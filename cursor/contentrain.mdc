@@ -1,0 +1,82 @@
+---
+description: Rules for managing Contentrain CMS models, content, and assets in projects with a contentrain/ directory
+globs: contentrain/**
+alwaysApply: false
+---
+
+# Contentrain CMS Content Management
+
+When working with files in the `contentrain/` directory, follow these rules.
+
+## Structure
+
+```
+contentrain.json                     # { "assetsPath": "contentrain/static" }
+contentrain/
+  assets.json                        # Asset registry
+  models/
+    metadata.json                    # Model list
+    <modelId>.json                   # Field definitions per model
+  <modelId>/
+    <modelId>.json                   # Non-localized content
+    <lang>.json                      # Localized content (en.json, tr.json)
+```
+
+## ID Format
+
+12-character lowercase hex: `[a-f0-9]{12}` (e.g., `50d81f2a3baf`). Must be unique within a model and consistent across all locale files.
+
+## System Fields (every content entry)
+
+- `ID`: 12-char hex, set once
+- `createdAt`: ISO 8601 string, set once, never modify on update
+- `updatedAt`: ISO 8601 string, update on every edit
+- `status`: `"draft"` | `"publish"` | `"changed"`
+
+## Model Definition
+
+`metadata.json` entry: `{ "name", "modelId", "localization", "type": "JSON"|"MD"|"MDX", "createdBy": "user", "isServerless": false }`
+
+Field file (`models/<modelId>.json`): array of field objects. Must include 4 system fields (`createdAt`, `updatedAt`, `ID`, `status` with `"system": true`). MD/MDX models also need `slug` and `content` default fields.
+
+## Component Types
+
+- `string`: single-line-text, multi-line-text, email, url, slug, color, json, md-editor, rich-text-editor
+- `number`: integer, decimal, rating, percent
+- `number` but stored as `string`: phone-number
+- `boolean`: checkbox, switch
+- `date`: date, date-time (stored as ISO string)
+- `media`: media (stores asset path string)
+- `relation`: one-to-one (string ID), one-to-many (string[] IDs)
+
+## Relations
+
+```json
+{ "options": { "reference": { "value": true, "form": { "reference": { "value": "<target-modelId>" } } } } }
+```
+
+## MD/MDX Rules
+
+- JSON index: all fields EXCEPT body content
+- Markdown file: YAML frontmatter + body
+- Never store content body in JSON index
+- Path: `<model.path>/<slug>.md` or `<model.path>/<lang>/<slug>.md`
+
+## Assets
+
+File: `contentrain/assets.json` (NOT `asset.json`). Physical file must exist at `path`. Media fields store the path string.
+
+## Environment Branches
+
+- `contentrain` = default
+- `contentrain-<name>` = named environments (staging, production)
+
+## Validation
+
+- Valid JSON, no trailing commas
+- All IDs: 12-char hex, unique
+- Required fields present
+- Relations reference existing entries
+- Media paths in assets.json
+- Localized entries: same ID across all locale files
+- createdAt never modified on update

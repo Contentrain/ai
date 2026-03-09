@@ -1,0 +1,8 @@
+{
+  "name": "contentrain",
+  "description": "Contentrain CMS content management for AI agents — models, content, and assets via MCP tools or direct file editing",
+  "author": {
+    "name": "Contentrain",
+    "email": "info@contentrain.io"
+  }
+}

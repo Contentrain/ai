@@ -1,0 +1,9 @@
+{
+  "contentrain": {
+    "command": "contentrain-mcp",
+    "env": {
+      "CONTENTRAIN_REPO_PATH": ".",
+      "CONTENTRAIN_BRANCH": "contentrain"
+    }
+  }
+}
