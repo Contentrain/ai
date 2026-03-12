@@ -127,6 +127,15 @@ export type DictionaryContentFile = Record<string, string>
 export type CollectionEntry = { id: string } & Record<string, unknown>
 export type CollectionContentOutput = CollectionEntry[]
 
+// ─── Scaffold ───
+
+export interface ScaffoldTemplate {
+  id: string
+  models: ModelDefinition[]
+  sample_content?: Record<string, Record<string, unknown>>
+  vocabulary?: Record<string, Record<string, string>>
+}
+
 // ─── Context ───
 
 export interface ContextJson {

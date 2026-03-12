@@ -1,5 +1,6 @@
-import { readFile, readdir, access } from 'node:fs/promises'
+import { readFile, readdir, access, writeFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
+import { canonicalStringify } from './serializer.js'
 
 export async function pathExists(filePath: string): Promise<boolean> {
   try {
@@ -25,6 +26,15 @@ export async function readDir(dirPath: string): Promise<string[]> {
   } catch {
     return []
   }
+}
+
+export async function writeJson(filePath: string, data: unknown, fieldOrder?: string[]): Promise<void> {
+  await mkdir(join(filePath, '..'), { recursive: true })
+  await writeFile(filePath, canonicalStringify(data, fieldOrder), 'utf-8')
+}
+
+export async function ensureDir(dirPath: string): Promise<void> {
+  await mkdir(dirPath, { recursive: true })
 }
 
 export function contentrainDir(projectRoot: string): string {

@@ -1,0 +1,228 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { ModelDefinition } from '@contentrain/types'
+import { z } from 'zod'
+import { readConfig } from '../core/config.js'
+import { writeContext } from '../core/context.js'
+import { checkReferences, deleteModel, readModel, writeModel } from '../core/model-manager.js'
+import { createTransaction, buildBranchName } from '../git/transaction.js'
+
+const fieldDefSchema: z.ZodType<Record<string, unknown>> = z.record(z.string(), z.object({
+  type: z.string(),
+  required: z.boolean().optional(),
+  unique: z.boolean().optional(),
+  default: z.unknown().optional(),
+  min: z.number().optional(),
+  max: z.number().optional(),
+  pattern: z.string().optional(),
+  options: z.array(z.string()).optional(),
+  model: z.union([z.string(), z.array(z.string())]).optional(),
+  items: z.union([z.string(), z.lazy(() => z.record(z.string(), z.unknown()))]).optional(),
+  fields: z.lazy(() => z.record(z.string(), z.unknown())).optional(),
+  accept: z.string().optional(),
+  maxSize: z.number().optional(),
+  description: z.string().optional(),
+}))
+
+export function registerModelTools(server: McpServer, projectRoot: string): void {
+  // ─── contentrain_model_save ───
+  server.tool(
+    'contentrain_model_save',
+    'Create or update a model definition. Uses git worktree + branch for audit trail.',
+    {
+      id: z.string().describe('Model ID (kebab-case, e.g. "blog-post")'),
+      name: z.string().describe('Human-readable name'),
+      kind: z.enum(['singleton', 'collection', 'document', 'dictionary']).describe('Model kind'),
+      domain: z.string().describe('Content domain (e.g. "blog", "marketing", "system")'),
+      i18n: z.boolean().describe('Whether this model supports localization'),
+      description: z.string().optional().describe('Model description'),
+      fields: fieldDefSchema.optional().describe('Field definitions (not needed for dictionary)'),
+    },
+    async (input) => {
+      const config = await readConfig(projectRoot)
+      if (!config) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized. Run contentrain_init first.' }) }],
+          isError: true,
+        }
+      }
+
+      // Validate
+      const errors = validateModel(input)
+      if (errors.length > 0) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Validation failed', details: errors }) }],
+          isError: true,
+        }
+      }
+
+      const existing = await readModel(projectRoot, input.id)
+      const action = existing ? 'updated' : 'created'
+
+      const model: ModelDefinition = {
+        id: input.id,
+        name: input.name,
+        kind: input.kind,
+        domain: input.domain,
+        i18n: input.i18n,
+        description: input.description,
+        fields: input.fields as ModelDefinition['fields'],
+      }
+
+      const branch = buildBranchName('model', input.id)
+      const tx = await createTransaction(projectRoot, branch)
+
+      try {
+        await tx.write(async (wt) => {
+          await writeModel(wt, model)
+        })
+
+        await tx.commit(`[contentrain] ${action}: ${input.id}`)
+        const gitResult = await tx.complete()
+
+        await writeContext(projectRoot, { tool: 'contentrain_model_save', model: input.id })
+
+        const defaultLocale = config.locales.default
+        const contentPath = `.contentrain/content/${input.domain}/${input.id}/`
+        const importSnippet: Record<string, string> = {
+          generic: `import data from '${contentPath}${defaultLocale}.json'`,
+        }
+        if (config.stack === 'nuxt') {
+          importSnippet['nuxt'] = model.kind === 'document'
+            ? `const { data } = await useAsyncData(() => queryContent('${model.domain}/${model.id}').locale('${defaultLocale}').find())`
+            : `const { data } = await useFetch('/api/content/${model.id}?locale=${defaultLocale}')`
+        }
+
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            action,
+            model: input.id,
+            validation: { valid: true, errors: [] },
+            git: { branch, action: gitResult.action, commit: gitResult.commit },
+            context_updated: true,
+            content_path: contentPath,
+            import_snippet: importSnippet,
+            next_steps: ['Add content with contentrain_content_save'],
+          }, null, 2) }],
+        }
+      } catch (error) {
+        await tx.cleanup()
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: `Model save failed: ${error instanceof Error ? error.message : String(error)}`,
+          }) }],
+          isError: true,
+        }
+      } finally {
+        await tx.cleanup()
+      }
+    },
+  )
+
+  // ─── contentrain_model_delete ───
+  server.tool(
+    'contentrain_model_delete',
+    'Delete a model and its content/meta. Blocked if other models reference it.',
+    {
+      model: z.string().describe('Model ID to delete'),
+      confirm: z.literal(true).describe('Must be true to confirm deletion'),
+    },
+    async ({ model: modelId }) => {
+      const config = await readConfig(projectRoot)
+      if (!config) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized.' }) }],
+          isError: true,
+        }
+      }
+
+      // Check model exists
+      const existing = await readModel(projectRoot, modelId)
+      if (!existing) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: `Model "${modelId}" not found` }) }],
+          isError: true,
+        }
+      }
+
+      // Check references
+      const refs = await checkReferences(projectRoot, modelId)
+      if (refs.length > 0) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            deleted: false,
+            error: 'REFERENCED_MODEL',
+            referenced_by: refs,
+            next_steps: ['Remove relation fields from referencing models first'],
+          }, null, 2) }],
+        }
+      }
+
+      const branch = buildBranchName('model', modelId)
+      const tx = await createTransaction(projectRoot, branch)
+
+      try {
+        let filesRemoved: string[] = []
+
+        await tx.write(async (wt) => {
+          filesRemoved = await deleteModel(wt, modelId)
+        })
+
+        await tx.commit(`[contentrain] delete: ${modelId}`)
+        const gitResult = await tx.complete()
+
+        await writeContext(projectRoot, { tool: 'contentrain_model_delete', model: modelId })
+
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            deleted: true,
+            git: { branch, action: gitResult.action, commit: gitResult.commit },
+            files_removed: filesRemoved,
+            context_updated: true,
+          }, null, 2) }],
+        }
+      } catch (error) {
+        await tx.cleanup()
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: `Delete failed: ${error instanceof Error ? error.message : String(error)}`,
+          }) }],
+          isError: true,
+        }
+      } finally {
+        await tx.cleanup()
+      }
+    },
+  )
+}
+
+function validateModel(input: { kind: string; fields?: Record<string, unknown>; id: string }): string[] {
+  const errors: string[] = []
+
+  // ID format check
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.id)) {
+    errors.push(`Invalid model ID "${input.id}": must be kebab-case`)
+  }
+
+  // Dictionary should not have fields (optional, not an error)
+  // Fields validation
+  if (input.fields) {
+    const validTypes = new Set([
+      'string', 'text', 'email', 'url', 'slug', 'color', 'phone', 'code', 'icon',
+      'markdown', 'richtext', 'number', 'integer', 'decimal', 'percent', 'rating',
+      'boolean', 'date', 'datetime', 'image', 'video', 'file',
+      'relation', 'relations', 'select', 'array', 'object',
+    ])
+
+    for (const [fieldName, fieldDef] of Object.entries(input.fields)) {
+      const def = fieldDef as { type?: string; model?: unknown }
+      if (!def.type || !validTypes.has(def.type)) {
+        errors.push(`Field "${fieldName}": invalid type "${def.type}"`)
+      }
+      if ((def.type === 'relation' || def.type === 'relations') && !def.model) {
+        errors.push(`Field "${fieldName}": relation/relations requires "model" property`)
+      }
+    }
+  }
+
+  return errors
+}

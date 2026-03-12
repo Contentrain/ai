@@ -1,0 +1,165 @@
+import { describe, expect, it, beforeEach, afterEach } from 'vitest'
+import { join } from 'node:path'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { simpleGit } from 'simple-git'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
+import { createServer } from '../../src/server.js'
+import { pathExists } from '../../src/util/fs.js'
+
+let testDir: string
+let client: Client
+
+async function initGitRepo(dir: string): Promise<void> {
+  const git = simpleGit(dir)
+  await git.init()
+  await git.addConfig('user.name', 'Test')
+  await git.addConfig('user.email', 'test@test.com')
+  // Need at least one commit to create branches from
+  await writeFile(join(dir, '.gitkeep'), '')
+  await git.add('.')
+  await git.commit('initial')
+}
+
+async function createTestClient(projectRoot: string): Promise<Client> {
+  const server = createServer(projectRoot)
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
+
+  const c = new Client({ name: 'test-client', version: '1.0.0' })
+  await Promise.all([
+    c.connect(clientTransport),
+    server.connect(serverTransport),
+  ])
+
+  return c
+}
+
+beforeEach(async () => {
+  testDir = await mkdtemp(join(tmpdir(), 'cr-setup-test-'))
+  await initGitRepo(testDir)
+  client = await createTestClient(testDir)
+})
+
+afterEach(async () => {
+  await rm(testDir, { recursive: true, force: true })
+})
+
+describe('contentrain_init', () => {
+  it('creates .contentrain structure', async () => {
+    const result = await client.callTool({
+      name: 'contentrain_init',
+      arguments: { locales: ['en', 'tr'] },
+    })
+
+    const content = result.content as Array<{ type: string; text: string }>
+    const data = JSON.parse(content[0]!.text)
+
+    expect(data.config_created).toBe('.contentrain/config.json')
+    expect(data.detected_locales).toEqual(['en', 'tr'])
+    expect(data.gitignore_updated).toBe(true)
+    expect(data.git.action).toBe('auto-merged')
+
+    // Verify files exist on main
+    expect(await pathExists(join(testDir, '.contentrain', 'config.json'))).toBe(true)
+    expect(await pathExists(join(testDir, '.contentrain', 'vocabulary.json'))).toBe(true)
+    expect(await pathExists(join(testDir, '.contentrain', 'context.json'))).toBe(true)
+    expect(await pathExists(join(testDir, '.contentrain', 'models'))).toBe(true)
+    expect(await pathExists(join(testDir, '.contentrain', 'content'))).toBe(true)
+    expect(await pathExists(join(testDir, '.contentrain', 'meta'))).toBe(true)
+  })
+
+  it('detects stack from package.json', async () => {
+    await writeFile(
+      join(testDir, 'package.json'),
+      JSON.stringify({ dependencies: { nuxt: '^3.0.0' } }),
+    )
+    const git = simpleGit(testDir)
+    await git.add('.')
+    await git.commit('add package.json')
+
+    const result = await client.callTool({
+      name: 'contentrain_init',
+      arguments: {},
+    })
+
+    const content = result.content as Array<{ type: string; text: string }>
+    const data = JSON.parse(content[0]!.text)
+
+    expect(data.detected_stack).toBe('nuxt')
+  })
+
+  it('returns error if already initialized', async () => {
+    // Init once
+    await client.callTool({ name: 'contentrain_init', arguments: {} })
+
+    // Re-create client to pick up changes
+    client = await createTestClient(testDir)
+
+    // Try again
+    const result = await client.callTool({ name: 'contentrain_init', arguments: {} })
+
+    const content = result.content as Array<{ type: string; text: string }>
+    const data = JSON.parse(content[0]!.text)
+
+    expect(data.error).toBe('Already initialized')
+  })
+})
+
+describe('contentrain_scaffold', () => {
+  it('creates models from blog template', async () => {
+    // Init first
+    await client.callTool({ name: 'contentrain_init', arguments: {} })
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_scaffold',
+      arguments: { template: 'blog', with_sample_content: true },
+    })
+
+    const content = result.content as Array<{ type: string; text: string }>
+    const data = JSON.parse(content[0]!.text)
+
+    expect(data.models_created).toHaveLength(3)
+    const modelIds = data.models_created.map((m: { id: string }) => m.id)
+    expect(modelIds).toContain('blog-post')
+    expect(modelIds).toContain('categories')
+    expect(modelIds).toContain('authors')
+
+    expect(data.content_created).toBeGreaterThan(0)
+    expect(data.vocabulary_terms_added).toBeGreaterThan(0)
+    expect(data.context_updated).toBe(true)
+
+    // Verify model files exist
+    expect(await pathExists(join(testDir, '.contentrain', 'models', 'blog-post.json'))).toBe(true)
+    expect(await pathExists(join(testDir, '.contentrain', 'models', 'categories.json'))).toBe(true)
+    expect(await pathExists(join(testDir, '.contentrain', 'models', 'authors.json'))).toBe(true)
+  })
+
+  it('returns error for unknown template', async () => {
+    await client.callTool({ name: 'contentrain_init', arguments: {} })
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_scaffold',
+      arguments: { template: 'nonexistent' },
+    })
+
+    const content = result.content as Array<{ type: string; text: string }>
+    const data = JSON.parse(content[0]!.text)
+
+    expect(data.error).toContain('Unknown template')
+  })
+
+  it('returns error when not initialized', async () => {
+    const result = await client.callTool({
+      name: 'contentrain_scaffold',
+      arguments: { template: 'blog' },
+    })
+
+    const content = result.content as Array<{ type: string; text: string }>
+    const data = JSON.parse(content[0]!.text)
+
+    expect(data.error).toContain('not initialized')
+  })
+})

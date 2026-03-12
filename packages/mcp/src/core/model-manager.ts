@@ -1,6 +1,7 @@
 import type { ModelDefinition } from '@contentrain/types'
 import { join } from 'node:path'
-import { contentrainDir, readDir, readJson } from '../util/fs.js'
+import { rm } from 'node:fs/promises'
+import { contentrainDir, ensureDir, readDir, readJson, writeJson } from '../util/fs.js'
 
 export interface ModelSummary {
   id: string
@@ -108,4 +109,76 @@ export async function countEntries(
     locales[file.replace(/\.json$/, '')] = 1
   }
   return { total: jsonFiles.length, locales }
+}
+
+const MODEL_FIELD_ORDER = ['id', 'name', 'kind', 'domain', 'i18n', 'description', 'fields']
+
+export async function writeModel(projectRoot: string, model: ModelDefinition): Promise<void> {
+  const filePath = join(contentrainDir(projectRoot), 'models', `${model.id}.json`)
+  await writeJson(filePath, model, MODEL_FIELD_ORDER)
+
+  // Ensure content and meta directories exist
+  await ensureDir(join(contentrainDir(projectRoot), 'content', model.domain, model.id))
+  await ensureDir(join(contentrainDir(projectRoot), 'meta', model.id))
+}
+
+export async function deleteModel(projectRoot: string, modelId: string): Promise<string[]> {
+  const model = await readModel(projectRoot, modelId)
+  if (!model) return []
+
+  const crDir = contentrainDir(projectRoot)
+  const removed: string[] = []
+
+  const modelPath = join(crDir, 'models', `${modelId}.json`)
+  const contentPath = join(crDir, 'content', model.domain, modelId)
+  const metaPath = join(crDir, 'meta', modelId)
+
+  await rm(modelPath, { force: true })
+  removed.push(`models/${modelId}.json`)
+
+  try {
+    await rm(contentPath, { recursive: true, force: true })
+    removed.push(`content/${model.domain}/${modelId}/`)
+  } catch {
+    // directory may not exist
+  }
+
+  try {
+    await rm(metaPath, { recursive: true, force: true })
+    removed.push(`meta/${modelId}/`)
+  } catch {
+    // directory may not exist
+  }
+
+  return removed
+}
+
+export interface ModelReference {
+  model: string
+  field: string
+  type: 'relation' | 'relations'
+}
+
+export async function checkReferences(projectRoot: string, modelId: string): Promise<ModelReference[]> {
+  const summaries = await listModels(projectRoot)
+  const others = summaries.filter(s => s.id !== modelId)
+
+  const models = await Promise.all(
+    others.map(s => readModel(projectRoot, s.id)),
+  )
+
+  const refs: ModelReference[] = []
+  for (const model of models) {
+    if (!model?.fields) continue
+
+    for (const [fieldName, fieldDef] of Object.entries(model.fields)) {
+      if (fieldDef.type !== 'relation' && fieldDef.type !== 'relations') continue
+      const targets = Array.isArray(fieldDef.model) ? fieldDef.model : [fieldDef.model]
+      if (targets.includes(modelId)) {
+        refs.push({ model: model.id, field: fieldName, type: fieldDef.type })
+      }
+    }
+  }
+
+  return refs
 }
