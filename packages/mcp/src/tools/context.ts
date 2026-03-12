@@ -10,7 +10,7 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
   // ─── contentrain_status ───
   server.tool(
     'contentrain_status',
-    'Get full project status — config, models, context, validation summary. First tool the agent should call.',
+    'Get full project status (read-only). Returns config, models, context. Do NOT manually edit .contentrain/ based on this output.',
     {},
     async () => {
       const crDir = contentrainDir(projectRoot)
@@ -75,7 +75,7 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
   // ─── contentrain_describe ───
   server.tool(
     'contentrain_describe',
-    'Get full schema of a single model, with optional sample content and stats.',
+    'Get full schema of a single model (read-only). Do NOT manually create content files — use contentrain_content_save instead.',
     {
       model: z.string().describe('Model ID (e.g. "blog-post", "hero")'),
       include_sample: z.boolean().optional().default(false).describe('Include one sample entry'),

@@ -27,7 +27,7 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
   // ─── contentrain_model_save ───
   server.tool(
     'contentrain_model_save',
-    'Create or update a model definition. Uses git worktree + branch for audit trail.',
+    'Create or update a model definition. Changes are auto-committed to git — do NOT manually edit .contentrain/ files after calling this tool.',
     {
       id: z.string().describe('Model ID (kebab-case, e.g. "blog-post")'),
       name: z.string().describe('Human-readable name'),
@@ -36,6 +36,8 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
       i18n: z.boolean().describe('Whether this model supports localization'),
       description: z.string().optional().describe('Model description'),
       fields: fieldDefSchema.optional().describe('Field definitions (not needed for dictionary)'),
+      content_path: z.string().optional().describe('Framework-relative path for content files (e.g. "content/blog", "locales"). When set, content is written here instead of .contentrain/content/'),
+      locale_strategy: z.enum(['file', 'suffix', 'directory', 'none']).optional().describe('How locale is encoded in file names. Default: "file"'),
     },
     async (input) => {
       const config = await readConfig(projectRoot)
@@ -66,6 +68,8 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
         i18n: input.i18n,
         description: input.description,
         fields: input.fields as ModelDefinition['fields'],
+        content_path: input.content_path,
+        locale_strategy: input.locale_strategy,
       }
 
       const branch = buildBranchName('model', input.id)
@@ -94,6 +98,8 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
+            status: 'committed',
+            message: 'Model saved and committed to git. Do NOT manually edit .contentrain/ files.',
             action,
             model: input.id,
             validation: { valid: true, errors: [] },
@@ -121,7 +127,7 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
   // ─── contentrain_model_delete ───
   server.tool(
     'contentrain_model_delete',
-    'Delete a model and its content/meta. Blocked if other models reference it.',
+    'Delete a model and its content/meta. Changes are auto-committed to git — do NOT manually edit .contentrain/ files.',
     {
       model: z.string().describe('Model ID to delete'),
       confirm: z.literal(true).describe('Must be true to confirm deletion'),
@@ -174,6 +180,8 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
+            status: 'committed',
+            message: 'Model deleted and committed to git. Do NOT manually edit .contentrain/ files.',
             deleted: true,
             git: { branch, action: gitResult.action, commit: gitResult.commit },
             files_removed: filesRemoved,

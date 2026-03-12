@@ -29,7 +29,7 @@ export async function listModels(projectRoot: string): Promise<ModelSummary[]> {
       i18n: model.i18n,
       fields: model.fields ? Object.keys(model.fields).length : 0,
     }))
-    .toSorted((a, b) => a.id.localeCompare(b.id))
+    .toSorted((a, b) => a.id.localeCompare(b.id, 'en'))
 }
 
 export async function readModel(projectRoot: string, modelId: string): Promise<ModelDefinition | null> {
@@ -111,7 +111,7 @@ export async function countEntries(
   return { total: jsonFiles.length, locales }
 }
 
-const MODEL_FIELD_ORDER = ['id', 'name', 'kind', 'domain', 'i18n', 'description', 'fields']
+const MODEL_FIELD_ORDER = ['id', 'name', 'kind', 'domain', 'i18n', 'description', 'content_path', 'locale_strategy', 'fields']
 
 export async function writeModel(projectRoot: string, model: ModelDefinition): Promise<void> {
   const filePath = join(contentrainDir(projectRoot), 'models', `${model.id}.json`)

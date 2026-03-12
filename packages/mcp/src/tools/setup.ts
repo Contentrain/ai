@@ -16,7 +16,7 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
   // ─── contentrain_init ───
   server.tool(
     'contentrain_init',
-    'Initialize .contentrain/ structure with config, directories, and git setup. Auto-detects stack and locales.',
+    'Initialize .contentrain/ structure. Changes are auto-committed to git — do NOT manually create .contentrain/ files.',
     {
       stack: z.string().optional().describe('Framework stack (nuxt, next, astro, svelte, react-vite, other). Auto-detected if omitted.'),
       locales: z.array(z.string()).optional().describe('Supported locales. Default: ["en"]'),
@@ -103,6 +103,8 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
+            status: 'committed',
+            message: 'Project initialized and committed to git. Do NOT manually edit .contentrain/ files.',
             config_created: '.contentrain/config.json',
             detected_stack: detectedStack,
             detected_locales: supportedLocales,
@@ -142,7 +144,7 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
   // ─── contentrain_scaffold ───
   server.tool(
     'contentrain_scaffold',
-    `Template-based project setup. Available templates: ${listTemplates().join(', ')}`,
+    `Template-based project setup. Available templates: ${listTemplates().join(', ')}. Changes are auto-committed to git.`,
     {
       template: z.string().describe('Template ID: blog, landing, docs, ecommerce, saas, i18n, mobile'),
       locales: z.array(z.string()).optional().describe('Override locales'),
@@ -213,6 +215,8 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
+            status: 'committed',
+            message: 'Scaffold applied and committed to git. Do NOT manually edit .contentrain/ files.',
             models_created: modelsCreated,
             content_created: contentCreated,
             vocabulary_terms_added: vocabAdded,

@@ -39,6 +39,8 @@ export interface FieldDef {
 
 // ─── Model Definition ───
 
+export type LocaleStrategy = 'file' | 'suffix' | 'directory' | 'none'
+
 export interface ModelDefinition {
   id: string
   name: string
@@ -47,6 +49,10 @@ export interface ModelDefinition {
   i18n: boolean
   description?: string
   fields?: Record<string, FieldDef>
+  /** Framework-relative path for content files (e.g. "content/blog", "locales"). When set, content is written here instead of .contentrain/content/ */
+  content_path?: string
+  /** How locale is encoded in file names. Default: "file" ({dir}/{locale}.json or {dir}/{slug}/{locale}.md) */
+  locale_strategy?: LocaleStrategy
 }
 
 // ─── Config ───

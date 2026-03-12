@@ -67,8 +67,8 @@ beforeEach(async () => {
   await initProject(testDir)
   client = await createTestClient(testDir)
 
-  // Initialize project
-  await client.callTool({ name: 'contentrain_init', arguments: {} })
+  // Initialize project with en + tr locales for i18n tests
+  await client.callTool({ name: 'contentrain_init', arguments: { locales: ['en', 'tr'] } })
   client = await createTestClient(testDir)
 })
 

@@ -10,7 +10,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
   // ─── contentrain_content_save ───
   server.tool(
     'contentrain_content_save',
-    'Save content entries for any model kind (singleton/collection/document/dictionary). Uses git worktree + branch.',
+    'Save content entries (singleton/collection/document/dictionary). Changes are auto-committed to git — do NOT manually edit .contentrain/ files after calling this tool.',
     {
       model: z.string().describe('Model ID'),
       entries: z.array(z.object({
@@ -37,6 +37,18 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         }
       }
 
+      // Validate locales before starting transaction
+      for (const entry of input.entries) {
+        if (entry.locale && !config.locales.supported.includes(entry.locale)) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({
+              error: `Locale "${entry.locale}" is not supported. Supported: [${config.locales.supported.join(', ')}]`,
+            }) }],
+            isError: true,
+          }
+        }
+      }
+
       const branch = buildBranchName('content', input.model)
       const tx = await createTransaction(projectRoot, branch)
 
@@ -60,6 +72,8 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
+            status: 'committed',
+            message: 'Content saved and committed to git. Do NOT manually edit .contentrain/ files.',
             results: results!,
             git: { branch, action: gitResult.action, commit: gitResult.commit },
             validation: { valid: true, errors: [] },
@@ -86,7 +100,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
   // ─── contentrain_content_delete ───
   server.tool(
     'contentrain_content_delete',
-    'Delete content entries. Collection: by entry ID. Document: by slug. Singleton/Dictionary: by locale.',
+    'Delete content entries. Changes are auto-committed to git — do NOT manually edit .contentrain/ files after calling this tool.',
     {
       model: z.string().describe('Model ID'),
       id: z.string().optional().describe('Entry ID (collection)'),
@@ -136,6 +150,8 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
+            status: 'committed',
+            message: 'Content deleted and committed to git. Do NOT manually edit .contentrain/ files.',
             deleted: true,
             files_removed: removed,
             git: { branch, action: gitResult.action, commit: gitResult.commit },
@@ -159,7 +175,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
   // ─── contentrain_content_list ───
   server.tool(
     'contentrain_content_list',
-    'List content entries for a model. Supports filtering, pagination, and relation resolving.',
+    'List content entries (read-only). Returns data from .contentrain/ — do NOT manually create or modify content files.',
     {
       model: z.string().describe('Model ID'),
       locale: z.string().optional().describe('Locale code (defaults to config default)'),

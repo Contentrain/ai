@@ -1,4 +1,4 @@
-import type { ModelDefinition, ContentrainConfig, EntryMeta } from '@contentrain/types'
+import type { ModelDefinition, ContentrainConfig, EntryMeta, LocaleStrategy } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { contentrainDir, readDir, readJson, readText, writeJson, writeText } from '../util/fs.js'
@@ -6,11 +6,39 @@ import { generateEntryId } from '../util/id.js'
 import { writeMeta, deleteMeta } from './meta-manager.js'
 import { readModel } from './model-manager.js'
 
+// ─── Validation helpers ───
+
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const ENTRY_ID_RE = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,39}$/
+const LOCALE_RE = /^[a-z]{2}(?:-[A-Z]{2})?$/
+
+export function validateSlug(slug: string): string | null {
+  if (!slug) return 'Slug is required'
+  if (!SLUG_RE.test(slug)) return `Invalid slug "${slug}": must be kebab-case alphanumeric (a-z, 0-9, hyphens)`
+  if (slug.startsWith('.') || slug.includes('..')) return `Invalid slug "${slug}": path traversal not allowed`
+  return null
+}
+
+export function validateEntryId(id: string): string | null {
+  if (!ENTRY_ID_RE.test(id)) return `Invalid entry ID "${id}": must be 1-40 alphanumeric characters (hyphens and underscores allowed)`
+  return null
+}
+
+export function validateLocale(locale: string, config: ContentrainConfig): string | null {
+  if (!LOCALE_RE.test(locale)) return `Invalid locale "${locale}": must be ISO 639-1 format (e.g. "en", "tr", "pt-BR")`
+  if (!config.locales.supported.includes(locale)) {
+    return `Locale "${locale}" is not in supported locales [${config.locales.supported.join(', ')}]. Update config first.`
+  }
+  return null
+}
+
 // ─── Frontmatter helpers ───
 
 export function parseFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
-  if (!match) return { frontmatter: {}, body: content }
+  // Normalize CRLF to LF for cross-platform compatibility
+  const normalized = content.replace(/\r\n/g, '\n')
+  const match = normalized.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
+  if (!match) return { frontmatter: {}, body: normalized }
 
   const frontmatterStr = match[1]!
   const body = match[2]!.trim()
@@ -108,7 +136,36 @@ export function serializeFrontmatter(data: Record<string, unknown>, body: string
 // ─── Content paths ───
 
 function contentDir(projectRoot: string, model: ModelDefinition): string {
+  if (model.content_path) {
+    return join(projectRoot, model.content_path)
+  }
   return join(contentrainDir(projectRoot), 'content', model.domain, model.id)
+}
+
+function localeStrategy(model: ModelDefinition): LocaleStrategy {
+  return model.locale_strategy ?? 'file'
+}
+
+/** Build the file path for a JSON content file (singleton/collection/dictionary) */
+function jsonFilePath(dir: string, model: ModelDefinition, locale: string): string {
+  switch (localeStrategy(model)) {
+    case 'suffix': return join(dir, `${model.id}.${locale}.json`)
+    case 'directory': return join(dir, locale, `${model.id}.json`)
+    case 'none': return join(dir, `${model.id}.json`)
+    case 'file':
+    default: return join(dir, `${locale}.json`)
+  }
+}
+
+/** Build the file path for a markdown document */
+function mdFilePath(dir: string, model: ModelDefinition, locale: string, slug: string): string {
+  switch (localeStrategy(model)) {
+    case 'suffix': return join(dir, `${slug}.${locale}.md`)
+    case 'directory': return join(dir, locale, `${slug}.md`)
+    case 'none': return join(dir, `${slug}.md`)
+    case 'file':
+    default: return join(dir, slug, `${locale}.md`)
+  }
 }
 
 // ─── Types ───
@@ -165,9 +222,25 @@ export async function writeContent(
   for (const entry of entries) {
     const locale = entry.locale ?? defaultLocale
 
+    // Validate locale
+    const localeErr = validateLocale(locale, config)
+    if (localeErr) throw new Error(localeErr)
+
+    // Validate entry ID if provided
+    if (entry.id) {
+      const idErr = validateEntryId(entry.id)
+      if (idErr) throw new Error(idErr)
+    }
+
+    // Validate slug if provided
+    if (entry.slug) {
+      const slugErr = validateSlug(entry.slug)
+      if (slugErr) throw new Error(slugErr)
+    }
+
     switch (model.kind) {
       case 'singleton': {
-        const filePath = join(contentDir(projectRoot, model), `${locale}.json`)
+        const filePath = jsonFilePath(contentDir(projectRoot, model), model, locale)
         await writeJson(filePath, entry.data)
         await writeMeta(projectRoot, model, { locale }, defaultMeta())
         results.push({ action: 'updated', locale })
@@ -177,7 +250,7 @@ export async function writeContent(
       case 'collection': {
         const isNew = !entry.id
         const id = entry.id ?? generateEntryId()
-        const filePath = join(contentDir(projectRoot, model), `${locale}.json`)
+        const filePath = jsonFilePath(contentDir(projectRoot, model), model, locale)
         const existing = await readJson<Record<string, Record<string, unknown>>>(filePath) ?? {}
 
         const action: 'created' | 'updated' = (isNew || !(id in existing)) ? 'created' : 'updated'
@@ -198,6 +271,8 @@ export async function writeContent(
       case 'document': {
         const slug = entry.slug ?? entry.data['slug'] as string
         if (!slug) throw new Error('Document entries require a slug')
+        const slugErr = validateSlug(slug)
+        if (slugErr) throw new Error(slugErr)
 
         const bodyContent = (entry.data['body'] as string) ?? ''
         const fmData = { ...entry.data }
@@ -205,18 +280,19 @@ export async function writeContent(
         if (!fmData['slug']) fmData['slug'] = slug
 
         // Check if existing
-        const existingRaw = await readText(join(contentDir(projectRoot, model), slug, `${locale}.md`))
+        const docPath = mdFilePath(contentDir(projectRoot, model), model, locale, slug)
+        const existingRaw = await readText(docPath)
         const action: 'created' | 'updated' = existingRaw ? 'updated' : 'created'
 
         const mdContent = serializeFrontmatter(fmData, bodyContent)
-        await writeText(join(contentDir(projectRoot, model), slug, `${locale}.md`), mdContent)
+        await writeText(docPath, mdContent)
         await writeMeta(projectRoot, model, { locale, slug }, defaultMeta())
         results.push({ action, slug, locale })
         break
       }
 
       case 'dictionary': {
-        const filePath = join(contentDir(projectRoot, model), `${locale}.json`)
+        const filePath = jsonFilePath(contentDir(projectRoot, model), model, locale)
         const existing = await readJson<Record<string, string>>(filePath) ?? {}
         const merged = { ...existing, ...entry.data as Record<string, string> }
         await writeJson(filePath, merged)
@@ -245,10 +321,10 @@ export async function deleteContent(
       if (!opts.id) throw new Error('Collection delete requires an entry ID')
       const locales = opts.locale
         ? [opts.locale]
-        : (await readDir(cDir)).filter(f => f.endsWith('.json')).map(f => f.replace('.json', ''))
+        : (await readDir(cDir)).filter(f => f.endsWith('.json')).map(f => f.replace('.json', '').replace(`${model.id}.`, ''))
 
       for (const loc of locales) {
-        const filePath = join(cDir, `${loc}.json`)
+        const filePath = jsonFilePath(cDir, model, loc)
         const data = await readJson<Record<string, unknown>>(filePath)
         if (data && opts.id in data) {
           delete data[opts.id]
@@ -263,9 +339,32 @@ export async function deleteContent(
 
     case 'document': {
       if (!opts.slug) throw new Error('Document delete requires a slug')
-      const slugDir = join(cDir, opts.slug)
-      await rm(slugDir, { recursive: true, force: true })
-      removed.push(`content/${model.domain}/${model.id}/${opts.slug}/`)
+      const slugDelErr = validateSlug(opts.slug)
+      if (slugDelErr) throw new Error(slugDelErr)
+
+      const strategy = localeStrategy(model)
+      if (strategy === 'file') {
+        // slug is a directory — remove entire slug directory
+        await rm(join(cDir, opts.slug), { recursive: true, force: true })
+      } else if (opts.locale) {
+        // Remove specific locale file
+        const filePath = mdFilePath(cDir, model, opts.locale, opts.slug)
+        await rm(filePath, { force: true })
+      } else {
+        // Remove all locale files for this slug
+        const files = await readDir(strategy === 'directory' ? cDir : cDir)
+        for (const f of files) {
+          if (strategy === 'suffix' && f.startsWith(`${opts.slug}.`) && f.endsWith('.md')) {
+            await rm(join(cDir, f), { force: true })
+          } else if (strategy === 'directory') {
+            // f is a locale dir — remove slug.md from it
+            await rm(join(cDir, f, `${opts.slug}.md`), { force: true })
+          } else if (strategy === 'none') {
+            if (f === `${opts.slug}.md`) await rm(join(cDir, f), { force: true })
+          }
+        }
+      }
+      removed.push(`${model.content_path ?? `content/${model.domain}/${model.id}`}/${opts.slug}`)
 
       await deleteMeta(projectRoot, model, { slug: opts.slug, locale: opts.locale })
       break
@@ -274,7 +373,7 @@ export async function deleteContent(
     case 'singleton':
     case 'dictionary': {
       if (!opts.locale) throw new Error(`${model.kind} delete requires a locale`)
-      const filePath = join(cDir, `${opts.locale}.json`)
+      const filePath = jsonFilePath(cDir, model, opts.locale)
       await rm(filePath, { force: true })
       removed.push(`content/${model.domain}/${model.id}/${opts.locale}.json`)
 
@@ -299,12 +398,12 @@ export async function listContent(
 
   switch (model.kind) {
     case 'singleton': {
-      const data = await readJson<Record<string, unknown>>(join(cDir, `${locale}.json`))
+      const data = await readJson<Record<string, unknown>>(jsonFilePath(cDir, model, locale))
       return { kind: 'singleton', data: data ?? {}, locale }
     }
 
     case 'collection': {
-      const data = await readJson<Record<string, Record<string, unknown>>>(join(cDir, `${locale}.json`)) ?? {}
+      const data = await readJson<Record<string, Record<string, unknown>>>(jsonFilePath(cDir, model, locale)) ?? {}
       let entries: Array<Record<string, unknown>> = Object.entries(data).map(([id, fields]) => ({ id, ...fields }))
 
       // Filter
@@ -333,14 +432,53 @@ export async function listContent(
     }
 
     case 'document': {
-      const slugDirs = await readDir(cDir)
       const entries: Array<{ slug: string; frontmatter: Record<string, unknown> }> = []
+      const strategy = localeStrategy(model)
 
-      for (const slug of slugDirs) {
-        const raw = await readText(join(cDir, slug, `${locale}.md`))
-        if (!raw) continue
-        const { frontmatter } = parseFrontmatter(raw)
-        entries.push({ slug, frontmatter })
+      if (strategy === 'file') {
+        // Each slug is a subdirectory containing locale.md files
+        const slugDirs = await readDir(cDir)
+        for (const slug of slugDirs) {
+          const raw = await readText(join(cDir, slug, `${locale}.md`))
+          if (!raw) continue
+          const { frontmatter } = parseFrontmatter(raw)
+          entries.push({ slug, frontmatter })
+        }
+      } else if (strategy === 'suffix') {
+        // Files like {slug}.{locale}.md in flat directory
+        const files = await readDir(cDir)
+        const suffix = `.${locale}.md`
+        for (const f of files) {
+          if (!f.endsWith(suffix)) continue
+          const slug = f.slice(0, -suffix.length)
+          const raw = await readText(join(cDir, f))
+          if (!raw) continue
+          const { frontmatter } = parseFrontmatter(raw)
+          entries.push({ slug, frontmatter })
+        }
+      } else if (strategy === 'directory') {
+        // Files in {locale}/ directory as {slug}.md
+        const localeDir = join(cDir, locale)
+        const files = await readDir(localeDir)
+        for (const f of files) {
+          if (!f.endsWith('.md')) continue
+          const slug = f.replace('.md', '')
+          const raw = await readText(join(localeDir, f))
+          if (!raw) continue
+          const { frontmatter } = parseFrontmatter(raw)
+          entries.push({ slug, frontmatter })
+        }
+      } else {
+        // none — {slug}.md, no locale in filename
+        const files = await readDir(cDir)
+        for (const f of files) {
+          if (!f.endsWith('.md')) continue
+          const slug = f.replace('.md', '')
+          const raw = await readText(join(cDir, f))
+          if (!raw) continue
+          const { frontmatter } = parseFrontmatter(raw)
+          entries.push({ slug, frontmatter })
+        }
       }
 
       const total = entries.length
@@ -352,7 +490,7 @@ export async function listContent(
     }
 
     case 'dictionary': {
-      const data = await readJson<Record<string, string>>(join(cDir, `${locale}.json`)) ?? {}
+      const data = await readJson<Record<string, string>>(jsonFilePath(cDir, model, locale)) ?? {}
       return { kind: 'dictionary', data, total_keys: Object.keys(data).length, locale }
     }
   }
@@ -369,24 +507,24 @@ export async function readContent(
 
   switch (model.kind) {
     case 'singleton':
-      return readJson<Record<string, unknown>>(join(cDir, `${opts.locale}.json`))
+      return readJson<Record<string, unknown>>(jsonFilePath(cDir, model, opts.locale))
 
     case 'collection': {
       if (!opts.entryId) return null
-      const data = await readJson<Record<string, Record<string, unknown>>>(join(cDir, `${opts.locale}.json`))
+      const data = await readJson<Record<string, Record<string, unknown>>>(jsonFilePath(cDir, model, opts.locale))
       return data?.[opts.entryId] ? { id: opts.entryId, ...data[opts.entryId] } : null
     }
 
     case 'document': {
       if (!opts.slug) return null
-      const raw = await readText(join(cDir, opts.slug, `${opts.locale}.md`))
+      const raw = await readText(mdFilePath(cDir, model, opts.locale, opts.slug))
       if (!raw) return null
       const { frontmatter, body } = parseFrontmatter(raw)
       return { slug: opts.slug, ...frontmatter, body }
     }
 
     case 'dictionary':
-      return readJson<Record<string, string>>(join(cDir, `${opts.locale}.json`))
+      return readJson<Record<string, string>>(jsonFilePath(cDir, model, opts.locale))
   }
 }
 
@@ -410,17 +548,20 @@ async function resolveRelations(
 
   if (relationFields.length === 0) return entries
 
-  // Load target model contents into cache
+  // Load target model contents into cache (with circular reference protection)
   const targetCache: Record<string, Record<string, Record<string, unknown>>> = {}
+  const visited = new Set<string>([model.id])
 
   for (const rf of relationFields) {
     for (const targetModelId of rf.targetModels) {
-      if (targetCache[targetModelId]) continue
+      if (targetCache[targetModelId] || visited.has(targetModelId)) continue
+      visited.add(targetModelId)
+
       const targetModel = await readModel(projectRoot, targetModelId)
       if (!targetModel || targetModel.kind !== 'collection') continue
 
       const targetData = await readJson<Record<string, Record<string, unknown>>>(
-        join(contentrainDir(projectRoot), 'content', targetModel.domain, targetModel.id, `${locale}.json`),
+        jsonFilePath(contentDir(projectRoot, targetModel), targetModel, locale),
       ) ?? {}
 
       targetCache[targetModelId] = targetData

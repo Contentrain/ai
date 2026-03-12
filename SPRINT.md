@@ -63,6 +63,28 @@
 
 ---
 
+## Sprint 4.5 — Hardening & content_path ✅
+**Hedef:** Sprint 5 öncesi güvenlik, robustness, monorepo, framework path desteği
+
+- [x] Input validation: slug, entry ID, locale format + config-aware locale check
+- [x] Agent duplication fix: tüm tool response'lara `status: 'committed'` + açık mesaj
+- [x] Tool description'lar güncellendi (do NOT manually edit uyarıları)
+- [x] Config null-safety: eksik field'lar safe default ile normalize
+- [x] Git merge conflict detection + abort + descriptive error
+- [x] Frontmatter CRLF normalization (cross-platform)
+- [x] Circular relation protection (visited set)
+- [x] Locale-independent sort fix (localeCompare 'en')
+- [x] Monorepo stack detection (walks up 5 levels for workspaces)
+- [x] Path normalization (resolve for CONTENTRAIN_PROJECT_ROOT)
+- [x] `content_path` on ModelDefinition — framework path desteği (document/dictionary/collection/singleton)
+- [x] `locale_strategy` — file/suffix/directory/none (JSON + MD)
+- [x] content-manager: jsonFilePath + mdFilePath helpers (tüm CRUD content_path-aware)
+- [x] model_save tool: content_path + locale_strategy parametreleri
+- [x] Test timeout fix (30s for integration tests)
+- [x] Test: 72/72 pass, build + typecheck temiz
+
+---
+
 ## Sprint 5 — MCP Normalize & Workflow Tools
 **Hedef:** Normalize akışı + validation + submit çalışır
 

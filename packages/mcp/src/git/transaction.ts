@@ -92,7 +92,18 @@ export async function createTransaction(
         }
       }
       await git.checkout(baseBranch)
-      await git.merge([branch])
+
+      try {
+        await git.merge([branch])
+      } catch (error) {
+        // Merge conflict — abort and report
+        try {
+          await git.merge(['--abort'])
+        } catch {
+          // abort may fail if not in merge state
+        }
+        throw new Error(`Merge conflict on branch "${branch}". Changes are on the branch but not merged. Resolve manually or retry.`, { cause: error })
+      }
 
       if (hasRemote) {
         try {
