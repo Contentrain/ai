@@ -1,0 +1,14 @@
+{
+  "id": "blog-post",
+  "name": "Blog Post",
+  "kind": "document",
+  "domain": "blog",
+  "i18n": true,
+  "fields": {
+    "title": { "type": "string", "required": true, "max": 120 },
+    "slug": { "type": "slug", "required": true, "unique": true },
+    "excerpt": { "type": "text", "max": 280 },
+    "cover": { "type": "image" },
+    "tags": { "type": "array", "items": "string" }
+  }
+}

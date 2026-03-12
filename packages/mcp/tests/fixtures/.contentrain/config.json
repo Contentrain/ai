@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "stack": "nuxt",
+  "workflow": "review",
+  "locales": {
+    "default": "en",
+    "supported": ["en", "tr"]
+  },
+  "domains": ["marketing", "blog", "system"]
+}

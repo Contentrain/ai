@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "terms": {
+    "read-more": {
+      "en": "Read More",
+      "tr": "Devamını Oku"
+    },
+    "sign-up": {
+      "en": "Sign Up",
+      "tr": "Kayıt Ol"
+    }
+  }
+}

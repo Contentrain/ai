@@ -1,0 +1,14 @@
+{
+  "id": "hero",
+  "name": "Hero Section",
+  "kind": "singleton",
+  "domain": "marketing",
+  "i18n": true,
+  "fields": {
+    "title": { "type": "string", "required": true, "max": 120 },
+    "subtitle": { "type": "text" },
+    "cta_text": { "type": "string" },
+    "cta_url": { "type": "url" },
+    "background": { "type": "image" }
+  }
+}

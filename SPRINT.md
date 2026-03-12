@@ -8,30 +8,30 @@
 **Hedef:** Monorepo çalışır durumda + @contentrain/types tam implementasyon
 
 - [x] Monorepo iskeleti (pnpm workspace, tsconfig, LICENSE, .npmrc)
-- [ ] @contentrain/types — Tüm type'lar (schema-architecture.md v2.1'den)
-  - [ ] Field types (27 flat type enum + FieldDef)
-  - [ ] Model types (ModelDef, 4 kind)
-  - [ ] Config types (ConfigJson, LocaleConfig)
-  - [ ] Meta types (EntryMeta, status enum)
-  - [ ] Context types (ContextJson)
-  - [ ] Vocabulary & Assets types
-  - [ ] Validation types (ValidationResult, ValidationError)
-- [ ] Vitest setup + types unit testleri
-- [ ] oxlint config
-- [ ] lefthook setup (lint + typecheck on commit)
-- [ ] İlk build doğrulama: `pnpm build` tüm paketlerde başarılı
+- [x] @contentrain/types — Tüm type'lar (schema-architecture.md v2.1'den)
+  - [x] Field types (27 flat type enum + FieldDef)
+  - [x] Model types (ModelDef, 4 kind)
+  - [x] Config types (ConfigJson, LocaleConfig)
+  - [x] Meta types (EntryMeta, status enum)
+  - [x] Context types (ContextJson)
+  - [x] Vocabulary & Assets types
+  - [x] Validation types (ValidationResult, ValidationError)
+- [x] Vitest setup + types unit testleri (39 type-level test)
+- [x] oxlint config (.oxlintrc.json)
+- [x] lefthook setup (lint + typecheck on commit)
+- [x] İlk build doğrulama: `pnpm build` tüm paketlerde başarılı
 
 ---
 
 ## Sprint 2 — MCP Core Infrastructure
 **Hedef:** MCP server ayağa kalkar, ilk 2 read-only tool çalışır
 
-- [ ] MCP server boilerplate (@modelcontextprotocol/sdk + stdio transport)
-- [ ] Tool registration altyapısı (her tool ayrı modül)
-- [ ] `contentrain_status` tool implementasyonu
-- [ ] `contentrain_describe` tool implementasyonu
-- [ ] Canonical JSON serializer utility
-- [ ] Test: mock .contentrain/ dizininde status + describe çalışır
+- [x] MCP server boilerplate (@modelcontextprotocol/sdk + stdio transport)
+- [x] Tool registration altyapısı (her tool ayrı modül)
+- [x] `contentrain_status` tool implementasyonu
+- [x] `contentrain_describe` tool implementasyonu
+- [x] Canonical JSON serializer utility
+- [x] Test: mock .contentrain/ dizininde status + describe çalışır (18 test)
 
 ---
 

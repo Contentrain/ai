@@ -1,0 +1,7 @@
+{
+  "id": "error-messages",
+  "name": "Error Messages",
+  "kind": "dictionary",
+  "domain": "system",
+  "i18n": true
+}

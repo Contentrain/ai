@@ -1,0 +1,5 @@
+{
+  "auth.forbidden": "Access denied",
+  "auth.expired": "Session expired",
+  "validation.required": "This field is required"
+}

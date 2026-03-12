@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "lastOperation": {
+    "tool": "content_save",
+    "model": "hero",
+    "locale": "en",
+    "timestamp": "2026-03-11T14:30:00Z",
+    "source": "mcp-local"
+  },
+  "stats": {
+    "models": 3,
+    "entries": 10,
+    "locales": ["en", "tr"],
+    "lastSync": "2026-03-11T14:30:00Z"
+  }
+}
