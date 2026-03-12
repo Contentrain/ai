@@ -94,23 +94,23 @@
 - Agent = zeka katmanı (projeyi analiz, content kararı, domain grouping)
 - MCP = deterministic altyapı (string bulma, content yazma, source patching, validation)
 
-### Sprint 5A — Validate + Submit (Bağımsız, düşük risk)
-- [ ] `contentrain_validate` — full project validation (schema + ref integrity + i18n parity)
-- [ ] Validation rule engine (composable validators)
-- [ ] Auto-fix: structural issues only (sort, orphan meta, missing locale template)
-- [ ] Secret detection (API keys, tokens, passwords)
-- [ ] `contentrain_submit` — push contentrain/* branches to remote
-- [ ] Test: validation senaryoları + submit
+### Sprint 5A — Validate + Submit ✅
+- [x] `contentrain_validate` — full project validation (schema + ref integrity + i18n parity)
+- [x] Validation rule engine (composable validators)
+- [x] Auto-fix: structural issues only (sort, orphan meta, missing locale template)
+- [x] Secret detection (API keys, tokens, passwords)
+- [x] `contentrain_submit` — push contentrain/* branches to remote
+- [x] Test: validation senaryoları + submit
 
-### Sprint 5B — Scan Tool (Read-only, orta risk)
-- [ ] `contentrain_scan` mode: **graph** — import/component graph builder (project intelligence)
-- [ ] `contentrain_scan` mode: **candidates** — string extraction + deterministic pre-filtering
-- [ ] `contentrain_scan` mode: **summary** — project overview stats
-- [ ] Pre-filter engine (CSS classes, imports, URLs, paths, color codes, identifiers)
-- [ ] Batching + pagination (limit/offset)
-- [ ] Dedup (identical strings across files grouped)
-- [ ] Graph builder: import statement regex parser, file classification (page/component/layout)
-- [ ] Test: scan tüm modlar + pre-filtering doğruluğu
+### Sprint 5B — Scan Tool ✅
+- [x] `contentrain_scan` mode: **graph** — import/component graph builder (project intelligence)
+- [x] `contentrain_scan` mode: **candidates** — string extraction + deterministic pre-filtering
+- [x] `contentrain_scan` mode: **summary** — project overview stats
+- [x] Pre-filter engine (CSS classes, imports, URLs, paths, color codes, identifiers)
+- [x] Batching + pagination (limit/offset)
+- [x] Dedup (identical strings across files grouped)
+- [x] Graph builder: import statement regex parser, file classification (page/component/layout)
+- [x] Test: scan tüm modlar + pre-filtering doğruluğu
 
 ### Sprint 5C — Apply Tool (Write, yüksek risk)
 - [ ] `contentrain_apply` mode: **extract** — content-only extraction (source untouched)
@@ -131,6 +131,41 @@
 
 ---
 
+## Sprint 5.5 — SDK: @contentrain/query ✅
+**Hedef:** Universal JS/TS content query SDK — Prisma-pattern generated client
+
+### v0.1 Foundation ✅ (2026-03-13)
+- [x] Generator pipeline (parallel I/O throughout):
+  - [x] config-reader — reads config.json + models + maps content files
+  - [x] type-emitter — generates TypeScript declarations from 27 field types
+  - [x] data-emitter — canonical JSON, object-map→sorted-array, frontmatter parsing
+  - [x] runtime-emitter — inlined runtime classes, per-kind registries, document aggregation
+  - [x] package-json — injects `#contentrain` imports into user's package.json
+- [x] Runtime (4 model kinds):
+  - [x] QueryBuilder — collection queries with where/sort/limit/offset/locale
+  - [x] SingletonAccessor — locale-aware singleton access
+  - [x] DictionaryAccessor — key-value lookup with locale
+  - [x] DocumentQuery — markdown frontmatter + body with bySlug/where/locale
+- [x] CLI: `contentrain-query generate [--root <path>]`
+- [x] CJS wrapper: async `init()` pattern (no top-level await)
+- [x] MCP alignment: path resolution, locale strategies, canonical serialization, slug extraction
+- [x] Quality: oxlint 0 warnings, tsc 0 errors, 75 tests (10 files: runtime + generator + integration)
+
+### v0.2 Relations & Watch (sonraki)
+- [ ] Relation resolution (one-to-one, one-to-many)
+- [ ] Polymorphic relation desteği
+- [ ] Watch mode
+
+### Key Design Decisions
+- Output: `.contentrain/client/` (proje-içi, node_modules'e yazmaz)
+- Import: `package.json` `imports` field (`#contentrain`) — Node.js native, tüm bundler'larda plugin'siz
+- Dual format: ESM (`.mjs`) + CJS (`.cjs` async init)
+- Zero runtime dependency — inlined classes, no node_modules import
+- Document dosya naming: `modelId--slug.locale.mjs` (registry'de locale bazlı array aggregation)
+- Canonical JSON: sorted keys, 2-space indent (MCP `canonicalStringify` ile hizalı)
+
+---
+
 ## Sprint 6 — CLI
 **Hedef:** `npx contentrain` CLI çalışır
 
@@ -143,19 +178,14 @@
 
 ---
 
-## Sprint 7 — AI Rules & Nuxt SDK
-**Hedef:** AI rules paketi + Nuxt SDK yayınlanabilir
+## Sprint 7 — AI Rules
+**Hedef:** AI rules paketi yayınlanabilir
 
 - [ ] @contentrain/ai-rules
   - [ ] CLAUDE.md template (contentrain projeler için)
   - [ ] .cursorrules template
   - [ ] Windsurf rules template
   - [ ] Rule generator (stack-aware)
-- [ ] @contentrain/sdk-nuxt
-  - [ ] `useContentrain()` composable
-  - [ ] `useFetch` wrapper'ları (model-aware, locale-aware)
-  - [ ] Auto-import setup (Nuxt module)
-  - [ ] Type-safe content access (model → TypeScript type generation)
 
 ---
 
