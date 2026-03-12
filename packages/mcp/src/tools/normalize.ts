@@ -1,8 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { FieldDef } from '@contentrain/types'
 import { z } from 'zod'
 import { readConfig } from '../core/config.js'
 import { buildGraph } from '../core/graph-builder.js'
 import { scanCandidates, scanSummary } from '../core/scanner.js'
+import { applyExtract, applyReuse } from '../core/apply-manager.js'
 
 export function registerNormalizeTools(server: McpServer, projectRoot: string): void {
   // ─── contentrain_scan ───
@@ -111,6 +113,126 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             error: `Scan failed: ${error instanceof Error ? error.message : String(error)}`,
+          }) }],
+          isError: true,
+        }
+      }
+    },
+  )
+
+  // ─── contentrain_apply ───
+  server.tool(
+    'contentrain_apply',
+    'Apply normalize operations. Two modes: "extract" writes agent-approved strings to Contentrain content files (source untouched), "reuse" patches source files with agent-provided replacement expressions. Both modes require dry_run:true first for preview. Normalize operations always use review workflow (never auto-merge). Extract creates/merges models and content; reuse replaces strings in source code with SDK/i18n calls.',
+    {
+      mode: z.enum(['extract', 'reuse']).describe('Apply mode: extract (content creation) or reuse (source patching)'),
+      dry_run: z.boolean().optional().describe('Preview mode — no changes written. Default: true'),
+
+      // Extract mode fields
+      extractions: z.array(z.object({
+        model: z.string().describe('Model ID (e.g. "ui-texts", "hero-section")'),
+        kind: z.enum(['singleton', 'collection', 'dictionary', 'document']).describe('Model kind'),
+        domain: z.string().describe('Content domain (e.g. "marketing", "app")'),
+        i18n: z.boolean().optional().describe('Enable i18n. Default: true'),
+        fields: z.record(z.any()).optional().describe('Field definitions for the model'),
+        entries: z.array(z.object({
+          locale: z.string().optional().describe('Locale. Default: project default'),
+          slug: z.string().optional().describe('Document slug'),
+          data: z.record(z.any()).describe('Content data'),
+          source: z.object({
+            file: z.string().describe('Source file path'),
+            line: z.number().describe('Source line number'),
+            value: z.string().describe('Original string value'),
+          }).optional().describe('Source tracking for traceability'),
+        })).describe('Content entries to create'),
+      })).optional().describe('Extract mode: content extractions'),
+
+      // Reuse mode fields
+      scope: z.object({
+        model: z.string().optional().describe('Target model ID'),
+        domain: z.string().optional().describe('Target domain'),
+      }).optional().describe('Reuse mode: scope (model or domain required)'),
+      patches: z.array(z.object({
+        file: z.string().describe('Relative file path to patch'),
+        line: z.number().describe('Line number hint (±10 line search)'),
+        old_value: z.string().describe('Original string to replace'),
+        new_expression: z.string().describe('Replacement expression (agent-determined)'),
+        import_statement: z.string().optional().describe('Import to add if needed'),
+      })).optional().describe('Reuse mode: patches to apply (max 100)'),
+    },
+    async (input) => {
+      const config = await readConfig(projectRoot)
+      if (!config) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized. Run contentrain_init first.' }) }],
+          isError: true,
+        }
+      }
+
+      try {
+        switch (input.mode) {
+          case 'extract': {
+            if (!input.extractions || input.extractions.length === 0) {
+              return {
+                content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Extract mode requires extractions array' }) }],
+                isError: true,
+              }
+            }
+
+            const result = await applyExtract(projectRoot, {
+              extractions: input.extractions.map(e => ({
+                ...e,
+                fields: e.fields as Record<string, FieldDef> | undefined,
+              })),
+              dry_run: input.dry_run,
+            })
+
+            return {
+              content: [{ type: 'text' as const, text: JSON.stringify({
+                mode: 'extract',
+                ...result,
+              }, null, 2) }],
+            }
+          }
+
+          case 'reuse': {
+            if (!input.scope) {
+              return {
+                content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Reuse mode requires scope (model or domain)' }) }],
+                isError: true,
+              }
+            }
+            if (!input.patches || input.patches.length === 0) {
+              return {
+                content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Reuse mode requires patches array' }) }],
+                isError: true,
+              }
+            }
+
+            const result = await applyReuse(projectRoot, {
+              scope: input.scope,
+              patches: input.patches,
+              dry_run: input.dry_run,
+            })
+
+            return {
+              content: [{ type: 'text' as const, text: JSON.stringify({
+                mode: 'reuse',
+                ...result,
+              }, null, 2) }],
+            }
+          }
+
+          default:
+            return {
+              content: [{ type: 'text' as const, text: JSON.stringify({ error: `Unknown mode: ${input.mode}` }) }],
+              isError: true,
+            }
+        }
+      } catch (error) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: `Apply failed: ${error instanceof Error ? error.message : String(error)}`,
           }) }],
           isError: true,
         }
