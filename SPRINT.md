@@ -35,29 +35,31 @@
 
 ---
 
-## Sprint 3 — MCP Setup Tools
+## Sprint 3 — MCP Setup Tools ✅
 **Hedef:** Yeni proje init edilebilir, model oluşturulabilir
 
-- [ ] `contentrain_init` — stack detection + scaffold + git init
-- [ ] `contentrain_scaffold` — domain dizinleri + başlangıç dosyaları
-- [ ] `contentrain_model_save` — model oluşturma/güncelleme + validation
-- [ ] `contentrain_model_delete` — model silme + referans kontrolü
-- [ ] Git worktree + branch yönetimi (simple-git)
-- [ ] context.json güncelleme mekanizması
-- [ ] Test: init → scaffold → model_save → status akışı
+- [x] `contentrain_init` — stack detection + scaffold + git init
+- [x] `contentrain_scaffold` — 7 template (blog, landing, docs, ecommerce, saas, i18n, mobile)
+- [x] `contentrain_model_save` — model oluşturma/güncelleme + validation
+- [x] `contentrain_model_delete` — model silme + referans kontrolü
+- [x] Git worktree + branch yönetimi (simple-git, remote-aware)
+- [x] context.json güncelleme mekanizması
+- [x] Test: init → scaffold → model_save → status akışı (19 yeni test, 37 toplam)
 
 ---
 
-## Sprint 4 — MCP Content Tools
+## Sprint 4 — MCP Content Tools ✅
 **Hedef:** İçerik CRUD tam çalışır (4 kind destekli)
 
-- [ ] `contentrain_content_save` — 4 kind desteği (singleton/collection/document/dictionary)
-- [ ] `contentrain_content_delete` — entry silme + meta temizliği
-- [ ] `contentrain_content_list` — filtreleme, pagination
-- [ ] Object-map storage (collection) — sorted keys, canonical serialization
-- [ ] Meta dosya yönetimi (status, source, updated_by)
-- [ ] i18n dosya yönetimi (locale-based file routing)
-- [ ] Test: tüm kind'lar için CRUD + i18n senaryoları
+- [x] `contentrain_content_save` — 4 kind desteği (singleton/collection/document/dictionary)
+- [x] `contentrain_content_delete` — entry silme + meta temizliği
+- [x] `contentrain_content_list` — filtreleme, pagination, relation resolving
+- [x] Object-map storage (collection) — sorted keys, canonical serialization
+- [x] Meta dosya yönetimi (status, source, updated_by) — meta-manager.ts
+- [x] i18n dosya yönetimi (locale-based file routing)
+- [x] Document frontmatter parser/serializer (zero-dependency)
+- [x] Entry ID generator (12-char hex)
+- [x] Test: tüm kind'lar için CRUD + i18n senaryoları (35 yeni test, 81 toplam)
 
 ---
 

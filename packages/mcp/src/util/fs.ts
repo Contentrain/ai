@@ -37,6 +37,19 @@ export async function ensureDir(dirPath: string): Promise<void> {
   await mkdir(dirPath, { recursive: true })
 }
 
+export async function readText(filePath: string): Promise<string | null> {
+  try {
+    return await readFile(filePath, 'utf-8')
+  } catch {
+    return null
+  }
+}
+
+export async function writeText(filePath: string, content: string): Promise<void> {
+  await mkdir(join(filePath, '..'), { recursive: true })
+  await writeFile(filePath, content, 'utf-8')
+}
+
 export function contentrainDir(projectRoot: string): string {
   return join(projectRoot, '.contentrain')
 }
