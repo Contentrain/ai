@@ -11,8 +11,7 @@
   "scripts": {
     "build": "tsdown src/index.ts --format esm",
     "dev": "tsdown src/index.ts --format esm --watch",
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit",
+"typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {

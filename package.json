@@ -19,5 +19,10 @@
     "lint": "oxlint .",
     "typecheck": "pnpm -r run typecheck",
     "clean": "pnpm -r run clean"
+  },
+  "devDependencies": {
+    "lefthook": "^2.1.4",
+    "oxlint": "^1.54.0",
+    "vitest": "^3.0.0"
   }
 }
