@@ -1,6 +1,7 @@
 import type { ValidationError, ModelDefinition, ContentrainConfig, FieldDef, EntryMeta } from '@contentrain/types'
 import { join } from 'node:path'
-import { contentrainDir, readDir, readJson, readText, writeJson, pathExists } from '../util/fs.js'
+import { rm } from 'node:fs/promises'
+import { contentrainDir, readDir, readJson, readText, writeJson, writeText, pathExists } from '../util/fs.js'
 import { readConfig } from './config.js'
 import { listModels, readModel } from './model-manager.js'
 import { parseFrontmatter } from './content-manager.js'
@@ -122,6 +123,63 @@ function checkMinMax(value: unknown, fieldDef: FieldDef): string | null {
     }
   }
   return null
+}
+
+// ─── Shared field validation ───
+
+interface FieldContext {
+  model: string
+  locale: string
+  entry?: string
+  slug?: string
+}
+
+async function checkRelation(
+  projectRoot: string,
+  fieldName: string,
+  fieldDef: FieldDef,
+  value: unknown,
+  locale: string,
+  ctx: FieldContext,
+  issues: ValidationError[],
+): Promise<void> {
+  if ((fieldDef.type !== 'relation' && fieldDef.type !== 'relations') || value === undefined || value === null) return
+
+  const targets = Array.isArray(fieldDef.model) ? fieldDef.model : fieldDef.model ? [fieldDef.model] : []
+  const refs = fieldDef.type === 'relations' && Array.isArray(value) ? value : [value]
+
+  for (const ref of refs) {
+    if (typeof ref !== 'string') continue
+    let found = false
+    for (const targetModelId of targets) {
+      const targetModel = await readModel(projectRoot, targetModelId)
+      if (!targetModel) {
+        issues.push({
+          severity: 'error',
+          ...ctx,
+          field: fieldName,
+          message: `Broken relation: target model "${targetModelId}" not found`,
+        })
+        found = true
+        break
+      }
+      const targetData = await readJson<Record<string, unknown>>(
+        join(contentrainDir(projectRoot), 'content', targetModel.domain, targetModelId, `${locale}.json`),
+      )
+      if (targetData && ref in targetData) {
+        found = true
+        break
+      }
+    }
+    if (!found) {
+      issues.push({
+        severity: 'error',
+        ...ctx,
+        field: fieldName,
+        message: `Broken relation: referenced ID "${ref}" not found in target model(s)`,
+      })
+    }
+  }
 }
 
 // ─── Per-model validators ───
@@ -273,48 +331,7 @@ async function validateCollectionModel(
         }
 
         // Broken relation
-        if ((fieldDef.type === 'relation' || fieldDef.type === 'relations') && value !== undefined && value !== null) {
-          const targets = Array.isArray(fieldDef.model) ? fieldDef.model : fieldDef.model ? [fieldDef.model] : []
-          const refs = fieldDef.type === 'relations' && Array.isArray(value) ? value : [value]
-
-          for (const ref of refs) {
-            if (typeof ref !== 'string') continue
-            let found = false
-            for (const targetModelId of targets) {
-              // Read target model to get domain
-              const targetModel = await readModel(projectRoot, targetModelId)
-              if (!targetModel) {
-                issues.push({
-                  severity: 'error',
-                  model: model.id,
-                  locale,
-                  entry: entryId,
-                  field: fieldName,
-                  message: `Broken relation: target model "${targetModelId}" not found`,
-                })
-                found = true // avoid duplicate error
-                break
-              }
-              const targetData = await readJson<Record<string, unknown>>(
-                join(contentrainDir(projectRoot), 'content', targetModel.domain, targetModelId, `${locale}.json`),
-              )
-              if (targetData && ref in targetData) {
-                found = true
-                break
-              }
-            }
-            if (!found) {
-              issues.push({
-                severity: 'error',
-                model: model.id,
-                locale,
-                entry: entryId,
-                field: fieldName,
-                message: `Broken relation: referenced ID "${ref}" not found in target model(s)`,
-              })
-            }
-          }
-        }
+        await checkRelation(projectRoot, fieldName, fieldDef, value, locale, { model: model.id, locale, entry: entryId }, issues)
       }
     }
   }
@@ -374,7 +391,6 @@ async function validateCollectionModel(
           if (Object.keys(metaData).length > 0) {
             await writeJson(metaPath, metaData)
           } else {
-            const { rm } = await import('node:fs/promises')
             await rm(metaPath, { force: true })
           }
           fixed++
@@ -469,6 +485,9 @@ async function validateSingletonModel(
             })
           }
         }
+
+        // Broken relation
+        await checkRelation(projectRoot, fieldName, fieldDef, value, locale, { model: model.id, locale }, issues)
       }
     }
 
@@ -638,7 +657,6 @@ async function validateDocumentModel(
           })
           if (fix) {
             // Create empty template
-            const { writeText } = await import('../util/fs.js')
             const template = `---\nslug: ${slug}\n---\n`
             await writeText(filePath, template)
             fixed++
@@ -692,6 +710,34 @@ async function validateDocumentModel(
               message: `Required field "${fieldName}" is missing`,
             })
           }
+
+          if (value !== undefined && value !== null && !fieldTypeMatches(value, fieldDef)) {
+            issues.push({
+              severity: 'error',
+              model: model.id,
+              locale,
+              slug,
+              field: fieldName,
+              message: `Type mismatch: expected ${fieldDef.type}, got ${typeof value}`,
+            })
+          }
+
+          if (value !== undefined && value !== null) {
+            const minMaxErr = checkMinMax(value, fieldDef)
+            if (minMaxErr) {
+              issues.push({
+                severity: 'error',
+                model: model.id,
+                locale,
+                slug,
+                field: fieldName,
+                message: minMaxErr,
+              })
+            }
+          }
+
+          // Broken relation
+          await checkRelation(projectRoot, fieldName, fieldDef, value, locale, { model: model.id, locale, slug }, issues)
         }
       }
     }

@@ -142,6 +142,73 @@ export interface ScaffoldTemplate {
   vocabulary?: Record<string, Record<string, string>>
 }
 
+// ─── Scan Types ───
+
+export type StringContext =
+  | 'jsx_text' | 'jsx_attribute'
+  | 'template_text' | 'template_attribute'
+  | 'variable_assignment' | 'function_argument'
+  | 'object_value' | 'other'
+
+export type FileCategory = 'page' | 'component' | 'layout' | 'other'
+
+export interface ScanCandidate {
+  file: string
+  line: number
+  column: number
+  value: string
+  context: StringContext
+  surrounding: string
+}
+
+export interface DuplicateGroup {
+  value: string
+  count: number
+  occurrences: Array<{ file: string; line: number }>
+}
+
+export interface GraphNode {
+  file: string
+  category: FileCategory
+  components?: string[]
+  imports: string[]
+  used_by: string[]
+  strings: number
+}
+
+export interface ProjectGraph {
+  pages: GraphNode[]
+  components: GraphNode[]
+  layouts: GraphNode[]
+  orphan_files: string[]
+  stats: {
+    total_files: number
+    total_components: number
+    total_pages: number
+    total_strings_estimate: number
+  }
+}
+
+export interface ScanCandidatesResult {
+  candidates: ScanCandidate[]
+  duplicates: DuplicateGroup[]
+  stats: {
+    files_scanned: number
+    raw_strings_found: number
+    after_filtering: number
+    candidates_returned: number
+    has_more: boolean
+  }
+}
+
+export interface ScanSummaryResult {
+  total_files: number
+  total_candidates_estimate: number
+  by_directory: Record<string, { files: number; candidates: number }>
+  top_repeated: Array<{ value: string; count: number }>
+  file_types: Record<string, number>
+}
+
 // ─── Context ───
 
 export interface ContextJson {

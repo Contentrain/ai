@@ -404,7 +404,11 @@ export async function listContent(
 
     case 'collection': {
       const data = await readJson<Record<string, Record<string, unknown>>>(jsonFilePath(cDir, model, locale)) ?? {}
-      let entries: Array<Record<string, unknown>> = Object.entries(data).map(([id, fields]) => ({ id, ...fields }))
+      let entries: Array<Record<string, unknown>> = Object.entries(data).map(([id, fields]) => {
+        const entry: Record<string, unknown> = { id }
+        Object.assign(entry, fields)
+        return entry
+      })
 
       // Filter
       if (opts.filter) {

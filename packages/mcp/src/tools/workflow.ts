@@ -25,7 +25,7 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
       }
 
       try {
-        let result: Awaited<ReturnType<typeof validateProject>>
+        let result: Awaited<ReturnType<typeof validateProject>> | undefined
 
         if (input.fix) {
           // Use git transaction for fixes
@@ -74,7 +74,7 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
         }
 
         // No fix or nothing was fixed — run read-only validation
-        if (!result!) {
+        if (!result) {
           result = await validateProject(projectRoot, { model: input.model, fix: false })
         }
 
@@ -85,7 +85,7 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
-            status: 'committed',
+            status: 'validated',
             message: result.valid
               ? 'All validation checks passed.'
               : `Validation found ${result.summary.errors} error(s) and ${result.summary.warnings} warning(s).`,

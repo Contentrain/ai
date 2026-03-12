@@ -4,6 +4,7 @@ import { registerSetupTools } from './tools/setup.js'
 import { registerModelTools } from './tools/model.js'
 import { registerContentTools } from './tools/content.js'
 import { registerWorkflowTools } from './tools/workflow.js'
+import { registerNormalizeTools } from './tools/normalize.js'
 
 export function createServer(projectRoot: string): McpServer {
   const server = new McpServer({
@@ -16,6 +17,7 @@ export function createServer(projectRoot: string): McpServer {
   registerModelTools(server, projectRoot)
   registerContentTools(server, projectRoot)
   registerWorkflowTools(server, projectRoot)
+  registerNormalizeTools(server, projectRoot)
 
   return server
 }
