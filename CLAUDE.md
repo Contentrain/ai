@@ -72,7 +72,48 @@ These files contain architectural decisions and are the source of truth during d
 | packages/ai-rules | @contentrain/ai-rules | AI agent rules |
 | packages/sdk/js | @contentrain/query | Universal query SDK (generated client) |
 
-## Commands (planned)
+## Mandatory Quality Gates
+
+**Every agent MUST pass ALL gates before considering work complete.** No exceptions.
+
+### 1. oxlint (zero errors, zero warnings)
+```bash
+npx oxlint packages/<package>/src/ packages/<package>/tests/
+```
+- `sort()` → `toSorted()` (immutable)
+- `no-await-in-loop` → use `Promise.all()` for parallel I/O
+- No unused imports/variables
+- Fix ALL warnings, not just errors
+
+### 2. TypeScript (zero errors)
+```bash
+cd packages/<package> && npx tsc --noEmit
+```
+- Strict mode — no `any` escapes without justification
+- All types must compile cleanly
+
+### 3. Tests (all pass, meaningful coverage)
+```bash
+cd packages/<package> && npx vitest run
+```
+- Every public module MUST have tests
+- Runtime classes: test all methods + edge cases (empty data, unknown locale, etc.)
+- Generator modules: test output correctness + canonical format
+- Integration test: end-to-end flow verification
+- Test assertions must be specific (not just `.toBeDefined()`)
+
+### 4. Sprint Documentation
+After completing a sprint milestone:
+- Update the relevant spec file's roadmap section (check off items, add date)
+- If new architectural decisions were made, document them in the spec's decision table
+- Update `docs/internal/README.md` if new spec files were created
+
+### 5. Commit Standards
+- Conventional commits: `feat(scope)`, `fix(scope)`, `refactor(scope)`
+- Scope = package name: `sdk`, `mcp`, `cli`, `types`, `ai-rules`
+- Commit message body: what was built, key decisions, test coverage summary
+
+## Commands
 
 ```bash
 pnpm install
