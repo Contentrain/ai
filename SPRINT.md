@@ -86,14 +86,48 @@
 ---
 
 ## Sprint 5 — MCP Normalize & Workflow Tools
-**Hedef:** Normalize akışı + validation + submit çalışır
+**Hedef:** Normalize akışı (extraction + reuse) + validation + submit çalışır
 
-- [ ] `contentrain_scan` — hardcoded string detection (AST-based)
-- [ ] `contentrain_apply` — scan sonuçlarını content'e dönüştürme
+### Phase Architecture
+- **Phase 1 (Extraction):** scan → agent reasoning → apply(extract) → validate → submit
+- **Phase 2 (Reuse):** apply(reuse, step-by-step) → validate → submit
+- Agent = zeka katmanı (projeyi analiz, content kararı, domain grouping)
+- MCP = deterministic altyapı (string bulma, content yazma, source patching, validation)
+
+### Sprint 5A — Validate + Submit (Bağımsız, düşük risk)
 - [ ] `contentrain_validate` — full project validation (schema + ref integrity + i18n parity)
-- [ ] `contentrain_submit` — branch push + workflow trigger (auto-merge / review)
 - [ ] Validation rule engine (composable validators)
-- [ ] Test: normalize akışı end-to-end + validation senaryoları
+- [ ] Auto-fix: structural issues only (sort, orphan meta, missing locale template)
+- [ ] Secret detection (API keys, tokens, passwords)
+- [ ] `contentrain_submit` — push contentrain/* branches to remote
+- [ ] Test: validation senaryoları + submit
+
+### Sprint 5B — Scan Tool (Read-only, orta risk)
+- [ ] `contentrain_scan` mode: **graph** — import/component graph builder (project intelligence)
+- [ ] `contentrain_scan` mode: **candidates** — string extraction + deterministic pre-filtering
+- [ ] `contentrain_scan` mode: **summary** — project overview stats
+- [ ] Pre-filter engine (CSS classes, imports, URLs, paths, color codes, identifiers)
+- [ ] Batching + pagination (limit/offset)
+- [ ] Dedup (identical strings across files grouped)
+- [ ] Graph builder: import statement regex parser, file classification (page/component/layout)
+- [ ] Test: scan tüm modlar + pre-filtering doğruluğu
+
+### Sprint 5C — Apply Tool (Write, yüksek risk)
+- [ ] `contentrain_apply` mode: **extract** — content-only extraction (source untouched)
+- [ ] `contentrain_apply` mode: **reuse** — source code patching (agent-provided replacements)
+- [ ] Dry-run zorunlu (her mode için)
+- [ ] Review zorunlu (normalize asla auto-merge edilmez)
+- [ ] Reuse scope: model/domain bazlı (tüm proje tek seferde yasak)
+- [ ] Source tracking: her extracted content'in kaynak dosya/satır bilgisi
+- [ ] Test: extract + reuse end-to-end, dry-run preview doğruluğu
+
+### Key Design Decisions
+- MCP "bu string content mi?" kararını **vermez** — agent verir
+- scan tool sadece bulur + filtreler, semantic karar yapmaz
+- Extraction ve reuse ayrı fazlar, ayrı branch'ler, ayrı review'lar
+- Graph mode ile agent 200 dosya yerine 20 dosyaya odaklanır (token tasarrufu)
+- Top 5+ stack desteği: Next.js, Nuxt, React Native/Expo, Node/Nest, Astro, SvelteKit
+- Replacement expression'ı agent belirler (stack-aware), MCP bilmez
 
 ---
 

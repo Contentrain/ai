@@ -53,6 +53,11 @@ These files contain architectural decisions and are the source of truth during d
 - **Canonical serialization** — deterministic JSON output, sorted keys, 2-space indent, trailing newline
 - **context.json** — MCP writes after every write op, Studio/IDE reads
 - **Workflow config** — `"auto-merge"` or `"review"` in config.json
+- **Agent-MCP split** — MCP = deterministic infra, Agent = intelligence. MCP does NOT make content decisions
+- **Normalize two phases** — Phase 1: Extraction (content-only), Phase 2: Reuse (source patching). Separate branches, separate reviews
+- **Graph-based scan** — scan tool builds import/component graph for project intelligence, reducing token usage dramatically
+- **Top 5+ stack support** — Not limited to Vue/Nuxt. Agent handles stack-specific logic, MCP stays framework-agnostic
+- **Replacement by agent** — In reuse phase, the agent determines replacement expressions (e.g., `{t('key')}` vs `{{ $t('key') }}`), not MCP
 
 ## npm Packages
 
