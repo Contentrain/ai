@@ -1,0 +1,26 @@
+{
+  "name": "@contentrain/ai-rules",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "AI agent rules and prompts for Contentrain IDE integration",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs"
+    },
+    "./rules/*": "./rules/*"
+  },
+  "files": ["dist", "rules"],
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm",
+    "dev": "tsdown src/index.ts --format esm --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@contentrain/types": "workspace:*"
+  },
+  "devDependencies": {
+    "tsdown": "^0.21.0",
+    "typescript": "^5.7.0"
+  }
+}

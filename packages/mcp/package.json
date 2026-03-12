@@ -1,0 +1,38 @@
+{
+  "name": "@contentrain/mcp",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "MCP tools for AI-powered content management with Contentrain",
+  "type": "module",
+  "bin": {
+    "contentrain-mcp": "./dist/index.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts",
+    "dev": "tsdown src/index.ts --format esm --dts --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@contentrain/types": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "simple-git": "^3.27.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "tsdown": "^0.21.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

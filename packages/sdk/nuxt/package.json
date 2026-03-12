@@ -1,0 +1,31 @@
+{
+  "name": "@contentrain/sdk-nuxt",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "Nuxt SDK for consuming Contentrain content",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts",
+    "dev": "tsdown src/index.ts --format esm --dts --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@contentrain/types": "workspace:*"
+  },
+  "devDependencies": {
+    "tsdown": "^0.21.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

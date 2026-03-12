@@ -1,0 +1,27 @@
+{
+  "name": "contentrain",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "CLI for Contentrain — init, serve, validate, normalize, connect",
+  "type": "module",
+  "bin": {
+    "contentrain": "./dist/index.mjs"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm",
+    "dev": "tsdown src/index.ts --format esm --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@contentrain/types": "workspace:*",
+    "citty": "^0.1.0"
+  },
+  "devDependencies": {
+    "tsdown": "^0.21.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
