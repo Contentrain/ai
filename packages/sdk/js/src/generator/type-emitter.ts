@@ -43,6 +43,7 @@ export function emitTypes(models: ModelDefinition[]): string {
   sort<K extends keyof T>(field: K, order?: 'asc' | 'desc'): QueryBuilder<T>
   limit(n: number): QueryBuilder<T>
   offset(n: number): QueryBuilder<T>
+  include(...fields: string[]): QueryBuilder<T>
   first(): T | undefined
   all(): T[]
 }`)
@@ -64,6 +65,7 @@ export function emitTypes(models: ModelDefinition[]): string {
   lines.push(`export interface DocumentQuery<T> {
   locale(lang: string): DocumentQuery<T>
   where<K extends keyof T>(field: K, value: T[K]): DocumentQuery<T>
+  include(...fields: string[]): DocumentQuery<T>
   bySlug(slug: string): T | undefined
   first(): T | undefined
   all(): T[]

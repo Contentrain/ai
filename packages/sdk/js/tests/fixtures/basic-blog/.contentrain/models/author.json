@@ -1,0 +1,12 @@
+{
+  "id": "author",
+  "name": "Author",
+  "kind": "collection",
+  "domain": "blog",
+  "i18n": false,
+  "fields": {
+    "name": { "type": "string", "required": true },
+    "email": { "type": "email", "required": false },
+    "bio": { "type": "text" }
+  }
+}

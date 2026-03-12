@@ -16,8 +16,8 @@ describe('config-reader', () => {
 
   it('reads all models sorted by id', async () => {
     const manifest = await readProjectManifest(FIXTURE)
-    expect(manifest.models).toHaveLength(4)
-    expect(manifest.models.map(m => m.id)).toEqual(['blog-article', 'blog-post', 'error-messages', 'hero'])
+    expect(manifest.models).toHaveLength(6)
+    expect(manifest.models.map(m => m.id)).toEqual(['author', 'blog-article', 'blog-post', 'error-messages', 'hero', 'tag'])
   })
 
   it('maps correct content files for collection', async () => {

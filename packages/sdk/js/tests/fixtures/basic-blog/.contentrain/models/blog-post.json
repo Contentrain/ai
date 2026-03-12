@@ -11,6 +11,8 @@
     "status": { "type": "select", "required": true, "options": ["draft", "published", "archived"] },
     "featured": { "type": "boolean" },
     "views": { "type": "integer" },
-    "category": { "type": "select", "options": ["tech", "design", "business"] }
+    "category": { "type": "select", "options": ["tech", "design", "business"] },
+    "author": { "type": "relation", "required": true, "model": "author" },
+    "tags": { "type": "relations", "model": "tag" }
   }
 }

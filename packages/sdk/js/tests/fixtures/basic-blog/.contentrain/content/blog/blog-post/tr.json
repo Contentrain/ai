@@ -6,7 +6,9 @@
     "status": "published",
     "featured": true,
     "views": 150,
-    "category": "tech"
+    "category": "tech",
+    "author": "auth01a2b3c4",
+    "tags": ["tag001a2b3c4", "tag003g8h9i0"]
   },
   "b2c3d4e5f6a7": {
     "title": "Tasarım Sistemleri 101",
@@ -15,7 +17,9 @@
     "status": "published",
     "featured": false,
     "views": 89,
-    "category": "design"
+    "category": "design",
+    "author": "auth02d5e6f7",
+    "tags": ["tag002d5e6f7"]
   },
   "c3d4e5f6a7b8": {
     "title": "Taslak Yazı",
@@ -24,6 +28,8 @@
     "status": "draft",
     "featured": false,
     "views": 0,
-    "category": "tech"
+    "category": "tech",
+    "author": "auth01a2b3c4",
+    "tags": []
   }
 }

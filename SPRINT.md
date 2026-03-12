@@ -151,10 +151,16 @@
 - [x] MCP alignment: path resolution, locale strategies, canonical serialization, slug extraction
 - [x] Quality: oxlint 0 warnings, tsc 0 errors, 75 tests (10 files: runtime + generator + integration)
 
-### v0.2 Relations & Watch (sonraki)
-- [ ] Relation resolution (one-to-one, one-to-many)
-- [ ] Polymorphic relation desteği
-- [ ] Watch mode
+### v0.2 Relations & Watch ✅ (2026-03-13)
+- [x] Relation resolution (one-to-one via `relation`, one-to-many via `relations`)
+- [x] Polymorphic relation desteği (`model: string[]` — tries each target model)
+- [x] `include(...fields)` method on QueryBuilder and DocumentQuery
+- [x] Relation metadata generation in runtime-emitter (field→target model mapping)
+- [x] `_resolveEntry` helper — searches collection + document registries
+- [x] Graceful degradation: unresolved IDs stay as raw strings
+- [x] Watch mode: `contentrain-query generate --watch` (fs.watch + debounce)
+- [x] Test fixtures with relation models (author, tag) + content
+- [x] Quality: oxlint 0, tsc 0, 96 tests (10 files)
 
 ### Key Design Decisions
 - Output: `.contentrain/client/` (proje-içi, node_modules'e yazmaz)

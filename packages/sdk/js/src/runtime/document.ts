@@ -1,10 +1,21 @@
-export class DocumentQuery<T extends Record<string, unknown>> {
+import type { RelationMeta, RelationResolver } from './query.js'
+
+export class DocumentQuery<T extends object> {
   private _data: Map<string, T[]>
   private _locale: string | null = null
   private _filters: Array<(item: T) => boolean> = []
+  private _includes: string[] = []
+  private _relationMeta: Record<string, RelationMeta>
+  private _resolver: RelationResolver | null
 
-  constructor(data: Map<string, T[]>) {
+  constructor(
+    data: Map<string, T[]>,
+    relationMeta?: Record<string, RelationMeta>,
+    resolver?: RelationResolver,
+  ) {
     this._data = data
+    this._relationMeta = relationMeta ?? {}
+    this._resolver = resolver ?? null
   }
 
   locale(lang: string): this {
@@ -17,15 +28,27 @@ export class DocumentQuery<T extends Record<string, unknown>> {
     return this
   }
 
+  include(...fields: string[]): this {
+    this._includes.push(...fields)
+    return this
+  }
+
   bySlug(slug: string): T | undefined {
     const items = this._resolveData()
-    return items.find(item => (item as Record<string, unknown>)['slug'] === slug)
+    const item = items.find(i => (i as Record<string, unknown>)['slug'] === slug)
+    if (item && this._includes.length > 0 && this._resolver) {
+      return this._resolveIncludes(item)
+    }
+    return item
   }
 
   all(): T[] {
     let items = this._resolveData()
     for (const filter of this._filters) {
       items = items.filter(filter)
+    }
+    if (this._includes.length > 0 && this._resolver) {
+      items = items.map(item => this._resolveIncludes(item))
     }
     return items
   }
@@ -43,5 +66,39 @@ export class DocumentQuery<T extends Record<string, unknown>> {
       return [...(this._data.get(firstKey) ?? [])]
     }
     return []
+  }
+
+  private _resolveIncludes(item: T): T {
+    const resolved = { ...item }
+    const src = item as Record<string, unknown>
+    const dst = resolved as Record<string, unknown>
+    for (const field of this._includes) {
+      const meta = this._relationMeta[field]
+      if (!meta) continue
+      const targets = Array.isArray(meta.target) ? meta.target : [meta.target]
+
+      if (meta.multi) {
+        const ids = src[field]
+        if (Array.isArray(ids)) {
+          dst[field] = ids.map(
+            id => this._resolveId(targets, id as string) ?? id,
+          )
+        }
+      } else {
+        const id = src[field]
+        if (typeof id === 'string') {
+          dst[field] = this._resolveId(targets, id) ?? id
+        }
+      }
+    }
+    return resolved
+  }
+
+  private _resolveId(targets: string[], id: string): Record<string, unknown> | undefined {
+    for (const target of targets) {
+      const result = this._resolver!(target, id, this._locale)
+      if (result) return result
+    }
+    return undefined
   }
 }

@@ -1,0 +1,14 @@
+{
+  "tag001a2b3c4": {
+    "label": "JavaScript",
+    "color": "#f7df1e"
+  },
+  "tag002d5e6f7": {
+    "label": "Design",
+    "color": "#ff6b6b"
+  },
+  "tag003g8h9i0": {
+    "label": "Tutorial",
+    "color": "#4ecdc4"
+  }
+}

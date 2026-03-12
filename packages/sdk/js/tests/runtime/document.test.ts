@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { DocumentQuery } from '../../src/runtime/document.js'
+import type { RelationMeta, RelationResolver } from '../../src/runtime/query.js'
 
 interface Article {
   slug: string
@@ -95,5 +96,77 @@ describe('DocumentQuery', () => {
     expect(q.all()).toEqual([])
     expect(q.first()).toBeUndefined()
     expect(q.bySlug('test')).toBeUndefined()
+  })
+})
+
+// ─── Relation Resolution Tests ───
+
+interface ArticleWithRelation {
+  slug: string
+  title: string
+  content: string
+  author: string
+  tags: string[]
+}
+
+const ARTICLES_WITH_RELS: ArticleWithRelation[] = [
+  { slug: 'post-one', title: 'Post One', content: '# One', author: 'auth01', tags: ['tag01'] },
+  { slug: 'post-two', title: 'Post Two', content: '# Two', author: 'auth02', tags: ['tag01', 'tag02'] },
+]
+
+const RELATION_META: Record<string, RelationMeta> = {
+  author: { target: 'author', multi: false },
+  tags: { target: 'tag', multi: true },
+}
+
+const AUTHORS = [
+  { id: 'auth01', name: 'Jane Doe' },
+  { id: 'auth02', name: 'John Smith' },
+]
+
+const TAGS = [
+  { id: 'tag01', label: 'JavaScript' },
+  { id: 'tag02', label: 'Design' },
+]
+
+const RESOLVER: RelationResolver = (model, id, _locale) => {
+  if (model === 'author') return AUTHORS.find(a => a.id === id) as Record<string, unknown> | undefined
+  if (model === 'tag') return TAGS.find(t => t.id === id) as Record<string, unknown> | undefined
+  return undefined
+}
+
+function createRelationQuery() {
+  const data = new Map<string, ArticleWithRelation[]>([['en', ARTICLES_WITH_RELS]])
+  return new DocumentQuery(data, RELATION_META, RESOLVER)
+}
+
+describe('DocumentQuery — relation resolution', () => {
+  it('resolves relations in all()', () => {
+    const result = createRelationQuery().locale('en').include('author').all()
+    expect(result[0]!.author).toEqual({ id: 'auth01', name: 'Jane Doe' })
+    expect(result[1]!.author).toEqual({ id: 'auth02', name: 'John Smith' })
+  })
+
+  it('resolves relations in bySlug()', () => {
+    const result = createRelationQuery().locale('en').include('author', 'tags').bySlug('post-two')
+    expect(result).toBeDefined()
+    expect(result!.author).toEqual({ id: 'auth02', name: 'John Smith' })
+    expect(result!.tags).toEqual([
+      { id: 'tag01', label: 'JavaScript' },
+      { id: 'tag02', label: 'Design' },
+    ])
+  })
+
+  it('bySlug without include returns raw IDs', () => {
+    const result = createRelationQuery().locale('en').bySlug('post-one')
+    expect(result).toBeDefined()
+    expect(result!.author).toBe('auth01')
+    expect(result!.tags).toEqual(['tag01'])
+  })
+
+  it('resolves relations in first()', () => {
+    const result = createRelationQuery().locale('en').include('author').first()
+    expect(result).toBeDefined()
+    expect(result!.author).toEqual({ id: 'auth01', name: 'Jane Doe' })
   })
 })

@@ -1,0 +1,11 @@
+{
+  "id": "tag",
+  "name": "Tag",
+  "kind": "collection",
+  "domain": "blog",
+  "i18n": false,
+  "fields": {
+    "label": { "type": "string", "required": true },
+    "color": { "type": "color", "required": false }
+  }
+}

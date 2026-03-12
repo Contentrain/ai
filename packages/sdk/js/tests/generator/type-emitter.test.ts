@@ -109,6 +109,12 @@ describe('type-emitter', () => {
     expect(result).toContain("export declare function dictionary(model: 'error-messages'): DictionaryAccessor")
   })
 
+  it('generates include() in QueryBuilder and DocumentQuery interfaces', () => {
+    const result = emitTypes([])
+    expect(result).toContain('include(...fields: string[]): QueryBuilder<T>')
+    expect(result).toContain('include(...fields: string[]): DocumentQuery<T>')
+  })
+
   it('maps all field types correctly', () => {
     const models: ModelDefinition[] = [{
       id: 'test-all',

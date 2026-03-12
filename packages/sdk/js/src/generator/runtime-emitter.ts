@@ -36,6 +36,45 @@ export function emitRuntimeModule(models: ModelDefinition[], dataModules: DataMo
   const dictionaries = models.filter(m => m.kind === 'dictionary')
   const documents = models.filter(m => m.kind === 'document')
 
+  // Generate relation metadata for models that have relation fields
+  const relationMetaMap = buildRelationMetaMap(models)
+
+  // Generate _resolveEntry helper (needed if any model has relations)
+  if (relationMetaMap.size > 0) {
+    lines.push('// ─── Relation Resolver ───')
+    lines.push('')
+    lines.push('function _resolveEntry(model, id, locale) {')
+    lines.push('  const localeKey = locale ?? \'_default\'')
+    // Search in collection registry
+    if (collections.length > 0) {
+      lines.push('  const colData = _collectionRegistry[model]?.get(localeKey)')
+      lines.push('  if (colData) { const e = colData.find(x => x.id === id); if (e) return e; }')
+    }
+    // Search in document registry
+    if (documents.length > 0) {
+      lines.push('  const docData = _documentRegistry[model]?.get(localeKey)')
+      lines.push('  if (docData) { const e = docData.find(x => x.id === id); if (e) return e; }')
+    }
+    lines.push('  return undefined')
+    lines.push('}')
+    lines.push('')
+
+    // Emit relation meta objects
+    lines.push('const _relationMeta = {')
+    for (const [modelId, meta] of relationMetaMap) {
+      lines.push(`  '${modelId}': {`)
+      for (const [field, info] of Object.entries(meta)) {
+        const targetStr = Array.isArray(info.target)
+          ? `[${info.target.map(t => `'${t}'`).join(', ')}]`
+          : `'${info.target}'`
+        lines.push(`    '${field}': { target: ${targetStr}, multi: ${info.multi} },`)
+      }
+      lines.push('  },')
+    }
+    lines.push('}')
+    lines.push('')
+  }
+
   // query() function
   if (collections.length > 0) {
     lines.push('const _collectionRegistry = {')
@@ -53,7 +92,11 @@ export function emitRuntimeModule(models: ModelDefinition[], dataModules: DataMo
     lines.push('export function query(model) {')
     lines.push('  const data = _collectionRegistry[model]')
     lines.push('  if (!data) throw new Error(`Unknown collection model: "${model}"`)')
-    lines.push('  return new QueryBuilder(data)')
+    if (relationMetaMap.size > 0) {
+      lines.push('  return new QueryBuilder(data, _relationMeta[model], _resolveEntry)')
+    } else {
+      lines.push('  return new QueryBuilder(data)')
+    }
     lines.push('}')
     lines.push('')
   }
@@ -130,7 +173,11 @@ export function emitRuntimeModule(models: ModelDefinition[], dataModules: DataMo
     lines.push('export function document(model) {')
     lines.push('  const data = _documentRegistry[model]')
     lines.push('  if (!data) throw new Error(`Unknown document model: "${model}"`)')
-    lines.push('  return new DocumentQuery(data)')
+    if (relationMetaMap.size > 0) {
+      lines.push('  return new DocumentQuery(data, _relationMeta[model], _resolveEntry)')
+    } else {
+      lines.push('  return new DocumentQuery(data)')
+    }
     lines.push('}')
     lines.push('')
   }
@@ -158,6 +205,34 @@ ${exports.map(e => `    module.exports.${e} = m.${e}`).join('\n')}
   return _promise
 }
 `
+}
+
+function buildRelationMetaMap(
+  models: ModelDefinition[],
+): Map<string, Record<string, { target: string | string[]; multi: boolean }>> {
+  const result = new Map<string, Record<string, { target: string | string[]; multi: boolean }>>()
+
+  for (const model of models) {
+    if (!model.fields) continue
+    const meta: Record<string, { target: string | string[]; multi: boolean }> = {}
+    let hasRelations = false
+
+    for (const [fieldName, field] of Object.entries(model.fields)) {
+      if (field.type === 'relation' && field.model) {
+        meta[fieldName] = { target: field.model, multi: false }
+        hasRelations = true
+      } else if (field.type === 'relations' && field.model) {
+        meta[fieldName] = { target: field.model, multi: true }
+        hasRelations = true
+      }
+    }
+
+    if (hasRelations) {
+      result.set(model.id, meta)
+    }
+  }
+
+  return result
 }
 
 function fileNameToVar(fileName: string): string {
@@ -202,20 +277,32 @@ const RUNTIME_CODE = `
 // ─── Runtime Classes ───
 
 class QueryBuilder {
-  constructor(data) { this._data = data; this._filters = []; this._sortField = null; this._sortOrder = 'asc'; this._limit = null; this._offset = 0; this._locale = null; }
+  constructor(data, relationMeta, resolver) { this._data = data; this._filters = []; this._sortField = null; this._sortOrder = 'asc'; this._limit = null; this._offset = 0; this._locale = null; this._includes = []; this._relationMeta = relationMeta || {}; this._resolver = resolver || null; }
   locale(lang) { this._locale = lang; return this; }
   where(field, value) { this._filters.push(item => { const v = item[field]; return Array.isArray(v) ? v.includes(value) : v === value; }); return this; }
   sort(field, order = 'asc') { this._sortField = field; this._sortOrder = order; return this; }
   limit(n) { this._limit = n; return this; }
   offset(n) { this._offset = n; return this; }
+  include(...fields) { this._includes.push(...fields); return this; }
   all() {
     let items = this._locale ? [...(this._data.get(this._locale) ?? [])] : [...(this._data.get(this._data.keys().next().value) ?? [])];
     for (const f of this._filters) items = items.filter(f);
     if (this._sortField) { const sf = this._sortField; const d = this._sortOrder === 'asc' ? 1 : -1; items.sort((a, b) => { const va = a[sf], vb = b[sf]; if (va == null && vb == null) return 0; if (va == null) return d; if (vb == null) return -d; return va < vb ? -d : va > vb ? d : 0; }); }
     if (this._offset > 0 || this._limit !== null) { const end = this._limit !== null ? this._offset + this._limit : undefined; items = items.slice(this._offset, end); }
+    if (this._includes.length > 0 && this._resolver) { items = items.map(item => this._resolveIncludes(item)); }
     return items;
   }
   first() { return this.all()[0]; }
+  _resolveIncludes(item) {
+    const resolved = { ...item };
+    for (const field of this._includes) {
+      const meta = this._relationMeta[field]; if (!meta) continue;
+      const targets = Array.isArray(meta.target) ? meta.target : [meta.target];
+      if (meta.multi) { const ids = item[field]; if (Array.isArray(ids)) { resolved[field] = ids.map(id => { for (const t of targets) { const r = this._resolver(t, id, this._locale); if (r) return r; } return id; }); } }
+      else { const id = item[field]; if (typeof id === 'string') { for (const t of targets) { const r = this._resolver(t, id, this._locale); if (r) { resolved[field] = r; break; } } } }
+    }
+    return resolved;
+  }
 }
 
 class SingletonAccessor {
@@ -240,12 +327,27 @@ class DictionaryAccessor {
 }
 
 class DocumentQuery {
-  constructor(data) { this._data = data; this._filters = []; this._locale = null; }
+  constructor(data, relationMeta, resolver) { this._data = data; this._filters = []; this._locale = null; this._includes = []; this._relationMeta = relationMeta || {}; this._resolver = resolver || null; }
   locale(lang) { this._locale = lang; return this; }
   where(field, value) { this._filters.push(item => item[field] === value); return this; }
-  bySlug(slug) { const items = this._resolveData(); return items.find(item => item.slug === slug); }
+  include(...fields) { this._includes.push(...fields); return this; }
+  bySlug(slug) {
+    const items = this._resolveData(); const item = items.find(x => x.slug === slug);
+    if (item && this._includes.length > 0 && this._resolver) return this._resolveIncludes(item);
+    return item;
+  }
   first() { return this.all()[0]; }
-  all() { let items = this._resolveData(); for (const f of this._filters) items = items.filter(f); return items; }
+  all() { let items = this._resolveData(); for (const f of this._filters) items = items.filter(f); if (this._includes.length > 0 && this._resolver) { items = items.map(item => this._resolveIncludes(item)); } return items; }
   _resolveData() { const key = this._locale ?? this._data.keys().next().value; return [...(this._data.get(key) ?? [])]; }
+  _resolveIncludes(item) {
+    const resolved = { ...item };
+    for (const field of this._includes) {
+      const meta = this._relationMeta[field]; if (!meta) continue;
+      const targets = Array.isArray(meta.target) ? meta.target : [meta.target];
+      if (meta.multi) { const ids = item[field]; if (Array.isArray(ids)) { resolved[field] = ids.map(id => { for (const t of targets) { const r = this._resolver(t, id, this._locale); if (r) return r; } return id; }); } }
+      else { const id = item[field]; if (typeof id === 'string') { for (const t of targets) { const r = this._resolver(t, id, this._locale); if (r) { resolved[field] = r; break; } } } }
+    }
+    return resolved;
+  }
 }
 `.trim()

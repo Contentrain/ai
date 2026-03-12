@@ -1,0 +1,12 @@
+{
+  "auth01a2b3c4": {
+    "name": "Jane Doe",
+    "email": "jane@example.com",
+    "bio": "Senior tech writer"
+  },
+  "auth02d5e6f7": {
+    "name": "John Smith",
+    "email": "john@example.com",
+    "bio": "Design enthusiast"
+  }
+}

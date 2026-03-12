@@ -119,6 +119,83 @@ describe('emitRuntimeModule', () => {
   })
 })
 
+describe('emitRuntimeModule — relation metadata', () => {
+  it('generates _relationMeta for models with relation fields', () => {
+    const modelWithRels: ModelDefinition = {
+      id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true,
+      fields: {
+        title: { type: 'string', required: true },
+        author: { type: 'relation', model: 'author', required: true },
+        tags: { type: 'relations', model: 'tag' },
+      },
+    }
+    const output = emitRuntimeModule([modelWithRels], [
+      { fileName: 'blog-post.en.mjs', content: '' },
+    ])
+    expect(output).toContain('_relationMeta')
+    expect(output).toContain("'blog-post'")
+    expect(output).toContain("'author': { target: 'author', multi: false }")
+    expect(output).toContain("'tags': { target: 'tag', multi: true }")
+  })
+
+  it('generates _resolveEntry function when relations exist', () => {
+    const modelWithRels: ModelDefinition = {
+      id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true,
+      fields: {
+        author: { type: 'relation', model: 'author', required: true },
+      },
+    }
+    const output = emitRuntimeModule([modelWithRels], [
+      { fileName: 'blog-post.en.mjs', content: '' },
+    ])
+    expect(output).toContain('function _resolveEntry(model, id, locale)')
+    expect(output).toContain('_collectionRegistry[model]')
+  })
+
+  it('passes relation meta and resolver to QueryBuilder constructor', () => {
+    const modelWithRels: ModelDefinition = {
+      id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true,
+      fields: {
+        author: { type: 'relation', model: 'author', required: true },
+      },
+    }
+    const output = emitRuntimeModule([modelWithRels], [
+      { fileName: 'blog-post.en.mjs', content: '' },
+    ])
+    expect(output).toContain('new QueryBuilder(data, _relationMeta[model], _resolveEntry)')
+  })
+
+  it('does not generate relation meta declaration when no relations exist', () => {
+    const output = emitRuntimeModule([COLLECTION_MODEL], [
+      { fileName: 'blog-post.en.mjs', content: '' },
+    ])
+    expect(output).not.toContain('const _relationMeta')
+    expect(output).not.toContain('function _resolveEntry')
+    expect(output).toContain('new QueryBuilder(data)')
+  })
+
+  it('handles polymorphic relations (model: string[])', () => {
+    const polyModel: ModelDefinition = {
+      id: 'post', name: 'Post', kind: 'collection', domain: 'blog', i18n: false,
+      fields: {
+        ref: { type: 'relation', model: ['author', 'tag'] },
+      },
+    }
+    const output = emitRuntimeModule([polyModel], [
+      { fileName: 'post.en.mjs', content: '' },
+    ])
+    expect(output).toContain("'ref': { target: ['author', 'tag'], multi: false }")
+  })
+
+  it('inlined runtime includes include() and _resolveIncludes methods', () => {
+    const output = emitRuntimeModule([COLLECTION_MODEL], [
+      { fileName: 'blog-post.en.mjs', content: '' },
+    ])
+    expect(output).toContain('include(...fields)')
+    expect(output).toContain('_resolveIncludes')
+  })
+})
+
 describe('emitCjsWrapper', () => {
   it('generates CJS proxy with init() for collection models', () => {
     const output = emitCjsWrapper([COLLECTION_MODEL])

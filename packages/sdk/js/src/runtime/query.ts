@@ -1,4 +1,11 @@
-export class QueryBuilder<T extends Record<string, unknown>> {
+export interface RelationMeta {
+  target: string | string[]
+  multi: boolean
+}
+
+export type RelationResolver = (model: string, id: string, locale: string | null) => Record<string, unknown> | undefined
+
+export class QueryBuilder<T extends object> {
   private _data: Map<string, T[]>
   private _locale: string | null = null
   private _filters: Array<(item: T) => boolean> = []
@@ -6,9 +13,18 @@ export class QueryBuilder<T extends Record<string, unknown>> {
   private _sortOrder: 'asc' | 'desc' = 'asc'
   private _limit: number | null = null
   private _offset = 0
+  private _includes: string[] = []
+  private _relationMeta: Record<string, RelationMeta>
+  private _resolver: RelationResolver | null
 
-  constructor(data: Map<string, T[]>) {
+  constructor(
+    data: Map<string, T[]>,
+    relationMeta?: Record<string, RelationMeta>,
+    resolver?: RelationResolver,
+  ) {
     this._data = data
+    this._relationMeta = relationMeta ?? {}
+    this._resolver = resolver ?? null
   }
 
   locale(lang: string): this {
@@ -41,6 +57,11 @@ export class QueryBuilder<T extends Record<string, unknown>> {
     return this
   }
 
+  include(...fields: string[]): this {
+    this._includes.push(...fields)
+    return this
+  }
+
   all(): T[] {
     let items = this._resolveData()
 
@@ -54,8 +75,8 @@ export class QueryBuilder<T extends Record<string, unknown>> {
       const field = this._sortField
       const dir = this._sortOrder === 'asc' ? 1 : -1
       items.sort((a, b) => {
-        const va = a[field]
-        const vb = b[field]
+        const va = (a as Record<string, unknown>)[field]
+        const vb = (b as Record<string, unknown>)[field]
         if (va == null && vb == null) return 0
         if (va == null) return dir
         if (vb == null) return -dir
@@ -71,6 +92,11 @@ export class QueryBuilder<T extends Record<string, unknown>> {
       items = items.slice(this._offset, end)
     }
 
+    // Resolve relations (after pagination for efficiency)
+    if (this._includes.length > 0 && this._resolver) {
+      items = items.map(item => this._resolveIncludes(item))
+    }
+
     return items
   }
 
@@ -82,11 +108,44 @@ export class QueryBuilder<T extends Record<string, unknown>> {
     if (this._locale) {
       return [...(this._data.get(this._locale) ?? [])]
     }
-    // If no locale specified, try to get first available
     const firstKey = this._data.keys().next().value
     if (firstKey !== undefined) {
       return [...(this._data.get(firstKey) ?? [])]
     }
     return []
+  }
+
+  private _resolveIncludes(item: T): T {
+    const resolved = { ...item }
+    const src = item as Record<string, unknown>
+    const dst = resolved as Record<string, unknown>
+    for (const field of this._includes) {
+      const meta = this._relationMeta[field]
+      if (!meta) continue
+      const targets = Array.isArray(meta.target) ? meta.target : [meta.target]
+
+      if (meta.multi) {
+        const ids = src[field]
+        if (Array.isArray(ids)) {
+          dst[field] = ids.map(
+            id => this._resolveId(targets, id as string) ?? id,
+          )
+        }
+      } else {
+        const id = src[field]
+        if (typeof id === 'string') {
+          dst[field] = this._resolveId(targets, id) ?? id
+        }
+      }
+    }
+    return resolved
+  }
+
+  private _resolveId(targets: string[], id: string): Record<string, unknown> | undefined {
+    for (const target of targets) {
+      const result = this._resolver!(target, id, this._locale)
+      if (result) return result
+    }
+    return undefined
   }
 }

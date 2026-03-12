@@ -19,9 +19,9 @@ describe('generate (integration)', () => {
   it('generates all output files and returns correct result', async () => {
     const result = await generate({ projectRoot: FIXTURE })
 
-    // Check result counts
-    expect(result.typesCount).toBe(4) // blog-post, hero, error-messages, blog-article
-    expect(result.dataModulesCount).toBeGreaterThanOrEqual(8) // 4 models × 2 locales (min)
+    // Check result counts — 6 models: author, blog-article, blog-post, error-messages, hero, tag
+    expect(result.typesCount).toBe(6)
+    expect(result.dataModulesCount).toBeGreaterThanOrEqual(10)
     expect(result.generatedFiles).toContain('index.d.ts')
     expect(result.generatedFiles).toContain('index.mjs')
     expect(result.generatedFiles).toContain('index.cjs')
@@ -44,13 +44,20 @@ describe('generate (integration)', () => {
     expect(types).toContain('export interface BlogArticle')
     expect(types).toContain('slug: string')
     expect(types).toContain('content: string')
-    // Query interfaces
+    // Relation model types
+    expect(types).toContain('export interface Author')
+    expect(types).toContain('export interface Tag')
+    // Query interfaces with include()
     expect(types).toContain('export interface QueryBuilder<T>')
+    expect(types).toContain('include(...fields: string[]): QueryBuilder<T>')
     expect(types).toContain('export interface SingletonAccessor<T>')
     expect(types).toContain('export interface DictionaryAccessor')
     expect(types).toContain('export interface DocumentQuery<T>')
+    expect(types).toContain('include(...fields: string[]): DocumentQuery<T>')
     // Overloaded entry points
     expect(types).toContain("export declare function query(model: 'blog-post')")
+    expect(types).toContain("export declare function query(model: 'author')")
+    expect(types).toContain("export declare function query(model: 'tag')")
     expect(types).toContain("export declare function singleton(model: 'hero')")
     expect(types).toContain("export declare function dictionary(model: 'error-messages')")
     expect(types).toContain("export declare function document(model: 'blog-article')")
@@ -65,6 +72,8 @@ describe('generate (integration)', () => {
     expect(esm).toContain("from './data/blog-post.en.mjs'")
     expect(esm).toContain("from './data/hero.en.mjs'")
     expect(esm).toContain("from './data/error-messages.en.mjs'")
+    expect(esm).toContain("from './data/author.mjs'")
+    expect(esm).toContain("from './data/tag.mjs'")
     // Runtime classes
     expect(esm).toContain('class QueryBuilder')
     expect(esm).toContain('class SingletonAccessor')
@@ -75,6 +84,9 @@ describe('generate (integration)', () => {
     expect(esm).toContain('export function singleton(')
     expect(esm).toContain('export function dictionary(')
     expect(esm).toContain('export function document(')
+    // Relation metadata
+    expect(esm).toContain('_relationMeta')
+    expect(esm).toContain('_resolveEntry')
   })
 
   it('generates CJS wrapper without top-level await', async () => {
@@ -142,6 +154,17 @@ describe('generate (integration)', () => {
     expect(esm).toContain('_blogArticleDesignTipsEn')
     // They should be in the same Map entry for 'en'
     expect(esm).toMatch(/\['en',\s*\[.*_blogArticle.*_blogArticle.*\]/)
+  })
+
+  it('generates relation metadata for blog-post model', async () => {
+    await generate({ projectRoot: FIXTURE })
+
+    const esm = await readFile(join(CLIENT_DIR, 'index.mjs'), 'utf-8')
+    // blog-post has author (relation) and tags (relations)
+    expect(esm).toContain("'author': { target: 'author', multi: false }")
+    expect(esm).toContain("'tags': { target: 'tag', multi: true }")
+    // Factory should pass relation meta to QueryBuilder
+    expect(esm).toContain('_relationMeta[model], _resolveEntry')
   })
 
   it('is idempotent — running twice produces same output', async () => {
