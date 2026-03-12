@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-MIT-licensed monorepo for Contentrain's open-source packages: MCP tools, CLI, TypeScript types, AI rules, and Nuxt SDK.
+MIT-licensed monorepo for Contentrain's open-source packages: MCP tools, CLI, TypeScript types, AI rules, and universal query SDK.
 
 **Vision:** "AI-generated content governance infrastructure — Agent üretir, insan onaylar, sistem standardize eder."
 
@@ -15,7 +15,8 @@ contentrain-ai/
 │   ├── cli/          — citty + tsdown (init/serve/validate/normalize/connect)
 │   ├── types/        — Shared TypeScript types (@contentrain/types)
 │   ├── ai-rules/     — AI agent rules & prompts for IDE integration
-│   └── sdk/nuxt/     — Nuxt SDK (@contentrain/sdk-nuxt)
+│   └── sdk/
+│       └── js/       — Universal query SDK (@contentrain/query)
 ├── docs/
 │   ├── internal/     — Private specs (gitignored, dev reference only)
 │   ├── mcp/          — VitePress docs → mcp.contentrain.io
@@ -28,6 +29,7 @@ These files contain architectural decisions and are the source of truth during d
 - `mcp-development-spec.md` — 13 MCP tools, Git flow, validation, context.json
 - `schema-architecture.md` — 27 types, 4 model kinds, canonical serialization
 - `ai-rules-spec.md` — AI agent rules, prompts, context bridge
+- `sdk-spec.md` — Universal query SDK, generated client, `#contentrain` imports
 - `README.md` — Master index, cross-references
 
 **Always read relevant spec before implementing.** Specs are expanded during development as details emerge.
@@ -58,6 +60,7 @@ These files contain architectural decisions and are the source of truth during d
 - **Graph-based scan** — scan tool builds import/component graph for project intelligence, reducing token usage dramatically
 - **Top 5+ stack support** — Not limited to Vue/Nuxt. Agent handles stack-specific logic, MCP stays framework-agnostic
 - **Replacement by agent** — In reuse phase, the agent determines replacement expressions (e.g., `{t('key')}` vs `{{ $t('key') }}`), not MCP
+- **SDK = generated client** — Prisma pattern: `contentrain generate` → `.contentrain/client/` with full types. `#contentrain` subpath import (Node.js native). No node_modules generation. Base SDK is framework-agnostic MIT, community builds framework SDKs on top
 
 ## npm Packages
 
@@ -67,7 +70,7 @@ These files contain architectural decisions and are the source of truth during d
 | packages/cli | contentrain | CLI (npx contentrain) |
 | packages/types | @contentrain/types | Shared TypeScript types |
 | packages/ai-rules | @contentrain/ai-rules | AI agent rules |
-| packages/sdk/nuxt | @contentrain/sdk-nuxt | Nuxt SDK |
+| packages/sdk/js | @contentrain/query | Universal query SDK (generated client) |
 
 ## Commands (planned)
 

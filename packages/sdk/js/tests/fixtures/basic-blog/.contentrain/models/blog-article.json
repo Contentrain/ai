@@ -1,0 +1,11 @@
+{
+  "id": "blog-article",
+  "name": "Blog Article",
+  "kind": "document",
+  "domain": "blog",
+  "i18n": true,
+  "fields": {
+    "title": { "type": "string", "required": true },
+    "category": { "type": "select", "options": ["tech", "design"] }
+  }
+}

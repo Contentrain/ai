@@ -1,0 +1,16 @@
+{
+  "id": "blog-post",
+  "name": "Blog Post",
+  "kind": "collection",
+  "domain": "blog",
+  "i18n": true,
+  "fields": {
+    "title": { "type": "string", "required": true },
+    "slug": { "type": "slug", "required": true, "unique": true },
+    "excerpt": { "type": "text" },
+    "status": { "type": "select", "required": true, "options": ["draft", "published", "archived"] },
+    "featured": { "type": "boolean" },
+    "views": { "type": "integer" },
+    "category": { "type": "select", "options": ["tech", "design", "business"] }
+  }
+}

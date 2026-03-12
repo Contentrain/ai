@@ -1,0 +1,44 @@
+{
+  "name": "@contentrain/query",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "Type-safe content query SDK for Contentrain — universal JS/TS",
+  "type": "module",
+  "bin": {
+    "contentrain-query": "./dist/cli.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    },
+    "./generate": {
+      "types": "./dist/generator/generate.d.ts",
+      "import": "./dist/generator/generate.mjs",
+      "require": "./dist/generator/generate.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsdown src/index.ts src/generator/generate.ts src/cli.ts --format esm,cjs --dts",
+    "dev": "tsdown src/index.ts src/generator/generate.ts src/cli.ts --format esm,cjs --dts --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@contentrain/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsdown": "^0.21.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

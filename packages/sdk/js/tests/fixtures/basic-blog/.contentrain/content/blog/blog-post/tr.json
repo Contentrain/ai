@@ -1,0 +1,29 @@
+{
+  "a1b2c3d4e5f6": {
+    "title": "Contentrain'e Başlangıç",
+    "slug": "getting-started",
+    "excerpt": "Contentrain ile nasıl başlayacağınızı öğrenin",
+    "status": "published",
+    "featured": true,
+    "views": 150,
+    "category": "tech"
+  },
+  "b2c3d4e5f6a7": {
+    "title": "Tasarım Sistemleri 101",
+    "slug": "design-systems",
+    "excerpt": "Tasarım sistemlerine giriş",
+    "status": "published",
+    "featured": false,
+    "views": 89,
+    "category": "design"
+  },
+  "c3d4e5f6a7b8": {
+    "title": "Taslak Yazı",
+    "slug": "draft-post",
+    "excerpt": "Bu hala bir taslak",
+    "status": "draft",
+    "featured": false,
+    "views": 0,
+    "category": "tech"
+  }
+}

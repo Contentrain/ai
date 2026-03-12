@@ -1,0 +1,6 @@
+{
+  "not_found": "Sayfa bulunamadı",
+  "server_error": "Sunucu hatası",
+  "unauthorized": "Yetkisiz erişim",
+  "forbidden": "Erişim engellendi"
+}

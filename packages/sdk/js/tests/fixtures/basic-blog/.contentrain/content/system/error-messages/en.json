@@ -1,0 +1,6 @@
+{
+  "not_found": "Page not found",
+  "server_error": "Internal server error",
+  "unauthorized": "You are not authorized",
+  "forbidden": "Access forbidden"
+}

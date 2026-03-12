@@ -1,0 +1,29 @@
+{
+  "a1b2c3d4e5f6": {
+    "title": "Getting Started with Contentrain",
+    "slug": "getting-started",
+    "excerpt": "Learn how to get started with Contentrain",
+    "status": "published",
+    "featured": true,
+    "views": 150,
+    "category": "tech"
+  },
+  "b2c3d4e5f6a7": {
+    "title": "Design Systems 101",
+    "slug": "design-systems",
+    "excerpt": "Introduction to design systems",
+    "status": "published",
+    "featured": false,
+    "views": 89,
+    "category": "design"
+  },
+  "c3d4e5f6a7b8": {
+    "title": "Draft Post",
+    "slug": "draft-post",
+    "excerpt": "This is still a draft",
+    "status": "draft",
+    "featured": false,
+    "views": 0,
+    "category": "tech"
+  }
+}

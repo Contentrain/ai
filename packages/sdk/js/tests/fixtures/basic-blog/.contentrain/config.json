@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "stack": "nuxt",
+  "workflow": "auto-merge",
+  "locales": {
+    "default": "en",
+    "supported": ["en", "tr"]
+  },
+  "domains": ["blog", "marketing", "system"]
+}
