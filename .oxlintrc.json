@@ -1,6 +1,9 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicolo-ribaudo/oxc-config-schema/refs/heads/main/oxlintrc.schema.json",
-  "rules": {},
+  "rules": {
+    "no-await-in-loop": "off",
+    "unicorn/prefer-set-has": "off"
+  },
   "categories": {
     "correctness": "error",
     "suspicious": "warn",
