@@ -1,0 +1,23 @@
+{
+  "name": "contentrain-ai",
+  "private": true,
+  "license": "MIT",
+  "description": "AI-generated content governance infrastructure — Agent üretir, insan onaylar, sistem standardize eder.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/contentrain/contentrain-ai.git"
+  },
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "dev": "pnpm -r --parallel run dev",
+    "test": "pnpm -r run test",
+    "lint": "oxlint .",
+    "typecheck": "pnpm -r run typecheck",
+    "clean": "pnpm -r run clean"
+  }
+}

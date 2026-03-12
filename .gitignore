@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.output/
+.nuxt/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+
+# Test coverage
+coverage/
+
+# Turbo
+.turbo/
+
+# Internal docs (private strategy & specs — not for public repo)
+docs/internal/
+
+# Claude Code (agent memory, project config — contains private context)
+.claude/
+
+# Changesets temp
+.changeset/*.md
+!.changeset/README.md

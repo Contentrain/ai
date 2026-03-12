@@ -1,0 +1,122 @@
+# Sprint Plan — contentrain-ai
+
+> Spec-driven development. Her sprint sonunda çalışan, test edilmiş, yayınlanabilir paket(ler).
+
+---
+
+## Sprint 1 — Foundation & Types
+**Hedef:** Monorepo çalışır durumda + @contentrain/types tam implementasyon
+
+- [x] Monorepo iskeleti (pnpm workspace, tsconfig, LICENSE, .npmrc)
+- [ ] @contentrain/types — Tüm type'lar (schema-architecture.md v2.1'den)
+  - [ ] Field types (27 flat type enum + FieldDef)
+  - [ ] Model types (ModelDef, 4 kind)
+  - [ ] Config types (ConfigJson, LocaleConfig)
+  - [ ] Meta types (EntryMeta, status enum)
+  - [ ] Context types (ContextJson)
+  - [ ] Vocabulary & Assets types
+  - [ ] Validation types (ValidationResult, ValidationError)
+- [ ] Vitest setup + types unit testleri
+- [ ] oxlint config
+- [ ] lefthook setup (lint + typecheck on commit)
+- [ ] İlk build doğrulama: `pnpm build` tüm paketlerde başarılı
+
+---
+
+## Sprint 2 — MCP Core Infrastructure
+**Hedef:** MCP server ayağa kalkar, ilk 2 read-only tool çalışır
+
+- [ ] MCP server boilerplate (@modelcontextprotocol/sdk + stdio transport)
+- [ ] Tool registration altyapısı (her tool ayrı modül)
+- [ ] `contentrain_status` tool implementasyonu
+- [ ] `contentrain_describe` tool implementasyonu
+- [ ] Canonical JSON serializer utility
+- [ ] Test: mock .contentrain/ dizininde status + describe çalışır
+
+---
+
+## Sprint 3 — MCP Setup Tools
+**Hedef:** Yeni proje init edilebilir, model oluşturulabilir
+
+- [ ] `contentrain_init` — stack detection + scaffold + git init
+- [ ] `contentrain_scaffold` — domain dizinleri + başlangıç dosyaları
+- [ ] `contentrain_model_save` — model oluşturma/güncelleme + validation
+- [ ] `contentrain_model_delete` — model silme + referans kontrolü
+- [ ] Git worktree + branch yönetimi (simple-git)
+- [ ] context.json güncelleme mekanizması
+- [ ] Test: init → scaffold → model_save → status akışı
+
+---
+
+## Sprint 4 — MCP Content Tools
+**Hedef:** İçerik CRUD tam çalışır (4 kind destekli)
+
+- [ ] `contentrain_content_save` — 4 kind desteği (singleton/collection/document/dictionary)
+- [ ] `contentrain_content_delete` — entry silme + meta temizliği
+- [ ] `contentrain_content_list` — filtreleme, pagination
+- [ ] Object-map storage (collection) — sorted keys, canonical serialization
+- [ ] Meta dosya yönetimi (status, source, updated_by)
+- [ ] i18n dosya yönetimi (locale-based file routing)
+- [ ] Test: tüm kind'lar için CRUD + i18n senaryoları
+
+---
+
+## Sprint 5 — MCP Normalize & Workflow Tools
+**Hedef:** Normalize akışı + validation + submit çalışır
+
+- [ ] `contentrain_scan` — hardcoded string detection (AST-based)
+- [ ] `contentrain_apply` — scan sonuçlarını content'e dönüştürme
+- [ ] `contentrain_validate` — full project validation (schema + ref integrity + i18n parity)
+- [ ] `contentrain_submit` — branch push + workflow trigger (auto-merge / review)
+- [ ] Validation rule engine (composable validators)
+- [ ] Test: normalize akışı end-to-end + validation senaryoları
+
+---
+
+## Sprint 6 — CLI
+**Hedef:** `npx contentrain` CLI çalışır
+
+- [ ] `contentrain init` — interactive init (citty prompts)
+- [ ] `contentrain serve` — local MCP server başlatma
+- [ ] `contentrain validate` — CLI üzerinden validation
+- [ ] `contentrain normalize` — scan + apply CLI wrapper
+- [ ] `contentrain connect` — Studio bağlantısı (API key setup)
+- [ ] Test: CLI komutları e2e
+
+---
+
+## Sprint 7 — AI Rules & Nuxt SDK
+**Hedef:** AI rules paketi + Nuxt SDK yayınlanabilir
+
+- [ ] @contentrain/ai-rules
+  - [ ] CLAUDE.md template (contentrain projeler için)
+  - [ ] .cursorrules template
+  - [ ] Windsurf rules template
+  - [ ] Rule generator (stack-aware)
+- [ ] @contentrain/sdk-nuxt
+  - [ ] `useContentrain()` composable
+  - [ ] `useFetch` wrapper'ları (model-aware, locale-aware)
+  - [ ] Auto-import setup (Nuxt module)
+  - [ ] Type-safe content access (model → TypeScript type generation)
+
+---
+
+## Sprint 8 — Documentation & Release
+**Hedef:** Docs siteleri + npm publish + v1.0.0
+
+- [ ] docs/mcp/ — VitePress site (mcp.contentrain.io)
+- [ ] docs/ai/ — VitePress site (ai.contentrain.io)
+- [ ] README.md (root + her paket)
+- [ ] CHANGELOG.md setup
+- [ ] npm publish pipeline
+- [ ] GitHub Actions CI (lint + test + build)
+- [ ] v1.0.0 tag
+
+---
+
+## Notlar
+
+- Her sprint sonunda `pnpm build && pnpm test && pnpm lint` geçmeli
+- Sprint 1-2 arası geçiş: types paketi stable olmalı, MCP onun üzerine inşa edilecek
+- Sprint 3-5 MCP tool'ları spec sırasıyla ilerler: setup → content → workflow
+- Spec referansları: `docs/internal/` altındaki dosyalar her zaman source of truth
