@@ -1,0 +1,136 @@
+import { defineCommand } from 'citty'
+import { intro, outro, log, select, confirm, isCancel } from '@clack/prompts'
+import { simpleGit } from 'simple-git'
+import { resolveProjectRoot } from '../utils/context.js'
+import { pc } from '../utils/ui.js'
+
+export default defineCommand({
+  meta: {
+    name: 'diff',
+    description: 'Review pending contentrain branches',
+  },
+  args: {
+    root: { type: 'string', description: 'Project root path', required: false },
+  },
+  async run({ args }) {
+    const projectRoot = await resolveProjectRoot(args.root)
+    const git = simpleGit(projectRoot)
+
+    intro(pc.bold('contentrain diff'))
+
+    // List contentrain branches
+    const branches = await git.branch(['--list', 'contentrain/*'])
+
+    if (branches.all.length === 0) {
+      log.message('No pending contentrain branches.')
+      outro('')
+      return
+    }
+
+    log.info(pc.bold(`Pending branches (${branches.all.length})`))
+
+    // Get main branch
+    const current = await git.revparse(['--abbrev-ref', 'HEAD'])
+    const baseBranch = current.trim()
+
+    // Show each branch with summary
+    const branchInfos: Array<{ name: string; summary: string; files: number }> = []
+
+    for (const branch of branches.all) {
+      try {
+        const diffStat = await git.diffSummary([`${baseBranch}...${branch}`])
+        branchInfos.push({
+          name: branch,
+          summary: `${diffStat.changed} file(s), +${diffStat.insertions}/-${diffStat.deletions}`,
+          files: diffStat.changed,
+        })
+      } catch {
+        branchInfos.push({
+          name: branch,
+          summary: 'Could not diff',
+          files: 0,
+        })
+      }
+    }
+
+    for (const info of branchInfos) {
+      log.message(`  ${pc.yellow('●')} ${pc.bold(info.name)}  ${pc.dim(info.summary)}`)
+    }
+
+    // Interactive review
+    const reviewChoice = await select({
+      message: 'Select a branch to review',
+      options: [
+        ...branchInfos.map(b => ({
+          value: b.name,
+          label: `${b.name} (${b.summary})`,
+        })),
+        { value: '__skip', label: 'Done — exit' },
+      ],
+    })
+
+    if (isCancel(reviewChoice) || reviewChoice === '__skip') {
+      outro('')
+      return
+    }
+
+    const selectedBranch = reviewChoice as string
+
+    // Show detailed diff
+    try {
+      const diff = await git.diff([`${baseBranch}...${selectedBranch}`, '--stat'])
+      log.info(pc.bold(`\nDiff: ${selectedBranch}`))
+      log.message(diff)
+
+      // Show the actual content changes
+      const fullDiff = await git.diff([`${baseBranch}...${selectedBranch}`])
+      if (fullDiff.length < 5000) {
+        log.message(fullDiff)
+      } else {
+        log.message(pc.dim(`(${Math.round(fullDiff.length / 1024)}KB diff — too large to display inline)`))
+      }
+    } catch (error) {
+      log.error(`Could not show diff: ${error instanceof Error ? error.message : String(error)}`)
+    }
+
+    // Action
+    const action = await select({
+      message: 'Action',
+      options: [
+        { value: 'merge', label: 'Merge into current branch' },
+        { value: 'delete', label: 'Delete branch (reject changes)' },
+        { value: 'skip', label: 'Leave for later' },
+      ],
+    })
+
+    if (isCancel(action) || action === 'skip') {
+      outro('')
+      return
+    }
+
+    if (action === 'merge') {
+      const confirmMerge = await confirm({ message: `Merge ${selectedBranch} into ${baseBranch}?` })
+      if (!isCancel(confirmMerge) && confirmMerge) {
+        try {
+          await git.merge([selectedBranch])
+          await git.deleteLocalBranch(selectedBranch, true)
+          log.success(`Merged and deleted ${selectedBranch}`)
+        } catch (error) {
+          log.error(`Merge failed: ${error instanceof Error ? error.message : String(error)}`)
+        }
+      }
+    } else if (action === 'delete') {
+      const confirmDelete = await confirm({ message: `Delete ${selectedBranch}? This cannot be undone.` })
+      if (!isCancel(confirmDelete) && confirmDelete) {
+        try {
+          await git.deleteLocalBranch(selectedBranch, true)
+          log.success(`Deleted ${selectedBranch}`)
+        } catch (error) {
+          log.error(`Delete failed: ${error instanceof Error ? error.message : String(error)}`)
+        }
+      }
+    }
+
+    outro('')
+  },
+})

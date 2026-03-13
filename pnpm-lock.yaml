@@ -33,13 +33,37 @@ importers:
 
   packages/cli:
     dependencies:
+      '@clack/prompts':
+        specifier: ^0.10.0
+        version: 0.10.1
+      '@contentrain/mcp':
+        specifier: workspace:*
+        version: link:../mcp
+      '@contentrain/query':
+        specifier: workspace:*
+        version: link:../sdk/js
       '@contentrain/types':
         specifier: workspace:*
         version: link:../types
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.12.0
+        version: 1.27.1(zod@3.25.76)
       citty:
         specifier: ^0.1.0
         version: 0.1.6
+      consola:
+        specifier: ^3.4.0
+        version: 3.4.2
+      picocolors:
+        specifier: ^1.1.0
+        version: 1.1.1
+      simple-git:
+        specifier: ^3.27.0
+        version: 3.33.0
     devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.15
       tsdown:
         specifier: ^0.21.0
         version: 0.21.2(typescript@5.9.3)
@@ -48,7 +72,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^3.0.0
-        version: 3.2.4(@types/node@25.4.0)
+        version: 3.2.4(@types/node@22.19.15)
 
   packages/mcp:
     dependencies:
@@ -144,6 +168,12 @@ packages:
   '@babel/types@8.0.0-rc.2':
     resolution: {integrity: sha512-91gAaWRznDwSX4E2tZ1YjBuIfnQVOFDCQ2r0Toby0gu4XEbyF623kXLMA8d4ZbCu+fINcrudkmEcwSUHgDDkNw==}
     engines: {node: ^20.19.0 || >=22.12.0}
+
+  '@clack/core@0.4.2':
+    resolution: {integrity: sha512-NYQfcEy8MWIxrT5Fj8nIVchfRFA26yYKJcvBS7WlUIlw2OmQOY9DhGGXMovyI5J5PpxrCPGkgUi207EBrjpBvg==}
+
+  '@clack/prompts@0.10.1':
+    resolution: {integrity: sha512-Q0T02vx8ZM9XSv9/Yde0jTmmBQufZhPJfYAg2XrrrxWWaZgq1rr8nU8Hv710BQ1dhoP8rtY7YUdpGej2Qza/cw==}
 
   '@emnapi/core@1.9.0':
     resolution: {integrity: sha512-0DQ98G9ZQZOxfUcQn1waV2yS8aWdZ6kJMbYCJB3oUBecjWYO1fqJ+a1DRfPF3O5JEkwqwP1A9QEN/9mYm2Yd0w==}
@@ -1296,6 +1326,9 @@ packages:
   simple-git@3.33.0:
     resolution: {integrity: sha512-D4V/tGC2sjsoNhoMybKyGoE+v8A60hRawKQ1iFRA1zwuDgGZCBJ4ByOzZ5J8joBbi4Oam0qiPH+GhzmSBwbJng==}
 
+  sisteransi@1.0.5:
+    resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
+
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
@@ -1531,6 +1564,17 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 8.0.0-rc.2
       '@babel/helper-validator-identifier': 8.0.0-rc.2
+
+  '@clack/core@0.4.2':
+    dependencies:
+      picocolors: 1.1.1
+      sisteransi: 1.0.5
+
+  '@clack/prompts@0.10.1':
+    dependencies:
+      '@clack/core': 0.4.2
+      picocolors: 1.1.1
+      sisteransi: 1.0.5
 
   '@emnapi/core@1.9.0':
     dependencies:
@@ -2550,6 +2594,8 @@ snapshots:
       debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
+
+  sisteransi@1.0.5: {}
 
   source-map-js@1.2.1: {}
 

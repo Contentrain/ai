@@ -11,6 +11,58 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.mjs"
+    },
+    "./core/config": {
+      "types": "./dist/core/config.d.ts",
+      "import": "./dist/core/config.mjs"
+    },
+    "./core/context": {
+      "types": "./dist/core/context.d.ts",
+      "import": "./dist/core/context.mjs"
+    },
+    "./core/model-manager": {
+      "types": "./dist/core/model-manager.d.ts",
+      "import": "./dist/core/model-manager.mjs"
+    },
+    "./core/content-manager": {
+      "types": "./dist/core/content-manager.d.ts",
+      "import": "./dist/core/content-manager.mjs"
+    },
+    "./core/validator": {
+      "types": "./dist/core/validator.d.ts",
+      "import": "./dist/core/validator.mjs"
+    },
+    "./core/scanner": {
+      "types": "./dist/core/scanner.d.ts",
+      "import": "./dist/core/scanner.mjs"
+    },
+    "./core/graph-builder": {
+      "types": "./dist/core/graph-builder.d.ts",
+      "import": "./dist/core/graph-builder.mjs"
+    },
+    "./core/apply-manager": {
+      "types": "./dist/core/apply-manager.d.ts",
+      "import": "./dist/core/apply-manager.mjs"
+    },
+    "./util/detect": {
+      "types": "./dist/util/detect.d.ts",
+      "import": "./dist/util/detect.mjs"
+    },
+    "./util/fs": {
+      "types": "./dist/util/fs.d.ts",
+      "import": "./dist/util/fs.mjs"
+    },
+    "./git/transaction": {
+      "types": "./dist/git/transaction.d.ts",
+      "import": "./dist/git/transaction.mjs"
+    },
+    "./templates": {
+      "types": "./dist/templates/index.d.ts",
+      "import": "./dist/templates/index.mjs"
     }
   },
   "main": "./dist/index.mjs",
@@ -19,8 +71,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown src/index.ts --format esm --dts",
-    "dev": "tsdown src/index.ts --format esm --dts --watch",
+    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/templates/index.ts --format esm --dts",
+    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/templates/index.ts --format esm --dts --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"

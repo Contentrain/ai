@@ -189,11 +189,16 @@
 - [x] Test: 16 tests (context utils, command module loading, args validation)
 - [x] Quality gates: oxlint 0, tsc 0, vitest 16/16
 
-### Phase 2 — UI + Advanced (TODO)
-- [ ] `contentrain serve` localhost UI (browser dashboard)
+### Phase 2 — CLI UI (TODO)
+- [ ] @contentrain/ui setup (shadcn-vue + Contentrain design tokens)
+- [ ] `contentrain serve` localhost UI — Vue 3.5 + Vite + h3 backend
+  - [ ] Dashboard: proje health, model stats, i18n completion, activity timeline
+  - [ ] Content Explorer: model list, entry table, inline edit, locale switcher
+  - [ ] Normalize Studio: graph viz, side-by-side source/string view, bulk approve
+  - [ ] Validation Dashboard: issue list, one-click fix, i18n parity matrix
+  - [ ] Branch Review: visual diff, merge/reject UI
 - [ ] `contentrain connect` — Studio bağlantısı (API key setup)
-- [ ] Interactive normalize improvements (batch approve, file-group view)
-- [ ] Test: CLI komutları e2e integration tests
+- [ ] Test: CLI UI e2e integration tests
 
 ---
 
