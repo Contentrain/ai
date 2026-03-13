@@ -4,6 +4,7 @@ import { access, cp, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/pr
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { tmpdir } from 'node:os'
+import { createRequire } from 'node:module'
 
 const FIXTURE = join(import.meta.dirname, '../fixtures/basic-blog')
 const CLIENT_DIR = join(FIXTURE, '.contentrain', 'client')
@@ -224,6 +225,27 @@ describe('generate (integration)', () => {
       await generate({ projectRoot: tempRoot })
 
       await expect(access(staleModulePath)).rejects.toThrow()
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('exposes usable query exports via CommonJS require + init()', async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), 'contentrain-sdk-cjs-'))
+
+    try {
+      await cp(FIXTURE, tempRoot, { recursive: true })
+      await generate({ projectRoot: tempRoot })
+
+      const require = createRequire(import.meta.url)
+      const cjs = require(join(tempRoot, '.contentrain', 'client', 'index.cjs')) as Record<string, unknown>
+
+      // CJS wrapper requires init() — ESM→CJS bridge is async
+      expect(typeof cjs.init).toBe('function')
+      const client = await (cjs.init as () => Promise<Record<string, unknown>>)()
+
+      expect(typeof client.query).toBe('function')
+      expect(typeof client.singleton).toBe('function')
     } finally {
       await rm(tempRoot, { recursive: true, force: true })
     }

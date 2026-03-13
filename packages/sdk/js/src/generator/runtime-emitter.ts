@@ -242,7 +242,8 @@ ${exports.map(e => `    module.exports.${e} = m.${e}`).join('\n')}
 _promise = import('./index.mjs').then(function(m) {
   _mod = m
 ${exports.map(e => `  module.exports.${e} = m.${e}`).join('\n')}
-}).catch(function() { /* swallow — init() will retry */ })
+  return module.exports
+}).catch(function() { _promise = null; /* retry on next init() call */ })
 `
 }
 
