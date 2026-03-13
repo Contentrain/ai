@@ -112,14 +112,14 @@
 - [x] Graph builder: import statement regex parser, file classification (page/component/layout)
 - [x] Test: scan tüm modlar + pre-filtering doğruluğu
 
-### Sprint 5C — Apply Tool (Write, yüksek risk)
-- [ ] `contentrain_apply` mode: **extract** — content-only extraction (source untouched)
-- [ ] `contentrain_apply` mode: **reuse** — source code patching (agent-provided replacements)
-- [ ] Dry-run zorunlu (her mode için)
-- [ ] Review zorunlu (normalize asla auto-merge edilmez)
-- [ ] Reuse scope: model/domain bazlı (tüm proje tek seferde yasak)
-- [ ] Source tracking: her extracted content'in kaynak dosya/satır bilgisi
-- [ ] Test: extract + reuse end-to-end, dry-run preview doğruluğu
+### Sprint 5C — Apply Tool (Write, yüksek risk) ✅
+- [x] `contentrain_apply` mode: **extract** — content-only extraction (source untouched)
+- [x] `contentrain_apply` mode: **reuse** — source code patching (agent-provided replacements)
+- [x] Dry-run zorunlu (her mode için)
+- [x] Review zorunlu (normalize asla auto-merge edilmez)
+- [x] Reuse scope: model/domain bazlı (tüm proje tek seferde yasak)
+- [x] Source tracking: her extracted content'in kaynak dosya/satır bilgisi
+- [x] Test: extract + reuse end-to-end, dry-run preview doğruluğu (15 test)
 
 ### Key Design Decisions
 - MCP "bu string content mi?" kararını **vermez** — agent verir
@@ -173,25 +173,90 @@
 ---
 
 ## Sprint 6 — CLI
-**Hedef:** `npx contentrain` CLI çalışır
 
-- [ ] `contentrain init` — interactive init (citty prompts)
-- [ ] `contentrain serve` — local MCP server başlatma
-- [ ] `contentrain validate` — CLI üzerinden validation
-- [ ] `contentrain normalize` — scan + apply CLI wrapper
+### Phase 1 — Core CLI (MCP Orkestrasyon) ✅ (2026-03-13)
+**Hedef:** `npx contentrain <command>` — MCP'yi daha akıllı çalıştıran orkestrasyon katmanı
+
+- [x] MCP subpath exports (core/*, util/*, server, templates) — CLI doğrudan import eder
+- [x] `contentrain init` — interactive init (stack detect, locales, domains, template, scan preview)
+- [x] `contentrain status` — rich overview (models, i18n %, pending branches, validation)
+- [x] `contentrain doctor` — health check (git, structure, orphans, SDK freshness, Node ≥22)
+- [x] `contentrain validate` — interactive validation (--fix, --interactive, --json, --model)
+- [x] `contentrain normalize` — guided flow (graph→scan→approve→extract→reuse)
+- [x] `contentrain serve` — MCP stdio server (env propagation, git author)
+- [x] `contentrain generate` — SDK client generation (--watch)
+- [x] `contentrain diff` — review pending contentrain branches (merge/reject)
+- [x] Test: 16 tests (context utils, command module loading, args validation)
+- [x] Quality gates: oxlint 0, tsc 0, vitest 16/16
+
+### Phase 2 — UI + Advanced (TODO)
+- [ ] `contentrain serve` localhost UI (browser dashboard)
 - [ ] `contentrain connect` — Studio bağlantısı (API key setup)
-- [ ] Test: CLI komutları e2e
+- [ ] Interactive normalize improvements (batch approve, file-group view)
+- [ ] Test: CLI komutları e2e integration tests
 
 ---
 
-## Sprint 7 — AI Rules
-**Hedef:** AI rules paketi yayınlanabilir
+## Sprint 7 — AI Rules ✅ (2026-03-13)
+**Hedef:** AI agent'lar için eksiksiz content governance ruleset — tüm IDE'ler desteklenir
 
-- [ ] @contentrain/ai-rules
-  - [ ] CLAUDE.md template (contentrain projeler için)
-  - [ ] .cursorrules template
-  - [ ] Windsurf rules template
-  - [ ] Rule generator (stack-aware)
+### Content Quality Rules (6 shared rule)
+- [x] `content-quality.md` — yazım kalitesi, ton, content type pattern'ları, lifecycle
+- [x] `seo-rules.md` — title, slug, meta, alt text, OG, structured data
+- [x] `i18n-quality.md` — çeviri kalitesi, kültürel adaptasyon, string expansion
+- [x] `accessibility-rules.md` — alt text, plain language, heading semantics
+- [x] `security-rules.md` — XSS, PII, secrets, sanitization whitelist
+- [x] `media-rules.md` — boyutlar, formatlar, dosya boyutları, naming
+
+### Architecture Rules (5 shared rule)
+- [x] `content-conventions.md` — .contentrain/ yapısı, formatlar, serialization
+- [x] `schema-rules.md` — 27 type, 4 kind, relation'lar, nesting limiti
+- [x] `mcp-usage.md` — 13 tool kataloğu, sekanslar, guardrail'ler
+- [x] `workflow-rules.md` — Git, branching, auto-merge vs review
+- [x] `normalize-rules.md` — iki fazlı extraction/reuse
+
+### IDE Bundles (4 format, auto-generated)
+- [x] `rules/claude-code/contentrain.md` — CLAUDE.md'ye eklenebilir format
+- [x] `rules/cursor/contentrain.cursorrules` — Cursor rules formatı
+- [x] `rules/windsurf/contentrain.md` — Windsurf rules formatı
+- [x] `rules/generic/contentrain.md` — Universal format (Copilot, Gemini, Codex, vb.)
+- [x] `scripts/build-rules.ts` — shared → IDE bundle merge script
+
+### Prompts (4 dosya)
+- [x] `prompts/common.md` — paylaşılan kimlik, prensipler, session startup
+- [x] `prompts/generate-mode.md` — yeni proje content oluşturma pipeline
+- [x] `prompts/normalize-mode.md` — hardcoded string extraction akışı
+- [x] `prompts/review-mode.md` — content review checklist
+
+### Skills (6 Claude Code slash command)
+- [x] `contentrain-init` — stack detect → init → context.json → model önerisi
+- [x] `contentrain-content` — content oluşturma + kalite kuralları + validate + submit
+- [x] `contentrain-normalize` — iki fazlı scan → extract → reuse
+- [x] `contentrain-review` — 6 kategori review checklist (quality, SEO, a11y, security, i18n, schema)
+- [x] `contentrain-translate` — çeviri akışı + vocabulary alignment + kültürel adaptasyon
+- [x] `contentrain-generate` — SDK client generation + import doğrulama + usage örnekleri
+
+### Framework Guides (4 dosya)
+- [x] `frameworks/nuxt.md` — Nuxt 3: composables, @nuxtjs/i18n, static generation
+- [x] `frameworks/next.md` — Next.js 14+: RSC, App Router, next-intl, MDX
+- [x] `frameworks/astro.md` — Astro: content collections, islands architecture
+- [x] `frameworks/sveltekit.md` — SvelteKit: load functions, $lib, mdsvex
+
+### Context Bridge (5 dosya)
+- [x] `context/context-bridge.md` — context.json specification
+- [x] `context/templates/nuxt.context.json` — Nuxt template
+- [x] `context/templates/next.context.json` — Next.js template
+- [x] `context/templates/astro.context.json` — Astro template
+- [x] `context/templates/sveltekit.context.json` — SvelteKit template
+
+### Programmatic API + Tests
+- [x] `src/index.ts` — FIELD_TYPES (27), MODEL_KINDS (4), MCP_TOOLS (13), rule/skill/framework constants
+- [x] Tests: 72 test (validate-rules + validate-prompts)
+- [x] Quality: oxlint 0, tsc 0, vitest 72/72
+
+> **Not:** Rules ve skills, codebase tamamlandığında (Sprint 8 sonrası) kapsamlı review yapılarak
+> eksik/güncel olmayan kurallar güncellenecek. CLI entegrasyonu (contentrain init --rules) Sprint 6
+> Phase 2'de eklenecek.
 
 ---
 
@@ -214,3 +279,4 @@
 - Sprint 1-2 arası geçiş: types paketi stable olmalı, MCP onun üzerine inşa edilecek
 - Sprint 3-5 MCP tool'ları spec sırasıyla ilerler: setup → content → workflow
 - Spec referansları: `docs/internal/` altındaki dosyalar her zaman source of truth
+- Rules & skills codebase stabilize olduktan sonra review edilecek — CLI init komutu rules inject edecek
