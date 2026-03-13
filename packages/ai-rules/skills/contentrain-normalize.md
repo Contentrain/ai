@@ -129,7 +129,7 @@ Based on the project's tech stack, determine the correct replacement pattern:
 | React/Next (react-intl) | `{intl.formatMessage({id: 'key'})}` | `{intl.formatMessage({id: 'hero.title'})}` |
 | Svelte/SvelteKit | `{$t('key')}` | `{$t('hero.title')}` |
 | Astro | `{t('key')}` | `{t('key')}` |
-| SDK direct import | `query('model').get()` | Direct data access via `#contentrain` |
+| SDK direct import | `query('model').all()` | Direct data access via `#contentrain` |
 
 Also determine any necessary import statements that must be added to patched files (e.g., `import { useTranslation } from 'next-intl'`).
 

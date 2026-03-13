@@ -58,14 +58,14 @@ Collections return arrays. The SDK converts the internal object-map storage to a
 
 ```ts
 const posts = query('blog-post').locale('en').all()
-const featured = query('blog-post').locale('en').filter({ featured: true }).all()
+const featured = query('blog-post').locale('en').where('featured', true).all()
 const sorted = query('blog-post').locale('en').sort('publishedAt', 'desc').all()
 ```
 
 Single entry by ID:
 
 ```ts
-const post = query('blog-post').locale('en').byId('abc-123')
+const post = query('blog-post').locale('en').where('id', 'abc-123').first()
 ```
 
 ### 3.2 Singletons
@@ -82,7 +82,7 @@ Dictionaries provide key-value access for UI strings.
 
 ```ts
 const labels = dictionary('ui-labels').locale('en').get('submit_button')
-const allLabels = dictionary('ui-labels').locale('en').all()
+const allLabels = dictionary('ui-labels').locale('en').get()
 ```
 
 ### 3.4 Documents

@@ -256,7 +256,7 @@ For projects that consume content directly without i18n:
 
 ```ts
 import { query } from '#contentrain'
-const hero = await query('marketing-hero').locale('en').first()
+const hero = singleton('marketing-hero').locale('en').get()
 ```
 
 ### Step 3 — Preview Reuse

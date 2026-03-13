@@ -2695,7 +2695,7 @@ Use these heuristics to identify content strings in source code. Content is user
    | React/Next (next-intl) | `{t('key')}` | `{t('hero.title')}` |
    | Svelte/SvelteKit | `{$t('key')}` | `{$t('hero.title')}` |
    | Astro | `{t('key')}` | `{t('hero.title')}` |
-   | SDK import | `query('model').get()` | Direct data access via `#contentrain` |
+   | SDK import | `query('model').all()` | Direct data access via `#contentrain` |
 
 3. **Preview reuse:**
    ```

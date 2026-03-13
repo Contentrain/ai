@@ -92,4 +92,16 @@ describe('IDE_RULE_FILES', () => {
       expect(path).toContain(ide)
     }
   })
+
+  it('matches the documented Windsurf rules filename', () => {
+    expect(IDE_RULE_FILES.windsurf).toBe('rules/windsurf/contentrain.windsurfrules')
+  })
+})
+
+describe('built IDE bundles', () => {
+  it('claude-code bundle references framework-specific guidance', async () => {
+    const filePath = join(PKG_ROOT, IDE_RULE_FILES['claude-code'])
+    const content = await readFile(filePath, 'utf-8')
+    expect(content).toMatch(/framework|nuxt|next|astro|sveltekit/i)
+  })
 })

@@ -86,7 +86,7 @@ export const ALL_SHARED_RULES = [
 export const IDE_RULE_FILES = {
   'claude-code': 'rules/claude-code/contentrain.md',
   'cursor': 'rules/cursor/contentrain.cursorrules',
-  'windsurf': 'rules/windsurf/contentrain.md',
+  'windsurf': 'rules/windsurf/contentrain.windsurfrules',
   'generic': 'rules/generic/contentrain.md',
 } as const
 

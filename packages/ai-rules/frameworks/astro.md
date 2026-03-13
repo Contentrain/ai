@@ -54,9 +54,9 @@ This import works in `.astro` component frontmatter, API routes, and any server-
 
 ```ts
 const posts = query('blog-post').locale('en').all()
-const featured = query('blog-post').locale('en').filter({ featured: true }).all()
+const featured = query('blog-post').locale('en').where('featured', true).all()
 const sorted = query('blog-post').locale('en').sort('publishedAt', 'desc').all()
-const post = query('blog-post').locale('en').byId('abc-123')
+const post = query('blog-post').locale('en').where('id', 'abc-123').first()
 ```
 
 ### 3.2 Singletons
@@ -69,7 +69,7 @@ const hero = singleton('hero').locale('en').get()
 
 ```ts
 const label = dictionary('ui-labels').locale('en').get('submit_button')
-const allLabels = dictionary('ui-labels').locale('en').all()
+const allLabels = dictionary('ui-labels').locale('en').get()
 ```
 
 ### 3.4 Documents
@@ -141,7 +141,7 @@ Provide global content (navigation, footer) from layouts:
 import { singleton, dictionary } from '#contentrain'
 
 const nav = singleton('navigation').locale('en').get()
-const footerLabels = dictionary('footer-labels').locale('en').all()
+const footerLabels = dictionary('footer-labels').locale('en').get()
 ---
 
 <nav>
@@ -211,7 +211,7 @@ Contentrain dictionaries can serve as the translation source for UI strings:
 import { dictionary } from '#contentrain'
 
 const locale = Astro.currentLocale ?? 'en'
-const t = dictionary('ui-labels').locale(locale).all()
+const t = dictionary('ui-labels').locale(locale).get()
 ---
 
 <button>{t.submit_button}</button>

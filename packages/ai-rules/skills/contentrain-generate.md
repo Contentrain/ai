@@ -115,23 +115,23 @@ Based on the detected stack and available models, show relevant examples using a
 #### Basic Query (all frameworks)
 
 ```ts
-import { query } from '#contentrain'
+import { query, singleton, dictionary } from '#contentrain'
 
-// Get all blog posts in English
-const posts = await query('blog-post')
+// Get all blog posts in English (SYNC — no await needed)
+const posts = query('blog-post')
   .locale('en')
-  .where('status', 'eq', 'published')
+  .where('status', 'published')
   .sort('createdAt', 'desc')
   .limit(10)
-  .get()
+  .all()
 
 // Get a singleton
-const hero = await query('hero')
+const hero = singleton('hero')
   .locale('en')
-  .first()
+  .get()
 
 // Get dictionary entries
-const labels = await query('ui-labels')
+const labels = dictionary('ui-labels')
   .locale('tr')
   .get()
 ```
@@ -139,20 +139,20 @@ const labels = await query('ui-labels')
 #### With Relations
 
 ```ts
-const posts = await query('blog-post')
+const posts = query('blog-post')
   .locale('en')
   .include('author')    // resolves relation field
-  .get()
+  .all()
 ```
 
 #### Framework-Specific Patterns
 
 | Stack | Usage Pattern |
 |---|---|
-| Nuxt 3 | `useAsyncData(() => query('hero').locale(locale).first())` |
-| Next.js | In `getStaticProps` or RSC: `const data = await query('hero').locale('en').first()` |
-| Astro | In frontmatter: `const posts = await query('blog-post').locale('en').get()` |
-| SvelteKit | In `+page.server.ts`: `export const load = () => ({ hero: query('hero').first() })` |
+| Nuxt 3 | `useAsyncData(() => singleton('hero').locale(locale).get())` |
+| Next.js | In RSC: `const data = singleton('hero').locale('en').get()` |
+| Astro | In frontmatter: `const posts = query('blog-post').locale('en').all()` |
+| SvelteKit | In `+page.server.ts`: `export const load = () => ({ hero: singleton('hero').locale('en').get() })` |
 
 ### 8. Offer Watch Mode
 

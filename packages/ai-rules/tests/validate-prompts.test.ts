@@ -89,6 +89,13 @@ describe('framework files', () => {
       const content = await readFile(filePath, 'utf-8')
       expect(content.trim().length).toBeGreaterThan(0)
     })
+
+    it(`frameworks/${fileName} does not teach unsupported SDK APIs`, async () => {
+      const content = await readFile(filePath, 'utf-8')
+      expect(content).not.toContain('.filter(')
+      expect(content).not.toContain('.byId(')
+      expect(content).not.toContain("dictionary('ui-labels').locale('en').all()")
+    })
   }
 })
 
@@ -102,5 +109,19 @@ describe('context bridge', () => {
   it('context-bridge.md is non-empty', async () => {
     const content = await readFile(filePath, 'utf-8')
     expect(content.trim().length).toBeGreaterThan(0)
+  })
+})
+
+describe('skill API examples', () => {
+  it('contentrain-generate skill does not teach unsupported query syntax', async () => {
+    const content = await readFile(join(PKG_ROOT, 'skills', 'contentrain-generate.md'), 'utf-8')
+    expect(content).not.toContain(".where('status', 'eq', 'published')")
+    // .get() is invalid on QueryBuilder but valid on singleton/dictionary
+    for (const line of content.split('\n')) {
+      if (line.includes('query(') && line.includes('.get()')) {
+        expect.unreachable(`Line uses .get() on query(): ${line.trim()}`)
+      }
+    }
+    expect(content).not.toContain('await query(')
   })
 })

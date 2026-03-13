@@ -54,9 +54,9 @@ This import works in React Server Components, server actions, route handlers, an
 
 ```ts
 const posts = query('blog-post').locale('en').all()
-const featured = query('blog-post').locale('en').filter({ featured: true }).all()
+const featured = query('blog-post').locale('en').where('featured', true).all()
 const sorted = query('blog-post').locale('en').sort('publishedAt', 'desc').all()
-const post = query('blog-post').locale('en').byId('abc-123')
+const post = query('blog-post').locale('en').where('id', 'abc-123').first()
 ```
 
 ### 3.2 Singletons
@@ -69,7 +69,7 @@ const hero = singleton('hero').locale('en').get()
 
 ```ts
 const label = dictionary('ui-labels').locale('en').get('submit_button')
-const allLabels = dictionary('ui-labels').locale('en').all()
+const allLabels = dictionary('ui-labels').locale('en').get()
 ```
 
 ### 3.4 Documents
