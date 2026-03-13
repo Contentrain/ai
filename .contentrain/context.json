@@ -3,12 +3,12 @@
     "locale": "en",
     "model": "",
     "source": "mcp-local",
-    "timestamp": "2026-03-13T19:38:34.082Z",
+    "timestamp": "2026-03-13T19:38:42.042Z",
     "tool": "contentrain_init"
   },
   "stats": {
     "entries": 0,
-    "lastSync": "2026-03-13T19:38:34.083Z",
+    "lastSync": "2026-03-13T19:38:42.043Z",
     "locales": [
       "en"
     ],
