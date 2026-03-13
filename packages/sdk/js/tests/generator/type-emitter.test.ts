@@ -120,6 +120,113 @@ describe('type-emitter', () => {
     expect(result).toContain('include(...fields: string[]): DocumentQuery<T>')
   })
 
+  it('generates fallback string overload for query', () => {
+    const models: ModelDefinition[] = [{
+      id: 'blog-post',
+      name: 'Blog Post',
+      kind: 'collection',
+      domain: 'blog',
+      i18n: true,
+    }]
+    const result = emitTypes(models)
+    expect(result).toContain("export declare function query(model: 'blog-post'): QueryBuilder<BlogPost>")
+    expect(result).toContain('export declare function query(model: string): QueryBuilder<Record<string, unknown>>')
+  })
+
+  it('generates fallback string overload for singleton', () => {
+    const models: ModelDefinition[] = [{
+      id: 'hero',
+      name: 'Hero',
+      kind: 'singleton',
+      domain: 'marketing',
+      i18n: true,
+    }]
+    const result = emitTypes(models)
+    expect(result).toContain("export declare function singleton(model: 'hero'): SingletonAccessor<Hero>")
+    expect(result).toContain('export declare function singleton(model: string): SingletonAccessor<Record<string, unknown>>')
+  })
+
+  it('generates fallback string overload for dictionary', () => {
+    const models: ModelDefinition[] = [{
+      id: 'error-messages',
+      name: 'Errors',
+      kind: 'dictionary',
+      domain: 'system',
+      i18n: true,
+    }]
+    const result = emitTypes(models)
+    expect(result).toContain("export declare function dictionary(model: 'error-messages'): DictionaryAccessor")
+    expect(result).toContain('export declare function dictionary(model: string): DictionaryAccessor')
+  })
+
+  it('generates fallback string overload for document', () => {
+    const models: ModelDefinition[] = [{
+      id: 'blog-article',
+      name: 'Blog Article',
+      kind: 'document',
+      domain: 'blog',
+      i18n: true,
+    }]
+    const result = emitTypes(models)
+    expect(result).toContain("export declare function document(model: 'blog-article'): DocumentQuery<BlogArticle>")
+    expect(result).toContain('export declare function document(model: string): DocumentQuery<Record<string, unknown>>')
+  })
+
+  it('generates overloads for all model kinds together', () => {
+    const models: ModelDefinition[] = [
+      { id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true },
+      { id: 'author', name: 'Author', kind: 'collection', domain: 'blog', i18n: false },
+      { id: 'hero-section', name: 'Hero Section', kind: 'singleton', domain: 'marketing', i18n: true },
+      { id: 'ui-texts', name: 'UI Texts', kind: 'dictionary', domain: 'system', i18n: true },
+      { id: 'blog-article', name: 'Blog Article', kind: 'document', domain: 'blog', i18n: true },
+    ]
+    const result = emitTypes(models)
+    // Collection overloads
+    expect(result).toContain("export declare function query(model: 'blog-post'): QueryBuilder<BlogPost>")
+    expect(result).toContain("export declare function query(model: 'author'): QueryBuilder<Author>")
+    expect(result).toContain('export declare function query(model: string): QueryBuilder<Record<string, unknown>>')
+    // Singleton overloads
+    expect(result).toContain("export declare function singleton(model: 'hero-section'): SingletonAccessor<HeroSection>")
+    expect(result).toContain('export declare function singleton(model: string): SingletonAccessor<Record<string, unknown>>')
+    // Dictionary overloads
+    expect(result).toContain("export declare function dictionary(model: 'ui-texts'): DictionaryAccessor")
+    expect(result).toContain('export declare function dictionary(model: string): DictionaryAccessor')
+    // Document overloads
+    expect(result).toContain("export declare function document(model: 'blog-article'): DocumentQuery<BlogArticle>")
+    expect(result).toContain('export declare function document(model: string): DocumentQuery<Record<string, unknown>>')
+  })
+
+  it('generates ContentrainClient interface with typed overloads', () => {
+    const models: ModelDefinition[] = [
+      { id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true },
+      { id: 'hero', name: 'Hero', kind: 'singleton', domain: 'marketing', i18n: true },
+      { id: 'translations', name: 'Translations', kind: 'dictionary', domain: 'system', i18n: true },
+      { id: 'blog-article', name: 'Blog Article', kind: 'document', domain: 'blog', i18n: true },
+    ]
+    const result = emitTypes(models)
+    expect(result).toContain('export interface ContentrainClient {')
+    expect(result).toContain("  query(model: 'blog-post'): QueryBuilder<BlogPost>")
+    expect(result).toContain('  query(model: string): QueryBuilder<Record<string, unknown>>')
+    expect(result).toContain("  singleton(model: 'hero'): SingletonAccessor<Hero>")
+    expect(result).toContain('  singleton(model: string): SingletonAccessor<Record<string, unknown>>')
+    expect(result).toContain("  dictionary(model: 'translations'): DictionaryAccessor")
+    expect(result).toContain('  dictionary(model: string): DictionaryAccessor')
+    expect(result).toContain("  document(model: 'blog-article'): DocumentQuery<BlogArticle>")
+    expect(result).toContain('  document(model: string): DocumentQuery<Record<string, unknown>>')
+    expect(result).toContain('export declare function createContentrainClient(): ContentrainClient')
+  })
+
+  it('generates createContentrainClient even with no models', () => {
+    const result = emitTypes([])
+    expect(result).toContain('export interface ContentrainClient {')
+    expect(result).toContain('export declare function createContentrainClient(): ContentrainClient')
+    // Fallback overloads still present
+    expect(result).toContain('export declare function query(model: string): QueryBuilder<Record<string, unknown>>')
+    expect(result).toContain('export declare function singleton(model: string): SingletonAccessor<Record<string, unknown>>')
+    expect(result).toContain('export declare function dictionary(model: string): DictionaryAccessor')
+    expect(result).toContain('export declare function document(model: string): DocumentQuery<Record<string, unknown>>')
+  })
+
   it('maps all field types correctly', () => {
     const models: ModelDefinition[] = [{
       id: 'test-all',

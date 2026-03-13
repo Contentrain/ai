@@ -79,33 +79,56 @@ export function emitTypes(models: ModelDefinition[]): string {
   const dictionaries = models.filter(m => m.kind === 'dictionary')
   const documents = models.filter(m => m.kind === 'document')
 
-  if (collections.length > 0) {
-    for (const m of collections) {
-      lines.push(`export declare function query(model: '${m.id}'): QueryBuilder<${kebabToPascal(m.id)}>`)
-    }
-    lines.push('')
+  // query() overloads
+  for (const m of collections) {
+    lines.push(`export declare function query(model: '${m.id}'): QueryBuilder<${kebabToPascal(m.id)}>`)
   }
+  lines.push('export declare function query(model: string): QueryBuilder<Record<string, unknown>>')
+  lines.push('')
 
-  if (singletons.length > 0) {
-    for (const m of singletons) {
-      lines.push(`export declare function singleton(model: '${m.id}'): SingletonAccessor<${kebabToPascal(m.id)}>`)
-    }
-    lines.push('')
+  // singleton() overloads
+  for (const m of singletons) {
+    lines.push(`export declare function singleton(model: '${m.id}'): SingletonAccessor<${kebabToPascal(m.id)}>`)
   }
+  lines.push('export declare function singleton(model: string): SingletonAccessor<Record<string, unknown>>')
+  lines.push('')
 
-  if (dictionaries.length > 0) {
-    for (const m of dictionaries) {
-      lines.push(`export declare function dictionary(model: '${m.id}'): DictionaryAccessor`)
-    }
-    lines.push('')
+  // dictionary() overloads
+  for (const m of dictionaries) {
+    lines.push(`export declare function dictionary(model: '${m.id}'): DictionaryAccessor`)
   }
+  lines.push('export declare function dictionary(model: string): DictionaryAccessor')
+  lines.push('')
 
-  if (documents.length > 0) {
-    for (const m of documents) {
-      lines.push(`export declare function document(model: '${m.id}'): DocumentQuery<${kebabToPascal(m.id)}>`)
-    }
-    lines.push('')
+  // document() overloads
+  for (const m of documents) {
+    lines.push(`export declare function document(model: '${m.id}'): DocumentQuery<${kebabToPascal(m.id)}>`)
   }
+  lines.push('export declare function document(model: string): DocumentQuery<Record<string, unknown>>')
+  lines.push('')
+
+  // Typed client interface
+  lines.push('export interface ContentrainClient {')
+  for (const m of collections) {
+    lines.push(`  query(model: '${m.id}'): QueryBuilder<${kebabToPascal(m.id)}>`)
+  }
+  lines.push('  query(model: string): QueryBuilder<Record<string, unknown>>')
+  for (const m of singletons) {
+    lines.push(`  singleton(model: '${m.id}'): SingletonAccessor<${kebabToPascal(m.id)}>`)
+  }
+  lines.push('  singleton(model: string): SingletonAccessor<Record<string, unknown>>')
+  for (const m of dictionaries) {
+    lines.push(`  dictionary(model: '${m.id}'): DictionaryAccessor`)
+  }
+  lines.push('  dictionary(model: string): DictionaryAccessor')
+  for (const m of documents) {
+    lines.push(`  document(model: '${m.id}'): DocumentQuery<${kebabToPascal(m.id)}>`)
+  }
+  lines.push('  document(model: string): DocumentQuery<Record<string, unknown>>')
+  lines.push('}')
+  lines.push('')
+  lines.push('export declare function createContentrainClient(): ContentrainClient')
+  lines.push('')
 
   return lines.join('\n') + '\n'
 }

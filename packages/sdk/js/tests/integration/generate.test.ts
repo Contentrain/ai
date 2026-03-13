@@ -57,13 +57,21 @@ describe('generate (integration)', () => {
     expect(types).toContain('export interface DictionaryAccessor')
     expect(types).toContain('export interface DocumentQuery<T>')
     expect(types).toContain('include(...fields: string[]): DocumentQuery<T>')
-    // Overloaded entry points
-    expect(types).toContain("export declare function query(model: 'blog-post')")
-    expect(types).toContain("export declare function query(model: 'author')")
-    expect(types).toContain("export declare function query(model: 'tag')")
-    expect(types).toContain("export declare function singleton(model: 'hero')")
-    expect(types).toContain("export declare function dictionary(model: 'error-messages')")
-    expect(types).toContain("export declare function document(model: 'blog-article')")
+    // Overloaded entry points — typed overloads
+    expect(types).toContain("export declare function query(model: 'blog-post'): QueryBuilder<BlogPost>")
+    expect(types).toContain("export declare function query(model: 'author'): QueryBuilder<Author>")
+    expect(types).toContain("export declare function query(model: 'tag'): QueryBuilder<Tag>")
+    expect(types).toContain("export declare function singleton(model: 'hero'): SingletonAccessor<Hero>")
+    expect(types).toContain("export declare function dictionary(model: 'error-messages'): DictionaryAccessor")
+    expect(types).toContain("export declare function document(model: 'blog-article'): DocumentQuery<BlogArticle>")
+    // Fallback overloads
+    expect(types).toContain('export declare function query(model: string): QueryBuilder<Record<string, unknown>>')
+    expect(types).toContain('export declare function singleton(model: string): SingletonAccessor<Record<string, unknown>>')
+    expect(types).toContain('export declare function dictionary(model: string): DictionaryAccessor')
+    expect(types).toContain('export declare function document(model: string): DocumentQuery<Record<string, unknown>>')
+    // Typed client interface
+    expect(types).toContain('export interface ContentrainClient {')
+    expect(types).toContain('export declare function createContentrainClient(): ContentrainClient')
   })
 
   it('generates ESM runtime with data imports and registries', async () => {
