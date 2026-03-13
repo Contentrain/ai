@@ -2,8 +2,9 @@ import { defineCommand } from 'citty'
 import { intro, outro, log, spinner, select, multiselect, confirm, isCancel } from '@clack/prompts'
 import { join } from 'node:path'
 import { simpleGit } from 'simple-git'
-import { detectStackInfo } from '@contentrain/mcp/util/detect'
+import { detectStack } from '@contentrain/mcp/util/detect'
 import { ensureDir, pathExists, writeJson } from '@contentrain/mcp/util/fs'
+import { writeContext } from '@contentrain/mcp/core/context'
 import { writeModel } from '@contentrain/mcp/core/model-manager'
 import { getTemplate, listTemplates } from '@contentrain/mcp/templates'
 import { createTransaction, buildBranchName } from '@contentrain/mcp/git/transaction'
@@ -11,7 +12,7 @@ import { scanSummary } from '@contentrain/mcp/core/scanner'
 import { resolveProjectRoot, loadProjectContext } from '../utils/context.js'
 import { pc } from '../utils/ui.js'
 import { writeFile, readFile, appendFile } from 'node:fs/promises'
-import type { ContentrainConfig, StackType, Vocabulary } from '@contentrain/types'
+import type { ContentrainConfig, Vocabulary } from '@contentrain/types'
 
 const COMMON_LOCALES = [
   { value: 'en', label: 'English' },
@@ -29,8 +30,6 @@ const COMMON_LOCALES = [
   { value: 'ru', label: 'Russian' },
 ]
 
-const ALL_STACKS: StackType[] = ['nuxt', 'next', 'astro', 'svelte', 'react-vite', 'react-native', 'expo', 'node', 'other']
-
 export default defineCommand({
   meta: {
     name: 'init',
@@ -39,7 +38,6 @@ export default defineCommand({
   args: {
     root: { type: 'string', description: 'Project root path', required: false },
     yes: { type: 'boolean', description: 'Skip prompts, use defaults', required: false },
-    force: { type: 'boolean', description: 'Re-initialize even if already initialized', required: false },
   },
   async run({ args }) {
     const projectRoot = await resolveProjectRoot(args.root)
@@ -48,33 +46,22 @@ export default defineCommand({
 
     // Already initialized?
     const ctx = await loadProjectContext(projectRoot)
-    if (ctx.initialized && !args.force) {
+    if (ctx.initialized) {
       log.warning('Project already initialized.')
       log.message(`Run ${pc.cyan('contentrain status')} to see current state.`)
-      log.message(`Run ${pc.cyan('contentrain init --force')} to re-initialize.`)
       outro('')
       return
     }
-    if (ctx.initialized && args.force) {
-      log.info('Re-initializing project...')
-    }
 
-    // 1. Detect stack (rich info)
+    // 1. Detect stack
     const s = spinner()
     s.start('Detecting project stack...')
-    const info = await detectStackInfo(projectRoot)
-    s.stop(`Detected: ${pc.cyan(info.name)} — ${info.description}`)
-
-    if (info.monorepo) {
-      log.info(`Monorepo: ${pc.green('Yes')}${info.monorepoTool ? ` (${info.monorepoTool})` : ''}`)
-    }
-    if (info.features.length > 0) {
-      log.info(`Features: ${info.features.map(f => pc.dim(f)).join(', ')}`)
-    }
+    const detectedStack = await detectStack(projectRoot)
+    s.stop(`Detected: ${pc.cyan(detectedStack)}`)
 
     if (args.yes) {
       await executeInit(projectRoot, {
-        stack: info.stack,
+        stack: detectedStack,
         locales: ['en'],
         domains: ['marketing', 'blog', 'system'],
         workflow: 'auto-merge',
@@ -88,12 +75,12 @@ export default defineCommand({
     const stackChoice = await select({
       message: 'Project framework',
       options: [
-        { value: info.stack, label: `${info.name} (detected)` },
-        ...ALL_STACKS
-          .filter(v => v !== info.stack)
+        { value: detectedStack, label: `${detectedStack} (detected)` },
+        ...['nuxt', 'next', 'astro', 'svelte', 'react-vite', 'other']
+          .filter(v => v !== detectedStack)
           .map(v => ({ value: v, label: v })),
       ],
-      initialValue: info.stack,
+      initialValue: detectedStack,
     })
     if (isCancel(stackChoice)) return handleCancel()
 
@@ -194,24 +181,6 @@ interface InitOptions {
   template: string | null
 }
 
-async function cleanupOrphanInitBranches(projectRoot: string): Promise<void> {
-  const git = simpleGit(projectRoot)
-  try {
-    const branches = await git.branch()
-    const orphans = branches.all.filter(b => b.startsWith('contentrain/new/init/'))
-    for (const orphan of orphans) {
-      try {
-        await git.raw(['worktree', 'prune'])
-        await git.deleteLocalBranch(orphan, true)
-      } catch {
-        // branch may be in use or already gone
-      }
-    }
-  } catch {
-    // git may not be initialized yet
-  }
-}
-
 async function executeInit(projectRoot: string, opts: InitOptions): Promise<void> {
   const s = spinner()
   s.start('Initializing...')
@@ -222,19 +191,8 @@ async function executeInit(projectRoot: string, opts: InitOptions): Promise<void
     await simpleGit(projectRoot).init()
   }
 
-  // Clean up orphan init branches from previous cancelled runs
-  await cleanupOrphanInitBranches(projectRoot)
-
   const branch = buildBranchName('new', 'init')
   const tx = await createTransaction(projectRoot, branch)
-
-  // Handle Ctrl+C gracefully
-  const onExit = async () => {
-    await tx.cleanup()
-    await cleanupBranch(projectRoot, branch)
-    process.exit(0)
-  }
-  process.on('SIGINT', onExit)
 
   try {
     await tx.write(async (wt) => {
@@ -292,30 +250,14 @@ async function executeInit(projectRoot: string, opts: InitOptions): Promise<void
 
     await tx.commit(`[contentrain] init: ${opts.stack} project setup`)
     await tx.complete()
+    await writeContext(projectRoot, { tool: 'contentrain_init', model: '' })
 
     s.stop('Initialized')
   } catch (error) {
     s.stop('Failed')
     throw error
   } finally {
-    process.removeListener('SIGINT', onExit)
     await tx.cleanup()
-    // Also delete the branch if merge failed (cleanup only removes worktree)
-    await cleanupBranch(projectRoot, branch)
-  }
-}
-
-async function cleanupBranch(projectRoot: string, branch: string): Promise<void> {
-  const git = simpleGit(projectRoot)
-  try {
-    // Ensure we're on main before deleting
-    const status = await git.status()
-    if (status.current === branch) {
-      await git.checkout('main')
-    }
-    await git.deleteLocalBranch(branch, true)
-  } catch {
-    // branch may not exist or already deleted
   }
 }
 

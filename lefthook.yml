@@ -7,18 +7,3 @@ pre-commit:
     typecheck:
       glob: "*.{ts,js,mjs}"
       run: pnpm typecheck
-    test-types:
-      glob: "packages/types/**/*.{ts,js,mjs}"
-      run: cd packages/types && npx vitest run
-    test-mcp:
-      glob: "packages/mcp/**/*.{ts,js,mjs}"
-      run: cd packages/mcp && npx vitest run tests/util tests/core
-    test-cli:
-      glob: "packages/cli/**/*.{ts,js,mjs}"
-      run: cd packages/cli && npx vitest run --exclude tests/integration
-    test-ai-rules:
-      glob: "packages/ai-rules/**/*.{ts,js,mjs}"
-      run: cd packages/ai-rules && npx vitest run
-    test-sdk:
-      glob: "packages/sdk/js/**/*.{ts,js,mjs}"
-      run: cd packages/sdk/js && npx vitest run

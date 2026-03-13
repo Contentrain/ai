@@ -51,14 +51,12 @@ describe('status command', () => {
   it('module loads without error', async () => {
     const mod = await import('../../src/commands/status.js')
     expect(mod.default).toBeDefined()
-    const meta = mod.default.meta as Record<string, unknown>
-    expect(meta?.name).toBe('status')
+    expect(mod.default.meta?.name).toBe('status')
   })
 
   it('supports --json flag', async () => {
     const mod = await import('../../src/commands/status.js')
-    const args = mod.default.args as Record<string, Record<string, unknown>>
-    expect(args?.json).toBeDefined()
-    expect(args?.json?.type).toBe('boolean')
+    expect(mod.default.args?.json).toBeDefined()
+    expect(mod.default.args?.json?.type).toBe('boolean')
   })
 })

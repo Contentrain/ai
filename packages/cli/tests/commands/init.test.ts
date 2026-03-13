@@ -72,21 +72,18 @@ describe('init command', () => {
   it('module loads without error', async () => {
     const mod = await import('../../src/commands/init.js')
     expect(mod.default).toBeDefined()
-    const meta = mod.default.meta as Record<string, unknown>
-    expect(meta?.name).toBe('init')
+    expect(mod.default.meta?.name).toBe('init')
   })
 
   it('has --yes flag for non-interactive mode', async () => {
     const mod = await import('../../src/commands/init.js')
-    const args = mod.default.args as Record<string, Record<string, unknown>>
-    expect(args?.yes).toBeDefined()
-    expect(args?.yes?.type).toBe('boolean')
+    expect(mod.default.args?.yes).toBeDefined()
+    expect(mod.default.args?.yes?.type).toBe('boolean')
   })
 
   it('has --root flag', async () => {
     const mod = await import('../../src/commands/init.js')
-    const args = mod.default.args as Record<string, Record<string, unknown>>
-    expect(args?.root).toBeDefined()
-    expect(args?.root?.type).toBe('string')
+    expect(mod.default.args?.root).toBeDefined()
+    expect(mod.default.args?.root?.type).toBe('string')
   })
 })

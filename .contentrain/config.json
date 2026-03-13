@@ -1,0 +1,16 @@
+{
+  "domains": [
+    "marketing",
+    "blog",
+    "system"
+  ],
+  "locales": {
+    "default": "en",
+    "supported": [
+      "en"
+    ]
+  },
+  "stack": "other",
+  "version": 1,
+  "workflow": "auto-merge"
+}

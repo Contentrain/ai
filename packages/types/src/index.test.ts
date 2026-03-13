@@ -89,15 +89,12 @@ describe('@contentrain/types', () => {
       expectTypeOf<'review'>().toMatchTypeOf<WorkflowMode>()
     })
 
-    it('StackType has 9 members', () => {
+    it('StackType has 6 members', () => {
       expectTypeOf<'nuxt'>().toMatchTypeOf<StackType>()
       expectTypeOf<'next'>().toMatchTypeOf<StackType>()
       expectTypeOf<'react-vite'>().toMatchTypeOf<StackType>()
-      expectTypeOf<'react-native'>().toMatchTypeOf<StackType>()
-      expectTypeOf<'expo'>().toMatchTypeOf<StackType>()
       expectTypeOf<'astro'>().toMatchTypeOf<StackType>()
       expectTypeOf<'svelte'>().toMatchTypeOf<StackType>()
-      expectTypeOf<'node'>().toMatchTypeOf<StackType>()
       expectTypeOf<'other'>().toMatchTypeOf<StackType>()
     })
 
