@@ -145,4 +145,19 @@ describe('type-emitter', () => {
     expect(result).toContain('f_relation?: string')
     expect(result).toContain('f_relations?: string[]')
   })
+
+  it('emits object shape for polymorphic relation fields', () => {
+    const models: ModelDefinition[] = [{
+      id: 'featured',
+      name: 'Featured',
+      kind: 'collection',
+      domain: 'home',
+      i18n: true,
+      fields: {
+        target: { type: 'relation', model: ['blog-post', 'page'] },
+      },
+    }]
+    const result = emitTypes(models)
+    expect(result).toContain("target?: { model: 'blog-post' | 'page'; ref: string }")
+  })
 })

@@ -56,6 +56,7 @@ function startWatch(projectRoot: string) {
   const crDir = join(projectRoot, '.contentrain')
   const modelsDir = join(crDir, 'models')
   const contentDir = join(crDir, 'content')
+  const configFile = join(crDir, 'config.json')
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -81,6 +82,7 @@ function startWatch(projectRoot: string) {
 
   try { watch(modelsDir, { recursive: true }, onChange) } catch { /* dir may not exist */ }
   try { watch(contentDir, { recursive: true }, onChange) } catch { /* dir may not exist */ }
+  try { watch(configFile, onChange) } catch { /* file may not exist */ }
 
   console.log('')
   console.log('Watching for changes in .contentrain/ ...')

@@ -117,9 +117,17 @@ function fieldToTS(field: FieldDef): string {
     case 'date': case 'datetime':
     case 'image': case 'video': case 'file':
     case 'relation':
+      if (Array.isArray(field.model) && field.model.length > 1) {
+        const union = field.model.map(m => `'${m}'`).join(' | ')
+        return `{ model: ${union}; ref: string }`
+      }
       return 'string'
 
     case 'relations':
+      if (Array.isArray(field.model) && field.model.length > 1) {
+        const union = field.model.map(m => `'${m}'`).join(' | ')
+        return `Array<{ model: ${union}; ref: string }>`
+      }
       return 'string[]'
 
     case 'number': case 'integer': case 'decimal': case 'percent': case 'rating':

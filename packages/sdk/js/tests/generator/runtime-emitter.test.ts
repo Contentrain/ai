@@ -152,6 +152,33 @@ describe('emitRuntimeModule — relation metadata', () => {
     expect(output).toContain('_collectionRegistry[model]')
   })
 
+  it('resolves document targets by slug in generated relation resolver', () => {
+    const models: ModelDefinition[] = [
+      {
+        id: 'blog-post',
+        name: 'Blog Post',
+        kind: 'collection',
+        domain: 'blog',
+        i18n: true,
+        fields: {
+          related: { type: 'relation', model: 'blog-article', required: true },
+        },
+      },
+      {
+        id: 'blog-article',
+        name: 'Blog Article',
+        kind: 'document',
+        domain: 'blog',
+        i18n: true,
+      },
+    ]
+    const output = emitRuntimeModule(models, [
+      { fileName: 'blog-post.en.mjs', content: '' },
+      { fileName: 'blog-article--welcome-post.en.mjs', content: '' },
+    ])
+    expect(output).toContain("x.slug === id")
+  })
+
   it('passes relation meta and resolver to QueryBuilder constructor', () => {
     const modelWithRels: ModelDefinition = {
       id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true,

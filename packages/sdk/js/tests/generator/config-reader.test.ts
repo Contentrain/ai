@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { readProjectManifest } from '../../src/generator/config-reader.js'
 import { join } from 'node:path'
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 
 const FIXTURE = join(import.meta.dirname, '../fixtures/basic-blog')
 
@@ -56,5 +58,46 @@ describe('config-reader', () => {
     expect(enFiles).toHaveLength(2)
     const trFiles = docFiles.filter(f => f.locale === 'tr')
     expect(trFiles).toHaveLength(2)
+  })
+
+  it('reads non-i18n JSON models from data.json', async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), 'contentrain-sdk-config-reader-'))
+
+    try {
+      await mkdir(join(tempRoot, '.contentrain', 'models'), { recursive: true })
+      await mkdir(join(tempRoot, '.contentrain', 'content', 'system', 'site-config'), { recursive: true })
+
+      await writeFile(join(tempRoot, '.contentrain', 'config.json'), JSON.stringify({
+        version: 1,
+        stack: 'other',
+        workflow: 'review',
+        locales: { default: 'en', supported: ['en', 'tr'] },
+        domains: ['system'],
+      }, null, 2) + '\n')
+
+      await writeFile(join(tempRoot, '.contentrain', 'models', 'site-config.json'), JSON.stringify({
+        id: 'site-config',
+        name: 'Site Config',
+        kind: 'singleton',
+        domain: 'system',
+        i18n: false,
+        fields: {
+          site_name: { type: 'string', required: true },
+        },
+      }, null, 2) + '\n')
+
+      await writeFile(join(tempRoot, '.contentrain', 'content', 'system', 'site-config', 'data.json'), JSON.stringify({
+        site_name: 'Contentrain',
+      }, null, 2) + '\n')
+
+      const manifest = await readProjectManifest(tempRoot)
+      const files = manifest.contentFiles.filter(f => f.modelId === 'site-config')
+
+      expect(files).toHaveLength(1)
+      expect(files[0]!.locale).toBeNull()
+      expect(files[0]!.filePath).toBe(join(tempRoot, '.contentrain', 'content', 'system', 'site-config', 'data.json'))
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true })
+    }
   })
 })

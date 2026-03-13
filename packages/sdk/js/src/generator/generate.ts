@@ -1,10 +1,11 @@
 import { join } from 'node:path'
+import { rm } from 'node:fs/promises'
 import { readProjectManifest } from './config-reader.js'
 import { emitTypes } from './type-emitter.js'
 import { emitDataModules } from './data-emitter.js'
 import { emitRuntimeModule, emitCjsWrapper } from './runtime-emitter.js'
 import { injectImports } from './package-json.js'
-import { writeText } from './utils.js'
+import { readDir, writeText } from './utils.js'
 
 export interface GenerateOptions {
   projectRoot: string
@@ -30,10 +31,21 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
 
   // 3. Generate all output content (sync — pure string transforms)
   const typesContent = emitTypes(manifest.models)
-  const runtimeContent = emitRuntimeModule(manifest.models, dataModules)
+  const runtimeContent = emitRuntimeModule(manifest.models, dataModules, manifest.config.locales.default)
   const cjsContent = emitCjsWrapper(manifest.models)
 
-  // 4. Write all files in parallel
+  // 4. Clean stale data modules
+  const newFileNames = new Set(dataModules.map(dm => dm.fileName))
+  try {
+    const existing = await readDir(dataDir)
+    await Promise.all(
+      existing
+        .filter(f => !newFileNames.has(f))
+        .map(f => rm(join(dataDir, f), { force: true })),
+    )
+  } catch { /* dataDir may not exist yet */ }
+
+  // 5. Write all files in parallel
   const dataFileNames = dataModules.map(dm => `data/${dm.fileName}`)
   await Promise.all([
     writeText(join(clientDir, 'index.d.ts'), typesContent),
@@ -42,7 +54,7 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
     ...dataModules.map(dm => writeText(join(dataDir, dm.fileName), dm.content)),
   ])
 
-  // 5. Inject #imports into package.json
+  // 6. Inject #imports into package.json
   const packageJsonUpdated = await injectImports(projectRoot)
 
   return {

@@ -99,8 +99,8 @@ async function mapContentFiles(
     return results.filter(Boolean) as ContentFileRef[]
   }
 
-  // Non-i18n: use default locale to resolve correct file path
-  const filePath = jsonFilePath(dir, model, config.locales.default)
+  // Non-i18n: always data.json
+  const filePath = join(dir, 'data.json')
   const content = await readJson(filePath)
   if (content === null) return []
   return [{ modelId: model.id, locale: null, filePath, kind: model.kind }]

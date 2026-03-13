@@ -16,15 +16,18 @@ export class QueryBuilder<T extends object> {
   private _includes: string[] = []
   private _relationMeta: Record<string, RelationMeta>
   private _resolver: RelationResolver | null
+  private _defaultLocale: string | null
 
   constructor(
     data: Map<string, T[]>,
     relationMeta?: Record<string, RelationMeta>,
     resolver?: RelationResolver,
+    defaultLocale?: string,
   ) {
     this._data = data
     this._relationMeta = relationMeta ?? {}
     this._resolver = resolver ?? null
+    this._defaultLocale = defaultLocale ?? null
   }
 
   locale(lang: string): this {
@@ -108,6 +111,10 @@ export class QueryBuilder<T extends object> {
     if (this._locale) {
       return [...(this._data.get(this._locale) ?? [])]
     }
+    if (this._defaultLocale) {
+      const defaultData = this._data.get(this._defaultLocale)
+      if (defaultData) return [...defaultData]
+    }
     const firstKey = this._data.keys().next().value
     if (firstKey !== undefined) {
       return [...(this._data.get(firstKey) ?? [])]
@@ -127,14 +134,24 @@ export class QueryBuilder<T extends object> {
       if (meta.multi) {
         const ids = src[field]
         if (Array.isArray(ids)) {
-          dst[field] = ids.map(
-            id => this._resolveId(targets, id as string) ?? id,
-          )
+          dst[field] = ids.map((id) => {
+            if (typeof id === 'string') {
+              return this._resolveId(targets, id) ?? id
+            }
+            if (typeof id === 'object' && id !== null && 'model' in id && 'ref' in id) {
+              const polyObj = id as { model: string; ref: string }
+              return this._resolveId([polyObj.model], polyObj.ref) ?? id
+            }
+            return id
+          })
         }
       } else {
         const id = src[field]
         if (typeof id === 'string') {
           dst[field] = this._resolveId(targets, id) ?? id
+        } else if (typeof id === 'object' && id !== null && 'model' in id && 'ref' in id) {
+          const polyObj = id as { model: string; ref: string }
+          dst[field] = this._resolveId([polyObj.model], polyObj.ref) ?? id
         }
       }
     }

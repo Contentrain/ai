@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { generate } from '../../src/generator/generate.js'
-import { readFile, rm } from 'node:fs/promises'
+import { access, cp, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { tmpdir } from 'node:os'
 
 const FIXTURE = join(import.meta.dirname, '../fixtures/basic-blog')
 const CLIENT_DIR = join(FIXTURE, '.contentrain', 'client')
@@ -180,5 +182,50 @@ describe('generate (integration)', () => {
     expect(result1.dataModulesCount).toBe(result2.dataModulesCount)
     expect(types1).toBe(types2)
     expect(esm1).toBe(esm2)
+  })
+
+  it('uses config.locales.default when locale() is omitted', async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), 'contentrain-sdk-default-locale-'))
+
+    try {
+      await cp(FIXTURE, tempRoot, { recursive: true })
+
+      const configPath = join(tempRoot, '.contentrain', 'config.json')
+      const rawConfig = JSON.parse(await readFile(configPath, 'utf-8')) as Record<string, unknown>
+      rawConfig['locales'] = { default: 'en', supported: ['tr', 'en'] }
+      await writeFile(configPath, JSON.stringify(rawConfig, null, 2) + '\n', 'utf-8')
+
+      await generate({ projectRoot: tempRoot })
+
+      const clientPath = pathToFileURL(join(tempRoot, '.contentrain', 'client', 'index.mjs')).href
+      const client = await import(clientPath)
+
+      expect(client.singleton('hero').get().title).toBe('Welcome to Contentrain')
+      expect(client.query('blog-post').first().title).toBe('Getting Started with Contentrain')
+      // document().first() returns alphabetically first slug — 'design-tips' before 'welcome-post'
+      expect(client.document('blog-article').first().title).toBe('Design Tips')
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('removes stale data modules when source files disappear', async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), 'contentrain-sdk-stale-client-'))
+
+    try {
+      await cp(FIXTURE, tempRoot, { recursive: true })
+
+      await generate({ projectRoot: tempRoot })
+
+      const staleModulePath = join(tempRoot, '.contentrain', 'client', 'data', 'blog-post.tr.mjs')
+      await access(staleModulePath)
+
+      await unlink(join(tempRoot, '.contentrain', 'content', 'blog', 'blog-post', 'tr.json'))
+      await generate({ projectRoot: tempRoot })
+
+      await expect(access(staleModulePath)).rejects.toThrow()
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true })
+    }
   })
 })

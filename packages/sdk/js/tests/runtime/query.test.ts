@@ -221,6 +221,23 @@ describe('QueryBuilder — relation resolution', () => {
     expect(result!.author).toEqual({ id: 'auth01', name: 'Jane Doe', email: 'jane@example.com' })
   })
 
+  it('resolves polymorphic relation objects using model+ref storage format', () => {
+    const polyMeta: Record<string, RelationMeta> = {
+      author: { target: ['author', 'tag'], multi: false },
+    }
+    const posts = [{
+      id: 'p1',
+      title: 'Polymorphic Post',
+      author: { model: 'tag', ref: 'tag02' },
+      tags: [],
+    }] as unknown as PostWithRelations[]
+    const data = new Map<string, PostWithRelations[]>([['en', posts]])
+    const builder = new QueryBuilder(data, polyMeta, RESOLVER)
+    const result = builder.locale('en').include('author').first()
+    expect(result).toBeDefined()
+    expect(result!.author).toEqual({ id: 'tag02', label: 'Design' })
+  })
+
   it('include works with filter + pagination', () => {
     const results = createRelationBuilder()
       .locale('en')
