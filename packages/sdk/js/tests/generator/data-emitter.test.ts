@@ -3,6 +3,8 @@ import { emitDataModules } from '../../src/generator/data-emitter.js'
 import type { ModelDefinition } from '@contentrain/types'
 import type { ContentFileRef } from '../../src/generator/config-reader.js'
 import { join } from 'node:path'
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 
 const FIXTURE = join(import.meta.dirname, '../fixtures/basic-blog')
 
@@ -95,5 +97,56 @@ describe('data-emitter', () => {
     expect(modules).toHaveLength(1)
     expect(modules[0]!.fileName).toBe('error-messages.tr.mjs')
     expect(modules[0]!.content).toContain('"not_found": "Sayfa bulunamadı"')
+  })
+
+  it('parses nested object frontmatter fields for documents', async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), 'contentrain-sdk-frontmatter-'))
+
+    try {
+      const docPath = join(tempRoot, 'landing-page.md')
+      await mkdir(tempRoot, { recursive: true })
+      await writeFile(docPath, `---
+title: "Landing"
+seo:
+  title: "SEO Title"
+  noindex: true
+---
+# Landing
+
+Body.`, 'utf-8')
+
+      const models: ModelDefinition[] = [{
+        id: 'page',
+        name: 'Page',
+        kind: 'document',
+        domain: 'site',
+        i18n: false,
+        fields: {
+          title: { type: 'string', required: true },
+          seo: {
+            type: 'object',
+            fields: {
+              title: { type: 'string' },
+              noindex: { type: 'boolean' },
+            },
+          },
+        },
+      }]
+
+      const refs: ContentFileRef[] = [{
+        modelId: 'page',
+        locale: null,
+        filePath: docPath,
+        kind: 'document',
+        slug: 'landing-page',
+      }]
+
+      const modules = await emitDataModules(models, refs)
+      const parsed = JSON.parse(modules[0]!.content.replace('export default ', '').trim()) as Record<string, unknown>
+
+      expect(parsed['seo']).toEqual({ title: 'SEO Title', noindex: true })
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true })
+    }
   })
 })

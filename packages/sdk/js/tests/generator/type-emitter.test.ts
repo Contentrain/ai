@@ -97,6 +97,11 @@ describe('type-emitter', () => {
     expect(result).toContain("export declare function singleton(model: 'hero'): SingletonAccessor<Hero>")
   })
 
+  it('includes relation resolution API on SingletonAccessor', () => {
+    const result = emitTypes([])
+    expect(result).toContain('include(...fields: string[]): SingletonAccessor<T>')
+  })
+
   it('generates dictionary overloads', () => {
     const models: ModelDefinition[] = [{
       id: 'error-messages',

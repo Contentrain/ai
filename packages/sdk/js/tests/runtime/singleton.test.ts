@@ -33,4 +33,9 @@ describe('SingletonAccessor', () => {
   it('throws for unknown locale', () => {
     expect(() => createAccessor().locale('fr').get()).toThrow()
   })
+
+  it('exposes include() for relation-bearing singleton models', () => {
+    const accessor = createAccessor() as unknown as { include?: (...fields: string[]) => unknown }
+    expect(typeof accessor.include).toBe('function')
+  })
 })

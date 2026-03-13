@@ -128,7 +128,15 @@ export function emitRuntimeModule(models: ModelDefinition[], dataModules: DataMo
     lines.push('export function singleton(model) {')
     lines.push('  const data = _singletonRegistry[model]')
     lines.push('  if (!data) throw new Error(`Unknown singleton model: "${model}"`)')
-    lines.push(defaultLocale ? '  return new SingletonAccessor(data, _defaultLocale)' : '  return new SingletonAccessor(data)')
+    if (relationMetaMap.size > 0 && defaultLocale) {
+      lines.push('  return new SingletonAccessor(data, _defaultLocale, _relationMeta[model], _resolveEntry)')
+    } else if (relationMetaMap.size > 0) {
+      lines.push('  return new SingletonAccessor(data, undefined, _relationMeta[model], _resolveEntry)')
+    } else if (defaultLocale) {
+      lines.push('  return new SingletonAccessor(data, _defaultLocale)')
+    } else {
+      lines.push('  return new SingletonAccessor(data)')
+    }
     lines.push('}')
     lines.push('')
   }
@@ -320,15 +328,26 @@ class QueryBuilder {
 }
 
 class SingletonAccessor {
-  constructor(data, defaultLocale) { this._data = data; this._locale = null; this._defaultLocale = defaultLocale || null; }
+  constructor(data, defaultLocale, relationMeta, resolveEntry) { this._data = data; this._locale = null; this._defaultLocale = defaultLocale || null; this._includes = []; this._relationMeta = relationMeta || {}; this._resolver = resolveEntry; }
   locale(lang) { this._locale = lang; return this; }
+  include(...fields) { this._includes.push(...fields); return this; }
   get() {
-    if (this._locale) { const d = this._data.get(this._locale); if (!d) throw new Error(\`No data for locale "\${this._locale}"\`); return d; }
-    if (this._defaultLocale) { const d = this._data.get(this._defaultLocale); if (d) return d; }
-    const key = this._data.keys().next().value;
-    const d = this._data.get(key);
+    const locale = this._locale || this._defaultLocale;
+    let d = locale ? this._data.get(locale) : undefined;
+    if (!d) { const key = this._data.keys().next().value; d = key !== undefined ? this._data.get(key) : undefined; }
     if (!d) throw new Error('No data available');
+    if (this._includes.length > 0 && this._resolver) return this._resolveIncludes(d, locale || 'en');
     return d;
+  }
+  _resolveIncludes(item, locale) {
+    const resolved = { ...item };
+    for (const field of this._includes) {
+      const meta = this._relationMeta[field]; if (!meta) continue;
+      const targets = Array.isArray(meta.target) ? meta.target : [meta.target];
+      if (meta.multi) { const ids = item[field]; if (Array.isArray(ids)) { resolved[field] = ids.map(id => { if (typeof id === 'string') { for (const t of targets) { const r = this._resolver(t, id, locale); if (r) return r; } return id; } if (typeof id === 'object' && id !== null && 'model' in id && 'ref' in id) { const r = this._resolver(id.model, id.ref, locale); if (r) return r; } return id; }); } }
+      else { const id = item[field]; if (typeof id === 'string') { for (const t of targets) { const r = this._resolver(t, id, locale); if (r) { resolved[field] = r; break; } } } else if (typeof id === 'object' && id !== null && 'model' in id && 'ref' in id) { const r = this._resolver(id.model, id.ref, locale); if (r) resolved[field] = r; } }
+    }
+    return resolved;
   }
 }
 

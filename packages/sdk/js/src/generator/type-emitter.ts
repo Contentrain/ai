@@ -51,6 +51,7 @@ export function emitTypes(models: ModelDefinition[]): string {
 
   lines.push(`export interface SingletonAccessor<T> {
   locale(lang: string): SingletonAccessor<T>
+  include(...fields: string[]): SingletonAccessor<T>
   get(): T
 }`)
   lines.push('')

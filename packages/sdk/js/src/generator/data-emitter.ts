@@ -85,47 +85,65 @@ function parseFrontmatter(text: string): { frontmatter: Record<string, unknown>;
   const body = match[2]!.trim()
   const frontmatter: Record<string, unknown> = {}
 
-  let currentKey: string | null = null
-  let currentArray: string[] | null = null
+  // Stack-based parser that handles nested objects and arrays
+  const lines = fmStr.split('\n')
+  const stack: Array<{ obj: Record<string, unknown>; indent: number }> = [{ obj: frontmatter, indent: -1 }]
 
-  for (const line of fmStr.split('\n')) {
+  for (const line of lines) {
+    // Skip empty lines
+    if (line.trim() === '') continue
+
     // Array item
-    if (/^\s+-\s+/.test(line) && currentKey) {
-      const value = line.replace(/^\s+-\s+/, '').trim()
-      if (!currentArray) currentArray = []
-      currentArray.push(value)
+    const arrayMatch = line.match(/^(\s*)-\s+(.*)$/)
+    if (arrayMatch) {
+      const arrIndent = arrayMatch[1]!.length
+      const value = arrayMatch[2]!.trim()
+      // Find the parent that owns this array
+      while (stack.length > 1 && stack[stack.length - 1]!.indent >= arrIndent) {
+        stack.pop()
+      }
+      const parent = stack[stack.length - 1]!.obj
+      const lastKey = Object.keys(parent).pop()
+      if (lastKey && Array.isArray(parent[lastKey])) {
+        (parent[lastKey] as unknown[]).push(parseValue(value))
+      }
       continue
     }
 
-    // Flush previous array
-    if (currentKey && currentArray) {
-      frontmatter[currentKey] = currentArray
-      currentKey = null
-      currentArray = null
-    }
-
-    const kvMatch = line.match(/^([\w][\w.-]*)\s*:\s*(.*)$/)
+    // Key-value pair
+    const kvMatch = line.match(/^(\s*)([\w][\w.-]*)\s*:\s*(.*)$/)
     if (!kvMatch) continue
 
-    const key = kvMatch[1]!
-    const rawValue = kvMatch[2]!.trim()
+    const kvIndent = kvMatch[1]!.length
+    const key = kvMatch[2]!
+    const rawValue = kvMatch[3]!.trim()
+
+    // Pop stack to find correct parent based on indentation
+    while (stack.length > 1 && stack[stack.length - 1]!.indent >= kvIndent) {
+      stack.pop()
+    }
+    const current = stack[stack.length - 1]!.obj
 
     if (rawValue === '') {
-      currentKey = key
-      currentArray = []
+      // Could be nested object or array — peek next line
+      const nextLineIdx = lines.indexOf(line) + 1
+      const nextLine = nextLineIdx < lines.length ? lines[nextLineIdx]! : ''
+      if (nextLine.trim().startsWith('-')) {
+        current[key] = []
+      } else {
+        const nested: Record<string, unknown> = {}
+        current[key] = nested
+        stack.push({ obj: nested, indent: kvIndent })
+      }
       continue
     }
 
     if (rawValue.startsWith('[') && rawValue.endsWith(']')) {
-      frontmatter[key] = rawValue.slice(1, -1).split(',').map(s => s.trim()).filter(Boolean)
+      current[key] = rawValue.slice(1, -1).split(',').map(s => s.trim()).filter(Boolean)
       continue
     }
 
-    frontmatter[key] = parseValue(rawValue)
-  }
-
-  if (currentKey && currentArray) {
-    frontmatter[currentKey] = currentArray
+    current[key] = parseValue(rawValue)
   }
 
   return { frontmatter, body }
