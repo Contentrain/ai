@@ -59,6 +59,16 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
         }
       }
 
+      // Reject invalid locale_strategy + i18n combinations
+      if (input.locale_strategy === 'none' && input.i18n !== false) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: 'locale_strategy "none" requires i18n:false. The "none" strategy stores a single file without locale encoding, which is incompatible with multi-locale content. Use "file", "suffix", or "directory" for i18n models.',
+          }) }],
+          isError: true,
+        }
+      }
+
       // Branch health gate
       const health = await checkBranchHealth(projectRoot)
       if (health.blocked) {

@@ -101,7 +101,7 @@ describe('countEntries', () => {
     },
   )
 
-  it.each(['suffix', 'directory', 'none'] as const)(
+  it.each(['suffix', 'directory'] as const)(
     'counts collection entries correctly for locale_strategy:%s',
     async (localeStrategy) => {
       const model = createCollectionModel(localeStrategy)
@@ -119,7 +119,7 @@ describe('countEntries', () => {
     },
   )
 
-  it.each(['suffix', 'directory', 'none'] as const)(
+  it.each(['suffix', 'directory'] as const)(
     'counts singleton entries correctly for locale_strategy:%s',
     async (localeStrategy) => {
       const model = createSingletonModel(localeStrategy)
@@ -136,4 +136,45 @@ describe('countEntries', () => {
       expect(stats.locales).toEqual({ en: 1, tr: 1 })
     },
   )
+
+  it('counts non-i18n collection entries (locale_strategy:none implies i18n:false)', async () => {
+    const model: ModelDefinition = {
+      id: 'authors-none',
+      name: 'Authors None',
+      kind: 'collection',
+      domain: 'blog',
+      i18n: false,
+      locale_strategy: 'none',
+      fields: { name: { type: 'string', required: true } },
+    }
+    await prepareModelDirs(model)
+
+    await writeContent(testDir, model, [
+      { id: 'alice', locale: 'en', data: { name: 'Alice' } },
+      { id: 'bob', locale: 'en', data: { name: 'Bob' } },
+    ], config)
+
+    const stats = await countEntries(testDir, model)
+    expect(stats.total).toBe(2)
+  })
+
+  it('counts non-i18n singleton entries (locale_strategy:none implies i18n:false)', async () => {
+    const model: ModelDefinition = {
+      id: 'hero-none',
+      name: 'Hero None',
+      kind: 'singleton',
+      domain: 'blog',
+      i18n: false,
+      locale_strategy: 'none',
+      fields: { title: { type: 'string', required: true } },
+    }
+    await prepareModelDirs(model)
+
+    await writeContent(testDir, model, [
+      { locale: 'en', data: { title: 'Hello' } },
+    ], config)
+
+    const stats = await countEntries(testDir, model)
+    expect(stats.total).toBe(1)
+  })
 })

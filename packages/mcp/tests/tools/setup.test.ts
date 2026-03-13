@@ -131,6 +131,7 @@ describe('contentrain_scaffold', () => {
     expect(data.content_created).toBeGreaterThan(0)
     expect(data.vocabulary_terms_added).toBeGreaterThan(0)
     expect(data.context_updated).toBe(true)
+    expect(data.git.commit).toBeDefined()
 
     // Verify model files exist
     expect(await pathExists(join(testDir, '.contentrain', 'models', 'blog-post.json'))).toBe(true)
