@@ -4,6 +4,7 @@ import { buildGraph } from '@contentrain/mcp/core/graph-builder'
 import { scanSummary, scanCandidates } from '@contentrain/mcp/core/scanner'
 import { applyExtract, applyReuse } from '@contentrain/mcp/core/apply-manager'
 import type { ExtractionEntry, PatchEntry } from '@contentrain/mcp/core/apply-manager'
+import { readConfig } from '@contentrain/mcp/core/config'
 import { resolveProjectRoot, loadProjectContext, requireInitialized } from '../utils/context.js'
 import { pc, formatCount } from '../utils/ui.js'
 
@@ -285,11 +286,17 @@ async function executeReuse(
   sourceMap: Array<{ model: string; locale: string; value: string; file: string; line: number }>,
   modelId: string,
 ): Promise<void> {
+  // Generate stack-aware replacement expressions
+  const config = await readConfig(projectRoot)
+  const stack = config?.stack ?? 'other'
+  const { expression, importStatement } = getReplacementPattern(stack)
+
   const patches: PatchEntry[] = sourceMap.map(s => ({
     file: s.file,
     line: s.line,
     old_value: s.value,
-    new_expression: `{t('${slugify(s.value)}')}`,
+    new_expression: expression(slugify(s.value)),
+    import_statement: importStatement,
   }))
 
   const s = spinner()
@@ -338,6 +345,53 @@ function slugify(value: string): string {
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_|_$/g, '')
     .slice(0, 50)
+}
+
+function getReplacementPattern(stack: string): {
+  expression: (key: string) => string
+  importStatement: string
+} {
+  switch (stack) {
+    case 'nuxt':
+      return {
+        expression: (key) => `{{ $t('${key}') }}`,
+        importStatement: '', // $t is globally available in Nuxt
+      }
+    case 'next':
+    case 'react':
+    case 'react-native':
+    case 'expo':
+      return {
+        expression: (key) => `{t('${key}')}`,
+        importStatement: "import { useTranslation } from 'react-i18next'",
+      }
+    case 'vue':
+      return {
+        expression: (key) => `{{ t('${key}') }}`,
+        importStatement: "import { useI18n } from 'vue-i18n'",
+      }
+    case 'svelte':
+    case 'sveltekit':
+      return {
+        expression: (key) => `{$t('${key}')}`,
+        importStatement: "import { t } from '$lib/i18n'",
+      }
+    case 'astro':
+      return {
+        expression: (key) => `{t('${key}')}`,
+        importStatement: "import { t } from '@/i18n'",
+      }
+    case 'angular':
+      return {
+        expression: (key) => `{{ '${key}' | translate }}`,
+        importStatement: "import { TranslateModule } from '@ngx-translate/core'",
+      }
+    default:
+      return {
+        expression: (key) => `t('${key}')`,
+        importStatement: '', // Generic — user must configure
+      }
+  }
 }
 
 function handleCancel(): void {

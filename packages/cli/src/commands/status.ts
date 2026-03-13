@@ -113,7 +113,16 @@ export default defineCommand({
       const git = simpleGit(projectRoot)
       const branches = await git.branch(['--list', 'contentrain/*'])
       if (branches.all.length > 0) {
-        log.info(pc.bold(`\nPending branches (${branches.all.length})`))
+        const count = branches.all.length
+        if (count >= 80) {
+          log.error(pc.bold(`\nBLOCKED: ${count} active contentrain branches (limit: 80)`))
+          log.message(`  New writes are blocked. Merge or delete old branches with ${pc.cyan('contentrain diff')}.`)
+        } else if (count >= 50) {
+          log.warning(pc.bold(`\nWARNING: ${count} active contentrain branches (limit: 50)`))
+          log.message(`  Consider merging or deleting old branches with ${pc.cyan('contentrain diff')}.`)
+        } else {
+          log.info(pc.bold(`\nPending branches (${count})`))
+        }
         for (const branch of branches.all) {
           log.message(`  ${pc.yellow('●')} ${branch}`)
         }
