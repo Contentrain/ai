@@ -33,6 +33,10 @@ export default defineCommand({
       log.message(`  Types:  ${result.typesCount}`)
       log.message(`  Data:   ${result.dataModulesCount} modules`)
 
+      if (result.packageJsonUpdated) {
+        log.info(`${pc.cyan('#contentrain')} imports added to package.json`)
+      }
+
       if (args.watch) {
         log.info('Watching for changes... (Ctrl+C to stop)')
 

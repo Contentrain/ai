@@ -20,12 +20,33 @@ export default defineCommand({
     const ctx = await loadProjectContext(projectRoot)
 
     if (args.json) {
-      process.stdout.write(JSON.stringify({
+      const jsonResult: Record<string, unknown> = {
         initialized: ctx.initialized,
         config: ctx.config,
         models: ctx.models,
         context: ctx.context,
-      }, null, 2))
+      }
+
+      if (ctx.initialized && ctx.config) {
+        // Validation
+        try {
+          const validation = await validateProject(projectRoot, {})
+          jsonResult['validation'] = {
+            valid: validation.valid,
+            errors: validation.summary.errors,
+            warnings: validation.summary.warnings,
+          }
+        } catch { /* best effort */ }
+
+        // Pending branches
+        try {
+          const git = simpleGit(projectRoot)
+          const branches = await git.branch(['--list', 'contentrain/*'])
+          jsonResult['pending_branches'] = branches.all
+        } catch { /* best effort */ }
+      }
+
+      process.stdout.write(JSON.stringify(jsonResult, null, 2))
       return
     }
 

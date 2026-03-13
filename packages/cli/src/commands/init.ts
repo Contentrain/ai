@@ -283,15 +283,16 @@ async function executeInit(projectRoot: string, opts: InitOptions): Promise<void
 
 async function updateGitignore(projectRoot: string): Promise<void> {
   const gitignorePath = join(projectRoot, '.gitignore')
-  const cacheEntry = '.contentrain/.cache/'
+  const ignoreEntries = ['.contentrain/.cache/', '.contentrain/client/']
 
   if (await pathExists(gitignorePath)) {
     const content = await readFile(gitignorePath, 'utf-8')
-    if (!content.includes(cacheEntry)) {
-      await appendFile(gitignorePath, `\n# Contentrain cache\n${cacheEntry}\n`)
+    const missing = ignoreEntries.filter(e => !content.includes(e))
+    if (missing.length > 0) {
+      await appendFile(gitignorePath, `\n# Contentrain\n${missing.join('\n')}\n`)
     }
   } else {
-    await writeFile(gitignorePath, `# Contentrain cache\n${cacheEntry}\n`, 'utf-8')
+    await writeFile(gitignorePath, `# Contentrain\n${ignoreEntries.join('\n')}\n`, 'utf-8')
   }
 }
 
