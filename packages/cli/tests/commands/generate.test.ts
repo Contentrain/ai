@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const messageMock = vi.fn()
 const successMock = vi.fn()
+const infoMock = vi.fn()
+const watchMock = vi.fn()
 
 vi.mock('../../src/utils/context.js', () => ({
   resolveProjectRoot: vi.fn().mockResolvedValue('/test/project'),
@@ -24,6 +26,10 @@ vi.mock('@contentrain/query/generate', () => ({
   }),
 }))
 
+vi.mock('node:fs', () => ({
+  watch: watchMock,
+}))
+
 vi.mock('@clack/prompts', () => ({
   intro: vi.fn(),
   outro: vi.fn(),
@@ -32,7 +38,7 @@ vi.mock('@clack/prompts', () => ({
     success: successMock,
     error: vi.fn(),
     warning: vi.fn(),
-    info: vi.fn(),
+    info: infoMock,
   },
   spinner: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })),
 }))
@@ -48,5 +54,22 @@ describe('generate command', () => {
 
     expect(successMock).toHaveBeenCalled()
     expect(messageMock).toHaveBeenCalledWith(expect.stringContaining('#contentrain'))
+  })
+
+  it('should watch config.json changes because generation depends on project config', async () => {
+    watchMock.mockImplementation(() => ({ close: vi.fn() }))
+
+    const mod = await import('../../src/commands/generate.js')
+    const runPromise = mod.default.run?.({ args: { root: '/test/project', watch: true } })
+
+    await Promise.resolve()
+
+    expect(watchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/.contentrain/config.json'),
+      expect.anything(),
+      expect.any(Function),
+    )
+
+    void runPromise
   })
 })

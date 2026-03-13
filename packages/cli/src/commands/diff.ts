@@ -100,7 +100,7 @@ export default defineCommand({
     const action = await select({
       message: 'Action',
       options: [
-        { value: 'merge', label: 'Merge into current branch' },
+        { value: 'merge', label: `Merge into ${baseBranch}` },
         { value: 'delete', label: 'Delete branch (reject changes)' },
         { value: 'skip', label: 'Leave for later' },
       ],

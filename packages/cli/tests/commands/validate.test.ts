@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 
+const errorMock = vi.fn()
+
 vi.mock('@contentrain/mcp/core/config', () => ({
   readConfig: vi.fn().mockResolvedValue({
     version: 1, stack: 'next', workflow: 'auto-merge',
@@ -25,6 +27,13 @@ vi.mock('@contentrain/mcp/core/validator', () => ({
   }),
 }))
 
+vi.mock('@contentrain/mcp/git/branch-lifecycle', () => ({
+  checkBranchHealth: vi.fn().mockResolvedValue({
+    blocked: true,
+    message: 'Too many active contentrain branches',
+  }),
+}))
+
 vi.mock('@contentrain/mcp/util/fs', () => ({
   pathExists: vi.fn().mockResolvedValue(true),
   contentrainDir: vi.fn((root: string) => `${root}/.contentrain`),
@@ -33,7 +42,7 @@ vi.mock('@contentrain/mcp/util/fs', () => ({
 vi.mock('@clack/prompts', () => ({
   intro: vi.fn(),
   outro: vi.fn(),
-  log: { message: vi.fn(), success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+  log: { message: vi.fn(), success: vi.fn(), error: errorMock, warning: vi.fn(), info: vi.fn() },
   spinner: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })),
   select: vi.fn(),
   isCancel: vi.fn().mockReturnValue(false),
@@ -52,5 +61,15 @@ describe('validate command', () => {
     expect(mod.default.args?.interactive?.type).toBe('boolean')
     expect(mod.default.args?.json?.type).toBe('boolean')
     expect(mod.default.args?.model?.type).toBe('string')
+  })
+
+  it('should fail the command when auto-fix is blocked by branch health', async () => {
+    process.exitCode = undefined
+
+    const mod = await import('../../src/commands/validate.js')
+    await mod.default.run?.({ args: { root: '/test/project', fix: true } })
+
+    expect(errorMock).toHaveBeenCalledWith(expect.stringContaining('Too many active'))
+    expect(process.exitCode).toBe(1)
   })
 })

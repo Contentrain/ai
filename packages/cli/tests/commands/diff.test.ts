@@ -55,4 +55,17 @@ describe('diff command', () => {
     expect(checkoutMock).toHaveBeenCalledWith('main')
     expect(mergeMock).toHaveBeenCalledWith(['contentrain/review/hero'])
   })
+
+  it('should label the merge action with the actual base branch instead of current branch', async () => {
+    selectMock.mockResolvedValueOnce('contentrain/review/hero').mockResolvedValueOnce('skip')
+
+    const mod = await import('../../src/commands/diff.js')
+    await mod.default.run?.({ args: { root: '/test/project' } })
+
+    expect(selectMock.mock.calls[1]?.[0]?.options).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: expect.stringContaining('main') }),
+      ]),
+    )
+  })
 })

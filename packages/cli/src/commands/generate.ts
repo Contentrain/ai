@@ -45,7 +45,7 @@ export default defineCommand({
         const { contentrainDir } = await import('@contentrain/mcp/util/fs')
 
         const crDir = contentrainDir(projectRoot)
-        const dirsToWatch = [join(crDir, 'models'), join(crDir, 'content')]
+        const dirsToWatch = [join(crDir, 'models'), join(crDir, 'content'), join(crDir, 'config.json')]
 
         let debounce: ReturnType<typeof setTimeout> | null = null
 
