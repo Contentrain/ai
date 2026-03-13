@@ -180,6 +180,9 @@ function buildContentPath(
   const baseDir = model.content_path ?? `.contentrain/content/${model.domain}/${model.id}`
 
   if (model.kind === 'document') {
+    // When i18n is disabled, documents are flat {slug}.md
+    if (!model.i18n) return `${baseDir}/{slug}.md`
+
     // Documents use directories — show the base path pattern
     switch (strategy) {
       case 'suffix': return `${baseDir}/{slug}.${locale}.md`
@@ -191,6 +194,9 @@ function buildContentPath(
   }
 
   // JSON-based models (collection, singleton, dictionary)
+  // When i18n is disabled, always data.json
+  if (!model.i18n) return `${baseDir}/data.json`
+
   switch (strategy) {
     case 'suffix': return `${baseDir}/${model.id}.${locale}.json`
     case 'directory': return `${baseDir}/${locale}/${model.id}.json`

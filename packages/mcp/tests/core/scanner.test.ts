@@ -118,9 +118,17 @@ describe('isNonContent', () => {
     expect(isNonContent('Created by John', '')).toBe(false)
   })
 
-  it('filters short all-uppercase words as SCREAMING_SNAKE', () => {
-    // OK matches SCREAMING_SNAKE_RE: /^[A-Z][A-Z0-9_]+$/
-    expect(isNonContent('OK', '')).toBe(true)
+  it('filters SCREAMING_SNAKE_CASE with underscores', () => {
+    // True SCREAMING_SNAKE_CASE identifiers (contain underscores) should be filtered
+    expect(isNonContent('MAX_SIZE', '')).toBe(true)
+    expect(isNonContent('API_KEY', '')).toBe(true)
+  })
+
+  it('keeps short uppercase words without underscores as UI labels', () => {
+    // Short uppercase words without underscores are likely real UI labels (OK, FAQ, GPS)
+    expect(isNonContent('OK', '')).toBe(false)
+    expect(isNonContent('FAQ', '')).toBe(false)
+    expect(isNonContent('GPS', '')).toBe(false)
   })
 
   it('keeps short mixed-case words that are content', () => {

@@ -646,6 +646,11 @@ async function discoverDocumentSlugs(
   const strategy = resolveLocaleStrategy(model)
   const entries = await readDir(cDir)
 
+  // When i18n is disabled, documents are flat {slug}.md files
+  if (!model.i18n) {
+    return entries.filter(f => f.endsWith('.md')).map(f => f.replace(/\.md$/, ''))
+  }
+
   if (strategy === 'file') {
     // Each slug is a subdirectory
     return entries.filter(e => !e.startsWith('.'))

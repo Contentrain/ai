@@ -200,7 +200,8 @@ describe('writeContent', () => {
     expect(results[0]!.action).toBe('created')
     expect(results[0]!.id).toBe('bbb000000000')
 
-    const filePath = join(contentrainDir(testDir), 'content', 'blog', 'authors', 'en.json')
+    // collectionModel has i18n:false, so content goes to data.json (not locale-based)
+    const filePath = join(contentrainDir(testDir), 'content', 'blog', 'authors', 'data.json')
     const content = await readJson<Record<string, Record<string, unknown>>>(filePath)
     const keys = Object.keys(content!)
     expect(keys[0]).toBe('aaa000000000')
@@ -230,8 +231,9 @@ describe('writeContent', () => {
 
     expect(results[0]!.action).toBe('updated')
 
+    // collectionModel has i18n:false, so content goes to data.json
     const content = await readJson<Record<string, Record<string, unknown>>>(
-      join(contentrainDir(testDir), 'content', 'blog', 'authors', 'en.json'),
+      join(contentrainDir(testDir), 'content', 'blog', 'authors', 'data.json'),
     )
     expect(content!['entry001']!['name']).toBe('Updated')
   })
@@ -321,8 +323,9 @@ describe('deleteContent', () => {
     expect(removed).toHaveLength(1)
     expect(removed[0]).toContain('delete-me')
 
+    // collectionModel has i18n:false, so content goes to data.json
     const content = await readJson<Record<string, unknown>>(
-      join(contentrainDir(testDir), 'content', 'blog', 'authors', 'en.json'),
+      join(contentrainDir(testDir), 'content', 'blog', 'authors', 'data.json'),
     )
     expect(content!['keep-me']).toBeDefined()
     expect(content!['delete-me']).toBeUndefined()

@@ -148,6 +148,9 @@ export function resolveLocaleStrategy(model: ModelDefinition): LocaleStrategy {
 
 /** Build the file path for a JSON content file (singleton/collection/dictionary) */
 export function resolveJsonFilePath(dir: string, model: ModelDefinition, locale: string): string {
+  // When i18n is disabled, always use data.json (locale parameter is ignored)
+  if (!model.i18n) return join(dir, 'data.json')
+
   switch (resolveLocaleStrategy(model)) {
     case 'suffix': return join(dir, `${model.id}.${locale}.json`)
     case 'directory': return join(dir, locale, `${model.id}.json`)
@@ -159,6 +162,9 @@ export function resolveJsonFilePath(dir: string, model: ModelDefinition, locale:
 
 /** Build the file path for a markdown document */
 export function resolveMdFilePath(dir: string, model: ModelDefinition, locale: string, slug: string): string {
+  // When i18n is disabled, always use {slug}.md (locale parameter is ignored)
+  if (!model.i18n) return join(dir, `${slug}.md`)
+
   switch (resolveLocaleStrategy(model)) {
     case 'suffix': return join(dir, `${slug}.${locale}.md`)
     case 'directory': return join(dir, locale, `${slug}.md`)
@@ -343,7 +349,10 @@ export async function deleteContent(
       if (slugDelErr) throw new Error(slugDelErr)
 
       const strategy = resolveLocaleStrategy(model)
-      if (strategy === 'file') {
+      if (!model.i18n) {
+        // No i18n: single {slug}.md file
+        await rm(join(cDir, `${opts.slug}.md`), { force: true })
+      } else if (strategy === 'file') {
         // slug is a directory — remove entire slug directory
         await rm(join(cDir, opts.slug), { recursive: true, force: true })
       } else if (opts.locale) {
@@ -439,7 +448,18 @@ export async function listContent(
       const entries: Array<{ slug: string; frontmatter: Record<string, unknown> }> = []
       const strategy = resolveLocaleStrategy(model)
 
-      if (strategy === 'file') {
+      if (!model.i18n) {
+        // No i18n: flat {slug}.md files, no locale in path
+        const files = await readDir(cDir)
+        for (const f of files) {
+          if (!f.endsWith('.md')) continue
+          const slug = f.replace('.md', '')
+          const raw = await readText(join(cDir, f))
+          if (!raw) continue
+          const { frontmatter } = parseFrontmatter(raw)
+          entries.push({ slug, frontmatter })
+        }
+      } else if (strategy === 'file') {
         // Each slug is a subdirectory containing locale.md files
         const slugDirs = await readDir(cDir)
         for (const slug of slugDirs) {

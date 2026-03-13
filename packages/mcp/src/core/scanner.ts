@@ -106,8 +106,9 @@ function isTechnicalIdentifier(value: string): boolean {
   // camelCase: starts lowercase, has at least one uppercase letter, no spaces
   if (CAMEL_CASE_RE.test(value) && /[A-Z]/.test(value)) return true
 
-  // SCREAMING_SNAKE_CASE
-  if (SCREAMING_SNAKE_RE.test(value)) return true
+  // SCREAMING_SNAKE_CASE — only filter if it contains underscores (true SCREAMING_SNAKE like API_KEY, MAX_COUNT).
+  // Short uppercase words without underscores (OK, FAQ, GPS) are likely real UI labels.
+  if (SCREAMING_SNAKE_RE.test(value) && value.includes('_')) return true
 
   // kebab-case: filter only if NO content words are present
   if (KEBAB_TECH_RE.test(value)) {

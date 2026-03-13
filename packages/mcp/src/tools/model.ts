@@ -3,6 +3,7 @@ import type { ModelDefinition } from '@contentrain/types'
 import { z } from 'zod'
 import { readConfig } from '../core/config.js'
 import { writeContext } from '../core/context.js'
+import { resolveContentDir, resolveJsonFilePath, resolveMdFilePath } from '../core/content-manager.js'
 import { checkReferences, deleteModel, readModel, writeModel } from '../core/model-manager.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 
@@ -85,9 +86,19 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
         const gitResult = await tx.complete()
 
         const defaultLocale = config.locales.default
-        const contentPath = `.contentrain/content/${input.domain}/${input.id}/`
+        // Build accurate content path using path resolvers
+        const contentDir = resolveContentDir(projectRoot, model)
+        const contentPath = model.content_path ?? `.contentrain/content/${input.domain}/${input.id}`
+        let exampleFilePath: string
+        if (model.kind === 'document') {
+          exampleFilePath = resolveMdFilePath(contentDir, model, defaultLocale, '{slug}')
+        } else {
+          exampleFilePath = resolveJsonFilePath(contentDir, model, defaultLocale)
+        }
+        // Make the path relative for display
+        const displayPath = exampleFilePath.replace(projectRoot + '/', '').replace(projectRoot, '')
         const importSnippet: Record<string, string> = {
-          generic: `import data from '${contentPath}${defaultLocale}.json'`,
+          generic: `import data from '${displayPath}'`,
         }
         if (config.stack === 'nuxt') {
           importSnippet['nuxt'] = model.kind === 'document'
@@ -104,7 +115,8 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
             validation: { valid: true, errors: [] },
             git: { branch, action: gitResult.action, commit: gitResult.commit },
             context_updated: true,
-            content_path: contentPath,
+            content_path: contentPath + '/',
+            example_file: displayPath,
             import_snippet: importSnippet,
             next_steps: ['Add content with contentrain_content_save'],
           }, null, 2) }],
