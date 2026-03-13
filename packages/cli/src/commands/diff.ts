@@ -115,7 +115,8 @@ export default defineCommand({
       const confirmMerge = await confirm({ message: `Merge ${selectedBranch} into ${baseBranch}?` })
       if (!isCancel(confirmMerge) && confirmMerge) {
         try {
-          await git.merge([selectedBranch])
+          await git.checkout(baseBranch)
+          await git.merge([selectedBranch, '--no-edit'])
           await git.deleteLocalBranch(selectedBranch, true)
           log.success(`Merged and deleted ${selectedBranch}`)
         } catch (error) {

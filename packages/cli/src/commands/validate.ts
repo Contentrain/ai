@@ -32,6 +32,16 @@ export default defineCommand({
 
     let result!: ValidateResult
     if (args.fix) {
+      // Branch health gate
+      const { checkBranchHealth } = await import('@contentrain/mcp/git/branch-lifecycle')
+      const health = await checkBranchHealth(projectRoot)
+      if (health.blocked) {
+        s?.stop('Blocked')
+        log.error(health.message!)
+        outro('')
+        return
+      }
+
       const branch = buildBranchName('fix', 'validate')
       const tx = await createTransaction(projectRoot, branch)
       try {
@@ -114,12 +124,19 @@ export default defineCommand({
 
           fixS.stop(`Fixed ${fixResult!.fixed} issue(s)`)
 
-          // Re-validate
-          const recheck = await validateProject(projectRoot, { model: args.model })
-          if (recheck.summary.errors === 0) {
-            log.success('All errors resolved!')
+          // In review workflow, fixes are on a branch — don't recheck base
+          const { readConfig } = await import('@contentrain/mcp/core/config')
+          const cfg = await readConfig(projectRoot)
+          if (cfg?.workflow === 'review') {
+            log.info(`Fixes committed to branch ${pc.cyan(fixBranch)}. Run ${pc.cyan('contentrain diff')} to review and merge.`)
           } else {
-            log.warning(`${formatCount(recheck.summary.errors, 'error')} remaining (may need manual fix)`)
+            // Auto-merge: fixes are on base, recheck is valid
+            const recheck = await validateProject(projectRoot, { model: args.model })
+            if (recheck.summary.errors === 0) {
+              log.success('All errors resolved!')
+            } else {
+              log.warning(`${formatCount(recheck.summary.errors, 'error')} remaining (may need manual fix)`)
+            }
           }
         }
       }

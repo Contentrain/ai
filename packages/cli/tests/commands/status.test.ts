@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
 
+const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+const branchMock = vi.fn().mockResolvedValue({ all: [] })
+const warningMock = vi.fn()
+
 vi.mock('@contentrain/mcp/core/config', () => ({
   readConfig: vi.fn().mockResolvedValue({
     version: 1,
@@ -37,14 +41,14 @@ vi.mock('@contentrain/mcp/util/fs', () => ({
 
 vi.mock('simple-git', () => ({
   simpleGit: vi.fn(() => ({
-    branch: vi.fn().mockResolvedValue({ all: [] }),
+    branch: branchMock,
   })),
 }))
 
 vi.mock('@clack/prompts', () => ({
   intro: vi.fn(),
   outro: vi.fn(),
-  log: { message: vi.fn(), success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+  log: { message: vi.fn(), success: vi.fn(), error: vi.fn(), warning: warningMock, info: vi.fn() },
 }))
 
 describe('status command', () => {
@@ -58,5 +62,27 @@ describe('status command', () => {
     const mod = await import('../../src/commands/status.js')
     expect(mod.default.args?.json).toBeDefined()
     expect(mod.default.args?.json?.type).toBe('boolean')
+  })
+
+  it('should include validation and branch information in JSON mode for CI consumers', async () => {
+    const mod = await import('../../src/commands/status.js')
+    await mod.default.run?.({ args: { root: '/test/project', json: true } })
+
+    expect(writeSpy).toHaveBeenCalled()
+    const payload = JSON.parse(String(writeSpy.mock.calls.at(-1)?.[0] ?? '{}')) as Record<string, unknown>
+
+    expect(payload['validation']).toBeDefined()
+    expect(payload['pending_branches']).toBeDefined()
+  })
+
+  it('should surface a branch-health warning when the project is blocked at 80 pending branches', async () => {
+    branchMock.mockResolvedValueOnce({
+      all: Array.from({ length: 80 }, (_, i) => `contentrain/review/test-${i}`),
+    })
+
+    const mod = await import('../../src/commands/status.js')
+    await mod.default.run?.({ args: { root: '/test/project' } })
+
+    expect(warningMock).toHaveBeenCalledWith(expect.stringContaining('80'))
   })
 })

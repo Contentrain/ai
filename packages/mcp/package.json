@@ -60,6 +60,10 @@
       "types": "./dist/git/transaction.d.ts",
       "import": "./dist/git/transaction.mjs"
     },
+    "./git/branch-lifecycle": {
+      "types": "./dist/git/branch-lifecycle.d.ts",
+      "import": "./dist/git/branch-lifecycle.mjs"
+    },
     "./templates": {
       "types": "./dist/templates/index.d.ts",
       "import": "./dist/templates/index.mjs"
@@ -71,8 +75,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/templates/index.ts --format esm --dts",
-    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/templates/index.ts --format esm --dts --watch",
+    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts --format esm --dts",
+    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts --format esm --dts --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"

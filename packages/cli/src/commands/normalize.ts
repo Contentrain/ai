@@ -23,7 +23,7 @@ export default defineCommand({
     root: { type: 'string', description: 'Project root path', required: false },
     'skip-graph': { type: 'boolean', description: 'Skip graph analysis', required: false },
     'dry-run': { type: 'boolean', description: 'Preview only, no changes', required: false },
-    json: { type: 'boolean', description: 'JSON output', required: false },
+    // json: TODO — structured output mode for CI (not yet implemented)
   },
   async run({ args }) {
     const projectRoot = await resolveProjectRoot(args.root)

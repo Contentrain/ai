@@ -3,17 +3,21 @@ import { join } from 'node:path'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { simpleGit } from 'simple-git'
-import { writeJson, pathExists, readJson } from '@contentrain/mcp/util/fs'
+import { writeJson, pathExists } from '@contentrain/mcp/util/fs'
 import type { ContentrainConfig, ModelDefinition } from '@contentrain/types'
 
 vi.setConfig({ testTimeout: 30000, hookTimeout: 30000 })
 
+const selectMock = vi.fn()
+const successMock = vi.fn()
+const warningMock = vi.fn()
+
 vi.mock('@clack/prompts', () => ({
   intro: vi.fn(),
   outro: vi.fn(),
-  log: { message: vi.fn(), success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+  log: { message: vi.fn(), success: successMock, error: vi.fn(), warning: warningMock, info: vi.fn() },
   spinner: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })),
-  select: vi.fn(),
+  select: selectMock,
   isCancel: vi.fn().mockReturnValue(false),
 }))
 
@@ -69,6 +73,13 @@ async function seedProject(dir: string): Promise<void> {
   })
 }
 
+async function createActiveContentrainBranches(dir: string, count: number): Promise<void> {
+  const git = simpleGit(dir)
+  for (let i = 0; i < count; i++) {
+    await git.branch([`contentrain/review/test-${i}`])
+  }
+}
+
 beforeEach(async () => {
   testDir = await mkdtemp(join(tmpdir(), 'cr-cli-validate-'))
   await initGitRepo(testDir)
@@ -83,7 +94,7 @@ afterEach(async () => {
 })
 
 describe('contentrain validate --fix', { sequential: true }, () => {
-  it('should use git workflow instead of mutating the base worktree directly', async () => {
+  it('should keep fixes on the review branch instead of mutating the base worktree directly', async () => {
     const mod = await import('../../src/commands/validate.js')
     await mod.default.run?.({ args: { root: testDir, fix: true } })
 
@@ -91,13 +102,29 @@ describe('contentrain validate --fix', { sequential: true }, () => {
     const status = await git.status()
     const branches = await git.branch()
 
-    expect(await pathExists(join(testDir, '.contentrain', 'content', 'marketing', 'authors', 'tr.json'))).toBe(true)
+    expect(await pathExists(join(testDir, '.contentrain', 'content', 'marketing', 'authors', 'tr.json'))).toBe(false)
     expect(status.files).toHaveLength(0)
     expect(branches.all.some(b => b.startsWith('contentrain/fix/validate/'))).toBe(true)
+  })
 
-    const trData = await readJson<Record<string, Record<string, string>>>(
-      join(testDir, '.contentrain', 'content', 'marketing', 'authors', 'tr.json'),
-    )
-    expect(trData).toEqual({})
+  it('should not report remaining errors from the untouched base worktree after interactive fix on review workflow', async () => {
+    selectMock.mockResolvedValueOnce('fix-all')
+
+    const mod = await import('../../src/commands/validate.js')
+    await mod.default.run?.({ args: { root: testDir, interactive: true } })
+
+    const git = simpleGit(testDir)
+    const branches = await git.branch()
+
+    expect(branches.all.some(b => b.startsWith('contentrain/fix/validate/'))).toBe(true)
+    expect(warningMock).not.toHaveBeenCalledWith(expect.stringContaining('remaining'))
+    expect(successMock).toHaveBeenCalled()
+  })
+
+  it('should block auto-fix when 80 active contentrain branches already exist', async () => {
+    await createActiveContentrainBranches(testDir, 80)
+
+    const mod = await import('../../src/commands/validate.js')
+    await expect(mod.default.run?.({ args: { root: testDir, fix: true } })).rejects.toBeDefined()
   })
 })

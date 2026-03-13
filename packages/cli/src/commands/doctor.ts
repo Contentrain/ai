@@ -187,19 +187,27 @@ async function findOrphanContent(projectRoot: string): Promise<string[]> {
     }
   }
 
+  // Scan default content tree
   const contentDir = join(crDir, 'content')
-  if (!await pathExists(contentDir)) return orphans
-
-  const domains = await readDir(contentDir)
-  for (const domain of domains) {
-    const domainDir = join(contentDir, domain)
-    const entries = await readDir(domainDir)
-    for (const entry of entries) {
-      if (entry === '.gitkeep') continue
-      const entryDir = join(domainDir, entry)
-      if (!knownContentDirs.has(entryDir)) {
-        orphans.push(`${domain}/${entry}`)
+  if (await pathExists(contentDir)) {
+    const domains = await readDir(contentDir)
+    for (const domain of domains) {
+      const domainDir = join(contentDir, domain)
+      const entries = await readDir(domainDir)
+      for (const entry of entries) {
+        if (entry === '.gitkeep') continue
+        const entryDir = join(domainDir, entry)
+        if (!knownContentDirs.has(entryDir)) {
+          orphans.push(`${domain}/${entry}`)
+        }
       }
+    }
+  }
+
+  // Also verify custom content_path directories exist and are tracked
+  for (const dir of knownContentDirs) {
+    if (!dir.startsWith(contentDir) && !await pathExists(dir)) {
+      orphans.push(`(missing custom path) ${dir}`)
     }
   }
 
