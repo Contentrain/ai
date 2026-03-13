@@ -1,10 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+const branchMock = vi.fn().mockResolvedValue({ all: ['contentrain/new/init'] })
+const readDirMock = vi.fn().mockResolvedValue([])
+const outroMock = vi.fn()
+
 // Mock all external dependencies
 vi.mock('simple-git', () => ({
   simpleGit: vi.fn(() => ({
     version: vi.fn().mockResolvedValue({ major: 2, minor: 45, patch: 0 }),
-    branch: vi.fn().mockResolvedValue({ all: ['contentrain/new/init'] }),
+    branch: branchMock,
   })),
 }))
 
@@ -35,12 +39,12 @@ vi.mock('@contentrain/mcp/core/model-manager', () => ({
 vi.mock('@contentrain/mcp/util/fs', () => ({
   pathExists: vi.fn().mockResolvedValue(true),
   contentrainDir: vi.fn((root: string) => `${root}/.contentrain`),
-  readDir: vi.fn().mockResolvedValue([]),
+  readDir: readDirMock,
 }))
 
 vi.mock('@clack/prompts', () => ({
   intro: vi.fn(),
-  outro: vi.fn(),
+  outro: outroMock,
   log: { message: vi.fn(), success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
   spinner: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })),
 }))
@@ -59,5 +63,35 @@ describe('doctor command', () => {
   it('has correct args definition', async () => {
     const mod = await import('../../src/commands/doctor.js')
     expect(mod.default.args?.root).toBeDefined()
+  })
+
+  it('should not fail health when only 6 pending contentrain branches exist', async () => {
+    branchMock.mockResolvedValueOnce({
+      all: Array.from({ length: 6 }, (_, i) => `contentrain/review/test-${i}`),
+    })
+
+    const mod = await import('../../src/commands/doctor.js')
+    await mod.default.run?.({ args: { root: '/test/project' } })
+
+    expect(outroMock).toHaveBeenCalledWith(expect.not.stringContaining('failed'))
+  })
+
+  it('should inspect custom content_path locations for orphan content checks', async () => {
+    const { listModels } = await import('@contentrain/mcp/core/model-manager')
+    vi.mocked(listModels).mockResolvedValueOnce([
+      {
+        id: 'authors',
+        kind: 'collection',
+        domain: 'marketing',
+        i18n: true,
+        fields: 2,
+        content_path: 'src/content/authors',
+      } as never,
+    ])
+
+    const mod = await import('../../src/commands/doctor.js')
+    await mod.default.run?.({ args: { root: '/test/project' } })
+
+    expect(readDirMock).toHaveBeenCalledWith('/test/project/src/content/authors')
   })
 })

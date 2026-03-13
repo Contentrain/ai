@@ -1,6 +1,8 @@
 import { defineCommand } from 'citty'
 import { intro, outro, log, spinner, select, isCancel } from '@clack/prompts'
-import { validateProject } from '@contentrain/mcp/core/validator'
+import { validateProject, type ValidateResult } from '@contentrain/mcp/core/validator'
+import { createTransaction, buildBranchName } from '@contentrain/mcp/git/transaction'
+import { writeContext } from '@contentrain/mcp/core/context'
 import { resolveProjectRoot, loadProjectContext, requireInitialized } from '../utils/context.js'
 import { pc, severityColor, formatCount } from '../utils/ui.js'
 
@@ -28,10 +30,26 @@ export default defineCommand({
     const s = !args.json ? spinner() : null
     s?.start('Validating...')
 
-    const result = await validateProject(projectRoot, {
-      model: args.model,
-      fix: args.fix,
-    })
+    let result!: ValidateResult
+    if (args.fix) {
+      const branch = buildBranchName('fix', 'validate')
+      const tx = await createTransaction(projectRoot, branch)
+      try {
+        await tx.write(async (wt) => {
+          result = await validateProject(wt, { model: args.model, fix: true })
+          await writeContext(wt, { tool: 'contentrain_validate', model: args.model ?? '*' })
+        })
+        await tx.commit('[contentrain] validate: auto-fix')
+        await tx.complete()
+      } finally {
+        await tx.cleanup()
+      }
+    } else {
+      result = await validateProject(projectRoot, {
+        model: args.model,
+        fix: false,
+      })
+    }
 
     s?.stop('Validation complete')
 
@@ -80,12 +98,21 @@ export default defineCommand({
           const fixS = spinner()
           fixS.start('Fixing issues...')
 
-          const fixResult = await validateProject(projectRoot, {
-            model: args.model,
-            fix: true,
-          })
+          const fixBranch = buildBranchName('fix', 'validate')
+          const fixTx = await createTransaction(projectRoot, fixBranch)
+          let fixResult
+          try {
+            await fixTx.write(async (wt) => {
+              fixResult = await validateProject(wt, { model: args.model, fix: true })
+              await writeContext(wt, { tool: 'contentrain_validate', model: args.model ?? '*' })
+            })
+            await fixTx.commit('[contentrain] validate: interactive auto-fix')
+            await fixTx.complete()
+          } finally {
+            await fixTx.cleanup()
+          }
 
-          fixS.stop(`Fixed ${fixResult.fixed} issue(s)`)
+          fixS.stop(`Fixed ${fixResult!.fixed} issue(s)`)
 
           // Re-validate
           const recheck = await validateProject(projectRoot, { model: args.model })

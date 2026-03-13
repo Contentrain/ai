@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty'
 import { intro, outro, log, select, confirm, isCancel } from '@clack/prompts'
 import { simpleGit } from 'simple-git'
+import { readConfig } from '@contentrain/mcp/core/config'
 import { resolveProjectRoot } from '../utils/context.js'
 import { pc } from '../utils/ui.js'
 
@@ -29,9 +30,11 @@ export default defineCommand({
 
     log.info(pc.bold(`Pending branches (${branches.all.length})`))
 
-    // Get main branch
-    const current = await git.revparse(['--abbrev-ref', 'HEAD'])
-    const baseBranch = current.trim()
+    // Get base branch from config, env, or fallback
+    const config = await readConfig(projectRoot)
+    const baseBranch = process.env['CONTENTRAIN_BRANCH']
+      ?? config?.repository?.default_branch
+      ?? ((await git.raw(['branch', '--show-current'])).trim() || 'main')
 
     // Show each branch with summary
     const branchInfos: Array<{ name: string; summary: string; files: number }> = []

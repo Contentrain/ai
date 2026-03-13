@@ -61,6 +61,19 @@ describe('loadProjectContext', () => {
     expect(ctx.config?.stack).toBe('next')
   })
 
+  it('treats missing config.json as uninitialized even if .contentrain exists', async () => {
+    const { pathExists } = await import('@contentrain/mcp/util/fs')
+    const { readConfig } = await import('@contentrain/mcp/core/config')
+
+    vi.mocked(pathExists).mockResolvedValueOnce(true)
+    vi.mocked(readConfig).mockResolvedValueOnce(null)
+
+    const ctx = await loadProjectContext('/test/project')
+    expect(ctx.initialized).toBe(false)
+    expect(ctx.config).toBeNull()
+    expect(ctx.models).toEqual([])
+  })
+
   it('returns empty context for uninitialized project', async () => {
     const { pathExists } = await import('@contentrain/mcp/util/fs')
     vi.mocked(pathExists).mockResolvedValueOnce(false)

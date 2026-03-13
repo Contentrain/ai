@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { intro, outro, log, spinner, select, multiselect, confirm, isCancel } from '@clack/prompts'
+import { intro, outro, log, spinner, select, multiselect, confirm, text, isCancel } from '@clack/prompts'
 import { buildGraph } from '@contentrain/mcp/core/graph-builder'
 import { scanSummary, scanCandidates } from '@contentrain/mcp/core/scanner'
 import { applyExtract, applyReuse } from '@contentrain/mcp/core/apply-manager'
@@ -187,7 +187,17 @@ export default defineCommand({
     })
     if (isCancel(modelChoice)) return handleCancel()
 
-    const modelId = modelChoice as string
+    let modelId = modelChoice as string
+    if (modelId === 'custom') {
+      const customName = await text({
+        message: 'Enter model name (slug format, e.g. "ui-strings"):',
+        validate: (v) => {
+          if (!v || !/^[a-z][a-z0-9-]*$/.test(v)) return 'Must be lowercase slug format'
+        },
+      })
+      if (isCancel(customName)) return handleCancel()
+      modelId = customName as string
+    }
     const isExistingModel = ctx.models.some(m => m.id === modelId)
 
     const extraction: ExtractionEntry = {

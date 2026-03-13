@@ -4,6 +4,7 @@ import { simpleGit } from 'simple-git'
 import { join } from 'node:path'
 import { stat } from 'node:fs/promises'
 import { listModels, readModel } from '@contentrain/mcp/core/model-manager'
+import { resolveContentDir } from '@contentrain/mcp/core/content-manager'
 import { readConfig } from '@contentrain/mcp/core/config'
 import { pathExists, contentrainDir, readDir } from '@contentrain/mcp/util/fs'
 import { resolveProjectRoot } from '../utils/context.js'
@@ -125,8 +126,11 @@ export default defineCommand({
         const staleCount = branches.all.length
         checks.push({
           name: 'Pending branches',
-          pass: staleCount <= 5,
-          detail: staleCount === 0 ? 'None' : `${staleCount} contentrain branch(es)`,
+          pass: staleCount < 50,
+          detail: staleCount === 0 ? 'None'
+            : staleCount >= 80 ? `${staleCount} branches (BLOCKED — limit: 80)`
+            : staleCount >= 50 ? `${staleCount} branches (WARNING — limit: 50)`
+            : `${staleCount} contentrain branch(es)`,
         })
       } catch {
         checks.push({ name: 'Pending branches', pass: true, detail: 'Could not check' })
@@ -172,8 +176,16 @@ export default defineCommand({
 async function findOrphanContent(projectRoot: string): Promise<string[]> {
   const crDir = contentrainDir(projectRoot)
   const models = await listModels(projectRoot)
-  const modelIds = new Set(models.map(m => m.id))
   const orphans: string[] = []
+
+  // Build set of known content directories from model definitions
+  const knownContentDirs = new Set<string>()
+  for (const m of models) {
+    const full = await readModel(projectRoot, m.id)
+    if (full) {
+      knownContentDirs.add(resolveContentDir(projectRoot, full))
+    }
+  }
 
   const contentDir = join(crDir, 'content')
   if (!await pathExists(contentDir)) return orphans
@@ -183,7 +195,9 @@ async function findOrphanContent(projectRoot: string): Promise<string[]> {
     const domainDir = join(contentDir, domain)
     const entries = await readDir(domainDir)
     for (const entry of entries) {
-      if (!modelIds.has(entry) && entry !== '.gitkeep') {
+      if (entry === '.gitkeep') continue
+      const entryDir = join(domainDir, entry)
+      if (!knownContentDirs.has(entryDir)) {
         orphans.push(`${domain}/${entry}`)
       }
     }

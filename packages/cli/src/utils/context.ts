@@ -1,6 +1,6 @@
 import type { ContentrainConfig, ContextJson, Vocabulary } from '@contentrain/types'
 import type { ModelSummary } from '@contentrain/mcp/core/model-manager'
-import { resolve } from 'node:path'
+import { resolve, join } from 'node:path'
 import { readConfig, readVocabulary } from '@contentrain/mcp/core/config'
 import { readContext } from '@contentrain/mcp/core/context'
 import { listModels } from '@contentrain/mcp/core/model-manager'
@@ -22,7 +22,7 @@ export async function resolveProjectRoot(argRoot?: string): Promise<string> {
 
 export async function loadProjectContext(projectRoot: string): Promise<ProjectContext> {
   const crDir = contentrainDir(projectRoot)
-  const initialized = await pathExists(crDir)
+  const initialized = await pathExists(join(crDir, 'config.json'))
 
   if (!initialized) {
     return { projectRoot, crDir, initialized, config: null, context: null, models: [], vocabulary: null }
