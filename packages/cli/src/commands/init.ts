@@ -195,6 +195,24 @@ interface InitOptions {
   template: string | null
 }
 
+async function cleanupOrphanInitBranches(projectRoot: string): Promise<void> {
+  const git = simpleGit(projectRoot)
+  try {
+    const branches = await git.branch()
+    const orphans = branches.all.filter(b => b.startsWith('contentrain/new/init/'))
+    for (const orphan of orphans) {
+      try {
+        await git.raw(['worktree', 'prune'])
+        await git.deleteLocalBranch(orphan, true)
+      } catch {
+        // branch may be in use or already gone
+      }
+    }
+  } catch {
+    // git may not be initialized yet
+  }
+}
+
 async function executeInit(projectRoot: string, opts: InitOptions): Promise<void> {
   const s = spinner()
   s.start('Initializing...')
@@ -205,8 +223,19 @@ async function executeInit(projectRoot: string, opts: InitOptions): Promise<void
     await simpleGit(projectRoot).init()
   }
 
+  // Clean up orphan init branches from previous cancelled runs
+  await cleanupOrphanInitBranches(projectRoot)
+
   const branch = buildBranchName('new', 'init')
   const tx = await createTransaction(projectRoot, branch)
+
+  // Handle Ctrl+C gracefully
+  const onExit = async () => {
+    await tx.cleanup()
+    await cleanupBranch(projectRoot, branch)
+    process.exit(0)
+  }
+  process.on('SIGINT', onExit)
 
   try {
     await tx.write(async (wt) => {
@@ -271,7 +300,24 @@ async function executeInit(projectRoot: string, opts: InitOptions): Promise<void
     s.stop('Failed')
     throw error
   } finally {
+    process.removeListener('SIGINT', onExit)
     await tx.cleanup()
+    // Also delete the branch if merge failed (cleanup only removes worktree)
+    await cleanupBranch(projectRoot, branch)
+  }
+}
+
+async function cleanupBranch(projectRoot: string, branch: string): Promise<void> {
+  const git = simpleGit(projectRoot)
+  try {
+    // Ensure we're on main before deleting
+    const status = await git.status()
+    if (status.current === branch) {
+      await git.checkout('main')
+    }
+    await git.deleteLocalBranch(branch, true)
+  } catch {
+    // branch may not exist or already deleted
   }
 }
 
