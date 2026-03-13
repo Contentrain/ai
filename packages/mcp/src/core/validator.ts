@@ -4,7 +4,7 @@ import { rm } from 'node:fs/promises'
 import { contentrainDir, readDir, readJson, readText, writeJson, writeText, pathExists } from '../util/fs.js'
 import { readConfig } from './config.js'
 import { listModels, readModel } from './model-manager.js'
-import { parseFrontmatter } from './content-manager.js'
+import { parseFrontmatter, resolveContentDir, resolveJsonFilePath, resolveMdFilePath, resolveLocaleStrategy } from './content-manager.js'
 
 // ─── Types ───
 
@@ -165,8 +165,8 @@ async function checkRelation(
       }
 
       if (targetModel.kind === 'document') {
-        // Document relations reference by slug (directory name)
-        const docContentDir = join(contentrainDir(projectRoot), 'content', targetModel.domain, targetModelId)
+        // Document relations reference by slug (directory name for 'file' strategy)
+        const docContentDir = resolveContentDir(projectRoot, targetModel)
         const slugDirs = await readDir(docContentDir)
         if (slugDirs.includes(ref)) {
           found = true
@@ -178,8 +178,9 @@ async function checkRelation(
         break
       } else {
         // Collection: validate against entry IDs (object-map keys)
+        const targetDir = resolveContentDir(projectRoot, targetModel)
         const targetData = await readJson<Record<string, unknown>>(
-          join(contentrainDir(projectRoot), 'content', targetModel.domain, targetModelId, `${locale}.json`),
+          resolveJsonFilePath(targetDir, targetModel, locale),
         )
         if (targetData && ref in targetData) {
           found = true
@@ -209,7 +210,7 @@ async function validateCollectionModel(
 ): Promise<{ entries: number; fixed: number }> {
   let entriesChecked = 0
   let fixed = 0
-  const contentDir = join(contentrainDir(projectRoot), 'content', model.domain, model.id)
+  const cDir = resolveContentDir(projectRoot, model)
   const metaDir = join(contentrainDir(projectRoot), 'meta', model.id)
   const locales = config.locales.supported
 
@@ -221,7 +222,7 @@ async function validateCollectionModel(
   const uniqueFieldValues: Record<string, Map<string, string>> = {}
 
   for (const locale of locales) {
-    const filePath = join(contentDir, `${locale}.json`)
+    const filePath = resolveJsonFilePath(cDir, model, locale)
     const data = await readJson<Record<string, Record<string, unknown>>>(filePath)
     if (!data) {
       if (model.i18n) {
@@ -392,7 +393,7 @@ async function validateCollectionModel(
     const metaData = await readJson<Record<string, EntryMeta>>(metaPath)
     if (!metaData) continue
 
-    const contentData = await readJson<Record<string, unknown>>(join(contentDir, `${locale}.json`)) ?? {}
+    const contentData = await readJson<Record<string, unknown>>(resolveJsonFilePath(cDir, model, locale)) ?? {}
     for (const metaEntryId of Object.keys(metaData)) {
       if (!(metaEntryId in contentData)) {
         issues.push({
@@ -427,10 +428,10 @@ async function validateSingletonModel(
 ): Promise<{ entries: number; fixed: number }> {
   let entriesChecked = 0
   let fixed = 0
-  const contentDir = join(contentrainDir(projectRoot), 'content', model.domain, model.id)
+  const cDir = resolveContentDir(projectRoot, model)
 
   for (const locale of config.locales.supported) {
-    const filePath = join(contentDir, `${locale}.json`)
+    const filePath = resolveJsonFilePath(cDir, model, locale)
     const data = await readJson<Record<string, unknown>>(filePath)
 
     if (!data) {
@@ -540,12 +541,12 @@ async function validateDictionaryModel(
 ): Promise<{ entries: number; fixed: number }> {
   let entriesChecked = 0
   let fixed = 0
-  const contentDir = join(contentrainDir(projectRoot), 'content', model.domain, model.id)
+  const cDir = resolveContentDir(projectRoot, model)
 
   const localeKeys: Record<string, Set<string>> = {}
 
   for (const locale of config.locales.supported) {
-    const filePath = join(contentDir, `${locale}.json`)
+    const filePath = resolveJsonFilePath(cDir, model, locale)
     const data = await readJson<Record<string, string>>(filePath)
 
     if (!data) {
@@ -638,6 +639,50 @@ async function validateDictionaryModel(
   return { entries: entriesChecked, fixed }
 }
 
+async function discoverDocumentSlugs(
+  cDir: string,
+  model: ModelDefinition,
+): Promise<string[]> {
+  const strategy = resolveLocaleStrategy(model)
+  const entries = await readDir(cDir)
+
+  if (strategy === 'file') {
+    // Each slug is a subdirectory
+    return entries.filter(e => !e.startsWith('.'))
+  }
+
+  if (strategy === 'suffix') {
+    // Files like {slug}.{locale}.md — extract unique slugs
+    const slugs = new Set<string>()
+    for (const f of entries) {
+      if (!f.endsWith('.md')) continue
+      // Remove last two dot-separated segments (.locale.md)
+      const parts = f.replace(/\.md$/, '').split('.')
+      if (parts.length >= 2) {
+        parts.pop() // remove locale
+        slugs.add(parts.join('.'))
+      }
+    }
+    return [...slugs]
+  }
+
+  if (strategy === 'directory') {
+    // Locale subdirectories contain {slug}.md files — collect slugs from all locale dirs
+    const slugs = new Set<string>()
+    for (const localeDir of entries) {
+      if (localeDir.startsWith('.')) continue
+      const files = await readDir(join(cDir, localeDir))
+      for (const f of files) {
+        if (f.endsWith('.md')) slugs.add(f.replace(/\.md$/, ''))
+      }
+    }
+    return [...slugs]
+  }
+
+  // 'none' — {slug}.md files, no locale
+  return entries.filter(f => f.endsWith('.md')).map(f => f.replace(/\.md$/, ''))
+}
+
 async function validateDocumentModel(
   projectRoot: string,
   model: ModelDefinition,
@@ -647,19 +692,18 @@ async function validateDocumentModel(
 ): Promise<{ entries: number; fixed: number }> {
   let entriesChecked = 0
   let fixed = 0
-  const contentDir = join(contentrainDir(projectRoot), 'content', model.domain, model.id)
+  const cDir = resolveContentDir(projectRoot, model)
 
-  if (!await pathExists(contentDir)) return { entries: 0, fixed: 0 }
+  if (!await pathExists(cDir)) return { entries: 0, fixed: 0 }
 
-  const slugDirs = await readDir(contentDir)
+  const slugs = await discoverDocumentSlugs(cDir, model)
   const locales = config.locales.supported
 
-  for (const slug of slugDirs) {
+  for (const slug of slugs) {
     if (slug.startsWith('.')) continue
-    const slugDir = join(contentDir, slug)
 
     for (const locale of locales) {
-      const filePath = join(slugDir, `${locale}.md`)
+      const filePath = resolveMdFilePath(cDir, model, locale, slug)
       const raw = await readText(filePath)
 
       if (!raw) {

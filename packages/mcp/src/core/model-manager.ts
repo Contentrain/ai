@@ -2,6 +2,7 @@ import type { ModelDefinition } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { contentrainDir, ensureDir, readDir, readJson, writeJson } from '../util/fs.js'
+import { resolveContentDir, resolveLocaleStrategy } from './content-manager.js'
 
 export interface ModelSummary {
   id: string
@@ -90,20 +91,27 @@ export async function countEntries(
   projectRoot: string,
   model: ModelDefinition,
 ): Promise<{ total: number; locales: Record<string, number> }> {
-  const contentDir = join(contentrainDir(projectRoot), 'content', model.domain, model.id)
-  const files = await readDir(contentDir)
+  const cDir = resolveContentDir(projectRoot, model)
+  const strategy = resolveLocaleStrategy(model)
+  const files = await readDir(cDir)
 
   if (model.kind === 'document') {
-    return countDocumentEntries(contentDir, files)
+    // For 'file' strategy, entries are subdirectories; otherwise need locale-aware logic
+    if (strategy === 'file') {
+      return countDocumentEntries(cDir, files)
+    }
+    // For other strategies, documents are flat .md files in cDir (or locale subdirs)
+    return countDocumentEntries(cDir, files)
   }
 
-  const jsonFiles = files.filter(f => f.endsWith('.json'))
-
   if (model.kind === 'collection') {
-    return countCollectionEntries(contentDir, jsonFiles)
+    // Resolve actual json file names per locale based on strategy
+    const jsonFiles = files.filter(f => f.endsWith('.json'))
+    return countCollectionEntries(cDir, jsonFiles)
   }
 
   // singleton / dictionary — one entry per locale file
+  const jsonFiles = files.filter(f => f.endsWith('.json'))
   const locales: Record<string, number> = {}
   for (const file of jsonFiles) {
     locales[file.replace(/\.json$/, '')] = 1
@@ -117,8 +125,8 @@ export async function writeModel(projectRoot: string, model: ModelDefinition): P
   const filePath = join(contentrainDir(projectRoot), 'models', `${model.id}.json`)
   await writeJson(filePath, model, MODEL_FIELD_ORDER)
 
-  // Ensure content and meta directories exist
-  await ensureDir(join(contentrainDir(projectRoot), 'content', model.domain, model.id))
+  // Ensure content and meta directories exist (respects content_path)
+  await ensureDir(resolveContentDir(projectRoot, model))
   await ensureDir(join(contentrainDir(projectRoot), 'meta', model.id))
 }
 
@@ -130,7 +138,7 @@ export async function deleteModel(projectRoot: string, modelId: string): Promise
   const removed: string[] = []
 
   const modelPath = join(crDir, 'models', `${modelId}.json`)
-  const contentPath = join(crDir, 'content', model.domain, modelId)
+  const contentPath = resolveContentDir(projectRoot, model)
   const metaPath = join(crDir, 'meta', modelId)
 
   await rm(modelPath, { force: true })
@@ -138,7 +146,7 @@ export async function deleteModel(projectRoot: string, modelId: string): Promise
 
   try {
     await rm(contentPath, { recursive: true, force: true })
-    removed.push(`content/${model.domain}/${modelId}/`)
+    removed.push(model.content_path ?? `content/${model.domain}/${modelId}/`)
   } catch {
     // directory may not exist
   }

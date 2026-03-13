@@ -135,20 +135,20 @@ export function serializeFrontmatter(data: Record<string, unknown>, body: string
 
 // ─── Content paths ───
 
-function contentDir(projectRoot: string, model: ModelDefinition): string {
+export function resolveContentDir(projectRoot: string, model: ModelDefinition): string {
   if (model.content_path) {
     return join(projectRoot, model.content_path)
   }
   return join(contentrainDir(projectRoot), 'content', model.domain, model.id)
 }
 
-function localeStrategy(model: ModelDefinition): LocaleStrategy {
+export function resolveLocaleStrategy(model: ModelDefinition): LocaleStrategy {
   return model.locale_strategy ?? 'file'
 }
 
 /** Build the file path for a JSON content file (singleton/collection/dictionary) */
-function jsonFilePath(dir: string, model: ModelDefinition, locale: string): string {
-  switch (localeStrategy(model)) {
+export function resolveJsonFilePath(dir: string, model: ModelDefinition, locale: string): string {
+  switch (resolveLocaleStrategy(model)) {
     case 'suffix': return join(dir, `${model.id}.${locale}.json`)
     case 'directory': return join(dir, locale, `${model.id}.json`)
     case 'none': return join(dir, `${model.id}.json`)
@@ -158,8 +158,8 @@ function jsonFilePath(dir: string, model: ModelDefinition, locale: string): stri
 }
 
 /** Build the file path for a markdown document */
-function mdFilePath(dir: string, model: ModelDefinition, locale: string, slug: string): string {
-  switch (localeStrategy(model)) {
+export function resolveMdFilePath(dir: string, model: ModelDefinition, locale: string, slug: string): string {
+  switch (resolveLocaleStrategy(model)) {
     case 'suffix': return join(dir, `${slug}.${locale}.md`)
     case 'directory': return join(dir, locale, `${slug}.md`)
     case 'none': return join(dir, `${slug}.md`)
@@ -240,7 +240,7 @@ export async function writeContent(
 
     switch (model.kind) {
       case 'singleton': {
-        const filePath = jsonFilePath(contentDir(projectRoot, model), model, locale)
+        const filePath = resolveJsonFilePath(resolveContentDir(projectRoot, model), model, locale)
         await writeJson(filePath, entry.data)
         await writeMeta(projectRoot, model, { locale }, defaultMeta())
         results.push({ action: 'updated', locale })
@@ -250,7 +250,7 @@ export async function writeContent(
       case 'collection': {
         const isNew = !entry.id
         const id = entry.id ?? generateEntryId()
-        const filePath = jsonFilePath(contentDir(projectRoot, model), model, locale)
+        const filePath = resolveJsonFilePath(resolveContentDir(projectRoot, model), model, locale)
         const existing = await readJson<Record<string, Record<string, unknown>>>(filePath) ?? {}
 
         const action: 'created' | 'updated' = (isNew || !(id in existing)) ? 'created' : 'updated'
@@ -280,7 +280,7 @@ export async function writeContent(
         if (!fmData['slug']) fmData['slug'] = slug
 
         // Check if existing
-        const docPath = mdFilePath(contentDir(projectRoot, model), model, locale, slug)
+        const docPath = resolveMdFilePath(resolveContentDir(projectRoot, model), model, locale, slug)
         const existingRaw = await readText(docPath)
         const action: 'created' | 'updated' = existingRaw ? 'updated' : 'created'
 
@@ -292,7 +292,7 @@ export async function writeContent(
       }
 
       case 'dictionary': {
-        const filePath = jsonFilePath(contentDir(projectRoot, model), model, locale)
+        const filePath = resolveJsonFilePath(resolveContentDir(projectRoot, model), model, locale)
         const existing = await readJson<Record<string, string>>(filePath) ?? {}
         const merged = { ...existing, ...entry.data as Record<string, string> }
         await writeJson(filePath, merged)
@@ -314,7 +314,7 @@ export async function deleteContent(
   opts: DeleteOpts,
 ): Promise<string[]> {
   const removed: string[] = []
-  const cDir = contentDir(projectRoot, model)
+  const cDir = resolveContentDir(projectRoot, model)
 
   switch (model.kind) {
     case 'collection': {
@@ -324,7 +324,7 @@ export async function deleteContent(
         : (await readDir(cDir)).filter(f => f.endsWith('.json')).map(f => f.replace('.json', '').replace(`${model.id}.`, ''))
 
       for (const loc of locales) {
-        const filePath = jsonFilePath(cDir, model, loc)
+        const filePath = resolveJsonFilePath(cDir, model, loc)
         const data = await readJson<Record<string, unknown>>(filePath)
         if (data && opts.id in data) {
           delete data[opts.id]
@@ -342,13 +342,13 @@ export async function deleteContent(
       const slugDelErr = validateSlug(opts.slug)
       if (slugDelErr) throw new Error(slugDelErr)
 
-      const strategy = localeStrategy(model)
+      const strategy = resolveLocaleStrategy(model)
       if (strategy === 'file') {
         // slug is a directory — remove entire slug directory
         await rm(join(cDir, opts.slug), { recursive: true, force: true })
       } else if (opts.locale) {
         // Remove specific locale file
-        const filePath = mdFilePath(cDir, model, opts.locale, opts.slug)
+        const filePath = resolveMdFilePath(cDir, model, opts.locale, opts.slug)
         await rm(filePath, { force: true })
       } else {
         // Remove all locale files for this slug
@@ -373,7 +373,7 @@ export async function deleteContent(
     case 'singleton':
     case 'dictionary': {
       if (!opts.locale) throw new Error(`${model.kind} delete requires a locale`)
-      const filePath = jsonFilePath(cDir, model, opts.locale)
+      const filePath = resolveJsonFilePath(cDir, model, opts.locale)
       await rm(filePath, { force: true })
       removed.push(`content/${model.domain}/${model.id}/${opts.locale}.json`)
 
@@ -393,17 +393,17 @@ export async function listContent(
   opts: ListOpts,
   config: ContentrainConfig,
 ): Promise<unknown> {
-  const cDir = contentDir(projectRoot, model)
+  const cDir = resolveContentDir(projectRoot, model)
   const locale = opts.locale ?? config.locales.default
 
   switch (model.kind) {
     case 'singleton': {
-      const data = await readJson<Record<string, unknown>>(jsonFilePath(cDir, model, locale))
+      const data = await readJson<Record<string, unknown>>(resolveJsonFilePath(cDir, model, locale))
       return { kind: 'singleton', data: data ?? {}, locale }
     }
 
     case 'collection': {
-      const data = await readJson<Record<string, Record<string, unknown>>>(jsonFilePath(cDir, model, locale)) ?? {}
+      const data = await readJson<Record<string, Record<string, unknown>>>(resolveJsonFilePath(cDir, model, locale)) ?? {}
       let entries: Array<Record<string, unknown>> = Object.entries(data).map(([id, fields]) => {
         const entry: Record<string, unknown> = { id }
         Object.assign(entry, fields)
@@ -437,7 +437,7 @@ export async function listContent(
 
     case 'document': {
       const entries: Array<{ slug: string; frontmatter: Record<string, unknown> }> = []
-      const strategy = localeStrategy(model)
+      const strategy = resolveLocaleStrategy(model)
 
       if (strategy === 'file') {
         // Each slug is a subdirectory containing locale.md files
@@ -494,7 +494,7 @@ export async function listContent(
     }
 
     case 'dictionary': {
-      const data = await readJson<Record<string, string>>(jsonFilePath(cDir, model, locale)) ?? {}
+      const data = await readJson<Record<string, string>>(resolveJsonFilePath(cDir, model, locale)) ?? {}
       return { kind: 'dictionary', data, total_keys: Object.keys(data).length, locale }
     }
   }
@@ -507,28 +507,28 @@ export async function readContent(
   model: ModelDefinition,
   opts: { locale: string; entryId?: string; slug?: string },
 ): Promise<unknown> {
-  const cDir = contentDir(projectRoot, model)
+  const cDir = resolveContentDir(projectRoot, model)
 
   switch (model.kind) {
     case 'singleton':
-      return readJson<Record<string, unknown>>(jsonFilePath(cDir, model, opts.locale))
+      return readJson<Record<string, unknown>>(resolveJsonFilePath(cDir, model, opts.locale))
 
     case 'collection': {
       if (!opts.entryId) return null
-      const data = await readJson<Record<string, Record<string, unknown>>>(jsonFilePath(cDir, model, opts.locale))
+      const data = await readJson<Record<string, Record<string, unknown>>>(resolveJsonFilePath(cDir, model, opts.locale))
       return data?.[opts.entryId] ? { id: opts.entryId, ...data[opts.entryId] } : null
     }
 
     case 'document': {
       if (!opts.slug) return null
-      const raw = await readText(mdFilePath(cDir, model, opts.locale, opts.slug))
+      const raw = await readText(resolveMdFilePath(cDir, model, opts.locale, opts.slug))
       if (!raw) return null
       const { frontmatter, body } = parseFrontmatter(raw)
       return { slug: opts.slug, ...frontmatter, body }
     }
 
     case 'dictionary':
-      return readJson<Record<string, string>>(jsonFilePath(cDir, model, opts.locale))
+      return readJson<Record<string, string>>(resolveJsonFilePath(cDir, model, opts.locale))
   }
 }
 
@@ -565,7 +565,7 @@ async function resolveRelations(
       if (!targetModel || targetModel.kind !== 'collection') continue
 
       const targetData = await readJson<Record<string, Record<string, unknown>>>(
-        jsonFilePath(contentDir(projectRoot, targetModel), targetModel, locale),
+        resolveJsonFilePath(resolveContentDir(projectRoot, targetModel), targetModel, locale),
       ) ?? {}
 
       targetCache[targetModelId] = targetData

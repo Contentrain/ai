@@ -278,6 +278,27 @@
 
 ---
 
+## MCP Hardening (Post-Review)
+**Hedef:** Tüm MCP review bulgularından sonra test altyapısını güçlendirmek
+
+### Test Kalitesi İyileştirme
+- [ ] Senaryo bazlı integration testler (happy path değil, edge case odaklı)
+  - init→cancel→re-init, normalize auto-merge projede review zorunluluğu
+  - writeContext sonrası repo clean mi, content_path'li model CRUD
+  - document slug relation, multiline scan, stale branch submit
+- [ ] Spec "MUST/MUST NOT" kuralları → doğrudan test assertion'a dönüştür
+  - "normalize asla auto-merge edilmez" → test: auto-merge projede normalize → pending-review
+  - "writeContext transaction içinde olmalı" → test: tx sonrası git status clean
+  - "content_path kullanılıyorsa validator da aynı path'e bakmalı" → test
+- [ ] PR öncesi MCP checklist oluştur:
+  - [ ] Transaction sonrası repo clean mi?
+  - [ ] writeContext nerede çağrılıyor?
+  - [ ] Path resolver kullanılıyor mu (hardcoded path var mı)?
+  - [ ] Yeni tool/feature spec ile cross-check edildi mi?
+- [ ] Mevcut testlerdeki workaround'ları temizle (apply.test.ts post-context commit vb.)
+
+---
+
 ## Notlar
 
 - Her sprint sonunda `pnpm build && pnpm test && pnpm lint` geçmeli

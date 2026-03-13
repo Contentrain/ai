@@ -9,6 +9,7 @@ import { contentrainDir, ensureDir, pathExists, writeJson } from '../util/fs.js'
 import { writeContext } from '../core/context.js'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { writeModel } from '../core/model-manager.js'
+import { resolveContentDir, resolveJsonFilePath } from '../core/content-manager.js'
 import { getTemplate, listTemplates } from '../templates/index.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 
@@ -274,15 +275,15 @@ async function writeSampleContent(
     const sampleData = tmpl.sample_content[model.id]
     if (!sampleData) continue
 
-    const contentDir = join(contentrainDir(projectRoot), 'content', model.domain, model.id)
+    const cDir = resolveContentDir(projectRoot, model)
 
     for (const [localeOrKey, data] of Object.entries(sampleData)) {
       if (localeOrKey === 'data') {
         const defaultLocale = locales[0] ?? 'en'
-        writes.push(writeJson(join(contentDir, `${defaultLocale}.json`), data))
+        writes.push(writeJson(resolveJsonFilePath(cDir, model, defaultLocale), data))
         count++
       } else if (locales.includes(localeOrKey)) {
-        writes.push(writeJson(join(contentDir, `${localeOrKey}.json`), data))
+        writes.push(writeJson(resolveJsonFilePath(cDir, model, localeOrKey), data))
         count++
       }
     }

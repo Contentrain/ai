@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { readContext } from '../core/context.js'
 import { countEntries, listModels, readModel } from '../core/model-manager.js'
+import { resolveContentDir, resolveJsonFilePath } from '../core/content-manager.js'
 import { detectStack } from '../util/detect.js'
 import { join } from 'node:path'
 import { contentrainDir, pathExists } from '../util/fs.js'
@@ -127,26 +128,23 @@ async function getSample(
   model: import('@contentrain/types').ModelDefinition,
   locale: string,
 ): Promise<unknown> {
-  const { readJson } = await import('../util/fs.js')
-  const contentDir = model.content_path
-    ? join(projectRoot, model.content_path)
-    : join(contentrainDir(projectRoot), 'content', model.domain, model.id)
+  const { readJson, readDir } = await import('../util/fs.js')
+  const cDir = resolveContentDir(projectRoot, model)
 
   if (model.kind === 'collection') {
-    const data = await readJson<Record<string, Record<string, unknown>>>(join(contentDir, `${locale}.json`))
+    const data = await readJson<Record<string, Record<string, unknown>>>(resolveJsonFilePath(cDir, model, locale))
     if (!data) return null
     const firstKey = Object.keys(data)[0]
     return firstKey ? { id: firstKey, ...data[firstKey] } : null
   }
 
   if (model.kind === 'singleton' || model.kind === 'dictionary') {
-    return readJson(join(contentDir, `${locale}.json`))
+    return readJson(resolveJsonFilePath(cDir, model, locale))
   }
 
   if (model.kind === 'document') {
     // Return first entry slug
-    const { readDir } = await import('../util/fs.js')
-    const entries = await readDir(contentDir)
+    const entries = await readDir(cDir)
     return entries[0] ? { slug: entries[0], locale } : null
   }
 
