@@ -53,11 +53,13 @@ describe('doctor command', () => {
   it('module loads without error', async () => {
     const mod = await import('../../src/commands/doctor.js')
     expect(mod.default).toBeDefined()
-    expect(mod.default.meta?.name).toBe('doctor')
+    const meta = mod.default.meta as Record<string, unknown>
+    expect(meta?.name).toBe('doctor')
   })
 
   it('has correct args definition', async () => {
     const mod = await import('../../src/commands/doctor.js')
-    expect(mod.default.args?.root).toBeDefined()
+    const args = mod.default.args as Record<string, Record<string, unknown>>
+    expect(args?.root).toBeDefined()
   })
 })

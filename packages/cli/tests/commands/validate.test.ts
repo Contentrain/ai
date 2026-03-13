@@ -43,14 +43,16 @@ describe('validate command', () => {
   it('module loads without error', async () => {
     const mod = await import('../../src/commands/validate.js')
     expect(mod.default).toBeDefined()
-    expect(mod.default.meta?.name).toBe('validate')
+    const meta = mod.default.meta as Record<string, unknown>
+    expect(meta?.name).toBe('validate')
   })
 
   it('supports all flags', async () => {
     const mod = await import('../../src/commands/validate.js')
-    expect(mod.default.args?.fix?.type).toBe('boolean')
-    expect(mod.default.args?.interactive?.type).toBe('boolean')
-    expect(mod.default.args?.json?.type).toBe('boolean')
-    expect(mod.default.args?.model?.type).toBe('string')
+    const args = mod.default.args as Record<string, Record<string, unknown>>
+    expect(args?.fix?.type).toBe('boolean')
+    expect(args?.interactive?.type).toBe('boolean')
+    expect(args?.json?.type).toBe('boolean')
+    expect(args?.model?.type).toBe('string')
   })
 })
