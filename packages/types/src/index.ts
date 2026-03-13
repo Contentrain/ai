@@ -14,7 +14,7 @@ export type ModelKind = 'singleton' | 'collection' | 'document' | 'dictionary'
 export type ContentStatus = 'draft' | 'in_review' | 'published' | 'rejected' | 'archived'
 export type ContentSource = 'agent' | 'human' | 'import'
 export type WorkflowMode = 'auto-merge' | 'review'
-export type StackType = 'nuxt' | 'next' | 'react-vite' | 'astro' | 'svelte' | 'other'
+export type StackType = 'nuxt' | 'next' | 'react-vite' | 'react-native' | 'expo' | 'astro' | 'svelte' | 'node' | 'other'
 export type ContextSource = 'mcp-local' | 'mcp-studio' | 'studio-ui'
 export type CollectionRuntimeFormat = 'map' | 'array'
 

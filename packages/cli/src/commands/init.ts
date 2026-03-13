@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 import { intro, outro, log, spinner, select, multiselect, confirm, isCancel } from '@clack/prompts'
 import { join } from 'node:path'
 import { simpleGit } from 'simple-git'
-import { detectStack } from '@contentrain/mcp/util/detect'
+import { detectStackInfo } from '@contentrain/mcp/util/detect'
 import { ensureDir, pathExists, writeJson } from '@contentrain/mcp/util/fs'
 import { writeContext } from '@contentrain/mcp/core/context'
 import { writeModel } from '@contentrain/mcp/core/model-manager'
@@ -12,7 +12,7 @@ import { scanSummary } from '@contentrain/mcp/core/scanner'
 import { resolveProjectRoot, loadProjectContext } from '../utils/context.js'
 import { pc } from '../utils/ui.js'
 import { writeFile, readFile, appendFile } from 'node:fs/promises'
-import type { ContentrainConfig, Vocabulary } from '@contentrain/types'
+import type { ContentrainConfig, StackType, Vocabulary } from '@contentrain/types'
 
 const COMMON_LOCALES = [
   { value: 'en', label: 'English' },
@@ -30,6 +30,8 @@ const COMMON_LOCALES = [
   { value: 'ru', label: 'Russian' },
 ]
 
+const ALL_STACKS: StackType[] = ['nuxt', 'next', 'astro', 'svelte', 'react-vite', 'react-native', 'expo', 'node', 'other']
+
 export default defineCommand({
   meta: {
     name: 'init',
@@ -38,6 +40,7 @@ export default defineCommand({
   args: {
     root: { type: 'string', description: 'Project root path', required: false },
     yes: { type: 'boolean', description: 'Skip prompts, use defaults', required: false },
+    force: { type: 'boolean', description: 'Re-initialize even if already initialized', required: false },
   },
   async run({ args }) {
     const projectRoot = await resolveProjectRoot(args.root)
@@ -46,22 +49,33 @@ export default defineCommand({
 
     // Already initialized?
     const ctx = await loadProjectContext(projectRoot)
-    if (ctx.initialized) {
+    if (ctx.initialized && !args.force) {
       log.warning('Project already initialized.')
       log.message(`Run ${pc.cyan('contentrain status')} to see current state.`)
+      log.message(`Run ${pc.cyan('contentrain init --force')} to re-initialize.`)
       outro('')
       return
     }
+    if (ctx.initialized && args.force) {
+      log.info('Re-initializing project...')
+    }
 
-    // 1. Detect stack
+    // 1. Detect stack (rich info)
     const s = spinner()
     s.start('Detecting project stack...')
-    const detectedStack = await detectStack(projectRoot)
-    s.stop(`Detected: ${pc.cyan(detectedStack)}`)
+    const info = await detectStackInfo(projectRoot)
+    s.stop(`Detected: ${pc.cyan(info.name)} — ${info.description}`)
+
+    if (info.monorepo) {
+      log.info(`Monorepo: ${pc.green('Yes')}${info.monorepoTool ? ` (${info.monorepoTool})` : ''}`)
+    }
+    if (info.features.length > 0) {
+      log.info(`Features: ${info.features.map(f => pc.dim(f)).join(', ')}`)
+    }
 
     if (args.yes) {
       await executeInit(projectRoot, {
-        stack: detectedStack,
+        stack: info.stack,
         locales: ['en'],
         domains: ['marketing', 'blog', 'system'],
         workflow: 'auto-merge',
@@ -75,12 +89,12 @@ export default defineCommand({
     const stackChoice = await select({
       message: 'Project framework',
       options: [
-        { value: detectedStack, label: `${detectedStack} (detected)` },
-        ...['nuxt', 'next', 'astro', 'svelte', 'react-vite', 'other']
-          .filter(v => v !== detectedStack)
+        { value: info.stack, label: `${info.name} (detected)` },
+        ...ALL_STACKS
+          .filter(v => v !== info.stack)
           .map(v => ({ value: v, label: v })),
       ],
-      initialValue: detectedStack,
+      initialValue: info.stack,
     })
     if (isCancel(stackChoice)) return handleCancel()
 

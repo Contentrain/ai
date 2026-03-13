@@ -16,6 +16,7 @@
     "build": "pnpm -r run build",
     "dev": "pnpm -r --parallel run dev",
     "test": "pnpm -r run test",
+    "test:affected": "pnpm -r --filter '...[HEAD~1]' run test",
     "lint": "oxlint .",
     "typecheck": "pnpm -r run typecheck",
     "clean": "pnpm -r run clean"
