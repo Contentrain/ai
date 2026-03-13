@@ -98,9 +98,6 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
         await tx.commit('[contentrain] init: project setup')
         const gitResult = await tx.complete()
 
-        // Update context on main after merge
-        await writeContext(projectRoot, { tool: 'contentrain_init', model: '' })
-
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             status: 'committed',
@@ -202,16 +199,17 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
           if (tmpl.vocabulary) {
             vocabAdded = await mergeVocabulary(wt, tmpl.vocabulary, effectiveLocales)
           }
+
+          // Update context inside transaction
+          await writeContext(wt, {
+            tool: 'contentrain_scaffold',
+            model: tmpl.models.map(m => m.id).join(', '),
+            locale: defaultLocale,
+          })
         })
 
         await tx.commit(`[contentrain] scaffold: ${templateId} (${defaultLocale})`)
         const gitResult = await tx.complete()
-
-        await writeContext(projectRoot, {
-          tool: 'contentrain_scaffold',
-          model: tmpl.models.map(m => m.id).join(', '),
-          locale: defaultLocale,
-        })
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({

@@ -4,6 +4,7 @@ import { readConfig, readVocabulary } from '../core/config.js'
 import { readContext } from '../core/context.js'
 import { countEntries, listModels, readModel } from '../core/model-manager.js'
 import { detectStack } from '../util/detect.js'
+import { join } from 'node:path'
 import { contentrainDir, pathExists } from '../util/fs.js'
 
 export function registerContextTools(server: McpServer, projectRoot: string): void {
@@ -14,7 +15,7 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
     {},
     async () => {
       const crDir = contentrainDir(projectRoot)
-      const initialized = await pathExists(crDir)
+      const initialized = await pathExists(join(crDir, 'config.json'))
 
       if (!initialized) {
         const detectedStack = await detectStack(projectRoot)
@@ -127,8 +128,9 @@ async function getSample(
   locale: string,
 ): Promise<unknown> {
   const { readJson } = await import('../util/fs.js')
-  const { join } = await import('node:path')
-  const contentDir = join(contentrainDir(projectRoot), 'content', model.domain, model.id)
+  const contentDir = model.content_path
+    ? join(projectRoot, model.content_path)
+    : join(contentrainDir(projectRoot), 'content', model.domain, model.id)
 
   if (model.kind === 'collection') {
     const data = await readJson<Record<string, Record<string, unknown>>>(join(contentDir, `${locale}.json`))
@@ -151,12 +153,40 @@ async function getSample(
   return null
 }
 
+function buildContentPath(
+  model: import('@contentrain/types').ModelDefinition,
+  locale: string,
+): string {
+  const strategy = model.locale_strategy ?? 'file'
+  const baseDir = model.content_path ?? `.contentrain/content/${model.domain}/${model.id}`
+
+  if (model.kind === 'document') {
+    // Documents use directories — show the base path pattern
+    switch (strategy) {
+      case 'suffix': return `${baseDir}/{slug}.${locale}.md`
+      case 'directory': return `${baseDir}/${locale}/{slug}.md`
+      case 'none': return `${baseDir}/{slug}.md`
+      case 'file':
+      default: return `${baseDir}/{slug}/${locale}.md`
+    }
+  }
+
+  // JSON-based models (collection, singleton, dictionary)
+  switch (strategy) {
+    case 'suffix': return `${baseDir}/${model.id}.${locale}.json`
+    case 'directory': return `${baseDir}/${locale}/${model.id}.json`
+    case 'none': return `${baseDir}/${model.id}.json`
+    case 'file':
+    default: return `${baseDir}/${locale}.json`
+  }
+}
+
 function generateImportSnippet(
   model: import('@contentrain/types').ModelDefinition,
   stack: string,
   locale: string,
 ): Record<string, string> {
-  const path = `.contentrain/content/${model.domain}/${model.id}/${locale}.json`
+  const path = buildContentPath(model, locale)
 
   const snippets: Record<string, string> = {
     generic: `import data from '${path}'`,

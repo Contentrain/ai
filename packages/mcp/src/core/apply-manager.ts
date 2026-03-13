@@ -144,7 +144,7 @@ export async function applyExtract(
 
   // Execute — git transaction (always review mode for normalize)
   const branchName = buildBranchName('normalize', 'extract')
-  const tx = await createTransaction(projectRoot, branchName)
+  const tx = await createTransaction(projectRoot, branchName, { workflowOverride: 'review' })
   const sourceMap: Array<{ model: string; locale: string; value: string; file: string; line: number }> = []
   const modelsCreated: string[] = []
   const modelsUpdated: string[] = []
@@ -312,7 +312,7 @@ export async function applyReuse(
   // Execute — git transaction
   const scopeTarget = scope.model ?? scope.domain!
   const branchName = buildBranchName('normalize/reuse', scopeTarget)
-  const tx = await createTransaction(projectRoot, branchName)
+  const tx = await createTransaction(projectRoot, branchName, { workflowOverride: 'review' })
 
   const filesModified: string[] = []
   let patchesApplied = 0
@@ -517,7 +517,29 @@ function addImportsToLines(lines: string[], imports: Set<string>): number {
     }
   }
 
-  const insertAt = lastImportIdx >= 0 ? lastImportIdx + 1 : 0
+  let insertAt: number
+  if (lastImportIdx >= 0) {
+    insertAt = lastImportIdx + 1
+  } else {
+    // No existing imports found — insert after shebang and directive lines
+    insertAt = 0
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i]!.trim()
+      if (i === 0 && trimmed.startsWith('#!')) {
+        insertAt = i + 1
+        continue
+      }
+      if (trimmed === "'use client'" || trimmed === '"use client"'
+        || trimmed === "'use server'" || trimmed === '"use server"'
+        || trimmed === "'use client';" || trimmed === '"use client";'
+        || trimmed === "'use server';" || trimmed === '"use server";') {
+        insertAt = i + 1
+        continue
+      }
+      if (insertAt > 0 && trimmed.length > 0) break
+      if (insertAt === 0 && trimmed.length > 0) break
+    }
+  }
   const toInsert: string[] = []
 
   for (const imp of imports) {

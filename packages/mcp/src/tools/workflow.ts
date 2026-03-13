@@ -35,16 +35,15 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
           try {
             await tx.write(async (wt) => {
               result = await validateProject(wt, { model: input.model, fix: true })
+              await writeContext(wt, {
+                tool: 'contentrain_validate',
+                model: input.model ?? '*',
+              })
             })
 
             if (result!.fixed > 0) {
               await tx.commit(`[contentrain] validate: auto-fix ${result!.fixed} issue(s)`)
               const gitResult = await tx.complete()
-
-              await writeContext(projectRoot, {
-                tool: 'contentrain_validate',
-                model: input.model ?? '*',
-              })
 
               const nextSteps: string[] = []
               if (result!.summary.errors > 0) nextSteps.push('Fix remaining errors manually')
@@ -189,11 +188,6 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
           }
         }
 
-        await writeContext(projectRoot, {
-          tool: 'contentrain_submit',
-          model: '*',
-        })
-
         const nextSteps: string[] = []
         if (pushed.length > 0) nextSteps.push('Create PRs on your git platform for review')
         if (errors.length > 0) nextSteps.push('Fix push errors and retry')
@@ -205,7 +199,6 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
             pushed,
             errors: errors.length > 0 ? errors : undefined,
             remote: remoteName,
-            context_updated: true,
             next_steps: nextSteps,
           }, null, 2) }],
         }

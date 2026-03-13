@@ -55,20 +55,21 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
       try {
         let results: Awaited<ReturnType<typeof writeContent>>
 
+        let entryIds: string[] = []
+
         await tx.write(async (wt) => {
           results = await writeContent(wt, model, input.entries, config)
+          entryIds = results!.map(r => r.id ?? r.slug ?? r.locale).filter(Boolean) as string[]
+          await writeContext(wt, {
+            tool: 'contentrain_content_save',
+            model: input.model,
+            locale: input.entries[0]?.locale,
+            entries: entryIds,
+          })
         })
 
         await tx.commit(`[contentrain] content: ${input.model}`)
         const gitResult = await tx.complete()
-
-        const entryIds = results!.map(r => r.id ?? r.slug ?? r.locale).filter(Boolean) as string[]
-        await writeContext(projectRoot, {
-          tool: 'contentrain_content_save',
-          model: input.model,
-          locale: input.entries[0]?.locale,
-          entries: entryIds,
-        })
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
@@ -137,16 +138,15 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
             slug: input.slug,
             locale: input.locale,
           })
+          await writeContext(wt, {
+            tool: 'contentrain_content_delete',
+            model: input.model,
+            locale: input.locale,
+          })
         })
 
         await tx.commit(`[contentrain] delete content: ${input.model}`)
         const gitResult = await tx.complete()
-
-        await writeContext(projectRoot, {
-          tool: 'contentrain_content_delete',
-          model: input.model,
-          locale: input.locale,
-        })
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({

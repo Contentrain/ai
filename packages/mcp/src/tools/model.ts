@@ -78,12 +78,11 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
       try {
         await tx.write(async (wt) => {
           await writeModel(wt, model)
+          await writeContext(wt, { tool: 'contentrain_model_save', model: input.id })
         })
 
         await tx.commit(`[contentrain] ${action}: ${input.id}`)
         const gitResult = await tx.complete()
-
-        await writeContext(projectRoot, { tool: 'contentrain_model_save', model: input.id })
 
         const defaultLocale = config.locales.default
         const contentPath = `.contentrain/content/${input.domain}/${input.id}/`
@@ -171,12 +170,11 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
 
         await tx.write(async (wt) => {
           filesRemoved = await deleteModel(wt, modelId)
+          await writeContext(wt, { tool: 'contentrain_model_delete', model: modelId })
         })
 
         await tx.commit(`[contentrain] delete: ${modelId}`)
         const gitResult = await tx.complete()
-
-        await writeContext(projectRoot, { tool: 'contentrain_model_delete', model: modelId })
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({

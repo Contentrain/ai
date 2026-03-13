@@ -163,12 +163,28 @@ async function checkRelation(
         found = true
         break
       }
-      const targetData = await readJson<Record<string, unknown>>(
-        join(contentrainDir(projectRoot), 'content', targetModel.domain, targetModelId, `${locale}.json`),
-      )
-      if (targetData && ref in targetData) {
+
+      if (targetModel.kind === 'document') {
+        // Document relations reference by slug (directory name)
+        const docContentDir = join(contentrainDir(projectRoot), 'content', targetModel.domain, targetModelId)
+        const slugDirs = await readDir(docContentDir)
+        if (slugDirs.includes(ref)) {
+          found = true
+          break
+        }
+      } else if (targetModel.kind === 'singleton' || targetModel.kind === 'dictionary') {
+        // Relations to singletons/dictionaries are unusual but shouldn't error
         found = true
         break
+      } else {
+        // Collection: validate against entry IDs (object-map keys)
+        const targetData = await readJson<Record<string, unknown>>(
+          join(contentrainDir(projectRoot), 'content', targetModel.domain, targetModelId, `${locale}.json`),
+        )
+        if (targetData && ref in targetData) {
+          found = true
+          break
+        }
       }
     }
     if (!found) {
@@ -176,7 +192,7 @@ async function checkRelation(
         severity: 'error',
         ...ctx,
         field: fieldName,
-        message: `Broken relation: referenced ID "${ref}" not found in target model(s)`,
+        message: `Broken relation: referenced ${targets.some(t => t) ? 'ref' : 'ID'} "${ref}" not found in target model(s)`,
       })
     }
   }

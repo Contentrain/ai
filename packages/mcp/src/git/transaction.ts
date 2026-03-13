@@ -17,13 +17,26 @@ export interface GitTransaction {
 export async function createTransaction(
   projectRoot: string,
   branchName: string,
+  options?: { workflowOverride?: 'review' | 'auto-merge' },
 ): Promise<GitTransaction> {
   const git = simpleGit(projectRoot)
   const config = await readConfig(projectRoot)
-  const workflow = config?.workflow ?? 'auto-merge'
+  const workflow = options?.workflowOverride ?? config?.workflow ?? 'auto-merge'
 
   const remoteName = process.env['CONTENTRAIN_REMOTE'] ?? 'origin'
-  const baseBranch = process.env['CONTENTRAIN_BRANCH'] ?? config?.repository?.default_branch ?? 'main'
+
+  // Smart base branch detection: env → config → current branch → 'main'
+  let baseBranch = process.env['CONTENTRAIN_BRANCH'] ?? config?.repository?.default_branch ?? ''
+  if (!baseBranch) {
+    try {
+      baseBranch = (await git.raw(['branch', '--show-current'])).trim()
+    } catch {
+      // fallback below
+    }
+  }
+  if (!baseBranch) {
+    baseBranch = 'main'
+  }
 
   // Detect remote
   let hasRemote = false
@@ -92,12 +105,10 @@ export async function createTransaction(
         }
       }
 
-      // Stash any uncommitted changes before checkout
-      let stashed = false
+      // Ensure working tree is clean before checkout
       const status = await git.status()
       if (status.modified.length > 0 || status.not_added.length > 0 || status.created.length > 0) {
-        await git.stash()
-        stashed = true
+        throw new Error('Working tree has uncommitted changes. Commit or stash them before completing the transaction.')
       }
 
       await git.checkout(baseBranch)
@@ -107,10 +118,9 @@ export async function createTransaction(
       } catch {
         // Merge conflict (e.g. modify/delete from file add/remove cycles).
         // Contentrain branch always represents the intended state — resolve
-        // by taking all content from the branch.
+        // by taking only .contentrain/ files from the branch.
         try {
-          // Accept all conflicted files from the branch side
-          await git.raw(['checkout', branch, '--', '.'])
+          await git.raw(['checkout', branch, '--', '.contentrain/'])
           await git.add('.')
           await git.raw(['commit', '--no-edit'])
         } catch (retryError) {
@@ -124,15 +134,6 @@ export async function createTransaction(
             `Merge conflict on branch "${branch}". Changes are on the branch but not merged. Resolve manually or retry.`,
             { cause: retryError },
           )
-        }
-      }
-
-      // Restore stashed changes if any
-      if (stashed) {
-        try {
-          await git.stash(['pop'])
-        } catch {
-          // stash pop conflict is non-fatal
         }
       }
 
