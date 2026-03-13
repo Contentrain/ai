@@ -1,0 +1,18 @@
+{
+  "lastOperation": {
+    "locale": "en",
+    "model": "",
+    "source": "mcp-local",
+    "timestamp": "2026-03-13T18:05:07.179Z",
+    "tool": "contentrain_init"
+  },
+  "stats": {
+    "entries": 0,
+    "lastSync": "2026-03-13T18:05:07.179Z",
+    "locales": [
+      "en"
+    ],
+    "models": 0
+  },
+  "version": "1"
+}
