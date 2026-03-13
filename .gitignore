@@ -36,3 +36,6 @@ docs/internal/
 # Changesets temp
 .changeset/*.md
 !.changeset/README.md
+
+# Contentrain cache
+.contentrain/.cache/
