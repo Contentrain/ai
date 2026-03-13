@@ -2,7 +2,7 @@ import type { ModelDefinition, FieldDef } from '@contentrain/types'
 import { join } from 'node:path'
 import { readText, writeText, pathExists } from '../util/fs.js'
 import { readModel, writeModel, listModels } from './model-manager.js'
-import { writeContent, type ContentEntry } from './content-manager.js'
+import { writeContent, resolveContentDir, resolveJsonFilePath, resolveMdFilePath, type ContentEntry } from './content-manager.js'
 import { readConfig } from './config.js'
 import { writeContext } from './context.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
@@ -112,13 +112,15 @@ export async function applyExtract(
     }
     totalEntries += ext.entries.length
 
-    // Estimate content file paths
+    // Estimate content file paths using resolvers
+    const tempModel = { id: ext.model, kind: ext.kind, domain: ext.domain, i18n: ext.i18n ?? true } as ModelDefinition
+    const cDir = resolveContentDir(projectRoot, tempModel)
     for (const entry of ext.entries) {
       const locale = entry.locale ?? config.locales.default
       if (ext.kind === 'document' && entry.slug) {
-        contentFiles.push(`content/${ext.domain}/${ext.model}/${entry.slug}/${locale}.md`)
+        contentFiles.push(resolveMdFilePath(cDir, tempModel, locale, entry.slug))
       } else {
-        contentFiles.push(`content/${ext.domain}/${ext.model}/${locale}.json`)
+        contentFiles.push(resolveJsonFilePath(cDir, tempModel, locale))
       }
     }
   }

@@ -339,7 +339,9 @@ export async function deleteContent(
         }
       }
 
-      await deleteMeta(projectRoot, model, { locale: opts.locale, entryId: opts.id })
+      for (const loc of locales) {
+        await deleteMeta(projectRoot, model, { locale: loc, entryId: opts.id })
+      }
       break
     }
 
@@ -381,12 +383,15 @@ export async function deleteContent(
 
     case 'singleton':
     case 'dictionary': {
-      if (!opts.locale) throw new Error(`${model.kind} delete requires a locale`)
-      const filePath = resolveJsonFilePath(cDir, model, opts.locale)
+      if (model.i18n && !opts.locale) throw new Error(`${model.kind} delete requires a locale when i18n is enabled`)
+      const locale = opts.locale ?? 'data'
+      const filePath = resolveJsonFilePath(cDir, model, locale)
       await rm(filePath, { force: true })
-      removed.push(`content/${model.domain}/${model.id}/${opts.locale}.json`)
+      removed.push(model.i18n
+        ? `content/${model.domain}/${model.id}/${locale}.json`
+        : `content/${model.domain}/${model.id}/data.json`)
 
-      await deleteMeta(projectRoot, model, { locale: opts.locale })
+      await deleteMeta(projectRoot, model, { locale: model.i18n ? locale : undefined })
       break
     }
   }

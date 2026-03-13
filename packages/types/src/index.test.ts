@@ -6,6 +6,7 @@ import type {
   ContentSource,
   WorkflowMode,
   StackType,
+  Platform,
   ContextSource,
   CollectionRuntimeFormat,
   FieldDef,
@@ -89,13 +90,46 @@ describe('@contentrain/types', () => {
       expectTypeOf<'review'>().toMatchTypeOf<WorkflowMode>()
     })
 
-    it('StackType has 6 members', () => {
+    it('StackType covers all platform categories', () => {
+      // Meta-frameworks
       expectTypeOf<'nuxt'>().toMatchTypeOf<StackType>()
       expectTypeOf<'next'>().toMatchTypeOf<StackType>()
-      expectTypeOf<'react-vite'>().toMatchTypeOf<StackType>()
       expectTypeOf<'astro'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'sveltekit'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'remix'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'analog'>().toMatchTypeOf<StackType>()
+      // Plain frameworks
+      expectTypeOf<'vue'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'react'>().toMatchTypeOf<StackType>()
       expectTypeOf<'svelte'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'solid'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'angular'>().toMatchTypeOf<StackType>()
+      // Mobile
+      expectTypeOf<'react-native'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'expo'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'flutter'>().toMatchTypeOf<StackType>()
+      // Backend
+      expectTypeOf<'node'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'django'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'rails'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'go'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'rust'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'dotnet'>().toMatchTypeOf<StackType>()
+      // Static + Desktop
+      expectTypeOf<'hugo'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'electron'>().toMatchTypeOf<StackType>()
+      expectTypeOf<'tauri'>().toMatchTypeOf<StackType>()
+      // Catch-all
       expectTypeOf<'other'>().toMatchTypeOf<StackType>()
+    })
+
+    it('Platform has 6 members', () => {
+      expectTypeOf<'web'>().toMatchTypeOf<Platform>()
+      expectTypeOf<'mobile'>().toMatchTypeOf<Platform>()
+      expectTypeOf<'api'>().toMatchTypeOf<Platform>()
+      expectTypeOf<'desktop'>().toMatchTypeOf<Platform>()
+      expectTypeOf<'static'>().toMatchTypeOf<Platform>()
+      expectTypeOf<'other'>().toMatchTypeOf<Platform>()
     })
 
     it('ContextSource has 3 members', () => {

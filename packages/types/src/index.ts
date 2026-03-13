@@ -14,7 +14,23 @@ export type ModelKind = 'singleton' | 'collection' | 'document' | 'dictionary'
 export type ContentStatus = 'draft' | 'in_review' | 'published' | 'rejected' | 'archived'
 export type ContentSource = 'agent' | 'human' | 'import'
 export type WorkflowMode = 'auto-merge' | 'review'
-export type StackType = 'nuxt' | 'next' | 'react-vite' | 'astro' | 'svelte' | 'other'
+// Meta-frameworks
+export type StackType =
+  | 'nuxt' | 'next' | 'astro' | 'sveltekit' | 'remix' | 'analog'
+  // Plain frameworks
+  | 'vue' | 'react' | 'svelte' | 'solid' | 'angular'
+  // Mobile
+  | 'react-native' | 'expo' | 'flutter'
+  // Backend
+  | 'node' | 'express' | 'fastify' | 'nestjs' | 'django' | 'rails' | 'laravel' | 'go' | 'rust' | 'dotnet'
+  // Static site generators
+  | 'hugo' | 'jekyll' | 'eleventy'
+  // Desktop
+  | 'electron' | 'tauri'
+  // Catch-all
+  | 'other'
+
+export type Platform = 'web' | 'mobile' | 'api' | 'desktop' | 'static' | 'other'
 export type ContextSource = 'mcp-local' | 'mcp-studio' | 'studio-ui'
 export type CollectionRuntimeFormat = 'map' | 'array'
 
@@ -59,6 +75,7 @@ export interface ModelDefinition {
 
 export interface ContentrainConfig {
   version: number
+  platform?: Platform
   stack: StackType
   workflow: WorkflowMode
   repository?: {
@@ -206,6 +223,7 @@ export interface ScanSummaryResult {
   total_candidates_estimate: number
   by_directory: Record<string, { files: number; candidates: number }>
   top_repeated: Array<{ value: string; count: number }>
+  sampling_note?: string
   file_types: Record<string, number>
 }
 

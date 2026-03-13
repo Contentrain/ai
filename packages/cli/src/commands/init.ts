@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 import { intro, outro, log, spinner, select, multiselect, confirm, isCancel } from '@clack/prompts'
 import { join } from 'node:path'
 import { simpleGit } from 'simple-git'
-import { detectStack } from '@contentrain/mcp/util/detect'
+import { detectStackInfo } from '@contentrain/mcp/util/detect'
 import { ensureDir, pathExists, writeJson } from '@contentrain/mcp/util/fs'
 import { writeContext } from '@contentrain/mcp/core/context'
 import { writeModel } from '@contentrain/mcp/core/model-manager'
@@ -56,12 +56,19 @@ export default defineCommand({
     // 1. Detect stack
     const s = spinner()
     s.start('Detecting project stack...')
-    const detectedStack = await detectStack(projectRoot)
-    s.stop(`Detected: ${pc.cyan(detectedStack)}`)
+    const info = await detectStackInfo(projectRoot)
+    s.stop(`Detected: ${pc.cyan(info.name)} — ${info.description}`)
+
+    if (info.monorepo) {
+      log.info(`Monorepo: ${pc.green('Yes')}${info.monorepoTool ? ` (${info.monorepoTool})` : ''}`)
+    }
+    if (info.features.length > 0) {
+      log.info(`Features: ${info.features.map(f => pc.dim(f)).join(', ')}`)
+    }
 
     if (args.yes) {
       await executeInit(projectRoot, {
-        stack: detectedStack,
+        stack: info.stack,
         locales: ['en'],
         domains: ['marketing', 'blog', 'system'],
         workflow: 'auto-merge',
@@ -72,15 +79,26 @@ export default defineCommand({
     }
 
     // 2. Confirm stack
+    const ALL_STACKS = [
+      { group: 'Meta-frameworks', items: ['nuxt', 'next', 'astro', 'sveltekit', 'remix', 'analog'] },
+      { group: 'Frameworks', items: ['vue', 'react', 'svelte', 'solid', 'angular'] },
+      { group: 'Mobile', items: ['react-native', 'expo', 'flutter'] },
+      { group: 'Backend', items: ['node', 'express', 'fastify', 'nestjs', 'django', 'rails', 'laravel', 'go', 'rust', 'dotnet'] },
+      { group: 'Static', items: ['hugo', 'jekyll', 'eleventy'] },
+      { group: 'Desktop', items: ['electron', 'tauri'] },
+    ]
+    const flatStacks = ALL_STACKS.flatMap(g => g.items)
+
     const stackChoice = await select({
       message: 'Project framework',
       options: [
-        { value: detectedStack, label: `${detectedStack} (detected)` },
-        ...['nuxt', 'next', 'astro', 'svelte', 'react-vite', 'other']
-          .filter(v => v !== detectedStack)
+        { value: info.stack, label: `${info.name} (detected)` },
+        ...flatStacks
+          .filter(v => v !== info.stack)
           .map(v => ({ value: v, label: v })),
+        { value: 'other', label: 'Other' },
       ],
-      initialValue: detectedStack,
+      initialValue: info.stack,
     })
     if (isCancel(stackChoice)) return handleCancel()
 

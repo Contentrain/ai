@@ -299,6 +299,51 @@ describe('contentrain_content_delete', () => {
     expect(content!['delete-me']).toBeUndefined()
   })
 
+  it('deletes collection entry metadata across all locales when locale is omitted', async () => {
+    client = await createModel(client, 'authors', 'collection', 'blog', {
+      name: { type: 'string' },
+    })
+
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'authors',
+        entries: [
+          { id: 'delete-me', locale: 'en', data: { name: 'English' } },
+          { id: 'delete-me', locale: 'tr', data: { name: 'Turkce' } },
+        ],
+      },
+    })
+
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_content_delete',
+      arguments: { model: 'authors', id: 'delete-me', confirm: true },
+    })
+
+    const data = parseResult(result)
+    expect(data['deleted']).toBe(true)
+
+    const enContent = await readJson<Record<string, unknown>>(
+      join(testDir, '.contentrain', 'content', 'blog', 'authors', 'en.json'),
+    )
+    const trContent = await readJson<Record<string, unknown>>(
+      join(testDir, '.contentrain', 'content', 'blog', 'authors', 'tr.json'),
+    )
+    expect(enContent!['delete-me']).toBeUndefined()
+    expect(trContent!['delete-me']).toBeUndefined()
+
+    const enMeta = await readJson<Record<string, unknown>>(
+      join(testDir, '.contentrain', 'meta', 'authors', 'en.json'),
+    )
+    const trMeta = await readJson<Record<string, unknown>>(
+      join(testDir, '.contentrain', 'meta', 'authors', 'tr.json'),
+    )
+    expect(enMeta?.['delete-me']).toBeUndefined()
+    expect(trMeta?.['delete-me']).toBeUndefined()
+  })
+
   it('deletes document slug directory', async () => {
     client = await createModel(client, 'blog-post', 'document', 'blog', {
       title: { type: 'string' },

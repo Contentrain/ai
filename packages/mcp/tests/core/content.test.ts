@@ -61,6 +61,17 @@ const dictionaryModel: ModelDefinition = {
   i18n: true,
 }
 
+const nonI18nSingletonModel: ModelDefinition = {
+  id: 'site-settings',
+  name: 'Site Settings',
+  kind: 'singleton',
+  domain: 'system',
+  i18n: false,
+  fields: {
+    title: { type: 'string', required: true },
+  },
+}
+
 beforeEach(async () => {
   testDir = await mkdtemp(join(tmpdir(), 'cr-content-test-'))
   // Create necessary directories
@@ -69,10 +80,12 @@ beforeEach(async () => {
   await mkdir(join(crDir, 'content', 'blog', 'authors'), { recursive: true })
   await mkdir(join(crDir, 'content', 'blog', 'blog-post'), { recursive: true })
   await mkdir(join(crDir, 'content', 'system', 'error-messages'), { recursive: true })
+  await mkdir(join(crDir, 'content', 'system', 'site-settings'), { recursive: true })
   await mkdir(join(crDir, 'meta', 'hero'), { recursive: true })
   await mkdir(join(crDir, 'meta', 'authors'), { recursive: true })
   await mkdir(join(crDir, 'meta', 'blog-post'), { recursive: true })
   await mkdir(join(crDir, 'meta', 'error-messages'), { recursive: true })
+  await mkdir(join(crDir, 'meta', 'site-settings'), { recursive: true })
 })
 
 afterEach(async () => {
@@ -358,6 +371,25 @@ describe('deleteContent', () => {
       join(contentrainDir(testDir), 'content', 'marketing', 'hero', 'tr.json'),
     )
     expect(content).toBeNull()
+  })
+
+  it('allows locale-free delete for non-i18n singleton models', async () => {
+    await writeContent(testDir, nonI18nSingletonModel, [
+      { data: { title: 'Contentrain' } },
+    ], config)
+
+    const removed = await deleteContent(testDir, nonI18nSingletonModel, {})
+    expect(removed).toHaveLength(1)
+
+    const content = await readJson(
+      join(contentrainDir(testDir), 'content', 'system', 'site-settings', 'data.json'),
+    )
+    expect(content).toBeNull()
+
+    const meta = await readJson(
+      join(contentrainDir(testDir), 'meta', 'site-settings', 'en.json'),
+    )
+    expect(meta).toBeNull()
   })
 
   it('removes dictionary locale file', async () => {

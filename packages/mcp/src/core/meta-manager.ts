@@ -74,5 +74,13 @@ export async function deleteMeta(
   } else if (opts.locale) {
     const filePath = metaPath(projectRoot, model, opts)
     await rm(filePath, { force: true })
+  } else {
+    // No locale specified — remove all meta for this model (non-i18n or full cleanup)
+    const metaDir = join(contentrainDir(projectRoot), 'meta', model.id)
+    try {
+      await rm(metaDir, { recursive: true, force: true })
+    } catch {
+      // directory may not exist
+    }
   }
 }

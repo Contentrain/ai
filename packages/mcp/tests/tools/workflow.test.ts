@@ -244,6 +244,40 @@ describe('contentrain_validate', () => {
     expect(secretIssue!['severity']).toBe('error')
   })
 
+  it('detects pattern violations from schema constraints', async () => {
+    client = await createModel(client, 'authors', 'collection', 'blog', {
+      email: { type: 'string', required: true, pattern: '^[^@]+@example\\\\.com$' },
+    })
+
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'authors',
+        entries: [
+          { id: 'author-001', locale: 'en', data: { email: 'alice@outside.com' } },
+          { id: 'author-001', locale: 'tr', data: { email: 'alice@outside.com' } },
+        ],
+      },
+    })
+
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_validate',
+      arguments: { model: 'authors' },
+    })
+
+    const data = parseResult(result)
+    expect(data['valid']).toBe(false)
+    const issues = data['issues'] as Array<Record<string, unknown>>
+    const patternIssue = issues.find(i =>
+      (i['message'] as string).includes('Pattern'),
+    )
+    expect(patternIssue).toBeDefined()
+    expect(patternIssue!['severity']).toBe('error')
+    expect(patternIssue!['field']).toBe('email')
+  })
+
   it('auto-fix orphan meta', async () => {
     client = await createModel(client, 'authors', 'collection', 'blog', {
       name: { type: 'string' },
@@ -285,6 +319,49 @@ describe('contentrain_validate', () => {
     const updatedMeta = await readJson<Record<string, unknown>>(metaPath)
     expect(updatedMeta!['orphan-entry']).toBeUndefined()
     expect(updatedMeta!['keep-me']).toBeDefined()
+  })
+
+  it('auto-fix orphan content by recreating missing meta entries', async () => {
+    client = await createModel(client, 'authors', 'collection', 'blog', {
+      name: { type: 'string' },
+    })
+
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'authors',
+        entries: [
+          { id: 'keep-me', locale: 'en', data: { name: 'Alice' } },
+          { id: 'keep-me', locale: 'tr', data: { name: 'Aylin' } },
+        ],
+      },
+    })
+
+    client = await createTestClient(testDir)
+
+    const metaPath = join(testDir, '.contentrain', 'meta', 'authors', 'en.json')
+    const metaData = await readJson<Record<string, Record<string, unknown>>>(metaPath) ?? {}
+    delete metaData['keep-me']
+    await writeJson(metaPath, metaData)
+
+    const git = simpleGit(testDir)
+    await git.add('.')
+    await git.commit('remove author meta')
+
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_validate',
+      arguments: { model: 'authors', fix: true },
+    })
+
+    const data = parseResult(result)
+    expect(data['fixed']).toBeGreaterThan(0)
+
+    const updatedMeta = await readJson<Record<string, Record<string, unknown>>>(metaPath)
+    expect(updatedMeta!['keep-me']).toBeDefined()
+    expect(updatedMeta!['keep-me']!['status']).toBe('draft')
+    expect(updatedMeta!['keep-me']!['source']).toBe('import')
   })
 
   it('auto-fix canonical sort', async () => {

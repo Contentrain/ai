@@ -54,7 +54,7 @@ export async function cleanupMergedBranches(projectRoot: string): Promise<Cleanu
   const deletedBranches: string[] = []
 
   // Determine retention period (days). Default: 7
-  const retentionDays = config?.branchRetention ?? 7
+  const retentionDays = config?.branchRetention ?? 30
   const retentionMs = retentionDays * 24 * 60 * 60 * 1000
   const now = Date.now()
 

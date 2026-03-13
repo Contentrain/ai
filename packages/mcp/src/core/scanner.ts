@@ -739,6 +739,7 @@ export async function scanSummary(
     total_candidates_estimate: totalCandidatesEstimate,
     by_directory: byDirectory,
     top_repeated: topRepeated,
+    sampling_note: `Based on first ${SUMMARY_SAMPLE_SIZE} files per directory. Counts are from sampled subset, not project-wide.`,
     file_types: fileTypes,
   }
 }
