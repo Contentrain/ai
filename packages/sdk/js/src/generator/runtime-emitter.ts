@@ -215,17 +215,34 @@ export function emitCjsWrapper(models: ModelDefinition[]): string {
   if (models.some(m => m.kind === 'document')) exports.push('document')
 
   return `// Auto-generated CJS proxy — delegates to ESM via dynamic import()
-// Usage: const { query } = await import('./.contentrain/client/index.mjs')
-// Or:    const client = await require('./index.cjs').init()
+// Sync usage: const client = require('#contentrain'); client.query('model')
+// Async usage: const client = await require('#contentrain').init()
 'use strict'
-let _promise
+let _mod = null
+let _promise = null
+
+function _ensure() {
+  if (_mod) return _mod
+  throw new Error(
+    'Contentrain client not initialized. Call .init() first, then access exports.\\n'
+    + 'Example: require("#contentrain").init().then(c => c.query("model"))'
+  )
+}
+
 module.exports.init = function() {
   if (!_promise) _promise = import('./index.mjs').then(function(m) {
+    _mod = m
 ${exports.map(e => `    module.exports.${e} = m.${e}`).join('\n')}
     return module.exports
   })
   return _promise
 }
+
+// Eagerly start loading so subsequent sync calls work after first await
+_promise = import('./index.mjs').then(function(m) {
+  _mod = m
+${exports.map(e => `  module.exports.${e} = m.${e}`).join('\n')}
+}).catch(function() { /* swallow — init() will retry */ })
 `
 }
 
