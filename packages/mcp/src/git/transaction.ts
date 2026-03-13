@@ -91,18 +91,49 @@ export async function createTransaction(
           // continue with local state
         }
       }
+
+      // Stash any uncommitted changes before checkout
+      let stashed = false
+      const status = await git.status()
+      if (status.modified.length > 0 || status.not_added.length > 0 || status.created.length > 0) {
+        await git.stash()
+        stashed = true
+      }
+
       await git.checkout(baseBranch)
 
       try {
-        await git.merge([branch])
-      } catch (error) {
-        // Merge conflict — abort and report
+        await git.merge([branch, '--no-edit'])
+      } catch {
+        // Merge conflict (e.g. modify/delete from file add/remove cycles).
+        // Contentrain branch always represents the intended state — resolve
+        // by taking all content from the branch.
         try {
-          await git.merge(['--abort'])
-        } catch {
-          // abort may fail if not in merge state
+          // Accept all conflicted files from the branch side
+          await git.raw(['checkout', branch, '--', '.'])
+          await git.add('.')
+          await git.raw(['commit', '--no-edit'])
+        } catch (retryError) {
+          // If that also fails, abort and report
+          try {
+            await git.merge(['--abort'])
+          } catch {
+            // abort may fail if not in merge state
+          }
+          throw new Error(
+            `Merge conflict on branch "${branch}". Changes are on the branch but not merged. Resolve manually or retry.`,
+            { cause: retryError },
+          )
         }
-        throw new Error(`Merge conflict on branch "${branch}". Changes are on the branch but not merged. Resolve manually or retry.`, { cause: error })
+      }
+
+      // Restore stashed changes if any
+      if (stashed) {
+        try {
+          await git.stash(['pop'])
+        } catch {
+          // stash pop conflict is non-fatal
+        }
       }
 
       if (hasRemote) {
