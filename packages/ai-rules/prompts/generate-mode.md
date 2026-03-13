@@ -148,12 +148,14 @@ contentrain_content_save(
 
 ### Content for Each Kind
 
-| Kind | How to Save |
+All kinds use `contentrain_content_save(model, entries)` where `entries` is an array:
+
+| Kind | Entry Format |
 |------|-------------|
-| Singleton | `contentrain_content_save(model, locale, data)` — one call per locale |
-| Collection | `contentrain_content_save(model, locale, data)` — one call per entry per locale. Omit `entry_id` for new entries. |
-| Document | `contentrain_content_save(model, locale, data)` — data includes frontmatter fields. Body in `content` or `body` field. |
-| Dictionary | `contentrain_content_save(model, locale, data)` — data is `{ "key": "value", ... }` flat pairs |
+| Singleton | `{ locale: "en", data: { field: value } }` -- no id or slug |
+| Collection | `{ id?: "optional", locale: "en", data: { field: value } }` -- omit id for new entries |
+| Document | `{ slug: "my-slug", locale: "en", data: { title: "...", body: "# Markdown" } }` -- slug required |
+| Dictionary | `{ locale: "en", data: { "key": "value", ... } }` -- flat key-value pairs |
 
 ---
 

@@ -86,4 +86,4 @@ Report to the user:
 - What was created in `.contentrain/`.
 - Which models were set up.
 - How to import content in their code (show the `#contentrain` import).
-- Next steps: create content, run `contentrain-query generate`, start the dev server.
+- Next steps: create content, run `npx contentrain generate`, start the dev server.

@@ -97,6 +97,15 @@ Created (worktree) --> Committed --> Merged/Pushed --> Cleaned up
 
 Merged branches are retained for `branchRetention` days (default: 30) for audit trail, then pruned.
 
+### 3.4 Branch Health
+
+MCP enforces branch health limits to prevent branch accumulation:
+
+- **50+ active branches**: Warning. Operations continue but the user is alerted.
+- **80+ active branches**: Blocked. No new write operations until branches are merged or deleted.
+- `contentrain_status` reports branch health automatically (total, merged, unmerged counts).
+- Merged branches are cleaned up lazily during status checks and submit operations.
+
 ---
 
 ## 4. Conflict Resolution

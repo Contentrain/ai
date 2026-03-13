@@ -9,8 +9,8 @@
 ### 1.1 SDK Installation
 
 ```bash
-npm install @contentrain/query
-npx contentrain-query generate
+pnpm add @contentrain/query   # or npm/yarn
+npx contentrain generate
 ```
 
 The generator reads `.contentrain/models/` and produces a typed client in `.contentrain/client/`. Your `package.json` must include the subpath import:
@@ -18,7 +18,12 @@ The generator reads `.contentrain/models/` and produces a typed client in `.cont
 ```json
 {
   "imports": {
-    "#contentrain": "./.contentrain/client/index.mjs"
+    "#contentrain": {
+      "types": "./.contentrain/client/index.d.ts",
+      "import": "./.contentrain/client/index.mjs",
+      "require": "./.contentrain/client/index.cjs",
+      "default": "./.contentrain/client/index.mjs"
+    }
   }
 }
 ```
@@ -30,7 +35,7 @@ The generator adds this automatically. After generation, restart the Nuxt dev se
 Run the generator in watch mode alongside Nuxt dev:
 
 ```bash
-npx contentrain-query generate --watch &
+npx contentrain generate --watch &
 npx nuxt dev
 ```
 

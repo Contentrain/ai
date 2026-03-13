@@ -152,6 +152,8 @@ Model definitions live at `.contentrain/models/{model-id}.json`. One file per mo
 | `i18n` | `boolean` | Yes | Whether the model supports multiple locales. |
 | `description` | `string` | No | Model description for documentation and agent context. |
 | `fields` | `object` | Yes (except dictionary) | Field definitions. Dictionary kind has NO fields. |
+| `content_path` | `string` | No | Framework-relative path for content files (e.g., `"content/blog"`, `"locales"`). When set, content is written here instead of `.contentrain/content/`. |
+| `locale_strategy` | `string` | No | How locale is encoded in file names: `"file"` (default), `"suffix"`, `"directory"`, `"none"`. |
 
 ### 4.2 System Fields
 
@@ -163,6 +165,22 @@ Do NOT define these in the schema. The platform manages them automatically:
 | `slug` | Document | Directory name in content path |
 | `createdAt` / `updatedAt` | All | Derived from Git commit history (not stored) |
 | `status`, `source`, `updated_by`, `approved_by` | All | Stored in `.contentrain/meta/` |
+
+---
+
+### 4.3 Locale Strategy Rules
+
+The `locale_strategy` property controls how locale is encoded in file paths:
+
+| Strategy | i18n:true JSON path | i18n:true Document path | i18n:false path |
+|----------|---------------------|------------------------|-----------------|
+| `file` (default) | `{dir}/{locale}.json` | `{dir}/{slug}/{locale}.md` | `{dir}/data.json` |
+| `suffix` | `{dir}/{model}.{locale}.json` | `{dir}/{slug}.{locale}.md` | `{dir}/data.json` |
+| `directory` | `{dir}/{locale}/{model}.json` | `{dir}/{locale}/{slug}.md` | `{dir}/data.json` |
+| `none` | **INVALID** (requires i18n:false) | **INVALID** | `{dir}/{model}.json` or `{dir}/{slug}.md` |
+
+- `locale_strategy: "none"` requires `i18n: false`. The "none" strategy stores a single file without locale encoding.
+- When `content_path` is set, `{dir}` is the content_path. Otherwise `{dir}` is `.contentrain/content/{domain}/{model-id}`.
 
 ---
 

@@ -83,20 +83,28 @@ Wait for user confirmation before proceeding.
 
 ### 8. Save Content
 
-Call `contentrain_content_save` with the approved content:
+Call `contentrain_content_save` with the approved content. The tool takes `model` and an `entries` array:
 
+```json
+contentrain_content_save({
+  "model": "<model-id>",
+  "entries": [
+    { "locale": "en", "data": { "field": "value" } }
+  ]
+})
 ```
-contentrain_content_save(model: "<model-id>", locale: "<source-locale>", entries: [{ ... }])
-```
 
-**Kind-specific rules:**
+**Kind-specific entry format:**
 
-- **singleton:** Single object, no ID needed.
-- **collection:** Object-map entries. Do NOT write `id`, `createdAt`, `updatedAt` — system manages these. Prefer batch mode (multiple entries in one call).
-- **document:** Markdown with JSON frontmatter. Slug derived from title.
-- **dictionary:** Flat key-value pairs (e.g., `"auth.login": "Log In"`).
+- **singleton:** `{ "locale": "en", "data": { "title": "My Site", "cta": "Get Started" } }` -- no `id` or `slug`.
+- **collection:** `{ "id": "optional-id", "locale": "en", "data": { "name": "John", "role": "CEO" } }` -- omit `id` to auto-generate, provide `id` to update.
+- **document:** `{ "slug": "getting-started", "locale": "en", "data": { "title": "Getting Started", "body": "# Welcome\n..." } }` -- `slug` is required, use `"body"` key for markdown content.
+- **dictionary:** `{ "locale": "en", "data": { "auth.login": "Log In", "auth.logout": "Log Out" } }` -- flat key-value pairs, no `id` or `slug`.
 
-For collections, omit `entry_id` to create a new entry. For singletons, the system handles the single-entry constraint.
+**Critical rules:**
+- NEVER include system fields (`status`, `source`, `updated_by`, `updated_at`, `createdAt`, `updatedAt`) in `data`.
+- Prefer batch mode -- send multiple entries in a single call when possible.
+- Locale defaults to the project's default locale if omitted, but explicit locale is recommended.
 
 ### 9. Handle i18n Completeness
 
@@ -125,13 +133,14 @@ Fix any errors reported. Acknowledge any warnings.
 
 ### 11. Submit
 
-Call `contentrain_submit` to commit the changes:
+Call `contentrain_submit` to push branches to remote:
 
-- Branch naming follows: `contentrain/content/{model}/{locale}/{timestamp}`.
-- In `auto-merge` mode, changes merge to main automatically.
-- In `review` mode, a branch is pushed for team review.
+- Write operations already create branches and commit changes automatically.
+- `contentrain_submit` pushes unmerged `contentrain/*` branches to the remote.
+- In `auto-merge` mode, branches are already merged to the base branch during the write operation.
+- In `review` mode, branches are pushed for team review.
 
-Report the Studio URL if provided in the tool response — the user can review and approve content there.
+Report the Studio URL if provided in the tool response -- the user can review and approve content there.
 
 ### 12. Final Summary
 

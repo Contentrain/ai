@@ -116,10 +116,12 @@ Wait for user approval. The user may request adjustments to tone, phrasing, or t
 After approval, call `contentrain_content_save` for each model and target locale:
 
 ```
-contentrain_content_save(model: "<model-id>", locale: "<target-locale>", entries: [{ ...translatedFields }])
+contentrain_content_save(model: "<model-id>", entries: [
+  { id: "<same-id>", locale: "<target-locale>", data: { ...translatedFields } }
+])
 ```
 
-Use the same `entry_id` as the source entry to maintain the cross-locale link. Batch all entries for a model in one call.
+Use the same `id` (for collections) or `slug` (for documents) as the source entry to maintain the cross-locale link. Batch all entries for a model in one call.
 
 ### 9. Validate
 

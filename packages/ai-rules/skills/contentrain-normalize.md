@@ -87,7 +87,9 @@ Show the preview to the user.
 
 ### Step 7. Execute Extraction
 
-After user confirmation, call `contentrain_apply(mode: "extract")`.
+After user confirmation, call `contentrain_apply(mode: "extract", dry_run: false)`.
+
+Note: `dry_run` defaults to `true`, so you MUST explicitly set `dry_run: false` to execute.
 
 This creates model definitions and content files in `.contentrain/` on a `contentrain/normalize/extract/{timestamp}` branch. Source files are NOT modified.
 
@@ -137,7 +139,9 @@ The agent determines the replacement expression — MCP does exact string replac
 
 ### Step 3. Preview Reuse
 
-Call `contentrain_apply(mode: "reuse", scope: { domain: "<domain>" }, dry_run: true)`.
+Call `contentrain_apply(mode: "reuse", scope: { model: "<model-id>" }, patches: [...], dry_run: true)`.
+
+The `scope` requires at least one of `model` or `domain`. The `patches` array contains the replacement instructions:
 
 Review the dry-run output:
 
@@ -150,7 +154,9 @@ Show the preview to the user.
 
 ### Step 4. Execute Reuse
 
-After user confirmation, call `contentrain_apply(mode: "reuse", scope: { domain: "<domain>" })`.
+After user confirmation, call `contentrain_apply(mode: "reuse", scope: { model: "<model-id>" }, patches: [...], dry_run: false)`.
+
+Note: `dry_run` defaults to `true`, so you MUST explicitly set `dry_run: false` to execute.
 
 This patches source files and creates a `contentrain/normalize/reuse/{model}/{timestamp}` branch.
 

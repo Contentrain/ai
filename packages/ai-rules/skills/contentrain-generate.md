@@ -29,13 +29,14 @@ Check that the required packages are available:
 - `@contentrain/query` must be installed in the project's `package.json` (as a dependency).
 - The `contentrain` CLI must be available (via `npx contentrain` or globally installed).
 
-If `@contentrain/query` is not installed, install it:
+If `@contentrain/query` is not installed, install it using the project's package manager:
 
 ```bash
+# Use whichever package manager the project uses
 pnpm add @contentrain/query
+# or: npm install @contentrain/query
+# or: yarn add @contentrain/query
 ```
-
-(Or the appropriate package manager command for the project.)
 
 ### 3. Run the Generator
 
@@ -112,37 +113,83 @@ If this fails, check:
 
 Based on the detected stack and available models, show relevant examples using actual model IDs and field names from the project — not generic placeholders.
 
-#### Basic Query (all frameworks)
+#### Complete SDK API Reference
 
 ```ts
-import { query, singleton, dictionary } from '#contentrain'
+import { query, singleton, dictionary, document } from '#contentrain'
+```
 
-// Get all blog posts in English (SYNC — no await needed)
+**QueryBuilder (for collection models) -- SYNC, no await needed:**
+
+```ts
 const posts = query('blog-post')
-  .locale('en')
-  .where('status', 'published')
-  .sort('createdAt', 'desc')
-  .limit(10)
-  .all()
+  .locale('en')               // set locale
+  .where('status', 'published') // exact match filter
+  .sort('date', 'desc')       // sort by field
+  .limit(10)                  // limit results
+  .offset(5)                  // skip results
+  .include('author', 'tags')  // resolve relation fields (1 level deep)
+  .all()                      // --> T[] (returns array)
+  .first()                    // --> T | undefined (first match)
+```
 
-// Get a singleton
+**SingletonAccessor (for singleton models):**
+
+```ts
 const hero = singleton('hero')
   .locale('en')
-  .get()
-
-// Get dictionary entries
-const labels = dictionary('ui-labels')
-  .locale('tr')
-  .get()
+  .include('featured_post')   // resolve relations on singletons too
+  .get()                      // --> T (single object)
 ```
+
+**DictionaryAccessor (for dictionary models):**
+
+```ts
+const allLabels = dictionary('ui-labels').locale('en').get()       // --> Record<string, string>
+const oneLabel = dictionary('ui-labels').locale('en').get('key')   // --> string | undefined
+```
+
+**DocumentQuery (for document models -- markdown + frontmatter):**
+
+```ts
+const article = document('blog-article')
+  .locale('en')
+  .where('category', 'tech')
+  .include('author')          // resolve relations in frontmatter
+  .bySlug('getting-started')  // --> T | undefined (find by slug)
+
+const docs = document('doc-page').locale('en').all()    // --> T[]
+const first = document('doc-page').locale('en').first()  // --> T | undefined
+```
+
+**DOES NOT EXIST -- never use these:**
+- `.filter()` -- use `.where(field, value)` instead
+- `.byId()` -- use `.where('id', value).first()` instead
+- `.count()` -- use `.all().length` instead
+- `dictionary().all()` -- use `.get()` instead
+- Queries are SYNC -- do not use `await` with `query()`, `singleton()`, `dictionary()`, or `document()`
+- `.where('field', 'eq', value)` -- just `.where('field', value)`
+- `.get()` on QueryBuilder -- use `.all()` or `.first()`
 
 #### With Relations
 
 ```ts
+// Relations are resolved 1 level deep via .include()
 const posts = query('blog-post')
   .locale('en')
-  .include('author')    // resolves relation field
+  .include('author', 'tags')
   .all()
+// posts[0].author --> { id: '...', name: 'John', ... } (resolved object)
+
+// Without include:
+const raw = query('blog-post').locale('en').all()
+// raw[0].author --> 'author-id-123' (raw string ID, NOT resolved)
+
+// Singletons support include too:
+const hero = singleton('hero').locale('en').include('featured_post').get()
+
+// Documents support include too:
+const article = document('blog-article').locale('en').include('author').bySlug('my-post')
 ```
 
 #### Framework-Specific Patterns
