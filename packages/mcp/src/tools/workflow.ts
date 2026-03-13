@@ -5,7 +5,7 @@ import { validateProject } from '../core/validator.js'
 import { writeContext } from '../core/context.js'
 import { readConfig } from '../core/config.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
-import { cleanupMergedBranches } from '../git/branch-lifecycle.js'
+import { checkBranchHealth, cleanupMergedBranches } from '../git/branch-lifecycle.js'
 
 export function registerWorkflowTools(server: McpServer, projectRoot: string): void {
   // ─── contentrain_validate ───
@@ -29,6 +29,19 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
         let result: Awaited<ReturnType<typeof validateProject>> | undefined
 
         if (input.fix) {
+          // Branch health gate for fix mode (creates a branch)
+          const fixHealth = await checkBranchHealth(projectRoot)
+          if (fixHealth.blocked) {
+            return {
+              content: [{ type: 'text' as const, text: JSON.stringify({
+                error: fixHealth.message,
+                action: 'blocked',
+                hint: 'Merge or delete old contentrain/* branches before auto-fixing.',
+              }, null, 2) }],
+              isError: true,
+            }
+          }
+
           // Use git transaction for fixes
           const branch = buildBranchName('fix', 'validate')
           const tx = await createTransaction(projectRoot, branch)

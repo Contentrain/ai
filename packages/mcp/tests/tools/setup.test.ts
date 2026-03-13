@@ -8,7 +8,7 @@ import { simpleGit } from 'simple-git'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { createServer } from '../../src/server.js'
-import { pathExists } from '../../src/util/fs.js'
+import { pathExists, readJson } from '../../src/util/fs.js'
 
 let testDir: string
 let client: Client
@@ -137,6 +137,34 @@ describe('contentrain_scaffold', () => {
     expect(await pathExists(join(testDir, '.contentrain', 'models', 'blog-post.json'))).toBe(true)
     expect(await pathExists(join(testDir, '.contentrain', 'models', 'categories.json'))).toBe(true)
     expect(await pathExists(join(testDir, '.contentrain', 'models', 'authors.json'))).toBe(true)
+  })
+
+  it('writes valid singleton and dictionary sample content for i18n template', async () => {
+    await client.callTool({ name: 'contentrain_init', arguments: {} })
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_scaffold',
+      arguments: { template: 'i18n', with_sample_content: true },
+    })
+
+    const content = result.content as Array<{ type: string; text: string }>
+    const data = JSON.parse(content[0]!.text)
+    expect(data.status).toBe('committed')
+
+    const navigation = await readJson<Record<string, unknown>>(
+      join(testDir, '.contentrain', 'content', 'ui', 'navigation', 'en.json'),
+    )
+    expect(navigation).toBeTruthy()
+    expect(navigation!['brand']).toBe('My App')
+    expect(Array.isArray(navigation!['items'])).toBe(true)
+
+    const errorMessages = await readJson<Record<string, unknown>>(
+      join(testDir, '.contentrain', 'content', 'system', 'error-messages', 'en.json'),
+    )
+    expect(errorMessages).toBeTruthy()
+    expect(errorMessages!['required-field']).toBe('This field is required')
+    expect(errorMessages!['invalid-email']).toBe('Please enter a valid email')
   })
 
   it('returns error for unknown template', async () => {

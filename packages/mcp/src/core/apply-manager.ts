@@ -6,6 +6,7 @@ import { writeContent, resolveContentDir, resolveJsonFilePath, resolveMdFilePath
 import { readConfig } from './config.js'
 import { writeContext } from './context.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
+import { checkBranchHealth } from '../git/branch-lifecycle.js'
 
 // ─── Types ───
 
@@ -142,6 +143,16 @@ export async function applyExtract(
         'Call contentrain_apply with mode:extract and dry_run:false to execute',
       ],
     }
+  }
+
+  // Branch health gate
+  const health = await checkBranchHealth(projectRoot)
+  if (health.blocked) {
+    return {
+      error: health.message,
+      action: 'blocked' as const,
+      hint: 'Merge or delete old contentrain/* branches before executing normalize.',
+    } as unknown as ExtractionResult
   }
 
   // Execute — git transaction (always review mode for normalize)
@@ -309,6 +320,16 @@ export async function applyReuse(
         'Call contentrain_apply with mode:reuse and dry_run:false to execute',
       ],
     }
+  }
+
+  // Branch health gate
+  const reuseHealth = await checkBranchHealth(projectRoot)
+  if (reuseHealth.blocked) {
+    return {
+      error: reuseHealth.message,
+      action: 'blocked' as const,
+      hint: 'Merge or delete old contentrain/* branches before executing reuse.',
+    } as unknown as ReuseResult
   }
 
   // Execute — git transaction

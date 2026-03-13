@@ -58,6 +58,7 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
             action: 'blocked',
             hint: 'Merge or delete old contentrain/* branches before creating new ones.',
           }, null, 2) }],
+          isError: true,
         }
       }
 
@@ -191,6 +192,7 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
             action: 'blocked',
             hint: 'Merge or delete old contentrain/* branches before creating new ones.',
           }, null, 2) }],
+          isError: true,
         }
       }
 
@@ -244,7 +246,7 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
             models_created: modelsCreated,
             content_created: contentCreated,
             vocabulary_terms_added: vocabAdded,
-            git: { branch, action: gitResult.action, commits: 1 },
+            git: { branch, action: gitResult.action, commit: gitResult.commit },
             context_updated: true,
             next_steps: [
               'Customize models with contentrain_model_save',

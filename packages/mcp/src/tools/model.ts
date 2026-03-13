@@ -78,6 +78,7 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
             action: 'blocked',
             hint: 'Merge or delete old contentrain/* branches before creating new ones.',
           }, null, 2) }],
+          isError: true,
         }
       }
 
@@ -193,6 +194,7 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
             action: 'blocked',
             hint: 'Merge or delete old contentrain/* branches before creating new ones.',
           }, null, 2) }],
+          isError: true,
         }
       }
 
