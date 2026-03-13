@@ -9,7 +9,7 @@ import { contentrainDir, ensureDir, pathExists, writeJson } from '../util/fs.js'
 import { writeContext } from '../core/context.js'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { writeModel } from '../core/model-manager.js'
-import { resolveContentDir, resolveJsonFilePath } from '../core/content-manager.js'
+import { writeContent, type ContentEntry } from '../core/content-manager.js'
 import { getTemplate, listTemplates } from '../templates/index.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 
@@ -191,9 +191,9 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
             })
           }))
 
-          // Write sample content
+          // Write sample content via content pipeline (handles content_path, locale_strategy, meta)
           if (with_sample_content && tmpl.sample_content) {
-            contentCreated = await writeSampleContent(wt, tmpl, effectiveLocales)
+            contentCreated = await writeSampleContent(wt, tmpl, effectiveLocales, config)
           }
 
           // Merge vocabulary
@@ -262,34 +262,42 @@ async function updateGitignore(projectRoot: string): Promise<void> {
 }
 
 async function writeSampleContent(
-  projectRoot: string,
+  worktreePath: string,
   tmpl: import('@contentrain/types').ScaffoldTemplate,
   locales: string[],
+  config: import('@contentrain/types').ContentrainConfig,
 ): Promise<number> {
   if (!tmpl.sample_content) return 0
 
-  const writes: Array<Promise<void>> = []
   let count = 0
 
   for (const model of tmpl.models) {
     const sampleData = tmpl.sample_content[model.id]
     if (!sampleData) continue
 
-    const cDir = resolveContentDir(projectRoot, model)
-
     for (const [localeOrKey, data] of Object.entries(sampleData)) {
+      const entryMap = data as Record<string, Record<string, unknown>>
+      let targetLocale: string
       if (localeOrKey === 'data') {
-        const defaultLocale = locales[0] ?? 'en'
-        writes.push(writeJson(resolveJsonFilePath(cDir, model, defaultLocale), data))
-        count++
+        targetLocale = locales[0] ?? 'en'
       } else if (locales.includes(localeOrKey)) {
-        writes.push(writeJson(resolveJsonFilePath(cDir, model, localeOrKey), data))
-        count++
+        targetLocale = localeOrKey
+      } else {
+        continue
       }
+
+      // Convert object-map entries to ContentEntry[]
+      const entries: ContentEntry[] = Object.entries(entryMap).map(([id, fields]) => ({
+        id,
+        locale: targetLocale,
+        data: fields,
+      }))
+
+      await writeContent(worktreePath, model, entries, config)
+      count += entries.length
     }
   }
 
-  await Promise.all(writes)
   return count
 }
 

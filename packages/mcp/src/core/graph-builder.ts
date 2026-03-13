@@ -233,7 +233,7 @@ export async function buildGraph(
   let totalStrings = 0
 
   for (const [relPath, info] of fileMap) {
-    const usedBy = [...(usedByMap.get(relPath) ?? [])]
+    const usedBy = [...(usedByMap.get(relPath) ?? [])].toSorted((a, b) => a.localeCompare(b))
     totalStrings += info.strings
 
     // Filter out nodes with 0 strings — not relevant for content extraction
@@ -272,10 +272,10 @@ export async function buildGraph(
   }
 
   return {
-    pages,
-    components,
-    layouts,
-    orphan_files: orphanCandidates.slice(0, MAX_ORPHANS),
+    pages: pages.toSorted((a, b) => a.file.localeCompare(b.file)),
+    components: components.toSorted((a, b) => a.file.localeCompare(b.file)),
+    layouts: layouts.toSorted((a, b) => a.file.localeCompare(b.file)),
+    orphan_files: orphanCandidates.toSorted((a, b) => a.localeCompare(b)).slice(0, MAX_ORPHANS),
     stats: {
       total_files: fileMap.size,
       total_components: components.length,

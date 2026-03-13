@@ -5,6 +5,7 @@ import { validateProject } from '../core/validator.js'
 import { writeContext } from '../core/context.js'
 import { readConfig } from '../core/config.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
+import { cleanupMergedBranches } from '../git/branch-lifecycle.js'
 
 export function registerWorkflowTools(server: McpServer, projectRoot: string): void {
   // ─── contentrain_validate ───
@@ -143,8 +144,26 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
       }
 
       try {
+        // Determine the base branch for merge-status checks
+        const baseBranch = config.repository?.default_branch
+          ?? process.env['CONTENTRAIN_BRANCH']
+          ?? ((await git.raw(['branch', '--show-current'])).trim() || 'main')
+
         // Get contentrain branches
         const branchSummary = await git.branchLocal()
+
+        // Get branches NOT yet merged into base (only these need pushing)
+        let unmergedRaw = ''
+        try {
+          unmergedRaw = await git.raw(['branch', '--no-merged', baseBranch])
+        } catch {
+          // If base branch doesn't exist yet, treat all as unmerged
+          unmergedRaw = branchSummary.all.join('\n')
+        }
+        const unmergedSet = new Set(
+          unmergedRaw.split('\n').map(b => b.replace(/^\*?\s+/, '').trim()).filter(Boolean),
+        )
+
         let branchesToPush: string[]
 
         if (input.branches && input.branches.length > 0) {
@@ -158,14 +177,16 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
               isError: true,
             }
           }
+          // Filter out already-merged branches from explicit list
+          branchesToPush = branchesToPush.filter(b => unmergedSet.has(b))
         } else {
-          branchesToPush = branchSummary.all.filter(b => b.startsWith('contentrain/'))
+          branchesToPush = branchSummary.all.filter(b => b.startsWith('contentrain/') && unmergedSet.has(b))
         }
 
         if (branchesToPush.length === 0) {
           return {
             content: [{ type: 'text' as const, text: JSON.stringify({
-              error: 'No contentrain/* branches found to push.',
+              error: 'No unmerged contentrain/* branches found to push.',
               next_steps: ['Make changes first with contentrain_content_save or contentrain_model_save'],
             }) }],
             isError: true,
@@ -188,9 +209,13 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
           }
         }
 
+        // Lazy cleanup: delete merged branches after push
+        const cleanup = await cleanupMergedBranches(projectRoot)
+
         const nextSteps: string[] = []
         if (pushed.length > 0) nextSteps.push('Create PRs on your git platform for review')
         if (errors.length > 0) nextSteps.push('Fix push errors and retry')
+        if (cleanup.remaining >= 50) nextSteps.push(`Warning: ${cleanup.remaining} active contentrain branches. Consider reviewing old branches.`)
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
@@ -199,6 +224,7 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
             pushed,
             errors: errors.length > 0 ? errors : undefined,
             remote: remoteName,
+            cleanup: cleanup.deleted > 0 ? { deleted: cleanup.deleted, remaining: cleanup.remaining } : undefined,
             next_steps: nextSteps,
           }, null, 2) }],
         }

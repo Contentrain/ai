@@ -267,6 +267,9 @@ function extractStringsFromFile(content: string, isTemplateFile: boolean, isAstr
     extractQuotedStrings(line, lineNum, effectiveTemplate, results)
   }
 
+  // Second pass: detect multiline tag text (content split across lines)
+  extractMultilineTagText(lines, results)
+
   return results
 }
 
@@ -293,6 +296,93 @@ function extractTagText(
       context: isTemplate ? 'template_text' : 'jsx_text',
       surrounding: line.slice(0, SURROUNDING_MAX),
     })
+  }
+}
+
+/**
+ * Second-pass heuristic: detect text content that spans multiple lines between tags.
+ *
+ * Looks for a line ending with `>` (tag opened) where the closing `</` appears on a
+ * later line. Collects intermediate lines and treats them as potential text content.
+ *
+ * Conservative: skips if the accumulated text contains code-like patterns (braces,
+ * JSX expressions, ternaries, function calls) to avoid false positives.
+ */
+function extractMultilineTagText(
+  lines: string[],
+  results: RawExtraction[],
+): void {
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]!
+    const trimmed = line.trim()
+
+    // Look for a line that ends with `>` (after trimming) but does NOT contain `</`
+    // on the same line — i.e. an opening tag whose text continues on the next line.
+    // Also skip self-closing tags (`/>`) and lines that already have `>...<` matched
+    // by the single-line extractor.
+    if (
+      trimmed.endsWith('>')
+      && !trimmed.endsWith('/>')
+      && !trimmed.includes('</')
+      // Must have an opening tag on this line
+      && /<[a-zA-Z]/.test(trimmed)
+    ) {
+      const startLine = i + 1 // 1-based line of text start
+      const textParts: string[] = []
+      let j = i + 1
+
+      // Collect subsequent lines until we hit the closing tag
+      while (j < lines.length) {
+        const nextTrimmed = lines[j]!.trim()
+
+        // Stop at closing tag
+        if (nextTrimmed.startsWith('</') || nextTrimmed.includes('</')) {
+          // If the closing-tag line has text before `</`, grab it
+          const beforeClose = nextTrimmed.split('</')[0]!.trim()
+          if (beforeClose.length > 0) {
+            textParts.push(beforeClose)
+          }
+          break
+        }
+
+        // Stop at another opening tag (nested element) — too complex
+        if (/<[a-zA-Z]/.test(nextTrimmed)) break
+
+        // Stop if line looks like code: braces, ternary, JSX expression, assignment
+        if (/[{}();=]/.test(nextTrimmed)) break
+
+        if (nextTrimmed.length > 0) {
+          textParts.push(nextTrimmed)
+        }
+        j++
+      }
+
+      if (textParts.length > 0) {
+        const combined = textParts.join(' ').trim()
+
+        // Only keep if it looks like user-facing content (has letters, no code patterns)
+        if (
+          combined.length > 0
+          && /[a-zA-Z]/.test(combined)
+          && !/[{}();=]/.test(combined)
+        ) {
+          results.push({
+            value: combined,
+            line: startLine + 1, // 1-based
+            column: 1,
+            context: 'jsx_text',
+            surrounding: lines[startLine]?.slice(0, SURROUNDING_MAX) ?? '',
+          })
+        }
+      }
+
+      // Advance past the collected lines
+      i = j + 1
+      continue
+    }
+
+    i++
   }
 }
 

@@ -177,5 +177,5 @@ export async function discoverFiles(
     if (files.length >= MAX_SCAN_FILES) break
   }
 
-  return files.slice(0, MAX_SCAN_FILES)
+  return files.toSorted((a, b) => a.localeCompare(b)).slice(0, MAX_SCAN_FILES)
 }

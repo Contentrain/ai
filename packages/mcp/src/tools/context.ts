@@ -7,6 +7,7 @@ import { resolveContentDir, resolveJsonFilePath } from '../core/content-manager.
 import { detectStack } from '../util/detect.js'
 import { join } from 'node:path'
 import { contentrainDir, pathExists } from '../util/fs.js'
+import { checkBranchHealth, cleanupMergedBranches } from '../git/branch-lifecycle.js'
 
 export function registerContextTools(server: McpServer, projectRoot: string): void {
   // ─── contentrain_status ───
@@ -60,6 +61,26 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
 
       if (errors.length > 0) {
         result['validation'] = { errors: errors.length, warnings: 0, summary: errors }
+      }
+
+      // Branch lifecycle: lazy cleanup + health check
+      try {
+        const cleanup = await cleanupMergedBranches(projectRoot)
+        const health = await checkBranchHealth(projectRoot)
+        result['branches'] = {
+          total: health.total,
+          merged: health.merged,
+          unmerged: health.unmerged,
+          cleaned_up: cleanup.deleted,
+        }
+        if (health.message) {
+          result['branch_warning'] = health.message
+        }
+        if (health.blocked) {
+          errors.push(health.message!)
+        }
+      } catch {
+        // Branch health check is best-effort — don't fail status
       }
 
       const nextSteps: string[] = []
