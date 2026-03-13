@@ -582,13 +582,74 @@ async function resolveRelations(
       visited.add(targetModelId)
 
       const targetModel = await readModel(projectRoot, targetModelId)
-      if (!targetModel || targetModel.kind !== 'collection') continue
+      if (!targetModel) continue
 
-      const targetData = await readJson<Record<string, Record<string, unknown>>>(
-        resolveJsonFilePath(resolveContentDir(projectRoot, targetModel), targetModel, locale),
-      ) ?? {}
+      if (targetModel.kind === 'collection') {
+        const targetData = await readJson<Record<string, Record<string, unknown>>>(
+          resolveJsonFilePath(resolveContentDir(projectRoot, targetModel), targetModel, locale),
+        ) ?? {}
+        targetCache[targetModelId] = targetData
+      } else if (targetModel.kind === 'document') {
+        // Build slug-keyed cache by listing document entries for this locale
+        const docCache: Record<string, Record<string, unknown>> = {}
+        const cDir = resolveContentDir(projectRoot, targetModel)
+        const strategy = resolveLocaleStrategy(targetModel)
 
-      targetCache[targetModelId] = targetData
+        if (!targetModel.i18n) {
+          const files = await readDir(cDir)
+          for (const f of files) {
+            if (!f.endsWith('.md')) continue
+            const slug = f.replace('.md', '')
+            const raw = await readText(join(cDir, f))
+            if (!raw) continue
+            const { frontmatter, body } = parseFrontmatter(raw)
+            docCache[slug] = { slug, ...frontmatter, body }
+          }
+        } else if (strategy === 'file') {
+          const slugDirs = await readDir(cDir)
+          for (const slug of slugDirs) {
+            const raw = await readText(join(cDir, slug, `${locale}.md`))
+            if (!raw) continue
+            const { frontmatter, body } = parseFrontmatter(raw)
+            docCache[slug] = { slug, ...frontmatter, body }
+          }
+        } else if (strategy === 'suffix') {
+          const files = await readDir(cDir)
+          const suffix = `.${locale}.md`
+          for (const f of files) {
+            if (!f.endsWith(suffix)) continue
+            const slug = f.slice(0, -suffix.length)
+            const raw = await readText(join(cDir, f))
+            if (!raw) continue
+            const { frontmatter, body } = parseFrontmatter(raw)
+            docCache[slug] = { slug, ...frontmatter, body }
+          }
+        } else if (strategy === 'directory') {
+          const localeDir = join(cDir, locale)
+          const files = await readDir(localeDir)
+          for (const f of files) {
+            if (!f.endsWith('.md')) continue
+            const slug = f.replace('.md', '')
+            const raw = await readText(join(localeDir, f))
+            if (!raw) continue
+            const { frontmatter, body } = parseFrontmatter(raw)
+            docCache[slug] = { slug, ...frontmatter, body }
+          }
+        } else {
+          // 'none' strategy
+          const files = await readDir(cDir)
+          for (const f of files) {
+            if (!f.endsWith('.md')) continue
+            const slug = f.replace('.md', '')
+            const raw = await readText(join(cDir, f))
+            if (!raw) continue
+            const { frontmatter, body } = parseFrontmatter(raw)
+            docCache[slug] = { slug, ...frontmatter, body }
+          }
+        }
+
+        targetCache[targetModelId] = docCache
+      }
     }
   }
 

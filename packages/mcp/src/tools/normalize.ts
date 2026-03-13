@@ -123,10 +123,10 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
   // ─── contentrain_apply ───
   server.tool(
     'contentrain_apply',
-    'Apply normalize operations. Two modes: "extract" writes agent-approved strings to Contentrain content files (source untouched), "reuse" patches source files with agent-provided replacement expressions. Both modes require dry_run:true first for preview. Normalize operations always use review workflow (never auto-merge). Extract creates/merges models and content; reuse replaces strings in source code with SDK/i18n calls.',
+    'Apply normalize operations. Two modes: "extract" writes agent-approved strings to Contentrain content files (source untouched), "reuse" patches source files with agent-provided replacement expressions. Defaults to preview mode (dry_run:true). Set dry_run:false to execute after reviewing the preview. Normalize operations always use review workflow (never auto-merge). Extract creates/merges models and content; reuse replaces strings in source code with SDK/i18n calls.',
     {
       mode: z.enum(['extract', 'reuse']).describe('Apply mode: extract (content creation) or reuse (source patching)'),
-      dry_run: z.boolean().optional().default(true).describe('Preview mode — no changes written. Default: true'),
+      dry_run: z.boolean().optional().default(true).describe('Defaults to preview mode (dry_run:true). Set dry_run:false to execute after reviewing the preview.'),
 
       // Extract mode fields
       extractions: z.array(z.object({

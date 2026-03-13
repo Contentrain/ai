@@ -59,11 +59,7 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
         vocabulary_size: vocabulary ? Object.keys(vocabulary.terms).length : 0,
       }
 
-      if (errors.length > 0) {
-        result['validation'] = { errors: errors.length, warnings: 0, summary: errors }
-      }
-
-      // Branch lifecycle: lazy cleanup + health check
+      // Branch lifecycle: lazy cleanup + health check (run BEFORE validation summary)
       try {
         const cleanup = await cleanupMergedBranches(projectRoot)
         const health = await checkBranchHealth(projectRoot)
@@ -81,6 +77,10 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
         }
       } catch {
         // Branch health check is best-effort — don't fail status
+      }
+
+      if (errors.length > 0) {
+        result['validation'] = { errors: errors.length, warnings: 0, summary: errors }
       }
 
       const nextSteps: string[] = []

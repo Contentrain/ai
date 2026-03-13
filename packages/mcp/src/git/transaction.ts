@@ -116,25 +116,17 @@ export async function createTransaction(
       try {
         await git.merge([branch, '--no-edit'])
       } catch {
-        // Merge conflict (e.g. modify/delete from file add/remove cycles).
-        // Contentrain branch always represents the intended state — resolve
-        // by taking only .contentrain/ files from the branch.
+        // Merge conflict — abort and let the user resolve manually.
         try {
-          await git.raw(['checkout', branch, '--', '.contentrain/'])
-          await git.add('.')
-          await git.raw(['commit', '--no-edit'])
-        } catch (retryError) {
-          // If that also fails, abort and report
-          try {
-            await git.merge(['--abort'])
-          } catch {
-            // abort may fail if not in merge state
-          }
-          throw new Error(
-            `Merge conflict on branch "${branch}". Changes are on the branch but not merged. Resolve manually or retry.`,
-            { cause: retryError },
-          )
+          await git.merge(['--abort'])
+        } catch {
+          // abort may fail if not in merge state
         }
+        throw new Error(
+          `Merge conflict when merging branch "${branch}" into "${baseBranch}". `
+          + `The branch still exists with your changes intact. `
+          + `Resolve the conflict manually, or delete the branch and retry.`,
+        )
       }
 
       if (hasRemote) {

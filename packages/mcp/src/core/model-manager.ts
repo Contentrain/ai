@@ -38,7 +38,7 @@ export async function readModel(projectRoot: string, modelId: string): Promise<M
   return readJson<ModelDefinition>(filePath)
 }
 
-async function countDocumentEntries(
+async function countDocumentFileStrategy(
   contentDir: string,
   entries: string[],
 ): Promise<{ total: number; locales: Record<string, number> }> {
@@ -56,6 +56,93 @@ async function countDocumentEntries(
 
   for (const entryLocales of results) {
     for (const locale of entryLocales) {
+      locales[locale] = (locales[locale] ?? 0) + 1
+      total++
+    }
+  }
+
+  return { total, locales }
+}
+
+async function countDocumentSuffixStrategy(
+  contentDir: string,
+  files: string[],
+): Promise<{ total: number; locales: Record<string, number> }> {
+  const locales: Record<string, number> = {}
+  const slugsByLocale: Record<string, Set<string>> = {}
+
+  for (const f of files) {
+    if (!f.endsWith('.md')) continue
+    // Pattern: {slug}.{locale}.md
+    const match = f.match(/^(.+)\.([a-z]{2}(?:-[A-Z]{2})?)\.md$/)
+    if (!match) continue
+    const locale = match[2]!
+    if (!slugsByLocale[locale]) slugsByLocale[locale] = new Set()
+    slugsByLocale[locale].add(match[1]!)
+  }
+
+  let total = 0
+  for (const [locale, slugs] of Object.entries(slugsByLocale)) {
+    locales[locale] = slugs.size
+    total += slugs.size
+  }
+
+  return { total, locales }
+}
+
+async function countDocumentDirectoryStrategy(
+  contentDir: string,
+  localeDirs: string[],
+): Promise<{ total: number; locales: Record<string, number> }> {
+  const locales: Record<string, number> = {}
+  let total = 0
+
+  const results = await Promise.all(
+    localeDirs.map(async (localeDir) => {
+      const files = await readDir(join(contentDir, localeDir))
+      const mdFiles = files.filter(f => f.endsWith('.md'))
+      return { locale: localeDir, count: mdFiles.length }
+    }),
+  )
+
+  for (const { locale, count } of results) {
+    locales[locale] = count
+    total += count
+  }
+
+  return { total, locales }
+}
+
+async function countDocumentNoneStrategy(
+  projectRoot: string,
+  modelId: string,
+  files: string[],
+  i18n: boolean,
+): Promise<{ total: number; locales: Record<string, number> }> {
+  const mdFiles = files.filter(f => f.endsWith('.md'))
+
+  if (!i18n) {
+    return { total: mdFiles.length, locales: { _: mdFiles.length } }
+  }
+
+  // With i18n + none strategy, content files have no locale info.
+  // Use meta/{modelId}/{slug}/ directories to determine locale counts.
+  const metaDir = join(contentrainDir(projectRoot), 'meta', modelId)
+  const locales: Record<string, number> = {}
+  let total = 0
+
+  const slugs = mdFiles.map(f => f.replace('.md', ''))
+  const results = await Promise.all(
+    slugs.map(async (slug) => {
+      const metaFiles = await readDir(join(metaDir, slug))
+      return metaFiles
+        .filter(f => f.endsWith('.json'))
+        .map(f => f.replace('.json', ''))
+    }),
+  )
+
+  for (const slugLocales of results) {
+    for (const locale of slugLocales) {
       locales[locale] = (locales[locale] ?? 0) + 1
       total++
     }
@@ -96,12 +183,21 @@ export async function countEntries(
   const files = await readDir(cDir)
 
   if (model.kind === 'document') {
-    // For 'file' strategy, entries are subdirectories; otherwise need locale-aware logic
-    if (strategy === 'file') {
-      return countDocumentEntries(cDir, files)
+    if (!model.i18n) {
+      // No i18n: flat {slug}.md files
+      return countDocumentNoneStrategy(projectRoot, model.id, files, false)
     }
-    // For other strategies, documents are flat .md files in cDir (or locale subdirs)
-    return countDocumentEntries(cDir, files)
+
+    switch (strategy) {
+      case 'file':
+        return countDocumentFileStrategy(cDir, files)
+      case 'suffix':
+        return countDocumentSuffixStrategy(cDir, files)
+      case 'directory':
+        return countDocumentDirectoryStrategy(cDir, files)
+      case 'none':
+        return countDocumentNoneStrategy(projectRoot, model.id, files, true)
+    }
   }
 
   if (model.kind === 'collection') {

@@ -53,13 +53,23 @@ export async function cleanupMergedBranches(projectRoot: string): Promise<Cleanu
   const mergedContentrain = contentrainBranches.filter(b => mergedSet.has(b))
   const deletedBranches: string[] = []
 
-  // Delete merged branches
+  // Determine retention period (days). Default: 7
+  const retentionDays = config?.branchRetention ?? 7
+  const retentionMs = retentionDays * 24 * 60 * 60 * 1000
+  const now = Date.now()
+
+  // Delete merged branches only if older than retention period
   for (const branch of mergedContentrain) {
     try {
+      const timestampRaw = (await git.raw(['log', '-1', '--format=%ct', branch])).trim()
+      const commitTimestamp = Number(timestampRaw) * 1000
+      if (now - commitTimestamp < retentionMs) {
+        continue // Branch is within retention period — keep it
+      }
       await git.raw(['branch', '-d', branch])
       deletedBranches.push(branch)
     } catch {
-      // Branch may be checked out or otherwise locked — skip
+      // Branch may be checked out, locked, or log failed — skip
     }
   }
 

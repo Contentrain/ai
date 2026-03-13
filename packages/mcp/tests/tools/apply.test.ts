@@ -12,6 +12,11 @@ import { createServer } from '../../src/server.js'
 let testDir: string
 let client: Client
 
+async function expectGitClean(dir: string): Promise<void> {
+  const status = await simpleGit(dir).status()
+  expect(status.files).toHaveLength(0)
+}
+
 async function initGitRepo(dir: string): Promise<void> {
   const git = simpleGit(dir)
   await git.init()
@@ -82,10 +87,7 @@ beforeEach(async () => {
 
   client = await createTestClient(testDir)
   await client.callTool({ name: 'contentrain_init', arguments: {} })
-
-  // Init writes context.json to working directory after merge — commit it
-  await git.add('.')
-  await git.commit('post-init context', { '--allow-empty': null })
+  await expectGitClean(testDir)
 
   client = await createTestClient(testDir)
 })
@@ -187,29 +189,24 @@ describe('contentrain_apply mode:extract', () => {
     expect(git['branch']).toContain('contentrain/normalize/extract')
 
     expect(data['context_updated']).toBe(true)
+    await expectGitClean(testDir)
   })
 
   it('merges fields into existing model', async () => {
-    // First create a model
+    // Create the base model through the normal write flow so it exists on the base branch.
     await client.callTool({
-      name: 'contentrain_apply',
+      name: 'contentrain_model_save',
       arguments: {
-        mode: 'extract',
-        dry_run: false,
-        extractions: [{
-          model: 'ui-texts',
-          kind: 'dictionary',
-          domain: 'app',
-          fields: { welcome_title: { type: 'string' } },
-          entries: [{ locale: 'en', data: { welcome_title: 'Welcome' } }],
-        }],
+        id: 'ui-texts',
+        name: 'UI Texts',
+        kind: 'dictionary',
+        domain: 'app',
+        i18n: true,
+        fields: { welcome_title: { type: 'string' } },
       },
     })
 
-    // Commit any post-merge context changes
-    const git = simpleGit(testDir)
-    await git.add('.')
-    await git.commit('post-extract context', { '--allow-empty': null })
+    await expectGitClean(testDir)
 
     // Re-create client to pick up new state
     client = await createTestClient(testDir)
@@ -287,26 +284,20 @@ describe('contentrain_apply mode:extract', () => {
 
 describe('contentrain_apply mode:reuse', () => {
   beforeEach(async () => {
-    // First create a model so scope check passes
+    // Reuse runs against models that already exist on the base branch.
     await client.callTool({
-      name: 'contentrain_apply',
+      name: 'contentrain_model_save',
       arguments: {
-        mode: 'extract',
-        dry_run: false,
-        extractions: [{
-          model: 'ui-texts',
-          kind: 'dictionary',
-          domain: 'app',
-          fields: { welcome_title: { type: 'string' } },
-          entries: [{ locale: 'en', data: { welcome_title: 'Welcome to our platform' } }],
-        }],
+        id: 'ui-texts',
+        name: 'UI Texts',
+        kind: 'dictionary',
+        domain: 'app',
+        i18n: true,
+        fields: { welcome_title: { type: 'string' } },
       },
     })
 
-    // Extract writes context.json after merge — commit so working dir is clean
-    const git = simpleGit(testDir)
-    await git.add('.')
-    await git.commit('post-extract context', { '--allow-empty': null })
+    await expectGitClean(testDir)
 
     client = await createTestClient(testDir)
   })
@@ -369,6 +360,7 @@ describe('contentrain_apply mode:reuse', () => {
 
     const git = data['git'] as Record<string, unknown>
     expect(git['branch']).toContain('contentrain/normalize/reuse')
+    await expectGitClean(testDir)
   })
 
   it('patches multiple files', async () => {

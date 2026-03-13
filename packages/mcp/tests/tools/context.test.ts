@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { join } from 'node:path'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
@@ -142,5 +142,40 @@ describe('contentrain_describe', () => {
     const content = result.content as Array<{ type: string; text: string }>
     const data = JSON.parse(content[0]!.text)
     expect(data.error).toContain('nonexistent')
+  })
+})
+
+describe('contentrain_status branch health', () => {
+  it('surfaces branch blocking state consistently in validation summary', async () => {
+    vi.resetModules()
+    vi.doMock('../../src/git/branch-lifecycle.js', () => ({
+      cleanupMergedBranches: vi.fn(async () => ({ deleted: 0, remaining: 80, deletedBranches: [] })),
+      checkBranchHealth: vi.fn(async () => ({
+        total: 80,
+        merged: 0,
+        unmerged: 80,
+        warning: true,
+        blocked: true,
+        message: 'BLOCKED: 80 active contentrain branches.',
+      })),
+    }))
+
+    const { createServer: createMockedServer } = await import('../../src/server.js')
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
+    const client = new Client({ name: 'test-client', version: '1.0.0' })
+    await Promise.all([
+      client.connect(clientTransport),
+      createMockedServer(FIXTURE).connect(serverTransport),
+    ])
+
+    const result = await client.callTool({ name: 'contentrain_status', arguments: {} })
+
+    const content = result.content as Array<{ type: string; text: string }>
+    const data = JSON.parse(content[0]!.text)
+
+    expect(data.branches.unmerged).toBeGreaterThanOrEqual(80)
+    expect(data.branch_warning).toContain('BLOCKED')
+    expect(data.validation.errors).toBeGreaterThan(0)
+    expect(data.validation.summary).toContain(data.branch_warning)
   })
 })

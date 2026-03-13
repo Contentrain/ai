@@ -287,11 +287,14 @@ async function writeSampleContent(
       }
 
       // Convert object-map entries to ContentEntry[]
-      const entries: ContentEntry[] = Object.entries(entryMap).map(([id, fields]) => ({
-        id,
-        locale: targetLocale,
-        data: fields,
-      }))
+      const entries: ContentEntry[] = Object.entries(entryMap).map(([key, fields]) => {
+        if (model.kind === 'document') {
+          // For documents, the key is the slug
+          return { slug: key, locale: targetLocale, data: fields }
+        }
+        // For collections/singletons/dictionaries, the key is the entry ID
+        return { id: key, locale: targetLocale, data: fields }
+      })
 
       await writeContent(worktreePath, model, entries, config)
       count += entries.length
