@@ -292,6 +292,40 @@ describe('contentrain_content_save', () => {
     const data = parseResult(result)
     expect(data['error']).toContain('80')
   })
+
+  it('handles two writes to the same model in the same second without branch collision', async () => {
+    client = await createModel(client, 'hero', 'singleton', 'marketing', {
+      title: { type: 'string', required: true },
+    })
+
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000)
+
+    try {
+      const first = await client.callTool({
+        name: 'contentrain_content_save',
+        arguments: {
+          model: 'hero',
+          entries: [{ locale: 'en', data: { title: 'First write' } }],
+        },
+      })
+
+      expect(first.isError).not.toBe(true)
+
+      client = await createTestClient(testDir)
+
+      const second = await client.callTool({
+        name: 'contentrain_content_save',
+        arguments: {
+          model: 'hero',
+          entries: [{ locale: 'en', data: { title: 'Second write' } }],
+        },
+      })
+
+      expect(second.isError).not.toBe(true)
+    } finally {
+      nowSpy.mockRestore()
+    }
+  })
 })
 
 describe('contentrain_content_delete', () => {

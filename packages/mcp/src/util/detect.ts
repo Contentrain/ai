@@ -219,7 +219,8 @@ async function detectNonJs(projectRoot: string): Promise<StackType> {
   if (await pathExists(join(projectRoot, 'pubspec.yaml'))) return 'flutter'
 
   // Hugo
-  if (await pathExists(join(projectRoot, 'hugo.toml')) || await pathExists(join(projectRoot, 'config.toml'))) {
+  if (await pathExists(join(projectRoot, 'hugo.toml'))) return 'hugo'
+  if (await pathExists(join(projectRoot, 'config.toml'))) {
     try {
       const { readText } = await import('./fs.js')
       const content = await readText(join(projectRoot, 'config.toml'))

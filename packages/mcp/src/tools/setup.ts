@@ -313,15 +313,27 @@ async function writeSampleContent(
         continue
       }
 
-      // Convert object-map entries to ContentEntry[]
-      const entries: ContentEntry[] = Object.entries(entryMap).map(([key, fields]) => {
-        if (model.kind === 'document') {
-          // For documents, the key is the slug
-          return { slug: key, locale: targetLocale, data: fields }
-        }
-        // For collections/singletons/dictionaries, the key is the entry ID
-        return { id: key, locale: targetLocale, data: fields }
-      })
+      // Convert template payload to ContentEntry[] based on model kind
+      let entries: ContentEntry[]
+
+      if (model.kind === 'singleton' || model.kind === 'dictionary') {
+        // Singleton/dictionary: the entire locale object IS the data for one entry
+        entries = [{ locale: targetLocale, data: entryMap as Record<string, unknown> }]
+      } else if (model.kind === 'document') {
+        // Document: keys are slugs, values are frontmatter objects
+        entries = Object.entries(entryMap).map(([slug, fields]) => ({
+          slug,
+          locale: targetLocale,
+          data: fields,
+        }))
+      } else {
+        // Collection: keys are entry IDs, values are field objects
+        entries = Object.entries(entryMap).map(([id, fields]) => ({
+          id,
+          locale: targetLocale,
+          data: fields,
+        }))
+      }
 
       await writeContent(worktreePath, model, entries, config)
       count += entries.length
