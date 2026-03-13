@@ -4,7 +4,6 @@ import { join } from 'node:path'
 import { simpleGit } from 'simple-git'
 import { detectStackInfo } from '@contentrain/mcp/util/detect'
 import { ensureDir, pathExists, writeJson } from '@contentrain/mcp/util/fs'
-import { writeContext } from '@contentrain/mcp/core/context'
 import { writeModel } from '@contentrain/mcp/core/model-manager'
 import { getTemplate, listTemplates } from '@contentrain/mcp/templates'
 import { createTransaction, buildBranchName } from '@contentrain/mcp/git/transaction'
@@ -293,7 +292,6 @@ async function executeInit(projectRoot: string, opts: InitOptions): Promise<void
 
     await tx.commit(`[contentrain] init: ${opts.stack} project setup`)
     await tx.complete()
-    await writeContext(projectRoot, { tool: 'contentrain_init', model: '' })
 
     s.stop('Initialized')
   } catch (error) {

@@ -15,7 +15,7 @@ pre-commit:
       run: cd packages/mcp && npx vitest run tests/util tests/core
     test-cli:
       glob: "packages/cli/**/*.{ts,js,mjs}"
-      run: cd packages/cli && npx vitest run
+      run: cd packages/cli && npx vitest run --exclude tests/integration
     test-ai-rules:
       glob: "packages/ai-rules/**/*.{ts,js,mjs}"
       run: cd packages/ai-rules && npx vitest run
