@@ -6,14 +6,26 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/index.mjs"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
     },
-    "./rules/*": "./rules/*"
+    "./rules/*": "./rules/*",
+    "./skills/*": "./skills/*",
+    "./prompts/*": "./prompts/*",
+    "./frameworks/*": "./frameworks/*",
+    "./context/*": "./context/*"
   },
-  "files": ["dist", "rules"],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "rules", "skills", "prompts", "frameworks", "context"],
   "scripts": {
-    "build": "tsdown src/index.ts --format esm",
-    "dev": "tsdown src/index.ts --format esm --watch",
+    "build": "tsdown src/index.ts --format esm,cjs --dts",
+    "dev": "tsdown src/index.ts --format esm,cjs --dts --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -21,6 +33,7 @@
   },
   "devDependencies": {
     "tsdown": "^0.21.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
   }
 }
