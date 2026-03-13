@@ -39,6 +39,7 @@ export default defineCommand({
         s?.stop('Blocked')
         log.error(health.message!)
         outro('')
+        process.exitCode = 1
         return
       }
 
