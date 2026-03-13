@@ -4,6 +4,7 @@ import { rm } from 'node:fs/promises'
 import { contentrainDir, readDir, readJson, readText, writeJson, writeText, pathExists } from '../util/fs.js'
 import { readConfig } from './config.js'
 import { listModels, readModel } from './model-manager.js'
+import { writeMeta } from './meta-manager.js'
 import { parseFrontmatter, resolveContentDir, resolveJsonFilePath, resolveMdFilePath, resolveLocaleStrategy } from './content-manager.js'
 
 // ─── Types ───
@@ -165,10 +166,10 @@ async function checkRelation(
       }
 
       if (targetModel.kind === 'document') {
-        // Document relations reference by slug (directory name for 'file' strategy)
+        // Document relations reference by slug — use locale-strategy-aware discovery
         const docContentDir = resolveContentDir(projectRoot, targetModel)
-        const slugDirs = await readDir(docContentDir)
-        if (slugDirs.includes(ref)) {
+        const slugs = await discoverDocumentSlugs(docContentDir, targetModel)
+        if (slugs.includes(ref)) {
           found = true
           break
         }
@@ -328,6 +329,33 @@ async function validateCollectionModel(
           }
         }
 
+        // Pattern regex check
+        if (fieldDef.pattern && typeof value === 'string') {
+          try {
+            const regex = new RegExp(fieldDef.pattern)
+            if (!regex.test(value)) {
+              issues.push({
+                severity: 'error',
+                model: model.id,
+                locale,
+                entry: entryId,
+                field: fieldName,
+                message: `Value "${value}" does not match pattern /${fieldDef.pattern}/`,
+              })
+            }
+          } catch {
+            // Invalid regex in schema — report as warning
+            issues.push({
+              severity: 'warning',
+              model: model.id,
+              locale,
+              entry: entryId,
+              field: fieldName,
+              message: `Invalid pattern regex: ${fieldDef.pattern}`,
+            })
+          }
+        }
+
         // Unique constraint
         if (fieldDef.unique && value !== undefined && value !== null) {
           const key = `${fieldName}:${locale}`
@@ -391,25 +419,48 @@ async function validateCollectionModel(
   for (const locale of locales) {
     const metaPath = join(metaDir, `${locale}.json`)
     const metaData = await readJson<Record<string, EntryMeta>>(metaPath)
-    if (!metaData) continue
-
     const contentData = await readJson<Record<string, unknown>>(resolveJsonFilePath(cDir, model, locale)) ?? {}
-    for (const metaEntryId of Object.keys(metaData)) {
-      if (!(metaEntryId in contentData)) {
+
+    // Forward check: meta entries without content
+    if (metaData) {
+      for (const metaEntryId of Object.keys(metaData)) {
+        if (!(metaEntryId in contentData)) {
+          issues.push({
+            severity: 'warning',
+            model: model.id,
+            locale,
+            entry: metaEntryId,
+            message: `Orphan meta: meta entry "${metaEntryId}" exists but content entry missing`,
+          })
+          if (fix) {
+            delete metaData[metaEntryId]
+            if (Object.keys(metaData).length > 0) {
+              await writeJson(metaPath, metaData)
+            } else {
+              await rm(metaPath, { force: true })
+            }
+            fixed++
+          }
+        }
+      }
+    }
+
+    // Reverse check: content entries without meta
+    for (const entryId of Object.keys(contentData)) {
+      if (!metaData || !(entryId in metaData)) {
         issues.push({
           severity: 'warning',
           model: model.id,
           locale,
-          entry: metaEntryId,
-          message: `Orphan meta: meta entry "${metaEntryId}" exists but content entry missing`,
+          entry: entryId,
+          message: `Orphan content: entry "${entryId}" has no metadata`,
         })
         if (fix) {
-          delete metaData[metaEntryId]
-          if (Object.keys(metaData).length > 0) {
-            await writeJson(metaPath, metaData)
-          } else {
-            await rm(metaPath, { force: true })
-          }
+          await writeMeta(projectRoot, model, { locale, entryId }, {
+            status: 'draft',
+            source: 'import',
+            updated_by: 'contentrain-mcp',
+          })
           fixed++
         }
       }
@@ -499,6 +550,30 @@ async function validateSingletonModel(
               locale,
               field: fieldName,
               message: minMaxErr,
+            })
+          }
+        }
+
+        // Pattern regex check
+        if (fieldDef.pattern && typeof value === 'string') {
+          try {
+            const regex = new RegExp(fieldDef.pattern)
+            if (!regex.test(value)) {
+              issues.push({
+                severity: 'error',
+                model: model.id,
+                locale,
+                field: fieldName,
+                message: `Value "${value}" does not match pattern /${fieldDef.pattern}/`,
+              })
+            }
+          } catch {
+            issues.push({
+              severity: 'warning',
+              model: model.id,
+              locale,
+              field: fieldName,
+              message: `Invalid pattern regex: ${fieldDef.pattern}`,
             })
           }
         }
@@ -797,6 +872,32 @@ async function validateDocumentModel(
                 slug,
                 field: fieldName,
                 message: minMaxErr,
+              })
+            }
+          }
+
+          // Pattern regex check
+          if (fieldDef.pattern && typeof value === 'string') {
+            try {
+              const regex = new RegExp(fieldDef.pattern)
+              if (!regex.test(value)) {
+                issues.push({
+                  severity: 'error',
+                  model: model.id,
+                  locale,
+                  slug,
+                  field: fieldName,
+                  message: `Value "${value}" does not match pattern /${fieldDef.pattern}/`,
+                })
+              }
+            } catch {
+              issues.push({
+                severity: 'warning',
+                model: model.id,
+                locale,
+                slug,
+                field: fieldName,
+                message: `Invalid pattern regex: ${fieldDef.pattern}`,
               })
             }
           }

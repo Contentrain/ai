@@ -38,6 +38,34 @@ function createDocumentModel(localeStrategy: NonNullable<ModelDefinition['locale
   }
 }
 
+function createCollectionModel(localeStrategy: NonNullable<ModelDefinition['locale_strategy']>): ModelDefinition {
+  return {
+    id: `authors-${localeStrategy}`,
+    name: `Authors ${localeStrategy}`,
+    kind: 'collection',
+    domain: 'blog',
+    i18n: true,
+    locale_strategy: localeStrategy,
+    fields: {
+      name: { type: 'string', required: true },
+    },
+  }
+}
+
+function createSingletonModel(localeStrategy: NonNullable<ModelDefinition['locale_strategy']>): ModelDefinition {
+  return {
+    id: `hero-${localeStrategy}`,
+    name: `Hero ${localeStrategy}`,
+    kind: 'singleton',
+    domain: 'blog',
+    i18n: true,
+    locale_strategy: localeStrategy,
+    fields: {
+      title: { type: 'string', required: true },
+    },
+  }
+}
+
 beforeEach(async () => {
   testDir = await mkdtemp(join(tmpdir(), 'cr-model-manager-test-'))
 })
@@ -64,6 +92,42 @@ describe('countEntries', () => {
           locale: 'tr',
           data: { title: 'Merhaba Dunya', slug: 'hello-world', body: '# Merhaba' },
         },
+      ], config)
+
+      const stats = await countEntries(testDir, model)
+
+      expect(stats.total).toBe(2)
+      expect(stats.locales).toEqual({ en: 1, tr: 1 })
+    },
+  )
+
+  it.each(['suffix', 'directory', 'none'] as const)(
+    'counts collection entries correctly for locale_strategy:%s',
+    async (localeStrategy) => {
+      const model = createCollectionModel(localeStrategy)
+      await prepareModelDirs(model)
+
+      await writeContent(testDir, model, [
+        { id: 'alice', locale: 'en', data: { name: 'Alice' } },
+        { id: 'alice', locale: 'tr', data: { name: 'Aylin' } },
+      ], config)
+
+      const stats = await countEntries(testDir, model)
+
+      expect(stats.total).toBe(2)
+      expect(stats.locales).toEqual({ en: 1, tr: 1 })
+    },
+  )
+
+  it.each(['suffix', 'directory', 'none'] as const)(
+    'counts singleton entries correctly for locale_strategy:%s',
+    async (localeStrategy) => {
+      const model = createSingletonModel(localeStrategy)
+      await prepareModelDirs(model)
+
+      await writeContent(testDir, model, [
+        { locale: 'en', data: { title: 'Hello' } },
+        { locale: 'tr', data: { title: 'Merhaba' } },
       ], config)
 
       const stats = await countEntries(testDir, model)

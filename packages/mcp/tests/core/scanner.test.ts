@@ -336,4 +336,22 @@ export function Header() {
       expect(result.by_directory[dir]!.files).toBeGreaterThan(0)
     }
   })
+
+  it('counts repeated strings beyond the per-directory sample window', async () => {
+    await mkdir(join(testDir, 'src', 'bulk'), { recursive: true })
+
+    for (let i = 1; i <= 12; i++) {
+      const repeated = i >= 11 ? 'Late repeated label' : `Unique label ${i}`
+      await writeFile(
+        join(testDir, 'src', 'bulk', `file-${String(i).padStart(2, '0')}.tsx`),
+        `export function File${i}() { return <div>${repeated}</div> }`,
+      )
+    }
+
+    const result = await scanSummary(testDir, { paths: ['src'] })
+    const repeated = result.top_repeated.find(r => r.value === 'Late repeated label')
+
+    expect(repeated).toBeDefined()
+    expect(repeated!.count).toBeGreaterThanOrEqual(2)
+  })
 })

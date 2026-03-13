@@ -1,10 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import { join } from 'node:path'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { simpleGit } from 'simple-git'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { createServer } from '../../src/server.js'
 
 const FIXTURE = join(import.meta.dirname, '..', 'fixtures')
+let testDir: string | null = null
 
 async function createTestClient(projectRoot: string) {
   const server = createServer(projectRoot)
@@ -18,6 +22,27 @@ async function createTestClient(projectRoot: string) {
 
   return client
 }
+
+async function initProject(dir: string): Promise<void> {
+  const git = simpleGit(dir)
+  await git.init()
+  await git.addConfig('user.name', 'Test')
+  await git.addConfig('user.email', 'test@test.com')
+  await writeFile(join(dir, '.gitkeep'), '')
+  await git.add('.')
+  await git.commit('initial')
+}
+
+beforeEach(async () => {
+  testDir = null
+})
+
+afterEach(async () => {
+  if (testDir) {
+    await rm(testDir, { recursive: true, force: true })
+    testDir = null
+  }
+})
 
 describe('contentrain_status', () => {
   it('returns initialized:true for valid fixture', async () => {
@@ -142,6 +167,62 @@ describe('contentrain_describe', () => {
     const content = result.content as Array<{ type: string; text: string }>
     const data = JSON.parse(content[0]!.text)
     expect(data.error).toContain('nonexistent')
+  })
+
+  it('returns the actual slug for document samples with suffix locale strategy', async () => {
+    testDir = await mkdtemp(join(tmpdir(), 'cr-context-describe-'))
+    await initProject(testDir)
+
+    let client = await createTestClient(testDir)
+    await client.callTool({ name: 'contentrain_init', arguments: { locales: ['en', 'tr'] } })
+    client = await createTestClient(testDir)
+
+    await client.callTool({
+      name: 'contentrain_model_save',
+      arguments: {
+        id: 'docs',
+        name: 'Docs',
+        kind: 'document',
+        domain: 'blog',
+        i18n: true,
+        locale_strategy: 'suffix',
+        fields: {
+          title: { type: 'string', required: true },
+          slug: { type: 'slug', required: true },
+        },
+      },
+    })
+
+    client = await createTestClient(testDir)
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'docs',
+        entries: [
+          {
+            slug: 'getting-started',
+            locale: 'en',
+            data: {
+              title: 'Getting Started',
+              slug: 'getting-started',
+              body: '# Hello',
+            },
+          },
+        ],
+      },
+    })
+
+    client = await createTestClient(testDir)
+    const result = await client.callTool({
+      name: 'contentrain_describe',
+      arguments: { model: 'docs', include_sample: true, locale: 'en' },
+    })
+
+    const content = result.content as Array<{ type: string; text: string }>
+    const data = JSON.parse(content[0]!.text)
+
+    expect(data.sample).toBeDefined()
+    expect(data.sample.slug).toBe('getting-started')
   })
 })
 

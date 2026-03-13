@@ -201,18 +201,101 @@ export async function countEntries(
   }
 
   if (model.kind === 'collection') {
-    // Resolve actual json file names per locale based on strategy
-    const jsonFiles = files.filter(f => f.endsWith('.json'))
-    return countCollectionEntries(cDir, jsonFiles)
+    if (!model.i18n) {
+      // Non-i18n: single data.json
+      const jsonFiles = files.filter(f => f.endsWith('.json'))
+      return countCollectionEntries(cDir, jsonFiles)
+    }
+    switch (strategy) {
+      case 'suffix': {
+        // Files: {model}.{locale}.json
+        const jsonFiles = files.filter(f => f.endsWith('.json'))
+        const locales: Record<string, number> = {}
+        for (const f of jsonFiles) {
+          const match = f.match(/^.+\.([a-z]{2}(?:-[A-Z]{2})?)\.json$/)
+          if (match) {
+            const data = await readJson<Record<string, unknown>>(join(cDir, f))
+            locales[match[1]!] = data ? Object.keys(data).length : 0
+          }
+        }
+        const total = Object.values(locales).reduce((a, b) => a + b, 0)
+        return { total, locales }
+      }
+      case 'directory': {
+        // Dirs: {locale}/... containing json files
+        const locales: Record<string, number> = {}
+        let total = 0
+        for (const localeDir of files) {
+          const subFiles = await readDir(join(cDir, localeDir))
+          const jsonFile = subFiles.find(f => f.endsWith('.json'))
+          if (jsonFile) {
+            const data = await readJson<Record<string, unknown>>(join(cDir, localeDir, jsonFile))
+            const count = data ? Object.keys(data).length : 0
+            locales[localeDir] = count
+            total += count
+          }
+        }
+        return { total, locales }
+      }
+      case 'none': {
+        // Single file: {model}.json — count entries inside
+        const noneFile = files.find(f => f === `${model.id}.json`)
+        if (!noneFile) return { total: 0, locales: {} }
+        const data = await readJson<Record<string, unknown>>(join(cDir, noneFile))
+        const count = data ? Object.keys(data).length : 0
+        return { total: count, locales: { _: count } }
+      }
+      default: {
+        // 'file': {locale}.json
+        const jsonFiles = files.filter(f => f.endsWith('.json'))
+        return countCollectionEntries(cDir, jsonFiles)
+      }
+    }
   }
 
   // singleton / dictionary — one entry per locale file
-  const jsonFiles = files.filter(f => f.endsWith('.json'))
-  const locales: Record<string, number> = {}
-  for (const file of jsonFiles) {
-    locales[file.replace(/\.json$/, '')] = 1
+  if (!model.i18n) {
+    // Non-i18n: single data.json
+    const hasData = files.some(f => f === 'data.json')
+    return { total: hasData ? 1 : 0, locales: {} }
   }
-  return { total: jsonFiles.length, locales }
+
+  switch (strategy) {
+    case 'suffix': {
+      // Files: {model}.{locale}.json
+      const locales: Record<string, number> = {}
+      for (const f of files) {
+        const match = f.match(/^.+\.([a-z]{2}(?:-[A-Z]{2})?)\.json$/)
+        if (match) locales[match[1]!] = 1
+      }
+      return { total: Object.keys(locales).length, locales }
+    }
+    case 'directory': {
+      // Dirs: {locale}/...
+      const locales: Record<string, number> = {}
+      for (const localeDir of files) {
+        const subFiles = await readDir(join(cDir, localeDir))
+        if (subFiles.some(f => f.endsWith('.json'))) {
+          locales[localeDir] = 1
+        }
+      }
+      return { total: Object.keys(locales).length, locales }
+    }
+    case 'none': {
+      // Single file: {model}.json
+      const hasFile = files.some(f => f === `${model.id}.json`)
+      return { total: hasFile ? 1 : 0, locales: {} }
+    }
+    default: {
+      // 'file': {locale}.json
+      const jsonFiles = files.filter(f => f.endsWith('.json'))
+      const locales: Record<string, number> = {}
+      for (const file of jsonFiles) {
+        locales[file.replace(/\.json$/, '')] = 1
+      }
+      return { total: jsonFiles.length, locales }
+    }
+  }
 }
 
 const MODEL_FIELD_ORDER = ['id', 'name', 'kind', 'domain', 'i18n', 'description', 'content_path', 'locale_strategy', 'fields']

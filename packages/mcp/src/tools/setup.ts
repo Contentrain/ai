@@ -12,6 +12,7 @@ import { writeModel } from '../core/model-manager.js'
 import { writeContent, type ContentEntry } from '../core/content-manager.js'
 import { getTemplate, listTemplates } from '../templates/index.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
+import { checkBranchHealth } from '../git/branch-lifecycle.js'
 
 export function registerSetupTools(server: McpServer, projectRoot: string): void {
   // ─── contentrain_init ───
@@ -46,6 +47,18 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
       const hasGit = await pathExists(join(projectRoot, '.git'))
       if (!hasGit) {
         await simpleGit(projectRoot).init()
+      }
+
+      // Branch health gate
+      const initHealth = await checkBranchHealth(projectRoot)
+      if (initHealth.blocked) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: initHealth.message,
+            action: 'blocked',
+            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+          }, null, 2) }],
+        }
       }
 
       // Create git transaction
@@ -166,6 +179,18 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
             error: `Unknown template: "${templateId}". Available: ${listTemplates().join(', ')}`,
           }) }],
           isError: true,
+        }
+      }
+
+      // Branch health gate
+      const scaffoldHealth = await checkBranchHealth(projectRoot)
+      if (scaffoldHealth.blocked) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: scaffoldHealth.message,
+            action: 'blocked',
+            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+          }, null, 2) }],
         }
       }
 

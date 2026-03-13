@@ -6,6 +6,7 @@ import { writeContext } from '../core/context.js'
 import { resolveContentDir, resolveJsonFilePath, resolveMdFilePath } from '../core/content-manager.js'
 import { checkReferences, deleteModel, readModel, writeModel } from '../core/model-manager.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
+import { checkBranchHealth } from '../git/branch-lifecycle.js'
 
 const fieldDefSchema: z.ZodType<Record<string, unknown>> = z.record(z.string(), z.object({
   type: z.string(),
@@ -55,6 +56,18 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Validation failed', details: errors }) }],
           isError: true,
+        }
+      }
+
+      // Branch health gate
+      const health = await checkBranchHealth(projectRoot)
+      if (health.blocked) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: health.message,
+            action: 'blocked',
+            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+          }, null, 2) }],
         }
       }
 
@@ -158,6 +171,18 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: `Model "${modelId}" not found` }) }],
           isError: true,
+        }
+      }
+
+      // Branch health gate
+      const deleteHealth = await checkBranchHealth(projectRoot)
+      if (deleteHealth.blocked) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: deleteHealth.message,
+            action: 'blocked',
+            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+          }, null, 2) }],
         }
       }
 

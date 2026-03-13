@@ -262,6 +262,36 @@ describe('contentrain_content_save', () => {
     const data = parseResult(result)
     expect(data['error']).toContain('not found')
   })
+
+  it('blocks new writes when 80 active contentrain branches exist', async () => {
+    client = await createModel(client, 'hero', 'singleton', 'marketing', {
+      title: { type: 'string', required: true },
+    })
+
+    const git = simpleGit(testDir)
+    const baseBranch = (await git.raw(['branch', '--show-current'])).trim()
+
+    for (let i = 1; i <= 80; i++) {
+      const branchName = `contentrain/test/block-${String(i).padStart(3, '0')}`
+      await git.checkoutBranch(branchName, baseBranch)
+      await git.commit(`branch ${i}`, undefined, { '--allow-empty': null })
+      await git.checkout(baseBranch)
+    }
+
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'hero',
+        entries: [{ locale: 'en', data: { title: 'Blocked write' } }],
+      },
+    })
+
+    expect(result.isError).toBe(true)
+    const data = parseResult(result)
+    expect(data['error']).toContain('80')
+  })
 })
 
 describe('contentrain_content_delete', () => {
