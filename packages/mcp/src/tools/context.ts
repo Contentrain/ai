@@ -142,6 +142,131 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
       }
     },
   )
+
+  // ─── contentrain_describe_format ───
+  server.tool(
+    'contentrain_describe_format',
+    'Describes the Contentrain content file format for any language/platform. Returns a comprehensive specification of the file structure, JSON formats, markdown conventions, meta files, and locale strategies.',
+    {},
+    async () => {
+      const formatSpec = {
+        overview: 'Contentrain stores content as plain JSON and Markdown files in a .contentrain/ directory at the project root. All files are committed to git.',
+        directory_structure: {
+          description: 'Standard layout of .contentrain/ directory',
+          layout: {
+            '.contentrain/config.json': 'Project configuration (stack, workflow, locales, domains)',
+            '.contentrain/context.json': 'Last operation metadata (written by MCP after every write)',
+            '.contentrain/vocabulary.json': 'Shared vocabulary/terms (optional)',
+            '.contentrain/models/{model-id}.json': 'Model schema definitions',
+            '.contentrain/content/{domain}/{model-id}/': 'Content files per model',
+            '.contentrain/meta/{model-id}/': 'Metadata files per model (status, source, timestamps)',
+          },
+        },
+        model_kinds: {
+          collection: {
+            description: 'Multiple entries stored as an object-map keyed by entry ID',
+            storage_format: 'JSON object-map: { "entry-id-1": { ...fields }, "entry-id-2": { ...fields } }',
+            note: 'Keys are sorted alphabetically for canonical output. Entry IDs are alphanumeric (1-40 chars, hyphens/underscores allowed).',
+            example: '{ "abc123": { "title": "Hello", "slug": "hello" }, "def456": { "title": "World", "slug": "world" } }',
+          },
+          singleton: {
+            description: 'Single entry (e.g. site settings, hero section)',
+            storage_format: 'JSON object with field key-value pairs: { "title": "My Site", "description": "..." }',
+          },
+          document: {
+            description: 'Markdown files with YAML-like frontmatter',
+            storage_format: 'Markdown file: ---\\nslug: my-post\\ntitle: My Post\\n---\\n\\nMarkdown body content here.',
+            frontmatter_rules: [
+              'Delimited by --- on its own line',
+              'Key-value pairs: key: value',
+              'Arrays: key:\\n  - item1\\n  - item2',
+              'Inline arrays: key: [item1, item2]',
+              'Values auto-parsed: true/false -> boolean, integers -> number, quoted -> string',
+              '"body" key is reserved for the markdown content below the frontmatter',
+            ],
+          },
+          dictionary: {
+            description: 'Flat key-value string map (e.g. i18n translation files)',
+            storage_format: 'JSON object: { "greeting": "Hello", "farewell": "Goodbye" }',
+            note: 'All values must be strings.',
+          },
+        },
+        meta_files: {
+          description: 'Metadata is stored separately from content in .contentrain/meta/{model-id}/',
+          collection_meta: 'Object-map: { "entry-id": { "status": "draft", "source": "agent", "updated_by": "contentrain-mcp" } }',
+          singleton_meta: 'Single object: { "status": "published", "source": "human", "updated_by": "user@example.com" }',
+          fields: {
+            status: 'Content lifecycle status: "draft" | "in_review" | "published" | "rejected" | "archived"',
+            source: 'Who created the entry: "agent" | "human" | "import"',
+            updated_by: 'Author identifier string',
+            approved_by: 'Optional: approver identifier',
+            version: 'Optional: version string',
+            publish_at: 'Optional: ISO 8601 date for scheduled publishing',
+            expire_at: 'Optional: ISO 8601 date for scheduled expiry (must be after publish_at)',
+          },
+        },
+        locale_strategies: {
+          description: 'How localized content files are organized. Set per-model via locale_strategy field.',
+          strategies: {
+            file: {
+              description: 'Default. Each locale is a separate file in the model directory.',
+              json_pattern: '{content-dir}/{locale}.json (e.g. en.json, tr.json)',
+              md_pattern: '{content-dir}/{slug}/{locale}.md',
+            },
+            suffix: {
+              description: 'Locale appended to filename.',
+              json_pattern: '{content-dir}/{model-id}.{locale}.json',
+              md_pattern: '{content-dir}/{slug}.{locale}.md',
+            },
+            directory: {
+              description: 'Locale as subdirectory.',
+              json_pattern: '{content-dir}/{locale}/{model-id}.json',
+              md_pattern: '{content-dir}/{locale}/{slug}.md',
+            },
+            none: {
+              description: 'No locale in path (single-language or externally managed).',
+              json_pattern: '{content-dir}/{model-id}.json',
+              md_pattern: '{content-dir}/{slug}.md',
+            },
+          },
+        },
+        i18n_disabled: {
+          description: 'When a model has i18n:false, locale is ignored in file paths.',
+          json_pattern: '{content-dir}/data.json (always "data.json", no locale suffix)',
+          md_pattern: '{content-dir}/{slug}.md (no locale in path)',
+        },
+        canonical_serialization: {
+          description: 'All JSON files use deterministic serialization for clean git diffs.',
+          rules: [
+            'Object keys sorted alphabetically',
+            '2-space indentation',
+            'Trailing newline at end of file',
+            'No trailing commas',
+            'UTF-8 encoding',
+          ],
+        },
+        content_path_override: {
+          description: 'Models can specify a custom content_path to store content outside .contentrain/content/.',
+          example: 'A model with content_path: "content/blog" stores files at {project-root}/content/blog/ instead of .contentrain/content/{domain}/{model-id}/',
+          note: 'This is useful for frameworks that expect content in specific directories (e.g. Nuxt Content, Astro).',
+        },
+        reading_content: {
+          steps: [
+            '1. Read .contentrain/config.json to get locales and workflow settings',
+            '2. Read .contentrain/models/{model-id}.json to get the schema and model kind',
+            '3. Determine content directory: model.content_path or .contentrain/content/{domain}/{model-id}/',
+            '4. Determine file path using locale_strategy and i18n flag',
+            '5. Parse JSON (collection/singleton/dictionary) or Markdown frontmatter (document)',
+            '6. Optionally read .contentrain/meta/{model-id}/{locale}.json for status/metadata',
+          ],
+        },
+      }
+
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(formatSpec, null, 2) }],
+      }
+    },
+  )
 }
 
 async function getSample(

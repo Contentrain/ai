@@ -2,7 +2,6 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { simpleGit } from 'simple-git'
 import { validateProject } from '../core/validator.js'
-import { writeContext } from '../core/context.js'
 import { readConfig } from '../core/config.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth, cleanupMergedBranches } from '../git/branch-lifecycle.js'
@@ -49,15 +48,14 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
           try {
             await tx.write(async (wt) => {
               result = await validateProject(wt, { model: input.model, fix: true })
-              await writeContext(wt, {
-                tool: 'contentrain_validate',
-                model: input.model ?? '*',
-              })
             })
 
             if (result!.fixed > 0) {
               await tx.commit(`[contentrain] validate: auto-fix ${result!.fixed} issue(s)`)
-              const gitResult = await tx.complete()
+              const gitResult = await tx.complete({
+                tool: 'contentrain_validate',
+                model: input.model ?? '*',
+              })
 
               const nextSteps: string[] = []
               if (result!.summary.errors > 0) nextSteps.push('Fix remaining errors manually')

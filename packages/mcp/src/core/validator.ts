@@ -126,6 +126,46 @@ function checkMinMax(value: unknown, fieldDef: FieldDef): string | null {
   return null
 }
 
+// ─── Schedule validation ───
+
+function validateScheduleFields(
+  meta: EntryMeta,
+  ctx: { model: string; locale: string; entry?: string; slug?: string },
+  issues: ValidationError[],
+): void {
+  if (meta.publish_at !== undefined) {
+    const d = new Date(meta.publish_at)
+    if (Number.isNaN(d.getTime())) {
+      issues.push({
+        severity: 'error',
+        ...ctx,
+        message: `Invalid publish_at date: "${meta.publish_at}". Must be a valid ISO 8601 date string.`,
+      })
+    }
+  }
+  if (meta.expire_at !== undefined) {
+    const d = new Date(meta.expire_at)
+    if (Number.isNaN(d.getTime())) {
+      issues.push({
+        severity: 'error',
+        ...ctx,
+        message: `Invalid expire_at date: "${meta.expire_at}". Must be a valid ISO 8601 date string.`,
+      })
+    }
+  }
+  if (meta.publish_at !== undefined && meta.expire_at !== undefined) {
+    const pubDate = new Date(meta.publish_at)
+    const expDate = new Date(meta.expire_at)
+    if (!Number.isNaN(pubDate.getTime()) && !Number.isNaN(expDate.getTime()) && expDate <= pubDate) {
+      issues.push({
+        severity: 'error',
+        ...ctx,
+        message: `expire_at ("${meta.expire_at}") must be after publish_at ("${meta.publish_at}").`,
+      })
+    }
+  }
+}
+
 // ─── Shared field validation ───
 
 interface FieldContext {
@@ -421,9 +461,12 @@ async function validateCollectionModel(
     const metaData = await readJson<Record<string, EntryMeta>>(metaPath)
     const contentData = await readJson<Record<string, unknown>>(resolveJsonFilePath(cDir, model, locale)) ?? {}
 
-    // Forward check: meta entries without content
+    // Forward check: meta entries without content + schedule validation
     if (metaData) {
       for (const metaEntryId of Object.keys(metaData)) {
+        // Validate schedule fields on every meta entry
+        validateScheduleFields(metaData[metaEntryId]!, { model: model.id, locale, entry: metaEntryId }, issues)
+
         if (!(metaEntryId in contentData)) {
           issues.push({
             severity: 'warning',
@@ -601,6 +644,13 @@ async function validateSingletonModel(
         await writeJson(filePath, resorted)
         fixed++
       }
+    }
+
+    // Validate schedule fields in singleton meta
+    const singletonMetaPath = join(contentrainDir(projectRoot), 'meta', model.id, `${locale}.json`)
+    const singletonMetaData = await readJson<EntryMeta>(singletonMetaPath)
+    if (singletonMetaData) {
+      validateScheduleFields(singletonMetaData, { model: model.id, locale }, issues)
     }
   }
 

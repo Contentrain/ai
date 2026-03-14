@@ -1,7 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { readConfig } from '../core/config.js'
-import { writeContext } from '../core/context.js'
 import { readModel } from '../core/model-manager.js'
 import { writeContent, deleteContent, listContent } from '../core/content-manager.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
@@ -19,6 +18,8 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         slug: z.string().optional().describe('Slug (document only)'),
         locale: z.string().optional().describe('Locale code (defaults to config default)'),
         data: z.record(z.string(), z.unknown()).describe('Content data. For documents, include "body" key for markdown content.'),
+        publish_at: z.string().optional().describe('ISO 8601 date for scheduled publishing (stored in meta)'),
+        expire_at: z.string().optional().describe('ISO 8601 date for scheduled expiry (stored in meta, must be after publish_at)'),
       })).describe('Content entries to save'),
     },
     async (input) => {
@@ -38,7 +39,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         }
       }
 
-      // Validate locales before starting transaction
+      // Validate locales and scheduling fields before starting transaction
       for (const entry of input.entries) {
         if (entry.locale && !config.locales.supported.includes(entry.locale)) {
           return {
@@ -48,6 +49,44 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
             isError: true,
           }
         }
+
+        // Validate publish_at / expire_at
+        if (entry.publish_at !== undefined) {
+          const d = new Date(entry.publish_at)
+          if (Number.isNaN(d.getTime())) {
+            return {
+              content: [{ type: 'text' as const, text: JSON.stringify({
+                error: `Invalid publish_at date: "${entry.publish_at}". Must be a valid ISO 8601 date string.`,
+              }) }],
+              isError: true,
+            }
+          }
+        }
+        if (entry.expire_at !== undefined) {
+          const d = new Date(entry.expire_at)
+          if (Number.isNaN(d.getTime())) {
+            return {
+              content: [{ type: 'text' as const, text: JSON.stringify({
+                error: `Invalid expire_at date: "${entry.expire_at}". Must be a valid ISO 8601 date string.`,
+              }) }],
+              isError: true,
+            }
+          }
+        }
+        if (entry.publish_at !== undefined && entry.expire_at !== undefined) {
+          if (new Date(entry.expire_at) <= new Date(entry.publish_at)) {
+            return {
+              content: [{ type: 'text' as const, text: JSON.stringify({
+                error: `expire_at ("${entry.expire_at}") must be after publish_at ("${entry.publish_at}").`,
+              }) }],
+              isError: true,
+            }
+          }
+        }
+
+        // Merge scheduling fields into data so meta-manager picks them up
+        if (entry.publish_at !== undefined) entry.data['publish_at'] = entry.publish_at
+        if (entry.expire_at !== undefined) entry.data['expire_at'] = entry.expire_at
       }
 
       // Branch health gate
@@ -74,16 +113,15 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         await tx.write(async (wt) => {
           results = await writeContent(wt, model, input.entries, config)
           entryIds = results!.map(r => r.id ?? r.slug ?? r.locale).filter(Boolean) as string[]
-          await writeContext(wt, {
-            tool: 'contentrain_content_save',
-            model: input.model,
-            locale: input.entries[0]?.locale,
-            entries: entryIds,
-          })
         })
 
         await tx.commit(`[contentrain] content: ${input.model}`)
-        const gitResult = await tx.complete()
+        const gitResult = await tx.complete({
+          tool: 'contentrain_content_save',
+          model: input.model,
+          locale: input.entries[0]?.locale,
+          entries: entryIds,
+        })
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
@@ -165,15 +203,14 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
             slug: input.slug,
             locale: input.locale,
           })
-          await writeContext(wt, {
-            tool: 'contentrain_content_delete',
-            model: input.model,
-            locale: input.locale,
-          })
         })
 
         await tx.commit(`[contentrain] delete content: ${input.model}`)
-        const gitResult = await tx.complete()
+        const gitResult = await tx.complete({
+          tool: 'contentrain_content_delete',
+          model: input.model,
+          locale: input.locale,
+        })
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({

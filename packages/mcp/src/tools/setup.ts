@@ -6,7 +6,6 @@ import { readFile, writeFile, appendFile } from 'node:fs/promises'
 import { simpleGit } from 'simple-git'
 import { detectStack } from '../util/detect.js'
 import { contentrainDir, ensureDir, pathExists, writeJson } from '../util/fs.js'
-import { writeContext } from '../core/context.js'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { writeModel } from '../core/model-manager.js'
 import { writeContent, type ContentEntry } from '../core/content-manager.js'
@@ -228,16 +227,14 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
             vocabAdded = await mergeVocabulary(wt, tmpl.vocabulary, effectiveLocales)
           }
 
-          // Update context inside transaction
-          await writeContext(wt, {
-            tool: 'contentrain_scaffold',
-            model: tmpl.models.map(m => m.id).join(', '),
-            locale: defaultLocale,
-          })
         })
 
         await tx.commit(`[contentrain] scaffold: ${templateId} (${defaultLocale})`)
-        const gitResult = await tx.complete()
+        const gitResult = await tx.complete({
+          tool: 'contentrain_scaffold',
+          model: tmpl.models.map(m => m.id).join(', '),
+          locale: defaultLocale,
+        })
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({

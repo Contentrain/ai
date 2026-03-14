@@ -206,12 +206,19 @@ export interface ListOpts {
 
 // ─── Default meta ───
 
-function defaultMeta(): EntryMeta {
-  return {
+function defaultMeta(data?: Record<string, unknown>): EntryMeta {
+  const meta: EntryMeta = {
     status: 'draft',
     source: 'agent',
     updated_by: 'contentrain-mcp',
   }
+  if (data?.['publish_at'] !== undefined) {
+    meta.publish_at = data['publish_at'] as string
+  }
+  if (data?.['expire_at'] !== undefined) {
+    meta.expire_at = data['expire_at'] as string
+  }
+  return meta
 }
 
 // ─── writeContent ───
@@ -248,7 +255,7 @@ export async function writeContent(
       case 'singleton': {
         const filePath = resolveJsonFilePath(resolveContentDir(projectRoot, model), model, locale)
         await writeJson(filePath, entry.data)
-        await writeMeta(projectRoot, model, { locale }, defaultMeta())
+        await writeMeta(projectRoot, model, { locale }, defaultMeta(entry.data))
         results.push({ action: 'updated', locale })
         break
       }
@@ -269,7 +276,7 @@ export async function writeContent(
         }
 
         await writeJson(filePath, sorted)
-        await writeMeta(projectRoot, model, { locale, entryId: id }, defaultMeta())
+        await writeMeta(projectRoot, model, { locale, entryId: id }, defaultMeta(entry.data))
         results.push({ action, id, locale })
         break
       }
@@ -292,7 +299,7 @@ export async function writeContent(
 
         const mdContent = serializeFrontmatter(fmData, bodyContent)
         await writeText(docPath, mdContent)
-        await writeMeta(projectRoot, model, { locale, slug }, defaultMeta())
+        await writeMeta(projectRoot, model, { locale, slug }, defaultMeta(entry.data))
         results.push({ action, slug, locale })
         break
       }
@@ -302,7 +309,7 @@ export async function writeContent(
         const existing = await readJson<Record<string, string>>(filePath) ?? {}
         const merged = { ...existing, ...entry.data as Record<string, string> }
         await writeJson(filePath, merged)
-        await writeMeta(projectRoot, model, { locale }, defaultMeta())
+        await writeMeta(projectRoot, model, { locale }, defaultMeta(entry.data))
         results.push({ action: 'updated', locale })
         break
       }

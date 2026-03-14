@@ -3,14 +3,22 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { readConfig } from '../core/config.js'
+import { writeContext } from '../core/context.js'
 import { branchTimestamp } from '../util/id.js'
+
+export interface ContextUpdate {
+  tool: string
+  model: string
+  locale?: string
+  entries?: string[]
+}
 
 export interface GitTransaction {
   worktree: string
   branch: string
   write(callback: (worktreePath: string) => Promise<void>): Promise<void>
   commit(message: string): Promise<string>
-  complete(): Promise<{ action: 'auto-merged' | 'pending-review'; commit: string }>
+  complete(contextUpdate?: ContextUpdate): Promise<{ action: 'auto-merged' | 'pending-review'; commit: string }>
   cleanup(): Promise<void>
 }
 
@@ -83,12 +91,20 @@ export async function createTransaction(
 
     async commit(message) {
       await wtGit.add('.')
-      const result = await wtGit.commit(message)
+      // Exclude context.json from branch commits — it contains timestamps
+      // that cause merge conflicts on sequential operations. Context is
+      // updated separately on the base branch after merge.
+      try {
+        await wtGit.raw(['reset', 'HEAD', '--', '.contentrain/context.json'])
+      } catch {
+        // context.json may not be staged — that's fine
+      }
+      const result = await wtGit.commit(message, { '--allow-empty': null })
       commitHash = result.commit || ''
       return commitHash
     },
 
-    async complete() {
+    async complete(contextUpdate?: ContextUpdate) {
       if (workflow === 'review') {
         if (hasRemote) {
           await git.push(remoteName, branch)
@@ -134,6 +150,17 @@ export async function createTransaction(
           await git.push(remoteName, baseBranch)
         } catch {
           // push may fail, branch is merged locally
+        }
+      }
+
+      // Update context.json on base branch after successful merge
+      if (contextUpdate) {
+        try {
+          await writeContext(projectRoot, contextUpdate)
+          await git.add('.contentrain/context.json')
+          await git.commit('[contentrain] update context', { '--allow-empty': null, '--author': `${authorName} <${authorEmail}>` })
+        } catch {
+          // Context update is best-effort — don't fail the transaction
         }
       }
 

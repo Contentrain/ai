@@ -2,7 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ModelDefinition } from '@contentrain/types'
 import { z } from 'zod'
 import { readConfig } from '../core/config.js'
-import { writeContext } from '../core/context.js'
+
 import { resolveContentDir, resolveJsonFilePath, resolveMdFilePath } from '../core/content-manager.js'
 import { checkReferences, deleteModel, readModel, writeModel } from '../core/model-manager.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
@@ -103,11 +103,10 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
       try {
         await tx.write(async (wt) => {
           await writeModel(wt, model)
-          await writeContext(wt, { tool: 'contentrain_model_save', model: input.id })
         })
 
         await tx.commit(`[contentrain] ${action}: ${input.id}`)
-        const gitResult = await tx.complete()
+        const gitResult = await tx.complete({ tool: 'contentrain_model_save', model: input.id })
 
         const defaultLocale = config.locales.default
         // Build accurate content path using path resolvers
@@ -219,11 +218,10 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
 
         await tx.write(async (wt) => {
           filesRemoved = await deleteModel(wt, modelId)
-          await writeContext(wt, { tool: 'contentrain_model_delete', model: modelId })
         })
 
         await tx.commit(`[contentrain] delete: ${modelId}`)
-        const gitResult = await tx.complete()
+        const gitResult = await tx.complete({ tool: 'contentrain_model_delete', model: modelId })
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({

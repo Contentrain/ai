@@ -108,6 +108,8 @@ export interface EntryMeta {
   updated_by: string
   approved_by?: string | null
   version?: string
+  publish_at?: string
+  expire_at?: string
 }
 
 export type SingletonMeta = EntryMeta
