@@ -1,18 +1,18 @@
 {
   "lastOperation": {
     "locale": "en",
-    "model": "",
+    "model": "navigation",
     "source": "mcp-local",
-    "timestamp": "2026-03-13T19:38:42.042Z",
-    "tool": "contentrain_init"
+    "timestamp": "2026-03-14T09:08:56.574Z",
+    "tool": "contentrain_model_save"
   },
   "stats": {
     "entries": 0,
-    "lastSync": "2026-03-13T19:38:42.043Z",
+    "lastSync": "2026-03-14T09:08:56.574Z",
     "locales": [
       "en"
     ],
-    "models": 0
+    "models": 1
   },
   "version": "1"
 }
