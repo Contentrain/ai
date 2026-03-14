@@ -1,0 +1,16 @@
+{
+  "hero-alt": {
+    "cta_link": "/contact",
+    "cta_text": "Talk to Sales",
+    "image": "/enterprise.webp",
+    "subtitle": "Scale content operations",
+    "title": "Enterprise Ready"
+  },
+  "hero-main": {
+    "cta_link": "/signup",
+    "cta_text": "Get Started",
+    "image": "/hero.webp",
+    "subtitle": "Ship production apps in hours",
+    "title": "Build faster with AI"
+  }
+}
