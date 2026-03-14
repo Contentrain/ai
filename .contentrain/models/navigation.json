@@ -1,0 +1,19 @@
+{
+  "id": "navigation",
+  "name": "Navigation",
+  "kind": "singleton",
+  "domain": "system",
+  "i18n": true,
+  "fields": {
+    "brand_name": {
+      "required": true,
+      "type": "string"
+    },
+    "cta_link": {
+      "type": "string"
+    },
+    "cta_text": {
+      "type": "string"
+    }
+  }
+}
