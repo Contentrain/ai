@@ -142,14 +142,12 @@ useWatch((event) => {
 
           <!-- Branch list -->
           <div v-else class="space-y-2">
-            <button
-              v-for="branch in parsedBranches"
-              :key="branch.name"
+            <button v-for="branch in parsedBranches" :key="branch.name"
               class="group flex w-full items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary/30 hover:shadow-sm"
-              @click="router.push(`/branches/${encodeURIComponent(branch.name)}`)"
-            >
+              @click="router.push(`/branches/${encodeURIComponent(branch.name)}`)">
               <div :class="cn('flex size-10 items-center justify-center rounded-lg', getScopeConfig(branch.scope).bg)">
-                <component :is="getScopeConfig(branch.scope).icon" :class="cn('size-5', getScopeConfig(branch.scope).color)" />
+                <component :is="getScopeConfig(branch.scope).icon"
+                  :class="cn('size-5', getScopeConfig(branch.scope).color)" />
               </div>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 flex-wrap">
@@ -159,10 +157,12 @@ useWatch((event) => {
                 </div>
                 <span class="font-mono text-xs text-muted-foreground truncate">{{ branch.name }}</span>
               </div>
-              <Badge :class="cn(getScopeConfig(branch.scope).bg, getScopeConfig(branch.scope).color)" class="text-[10px] uppercase shrink-0">
+              <Badge :class="cn(getScopeConfig(branch.scope).bg, getScopeConfig(branch.scope).color)"
+                class="text-[10px] uppercase shrink-0">
                 {{ getScopeConfig(branch.scope).label }}
               </Badge>
-              <ChevronRight class="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              <ChevronRight
+                class="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
             </button>
           </div>
         </TabsContent>
@@ -190,17 +190,14 @@ useWatch((event) => {
 
               <!-- Timeline -->
               <div class="relative ml-5 border-l-2 border-border pl-6 space-y-4">
-                <div
-                  v-for="entry in group.entries"
-                  :key="entry.hash"
-                  class="relative"
-                >
+                <div v-for="entry in group.entries" :key="entry.hash" class="relative">
                   <!-- Timeline dot -->
                   <div :class="cn(
-                    'absolute -left-[31px] flex size-5 items-center justify-center rounded-full border-2 border-background',
+                    'absolute -left-7.75 flex size-5 items-center justify-center rounded-full border-2 border-background',
                     getHistoryConfig(entry.type).bg,
                   )">
-                    <component :is="getHistoryConfig(entry.type).icon" :class="cn('size-2.5', getHistoryConfig(entry.type).color)" />
+                    <component :is="getHistoryConfig(entry.type).icon"
+                      :class="cn('size-2.5', getHistoryConfig(entry.type).color)" />
                   </div>
 
                   <!-- Entry card -->
@@ -208,7 +205,8 @@ useWatch((event) => {
                     <div class="flex items-start gap-2">
                       <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 flex-wrap">
-                          <Badge variant="secondary" class="text-[10px]">{{ getHistoryConfig(entry.type).label }}</Badge>
+                          <Badge variant="secondary" class="text-[10px]">{{ getHistoryConfig(entry.type).label }}
+                          </Badge>
                           <span v-if="entry.target" class="font-mono text-xs font-medium text-foreground truncate">
                             {{ entry.target }}
                           </span>

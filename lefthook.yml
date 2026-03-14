@@ -1,8 +1,12 @@
 pre-commit:
   parallel: true
   commands:
+    lint-fix:
+      glob: "*.{ts,js,mjs,vue}"
+      run: npx oxlint --fix --deny-warnings {staged_files}
+      stage_fixed: true
     lint:
-      glob: "*.{ts,js,mjs}"
+      glob: "*.{ts,js,mjs,vue}"
       run: pnpm lint
     typecheck:
       glob: "*.{ts,js,mjs}"

@@ -141,7 +141,7 @@ const defaultVisibleNames = computed(() => {
       name,
       priority: (def.required ? 0 : 100) + (priorityOrder[def.type] ?? 50),
     }))
-    .sort((a, b) => a.priority - b.priority)
+    .toSorted((a, b) => a.priority - b.priority)
     .slice(0, 6)
     .map(f => f.name)
 })
@@ -457,7 +457,7 @@ useWatch((event) => {
               </Badge>
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" class="w-[260px] p-0">
+          <PopoverContent align="end" class="w-65 p-0">
             <div class="border-b border-border px-3 py-2.5">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-foreground">Toggle columns</span>
@@ -468,7 +468,7 @@ useWatch((event) => {
                 </div>
               </div>
             </div>
-            <div class="max-h-[340px] overflow-y-auto custom-scrollbar p-1.5">
+            <div class="max-h-85 overflow-y-auto custom-scrollbar p-1.5">
               <div
                 v-for="(field, fieldIdx) in orderedColumns"
                 :key="field"
@@ -967,11 +967,14 @@ useWatch((event) => {
 
 <style scoped>
 input[type='text'][inputmode='numeric'] {
+  appearance: textfield;
   -moz-appearance: textfield;
 }
 
 input[type='text'][inputmode='numeric']::-webkit-outer-spin-button,
 input[type='text'][inputmode='numeric']::-webkit-inner-spin-button {
+  appearance: none;
   -webkit-appearance: none;
+  margin: 0;
 }
 </style>

@@ -44,7 +44,7 @@ const validationIssues = computed(() => {
 
 <template>
   <aside
-    class="group flex h-screen w-[72px] min-w-[72px] flex-col overflow-hidden border-r border-border bg-card transition-all duration-200 ease-in-out hover:w-[220px] hover:min-w-[220px] xl:w-[220px] xl:min-w-[220px]"
+    class="group flex h-screen w-18 min-w-18 flex-col overflow-hidden border-r border-border bg-card transition-all duration-200 ease-in-out hover:w-55 hover:min-w-55 xl:w-55 xl:min-w-55"
   >
     <!-- Logo + Brand -->
     <div class="flex h-14 items-center gap-3 px-4 shrink-0">

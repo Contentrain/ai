@@ -23,12 +23,12 @@ function connect() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   ws = new WebSocket(`${protocol}//${window.location.host}/ws`)
 
-  ws.onopen = () => {
+  ws.addEventListener('open', () => {
     connected.value = true
     reconnectDelay = 1000
-  }
+  })
 
-  ws.onmessage = (event) => {
+  ws.addEventListener('message', (event) => {
     try {
       const data: WSEvent = JSON.parse(event.data)
       lastUpdate.value = new Date()
@@ -36,16 +36,16 @@ function connect() {
     } catch {
       // ignore malformed messages
     }
-  }
+  })
 
-  ws.onclose = () => {
+  ws.addEventListener('close', () => {
     connected.value = false
     scheduleReconnect()
-  }
+  })
 
-  ws.onerror = () => {
+  ws.addEventListener('error', () => {
     ws?.close()
-  }
+  })
 }
 
 function scheduleReconnect() {

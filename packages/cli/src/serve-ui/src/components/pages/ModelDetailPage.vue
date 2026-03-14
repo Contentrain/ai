@@ -43,10 +43,7 @@ const copiedSnippet = ref(false)
 
 const fields = computed(() => {
   if (!model.value?.fields) return []
-  return Object.entries(model.value.fields).map(([name, def]) => ({
-    name,
-    ...def,
-  }))
+  return Object.entries(model.value.fields).map(([name, def]) => (Object.assign({name}, def)))
 })
 
 const customFields = computed(() =>

@@ -15,8 +15,8 @@ import { createServer as createMcpServer } from '@contentrain/mcp/server'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { watch } from 'chokidar'
-import { join, resolve } from 'node:path'
-import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { simpleGit } from 'simple-git'
 
@@ -42,11 +42,12 @@ export async function createServeApp(options: ServeOptions) {
 
   async function callTool(name: string, args: Record<string, unknown> = {}): Promise<unknown> {
     const result = await mcpClient.callTool({ name, arguments: args })
-    const textContent = result.content.find((c: { type: string }) => c.type === 'text')
-    if (!textContent || !('text' in textContent)) {
+    const contentArr = result.content as Array<{ type: string; text?: string }>
+    const textContent = contentArr.find(c => c.type === 'text')
+    if (!textContent?.text) {
       throw createError({ statusCode: 500, message: `Tool ${name} returned no text content` })
     }
-    return JSON.parse(textContent.text as string)
+    return JSON.parse(textContent.text)
   }
 
   // --- H3 App ---
@@ -99,20 +100,29 @@ export async function createServeApp(options: ServeOptions) {
       for (const event of events) broadcast(event)
     }
 
-    watcher.on('all', (eventType, filePath) => {
+    watcher.on('all', (_eventType, filePath) => {
       const rel = filePath.replace(crDir, '').replace(/^\//, '')
 
       let event: Record<string, unknown>
       if (rel === 'config.json') {
         event = { type: 'config:changed' }
       } else if (rel === 'context.json') {
-        event = { type: 'context:changed' }
+        // Include context payload so consumers don't need extra fetch
+        let context: unknown = null
+        try {
+          const raw = readFileSync(join(crDir, 'context.json'), 'utf-8')
+          context = JSON.parse(raw)
+        } catch { /* file may be mid-write */ }
+        event = { type: 'context:changed', context }
       } else if (rel.startsWith('models/')) {
         const modelId = rel.replace('models/', '').replace('.json', '')
         event = { type: 'model:changed', modelId }
       } else if (rel.startsWith('content/')) {
+        // Path: content/<domain>/<model>/<locale>.json
         const parts = rel.replace('content/', '').split('/')
-        event = { type: 'content:changed', modelId: parts[0], locale: parts[1]?.replace('.json', '') }
+        const modelId = parts.length >= 2 ? parts[1] : parts[0]
+        const locale = parts.length >= 3 ? parts[2]?.replace('.json', '') : parts[1]?.replace('.json', '')
+        event = { type: 'content:changed', modelId, locale }
       } else {
         return
       }
@@ -161,16 +171,22 @@ export async function createServeApp(options: ServeOptions) {
     })
   }))
 
-  // Quick fix (content save)
+  // Quick fix (content save) — broadcasts branch:created if review workflow creates a branch
   router.add('/api/content/:modelId/:entryId/fix', defineEventHandler(async (event) => {
     if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
     const modelId = getRouterParam(event, 'modelId')
     const entryId = getRouterParam(event, 'entryId')
     const body = await readBody(event)
-    return await callTool('contentrain_content_save', {
+    const result = await callTool('contentrain_content_save', {
       model: modelId,
       entries: [{ id: entryId, locale: body.locale, data: body.data }],
-    })
+    }) as Record<string, unknown>
+    // If MCP created a branch (review workflow), broadcast it
+    const git = result.git as Record<string, unknown> | undefined
+    if (git?.branch && typeof git.branch === 'string') {
+      broadcast({ type: 'branch:created', branch: git.branch })
+    }
+    return result
   }))
 
   // Validate
@@ -191,6 +207,15 @@ export async function createServeApp(options: ServeOptions) {
     return { branches: crBranches, total: crBranches.length }
   }))
 
+  // Resolve configured default branch from config.json
+  function getDefaultBranch(): string {
+    try {
+      const raw = readFileSync(join(crDir, 'config.json'), 'utf-8')
+      const config = JSON.parse(raw)
+      return config?.repository?.default_branch ?? 'main'
+    } catch { return 'main' }
+  }
+
   // Branch diff
   router.add('/api/branches/diff', defineEventHandler(async (event) => {
     const query = getQuery(event)
@@ -199,12 +224,10 @@ export async function createServeApp(options: ServeOptions) {
       throw createError({ statusCode: 400, message: 'Invalid branch name' })
     }
     const git = simpleGit(projectRoot)
-    const defaultBranch = (await git.branchLocal()).current === branchName
-      ? 'main'
-      : (await git.branchLocal()).current
-    const diff = await git.diff([`${defaultBranch}...${branchName}`, '--stat'])
-    const rawDiff = await git.diff([`${defaultBranch}...${branchName}`])
-    return { branch: branchName, base: defaultBranch, stat: diff, diff: rawDiff }
+    const baseBranch = getDefaultBranch()
+    const diff = await git.diff([`${baseBranch}...${branchName}`, '--stat'])
+    const rawDiff = await git.diff([`${baseBranch}...${branchName}`])
+    return { branch: branchName, base: baseBranch, stat: diff, diff: rawDiff }
   }))
 
   // Branch approve (merge with conflict resolution)
@@ -216,26 +239,26 @@ export async function createServeApp(options: ServeOptions) {
       throw createError({ statusCode: 400, message: 'Invalid branch name' })
     }
     const git = simpleGit(projectRoot)
-    const currentBranch = (await git.branchLocal()).current
+    const baseBranch = getDefaultBranch()
+    // Ensure we're on the configured base branch before merging
+    await git.checkout(baseBranch)
     try {
-      // Try clean merge first
-      await git.merge([branchName, '--no-edit'])
+      // Try merge with theirs strategy for .contentrain/ conflicts
+      await git.merge([branchName, '--no-edit', '-X', 'theirs'])
     } catch {
-      // Conflict (likely context.json) — resolve with theirs strategy
+      // If still conflicts, resolve manually
       try {
-        // Accept theirs for context.json (transient state), ours for everything else
-        await git.raw(['checkout', '--theirs', '.contentrain/context.json']).catch(() => {})
+        await git.raw(['checkout', '--theirs', '--', '.contentrain/']).catch(() => {})
         await git.add('.')
         await git.commit(`Merge branch '${branchName}' (auto-resolved)`, { '--no-verify': null })
       } catch (resolveErr) {
-        // If still fails, abort and report
         await git.merge(['--abort']).catch(() => {})
         throw createError({ statusCode: 500, message: `Merge conflict could not be resolved: ${resolveErr}` })
       }
     }
     await git.deleteLocalBranch(branchName, true).catch(() => {})
     broadcast({ type: 'branch:merged', branch: branchName })
-    return { status: 'merged', branch: branchName, into: currentBranch }
+    return { status: 'merged', branch: branchName, into: baseBranch }
   }))
 
   // Branch reject (delete)
@@ -251,6 +274,111 @@ export async function createServeApp(options: ServeOptions) {
     return { status: 'deleted', branch: branchName }
   }))
 
+  // File tree — scannable project structure
+  router.add('/api/tree', defineEventHandler(async (event) => {
+    const query = getQuery(event)
+    const extensions = (query['ext'] as string ?? '.vue,.tsx,.jsx,.ts,.js,.astro,.svelte').split(',')
+    const { readdirSync } = await import('node:fs')
+
+    interface TreeNode { name: string; path: string; type: 'dir' | 'file'; children?: TreeNode[]; fileCount?: number }
+
+    const ignoreDirs = new Set(['node_modules', '.git', 'dist', '.tmp', '.agents', '.contentrain', '.cache', '.claude', '.histoire', 'serve-ui'])
+
+    function buildTree(dirPath: string, relativePath: string, depth: number): TreeNode | null {
+      if (depth > 5) return null
+      const name = relativePath.split('/').pop() ?? relativePath
+      if (ignoreDirs.has(name)) return null
+
+      try {
+        const entries = readdirSync(dirPath, { withFileTypes: true })
+        const children: TreeNode[] = []
+        let fileCount = 0
+
+        for (const entry of entries) {
+          if (entry.name.startsWith('.') && depth > 0) continue
+          const childRelative = relativePath ? `${relativePath}/${entry.name}` : entry.name
+          const childFull = join(dirPath, entry.name)
+
+          if (entry.isDirectory()) {
+            const sub = buildTree(childFull, childRelative, depth + 1)
+            if (sub && (sub.fileCount ?? 0) > 0) children.push(sub)
+          } else if (entry.isFile()) {
+            const ext = '.' + entry.name.split('.').pop()
+            if (extensions.includes(ext)) {
+              children.push({ name: entry.name, path: childRelative, type: 'file' })
+              fileCount++
+            }
+          }
+        }
+
+        // Sum file counts from children
+        for (const child of children) {
+          if (child.type === 'dir') fileCount += child.fileCount ?? 0
+        }
+
+        if (fileCount === 0) return null
+
+        return { name, path: relativePath || '.', type: 'dir', children: children.toSorted((a, b) => {
+          if (a.type !== b.type) return a.type === 'dir' ? -1 : 1
+          return a.name.localeCompare(b.name)
+        }), fileCount }
+      } catch { return null }
+    }
+
+    const tree = buildTree(projectRoot, '', 0)
+    return { tree: tree?.children ?? [] }
+  }))
+
+  // Normalize — scan for hardcoded strings
+  router.add('/api/normalize/scan', defineEventHandler(async (event) => {
+    const query = getQuery(event)
+    const mode = (query['mode'] as string) ?? 'summary'
+    const limit = Number(query['limit']) || 30
+    const offset = Number(query['offset']) || 0
+    const paths = query['paths'] ? (query['paths'] as string).split(',') : undefined
+    return await callTool('contentrain_scan', {
+      mode,
+      limit,
+      offset,
+      ...(paths ? { paths } : {}),
+    })
+  }))
+
+  // Normalize — apply extraction (dry-run by default)
+  router.add('/api/normalize/apply', defineEventHandler(async (event) => {
+    if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
+    const body = await readBody(event)
+    return await callTool('contentrain_apply', body)
+  }))
+
+  // Normalize — approve (merge normalize branch)
+  router.add('/api/normalize/approve', defineEventHandler(async (event) => {
+    if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
+    const body = await readBody(event)
+    const branchName = body.branch as string
+    if (!branchName?.startsWith('contentrain/')) {
+      throw createError({ statusCode: 400, message: 'Invalid branch name' })
+    }
+    const git = simpleGit(projectRoot)
+    const baseBranch = getDefaultBranch()
+    await git.checkout(baseBranch)
+    try {
+      await git.merge([branchName, '--no-edit', '-X', 'theirs'])
+    } catch {
+      try {
+        await git.raw(['checkout', '--theirs', '--', '.contentrain/']).catch(() => {})
+        await git.add('.')
+        await git.commit(`Merge branch '${branchName}' (auto-resolved)`, { '--no-verify': null })
+      } catch (resolveErr) {
+        await git.merge(['--abort']).catch(() => {})
+        throw createError({ statusCode: 500, message: `Merge conflict could not be resolved: ${resolveErr}` })
+      }
+    }
+    await git.deleteLocalBranch(branchName, true).catch(() => {})
+    broadcast({ type: 'branch:merged', branch: branchName })
+    return { status: 'merged', branch: branchName, into: baseBranch }
+  }))
+
   // History — git log for contentrain operations
   router.add('/api/history', defineEventHandler(async (event) => {
     const query = getQuery(event)
@@ -260,14 +388,14 @@ export async function createServeApp(options: ServeOptions) {
       maxCount: limit * 2, // fetch more, filter after
       format: { hash: '%h', fullHash: '%H', message: '%s', author: '%an', email: '%ae', date: '%aI', relativeDate: '%ar' },
     })
-    // Filter to contentrain-related commits
+    // Filter to contentrain OPERATIONS only (not repo development commits)
     const entries = log.all
-      .filter((c: Record<string, string>) => {
+      .filter((c) => {
         const msg = c.message ?? ''
-        return msg.startsWith('[contentrain]') || msg.startsWith('Merge branch \'contentrain/') || msg.includes('contentrain')
+        return msg.startsWith('[contentrain]') || msg.startsWith("Merge branch 'contentrain/")
       })
       .slice(0, limit)
-      .map((c: Record<string, string>) => {
+      .map((c) => {
         const msg = c.message ?? ''
         let type: string = 'other'
         let target = ''
@@ -307,20 +435,21 @@ export async function createServeApp(options: ServeOptions) {
   }))
 
   // --- Static UI serving ---
+
+  const mimeTypes: Record<string, string> = {
+    html: 'text/html', js: 'application/javascript', css: 'text/css',
+    json: 'application/json', svg: 'image/svg+xml', png: 'image/png',
+    jpg: 'image/jpeg', ico: 'image/x-icon', woff2: 'font/woff2',
+    woff: 'font/woff', ttf: 'font/ttf',
+  }
+
+  function getMimeType(filePath: string): string {
+    const ext = filePath.split('.').pop()?.toLowerCase()
+    return mimeTypes[ext ?? ''] ?? 'application/octet-stream'
+  }
+
   if (existsSync(uiDir)) {
     const { statSync } = await import('node:fs')
-    const { lookup } = await import('node:dns').catch(() => ({ lookup: null }))
-
-    function getMimeType(filePath: string): string {
-      const ext = filePath.split('.').pop()?.toLowerCase()
-      const mimes: Record<string, string> = {
-        html: 'text/html', js: 'application/javascript', css: 'text/css',
-        json: 'application/json', svg: 'image/svg+xml', png: 'image/png',
-        jpg: 'image/jpeg', ico: 'image/x-icon', woff2: 'font/woff2',
-        woff: 'font/woff', ttf: 'font/ttf',
-      }
-      return mimes[ext ?? ''] ?? 'application/octet-stream'
-    }
 
     app.use(defineEventHandler(async (event) => {
       // Let API and WS routes pass through

@@ -102,7 +102,8 @@ const stackLabel = computed(() => project.status?.config?.stack ?? null)
       </div>
 
       <!-- Not initialized -->
-      <div v-else-if="project.status && !project.status.initialized" class="flex flex-col items-center justify-center py-20 text-center">
+      <div v-else-if="project.status && !project.status.initialized"
+        class="flex flex-col items-center justify-center py-20 text-center">
         <img src="/model-empty-state.svg" alt="" class="empty-illustration mb-6" />
         <h2 class="text-lg font-semibold text-foreground">Not a Contentrain project</h2>
         <p class="mt-2 max-w-sm text-sm text-muted-foreground">
@@ -133,28 +134,26 @@ const stackLabel = computed(() => project.status?.config?.stack ?? null)
 
         <!-- Stat cards -->
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
-          <button
-            v-for="stat in stats"
-            :key="stat.label"
-            :class="cn(
-              'group flex flex-col gap-2 rounded-xl border p-4 text-left transition-all duration-200',
-              stat.warn
-                ? 'border-status-warning/30 bg-gradient-to-b from-status-warning/8 to-card'
-                : 'border-border bg-card hover:border-primary/20 hover:shadow-sm',
-              stat.to ? 'cursor-pointer' : 'cursor-default',
-            )"
-            @click="stat.to && router.push(stat.to)"
-          >
+          <button v-for="stat in stats" :key="stat.label" :class="cn(
+            'group flex flex-col gap-2 rounded-xl border p-4 text-left transition-all duration-200',
+            stat.warn
+              ? 'border-status-warning/30 bg-linear-to-b from-status-warning/8 to-card'
+              : 'border-border bg-card hover:border-primary/20 hover:shadow-sm',
+            stat.to ? 'cursor-pointer' : 'cursor-default',
+          )" @click="stat.to && router.push(stat.to)">
             <div class="flex items-center justify-between">
-              <div :class="cn('flex size-8 items-center justify-center rounded-lg', stat.warn ? 'bg-status-warning/10' : stat.bg)">
+              <div
+                :class="cn('flex size-8 items-center justify-center rounded-lg', stat.warn ? 'bg-status-warning/10' : stat.bg)">
                 <component :is="stat.icon" :class="cn('size-4', stat.warn ? 'text-status-warning' : stat.color)" />
               </div>
-              <ArrowRight v-if="stat.to" class="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+              <ArrowRight v-if="stat.to"
+                class="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
             </div>
             <div>
               <span class="text-2xl font-bold text-foreground">{{ stat.value }}</span>
               <p class="text-xs font-medium text-muted-foreground">{{ stat.label }}</p>
-              <p v-if="'subtitle' in stat && stat.subtitle" class="mt-0.5 text-[10px] text-muted-foreground/70">{{ stat.subtitle }}</p>
+              <p v-if="'subtitle' in stat && stat.subtitle" class="mt-0.5 text-[10px] text-muted-foreground/70">{{
+                stat.subtitle }}</p>
             </div>
           </button>
         </div>
@@ -163,43 +162,52 @@ const stackLabel = computed(() => project.status?.config?.stack ?? null)
         <section>
           <div class="mb-4 flex items-center justify-between">
             <h2 class="text-sm font-semibold text-foreground">Content Models</h2>
-            <button v-if="models.length > 0" class="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-primary" @click="router.push('/models')">
-              View all <ArrowRight class="size-3" />
+            <button v-if="models.length > 0"
+              class="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
+              @click="router.push('/models')">
+              View all
+              <ArrowRight class="size-3" />
             </button>
           </div>
 
           <div v-if="models.length > 0" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            <button
-              v-for="model in models"
-              :key="model.id"
+            <button v-for="model in models" :key="model.id"
               :class="cn('group flex flex-col gap-3 rounded-xl border p-4 text-left transition-all duration-200', collectionCardClass(model))"
-              @click="router.push(`/content/${model.id}`)"
-            >
+              @click="router.push(`/content/${model.id}`)">
               <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 min-w-0">
-                  <component :is="getKindConfig(model.kind).icon" :class="cn('size-4 shrink-0', getKindConfig(model.kind).color)" />
+                  <component :is="getKindConfig(model.kind).icon"
+                    :class="cn('size-4 shrink-0', getKindConfig(model.kind).color)" />
                   <span class="truncate font-medium text-foreground">{{ model.id }}</span>
                 </div>
-                <span :class="cn('shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium', getKindConfig(model.kind).badgeCls)">
+                <span
+                  :class="cn('shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium', getKindConfig(model.kind).badgeCls)">
                   {{ model.kind }}
                 </span>
               </div>
               <div class="flex items-center gap-3 text-xs text-muted-foreground">
-                <span class="flex items-center gap-1"><Box class="size-3 opacity-50" /> {{ model.fields }} fields</span>
+                <span class="flex items-center gap-1">
+                  <Box class="size-3 opacity-50" /> {{ model.fields }} fields
+                </span>
                 <span class="rounded bg-muted px-1.5 py-0.5 text-[10px]">{{ model.domain }}</span>
-                <span v-if="model.i18n" class="flex items-center gap-1"><Globe class="size-3 opacity-50" /> i18n</span>
+                <span v-if="model.i18n" class="flex items-center gap-1">
+                  <Globe class="size-3 opacity-50" /> i18n
+                </span>
               </div>
               <div class="flex items-center justify-end">
-                <ArrowRight class="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                <ArrowRight
+                  class="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
               </div>
             </button>
           </div>
 
           <!-- Empty state -->
-          <div v-else class="flex flex-col items-center rounded-xl border border-dashed border-border py-16 text-center">
+          <div v-else
+            class="flex flex-col items-center rounded-xl border border-dashed border-border py-16 text-center">
             <img src="/model-empty-state.svg" alt="" class="empty-illustration mb-5" />
             <h3 class="text-sm font-semibold text-foreground">No content models yet</h3>
-            <p class="mt-1.5 max-w-xs text-xs text-muted-foreground">Create models using AI in your IDE to get started.</p>
+            <p class="mt-1.5 max-w-xs text-xs text-muted-foreground">Create models using AI in your IDE to get started.
+            </p>
           </div>
         </section>
 
@@ -210,7 +218,8 @@ const stackLabel = computed(() => project.status?.config?.stack ?? null)
             <h2 class="text-sm font-semibold text-foreground">Recent Activity</h2>
           </div>
           <div class="space-y-2">
-            <div v-for="(activity, i) in recentActivity" :key="i" class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm">
+            <div v-for="(activity, i) in recentActivity" :key="i"
+              class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm">
               <CircleDot class="size-3.5 shrink-0 text-primary" />
               <span class="rounded bg-primary/10 px-2 py-0.5 font-mono text-xs text-primary">{{ activity.tool }}</span>
               <span class="truncate text-foreground">{{ activity.target }}</span>
@@ -226,13 +235,16 @@ const stackLabel = computed(() => project.status?.config?.stack ?? null)
               <ShieldAlert class="size-4 text-status-warning" />
               <h2 class="text-sm font-semibold text-foreground">Validation Summary</h2>
             </div>
-            <button class="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-primary" @click="router.push('/validate')">
-              Full report <ArrowRight class="size-3" />
+            <button class="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-primary"
+              @click="router.push('/validate')">
+              Full report
+              <ArrowRight class="size-3" />
             </button>
           </div>
-          <div class="rounded-xl border border-status-warning/20 bg-gradient-to-b from-status-warning/5 to-card p-4">
+          <div class="rounded-xl border border-status-warning/20 bg-linear-to-b from-status-warning/5 to-card p-4">
             <ul class="space-y-1.5">
-              <li v-for="(msg, i) in project.status.validation.summary.slice(0, 5)" :key="i" class="flex items-start gap-2 text-xs text-muted-foreground">
+              <li v-for="(msg, i) in project.status.validation.summary.slice(0, 5)" :key="i"
+                class="flex items-start gap-2 text-xs text-muted-foreground">
                 <span class="mt-1.5 size-1 shrink-0 rounded-full bg-status-warning" />
                 {{ msg }}
               </li>

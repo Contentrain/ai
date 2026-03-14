@@ -12,26 +12,15 @@
     "question": "Do I pay for AI?"
   },
   "faq-3": {
-<<<<<<< HEAD
     "answer": "Scans source files for hardcoded strings, extracts into models, patches source.",
-=======
-    "answer": "Normalize scans your source files for hardcoded strings, extracts them into content models, and patches your source with content references.",
->>>>>>> contentrain/content/faq/1773493836-ef51
     "category": "Technical",
     "order": 3,
     "question": "How does normalize work?"
   },
   "faq-4": {
-<<<<<<< HEAD
     "answer": "Yes — Vue, React, Svelte, Astro, Next.js all supported.",
     "category": "General",
     "order": 4,
     "question": "Can I use any framework?"
-=======
-    "answer": "Yes! Contentrain is framework-agnostic. Vue, React, Svelte, Astro, Next.js — all supported.",
-    "category": "General",
-    "order": 4,
-    "question": "Can I use it with any framework?"
->>>>>>> contentrain/content/faq/1773493836-ef51
   }
 }
