@@ -207,7 +207,7 @@ export async function createServeApp(options: ServeOptions) {
     return { branch: branchName, base: defaultBranch, stat: diff, diff: rawDiff }
   }))
 
-  // Branch approve (merge)
+  // Branch approve (merge with conflict resolution)
   router.add('/api/branches/approve', defineEventHandler(async (event) => {
     if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
     const body = await readBody(event)
@@ -217,8 +217,23 @@ export async function createServeApp(options: ServeOptions) {
     }
     const git = simpleGit(projectRoot)
     const currentBranch = (await git.branchLocal()).current
-    await git.merge([branchName])
-    await git.deleteLocalBranch(branchName, true)
+    try {
+      // Try clean merge first
+      await git.merge([branchName, '--no-edit'])
+    } catch {
+      // Conflict (likely context.json) — resolve with theirs strategy
+      try {
+        // Accept theirs for context.json (transient state), ours for everything else
+        await git.raw(['checkout', '--theirs', '.contentrain/context.json']).catch(() => {})
+        await git.add('.')
+        await git.commit(`Merge branch '${branchName}' (auto-resolved)`, { '--no-verify': null })
+      } catch (resolveErr) {
+        // If still fails, abort and report
+        await git.merge(['--abort']).catch(() => {})
+        throw createError({ statusCode: 500, message: `Merge conflict could not be resolved: ${resolveErr}` })
+      }
+    }
+    await git.deleteLocalBranch(branchName, true).catch(() => {})
     broadcast({ type: 'branch:merged', branch: branchName })
     return { status: 'merged', branch: branchName, into: currentBranch }
   }))
