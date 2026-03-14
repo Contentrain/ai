@@ -1,0 +1,125 @@
+{
+  "id": "showcase",
+  "name": "Type Showcase",
+  "kind": "collection",
+  "domain": "system",
+  "i18n": true,
+  "description": "Demonstrates all 27 field types for preview testing",
+  "fields": {
+    "attachment": {
+      "description": "File path",
+      "type": "file"
+    },
+    "author": {
+      "description": "Single relation",
+      "model": "hero",
+      "type": "relation"
+    },
+    "body": {
+      "description": "Multi-line text",
+      "type": "text"
+    },
+    "brand_color": {
+      "default": "#6366f1",
+      "description": "Hex color",
+      "type": "color"
+    },
+    "content": {
+      "description": "Markdown content",
+      "type": "markdown"
+    },
+    "cover": {
+      "description": "Image path",
+      "type": "image"
+    },
+    "demo_video": {
+      "description": "Video path",
+      "type": "video"
+    },
+    "difficulty": {
+      "description": "Star rating 1-5",
+      "type": "rating"
+    },
+    "discount": {
+      "description": "Percentage 0-100",
+      "type": "percent"
+    },
+    "email": {
+      "description": "Email address",
+      "type": "email"
+    },
+    "event_time": {
+      "description": "Date + time",
+      "type": "datetime"
+    },
+    "handle": {
+      "description": "URL-safe identifier",
+      "type": "slug",
+      "unique": true
+    },
+    "html_body": {
+      "description": "Rich text HTML",
+      "type": "richtext"
+    },
+    "is_active": {
+      "default": true,
+      "description": "Boolean toggle",
+      "type": "boolean"
+    },
+    "logo_ref": {
+      "description": "Icon identifier",
+      "type": "icon"
+    },
+    "phone": {
+      "description": "Phone number",
+      "type": "phone"
+    },
+    "price": {
+      "description": "Decimal number",
+      "min": 0,
+      "type": "decimal"
+    },
+    "publish_date": {
+      "description": "Date only",
+      "type": "date"
+    },
+    "related": {
+      "description": "Multiple relations",
+      "model": "faq",
+      "type": "relations"
+    },
+    "snippet": {
+      "description": "Code block",
+      "type": "code"
+    },
+    "status": {
+      "default": "active",
+      "options": [
+        "active",
+        "inactive",
+        "archived"
+      ],
+      "type": "select"
+    },
+    "stock": {
+      "description": "Integer",
+      "min": 0,
+      "type": "integer"
+    },
+    "tags": {
+      "description": "String array (tags)",
+      "items": "string",
+      "type": "array"
+    },
+    "title": {
+      "description": "Single line text",
+      "max": 80,
+      "required": true,
+      "type": "string"
+    },
+    "website": {
+      "description": "URL field",
+      "type": "url"
+    }
+  }
+}
