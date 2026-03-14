@@ -3,31 +3,69 @@ import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useContentStore } from '@/stores/content'
 import { useWatch } from '@/composables/useWatch'
-import { GitBranch, RefreshCw } from 'lucide-vue-next'
+import {
+  GitBranch, RefreshCw, FileText, Database, Languages, ShieldCheck,
+  ChevronRight, GitMerge, Clock,
+} from 'lucide-vue-next'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import StudioHint from '@/components/layout/StudioHint.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 const store = useContentStore()
 const router = useRouter()
 
 const branches = computed(() => store.branches)
 
-function branchLabel(name: string): string {
-  const parts = name.replace('contentrain/', '').split('/')
-  return parts.length > 1 ? `${parts[0]} / ${parts.slice(1).join('/')}` : parts[0]
+interface ParsedBranch {
+  name: string
+  scope: string
+  target: string
+  timestamp: string
+  current: boolean
 }
 
-function branchScope(name: string): string {
-  return name.split('/')[1] ?? 'unknown'
+function parseBranch(branch: { name: string; current: boolean }): ParsedBranch {
+  // contentrain/<scope>/<target>/<timestamp>
+  const stripped = branch.name.replace('contentrain/', '')
+  const parts = stripped.split('/')
+  return {
+    name: branch.name,
+    scope: parts[0] ?? 'unknown',
+    target: parts.length > 2 ? parts.slice(1, -1).join('/') : parts[1] ?? '',
+    timestamp: parts.length > 2 ? parts[parts.length - 1] ?? '' : '',
+    current: branch.current,
+  }
 }
 
-const scopeColors: Record<string, string> = {
-  content: 'bg-primary/10 text-primary',
-  model: 'bg-status-info/10 text-status-info',
-  normalize: 'bg-status-warning/10 text-status-warning',
-  validate: 'bg-status-success/10 text-status-success',
+const parsedBranches = computed(() => branches.value.map(parseBranch))
+
+const scopeConfig: Record<string, { icon: typeof FileText; color: string; bg: string; label: string }> = {
+  content: { icon: FileText, color: 'text-primary', bg: 'bg-primary/10', label: 'Content' },
+  model: { icon: Database, color: 'text-status-info', bg: 'bg-status-info/10', label: 'Model' },
+  normalize: { icon: Languages, color: 'text-status-warning', bg: 'bg-status-warning/10', label: 'Normalize' },
+  validate: { icon: ShieldCheck, color: 'text-status-success', bg: 'bg-status-success/10', label: 'Validate' },
+}
+
+const defaultScopeConfig = { icon: GitBranch, color: 'text-muted-foreground', bg: 'bg-muted', label: 'Branch' }
+
+function getScopeConfig(scope: string) {
+  return scopeConfig[scope] ?? defaultScopeConfig
+}
+
+function formatTimestamp(ts: string): string {
+  if (!ts) return ''
+  // Try to parse as date-like: 20240314-1430 or similar
+  const match = ts.match(/^(\d{4})(\d{2})(\d{2})-?(\d{2})(\d{2})/)
+  if (match) {
+    const [, y, m, d, h, min] = match
+    const date = new Date(`${y}-${m}-${d}T${h}:${min}:00`)
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    }
+  }
+  return ts
 }
 
 onMounted(() => { store.fetchBranches() })
@@ -39,7 +77,7 @@ useWatch((event) => {
 
 <template>
   <div>
-    <PageHeader title="Branches" :description="`${branches.length} pending contentrain branches`">
+    <PageHeader title="Branches" :description="`${branches.length} pending contentrain branch${branches.length !== 1 ? 'es' : ''}`">
       <template #actions>
         <Button variant="outline" size="sm" :disabled="store.loading" @click="store.fetchBranches()">
           <RefreshCw class="mr-1.5 size-4" :class="store.loading && 'animate-spin'" /> Refresh
@@ -48,32 +86,60 @@ useWatch((event) => {
     </PageHeader>
 
     <div class="px-6 py-6">
+      <!-- Loading -->
       <div v-if="store.loading && branches.length === 0" class="flex justify-center py-12">
         <div class="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
 
+      <!-- Empty state -->
       <div v-else-if="branches.length === 0" class="flex flex-col items-center py-16 text-center">
-        <img src="/merge-1.svg" alt="" class="mb-6 h-28 opacity-50 dark:opacity-30" />
+        <img src="/merge-1.svg" alt="" class="empty-illustration mb-6" />
         <h2 class="text-lg font-semibold">No pending branches</h2>
-        <p class="mt-2 text-sm text-muted-foreground">AI changes from your IDE will appear here for review.</p>
+        <p class="mt-2 max-w-sm text-sm text-muted-foreground">
+          AI-generated content changes from your IDE will appear here for review.
+          Branches are created automatically when agents save content or models.
+        </p>
       </div>
 
+      <!-- Branch list -->
       <div v-else class="space-y-2">
         <button
-          v-for="branch in branches"
+          v-for="branch in parsedBranches"
           :key="branch.name"
-          class="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-primary/30 hover:shadow-sm"
+          class="group flex w-full items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary/30 hover:shadow-sm"
           @click="router.push(`/branches/${encodeURIComponent(branch.name)}`)"
         >
-          <div class="flex size-9 items-center justify-center rounded-md bg-muted">
-            <GitBranch class="size-4 text-muted-foreground" />
+          <!-- Scope icon -->
+          <div :class="cn('flex size-10 items-center justify-center rounded-lg', getScopeConfig(branch.scope).bg)">
+            <component :is="getScopeConfig(branch.scope).icon" :class="cn('size-5', getScopeConfig(branch.scope).color)" />
           </div>
+
+          <!-- Branch info -->
           <div class="flex-1 min-w-0">
-            <span class="font-mono text-sm font-medium text-foreground">{{ branchLabel(branch.name) }}</span>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-mono text-sm font-medium text-foreground truncate">
+                {{ branch.target || branch.scope }}
+              </span>
+              <Badge v-if="branch.current" variant="outline" class="text-[10px] border-primary/30 text-primary">
+                current
+              </Badge>
+            </div>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="font-mono text-xs text-muted-foreground truncate">{{ branch.name }}</span>
+              <span v-if="branch.timestamp" class="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock class="size-3" />
+                {{ formatTimestamp(branch.timestamp) }}
+              </span>
+            </div>
           </div>
-          <Badge :class="scopeColors[branchScope(branch.name)] ?? 'bg-muted text-muted-foreground'" class="text-[10px]">
-            {{ branchScope(branch.name) }}
+
+          <!-- Scope badge -->
+          <Badge :class="cn(getScopeConfig(branch.scope).bg, getScopeConfig(branch.scope).color)" class="text-[10px] uppercase shrink-0">
+            {{ getScopeConfig(branch.scope).label }}
           </Badge>
+
+          <!-- Arrow -->
+          <ChevronRight class="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
         </button>
       </div>
 

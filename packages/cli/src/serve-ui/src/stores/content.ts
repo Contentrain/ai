@@ -52,10 +52,15 @@ export const useContentStore = defineStore('content', () => {
   const branchDiff = ref<BranchDiff | null>(null)
   const loading = ref(false)
 
-  async function fetchContent(modelId: string, locale?: string) {
+  async function fetchContent(modelId: string, locale?: string, limit?: number, offset?: number) {
     loading.value = true
     try {
-      contentList.value = await api.get<ContentListResult>(`/content/${modelId}${locale ? `?locale=${locale}` : ''}`)
+      const params = new URLSearchParams()
+      if (locale) params.set('locale', locale)
+      if (limit !== undefined) params.set('limit', String(limit))
+      if (offset !== undefined) params.set('offset', String(offset))
+      const qs = params.toString()
+      contentList.value = await api.get<ContentListResult>(`/content/${modelId}${qs ? `?${qs}` : ''}`)
     } finally {
       loading.value = false
     }

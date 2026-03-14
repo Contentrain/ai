@@ -7,8 +7,10 @@ import {
   readBody,
   getQuery,
   createError,
-  defineWebSocketHandler,
 } from 'h3'
+import { WebSocketServer, type WebSocket as WS } from 'ws'
+import type { IncomingMessage } from 'node:http'
+import type { Duplex } from 'node:stream'
 import { createServer as createMcpServer } from '@contentrain/mcp/server'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
@@ -51,24 +53,33 @@ export async function createServeApp(options: ServeOptions) {
   const app = createApp()
   const router = createRouter()
 
-  // --- WebSocket for file watching ---
-  const wsClients = new Set<{ send: (data: string) => void }>()
+  // --- WebSocket for file watching (ws package) ---
+  const wss = new WebSocketServer({ noServer: true })
+  const wsClients = new Set<WS>()
 
   function broadcast(event: Record<string, unknown>) {
     const data = JSON.stringify(event)
     for (const client of wsClients) {
-      try { client.send(data) } catch { wsClients.delete(client) }
+      if (client.readyState === 1 /* OPEN */) {
+        client.send(data)
+      }
     }
   }
 
-  router.add('/ws', defineWebSocketHandler({
-    open(peer) {
-      wsClients.add(peer)
-    },
-    close(peer) {
-      wsClients.delete(peer)
-    },
-  }))
+  wss.on('connection', (ws) => {
+    wsClients.add(ws)
+    ws.send(JSON.stringify({ type: 'connected' }))
+    ws.on('close', () => { wsClients.delete(ws) })
+    ws.on('error', () => { wsClients.delete(ws) })
+  })
+
+  // WebSocket upgrade handler — called from serve command
+  function handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer) {
+    if (req.url !== '/ws') { socket.destroy(); return }
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit('connection', ws, req)
+    })
+  }
 
   // --- File Watcher ---
   if (existsSync(crDir)) {
@@ -271,5 +282,5 @@ export async function createServeApp(options: ServeOptions) {
 
   app.use(router)
 
-  return { app, toNodeListener: () => toNodeListener(app) }
+  return { app, handleUpgrade, toNodeListener: () => toNodeListener(app) }
 }

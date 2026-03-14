@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { useRoute, RouterLink } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
+import { useProjectStore } from '@/stores/project'
+import { computed } from 'vue'
 import {
   LayoutDashboard,
   Box,
@@ -10,11 +12,14 @@ import {
   ScanSearch,
   Moon,
   Sun,
+  Settings,
 } from 'lucide-vue-next'
-import NavItem from './NavItem.vue'
+import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 
 const route = useRoute()
 const ui = useUiStore()
+const project = useProjectStore()
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', to: '/', exact: true },
@@ -29,35 +34,79 @@ function isActive(item: typeof navItems[0]): boolean {
   if (item.exact) return route.path === item.to
   return route.path.startsWith(item.to)
 }
+
+const branchCount = computed(() => project.status?.branches?.unmerged ?? 0)
+const validationIssues = computed(() => {
+  const v = project.status?.validation
+  return v ? v.errors + v.warnings : 0
+})
 </script>
 
 <template>
-  <aside class="flex h-screen w-[72px] flex-col border-r border-border bg-background">
-    <!-- Logo -->
-    <div class="flex h-16 items-center justify-center">
-      <img src="/icon-color.svg" alt="Contentrain" class="size-8" />
+  <aside
+    class="group flex h-screen w-[72px] min-w-[72px] flex-col overflow-hidden border-r border-border bg-card transition-all duration-200 ease-in-out hover:w-[220px] hover:min-w-[220px] xl:w-[220px] xl:min-w-[220px]"
+  >
+    <!-- Logo + Brand -->
+    <div class="flex h-14 items-center gap-3 px-4 shrink-0">
+      <img src="/icon-color.svg" alt="Contentrain" class="size-8 shrink-0" />
+      <span
+        class="truncate text-sm font-semibold text-foreground opacity-0 transition-opacity duration-200 group-hover:opacity-100 xl:opacity-100"
+      >
+        Contentrain
+      </span>
     </div>
 
     <!-- Navigation -->
-    <nav class="flex flex-1 flex-col items-center gap-1 px-2 pt-4">
-      <NavItem
+    <nav class="flex flex-1 flex-col gap-1 px-3 pt-4">
+      <RouterLink
         v-for="item in navItems"
         :key="item.to"
-        :icon="item.icon"
-        :label="item.label"
         :to="item.to"
-        :active="isActive(item)"
-      />
+        :class="cn(
+          'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-150',
+          isActive(item)
+            ? 'bg-background text-primary font-medium shadow-sm border border-border'
+            : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',
+        )"
+      >
+        <component :is="item.icon" class="size-5 shrink-0" />
+        <span
+          class="truncate opacity-0 transition-opacity duration-200 group-hover:opacity-100 xl:opacity-100"
+        >
+          {{ item.label }}
+        </span>
+        <!-- Badge for branches -->
+        <Badge
+          v-if="item.to === '/branches' && branchCount > 0"
+          variant="secondary"
+          class="ml-auto text-[10px] h-5 px-1.5 opacity-0 group-hover:opacity-100 xl:opacity-100 transition-opacity"
+        >
+          {{ branchCount }}
+        </Badge>
+        <!-- Badge for validation issues -->
+        <Badge
+          v-if="item.to === '/validate' && validationIssues > 0"
+          class="ml-auto text-[10px] h-5 px-1.5 bg-status-error/10 text-status-error border-0 opacity-0 group-hover:opacity-100 xl:opacity-100 transition-opacity"
+        >
+          {{ validationIssues }}
+        </Badge>
+      </RouterLink>
     </nav>
 
-    <!-- Theme toggle -->
-    <div class="flex flex-col items-center gap-2 pb-4 px-2">
+    <!-- Bottom: Theme toggle -->
+    <div class="flex items-center gap-3 px-3 pb-4 mt-auto">
       <button
-        class="flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        :class="cn(
+          'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm w-full transition-all duration-150',
+          'text-muted-foreground hover:bg-background/60 hover:text-foreground',
+        )"
         @click="ui.toggleTheme()"
       >
-        <Sun v-if="ui.colorMode === 'dark'" class="size-5" />
-        <Moon v-else class="size-5" />
+        <Sun v-if="ui.colorMode === 'dark'" class="size-5 shrink-0" />
+        <Moon v-else class="size-5 shrink-0" />
+        <span class="truncate opacity-0 transition-opacity duration-200 group-hover:opacity-100 xl:opacity-100">
+          {{ ui.colorMode === 'dark' ? 'Light mode' : 'Dark mode' }}
+        </span>
       </button>
     </div>
   </aside>

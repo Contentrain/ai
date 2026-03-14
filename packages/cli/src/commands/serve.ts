@@ -66,13 +66,31 @@ export default defineCommand({
     }
 
     const { createServeApp } = await import('../serve/server.js')
-    const { app } = await createServeApp({ projectRoot, port, uiDir })
+    const { app, handleUpgrade } = await createServeApp({ projectRoot, port, uiDir })
 
     // Start HTTP server
     const { createServer: createHttpServer } = await import('node:http')
     const { toNodeListener } = await import('h3')
 
-    const httpServer = createHttpServer(toNodeListener(app))
+    const h3Listener = toNodeListener(app)
+    const httpServer = createHttpServer((req, res) => {
+      // Skip /ws requests — they'll be handled by the upgrade event
+      if (req.url === '/ws') {
+        // Don't respond — let the upgrade event handle it
+        // If not an upgrade, just close
+        if (!req.headers.upgrade) {
+          res.writeHead(400)
+          res.end('WebSocket upgrade required')
+        }
+        return
+      }
+      h3Listener(req, res)
+    })
+
+    // WebSocket upgrade handler
+    httpServer.on('upgrade', (req, socket, head) => {
+      handleUpgrade(req, socket, head)
+    })
 
     httpServer.listen(port, host, () => {
       const url = `http://${host}:${port}`

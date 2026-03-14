@@ -1,46 +1,126 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useProjectStore } from '@/stores/project'
-import { FileText } from 'lucide-vue-next'
+import { useProjectStore, type ModelSummary } from '@/stores/project'
+import { FileText, Database, BookOpen, Languages, Search } from 'lucide-vue-next'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 
 const project = useProjectStore()
 const router = useRouter()
+const search = ref('')
 
-const models = computed(() => project.status?.models ?? [])
+const models = computed(() => {
+  const list = project.status?.models ?? []
+  if (!search.value) return list
+  const q = search.value.toLowerCase()
+  return list.filter(m =>
+    m.id.toLowerCase().includes(q) || m.domain.toLowerCase().includes(q),
+  )
+})
+
+const groupedByDomain = computed(() => {
+  const groups: Record<string, ModelSummary[]> = {}
+  for (const model of models.value) {
+    const domain = model.domain || 'default'
+    if (!groups[domain]) groups[domain] = []
+    groups[domain].push(model)
+  }
+  return groups
+})
+
+const kindConfig: Record<string, { icon: typeof FileText; color: string; label: string }> = {
+  collection: { icon: Database, color: 'bg-primary/10 text-primary', label: 'Collection' },
+  singleton: { icon: FileText, color: 'bg-status-info/10 text-status-info', label: 'Singleton' },
+  document: { icon: BookOpen, color: 'bg-status-success/10 text-status-success', label: 'Document' },
+  dictionary: { icon: FileText, color: 'bg-status-warning/10 text-status-warning', label: 'Dictionary' },
+}
+
+function getKindConfig(kind: string) {
+  return kindConfig[kind] ?? kindConfig.collection
+}
 </script>
 
 <template>
   <div>
-    <PageHeader title="Content" description="Browse content by collection" />
+    <PageHeader title="Content" description="Browse and inspect content by collection" />
 
     <div class="px-6 py-6">
-      <div v-if="models.length === 0" class="flex flex-col items-center py-16 text-center">
-        <img src="/empty-state-manual.svg" alt="" class="mb-6 h-28 opacity-50 dark:opacity-30" />
-        <h2 class="text-lg font-semibold">No content yet</h2>
-        <p class="mt-2 text-sm text-muted-foreground">Create models first, then content will appear here.</p>
+      <!-- Empty state -->
+      <div v-if="(project.status?.models ?? []).length === 0" class="flex flex-col items-center py-16 text-center">
+        <div class="mb-4 flex size-14 items-center justify-center rounded-full bg-muted">
+          <FileText class="size-6 text-muted-foreground" />
+        </div>
+        <h2 class="text-lg font-semibold">No models yet</h2>
+        <p class="mt-2 max-w-sm text-sm text-muted-foreground">
+          Create models using your IDE with AI assistance. Once models are defined, their content will appear here.
+        </p>
       </div>
 
-      <div v-else class="space-y-2">
-        <button
-          v-for="model in models"
-          :key="model.id"
-          class="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-all hover:border-primary/30 hover:shadow-sm"
-          @click="router.push(`/content/${model.id}`)"
-        >
-          <div class="flex size-9 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <FileText class="size-4" />
+      <template v-else>
+        <!-- Search -->
+        <div class="relative mb-6 max-w-sm">
+          <Search class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            v-model="search"
+            placeholder="Filter models..."
+            class="h-9 pl-9 text-sm"
+          />
+        </div>
+
+        <!-- Grouped model list -->
+        <div v-for="(domainModels, domain) in groupedByDomain" :key="domain" class="mb-8 last:mb-0">
+          <h3 class="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {{ domain }}
+          </h3>
+          <div class="space-y-1.5">
+            <button
+              v-for="model in domainModels"
+              :key="model.id"
+              :class="cn(
+                'group flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-all',
+                'hover:border-primary/30 hover:shadow-sm',
+              )"
+              @click="router.push(`/content/${model.id}`)"
+            >
+              <!-- Kind icon -->
+              <div :class="cn('flex size-8 shrink-0 items-center justify-center rounded-md', getKindConfig(model.kind).color)">
+                <component :is="getKindConfig(model.kind).icon" class="size-4" />
+              </div>
+
+              <!-- Name + domain -->
+              <div class="min-w-0 flex-1">
+                <span class="font-medium text-foreground">{{ model.id }}</span>
+              </div>
+
+              <!-- Badges -->
+              <div class="flex items-center gap-2 shrink-0">
+                <Badge variant="secondary" class="text-[10px]">
+                  {{ getKindConfig(model.kind).label }}
+                </Badge>
+                <Badge variant="outline" class="text-[10px]">
+                  {{ model.fields }} fields
+                </Badge>
+                <Badge
+                  v-if="model.i18n"
+                  variant="outline"
+                  class="text-[10px] text-status-info border-status-info/30"
+                >
+                  <Languages class="mr-0.5 size-3" />
+                  i18n
+                </Badge>
+              </div>
+            </button>
           </div>
-          <div class="flex-1 min-w-0">
-            <span class="font-medium text-foreground">{{ model.id }}</span>
-            <span class="ml-2 text-xs text-muted-foreground">{{ model.domain }}</span>
-          </div>
-          <Badge variant="secondary">{{ model.fields }} fields</Badge>
-          <Badge v-if="model.i18n" variant="outline" class="text-status-info border-status-info/30">i18n</Badge>
-        </button>
-      </div>
+        </div>
+
+        <!-- No results from filter -->
+        <div v-if="models.length === 0 && search" class="py-12 text-center text-sm text-muted-foreground">
+          No models matching "{{ search }}"
+        </div>
+      </template>
     </div>
   </div>
 </template>

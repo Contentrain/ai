@@ -163,4 +163,14 @@
     background: oklch(0.46 0 0 / 0.2);
   }
   .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+
+  /* Empty state illustrations — dark mode friendly */
+  .empty-illustration {
+    opacity: 0.5;
+    max-height: 160px;
+  }
+  .dark .empty-illustration {
+    opacity: 0.15;
+    filter: invert(1) hue-rotate(180deg);
+  }
 }
