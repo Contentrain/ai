@@ -7,7 +7,8 @@
   "locales": {
     "default": "en",
     "supported": [
-      "en"
+      "en",
+      "tr"
     ]
   },
   "stack": "other",

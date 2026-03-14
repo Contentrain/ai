@@ -32,6 +32,8 @@ docs/internal/
 
 # Claude Code (agent memory, project config — contains private context)
 .claude/
+.windsurf/
+.agents/
 
 # Changesets temp
 .changeset/*.md
@@ -39,3 +41,5 @@ docs/internal/
 
 # Contentrain cache
 .contentrain/.cache/
+
+.tmp

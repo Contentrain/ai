@@ -9,7 +9,9 @@
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsdown src/index.ts --format esm",
+    "build": "tsdown src/index.ts --format esm && cd src/serve-ui && npx vite build",
+    "build:cli-only": "tsdown src/index.ts --format esm",
+    "build:ui-only": "cd src/serve-ui && npx vite build",
     "dev": "tsdown src/index.ts --format esm --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
@@ -21,8 +23,11 @@
     "@contentrain/types": "workspace:*",
     "@clack/prompts": "^0.10.0",
     "@modelcontextprotocol/sdk": "^1.12.0",
+    "chokidar": "^4.0.0",
     "citty": "^0.1.0",
     "consola": "^3.4.0",
+    "crossws": "^0.3.0",
+    "h3": "^1.15.0",
     "picocolors": "^1.1.0",
     "simple-git": "^3.27.0"
   },

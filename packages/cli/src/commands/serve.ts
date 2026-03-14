@@ -6,11 +6,14 @@ import consola from 'consola'
 export default defineCommand({
   meta: {
     name: 'serve',
-    description: 'Start MCP server for IDE integration',
+    description: 'Start local content viewer or MCP stdio server',
   },
   args: {
     root: { type: 'string', description: 'Project root path', required: false },
-    stdio: { type: 'boolean', description: 'Use stdio transport (default)', required: false },
+    stdio: { type: 'boolean', description: 'Use stdio MCP transport (for IDE integration)', required: false },
+    port: { type: 'string', description: 'HTTP server port (default: 3333)', required: false },
+    open: { type: 'boolean', description: 'Open browser automatically', required: false },
+    host: { type: 'string', description: 'Bind address (default: localhost)', required: false },
   },
   async run({ args }) {
     const projectRoot = await resolveProjectRoot(args.root)
@@ -32,13 +35,69 @@ export default defineCommand({
       // Use defaults
     }
 
-    const server = createServer(projectRoot)
+    // --- Stdio mode (IDE integration) ---
+    if (args.stdio) {
+      const server = createServer(projectRoot)
+      const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js')
+      const transport = new StdioServerTransport()
+      consola.info(`Contentrain MCP server starting (stdio) — ${projectRoot}`)
+      await server.connect(transport)
+      return
+    }
 
-    // Import stdio transport
-    const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js')
-    const transport = new StdioServerTransport()
+    // --- Web UI mode (default) ---
+    const port = Number(args.port) || 3333
+    const host = args.host ?? 'localhost'
+    const shouldOpen = args.open !== false
 
-    consola.info(`Contentrain MCP server starting (stdio) — ${projectRoot}`)
-    await server.connect(transport)
+    // Resolve UI directory (pre-built static assets next to CLI bundle)
+    const { join, dirname } = await import('node:path')
+    const { existsSync } = await import('node:fs')
+    const { fileURLToPath } = await import('node:url')
+
+    // import.meta.url points to the chunk file in dist/ (e.g. dist/serve-XXX.mjs)
+    const thisFile = fileURLToPath(import.meta.url)
+    const distDir = dirname(thisFile)
+    const uiDir = join(distDir, 'serve-ui')
+
+    if (!existsSync(uiDir)) {
+      consola.warn('Serve UI not found. Running in API-only mode.')
+      consola.info('UI will be available after building: cd packages/cli/src/serve-ui && pnpm build')
+    }
+
+    const { createServeApp } = await import('../serve/server.js')
+    const { app } = await createServeApp({ projectRoot, port, uiDir })
+
+    // Start HTTP server
+    const { createServer: createHttpServer } = await import('node:http')
+    const { toNodeListener } = await import('h3')
+
+    const httpServer = createHttpServer(toNodeListener(app))
+
+    httpServer.listen(port, host, () => {
+      const url = `http://${host}:${port}`
+      consola.box({
+        title: 'Contentrain Serve',
+        message: [
+          `Local:    ${url}`,
+          `Watching: .contentrain/`,
+          `Root:     ${projectRoot}`,
+          '',
+          'Press Ctrl+C to stop',
+        ].join('\n'),
+      })
+
+      if (shouldOpen) {
+        import('node:child_process').then(({ exec }) => {
+          const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open'
+          exec(`${cmd} ${url}`)
+        })
+      }
+    })
+
+    // Warn if binding to 0.0.0.0
+    if (host === '0.0.0.0') {
+      consola.warn('Server is accessible from the network. No authentication is configured.')
+    }
   },
 })

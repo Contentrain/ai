@@ -1,14 +1,14 @@
 {
   "lastOperation": {
     "locale": "en",
-    "model": "faq",
+    "model": "hero",
     "source": "mcp-local",
-    "timestamp": "2026-03-14T08:57:32.765Z",
+    "timestamp": "2026-03-14T08:57:28.608Z",
     "tool": "contentrain_model_save"
   },
   "stats": {
     "entries": 0,
-    "lastSync": "2026-03-14T08:57:32.765Z",
+    "lastSync": "2026-03-14T08:57:28.609Z",
     "locales": [
       "en"
     ],
