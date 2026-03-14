@@ -1,0 +1,29 @@
+{
+  "id": "hero",
+  "name": "Hero Section",
+  "kind": "collection",
+  "domain": "marketing",
+  "i18n": true,
+  "description": "Homepage hero content",
+  "fields": {
+    "cta_link": {
+      "default": "/",
+      "required": true,
+      "type": "string"
+    },
+    "cta_text": {
+      "required": true,
+      "type": "string"
+    },
+    "image": {
+      "type": "image"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    }
+  }
+}
