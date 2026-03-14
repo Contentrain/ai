@@ -124,4 +124,11 @@ describe('skill API examples', () => {
     }
     expect(content).not.toContain('await query(')
   })
+
+  it('contentrain-init skill does not tell agents to write context.json directly', async () => {
+    const content = await readFile(join(PKG_ROOT, 'skills', 'contentrain-init.md'), 'utf-8')
+    expect(content).not.toContain('### 4. Update context.json')
+    expect(content).not.toContain('update `context.json`')
+    expect(content).not.toContain('update context.json')
+  })
 })

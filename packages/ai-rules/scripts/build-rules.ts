@@ -120,7 +120,7 @@ async function main() {
   const outputs = [
     { dir: 'rules/claude-code', file: 'contentrain.md', content: buildClaudeCode(rules) },
     { dir: 'rules/cursor', file: 'contentrain.cursorrules', content: buildCursor(rules) },
-    { dir: 'rules/windsurf', file: 'contentrain.md', content: buildGeneric(rules) },
+    { dir: 'rules/windsurf', file: 'contentrain.windsurfrules', content: buildGeneric(rules) },
     { dir: 'rules/generic', file: 'contentrain.md', content: buildGeneric(rules) },
   ]
 

@@ -105,3 +105,11 @@ describe('built IDE bundles', () => {
     expect(content).toMatch(/framework|nuxt|next|astro|sveltekit/i)
   })
 })
+
+describe('build script outputs', () => {
+  it('writes the documented Windsurf filename', async () => {
+    const content = await readFile(join(PKG_ROOT, 'scripts', 'build-rules.ts'), 'utf-8')
+    expect(content).toContain("file: 'contentrain.windsurfrules'")
+    expect(content).not.toContain("{ dir: 'rules/windsurf', file: 'contentrain.md'")
+  })
+})

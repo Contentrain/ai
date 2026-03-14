@@ -43,12 +43,14 @@ contentrain_init(stack: "<detected>", locales: ["en", ...], domains: ["marketing
 
 This creates the `.contentrain/` directory structure, `config.json`, and initial `context.json`.
 
-### 4. Update context.json
+### 4. Analyze Project Conventions
 
-After initialization, review the project for conventions and update `context.json` with:
+After initialization, review the project for conventions to inform content creation:
 
 - **Tone:** Analyze existing copy in the project (README, landing page, UI text) to determine the appropriate tone (e.g., `professional`, `casual`, `technical`).
 - **Naming conventions:** Note any patterns in file naming, component naming, or content structure.
+
+> **Note:** Do NOT manually edit `context.json`. It is managed automatically by MCP tools and updated after every write operation.
 
 ### 5. Suggest Initial Models
 
