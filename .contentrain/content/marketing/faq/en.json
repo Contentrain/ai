@@ -10,5 +10,17 @@
     "category": "Pricing",
     "order": 2,
     "question": "Do I pay for AI?"
+  },
+  "faq-3": {
+    "answer": "Scans source files for hardcoded strings, extracts into models, patches source.",
+    "category": "Technical",
+    "order": 3,
+    "question": "How does normalize work?"
+  },
+  "faq-4": {
+    "answer": "Yes — Vue, React, Svelte, Astro, Next.js all supported.",
+    "category": "General",
+    "order": 4,
+    "question": "Can I use any framework?"
   }
 }
