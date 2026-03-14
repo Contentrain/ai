@@ -1,0 +1,24 @@
+{
+  "id": "faq",
+  "name": "FAQ",
+  "kind": "collection",
+  "domain": "marketing",
+  "i18n": true,
+  "fields": {
+    "answer": {
+      "required": true,
+      "type": "text"
+    },
+    "category": {
+      "type": "string"
+    },
+    "order": {
+      "default": 0,
+      "type": "number"
+    },
+    "question": {
+      "required": true,
+      "type": "string"
+    }
+  }
+}
