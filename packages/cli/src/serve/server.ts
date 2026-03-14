@@ -181,7 +181,9 @@ export async function createServeApp(options: ServeOptions) {
       model: modelId,
       entries: [{ id: entryId, locale: body.locale, data: body.data }],
     }) as Record<string, unknown>
-    // If MCP created a branch (review workflow), broadcast it
+    // Content changed → validation may have changed
+    broadcast({ type: 'validation:updated' })
+    // If MCP created a branch (review workflow), broadcast it last
     const git = result.git as Record<string, unknown> | undefined
     if (git?.branch && typeof git.branch === 'string') {
       broadcast({ type: 'branch:created', branch: git.branch })
@@ -342,6 +344,28 @@ export async function createServeApp(options: ServeOptions) {
       offset,
       ...(paths ? { paths } : {}),
     })
+  }))
+
+  // Normalize — last results (from context.json + pending normalize branches)
+  router.add('/api/normalize/results', defineEventHandler(async () => {
+    // Read last normalize operation from context
+    let lastNormalize: unknown = null
+    try {
+      const raw = readFileSync(join(crDir, 'context.json'), 'utf-8')
+      const ctx = JSON.parse(raw)
+      const op = ctx?.lastOperation
+      if (op?.tool === 'contentrain_scan' || op?.tool === 'contentrain_apply') {
+        lastNormalize = op
+      }
+    } catch { /* no context */ }
+
+    // Find pending normalize branches
+    const git = simpleGit(projectRoot)
+    const branches = (await git.branchLocal()).all
+      .filter(b => b.startsWith('contentrain/normalize/'))
+      .map(b => ({ name: b }))
+
+    return { lastOperation: lastNormalize, pendingBranches: branches }
   }))
 
   // Normalize — apply extraction (dry-run by default)

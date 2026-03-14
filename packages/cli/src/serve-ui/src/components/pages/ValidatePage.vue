@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, computed, ref, Transition } from 'vue'
 import { useContentStore } from '@/stores/content'
+import { useWatch } from '@/composables/useWatch'
 import {
   ShieldCheck, ShieldAlert, AlertTriangle, CircleAlert, Info, RefreshCw,
   ChevronDown, Filter, FileWarning, Database, ListChecks,
@@ -79,6 +80,13 @@ async function runValidation() {
 }
 
 onMounted(() => { runValidation() })
+
+// Auto-refresh when content/model changes trigger validation:updated
+useWatch((event) => {
+  if (event.type === 'validation:updated' || event.type === 'content:changed' || event.type === 'model:changed') {
+    runValidation()
+  }
+})
 </script>
 
 <template>
