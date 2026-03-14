@@ -1,0 +1,17 @@
+{
+  "free": {
+    "source": "agent",
+    "status": "draft",
+    "updated_by": "contentrain-mcp"
+  },
+  "pro": {
+    "source": "agent",
+    "status": "draft",
+    "updated_by": "contentrain-mcp"
+  },
+  "team": {
+    "source": "agent",
+    "status": "draft",
+    "updated_by": "contentrain-mcp"
+  }
+}
