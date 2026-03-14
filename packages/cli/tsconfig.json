@@ -5,5 +5,5 @@
     "rootDir": "."
   },
   "include": ["src"],
-  "exclude": ["tests"]
+  "exclude": ["tests", "src/serve-ui"]
 }
