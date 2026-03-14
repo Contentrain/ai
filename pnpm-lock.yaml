@@ -39,6 +39,9 @@ importers:
       '@clack/prompts':
         specifier: ^0.10.0
         version: 0.10.1
+      '@contentrain/ai-rules':
+        specifier: workspace:*
+        version: link:../ai-rules
       '@contentrain/mcp':
         specifier: workspace:*
         version: link:../mcp
@@ -72,10 +75,16 @@ importers:
       simple-git:
         specifier: ^3.27.0
         version: 3.33.0
+      ws:
+        specifier: ^8.18.0
+        version: 8.19.0
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.15
+      '@types/ws':
+        specifier: ^8.5.0
+        version: 8.18.1
       tsdown:
         specifier: ^0.21.0
         version: 0.21.2(typescript@5.9.3)
@@ -747,6 +756,9 @@ packages:
 
   '@types/node@25.4.0':
     resolution: {integrity: sha512-9wLpoeWuBlcbBpOY3XmzSTG3oscB6xjBEEtn+pYXTfhyXhIxC5FsBer2KTopBlvKEiW9l13po9fq+SJY/5lkhw==}
+
+  '@types/ws@8.18.1':
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
   '@vitest/expect@3.2.4':
     resolution: {integrity: sha512-Io0yyORnB6sikFlt8QW5K7slY4OjqNX9jmJQ02QDda8lyM6B5oNgVWoSoKPac8/kgnCUzuHQKrSLtu/uOqqrig==}
@@ -1580,6 +1592,18 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
+  ws@8.19.0:
+    resolution: {integrity: sha512-blAT2mjOEIi0ZzruJfIhb3nps74PRWTCz1IjglWEEpQl5XS/UNama6u2/rjFkDDouqr4L67ry+1aGIALViWjDg==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   zod-to-json-schema@3.25.1:
     resolution: {integrity: sha512-pM/SU9d3YAggzi6MtR4h7ruuQlqKtad8e9S0fmxcMi+ueAK5Korys/aWcV9LIIHTVbj01NdzxcnXSN+O74ZIVA==}
     peerDependencies:
@@ -1982,6 +2006,10 @@ snapshots:
   '@types/node@25.4.0':
     dependencies:
       undici-types: 7.18.2
+
+  '@types/ws@8.18.1':
+    dependencies:
+      '@types/node': 25.4.0
 
   '@vitest/expect@3.2.4':
     dependencies:
@@ -2926,6 +2954,8 @@ snapshots:
       stackback: 0.0.2
 
   wrappy@1.0.2: {}
+
+  ws@8.19.0: {}
 
   zod-to-json-schema@3.25.1(zod@3.25.76):
     dependencies:
