@@ -8,5 +8,15 @@
     "source": "agent",
     "status": "draft",
     "updated_by": "contentrain-mcp"
+  },
+  "faq-3": {
+    "source": "agent",
+    "status": "draft",
+    "updated_by": "contentrain-mcp"
+  },
+  "faq-4": {
+    "source": "agent",
+    "status": "draft",
+    "updated_by": "contentrain-mcp"
   }
 }
