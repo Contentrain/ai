@@ -12,7 +12,6 @@ const main = defineCommand({
     status: () => import('./commands/status.js').then(m => m.default),
     doctor: () => import('./commands/doctor.js').then(m => m.default),
     validate: () => import('./commands/validate.js').then(m => m.default),
-    normalize: () => import('./commands/normalize.js').then(m => m.default),
     serve: () => import('./commands/serve.js').then(m => m.default),
     generate: () => import('./commands/generate.js').then(m => m.default),
     diff: () => import('./commands/diff.js').then(m => m.default),
