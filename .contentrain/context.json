@@ -1,19 +1,17 @@
 {
   "lastOperation": {
     "entries": [
-      "demo-full",
-      "demo-minimal",
-      "demo-media"
+      "tr"
     ],
-    "locale": "en",
-    "model": "showcase",
+    "locale": "tr",
+    "model": "navigation",
     "source": "mcp-local",
-    "timestamp": "2026-03-14T10:58:27.360Z",
+    "timestamp": "2026-03-14T10:58:31.050Z",
     "tool": "contentrain_content_save"
   },
   "stats": {
-    "entries": 12,
-    "lastSync": "2026-03-14T10:58:27.361Z",
+    "entries": 13,
+    "lastSync": "2026-03-14T10:58:31.050Z",
     "locales": [
       "en",
       "tr"
