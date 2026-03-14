@@ -35,6 +35,16 @@ export interface BranchInfo {
   current: boolean
 }
 
+export interface HistoryEntry {
+  hash: string
+  message: string
+  type: string
+  target: string
+  author: string
+  date: string
+  relativeDate: string
+}
+
 export interface BranchDiff {
   branch: string
   base: string
@@ -103,6 +113,19 @@ export const useContentStore = defineStore('content', () => {
     }
   }
 
+  // History
+  const history = ref<HistoryEntry[]>([])
+
+  async function fetchHistory(limit = 50) {
+    loading.value = true
+    try {
+      const result = await api.get<{ entries: HistoryEntry[] }>(`/history?limit=${limit}`)
+      history.value = result.entries
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function approveBranch(branchName: string) {
     return api.post<{ status: string }>('/branches/approve', { branch: branchName })
   }
@@ -112,8 +135,8 @@ export const useContentStore = defineStore('content', () => {
   }
 
   return {
-    contentList, modelDescription, validation, branches, branchDiff, loading,
-    fetchContent, fetchModelDescription, fetchValidation, fetchBranches, fetchBranchDiff,
+    contentList, modelDescription, validation, branches, branchDiff, history, loading,
+    fetchContent, fetchModelDescription, fetchValidation, fetchBranches, fetchBranchDiff, fetchHistory,
     approveBranch, rejectBranch,
   }
 })

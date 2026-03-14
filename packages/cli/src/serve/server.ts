@@ -236,6 +236,53 @@ export async function createServeApp(options: ServeOptions) {
     return { status: 'deleted', branch: branchName }
   }))
 
+  // History — git log for contentrain operations
+  router.add('/api/history', defineEventHandler(async (event) => {
+    const query = getQuery(event)
+    const limit = Number(query['limit']) || 50
+    const git = simpleGit(projectRoot)
+    const log = await git.log({
+      maxCount: limit * 2, // fetch more, filter after
+      format: { hash: '%h', fullHash: '%H', message: '%s', author: '%an', email: '%ae', date: '%aI', relativeDate: '%ar' },
+    })
+    // Filter to contentrain-related commits
+    const entries = log.all
+      .filter((c: Record<string, string>) => {
+        const msg = c.message ?? ''
+        return msg.startsWith('[contentrain]') || msg.startsWith('Merge branch \'contentrain/') || msg.includes('contentrain')
+      })
+      .slice(0, limit)
+      .map((c: Record<string, string>) => {
+        const msg = c.message ?? ''
+        let type: string = 'other'
+        let target = ''
+        // Parse commit message
+        if (msg.startsWith('[contentrain] created:')) {
+          type = 'model_create'
+          target = msg.replace('[contentrain] created: ', '')
+        } else if (msg.startsWith('[contentrain] updated:')) {
+          type = 'model_update'
+          target = msg.replace('[contentrain] updated: ', '')
+        } else if (msg.startsWith('[contentrain] content:')) {
+          type = 'content_save'
+          target = msg.replace('[contentrain] content: ', '')
+        } else if (msg.startsWith('[contentrain] deleted:')) {
+          type = 'delete'
+          target = msg.replace('[contentrain] deleted: ', '')
+        } else if (msg.startsWith('[contentrain] update context')) {
+          type = 'context_update'
+        } else if (msg.startsWith('Merge branch \'contentrain/')) {
+          type = 'merge'
+          target = msg.replace("Merge branch '", '').replace("'", '')
+        } else if (msg.startsWith('[contentrain]')) {
+          type = 'operation'
+          target = msg.replace('[contentrain] ', '')
+        }
+        return { hash: c.hash, message: msg, type, target, author: c.author, date: c.date, relativeDate: c.relativeDate }
+      })
+    return { entries, total: entries.length }
+  }))
+
   // Context
   router.add('/api/context', defineEventHandler(async () => {
     const contextPath = join(crDir, 'context.json')

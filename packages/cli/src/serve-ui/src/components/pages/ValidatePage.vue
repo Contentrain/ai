@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, computed, ref, Transition } from 'vue'
 import { useContentStore } from '@/stores/content'
 import {
   ShieldCheck, ShieldAlert, AlertTriangle, CircleAlert, Info, RefreshCw,
@@ -60,21 +60,67 @@ const filteredGroups = computed(() => {
 
 const hasAnyFiltered = computed(() => filteredGroups.value.length > 0)
 
-onMounted(() => { store.fetchValidation() })
+// Run tracking
+const lastRunAt = ref<Date | null>(null)
+const runFeedback = ref<string | null>(null)
+
+async function runValidation() {
+  runFeedback.value = null
+  await store.fetchValidation()
+  lastRunAt.value = new Date()
+  const s = store.validation?.summary
+  if (s) {
+    const total = s.errors + s.warnings + s.notices
+    runFeedback.value = total === 0
+      ? 'All checks passed!'
+      : `Found ${s.errors} error(s), ${s.warnings} warning(s), ${s.notices} notice(s)`
+    setTimeout(() => { runFeedback.value = null }, 4000)
+  }
+}
+
+onMounted(() => { runValidation() })
 </script>
 
 <template>
   <div>
     <PageHeader title="Validation" description="Content quality report">
       <template #actions>
-        <Button variant="outline" size="sm" :disabled="store.loading" @click="store.fetchValidation()">
-          <RefreshCw class="mr-1.5 size-4" :class="store.loading && 'animate-spin'" /> Run Again
+        <Button variant="outline" size="sm" :disabled="store.loading" @click="runValidation()">
+          <RefreshCw class="size-4" :class="store.loading && 'animate-spin'" /> Run Again
         </Button>
       </template>
     </PageHeader>
 
     <div class="px-6 py-6 space-y-6">
-      <!-- Loading -->
+      <!-- Run feedback banner -->
+      <Transition
+        enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="opacity-0 -translate-y-2"
+        leave-active-class="transition-all duration-200 ease-in"
+        leave-to-class="opacity-0 -translate-y-2"
+      >
+        <div
+          v-if="runFeedback"
+          :class="cn(
+            'flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm',
+            validation?.valid
+              ? 'border-status-success/30 bg-status-success/10 text-status-success'
+              : 'border-status-warning/30 bg-status-warning/10 text-status-warning',
+          )"
+        >
+          <component :is="validation?.valid ? ShieldCheck : ShieldAlert" class="size-4 shrink-0" />
+          {{ runFeedback }}
+          <span v-if="lastRunAt" class="ml-auto text-xs opacity-60">{{ lastRunAt.toLocaleTimeString() }}</span>
+        </div>
+      </Transition>
+
+      <!-- Loading overlay when re-running -->
+      <div v-if="store.loading && validation" class="flex items-center gap-2 text-sm text-muted-foreground">
+        <div class="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        Running validation...
+      </div>
+
+      <!-- Initial loading -->
       <div v-if="store.loading && !validation" class="flex justify-center py-12">
         <div class="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
