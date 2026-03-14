@@ -1,0 +1,33 @@
+{
+  "id": "pricing",
+  "name": "Pricing Plans",
+  "kind": "collection",
+  "domain": "marketing",
+  "i18n": true,
+  "fields": {
+    "currency": {
+      "default": "USD",
+      "type": "string"
+    },
+    "features": {
+      "items": "string",
+      "type": "array"
+    },
+    "highlighted": {
+      "default": false,
+      "type": "boolean"
+    },
+    "name": {
+      "required": true,
+      "type": "string"
+    },
+    "period": {
+      "default": "month",
+      "type": "string"
+    },
+    "price": {
+      "required": true,
+      "type": "number"
+    }
+  }
+}
