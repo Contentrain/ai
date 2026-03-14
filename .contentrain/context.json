@@ -1,17 +1,18 @@
 {
   "lastOperation": {
     "entries": [
-      "hero-main"
+      "faq-3",
+      "faq-4"
     ],
-    "locale": "tr",
-    "model": "hero",
+    "locale": "en",
+    "model": "faq",
     "source": "mcp-local",
-    "timestamp": "2026-03-14T13:11:38.694Z",
+    "timestamp": "2026-03-14T13:11:43.858Z",
     "tool": "contentrain_content_save"
   },
   "stats": {
-    "entries": 13,
-    "lastSync": "2026-03-14T13:11:38.699Z",
+    "entries": 15,
+    "lastSync": "2026-03-14T13:11:43.858Z",
     "locales": [
       "en",
       "tr"
