@@ -1,0 +1,14 @@
+{
+  "faq-1": {
+    "answer": "AI-native content governance platform.",
+    "category": "General",
+    "order": 1,
+    "question": "What is Contentrain?"
+  },
+  "faq-2": {
+    "answer": "No. BYOA — use your own AI provider.",
+    "category": "Pricing",
+    "order": 2,
+    "question": "Do I pay for AI?"
+  }
+}
