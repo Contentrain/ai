@@ -1,18 +1,24 @@
 {
   "lastOperation": {
+    "entries": [
+      "demo-full",
+      "demo-minimal",
+      "demo-media"
+    ],
     "locale": "en",
-    "model": "pricing",
+    "model": "showcase",
     "source": "mcp-local",
-    "timestamp": "2026-03-14T09:08:54.214Z",
-    "tool": "contentrain_model_save"
+    "timestamp": "2026-03-14T10:58:27.360Z",
+    "tool": "contentrain_content_save"
   },
   "stats": {
-    "entries": 0,
-    "lastSync": "2026-03-14T09:08:54.215Z",
+    "entries": 12,
+    "lastSync": "2026-03-14T10:58:27.361Z",
     "locales": [
-      "en"
+      "en",
+      "tr"
     ],
-    "models": 1
+    "models": 5
   },
   "version": "1"
 }
