@@ -189,16 +189,18 @@
 - [x] Test: 16 tests (context utils, command module loading, args validation)
 - [x] Quality gates: oxlint 0, tsc 0, vitest 16/16
 
-### Phase 2 — CLI UI (TODO)
-- [ ] @contentrain/ui setup (shadcn-vue + Contentrain design tokens)
-- [ ] `contentrain serve` localhost UI — Vue 3.5 + Vite + h3 backend
-  - [ ] Dashboard: proje health, model stats, i18n completion, activity timeline
-  - [ ] Content Explorer: model list, entry table, inline edit, locale switcher
-  - [ ] Normalize Studio: graph viz, side-by-side source/string view, bulk approve
-  - [ ] Validation Dashboard: issue list, one-click fix, i18n parity matrix
-  - [ ] Branch Review: visual diff, merge/reject UI
-- [ ] `contentrain connect` — Studio bağlantısı (API key setup)
-- [ ] Test: CLI UI e2e integration tests
+### Phase 2 — CLI UI ✅ (2026-03-15)
+- [x] shadcn-vue (reka-ui) + Tailwind CSS 4 component library (serve-ui içinde embed)
+- [x] `contentrain serve` localhost UI — Vue 3.5 + Vite + h3 + WebSocket (chokidar)
+  - [x] Dashboard: proje health, model stats, i18n completion, activity timeline
+  - [x] Content Explorer: model list, entry table, inline edit, locale switcher
+  - [x] Normalize Studio: scan modes, side-by-side source/string view, bulk approve/reject
+  - [x] Validation Dashboard: severity filters, issue details, auto-refresh
+  - [x] Branch Review: visual diff, merge/reject UI, history timeline
+- [x] 20+ API routes (h3) + WebSocket real-time file watching
+- [x] Pinia stores (project, content, ui) + composables (useApi, useWatch, useFormatters)
+- [x] Test: serve unit + integration (24 test) — WebSocket, quick-fix, branch ops, static UI
+- [ ] `contentrain connect` — Studio bağlantısı (API key setup) — v1.0 sonrasına ertelendi
 
 ---
 
@@ -278,24 +280,36 @@
 
 ---
 
-## MCP Hardening (Post-Review)
+## MCP Hardening (Post-Review) — Kısmen Tamamlandı
 **Hedef:** Tüm MCP review bulgularından sonra test altyapısını güçlendirmek
 
 ### Test Kalitesi İyileştirme
-- [ ] Senaryo bazlı integration testler (happy path değil, edge case odaklı)
-  - init→cancel→re-init, normalize auto-merge projede review zorunluluğu
-  - writeContext sonrası repo clean mi, content_path'li model CRUD
-  - document slug relation, multiline scan, stale branch submit
-- [ ] Spec "MUST/MUST NOT" kuralları → doğrudan test assertion'a dönüştür
-  - "normalize asla auto-merge edilmez" → test: auto-merge projede normalize → pending-review
-  - "writeContext transaction içinde olmalı" → test: tx sonrası git status clean
-  - "content_path kullanılıyorsa validator da aynı path'e bakmalı" → test
-- [ ] PR öncesi MCP checklist oluştur:
-  - [ ] Transaction sonrası repo clean mi?
-  - [ ] writeContext nerede çağrılıyor?
-  - [ ] Path resolver kullanılıyor mu (hardcoded path var mı)?
-  - [ ] Yeni tool/feature spec ile cross-check edildi mi?
-- [ ] Mevcut testlerdeki workaround'ları temizle (apply.test.ts post-context commit vb.)
+- [x] Senaryo bazlı integration testler — mevcut kapsam (410 test, 24 dosya):
+  - [x] content_path'li model CRUD (tüm 4 kind)
+  - [x] document slug relation
+  - [x] multiline scan + pagination
+  - [x] normalize phase 1 (extract) + phase 2 (reuse) end-to-end
+  - [x] 80-branch limit enforcement
+  - [ ] init→cancel→re-init recovery
+  - [ ] auto-merge sequential writes + context.json conflict handling
+  - [ ] stale branch submit detection
+  - [ ] normalize phase transition failure (reuse without prior extract)
+- [x] Spec "MUST/MUST NOT" kuralları → test assertion (büyük bölümü):
+  - [x] Worktree + branch zorunluluğu → transaction.test.ts
+  - [x] Object-map sorted by ID → content.test.ts
+  - [x] Canonical serialization → serializer.test.ts
+  - [x] MCP content kararı vermez → apply-guardrails.test.ts
+  - [x] 4 model kind desteği → content.test.ts
+  - [x] Octokit yok → sadece simple-git kullanımı doğrulandı
+  - [x] i18n locale parity → workflow.test.ts
+  - [ ] "normalize asla auto-merge edilmez" → eksik
+  - [ ] "writeContext transaction içinde olmalı" → eksik
+- [x] Path/expression security guardrails (710 satır test):
+  - [x] Path traversal (..), absolute path, .contentrain/, node_modules/, .git/ rejection
+  - [x] Framework expression validation (React/Vue/Svelte/Astro)
+  - [x] Secret detection (API keys, tokens)
+- [ ] PR öncesi MCP checklist oluştur (.github/pull_request_template.md)
+- [ ] Mevcut testlerdeki workaround'ları temizle (optional parser skipIf, benchmark skip marking)
 
 ---
 
