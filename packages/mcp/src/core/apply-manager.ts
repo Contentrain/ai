@@ -581,7 +581,16 @@ export async function applyReuse(
     }
   }
 
-  // Enforce scope — validate patch files belong to scope
+  // Guardrail #1: Scope Real Enforcement
+  // Step 1: Path safety — every patch must target a valid, patchable source file
+  for (const patch of patches) {
+    const pathError = validatePatchPath(patch.file)
+    if (pathError) {
+      throw new Error(`Invalid patch path: ${pathError}`)
+    }
+  }
+
+  // Step 2: Semantic scope — verify scope model/domain exists and cross-check patch files
   if (scope.model || scope.domain) {
     const models = await listModels(projectRoot)
     const scopeModels = scope.model
@@ -594,11 +603,33 @@ export async function applyReuse(
       throw new Error(`No models found for scope ${scope.model ? `model="${scope.model}"` : `domain="${scope.domain}"`}`)
     }
 
-    // Guardrail #1: Scope Real Enforcement — validate each patch file path
+    // Step 3: Verify patch files are source files (not content/config/meta files)
+    // and belong to detectable source directories (not random locations)
+    const { autoDetectSourceDirs } = await import('./scan-config.js')
+    const sourceDirs = await autoDetectSourceDirs(projectRoot)
+
+    // Build allowed file prefixes from source dirs
+    const allowedPrefixes = sourceDirs.map(d => d === '.' ? '' : d + '/')
+
     for (const patch of patches) {
-      const pathError = validatePatchPath(patch.file)
-      if (pathError) {
-        throw new Error(`Invalid patch path: ${pathError}`)
+      const normalizedPath = patch.file.replace(/\\/g, '/')
+
+      // Reject patches targeting .contentrain/ directory (content files should never be patched by reuse)
+      if (normalizedPath.startsWith('.contentrain/') || normalizedPath.includes('/.contentrain/')) {
+        throw new Error(`Cannot patch content/config files directly: "${patch.file}". Reuse patches source files only.`)
+      }
+
+      // If source dirs were detected (not just "."), verify patch files are within them
+      if (sourceDirs.length > 0 && sourceDirs[0] !== '.') {
+        const inSourceDir = allowedPrefixes.some(prefix =>
+          prefix === '' || normalizedPath.startsWith(prefix),
+        )
+        if (!inSourceDir) {
+          throw new Error(
+            `Patch file "${patch.file}" is outside detected source directories (${sourceDirs.join(', ')}). ` +
+            `Reuse patches must target source files within the project's source tree.`,
+          )
+        }
       }
     }
   }
@@ -680,10 +711,17 @@ export async function applyReuse(
         let fileModified = false
 
         for (const patch of sorted) {
-          // Guardrail #2: Framework-aware validation on tag text replacements
-          const fwWarning = validateFrameworkExpression(relFile, patch.new_expression, 'tag_text')
-          if (fwWarning) {
-            frameworkWarnings.push({ file: relFile, warning: fwWarning })
+          // Determine replacement context before applying
+          const targetLine = lines[patch.line - 1] ?? ''
+          const isTagTextContext = targetLine.includes(`>${patch.old_value}<`)
+          const replacementContext = isTagTextContext ? 'tag_text' as const : 'other' as const
+
+          // Guardrail #2: Framework-aware validation — only warn for tag text replacements
+          if (isTagTextContext) {
+            const fwWarning = validateFrameworkExpression(relFile, patch.new_expression, replacementContext)
+            if (fwWarning) {
+              frameworkWarnings.push({ file: relFile, warning: fwWarning })
+            }
           }
 
           const applied = applyPatchToLines(lines, patch)
