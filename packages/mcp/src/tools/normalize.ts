@@ -187,6 +187,17 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
               dry_run: input.dry_run,
             })
 
+            // Check for branch-blocked response
+            if ('blocked' in result || ('error' in result && typeof (result as Record<string, unknown>).error === 'string')) {
+              return {
+                content: [{ type: 'text' as const, text: JSON.stringify({
+                  mode: 'extract',
+                  ...result,
+                }, null, 2) }],
+                isError: true,
+              }
+            }
+
             return {
               content: [{ type: 'text' as const, text: JSON.stringify({
                 mode: 'extract',
@@ -214,6 +225,17 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
               patches: input.patches,
               dry_run: input.dry_run,
             })
+
+            // Check for branch-blocked response
+            if ('blocked' in result || ('error' in result && typeof (result as Record<string, unknown>).error === 'string')) {
+              return {
+                content: [{ type: 'text' as const, text: JSON.stringify({
+                  mode: 'reuse',
+                  ...result,
+                }, null, 2) }],
+                isError: true,
+              }
+            }
 
             return {
               content: [{ type: 'text' as const, text: JSON.stringify({

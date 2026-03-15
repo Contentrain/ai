@@ -294,6 +294,30 @@ export async function applyReuse(
     }
   }
 
+  // Enforce scope — validate patch files belong to scope
+  if (scope.model || scope.domain) {
+    const models = await listModels(projectRoot)
+    const scopeModels = scope.model
+      ? models.filter(m => m.id === scope.model)
+      : scope.domain
+        ? models.filter(m => m.domain === scope.domain)
+        : models
+
+    if (scopeModels.length === 0) {
+      throw new Error(`No models found for scope ${scope.model ? `model="${scope.model}"` : `domain="${scope.domain}"`}`)
+    }
+
+    // Build set of allowed source directories based on scope
+    // Patches should target source files (not .contentrain/), so we validate
+    // that patch files don't write outside the project
+    for (const patch of patches) {
+      const normalizedPath = patch.file.replace(/\\/g, '/')
+      if (normalizedPath.includes('..') || normalizedPath.startsWith('/')) {
+        throw new Error(`Invalid patch path: "${patch.file}". Paths must be relative and cannot traverse outside the project.`)
+      }
+    }
+  }
+
   // Group patches by file
   const patchesByFile = new Map<string, PatchEntry[]>()
   for (const patch of patches) {
@@ -506,8 +530,13 @@ function replaceInLine(line: string, oldValue: string, newExpression: string): s
   }
 
   // Try unquoted tag text match: >old_value<
+  // The agent provides the complete new_expression with correct framework syntax:
+  //   JSX:    {t('key')}
+  //   Vue:    {{ $t('key') }}
+  //   Svelte: {$t('key')}
+  // So we insert the expression as-is between > and <, without wrapping in braces.
   if (line.includes(`>${oldValue}<`)) {
-    return line.replace(`>${oldValue}<`, `>{${newExpression}}<`)
+    return line.replace(`>${oldValue}<`, `>${newExpression}<`)
   }
 
   // Try plain text match (last resort)
