@@ -239,7 +239,7 @@ pnpm exec oxlint packages/sdk/js/src packages/sdk/js/tests
 - `contentrain` — CLI that runs project initialization, validation, serve, and generation flows
 - `@contentrain/mcp` — local-first MCP server and core content workflow engine
 - `@contentrain/types` — shared schema and model definitions
-- `@contentrain/ai-rules` — agent rules and prompts
+- `@contentrain/rules` — agent rules and prompts
 
 ## License
 

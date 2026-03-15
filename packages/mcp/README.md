@@ -183,7 +183,7 @@ pnpm exec oxlint packages/mcp/src packages/mcp/tests
 
 - `contentrain` — CLI and local review tooling
 - `@contentrain/query` — generated runtime query SDK
-- `@contentrain/ai-rules` — IDE/agent rules and prompts
+- `@contentrain/rules` — IDE/agent rules and prompts
 - `@contentrain/types` — shared schema and model types
 
 ## License

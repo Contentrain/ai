@@ -14,7 +14,8 @@ contentrain-ai/
 │   ├── mcp/          — 13 MCP tools (simple-git + zod + MCP SDK)
 │   ├── cli/          — citty + tsdown (init/serve/validate/normalize/connect)
 │   ├── types/        — Shared TypeScript types (@contentrain/types)
-│   ├── ai-rules/     — AI agent rules & prompts for IDE integration
+│   ├── rules/        — AI agent quality rules & conventions
+│   ├── skills/       — AI agent workflow procedures & framework guides
 │   └── sdk/
 │       └── js/       — Universal query SDK (@contentrain/query)
 ├── docs/
@@ -69,7 +70,8 @@ These files contain architectural decisions and are the source of truth during d
 | packages/mcp | @contentrain/mcp | 13 MCP tools |
 | packages/cli | contentrain | CLI (npx contentrain) |
 | packages/types | @contentrain/types | Shared TypeScript types |
-| packages/ai-rules | @contentrain/ai-rules | AI agent rules |
+| packages/rules | @contentrain/rules | AI agent quality rules & conventions |
+| packages/skills | @contentrain/skills | AI agent workflow procedures & guides |
 | packages/sdk/js | @contentrain/query | Universal query SDK (generated client) |
 
 ## Mandatory Quality Gates
@@ -110,7 +112,7 @@ After completing a sprint milestone:
 
 ### 5. Commit Standards
 - Conventional commits: `feat(scope)`, `fix(scope)`, `refactor(scope)`
-- Scope = package name: `sdk`, `mcp`, `cli`, `types`, `ai-rules`
+- Scope = package name: `sdk`, `mcp`, `cli`, `types`, `rules`, `skills`
 - Commit message body: what was built, key decisions, test coverage summary
 
 ## Commands

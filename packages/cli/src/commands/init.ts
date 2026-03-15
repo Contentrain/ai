@@ -294,7 +294,7 @@ async function installRules(projectRoot: string): Promise<void> {
     }
     const { createRequire } = await import('node:module')
     const require = createRequire(import.meta.url)
-    const aiRulesDir = join(require.resolve('@contentrain/ai-rules/package.json'), '..')
+    const rulesDir = join(require.resolve('@contentrain/rules/package.json'), '..')
 
     const targets: Array<{ ide: string; source: string; dest: string; append?: boolean }> = []
 
@@ -302,7 +302,7 @@ async function installRules(projectRoot: string): Promise<void> {
     if (await pathExists(join(projectRoot, 'CLAUDE.md')) || await pathExists(join(projectRoot, '.claude'))) {
       targets.push({
         ide: 'Claude Code',
-        source: join(aiRulesDir, ruleFiles['claude-code']),
+        source: join(rulesDir, ruleFiles['claude-code']),
         dest: join(projectRoot, 'CLAUDE.md'),
         append: true,
       })
@@ -311,7 +311,7 @@ async function installRules(projectRoot: string): Promise<void> {
     if (await pathExists(join(projectRoot, '.cursorrules')) || await pathExists(join(projectRoot, '.cursor'))) {
       targets.push({
         ide: 'Cursor',
-        source: join(aiRulesDir, ruleFiles['cursor']),
+        source: join(rulesDir, ruleFiles['cursor']),
         dest: join(projectRoot, '.cursorrules'),
       })
     }
@@ -319,7 +319,7 @@ async function installRules(projectRoot: string): Promise<void> {
     if (await pathExists(join(projectRoot, '.windsurf'))) {
       targets.push({
         ide: 'Windsurf',
-        source: join(aiRulesDir, ruleFiles['windsurf']),
+        source: join(rulesDir, ruleFiles['windsurf']),
         dest: join(projectRoot, '.windsurfrules'),
       })
     }
@@ -328,7 +328,7 @@ async function installRules(projectRoot: string): Promise<void> {
     if (targets.length === 0) {
       targets.push({
         ide: 'Generic',
-        source: join(aiRulesDir, ruleFiles['generic']),
+        source: join(rulesDir, ruleFiles['generic']),
         dest: join(projectRoot, 'CLAUDE.md'),
       })
     }
@@ -355,7 +355,7 @@ async function installRules(projectRoot: string): Promise<void> {
       }
     }
   } catch {
-    // ai-rules package may not be installed — skip silently
+    // rules package may not be installed — skip silently
   }
 }
 

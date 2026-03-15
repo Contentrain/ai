@@ -7,7 +7,7 @@ This package is the common schema layer used by:
 - `@contentrain/mcp`
 - `contentrain`
 - `@contentrain/query`
-- `@contentrain/ai-rules`
+- `@contentrain/rules`
 
 It defines the stable type vocabulary for models, config, metadata, validation, scanning, and context files.
 
@@ -167,7 +167,7 @@ pnpm --filter @contentrain/types typecheck
 - `@contentrain/mcp`
 - `contentrain`
 - `@contentrain/query`
-- `@contentrain/ai-rules`
+- `@contentrain/rules`
 
 ## License
 

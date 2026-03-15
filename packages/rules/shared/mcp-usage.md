@@ -35,6 +35,7 @@ MCP is **deterministic infrastructure**. The agent is the **intelligence layer**
 |------|---------|------------|
 | `contentrain_status` | Get full project state in one call | _(none)_ |
 | `contentrain_describe` | Get full schema + optional sample for one model | `model`, `include_sample?` (bool), `locale?` |
+| `contentrain_describe_format` | Get the storage and file-format contract for Contentrain content | _(none)_ |
 
 ### 2.2 Setup Tools
 

@@ -18,7 +18,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@contentrain/ai-rules": "workspace:*",
+    "@contentrain/rules": "workspace:*",
     "@contentrain/mcp": "workspace:*",
     "@contentrain/query": "workspace:*",
     "@contentrain/types": "workspace:*",

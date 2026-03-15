@@ -16,7 +16,7 @@ describe('shared rules', () => {
 describe('constants', () => {
   it('FIELD_TYPES has 27 entries', () => { expect(FIELD_TYPES).toHaveLength(27) })
   it('MODEL_KINDS has 4 entries', () => { expect(MODEL_KINDS).toHaveLength(4) })
-  it('MCP_TOOLS has 14 entries', () => { expect(MCP_TOOLS).toHaveLength(14) })
+  it('MCP_TOOLS has 15 entries', () => { expect(MCP_TOOLS).toHaveLength(15) })
   it('all MCP tools match pattern', () => {
     for (const t of MCP_TOOLS) expect(t).toMatch(/^contentrain_/)
   })
