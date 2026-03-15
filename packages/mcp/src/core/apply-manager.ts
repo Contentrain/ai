@@ -555,7 +555,10 @@ export async function applyExtract(
           created_at: new Date().toISOString(),
           models: sourcesByModel,
         }, null, 2) + '\n'
+        // Write to worktree (for the commit)
         await writeText(join(wt, '.contentrain', 'normalize-sources.json'), sourcesJson)
+        // Also write to base projectRoot so reuse can read it BEFORE extract branch is merged
+        await writeText(join(projectRoot, '.contentrain', 'normalize-sources.json'), sourcesJson)
       }
 
       // Update context
@@ -687,7 +690,8 @@ export async function applyReuse(
     }
 
     // Step 4: Semantic source→model cross-check via normalize-sources.json
-    if (scope.model) {
+    // Works for both scope.model (exact model match) and scope.domain (all models in domain)
+    if (scope.model || scope.domain) {
       try {
         const sourcesPath = join(projectRoot, '.contentrain', 'normalize-sources.json')
         const sourcesRaw = await readText(sourcesPath)
@@ -695,21 +699,40 @@ export async function applyReuse(
           const sourcesData = JSON.parse(sourcesRaw) as {
             models?: Record<string, { source_files?: string[] }>
           }
-          const modelSources = sourcesData.models?.[scope.model]?.source_files
-          if (modelSources && modelSources.length > 0) {
+
+          // Collect all allowed source files for the scope
+          let allowedSourceFiles: string[] = []
+          let scopeLabel = ''
+
+          if (scope.model) {
+            // Exact model scope
+            const modelSources = sourcesData.models?.[scope.model]?.source_files
+            if (modelSources) allowedSourceFiles = modelSources
+            scopeLabel = `model "${scope.model}"`
+          } else if (scope.domain) {
+            // Domain scope — collect source files from ALL models in the domain
+            const domainModelIds = scopeModels.map(m => m.id)
+            for (const modelId of domainModelIds) {
+              const modelSources = sourcesData.models?.[modelId]?.source_files
+              if (modelSources) allowedSourceFiles.push(...modelSources)
+            }
+            allowedSourceFiles = [...new Set(allowedSourceFiles)] // dedupe
+            scopeLabel = `domain "${scope.domain}"`
+          }
+
+          if (allowedSourceFiles.length > 0) {
             const outOfScopePatches: string[] = []
             for (const patch of patches) {
               const normalizedPath = patch.file.replace(/\\/g, '/')
-              if (!modelSources.includes(normalizedPath)) {
+              if (!allowedSourceFiles.includes(normalizedPath)) {
                 outOfScopePatches.push(patch.file)
               }
             }
             if (outOfScopePatches.length > 0) {
               throw new Error(
-                `Scope enforcement: ${outOfScopePatches.length} patch file(s) are not associated with model "${scope.model}". ` +
+                `Scope enforcement: ${outOfScopePatches.length} patch file(s) are not associated with ${scopeLabel}. ` +
                 `Out-of-scope files: ${outOfScopePatches.join(', ')}. ` +
-                `Known source files for "${scope.model}": ${modelSources.join(', ')}. ` +
-                `If this is intentional, use scope: { domain: "${scopeModels[0]?.domain ?? 'unknown'}" } for broader scope.`,
+                `Known source files: ${allowedSourceFiles.join(', ')}.`,
               )
             }
           }
