@@ -5,6 +5,7 @@ import { readConfig } from '../core/config.js'
 import { buildGraph } from '../core/graph-builder.js'
 import { scanCandidates, scanSummary } from '../core/scanner.js'
 import { applyExtract, applyReuse } from '../core/apply-manager.js'
+import { fieldDefZodSchema } from '../core/model-manager.js'
 
 export function registerNormalizeTools(server: McpServer, projectRoot: string): void {
   // ─── contentrain_scan ───
@@ -134,37 +135,7 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
         kind: z.enum(['singleton', 'collection', 'dictionary', 'document']).describe('Model kind'),
         domain: z.string().describe('Content domain (e.g. "marketing", "app")'),
         i18n: z.boolean().optional().describe('Enable i18n. Default: true'),
-        fields: z.record(z.object({
-          type: z.enum([
-            'string', 'text', 'email', 'url', 'slug', 'color', 'phone', 'code', 'icon',
-            'markdown', 'richtext',
-            'number', 'integer', 'decimal', 'percent', 'rating',
-            'boolean', 'date', 'datetime',
-            'image', 'video', 'file',
-            'relation', 'relations',
-            'select', 'array', 'object',
-          ]).describe('Field type from the 27-type catalog'),
-          required: z.boolean().optional(),
-          unique: z.boolean().optional(),
-          default: z.any().optional(),
-          min: z.number().optional(),
-          max: z.number().optional(),
-          pattern: z.string().optional(),
-          options: z.array(z.string()).optional(),
-          model: z.union([z.string(), z.array(z.string())]).optional(),
-          items: z.any().optional(),
-          fields: z.record(z.any()).optional(),
-          accept: z.string().optional(),
-          maxSize: z.number().optional(),
-          description: z.string().optional(),
-        }).refine(
-          (f) => {
-            if ((f.type === 'relation' || f.type === 'relations') && !f.model) return false
-            if (f.type === 'select' && (!f.options || f.options.length === 0)) return false
-            return true
-          },
-          { message: 'relation/relations requires "model", select requires non-empty "options"' },
-        )).optional().describe('Field definitions — must use valid types from the 27-type catalog'),
+        fields: fieldDefZodSchema.optional().describe('Field definitions — shared schema with model_save for full parity'),
         entries: z.array(z.object({
           locale: z.string().optional().describe('Locale. Default: project default'),
           slug: z.string().optional().describe('Document slug'),

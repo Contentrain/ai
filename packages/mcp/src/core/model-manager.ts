@@ -1,6 +1,7 @@
 import type { ModelDefinition } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
+import { z } from 'zod'
 import { contentrainDir, ensureDir, readDir, readJson, writeJson } from '../util/fs.js'
 import { resolveContentDir, resolveLocaleStrategy } from './content-manager.js'
 
@@ -370,14 +371,49 @@ export async function checkReferences(projectRoot: string, modelId: string): Pro
   return refs
 }
 
+// ─── Shared Field Type Catalog ───
+
+export const FIELD_TYPE_ENUM = [
+  'string', 'text', 'email', 'url', 'slug', 'color', 'phone', 'code', 'icon',
+  'markdown', 'richtext',
+  'number', 'integer', 'decimal', 'percent', 'rating',
+  'boolean', 'date', 'datetime',
+  'image', 'video', 'file',
+  'relation', 'relations',
+  'select', 'array', 'object',
+] as const
+
+/**
+ * Shared Zod schema for field definitions.
+ * Used by both model_save and normalize extract for full parity.
+ */
+export const fieldDefZodSchema: z.ZodType<Record<string, unknown>> = z.record(z.string(), z.object({
+  type: z.enum(FIELD_TYPE_ENUM).describe('Field type from the 27-type catalog'),
+  required: z.boolean().optional(),
+  unique: z.boolean().optional(),
+  default: z.unknown().optional(),
+  min: z.number().optional(),
+  max: z.number().optional(),
+  pattern: z.string().optional(),
+  options: z.array(z.string()).optional(),
+  model: z.union([z.string(), z.array(z.string())]).optional(),
+  items: z.union([z.string(), z.lazy(() => z.record(z.string(), z.unknown()))]).optional(),
+  fields: z.lazy(() => z.record(z.string(), z.unknown())).optional(),
+  accept: z.string().optional(),
+  maxSize: z.number().optional(),
+  description: z.string().optional(),
+}).refine(
+  (f) => {
+    if ((f.type === 'relation' || f.type === 'relations') && !f.model) return false
+    if (f.type === 'select' && (!f.options || f.options.length === 0)) return false
+    return true
+  },
+  { message: 'relation/relations requires "model", select requires non-empty "options"' },
+))
+
 // ─── Model Validation (shared between model_save and normalize extract) ───
 
-const VALID_FIELD_TYPES = new Set([
-  'string', 'text', 'email', 'url', 'slug', 'color', 'phone', 'code', 'icon',
-  'markdown', 'richtext', 'number', 'integer', 'decimal', 'percent', 'rating',
-  'boolean', 'date', 'datetime', 'image', 'video', 'file',
-  'relation', 'relations', 'select', 'array', 'object',
-])
+const VALID_FIELD_TYPES = new Set<string>(FIELD_TYPE_ENUM)
 
 /**
  * Validate a model definition before writing.

@@ -4,26 +4,12 @@ import { z } from 'zod'
 import { readConfig } from '../core/config.js'
 
 import { resolveContentDir, resolveJsonFilePath, resolveMdFilePath } from '../core/content-manager.js'
-import { checkReferences, deleteModel, readModel, writeModel, validateModelDefinition } from '../core/model-manager.js'
+import { checkReferences, deleteModel, readModel, writeModel, validateModelDefinition, fieldDefZodSchema } from '../core/model-manager.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 
-const fieldDefSchema: z.ZodType<Record<string, unknown>> = z.record(z.string(), z.object({
-  type: z.string(),
-  required: z.boolean().optional(),
-  unique: z.boolean().optional(),
-  default: z.unknown().optional(),
-  min: z.number().optional(),
-  max: z.number().optional(),
-  pattern: z.string().optional(),
-  options: z.array(z.string()).optional(),
-  model: z.union([z.string(), z.array(z.string())]).optional(),
-  items: z.union([z.string(), z.lazy(() => z.record(z.string(), z.unknown()))]).optional(),
-  fields: z.lazy(() => z.record(z.string(), z.unknown())).optional(),
-  accept: z.string().optional(),
-  maxSize: z.number().optional(),
-  description: z.string().optional(),
-}))
+// Shared field definition schema — single source of truth with normalize extract
+const fieldDefSchema = fieldDefZodSchema
 
 export function registerModelTools(server: McpServer, projectRoot: string): void {
   // ─── contentrain_model_save ───
