@@ -52,6 +52,52 @@ export interface BranchDiff {
   diff: string
 }
 
+export interface NormalizePlanField {
+  type: string
+  required?: boolean
+}
+
+export interface NormalizePlanModel {
+  id: string
+  kind: string
+  domain: string
+  i18n?: boolean
+  fields: Record<string, NormalizePlanField>
+}
+
+export interface NormalizePlanExtraction {
+  value: string
+  file: string
+  line: number
+  model: string
+  field: string
+  locale?: string
+}
+
+export interface NormalizePlanPatch {
+  file: string
+  line: number
+  old_value: string
+  new_expression: string
+}
+
+export interface NormalizePlan {
+  version: number
+  status: string
+  created_at: string
+  agent: string
+  scan_stats: {
+    files_scanned: number
+    raw_strings: number
+    candidates_sent: number
+    extracted: number
+    skipped: number
+  }
+  models: NormalizePlanModel[]
+  extractions: NormalizePlanExtraction[]
+  patches: NormalizePlanPatch[]
+}
+
 export const useContentStore = defineStore('content', () => {
   const api = useApi()
 
@@ -60,6 +106,7 @@ export const useContentStore = defineStore('content', () => {
   const validation = ref<ValidationResult | null>(null)
   const branches = ref<BranchInfo[]>([])
   const branchDiff = ref<BranchDiff | null>(null)
+  const normalizePlan = ref<NormalizePlan | null>(null)
   const loading = ref(false)
 
   async function fetchContent(modelId: string, locale?: string, limit?: number, offset?: number) {
@@ -134,9 +181,18 @@ export const useContentStore = defineStore('content', () => {
     return api.post<{ status: string }>('/branches/reject', { branch: branchName })
   }
 
+  async function fetchNormalizePlan() {
+    try {
+      const result = await api.get<{ plan: NormalizePlan | null }>('/normalize/plan')
+      normalizePlan.value = result.plan
+    } catch {
+      normalizePlan.value = null
+    }
+  }
+
   return {
-    contentList, modelDescription, validation, branches, branchDiff, history, loading,
+    contentList, modelDescription, validation, branches, branchDiff, history, normalizePlan, loading,
     fetchContent, fetchModelDescription, fetchValidation, fetchBranches, fetchBranchDiff, fetchHistory,
-    approveBranch, rejectBranch,
+    approveBranch, rejectBranch, fetchNormalizePlan,
   }
 })

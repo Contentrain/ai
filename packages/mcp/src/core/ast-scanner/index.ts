@@ -6,7 +6,8 @@ import { parseTsx } from './tsx-parser.js'
 
 const TSX_EXTENSIONS = new Set(['.tsx', '.jsx', '.ts', '.js', '.mjs'])
 const VUE_EXTENSIONS = new Set(['.vue'])
-const FALLBACK_EXTENSIONS = new Set(['.svelte', '.astro'])
+const SVELTE_EXTENSIONS = new Set(['.svelte'])
+const ASTRO_EXTENSIONS = new Set(['.astro'])
 
 // ─── Lazy-loaded parsers ───
 
@@ -23,14 +24,40 @@ async function loadVueParser(): Promise<((content: string, fileName: string) => 
   }
 }
 
-// ─── Regex fallback for Svelte/Astro ───
+/**
+ * Lazily import svelte-parser. Returns undefined if not available
+ * (svelte is an optional dependency).
+ */
+async function loadSvelteParser(): Promise<((content: string, fileName: string) => Promise<ExtractedString[]>) | undefined> {
+  try {
+    const mod = await import('./svelte-parser.js')
+    return mod.parseSvelte
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Lazily import astro-parser. Returns undefined if not available
+ * (@astrojs/compiler is an optional dependency).
+ */
+async function loadAstroParser(): Promise<((content: string, fileName: string) => Promise<ExtractedString[]>) | undefined> {
+  try {
+    const mod = await import('./astro-parser.js')
+    return mod.parseAstro
+  } catch {
+    return undefined
+  }
+}
+
+// ─── Regex fallback for unknown extensions ───
 
 const SURROUNDING_MAX = 120
 
 /**
  * Minimal regex-based extractor for file types without AST parsers.
  * Extracts quoted strings and tag text — conservative, low accuracy.
- * Used as fallback until dedicated parsers are built.
+ * Used as fallback when dedicated parsers are unavailable.
  */
 function extractWithRegex(content: string, _filePath: string): ExtractedString[] {
   const lines = content.split('\n')
@@ -121,8 +148,12 @@ function buildSurrounding(lines: string[], lineIdx: number): string {
  * Routes to the correct parser based on file extension:
  * - .tsx/.jsx/.ts/.js/.mjs -> tsx-parser (AST-based)
  * - .vue -> vue-parser (lazy-loaded, AST-based)
- * - .svelte/.astro -> regex fallback
+ * - .svelte -> svelte-parser (lazy-loaded, AST-based)
+ * - .astro -> astro-parser (lazy-loaded, AST-based)
  * - unknown -> empty array
+ *
+ * Falls back to regex extraction when the dedicated parser's
+ * optional dependency is not installed.
  *
  * Applies structural pre-filter to remove 100% non-content strings.
  * Returns only candidates that should be sent to the agent.
@@ -142,11 +173,22 @@ export async function extractStrings(
     if (parseVue) {
       rawStrings = await parseVue(content, filePath)
     } else {
-      // Fallback to regex if vue-parser is not available
       rawStrings = extractWithRegex(content, filePath)
     }
-  } else if (FALLBACK_EXTENSIONS.has(normalizedExt)) {
-    rawStrings = extractWithRegex(content, filePath)
+  } else if (SVELTE_EXTENSIONS.has(normalizedExt)) {
+    const parseSvelte = await loadSvelteParser()
+    if (parseSvelte) {
+      rawStrings = await parseSvelte(content, filePath)
+    } else {
+      rawStrings = extractWithRegex(content, filePath)
+    }
+  } else if (ASTRO_EXTENSIONS.has(normalizedExt)) {
+    const parseAstro = await loadAstroParser()
+    if (parseAstro) {
+      rawStrings = await parseAstro(content, filePath)
+    } else {
+      rawStrings = extractWithRegex(content, filePath)
+    }
   } else {
     return []
   }

@@ -17,7 +17,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { watch } from 'chokidar'
 import { join } from 'node:path'
 import { existsSync, readFileSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
+import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { simpleGit } from 'simple-git'
 
 interface ServeOptions {
@@ -29,6 +29,15 @@ interface ServeOptions {
 export async function createServeApp(options: ServeOptions) {
   const { projectRoot, uiDir } = options
   const crDir = join(projectRoot, '.contentrain')
+
+  function getDefaultBranch(): string {
+    try {
+      const raw = readFileSync(join(crDir, 'config.json'), 'utf-8')
+      const cfg = JSON.parse(raw)
+      if (cfg?.repository?.default_branch) return cfg.repository.default_branch
+    } catch { /* ignore */ }
+    return 'main'
+  }
 
   // --- MCP Client setup ---
   const mcpServer = createMcpServer(projectRoot)
@@ -42,12 +51,11 @@ export async function createServeApp(options: ServeOptions) {
 
   async function callTool(name: string, args: Record<string, unknown> = {}): Promise<unknown> {
     const result = await mcpClient.callTool({ name, arguments: args })
-    const contentArr = result.content as Array<{ type: string; text?: string }>
-    const textContent = contentArr.find(c => c.type === 'text')
-    if (!textContent?.text) {
+    const contentArr = result.content as Array<{ type: string; text?: string }>; const textContent = contentArr.find((c: { type: string }) => c.type === 'text')
+    if (!textContent || !('text' in textContent)) {
       throw createError({ statusCode: 500, message: `Tool ${name} returned no text content` })
     }
-    return JSON.parse(textContent.text)
+    return JSON.parse(textContent.text as string)
   }
 
   // --- H3 App ---
@@ -107,22 +115,20 @@ export async function createServeApp(options: ServeOptions) {
       if (rel === 'config.json') {
         event = { type: 'config:changed' }
       } else if (rel === 'context.json') {
-        // Include context payload so consumers don't need extra fetch
         let context: unknown = null
         try {
           const raw = readFileSync(join(crDir, 'context.json'), 'utf-8')
           context = JSON.parse(raw)
-        } catch { /* file may be mid-write */ }
+        } catch { /* ignore */ }
         event = { type: 'context:changed', context }
+      } else if (rel === 'normalize-plan.json') {
+        event = { type: 'normalize:plan-updated' }
       } else if (rel.startsWith('models/')) {
         const modelId = rel.replace('models/', '').replace('.json', '')
         event = { type: 'model:changed', modelId }
       } else if (rel.startsWith('content/')) {
-        // Path: content/<domain>/<model>/<locale>.json
         const parts = rel.replace('content/', '').split('/')
-        const modelId = parts.length >= 2 ? parts[1] : parts[0]
-        const locale = parts.length >= 3 ? parts[2]?.replace('.json', '') : parts[1]?.replace('.json', '')
-        event = { type: 'content:changed', modelId, locale }
+        event = { type: 'content:changed', modelId: parts[1], locale: parts[2]?.replace('.json', '') }
       } else {
         return
       }
@@ -171,7 +177,7 @@ export async function createServeApp(options: ServeOptions) {
     })
   }))
 
-  // Quick fix (content save) — broadcasts branch:created if review workflow creates a branch
+  // Quick fix (content save)
   router.add('/api/content/:modelId/:entryId/fix', defineEventHandler(async (event) => {
     if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
     const modelId = getRouterParam(event, 'modelId')
@@ -181,13 +187,14 @@ export async function createServeApp(options: ServeOptions) {
       model: modelId,
       entries: [{ id: entryId, locale: body.locale, data: body.data }],
     }) as Record<string, unknown>
-    // Content changed → validation may have changed
+
     broadcast({ type: 'validation:updated' })
-    // If MCP created a branch (review workflow), broadcast it last
-    const git = result.git as Record<string, unknown> | undefined
-    if (git?.branch && typeof git.branch === 'string') {
+
+    const git = result?.git as Record<string, unknown> | undefined
+    if (git?.branch && git?.action === 'pending-review') {
       broadcast({ type: 'branch:created', branch: git.branch })
     }
+
     return result
   }))
 
@@ -209,15 +216,6 @@ export async function createServeApp(options: ServeOptions) {
     return { branches: crBranches, total: crBranches.length }
   }))
 
-  // Resolve configured default branch from config.json
-  function getDefaultBranch(): string {
-    try {
-      const raw = readFileSync(join(crDir, 'config.json'), 'utf-8')
-      const config = JSON.parse(raw)
-      return config?.repository?.default_branch ?? 'main'
-    } catch { return 'main' }
-  }
-
   // Branch diff
   router.add('/api/branches/diff', defineEventHandler(async (event) => {
     const query = getQuery(event)
@@ -226,13 +224,13 @@ export async function createServeApp(options: ServeOptions) {
       throw createError({ statusCode: 400, message: 'Invalid branch name' })
     }
     const git = simpleGit(projectRoot)
-    const baseBranch = getDefaultBranch()
-    const diff = await git.diff([`${baseBranch}...${branchName}`, '--stat'])
-    const rawDiff = await git.diff([`${baseBranch}...${branchName}`])
-    return { branch: branchName, base: baseBranch, stat: diff, diff: rawDiff }
+    const defaultBranch = getDefaultBranch()
+    const diff = await git.diff([`${defaultBranch}...${branchName}`, '--stat'])
+    const rawDiff = await git.diff([`${defaultBranch}...${branchName}`])
+    return { branch: branchName, base: defaultBranch, stat: diff, diff: rawDiff }
   }))
 
-  // Branch approve (merge with conflict resolution)
+  // Branch approve (merge)
   router.add('/api/branches/approve', defineEventHandler(async (event) => {
     if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
     const body = await readBody(event)
@@ -242,23 +240,9 @@ export async function createServeApp(options: ServeOptions) {
     }
     const git = simpleGit(projectRoot)
     const baseBranch = getDefaultBranch()
-    // Ensure we're on the configured base branch before merging
     await git.checkout(baseBranch)
-    try {
-      // Try merge with theirs strategy for .contentrain/ conflicts
-      await git.merge([branchName, '--no-edit', '-X', 'theirs'])
-    } catch {
-      // If still conflicts, resolve manually
-      try {
-        await git.raw(['checkout', '--theirs', '--', '.contentrain/']).catch(() => {})
-        await git.add('.')
-        await git.commit(`Merge branch '${branchName}' (auto-resolved)`, { '--no-verify': null })
-      } catch (resolveErr) {
-        await git.merge(['--abort']).catch(() => {})
-        throw createError({ statusCode: 500, message: `Merge conflict could not be resolved: ${resolveErr}` })
-      }
-    }
-    await git.deleteLocalBranch(branchName, true).catch(() => {})
+    await git.merge([branchName, '--no-edit', '-X', 'theirs'])
+    await git.deleteLocalBranch(branchName, true)
     broadcast({ type: 'branch:merged', branch: branchName })
     return { status: 'merged', branch: branchName, into: baseBranch }
   }))
@@ -274,6 +258,61 @@ export async function createServeApp(options: ServeOptions) {
     const git = simpleGit(projectRoot)
     await git.deleteLocalBranch(branchName, true)
     return { status: 'deleted', branch: branchName }
+  }))
+
+  // History — git log for contentrain operations
+  router.add('/api/history', defineEventHandler(async (event) => {
+    const query = getQuery(event)
+    const limit = Number(query['limit']) || 50
+    const git = simpleGit(projectRoot)
+    const log = await git.log({
+      maxCount: limit * 2, // fetch more, filter after
+      format: { hash: '%h', fullHash: '%H', message: '%s', author: '%an', email: '%ae', date: '%aI', relativeDate: '%ar' },
+    })
+    // Filter to contentrain-related commits
+    const entries = log.all
+      .filter((c) => {
+        const msg = c.message ?? ''
+        return msg.startsWith('[contentrain]') || msg.startsWith('Merge branch \'contentrain/') || msg.includes('contentrain')
+      })
+      .slice(0, limit)
+      .map((c) => {
+        const msg = c.message ?? ''
+        let type: string = 'other'
+        let target = ''
+        // Parse commit message
+        if (msg.startsWith('[contentrain] created:')) {
+          type = 'model_create'
+          target = msg.replace('[contentrain] created: ', '')
+        } else if (msg.startsWith('[contentrain] updated:')) {
+          type = 'model_update'
+          target = msg.replace('[contentrain] updated: ', '')
+        } else if (msg.startsWith('[contentrain] content:')) {
+          type = 'content_save'
+          target = msg.replace('[contentrain] content: ', '')
+        } else if (msg.startsWith('[contentrain] deleted:')) {
+          type = 'delete'
+          target = msg.replace('[contentrain] deleted: ', '')
+        } else if (msg.startsWith('[contentrain] update context')) {
+          type = 'context_update'
+        } else if (msg.startsWith('Merge branch \'contentrain/')) {
+          type = 'merge'
+          target = msg.replace("Merge branch '", '').replace("'", '')
+        } else if (msg.startsWith('[contentrain]')) {
+          type = 'operation'
+          target = msg.replace('[contentrain] ', '')
+        }
+        return { hash: c.hash, message: msg, type, target, author: c.author, date: c.date, relativeDate: c.relativeDate }
+      })
+    return { entries, total: entries.length }
+  }))
+
+  // Context
+  router.add('/api/context', defineEventHandler(async () => {
+    const contextPath = join(crDir, 'context.json')
+    if (!existsSync(contextPath)) return { lastOperation: null, stats: null }
+    const raw = await readFile(contextPath, 'utf-8')
+    return JSON.parse(raw)
   }))
 
   // File tree — scannable project structure
@@ -348,7 +387,6 @@ export async function createServeApp(options: ServeOptions) {
 
   // Normalize — last results (from context.json + pending normalize branches)
   router.add('/api/normalize/results', defineEventHandler(async () => {
-    // Read last normalize operation from context
     let lastNormalize: unknown = null
     try {
       const raw = readFileSync(join(crDir, 'context.json'), 'utf-8')
@@ -359,13 +397,73 @@ export async function createServeApp(options: ServeOptions) {
       }
     } catch { /* no context */ }
 
-    // Find pending normalize branches
     const git = simpleGit(projectRoot)
     const branches = (await git.branchLocal()).all
       .filter(b => b.startsWith('contentrain/normalize/'))
       .map(b => ({ name: b }))
 
     return { lastOperation: lastNormalize, pendingBranches: branches }
+  }))
+
+  // Normalize — read plan (normalize-plan.json)
+  router.add('/api/normalize/plan', defineEventHandler(async () => {
+    const planPath = join(crDir, 'normalize-plan.json')
+    if (!existsSync(planPath)) return { plan: null }
+    try {
+      const raw = await readFile(planPath, 'utf-8')
+      return { plan: JSON.parse(raw) }
+    } catch {
+      return { plan: null }
+    }
+  }))
+
+  // Normalize — delete plan (reject)
+  router.add('/api/normalize/plan/reject', defineEventHandler(async (event) => {
+    if (event.method !== 'DELETE' && event.method !== 'POST') {
+      throw createError({ statusCode: 405, message: 'Method not allowed' })
+    }
+    const planPath = join(crDir, 'normalize-plan.json')
+    if (existsSync(planPath)) {
+      await unlink(planPath)
+    }
+    return { status: 'rejected' }
+  }))
+
+  // Normalize — approve plan (write approved status, call MCP apply)
+  router.add('/api/normalize/plan/approve', defineEventHandler(async (event) => {
+    if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
+    const planPath = join(crDir, 'normalize-plan.json')
+    if (!existsSync(planPath)) {
+      throw createError({ statusCode: 404, message: 'No normalize plan found' })
+    }
+    const raw = await readFile(planPath, 'utf-8')
+    const plan = JSON.parse(raw)
+    const body = await readBody(event)
+    const selectedModels = body?.models as string[] | undefined
+
+    // Update plan status
+    plan.status = 'approved'
+    plan.approved_at = new Date().toISOString()
+    if (selectedModels) {
+      plan.approved_models = selectedModels
+    }
+    await writeFile(planPath, JSON.stringify(plan, null, 2) + '\n', 'utf-8')
+
+    // Call MCP apply with the plan data
+    const applyArgs: Record<string, unknown> = {
+      models: selectedModels ?? plan.models?.map((m: { id: string }) => m.id) ?? [],
+      extractions: plan.extractions ?? [],
+      patches: plan.patches ?? [],
+    }
+    const result = await callTool('contentrain_apply', applyArgs)
+
+    // Clean up plan file after successful apply
+    if (existsSync(planPath)) {
+      await unlink(planPath)
+    }
+
+    broadcast({ type: 'normalize:plan-updated' })
+    return result
   }))
 
   // Normalize — apply extraction (dry-run by default)
@@ -375,7 +473,7 @@ export async function createServeApp(options: ServeOptions) {
     return await callTool('contentrain_apply', body)
   }))
 
-  // Normalize — approve (merge normalize branch)
+  // Normalize — approve branch (merge normalize branch)
   router.add('/api/normalize/approve', defineEventHandler(async (event) => {
     if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
     const body = await readBody(event)
@@ -384,83 +482,15 @@ export async function createServeApp(options: ServeOptions) {
       throw createError({ statusCode: 400, message: 'Invalid branch name' })
     }
     const git = simpleGit(projectRoot)
-    const baseBranch = getDefaultBranch()
-    await git.checkout(baseBranch)
-    try {
-      await git.merge([branchName, '--no-edit', '-X', 'theirs'])
-    } catch {
-      try {
-        await git.raw(['checkout', '--theirs', '--', '.contentrain/']).catch(() => {})
-        await git.add('.')
-        await git.commit(`Merge branch '${branchName}' (auto-resolved)`, { '--no-verify': null })
-      } catch (resolveErr) {
-        await git.merge(['--abort']).catch(() => {})
-        throw createError({ statusCode: 500, message: `Merge conflict could not be resolved: ${resolveErr}` })
-      }
-    }
-    await git.deleteLocalBranch(branchName, true).catch(() => {})
+    const currentBranch = (await git.branchLocal()).current
+    await git.merge([branchName])
+    await git.deleteLocalBranch(branchName, true)
     broadcast({ type: 'branch:merged', branch: branchName })
-    return { status: 'merged', branch: branchName, into: baseBranch }
-  }))
-
-  // History — git log for contentrain operations
-  router.add('/api/history', defineEventHandler(async (event) => {
-    const query = getQuery(event)
-    const limit = Number(query['limit']) || 50
-    const git = simpleGit(projectRoot)
-    const log = await git.log({
-      maxCount: limit * 2, // fetch more, filter after
-      format: { hash: '%h', fullHash: '%H', message: '%s', author: '%an', email: '%ae', date: '%aI', relativeDate: '%ar' },
-    })
-    // Filter to contentrain OPERATIONS only (not repo development commits)
-    const entries = log.all
-      .filter((c) => {
-        const msg = c.message ?? ''
-        return msg.startsWith('[contentrain]') || msg.startsWith("Merge branch 'contentrain/")
-      })
-      .slice(0, limit)
-      .map((c) => {
-        const msg = c.message ?? ''
-        let type: string = 'other'
-        let target = ''
-        // Parse commit message
-        if (msg.startsWith('[contentrain] created:')) {
-          type = 'model_create'
-          target = msg.replace('[contentrain] created: ', '')
-        } else if (msg.startsWith('[contentrain] updated:')) {
-          type = 'model_update'
-          target = msg.replace('[contentrain] updated: ', '')
-        } else if (msg.startsWith('[contentrain] content:')) {
-          type = 'content_save'
-          target = msg.replace('[contentrain] content: ', '')
-        } else if (msg.startsWith('[contentrain] deleted:')) {
-          type = 'delete'
-          target = msg.replace('[contentrain] deleted: ', '')
-        } else if (msg.startsWith('[contentrain] update context')) {
-          type = 'context_update'
-        } else if (msg.startsWith('Merge branch \'contentrain/')) {
-          type = 'merge'
-          target = msg.replace("Merge branch '", '').replace("'", '')
-        } else if (msg.startsWith('[contentrain]')) {
-          type = 'operation'
-          target = msg.replace('[contentrain] ', '')
-        }
-        return { hash: c.hash, message: msg, type, target, author: c.author, date: c.date, relativeDate: c.relativeDate }
-      })
-    return { entries, total: entries.length }
-  }))
-
-  // Context
-  router.add('/api/context', defineEventHandler(async () => {
-    const contextPath = join(crDir, 'context.json')
-    if (!existsSync(contextPath)) return { lastOperation: null, stats: null }
-    const raw = await readFile(contextPath, 'utf-8')
-    return JSON.parse(raw)
+    return { status: 'merged', branch: branchName, into: currentBranch }
   }))
 
   // --- Static UI serving ---
-
-  const mimeTypes: Record<string, string> = {
+  const MIME_TYPES: Record<string, string> = {
     html: 'text/html', js: 'application/javascript', css: 'text/css',
     json: 'application/json', svg: 'image/svg+xml', png: 'image/png',
     jpg: 'image/jpeg', ico: 'image/x-icon', woff2: 'font/woff2',
@@ -469,7 +499,7 @@ export async function createServeApp(options: ServeOptions) {
 
   function getMimeType(filePath: string): string {
     const ext = filePath.split('.').pop()?.toLowerCase()
-    return mimeTypes[ext ?? ''] ?? 'application/octet-stream'
+    return MIME_TYPES[ext ?? ''] ?? 'application/octet-stream'
   }
 
   if (existsSync(uiDir)) {

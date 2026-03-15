@@ -1,0 +1,13 @@
+{
+  "name": "react-dirty-dashboard",
+  "scan_paths": ["src"],
+  "min_precision": 0.9,
+  "min_recall": 0.95,
+  "should_detect": [
+    { "file": "src/app/dashboard.tsx", "value": "Aktif Kullanici", "context": "object_value" },
+    { "file": "src/app/dashboard.tsx", "value": "Onay Bekliyor", "context": "object_value" },
+    { "file": "src/app/dashboard.tsx", "value": "Kullanici Listesi", "context": "jsx_text" },
+    { "file": "src/app/dashboard.tsx", "value": "Filtreleri temizle", "context": "jsx_attribute" },
+    { "file": "src/app/dashboard.tsx", "value": "Temizle", "context": "jsx_text" }
+  ]
+}

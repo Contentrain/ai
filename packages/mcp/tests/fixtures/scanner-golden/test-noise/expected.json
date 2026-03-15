@@ -1,0 +1,7 @@
+{
+  "name": "test-noise",
+  "scan_paths": ["src"],
+  "min_precision": 1.0,
+  "min_recall": 1.0,
+  "should_detect": []
+}

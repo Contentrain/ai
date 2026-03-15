@@ -1,7 +1,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 
 export interface WSEvent {
-  type: 'content:changed' | 'model:changed' | 'config:changed' | 'context:changed' | 'branch:created' | 'branch:merged' | 'validation:updated'
+  type: 'content:changed' | 'model:changed' | 'config:changed' | 'context:changed' | 'branch:created' | 'branch:merged' | 'validation:updated' | 'normalize:plan-updated'
   modelId?: string
   locale?: string
   branch?: string

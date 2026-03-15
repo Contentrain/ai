@@ -6,6 +6,14 @@ import { scanCandidates, scanSummary } from '../../../src/core/scanner.js'
 
 vi.setConfig({ testTimeout: 60000, hookTimeout: 60000 })
 
+let hasSvelteParser = false
+let hasAstroParser = false
+
+beforeEach(async () => {
+  hasSvelteParser = await moduleAvailable('svelte')
+  hasAstroParser = await moduleAvailable('@astrojs/compiler')
+})
+
 describe('ast-scanner mixed-framework integration', () => {
   let testDir: string
 
@@ -101,9 +109,10 @@ console.info("ignore this")
 `,
     )
 
-    await writeFile(
-      join(testDir, 'src', 'components', 'Hero.svelte'),
-      `<script>
+    if (hasSvelteParser) {
+      await writeFile(
+        join(testDir, 'src', 'components', 'Hero.svelte'),
+        `<script>
   import { goto } from '$app/navigation'
 
   const title = "Svelte ile hizli"
@@ -114,11 +123,13 @@ console.info("ignore this")
   <button aria-label="Plani sec">Plani sec</button>
 </section>
 `,
-    )
+      )
+    }
 
-    await writeFile(
-      join(testDir, 'src', 'pages', 'index.astro'),
-      `---
+    if (hasAstroParser) {
+      await writeFile(
+        join(testDir, 'src', 'pages', 'index.astro'),
+        `---
 const title = "Astro ile hizli";
 ---
 
@@ -129,7 +140,8 @@ const title = "Astro ile hizli";
   </body>
 </html>
 `,
-    )
+      )
+    }
   })
 
   afterEach(async () => {
@@ -143,7 +155,7 @@ const title = "Astro ile hizli";
 
     const values = result.candidates.map(c => c.value)
 
-    expect(result.stats.files_scanned).toBe(7)
+    expect(result.stats.files_scanned).toBe(5 + Number(hasSvelteParser) + Number(hasAstroParser))
     expect(values).toContain('Platforma Hos Geldin')
     expect(values).toContain('Uretime daha hizli basla')
     expect(values).toContain('Teklifi Al')
@@ -153,11 +165,16 @@ const title = "Astro ile hizli";
     expect(values).toContain('Devam et')
     expect(values).toContain('No items yet')
     expect(values).toContain('Save changes')
-    expect(values).toContain('Svelte ile hizli')
-    expect(values).toContain('Denemeye basla')
-    expect(values).toContain('Plani sec')
-    expect(values).toContain('Astro ile hizli')
-    expect(values).toContain('Belgeleri oku')
+    if (hasSvelteParser) {
+      expect(values).toContain('Svelte ile hizli')
+      expect(values).toContain('Denemeye basla')
+      expect(values).toContain('Plani sec')
+    }
+
+    if (hasAstroParser) {
+      expect(values).toContain('Astro ile hizli')
+      expect(values).toContain('Belgeleri oku')
+    }
   })
 
   it('filters import paths, routes, css utilities, console strings and color literals across frameworks', async () => {
@@ -170,7 +187,9 @@ const title = "Astro ile hizli";
     expect(values).not.toContain('#imports')
     expect(values).not.toContain('next/link')
     expect(values).not.toContain('react-native')
-    expect(values).not.toContain('$app/navigation')
+    if (hasSvelteParser) {
+      expect(values).not.toContain('$app/navigation')
+    }
     expect(values).not.toContain('/pricing')
     expect(values).not.toContain('/checkout')
     expect(values).not.toContain('/api/v1/items')
@@ -197,9 +216,11 @@ const title = "Astro ile hizli";
     expect(messagesValue).toBeDefined()
     expect(messagesValue!.context).toBe('object_value')
 
-    const astroTitle = result.candidates.find(c => c.value === 'Astro ile hizli')
-    expect(astroTitle).toBeDefined()
-    expect(astroTitle!.file.endsWith('index.astro')).toBe(true)
+    if (hasAstroParser) {
+      const astroTitle = result.candidates.find(c => c.value === 'Astro ile hizli')
+      expect(astroTitle).toBeDefined()
+      expect(astroTitle!.file.endsWith('index.astro')).toBe(true)
+    }
   })
 
   it('detects repeated UI strings across framework boundaries', async () => {
@@ -222,7 +243,9 @@ const title = "Astro ile hizli";
     expect(values).not.toContain('Uygulamayi kesfet')
     expect(values).not.toContain('Devam et')
     expect(values).toContain('Platforma Hos Geldin')
-    expect(values).toContain('Svelte ile hizli')
+    if (hasSvelteParser) {
+      expect(values).toContain('Svelte ile hizli')
+    }
   })
 })
 
@@ -251,10 +274,12 @@ describe('ast-scanner mixed-framework summary', () => {
       `export function HomeScreen() { return <Text>Devam et</Text> }`,
     )
 
-    await writeFile(
-      join(testDir, 'src', 'components', 'Hero.svelte'),
-      `<section><p>Teklifi Al</p></section>`,
-    )
+    if (hasSvelteParser) {
+      await writeFile(
+        join(testDir, 'src', 'components', 'Hero.svelte'),
+        `<section><p>Teklifi Al</p></section>`,
+      )
+    }
   })
 
   afterEach(async () => {
@@ -266,17 +291,28 @@ describe('ast-scanner mixed-framework summary', () => {
       paths: ['app', 'src'],
     })
 
-    expect(result.total_files).toBe(4)
+    expect(result.total_files).toBe(3 + Number(hasSvelteParser))
     expect(result.file_types['.vue']).toBe(1)
     expect(result.file_types['.tsx']).toBe(2)
-    expect(result.file_types['.svelte']).toBe(1)
+    if (hasSvelteParser) {
+      expect(result.file_types['.svelte']).toBe(1)
+    }
 
     expect(result.by_directory['app']?.files).toBe(1)
-    expect(result.by_directory['src/components']?.files).toBe(2)
+    expect(result.by_directory['src/components']?.files).toBe(1 + Number(hasSvelteParser))
     expect(result.by_directory['src/screens']?.files).toBe(1)
 
     const repeated = result.top_repeated.find(r => r.value === 'Teklifi Al')
     expect(repeated).toBeDefined()
-    expect(repeated!.count).toBeGreaterThanOrEqual(3)
+    expect(repeated!.count).toBeGreaterThanOrEqual(hasSvelteParser ? 3 : 2)
   })
 })
+
+async function moduleAvailable(specifier: string): Promise<boolean> {
+  try {
+    await import(specifier)
+    return true
+  } catch {
+    return false
+  }
+}

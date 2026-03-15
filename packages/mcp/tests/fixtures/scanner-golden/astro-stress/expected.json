@@ -1,0 +1,11 @@
+{
+  "name": "astro-stress",
+  "scan_paths": ["src"],
+  "min_precision": 0.75,
+  "min_recall": 0.8,
+  "should_detect": [
+    { "file": "src/pages/index.astro", "value": "Astro ile daha temiz", "context": "other" },
+    { "file": "src/pages/index.astro", "value": "Belgeleri tek yerde topla", "context": "template_text" },
+    { "file": "src/pages/index.astro", "value": "Dokumantasyonu ac", "context": "template_text" }
+  ]
+}

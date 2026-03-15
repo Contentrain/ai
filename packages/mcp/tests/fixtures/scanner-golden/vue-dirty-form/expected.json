@@ -1,0 +1,15 @@
+{
+  "name": "vue-dirty-form",
+  "scan_paths": ["app"],
+  "min_precision": 0.85,
+  "min_recall": 0.95,
+  "should_detect": [
+    { "file": "app/components/SignupForm.vue", "value": "Hemen Kayit Ol", "context": "template_text" },
+    { "file": "app/components/SignupForm.vue", "value": "Is e-posta adresin", "context": "template_attribute" },
+    { "file": "app/components/SignupForm.vue", "value": "E-posta alani", "context": "template_attribute" },
+    { "file": "app/components/SignupForm.vue", "value": "Kaydi Tamamla", "context": "template_text" },
+    { "file": "app/components/SignupForm.vue", "value": "Kaydolarak kosullari kabul edersin", "context": "template_text" },
+    { "file": "app/components/SignupForm.vue", "value": "Sadece sirket e-postasi kullan", "context": "object_value" },
+    { "file": "app/components/SignupForm.vue", "value": "Hesabin hazir", "context": "object_value" }
+  ]
+}
