@@ -34,7 +34,6 @@ interface Candidate {
   value: string
   context?: string
   surrounding?: string
-  confidence: number
 }
 
 interface ScanSummary {
@@ -47,8 +46,8 @@ interface ScanSummary {
 interface ScanCandidates {
   mode: 'candidates'
   candidates: Candidate[]
-  duplicates?: Array<{ value: string; count: number; files: string[] }>
-  stats: { total_scanned: number; candidates_found: number; total_files: number; has_more: boolean }
+  duplicates?: Array<{ value: string; count: number; occurrences: Array<{ file: string; line: number }> }>
+  stats: { files_scanned: number; raw_strings_found: number; after_filtering: number; candidates_returned: number; has_more: boolean }
 }
 
 type ScanResult = ScanSummary | ScanCandidates
@@ -295,9 +294,11 @@ function reviewBranch(branchName: string) {
   router.push(`/branches/${encodeURIComponent(branchName)}`)
 }
 
-function confidenceColor(confidence: number): string {
-  if (confidence >= 0.9) return 'text-status-success bg-status-success/10'
-  if (confidence >= 0.7) return 'text-status-warning bg-status-warning/10'
+function contextColor(context?: string): string {
+  if (!context) return 'text-muted-foreground bg-muted'
+  if (context.startsWith('template') || context.startsWith('jsx')) return 'text-status-success bg-status-success/10'
+  if (context === 'variable_assignment' || context === 'object_property') return 'text-status-info bg-status-info/10'
+  if (context === 'function_argument') return 'text-status-warning bg-status-warning/10'
   return 'text-muted-foreground bg-muted'
 }
 
@@ -848,7 +849,7 @@ onMounted(() => {
                     <FileText class="size-5 text-muted-foreground" />
                   </div>
                   <div>
-                    <div class="text-2xl font-bold tabular-nums">{{ candidates.stats.total_files }}</div>
+                    <div class="text-2xl font-bold tabular-nums">{{ candidates.stats.files_scanned }}</div>
                     <div class="text-xs text-muted-foreground">Files scanned</div>
                   </div>
                 </CardContent>
@@ -859,8 +860,8 @@ onMounted(() => {
                     <Languages class="size-5 text-status-warning" />
                   </div>
                   <div>
-                    <div class="text-2xl font-bold tabular-nums">{{ candidates.stats.candidates_found }}</div>
-                    <div class="text-xs text-muted-foreground">Candidates found</div>
+                    <div class="text-2xl font-bold tabular-nums">{{ candidates.stats.after_filtering }}</div>
+                    <div class="text-xs text-muted-foreground">After filtering</div>
                   </div>
                 </CardContent>
               </Card>
@@ -870,8 +871,8 @@ onMounted(() => {
                     <BarChart3 class="size-5 text-status-info" />
                   </div>
                   <div>
-                    <div class="text-2xl font-bold tabular-nums">{{ candidates.stats.total_scanned }}</div>
-                    <div class="text-xs text-muted-foreground">Total analyzed</div>
+                    <div class="text-2xl font-bold tabular-nums">{{ candidates.stats.raw_strings_found }}</div>
+                    <div class="text-xs text-muted-foreground">Raw strings</div>
                   </div>
                 </CardContent>
               </Card>
@@ -919,8 +920,8 @@ onMounted(() => {
                             {{ c.surrounding }}
                           </p>
                         </div>
-                        <Badge :class="confidenceColor(c.confidence)" class="text-[10px] shrink-0 font-mono">
-                          {{ Math.round(c.confidence * 100) }}%
+                        <Badge :class="contextColor(c.context)" class="text-[10px] shrink-0 font-mono">
+                          {{ c.context ?? 'other' }}
                         </Badge>
                       </div>
                     </div>
@@ -940,7 +941,7 @@ onMounted(() => {
                       <span class="text-sm font-medium text-foreground">"{{ dup.value }}"</span>
                       <div class="mt-1 flex items-center gap-2 flex-wrap">
                         <Badge variant="outline" class="text-[10px]">{{ dup.count }}x</Badge>
-                        <span v-for="f in dup.files" :key="f" class="font-mono text-[10px] text-muted-foreground">{{ f }}</span>
+                        <span v-for="occ in dup.occurrences" :key="`${occ.file}:${occ.line}`" class="font-mono text-[10px] text-muted-foreground">{{ occ.file }}:{{ occ.line }}</span>
                       </div>
                     </div>
                   </div>
