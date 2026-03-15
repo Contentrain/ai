@@ -203,6 +203,7 @@ export async function createServeApp(options: ServeOptions) {
     const query = getQuery(event)
     return await callTool('contentrain_validate', {
       model: query['model'] as string | undefined,
+      fix: query['fix'] === 'true',
     })
   }))
 
@@ -487,6 +488,47 @@ export async function createServeApp(options: ServeOptions) {
     await git.deleteLocalBranch(branchName, true)
     broadcast({ type: 'branch:merged', branch: branchName })
     return { status: 'merged', branch: branchName, into: currentBranch }
+  }))
+
+  // Normalize — read source map (normalize-sources.json)
+  router.add('/api/normalize/sources', defineEventHandler(async () => {
+    const sourcesPath = join(crDir, 'normalize-sources.json')
+    if (!existsSync(sourcesPath)) return { sources: null }
+    try {
+      const raw = await readFile(sourcesPath, 'utf-8')
+      return { sources: JSON.parse(raw) }
+    } catch {
+      return { sources: null }
+    }
+  }))
+
+  // Normalize — read file context around a line
+  router.add('/api/normalize/file-context', defineEventHandler(async (event) => {
+    const query = getQuery(event)
+    const filePath = query['file'] as string
+    const line = Number(query['line']) || 1
+    const range = Number(query['range']) || 5
+
+    if (!filePath || filePath.includes('..') || filePath.startsWith('/')) {
+      throw createError({ statusCode: 400, message: 'Invalid file path' })
+    }
+
+    const fullPath = join(projectRoot, filePath)
+    if (!existsSync(fullPath)) {
+      throw createError({ statusCode: 404, message: 'File not found' })
+    }
+
+    const fileContent = await readFile(fullPath, 'utf-8')
+    const allLines = fileContent.split('\n')
+    const startLine = Math.max(1, line - range)
+    const endLine = Math.min(allLines.length, line + range)
+
+    const lines = []
+    for (let i = startLine; i <= endLine; i++) {
+      lines.push({ num: i, content: allLines[i - 1] ?? '' })
+    }
+
+    return { file: filePath, lines, highlight: line, totalLines: allLines.length }
   }))
 
   // --- Static UI serving ---

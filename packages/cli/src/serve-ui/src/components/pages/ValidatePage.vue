@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { onMounted, computed, ref, Transition } from 'vue'
+import { useRouter } from 'vue-router'
 import { useContentStore } from '@/stores/content'
-import { useWatch } from '@/composables/useWatch'
 import {
   ShieldCheck, ShieldAlert, AlertTriangle, CircleAlert, Info, RefreshCw,
-  ChevronDown, Filter, FileWarning, Database, ListChecks,
+  ChevronDown, Filter, FileWarning, Database, ListChecks, Wrench,
 } from 'lucide-vue-next'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import StudioHint from '@/components/layout/StudioHint.vue'
 import { Badge } from '@/components/ui/badge'
+import { TrustBadge } from '@/components/ui/trust-badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -16,6 +17,7 @@ import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 
 const store = useContentStore()
+const router = useRouter()
 
 const validation = computed(() => store.validation)
 const summary = computed(() => validation.value?.summary)
@@ -25,6 +27,9 @@ const allIssues = computed(() => validation.value?.issues ?? [])
 const showErrors = ref(true)
 const showWarnings = ref(true)
 const showNotices = ref(true)
+
+// Group-by mode
+const groupBy = ref<'severity' | 'model'>('severity')
 
 // Group sections open state
 const errorsOpen = ref(true)
@@ -61,6 +66,17 @@ const filteredGroups = computed(() => {
 
 const hasAnyFiltered = computed(() => filteredGroups.value.length > 0)
 
+// Model-grouped issues
+const issuesByModel = computed(() => {
+  const groups = new Map<string, typeof allIssues.value>()
+  for (const issue of allIssues.value) {
+    const key = issue.model ?? 'unknown'
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(issue)
+  }
+  return [...groups.entries()].toSorted((a, b) => b[1].length - a[1].length)
+})
+
 // Run tracking
 const lastRunAt = ref<Date | null>(null)
 const runFeedback = ref<string | null>(null)
@@ -79,20 +95,31 @@ async function runValidation() {
   }
 }
 
-onMounted(() => { runValidation() })
-
-// Auto-refresh when content/model changes trigger validation:updated
-useWatch((event) => {
-  if (event.type === 'validation:updated' || event.type === 'content:changed' || event.type === 'model:changed') {
-    runValidation()
+async function runAutoFix() {
+  runFeedback.value = null
+  await store.fetchValidationWithFix()
+  lastRunAt.value = new Date()
+  const s = store.validation?.summary
+  if (s) {
+    const total = s.errors + s.warnings + s.notices
+    runFeedback.value = total === 0
+      ? 'All issues fixed!'
+      : `Fixed auto-fixable issues. ${s.errors} error(s), ${s.warnings} warning(s) remaining`
+    setTimeout(() => { runFeedback.value = null }, 4000)
   }
-})
+}
+
+onMounted(() => { runValidation() })
 </script>
 
 <template>
   <div>
     <PageHeader title="Validation" description="Content quality report">
       <template #actions>
+        <TrustBadge
+          :status="validation?.valid ? 'validated' : validation ? 'warning' : 'pending'"
+          :count="(validation?.summary.errors ?? 0) + (validation?.summary.warnings ?? 0)"
+        />
         <Button variant="outline" size="sm" :disabled="store.loading" @click="runValidation()">
           <RefreshCw class="size-4" :class="store.loading && 'animate-spin'" /> Run Again
         </Button>
@@ -210,9 +237,25 @@ useWatch((event) => {
 
         <!-- Issues -->
         <template v-else>
-          <!-- Severity filter -->
+          <!-- Filters and group-by toggle -->
           <div class="flex items-center gap-2 flex-wrap">
             <Filter class="size-4 text-muted-foreground" />
+            <!-- Group by toggle -->
+            <div class="flex items-center border rounded-md overflow-hidden mr-2">
+              <button
+                :class="cn('px-2.5 py-1 text-xs font-medium transition-colors', groupBy === 'severity' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')"
+                @click="groupBy = 'severity'"
+              >
+                By Severity
+              </button>
+              <button
+                :class="cn('px-2.5 py-1 text-xs font-medium transition-colors', groupBy === 'model' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')"
+                @click="groupBy = 'model'"
+              >
+                By Model
+              </button>
+            </div>
+            <!-- Severity filter buttons -->
             <Button
               :variant="showErrors ? 'default' : 'outline'"
               size="sm"
@@ -240,74 +283,134 @@ useWatch((event) => {
               <Info class="mr-1 size-3" />
               Notices ({{ noticeIssues.length }})
             </Button>
+            <!-- Auto-fix button -->
+            <Button variant="outline" size="sm" class="h-7 text-xs ml-auto" :disabled="store.loading" @click="runAutoFix()">
+              <Wrench class="mr-1 size-3" />
+              Auto-fix
+            </Button>
           </div>
 
-          <!-- Grouped issues -->
-          <div v-if="hasAnyFiltered" class="space-y-4">
-            <Collapsible
-              v-for="group in filteredGroups"
-              :key="group.severity"
-              v-model:open="group.open.value"
-            >
-              <Card>
-                <CollapsibleTrigger class="flex w-full items-center justify-between p-4 hover:bg-muted/50 transition-colors rounded-t-lg">
-                  <div class="flex items-center gap-3">
-                    <div :class="cn('flex size-8 items-center justify-center rounded-md', severityConfig[group.severity].bg)">
-                      <component :is="severityConfig[group.severity].icon" :class="cn('size-4', severityConfig[group.severity].color)" />
+          <!-- Model-grouped view -->
+          <template v-if="groupBy === 'model'">
+            <div class="space-y-4">
+              <Collapsible v-for="[modelId, issues] in issuesByModel" :key="modelId" :default-open="issuesByModel.length <= 5">
+                <Card>
+                  <CollapsibleTrigger class="flex w-full items-center justify-between p-4 hover:bg-muted/50 transition-colors rounded-t-lg">
+                    <div class="flex items-center gap-3">
+                      <div class="flex size-8 items-center justify-center rounded-md bg-primary/10">
+                        <Database class="size-4 text-primary" />
+                      </div>
+                      <span class="font-medium text-sm font-mono">{{ modelId }}</span>
+                      <Badge variant="secondary" class="text-[10px]">{{ issues.length }}</Badge>
+                      <Badge v-if="issues.filter(i => i.severity === 'error').length > 0" variant="destructive" class="text-[10px]">
+                        {{ issues.filter(i => i.severity === 'error').length }}E
+                      </Badge>
+                      <Badge v-if="issues.filter(i => i.severity === 'warning').length > 0" variant="outline" class="text-[10px] border-status-warning/50 text-status-warning">
+                        {{ issues.filter(i => i.severity === 'warning').length }}W
+                      </Badge>
                     </div>
-                    <span class="font-medium text-sm">{{ severityConfig[group.severity].label }}</span>
-                    <Badge variant="secondary" class="text-[10px]">{{ group.issues.length }}</Badge>
-                  </div>
-                  <ChevronDown class="size-4 text-muted-foreground transition-transform" :class="group.open.value && 'rotate-180'" />
-                </CollapsibleTrigger>
-
-                <CollapsibleContent>
-                  <Separator />
-                  <div class="divide-y divide-border">
-                    <div
-                      v-for="(issue, i) in group.issues"
-                      :key="i"
-                      :class="cn('flex items-start gap-3 p-4', severityConfig[group.severity].bg)"
-                    >
-                      <component
-                        :is="severityConfig[group.severity].icon"
-                        :class="cn('mt-0.5 size-4 shrink-0', severityConfig[group.severity].color)"
-                      />
-                      <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 flex-wrap">
-                          <Badge
-                            :variant="issue.severity === 'error' ? 'destructive' : 'secondary'"
-                            class="text-[10px] uppercase"
-                          >
-                            {{ issue.severity }}
-                          </Badge>
-                          <span v-if="issue.model" class="font-mono text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                            {{ issue.model }}
-                          </span>
-                          <span v-if="issue.entry" class="font-mono text-xs text-muted-foreground">
-                            {{ issue.entry }}
-                          </span>
-                          <span v-if="issue.field" class="font-mono text-xs text-muted-foreground">
-                            .{{ issue.field }}
-                          </span>
-                          <Badge v-if="issue.locale" variant="outline" class="text-[10px]">
-                            {{ issue.locale }}
-                          </Badge>
+                    <ChevronDown class="size-4 text-muted-foreground transition-transform" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <Separator />
+                    <div class="divide-y divide-border">
+                      <div v-for="(issue, i) in issues" :key="i" class="flex items-start gap-3 p-4">
+                        <component
+                          :is="severityConfig[issue.severity as keyof typeof severityConfig]?.icon ?? Info"
+                          :class="cn('mt-0.5 size-4 shrink-0', severityConfig[issue.severity as keyof typeof severityConfig]?.color ?? 'text-muted-foreground')"
+                        />
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center gap-2 flex-wrap">
+                            <Badge :variant="issue.severity === 'error' ? 'destructive' : 'secondary'" class="text-[10px] uppercase">
+                              {{ issue.severity }}
+                            </Badge>
+                            <span v-if="issue.entry" class="font-mono text-xs text-muted-foreground">{{ issue.entry }}</span>
+                            <span v-if="issue.field" class="font-mono text-xs text-muted-foreground">.{{ issue.field }}</span>
+                            <Badge v-if="issue.locale" variant="outline" class="text-[10px]">{{ issue.locale }}</Badge>
+                          </div>
+                          <p class="mt-1.5 text-sm text-foreground">{{ issue.message }}</p>
                         </div>
-                        <p class="mt-1.5 text-sm text-foreground">{{ issue.message }}</p>
                       </div>
                     </div>
-                  </div>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-          </div>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            </div>
+          </template>
 
-          <!-- All filtered out -->
-          <div v-else class="flex flex-col items-center py-12 text-center">
-            <FileWarning class="size-8 text-muted-foreground mb-3" />
-            <p class="text-sm text-muted-foreground">All issue types are hidden. Adjust filters above to see issues.</p>
-          </div>
+          <!-- Severity-grouped view -->
+          <template v-else>
+            <!-- Grouped issues -->
+            <div v-if="hasAnyFiltered" class="space-y-4">
+              <Collapsible
+                v-for="group in filteredGroups"
+                :key="group.severity"
+                v-model:open="group.open.value"
+              >
+                <Card>
+                  <CollapsibleTrigger class="flex w-full items-center justify-between p-4 hover:bg-muted/50 transition-colors rounded-t-lg">
+                    <div class="flex items-center gap-3">
+                      <div :class="cn('flex size-8 items-center justify-center rounded-md', severityConfig[group.severity].bg)">
+                        <component :is="severityConfig[group.severity].icon" :class="cn('size-4', severityConfig[group.severity].color)" />
+                      </div>
+                      <span class="font-medium text-sm">{{ severityConfig[group.severity].label }}</span>
+                      <Badge variant="secondary" class="text-[10px]">{{ group.issues.length }}</Badge>
+                    </div>
+                    <ChevronDown class="size-4 text-muted-foreground transition-transform" :class="group.open.value && 'rotate-180'" />
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent>
+                    <Separator />
+                    <div class="divide-y divide-border">
+                      <div
+                        v-for="(issue, i) in group.issues"
+                        :key="i"
+                        :class="cn('flex items-start gap-3 p-4', severityConfig[group.severity].bg)"
+                      >
+                        <component
+                          :is="severityConfig[group.severity].icon"
+                          :class="cn('mt-0.5 size-4 shrink-0', severityConfig[group.severity].color)"
+                        />
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center gap-2 flex-wrap">
+                            <Badge
+                              :variant="issue.severity === 'error' ? 'destructive' : 'secondary'"
+                              class="text-[10px] uppercase"
+                            >
+                              {{ issue.severity }}
+                            </Badge>
+                            <button
+                              v-if="issue.model"
+                              class="font-mono text-xs text-primary hover:underline bg-muted px-1.5 py-0.5 rounded"
+                              @click="router.push(`/content/${issue.model}`)"
+                            >
+                              {{ issue.model }}
+                            </button>
+                            <span v-if="issue.entry" class="font-mono text-xs text-muted-foreground">
+                              {{ issue.entry }}
+                            </span>
+                            <span v-if="issue.field" class="font-mono text-xs text-muted-foreground">
+                              .{{ issue.field }}
+                            </span>
+                            <Badge v-if="issue.locale" variant="outline" class="text-[10px]">
+                              {{ issue.locale }}
+                            </Badge>
+                          </div>
+                          <p class="mt-1.5 text-sm text-foreground">{{ issue.message }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            </div>
+
+            <!-- All filtered out -->
+            <div v-else class="flex flex-col items-center py-12 text-center">
+              <FileWarning class="size-8 text-muted-foreground mb-3" />
+              <p class="text-sm text-muted-foreground">All issue types are hidden. Adjust filters above to see issues.</p>
+            </div>
+          </template>
         </template>
       </template>
 

@@ -1,0 +1,27 @@
+{
+  "name": "@contentrain/rules",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "AI agent rules for Contentrain — quality standards, architecture conventions, IDE integration",
+  "type": "module",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.mjs", "require": "./dist/index.cjs" },
+    "./shared/*": "./shared/*",
+    "./prompts/*": "./prompts/*",
+    "./context/*": "./context/*",
+    "./ide/*": "./ide/*"
+  },
+  "files": ["dist", "shared", "prompts", "context", "ide"],
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm,cjs --dts && tsx scripts/build-rules.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsdown": "^0.21.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

@@ -106,7 +106,6 @@ export const useContentStore = defineStore('content', () => {
   const validation = ref<ValidationResult | null>(null)
   const branches = ref<BranchInfo[]>([])
   const branchDiff = ref<BranchDiff | null>(null)
-  const normalizePlan = ref<NormalizePlan | null>(null)
   const loading = ref(false)
 
   async function fetchContent(modelId: string, locale?: string, limit?: number, offset?: number) {
@@ -136,6 +135,15 @@ export const useContentStore = defineStore('content', () => {
     loading.value = true
     try {
       validation.value = await api.get<ValidationResult>(`/validate${modelId ? `?model=${modelId}` : ''}`)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchValidationWithFix() {
+    loading.value = true
+    try {
+      validation.value = await api.get<ValidationResult>('/validate?fix=true')
     } finally {
       loading.value = false
     }
@@ -181,6 +189,8 @@ export const useContentStore = defineStore('content', () => {
     return api.post<{ status: string }>('/branches/reject', { branch: branchName })
   }
 
+  const normalizePlan = ref<NormalizePlan | null>(null)
+
   async function fetchNormalizePlan() {
     try {
       const result = await api.get<{ plan: NormalizePlan | null }>('/normalize/plan')
@@ -192,7 +202,7 @@ export const useContentStore = defineStore('content', () => {
 
   return {
     contentList, modelDescription, validation, branches, branchDiff, history, normalizePlan, loading,
-    fetchContent, fetchModelDescription, fetchValidation, fetchBranches, fetchBranchDiff, fetchHistory,
+    fetchContent, fetchModelDescription, fetchValidation, fetchValidationWithFix, fetchBranches, fetchBranchDiff, fetchHistory,
     approveBranch, rejectBranch, fetchNormalizePlan,
   }
 })

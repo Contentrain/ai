@@ -9,6 +9,7 @@ import {
 import PageHeader from '@/components/layout/PageHeader.vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { TrustBadge } from '@/components/ui/trust-badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -226,6 +227,10 @@ onMounted(() => { store.fetchBranchDiff(branchName.value) })
                 <code class="text-xs font-mono bg-primary/10 text-primary px-2 py-1 rounded">{{ branchName.replace('contentrain/', '') }}</code>
               </div>
               <div class="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
+                <TrustBadge
+                  :status="branchParts.scope === 'normalize' ? 'pending' : 'partial'"
+                  :reason="branchParts.scope === 'normalize' ? 'Review required' : undefined"
+                />
                 <span class="flex items-center gap-1">
                   <File class="size-3" /> {{ statFileCount }} file{{ statFileCount !== 1 ? 's' : '' }}
                 </span>
