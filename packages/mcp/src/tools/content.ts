@@ -5,6 +5,7 @@ import { readModel } from '../core/model-manager.js'
 import { writeContent, deleteContent, listContent } from '../core/content-manager.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
+import { validateProject } from '../core/validator.js'
 
 export function registerContentTools(server: McpServer, projectRoot: string): void {
   // ─── contentrain_content_save ───
@@ -123,17 +124,26 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
           entries: entryIds,
         })
 
+        // Run real validation after save — don't fake it
+        const validationResult = await validateProject(projectRoot, { model: input.model })
+
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             status: 'committed',
             message: 'Content saved and committed to git. Do NOT manually edit .contentrain/ files.',
             results: results!,
             git: { branch, action: gitResult.action, commit: gitResult.commit },
-            validation: { valid: true, errors: [] },
+            validation: {
+              valid: validationResult.valid,
+              errors: validationResult.issues.filter(i => i.severity === 'error').map(i => i.message),
+            },
             context_updated: true,
-            next_steps: model.kind === 'collection'
-              ? ['Use contentrain_content_list to verify', 'Add more entries or publish']
-              : ['Use contentrain_content_list to verify'],
+            next_steps: [
+              ...(!validationResult.valid ? ['WARNING: Content has validation errors — run contentrain_validate for details'] : []),
+              ...(model.kind === 'collection'
+                ? ['Use contentrain_content_list to verify', 'Add more entries or publish']
+                : ['Use contentrain_content_list to verify']),
+            ],
           }, null, 2) }],
         }
       } catch (error) {
