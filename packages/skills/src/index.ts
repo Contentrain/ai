@@ -8,9 +8,15 @@
 
 export const WORKFLOW_SKILLS = [
   'contentrain-init',
+  'contentrain-model',
   'contentrain-content',
+  'contentrain-bulk',
   'contentrain-normalize',
+  'contentrain-validate-fix',
   'contentrain-review',
+  'contentrain-diff',
+  'contentrain-doctor',
+  'contentrain-serve',
   'contentrain-translate',
   'contentrain-generate',
 ] as const
@@ -19,5 +25,5 @@ export type WorkflowSkill = (typeof WORKFLOW_SKILLS)[number]
 
 // ─── Framework Guides ───
 
-export const FRAMEWORK_GUIDES = ['nuxt', 'next', 'astro', 'sveltekit'] as const
+export const FRAMEWORK_GUIDES = ['nuxt', 'next', 'astro', 'sveltekit', 'vue', 'react', 'expo', 'react-native', 'node'] as const
 export type FrameworkGuide = (typeof FRAMEWORK_GUIDES)[number]

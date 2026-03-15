@@ -19,10 +19,15 @@
     "skills",
     "mcp",
     "workflow",
+    "vue",
+    "react",
     "nuxt",
     "nextjs",
     "astro",
-    "sveltekit"
+    "sveltekit",
+    "expo",
+    "react-native",
+    "nodejs"
   ],
   "sideEffects": false,
   "publishConfig": {

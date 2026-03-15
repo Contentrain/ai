@@ -26,9 +26,15 @@ pnpm add @contentrain/skills
 Published under `workflows/*`:
 
 - `contentrain-init.md`
+- `contentrain-model.md`
 - `contentrain-content.md`
+- `contentrain-bulk.md`
 - `contentrain-normalize.md`
+- `contentrain-validate-fix.md`
 - `contentrain-review.md`
+- `contentrain-diff.md`
+- `contentrain-doctor.md`
+- `contentrain-serve.md`
 - `contentrain-translate.md`
 - `contentrain-generate.md`
 
@@ -40,6 +46,11 @@ Published under `frameworks/*`:
 - `next.md`
 - `astro.md`
 - `sveltekit.md`
+- `vue.md`
+- `react.md`
+- `expo.md`
+- `react-native.md`
+- `node.md`
 
 ## Public Exports
 
