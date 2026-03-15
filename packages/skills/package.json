@@ -4,8 +4,37 @@
   "license": "MIT",
   "description": "AI agent skills for Contentrain — workflow procedures, framework integration guides",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/contentrain/contentrain-ai.git",
+    "directory": "packages/skills"
+  },
+  "homepage": "https://github.com/contentrain/contentrain-ai/tree/main/packages/skills",
+  "bugs": {
+    "url": "https://github.com/contentrain/contentrain-ai/issues"
+  },
+  "keywords": [
+    "contentrain",
+    "ai",
+    "skills",
+    "mcp",
+    "workflow",
+    "nuxt",
+    "nextjs",
+    "astro",
+    "sveltekit"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.mjs", "require": "./dist/index.cjs" },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    },
     "./workflows/*": "./workflows/*",
     "./frameworks/*": "./frameworks/*"
   },

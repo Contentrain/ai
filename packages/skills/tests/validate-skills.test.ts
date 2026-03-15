@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { WORKFLOW_SKILLS, FRAMEWORK_GUIDES } from '../src/index.js'
@@ -25,4 +25,16 @@ describe('framework guides', () => {
       expect(existsSync(join(PKG_ROOT, 'frameworks', `${fw}.md`))).toBe(true)
     })
   }
+
+  it('nuxt guide treats #contentrain as server-only', () => {
+    const nuxt = readFileSync(join(PKG_ROOT, 'frameworks', 'nuxt.md'), 'utf-8')
+    expect(nuxt).toContain('Treat this import as **server-only** in Nuxt.')
+    expect(nuxt).not.toContain('works in server routes, composables, plugins, and `<script setup>` blocks')
+  })
+})
+
+describe('package surface', () => {
+  it('README.md exists', () => {
+    expect(existsSync(join(PKG_ROOT, 'README.md'))).toBe(true)
+  })
 })

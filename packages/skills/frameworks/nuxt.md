@@ -51,7 +51,7 @@ All SDK functions are imported from the `#contentrain` subpath:
 import { query, singleton, dictionary, document } from '#contentrain'
 ```
 
-This import works in server routes, composables, plugins, and `<script setup>` blocks. The SDK reads JSON files at build time — there is no runtime API dependency.
+Treat this import as **server-only** in Nuxt. Use it in Nitro server routes, server utilities, route middleware, and other server execution contexts. Do **not** import `#contentrain` directly in client-rendered Vue components or generic `<script setup>` blocks.
 
 ---
 
@@ -115,15 +115,22 @@ const posts = query('blog-post').locale('en').include('author', 'tags').all()
 
 ### 4.1 Page Data Loading
 
-Use `useAsyncData` or direct calls in `<script setup>`:
+Load content through a server route, then consume it with `useAsyncData` in the page:
+
+```ts
+// server/api/blog-posts.get.ts
+import { query } from '#contentrain'
+import { getQuery } from 'h3'
+
+export default defineEventHandler((event) => {
+  const locale = getQuery(event).locale?.toString() ?? 'en'
+  return query('blog-post').locale(locale).sort('publishedAt', 'desc').all()
+})
+```
 
 ```vue
 <script setup lang="ts">
-import { query } from '#contentrain'
-
-const { data: posts } = await useAsyncData('blog-posts', () =>
-  query('blog-post').locale('en').sort('publishedAt', 'desc').all()
-)
+const { data: posts } = await useAsyncData('blog-posts', () => $fetch('/api/blog-posts'))
 </script>
 ```
 
@@ -133,13 +140,25 @@ For `pages/blog/[slug].vue`:
 
 ```vue
 <script setup lang="ts">
-import { document } from '#contentrain'
-
 const route = useRoute()
-const { data: post } = await useAsyncData(`post-${route.params.slug}`, () =>
-  document('blog-article').locale('en').bySlug(route.params.slug as string)
+const { data: post } = await useAsyncData(
+  `post-${route.params.slug}`,
+  () => $fetch(`/api/blog-post/${route.params.slug}`),
 )
 </script>
+```
+
+With the matching server route:
+
+```ts
+// server/api/blog-post/[slug].get.ts
+import { document } from '#contentrain'
+import { getRouterParam } from 'h3'
+
+export default defineEventHandler((event) => {
+  const slug = getRouterParam(event, 'slug')
+  return document('blog-article').locale('en').bySlug(slug ?? '')
+})
 ```
 
 ### 4.3 Server Routes
@@ -165,12 +184,10 @@ Use the `useI18n()` composable to get the current locale, then pass it to SDK ca
 
 ```vue
 <script setup lang="ts">
-import { query } from '#contentrain'
-
 const { locale } = useI18n()
 const { data: posts } = await useAsyncData(
   `posts-${locale.value}`,
-  () => query('blog-post').locale(locale.value).all(),
+  () => $fetch('/api/blog-posts', { query: { locale: locale.value } }),
   { watch: [locale] }
 )
 </script>
