@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "project": {
+    "name": "my-astro-site",
+    "description": "Content-driven marketing site with blog and portfolio",
+    "stack": "astro",
+    "stack_version": "5.x",
+    "package_manager": "pnpm",
+    "src_dir": "src/",
+    "content_consumption": "build-time"
+  },
+  "content": {
+    "import_pattern": "import {model} from '~/.contentrain/content/{domain}/{model}/{locale}.json'",
+    "i18n_strategy": "file-per-locale",
+    "default_locale": "en",
+    "supported_locales": ["en", "de"],
+    "domains": [
+      {
+        "id": "marketing",
+        "description": "Landing page content — hero, features, testimonials",
+        "models": ["hero", "features", "testimonials"]
+      },
+      {
+        "id": "blog",
+        "description": "Blog posts, authors, and categories",
+        "models": ["blog-post", "authors", "categories"]
+      },
+      {
+        "id": "portfolio",
+        "description": "Project showcase entries",
+        "models": ["projects"]
+      }
+    ]
+  },
+  "normalize": {
+    "scan_dirs": ["src/components/", "src/pages/", "src/layouts/"],
+    "scan_extensions": [".astro", ".ts", ".tsx"],
+    "ignore_patterns": ["dist/", "node_modules/", ".astro/", ".contentrain/", "*.test.*", "*.spec.*"],
+    "import_rewrite": "import { t } from '../i18n/utils'"
+  },
+  "conventions": {
+    "tone": "Friendly, informative. Approachable but professional.",
+    "brand_terms": {
+      "product_name": "My Astro Site",
+      "company_name": "Stellar Labs"
+    },
+    "forbidden_terms": ["click here", "lorem ipsum", "TODO"],
+    "max_title_length": 80,
+    "max_description_length": 160,
+    "target_reading_level": "grade-8",
+    "allowed_richtext_tags": [
+      "p", "strong", "em", "a", "ul", "ol", "li",
+      "h2", "h3", "h4", "h5", "h6",
+      "blockquote", "code", "pre", "img", "br", "hr",
+      "table", "thead", "tbody", "tr", "th", "td",
+      "del", "ins", "sup", "sub", "abbr", "mark",
+      "details", "summary"
+    ]
+  },
+  "lastOperation": {
+    "tool": "content_save",
+    "model": "blog-post",
+    "locale": "en",
+    "entries": ["c3d4e5f6a7b8"],
+    "timestamp": "2026-03-09T12:15:00Z",
+    "source": "mcp-local"
+  },
+  "stats": {
+    "models": 6,
+    "entries": 38,
+    "locales": ["en", "de"],
+    "lastSync": "2026-03-09T12:15:00Z"
+  }
+}

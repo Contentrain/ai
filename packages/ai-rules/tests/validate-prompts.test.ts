@@ -26,7 +26,7 @@ describe('prompt files', () => {
   })
 
   for (const file of PROMPT_FILES) {
-    const filePath = join(PKG_ROOT, 'prompts', file)
+    const filePath = join(PKG_ROOT, 'rules', 'prompts', file)
 
     it(`prompts/${file} exists`, () => {
       expect(existsSync(filePath)).toBe(true)
@@ -54,7 +54,7 @@ describe('skill files', () => {
 
   for (const skill of SKILLS) {
     const fileName = `${skill}.md`
-    const filePath = join(PKG_ROOT, 'skills', fileName)
+    const filePath = join(PKG_ROOT, 'skills', 'workflows', fileName)
 
     it(`skills/${fileName} exists`, () => {
       expect(existsSync(filePath)).toBe(true)
@@ -79,7 +79,7 @@ describe('framework files', () => {
 
   for (const fw of FRAMEWORKS) {
     const fileName = `${fw}.md`
-    const filePath = join(PKG_ROOT, 'frameworks', fileName)
+    const filePath = join(PKG_ROOT, 'skills', 'frameworks', fileName)
 
     it(`frameworks/${fileName} exists`, () => {
       expect(existsSync(filePath)).toBe(true)
@@ -100,7 +100,7 @@ describe('framework files', () => {
 })
 
 describe('context bridge', () => {
-  const filePath = join(PKG_ROOT, 'context', 'context-bridge.md')
+  const filePath = join(PKG_ROOT, 'rules', 'context', 'context-bridge.md')
 
   it('context-bridge.md exists', () => {
     expect(existsSync(filePath)).toBe(true)

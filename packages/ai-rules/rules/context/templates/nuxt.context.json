@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "project": {
+    "name": "my-nuxt-app",
+    "description": "Marketing website with blog and i18n support",
+    "stack": "nuxt",
+    "stack_version": "4.0",
+    "package_manager": "pnpm",
+    "src_dir": "app/",
+    "content_consumption": "build-time"
+  },
+  "content": {
+    "import_pattern": "import {model} from '~/.contentrain/content/{domain}/{model}/{locale}.json'",
+    "i18n_strategy": "file-per-locale",
+    "default_locale": "en",
+    "supported_locales": ["en", "tr"],
+    "domains": [
+      {
+        "id": "marketing",
+        "description": "Landing page content — hero, features, pricing, testimonials",
+        "models": ["hero", "features", "pricing", "testimonials"]
+      },
+      {
+        "id": "blog",
+        "description": "Blog posts and categories",
+        "models": ["blog-post", "categories"]
+      },
+      {
+        "id": "ui",
+        "description": "UI strings — navigation, forms, errors",
+        "models": ["navigation", "forms", "error-messages"]
+      }
+    ]
+  },
+  "normalize": {
+    "scan_dirs": ["app/components/", "app/pages/", "app/layouts/"],
+    "scan_extensions": [".vue", ".ts"],
+    "ignore_patterns": [".nuxt/", "node_modules/", "dist/", ".contentrain/", "*.test.*", "*.spec.*"],
+    "import_rewrite": "import { t } from '~/composables/useContent'"
+  },
+  "conventions": {
+    "tone": "Professional, concise. Avoid jargon.",
+    "brand_terms": {
+      "product_name": "My Nuxt App",
+      "company_name": "Acme Inc"
+    },
+    "forbidden_terms": ["click here", "lorem ipsum", "TODO"],
+    "max_title_length": 80,
+    "max_description_length": 160,
+    "target_reading_level": "grade-8",
+    "allowed_richtext_tags": [
+      "p", "strong", "em", "a", "ul", "ol", "li",
+      "h2", "h3", "h4", "h5", "h6",
+      "blockquote", "code", "pre", "img", "br", "hr",
+      "table", "thead", "tbody", "tr", "th", "td",
+      "del", "ins", "sup", "sub", "abbr", "mark",
+      "details", "summary"
+    ]
+  },
+  "lastOperation": {
+    "tool": "content_save",
+    "model": "hero",
+    "locale": "en",
+    "entries": ["f7e8d9c0b1a2"],
+    "timestamp": "2026-03-11T10:00:00Z",
+    "source": "mcp-local"
+  },
+  "stats": {
+    "models": 7,
+    "entries": 86,
+    "locales": ["en", "tr"],
+    "lastSync": "2026-03-11T10:00:00Z"
+  }
+}
