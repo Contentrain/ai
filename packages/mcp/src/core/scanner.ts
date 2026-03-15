@@ -11,8 +11,8 @@ import {
   autoDetectSourceDirs,
   discoverFiles,
 } from './scan-config.js'
-import { extractStrings } from './scanner-v2/index.js'
-import type { StructuralContext } from './scanner-v2/types.js'
+import { extractStrings } from './ast-scanner/index.js'
+import type { StructuralContext } from './ast-scanner/types.js'
 
 // ─── Options ───
 

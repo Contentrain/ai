@@ -1,0 +1,12 @@
+{
+  "name": "react-next-page",
+  "scan_paths": ["src"],
+  "min_precision": 0.95,
+  "min_recall": 0.95,
+  "should_detect": [
+    { "file": "src/app/page.tsx", "value": "Teklifi Al", "context": "variable_assignment" },
+    { "file": "src/app/page.tsx", "value": "Bugun Basla", "context": "jsx_text" },
+    { "file": "src/app/page.tsx", "value": "Sepete ekle", "context": "jsx_attribute" },
+    { "file": "src/app/page.tsx", "value": "Odeme", "context": "jsx_text" }
+  ]
+}

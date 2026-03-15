@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
+import { useWatch } from '@/composables/useWatch'
 import {
   ScanSearch, FileCode, Sparkles, RefreshCw,
   FileText, BarChart3, Languages, CheckCircle2,
@@ -20,6 +22,7 @@ import { TreeSelect, type TreeNode } from '@/components/ui/tree-select'
 import { cn } from '@/lib/utils'
 
 const api = useApi()
+const router = useRouter()
 
 // --- Types ---
 interface Candidate {
@@ -48,11 +51,24 @@ interface ScanCandidates {
 
 type ScanResult = ScanSummary | ScanCandidates
 
+interface NormalizeResults {
+  lastOperation: {
+    tool?: string
+    target?: string
+    timestamp?: string
+  } | null
+  pendingBranches: Array<{ name: string }>
+}
+
 // --- State ---
 const scanResult = ref<ScanResult | null>(null)
 const loading = ref(false)
 const scanError = ref<string | null>(null)
 const activeTab = ref('scan')
+const normalizeResults = ref<NormalizeResults | null>(null)
+const resultsLoading = ref(false)
+const resultsError = ref<string | null>(null)
+const approvingBranch = ref<string | null>(null)
 
 // Scan config
 const scanPaths = ref<Set<string>>(new Set())
@@ -86,6 +102,9 @@ const selectedPathsList = computed(() => [...scanPaths.value])
 // --- Computed ---
 const summary = computed(() => scanResult.value?.mode === 'summary' ? scanResult.value as ScanSummary : null)
 const candidates = computed(() => scanResult.value?.mode === 'candidates' ? scanResult.value as ScanCandidates : null)
+const pendingBranches = computed(() => normalizeResults.value?.pendingBranches ?? [])
+const lastNormalizeOperation = computed(() => normalizeResults.value?.lastOperation ?? null)
+const hasReviewState = computed(() => pendingBranches.value.length > 0 || lastNormalizeOperation.value !== null)
 
 const candidatesByFile = computed(() => {
   if (!candidates.value?.candidates) return []
@@ -109,6 +128,18 @@ const sortedDirectories = computed(() => {
 })
 
 // --- Actions ---
+async function loadNormalizeResults() {
+  resultsLoading.value = true
+  resultsError.value = null
+  try {
+    normalizeResults.value = await api.get<NormalizeResults>('/normalize/results')
+  } catch (e) {
+    resultsError.value = e instanceof Error ? e.message : 'Failed to load normalize results'
+  } finally {
+    resultsLoading.value = false
+  }
+}
+
 async function runScan(mode: 'summary' | 'candidates', overridePath?: string) {
   loading.value = true
   scanError.value = null
@@ -125,11 +156,38 @@ async function runScan(mode: 'summary' | 'candidates', overridePath?: string) {
   }
 }
 
+async function approveNormalizeBranch(branchName: string) {
+  approvingBranch.value = branchName
+  resultsError.value = null
+  try {
+    await api.post('/normalize/approve', { branch: branchName })
+    await loadNormalizeResults()
+  } catch (e) {
+    resultsError.value = e instanceof Error ? e.message : 'Failed to approve normalize branch'
+  } finally {
+    approvingBranch.value = null
+  }
+}
+
+function reviewBranch(branchName: string) {
+  router.push(`/branches/${encodeURIComponent(branchName)}`)
+}
+
 function confidenceColor(confidence: number): string {
   if (confidence >= 0.9) return 'text-status-success bg-status-success/10'
   if (confidence >= 0.7) return 'text-status-warning bg-status-warning/10'
   return 'text-muted-foreground bg-muted'
 }
+
+useWatch((event) => {
+  if (event.type === 'branch:created' || event.type === 'branch:merged' || event.type === 'context:changed') {
+    void loadNormalizeResults()
+  }
+})
+
+onMounted(() => {
+  void loadNormalizeResults()
+})
 </script>
 
 <template>
@@ -147,6 +205,87 @@ function confidenceColor(confidence: number): string {
     </PageHeader>
 
     <div class="px-6 py-6 space-y-6">
+      <div class="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <Card>
+          <CardHeader class="pb-3">
+            <CardTitle class="text-sm font-medium flex items-center gap-2">
+              <Sparkles class="size-4 text-primary" />
+              Normalize Review Queue
+            </CardTitle>
+          </CardHeader>
+          <Separator />
+          <CardContent class="pt-4">
+            <div v-if="resultsLoading" class="flex items-center gap-2 text-sm text-muted-foreground">
+              <RefreshCw class="size-4 animate-spin" />
+              Loading normalize results...
+            </div>
+            <div v-else-if="pendingBranches.length > 0" class="space-y-3">
+              <div
+                v-for="branch in pendingBranches"
+                :key="branch.name"
+                class="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
+              >
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm font-medium text-foreground truncate">{{ branch.name.replace('contentrain/', '') }}</p>
+                  <p class="font-mono text-[10px] text-muted-foreground truncate">{{ branch.name }}</p>
+                </div>
+                <Button variant="outline" size="sm" class="h-8 text-xs" @click="reviewBranch(branch.name)">
+                  Review Diff
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  class="h-8 text-xs"
+                  :disabled="approvingBranch === branch.name"
+                  @click="approveNormalizeBranch(branch.name)"
+                >
+                  {{ approvingBranch === branch.name ? 'Approving...' : 'Approve' }}
+                </Button>
+              </div>
+            </div>
+            <div v-else-if="hasReviewState" class="rounded-lg border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+              No pending normalize branches. The last normalize run is shown on the right.
+            </div>
+            <div v-else class="rounded-lg border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+              No normalize runs recorded yet. Start with a summary or candidate scan below.
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader class="pb-3">
+            <CardTitle class="text-sm font-medium flex items-center gap-2">
+              <BarChart3 class="size-4 text-status-info" />
+              Last Normalize Activity
+            </CardTitle>
+          </CardHeader>
+          <Separator />
+          <CardContent class="pt-4">
+            <div v-if="lastNormalizeOperation" class="space-y-2 text-sm">
+              <div>
+                <p class="text-xs text-muted-foreground">Tool</p>
+                <p class="font-medium text-foreground">{{ lastNormalizeOperation.tool ?? 'unknown' }}</p>
+              </div>
+              <div v-if="lastNormalizeOperation.target">
+                <p class="text-xs text-muted-foreground">Target</p>
+                <p class="font-mono text-xs text-foreground break-all">{{ lastNormalizeOperation.target }}</p>
+              </div>
+              <div v-if="lastNormalizeOperation.timestamp">
+                <p class="text-xs text-muted-foreground">Updated</p>
+                <p class="text-foreground">{{ new Date(lastNormalizeOperation.timestamp).toLocaleString() }}</p>
+              </div>
+            </div>
+            <div v-else class="text-sm text-muted-foreground">
+              No normalize activity found in context yet.
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div v-if="resultsError" class="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
+        {{ resultsError }}
+      </div>
+
       <!-- Scan config bar -->
       <div class="flex items-center gap-3 flex-wrap">
         <!-- Path selector -->

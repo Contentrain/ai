@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { ExtractedString } from '../../../src/core/scanner-v2/vue-parser.js'
+import type { ExtractedString } from '../../../src/core/ast-scanner/vue-parser.js'
 
 // ─── AST Node Helpers ───
 
@@ -256,7 +256,7 @@ vi.mock('@vue/compiler-sfc', () => ({
   compileTemplate: () => ({ ast: null }),
 }))
 
-vi.mock('../../../src/core/scanner-v2/tsx-parser.js', () => ({
+vi.mock('../../../src/core/ast-scanner/tsx-parser.js', () => ({
   parseTsx: (...args: [string, string]) => mockParseTsx(...args),
 }))
 
@@ -301,7 +301,7 @@ describe('vue-parser', () => {
   })
 
   it('should extract template text nodes with correct context', async () => {
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(SFC_CONTENT, 'TestComponent.vue')
 
     const templateTexts = results.filter(
@@ -316,7 +316,7 @@ describe('vue-parser', () => {
   })
 
   it('should set parent to the correct element tag name', async () => {
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(SFC_CONTENT, 'TestComponent.vue')
 
     const welcome = results.find(r => r.value === 'Welcome to our app')
@@ -333,7 +333,7 @@ describe('vue-parser', () => {
   })
 
   it('should extract attribute values with attribute name as parentProperty', async () => {
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(SFC_CONTENT, 'TestComponent.vue')
 
     const placeholder = results.find(r => r.value === 'Enter your email')
@@ -350,7 +350,7 @@ describe('vue-parser', () => {
   })
 
   it('should mark class attribute values with css_class context', async () => {
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(SFC_CONTENT, 'TestComponent.vue')
 
     const classAttr = results.find(r => r.value === 'flex items-center')
@@ -360,7 +360,7 @@ describe('vue-parser', () => {
   })
 
   it('should NOT extract interpolation variable references ({{ greeting }})', async () => {
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(SFC_CONTENT, 'TestComponent.vue')
 
     const greeting = results.find(
@@ -370,7 +370,7 @@ describe('vue-parser', () => {
   })
 
   it('should extract script strings with scope: script and offset line numbers', async () => {
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(SFC_CONTENT, 'TestComponent.vue')
 
     const scriptResults = results.filter(r => r.scope === 'script')
@@ -390,7 +390,7 @@ describe('vue-parser', () => {
   })
 
   it('should pass script content to tsx-parser', async () => {
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     await parseVue(SFC_CONTENT, 'TestComponent.vue')
 
     expect(mockParseTsx).toHaveBeenCalledTimes(1)
@@ -400,7 +400,7 @@ describe('vue-parser', () => {
   })
 
   it('should correctly offset template line numbers', async () => {
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(SFC_CONTENT, 'TestComponent.vue')
 
     const welcome = results.find(r => r.value === 'Welcome to our app')
@@ -409,7 +409,7 @@ describe('vue-parser', () => {
   })
 
   it('should handle v-if expressions as code — not extracting them as content', async () => {
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(SFC_CONTENT, 'TestComponent.vue')
 
     const show = results.find(
@@ -419,7 +419,7 @@ describe('vue-parser', () => {
   })
 
   it('should extract text inside v-if conditionally rendered elements', async () => {
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(SFC_CONTENT, 'TestComponent.vue')
 
     const conditional = results.find(r => r.value === 'Conditional text')
@@ -429,7 +429,7 @@ describe('vue-parser', () => {
   })
 
   it('should set scope: template for all template-extracted strings', async () => {
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(SFC_CONTENT, 'TestComponent.vue')
 
     const templateResults = results.filter(r => r.scope === 'template')
@@ -444,7 +444,7 @@ describe('vue-parser', () => {
   })
 
   it('should provide surrounding context string', async () => {
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(SFC_CONTENT, 'TestComponent.vue')
 
     for (const r of results) {
@@ -469,7 +469,7 @@ describe('vue-parser edge cases', () => {
       scriptSetup: null,
     }
 
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(
       '<script>\nexport default { name: "Test" }\n</script>',
       'NoTemplate.vue',
@@ -493,7 +493,7 @@ describe('vue-parser edge cases', () => {
       scriptSetup: null,
     }
 
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(
       '<template><div>Hello</div></template>',
       'NoScript.vue',
@@ -522,7 +522,7 @@ describe('vue-parser edge cases', () => {
       scriptSetup: null,
     }
 
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(
       '<template><button @click="handleClick">Click me</button></template>',
       'EventHandler.vue',
@@ -553,7 +553,7 @@ describe('vue-parser edge cases', () => {
       scriptSetup: null,
     }
 
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(
       '<template><div :class="{ active: isActive }" :style="{ color: textColor }">Content</div></template>',
       'Bindings.vue',
@@ -586,7 +586,7 @@ describe('vue-parser edge cases', () => {
       scriptSetup: null,
     }
 
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(
       '<template><li v-for="item in items">List item</li></template>',
       'ForLoop.vue',
@@ -614,7 +614,7 @@ describe('vue-parser edge cases', () => {
       scriptSetup: null,
     }
 
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(
       "<template><p>{{ 'Static greeting' }}</p></template>",
       'Interpolation.vue',
@@ -641,7 +641,7 @@ describe('vue-parser edge cases', () => {
       scriptSetup: null,
     }
 
-    const { parseVue } = await import('../../../src/core/scanner-v2/vue-parser.js')
+    const { parseVue } = await import('../../../src/core/ast-scanner/vue-parser.js')
     const results = await parseVue(
       '<template><div>\n  Real content\n</div></template>',
       'Whitespace.vue',

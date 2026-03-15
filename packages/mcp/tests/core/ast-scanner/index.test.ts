@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extractStrings } from '../../../src/core/scanner-v2/index.js'
+import { extractStrings } from '../../../src/core/ast-scanner/index.js'
 
 describe('extractStrings orchestrator', () => {
   // ─── TSX routing ───

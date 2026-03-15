@@ -1,0 +1,11 @@
+{
+  "name": "expo-home",
+  "scan_paths": ["src"],
+  "min_precision": 0.95,
+  "min_recall": 0.95,
+  "should_detect": [
+    { "file": "src/screens/HomeScreen.tsx", "value": "Uygulamayi kesfet", "context": "jsx_text" },
+    { "file": "src/screens/HomeScreen.tsx", "value": "Devam et", "context": "jsx_attribute" },
+    { "file": "src/screens/HomeScreen.tsx", "value": "Devam et", "context": "jsx_text" }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "svelte-astro-fallback",
+  "scan_paths": ["src"],
+  "min_precision": 0.8,
+  "min_recall": 0.8,
+  "should_detect": [
+    { "file": "src/components/Hero.svelte", "value": "Svelte ile hizli", "context": "other" },
+    { "file": "src/components/Hero.svelte", "value": "Denemeye basla", "context": "template_text" },
+    { "file": "src/components/Hero.svelte", "value": "Plani sec", "context": "template_text" },
+    { "file": "src/pages/index.astro", "value": "Astro ile hizli", "context": "other" },
+    { "file": "src/pages/index.astro", "value": "Belgeleri oku", "context": "template_text" }
+  ]
+}

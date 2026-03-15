@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseTsx } from '../../../src/core/scanner-v2/tsx-parser.js'
+import { parseTsx } from '../../../src/core/ast-scanner/tsx-parser.js'
 
 // ─── JSX text content ───
 

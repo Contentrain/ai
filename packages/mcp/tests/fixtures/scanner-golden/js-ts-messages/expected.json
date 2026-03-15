@@ -1,0 +1,11 @@
+{
+  "name": "js-ts-messages",
+  "scan_paths": ["src"],
+  "min_precision": 0.95,
+  "min_recall": 0.95,
+  "should_detect": [
+    { "file": "src/lib/messages.ts", "value": "No items yet", "context": "object_value" },
+    { "file": "src/lib/messages.ts", "value": "Save changes", "context": "object_value" },
+    { "file": "src/lib/messages.ts", "value": "Use your work email", "context": "object_value" }
+  ]
+}

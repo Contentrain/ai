@@ -458,7 +458,7 @@ export async function parseVue(content: string, fileName: string): Promise<Extra
         const compiled = compiler.compileTemplate({
           source: descriptor.template.content,
           filename: fileName,
-          id: 'scanner-v2',
+          id: 'ast-scanner',
         })
         if (compiled.ast) {
           walkTemplate(compiled.ast, templateLineOffset, content, results)

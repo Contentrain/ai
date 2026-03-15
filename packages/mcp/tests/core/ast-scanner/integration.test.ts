@@ -6,11 +6,11 @@ import { scanCandidates, scanSummary } from '../../../src/core/scanner.js'
 
 vi.setConfig({ testTimeout: 60000, hookTimeout: 60000 })
 
-describe('scanner-v2 mixed-framework integration', () => {
+describe('ast-scanner mixed-framework integration', () => {
   let testDir: string
 
   beforeEach(async () => {
-    testDir = await mkdtemp(join(tmpdir(), 'cr-scanner-v2-mixed-'))
+    testDir = await mkdtemp(join(tmpdir(), 'cr-ast-scanner-mixed-'))
 
     await mkdir(join(testDir, 'app', 'pages'), { recursive: true })
     await mkdir(join(testDir, 'src', 'app'), { recursive: true })
@@ -226,11 +226,11 @@ const title = "Astro ile hizli";
   })
 })
 
-describe('scanner-v2 mixed-framework summary', () => {
+describe('ast-scanner mixed-framework summary', () => {
   let testDir: string
 
   beforeEach(async () => {
-    testDir = await mkdtemp(join(tmpdir(), 'cr-scanner-v2-summary-'))
+    testDir = await mkdtemp(join(tmpdir(), 'cr-ast-scanner-summary-'))
 
     await mkdir(join(testDir, 'app'), { recursive: true })
     await mkdir(join(testDir, 'src', 'components'), { recursive: true })

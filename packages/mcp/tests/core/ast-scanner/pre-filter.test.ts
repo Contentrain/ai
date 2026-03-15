@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { applyPreFilter } from '../../../src/core/scanner-v2/pre-filter.js'
-import type { ExtractedString, StructuralContext } from '../../../src/core/scanner-v2/types.js'
+import { applyPreFilter } from '../../../src/core/ast-scanner/pre-filter.js'
+import type { ExtractedString, StructuralContext } from '../../../src/core/ast-scanner/types.js'
 
 // ─── Helper ───
 
