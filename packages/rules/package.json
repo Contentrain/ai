@@ -4,8 +4,36 @@
   "license": "MIT",
   "description": "AI agent rules for Contentrain — quality standards, architecture conventions, IDE integration",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/contentrain/contentrain-ai.git",
+    "directory": "packages/rules"
+  },
+  "homepage": "https://github.com/contentrain/contentrain-ai/tree/main/packages/rules",
+  "bugs": {
+    "url": "https://github.com/contentrain/contentrain-ai/issues"
+  },
+  "keywords": [
+    "contentrain",
+    "ai",
+    "rules",
+    "mcp",
+    "prompt-engineering",
+    "claude-code",
+    "cursor",
+    "windsurf"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.mjs", "require": "./dist/index.cjs" },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    },
     "./shared/*": "./shared/*",
     "./prompts/*": "./prompts/*",
     "./context/*": "./context/*",
@@ -13,7 +41,7 @@
   },
   "files": ["dist", "shared", "prompts", "context", "ide"],
   "scripts": {
-    "build": "tsdown src/index.ts --format esm,cjs --dts && tsx scripts/build-rules.ts",
+    "build": "tsdown src/index.ts --format esm,cjs --dts && node --import tsx scripts/build-rules.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

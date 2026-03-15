@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { FIELD_TYPES, MODEL_KINDS, MCP_TOOLS, ALL_SHARED_RULES, IDE_RULE_FILES } from '../src/index.js'
 
@@ -20,6 +20,10 @@ describe('constants', () => {
   it('all MCP tools match pattern', () => {
     for (const t of MCP_TOOLS) expect(t).toMatch(/^contentrain_/)
   })
+  it('mcp-usage.md documents every MCP tool', () => {
+    const usage = readFileSync(join(PKG_ROOT, 'shared', 'mcp-usage.md'), 'utf-8')
+    for (const t of MCP_TOOLS) expect(usage).toContain(t)
+  })
 })
 
 describe('IDE bundles', () => {
@@ -28,6 +32,10 @@ describe('IDE bundles', () => {
       expect(existsSync(join(PKG_ROOT, path))).toBe(true)
     })
   }
+
+  it('does not ship legacy windsurf markdown bundle', () => {
+    expect(existsSync(join(PKG_ROOT, 'ide', 'windsurf', 'contentrain.md'))).toBe(false)
+  })
 })
 
 describe('prompts', () => {

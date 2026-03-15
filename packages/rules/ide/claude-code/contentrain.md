@@ -2032,6 +2032,7 @@ MCP is **deterministic infrastructure**. The agent is the **intelligence layer**
 |------|---------|------------|
 | `contentrain_status` | Get full project state in one call | _(none)_ |
 | `contentrain_describe` | Get full schema + optional sample for one model | `model`, `include_sample?` (bool), `locale?` |
+| `contentrain_describe_format` | Get the storage and file-format contract for Contentrain content | _(none)_ |
 
 ### 2.2 Setup Tools
 
@@ -2153,6 +2154,25 @@ Each entry in the `entries` array has this shape:
 |------|---------|------------|
 | `contentrain_validate` | Validate project content against model schemas | `model?`, `fix?` (bool) |
 | `contentrain_submit` | Push contentrain/* branches to remote | `branches?` (string[]), `message?` |
+
+### 2.7 Bulk Tools
+
+| Tool | Purpose | Parameters |
+|------|---------|------------|
+| `contentrain_bulk` | Run git-backed batch operations on existing content entries | `operation`, `model`, `source_locale?`, `target_locale?`, `entry_ids?`, `status?`, `confirm?` |
+
+#### contentrain_bulk operations
+
+- `copy_locale`: copy one locale to another for an i18n-enabled `collection`, `singleton`, or `dictionary` model. Requires `source_locale` and `target_locale`.
+- `update_status`: update entry metadata status for a `collection` model. Requires `entry_ids` and `status`.
+- `delete_entries`: delete multiple entries from a `collection` model. Requires `entry_ids` and `confirm: true`.
+
+#### contentrain_bulk rules
+
+- ALWAYS verify the target model with `contentrain_describe` or `contentrain_status` before running a bulk operation.
+- `copy_locale` MUST NOT be used on non-i18n models.
+- `update_status` and `delete_entries` are collection-only operations.
+- Bulk operations create branches and commits like other write tools; validate afterward when content shape may have changed.
 
 #### contentrain_validate parameters
 
