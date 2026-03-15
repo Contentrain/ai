@@ -1,5 +1,5 @@
 import type { ModelDefinition, FieldDef } from '@contentrain/types'
-import { join } from 'node:path'
+import { join, extname } from 'node:path'
 import { readText, writeText, pathExists } from '../util/fs.js'
 import { readModel, writeModel, listModels } from './model-manager.js'
 import { writeContent, resolveContentDir, resolveJsonFilePath, resolveMdFilePath, type ContentEntry } from './content-manager.js'
@@ -64,6 +64,11 @@ export interface ReuseInput {
   dry_run?: boolean
 }
 
+export interface SyntaxError {
+  file: string
+  error: string
+}
+
 export interface ReuseResult {
   dry_run: boolean
   preview?: {
@@ -76,6 +81,8 @@ export interface ReuseResult {
     patches_applied: number
     patches_skipped: Array<{ file: string; line: number; reason: string }>
     imports_added: number
+    framework_warnings?: Array<{ file: string; warning: string }>
+    syntax_errors?: SyntaxError[]
   }
   git?: { branch: string; action: string; commit: string }
   next_steps: string[]
@@ -84,6 +91,275 @@ export interface ReuseResult {
 // ─── Constants ───
 
 const MAX_PATCHES = 100
+
+/** File extensions allowed for patching — scannable source files only */
+export const PATCHABLE_EXTENSIONS = new Set([
+  '.vue', '.tsx', '.jsx', '.ts', '.js', '.mjs', '.astro', '.svelte',
+])
+
+/** Directories that must never be patched */
+const FORBIDDEN_PATH_SEGMENTS = new Set([
+  '.contentrain', 'node_modules', '.git', 'dist', 'build', '.next', '.nuxt',
+])
+
+// ─── Framework Detection (Guardrail #2) ───
+
+export type FileFramework = 'vue' | 'svelte' | 'jsx' | 'astro' | 'script'
+
+export function detectFileFramework(filePath: string): FileFramework {
+  const ext = extname(filePath).toLowerCase()
+  switch (ext) {
+    case '.vue': return 'vue'
+    case '.svelte': return 'svelte'
+    case '.tsx':
+    case '.jsx': return 'jsx'
+    case '.astro': return 'astro'
+    case '.ts':
+    case '.js':
+    case '.mjs': return 'script'
+    default: return 'script'
+  }
+}
+
+/**
+ * Validate that a replacement expression uses the correct template syntax
+ * for the target file's framework. Returns a warning string or null.
+ */
+export function validateFrameworkExpression(
+  filePath: string,
+  newExpression: string,
+  context: 'tag_text' | 'other',
+): string | null {
+  if (context !== 'tag_text') return null
+
+  const framework = detectFileFramework(filePath)
+
+  switch (framework) {
+    case 'vue':
+      if (!newExpression.includes('{{')) {
+        return `Vue file "${filePath}": tag text expression "${newExpression}" does not contain "{{" — expected Vue template syntax like {{ $t('key') }}`
+      }
+      break
+    case 'jsx':
+      if (!newExpression.includes('{')) {
+        return `JSX file "${filePath}": tag text expression "${newExpression}" does not contain "{" — expected JSX syntax like {t('key')}`
+      }
+      break
+    case 'svelte':
+      if (!newExpression.includes('{')) {
+        return `Svelte file "${filePath}": tag text expression "${newExpression}" does not contain "{" — expected Svelte syntax like {$t('key')}`
+      }
+      break
+    case 'astro':
+      if (!newExpression.includes('{')) {
+        return `Astro file "${filePath}": tag text expression "${newExpression}" does not contain "{" — expected Astro syntax like {t('key')}`
+      }
+      break
+    case 'script':
+      // Script files don't have template interpolation — warn if attempting tag text replacement
+      return `Script file "${filePath}": tag text replacement not applicable for .ts/.js files`
+  }
+
+  return null
+}
+
+// ─── Scope Validation (Guardrail #1) ───
+
+/**
+ * Validate that a patch file path is safe and within allowed scope.
+ * Returns an error message or null if valid.
+ */
+export function validatePatchPath(filePath: string): string | null {
+  const normalizedPath = filePath.replace(/\\/g, '/')
+
+  // Reject path traversal
+  if (normalizedPath.includes('..')) {
+    return `Path traversal detected: "${filePath}"`
+  }
+
+  // Reject absolute paths
+  if (normalizedPath.startsWith('/')) {
+    return `Absolute path not allowed: "${filePath}"`
+  }
+
+  // Reject forbidden directories
+  const segments = normalizedPath.split('/')
+  for (const seg of segments) {
+    if (FORBIDDEN_PATH_SEGMENTS.has(seg)) {
+      return `Patching files inside "${seg}/" is not allowed: "${filePath}"`
+    }
+  }
+
+  // Reject non-scannable extensions
+  const ext = extname(filePath).toLowerCase()
+  if (!PATCHABLE_EXTENSIONS.has(ext)) {
+    return `File extension "${ext}" is not patchable. Allowed: ${[...PATCHABLE_EXTENSIONS].join(', ')}. Path: "${filePath}"`
+  }
+
+  return null
+}
+
+// ─── Syntax Check (Guardrail #5) ───
+
+/**
+ * Perform a basic syntax check on a patched file.
+ * Returns an error message or null if syntax appears valid.
+ */
+export function checkSyntax(filePath: string, content: string): string | null {
+  const ext = extname(filePath).toLowerCase()
+
+  switch (ext) {
+    case '.ts':
+    case '.tsx':
+    case '.js':
+    case '.jsx':
+    case '.mjs':
+      return checkJsSyntax(content)
+    case '.vue':
+      return checkVueSyntax(content)
+    case '.svelte':
+    case '.astro':
+      return checkTagBalance(content)
+    default:
+      return null
+  }
+}
+
+/**
+ * Basic JS/TS syntax check: bracket/paren/brace balance + string literal closure.
+ * This is intentionally conservative — it catches obvious breakage without
+ * requiring a full parser.
+ */
+function checkJsSyntax(content: string): string | null {
+  const stack: string[] = []
+  const pairs: Record<string, string> = { ')': '(', ']': '[', '}': '{' }
+  let inString: string | null = null
+  let escaped = false
+  let inLineComment = false
+  let inBlockComment = false
+
+  for (let i = 0; i < content.length; i++) {
+    const ch = content[i]!
+    const next = content[i + 1]
+
+    // Handle escape sequences inside strings
+    if (escaped) {
+      escaped = false
+      continue
+    }
+
+    if (ch === '\\' && inString !== null) {
+      escaped = true
+      continue
+    }
+
+    // Line comment
+    if (!inString && !inBlockComment && ch === '/' && next === '/') {
+      inLineComment = true
+      continue
+    }
+    if (inLineComment) {
+      if (ch === '\n') inLineComment = false
+      continue
+    }
+
+    // Block comment
+    if (!inString && !inBlockComment && ch === '/' && next === '*') {
+      inBlockComment = true
+      i++ // skip *
+      continue
+    }
+    if (inBlockComment) {
+      if (ch === '*' && next === '/') {
+        inBlockComment = false
+        i++ // skip /
+      }
+      continue
+    }
+
+    // String handling
+    if (inString !== null) {
+      if (ch === inString) {
+        // Template literal allows multi-line, others don't
+        inString = null
+      } else if (inString !== '`' && ch === '\n') {
+        return `Unterminated string literal near offset ${i}`
+      }
+      continue
+    }
+
+    if (ch === '"' || ch === "'" || ch === '`') {
+      inString = ch
+      continue
+    }
+
+    // Bracket matching
+    if (ch === '(' || ch === '[' || ch === '{') {
+      stack.push(ch)
+    } else if (ch === ')' || ch === ']' || ch === '}') {
+      const expected = pairs[ch]!
+      if (stack.length === 0) {
+        return `Unmatched closing "${ch}" near offset ${i}`
+      }
+      const top = stack.pop()!
+      if (top !== expected) {
+        return `Mismatched bracket: expected closing for "${top}" but found "${ch}" near offset ${i}`
+      }
+    }
+  }
+
+  if (inString !== null) {
+    return `Unterminated string literal (opened with ${inString})`
+  }
+
+  if (stack.length > 0) {
+    return `Unclosed bracket "${stack[stack.length - 1]}" — ${stack.length} unclosed bracket(s)`
+  }
+
+  return null
+}
+
+/**
+ * Vue SFC syntax check: ensure <template>, <script>, <style> tags are balanced.
+ */
+function checkVueSyntax(content: string): string | null {
+  const tagBalance = checkTagBalance(content)
+  if (tagBalance) return tagBalance
+
+  // Vue-specific: check that SFC root tags are present and balanced
+  for (const tag of ['template', 'script']) {
+    const openRe = new RegExp(`<${tag}[\\s>]`, 'g')
+    const closeRe = new RegExp(`</${tag}>`, 'g')
+    const opens = content.match(openRe)?.length ?? 0
+    const closes = content.match(closeRe)?.length ?? 0
+    if (opens !== closes) {
+      return `Unbalanced <${tag}> tag: ${opens} opening vs ${closes} closing`
+    }
+  }
+
+  return null
+}
+
+/**
+ * Basic tag balance check for HTML-like files.
+ * Checks that self-closing tags are handled and major structural tags are balanced.
+ */
+function checkTagBalance(content: string): string | null {
+  // Check for common structural tags balance
+  const structuralTags = ['div', 'section', 'main', 'header', 'footer', 'nav', 'article', 'aside', 'ul', 'ol', 'table']
+
+  for (const tag of structuralTags) {
+    const openRe = new RegExp(`<${tag}[\\s>]`, 'g')
+    const closeRe = new RegExp(`</${tag}>`, 'g')
+    const opens = content.match(openRe)?.length ?? 0
+    const closes = content.match(closeRe)?.length ?? 0
+    if (opens !== closes) {
+      return `Unbalanced <${tag}> tag: ${opens} opening vs ${closes} closing`
+    }
+  }
+
+  return null
+}
 
 // ─── Extract Mode ───
 
@@ -113,15 +389,26 @@ export async function applyExtract(
     }
     totalEntries += ext.entries.length
 
-    // Estimate content file paths using resolvers
-    const tempModel = { id: ext.model, kind: ext.kind, domain: ext.domain, i18n: ext.i18n ?? true } as ModelDefinition
-    const cDir = resolveContentDir(projectRoot, tempModel)
+    // Guardrail #3: Preview-Execute Parity — use real model metadata if it exists
+    let previewModel: ModelDefinition
+    if (existingIds.has(ext.model)) {
+      const real = await readModel(projectRoot, ext.model)
+      if (real) {
+        previewModel = real
+      } else {
+        previewModel = { id: ext.model, kind: ext.kind, domain: ext.domain, i18n: ext.i18n ?? true } as ModelDefinition
+      }
+    } else {
+      previewModel = { id: ext.model, kind: ext.kind, domain: ext.domain, i18n: ext.i18n ?? true } as ModelDefinition
+    }
+
+    const cDir = resolveContentDir(projectRoot, previewModel)
     for (const entry of ext.entries) {
       const locale = entry.locale ?? config.locales.default
       if (ext.kind === 'document' && entry.slug) {
-        contentFiles.push(resolveMdFilePath(cDir, tempModel, locale, entry.slug))
+        contentFiles.push(resolveMdFilePath(cDir, previewModel, locale, entry.slug))
       } else {
-        contentFiles.push(resolveJsonFilePath(cDir, tempModel, locale))
+        contentFiles.push(resolveJsonFilePath(cDir, previewModel, locale))
       }
     }
   }
@@ -307,13 +594,11 @@ export async function applyReuse(
       throw new Error(`No models found for scope ${scope.model ? `model="${scope.model}"` : `domain="${scope.domain}"`}`)
     }
 
-    // Build set of allowed source directories based on scope
-    // Patches should target source files (not .contentrain/), so we validate
-    // that patch files don't write outside the project
+    // Guardrail #1: Scope Real Enforcement — validate each patch file path
     for (const patch of patches) {
-      const normalizedPath = patch.file.replace(/\\/g, '/')
-      if (normalizedPath.includes('..') || normalizedPath.startsWith('/')) {
-        throw new Error(`Invalid patch path: "${patch.file}". Paths must be relative and cannot traverse outside the project.`)
+      const pathError = validatePatchPath(patch.file)
+      if (pathError) {
+        throw new Error(`Invalid patch path: ${pathError}`)
       }
     }
   }
@@ -365,6 +650,8 @@ export async function applyReuse(
   let patchesApplied = 0
   let importsAdded = 0
   const patchesSkipped: Array<{ file: string; line: number; reason: string }> = []
+  const frameworkWarnings: Array<{ file: string; warning: string }> = []
+  const syntaxErrors: SyntaxError[] = []
 
   try {
     await tx.write(async (wt) => {
@@ -378,7 +665,7 @@ export async function applyReuse(
           continue
         }
 
-        let content = await readText(absPath)
+        const content = await readText(absPath)
         if (content === null) {
           for (const p of filePatches) {
             patchesSkipped.push({ file: relFile, line: p.line, reason: 'file unreadable' })
@@ -393,6 +680,12 @@ export async function applyReuse(
         let fileModified = false
 
         for (const patch of sorted) {
+          // Guardrail #2: Framework-aware validation on tag text replacements
+          const fwWarning = validateFrameworkExpression(relFile, patch.new_expression, 'tag_text')
+          if (fwWarning) {
+            frameworkWarnings.push({ file: relFile, warning: fwWarning })
+          }
+
           const applied = applyPatchToLines(lines, patch)
           if (applied) {
             patchesApplied++
@@ -416,8 +709,15 @@ export async function applyReuse(
         }
 
         if (fileModified) {
-          await writeText(absPath, lines.join('\n'))
+          const newContent = lines.join('\n')
+          await writeText(absPath, newContent)
           filesModified.push(relFile)
+
+          // Guardrail #5: Syntax check after patching
+          const syntaxError = checkSyntax(relFile, newContent)
+          if (syntaxError) {
+            syntaxErrors.push({ file: relFile, error: syntaxError })
+          }
         }
       }
 
@@ -438,6 +738,7 @@ export async function applyReuse(
           patches_applied: 0,
           patches_skipped: patchesSkipped,
           imports_added: 0,
+          framework_warnings: frameworkWarnings.length > 0 ? frameworkWarnings : undefined,
         },
         next_steps: ['No files were modified. Check patch definitions and try again.'],
       }
@@ -464,11 +765,14 @@ export async function applyReuse(
         patches_applied: patchesApplied,
         patches_skipped: patchesSkipped,
         imports_added: importsAdded,
+        framework_warnings: frameworkWarnings.length > 0 ? frameworkWarnings : undefined,
+        syntax_errors: syntaxErrors.length > 0 ? syntaxErrors : undefined,
       },
       git: gitResult,
       next_steps: [
         'Run contentrain_validate to verify the patched files',
         patchesSkipped.length > 0 ? `${patchesSkipped.length} patches were skipped — review and retry if needed` : '',
+        syntaxErrors.length > 0 ? `WARNING: ${syntaxErrors.length} file(s) may have syntax errors after patching — review manually` : '',
         'Run contentrain_submit to push the branch for review',
       ].filter(Boolean),
     }
@@ -518,8 +822,11 @@ function applyPatchToLines(lines: string[], patch: PatchEntry): boolean {
  * Replace old_value with new_expression in a single line.
  * Matches the string literal (quoted or unquoted tag text).
  * Returns the modified line, or null if not found.
+ *
+ * Guardrail #4: Safer patch matching — word boundary awareness and
+ * ambiguity rejection for plain text fallback.
  */
-function replaceInLine(line: string, oldValue: string, newExpression: string): string | null {
+export function replaceInLine(line: string, oldValue: string, newExpression: string): string | null {
   // Try exact match of the value in quoted strings
   // Match: "old_value", 'old_value', `old_value`
   for (const quote of ['"', "'", '`']) {
@@ -539,12 +846,56 @@ function replaceInLine(line: string, oldValue: string, newExpression: string): s
     return line.replace(`>${oldValue}<`, `>${newExpression}<`)
   }
 
-  // Try plain text match (last resort)
+  // Guardrail #4: Safer plain text fallback
+  // Only match if old_value appears at a word boundary and is unambiguous
   if (line.includes(oldValue)) {
+    // Count occurrences — if multiple, it's ambiguous
+    const occurrences = countOccurrences(line, oldValue)
+    if (occurrences > 1) {
+      return null // ambiguous — let proximity search handle it
+    }
+
+    // Word boundary check: don't replace "Submit" inside "SubmitButton"
+    // Reject if the old_value is a substring of a larger word — check if
+    // adjacent characters are word characters that extend the token.
+    const idx = line.indexOf(oldValue)
+    const charBefore = idx > 0 ? line[idx - 1]! : ''
+    const charAfter = idx + oldValue.length < line.length ? line[idx + oldValue.length]! : ''
+
+    const oldStartsWithWord = oldValue.length > 0 && isWordChar(oldValue[0]!)
+    const oldEndsWithWord = oldValue.length > 0 && isWordChar(oldValue[oldValue.length - 1]!)
+
+    // If old_value starts with a word char and char before is also word char, it's a partial match
+    if (oldStartsWithWord && isWordChar(charBefore)) {
+      return null
+    }
+    // If old_value ends with a word char and char after is also word char, it's a partial match
+    if (oldEndsWithWord && isWordChar(charAfter)) {
+      return null
+    }
+
     return line.replace(oldValue, newExpression)
   }
 
   return null
+}
+
+/** Count non-overlapping occurrences of a substring */
+function countOccurrences(str: string, sub: string): number {
+  let count = 0
+  let pos = 0
+  while (pos <= str.length - sub.length) {
+    const idx = str.indexOf(sub, pos)
+    if (idx === -1) break
+    count++
+    pos = idx + sub.length
+  }
+  return count
+}
+
+/** Check if a character is a word character (letter, digit, underscore) */
+function isWordChar(ch: string): boolean {
+  return /\w/.test(ch)
 }
 
 /**
