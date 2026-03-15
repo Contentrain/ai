@@ -16,6 +16,7 @@ import {
 import PageHeader from '@/components/layout/PageHeader.vue'
 import StudioHint from '@/components/layout/StudioHint.vue'
 import { Badge } from '@/components/ui/badge'
+import { TrustBadge } from '@/components/ui/trust-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -34,6 +35,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { useTrustLevel } from '@/composables/useTrustLevel'
 
 const route = useRoute()
 const store = useContentStore()
@@ -46,6 +48,9 @@ const modelId = computed(() => route.params.modelId as string)
 const modelInfo = computed(() =>
   project.status?.models?.find(m => m.id === modelId.value),
 )
+
+// --- Trust level ---
+const { trustStatus, trustCount } = useTrustLevel(computed(() => store.validation))
 
 // --- Locale ---
 const locales = computed(() => project.status?.config?.locales.supported ?? [])
@@ -326,6 +331,7 @@ function isLongContent(val: unknown, fieldName: string): boolean {
 function load() {
   store.fetchContent(modelId.value, selectedLocale.value)
   store.fetchModelDescription(modelId.value)
+  store.fetchValidation(modelId.value)
 }
 
 function refresh() {
@@ -437,8 +443,9 @@ useWatch((event) => {
     </PageHeader>
 
     <div class="flex flex-1 flex-col overflow-hidden px-6 py-4">
-      <!-- Toolbar: search -->
+      <!-- Toolbar: search + trust badge -->
       <div class="mb-4 flex items-center gap-3">
+        <TrustBadge :status="trustStatus" :count="trustCount" />
         <div :class="cn('relative transition-all duration-200', searchFocused || searchQuery ? 'w-72' : 'w-48')">
           <Search class="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input v-model="searchQuery" placeholder="Search entries..." class="h-8 pl-8 text-xs"
@@ -457,7 +464,7 @@ useWatch((event) => {
               </Badge>
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" class="w-65 p-0">
+          <PopoverContent align="end" class="w-[260px] p-0">
             <div class="border-b border-border px-3 py-2.5">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-foreground">Toggle columns</span>
@@ -468,7 +475,7 @@ useWatch((event) => {
                 </div>
               </div>
             </div>
-            <div class="max-h-85 overflow-y-auto custom-scrollbar p-1.5">
+            <div class="max-h-[340px] overflow-y-auto custom-scrollbar p-1.5">
               <div
                 v-for="(field, fieldIdx) in orderedColumns"
                 :key="field"
@@ -967,14 +974,11 @@ useWatch((event) => {
 
 <style scoped>
 input[type='text'][inputmode='numeric'] {
-  appearance: textfield;
   -moz-appearance: textfield;
 }
 
 input[type='text'][inputmode='numeric']::-webkit-outer-spin-button,
 input[type='text'][inputmode='numeric']::-webkit-inner-spin-button {
-  appearance: none;
   -webkit-appearance: none;
-  margin: 0;
 }
 </style>
