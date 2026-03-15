@@ -1,0 +1,13 @@
+{
+  "id": "ui-labels",
+  "name": "Ui Labels",
+  "kind": "dictionary",
+  "domain": "system",
+  "i18n": true,
+  "fields": {
+    "value": {
+      "required": true,
+      "type": "string"
+    }
+  }
+}
