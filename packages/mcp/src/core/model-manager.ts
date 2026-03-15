@@ -369,3 +369,55 @@ export async function checkReferences(projectRoot: string, modelId: string): Pro
 
   return refs
 }
+
+// ─── Model Validation (shared between model_save and normalize extract) ───
+
+const VALID_FIELD_TYPES = new Set([
+  'string', 'text', 'email', 'url', 'slug', 'color', 'phone', 'code', 'icon',
+  'markdown', 'richtext', 'number', 'integer', 'decimal', 'percent', 'rating',
+  'boolean', 'date', 'datetime', 'image', 'video', 'file',
+  'relation', 'relations', 'select', 'array', 'object',
+])
+
+/**
+ * Validate a model definition before writing.
+ * Returns array of error messages (empty = valid).
+ * Used by both model_save tool and normalize extract.
+ */
+export function validateModelDefinition(input: { id: string; kind: string; fields?: Record<string, unknown> }): string[] {
+  const errors: string[] = []
+
+  // ID format: kebab-case
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.id)) {
+    errors.push(`Invalid model ID "${input.id}": must be kebab-case`)
+  }
+
+  // Fields validation
+  if (input.fields) {
+    for (const [fieldName, fieldDef] of Object.entries(input.fields)) {
+      const def = fieldDef as { type?: string; model?: unknown; options?: unknown }
+
+      // Field name format
+      if (!/^[a-z][a-z0-9_]*$/.test(fieldName)) {
+        errors.push(`Field "${fieldName}": invalid name — must be snake_case starting with letter`)
+      }
+
+      // Type check
+      if (!def.type || !VALID_FIELD_TYPES.has(def.type)) {
+        errors.push(`Field "${fieldName}": invalid type "${def.type}"`)
+      }
+
+      // Relation requires model
+      if ((def.type === 'relation' || def.type === 'relations') && !def.model) {
+        errors.push(`Field "${fieldName}": ${def.type} type requires "model" property`)
+      }
+
+      // Select requires options
+      if (def.type === 'select' && (!def.options || !Array.isArray(def.options) || def.options.length === 0)) {
+        errors.push(`Field "${fieldName}": select type requires non-empty "options" array`)
+      }
+    }
+  }
+
+  return errors
+}

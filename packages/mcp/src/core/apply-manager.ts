@@ -1,7 +1,7 @@
 import type { ModelDefinition, FieldDef } from '@contentrain/types'
 import { join, extname } from 'node:path'
 import { readText, writeText, pathExists } from '../util/fs.js'
-import { readModel, writeModel, listModels } from './model-manager.js'
+import { readModel, writeModel, listModels, validateModelDefinition } from './model-manager.js'
 import { writeContent, resolveContentDir, resolveJsonFilePath, resolveMdFilePath, type ContentEntry } from './content-manager.js'
 import { readConfig } from './config.js'
 import { writeContext } from './context.js'
@@ -39,6 +39,8 @@ export interface ExtractionPreview {
 export interface ExtractionResult {
   dry_run: boolean
   preview?: ExtractionPreview
+  error?: string
+  validation_errors?: string[]
   results?: {
     models_created: string[]
     models_updated: string[]
@@ -71,6 +73,8 @@ export interface SyntaxError {
 
 export interface ReuseResult {
   dry_run: boolean
+  error?: string
+  scope_warnings?: string[]
   preview?: {
     files_to_modify: string[]
     patches_count: number
@@ -381,7 +385,19 @@ export async function applyExtract(
   const contentFiles: string[] = []
   let totalEntries = 0
 
+  const validationErrors: string[] = []
+
   for (const ext of extractions) {
+    // Validate model definition with same rules as model_save
+    const modelErrors = validateModelDefinition({
+      id: ext.model,
+      kind: ext.kind,
+      fields: ext.fields as Record<string, unknown> | undefined,
+    })
+    if (modelErrors.length > 0) {
+      validationErrors.push(...modelErrors.map(e => `[${ext.model}] ${e}`))
+    }
+
     if (existingIds.has(ext.model)) {
       modelsToUpdate.push(ext.model)
     } else {
@@ -420,15 +436,29 @@ export async function applyExtract(
     content_files: [...new Set(contentFiles)],
   }
 
-  // Dry run — return preview only
+  // Dry run — return preview only (include validation errors if any)
   if (dry_run !== false) {
     return {
       dry_run: true,
       preview,
+      ...(validationErrors.length > 0 ? { validation_errors: validationErrors } : {}),
       next_steps: [
+        ...(validationErrors.length > 0
+          ? [`WARNING: ${validationErrors.length} validation error(s) found — fix before executing`]
+          : []),
         'Review the preview above',
         'Call contentrain_apply with mode:extract and dry_run:false to execute',
       ],
+    }
+  }
+
+  // Block execute if validation errors exist
+  if (validationErrors.length > 0) {
+    return {
+      dry_run: false,
+      error: 'Model validation failed — cannot execute extract with invalid model definitions',
+      validation_errors: validationErrors,
+      next_steps: ['Fix the validation errors and retry'],
     }
   }
 
@@ -507,6 +537,27 @@ export async function applyExtract(
         }
       }
 
+      // Write source map for reuse scope enforcement
+      if (sourceMap.length > 0) {
+        const sourcesByModel: Record<string, { source_files: string[]; entry_count: number }> = {}
+        for (const s of sourceMap) {
+          if (!sourcesByModel[s.model]) {
+            sourcesByModel[s.model] = { source_files: [], entry_count: 0 }
+          }
+          const modelEntry = sourcesByModel[s.model]!
+          if (!modelEntry.source_files.includes(s.file)) {
+            modelEntry.source_files.push(s.file)
+          }
+          modelEntry.entry_count++
+        }
+        const sourcesJson = JSON.stringify({
+          version: 1,
+          created_at: new Date().toISOString(),
+          models: sourcesByModel,
+        }, null, 2) + '\n'
+        await writeText(join(wt, '.contentrain', 'normalize-sources.json'), sourcesJson)
+      }
+
       // Update context
       await writeContext(wt, {
         tool: 'contentrain_apply',
@@ -581,6 +632,8 @@ export async function applyReuse(
     }
   }
 
+  const scopeWarnings: string[] = []
+
   // Guardrail #1: Scope Real Enforcement
   // Step 1: Path safety — every patch must target a valid, patchable source file
   for (const patch of patches) {
@@ -632,6 +685,35 @@ export async function applyReuse(
         }
       }
     }
+
+    // Step 4: Semantic source→model cross-check via normalize-sources.json
+    if (scope.model) {
+      try {
+        const sourcesPath = join(projectRoot, '.contentrain', 'normalize-sources.json')
+        const sourcesRaw = await readText(sourcesPath)
+        if (sourcesRaw) {
+          const sourcesData = JSON.parse(sourcesRaw) as {
+            models?: Record<string, { source_files?: string[] }>
+          }
+          const modelSources = sourcesData.models?.[scope.model]?.source_files
+          if (modelSources && modelSources.length > 0) {
+            // Warn (not error) for patches targeting files not in the source map
+            for (const patch of patches) {
+              const normalizedPath = patch.file.replace(/\\/g, '/')
+              if (!modelSources.includes(normalizedPath)) {
+                // Collect as warning — agent may have legitimate reasons
+                scopeWarnings.push(
+                  `Patch file "${patch.file}" was not part of the extract source for model "${scope.model}". ` +
+                  `Known source files: ${modelSources.join(', ')}`,
+                )
+              }
+            }
+          }
+        }
+      } catch {
+        // normalize-sources.json not found or invalid — skip cross-check
+      }
+    }
   }
 
   // Group patches by file
@@ -655,7 +737,9 @@ export async function applyReuse(
         patches_count: patches.length,
         imports_to_add: importsToAdd,
       },
+      ...(scopeWarnings.length > 0 ? { scope_warnings: scopeWarnings } : {}),
       next_steps: [
+        ...(scopeWarnings.length > 0 ? [`WARNING: ${scopeWarnings.length} patch file(s) not in extract source map — verify intent`] : []),
         'Review the files and patches above',
         'Call contentrain_apply with mode:reuse and dry_run:false to execute',
       ],
@@ -666,10 +750,10 @@ export async function applyReuse(
   const reuseHealth = await checkBranchHealth(projectRoot)
   if (reuseHealth.blocked) {
     return {
-      error: reuseHealth.message,
-      action: 'blocked' as const,
-      hint: 'Merge or delete old contentrain/* branches before executing reuse.',
-    } as unknown as ReuseResult
+      dry_run: false,
+      error: `Branch blocked: ${reuseHealth.message}`,
+      next_steps: ['Merge or delete old contentrain/* branches before executing reuse.'],
+    }
   }
 
   // Execute — git transaction
@@ -806,11 +890,13 @@ export async function applyReuse(
         framework_warnings: frameworkWarnings.length > 0 ? frameworkWarnings : undefined,
         syntax_errors: syntaxErrors.length > 0 ? syntaxErrors : undefined,
       },
+      ...(scopeWarnings.length > 0 ? { scope_warnings: scopeWarnings } : {}),
       git: gitResult,
       next_steps: [
         'Run contentrain_validate to verify the patched files',
         patchesSkipped.length > 0 ? `${patchesSkipped.length} patches were skipped — review and retry if needed` : '',
         syntaxErrors.length > 0 ? `WARNING: ${syntaxErrors.length} file(s) may have syntax errors after patching — review manually` : '',
+        scopeWarnings.length > 0 ? `NOTE: ${scopeWarnings.length} patch file(s) not in extract source map` : '',
         'Run contentrain_submit to push the branch for review',
       ].filter(Boolean),
     }

@@ -211,7 +211,7 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
             })
 
             // Check for branch-blocked response
-            if ('blocked' in result || ('error' in result && typeof (result as Record<string, unknown>).error === 'string')) {
+            if (result.error !== undefined) {
               return {
                 content: [{ type: 'text' as const, text: JSON.stringify({
                   mode: 'extract',
@@ -250,7 +250,7 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
             })
 
             // Check for branch-blocked response
-            if ('blocked' in result || ('error' in result && typeof (result as Record<string, unknown>).error === 'string')) {
+            if (result.error !== undefined) {
               return {
                 content: [{ type: 'text' as const, text: JSON.stringify({
                   mode: 'reuse',

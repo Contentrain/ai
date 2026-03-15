@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { readConfig } from '../core/config.js'
 
 import { resolveContentDir, resolveJsonFilePath, resolveMdFilePath } from '../core/content-manager.js'
-import { checkReferences, deleteModel, readModel, writeModel } from '../core/model-manager.js'
+import { checkReferences, deleteModel, readModel, writeModel, validateModelDefinition } from '../core/model-manager.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 
@@ -248,34 +248,5 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
   )
 }
 
-function validateModel(input: { kind: string; fields?: Record<string, unknown>; id: string }): string[] {
-  const errors: string[] = []
-
-  // ID format check
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.id)) {
-    errors.push(`Invalid model ID "${input.id}": must be kebab-case`)
-  }
-
-  // Dictionary should not have fields (optional, not an error)
-  // Fields validation
-  if (input.fields) {
-    const validTypes = new Set([
-      'string', 'text', 'email', 'url', 'slug', 'color', 'phone', 'code', 'icon',
-      'markdown', 'richtext', 'number', 'integer', 'decimal', 'percent', 'rating',
-      'boolean', 'date', 'datetime', 'image', 'video', 'file',
-      'relation', 'relations', 'select', 'array', 'object',
-    ])
-
-    for (const [fieldName, fieldDef] of Object.entries(input.fields)) {
-      const def = fieldDef as { type?: string; model?: unknown }
-      if (!def.type || !validTypes.has(def.type)) {
-        errors.push(`Field "${fieldName}": invalid type "${def.type}"`)
-      }
-      if ((def.type === 'relation' || def.type === 'relations') && !def.model) {
-        errors.push(`Field "${fieldName}": relation/relations requires "model" property`)
-      }
-    }
-  }
-
-  return errors
-}
+// validateModel is now validateModelDefinition from model-manager.ts (shared)
+const validateModel = validateModelDefinition
