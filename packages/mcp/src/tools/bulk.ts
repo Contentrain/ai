@@ -77,6 +77,16 @@ export function registerBulkTools(server: McpServer, projectRoot: string): void 
             }
           }
 
+          // Guard: copy_locale requires i18n model — non-i18n models use data.json for all locales
+          if (!model.i18n) {
+            return {
+              content: [{ type: 'text' as const, text: JSON.stringify({
+                error: `Model "${input.model}" has i18n disabled. copy_locale only works with i18n-enabled models. Enable i18n first with contentrain_model_save.`,
+              }) }],
+              isError: true,
+            }
+          }
+
           if (model.kind !== 'collection' && model.kind !== 'singleton' && model.kind !== 'dictionary') {
             return {
               content: [{ type: 'text' as const, text: JSON.stringify({ error: 'copy_locale is only supported for collection, singleton, and dictionary models' }) }],

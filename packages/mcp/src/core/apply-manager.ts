@@ -697,21 +697,26 @@ export async function applyReuse(
           }
           const modelSources = sourcesData.models?.[scope.model]?.source_files
           if (modelSources && modelSources.length > 0) {
-            // Warn (not error) for patches targeting files not in the source map
+            const outOfScopePatches: string[] = []
             for (const patch of patches) {
               const normalizedPath = patch.file.replace(/\\/g, '/')
               if (!modelSources.includes(normalizedPath)) {
-                // Collect as warning — agent may have legitimate reasons
-                scopeWarnings.push(
-                  `Patch file "${patch.file}" was not part of the extract source for model "${scope.model}". ` +
-                  `Known source files: ${modelSources.join(', ')}`,
-                )
+                outOfScopePatches.push(patch.file)
               }
+            }
+            if (outOfScopePatches.length > 0) {
+              throw new Error(
+                `Scope enforcement: ${outOfScopePatches.length} patch file(s) are not associated with model "${scope.model}". ` +
+                `Out-of-scope files: ${outOfScopePatches.join(', ')}. ` +
+                `Known source files for "${scope.model}": ${modelSources.join(', ')}. ` +
+                `If this is intentional, use scope: { domain: "${scopeModels[0]?.domain ?? 'unknown'}" } for broader scope.`,
+              )
             }
           }
         }
-      } catch {
-        // normalize-sources.json not found or invalid — skip cross-check
+      } catch (err) {
+        // Re-throw scope enforcement errors, ignore file read errors
+        if (err instanceof Error && err.message.startsWith('Scope enforcement:')) throw err
       }
     }
   }

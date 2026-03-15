@@ -157,7 +157,14 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
           accept: z.string().optional(),
           maxSize: z.number().optional(),
           description: z.string().optional(),
-        })).optional().describe('Field definitions — must use valid types from the 27-type catalog'),
+        }).refine(
+          (f) => {
+            if ((f.type === 'relation' || f.type === 'relations') && !f.model) return false
+            if (f.type === 'select' && (!f.options || f.options.length === 0)) return false
+            return true
+          },
+          { message: 'relation/relations requires "model", select requires non-empty "options"' },
+        )).optional().describe('Field definitions — must use valid types from the 27-type catalog'),
         entries: z.array(z.object({
           locale: z.string().optional().describe('Locale. Default: project default'),
           slug: z.string().optional().describe('Document slug'),
