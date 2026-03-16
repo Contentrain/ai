@@ -1,17 +1,17 @@
 {
   "lastOperation": {
     "entries": [
-      "rules"
+      "config"
     ],
     "locale": "en",
-    "model": "docs-packages",
+    "model": "docs-reference",
     "source": "mcp-local",
-    "timestamp": "2026-03-16T19:46:48.679Z",
+    "timestamp": "2026-03-16T19:47:01.042Z",
     "tool": "contentrain_content_save"
   },
   "stats": {
-    "entries": 27,
-    "lastSync": "2026-03-16T19:46:48.679Z",
+    "entries": 29,
+    "lastSync": "2026-03-16T19:47:01.042Z",
     "locales": [
       "en",
       "tr"
