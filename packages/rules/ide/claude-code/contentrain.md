@@ -2792,30 +2792,26 @@ Use these heuristics to identify content strings in source code. Content is user
 - JSON keys
 - Enum values used as code identifiers (not displayed to users)
 
-### Dictionary Parameterized Templates
+### Dictionary Interpolation Limitation
 
-Dictionary values can contain `{placeholder}` parameters that are resolved at runtime using the SDK's `get(key, params)` method.
+Strings containing dynamic expressions (`${variable}`, template literals with runtime values) cannot be stored in dictionaries. These must remain as hardcoded expressions in source code.
 
-**Store with placeholders:**
+**CANNOT extract:**
+
+- `"Add a new entry to ${modelId}"` — contains runtime variable
+- `` `Hello, ${user.name}!` `` — template literal with variable
+
+**CAN extract:**
+
+- `"Add a new entry"` — static string (parameterize separately if needed)
+- `"Hello, World!"` — no runtime variables
+
+Agent should split parameterized strings: extract the static template pattern and leave the interpolation in code.
+
 ```
-dictionary key "add-entry" = "Add a new entry to {model}"
-dictionary key "welcome" = "Hello, {name}! You have {count} messages."
-```
-
-**Use in code:**
-```ts
-const t = dictionary('ui-texts').locale('en')
-t.get('add-entry', { model: modelId })           // "Add a new entry to blog-post"
-t.get('welcome', { name: 'Ahmet', count: 5 })    // "Hello, Ahmet! You have 5 messages."
-```
-
-This enables full i18n: translators see `{model}` as a placeholder, parameter order can change per locale.
-
-**Bracket notation alternative** (when using `.get()` without key):
-```ts
-const labels = dictionary('ui-texts').locale('en').get()
-// labels['add-entry'] returns raw template: "Add a new entry to {model}"
-// Use dictionary().get('add-entry', { model }) for interpolation
+// Instead of: `"Add a new entry to ${modelId}"`
+// Extract: dictionary key "add-entry-to" = "Add a new entry to"
+// Code: `${t['add-entry-to']} ${modelId}`
 ```
 
 ### Edge Cases
