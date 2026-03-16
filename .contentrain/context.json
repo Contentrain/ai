@@ -1,23 +1,19 @@
 {
   "lastOperation": {
-    "entries": [
-      "faq-3",
-      "faq-4"
-    ],
     "locale": "en",
-    "model": "faq",
+    "model": "docs-guide",
     "source": "mcp-local",
-    "timestamp": "2026-03-14T13:11:43.858Z",
-    "tool": "contentrain_content_save"
+    "timestamp": "2026-03-16T19:17:17.849Z",
+    "tool": "contentrain_model_save"
   },
   "stats": {
-    "entries": 15,
-    "lastSync": "2026-03-14T13:11:43.858Z",
+    "entries": 16,
+    "lastSync": "2026-03-16T19:17:17.850Z",
     "locales": [
       "en",
       "tr"
     ],
-    "models": 5
+    "models": 7
   },
   "version": "1"
 }
