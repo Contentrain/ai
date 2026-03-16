@@ -29,3 +29,20 @@
 .VPHero .tagline {
   max-width: 560px;
 }
+
+/* Hero image sizing */
+.VPHero .image-container .image-bg {
+  transform: scale(1.4);
+}
+
+.VPHero .image-container img {
+  max-width: 420px !important;
+  width: 420px !important;
+}
+
+@media (min-width: 960px) {
+  .VPHero .image-container img {
+    max-width: 520px !important;
+    width: 520px !important;
+  }
+}
