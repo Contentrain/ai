@@ -39,6 +39,7 @@ Optional flags:
 - `--port` (default: 3333)
 - `--host` (default: localhost)
 - `--open=false` (prevent auto-opening browser)
+- `--stdio` (MCP stdio transport for IDE integration — no web UI)
 
 Wait for the "Contentrain Serve" banner confirming the server is ready.
 

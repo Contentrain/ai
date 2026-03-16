@@ -28,6 +28,19 @@ Call `contentrain_status` to confirm:
 - Note supported locales and configured domains.
 - Check for pending changes — resolve them before starting.
 
+### Step 1.5. Understand Content Formats
+
+Call `contentrain_describe_format` to review the storage format for each model kind before deciding how to structure extracted content.
+
+Know the four formats:
+
+- **Dictionary:** Flat key-value JSON. All values are strings. Keys are semantic dot-separated addresses (e.g., `auth.login.button`). No field schema. Path: `{model-id}/{locale}.json`
+- **Collection:** Object-map JSON keyed by auto-generated 12-char hex IDs. Each entry has typed fields. Path: `{model-id}/{locale}.json`
+- **Singleton:** Single JSON object per locale. One instance of typed fields. Path: `{model-id}/{locale}.json`
+- **Document:** Markdown file with frontmatter per slug per locale. Path: `{model-id}/{slug}/{locale}.md`
+
+Understanding these formats is essential for Step 4, where you choose the right model kind for each group of candidates.
+
 ### Step 2. Build the Project Graph
 
 Call `contentrain_scan(mode: "graph")` to build the import/component dependency graph.
@@ -51,10 +64,10 @@ This is the intelligence step — you (the agent) make all the decisions:
 - **Filter false positives:** Remove CSS values, technical identifiers, import paths, variable names, config values, log messages, and test strings. Refer to `normalize-rules.md` Section 5 for the full heuristics.
 - **Assign domains:** Group candidates by domain (e.g., `marketing`, `blog`, `ui`, `system`).
 - **Determine model types:** Decide the appropriate model kind for each group:
-  - UI labels and error messages → `dictionary`
-  - Page-specific content (hero, features) → `singleton`
-  - Repeating items (testimonials, FAQs) → `collection`
-  - Long-form content with metadata → `document`
+  - **dictionary** — UI strings, button labels, error messages, validation messages. Flat key-value, all strings, no field schema. Choose this when content is short text with no structured fields.
+  - **singleton** — Page-specific content with structured fields (hero section, features block, pricing header). One instance per locale with typed fields.
+  - **collection** — Repeating items with structured fields (testimonials, FAQs, team members). Multiple entries sharing the same field schema.
+  - **document** — Long-form content with markdown body and typed metadata (blog posts, documentation pages, changelogs).
 - **Structure fields:** Define field names and assign candidate strings to fields.
 
 ### Step 5. Write Normalize Plan

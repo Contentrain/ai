@@ -22,11 +22,12 @@ import { Separator } from '@/components/ui/separator'
 const store = useContentStore()
 
 // ─── Phase state machine ───
-type Phase = 'empty' | 'plan' | 'branches'
+type Phase = 'empty' | 'plan' | 'branches' | 'done'
 
 const phase = computed<Phase>(() => {
   if (store.normalizePlan) return 'plan'
   if (store.normalizeResults?.pendingBranches?.length) return 'branches'
+  if (mergeSuccess.value) return 'done'
   return 'empty'
 })
 
@@ -47,8 +48,8 @@ async function handleApprove() {
   try {
     const models = selectedModels.value.size ? [...selectedModels.value] : undefined
     await store.approvePlan(models)
+    toast.success('Plan approved — extraction branch created. Review and merge below.', { duration: 6000 })
     await Promise.all([store.fetchNormalizePlan(), store.fetchNormalizeResults()])
-    toast.success('Plan approved and applied')
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Failed to approve plan')
   } finally {
@@ -73,12 +74,17 @@ async function handleReject() {
 const mergingBranch = ref<string | null>(null)
 const deletingBranch = ref<string | null>(null)
 
+const mergeSuccess = ref(false)
+
 async function mergeBranch(branchName: string) {
   mergingBranch.value = branchName
   try {
     await store.approveBranch(branchName)
     await store.fetchNormalizeResults()
-    toast.success('Branch merged successfully')
+    toast.success('Branch merged — tell your agent to continue with Phase 2', { duration: 6000 })
+    if (!store.normalizeResults?.pendingBranches?.length) {
+      mergeSuccess.value = true
+    }
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Failed to merge branch')
   } finally {
@@ -322,6 +328,26 @@ onMounted(async () => {
           <AgentPromptGroup title="What's next — ask your agent">
             <AgentPrompt prompt="Continue to Phase 2 — patch source files with content references" />
             <AgentPrompt prompt="Start reuse for the extracted content models" />
+          </AgentPromptGroup>
+        </div>
+      </div>
+
+      <!-- ═══ Phase: done — extract merged, ready for Phase 2 ═══ -->
+      <div v-else-if="phase === 'done'" class="space-y-8">
+        <div class="flex flex-col items-center py-12 text-center">
+          <div class="flex size-16 items-center justify-center rounded-full bg-status-success/10 mb-4">
+            <CheckCircle2 class="size-8 text-status-success" />
+          </div>
+          <h2 class="text-xl font-semibold">Phase 1 complete</h2>
+          <p class="mt-2 max-w-md text-sm text-muted-foreground">
+            Content strings have been extracted into models and merged. Tell your AI agent to continue with Phase 2 — patching source files with content references.
+          </p>
+        </div>
+
+        <div class="max-w-2xl mx-auto space-y-4">
+          <AgentPromptGroup title="Tell your agent">
+            <AgentPrompt prompt="Continue to Phase 2 — patch serve-ui source files with content references" label="recommended" />
+            <AgentPrompt prompt="Start reuse for all extracted content models in serve-ui domain" />
           </AgentPromptGroup>
         </div>
       </div>
