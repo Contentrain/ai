@@ -1,6 +1,7 @@
 {
   "name": "@contentrain/docs",
   "private": true,
+  "type": "module",
   "version": "0.0.0",
   "scripts": {
     "dev": "vitepress dev",

@@ -105,6 +105,21 @@ function parseYamlValue(raw: string): unknown {
   return raw
 }
 
+function yamlValue(value: unknown): string {
+  const str = String(value)
+  // Quote strings that contain YAML-special characters
+  if (str.includes(':') || str.includes('#') || str.includes('{') || str.includes('}')
+    || str.includes('[') || str.includes(']') || str.includes('*') || str.includes('&')
+    || str.includes('!') || str.includes('|') || str.includes('>') || str.includes("'")
+    || str.includes('"') || str.includes('%') || str.includes('@') || str.includes('`')
+    || str.startsWith('-') || str.startsWith('?')
+    || str === 'true' || str === 'false' || str === 'null' || str === 'yes' || str === 'no'
+    || str === '') {
+    return `"${str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  }
+  return str
+}
+
 export function serializeFrontmatter(data: Record<string, unknown>, body: string): string {
   // If body starts with frontmatter (---), merge model fields into body's frontmatter
   const trimmedBody = body.trimStart()
@@ -125,7 +140,7 @@ export function serializeFrontmatter(data: Record<string, unknown>, body: string
             lines.push(`  - ${String(item)}`)
           }
         } else {
-          lines.push(`${key}: ${String(value)}`)
+          lines.push(`${key}: ${yamlValue(value)}`)
         }
       }
       // Body frontmatter fields (skip top-level duplicates from model fields)
