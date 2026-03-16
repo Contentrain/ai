@@ -15,10 +15,14 @@ export class DictionaryAccessor {
 
   get(): Record<string, string>
   get(key: string): string | undefined
-  get(key?: string): Record<string, string> | string | undefined {
+  get(key: string, params: Record<string, string | number>): string
+  get(key?: string, params?: Record<string, string | number>): Record<string, string> | string | undefined {
     const dict = this._resolveData()
-    if (key !== undefined) return dict[key]
-    return dict
+    if (key === undefined) return dict
+    const value = dict[key]
+    if (value === undefined) return undefined
+    if (params) return interpolate(value, params)
+    return value
   }
 
   private _resolveData(): Record<string, string> {
@@ -35,4 +39,11 @@ export class DictionaryAccessor {
     }
     return {}
   }
+}
+
+function interpolate(template: string, params: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) => {
+    const val = params[key]
+    return val !== undefined ? String(val) : match
+  })
 }

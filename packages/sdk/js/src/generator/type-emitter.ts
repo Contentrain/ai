@@ -62,6 +62,7 @@ export function emitTypes(models: ModelDefinition[]): string {
   locale(lang: string): DictionaryAccessor
   get(): Record<string, string>
   get(key: string): string | undefined
+  get(key: string, params: Record<string, string | number>): string
 }`)
   lines.push('')
 

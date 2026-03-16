@@ -2792,6 +2792,32 @@ Use these heuristics to identify content strings in source code. Content is user
 - JSON keys
 - Enum values used as code identifiers (not displayed to users)
 
+### Dictionary Parameterized Templates
+
+Dictionary values can contain `{placeholder}` parameters that are resolved at runtime using the SDK's `get(key, params)` method.
+
+**Store with placeholders:**
+```
+dictionary key "add-entry" = "Add a new entry to {model}"
+dictionary key "welcome" = "Hello, {name}! You have {count} messages."
+```
+
+**Use in code:**
+```ts
+const t = dictionary('ui-texts').locale('en')
+t.get('add-entry', { model: modelId })           // "Add a new entry to blog-post"
+t.get('welcome', { name: 'Ahmet', count: 5 })    // "Hello, Ahmet! You have 5 messages."
+```
+
+This enables full i18n: translators see `{model}` as a placeholder, parameter order can change per locale.
+
+**Bracket notation alternative** (when using `.get()` without key):
+```ts
+const labels = dictionary('ui-texts').locale('en').get()
+// labels['add-entry'] returns raw template: "Add a new entry to {model}"
+// Use dictionary().get('add-entry', { model }) for interpolation
+```
+
 ### Edge Cases
 
 | String | Extract? | Reason |

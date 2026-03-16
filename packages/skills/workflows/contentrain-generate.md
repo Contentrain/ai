@@ -260,7 +260,10 @@ const hero = singleton('hero')
 ```ts
 const allLabels = dictionary('ui-labels').locale('en').get()       // --> Record<string, string>
 const oneLabel = dictionary('ui-labels').locale('en').get('key')   // --> string | undefined
+const withParams = dictionary('ui-labels').locale('en').get('add-entry', { model: 'blog' })  // --> "Add a new entry to blog"
 ```
+
+Parameterized templates use `{placeholder}` syntax in dictionary values. The `get(key, params)` overload replaces `{name}` with the provided value. Unmatched placeholders are left as-is.
 
 **DocumentQuery (for document models -- markdown + frontmatter):**
 

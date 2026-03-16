@@ -376,9 +376,13 @@ class SingletonAccessor {
 class DictionaryAccessor {
   constructor(data, defaultLocale) { this._data = data; this._locale = null; this._defaultLocale = defaultLocale || null; }
   locale(lang) { this._locale = lang; return this; }
-  get(key) {
+  get(key, params) {
     let dict; if (this._locale) { dict = this._data.get(this._locale) ?? {}; } else if (this._defaultLocale && this._data.has(this._defaultLocale)) { dict = this._data.get(this._defaultLocale); } else { const loc = this._data.keys().next().value; dict = this._data.get(loc) ?? {}; }
-    return key !== undefined ? dict[key] : dict;
+    if (key === undefined) return dict;
+    const val = dict[key];
+    if (val === undefined) return undefined;
+    if (params) return val.replace(/{(w+)}/g, (m, k) => { const v = params[k]; return v !== undefined ? String(v) : m; });
+    return val;
   }
 }
 
