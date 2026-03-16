@@ -35,6 +35,30 @@ These files contain architectural decisions and are the source of truth during d
 
 **Always read relevant spec before implementing.** Specs are expanded during development as details emerge.
 
+## Contentrain Rules & Skills (MANDATORY)
+
+When working with Contentrain content operations (models, content, normalize, validate), you MUST follow the rules and skills in this repo:
+
+### Rules (read before any content operation)
+- **Main rules:** `packages/rules/rules/claude-code/contentrain.md` — 2900+ lines of content quality, schema, MCP usage, and security rules
+- **Shared rules:** `packages/rules/shared/` — normalize-rules, content-quality, schema-rules, i18n-quality, security-rules, mcp-usage
+
+### Skills (follow step-by-step for workflows)
+- `packages/skills/workflows/contentrain-normalize.md` — Two-phase normalize (extract + reuse)
+- `packages/skills/workflows/contentrain-content.md` — Content CRUD operations
+- `packages/skills/workflows/contentrain-model.md` — Model creation/update
+- `packages/skills/workflows/contentrain-review.md` — Content quality review
+- `packages/skills/workflows/contentrain-serve.md` — Serve UI management
+- `packages/skills/workflows/contentrain-validate-fix.md` — Validation and auto-fix
+
+### Critical rules to always follow:
+1. **Always call `contentrain_describe_format` before creating models or content** — understand storage formats
+2. **Dictionary = flat key-value, all strings, no fields, no id/slug** — keys are semantic addresses
+3. **Collection = object-map by entry ID, typed fields** — IDs are auto-generated hex
+4. **Always dry_run:true first, review, then dry_run:false** — never skip preview
+5. **MCP is deterministic infra, agent is intelligence** — MCP does NOT make content decisions
+6. **Normalize branches always use review workflow** — never auto-merge
+
 ## Tech Stack
 
 - **Runtime:** Node.js 22 LTS
