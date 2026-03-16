@@ -254,3 +254,4 @@ In most cases, you do not install these manually. `contentrain init` handles IDE
 - [MCP Tools](/packages/mcp) — The deterministic execution layer that rules and skills govern
 - [CLI](/packages/cli) — `contentrain init` installs IDE rules automatically
 - [Query SDK](/packages/sdk) — The generated client for consuming content
+- [Contentrain Studio](https://studio.contentrain.io) — Chat-first UI where agents use the same rules and skills through a web interface

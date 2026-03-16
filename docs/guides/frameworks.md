@@ -616,3 +616,7 @@ All frameworks share the same deployment pattern:
 4. Static or server output is produced with embedded content
 
 No external API dependency. No database. Content lives in Git.
+
+::: info Non-Web Platforms
+For mobile (React Native, Expo, Flutter) and desktop apps that can't read from Git at build time, [Contentrain Studio](https://studio.contentrain.io) publishes merged content to a CDN — same JSON, delivered over HTTP.
+:::

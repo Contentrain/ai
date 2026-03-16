@@ -389,3 +389,4 @@ The base SDK is framework-agnostic and MIT-licensed. Community-built framework S
 - [CLI](/packages/cli) — `contentrain generate` command that runs the SDK generator
 - [MCP Tools](/packages/mcp) — The tool layer that creates models and content the SDK consumes
 - [Rules & Skills](/packages/rules) — Agent guidance for content operations
+- [Contentrain Studio](https://studio.contentrain.io) — Content CDN for non-web platforms (iOS, Android, Flutter) that can't import from Git at runtime

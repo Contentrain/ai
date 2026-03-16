@@ -275,3 +275,13 @@ If content created by the agent does not appear:
 1. Check if the content is on a branch (not yet merged to main)
 2. Navigate to the Branches page to see pending branches
 3. Merge the branch to make content visible on the Content page
+
+## Beyond Local: Contentrain Studio
+
+`contentrain serve` is designed for single-developer, local workflows. When your team grows, [Contentrain Studio](https://studio.contentrain.io) extends this with:
+
+- **GitHub-connected review** — PRs created from agent branches, reviewable in a web UI
+- **Team roles** — invite editors and reviewers with scoped permissions
+- **Chat-first agent** — talk to your agent through a web interface with full MCP access
+- **Content CDN** — publish approved content for mobile and non-web platforms
+- **Audit trail** — track who created, reviewed, and approved every content change

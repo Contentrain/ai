@@ -283,3 +283,4 @@ Available subpath exports:
 - [CLI](/packages/cli) — Human-facing companion for local operations
 - [Query SDK](/packages/sdk) — Generated runtime client for consuming content
 - [Rules & Skills](/packages/rules) — Agent behavior policies and workflow playbooks
+- [Contentrain Studio](https://studio.contentrain.io) — Hosted governance UI with team review, chat-first agent interface, and content CDN

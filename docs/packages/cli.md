@@ -306,8 +306,13 @@ contentrain diff
 contentrain serve
 ```
 
+::: tip From Local to Team
+The CLI covers single-developer workflows. When you need team collaboration, visual diff review, and content CDN, [Contentrain Studio](https://studio.contentrain.io) extends everything the CLI does with a hosted governance UI.
+:::
+
 ## Related Pages
 
 - [MCP Tools](/packages/mcp) — The deterministic tool layer the CLI wraps
 - [Query SDK](/packages/sdk) — The generated client that `contentrain generate` produces
 - [Rules & Skills](/packages/rules) — Agent behavior policies installed by `contentrain init`
+- [Contentrain Studio](https://studio.contentrain.io) — Hosted team review, chat-first agent, and CDN

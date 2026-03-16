@@ -36,7 +36,7 @@ These strings are scattered across dozens of files. Translating means grep-and-r
 | 3. Translate | Content copied to new locales and translated | No | Standard content branch |
 
 ::: tip
-Phase 1 is valuable on its own. Extracted content can be managed in Studio, translated, and published without touching source code.
+Phase 1 is valuable on its own. Extracted content can be managed in [Contentrain Studio](https://studio.contentrain.io), translated, and published without touching source code.
 :::
 
 ## Phase 1: Extract
