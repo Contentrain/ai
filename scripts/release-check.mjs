@@ -3,7 +3,6 @@ import { resolve } from 'node:path'
 import process from 'node:process'
 import { PRIVATE_PACKAGE_JSONS, PUBLISHABLE_PACKAGES } from './release-manifest.mjs'
 
-const versions = new Map()
 let failed = false
 
 for (const pkg of PUBLISHABLE_PACKAGES) {
@@ -11,15 +10,14 @@ for (const pkg of PUBLISHABLE_PACKAGES) {
   const readmePath = resolve(pkg.dir, 'README.md')
 
   const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8'))
-  versions.set(pkg.name, packageJson.version)
 
   if (packageJson.private === true) {
     console.error(`publishable package is still private: ${pkg.name}`)
     failed = true
   }
 
-  if (packageJson.version === '0.0.0') {
-    console.error(`placeholder version remains: ${pkg.name} -> 0.0.0`)
+  if (packageJson.version !== pkg.version) {
+    console.error(`version drift: ${pkg.name} expected ${pkg.version} but found ${packageJson.version}`)
     failed = true
   }
 
@@ -39,6 +37,16 @@ for (const pkg of PUBLISHABLE_PACKAGES) {
     console.error(`missing README: ${pkg.dir}/README.md`)
     failed = true
   }
+
+  for (const file of pkg.runtimeVersionFiles ?? []) {
+    const runtimePath = resolve(file)
+    const runtimeRaw = await readFile(runtimePath, 'utf-8')
+    const match = runtimeRaw.match(/version:\s*'([^']+)'/u)
+    if (!match || match[1] !== pkg.version) {
+      console.error(`runtime version drift: ${file} expected ${pkg.version}`)
+      failed = true
+    }
+  }
 }
 
 for (const packageJsonFile of PRIVATE_PACKAGE_JSONS) {
@@ -50,17 +58,8 @@ for (const packageJsonFile of PRIVATE_PACKAGE_JSONS) {
   }
 }
 
-const uniqueVersions = new Set(versions.values())
-if (uniqueVersions.size > 1) {
-  console.error('lockstep release violated: publishable packages do not share the same version')
-  for (const [name, version] of versions) {
-    console.error(`  ${name}: ${version}`)
-  }
-  failed = true
-}
-
 if (failed) {
   process.exit(1)
 }
 
-console.log(`release check passed (${[...uniqueVersions][0]})`)
+console.log('release check passed')

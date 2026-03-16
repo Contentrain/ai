@@ -29,6 +29,8 @@ coverage/
 
 # Internal docs (private strategy & specs — not for public repo)
 docs/internal/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
 
 # Claude Code (agent memory, project config — contains private context)
 .claude/

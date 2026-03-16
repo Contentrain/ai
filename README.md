@@ -315,10 +315,10 @@ pnpm typecheck
 
 ## 🚢 Release
 
-Contentrain currently uses lockstep versioning for all publishable packages.
+Contentrain uses package-specific versioning for public packages. `@contentrain/query` and `@contentrain/mcp` follow their existing npm lines; the other packages start from the `0.1.x` line.
 
 ```bash
-pnpm release:version 0.1.0
+pnpm release:version
 pnpm release:check
 pnpm release:pack
 ```
