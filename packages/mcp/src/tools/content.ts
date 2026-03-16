@@ -163,12 +163,13 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
   // ─── contentrain_content_delete ───
   server.tool(
     'contentrain_content_delete',
-    'Delete content entries. Changes are auto-committed to git — do NOT manually edit .contentrain/ files after calling this tool.',
+    'Delete content entries. For dictionaries, use "keys" to remove specific keys (omit to delete entire locale file). Changes are auto-committed to git — do NOT manually edit .contentrain/ files after calling this tool.',
     {
       model: z.string().describe('Model ID'),
       id: z.string().optional().describe('Entry ID (collection)'),
       slug: z.string().optional().describe('Slug (document)'),
       locale: z.string().optional().describe('Locale code'),
+      keys: z.array(z.string()).optional().describe('Dictionary only: specific keys to remove. Omit to delete entire locale file.'),
       confirm: z.literal(true).describe('Must be true to confirm deletion'),
     },
     async (input) => {
@@ -212,6 +213,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
             id: input.id,
             slug: input.slug,
             locale: input.locale,
+            keys: input.keys,
           })
         })
 

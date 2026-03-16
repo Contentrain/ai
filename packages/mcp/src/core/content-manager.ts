@@ -194,6 +194,7 @@ export interface DeleteOpts {
   id?: string
   slug?: string
   locale?: string
+  keys?: string[]
 }
 
 export interface ListOpts {
@@ -400,17 +401,47 @@ export async function deleteContent(
       break
     }
 
-    case 'singleton':
-    case 'dictionary': {
-      if (model.i18n && !opts.locale) throw new Error(`${model.kind} delete requires a locale when i18n is enabled`)
+    case 'singleton': {
+      if (model.i18n && !opts.locale) throw new Error('Singleton delete requires a locale when i18n is enabled')
       const locale = opts.locale ?? 'data'
       const filePath = resolveJsonFilePath(cDir, model, locale)
       await rm(filePath, { force: true })
       removed.push(model.i18n
         ? `content/${model.domain}/${model.id}/${locale}.json`
         : `content/${model.domain}/${model.id}/data.json`)
-
       await deleteMeta(projectRoot, model, { locale: model.i18n ? locale : undefined })
+      break
+    }
+
+    case 'dictionary': {
+      if (model.i18n && !opts.locale) throw new Error('Dictionary delete requires a locale when i18n is enabled')
+      const locale = opts.locale ?? 'data'
+      const filePath = resolveJsonFilePath(cDir, model, locale)
+
+      if (opts.keys?.length) {
+        // Delete specific keys from dictionary
+        const existing = await readJson<Record<string, string>>(filePath) ?? {}
+        const notFound: string[] = []
+        for (const key of opts.keys) {
+          if (key in existing) {
+            delete existing[key]
+          } else {
+            notFound.push(key)
+          }
+        }
+        if (notFound.length > 0) {
+          throw new Error(`Dictionary "${model.id}" (${locale}): keys not found — [${notFound.join(', ')}]`)
+        }
+        await writeJson(filePath, existing)
+        removed.push(...opts.keys.map(k => `${model.id}/${locale}:${k}`))
+      } else {
+        // Delete entire locale file
+        await rm(filePath, { force: true })
+        removed.push(model.i18n
+          ? `content/${model.domain}/${model.id}/${locale}.json`
+          : `content/${model.domain}/${model.id}/data.json`)
+        await deleteMeta(projectRoot, model, { locale: model.i18n ? locale : undefined })
+      }
       break
     }
   }
