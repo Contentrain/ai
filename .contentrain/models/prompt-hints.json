@@ -1,0 +1,13 @@
+{
+  "id": "prompt-hints",
+  "name": "Prompt Hints",
+  "kind": "dictionary",
+  "domain": "serve-ui",
+  "i18n": true,
+  "fields": {
+    "value": {
+      "required": true,
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "status-labels",
+  "name": "Status Labels",
+  "kind": "dictionary",
+  "domain": "serve-ui",
+  "i18n": true,
+  "fields": {
+    "value": {
+      "required": true,
+      "type": "string"
+    }
+  }
+}

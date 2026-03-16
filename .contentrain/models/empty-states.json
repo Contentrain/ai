@@ -1,0 +1,13 @@
+{
+  "id": "empty-states",
+  "name": "Empty States",
+  "kind": "dictionary",
+  "domain": "serve-ui",
+  "i18n": true,
+  "fields": {
+    "value": {
+      "required": true,
+      "type": "string"
+    }
+  }
+}
