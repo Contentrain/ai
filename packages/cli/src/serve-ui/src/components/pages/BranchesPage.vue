@@ -5,8 +5,9 @@ import { useContentStore } from '@/stores/content'
 import type { HistoryEntry } from '@/stores/content'
 import { useWatch } from '@/composables/useWatch'
 import { formatRelativeTime } from '@/composables/useFormatters'
+import { toast } from 'vue-sonner'
 import {
-  GitBranch, RefreshCw, FileText, Database, Languages, ShieldCheck,
+  GitBranch, RefreshCw, Loader2, FileText, Database, Languages, ShieldCheck,
   ChevronRight, Clock, History, Layers, Box, Trash2, GitMerge,
   Settings, ScanSearch,
 } from 'lucide-vue-next'
@@ -86,9 +87,12 @@ const groupedHistory = computed(() => {
 
 // ─── Actions ───
 
-function refresh() {
-  store.fetchBranches()
-  store.fetchHistory()
+async function refresh() {
+  try {
+    await Promise.all([store.fetchBranches(), store.fetchHistory()])
+  } catch {
+    toast.error('Failed to load branches or history')
+  }
 }
 
 onMounted(() => { refresh() })
@@ -103,7 +107,8 @@ useWatch((event) => {
     <PageHeader title="Branches & History" description="Review pending changes and track operations">
       <template #actions>
         <Button variant="outline" size="sm" :disabled="store.loading" @click="refresh()">
-          <RefreshCw class="size-4" :class="store.loading && 'animate-spin'" /> Refresh
+          <Loader2 v-if="store.loading" class="size-4 animate-spin" />
+          <RefreshCw v-else class="size-4" /> Refresh
         </Button>
       </template>
     </PageHeader>
@@ -128,7 +133,7 @@ useWatch((event) => {
         <TabsContent value="pending">
           <!-- Loading -->
           <div v-if="store.loading && branches.length === 0" class="flex justify-center py-12">
-            <div class="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <Loader2 class="size-6 animate-spin text-primary" />
           </div>
 
           <!-- Empty -->
@@ -142,8 +147,8 @@ useWatch((event) => {
 
           <!-- Branch list -->
           <div v-else class="space-y-2">
-            <button v-for="branch in parsedBranches" :key="branch.name"
-              class="group flex w-full items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary/30 hover:shadow-sm"
+            <Button v-for="branch in parsedBranches" :key="branch.name" variant="ghost"
+              class="group flex w-full h-auto items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary/30 hover:shadow-sm"
               @click="router.push(`/branches/${encodeURIComponent(branch.name)}`)">
               <div :class="cn('flex size-10 items-center justify-center rounded-lg', getScopeConfig(branch.scope).bg)">
                 <component :is="getScopeConfig(branch.scope).icon"
@@ -163,14 +168,14 @@ useWatch((event) => {
               </Badge>
               <ChevronRight
                 class="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-            </button>
+            </Button>
           </div>
         </TabsContent>
 
         <!-- History Tab -->
         <TabsContent value="history">
           <div v-if="store.loading && historyEntries.length === 0" class="flex justify-center py-12">
-            <div class="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <Loader2 class="size-6 animate-spin text-primary" />
           </div>
 
           <div v-else-if="historyEntries.length === 0" class="flex flex-col items-center py-16 text-center">

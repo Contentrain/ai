@@ -2,9 +2,10 @@
 import { onMounted, computed, ref, Transition } from 'vue'
 import { useRouter } from 'vue-router'
 import { useContentStore } from '@/stores/content'
+import { toast } from 'vue-sonner'
 import {
   ShieldCheck, ShieldAlert, AlertTriangle, CircleAlert, Info, RefreshCw,
-  ChevronDown, Filter, FileWarning, Database, ListChecks, Wrench,
+  ChevronDown, Filter, FileWarning, Database, ListChecks, Wrench, Loader2,
 } from 'lucide-vue-next'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import StudioHint from '@/components/layout/StudioHint.vue'
@@ -81,31 +82,45 @@ const issuesByModel = computed(() => {
 const lastRunAt = ref<Date | null>(null)
 const runFeedback = ref<string | null>(null)
 
+const fixing = ref(false)
+
 async function runValidation() {
   runFeedback.value = null
-  await store.fetchValidation()
-  lastRunAt.value = new Date()
-  const s = store.validation?.summary
-  if (s) {
-    const total = s.errors + s.warnings + s.notices
-    runFeedback.value = total === 0
-      ? 'All checks passed!'
-      : `Found ${s.errors} error(s), ${s.warnings} warning(s), ${s.notices} notice(s)`
-    setTimeout(() => { runFeedback.value = null }, 4000)
+  try {
+    await store.fetchValidation()
+    lastRunAt.value = new Date()
+    const s = store.validation?.summary
+    if (s) {
+      const total = s.errors + s.warnings + s.notices
+      runFeedback.value = total === 0
+        ? 'All checks passed!'
+        : `Found ${s.errors} error(s), ${s.warnings} warning(s), ${s.notices} notice(s)`
+      setTimeout(() => { runFeedback.value = null }, 4000)
+    }
+  } catch {
+    toast.error('Validation failed. Please try again.')
   }
 }
 
 async function runAutoFix() {
   runFeedback.value = null
-  await store.fetchValidationWithFix()
-  lastRunAt.value = new Date()
-  const s = store.validation?.summary
-  if (s) {
-    const total = s.errors + s.warnings + s.notices
-    runFeedback.value = total === 0
-      ? 'All issues fixed!'
-      : `Fixed auto-fixable issues. ${s.errors} error(s), ${s.warnings} warning(s) remaining`
-    setTimeout(() => { runFeedback.value = null }, 4000)
+  fixing.value = true
+  try {
+    await store.fetchValidationWithFix()
+    lastRunAt.value = new Date()
+    const s = store.validation?.summary
+    if (s) {
+      const total = s.errors + s.warnings + s.notices
+      runFeedback.value = total === 0
+        ? 'All issues fixed!'
+        : `Fixed auto-fixable issues. ${s.errors} error(s), ${s.warnings} warning(s) remaining`
+      setTimeout(() => { runFeedback.value = null }, 4000)
+    }
+    toast.success('Auto-fix completed successfully.')
+  } catch {
+    toast.error('Auto-fix failed. Please try again.')
+  } finally {
+    fixing.value = false
   }
 }
 
@@ -121,7 +136,9 @@ onMounted(() => { runValidation() })
           :count="(validation?.summary.errors ?? 0) + (validation?.summary.warnings ?? 0)"
         />
         <Button variant="outline" size="sm" :disabled="store.loading" @click="runValidation()">
-          <RefreshCw class="size-4" :class="store.loading && 'animate-spin'" /> Run Again
+          <Loader2 v-if="store.loading" class="size-4 animate-spin" />
+          <RefreshCw v-else class="size-4" />
+          Run Again
         </Button>
       </template>
     </PageHeader>
@@ -151,13 +168,13 @@ onMounted(() => { runValidation() })
 
       <!-- Loading overlay when re-running -->
       <div v-if="store.loading && validation" class="flex items-center gap-2 text-sm text-muted-foreground">
-        <div class="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <Loader2 class="size-4 animate-spin text-primary" />
         Running validation...
       </div>
 
       <!-- Initial loading -->
       <div v-if="store.loading && !validation" class="flex justify-center py-12">
-        <div class="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <Loader2 class="size-6 animate-spin text-primary" />
       </div>
 
       <template v-else-if="validation">
@@ -242,18 +259,22 @@ onMounted(() => { runValidation() })
             <Filter class="size-4 text-muted-foreground" />
             <!-- Group by toggle -->
             <div class="flex items-center border rounded-md overflow-hidden mr-2">
-              <button
-                :class="cn('px-2.5 py-1 text-xs font-medium transition-colors', groupBy === 'severity' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')"
+              <Button
+                variant="ghost"
+                size="sm"
+                :class="cn('px-2.5 py-1 h-auto text-xs font-medium rounded-none transition-colors', groupBy === 'severity' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')"
                 @click="groupBy = 'severity'"
               >
                 By Severity
-              </button>
-              <button
-                :class="cn('px-2.5 py-1 text-xs font-medium transition-colors', groupBy === 'model' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')"
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                :class="cn('px-2.5 py-1 h-auto text-xs font-medium rounded-none transition-colors', groupBy === 'model' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')"
                 @click="groupBy = 'model'"
               >
                 By Model
-              </button>
+              </Button>
             </div>
             <!-- Severity filter buttons -->
             <Button
@@ -284,8 +305,9 @@ onMounted(() => { runValidation() })
               Notices ({{ noticeIssues.length }})
             </Button>
             <!-- Auto-fix button -->
-            <Button variant="outline" size="sm" class="h-7 text-xs ml-auto" :disabled="store.loading" @click="runAutoFix()">
-              <Wrench class="mr-1 size-3" />
+            <Button variant="outline" size="sm" class="h-7 text-xs ml-auto" :disabled="store.loading || fixing" @click="runAutoFix()">
+              <Loader2 v-if="fixing" class="mr-1 size-3 animate-spin" />
+              <Wrench v-else class="mr-1 size-3" />
               Auto-fix
             </Button>
           </div>
@@ -379,13 +401,15 @@ onMounted(() => { runValidation() })
                             >
                               {{ issue.severity }}
                             </Badge>
-                            <button
+                            <Button
                               v-if="issue.model"
-                              class="font-mono text-xs text-primary hover:underline bg-muted px-1.5 py-0.5 rounded"
+                              variant="ghost"
+                              size="sm"
+                              class="h-auto font-mono text-xs text-primary hover:underline bg-muted px-1.5 py-0.5 rounded"
                               @click="router.push(`/content/${issue.model}`)"
                             >
                               {{ issue.model }}
-                            </button>
+                            </Button>
                             <span v-if="issue.entry" class="font-mono text-xs text-muted-foreground">
                               {{ issue.entry }}
                             </span>

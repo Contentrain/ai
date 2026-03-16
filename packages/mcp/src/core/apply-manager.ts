@@ -555,10 +555,9 @@ export async function applyExtract(
           created_at: new Date().toISOString(),
           models: sourcesByModel,
         }, null, 2) + '\n'
-        // Write to worktree (for the commit)
+        // Write to worktree only — merge brings it to main
+        // Phase 2 (reuse) must wait for extract branch to be merged first
         await writeText(join(wt, '.contentrain', 'normalize-sources.json'), sourcesJson)
-        // Also write to base projectRoot so reuse can read it BEFORE extract branch is merged
-        await writeText(join(projectRoot, '.contentrain', 'normalize-sources.json'), sourcesJson)
       }
 
       // Update context

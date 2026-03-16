@@ -450,11 +450,43 @@ export async function createServeApp(options: ServeOptions) {
     }
     await writeFile(planPath, JSON.stringify(plan, null, 2) + '\n', 'utf-8')
 
-    // Call MCP apply with the plan data
+    // Transform flat plan extractions into contentrain_apply grouped format
+    const modelIds = selectedModels ?? plan.models?.map((m: { id: string }) => m.id) ?? []
+    const modelMap = new Map<string, { id: string; kind: string; domain: string; i18n?: boolean; fields: Record<string, unknown> }>(
+      (plan.models ?? []).map((m: { id: string; kind: string; domain: string; i18n?: boolean; fields: Record<string, unknown> }) => [m.id, m]),
+    )
+
+    // Group extractions by model
+    const groupedByModel = new Map<string, Array<{ locale?: string; data: Record<string, string>; source: { file: string; line: number; value: string } }>>()
+    for (const ext of (plan.extractions ?? []) as Array<{ value: string; file: string; line: number; model: string; field: string; locale?: string }>) {
+      if (!modelIds.includes(ext.model)) continue
+      const entries = groupedByModel.get(ext.model) ?? []
+      entries.push({
+        locale: ext.locale,
+        data: { [ext.field]: ext.value },
+        source: { file: ext.file, line: ext.line, value: ext.value },
+      })
+      groupedByModel.set(ext.model, entries)
+    }
+
+    // Build extractions array for contentrain_apply
+    const applyExtractions = []
+    for (const [modelId, entries] of groupedByModel) {
+      const model = modelMap.get(modelId)
+      applyExtractions.push({
+        model: modelId,
+        kind: model?.kind ?? 'collection',
+        domain: model?.domain ?? 'default',
+        i18n: model?.i18n,
+        fields: model?.fields,
+        entries,
+      })
+    }
+
     const applyArgs: Record<string, unknown> = {
-      models: selectedModels ?? plan.models?.map((m: { id: string }) => m.id) ?? [],
-      extractions: plan.extractions ?? [],
-      patches: plan.patches ?? [],
+      mode: 'extract',
+      dry_run: false,
+      extractions: applyExtractions,
     }
     const result = await callTool('contentrain_apply', applyArgs)
 

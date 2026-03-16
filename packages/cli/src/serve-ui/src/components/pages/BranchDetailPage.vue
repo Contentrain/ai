@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
+import { toast } from 'vue-sonner'
 
 const route = useRoute()
 const router = useRouter()
@@ -103,9 +104,11 @@ async function approve() {
   try {
     await store.approveBranch(branchName.value)
     actionResult.value = { type: 'success', message: 'Branch merged successfully.' }
+    toast.success('Branch merged successfully.')
     setTimeout(() => router.push('/branches'), 1500)
   } catch {
     actionResult.value = { type: 'error', message: 'Failed to merge branch. Please try again.' }
+    toast.error('Failed to merge branch. Please try again.')
   } finally {
     acting.value = false
   }
@@ -118,15 +121,23 @@ async function reject() {
   try {
     await store.rejectBranch(branchName.value)
     actionResult.value = { type: 'success', message: 'Branch rejected and deleted.' }
+    toast.success('Branch rejected and deleted.')
     setTimeout(() => router.push('/branches'), 1500)
   } catch {
     actionResult.value = { type: 'error', message: 'Failed to delete branch. Please try again.' }
+    toast.error('Failed to delete branch. Please try again.')
   } finally {
     acting.value = false
   }
 }
 
-onMounted(() => { store.fetchBranchDiff(branchName.value) })
+onMounted(async () => {
+  try {
+    await store.fetchBranchDiff(branchName.value)
+  } catch {
+    toast.error('Failed to load branch data.')
+  }
+})
 </script>
 
 <template>
@@ -209,7 +220,7 @@ onMounted(() => { store.fetchBranchDiff(branchName.value) })
 
       <!-- Loading -->
       <div v-if="store.loading" class="flex justify-center py-12">
-        <div class="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <Loader2 class="size-6 animate-spin text-primary" />
       </div>
 
       <template v-else-if="diff">

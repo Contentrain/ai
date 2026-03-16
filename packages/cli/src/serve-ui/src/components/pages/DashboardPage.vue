@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import type { ModelSummary } from '@/stores/project'
 import { useContentStore, type HistoryEntry } from '@/stores/content'
 import { useWatch } from '@/composables/useWatch'
+import { toast } from 'vue-sonner'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import StudioHint from '@/components/layout/StudioHint.vue'
 import { Badge } from '@/components/ui/badge'
@@ -28,6 +29,7 @@ import {
   GitMerge,
   Trash2,
   Clock,
+  Loader2,
 } from 'lucide-vue-next'
 
 const project = useProjectStore()
@@ -91,11 +93,17 @@ const models = computed(() => project.status?.models ?? [])
 const timelineLoading = ref(false)
 const timeline = ref<HistoryEntry[]>([])
 
+watch(() => project.error, (err) => {
+  if (err) toast.error(err)
+})
+
 async function loadTimeline() {
   timelineLoading.value = true
   try {
     await contentStore.fetchHistory(15)
     timeline.value = contentStore.history
+  } catch (e) {
+    toast.error(e instanceof Error ? e.message : 'Failed to load recent operations')
   } finally {
     timelineLoading.value = false
   }
@@ -136,7 +144,7 @@ const stackLabel = computed(() => project.status?.config?.stack ?? null)
     <div class="px-6 py-6 space-y-8">
       <!-- Loading -->
       <div v-if="project.loading && !project.status" class="flex items-center justify-center py-20">
-        <div class="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <Loader2 class="size-6 animate-spin text-primary" />
       </div>
 
       <!-- Error -->
@@ -266,7 +274,7 @@ const stackLabel = computed(() => project.status?.config?.stack ?? null)
 
           <!-- Loading -->
           <div v-if="timelineLoading && timeline.length === 0" class="flex justify-center py-8">
-            <div class="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <Loader2 class="size-5 animate-spin text-primary" />
           </div>
 
           <!-- Empty -->

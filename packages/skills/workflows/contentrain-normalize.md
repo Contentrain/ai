@@ -57,23 +57,71 @@ This is the intelligence step — you (the agent) make all the decisions:
   - Long-form content with metadata → `document`
 - **Structure fields:** Define field names and assign candidate strings to fields.
 
-### Step 5. Present Findings
+### Step 5. Write Normalize Plan
 
-Show the user a summary of what will be extracted:
+After evaluating candidates, write the plan as `.contentrain/normalize-plan.json`:
 
-| Domain | File | String | Suggested Model | Suggested Key |
-|---|---|---|---|---|
-| marketing | `src/pages/index.vue` | "Build faster apps" | hero (singleton) | `title` |
-| ui | `src/components/Nav.vue` | "Sign Up" | ui-labels (dictionary) | `nav.sign-up` |
+```json
+{
+  "version": 1,
+  "status": "pending",
+  "created_at": "2026-03-16T12:00:00.000Z",
+  "agent": "claude",
+  "scan_stats": {
+    "files_scanned": 42,
+    "raw_strings": 320,
+    "candidates_sent": 85,
+    "extracted": 28,
+    "skipped": 57
+  },
+  "models": [
+    {
+      "id": "hero-section",
+      "kind": "singleton",
+      "domain": "marketing",
+      "i18n": true,
+      "fields": { "title": { "type": "string", "required": true }, "subtitle": { "type": "string" } }
+    }
+  ],
+  "extractions": [
+    { "value": "Build faster apps", "file": "src/pages/index.vue", "line": 12, "model": "hero-section", "field": "title" }
+  ],
+  "patches": [
+    { "file": "src/pages/index.vue", "line": 12, "old_value": "Build faster apps", "new_expression": "{{ $t('hero.title') }}" }
+  ]
+}
+```
 
-Report:
-- Number of candidates found vs accepted.
-- Proposed models with their kinds, domains, and field counts.
-- Any edge cases or decisions that need user input.
+This file is watched by the serve UI — writing it triggers automatic detection.
 
-Wait for user confirmation before proceeding.
+### Step 6. Open UI for Review
 
-### Step 6. Preview Extraction
+Start the review UI and direct the developer to visually inspect the plan:
+
+1. **Start serve** (if not already running):
+
+```bash
+contentrain serve
+```
+
+2. **Direct the user** to the normalize page:
+
+> "I've prepared a normalize plan with **{N} extractions** across **{M} models**.
+> Review it visually at **http://localhost:3333/normalize** — you can inspect each extraction, see source traces, and preview patches.
+> **Approve** or **Reject** directly from the UI."
+
+3. **Wait for user action.** The UI provides:
+   - Extraction review panel — grouped by model with field mappings
+   - Source trace panel — click any extraction to see its original location
+   - Patch preview panel — see exact source file changes
+   - **Approve & Apply** button — executes the extraction
+   - **Reject** button — deletes the plan
+
+Do NOT proceed to apply unless the user approves (either via UI or explicit confirmation in chat).
+
+**Alternative (no UI):** If the user prefers terminal-only workflow, present the summary inline and wait for explicit confirmation before proceeding. Skip to Step 7.
+
+### Step 7. Preview Extraction (if not using UI)
 
 Call `contentrain_apply(mode: "extract", dry_run: true)` to generate a preview.
 
@@ -85,15 +133,17 @@ Review the dry-run output:
 
 Show the preview to the user.
 
-### Step 7. Execute Extraction
+### Step 8. Execute Extraction
 
-After user confirmation, call `contentrain_apply(mode: "extract", dry_run: false)`.
+After user approval (via UI or chat), call `contentrain_apply(mode: "extract", dry_run: false)`.
 
 Note: `dry_run` defaults to `true`, so you MUST explicitly set `dry_run: false` to execute.
 
 This creates model definitions and content files in `.contentrain/` on a `contentrain/normalize/extract/{timestamp}` branch. Source files are NOT modified.
 
-### Step 8. Validate and Submit
+If approved via UI, the UI calls this automatically — no additional agent action needed.
+
+### Step 9. Validate and Submit
 
 Call `contentrain_validate` to check the extracted content:
 

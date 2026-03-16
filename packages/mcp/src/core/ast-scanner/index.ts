@@ -178,14 +178,24 @@ export async function extractStrings(
   } else if (SVELTE_EXTENSIONS.has(normalizedExt)) {
     const parseSvelte = await loadSvelteParser()
     if (parseSvelte) {
-      rawStrings = await parseSvelte(content, filePath)
+      try {
+        rawStrings = await parseSvelte(content, filePath)
+      } catch {
+        // svelte/compiler not installed — fall back to regex
+        rawStrings = extractWithRegex(content, filePath)
+      }
     } else {
       rawStrings = extractWithRegex(content, filePath)
     }
   } else if (ASTRO_EXTENSIONS.has(normalizedExt)) {
     const parseAstro = await loadAstroParser()
     if (parseAstro) {
-      rawStrings = await parseAstro(content, filePath)
+      try {
+        rawStrings = await parseAstro(content, filePath)
+      } catch {
+        // @astrojs/compiler not installed — fall back to regex
+        rawStrings = extractWithRegex(content, filePath)
+      }
     } else {
       rawStrings = extractWithRegex(content, filePath)
     }

@@ -1,103 +1,125 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useApi } from '@/composables/useApi'
-import type {
-  NormalizePlanExtraction,
-  NormalizePlanModel,
-  NormalizePlanPatch,
-} from '@/stores/content'
+import { toast } from 'vue-sonner'
+import { useContentStore } from '@/stores/content'
+import type { NormalizePlanExtraction } from '@/stores/content'
+import { useWatch } from '@/composables/useWatch'
 import {
-  ScanSearch, FileCode, Terminal, ArrowRight, Sparkles,
-  FileText, BarChart3, Languages, CheckCircle2, MapPin,
+  Sparkles, MapPin, Loader2, Trash2, GitMerge, CheckCircle2, Bot, Terminal,
 } from 'lucide-vue-next'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import StudioHint from '@/components/layout/StudioHint.vue'
 import ExtractionReviewPanel from '@/components/normalize/ExtractionReviewPanel.vue'
 import SourceTracePanel from '@/components/normalize/SourceTracePanel.vue'
 import PatchPreviewPanel from '@/components/normalize/PatchPreviewPanel.vue'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
-const api = useApi()
+const store = useContentStore()
 
-interface Candidate {
-  value: string
-  file: string
-  line: number
-  confidence: number
-}
+// ─── Phase state machine ───
+type Phase = 'empty' | 'plan' | 'branches'
 
-interface ScanResult {
-  mode: string
-  candidates?: Candidate[]
-  duplicates?: Array<{ value: string; count: number; files: string[] }>
-  stats?: { total_scanned: number; candidates_found: number; total_files: number }
-}
+const phase = computed<Phase>(() => {
+  if (store.normalizePlan) return 'plan'
+  if (store.normalizeResults?.pendingBranches?.length) return 'branches'
+  return 'empty'
+})
 
-interface NormalizePlan {
-  models: NormalizePlanModel[]
-  extractions: NormalizePlanExtraction[]
-  patches: NormalizePlanPatch[]
-}
-
-const result = ref<ScanResult | null>(null)
-const plan = ref<NormalizePlan | null>(null)
-const loading = ref(false)
+// ─── Plan state ───
 const selectedExtraction = ref<NormalizePlanExtraction | null>(null)
 const selectedModels = ref<Set<string>>(new Set())
+const approving = ref(false)
+const rejecting = ref(false)
+const loading = ref(false)
 
 function onSelectExtraction(ext: NormalizePlanExtraction) {
   selectedExtraction.value = ext
 }
 
-// Group candidates by file
-const candidatesByFile = computed(() => {
-  if (!result.value?.candidates) return []
-  const groups = new Map<string, Candidate[]>()
-  for (const c of result.value.candidates) {
-    const existing = groups.get(c.file) ?? []
-    existing.push(c)
-    groups.set(c.file, existing)
+// ─── Actions ───
+async function handleApprove() {
+  approving.value = true
+  try {
+    const models = selectedModels.value.size ? [...selectedModels.value] : undefined
+    await store.approvePlan(models)
+    await Promise.all([store.fetchNormalizePlan(), store.fetchNormalizeResults()])
+    toast.success('Plan approved and applied')
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : 'Failed to approve plan')
+  } finally {
+    approving.value = false
   }
-  return [...groups.entries()].map(([file, candidates]) => ({
-    file,
-    candidates: candidates.toSorted((a, b) => a.line - b.line),
-  }))
-})
-
-function confidenceColor(confidence: number): string {
-  if (confidence >= 0.9) return 'text-status-success bg-status-success/10'
-  if (confidence >= 0.7) return 'text-status-warning bg-status-warning/10'
-  return 'text-muted-foreground bg-muted'
 }
 
+async function handleReject() {
+  rejecting.value = true
+  try {
+    await store.rejectPlan()
+    store.normalizePlan = null
+    toast.success('Plan rejected')
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : 'Failed to reject plan')
+  } finally {
+    rejecting.value = false
+  }
+}
+
+// ─── Branch actions ───
+const mergingBranch = ref<string | null>(null)
+const deletingBranch = ref<string | null>(null)
+
+async function mergeBranch(branchName: string) {
+  mergingBranch.value = branchName
+  try {
+    await store.approveBranch(branchName)
+    await store.fetchNormalizeResults()
+    toast.success('Branch merged successfully')
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : 'Failed to merge branch')
+  } finally {
+    mergingBranch.value = null
+  }
+}
+
+async function deleteBranch(branchName: string) {
+  deletingBranch.value = branchName
+  try {
+    await store.rejectBranch(branchName)
+    await store.fetchNormalizeResults()
+    toast.success('Branch deleted successfully')
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : 'Failed to delete branch')
+  } finally {
+    deletingBranch.value = null
+  }
+}
+
+// ─── WebSocket ───
+useWatch((event) => {
+  if (event.type === 'normalize:plan-updated') {
+    store.fetchNormalizePlan()
+  }
+  if (event.type === 'branch:created' || event.type === 'branch:merged') {
+    store.fetchNormalizeResults()
+  }
+})
+
+// ─── Init ───
 onMounted(async () => {
   loading.value = true
   try {
-    // Load scan results from context
-    const ctx = await api.get<{ lastOperation?: { tool?: string; result?: ScanResult } }>('/context')
-    if (
-      ctx.lastOperation?.tool === 'contentrain_apply' ||
-      ctx.lastOperation?.tool === 'contentrain_scan'
-    ) {
-      if (ctx.lastOperation.result) {
-        result.value = ctx.lastOperation.result
-      }
-    }
-
-    // Load normalize sources (plan data)
-    const sourcesResult = await api.get<{ sources: NormalizePlan | null }>('/normalize/sources')
-    if (sourcesResult.sources) {
-      plan.value = sourcesResult.sources
-      // Select all models by default
-      for (const model of sourcesResult.sources.models) {
+    await Promise.all([store.fetchNormalizePlan(), store.fetchNormalizeResults()])
+    // Select all models by default if plan exists
+    if (store.normalizePlan) {
+      for (const model of store.normalizePlan.models) {
         selectedModels.value.add(model.id)
       }
     }
-  } catch {
-    // No normalize results yet
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : 'Failed to load normalize data')
   } finally {
     loading.value = false
   }
@@ -111,12 +133,11 @@ onMounted(async () => {
     <div class="px-6 py-6">
       <!-- Loading -->
       <div v-if="loading" class="flex justify-center py-12">
-        <div class="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <Loader2 class="size-5 animate-spin text-muted-foreground" />
       </div>
 
-      <!-- No results: empty state -->
-      <div v-else-if="!result && !plan" class="space-y-8">
-        <!-- Hero empty state -->
+      <!-- ═══ Phase: empty — no plan, no branches ═══ -->
+      <div v-else-if="phase === 'empty'" class="space-y-8">
         <div class="flex flex-col items-center py-12 text-center">
           <img src="/select-data-type.svg" alt="" class="empty-illustration mb-6" />
           <h2 class="text-xl font-semibold">Extract hardcoded strings</h2>
@@ -140,208 +161,171 @@ onMounted(async () => {
               <div class="flex items-start gap-4">
                 <Badge variant="secondary" class="mt-0.5 shrink-0 size-7 flex items-center justify-center rounded-full font-mono text-xs">1</Badge>
                 <div>
-                  <p class="text-sm font-medium">Scan</p>
-                  <p class="text-xs text-muted-foreground mt-0.5">AI scans your source files for hardcoded strings and identifies extraction candidates.</p>
+                  <p class="text-sm font-medium">Ask your AI agent</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">Tell your agent: "normalize my project" or "extract content strings". The agent scans, classifies, and prepares an extraction plan.</p>
                 </div>
               </div>
               <div class="flex items-start gap-4">
                 <Badge variant="secondary" class="mt-0.5 shrink-0 size-7 flex items-center justify-center rounded-full font-mono text-xs">2</Badge>
                 <div>
-                  <p class="text-sm font-medium">Extract</p>
-                  <p class="text-xs text-muted-foreground mt-0.5">Strings are extracted into Contentrain content models with proper keys and structure.</p>
+                  <p class="text-sm font-medium">Review the plan here</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">The agent sends you here to review extractions, source traces, and patches before applying.</p>
                 </div>
               </div>
               <div class="flex items-start gap-4">
                 <Badge variant="secondary" class="mt-0.5 shrink-0 size-7 flex items-center justify-center rounded-full font-mono text-xs">3</Badge>
                 <div>
-                  <p class="text-sm font-medium">Patch</p>
-                  <p class="text-xs text-muted-foreground mt-0.5">Source files are patched to reference the extracted content instead of hardcoded strings.</p>
+                  <p class="text-sm font-medium">Approve or reject</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">Approved extractions are written to content models on a review branch. Reject to discard.</p>
                 </div>
               </div>
               <div class="flex items-start gap-4">
                 <Badge variant="secondary" class="mt-0.5 shrink-0 size-7 flex items-center justify-center rounded-full font-mono text-xs">4</Badge>
                 <div>
-                  <p class="text-sm font-medium">Review</p>
-                  <p class="text-xs text-muted-foreground mt-0.5">Changes appear as branches for review. Approve or reject from the Branches page.</p>
+                  <p class="text-sm font-medium">Merge</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">Review branches appear below. Merge to apply changes to your main branch.</p>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <!-- Terminal CTA -->
+        <!-- Agent CTA -->
+        <Card class="mx-auto max-w-2xl border-dashed">
+          <CardContent class="flex items-center gap-4 p-4">
+            <div class="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+              <Bot class="size-5 text-primary" />
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium">Start from your AI agent</p>
+              <p class="mt-0.5 text-xs text-muted-foreground">
+                Ask your agent to normalize your project. It will scan, classify, and prepare a plan for your review.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <!-- Terminal hint -->
         <Card class="mx-auto max-w-2xl border-dashed">
           <CardContent class="flex items-center gap-4 p-4">
             <div class="flex size-10 items-center justify-center rounded-lg bg-muted">
               <Terminal class="size-5 text-muted-foreground" />
             </div>
             <div class="flex-1">
-              <p class="text-sm font-medium">Run from your terminal</p>
+              <p class="text-sm font-medium">Or run the CLI</p>
               <code class="mt-1 block rounded bg-muted px-3 py-1.5 font-mono text-xs text-foreground">
-                npx contentrain normalize
+                npx contentrain serve
               </code>
             </div>
-            <ArrowRight class="size-4 text-muted-foreground shrink-0" />
           </CardContent>
         </Card>
       </div>
 
-      <!-- Results -->
-      <div v-else class="space-y-6">
-        <!-- Stats summary (scan results) -->
-        <div v-if="result" class="grid grid-cols-3 gap-3">
-          <Card>
-            <CardContent class="flex items-center gap-3 p-4">
-              <div class="flex size-10 items-center justify-center rounded-lg bg-muted">
-                <FileText class="size-5 text-muted-foreground" />
-              </div>
-              <div>
-                <div class="text-2xl font-bold tabular-nums">{{ result.stats?.total_files ?? 0 }}</div>
-                <div class="text-xs text-muted-foreground">Files scanned</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent class="flex items-center gap-3 p-4">
-              <div class="flex size-10 items-center justify-center rounded-lg bg-status-warning/10">
-                <Languages class="size-5 text-status-warning" />
-              </div>
-              <div>
-                <div class="text-2xl font-bold tabular-nums">{{ result.stats?.candidates_found ?? 0 }}</div>
-                <div class="text-xs text-muted-foreground">Candidates found</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent class="flex items-center gap-3 p-4">
-              <div class="flex size-10 items-center justify-center rounded-lg bg-status-info/10">
-                <BarChart3 class="size-5 text-status-info" />
-              </div>
-              <div>
-                <div class="text-2xl font-bold tabular-nums">{{ result.stats?.total_scanned ?? 0 }}</div>
-                <div class="text-xs text-muted-foreground">Strings analyzed</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <!-- Plan Review: Extraction + Source Trace -->
-        <div v-if="plan && plan.extractions.length > 0">
-          <!-- Extraction Review -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- ═══ Phase: plan — agent prepared a plan, human reviews ═══ -->
+      <div v-else-if="phase === 'plan' && store.normalizePlan" class="space-y-6">
+        <!-- Plan header -->
+        <Card>
+          <CardContent class="flex items-center justify-between p-4">
             <div>
-              <h3 class="text-sm font-semibold text-foreground mb-3">Extractions</h3>
-              <ExtractionReviewPanel
-                :models="plan.models"
-                :extractions="plan.extractions"
-                :selected-models="selectedModels"
-                @select-extraction="onSelectExtraction"
-              />
+              <h3 class="text-sm font-semibold">Normalize Plan</h3>
+              <p class="text-xs text-muted-foreground mt-0.5">
+                {{ store.normalizePlan.extractions.length }} extractions across {{ store.normalizePlan.models.length }} models
+                <template v-if="store.normalizePlan.patches.length">
+                  &middot; {{ store.normalizePlan.patches.length }} patches
+                </template>
+              </p>
             </div>
-            <div>
-              <h3 class="text-sm font-semibold text-foreground mb-3">Source Trace</h3>
-              <SourceTracePanel
-                :extraction="selectedExtraction"
-                :patches="plan.patches"
-                @close="selectedExtraction = null"
-              />
-              <div v-if="!selectedExtraction" class="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-12 text-center">
-                <MapPin class="size-6 text-muted-foreground/40 mb-2" />
-                <p class="text-xs text-muted-foreground">Click an extraction to see its source trace</p>
-              </div>
+            <div class="flex items-center gap-2">
+              <Button variant="outline" :disabled="rejecting || approving" @click="handleReject">
+                <Loader2 v-if="rejecting" class="size-4 animate-spin" />
+                <Trash2 v-else />
+                {{ rejecting ? 'Rejecting...' : 'Reject' }}
+              </Button>
+              <Button :disabled="approving || rejecting" @click="handleApprove">
+                <Loader2 v-if="approving" class="size-4 animate-spin" />
+                <CheckCircle2 v-else />
+                {{ approving ? 'Applying...' : 'Approve & Apply' }}
+              </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <!-- Scan stats (if available) -->
+        <Card v-if="store.normalizePlan.scan_stats" class="bg-muted/30">
+          <CardContent class="flex items-center gap-6 p-4 text-xs text-muted-foreground">
+            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.files_scanned }}</strong> files scanned</span>
+            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.raw_strings }}</strong> strings found</span>
+            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.candidates_sent }}</strong> candidates</span>
+            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.extracted }}</strong> extracted</span>
+            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.skipped }}</strong> skipped</span>
+          </CardContent>
+        </Card>
+
+        <!-- Extraction Review + Source Trace -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div>
+            <h3 class="text-sm font-semibold text-foreground mb-3">Extractions</h3>
+            <ExtractionReviewPanel
+              :models="store.normalizePlan.models"
+              :extractions="store.normalizePlan.extractions"
+              :selected-models="selectedModels"
+              @select-extraction="onSelectExtraction"
+            />
           </div>
-
-          <!-- Source Patches -->
-          <div v-if="plan.patches.length > 0" class="mt-6">
-            <h3 class="text-sm font-semibold text-foreground mb-3">Source Patches</h3>
-            <PatchPreviewPanel :patches="plan.patches" />
+          <div>
+            <h3 class="text-sm font-semibold text-foreground mb-3">Source Trace</h3>
+            <SourceTracePanel
+              v-if="selectedExtraction"
+              :extraction="selectedExtraction"
+              :patches="store.normalizePlan.patches"
+              @close="selectedExtraction = null"
+            />
+            <div v-else class="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-12 text-center">
+              <MapPin class="size-6 text-muted-foreground/40 mb-2" />
+              <p class="text-xs text-muted-foreground">Click an extraction to see its source trace</p>
+            </div>
           </div>
         </div>
 
-        <!-- Scan candidates (no plan yet) -->
-        <template v-if="result">
-          <!-- No candidates found -->
-          <div v-if="candidatesByFile.length === 0 && !plan" class="flex flex-col items-center py-12 text-center">
-            <div class="flex size-16 items-center justify-center rounded-full bg-status-success/10 mb-4">
-              <CheckCircle2 class="size-8 text-status-success" />
-            </div>
-            <h2 class="text-lg font-semibold">No hardcoded strings found</h2>
-            <p class="mt-2 text-sm text-muted-foreground">Your project looks clean. No extraction candidates detected.</p>
+        <!-- Source Patches -->
+        <div v-if="store.normalizePlan.patches.length > 0">
+          <h3 class="text-sm font-semibold text-foreground mb-3">Source Patches</h3>
+          <PatchPreviewPanel :patches="store.normalizePlan.patches" />
+        </div>
+      </div>
+
+      <!-- ═══ Phase: branches — pending normalize branches ═══ -->
+      <div v-else-if="phase === 'branches' && store.normalizeResults" class="space-y-6">
+        <div class="flex flex-col items-center py-6 text-center">
+          <div class="flex size-14 items-center justify-center rounded-full bg-status-info/10 mb-4">
+            <GitMerge class="size-7 text-status-info" />
           </div>
+          <h2 class="text-lg font-semibold">Pending normalize branches</h2>
+          <p class="mt-1 text-sm text-muted-foreground">Review and merge normalize branches into your main branch.</p>
+        </div>
 
-          <!-- Candidates grouped by file -->
-          <div v-if="candidatesByFile.length > 0" class="space-y-3">
-            <h3 class="text-sm font-medium text-muted-foreground">Candidates by file</h3>
-
-            <Collapsible
-              v-for="group in candidatesByFile"
-              :key="group.file"
-              :default-open="true"
-            >
-              <Card class="overflow-hidden">
-                <CollapsibleTrigger class="flex w-full items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left">
-                  <FileCode class="size-4 text-muted-foreground shrink-0" />
-                  <span class="font-mono text-xs text-foreground flex-1 truncate">{{ group.file }}</span>
-                  <Badge variant="secondary" class="text-[10px]">{{ group.candidates.length }}</Badge>
-                </CollapsibleTrigger>
-
-                <CollapsibleContent>
-                  <Separator />
-                  <div class="divide-y divide-border">
-                    <div
-                      v-for="(candidate, ci) in group.candidates"
-                      :key="ci"
-                      class="flex items-start gap-3 p-3 bg-card"
-                    >
-                      <span class="font-mono text-[10px] text-muted-foreground mt-1 w-8 text-right shrink-0 tabular-nums">
-                        L{{ candidate.line }}
-                      </span>
-                      <div class="flex-1 min-w-0">
-                        <span class="text-sm font-medium text-foreground break-all">"{{ candidate.value }}"</span>
-                      </div>
-                      <Badge
-                        :class="confidenceColor(candidate.confidence)"
-                        class="text-[10px] shrink-0 font-mono"
-                      >
-                        {{ Math.round(candidate.confidence * 100) }}%
-                      </Badge>
-                    </div>
-                  </div>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-          </div>
-
-          <!-- Duplicates section -->
-          <div v-if="result.duplicates && result.duplicates.length > 0" class="space-y-3">
-            <h3 class="text-sm font-medium text-muted-foreground">Duplicate strings</h3>
-            <Card>
-              <div class="divide-y divide-border">
-                <div
-                  v-for="(dup, di) in result.duplicates"
-                  :key="di"
-                  class="flex items-start gap-3 p-3"
-                >
-                  <ScanSearch class="size-4 text-status-warning mt-0.5 shrink-0" />
-                  <div class="flex-1 min-w-0">
-                    <span class="text-sm font-medium text-foreground">"{{ dup.value }}"</span>
-                    <div class="mt-1 flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline" class="text-[10px]">{{ dup.count }}x</Badge>
-                      <span
-                        v-for="f in dup.files"
-                        :key="f"
-                        class="font-mono text-[10px] text-muted-foreground"
-                      >{{ f }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </template>
+        <div class="space-y-3 max-w-2xl mx-auto">
+          <Card
+            v-for="branch in store.normalizeResults.pendingBranches"
+            :key="branch.name"
+            class="overflow-hidden"
+          >
+            <CardContent class="flex items-center gap-3 p-4">
+              <GitMerge class="size-4 text-status-info shrink-0" />
+              <span class="font-mono text-xs text-foreground flex-1 truncate">{{ branch.name }}</span>
+              <Button variant="outline" size="sm" :disabled="deletingBranch === branch.name || mergingBranch === branch.name" @click="deleteBranch(branch.name)">
+                <Loader2 v-if="deletingBranch === branch.name" class="size-4 animate-spin" />
+                <Trash2 v-else />
+                Delete
+              </Button>
+              <Button size="sm" :disabled="mergingBranch === branch.name || deletingBranch === branch.name" @click="mergeBranch(branch.name)">
+                <Loader2 v-if="mergingBranch === branch.name" class="size-4 animate-spin" />
+                <GitMerge v-else />
+                Merge
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <StudioHint id="normalize" message="Track normalize history and manage extractions in Contentrain Studio." class="mt-6" />

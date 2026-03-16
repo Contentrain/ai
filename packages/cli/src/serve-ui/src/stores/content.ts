@@ -98,6 +98,13 @@ export interface NormalizePlan {
   patches: NormalizePlanPatch[]
 }
 
+// ─── Normalize types ───
+
+export interface NormalizeResults {
+  lastOperation: unknown
+  pendingBranches: Array<{ name: string }>
+}
+
 export const useContentStore = defineStore('content', () => {
   const api = useApi()
 
@@ -107,6 +114,9 @@ export const useContentStore = defineStore('content', () => {
   const branches = ref<BranchInfo[]>([])
   const branchDiff = ref<BranchDiff | null>(null)
   const loading = ref(false)
+
+  // Normalize state
+  const normalizeResults = ref<NormalizeResults | null>(null)
 
   async function fetchContent(modelId: string, locale?: string, limit?: number, offset?: number) {
     loading.value = true
@@ -200,9 +210,27 @@ export const useContentStore = defineStore('content', () => {
     }
   }
 
+  async function fetchNormalizeResults() {
+    try {
+      normalizeResults.value = await api.get<NormalizeResults>('/normalize/results')
+    } catch {
+      normalizeResults.value = null
+    }
+  }
+
+  async function approvePlan(models?: string[]) {
+    return api.post<unknown>('/normalize/plan/approve', models ? { models } : {})
+  }
+
+  async function rejectPlan() {
+    return api.post<unknown>('/normalize/plan/reject', {})
+  }
+
   return {
     contentList, modelDescription, validation, branches, branchDiff, history, normalizePlan, loading,
+    normalizeResults,
     fetchContent, fetchModelDescription, fetchValidation, fetchValidationWithFix, fetchBranches, fetchBranchDiff, fetchHistory,
     approveBranch, rejectBranch, fetchNormalizePlan,
+    fetchNormalizeResults, approvePlan, rejectPlan,
   }
 })

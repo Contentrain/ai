@@ -12,7 +12,9 @@ import {
   AlertTriangle, RefreshCw, Search, ChevronLeft, ChevronRight,
   Copy, Check, ChevronDown, ChevronUp, FileText, SlidersHorizontal,
   Eye, EyeOff, Maximize2, GripVertical, Pin, PinOff, ArrowUp, ArrowDown,
+  Loader2,
 } from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import StudioHint from '@/components/layout/StudioHint.vue'
 import { Badge } from '@/components/ui/badge'
@@ -286,7 +288,10 @@ async function copyEntry(entry: Record<string, unknown>) {
   const ok = await copyToClipboard(json)
   if (ok) {
     copiedEntryId.value = entry['id'] ?? Object.values(entry)[0]
+    toast.success('Entry copied to clipboard.')
     setTimeout(() => { copiedEntryId.value = null }, 2000)
+  } else {
+    toast.error('Failed to copy entry.')
   }
 }
 
@@ -328,15 +333,21 @@ function isLongContent(val: unknown, fieldName: string): boolean {
 }
 
 // --- Actions ---
-function load() {
-  store.fetchContent(modelId.value, selectedLocale.value)
-  store.fetchModelDescription(modelId.value)
-  store.fetchValidation(modelId.value)
+async function load() {
+  try {
+    await Promise.all([
+      store.fetchContent(modelId.value, selectedLocale.value),
+      store.fetchModelDescription(modelId.value),
+      store.fetchValidation(modelId.value),
+    ])
+  } catch (err) {
+    toast.error('Failed to load content. Please try again.')
+  }
 }
 
-function refresh() {
+async function refresh() {
   expandedRow.value = null
-  load()
+  await load()
 }
 
 function toggleRow(i: number) {
@@ -364,7 +375,10 @@ async function handleCopyId(id: string) {
   const ok = await copyToClipboard(id)
   if (ok) {
     copiedId.value = id
+    toast.success('ID copied to clipboard.')
     setTimeout(() => { copiedId.value = null }, 2000)
+  } else {
+    toast.error('Failed to copy ID.')
   }
 }
 
@@ -436,7 +450,8 @@ useWatch((event) => {
 
         <!-- Refresh -->
         <Button variant="outline" size="sm" class="h-8" :disabled="store.loading" @click="refresh">
-          <RefreshCw class="mr-1.5 size-3.5" :class="store.loading && 'animate-spin'" />
+          <Loader2 v-if="store.loading" class="mr-1.5 size-3.5 animate-spin" />
+          <RefreshCw v-else class="mr-1.5 size-3.5" />
           Refresh
         </Button>
       </template>
@@ -469,9 +484,9 @@ useWatch((event) => {
               <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-foreground">Toggle columns</span>
                 <div class="flex gap-1">
-                  <button class="text-[10px] text-primary hover:underline" @click="showAllColumns">Show all</button>
+                  <Button variant="link" size="sm" class="h-auto p-0 text-[10px] text-primary hover:underline" @click="showAllColumns">Show all</Button>
                   <span class="text-[10px] text-muted-foreground">·</span>
-                  <button class="text-[10px] text-muted-foreground hover:text-foreground hover:underline" @click="resetColumns">Reset</button>
+                  <Button variant="link" size="sm" class="h-auto p-0 text-[10px] text-muted-foreground hover:text-foreground hover:underline" @click="resetColumns">Reset</Button>
                 </div>
               </div>
             </div>
@@ -494,30 +509,34 @@ useWatch((event) => {
                 <div class="flex shrink-0 items-center">
                   <GripVertical class="size-3.5 cursor-grab text-muted-foreground/40 active:cursor-grabbing" />
                   <div class="flex flex-col -space-y-0.5 ml-0.5">
-                    <button
-                      class="text-muted-foreground/30 hover:text-foreground disabled:opacity-20"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      class="h-auto p-0 text-muted-foreground/30 hover:text-foreground disabled:opacity-20"
                       :disabled="fieldIdx === 0"
                       @click.stop="moveColumn(field, 'up')"
                     >
                       <ArrowUp class="size-2.5" />
-                    </button>
-                    <button
-                      class="text-muted-foreground/30 hover:text-foreground disabled:opacity-20"
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      class="h-auto p-0 text-muted-foreground/30 hover:text-foreground disabled:opacity-20"
                       :disabled="fieldIdx === orderedColumns.length - 1"
                       @click.stop="moveColumn(field, 'down')"
                     >
                       <ArrowDown class="size-2.5" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
                 <!-- Visibility toggle -->
-                <button class="shrink-0 p-0.5" @click.stop="toggleColumn(field)">
+                <Button variant="ghost" size="sm" class="shrink-0 h-auto p-0.5" @click.stop="toggleColumn(field)">
                   <component
                     :is="hiddenColumns.has(field) ? EyeOff : Eye"
                     :class="cn('size-3.5', hiddenColumns.has(field) ? 'text-muted-foreground/30' : 'text-foreground')"
                   />
-                </button>
+                </Button>
 
                 <!-- Field name -->
                 <span :class="cn('flex-1 truncate', hiddenColumns.has(field) && 'text-muted-foreground/50 line-through')">
@@ -534,12 +553,12 @@ useWatch((event) => {
                 </Badge>
 
                 <!-- Pin toggle -->
-                <button class="shrink-0 p-0.5" @click.stop="togglePin(field)">
+                <Button variant="ghost" size="sm" class="shrink-0 h-auto p-0.5" @click.stop="togglePin(field)">
                   <component
                     :is="pinnedColumns.has(field) ? Pin : PinOff"
                     :class="cn('size-3', pinnedColumns.has(field) ? 'text-primary' : 'text-muted-foreground/30 hover:text-muted-foreground')"
                   />
-                </button>
+                </Button>
               </div>
             </div>
           </PopoverContent>
@@ -552,7 +571,7 @@ useWatch((event) => {
 
       <!-- Loading -->
       <div v-if="store.loading && rawEntries.length === 0" class="flex flex-1 items-center justify-center">
-        <div class="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <Loader2 class="size-6 animate-spin text-primary" />
       </div>
 
       <!-- Empty -->
@@ -697,13 +716,15 @@ useWatch((event) => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger as-child>
-                          <button
-                            class="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-accent hover:text-foreground"
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            class="size-7 p-0 text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-accent hover:text-foreground"
                             @click.stop="copyEntry(entry)"
                           >
                             <component :is="copiedEntryId === (entry['id'] ?? i) ? Check : Copy" class="size-3.5"
                               :class="copiedEntryId === (entry['id'] ?? i) && 'text-status-success'" />
-                          </button>
+                          </Button>
                         </TooltipTrigger>
                         <TooltipContent side="left">
                           <p class="text-xs">{{ copiedEntryId === (entry['id'] ?? i) ? 'Copied!' : 'Copy entry as JSON' }}</p>
@@ -726,16 +747,17 @@ useWatch((event) => {
 
                             <div class="ml-auto flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
                               <!-- Copy button for ID -->
-                              <button v-if="String(key) === 'id'" class="inline-flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+                              <Button v-if="String(key) === 'id'" variant="ghost" size="sm" class="size-5 p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
                                 @click.stop="handleCopyId(String(val))">
                                 <component :is="copiedId === String(val) ? Check : Copy" class="size-3" :class="copiedId === String(val) && 'text-status-success'" />
-                              </button>
+                              </Button>
                               <!-- Preview button for long content -->
-                              <button v-if="val != null && val !== '' && isLongContent(val, String(key))"
-                                class="inline-flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+                              <Button v-if="val != null && val !== '' && isLongContent(val, String(key))"
+                                variant="ghost" size="sm"
+                                class="size-5 p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
                                 @click.stop="openPreview(String(key), val)">
                                 <Maximize2 class="size-3" />
-                              </button>
+                              </Button>
                             </div>
                           </div>
 
