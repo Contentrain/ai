@@ -22,42 +22,34 @@ The source of truth for release state is:
 
 ## 🛠 Commands
 
-Sync package manifests and runtime versions from `scripts/release-manifest.mjs`:
-
-```bash
-pnpm release:version
-```
-
-Verify release readiness:
-
-```bash
-pnpm release:check
-```
-
-Build tarballs for every publishable package:
-
-```bash
-pnpm release:pack
-```
+| Command | Purpose |
+|---|---|
+| `pnpm release:bump` | Auto-detect changes, bump versions, create release commit |
+| `pnpm release` | Tag + push to origin (triggers CI publish) |
+| `pnpm release:version` | Sync manifest versions to package.json + runtime files |
+| `pnpm release:check` | Verify release readiness (version drift, missing README, etc.) |
+| `pnpm release:pack` | Build tarballs for every publishable package |
 
 ## 🤖 Automated Release (Recommended)
 
-Update versions and run a single command:
+Two commands — no manual version editing:
 
 ```bash
-# 1. Update versions in release-manifest.mjs
-# 2. Sync to all package.json + runtime files
-pnpm release:version
+# 1. Auto-detect changed packages, bump versions, commit
+pnpm release:bump
 
-# 3. Commit
-git add -A
-git commit -m "release: v1.1.0"
-
-# 4. Tag + push (one command — runs safety checks first)
+# 2. Tag + push → CI publishes to npm
 pnpm release
 ```
 
-`pnpm release` runs `release:check`, creates a git tag from the highest version in the manifest, and pushes main + tag to origin. CI then handles lint, test, build, and npm publish.
+`release:bump` does everything automatically:
+- Finds the last `v*` tag
+- Detects which packages changed since that tag
+- Reads commit prefixes: `feat(…)` → **minor**, `fix(…)` / others → **patch**
+- Updates `release-manifest.mjs` and all `package.json` files
+- Creates a release commit with the version summary
+
+`release` then tags (from highest manifest version) and pushes to origin.
 
 The `release.yml` workflow:
 - Runs lint, typecheck, test, and release:check

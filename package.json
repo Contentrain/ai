@@ -22,6 +22,7 @@
     "release:version": "node scripts/version-packages.mjs",
     "release:check": "node scripts/release-check.mjs",
     "release:pack": "node scripts/release-pack.mjs",
+    "release:bump": "node scripts/release-bump.mjs",
     "release": "node scripts/release-tag.mjs"
   },
   "devDependencies": {
