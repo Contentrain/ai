@@ -6,12 +6,12 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/contentrain/contentrain-ai.git",
+    "url": "git+https://github.com/Contentrain/ai.git",
     "directory": "packages/rules"
   },
-  "homepage": "https://github.com/contentrain/contentrain-ai/tree/main/packages/rules",
+  "homepage": "https://github.com/Contentrain/ai/tree/main/packages/rules",
   "bugs": {
-    "url": "https://github.com/contentrain/contentrain-ai/issues"
+    "url": "https://github.com/Contentrain/ai/issues"
   },
   "keywords": [
     "contentrain",

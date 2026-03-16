@@ -5,7 +5,7 @@
   "description": "AI-generated content governance infrastructure — Agent üretir, insan onaylar, sistem standardize eder.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/contentrain/contentrain-ai.git"
+    "url": "https://github.com/Contentrain/ai.git"
   },
   "engines": {
     "node": ">=22",

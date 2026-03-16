@@ -10,13 +10,16 @@ hero:
   name: Contentrain AI
   text: AI Content Governance Infrastructure
   tagline: Open-source MCP tools, CLI, SDK, and AI rules for managing content across any framework.
+  image:
+    src: /hero-pipeline.svg
+    alt: Contentrain AI Pipeline — Agent generates, MCP validates, Human reviews, Git commits, SDK serves
   actions:
     - theme: brand
       text: Get Started
       link: /getting-started
     - theme: alt
       text: View on GitHub
-      link: https://github.com/contentrain/contentrain-ai
+      link: https://github.com/Contentrain/ai
 
 features:
   - icon: 🤖

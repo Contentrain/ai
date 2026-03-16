@@ -1,0 +1,98 @@
+<svg width="520" height="340" viewBox="0 0 520 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background glow -->
+  <defs>
+    <linearGradient id="glow" x1="0" y1="0" x2="520" y2="340">
+      <stop offset="0%" stop-color="#3b5afc" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.06"/>
+    </linearGradient>
+    <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#3b5afc"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="arrowGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#3b5afc" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.6"/>
+    </linearGradient>
+    <filter id="shadow" x="-4" y="-4" width="108%" height="116%">
+      <feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#3b5afc" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect width="520" height="340" rx="16" fill="url(#glow)"/>
+
+  <!-- Row 1: Agent → MCP → Review -->
+
+  <!-- Agent node -->
+  <g filter="url(#shadow)">
+    <rect x="20" y="40" width="140" height="80" rx="12" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="90" y="68" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b">AI Agent</text>
+    <text x="90" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#64748b">Claude, Cursor</text>
+    <text x="90" y="102" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#64748b">Windsurf, GPT</text>
+  </g>
+
+  <!-- Arrow 1 -->
+  <path d="M164 80 L188 80" stroke="url(#arrowGrad)" stroke-width="2" stroke-dasharray="4 3"/>
+  <polygon points="188,76 196,80 188,84" fill="#3b5afc" opacity="0.6"/>
+
+  <!-- MCP node -->
+  <g filter="url(#shadow)">
+    <rect x="200" y="40" width="140" height="80" rx="12" fill="white" stroke="#3b5afc" stroke-width="1.5"/>
+    <text x="270" y="68" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#3b5afc">MCP Tools</text>
+    <text x="270" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#64748b">13 deterministic tools</text>
+    <text x="270" y="102" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#64748b">validate · serialize · commit</text>
+  </g>
+
+  <!-- Arrow 2 -->
+  <path d="M344 80 L368 80" stroke="url(#arrowGrad)" stroke-width="2" stroke-dasharray="4 3"/>
+  <polygon points="368,76 376,80 368,84" fill="#3b5afc" opacity="0.6"/>
+
+  <!-- Review node -->
+  <g filter="url(#shadow)">
+    <rect x="380" y="40" width="120" height="80" rx="12" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="440" y="68" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b">Human Review</text>
+    <text x="440" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#64748b">Serve UI / Studio</text>
+    <text x="440" y="102" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#64748b">approve · reject</text>
+  </g>
+
+  <!-- Vertical arrow from Review to Git -->
+  <path d="M440 124 L440 148" stroke="url(#arrowGrad)" stroke-width="2" stroke-dasharray="4 3"/>
+  <polygon points="436,148 440,156 444,148" fill="#7c3aed" opacity="0.6"/>
+
+  <!-- Row 2: Git → SDK → Your App -->
+
+  <!-- Git node -->
+  <g filter="url(#shadow)">
+    <rect x="380" y="160" width="120" height="80" rx="12" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="440" y="188" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b">Git Commit</text>
+    <text x="440" y="208" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#64748b">JSON + Markdown</text>
+    <text x="440" y="222" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#64748b">branch · merge · diff</text>
+  </g>
+
+  <!-- Arrow Git → SDK (left) -->
+  <path d="M376 200 L352 200" stroke="url(#arrowGrad)" stroke-width="2" stroke-dasharray="4 3"/>
+  <polygon points="352,196 344,200 352,204" fill="#7c3aed" opacity="0.6"/>
+
+  <!-- SDK node -->
+  <g filter="url(#shadow)">
+    <rect x="200" y="160" width="140" height="80" rx="12" fill="white" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="270" y="188" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#7c3aed">Query SDK</text>
+    <text x="270" y="208" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#64748b">generated typed client</text>
+    <text x="270" y="222" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#64748b">#contentrain imports</text>
+  </g>
+
+  <!-- Arrow SDK → App -->
+  <path d="M196 200 L172 200" stroke="url(#arrowGrad)" stroke-width="2" stroke-dasharray="4 3"/>
+  <polygon points="172,196 164,200 172,204" fill="#7c3aed" opacity="0.6"/>
+
+  <!-- Your App node -->
+  <g filter="url(#shadow)">
+    <rect x="20" y="160" width="140" height="80" rx="12" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="90" y="188" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b">Your App</text>
+    <text x="90" y="208" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#64748b">Vue · React · Astro</text>
+    <text x="90" y="222" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#64748b">Nuxt · Next · Svelte</text>
+  </g>
+
+  <!-- Bottom tagline -->
+  <text x="260" y="290" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="url(#brandGrad)">Agent generates · System standardizes · Human approves</text>
+  <text x="260" y="310" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#94a3b8">Zero vendor lock-in · Plain files in Git · Works with any AI agent</text>
+</svg>

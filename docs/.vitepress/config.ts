@@ -6,7 +6,7 @@ export default defineConfig({
 
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
-    ['meta', { name: 'theme-color', content: '#0331FC' }],
+    ['meta', { name: 'theme-color', content: '#3b5afc' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'Contentrain AI' }],
     ['meta', { property: 'og:description', content: 'AI content governance infrastructure for modern web projects' }],
@@ -81,7 +81,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/contentrain/contentrain-ai' },
+      { icon: 'github', link: 'https://github.com/Contentrain/ai' },
     ],
 
     footer: {
@@ -94,7 +94,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: 'https://github.com/contentrain/contentrain-ai/edit/main/docs/:path',
+      pattern: 'https://github.com/Contentrain/ai/edit/main/docs/:path',
       text: 'Edit this page on GitHub',
     },
   },

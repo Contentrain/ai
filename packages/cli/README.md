@@ -16,9 +16,9 @@ CLI for Contentrain.
 
 This package is the human-facing companion to:
 
-- [`@contentrain/mcp`](https://github.com/contentrain/contentrain-ai/tree/main/packages/mcp) for deterministic content operations
-- [`@contentrain/query`](https://github.com/contentrain/contentrain-ai/tree/main/packages/sdk/js) for generated runtime queries
-- [`@contentrain/rules`](https://github.com/contentrain/contentrain-ai/tree/main/packages/rules) and [`@contentrain/skills`](https://github.com/contentrain/contentrain-ai/tree/main/packages/skills) for agent guidance
+- [`@contentrain/mcp`](https://github.com/Contentrain/ai/tree/main/packages/mcp) for deterministic content operations
+- [`@contentrain/query`](https://github.com/Contentrain/ai/tree/main/packages/sdk/js) for generated runtime queries
+- [`@contentrain/rules`](https://github.com/Contentrain/ai/tree/main/packages/rules) and [`@contentrain/skills`](https://github.com/Contentrain/ai/tree/main/packages/skills) for agent guidance
 
 ## 🚀 Install
 
