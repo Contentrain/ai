@@ -1,9 +1,10 @@
 [build]
-  command = "pnpm install --frozen-lockfile && pnpm docs:build"
+  command = "corepack enable && pnpm install --frozen-lockfile && pnpm docs:build"
   publish = "docs/.vitepress/dist"
 
 [build.environment]
   NODE_VERSION = "22"
+  COREPACK_ENABLE_STRICT = "0"
 
 [[redirects]]
   from = "/*"
