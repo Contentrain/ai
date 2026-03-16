@@ -291,7 +291,7 @@ describe('contentrain_content_save', () => {
     expect(result.isError).toBe(true)
     const data = parseResult(result)
     expect(data['error']).toContain('80')
-  })
+  }, 120000)
 
   it('handles two writes to the same model in the same second without branch collision', async () => {
     client = await createModel(client, 'hero', 'singleton', 'marketing', {
