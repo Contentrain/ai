@@ -19,7 +19,7 @@ hero:
       link: /getting-started
     - theme: alt
       text: View on GitHub
-      link: https://github.com/anthropics/contentrain-ai
+      link: https://github.com/contentrain/contentrain-ai
 
 features:
   - icon: 🤖
