@@ -16,18 +16,20 @@ import {
 } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { useTexts } from '@/composables/useTexts'
 
 const route = useRoute()
+const { t } = useTexts()
 const ui = useUiStore()
 const project = useProjectStore()
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', to: '/', exact: true },
-  { icon: Box, label: 'Models', to: '/models' },
-  { icon: FileText, label: 'Content', to: '/content' },
-  { icon: ShieldCheck, label: 'Validate', to: '/validate' },
-  { icon: GitBranch, label: 'Branches', to: '/branches' },
-  { icon: ScanSearch, label: 'Normalize', to: '/normalize' },
+  { icon: LayoutDashboard, label: t('primary-sidebar.dashboard'), to: '/', exact: true },
+  { icon: Box, label: t('primary-sidebar.models'), to: '/models' },
+  { icon: FileText, label: t('primary-sidebar.content'), to: '/content' },
+  { icon: ShieldCheck, label: t('primary-sidebar.validate'), to: '/validate' },
+  { icon: GitBranch, label: t('primary-sidebar.branches'), to: '/branches' },
+  { icon: ScanSearch, label: t('primary-sidebar.normalize'), to: '/normalize' },
 ]
 
 function isActive(item: typeof navItems[0]): boolean {
