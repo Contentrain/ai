@@ -42,23 +42,22 @@ pnpm release:pack
 
 ## 🤖 Automated Release (Recommended)
 
-Push a version tag to trigger the CI release pipeline:
+Update versions and run a single command:
 
 ```bash
-# 1. Update versions in manifest
-#    Edit scripts/release-manifest.mjs with target versions
-
-# 2. Sync versions to all package.json + runtime files
+# 1. Update versions in release-manifest.mjs
+# 2. Sync to all package.json + runtime files
 pnpm release:version
 
-# 3. Commit and tag
+# 3. Commit
 git add -A
 git commit -m "release: v1.1.0"
-git tag v1.1.0
 
-# 4. Push tag — CI handles lint, typecheck, test, build, and npm publish
-git push origin main --tags
+# 4. Tag + push (one command — runs safety checks first)
+pnpm release
 ```
+
+`pnpm release` runs `release:check`, creates a git tag from the highest version in the manifest, and pushes main + tag to origin. CI then handles lint, test, build, and npm publish.
 
 The `release.yml` workflow:
 - Runs lint, typecheck, test, and release:check
