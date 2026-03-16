@@ -31,7 +31,7 @@ Contentrain AI inverts the traditional CMS workflow:
 - **Write:** `contentrain_model_save`, `contentrain_content_save`, `contentrain_apply`, `contentrain_bulk`
 - **Workflow:** `contentrain_validate`, `contentrain_submit`
 
-MCP is **deterministic infrastructure** — it doesn’t make content decisions. The agent decides what to create; MCP executes it.
+MCP is **deterministic infrastructure** — it doesn't make content decisions. The agent decides what to create; MCP executes it.
 
 ### 2. Agent (Intelligence)
 
