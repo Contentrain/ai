@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 import { defineCommand, runMain } from 'citty'
+import packageJson from '../package.json' with { type: 'json' }
 
 const main = defineCommand({
   meta: {
     name: 'contentrain',
-    version: '0.1.0',
+    version: packageJson.version,
     description: 'Contentrain CLI — AI content governance infrastructure',
   },
   subCommands: {

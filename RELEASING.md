@@ -1,114 +1,99 @@
 # Releasing Contentrain
 
-Contentrain uses package-specific versioning for public packages:
+Contentrain uses [Changesets](https://github.com/changesets/changesets) as the single source of truth for package versioning, changelogs, tags, and npm publishing.
 
-- `@contentrain/mcp` → `1.0.0`
-- `contentrain` → `0.1.0`
-- `@contentrain/types` → `0.1.0`
-- `@contentrain/rules` → `0.1.0`
-- `@contentrain/skills` → `0.1.0`
-- `@contentrain/query` → `5.0.0`
+## 🧭 Standard Flow
 
-## 🧭 Source of Truth
-
-The source of truth for release state is:
-
-1. the per-package version map in `scripts/release-manifest.mjs`
-2. each package `package.json` version
-3. runtime version strings for packages that expose them:
-   - `packages/cli/src/index.ts`
-   - `packages/mcp/src/server.ts`
-4. the repo release scripts in `scripts/`
-
-## 🛠 Commands
-
-| Command | Purpose |
-|---|---|
-| `pnpm release:bump` | Auto-detect changes, bump versions, create release commit |
-| `pnpm release` | Tag + push to origin (triggers CI publish) |
-| `pnpm release:version` | Sync manifest versions to package.json + runtime files |
-| `pnpm release:check` | Verify release readiness (version drift, missing README, etc.) |
-| `pnpm release:pack` | Build tarballs for every publishable package |
-
-## 🤖 Automated Release (Recommended)
-
-Two commands — no manual version editing:
+For contributors:
 
 ```bash
-# 1. Auto-detect changed packages, bump versions, commit
-pnpm release:bump
+pnpm changeset
+```
 
-# 2. Tag + push → CI publishes to npm
+That creates a `.changeset/*.md` file describing:
+
+- which package changed
+- whether the bump is `patch`, `minor`, or `major`
+- the changelog summary
+
+For maintainers:
+
+```bash
+pnpm version-packages
 pnpm release
 ```
 
-`release:bump` does everything automatically:
-- Finds the last `v*` tag
-- Detects which packages changed since that tag
-- Reads commit prefixes: `feat(…)` → **minor**, `fix(…)` / others → **patch**
-- Updates `release-manifest.mjs` and all `package.json` files
-- Creates a release commit with the version summary
+In normal operation you do **not** run those commands locally. GitHub Actions handles them automatically.
 
-`release` then tags (from highest manifest version) and pushes to origin.
+## 🤖 Automated Release Flow
 
-The `release.yml` workflow:
-- Runs lint, typecheck, test, and release:check
-- Publishes all 6 packages to npm in dependency order
-- Creates a GitHub Release with auto-generated notes
+The `Release` workflow runs on pushes to `main` and uses `changesets/action`.
 
-**Required:** `NPM_TOKEN` secret in GitHub repository settings.
+It does one of two things:
 
-## 🚢 Manual Publish Sequence
+1. If there are unreleased changesets, it opens or updates a release PR.
+2. If the release PR has been merged, it publishes changed packages to npm and creates package tags and GitHub releases.
 
-If CI is unavailable or you need to publish manually:
+This is the expected day-to-day flow:
 
-1. update `scripts/release-manifest.mjs` with target versions
-2. `pnpm release:version`
-3. `pnpm install`
-4. `pnpm lint`
-5. `pnpm typecheck`
-6. `pnpm test`
-7. `pnpm build`
-8. `pnpm release:check`
-9. `pnpm release:pack`
-10. publish packages in dependency order:
-   - `@contentrain/types`
-   - `@contentrain/query`
-   - `@contentrain/rules`
-   - `@contentrain/skills`
-   - `@contentrain/mcp`
-   - `contentrain`
+1. Contributors merge PRs with changesets.
+2. GitHub updates the release PR.
+3. A maintainer reviews and merges that PR.
+4. GitHub publishes packages and writes changelogs automatically.
 
-## 🧩 Version Strategy
+## 📝 Changelogs
 
-- `@contentrain/query` follows the existing npm line and must publish above the already-released `4.x` range.
-- `@contentrain/mcp` follows the existing npm line and starts this monorepo release line at `1.0.0`.
-- `contentrain`, `@contentrain/types`, `@contentrain/rules`, and `@contentrain/skills` start at `0.1.0`.
-- Packages do not need to share the same version.
+Changesets updates `CHANGELOG.md` files automatically for the packages included in a release.
 
-## 🏷 Tag Convention
+Changelog entries come from the text written in `.changeset/*.md`.
 
-- Format: `v{major}.{minor}.{patch}` (e.g., `v1.1.0`)
-- Tags trigger the `release.yml` workflow
-- Each tag represents a monorepo-wide release point
-- Individual package versions are tracked in `release-manifest.mjs`
+## 🏷 Tags
 
-## 📦 Published Packages
+Tags are package-specific, not monorepo-global.
 
-All packages are live on npm:
+Examples:
 
-| Package | npm | Version |
-|---|---|---|
-| `@contentrain/mcp` | [npm](https://www.npmjs.com/package/@contentrain/mcp) | `1.0.0` |
-| `contentrain` | [npm](https://www.npmjs.com/package/contentrain) | `0.1.0` |
-| `@contentrain/types` | [npm](https://www.npmjs.com/package/@contentrain/types) | `0.1.0` |
-| `@contentrain/rules` | [npm](https://www.npmjs.com/package/@contentrain/rules) | `0.1.0` |
-| `@contentrain/skills` | [npm](https://www.npmjs.com/package/@contentrain/skills) | `0.1.0` |
-| `@contentrain/query` | [npm](https://www.npmjs.com/package/@contentrain/query) | `5.0.0` |
+- `@contentrain/mcp@1.0.1`
+- `@contentrain/query@5.1.0`
+- `contentrain@0.2.0`
 
-## 📝 Notes
+This is the standard Changesets model for independently versioned monorepos.
 
-- `workspace:*` dependencies are expected during development and are resolved by the package manager during publish.
-- Do not publish with `0.0.0`.
+## ✅ Release Commands
+
+| Command | Purpose |
+|---|---|
+| `pnpm changeset` | Create a release note for changed packages |
+| `pnpm version-packages` | Apply pending changesets and update changelogs |
+| `pnpm release:status` | Inspect pending changesets and release state |
+| `pnpm release:check` | Verify publish metadata and package readiness |
+| `pnpm release:pack` | Build tarballs for all public packages |
+| `pnpm release` | Build and publish changed packages with Changesets |
+
+## 🛠 Local Maintainer Fallback
+
+If GitHub Actions is unavailable and you need to release manually:
+
+1. `pnpm install`
+2. `pnpm lint`
+3. `pnpm typecheck`
+4. `pnpm test`
+5. `pnpm release:check`
+6. `pnpm version-packages`
+7. review the generated package version changes and `CHANGELOG.md` files
+8. `pnpm release`
+
+## 🔐 Required Secrets
+
+The GitHub `Release` workflow expects:
+
+- `NPM_TOKEN`
+
+`GITHUB_TOKEN` is provided automatically by GitHub Actions.
+
+## 📦 Notes
+
+- Do not edit package versions manually.
+- Do not maintain a custom release manifest.
+- Do not create manual monorepo-wide release tags.
 - Internal workspaces such as `docs` and `packages/cli/src/serve-ui` must remain `private: true`.
-- `NPM_TOKEN` GitHub secret is required for automated publishing.

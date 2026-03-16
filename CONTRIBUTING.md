@@ -40,6 +40,11 @@ pnpm install
 - fix package drift across MCP, CLI, SDK, rules, or skills
 
 If a change affects public behavior, include tests and update docs where needed.
+If a change affects a published package, add a changeset:
+
+```bash
+pnpm changeset
+```
 
 ## Issues
 
@@ -77,6 +82,8 @@ pnpm typecheck
 pnpm test
 pnpm release:check
 ```
+
+If your PR changes a publishable package, also include a `.changeset/*.md` entry unless the change is explicitly non-release work.
 
 If you touch a specific package heavily, also run targeted commands for that package.
 
@@ -123,8 +130,8 @@ Contributors do not need to publish packages manually.
 
 Maintainers handle:
 
-- version selection
+- merging release PRs
 - npm publishing
 - deprecations
-- git tags
+- package tags
 - GitHub releases

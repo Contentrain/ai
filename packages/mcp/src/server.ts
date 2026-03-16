@@ -6,11 +6,12 @@ import { registerContentTools } from './tools/content.js'
 import { registerWorkflowTools } from './tools/workflow.js'
 import { registerNormalizeTools } from './tools/normalize.js'
 import { registerBulkTools } from './tools/bulk.js'
+import packageJson from '../package.json' with { type: 'json' }
 
 export function createServer(projectRoot: string): McpServer {
   const server = new McpServer({
     name: 'contentrain-mcp',
-    version: '1.0.0',
+    version: packageJson.version,
   })
 
   registerContextTools(server, projectRoot)

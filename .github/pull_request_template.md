@@ -18,4 +18,5 @@
 
 - [ ] tests added or updated when behavior changed
 - [ ] docs updated when public usage changed
+- [ ] changeset added if a published package changed
 - [ ] breaking change noted explicitly

@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import process from 'node:process'
-import { PRIVATE_PACKAGE_JSONS, PUBLISHABLE_PACKAGES } from './release-manifest.mjs'
+import { PRIVATE_PACKAGE_JSONS, PUBLISHABLE_PACKAGES } from './release-packages.mjs'
 
 let failed = false
 
@@ -16,13 +16,13 @@ for (const pkg of PUBLISHABLE_PACKAGES) {
     failed = true
   }
 
-  if (packageJson.version !== pkg.version) {
-    console.error(`version drift: ${pkg.name} expected ${pkg.version} but found ${packageJson.version}`)
+  if (packageJson.publishConfig?.access !== 'public') {
+    console.error(`missing publishConfig.access=public: ${pkg.name}`)
     failed = true
   }
 
-  if (packageJson.publishConfig?.access !== 'public') {
-    console.error(`missing publishConfig.access=public: ${pkg.name}`)
+  if (!packageJson.version || packageJson.version === '0.0.0') {
+    console.error(`invalid package version for ${pkg.name}: ${packageJson.version ?? '<missing>'}`)
     failed = true
   }
 
@@ -36,16 +36,6 @@ for (const pkg of PUBLISHABLE_PACKAGES) {
   } catch {
     console.error(`missing README: ${pkg.dir}/README.md`)
     failed = true
-  }
-
-  for (const file of pkg.runtimeVersionFiles ?? []) {
-    const runtimePath = resolve(file)
-    const runtimeRaw = await readFile(runtimePath, 'utf-8')
-    const match = runtimeRaw.match(/version:\s*'([^']+)'/u)
-    if (!match || match[1] !== pkg.version) {
-      console.error(`runtime version drift: ${file} expected ${pkg.version}`)
-      failed = true
-    }
   }
 }
 

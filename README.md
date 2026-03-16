@@ -332,12 +332,13 @@ pnpm typecheck
 
 ## 🚢 Release
 
-Contentrain uses package-specific versioning for public packages. `@contentrain/query` and `@contentrain/mcp` follow their existing npm lines; the other packages start from the `0.1.x` line.
+Contentrain uses [Changesets](https://github.com/changesets/changesets) for package-specific versioning, changelogs, tags, and npm publishing.
 
 ```bash
-pnpm release:version
+pnpm changeset
+pnpm version-packages
 pnpm release:check
-pnpm release:pack
+pnpm release
 ```
 
 For the full release workflow, see [`RELEASING.md`](RELEASING.md).
