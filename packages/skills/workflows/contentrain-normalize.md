@@ -119,6 +119,15 @@ contentrain serve
 
 Do NOT proceed to apply unless the user approves (either via UI or explicit confirmation in chat).
 
+4. **Detect the user's decision.** After directing the user to the UI, check the plan file to determine the outcome:
+   - **Plan file exists** (`status: "pending"`) → user has not decided yet — wait
+   - **Plan file deleted + new `contentrain/normalize/extract/*` branch exists** → user approved, extraction applied
+   - **Plan file deleted + no new branch** → user rejected the plan
+
+   If rejected, ask the user what to change and iterate from Step 4 (re-evaluate candidates).
+
+   If approved, proceed to Step 9 (Validate and Submit).
+
 **Alternative (no UI):** If the user prefers terminal-only workflow, present the summary inline and wait for explicit confirmation before proceeding. Skip to Step 7.
 
 ### Step 7. Preview Extraction (if not using UI)

@@ -45,16 +45,29 @@ describe('serve-ui useApi', () => {
     })
   })
 
-  it('throws status + body text for non-ok responses', async () => {
+  it('throws structured error message for non-ok responses', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: false,
-      status: 500,
-      text: async () => 'boom',
+      status: 422,
+      text: async () => JSON.stringify({ statusCode: 422, error: 'Model not found' }),
     })
 
     const { useApi } = await import('../../src/serve-ui/src/composables/useApi.ts')
     const api = useApi()
 
-    await expect(api.get('/status')).rejects.toThrow('API 500: boom')
+    await expect(api.get('/status')).rejects.toThrow('Model not found')
+  })
+
+  it('falls back to raw text for non-JSON error responses', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      text: async () => 'Internal Server Error',
+    })
+
+    const { useApi } = await import('../../src/serve-ui/src/composables/useApi.ts')
+    const api = useApi()
+
+    await expect(api.get('/status')).rejects.toThrow('Internal Server Error')
   })
 })

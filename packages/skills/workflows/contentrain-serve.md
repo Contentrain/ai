@@ -1,6 +1,6 @@
 # Skill: Review the Project with `contentrain serve`
 
-> Start the local viewer/review UI and use it intentionally.
+> Start the local review UI as a bridge between agent and developer.
 
 ---
 
@@ -8,24 +8,27 @@
 
 Use this when:
 
-- the user wants a visual review surface
-- validation, normalize, branch review, or content browsing is easier in UI form
-- the user wants local MCP stdio vs web UI explained
+- a normalize plan, branch, or validation result needs developer review
+- the developer wants to browse models, content, or history visually
+- another skill needs to hand off to the UI for approval (normalize, review)
 
 ---
 
 ## Steps
 
-### 1. Choose the Mode
+### 1. Check if Serve is Already Running
 
-- `contentrain serve` → local web UI
-- `contentrain serve --stdio` → MCP stdio transport for IDE integration
+Before starting a new instance, check if port 3333 is already in use:
 
-Use web UI for humans. Use `--stdio` for tool transport.
+```bash
+lsof -ti:3333
+```
 
-### 2. Start the Web UI
+If a process is running, serve is already up — skip to Step 3.
 
-Run:
+### 2. Start Serve
+
+Run from the project root (where `.contentrain/` lives):
 
 ```bash
 contentrain serve
@@ -33,31 +36,52 @@ contentrain serve
 
 Optional flags:
 
-- `--port`
-- `--host`
-- `--open=false`
+- `--port` (default: 3333)
+- `--host` (default: localhost)
+- `--open=false` (prevent auto-opening browser)
 
-### 3. Use the Right Page for the Job
+Wait for the "Contentrain Serve" banner confirming the server is ready.
 
-- Dashboard: overall project state
-- Models / Content: inspect schemas and entries
-- Validate: check validation results and quick fixes
-- Normalize: inspect extraction/reuse review data
-- Branches: review pending branches and merges
+### 3. Direct the Developer to the Right Page
 
-### 4. Prefer UI for Review-heavy Work
+Based on the current context, tell the developer exactly where to go:
 
-Recommend the web UI when:
+| Context | URL | What to do |
+|---|---|---|
+| Normalize plan ready | `http://localhost:3333/normalize` | Review extractions, approve or reject |
+| Pending branches | `http://localhost:3333/branches` | Review and merge branches |
+| Validation issues | `http://localhost:3333/validate` | Inspect errors and warnings |
+| Content browsing | `http://localhost:3333/content` | Browse entries and models |
+| General overview | `http://localhost:3333` | Dashboard with project stats |
 
-- branch review is needed
-- normalize source traces or patch previews matter
-- validation findings need visual scanning
+### 4. Wait for Developer Action
 
-### 5. Report the Outcome
+After directing the developer to the UI:
 
-Summarize:
+- **Normalize flow:** Check `.contentrain/normalize-plan.json` — if deleted, check for new branches to determine approve vs reject
+- **Branch flow:** Check branch list — if branch was merged or deleted, proceed accordingly
+- **Validation flow:** Re-read validation results after developer reviews
 
-- which mode was started
-- URL and port
-- what page the user should open next
+The UI communicates back through filesystem changes (plan files, branches, context.json). Poll these to detect the developer's decision.
 
+### 5. Resume the Workflow
+
+After the developer acts in the UI:
+
+- If **approved**: continue with the next step in the calling skill (validate, submit, Phase 2)
+- If **rejected**: ask the developer what to change and iterate
+- If **merged**: confirm and report the final state
+
+Do NOT leave the developer hanging — always follow up after UI interaction.
+
+---
+
+## UI Philosophy
+
+The serve UI is a **monitoring + approval surface**, not an action trigger:
+
+- **Monitoring**: models, content, validation, history, branches — read-only browsing
+- **Approval**: approve/reject normalize plans, merge/delete branches — human decisions
+- **Prompts**: every page shows copyable agent prompts that developers paste into their AI agent
+
+All mutations (create, edit, delete, scan, fix, normalize) are **agent-driven via MCP tools**. The UI never triggers these directly.
