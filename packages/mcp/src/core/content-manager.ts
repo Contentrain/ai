@@ -128,13 +128,16 @@ export function serializeFrontmatter(data: Record<string, unknown>, body: string
           lines.push(`${key}: ${String(value)}`)
         }
       }
-      // Body frontmatter fields (skip duplicates from model fields)
+      // Body frontmatter fields (skip top-level duplicates from model fields)
       if (bodyFmContent) {
         const modelKeys = new Set(Object.keys(data))
         for (const line of bodyFmContent.split('\n')) {
-          const colonIdx = line.indexOf(':')
-          const lineKey = colonIdx > 0 ? line.slice(0, colonIdx).trim() : ''
-          if (lineKey && modelKeys.has(lineKey)) continue
+          // Only check top-level keys (lines that don't start with whitespace)
+          if (line.length > 0 && line[0] !== ' ' && line[0] !== '-') {
+            const colonIdx = line.indexOf(':')
+            const lineKey = colonIdx > 0 ? line.slice(0, colonIdx).trim() : ''
+            if (lineKey && modelKeys.has(lineKey)) continue
+          }
           lines.push(line)
         }
       }
