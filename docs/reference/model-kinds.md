@@ -1,6 +1,6 @@
 ---
 title: Model Kinds
-description: "Complete specification of the four model kinds: collection, singleton, dictionary, and document — including storage formats, locale strategies, and decision criteria"
+description: Complete specification of the four model kinds: collection, singleton, dictionary, and document — including storage formats, locale strategies, and decision criteria
 order: 1
 slug: model-kinds
 ---
