@@ -1,6 +1,6 @@
 {
   "name": "contentrain",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "MIT",
   "description": "CLI for Contentrain — AI content governance infrastructure",
   "type": "module",
@@ -28,7 +28,9 @@
   "bin": {
     "contentrain": "./dist/index.mjs"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsdown src/index.ts --format esm && cd src/serve-ui && npx vite build",
     "build:cli-only": "tsdown src/index.ts --format esm",

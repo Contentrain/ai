@@ -13,13 +13,13 @@ This package is the policy layer of the Contentrain ecosystem. It defines how ag
 
 If `@contentrain/mcp` is the deterministic execution layer, `@contentrain/rules` is the behavioral contract.
 
-## Install
+## 🚀 Install
 
 ```bash
 pnpm add @contentrain/rules
 ```
 
-## What It Contains
+## 📦 What It Contains
 
 ### Shared rule sets
 
@@ -61,7 +61,7 @@ Published under `ide/*`:
 - `ide/windsurf/contentrain.windsurfrules`
 - `ide/generic/contentrain.md`
 
-## Public Exports
+## 🧰 Public Exports
 
 The package root exports constants that can be used by tooling:
 
@@ -74,7 +74,7 @@ The package root exports constants that can be used by tooling:
 - `IDE_RULE_FILES`
 - `STACKS`
 
-## Example
+## 🧪 Example
 
 ```ts
 import { IDE_RULE_FILES, MCP_TOOLS, ALL_SHARED_RULES } from '@contentrain/rules'
@@ -84,7 +84,7 @@ console.log(IDE_RULE_FILES['claude-code'])
 console.log(ALL_SHARED_RULES)
 ```
 
-## Design Role
+## 🧠 Design Role
 
 `@contentrain/rules` exists to keep agent behavior aligned across tools and environments.
 
@@ -96,7 +96,7 @@ It should answer questions like:
 - What workflow and review constraints exist?
 - How should rules be packaged for Claude Code, Cursor, Windsurf, and generic agents?
 
-## Relationship To Other Packages
+## 🔗 Relationship To Other Packages
 
 - `@contentrain/mcp` enforces file, validation, and git behavior
 - `@contentrain/skills` provides step-by-step workflow playbooks
@@ -108,7 +108,7 @@ Rule of thumb:
 - `rules` = policy and constraints
 - `skills` = procedures and playbooks
 
-## Build
+## 🛠 Build
 
 The build does two things:
 
@@ -123,6 +123,6 @@ pnpm --filter @contentrain/rules test
 pnpm --filter @contentrain/rules typecheck
 ```
 
-## License
+## 📄 License
 
 MIT

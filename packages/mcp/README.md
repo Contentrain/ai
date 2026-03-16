@@ -15,7 +15,7 @@ This package is the runtime core behind Contentrain's MCP integration. It can be
 - an embeddable server (`createServer(projectRoot)`)
 - a low-level toolkit for config, models, content, validation, scanning, and git transaction flow
 
-## Install
+## 🚀 Install
 
 ```bash
 pnpm add @contentrain/mcp
@@ -34,7 +34,7 @@ Optional parser support for higher-quality source scanning:
 
 They are listed as optional dependencies. The scanner still works without them, but Vue/Astro/Svelte detection is stronger when they are installed.
 
-## What It Does
+## ✨ What It Does
 
 `@contentrain/mcp` manages a `.contentrain/` directory in your project and exposes MCP tools for:
 
@@ -53,7 +53,7 @@ All write operations are designed around git-backed safety:
 - update `.contentrain/context.json`
 - surface validation and next-step hints to the caller
 
-## Tool Surface
+## 🧰 Tool Surface
 
 Current MCP tools exposed by the server:
 
@@ -75,7 +75,7 @@ Current MCP tools exposed by the server:
 | `contentrain_apply` | Normalize extract/reuse execution with dry-run support |
 | `contentrain_bulk` | Bulk locale copy, status updates, and deletes |
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Run as an MCP server
 
@@ -97,7 +97,7 @@ const transport = new StdioServerTransport()
 await server.connect(transport)
 ```
 
-## Example MCP Flow
+## 🔄 Example MCP Flow
 
 Typical agent workflow:
 
@@ -109,7 +109,7 @@ Typical agent workflow:
 6. For hardcoded strings, use `contentrain_scan` then `contentrain_apply`
 7. Push review branches with `contentrain_submit`
 
-## Normalize Flow
+## 🧪 Normalize Flow
 
 Normalize is intentionally split into two phases:
 
@@ -135,7 +135,7 @@ Normalize is intentionally split into two phases:
 
 This split keeps content extraction separate from source rewriting.
 
-## Core Exports
+## 📦 Core Exports
 
 The package also exposes low-level modules for embedding and advanced use:
 
@@ -156,7 +156,7 @@ The package also exposes low-level modules for embedding and advanced use:
 
 These are intended for Contentrain tooling and advanced integrations, not for direct manual editing of `.contentrain/` files.
 
-## Design Constraints
+## 🧠 Design Constraints
 
 Key design decisions in this package:
 
@@ -168,7 +168,7 @@ Key design decisions in this package:
 - framework-agnostic MCP layer
 - agent decides content semantics, MCP enforces deterministic execution
 
-## Development
+## 🛠 Development
 
 From the monorepo root:
 
@@ -179,13 +179,13 @@ pnpm --filter @contentrain/mcp typecheck
 pnpm exec oxlint packages/mcp/src packages/mcp/tests
 ```
 
-## Related Packages
+## 🔗 Related Packages
 
 - `contentrain` — CLI and local review tooling
 - `@contentrain/query` — generated runtime query SDK
 - `@contentrain/rules` — IDE/agent rules and prompts
 - `@contentrain/types` — shared schema and model types
 
-## License
+## 📄 License
 
 MIT

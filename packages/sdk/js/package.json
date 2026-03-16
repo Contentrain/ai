@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/query",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "MIT",
   "description": "Type-safe content query SDK for Contentrain — universal JS/TS",
   "type": "module",
@@ -24,7 +24,9 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "sideEffects": false,
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsdown src/index.ts src/generator/generate.ts src/cli.ts --format esm,cjs --dts",
     "dev": "tsdown src/index.ts src/generator/generate.ts src/cli.ts --format esm,cjs --dts --watch",

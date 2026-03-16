@@ -4,7 +4,7 @@ import { defineCommand, runMain } from 'citty'
 const main = defineCommand({
   meta: {
     name: 'contentrain',
-    version: '0.0.0',
+    version: '0.1.0',
     description: 'Contentrain CLI — AI content governance infrastructure',
   },
   subCommands: {

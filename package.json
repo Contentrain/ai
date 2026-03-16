@@ -18,7 +18,10 @@
     "test": "pnpm -r run test",
     "lint": "oxlint --deny-warnings .",
     "typecheck": "pnpm -r run typecheck",
-    "clean": "pnpm -r run clean"
+    "clean": "pnpm -r run clean",
+    "release:version": "node scripts/version-packages.mjs",
+    "release:check": "node scripts/release-check.mjs",
+    "release:pack": "node scripts/release-pack.mjs"
   },
   "devDependencies": {
     "lefthook": "^2.1.4",

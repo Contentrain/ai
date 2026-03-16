@@ -19,21 +19,18 @@ contentrain-ai/
 │   └── sdk/
 │       └── js/       — Universal query SDK (@contentrain/query)
 ├── docs/
-│   ├── internal/     — Private specs (gitignored, dev reference only)
-│   ├── mcp/          — VitePress docs → mcp.contentrain.io
-│   └── ai/           — VitePress docs → ai.contentrain.io
+│   └──              — Reserved for the public VitePress docs site
 ```
 
-## Internal Specs (docs/internal/)
+## Documentation Sources
 
-These files contain architectural decisions and are the source of truth during development:
-- `mcp-development-spec.md` — 13 MCP tools, Git flow, validation, context.json
-- `schema-architecture.md` — 27 types, 4 model kinds, canonical serialization
-- `ai-rules-spec.md` — AI agent rules, prompts, context bridge
-- `sdk-spec.md` — Universal query SDK, generated client, `#contentrain` imports
-- `README.md` — Master index, cross-references
+The old `docs/internal/*` spec set is no longer the source of truth.
 
-**Always read relevant spec before implementing.** Specs are expanded during development as details emerge.
+Use these references instead:
+- root [README.md](README.md) for monorepo overview
+- package `README.md` files for public package contracts
+- [RELEASING.md](RELEASING.md) for versioning and publish flow
+- `packages/rules/` and `packages/skills/` for agent behavior guidance
 
 ## Tech Stack
 
@@ -104,11 +101,11 @@ cd packages/<package> && npx vitest run
 - Integration test: end-to-end flow verification
 - Test assertions must be specific (not just `.toBeDefined()`)
 
-### 4. Sprint Documentation
-After completing a sprint milestone:
-- Update the relevant spec file's roadmap section (check off items, add date)
-- If new architectural decisions were made, document them in the spec's decision table
-- Update `docs/internal/README.md` if new spec files were created
+### 4. Documentation Updates
+After changing public behavior:
+- Update the affected package `README.md`
+- Update root `README.md` if the monorepo contract changed
+- Update `RELEASING.md` if release/versioning behavior changed
 
 ### 5. Commit Standards
 - Conventional commits: `feat(scope)`, `fix(scope)`, `refactor(scope)`

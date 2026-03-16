@@ -11,7 +11,7 @@ This package is the common schema layer used by:
 
 It defines the stable type vocabulary for models, config, metadata, validation, scanning, and context files.
 
-## When To Use It
+## ✨ When To Use It
 
 Use `@contentrain/types` when you are:
 
@@ -20,13 +20,13 @@ Use `@contentrain/types` when you are:
 - authoring framework integrations or SDK extensions
 - consuming Contentrain JSON structures directly in TypeScript
 
-## Install
+## 🚀 Install
 
 ```bash
 pnpm add @contentrain/types
 ```
 
-## What It Exports
+## 📦 What It Exports
 
 Core unions:
 
@@ -72,7 +72,7 @@ Storage/runtime helper types:
 - `DocumentMeta`
 - `DictionaryMeta`
 
-## Stability
+## 🧭 Stability
 
 This package is intended to be the shared public contract across the Contentrain ecosystem.
 
@@ -82,7 +82,7 @@ In practice that means:
 - packages should depend on these shared definitions instead of redefining domain types
 - breaking changes here should be treated as ecosystem-level breaking changes
 
-## Quick Example
+## 🧪 Quick Example
 
 ```ts
 import type {
@@ -120,7 +120,7 @@ const result: ValidationResult = {
 }
 ```
 
-## Import Style
+## 📝 Import Style
 
 Type-only usage:
 
@@ -134,7 +134,7 @@ Runtime-safe mixed usage:
 import type { FieldDef } from '@contentrain/types'
 ```
 
-## Design Role
+## 🧠 Design Role
 
 `@contentrain/types` exists so every package in the monorepo speaks the same domain language.
 
@@ -152,7 +152,7 @@ This package should stay:
 - stable
 - free of package-specific behavior
 
-## Development
+## 🛠 Development
 
 From the monorepo root:
 
@@ -162,13 +162,13 @@ pnpm --filter @contentrain/types test
 pnpm --filter @contentrain/types typecheck
 ```
 
-## Related Packages
+## 🔗 Related Packages
 
 - `@contentrain/mcp`
 - `contentrain`
 - `@contentrain/query`
 - `@contentrain/rules`
 
-## License
+## 📄 License
 
 MIT

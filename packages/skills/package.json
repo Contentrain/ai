@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/skills",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "MIT",
   "description": "AI agent skills for Contentrain — workflow procedures, framework integration guides",
   "type": "module",
@@ -43,7 +43,11 @@
     "./workflows/*": "./workflows/*",
     "./frameworks/*": "./frameworks/*"
   },
-  "files": ["dist", "workflows", "frameworks"],
+  "files": [
+    "dist",
+    "workflows",
+    "frameworks"
+  ],
   "scripts": {
     "build": "tsdown src/index.ts --format esm,cjs --dts",
     "test": "vitest run",

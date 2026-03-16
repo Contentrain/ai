@@ -10,7 +10,7 @@ import { registerBulkTools } from './tools/bulk.js'
 export function createServer(projectRoot: string): McpServer {
   const server = new McpServer({
     name: 'contentrain-mcp',
-    version: '0.0.0',
+    version: '0.1.0',
   })
 
   registerContextTools(server, projectRoot)

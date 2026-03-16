@@ -10,7 +10,7 @@ Contentrain stores content in a git-backed `.contentrain/` directory. This packa
 - ESM and CommonJS output
 - framework-agnostic usage across app and server environments
 
-## Install
+## 🚀 Install
 
 ```bash
 pnpm add @contentrain/query
@@ -21,7 +21,7 @@ Requirements:
 - Node.js `22+`
 - a Contentrain project with `.contentrain/config.json`
 
-## What This Package Provides
+## ✨ What This Package Provides
 
 `@contentrain/query` has two roles:
 
@@ -34,7 +34,7 @@ Requirements:
    - exports low-level runtime classes for framework SDK authors
    - exports `createContentrainClient(projectRoot?)` for loading a generated client module
 
-## Quick Start
+## 🚀 Quick Start
 
 Generate a client:
 
@@ -83,7 +83,7 @@ const messages = dictionary('error-messages').locale('en').get()
 const article = document('blog-article').locale('en').bySlug('welcome-post')
 ```
 
-## Generated Client API
+## 📦 Generated Client API
 
 The generated client exposes four entry points:
 
@@ -135,7 +135,7 @@ Supported methods:
 - `first()`
 - `all()`
 
-## Relations
+## 🔗 Relations
 
 Generated clients support relation resolution via `include(...)`.
 
@@ -153,7 +153,7 @@ const settings = singleton('site-settings')
   .get()
 ```
 
-## Framework SDK Authors
+## 🧱 Framework SDK Authors
 
 The package root exports runtime primitives and an async loader:
 
@@ -172,7 +172,7 @@ Public root exports:
 - `DocumentQuery`
 - `createContentrainClient`
 
-## CommonJS Usage
+## 🧩 CommonJS Usage
 
 Generated clients support CommonJS through `init()`:
 
@@ -183,7 +183,7 @@ const client = await clientModule.init()
 const hero = client.singleton('hero').get()
 ```
 
-## CLI
+## 🛠 CLI
 
 Generate once:
 
@@ -203,7 +203,7 @@ Use a different project root:
 npx contentrain-query generate --root /path/to/project
 ```
 
-## Package Exports
+## 📤 Package Exports
 
 Main package:
 
@@ -213,7 +213,7 @@ Generator entry:
 
 - `@contentrain/query/generate`
 
-## Design Constraints
+## 🧠 Design Constraints
 
 This package intentionally:
 
@@ -223,7 +223,7 @@ This package intentionally:
 - keeps the runtime framework-agnostic
 - treats generated client output as the primary consumer surface
 
-## Development
+## 🛠 Development
 
 From the monorepo root:
 
@@ -234,13 +234,13 @@ pnpm --filter @contentrain/query typecheck
 pnpm exec oxlint packages/sdk/js/src packages/sdk/js/tests
 ```
 
-## Related Packages
+## 🔗 Related Packages
 
 - `contentrain` — CLI that runs project initialization, validation, serve, and generation flows
 - `@contentrain/mcp` — local-first MCP server and core content workflow engine
 - `@contentrain/types` — shared schema and model definitions
 - `@contentrain/rules` — agent rules and prompts
 
-## License
+## 📄 License
 
 MIT

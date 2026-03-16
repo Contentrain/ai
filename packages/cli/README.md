@@ -17,7 +17,7 @@ This package is the human-facing companion to:
 - [`@contentrain/query`](https://github.com/contentrain/contentrain-ai/tree/main/packages/sdk/js) for generated runtime queries
 - [`@contentrain/rules`](https://github.com/contentrain/contentrain-ai/tree/main/packages/rules) and [`@contentrain/skills`](https://github.com/contentrain/contentrain-ai/tree/main/packages/skills) for agent guidance
 
-## Install
+## 🚀 Install
 
 Use `npx`:
 
@@ -37,7 +37,7 @@ Requirements:
 - Node.js 22+
 - Git available in `PATH`
 
-## Commands
+## 🧰 Commands
 
 | Command | Purpose |
 | --- | --- |
@@ -49,7 +49,7 @@ Requirements:
 | `contentrain diff` | Review and merge or reject pending `contentrain/*` branches |
 | `contentrain serve` | Start the local review UI or the MCP stdio server |
 
-## Typical Flow
+## 🔄 Typical Flow
 
 Initialize a project:
 
@@ -89,7 +89,7 @@ Open the local UI:
 contentrain serve
 ```
 
-## `serve` Modes
+## 🖥 `serve` Modes
 
 `contentrain serve` has two roles.
 
@@ -114,7 +114,7 @@ contentrain serve --stdio
 
 Use stdio mode when connecting Claude Code, Cursor, Windsurf, or another MCP client to the local project.
 
-## `generate` and `#contentrain`
+## 📦 `generate` and `#contentrain`
 
 `contentrain generate` writes a typed client to `.contentrain/client/` and injects `#contentrain` imports into your `package.json`.
 
@@ -130,7 +130,7 @@ Run with watch mode during local model/content work:
 contentrain generate --watch
 ```
 
-## Review Workflow
+## 👀 Review Workflow
 
 Most write operations create `contentrain/*` branches in review mode.
 
@@ -147,7 +147,7 @@ to understand:
 - whether branch health is blocking new writes
 - what changed before merging or deleting a branch
 
-## IDE Rules
+## 🤖 IDE Rules
 
 `contentrain init` installs project-level AI rules automatically:
 
@@ -157,7 +157,7 @@ to understand:
 
 If the target file already exists, Contentrain appends its rules instead of overwriting unrelated content where possible.
 
-## Development
+## 🛠 Development
 
 From the monorepo root:
 

@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/rules",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "MIT",
   "description": "AI agent rules for Contentrain — quality standards, architecture conventions, IDE integration",
   "type": "module",
@@ -39,7 +39,13 @@
     "./context/*": "./context/*",
     "./ide/*": "./ide/*"
   },
-  "files": ["dist", "shared", "prompts", "context", "ide"],
+  "files": [
+    "dist",
+    "shared",
+    "prompts",
+    "context",
+    "ide"
+  ],
   "scripts": {
     "build": "tsdown src/index.ts --format esm,cjs --dts && node --import tsx scripts/build-rules.ts",
     "test": "vitest run",

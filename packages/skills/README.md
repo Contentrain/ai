@@ -13,13 +13,13 @@ This package is the procedural layer of the Contentrain ecosystem. It tells an a
 
 If `@contentrain/rules` defines constraints, `@contentrain/skills` defines execution playbooks.
 
-## Install
+## 🚀 Install
 
 ```bash
 pnpm add @contentrain/skills
 ```
 
-## What It Contains
+## 📦 What It Contains
 
 ### Workflow skills
 
@@ -52,14 +52,14 @@ Published under `frameworks/*`:
 - `react-native.md`
 - `node.md`
 
-## Public Exports
+## 🧰 Public Exports
 
 The package root exports:
 
 - `WORKFLOW_SKILLS`
 - `FRAMEWORK_GUIDES`
 
-## Example
+## 🧪 Example
 
 ```ts
 import { WORKFLOW_SKILLS, FRAMEWORK_GUIDES } from '@contentrain/skills'
@@ -68,7 +68,7 @@ console.log(WORKFLOW_SKILLS)
 console.log(FRAMEWORK_GUIDES.includes('next'))
 ```
 
-## Design Role
+## 🧠 Design Role
 
 `@contentrain/skills` is for step-by-step execution guidance:
 
@@ -80,14 +80,14 @@ In practice:
 - use `@contentrain/rules` to understand what is allowed
 - use `@contentrain/skills` to decide which workflow to run next
 
-## Relationship To Other Packages
+## 🔗 Relationship To Other Packages
 
 - `@contentrain/mcp` provides the actual tool surface
 - `@contentrain/rules` defines policy and quality constraints
 - `contentrain` exposes CLI and serve workflows
 - `@contentrain/query` provides the generated content runtime
 
-## Build
+## 🛠 Build
 
 From the monorepo root:
 
@@ -97,6 +97,6 @@ pnpm --filter @contentrain/skills test
 pnpm --filter @contentrain/skills typecheck
 ```
 
-## License
+## 📄 License
 
 MIT

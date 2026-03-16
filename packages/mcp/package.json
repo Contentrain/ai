@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/mcp",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "MIT",
   "description": "MCP tools for AI-powered content management with Contentrain",
   "type": "module",
