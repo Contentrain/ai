@@ -248,6 +248,42 @@ Ask the user which model or domain to process next. Repeat steps 1-5 for each re
 
 ---
 
+## Phase 3: Translation (Optional)
+
+After Phase 1 (extract) and Phase 2 (reuse) are complete:
+
+1. Copy source locale to target locales:
+   ```
+   contentrain_bulk({ operation: "copy_locale", model: "ui-texts", source_locale: "en", target_locale: "tr" })
+   ```
+
+2. Translate each key's value while keeping the key names identical across locales.
+
+3. Re-generate the SDK client:
+   ```bash
+   npx contentrain generate
+   ```
+
+4. The application now serves localized content from the dictionary.
+
+---
+
+## Content Update Workflow
+
+When dictionary content is added or updated:
+
+1. Edit content via MCP (`contentrain_content_save`).
+2. Re-run `contentrain generate` to update the static data modules.
+3. Rebuild the application.
+
+For development, use watch mode:
+
+```bash
+npx contentrain generate --watch
+```
+
+---
+
 ## Important Rules
 
 - **ALWAYS dry-run before apply.** Both extract and reuse require a preview step.

@@ -17,6 +17,60 @@ const PURE_NUMBER_RE = /^\d+(\.\d+)?$/
 const HEX_COLOR_RE = /^#[0-9a-f]{3,8}$/i
 const FILE_EXT_RE = /\.(png|jpg|jpeg|gif|svg|webp|ico|css|scss|less|js|ts|tsx|jsx|json|md|html|xml|yaml|yml|woff|woff2|ttf|eot|mp4|webm|mp3|wav|pdf)$/i
 
+// ─── HTML / component prop technical values ───
+
+const HTML_PROP_VALUES = new Set([
+  // CSS / variant keywords
+  'class', 'variant', 'secondary', 'outline', 'ghost', 'destructive', 'default', 'primary',
+  // Link / target
+  '_blank', 'noopener', 'noreferrer',
+  // Input / button types
+  'button', 'submit', 'reset', 'text', 'numeric', 'password', 'email', 'checkbox', 'radio',
+  // Layout / display
+  'hidden', 'none', 'auto', 'inherit', 'initial',
+  // Size tokens
+  'sm', 'md', 'lg', 'xl', 'xs', '2xl', '3xl',
+  // Icon variants
+  'icon', 'icon-sm', 'icon-lg',
+])
+
+// ─── Slot / event technical names (single lowercase word) ───
+
+const SLOT_EVENT_NAMES = new Set([
+  'header', 'footer', 'default', 'trigger', 'content',
+  'sidebar', 'overlay', 'body', 'actions',
+  'click', 'change', 'input', 'focus', 'blur', 'submit',
+  'mounted', 'unmounted', 'updated',
+])
+
+// ─── Tailwind / CSS utility detection ───
+
+const TAILWIND_SEGMENT_RE = /^(?:bg-|text-|border-|flex|grid|p-|px-|py-|pt-|pb-|pl-|pr-|m-|mx-|my-|mt-|mb-|ml-|mr-|rounded|shadow|w-|h-|min-|max-|gap-|space-|items-|justify-|self-|overflow-|z-|opacity-|transition|duration-|ease-|animate-|font-|leading-|tracking-|decoration-|underline|line-through|uppercase|lowercase|capitalize|truncate|whitespace-|break-|sr-only|not-sr-only|hover:|focus:|active:|disabled:|dark:|sm:|md:|lg:|xl:|2xl:|group-|peer-|ring-|outline-|divide-|table-|col-|row-|aspect-|object-|inset-|top-|right-|bottom-|left-|translate-|rotate-|scale-|skew-|origin-|cursor-|select-|resize-|fill-|stroke-|block|inline|absolute|relative|fixed|sticky|static|float-|clear-|isolate|visible|invisible|grow|shrink|basis-|order-|place-)/
+
+/**
+ * Returns true if the string looks like a CSS class list (Tailwind or similar).
+ * Requires 2+ space-separated segments with majority matching utility patterns.
+ */
+function isCssClassList(value: string): boolean {
+  const segments = value.trim().split(/\s+/)
+  if (segments.length < 2) return false
+  let matched = 0
+  for (const seg of segments) {
+    if (TAILWIND_SEGMENT_RE.test(seg)) matched++
+  }
+  return matched / segments.length >= 0.5
+}
+
+/**
+ * Returns true if the string is a single CSS utility token (e.g. "bg-blue-500").
+ */
+function isSingleCssUtility(value: string): boolean {
+  const trimmed = value.trim()
+  // Must be a single token, no spaces
+  if (trimmed.includes(' ')) return false
+  return TAILWIND_SEGMENT_RE.test(trimmed)
+}
+
 // ─── Pre-filter Rules ───
 
 const PRE_FILTER_RULES: PreFilterRule[] = [
@@ -35,6 +89,21 @@ const PRE_FILTER_RULES: PreFilterRule[] = [
   { condition: (v) => v.startsWith('--'), reason: 'cli_flag' },
   { condition: (v) => HEX_COLOR_RE.test(v), reason: 'hex_color' },
   { condition: (v) => FILE_EXT_RE.test(v), reason: 'file_extension' },
+
+  // HTML / component prop technical values (exact match, case-insensitive)
+  { condition: (v) => HTML_PROP_VALUES.has(v.toLowerCase()), reason: 'html_prop_value' },
+
+  // CSS class lists (Tailwind-style multi-segment strings)
+  { condition: (v) => isCssClassList(v), reason: 'css_class_list' },
+
+  // Single CSS utility token (e.g. "bg-blue-500", "rounded-lg")
+  { condition: (v) => isSingleCssUtility(v), reason: 'css_utility_token' },
+
+  // Slot / event technical names (single lowercase word only)
+  { condition: (v) => {
+    const lower = v.toLowerCase()
+    return v === lower && !v.includes(' ') && SLOT_EVENT_NAMES.has(lower)
+  }, reason: 'slot_event_name' },
 ]
 
 // ─── Public API ───

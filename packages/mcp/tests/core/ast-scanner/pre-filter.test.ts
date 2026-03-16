@@ -151,6 +151,164 @@ describe('applyPreFilter', () => {
     })
   })
 
+  // ─── HTML prop value filtering ───
+
+  describe('html prop value rules', () => {
+    it('filters common HTML/component prop values', () => {
+      const strings = [
+        makeString('class'),
+        makeString('variant'),
+        makeString('secondary'),
+        makeString('outline'),
+        makeString('ghost'),
+        makeString('destructive'),
+        makeString('default'),
+        makeString('primary'),
+        makeString('_blank'),
+        makeString('noopener'),
+        makeString('button'),
+        makeString('submit'),
+        makeString('text'),
+        makeString('numeric'),
+        makeString('password'),
+        makeString('email'),
+        makeString('checkbox'),
+        makeString('radio'),
+        makeString('hidden'),
+        makeString('none'),
+        makeString('auto'),
+        makeString('sm'),
+        makeString('md'),
+        makeString('lg'),
+        makeString('xl'),
+        makeString('icon'),
+        makeString('icon-sm'),
+        makeString('icon-lg'),
+      ]
+      const result = applyPreFilter(strings)
+      expect(result.candidates).toHaveLength(0)
+      expect(result.filterReasons['html_prop_value']).toBe(strings.length)
+    })
+
+    it('filters prop values case-insensitively', () => {
+      const strings = [makeString('Secondary'), makeString('OUTLINE')]
+      const result = applyPreFilter(strings)
+      expect(result.candidates).toHaveLength(0)
+      expect(result.filterReasons['html_prop_value']).toBe(2)
+    })
+
+    it('does NOT filter capitalized multi-word content like "Dashboard"', () => {
+      const strings = [
+        makeString('Dashboard'),
+        makeString('Models'),
+        makeString('Content'),
+        makeString('Settings'),
+      ]
+      const result = applyPreFilter(strings)
+      expect(result.candidates).toHaveLength(4)
+      expect(result.filtered).toBe(0)
+    })
+  })
+
+  // ─── CSS class list filtering ───
+
+  describe('css class list rules', () => {
+    it('filters Tailwind class lists', () => {
+      const strings = [
+        makeString('bg-blue-500 text-white p-4'),
+        makeString('flex items-center justify-between'),
+        makeString('rounded-lg shadow-md border-gray-200'),
+      ]
+      const result = applyPreFilter(strings)
+      expect(result.candidates).toHaveLength(0)
+      expect(result.filterReasons['css_class_list']).toBe(3)
+    })
+
+    it('filters mixed class lists where majority are utilities', () => {
+      const strings = [makeString('flex items-center gap-2 myclass')]
+      const result = applyPreFilter(strings)
+      expect(result.candidates).toHaveLength(0)
+      expect(result.filterReasons['css_class_list']).toBe(1)
+    })
+
+    it('does NOT filter normal multi-word sentences', () => {
+      const strings = [
+        makeString('Welcome to our app'),
+        makeString('Click here to continue'),
+      ]
+      const result = applyPreFilter(strings)
+      expect(result.candidates).toHaveLength(2)
+      expect(result.filtered).toBe(0)
+    })
+  })
+
+  // ─── Single CSS utility token filtering ───
+
+  describe('css utility token rules', () => {
+    it('filters single CSS utility tokens', () => {
+      const strings = [
+        makeString('bg-blue-500'),
+        makeString('text-white'),
+        makeString('rounded-lg'),
+        makeString('border-gray-200'),
+        makeString('hover:bg-red-500'),
+      ]
+      const result = applyPreFilter(strings)
+      expect(result.candidates).toHaveLength(0)
+      expect(result.filterReasons['css_utility_token']).toBe(5)
+    })
+
+    it('does NOT filter non-utility single words', () => {
+      const strings = [makeString('Welcome'), makeString('Hello')]
+      const result = applyPreFilter(strings)
+      expect(result.candidates).toHaveLength(2)
+      expect(result.filtered).toBe(0)
+    })
+  })
+
+  // ─── Slot / event name filtering ───
+
+  describe('slot/event name rules', () => {
+    it('filters single lowercase slot/event names', () => {
+      const strings = [
+        makeString('header'),
+        makeString('footer'),
+        makeString('trigger'),
+        makeString('content'),
+        makeString('sidebar'),
+        makeString('overlay'),
+        makeString('click'),
+        makeString('change'),
+        makeString('blur'),
+      ]
+      const result = applyPreFilter(strings)
+      expect(result.candidates).toHaveLength(0)
+      expect(result.filterReasons['slot_event_name']).toBe(9)
+    })
+
+    it('does NOT filter capitalized versions (these are likely UI labels)', () => {
+      const strings = [
+        makeString('Header'),
+        makeString('Footer'),
+        makeString('Content'),
+        makeString('Sidebar'),
+      ]
+      const result = applyPreFilter(strings)
+      expect(result.candidates).toHaveLength(4)
+      expect(result.filtered).toBe(0)
+    })
+
+    it('does NOT filter multi-word strings starting with slot names', () => {
+      const strings = [
+        makeString('header section title'),
+        makeString('footer copyright text'),
+      ]
+      const result = applyPreFilter(strings)
+      expect(result.candidates).toHaveLength(2)
+      expect(result.filtered).toBe(0)
+    })
+  })
+
   // ─── Pass-through (conservative) ───
 
   describe('pass-through (when in doubt, include)', () => {

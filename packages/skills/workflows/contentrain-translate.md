@@ -111,6 +111,22 @@ Field: description
 
 Wait for user approval. The user may request adjustments to tone, phrasing, or terminology.
 
+### 7.5. Bulk Copy for New Locales
+
+When translating a model to a brand-new locale, use `copy_locale` to bootstrap the target locale with source content before translating:
+
+```
+contentrain_bulk({ operation: "copy_locale", model: "<model-id>", source_locale: "en", target_locale: "<target>" })
+```
+
+This creates target locale files with the source content as a starting point. Then translate each entry's values in-place — keys and entry IDs remain identical.
+
+After all translations are saved, re-generate the SDK client so the application picks up the new locale data:
+
+```bash
+npx contentrain generate
+```
+
 ### 8. Save Translations
 
 After approval, call `contentrain_content_save` for each model and target locale:

@@ -96,18 +96,131 @@ Ensure `tsconfig.json` does not block the generated client:
 - `rootDir` or `include` should not exclude `.contentrain/client/`.
 - If using `moduleResolution: "bundler"` or `"node16"`, subpath imports resolve natively.
 
+### 5.5. Configure Bundler Alias
+
+The `#contentrain` subpath import works natively in Node.js 22+ but **does NOT resolve in browser bundlers**. If the project uses a bundler, configure an alias so `#contentrain` resolves to the generated client.
+
+#### Vite (Vue, React, Svelte, Astro)
+
+```ts
+// vite.config.ts
+import { resolve } from 'node:path'
+export default defineConfig({
+  resolve: {
+    alias: {
+      '#contentrain': resolve(__dirname, '.contentrain/client/index.mjs'),
+    },
+  },
+})
+```
+
+Also add a `paths` entry to `tsconfig.json` so the TypeScript language server resolves the alias:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "#contentrain": ["./.contentrain/client/index.d.ts"]
+    }
+  }
+}
+```
+
+#### Next.js (webpack)
+
+```js
+// next.config.js
+const path = require('path')
+module.exports = {
+  webpack: (config) => {
+    config.resolve.alias['#contentrain'] = path.resolve(__dirname, '.contentrain/client/index.mjs')
+    return config
+  },
+}
+```
+
+Add the same `tsconfig.json` paths entry:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "#contentrain": ["./.contentrain/client/index.d.ts"]
+    }
+  }
+}
+```
+
+#### Nuxt 3
+
+Nuxt provides a top-level `alias` option — no Vite config needed:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  alias: {
+    '#contentrain': './.contentrain/client/index.mjs',
+  },
+})
+```
+
+Add the `tsconfig.json` paths entry as above. Nuxt auto-extends `tsconfig.json` via `.nuxt/tsconfig.json`, so ensure the paths entry is in the project root `tsconfig.json`.
+
+#### SvelteKit
+
+SvelteKit uses Vite internally. Add the alias in `vite.config.ts` as shown in the Vite section above.
+
+#### Expo / React Native (Metro)
+
+```js
+// metro.config.js
+const path = require('path')
+module.exports = {
+  resolver: {
+    extraNodeModules: {
+      '#contentrain': path.resolve(__dirname, '.contentrain/client/index.mjs'),
+    },
+  },
+}
+```
+
+#### Pure Node.js / SSR-only
+
+No alias needed. Node.js 22+ resolves `#contentrain` from `package.json` imports natively.
+
 ### 6. Verify Imports Work
 
-Run a quick verification that the imports resolve correctly:
+Run a quick verification that the imports resolve correctly.
+
+**Node.js / SSR-only projects:**
 
 ```bash
 node -e "import('#contentrain').then(m => console.log('OK:', Object.keys(m)))"
 ```
 
-If this fails, check:
-- Node.js version >= 22 (required for subpath imports).
+**Browser / bundler projects:** run the framework's build command instead, since the Node.js check does not exercise the bundler alias:
+
+```bash
+# Vite-based (Vue, React, Svelte, Astro)
+npx vite build
+
+# Next.js
+npx next build
+
+# Nuxt 3
+npx nuxi build
+
+# Expo
+npx expo export
+```
+
+A successful build confirms the `#contentrain` alias resolves correctly through the bundler pipeline.
+
+If verification fails, check:
+- Node.js version >= 22 (required for native subpath imports).
 - `package.json` has `"type": "module"` (for ESM projects).
 - The `.contentrain/client/` directory was generated successfully.
+- The bundler alias is configured (see Step 5.5) for browser projects.
 
 ### 7. Show Usage Examples
 
@@ -194,12 +307,14 @@ const article = document('blog-article').locale('en').include('author').bySlug('
 
 #### Framework-Specific Patterns
 
-| Stack | Usage Pattern |
-|---|---|
-| Nuxt 3 | `useAsyncData(() => singleton('hero').locale(locale).get())` |
-| Next.js | In RSC: `const data = singleton('hero').locale('en').get()` |
-| Astro | In frontmatter: `const posts = query('blog-post').locale('en').all()` |
-| SvelteKit | In `+page.server.ts`: `export const load = () => ({ hero: singleton('hero').locale('en').get() })` |
+| Stack | Usage Pattern | Alias Setup |
+|---|---|---|
+| Nuxt 3 | `useAsyncData(() => singleton('hero').locale(locale).get())` | `nuxt.config.ts` alias (Step 5.5) |
+| Next.js | In RSC: `const data = singleton('hero').locale('en').get()` | `next.config.js` webpack alias (Step 5.5) |
+| Astro | In frontmatter: `const posts = query('blog-post').locale('en').all()` | `vite.config.ts` alias (Step 5.5) |
+| SvelteKit | In `+page.server.ts`: `export const load = () => ({ hero: singleton('hero').locale('en').get() })` | `vite.config.ts` alias (Step 5.5) |
+| Expo / RN | `const hero = singleton('hero').locale('en').get()` | `metro.config.js` resolver (Step 5.5) |
+| Node.js / SSR | Direct import — no alias needed | Native subpath imports |
 
 ### 8. Offer Watch Mode
 

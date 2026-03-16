@@ -21,6 +21,7 @@ export interface ExtractionEntry {
     slug?: string
     data: Record<string, unknown>
     source?: { file: string; line: number; value: string }
+    sources?: Array<{ file: string; line: number; key: string; value: string }>
   }>
 }
 
@@ -550,7 +551,18 @@ export async function applyExtract(
 
         // Track source map
         for (const entry of ext.entries) {
-          if (entry.source) {
+          // For dictionary entries with per-key source tracking
+          if (ext.kind === 'dictionary' && entry.sources) {
+            for (const s of entry.sources) {
+              sourceMap.push({
+                model: ext.model,
+                locale: entry.locale ?? config.locales.default,
+                value: s.value,
+                file: s.file,
+                line: s.line,
+              })
+            }
+          } else if (entry.source) {
             sourceMap.push({
               model: ext.model,
               locale: entry.locale ?? config.locales.default,

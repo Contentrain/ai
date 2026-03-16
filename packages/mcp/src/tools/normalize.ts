@@ -145,6 +145,12 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
             line: z.number().describe('Source line number'),
             value: z.string().describe('Original string value'),
           }).optional().describe('Source tracking for traceability'),
+          sources: z.array(z.object({
+            file: z.string().describe('Source file path'),
+            line: z.number().describe('Source line number'),
+            key: z.string().describe('Dictionary key this source maps to'),
+            value: z.string().describe('Original string value'),
+          })).optional().describe('Per-key source tracking for dictionary models'),
         })).describe('Content entries to create'),
       })).optional().describe('Extract mode: content extractions'),
 
