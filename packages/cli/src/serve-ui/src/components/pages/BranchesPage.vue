@@ -13,6 +13,8 @@ import {
 } from 'lucide-vue-next'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import StudioHint from '@/components/layout/StudioHint.vue'
+import AgentPrompt from '@/components/layout/AgentPrompt.vue'
+import AgentPromptGroup from '@/components/layout/AgentPromptGroup.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -143,6 +145,11 @@ useWatch((event) => {
             <p class="mt-2 max-w-sm text-sm text-muted-foreground">
               AI-generated changes from your IDE will appear here for review.
             </p>
+            <AgentPromptGroup title="Try asking your AI agent" class="mt-6 w-full max-w-md">
+              <AgentPrompt prompt="Create a new content model for my project" />
+              <AgentPrompt prompt="Normalize my project — extract hardcoded strings" />
+              <AgentPrompt prompt="Add sample content to my models" />
+            </AgentPromptGroup>
           </div>
 
           <!-- Branch list -->
@@ -182,6 +189,9 @@ useWatch((event) => {
             <History class="mb-4 size-12 text-muted-foreground/30" />
             <h2 class="text-lg font-semibold">No history yet</h2>
             <p class="mt-2 text-sm text-muted-foreground">Contentrain operations will appear here as a timeline.</p>
+            <AgentPromptGroup title="Get started" class="mt-6 w-full max-w-md">
+              <AgentPrompt prompt="Initialize my contentrain project" />
+            </AgentPromptGroup>
           </div>
 
           <div v-else class="space-y-8">

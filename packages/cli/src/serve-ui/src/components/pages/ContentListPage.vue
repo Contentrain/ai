@@ -17,6 +17,8 @@ import {
 import { toast } from 'vue-sonner'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import StudioHint from '@/components/layout/StudioHint.vue'
+import AgentPrompt from '@/components/layout/AgentPrompt.vue'
+import AgentPromptGroup from '@/components/layout/AgentPromptGroup.vue'
 import { Badge } from '@/components/ui/badge'
 import { TrustBadge } from '@/components/ui/trust-badge'
 import { Button } from '@/components/ui/button'
@@ -569,6 +571,16 @@ useWatch((event) => {
         </span>
       </div>
 
+      <!-- Agent prompt hints -->
+      <AgentPromptGroup title="Ask your agent" class="mb-4">
+        <div class="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4">
+          <AgentPrompt :prompt="`Add a new entry to ${modelId}`" />
+          <AgentPrompt :prompt="`Update the content of ${modelId}`" />
+          <AgentPrompt :prompt="`Translate ${modelId} content to Turkish`" />
+          <AgentPrompt :prompt="`Delete draft entries from ${modelId}`" />
+        </div>
+      </AgentPromptGroup>
+
       <!-- Loading -->
       <div v-if="store.loading && rawEntries.length === 0" class="flex flex-1 items-center justify-center">
         <Loader2 class="size-6 animate-spin text-primary" />
@@ -583,6 +595,10 @@ useWatch((event) => {
         <p class="mt-2 max-w-sm text-sm text-muted-foreground">
           Create content using AI in your IDE.
         </p>
+        <AgentPromptGroup title="Ask your agent" class="mt-6 w-full max-w-md">
+          <AgentPrompt :prompt="`Create sample content for ${modelId}`" />
+          <AgentPrompt :prompt="`Generate 5 entries for ${modelId}`" />
+        </AgentPromptGroup>
       </div>
 
       <!-- No search results -->
@@ -965,7 +981,7 @@ useWatch((event) => {
         </div>
       </template>
 
-      <StudioHint id="content" message="Edit content with AI chat in Contentrain Studio." class="mt-4" />
+      <StudioHint id="content" message="Content mutations are agent actions — copy a prompt above and paste it in your AI agent." class="mt-4" />
 
       <!-- Preview Dialog -->
       <Dialog v-model:open="previewOpen">

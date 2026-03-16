@@ -2,13 +2,16 @@
 import { onMounted, computed, ref, Transition } from 'vue'
 import { useRouter } from 'vue-router'
 import { useContentStore } from '@/stores/content'
+import { useWatch } from '@/composables/useWatch'
 import { toast } from 'vue-sonner'
 import {
-  ShieldCheck, ShieldAlert, AlertTriangle, CircleAlert, Info, RefreshCw,
-  ChevronDown, Filter, FileWarning, Database, ListChecks, Wrench, Loader2,
+  ShieldCheck, ShieldAlert, AlertTriangle, CircleAlert, Info,
+  ChevronDown, Filter, FileWarning, Database, ListChecks, Loader2,
 } from 'lucide-vue-next'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import StudioHint from '@/components/layout/StudioHint.vue'
+import AgentPrompt from '@/components/layout/AgentPrompt.vue'
+import AgentPromptGroup from '@/components/layout/AgentPromptGroup.vue'
 import { Badge } from '@/components/ui/badge'
 import { TrustBadge } from '@/components/ui/trust-badge'
 import { Button } from '@/components/ui/button'
@@ -24,15 +27,12 @@ const validation = computed(() => store.validation)
 const summary = computed(() => validation.value?.summary)
 const allIssues = computed(() => validation.value?.issues ?? [])
 
-// Severity filter toggles
 const showErrors = ref(true)
 const showWarnings = ref(true)
 const showNotices = ref(true)
 
-// Group-by mode
 const groupBy = ref<'severity' | 'model'>('severity')
 
-// Group sections open state
 const errorsOpen = ref(true)
 const warningsOpen = ref(true)
 const noticesOpen = ref(true)
@@ -67,7 +67,6 @@ const filteredGroups = computed(() => {
 
 const hasAnyFiltered = computed(() => filteredGroups.value.length > 0)
 
-// Model-grouped issues
 const issuesByModel = computed(() => {
   const groups = new Map<string, typeof allIssues.value>()
   for (const issue of allIssues.value) {
@@ -78,53 +77,24 @@ const issuesByModel = computed(() => {
   return [...groups.entries()].toSorted((a, b) => b[1].length - a[1].length)
 })
 
-// Run tracking
-const lastRunAt = ref<Date | null>(null)
-const runFeedback = ref<string | null>(null)
+const lastUpdatedAt = ref<Date | null>(null)
 
-const fixing = ref(false)
-
-async function runValidation() {
-  runFeedback.value = null
+async function fetchValidation() {
   try {
     await store.fetchValidation()
-    lastRunAt.value = new Date()
-    const s = store.validation?.summary
-    if (s) {
-      const total = s.errors + s.warnings + s.notices
-      runFeedback.value = total === 0
-        ? 'All checks passed!'
-        : `Found ${s.errors} error(s), ${s.warnings} warning(s), ${s.notices} notice(s)`
-      setTimeout(() => { runFeedback.value = null }, 4000)
-    }
+    lastUpdatedAt.value = new Date()
   } catch {
-    toast.error('Validation failed. Please try again.')
+    toast.error('Failed to load validation results.')
   }
 }
 
-async function runAutoFix() {
-  runFeedback.value = null
-  fixing.value = true
-  try {
-    await store.fetchValidationWithFix()
-    lastRunAt.value = new Date()
-    const s = store.validation?.summary
-    if (s) {
-      const total = s.errors + s.warnings + s.notices
-      runFeedback.value = total === 0
-        ? 'All issues fixed!'
-        : `Fixed auto-fixable issues. ${s.errors} error(s), ${s.warnings} warning(s) remaining`
-      setTimeout(() => { runFeedback.value = null }, 4000)
-    }
-    toast.success('Auto-fix completed successfully.')
-  } catch {
-    toast.error('Auto-fix failed. Please try again.')
-  } finally {
-    fixing.value = false
+useWatch((event) => {
+  if (event.type === 'validation:updated') {
+    fetchValidation()
   }
-}
+})
 
-onMounted(() => { runValidation() })
+onMounted(() => { fetchValidation() })
 </script>
 
 <template>
@@ -135,50 +105,23 @@ onMounted(() => { runValidation() })
           :status="validation?.valid ? 'validated' : validation ? 'warning' : 'pending'"
           :count="(validation?.summary.errors ?? 0) + (validation?.summary.warnings ?? 0)"
         />
-        <Button variant="outline" size="sm" :disabled="store.loading" @click="runValidation()">
-          <Loader2 v-if="store.loading" class="size-4 animate-spin" />
-          <RefreshCw v-else class="size-4" />
-          Run Again
-        </Button>
+        <span v-if="lastUpdatedAt" class="text-xs text-muted-foreground tabular-nums">
+          Updated {{ lastUpdatedAt.toLocaleTimeString() }}
+        </span>
       </template>
     </PageHeader>
 
     <div class="px-6 py-6 space-y-6">
-      <!-- Run feedback banner -->
-      <Transition
-        enter-active-class="transition-all duration-300 ease-out"
-        enter-from-class="opacity-0 -translate-y-2"
-        leave-active-class="transition-all duration-200 ease-in"
-        leave-to-class="opacity-0 -translate-y-2"
-      >
-        <div
-          v-if="runFeedback"
-          :class="cn(
-            'flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm',
-            validation?.valid
-              ? 'border-status-success/30 bg-status-success/10 text-status-success'
-              : 'border-status-warning/30 bg-status-warning/10 text-status-warning',
-          )"
-        >
-          <component :is="validation?.valid ? ShieldCheck : ShieldAlert" class="size-4 shrink-0" />
-          {{ runFeedback }}
-          <span v-if="lastRunAt" class="ml-auto text-xs opacity-60">{{ lastRunAt.toLocaleTimeString() }}</span>
-        </div>
-      </Transition>
-
-      <!-- Loading overlay when re-running -->
-      <div v-if="store.loading && validation" class="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 class="size-4 animate-spin text-primary" />
-        Running validation...
-      </div>
-
-      <!-- Initial loading -->
       <div v-if="store.loading && !validation" class="flex justify-center py-12">
         <Loader2 class="size-6 animate-spin text-primary" />
       </div>
 
-      <template v-else-if="validation">
-        <!-- Summary cards -->
+      <div v-if="store.loading && validation" class="flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 class="size-4 animate-spin text-primary" />
+        Refreshing validation...
+      </div>
+
+      <template v-if="validation">
         <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
           <Card class="border-status-error/20">
             <CardContent class="flex items-center gap-3 p-4">
@@ -241,7 +184,6 @@ onMounted(() => { runValidation() })
           </Card>
         </div>
 
-        <!-- All passed -->
         <div v-if="allIssues.length === 0" class="flex flex-col items-center py-16 text-center">
           <div class="flex size-20 items-center justify-center rounded-full bg-status-success/10 mb-4">
             <ShieldCheck class="size-10 text-status-success" />
@@ -250,14 +192,17 @@ onMounted(() => { runValidation() })
           <p class="mt-2 text-sm text-muted-foreground max-w-sm">
             Your content and models are in great shape. No errors, warnings, or notices found.
           </p>
+          <div class="mt-6 w-full max-w-md">
+            <AgentPromptGroup title="Ask your agent">
+              <AgentPrompt prompt="Validate my content models" label="re-validate" />
+              <AgentPrompt prompt="Check content quality and i18n completeness" label="quality check" />
+            </AgentPromptGroup>
+          </div>
         </div>
 
-        <!-- Issues -->
         <template v-else>
-          <!-- Filters and group-by toggle -->
           <div class="flex items-center gap-2 flex-wrap">
             <Filter class="size-4 text-muted-foreground" />
-            <!-- Group by toggle -->
             <div class="flex items-center border rounded-md overflow-hidden mr-2">
               <Button
                 variant="ghost"
@@ -276,7 +221,6 @@ onMounted(() => { runValidation() })
                 By Model
               </Button>
             </div>
-            <!-- Severity filter buttons -->
             <Button
               :variant="showErrors ? 'default' : 'outline'"
               size="sm"
@@ -304,15 +248,13 @@ onMounted(() => { runValidation() })
               <Info class="mr-1 size-3" />
               Notices ({{ noticeIssues.length }})
             </Button>
-            <!-- Auto-fix button -->
-            <Button variant="outline" size="sm" class="h-7 text-xs ml-auto" :disabled="store.loading || fixing" @click="runAutoFix()">
-              <Loader2 v-if="fixing" class="mr-1 size-3 animate-spin" />
-              <Wrench v-else class="mr-1 size-3" />
-              Auto-fix
-            </Button>
           </div>
 
-          <!-- Model-grouped view -->
+          <AgentPromptGroup title="Ask your agent">
+            <AgentPrompt prompt="Fix all validation errors in my content" label="auto-fix" />
+            <AgentPrompt prompt="Review and fix validation warnings" label="fix warnings" />
+          </AgentPromptGroup>
+
           <template v-if="groupBy === 'model'">
             <div class="space-y-4">
               <Collapsible v-for="[modelId, issues] in issuesByModel" :key="modelId" :default-open="issuesByModel.length <= 5">
@@ -360,9 +302,7 @@ onMounted(() => { runValidation() })
             </div>
           </template>
 
-          <!-- Severity-grouped view -->
           <template v-else>
-            <!-- Grouped issues -->
             <div v-if="hasAnyFiltered" class="space-y-4">
               <Collapsible
                 v-for="group in filteredGroups"
@@ -429,7 +369,6 @@ onMounted(() => { runValidation() })
               </Collapsible>
             </div>
 
-            <!-- All filtered out -->
             <div v-else class="flex flex-col items-center py-12 text-center">
               <FileWarning class="size-8 text-muted-foreground mb-3" />
               <p class="text-sm text-muted-foreground">All issue types are hidden. Adjust filters above to see issues.</p>
@@ -438,7 +377,7 @@ onMounted(() => { runValidation() })
         </template>
       </template>
 
-      <StudioHint id="validate" message="Set up CI quality gates to catch issues automatically." class="mt-4" />
+      <StudioHint id="validate" message="Validation results update automatically when your agent runs validation tools." class="mt-4" />
     </div>
   </div>
 </template>

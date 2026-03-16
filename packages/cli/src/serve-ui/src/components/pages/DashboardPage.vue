@@ -8,6 +8,8 @@ import { useWatch } from '@/composables/useWatch'
 import { toast } from 'vue-sonner'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import StudioHint from '@/components/layout/StudioHint.vue'
+import AgentPrompt from '@/components/layout/AgentPrompt.vue'
+import AgentPromptGroup from '@/components/layout/AgentPromptGroup.vue'
 import { Badge } from '@/components/ui/badge'
 import { TrustBadge } from '@/components/ui/trust-badge'
 import { cn } from '@/lib/utils'
@@ -135,6 +137,30 @@ function getOpConfig(type: string) {
 }
 
 const stackLabel = computed(() => project.status?.config?.stack ?? null)
+
+const agentPrompts = computed(() => {
+  const s = project.status
+  if (!s) return []
+
+  const prompts: { prompt: string; label?: string }[] = []
+
+  if (s.models.length === 0) {
+    prompts.push({ prompt: 'Create a blog model with title, content, and author fields', label: 'Get started' })
+  } else if (totalEntries.value < 3) {
+    prompts.push({ prompt: 'Generate sample content for my models', label: 'Populate' })
+  }
+
+  if (s.validation && s.validation.errors > 0) {
+    prompts.push({ prompt: 'Fix validation errors in my content', label: 'Fix issues' })
+  }
+
+  prompts.push(
+    { prompt: 'Normalize my project \u2014 extract hardcoded strings' },
+    { prompt: 'Review pending content changes' },
+  )
+
+  return prompts.slice(0, 5)
+})
 </script>
 
 <template>
@@ -333,6 +359,16 @@ const stackLabel = computed(() => project.status?.config?.stack ?? null)
             </ul>
           </div>
         </section>
+
+        <!-- Agent prompt hints -->
+        <AgentPromptGroup v-if="agentPrompts.length > 0" title="Try with your AI agent">
+          <AgentPrompt
+            v-for="(item, i) in agentPrompts"
+            :key="i"
+            :prompt="item.prompt"
+            :label="item.label"
+          />
+        </AgentPromptGroup>
 
         <StudioHint id="dashboard" message="Manage content with AI chat and team review in Contentrain Studio." />
       </template>

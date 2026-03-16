@@ -7,6 +7,8 @@ import {
   Loader2, CheckCircle, XCircle, File,
 } from 'lucide-vue-next'
 import PageHeader from '@/components/layout/PageHeader.vue'
+import AgentPrompt from '@/components/layout/AgentPrompt.vue'
+import AgentPromptGroup from '@/components/layout/AgentPromptGroup.vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { TrustBadge } from '@/components/ui/trust-badge'
@@ -89,6 +91,7 @@ const diffFiles = computed<DiffFile[]>(() => {
 
 const totalAdditions = computed(() => diffFiles.value.reduce((s, f) => s + f.additions, 0))
 const totalDeletions = computed(() => diffFiles.value.reduce((s, f) => s + f.deletions, 0))
+const isNormalizeBranch = computed(() => branchName.value.includes('normalize'))
 
 // Parse stat for file count
 const statFileCount = computed(() => {
@@ -296,6 +299,15 @@ onMounted(async () => {
               </CollapsibleContent>
             </Card>
           </Collapsible>
+          <!-- Agent prompt hints -->
+          <AgentPromptGroup title="Ask your agent" class="mt-4">
+            <AgentPrompt prompt="Review the changes on this branch and recommend approval or rejection" />
+            <AgentPrompt prompt="Check the content quality of the pending changes" />
+            <AgentPrompt
+              v-if="isNormalizeBranch"
+              prompt="Continue with Phase 2 — patch source files with content references"
+            />
+          </AgentPromptGroup>
         </div>
 
         <div v-else class="flex flex-col items-center py-12 text-center">

@@ -5,10 +5,12 @@ import { useContentStore } from '@/stores/content'
 import type { NormalizePlanExtraction } from '@/stores/content'
 import { useWatch } from '@/composables/useWatch'
 import {
-  Sparkles, MapPin, Loader2, Trash2, GitMerge, CheckCircle2, Bot, Terminal,
+  Sparkles, MapPin, Loader2, Trash2, GitMerge, CheckCircle2,
 } from 'lucide-vue-next'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import StudioHint from '@/components/layout/StudioHint.vue'
+import AgentPrompt from '@/components/layout/AgentPrompt.vue'
+import AgentPromptGroup from '@/components/layout/AgentPromptGroup.vue'
 import ExtractionReviewPanel from '@/components/normalize/ExtractionReviewPanel.vue'
 import SourceTracePanel from '@/components/normalize/SourceTracePanel.vue'
 import PatchPreviewPanel from '@/components/normalize/PatchPreviewPanel.vue'
@@ -147,6 +149,16 @@ onMounted(async () => {
           </p>
         </div>
 
+        <!-- Agent prompt hints -->
+        <div class="mx-auto max-w-2xl">
+          <AgentPromptGroup title="Ask your AI agent to get started">
+            <AgentPrompt prompt="Normalize my Vue project — extract hardcoded strings" />
+            <AgentPrompt prompt="Scan src/pages for content strings and create extraction plan" />
+            <AgentPrompt prompt="Extract hero section text into a content model" />
+            <AgentPrompt prompt="Make my landing page i18n-ready" />
+          </AgentPromptGroup>
+        </div>
+
         <!-- How it works -->
         <Card class="mx-auto max-w-2xl">
           <CardHeader class="pb-3">
@@ -161,61 +173,31 @@ onMounted(async () => {
               <div class="flex items-start gap-4">
                 <Badge variant="secondary" class="mt-0.5 shrink-0 size-7 flex items-center justify-center rounded-full font-mono text-xs">1</Badge>
                 <div>
-                  <p class="text-sm font-medium">Ask your AI agent</p>
-                  <p class="text-xs text-muted-foreground mt-0.5">Tell your agent: "normalize my project" or "extract content strings". The agent scans, classifies, and prepares an extraction plan.</p>
+                  <p class="text-sm font-medium">Prompt your AI agent</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">Copy a prompt above or describe what you want extracted. The agent scans your source files, classifies strings, and builds an extraction plan.</p>
                 </div>
               </div>
               <div class="flex items-start gap-4">
                 <Badge variant="secondary" class="mt-0.5 shrink-0 size-7 flex items-center justify-center rounded-full font-mono text-xs">2</Badge>
                 <div>
                   <p class="text-sm font-medium">Review the plan here</p>
-                  <p class="text-xs text-muted-foreground mt-0.5">The agent sends you here to review extractions, source traces, and patches before applying.</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">The agent sends the plan to this dashboard. You review every extraction, source trace, and patch before anything is applied.</p>
                 </div>
               </div>
               <div class="flex items-start gap-4">
                 <Badge variant="secondary" class="mt-0.5 shrink-0 size-7 flex items-center justify-center rounded-full font-mono text-xs">3</Badge>
                 <div>
-                  <p class="text-sm font-medium">Approve or reject</p>
-                  <p class="text-xs text-muted-foreground mt-0.5">Approved extractions are written to content models on a review branch. Reject to discard.</p>
+                  <p class="text-sm font-medium">Approve or request changes</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">Approve to write extractions to content models on a review branch. Reject to discard, or ask the agent to adjust the plan.</p>
                 </div>
               </div>
               <div class="flex items-start gap-4">
                 <Badge variant="secondary" class="mt-0.5 shrink-0 size-7 flex items-center justify-center rounded-full font-mono text-xs">4</Badge>
                 <div>
-                  <p class="text-sm font-medium">Merge</p>
-                  <p class="text-xs text-muted-foreground mt-0.5">Review branches appear below. Merge to apply changes to your main branch.</p>
+                  <p class="text-sm font-medium">Merge and continue</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">Merge review branches into main, then ask the agent to start Phase 2 — patching source files with content references.</p>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <!-- Agent CTA -->
-        <Card class="mx-auto max-w-2xl border-dashed">
-          <CardContent class="flex items-center gap-4 p-4">
-            <div class="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-              <Bot class="size-5 text-primary" />
-            </div>
-            <div class="flex-1">
-              <p class="text-sm font-medium">Start from your AI agent</p>
-              <p class="mt-0.5 text-xs text-muted-foreground">
-                Ask your agent to normalize your project. It will scan, classify, and prepare a plan for your review.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <!-- Terminal hint -->
-        <Card class="mx-auto max-w-2xl border-dashed">
-          <CardContent class="flex items-center gap-4 p-4">
-            <div class="flex size-10 items-center justify-center rounded-lg bg-muted">
-              <Terminal class="size-5 text-muted-foreground" />
-            </div>
-            <div class="flex-1">
-              <p class="text-sm font-medium">Or run the CLI</p>
-              <code class="mt-1 block rounded bg-muted px-3 py-1.5 font-mono text-xs text-foreground">
-                npx contentrain serve
-              </code>
             </div>
           </CardContent>
         </Card>
@@ -249,6 +231,14 @@ onMounted(async () => {
             </div>
           </CardContent>
         </Card>
+
+        <!-- Plan adjustment prompts -->
+        <div class="max-w-md">
+          <AgentPromptGroup title="Request changes from your agent">
+            <AgentPrompt prompt="Adjust the normalize plan — also include strings from the footer component" />
+            <AgentPrompt prompt="Remove navigation labels from the extraction plan" />
+          </AgentPromptGroup>
+        </div>
 
         <!-- Scan stats (if available) -->
         <Card v-if="store.normalizePlan.scan_stats" class="bg-muted/30">
@@ -325,6 +315,14 @@ onMounted(async () => {
               </Button>
             </CardContent>
           </Card>
+        </div>
+
+        <!-- Phase 2 prompts -->
+        <div class="max-w-2xl mx-auto">
+          <AgentPromptGroup title="What's next — ask your agent">
+            <AgentPrompt prompt="Continue to Phase 2 — patch source files with content references" />
+            <AgentPrompt prompt="Start reuse for the extracted content models" />
+          </AgentPromptGroup>
         </div>
       </div>
 

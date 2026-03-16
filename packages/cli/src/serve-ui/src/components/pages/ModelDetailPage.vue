@@ -26,6 +26,8 @@ import {
   ExternalLink,
 } from 'lucide-vue-next'
 import PageHeader from '@/components/layout/PageHeader.vue'
+import AgentPrompt from '@/components/layout/AgentPrompt.vue'
+import AgentPromptGroup from '@/components/layout/AgentPromptGroup.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -263,6 +265,14 @@ watch(modelId, (id) => {
             </div>
           </div>
         </div>
+
+        <!-- Agent prompts -->
+        <AgentPromptGroup title="Ask your agent">
+          <AgentPrompt :prompt="`Add a 'category' field to ${modelId}`" />
+          <AgentPrompt :prompt="`Update ${modelId} to support i18n`" />
+          <AgentPrompt :prompt="`Delete the ${modelId} model`" />
+          <AgentPrompt :prompt="`Generate 5 sample entries for ${modelId}`" />
+        </AgentPromptGroup>
 
         <!-- Custom fields -->
         <section v-if="customFields.length > 0">

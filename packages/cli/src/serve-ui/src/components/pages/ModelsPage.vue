@@ -14,6 +14,8 @@ import {
 } from 'lucide-vue-next'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import StudioHint from '@/components/layout/StudioHint.vue'
+import AgentPrompt from '@/components/layout/AgentPrompt.vue'
+import AgentPromptGroup from '@/components/layout/AgentPromptGroup.vue'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -133,6 +135,12 @@ function clearSearch() {
         <p class="mt-2 max-w-sm text-sm text-muted-foreground">
           Create content models using AI in your IDE, then come back to inspect them here.
         </p>
+
+        <AgentPromptGroup title="Ask your agent" class="mt-6 w-full max-w-md">
+          <AgentPrompt prompt="Create a blog model with title, content, slug, and author fields" />
+          <AgentPrompt prompt="Create a FAQ model with question and answer fields" />
+          <AgentPrompt prompt="Scaffold my project with a landing page template" />
+        </AgentPromptGroup>
       </div>
 
       <!-- No search results -->
@@ -271,6 +279,11 @@ function clearSearch() {
           <span v-if="searchQuery">filtered from {{ models.length }} total</span>
         </div>
       </template>
+
+      <AgentPromptGroup title="Ask your agent">
+        <AgentPrompt prompt="Create a new content model" />
+        <AgentPrompt prompt="Add a testimonials collection model" />
+      </AgentPromptGroup>
 
       <StudioHint
         id="models"
