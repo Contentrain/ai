@@ -1,0 +1,40 @@
+name: Feature request
+description: Propose a focused improvement to a package, workflow, or docs surface.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: dropdown
+    id: package
+    attributes:
+      label: Target package
+      options:
+        - @contentrain/mcp
+        - contentrain
+        - @contentrain/query
+        - @contentrain/types
+        - @contentrain/rules
+        - @contentrain/skills
+        - docs
+        - cross-package
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What is missing or painful today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Keep it concrete and scoped.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Mention user impact, package impact, or possible breaking changes.

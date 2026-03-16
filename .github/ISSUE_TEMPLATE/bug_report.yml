@@ -1,0 +1,45 @@
+name: Bug report
+description: Report a reproducible bug in a package, workflow, or docs surface.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: dropdown
+    id: package
+    attributes:
+      label: Affected package
+      options:
+        - @contentrain/mcp
+        - contentrain
+        - @contentrain/query
+        - @contentrain/types
+        - @contentrain/rules
+        - @contentrain/skills
+        - docs
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the bug and the expected behavior.
+      placeholder: Expected X, but got Y.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Provide steps, commands, or a minimal reproduction.
+      placeholder: |
+        1. Run ...
+        2. Open ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Extra context
+      description: Add logs, screenshots, environment details, or contract notes if relevant.
