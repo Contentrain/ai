@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { ref } from 'vue'
+import { dictionary } from '#contentrain'
+
+const t = dictionary('serve-ui-texts').locale('en').get()
 
 const props = defineProps<{
   basePath: string
@@ -43,7 +46,7 @@ const kindIcons: Record<string, string> = {
       <div class="p-3">
         <div class="relative">
           <Search class="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
-          <Input v-model="search" placeholder="Search..." class="h-8 bg-background pl-8 text-xs" />
+          <Input v-model="search" :placeholder="t['sub-sidebar-layout.search']" class="h-8 bg-background pl-8 text-xs" />
         </div>
       </div>
       <ScrollArea class="flex-1 px-1.5">
@@ -61,7 +64,7 @@ const kindIcons: Record<string, string> = {
         </button>
 
         <div v-if="models.length === 0" class="px-3 py-6 text-center text-xs text-muted-foreground">
-          No models found
+          {{ t['sub-sidebar-layout.no-models-found'] }}
         </div>
       </ScrollArea>
     </aside>

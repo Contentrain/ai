@@ -13,6 +13,7 @@ import AgentPromptGroup from '@/components/layout/AgentPromptGroup.vue'
 import { Badge } from '@/components/ui/badge'
 import { TrustBadge } from '@/components/ui/trust-badge'
 import { cn } from '@/lib/utils'
+import { dictionary } from '#contentrain'
 import {
   Box,
   FileText,
@@ -37,6 +38,7 @@ import {
 const project = useProjectStore()
 const router = useRouter()
 const contentStore = useContentStore()
+const t = dictionary('serve-ui-texts').locale('en').get()
 
 const totalEntries = computed(() => {
   const ctx = project.status?.context
@@ -49,12 +51,12 @@ const stats = computed(() => {
   const s = project.status
   if (!s) return []
   return [
-    { icon: Box, label: 'Models', value: s.models.length, to: '/models', color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { icon: FileText, label: 'Entries', value: totalEntries.value, to: undefined as string | undefined, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-    { icon: Languages, label: 'Locales', value: s.config?.locales.supported.length ?? 0, subtitle: s.config?.locales.supported.join(', ') ?? '—', to: undefined as string | undefined, color: 'text-violet-500', bg: 'bg-violet-500/10' },
-    { icon: GitBranch, label: 'Branches', value: s.branches?.unmerged ?? 0, subtitle: s.branches ? `${s.branches.total} total` : undefined, to: '/branches', color: 'text-orange-500', bg: 'bg-orange-500/10' },
+    { icon: Box, label: t['dashboard.models'], value: s.models.length, to: '/models', color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { icon: FileText, label: t['dashboard.entries'], value: totalEntries.value, to: undefined as string | undefined, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { icon: Languages, label: t['dashboard.locales'], value: s.config?.locales.supported.length ?? 0, subtitle: s.config?.locales.supported.join(', ') ?? '—', to: undefined as string | undefined, color: 'text-violet-500', bg: 'bg-violet-500/10' },
+    { icon: GitBranch, label: t['dashboard.branches'], value: s.branches?.unmerged ?? 0, subtitle: s.branches ? `${s.branches.total} ${t['dashboard.total']}` : undefined, to: '/branches', color: 'text-orange-500', bg: 'bg-orange-500/10' },
     ...(s.validation && (s.validation.errors > 0 || s.validation.warnings > 0)
-      ? [{ icon: ShieldAlert, label: 'Issues', value: s.validation.errors + s.validation.warnings, subtitle: `${s.validation.errors}E ${s.validation.warnings}W`, to: '/validate', color: 'text-red-500', bg: 'bg-red-500/10', warn: true }]
+      ? [{ icon: ShieldAlert, label: t['dashboard.issues'], value: s.validation.errors + s.validation.warnings, subtitle: `${s.validation.errors}E ${s.validation.warnings}W`, to: '/validate', color: 'text-red-500', bg: 'bg-red-500/10', warn: true }]
       : []),
   ]
 })
@@ -87,7 +89,7 @@ function getKindConfig(kind: string) {
 }
 
 function collectionCardClass(_model: ModelSummary): string {
-  return 'border-border bg-gradient-to-b from-secondary/30 to-card hover:from-primary/8 hover:border-primary/20 hover:shadow-md'
+  return 'border-border bg-linear-to-b from-secondary/30 to-card hover:from-primary/8 hover:border-primary/20 hover:shadow-md'
 }
 
 const models = computed(() => project.status?.models ?? [])
@@ -122,13 +124,13 @@ useWatch((event) => {
 })
 
 const operationConfig: Record<string, { icon: typeof Box; color: string; bg: string; label: string }> = {
-  model_create: { icon: Box, color: 'text-blue-500', bg: 'bg-blue-500/10', label: 'Model Created' },
-  model_update: { icon: Settings, color: 'text-blue-400', bg: 'bg-blue-400/10', label: 'Model Updated' },
-  content_save: { icon: FileText, color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'Content Saved' },
-  delete: { icon: Trash2, color: 'text-red-500', bg: 'bg-red-500/10', label: 'Deleted' },
-  merge: { icon: GitMerge, color: 'text-violet-500', bg: 'bg-violet-500/10', label: 'Merged' },
-  context_update: { icon: Activity, color: 'text-gray-400', bg: 'bg-gray-400/10', label: 'Context Updated' },
-  operation: { icon: CircleDot, color: 'text-primary', bg: 'bg-primary/10', label: 'Operation' },
+  model_create: { icon: Box, color: 'text-blue-500', bg: 'bg-blue-500/10', label: t['dashboard.model-created'] },
+  model_update: { icon: Settings, color: 'text-blue-400', bg: 'bg-blue-400/10', label: t['dashboard.model-updated'] },
+  content_save: { icon: FileText, color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: t['dashboard.content-saved'] },
+  delete: { icon: Trash2, color: 'text-red-500', bg: 'bg-red-500/10', label: t['dashboard.deleted'] },
+  merge: { icon: GitMerge, color: 'text-violet-500', bg: 'bg-violet-500/10', label: t['dashboard.merged'] },
+  context_update: { icon: Activity, color: 'text-gray-400', bg: 'bg-gray-400/10', label: t['dashboard.context-updated'] },
+  operation: { icon: CircleDot, color: 'text-primary', bg: 'bg-primary/10', label: t['dashboard.operation'] },
   other: { icon: CircleDot, color: 'text-muted-foreground', bg: 'bg-muted', label: 'Other' },
 }
 
@@ -145,18 +147,18 @@ const agentPrompts = computed(() => {
   const prompts: { prompt: string; label?: string }[] = []
 
   if (s.models.length === 0) {
-    prompts.push({ prompt: 'Create a blog model with title, content, and author fields', label: 'Get started' })
+    prompts.push({ prompt: t['dashboard.create-a-blog-model'], label: t['dashboard.get-started'] })
   } else if (totalEntries.value < 3) {
-    prompts.push({ prompt: 'Generate sample content for my models', label: 'Populate' })
+    prompts.push({ prompt: t['dashboard.generate-sample-content-for'], label: t['dashboard.populate'] })
   }
 
   if (s.validation && s.validation.errors > 0) {
-    prompts.push({ prompt: 'Fix validation errors in my content', label: 'Fix issues' })
+    prompts.push({ prompt: t['dashboard.fix-validation-errors-in'], label: t['dashboard.fix-issues'] })
   }
 
   prompts.push(
-    { prompt: 'Normalize my project \u2014 extract hardcoded strings' },
-    { prompt: 'Review pending content changes' },
+    { prompt: t['dashboard.normalize-my-project-extract'] },
+    { prompt: t['dashboard.review-pending-content-changes'] },
   )
 
   return prompts.slice(0, 5)
@@ -165,7 +167,7 @@ const agentPrompts = computed(() => {
 
 <template>
   <div>
-    <PageHeader title="Dashboard" description="Your project at a glance" />
+    <PageHeader :title="t['dashboard.dashboard']" :description="t['dashboard.your-project-at-a']" />
 
     <div class="px-6 py-6 space-y-8">
       <!-- Loading -->
@@ -182,9 +184,9 @@ const agentPrompts = computed(() => {
       <!-- Not initialized -->
       <div v-else-if="project.status && !project.status.initialized" class="flex flex-col items-center justify-center py-20 text-center">
         <img src="/model-empty-state.svg" alt="" class="empty-illustration mb-6" />
-        <h2 class="text-lg font-semibold text-foreground">Not a Contentrain project</h2>
+        <h2 class="text-lg font-semibold text-foreground">{{ t['dashboard.not-a-contentrain-project'] }}</h2>
         <p class="mt-2 max-w-sm text-sm text-muted-foreground">
-          Run <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">contentrain init</code> to initialize.
+          Run <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{{ t['dashboard.contentrain-init'] }}</code> {{ t['dashboard.to-initialize'] }}
         </p>
       </div>
 
@@ -205,7 +207,7 @@ const agentPrompts = computed(() => {
             </span>
           </Badge>
           <Badge v-if="project.status.vocabulary_size > 0" variant="secondary" class="gap-1.5">
-            <BookMarked class="size-3" /> {{ project.status.vocabulary_size }} terms
+            <BookMarked class="size-3" /> {{ project.status.vocabulary_size }} {{ t['dashboard.terms'] }}
           </Badge>
           <TrustBadge :status="dashboardTrustStatus" :count="dashboardTrustCount" />
         </div>
@@ -218,7 +220,7 @@ const agentPrompts = computed(() => {
             :class="cn(
               'group flex flex-col gap-2 rounded-xl border p-4 text-left transition-all duration-200',
               stat.warn
-                ? 'border-status-warning/30 bg-gradient-to-b from-status-warning/8 to-card'
+                ? 'border-status-warning/30 bg-linear-to-b from-status-warning/8 to-card'
                 : 'border-border bg-card hover:border-primary/20 hover:shadow-sm',
               stat.to ? 'cursor-pointer' : 'cursor-default',
             )"
@@ -241,9 +243,9 @@ const agentPrompts = computed(() => {
         <!-- Collections grid -->
         <section>
           <div class="mb-4 flex items-center justify-between">
-            <h2 class="text-sm font-semibold text-foreground">Content Models</h2>
+            <h2 class="text-sm font-semibold text-foreground">{{ t['dashboard.content-models'] }}</h2>
             <button v-if="models.length > 0" class="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-primary" @click="router.push('/models')">
-              View all <ArrowRight class="size-3" />
+              {{ t['dashboard.view-all'] }} <ArrowRight class="size-3" />
             </button>
           </div>
 
@@ -264,9 +266,9 @@ const agentPrompts = computed(() => {
                 </span>
               </div>
               <div class="flex items-center gap-3 text-xs text-muted-foreground">
-                <span class="flex items-center gap-1"><Box class="size-3 opacity-50" /> {{ model.fields }} fields</span>
+                <span class="flex items-center gap-1"><Box class="size-3 opacity-50" /> {{ model.fields }} {{ t['dashboard.fields'] }}</span>
                 <span class="rounded bg-muted px-1.5 py-0.5 text-[10px]">{{ model.domain }}</span>
-                <span v-if="model.i18n" class="flex items-center gap-1"><Globe class="size-3 opacity-50" /> i18n</span>
+                <span v-if="model.i18n" class="flex items-center gap-1"><Globe class="size-3 opacity-50" /> {{ t['dashboard.i18n'] }}</span>
               </div>
               <div class="flex items-center justify-end">
                 <ArrowRight class="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
@@ -277,8 +279,8 @@ const agentPrompts = computed(() => {
           <!-- Empty state -->
           <div v-else class="flex flex-col items-center rounded-xl border border-dashed border-border py-16 text-center">
             <img src="/model-empty-state.svg" alt="" class="empty-illustration mb-5" />
-            <h3 class="text-sm font-semibold text-foreground">No content models yet</h3>
-            <p class="mt-1.5 max-w-xs text-xs text-muted-foreground">Create models using AI in your IDE to get started.</p>
+            <h3 class="text-sm font-semibold text-foreground">{{ t['dashboard.no-content-models-yet'] }}</h3>
+            <p class="mt-1.5 max-w-xs text-xs text-muted-foreground">{{ t['dashboard.create-models-using-ai'] }}</p>
           </div>
         </section>
 
@@ -287,13 +289,13 @@ const agentPrompts = computed(() => {
           <div class="mb-4 flex items-center justify-between">
             <div class="flex items-center gap-2">
               <Activity class="size-4 text-muted-foreground" />
-              <h2 class="text-sm font-semibold text-foreground">Recent Operations</h2>
+              <h2 class="text-sm font-semibold text-foreground">{{ t['dashboard.recent-operations'] }}</h2>
             </div>
             <button
               class="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
               @click="router.push('/branches')"
             >
-              View all
+              {{ t['dashboard.view-all'] }}
               <ArrowRight class="size-3" />
             </button>
           </div>
@@ -306,13 +308,13 @@ const agentPrompts = computed(() => {
           <!-- Empty -->
           <div v-else-if="timeline.length === 0" class="flex flex-col items-center rounded-xl border border-dashed border-border py-10 text-center">
             <Clock class="size-6 text-muted-foreground/50 mb-2" />
-            <p class="text-xs text-muted-foreground">No operations yet. Start by creating models or content.</p>
+            <p class="text-xs text-muted-foreground">{{ t['dashboard.no-operations-yet-start'] }}</p>
           </div>
 
           <!-- Timeline list -->
           <div v-else class="relative space-y-0">
             <!-- Vertical line -->
-            <div class="absolute left-[19px] top-2 bottom-2 w-px bg-border" />
+            <div class="absolute left-4.75 top-2 bottom-2 w-px bg-border" />
 
             <div
               v-for="entry in timeline.slice(0, 10)"
@@ -344,13 +346,13 @@ const agentPrompts = computed(() => {
           <div class="mb-4 flex items-center justify-between">
             <div class="flex items-center gap-2">
               <ShieldAlert class="size-4 text-status-warning" />
-              <h2 class="text-sm font-semibold text-foreground">Validation Summary</h2>
+              <h2 class="text-sm font-semibold text-foreground">{{ t['dashboard.validation-summary'] }}</h2>
             </div>
             <button class="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-primary" @click="router.push('/validate')">
-              Full report <ArrowRight class="size-3" />
+              {{ t['dashboard.full-report'] }} <ArrowRight class="size-3" />
             </button>
           </div>
-          <div class="rounded-xl border border-status-warning/20 bg-gradient-to-b from-status-warning/5 to-card p-4">
+          <div class="rounded-xl border border-status-warning/20 bg-linear-to-b from-status-warning/5 to-card p-4">
             <ul class="space-y-1.5">
               <li v-for="(msg, i) in project.status.validation.summary.slice(0, 5)" :key="i" class="flex items-start gap-2 text-xs text-muted-foreground">
                 <span class="mt-1.5 size-1 shrink-0 rounded-full bg-status-warning" />
@@ -361,7 +363,7 @@ const agentPrompts = computed(() => {
         </section>
 
         <!-- Agent prompt hints -->
-        <AgentPromptGroup v-if="agentPrompts.length > 0" title="Try with your AI agent">
+        <AgentPromptGroup v-if="agentPrompts.length > 0" :title="t['dashboard.try-with-your-ai']">
           <AgentPrompt
             v-for="(item, i) in agentPrompts"
             :key="i"
@@ -370,7 +372,7 @@ const agentPrompts = computed(() => {
           />
         </AgentPromptGroup>
 
-        <StudioHint message="Manage content with AI chat and team review in Contentrain Studio." />
+        <StudioHint :message="t['dashboard.manage-content-with-ai']" />
       </template>
     </div>
   </div>

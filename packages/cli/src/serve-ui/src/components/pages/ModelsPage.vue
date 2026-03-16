@@ -19,6 +19,9 @@ import AgentPromptGroup from '@/components/layout/AgentPromptGroup.vue'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { dictionary } from '#contentrain'
+
+const t = dictionary('serve-ui-texts').locale('en').get()
 
 const project = useProjectStore()
 const router = useRouter()
@@ -80,7 +83,7 @@ function clearSearch() {
 
 <template>
   <div>
-    <PageHeader title="Models" description="Content model definitions">
+    <PageHeader :title="t['models.models']" :description="t['models.content-model-definitions']">
       <template #actions>
         <button
           v-if="models.length > 0"
@@ -88,7 +91,7 @@ function clearSearch() {
           @click="searchOpen = !searchOpen"
         >
           <Search class="size-3.5" />
-          <span class="hidden sm:inline">Search</span>
+          <span class="hidden sm:inline">{{ t['models.search'] }}</span>
         </button>
       </template>
     </PageHeader>
@@ -103,7 +106,7 @@ function clearSearch() {
           <Search class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             v-model="searchQuery"
-            placeholder="Search models by name, domain, or kind..."
+            :placeholder="t['models.search-models-by-name']"
             class="pl-9 pr-9"
             autofocus
           />
@@ -119,7 +122,7 @@ function clearSearch() {
           class="shrink-0 rounded-md px-2.5 py-2 text-xs text-muted-foreground hover:bg-accent"
           @click="clearSearch"
         >
-          Close
+          {{ t['models.close'] }}
         </button>
       </div>
 
@@ -131,15 +134,15 @@ function clearSearch() {
       <!-- Empty state -->
       <div v-else-if="models.length === 0" class="flex flex-col items-center py-16 text-center">
         <img src="/model-empty-state.svg" alt="" class="empty-illustration mb-6" />
-        <h2 class="text-lg font-semibold text-foreground">No models yet</h2>
+        <h2 class="text-lg font-semibold text-foreground">{{ t['models.no-models-yet'] }}</h2>
         <p class="mt-2 max-w-sm text-sm text-muted-foreground">
-          Create content models using AI in your IDE, then come back to inspect them here.
+          {{ t['models.create-content-models-using'] }}
         </p>
 
-        <AgentPromptGroup title="Ask your agent" class="mt-6 w-full max-w-md">
-          <AgentPrompt prompt="Create a blog model with title, content, slug, and author fields" />
-          <AgentPrompt prompt="Create a FAQ model with question and answer fields" />
-          <AgentPrompt prompt="Scaffold my project with a landing page template" />
+        <AgentPromptGroup :title="t['models.ask-your-agent']" class="mt-6 w-full max-w-md">
+          <AgentPrompt :prompt="t['models.create-a-blog-model']" />
+          <AgentPrompt :prompt="t['models.create-a-faq-model']" />
+          <AgentPrompt :prompt="t['models.scaffold-my-project-with']" />
         </AgentPromptGroup>
       </div>
 
@@ -149,15 +152,15 @@ function clearSearch() {
         class="flex flex-col items-center py-16 text-center"
       >
         <Search class="mb-4 size-10 text-muted-foreground/40" />
-        <h2 class="text-lg font-semibold text-foreground">No models found</h2>
+        <h2 class="text-lg font-semibold text-foreground">{{ t['models.no-models-found'] }}</h2>
         <p class="mt-2 text-sm text-muted-foreground">
-          No models match "<span class="font-medium">{{ searchQuery }}</span>". Try a different search term.
+          {{ t['models.no-models-match'] }}<span class="font-medium">{{ searchQuery }}</span>{{ t['models.try-a-different-search'] }}
         </p>
         <button
           class="mt-4 text-sm font-medium text-primary hover:underline"
           @click="searchQuery = ''"
         >
-          Clear search
+          {{ t['models.clear-search'] }}
         </button>
       </div>
 
@@ -198,14 +201,14 @@ function clearSearch() {
                 </Badge>
               </div>
               <div class="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
-                <span>{{ model.fields }} fields</span>
+                <span>{{ model.fields }} {{ t['models.fields'] }}</span>
                 <span class="size-0.5 rounded-full bg-muted-foreground/40" />
                 <span>{{ model.domain }}</span>
                 <template v-if="model.i18n">
                   <span class="size-0.5 rounded-full bg-muted-foreground/40" />
                   <span class="inline-flex items-center gap-1 text-sky-600">
                     <Languages class="size-3" />
-                    i18n
+                    {{ t['models.i18n'] }}
                   </span>
                 </template>
               </div>
@@ -257,12 +260,12 @@ function clearSearch() {
                     </Badge>
                   </div>
                   <div class="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>{{ model.fields }} fields</span>
+                    <span>{{ model.fields }} {{ t['models.fields'] }}</span>
                     <template v-if="model.i18n">
                       <span class="size-0.5 rounded-full bg-muted-foreground/40" />
                       <span class="inline-flex items-center gap-1 text-sky-600">
                         <Languages class="size-3" />
-                        i18n
+                        {{ t['models.i18n'] }}
                       </span>
                     </template>
                   </div>
@@ -274,19 +277,19 @@ function clearSearch() {
 
         <!-- Model count summary -->
         <div class="flex items-center gap-4 text-xs text-muted-foreground">
-          <span>{{ filteredModels.length }} model{{ filteredModels.length === 1 ? '' : 's' }}</span>
+          <span>{{ filteredModels.length }} {{ t['models.model'] }}{{ filteredModels.length === 1 ? '' : 's' }}</span>
           <span v-if="searchQuery" class="size-0.5 rounded-full bg-muted-foreground/40" />
-          <span v-if="searchQuery">filtered from {{ models.length }} total</span>
+          <span v-if="searchQuery">{{ t['models.filtered-from'] }} {{ models.length }} {{ t['models.total'] }}</span>
         </div>
       </template>
 
-      <AgentPromptGroup title="Ask your agent">
-        <AgentPrompt prompt="Create a new content model" />
-        <AgentPrompt prompt="Add a testimonials collection model" />
+      <AgentPromptGroup :title="t['models.ask-your-agent']">
+        <AgentPrompt :prompt="t['models.create-a-new-content']" />
+        <AgentPrompt :prompt="t['models.add-a-testimonials-collection']" />
       </AgentPromptGroup>
 
       <StudioHint
-        message="Create and manage models with AI chat in Contentrain Studio."
+        :message="t['models.create-and-manage-models']"
         class="mt-4"
       />
     </div>

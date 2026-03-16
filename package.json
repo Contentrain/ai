@@ -24,5 +24,19 @@
     "lefthook": "^2.1.4",
     "oxlint": "^1.54.0",
     "vitest": "^3.0.0"
+  },
+  "imports": {
+    "#contentrain": {
+      "types": "./.contentrain/client/index.d.ts",
+      "import": "./.contentrain/client/index.mjs",
+      "require": "./.contentrain/client/index.cjs",
+      "default": "./.contentrain/client/index.mjs"
+    },
+    "#contentrain/*": {
+      "types": "./.contentrain/client/*.d.ts",
+      "import": "./.contentrain/client/*.mjs",
+      "require": "./.contentrain/client/*.cjs",
+      "default": "./.contentrain/client/*.mjs"
+    }
   }
 }

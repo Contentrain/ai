@@ -1,0 +1,5 @@
+export default {
+  "brand_name": "Contentrain",
+  "cta_link": "/signup",
+  "cta_text": "Get Started"
+}

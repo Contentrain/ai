@@ -8,6 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
+      '#contentrain': resolve(__dirname, '../../../../.contentrain/client/index.mjs'),
     },
   },
   build: {

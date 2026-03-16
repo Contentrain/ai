@@ -33,6 +33,9 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { copyToClipboard, truncate } from '@/composables/useFormatters'
+import { dictionary } from '#contentrain'
+
+const t = dictionary('serve-ui-texts').locale('en').get()
 
 const route = useRoute()
 const router = useRouter()
@@ -170,7 +173,7 @@ watch(modelId, (id) => {
       <template #actions>
         <Button variant="ghost" size="sm" @click="router.push('/models')">
           <ArrowLeft class="mr-1.5 size-4" />
-          Models
+          {{ t['model-detail.models'] }}
         </Button>
         <Button
           variant="outline"
@@ -178,7 +181,7 @@ watch(modelId, (id) => {
           @click="router.push(`/content/${modelId}`)"
         >
           <ExternalLink class="mr-1.5 size-3.5" />
-          View Content
+          {{ t['model-detail.view-content'] }}
         </Button>
       </template>
     </PageHeader>
@@ -228,7 +231,7 @@ watch(modelId, (id) => {
                   class="text-[10px] border-sky-500/20 bg-sky-500/10 text-sky-600"
                 >
                   <Languages class="mr-1 size-3" />
-                  i18n
+                  {{ t['model-detail.i18n'] }}
                 </Badge>
               </div>
 
@@ -267,7 +270,7 @@ watch(modelId, (id) => {
         </div>
 
         <!-- Agent prompts -->
-        <AgentPromptGroup title="Ask your agent">
+        <AgentPromptGroup :title="t['model-detail.ask-your-agent']">
           <AgentPrompt :prompt="`Add a 'category' field to ${modelId}`" />
           <AgentPrompt :prompt="`Update ${modelId} to support i18n`" />
           <AgentPrompt :prompt="`Delete the ${modelId} model`" />
@@ -277,7 +280,7 @@ watch(modelId, (id) => {
         <!-- Custom fields -->
         <section v-if="customFields.length > 0">
           <h3 class="mb-3 text-sm font-medium text-muted-foreground">
-            Fields
+            {{ t['model-detail.fields'] }}
             <span class="ml-1 text-xs text-muted-foreground/60">({{ customFields.length }})</span>
           </h3>
           <div class="space-y-2">
@@ -322,7 +325,7 @@ watch(modelId, (id) => {
                   class="inline-flex items-center gap-0.5 text-xs font-medium text-status-warning"
                 >
                   <Asterisk class="size-3" />
-                  req
+                  {{ t['model-detail.req'] }}
                 </span>
                 <span v-else class="text-xs text-muted-foreground/40">--</span>
               </div>
@@ -343,7 +346,7 @@ watch(modelId, (id) => {
         <!-- System fields -->
         <section v-if="systemFields.length > 0">
           <h3 class="mb-3 text-sm font-medium text-muted-foreground">
-            System Fields
+            {{ t['model-detail.system-fields'] }}
             <span class="ml-1 text-xs text-muted-foreground/60">({{ systemFields.length }})</span>
           </h3>
           <div class="space-y-2">
@@ -370,7 +373,7 @@ watch(modelId, (id) => {
                   class="inline-flex items-center gap-0.5 text-xs text-muted-foreground"
                 >
                   <Asterisk class="size-3" />
-                  req
+                  {{ t['model-detail.req'] }}
                 </span>
                 <span v-else class="text-xs text-muted-foreground/40">--</span>
               </div>
@@ -390,7 +393,7 @@ watch(modelId, (id) => {
 
         <!-- Import snippet -->
         <section>
-          <h3 class="mb-3 text-sm font-medium text-muted-foreground">Import Snippet</h3>
+          <h3 class="mb-3 text-sm font-medium text-muted-foreground">{{ t['model-detail.import-snippet'] }}</h3>
           <div class="relative rounded-xl border border-border bg-muted/30 p-4">
             <pre class="overflow-x-auto font-mono text-xs leading-relaxed text-foreground"><code>{{ importSnippet }}</code></pre>
             <button
@@ -413,7 +416,7 @@ watch(modelId, (id) => {
               :is="sampleOpen ? ChevronDown : ChevronRight"
               class="size-4"
             />
-            Sample Data
+            {{ t['model-detail.sample-data'] }}
           </button>
           <div
             v-if="sampleOpen"

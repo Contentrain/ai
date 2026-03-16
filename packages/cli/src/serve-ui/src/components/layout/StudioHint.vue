@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ArrowRight } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
+import { dictionary } from '#contentrain'
+
+const t = dictionary('serve-ui-texts').locale('en').get()
 
 defineProps<{
   message: string
@@ -10,7 +13,7 @@ defineProps<{
 <template>
   <div class="relative overflow-hidden rounded-xl border border-primary/15">
     <!-- Background pattern -->
-    <div class="absolute inset-0 bg-gradient-to-r from-primary/8 via-primary/4 to-primary/8" />
+    <div class="absolute inset-0 bg-linear-to-r from-primary/8 via-primary/4 to-primary/8" />
     <img
       src="/for-developers-1.svg"
       alt=""
@@ -32,7 +35,7 @@ defineProps<{
         rel="noopener"
         size="sm"
       >
-        Open Studio
+        {{ t['studio-hint.open-studio'] }}
         <ArrowRight class="size-3.5" />
       </Button>
     </div>

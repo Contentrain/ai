@@ -21,10 +21,12 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
 import { toast } from 'vue-sonner'
+import { dictionary } from '#contentrain'
 
 const route = useRoute()
 const router = useRouter()
 const store = useContentStore()
+const t = dictionary('serve-ui-texts').locale('en').get()
 
 const branchName = computed(() => decodeURIComponent(route.params.branchName as string))
 const diff = computed(() => store.branchDiff)
@@ -106,12 +108,12 @@ async function approve() {
   confirmApproveOpen.value = false
   try {
     await store.approveBranch(branchName.value)
-    actionResult.value = { type: 'success', message: 'Branch merged successfully.' }
-    toast.success('Branch merged successfully.')
+    actionResult.value = { type: 'success', message: t['branch-detail.branch-merged-successfully'] }
+    toast.success(t['branch-detail.branch-merged-successfully'])
     setTimeout(() => router.push('/branches'), 1500)
   } catch {
-    actionResult.value = { type: 'error', message: 'Failed to merge branch. Please try again.' }
-    toast.error('Failed to merge branch. Please try again.')
+    actionResult.value = { type: 'error', message: t['branch-detail.failed-to-merge-branch'] }
+    toast.error(t['branch-detail.failed-to-merge-branch'])
   } finally {
     acting.value = false
   }
@@ -123,12 +125,12 @@ async function reject() {
   confirmRejectOpen.value = false
   try {
     await store.rejectBranch(branchName.value)
-    actionResult.value = { type: 'success', message: 'Branch rejected and deleted.' }
-    toast.success('Branch rejected and deleted.')
+    actionResult.value = { type: 'success', message: t['branch-detail.branch-rejected-and-deleted'] }
+    toast.success(t['branch-detail.branch-rejected-and-deleted'])
     setTimeout(() => router.push('/branches'), 1500)
   } catch {
-    actionResult.value = { type: 'error', message: 'Failed to delete branch. Please try again.' }
-    toast.error('Failed to delete branch. Please try again.')
+    actionResult.value = { type: 'error', message: t['branch-detail.failed-to-delete-branch'] }
+    toast.error(t['branch-detail.failed-to-delete-branch'])
   } finally {
     acting.value = false
   }
@@ -145,34 +147,34 @@ onMounted(async () => {
 
 <template>
   <div>
-    <PageHeader :title="branchParts.target || branchParts.scope" description="Branch review and diff">
+    <PageHeader :title="branchParts.target || branchParts.scope" :description="t['branch-detail.branch-review-and-diff']">
       <template #actions>
         <Button variant="ghost" size="sm" @click="router.push('/branches')">
-          <ArrowLeft class="mr-1.5 size-4" /> Back
+          <ArrowLeft class="mr-1.5 size-4" /> {{ t['branch-detail.back'] }}
         </Button>
 
         <!-- Approve dialog -->
         <Dialog v-model:open="confirmApproveOpen">
           <DialogTrigger as-child>
             <Button variant="default" size="sm" :disabled="acting || !diff">
-              <GitMerge class="mr-1.5 size-4" /> Approve & Merge
+              <GitMerge class="mr-1.5 size-4" /> {{ t['branch-detail.approve-merge'] }}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Confirm merge</DialogTitle>
+              <DialogTitle>{{ t['branch-detail.confirm-merge'] }}</DialogTitle>
               <DialogDescription>
-                This will merge <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{{ branchName }}</code>
-                into <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{{ diff?.base ?? 'main' }}</code>
-                and delete the source branch.
+                {{ t['branch-detail.this-will-merge'] }} <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{{ branchName }}</code>
+                {{ t['branch-detail.into'] }} <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{{ diff?.base ?? 'main' }}</code>
+                {{ t['branch-detail.and-delete-the-source'] }}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant="outline" size="sm" @click="confirmApproveOpen = false">Cancel</Button>
+              <Button variant="outline" size="sm" @click="confirmApproveOpen = false">{{ t['branch-detail.cancel'] }}</Button>
               <Button variant="default" size="sm" :disabled="acting" @click="approve">
                 <Loader2 v-if="acting" class="mr-1.5 size-4 animate-spin" />
                 <Check v-else class="mr-1.5 size-4" />
-                Merge
+                {{ t['branch-detail.merge'] }}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -182,24 +184,24 @@ onMounted(async () => {
         <Dialog v-model:open="confirmRejectOpen">
           <DialogTrigger as-child>
             <Button variant="destructive" size="sm" :disabled="acting || !diff">
-              <X class="mr-1.5 size-4" /> Reject
+              <X class="mr-1.5 size-4" /> {{ t['branch-detail.reject'] }}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Confirm rejection</DialogTitle>
+              <DialogTitle>{{ t['branch-detail.confirm-rejection'] }}</DialogTitle>
               <DialogDescription>
-                This will permanently delete the branch
+                {{ t['branch-detail.this-will-permanently-delete'] }}
                 <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{{ branchName }}</code>.
                 All changes in this branch will be lost.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant="outline" size="sm" @click="confirmRejectOpen = false">Cancel</Button>
+              <Button variant="outline" size="sm" @click="confirmRejectOpen = false">{{ t['branch-detail.cancel'] }}</Button>
               <Button variant="destructive" size="sm" :disabled="acting" @click="reject">
                 <Loader2 v-if="acting" class="mr-1.5 size-4 animate-spin" />
                 <X v-else class="mr-1.5 size-4" />
-                Delete Branch
+                {{ t['branch-detail.delete-branch'] }}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -246,7 +248,7 @@ onMounted(async () => {
                   :reason="branchParts.scope === 'normalize' ? 'Review required' : undefined"
                 />
                 <span class="flex items-center gap-1">
-                  <File class="size-3" /> {{ statFileCount }} file{{ statFileCount !== 1 ? 's' : '' }}
+                  <File class="size-3" /> {{ statFileCount }} {{ t['branch-detail.file'] }}{{ statFileCount !== 1 ? 's' : '' }}
                 </span>
                 <span class="flex items-center gap-1 text-status-success">
                   <Plus class="size-3" /> {{ totalAdditions }}
@@ -300,19 +302,19 @@ onMounted(async () => {
             </Card>
           </Collapsible>
           <!-- Agent prompt hints -->
-          <AgentPromptGroup title="Ask your agent" class="mt-4">
-            <AgentPrompt prompt="Review the changes on this branch and recommend approval or rejection" />
-            <AgentPrompt prompt="Check the content quality of the pending changes" />
+          <AgentPromptGroup :title="t['branch-detail.ask-your-agent']" class="mt-4">
+            <AgentPrompt :prompt="t['branch-detail.review-the-changes-on']" />
+            <AgentPrompt :prompt="t['branch-detail.check-the-content-quality']" />
             <AgentPrompt
               v-if="isNormalizeBranch"
-              prompt="Continue with Phase 2 — patch source files with content references"
+              :prompt="t['branch-detail.continue-with-phase-2']"
             />
           </AgentPromptGroup>
         </div>
 
         <div v-else class="flex flex-col items-center py-12 text-center">
           <img src="/merge-2.svg" alt="" class="empty-illustration mb-4" />
-          <p class="text-sm text-muted-foreground">No diff available for this branch.</p>
+          <p class="text-sm text-muted-foreground">{{ t['branch-detail.no-diff-available-for'] }}</p>
         </div>
       </template>
     </div>

@@ -2,7 +2,9 @@
 import { computed } from 'vue'
 import { useProjectStore } from '@/stores/project'
 import { useWatch } from '@/composables/useWatch'
+import { dictionary } from '#contentrain'
 
+const t = dictionary('serve-ui-texts').locale('en').get()
 const project = useProjectStore()
 const { connected, lastUpdate } = useWatch()
 
@@ -35,9 +37,9 @@ const lastUpdateText = computed(() => {
       {{ connected ? 'watching' : 'disconnected' }}
     </span>
     <span class="h-3 w-px bg-border" />
-    <span>{{ modelCount }} models</span>
+    <span>{{ modelCount }} {{ t['status-bar.models'] }}</span>
     <span class="h-3 w-px bg-border" />
-    <span>{{ localeCount }} locales</span>
+    <span>{{ localeCount }} {{ t['status-bar.locales'] }}</span>
     <span v-if="lastUpdateText" class="ml-auto">{{ lastUpdateText }}</span>
   </footer>
 </template>

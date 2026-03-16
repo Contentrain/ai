@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, computed, ref, Transition } from 'vue'
 import { useRouter } from 'vue-router'
+import { dictionary } from '#contentrain'
 import { useContentStore } from '@/stores/content'
 import { useWatch } from '@/composables/useWatch'
 import { toast } from 'vue-sonner'
@@ -22,6 +23,7 @@ import { cn } from '@/lib/utils'
 
 const store = useContentStore()
 const router = useRouter()
+const t = dictionary('serve-ui-texts').locale('en').get()
 
 const validation = computed(() => store.validation)
 const summary = computed(() => validation.value?.summary)
@@ -38,9 +40,9 @@ const warningsOpen = ref(true)
 const noticesOpen = ref(true)
 
 const severityConfig = {
-  error: { icon: CircleAlert, color: 'text-status-error', bg: 'bg-status-error/10', border: 'border-status-error/20', label: 'Errors' },
-  warning: { icon: AlertTriangle, color: 'text-status-warning', bg: 'bg-status-warning/10', border: 'border-status-warning/20', label: 'Warnings' },
-  notice: { icon: Info, color: 'text-status-info', bg: 'bg-status-info/10', border: 'border-status-info/20', label: 'Notices' },
+  error: { icon: CircleAlert, color: 'text-status-error', bg: 'bg-status-error/10', border: 'border-status-error/20', label: t['validate.errors'] },
+  warning: { icon: AlertTriangle, color: 'text-status-warning', bg: 'bg-status-warning/10', border: 'border-status-warning/20', label: t['validate.warnings'] },
+  notice: { icon: Info, color: 'text-status-info', bg: 'bg-status-info/10', border: 'border-status-info/20', label: t['validate.notices'] },
 } as const
 
 const errorIssues = computed(() => allIssues.value.filter(i => i.severity === 'error'))
@@ -99,14 +101,14 @@ onMounted(() => { fetchValidation() })
 
 <template>
   <div>
-    <PageHeader title="Validation" description="Content quality report">
+    <PageHeader :title="t['validate.validation']" :description="t['validate.content-quality-report']">
       <template #actions>
         <TrustBadge
           :status="validation?.valid ? 'validated' : validation ? 'warning' : 'pending'"
           :count="(validation?.summary.errors ?? 0) + (validation?.summary.warnings ?? 0)"
         />
         <span v-if="lastUpdatedAt" class="text-xs text-muted-foreground tabular-nums">
-          Updated {{ lastUpdatedAt.toLocaleTimeString() }}
+          {{ t['validate.updated'] }} {{ lastUpdatedAt.toLocaleTimeString() }}
         </span>
       </template>
     </PageHeader>
@@ -118,7 +120,7 @@ onMounted(() => { fetchValidation() })
 
       <div v-if="store.loading && validation" class="flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 class="size-4 animate-spin text-primary" />
-        Refreshing validation...
+        {{ t['validate.refreshing-validation'] }}
       </div>
 
       <template v-if="validation">
@@ -130,7 +132,7 @@ onMounted(() => { fetchValidation() })
               </div>
               <div>
                 <div class="text-2xl font-bold tabular-nums">{{ summary?.errors ?? 0 }}</div>
-                <div class="text-xs text-muted-foreground">Errors</div>
+                <div class="text-xs text-muted-foreground">{{ t['validate.errors'] }}</div>
               </div>
             </CardContent>
           </Card>
@@ -142,7 +144,7 @@ onMounted(() => { fetchValidation() })
               </div>
               <div>
                 <div class="text-2xl font-bold tabular-nums">{{ summary?.warnings ?? 0 }}</div>
-                <div class="text-xs text-muted-foreground">Warnings</div>
+                <div class="text-xs text-muted-foreground">{{ t['validate.warnings'] }}</div>
               </div>
             </CardContent>
           </Card>
@@ -154,7 +156,7 @@ onMounted(() => { fetchValidation() })
               </div>
               <div>
                 <div class="text-2xl font-bold tabular-nums">{{ summary?.notices ?? 0 }}</div>
-                <div class="text-xs text-muted-foreground">Notices</div>
+                <div class="text-xs text-muted-foreground">{{ t['validate.notices'] }}</div>
               </div>
             </CardContent>
           </Card>
@@ -166,7 +168,7 @@ onMounted(() => { fetchValidation() })
               </div>
               <div>
                 <div class="text-2xl font-bold tabular-nums">{{ summary?.models_checked ?? 0 }}</div>
-                <div class="text-xs text-muted-foreground">Models</div>
+                <div class="text-xs text-muted-foreground">{{ t['validate.models'] }}</div>
               </div>
             </CardContent>
           </Card>
@@ -178,7 +180,7 @@ onMounted(() => { fetchValidation() })
               </div>
               <div>
                 <div class="text-2xl font-bold tabular-nums">{{ summary?.entries_checked ?? 0 }}</div>
-                <div class="text-xs text-muted-foreground">Entries</div>
+                <div class="text-xs text-muted-foreground">{{ t['validate.entries'] }}</div>
               </div>
             </CardContent>
           </Card>
@@ -188,14 +190,14 @@ onMounted(() => { fetchValidation() })
           <div class="flex size-20 items-center justify-center rounded-full bg-status-success/10 mb-4">
             <ShieldCheck class="size-10 text-status-success" />
           </div>
-          <h2 class="text-xl font-semibold">All checks passed</h2>
+          <h2 class="text-xl font-semibold">{{ t['validate.all-checks-passed'] }}</h2>
           <p class="mt-2 text-sm text-muted-foreground max-w-sm">
-            Your content and models are in great shape. No errors, warnings, or notices found.
+            {{ t['validate.your-content-and-models'] }}
           </p>
           <div class="mt-6 w-full max-w-md">
-            <AgentPromptGroup title="Ask your agent">
-              <AgentPrompt prompt="Validate my content models" label="re-validate" />
-              <AgentPrompt prompt="Check content quality and i18n completeness" label="quality check" />
+            <AgentPromptGroup :title="t['validate.ask-your-agent']">
+              <AgentPrompt :prompt="t['validate.validate-my-content-models']" label="re-validate" />
+              <AgentPrompt :prompt="t['validate.check-content-quality-and']" :label="t['validate.quality-check']" />
             </AgentPromptGroup>
           </div>
         </div>
@@ -210,7 +212,7 @@ onMounted(() => { fetchValidation() })
                 :class="cn('px-2.5 py-1 h-auto text-xs font-medium rounded-none transition-colors', groupBy === 'severity' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')"
                 @click="groupBy = 'severity'"
               >
-                By Severity
+                {{ t['validate.by-severity'] }}
               </Button>
               <Button
                 variant="ghost"
@@ -218,7 +220,7 @@ onMounted(() => { fetchValidation() })
                 :class="cn('px-2.5 py-1 h-auto text-xs font-medium rounded-none transition-colors', groupBy === 'model' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')"
                 @click="groupBy = 'model'"
               >
-                By Model
+                {{ t['validate.by-model'] }}
               </Button>
             </div>
             <Button
@@ -228,7 +230,7 @@ onMounted(() => { fetchValidation() })
               @click="showErrors = !showErrors"
             >
               <CircleAlert class="mr-1 size-3" />
-              Errors ({{ errorIssues.length }})
+              {{ t['validate.errors-2'] }}{{ errorIssues.length }})
             </Button>
             <Button
               :variant="showWarnings ? 'default' : 'outline'"
@@ -237,7 +239,7 @@ onMounted(() => { fetchValidation() })
               @click="showWarnings = !showWarnings"
             >
               <AlertTriangle class="mr-1 size-3" />
-              Warnings ({{ warningIssues.length }})
+              {{ t['validate.warnings-2'] }}{{ warningIssues.length }})
             </Button>
             <Button
               :variant="showNotices ? 'default' : 'outline'"
@@ -246,13 +248,13 @@ onMounted(() => { fetchValidation() })
               @click="showNotices = !showNotices"
             >
               <Info class="mr-1 size-3" />
-              Notices ({{ noticeIssues.length }})
+              {{ t['validate.notices-2'] }}{{ noticeIssues.length }})
             </Button>
           </div>
 
-          <AgentPromptGroup title="Ask your agent">
-            <AgentPrompt prompt="Fix all validation errors in my content" label="auto-fix" />
-            <AgentPrompt prompt="Review and fix validation warnings" label="fix warnings" />
+          <AgentPromptGroup :title="t['validate.ask-your-agent']">
+            <AgentPrompt :prompt="t['validate.fix-all-validation-errors']" label="auto-fix" />
+            <AgentPrompt :prompt="t['validate.review-and-fix-validation']" :label="t['validate.fix-warnings']" />
           </AgentPromptGroup>
 
           <template v-if="groupBy === 'model'">
@@ -371,13 +373,13 @@ onMounted(() => { fetchValidation() })
 
             <div v-else class="flex flex-col items-center py-12 text-center">
               <FileWarning class="size-8 text-muted-foreground mb-3" />
-              <p class="text-sm text-muted-foreground">All issue types are hidden. Adjust filters above to see issues.</p>
+              <p class="text-sm text-muted-foreground">{{ t['validate.all-issue-types-are'] }}</p>
             </div>
           </template>
         </template>
       </template>
 
-      <StudioHint message="Validation results update automatically when your agent runs validation tools." class="mt-4" />
+      <StudioHint :message="t['validate.validation-results-update-automatically']" class="mt-4" />
     </div>
   </div>
 </template>

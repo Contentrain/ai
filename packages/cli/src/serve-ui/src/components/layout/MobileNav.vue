@@ -9,15 +9,17 @@ import {
   GitBranch,
 } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
+import { dictionary } from '#contentrain'
 
+const t = dictionary('serve-ui-texts').locale('en').get()
 const route = useRoute()
 
 const items = [
-  { icon: LayoutDashboard, label: 'Dash', to: '/', exact: true },
-  { icon: Box, label: 'Models', to: '/models' },
-  { icon: FileText, label: 'Content', to: '/content' },
-  { icon: ShieldCheck, label: 'Valid.', to: '/validate' },
-  { icon: GitBranch, label: 'Branch', to: '/branches' },
+  { icon: LayoutDashboard, label: t['mobile-nav.dash'], to: '/', exact: true },
+  { icon: Box, label: t['mobile-nav.models'], to: '/models' },
+  { icon: FileText, label: t['mobile-nav.content'], to: '/content' },
+  { icon: ShieldCheck, label: t['mobile-nav.valid'], to: '/validate' },
+  { icon: GitBranch, label: t['mobile-nav.branch'], to: '/branches' },
 ]
 
 function isActive(item: typeof items[0]): boolean {

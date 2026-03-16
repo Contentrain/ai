@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { toast } from 'vue-sonner'
+import { dictionary } from '#contentrain'
 import { useContentStore } from '@/stores/content'
 import type { NormalizePlanExtraction } from '@/stores/content'
 import { useWatch } from '@/composables/useWatch'
@@ -20,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 
 const store = useContentStore()
+const t = dictionary('serve-ui-texts').locale('en').get()
 
 // ─── Phase state machine ───
 type Phase = 'empty' | 'plan' | 'branches' | 'done'
@@ -136,7 +138,7 @@ onMounted(async () => {
 
 <template>
   <div>
-    <PageHeader title="Normalize" description="Content extraction and i18n readiness" />
+    <PageHeader :title="t['normalize.normalize']" :description="t['normalize.content-extraction-and-i18n']" />
 
     <div class="px-6 py-6">
       <!-- Loading -->
@@ -148,20 +150,19 @@ onMounted(async () => {
       <div v-else-if="phase === 'empty'" class="space-y-8">
         <div class="flex flex-col items-center py-12 text-center">
           <img src="/select-data-type.svg" alt="" class="empty-illustration mb-6" />
-          <h2 class="text-xl font-semibold">Extract hardcoded strings</h2>
+          <h2 class="text-xl font-semibold">{{ t['normalize.extract-hardcoded-strings'] }}</h2>
           <p class="mt-2 max-w-md text-sm text-muted-foreground">
-            Normalize scans your source files for hardcoded strings and extracts them into
-            content models, making your project i18n-ready.
+            {{ t['normalize.normalize-scans-your-source'] }}
           </p>
         </div>
 
         <!-- Agent prompt hints -->
         <div class="mx-auto max-w-2xl">
-          <AgentPromptGroup title="Ask your AI agent to get started">
-            <AgentPrompt prompt="Normalize my Vue project — extract hardcoded strings" />
-            <AgentPrompt prompt="Scan src/pages for content strings and create extraction plan" />
-            <AgentPrompt prompt="Extract hero section text into a content model" />
-            <AgentPrompt prompt="Make my landing page i18n-ready" />
+          <AgentPromptGroup :title="t['normalize.ask-your-ai-agent']">
+            <AgentPrompt :prompt="t['normalize.normalize-my-vue-project']" />
+            <AgentPrompt :prompt="t['normalize.scan-srcpages-for-content']" />
+            <AgentPrompt :prompt="t['normalize.extract-hero-section-text']" />
+            <AgentPrompt :prompt="t['normalize.make-my-landing-page']" />
           </AgentPromptGroup>
         </div>
 
@@ -170,7 +171,7 @@ onMounted(async () => {
           <CardHeader class="pb-3">
             <CardTitle class="text-sm font-medium flex items-center gap-2">
               <Sparkles class="size-4 text-primary" />
-              How it works
+              {{ t['normalize.how-it-works'] }}
             </CardTitle>
           </CardHeader>
           <Separator />
@@ -179,29 +180,29 @@ onMounted(async () => {
               <div class="flex items-start gap-4">
                 <Badge variant="secondary" class="mt-0.5 shrink-0 size-7 flex items-center justify-center rounded-full font-mono text-xs">1</Badge>
                 <div>
-                  <p class="text-sm font-medium">Prompt your AI agent</p>
-                  <p class="text-xs text-muted-foreground mt-0.5">Copy a prompt above or describe what you want extracted. The agent scans your source files, classifies strings, and builds an extraction plan.</p>
+                  <p class="text-sm font-medium">{{ t['normalize.prompt-your-ai-agent'] }}</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">{{ t['normalize.copy-a-prompt-above'] }}</p>
                 </div>
               </div>
               <div class="flex items-start gap-4">
                 <Badge variant="secondary" class="mt-0.5 shrink-0 size-7 flex items-center justify-center rounded-full font-mono text-xs">2</Badge>
                 <div>
-                  <p class="text-sm font-medium">Review the plan here</p>
-                  <p class="text-xs text-muted-foreground mt-0.5">The agent sends the plan to this dashboard. You review every extraction, source trace, and patch before anything is applied.</p>
+                  <p class="text-sm font-medium">{{ t['normalize.review-the-plan-here'] }}</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">{{ t['normalize.the-agent-sends-the'] }}</p>
                 </div>
               </div>
               <div class="flex items-start gap-4">
                 <Badge variant="secondary" class="mt-0.5 shrink-0 size-7 flex items-center justify-center rounded-full font-mono text-xs">3</Badge>
                 <div>
-                  <p class="text-sm font-medium">Approve or request changes</p>
-                  <p class="text-xs text-muted-foreground mt-0.5">Approve to write extractions to content models on a review branch. Reject to discard, or ask the agent to adjust the plan.</p>
+                  <p class="text-sm font-medium">{{ t['normalize.approve-or-request-changes'] }}</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">{{ t['normalize.approve-to-write-extractions'] }}</p>
                 </div>
               </div>
               <div class="flex items-start gap-4">
                 <Badge variant="secondary" class="mt-0.5 shrink-0 size-7 flex items-center justify-center rounded-full font-mono text-xs">4</Badge>
                 <div>
-                  <p class="text-sm font-medium">Merge and continue</p>
-                  <p class="text-xs text-muted-foreground mt-0.5">Merge review branches into main, then ask the agent to start Phase 2 — patching source files with content references.</p>
+                  <p class="text-sm font-medium">{{ t['normalize.merge-and-continue'] }}</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">{{ t['normalize.merge-review-branches-into'] }}</p>
                 </div>
               </div>
             </div>
@@ -215,11 +216,11 @@ onMounted(async () => {
         <Card>
           <CardContent class="flex items-center justify-between p-4">
             <div>
-              <h3 class="text-sm font-semibold">Normalize Plan</h3>
+              <h3 class="text-sm font-semibold">{{ t['normalize.normalize-plan'] }}</h3>
               <p class="text-xs text-muted-foreground mt-0.5">
-                {{ store.normalizePlan.extractions.length }} extractions across {{ store.normalizePlan.models.length }} models
+                {{ store.normalizePlan.extractions.length }} {{ t['normalize.extractions-across'] }} {{ store.normalizePlan.models.length }} {{ t['normalize.models'] }}
                 <template v-if="store.normalizePlan.patches.length">
-                  &middot; {{ store.normalizePlan.patches.length }} patches
+                  &middot; {{ store.normalizePlan.patches.length }} {{ t['normalize.patches'] }}
                 </template>
               </p>
             </div>
@@ -240,27 +241,27 @@ onMounted(async () => {
 
         <!-- Plan adjustment prompts -->
         <div class="max-w-md">
-          <AgentPromptGroup title="Request changes from your agent">
-            <AgentPrompt prompt="Adjust the normalize plan — also include strings from the footer component" />
-            <AgentPrompt prompt="Remove navigation labels from the extraction plan" />
+          <AgentPromptGroup :title="t['normalize.request-changes-from-your']">
+            <AgentPrompt :prompt="t['normalize.adjust-the-normalize-plan']" />
+            <AgentPrompt :prompt="t['normalize.remove-navigation-labels-from']" />
           </AgentPromptGroup>
         </div>
 
         <!-- Scan stats (if available) -->
         <Card v-if="store.normalizePlan.scan_stats" class="bg-muted/30">
           <CardContent class="flex items-center gap-6 p-4 text-xs text-muted-foreground">
-            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.files_scanned }}</strong> files scanned</span>
-            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.raw_strings }}</strong> strings found</span>
-            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.candidates_sent }}</strong> candidates</span>
-            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.extracted }}</strong> extracted</span>
-            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.skipped }}</strong> skipped</span>
+            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.files_scanned }}</strong> {{ t['normalize.files-scanned'] }}</span>
+            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.raw_strings }}</strong> {{ t['normalize.strings-found'] }}</span>
+            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.candidates_sent }}</strong> {{ t['normalize.candidates'] }}</span>
+            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.extracted }}</strong> {{ t['normalize.extracted'] }}</span>
+            <span><strong class="text-foreground tabular-nums">{{ store.normalizePlan.scan_stats.skipped }}</strong> {{ t['normalize.skipped'] }}</span>
           </CardContent>
         </Card>
 
         <!-- Extraction Review + Source Trace -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
-            <h3 class="text-sm font-semibold text-foreground mb-3">Extractions</h3>
+            <h3 class="text-sm font-semibold text-foreground mb-3">{{ t['normalize.extractions'] }}</h3>
             <ExtractionReviewPanel
               :models="store.normalizePlan.models"
               :extractions="store.normalizePlan.extractions"
@@ -269,7 +270,7 @@ onMounted(async () => {
             />
           </div>
           <div>
-            <h3 class="text-sm font-semibold text-foreground mb-3">Source Trace</h3>
+            <h3 class="text-sm font-semibold text-foreground mb-3">{{ t['normalize.source-trace'] }}</h3>
             <SourceTracePanel
               v-if="selectedExtraction"
               :extraction="selectedExtraction"
@@ -278,14 +279,14 @@ onMounted(async () => {
             />
             <div v-else class="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-12 text-center">
               <MapPin class="size-6 text-muted-foreground/40 mb-2" />
-              <p class="text-xs text-muted-foreground">Click an extraction to see its source trace</p>
+              <p class="text-xs text-muted-foreground">{{ t['normalize.click-an-extraction-to'] }}</p>
             </div>
           </div>
         </div>
 
         <!-- Source Patches -->
         <div v-if="store.normalizePlan.patches.length > 0">
-          <h3 class="text-sm font-semibold text-foreground mb-3">Source Patches</h3>
+          <h3 class="text-sm font-semibold text-foreground mb-3">{{ t['normalize.source-patches'] }}</h3>
           <PatchPreviewPanel :patches="store.normalizePlan.patches" />
         </div>
       </div>
@@ -296,8 +297,8 @@ onMounted(async () => {
           <div class="flex size-14 items-center justify-center rounded-full bg-status-info/10 mb-4">
             <GitMerge class="size-7 text-status-info" />
           </div>
-          <h2 class="text-lg font-semibold">Pending normalize branches</h2>
-          <p class="mt-1 text-sm text-muted-foreground">Review and merge normalize branches into your main branch.</p>
+          <h2 class="text-lg font-semibold">{{ t['normalize.pending-normalize-branches'] }}</h2>
+          <p class="mt-1 text-sm text-muted-foreground">{{ t['normalize.review-and-merge-normalize'] }}</p>
         </div>
 
         <div class="space-y-3 max-w-2xl mx-auto">
@@ -312,12 +313,12 @@ onMounted(async () => {
               <Button variant="outline" size="sm" :disabled="deletingBranch === branch.name || mergingBranch === branch.name" @click="deleteBranch(branch.name)">
                 <Loader2 v-if="deletingBranch === branch.name" class="size-4 animate-spin" />
                 <Trash2 v-else />
-                Delete
+                {{ t['normalize.delete'] }}
               </Button>
               <Button size="sm" :disabled="mergingBranch === branch.name || deletingBranch === branch.name" @click="mergeBranch(branch.name)">
                 <Loader2 v-if="mergingBranch === branch.name" class="size-4 animate-spin" />
                 <GitMerge v-else />
-                Merge
+                {{ t['normalize.merge'] }}
               </Button>
             </CardContent>
           </Card>
@@ -325,9 +326,9 @@ onMounted(async () => {
 
         <!-- Phase 2 prompts -->
         <div class="max-w-2xl mx-auto">
-          <AgentPromptGroup title="What's next — ask your agent">
-            <AgentPrompt prompt="Continue to Phase 2 — patch source files with content references" />
-            <AgentPrompt prompt="Start reuse for the extracted content models" />
+          <AgentPromptGroup :title="t['normalize.whats-next-ask-your']">
+            <AgentPrompt :prompt="t['normalize.continue-to-phase-2']" />
+            <AgentPrompt :prompt="t['normalize.start-reuse-for-the']" />
           </AgentPromptGroup>
         </div>
       </div>
@@ -352,7 +353,7 @@ onMounted(async () => {
         </div>
       </div>
 
-      <StudioHint message="Track normalize history and manage extractions in Contentrain Studio." class="mt-6" />
+      <StudioHint :message="t['normalize.track-normalize-history-and']" class="mt-6" />
     </div>
   </div>
 </template>

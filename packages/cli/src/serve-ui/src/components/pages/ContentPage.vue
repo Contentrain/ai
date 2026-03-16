@@ -7,6 +7,9 @@ import PageHeader from '@/components/layout/PageHeader.vue'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { dictionary } from '#contentrain'
+
+const t = dictionary('serve-ui-texts').locale('en').get()
 
 const project = useProjectStore()
 const router = useRouter()
@@ -32,10 +35,10 @@ const groupedByDomain = computed(() => {
 })
 
 const kindConfig: Record<string, { icon: typeof FileText; color: string; label: string }> = {
-  collection: { icon: Database, color: 'bg-primary/10 text-primary', label: 'Collection' },
-  singleton: { icon: FileText, color: 'bg-status-info/10 text-status-info', label: 'Singleton' },
-  document: { icon: BookOpen, color: 'bg-status-success/10 text-status-success', label: 'Document' },
-  dictionary: { icon: FileText, color: 'bg-status-warning/10 text-status-warning', label: 'Dictionary' },
+  collection: { icon: Database, color: 'bg-primary/10 text-primary', label: t['content.collection'] },
+  singleton: { icon: FileText, color: 'bg-status-info/10 text-status-info', label: t['content.singleton'] },
+  document: { icon: BookOpen, color: 'bg-status-success/10 text-status-success', label: t['content.document'] },
+  dictionary: { icon: FileText, color: 'bg-status-warning/10 text-status-warning', label: t['content.dictionary'] },
 }
 
 function getKindConfig(kind: string) {
@@ -45,7 +48,7 @@ function getKindConfig(kind: string) {
 
 <template>
   <div>
-    <PageHeader title="Content" description="Browse and inspect content by collection" />
+    <PageHeader :title="t['content.content']" :description="t['content.browse-and-inspect-content']" />
 
     <div class="px-6 py-6">
       <!-- Empty state -->
@@ -53,9 +56,9 @@ function getKindConfig(kind: string) {
         <div class="mb-4 flex size-14 items-center justify-center rounded-full bg-muted">
           <FileText class="size-6 text-muted-foreground" />
         </div>
-        <h2 class="text-lg font-semibold">No models yet</h2>
+        <h2 class="text-lg font-semibold">{{ t['content.no-models-yet'] }}</h2>
         <p class="mt-2 max-w-sm text-sm text-muted-foreground">
-          Create models using your IDE with AI assistance. Once models are defined, their content will appear here.
+          {{ t['content.create-models-using-your'] }}
         </p>
       </div>
 
@@ -65,7 +68,7 @@ function getKindConfig(kind: string) {
           <Search class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             v-model="search"
-            placeholder="Filter models..."
+            :placeholder="t['content.filter-models']"
             class="h-9 pl-9 text-sm"
           />
         </div>
@@ -101,7 +104,7 @@ function getKindConfig(kind: string) {
                   {{ getKindConfig(model.kind).label }}
                 </Badge>
                 <Badge variant="outline" class="text-[10px]">
-                  {{ model.fields }} fields
+                  {{ model.fields }} {{ t['content.fields'] }}
                 </Badge>
                 <Badge
                   v-if="model.i18n"
@@ -109,7 +112,7 @@ function getKindConfig(kind: string) {
                   class="text-[10px] text-status-info border-status-info/30"
                 >
                   <Languages class="mr-0.5 size-3" />
-                  i18n
+                  {{ t['content.i18n'] }}
                 </Badge>
               </div>
             </button>
@@ -118,7 +121,7 @@ function getKindConfig(kind: string) {
 
         <!-- No results from filter -->
         <div v-if="models.length === 0 && search" class="py-12 text-center text-sm text-muted-foreground">
-          No models matching "{{ search }}"
+          {{ t['content.no-models-matching'] }}{{ search }}"
         </div>
       </template>
     </div>

@@ -40,6 +40,9 @@ import {
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { useTrustLevel } from '@/composables/useTrustLevel'
+import { dictionary } from '#contentrain'
+
+const t = dictionary('serve-ui-texts').locale('en').get()
 
 const route = useRoute()
 const store = useContentStore()
@@ -404,6 +407,9 @@ watch(modelId, () => {
   pageInputValue.value = '1'
   searchQuery.value = ''
   expandedRow.value = null
+  columnOrder.value = []
+  hiddenColumns.value.clear()
+  pinnedColumns.value.clear()
   load()
 })
 watch(selectedLocale, () => {
@@ -440,10 +446,10 @@ useWatch((event) => {
         <Select v-if="hasI18n && locales.length > 1" :model-value="selectedLocale ?? '__all__'"
           @update:model-value="(v: any) => selectedLocale = v === '__all__' ? undefined : String(v)">
           <SelectTrigger size="sm" class="h-8 w-auto gap-1.5 text-xs">
-            <SelectValue placeholder="All locales" />
+            <SelectValue :placeholder="t['content-list.all-locales']" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">All locales</SelectItem>
+            <SelectItem value="__all__">{{ t['content-list.all-locales'] }}</SelectItem>
             <SelectItem v-for="loc in locales" :key="loc" :value="loc">
               {{ loc }}
             </SelectItem>
@@ -454,7 +460,7 @@ useWatch((event) => {
         <Button variant="outline" size="sm" class="h-8" :disabled="store.loading" @click="refresh">
           <Loader2 v-if="store.loading" class="mr-1.5 size-3.5 animate-spin" />
           <RefreshCw v-else class="mr-1.5 size-3.5" />
-          Refresh
+          {{ t['content-list.refresh'] }}
         </Button>
       </template>
     </PageHeader>
@@ -465,7 +471,7 @@ useWatch((event) => {
         <TrustBadge :status="trustStatus" :count="trustCount" />
         <div :class="cn('relative transition-all duration-200', searchFocused || searchQuery ? 'w-72' : 'w-48')">
           <Search class="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input v-model="searchQuery" placeholder="Search entries..." class="h-8 pl-8 text-xs"
+          <Input v-model="searchQuery" :placeholder="t['content-list.search-entries']" class="h-8 pl-8 text-xs"
             @focus="searchFocused = true" @blur="searchFocused = false" />
         </div>
         <div class="flex-1" />
@@ -475,58 +481,45 @@ useWatch((event) => {
           <PopoverTrigger as-child>
             <Button variant="outline" size="sm" class="h-8 gap-1.5 text-xs">
               <SlidersHorizontal class="size-3.5" />
-              Columns
+              {{ t['content-list.columns'] }}
               <Badge v-if="hiddenColumns.size > 0" variant="secondary" class="h-4 px-1 text-[10px]">
                 {{ visibleFieldNames.length }}/{{ allFieldNames.length }}
               </Badge>
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" class="w-[260px] p-0">
+          <PopoverContent align="end" class="w-65 p-0">
             <div class="border-b border-border px-3 py-2.5">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-medium text-foreground">Toggle columns</span>
+                <span class="text-xs font-medium text-foreground">{{ t['content-list.toggle-columns'] }}</span>
                 <div class="flex gap-1">
-                  <Button variant="link" size="sm" class="h-auto p-0 text-[10px] text-primary hover:underline" @click="showAllColumns">Show all</Button>
+                  <Button variant="link" size="sm" class="h-auto p-0 text-[10px] text-primary hover:underline"
+                    @click="showAllColumns">{{ t['content-list.show-all'] }}</Button>
                   <span class="text-[10px] text-muted-foreground">·</span>
-                  <Button variant="link" size="sm" class="h-auto p-0 text-[10px] text-muted-foreground hover:text-foreground hover:underline" @click="resetColumns">Reset</Button>
+                  <Button variant="link" size="sm"
+                    class="h-auto p-0 text-[10px] text-muted-foreground hover:text-foreground hover:underline"
+                    @click="resetColumns">{{ t['content-list.reset'] }}</Button>
                 </div>
               </div>
             </div>
-            <div class="max-h-[340px] overflow-y-auto custom-scrollbar p-1.5">
-              <div
-                v-for="(field, fieldIdx) in orderedColumns"
-                :key="field"
-                :draggable="true"
-                :class="cn(
-                  'flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 text-xs transition-all',
-                  draggedColumn === field ? 'opacity-30 bg-accent scale-95' : 'hover:bg-accent',
-                  pinnedColumns.has(field) && 'bg-primary/5 border border-primary/10',
-                )"
-                @dragstart="(e) => onDragStart(e, field)"
-                @dragover="onDragOver"
-                @drop="(e) => onDrop(e, field)"
-                @dragend="onDragEnd"
-              >
+            <div class="max-h-85 overflow-y-auto custom-scrollbar p-1.5">
+              <div v-for="(field, fieldIdx) in orderedColumns" :key="field" :draggable="true" :class="cn(
+                'flex w-full items-center gap-1 rounded-md px-1.5 py-1.5 text-xs transition-all',
+                draggedColumn === field ? 'opacity-30 bg-accent scale-95' : 'hover:bg-accent',
+                pinnedColumns.has(field) && 'bg-primary/5 border border-primary/10',
+              )" @dragstart="(e) => onDragStart(e, field)" @dragover="onDragOver" @drop="(e) => onDrop(e, field)"
+                @dragend="onDragEnd">
                 <!-- Drag handle + move buttons -->
                 <div class="flex shrink-0 items-center">
                   <GripVertical class="size-3.5 cursor-grab text-muted-foreground/40 active:cursor-grabbing" />
                   <div class="flex flex-col -space-y-0.5 ml-0.5">
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <Button variant="ghost" size="sm"
                       class="h-auto p-0 text-muted-foreground/30 hover:text-foreground disabled:opacity-20"
-                      :disabled="fieldIdx === 0"
-                      @click.stop="moveColumn(field, 'up')"
-                    >
+                      :disabled="fieldIdx === 0" @click.stop="moveColumn(field, 'up')">
                       <ArrowUp class="size-2.5" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <Button variant="ghost" size="sm"
                       class="h-auto p-0 text-muted-foreground/30 hover:text-foreground disabled:opacity-20"
-                      :disabled="fieldIdx === orderedColumns.length - 1"
-                      @click.stop="moveColumn(field, 'down')"
-                    >
+                      :disabled="fieldIdx === orderedColumns.length - 1" @click.stop="moveColumn(field, 'down')">
                       <ArrowDown class="size-2.5" />
                     </Button>
                   </div>
@@ -534,32 +527,26 @@ useWatch((event) => {
 
                 <!-- Visibility toggle -->
                 <Button variant="ghost" size="sm" class="shrink-0 h-auto p-0.5" @click.stop="toggleColumn(field)">
-                  <component
-                    :is="hiddenColumns.has(field) ? EyeOff : Eye"
-                    :class="cn('size-3.5', hiddenColumns.has(field) ? 'text-muted-foreground/30' : 'text-foreground')"
-                  />
+                  <component :is="hiddenColumns.has(field) ? EyeOff : Eye"
+                    :class="cn('size-3.5', hiddenColumns.has(field) ? 'text-muted-foreground/30' : 'text-foreground')" />
                 </Button>
 
                 <!-- Field name -->
-                <span :class="cn('flex-1 truncate', hiddenColumns.has(field) && 'text-muted-foreground/50 line-through')">
+                <span
+                  :class="cn('flex-1 truncate', hiddenColumns.has(field) && 'text-muted-foreground/50 line-through')">
                   {{ field }}
                 </span>
 
                 <!-- Type badge -->
-                <Badge
-                  v-if="fieldTypeMap[field]"
-                  variant="secondary"
-                  :class="cn('text-[9px] h-4 px-1 shrink-0', hiddenColumns.has(field) && 'opacity-30')"
-                >
+                <Badge v-if="fieldTypeMap[field]" variant="secondary"
+                  :class="cn('text-[9px] h-4 px-1 shrink-0', hiddenColumns.has(field) && 'opacity-30')">
                   {{ fieldTypeMap[field] }}
                 </Badge>
 
                 <!-- Pin toggle -->
                 <Button variant="ghost" size="sm" class="shrink-0 h-auto p-0.5" @click.stop="togglePin(field)">
-                  <component
-                    :is="pinnedColumns.has(field) ? Pin : PinOff"
-                    :class="cn('size-3', pinnedColumns.has(field) ? 'text-primary' : 'text-muted-foreground/30 hover:text-muted-foreground')"
-                  />
+                  <component :is="pinnedColumns.has(field) ? Pin : PinOff"
+                    :class="cn('size-3', pinnedColumns.has(field) ? 'text-primary' : 'text-muted-foreground/30 hover:text-muted-foreground')" />
                 </Button>
               </div>
             </div>
@@ -572,7 +559,7 @@ useWatch((event) => {
       </div>
 
       <!-- Agent prompt hints -->
-      <AgentPromptGroup title="Ask your agent" class="mb-4">
+      <AgentPromptGroup :title="t['content-list.ask-your-agent']" class="mb-4">
         <div class="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4">
           <AgentPrompt :prompt="`Add a new entry to ${modelId}`" />
           <AgentPrompt :prompt="`Update the content of ${modelId}`" />
@@ -591,11 +578,11 @@ useWatch((event) => {
         <div class="mb-4 flex size-14 items-center justify-center rounded-full bg-muted">
           <FileText class="size-6 text-muted-foreground" />
         </div>
-        <h2 class="text-lg font-semibold">No entries yet</h2>
+        <h2 class="text-lg font-semibold">{{ t['content-list.no-entries-yet'] }}</h2>
         <p class="mt-2 max-w-sm text-sm text-muted-foreground">
-          Create content using AI in your IDE.
+          {{ t['content-list.create-content-using-ai'] }}
         </p>
-        <AgentPromptGroup title="Ask your agent" class="mt-6 w-full max-w-md">
+        <AgentPromptGroup :title="t['content-list.ask-your-agent']" class="mt-6 w-full max-w-md">
           <AgentPrompt :prompt="`Create sample content for ${modelId}`" />
           <AgentPrompt :prompt="`Generate 5 entries for ${modelId}`" />
         </AgentPromptGroup>
@@ -605,7 +592,7 @@ useWatch((event) => {
       <div v-else-if="filteredEntries.length === 0"
         class="flex flex-1 flex-col items-center justify-center text-center">
         <p class="text-sm text-muted-foreground">
-          No entries matching "{{ searchQuery }}"
+          {{ t['content-list.no-entries-matching'] }}{{ searchQuery }}"
         </p>
       </div>
 
@@ -616,11 +603,10 @@ useWatch((event) => {
             <TableHeader>
               <TableRow class="hover:bg-transparent">
                 <TableHead class="w-10 text-center text-[11px] font-medium text-muted-foreground">#</TableHead>
-                <TableHead v-for="field in visibleFieldNames" :key="field"
-                  :class="cn(
-                    'text-[11px] font-medium uppercase tracking-wider text-muted-foreground',
-                    pinnedColumns.has(field) && 'bg-background/95 backdrop-blur',
-                  )">
+                <TableHead v-for="field in visibleFieldNames" :key="field" :class="cn(
+                  'text-[11px] font-medium uppercase tracking-wider text-muted-foreground',
+                  pinnedColumns.has(field) && 'bg-background/95 backdrop-blur',
+                )">
                   <div class="flex items-center gap-1">
                     <Pin v-if="pinnedColumns.has(field)" class="size-2.5 text-primary/50" />
                     {{ field }}
@@ -650,9 +636,10 @@ useWatch((event) => {
                   <TableCell v-for="field in visibleFieldNames" :key="field" class="max-w-60">
                     <!-- Empty / missing — warn only if required -->
                     <template v-if="getCellDisplayType(entry[field], field) === 'empty'">
-                      <span v-if="isFieldRequired(field)" class="inline-flex items-center gap-1 text-[11px] text-status-warning">
+                      <span v-if="isFieldRequired(field)"
+                        class="inline-flex items-center gap-1 text-[11px] text-status-warning">
                         <AlertTriangle class="size-3" />
-                        missing
+                        {{ t['content-list.missing'] }}
                       </span>
                       <span v-else class="text-[11px] text-muted-foreground/40">—</span>
                     </template>
@@ -732,18 +719,16 @@ useWatch((event) => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger as-child>
-                          <Button
-                            variant="ghost"
-                            size="sm"
+                          <Button variant="ghost" size="sm"
                             class="size-7 p-0 text-muted-foreground opacity-0 transition-all group-hover/row:opacity-100 hover:bg-accent hover:text-foreground"
-                            @click.stop="copyEntry(entry)"
-                          >
+                            @click.stop="copyEntry(entry)">
                             <component :is="copiedEntryId === (entry['id'] ?? i) ? Check : Copy" class="size-3.5"
                               :class="copiedEntryId === (entry['id'] ?? i) && 'text-status-success'" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent side="left">
-                          <p class="text-xs">{{ copiedEntryId === (entry['id'] ?? i) ? 'Copied!' : 'Copy entry as JSON' }}</p>
+                          <p class="text-xs">{{ copiedEntryId === (entry['id'] ?? i) ? 'Copied!' : 'Copy entry as JSON'
+                            }}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -759,13 +744,17 @@ useWatch((event) => {
                           class="group/card flex flex-col gap-1 rounded-md border border-border/50 bg-background/50 px-3 py-2 overflow-hidden">
                           <div class="flex items-center gap-1.5">
                             <span class="font-mono text-[11px] font-medium text-muted-foreground">{{ key }}</span>
-                            <Badge v-if="fieldTypeMap[String(key)]" variant="secondary" class="text-[8px] h-3.5 px-1">{{ fieldTypeMap[String(key)] }}</Badge>
+                            <Badge v-if="fieldTypeMap[String(key)]" variant="secondary" class="text-[8px] h-3.5 px-1">{{
+                              fieldTypeMap[String(key)] }}</Badge>
 
-                            <div class="ml-auto flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                            <div
+                              class="ml-auto flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
                               <!-- Copy button for ID -->
-                              <Button v-if="String(key) === 'id'" variant="ghost" size="sm" class="size-5 p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
+                              <Button v-if="String(key) === 'id'" variant="ghost" size="sm"
+                                class="size-5 p-0 text-muted-foreground hover:bg-accent hover:text-foreground"
                                 @click.stop="handleCopyId(String(val))">
-                                <component :is="copiedId === String(val) ? Check : Copy" class="size-3" :class="copiedId === String(val) && 'text-status-success'" />
+                                <component :is="copiedId === String(val) ? Check : Copy" class="size-3"
+                                  :class="copiedId === String(val) && 'text-status-success'" />
                               </Button>
                               <!-- Preview button for long content -->
                               <Button v-if="val != null && val !== '' && isLongContent(val, String(key))"
@@ -779,8 +768,9 @@ useWatch((event) => {
 
                           <!-- Type-aware value preview -->
                           <template v-if="val === undefined || val === null || val === ''">
-                            <span v-if="isFieldRequired(String(key))" class="inline-flex items-center gap-1 text-xs text-status-warning">
-                              <AlertTriangle class="size-3" /> required
+                            <span v-if="isFieldRequired(String(key))"
+                              class="inline-flex items-center gap-1 text-xs text-status-warning">
+                              <AlertTriangle class="size-3" /> {{ t['content-list.required'] }}
                             </span>
                             <span v-else class="text-xs text-muted-foreground/40">—</span>
                           </template>
@@ -788,8 +778,10 @@ useWatch((event) => {
                           <!-- Boolean → switch visual -->
                           <template v-else-if="fieldTypeMap[String(key)] === 'boolean' || typeof val === 'boolean'">
                             <div class="flex items-center gap-2">
-                              <div :class="cn('h-5 w-9 rounded-full p-0.5 transition-colors', val ? 'bg-primary' : 'bg-muted')">
-                                <div :class="cn('size-4 rounded-full bg-white shadow transition-transform', val ? 'translate-x-4' : 'translate-x-0')" />
+                              <div
+                                :class="cn('h-5 w-9 rounded-full p-0.5 transition-colors', val ? 'bg-primary' : 'bg-muted')">
+                                <div
+                                  :class="cn('size-4 rounded-full bg-white shadow transition-transform', val ? 'translate-x-4' : 'translate-x-0')" />
                               </div>
                               <span class="text-xs text-muted-foreground">{{ val ? 'Yes' : 'No' }}</span>
                             </div>
@@ -798,7 +790,8 @@ useWatch((event) => {
                           <!-- Color → swatch + hex -->
                           <template v-else-if="fieldTypeMap[String(key)] === 'color'">
                             <div class="flex items-center gap-2">
-                              <span class="size-6 rounded-md border border-border shadow-sm" :style="{ backgroundColor: String(val) }" />
+                              <span class="size-6 rounded-md border border-border shadow-sm"
+                                :style="{ backgroundColor: String(val) }" />
                               <span class="font-mono text-xs text-foreground">{{ val }}</span>
                             </div>
                           </template>
@@ -806,7 +799,8 @@ useWatch((event) => {
                           <!-- Rating → stars -->
                           <template v-else-if="fieldTypeMap[String(key)] === 'rating'">
                             <div class="flex items-center gap-0.5">
-                              <span v-for="s in 5" :key="s" :class="cn('text-base', s <= Number(val) ? 'text-amber-400' : 'text-muted/50')">★</span>
+                              <span v-for="s in 5" :key="s"
+                                :class="cn('text-base', s <= Number(val) ? 'text-amber-400' : 'text-muted/50')">★</span>
                               <span class="ml-1.5 text-xs text-muted-foreground">{{ val }}/5</span>
                             </div>
                           </template>
@@ -815,7 +809,8 @@ useWatch((event) => {
                           <template v-else-if="fieldTypeMap[String(key)] === 'percent'">
                             <div class="flex items-center gap-2">
                               <div class="h-2 flex-1 rounded-full bg-muted overflow-hidden">
-                                <div class="h-full rounded-full bg-primary transition-all" :style="{ width: `${Math.min(Number(val), 100)}%` }" />
+                                <div class="h-full rounded-full bg-primary transition-all"
+                                  :style="{ width: `${Math.min(Number(val), 100)}%` }" />
                               </div>
                               <span class="text-xs font-medium text-foreground tabular-nums">{{ val }}%</span>
                             </div>
@@ -823,21 +818,25 @@ useWatch((event) => {
 
                           <!-- Email → mailto link -->
                           <template v-else-if="fieldTypeMap[String(key)] === 'email'">
-                            <a :href="`mailto:${val}`" class="inline-flex items-center gap-1.5 text-xs text-primary hover:underline" @click.stop>
+                            <a :href="`mailto:${val}`"
+                              class="inline-flex items-center gap-1.5 text-xs text-primary hover:underline" @click.stop>
                               {{ val }}
                             </a>
                           </template>
 
                           <!-- URL → clickable link -->
                           <template v-else-if="fieldTypeMap[String(key)] === 'url'">
-                            <a :href="String(val)" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs text-primary hover:underline truncate max-w-full" @click.stop>
+                            <a :href="String(val)" target="_blank" rel="noopener"
+                              class="inline-flex items-center gap-1.5 text-xs text-primary hover:underline truncate max-w-full"
+                              @click.stop>
                               {{ String(val).replace(/^https?:\/\//, '') }}
                             </a>
                           </template>
 
                           <!-- Phone → tel link -->
                           <template v-else-if="fieldTypeMap[String(key)] === 'phone'">
-                            <a :href="`tel:${val}`" class="inline-flex items-center gap-1.5 text-xs text-primary hover:underline" @click.stop>
+                            <a :href="`tel:${val}`"
+                              class="inline-flex items-center gap-1.5 text-xs text-primary hover:underline" @click.stop>
                               {{ val }}
                             </a>
                           </template>
@@ -845,18 +844,24 @@ useWatch((event) => {
                           <!-- Image → thumbnail -->
                           <template v-else-if="fieldTypeMap[String(key)] === 'image'">
                             <div class="flex items-center gap-2">
-                              <div class="flex size-10 items-center justify-center rounded-md border border-border bg-muted">
-                                <img :src="String(val)" :alt="String(key)" class="size-10 rounded-md object-cover" @error="($event.target as HTMLImageElement).style.display='none'" />
+                              <div
+                                class="flex size-10 items-center justify-center rounded-md border border-border bg-muted">
+                                <img :src="String(val)" :alt="String(key)" class="size-10 rounded-md object-cover"
+                                  @error="($event.target as HTMLImageElement).style.display = 'none'" />
                               </div>
-                              <span class="text-xs text-muted-foreground truncate">{{ String(val).split('/').pop() }}</span>
+                              <span class="text-xs text-muted-foreground truncate">{{ String(val).split('/').pop()
+                                }}</span>
                             </div>
                           </template>
 
                           <!-- Video/File → icon + filename -->
-                          <template v-else-if="fieldTypeMap[String(key)] === 'video' || fieldTypeMap[String(key)] === 'file'">
+                          <template
+                            v-else-if="fieldTypeMap[String(key)] === 'video' || fieldTypeMap[String(key)] === 'file'">
                             <div class="flex items-center gap-2">
-                              <Badge variant="outline" class="text-[10px] shrink-0">{{ fieldTypeMap[String(key)] === 'video' ? '▶' : '📎' }} {{ String(val).split('.').pop()?.toUpperCase() }}</Badge>
-                              <span class="text-xs text-muted-foreground truncate">{{ String(val).split('/').pop() }}</span>
+                              <Badge variant="outline" class="text-[10px] shrink-0">{{ fieldTypeMap[String(key)] ===
+                                'video' ? '▶' : '📎' }} {{ String(val).split('.').pop()?.toUpperCase() }}</Badge>
+                              <span class="text-xs text-muted-foreground truncate">{{ String(val).split('/').pop()
+                                }}</span>
                             </div>
                           </template>
 
@@ -870,7 +875,8 @@ useWatch((event) => {
                           <!-- Relations → multiple badges -->
                           <template v-else-if="fieldTypeMap[String(key)] === 'relations' && Array.isArray(val)">
                             <div class="flex flex-wrap gap-1">
-                              <Badge v-for="(ref, j) in (val as string[])" :key="j" variant="outline" class="text-[10px] font-mono gap-1">
+                              <Badge v-for="(ref, j) in (val as string[])" :key="j" variant="outline"
+                                class="text-[10px] font-mono gap-1">
                                 🔗 {{ ref }}
                               </Badge>
                             </div>
@@ -879,10 +885,12 @@ useWatch((event) => {
                           <!-- Array → tag badges -->
                           <template v-else-if="Array.isArray(val)">
                             <div class="flex flex-wrap gap-1">
-                              <Badge v-for="(item, j) in (val as unknown[]).slice(0, 8)" :key="j" variant="outline" class="text-[10px]">
+                              <Badge v-for="(item, j) in (val as unknown[]).slice(0, 8)" :key="j" variant="outline"
+                                class="text-[10px]">
                                 {{ typeof item === 'string' ? item : JSON.stringify(item) }}
                               </Badge>
-                              <Badge v-if="(val as unknown[]).length > 8" variant="secondary" class="text-[10px]">+{{ (val as unknown[]).length - 8 }}</Badge>
+                              <Badge v-if="(val as unknown[]).length > 8" variant="secondary" class="text-[10px]">+{{
+                                (val as unknown[]).length - 8 }}</Badge>
                             </div>
                           </template>
 
@@ -892,10 +900,12 @@ useWatch((event) => {
                           </template>
 
                           <!-- Date / DateTime → formatted -->
-                          <template v-else-if="fieldTypeMap[String(key)] === 'date' || fieldTypeMap[String(key)] === 'datetime'">
+                          <template
+                            v-else-if="fieldTypeMap[String(key)] === 'date' || fieldTypeMap[String(key)] === 'datetime'">
                             <span class="text-xs text-foreground">
                               {{ formatDate(String(val)).title }}
-                              <span v-if="fieldTypeMap[String(key)] === 'datetime'" class="text-muted-foreground ml-1">{{ formatDate(String(val)).subtitle }}</span>
+                              <span v-if="fieldTypeMap[String(key)] === 'datetime'"
+                                class="text-muted-foreground ml-1">{{ formatDate(String(val)).subtitle }}</span>
                             </span>
                           </template>
 
@@ -906,25 +916,30 @@ useWatch((event) => {
 
                           <!-- Code → code block -->
                           <template v-else-if="fieldTypeMap[String(key)] === 'code'">
-                            <code class="line-clamp-2 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground">{{ val }}</code>
+                            <code
+                              class="line-clamp-2 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground">{{ val }}</code>
                           </template>
 
                           <!-- Markdown/Richtext → preview badge + truncate -->
-                          <template v-else-if="fieldTypeMap[String(key)] === 'markdown' || fieldTypeMap[String(key)] === 'richtext'">
+                          <template
+                            v-else-if="fieldTypeMap[String(key)] === 'markdown' || fieldTypeMap[String(key)] === 'richtext'">
                             <div class="flex items-center gap-2">
-                              <Badge variant="secondary" class="text-[9px] shrink-0">{{ fieldTypeMap[String(key)] === 'markdown' ? 'MD' : 'HTML' }}</Badge>
+                              <Badge variant="secondary" class="text-[9px] shrink-0">{{ fieldTypeMap[String(key)] ===
+                                'markdown' ? 'MD' : 'HTML' }}</Badge>
                               <span class="line-clamp-1 text-xs text-muted-foreground">{{ String(val).replace(/<[^>]*>/g, '').replace(/[#*`_\[\]]/g, '') }}</span>
                             </div>
                           </template>
 
                           <!-- Number types → formatted -->
-                          <template v-else-if="['number', 'integer', 'decimal'].includes(fieldTypeMap[String(key)] ?? '')">
+                          <template
+                            v-else-if="['number', 'integer', 'decimal'].includes(fieldTypeMap[String(key)] ?? '')">
                             <span class="font-mono text-xs font-medium text-foreground tabular-nums">{{ val }}</span>
                           </template>
 
                           <!-- Default fallback -->
                           <template v-else>
-                            <span class="line-clamp-2 text-xs text-foreground">{{ typeof val === 'string' ? val : JSON.stringify(val) }}</span>
+                            <span class="line-clamp-2 text-xs text-foreground">{{ typeof val === 'string' ? val :
+                              JSON.stringify(val) }}</span>
                           </template>
                         </div>
                       </div>
@@ -941,7 +956,7 @@ useWatch((event) => {
           class="mt-4 flex items-center justify-between border-t border-border pt-4">
           <!-- Page size -->
           <div class="flex items-center gap-2">
-            <span class="text-xs text-muted-foreground">Show</span>
+            <span class="text-xs text-muted-foreground">{{ t['content-list.show'] }}</span>
             <Select :model-value="String(pageSize)"
               @update:model-value="(v: any) => { pageSize = Number(v); goToPage(1) }">
               <SelectTrigger size="sm" class="h-7 w-16 text-xs">
@@ -963,7 +978,7 @@ useWatch((event) => {
             </Button>
 
             <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span>Page</span>
+              <span>{{ t['content-list.page'] }}</span>
               <input v-model="pageInputValue" type="text" inputmode="numeric"
                 class="h-7 w-10 rounded-md border border-input bg-background text-center text-xs text-foreground outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
                 @blur="handlePageInput" @keydown.enter="($event.target as HTMLInputElement).blur()">
@@ -981,7 +996,8 @@ useWatch((event) => {
         </div>
       </template>
 
-      <StudioHint message="Content mutations are agent actions — copy a prompt above and paste it in your AI agent." class="mt-4" />
+      <StudioHint :message="t['content-list.content-mutations-are-agent']"
+        class="mt-4" />
 
       <!-- Preview Dialog -->
       <Dialog v-model:open="previewOpen">
@@ -994,13 +1010,18 @@ useWatch((event) => {
           </DialogHeader>
           <div class="flex-1 overflow-auto custom-scrollbar rounded-md border border-border bg-muted/30 p-4">
             <!-- Markdown preview -->
-            <div v-if="previewType === 'markdown'" class="prose prose-sm dark:prose-invert max-w-none" v-html="renderMarkdown(String(previewValue))" />
+            <div v-if="previewType === 'markdown'" class="prose prose-sm dark:prose-invert max-w-none"
+              v-html="renderMarkdown(String(previewValue))" />
             <!-- Rich text preview -->
-            <div v-else-if="previewType === 'richtext'" class="prose prose-sm dark:prose-invert max-w-none" v-html="previewValue" />
+            <div v-else-if="previewType === 'richtext'" class="prose prose-sm dark:prose-invert max-w-none"
+              v-html="previewValue" />
             <!-- Code preview -->
-            <pre v-else-if="previewType === 'code'" class="font-mono text-sm text-foreground whitespace-pre-wrap"><code>{{ previewValue }}</code></pre>
+            <pre v-else-if="previewType === 'code'" class="font-mono text-sm text-foreground whitespace-pre-wrap"><code>{{
+          previewValue }}</code></pre>
             <!-- JSON/Object preview -->
-            <pre v-else-if="typeof previewValue === 'object'" class="font-mono text-xs text-foreground whitespace-pre-wrap"><code>{{ JSON.stringify(previewValue, null, 2) }}</code></pre>
+            <pre v-else-if="typeof previewValue === 'object'"
+              class="font-mono text-xs text-foreground whitespace-pre-wrap">
+        <code>{{ JSON.stringify(previewValue, null, 2) }}</code></pre>
             <!-- Text preview -->
             <p v-else class="whitespace-pre-wrap font-mono text-sm text-foreground">{{ previewValue }}</p>
           </div>

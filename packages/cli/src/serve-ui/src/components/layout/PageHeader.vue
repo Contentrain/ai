@@ -2,6 +2,9 @@
 import { ExternalLink, Sparkles } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useWatch } from '@/composables/useWatch'
+import { dictionary } from '#contentrain'
+
+const t = dictionary('serve-ui-texts').locale('en').get()
 
 defineProps<{
   title: string
@@ -39,10 +42,10 @@ const { connected } = useWatch()
           target="_blank"
           rel="noopener"
           size="sm"
-          class="hidden sm:inline-flex bg-gradient-to-r from-primary to-primary/80 shadow-sm hover:shadow-md hover:from-primary/90 hover:to-primary/70"
+          class="hidden sm:inline-flex bg-linear-to-r from-primary to-primary/80 shadow-sm hover:shadow-md hover:from-primary/90 hover:to-primary/70"
         >
           <Sparkles class="size-3.5" />
-          Open in Studio
+          {{ t['header.open-in-studio'] }}
           <ExternalLink class="size-3 opacity-60" />
         </Button>
       </div>

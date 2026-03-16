@@ -6,6 +6,7 @@ import type { HistoryEntry } from '@/stores/content'
 import { useWatch } from '@/composables/useWatch'
 import { formatRelativeTime } from '@/composables/useFormatters'
 import { toast } from 'vue-sonner'
+import { dictionary } from '#contentrain'
 import {
   GitBranch, RefreshCw, Loader2, FileText, Database, Languages, ShieldCheck,
   ChevronRight, Clock, History, Layers, Box, Trash2, GitMerge,
@@ -23,6 +24,7 @@ import { cn } from '@/lib/utils'
 const store = useContentStore()
 const router = useRouter()
 const activeTab = ref('pending')
+const t = dictionary('serve-ui-texts').locale('en').get()
 
 // ─── Pending Branches ───
 
@@ -47,12 +49,12 @@ function parseBranch(branch: { name: string; current: boolean }): ParsedBranch {
 const parsedBranches = computed(() => branches.value.map(parseBranch))
 
 const scopeConfig: Record<string, { icon: typeof FileText; color: string; bg: string; label: string }> = {
-  content: { icon: FileText, color: 'text-primary', bg: 'bg-primary/10', label: 'Content' },
-  model: { icon: Database, color: 'text-status-info', bg: 'bg-status-info/10', label: 'Model' },
-  normalize: { icon: ScanSearch, color: 'text-status-warning', bg: 'bg-status-warning/10', label: 'Normalize' },
-  validate: { icon: ShieldCheck, color: 'text-status-success', bg: 'bg-status-success/10', label: 'Validate' },
+  content: { icon: FileText, color: 'text-primary', bg: 'bg-primary/10', label: t['branches.content'] },
+  model: { icon: Database, color: 'text-status-info', bg: 'bg-status-info/10', label: t['branches.model'] },
+  normalize: { icon: ScanSearch, color: 'text-status-warning', bg: 'bg-status-warning/10', label: t['branches.normalize'] },
+  validate: { icon: ShieldCheck, color: 'text-status-success', bg: 'bg-status-success/10', label: t['branches.validate'] },
 }
-const defaultScopeConfig = { icon: GitBranch, color: 'text-muted-foreground', bg: 'bg-muted', label: 'Branch' }
+const defaultScopeConfig = { icon: GitBranch, color: 'text-muted-foreground', bg: 'bg-muted', label: t['branches.branch'] }
 function getScopeConfig(scope: string) { return scopeConfig[scope] ?? defaultScopeConfig }
 
 // ─── History ───
@@ -60,13 +62,13 @@ function getScopeConfig(scope: string) { return scopeConfig[scope] ?? defaultSco
 const historyEntries = computed(() => store.history)
 
 const historyTypeConfig: Record<string, { icon: typeof Box; color: string; bg: string; label: string }> = {
-  model_create: { icon: Box, color: 'text-status-info', bg: 'bg-status-info/10', label: 'Model Created' },
-  model_update: { icon: Settings, color: 'text-status-info', bg: 'bg-status-info/10', label: 'Model Updated' },
-  content_save: { icon: FileText, color: 'text-primary', bg: 'bg-primary/10', label: 'Content Saved' },
-  delete: { icon: Trash2, color: 'text-status-error', bg: 'bg-status-error/10', label: 'Deleted' },
-  merge: { icon: GitMerge, color: 'text-status-success', bg: 'bg-status-success/10', label: 'Merged' },
+  model_create: { icon: Box, color: 'text-status-info', bg: 'bg-status-info/10', label: t['branches.model-created'] },
+  model_update: { icon: Settings, color: 'text-status-info', bg: 'bg-status-info/10', label: t['branches.model-updated'] },
+  content_save: { icon: FileText, color: 'text-primary', bg: 'bg-primary/10', label: t['branches.content-saved'] },
+  delete: { icon: Trash2, color: 'text-status-error', bg: 'bg-status-error/10', label: t['branches.deleted'] },
+  merge: { icon: GitMerge, color: 'text-status-success', bg: 'bg-status-success/10', label: t['branches.merged'] },
   context_update: { icon: Layers, color: 'text-muted-foreground', bg: 'bg-muted', label: 'Context' },
-  operation: { icon: Settings, color: 'text-muted-foreground', bg: 'bg-muted', label: 'Operation' },
+  operation: { icon: Settings, color: 'text-muted-foreground', bg: 'bg-muted', label: t['branches.operation'] },
 }
 const defaultHistoryConfig = { icon: GitBranch, color: 'text-muted-foreground', bg: 'bg-muted', label: 'Other' }
 function getHistoryConfig(type: string) { return historyTypeConfig[type] ?? defaultHistoryConfig }
@@ -106,11 +108,11 @@ useWatch((event) => {
 
 <template>
   <div>
-    <PageHeader title="Branches & History" description="Review pending changes and track operations">
+    <PageHeader :title="t['branches.branches-history']" :description="t['branches.review-pending-changes-and']">
       <template #actions>
         <Button variant="outline" size="sm" :disabled="store.loading" @click="refresh()">
           <Loader2 v-if="store.loading" class="size-4 animate-spin" />
-          <RefreshCw v-else class="size-4" /> Refresh
+          <RefreshCw v-else class="size-4" /> {{ t['branches.refresh'] }}
         </Button>
       </template>
     </PageHeader>
@@ -141,14 +143,14 @@ useWatch((event) => {
           <!-- Empty -->
           <div v-else-if="branches.length === 0" class="flex flex-col items-center py-16 text-center">
             <img src="/merge-1.svg" alt="" class="empty-illustration mb-6" />
-            <h2 class="text-lg font-semibold">No pending branches</h2>
+            <h2 class="text-lg font-semibold">{{ t['branches.no-pending-branches'] }}</h2>
             <p class="mt-2 max-w-sm text-sm text-muted-foreground">
-              AI-generated changes from your IDE will appear here for review.
+              {{ t['branches.aigenerated-changes-from-your'] }}
             </p>
-            <AgentPromptGroup title="Try asking your AI agent" class="mt-6 w-full max-w-md">
-              <AgentPrompt prompt="Create a new content model for my project" />
-              <AgentPrompt prompt="Normalize my project — extract hardcoded strings" />
-              <AgentPrompt prompt="Add sample content to my models" />
+            <AgentPromptGroup :title="t['branches.try-asking-your-ai']" class="mt-6 w-full max-w-md">
+              <AgentPrompt :prompt="t['branches.create-a-new-content']" />
+              <AgentPrompt :prompt="t['branches.normalize-my-project-extract']" />
+              <AgentPrompt :prompt="t['branches.add-sample-content-to']" />
             </AgentPromptGroup>
           </div>
 
@@ -187,10 +189,10 @@ useWatch((event) => {
 
           <div v-else-if="historyEntries.length === 0" class="flex flex-col items-center py-16 text-center">
             <History class="mb-4 size-12 text-muted-foreground/30" />
-            <h2 class="text-lg font-semibold">No history yet</h2>
-            <p class="mt-2 text-sm text-muted-foreground">Contentrain operations will appear here as a timeline.</p>
-            <AgentPromptGroup title="Get started" class="mt-6 w-full max-w-md">
-              <AgentPrompt prompt="Initialize my contentrain project" />
+            <h2 class="text-lg font-semibold">{{ t['branches.no-history-yet'] }}</h2>
+            <p class="mt-2 text-sm text-muted-foreground">{{ t['branches.contentrain-operations-will-appear'] }}</p>
+            <AgentPromptGroup :title="t['branches.get-started']" class="mt-6 w-full max-w-md">
+              <AgentPrompt :prompt="t['branches.initialize-my-contentrain-project']" />
             </AgentPromptGroup>
           </div>
 
@@ -244,7 +246,7 @@ useWatch((event) => {
         </TabsContent>
       </Tabs>
 
-      <StudioHint message="Share branch reviews with your team in Contentrain Studio." class="mt-6" />
+      <StudioHint :message="t['branches.share-branch-reviews-with']" class="mt-6" />
     </div>
   </div>
 </template>

@@ -15,6 +15,7 @@
     ".output",
     ".nuxt",
     "coverage",
-    "pnpm-lock.yaml"
+    "pnpm-lock.yaml",
+    ".contentrain/client"
   ]
 }

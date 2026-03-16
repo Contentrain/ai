@@ -722,15 +722,23 @@ export async function applyReuse(
       const sourcesRaw = await readText(sourcesPath)
 
       if (!sourcesRaw) {
-        // Source map not found — extract branch not yet merged
-        if (dry_run !== false) {
-          // Preview is allowed without source map — show warning
+        // Source map not found — check if scoped model is a dictionary
+        // Dictionaries store all keys in one entry, so per-file source tracking
+        // is not available. Allow reuse with a warning instead of blocking.
+        const scopedModel = scopeModels.find(m => m.id === scope.model)
+        const isDictionary = scopedModel?.kind === 'dictionary'
+
+        if (isDictionary) {
+          scopeWarnings.push(
+            'normalize-sources.json not found. Dictionary models do not generate per-file source maps. ' +
+            'Scope enforcement is based on source-tree locality only.',
+          )
+        } else if (dry_run !== false) {
           scopeWarnings.push(
             'normalize-sources.json not found. Semantic scope enforcement is unavailable. ' +
             'Merge the extract branch first, then reuse will have full scope protection.',
           )
         } else {
-          // Execute blocked — require source map for safety
           throw new Error(
             'Cannot execute reuse: normalize-sources.json not found on base branch. ' +
             'The extract branch must be merged before reuse can execute. ' +
@@ -1095,15 +1103,26 @@ function addImportsToLines(lines: string[], imports: Set<string>): number {
   let added = 0
   const existingContent = lines.join('\n')
 
-  // Find the last import line position
+  // Find the last import line position (handles multi-line imports)
   let lastImportIdx = -1
+  let inMultiLineImport = false
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i]!.trim()
+    if (inMultiLineImport) {
+      lastImportIdx = i
+      if (trimmed.includes('}')) inMultiLineImport = false
+      continue
+    }
     if (trimmed.startsWith('import ') || trimmed.startsWith('import{')) {
       lastImportIdx = i
+      // Check if this is a multi-line import (has { but no closing })
+      if (trimmed.includes('{') && !trimmed.includes('}')) {
+        inMultiLineImport = true
+      }
+      continue
     }
     // Stop searching after a non-import, non-empty, non-comment line following imports
-    if (lastImportIdx >= 0 && trimmed.length > 0 && !trimmed.startsWith('import') && !trimmed.startsWith('//') && !trimmed.startsWith('/*')) {
+    if (lastImportIdx >= 0 && trimmed.length > 0 && !trimmed.startsWith('//') && !trimmed.startsWith('/*') && !trimmed.startsWith('*')) {
       break
     }
   }
