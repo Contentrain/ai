@@ -105,7 +105,7 @@ function parseYamlValue(raw: string): unknown {
   return raw
 }
 
-function yamlValue(value: unknown): string {
+function yamlScalar(value: unknown): string {
   const str = String(value)
   // Quote strings that contain YAML-special characters
   if (str.includes(':') || str.includes('#') || str.includes('{') || str.includes('}')
@@ -120,6 +120,82 @@ function yamlValue(value: unknown): string {
   return str
 }
 
+function serializeYamlValue(value: unknown, indent: number): string[] {
+  const pad = '  '.repeat(indent)
+  if (value === null || value === undefined) return []
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    const lines: string[] = []
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (v === null || v === undefined) continue
+      if (typeof v === 'object' && !Array.isArray(v)) {
+        lines.push(`${pad}${k}:`)
+        lines.push(...serializeYamlValue(v, indent + 1))
+      } else if (Array.isArray(v)) {
+        lines.push(`${pad}${k}:`)
+        for (const item of v) {
+          if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+            const nested = serializeYamlValue(item, indent + 2)
+            if (nested.length > 0) {
+              // First line of nested object gets the "- " prefix
+              lines.push(`${pad}  - ${nested[0]!.trimStart()}`)
+              lines.push(...nested.slice(1))
+            }
+          } else {
+            lines.push(`${pad}  - ${yamlScalar(item)}`)
+          }
+        }
+      } else {
+        lines.push(`${pad}${k}: ${yamlScalar(v)}`)
+      }
+    }
+    return lines
+  }
+  if (Array.isArray(value)) {
+    const lines: string[] = []
+    for (const item of value) {
+      if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+        const nested = serializeYamlValue(item, indent + 1)
+        if (nested.length > 0) {
+          lines.push(`${pad}- ${nested[0]!.trimStart()}`)
+          lines.push(...nested.slice(1))
+        }
+      } else {
+        lines.push(`${pad}- ${yamlScalar(item)}`)
+      }
+    }
+    return lines
+  }
+  return [`${pad}${yamlScalar(value)}`]
+}
+
+function serializeYamlFields(data: Record<string, unknown>): string[] {
+  const lines: string[] = []
+  for (const [key, value] of Object.entries(data)) {
+    if (key === 'body') continue
+    if (value === null || value === undefined) continue
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      lines.push(`${key}:`)
+      lines.push(...serializeYamlValue(value, 1))
+    } else if (Array.isArray(value)) {
+      lines.push(`${key}:`)
+      for (const item of value) {
+        if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+          const nested = serializeYamlValue(item, 2)
+          if (nested.length > 0) {
+            lines.push(`  - ${nested[0]!.trimStart()}`)
+            lines.push(...nested.slice(1))
+          }
+        } else {
+          lines.push(`  - ${yamlScalar(item)}`)
+        }
+      }
+    } else {
+      lines.push(`${key}: ${yamlScalar(value)}`)
+    }
+  }
+  return lines
+}
+
 export function serializeFrontmatter(data: Record<string, unknown>, body: string): string {
   // If body starts with frontmatter (---), merge model fields into body's frontmatter
   const trimmedBody = body.trimStart()
@@ -130,19 +206,7 @@ export function serializeFrontmatter(data: Record<string, unknown>, body: string
       const afterFm = trimmedBody.slice(endIdx + 3)
 
       const lines: string[] = ['---']
-      // Model fields first
-      for (const [key, value] of Object.entries(data)) {
-        if (key === 'body') continue
-        if (value === null || value === undefined) continue
-        if (Array.isArray(value)) {
-          lines.push(`${key}:`)
-          for (const item of value) {
-            lines.push(`  - ${yamlValue(item)}`)
-          }
-        } else {
-          lines.push(`${key}: ${yamlValue(value)}`)
-        }
-      }
+      lines.push(...serializeYamlFields(data))
       // Body frontmatter fields (skip top-level duplicates from model fields)
       if (bodyFmContent) {
         const modelKeys = new Set(Object.keys(data))
@@ -167,18 +231,7 @@ export function serializeFrontmatter(data: Record<string, unknown>, body: string
 
   // Standard: model fields as frontmatter, body as markdown
   const lines: string[] = ['---']
-  for (const [key, value] of Object.entries(data)) {
-    if (key === 'body') continue
-    if (value === null || value === undefined) continue
-    if (Array.isArray(value)) {
-      lines.push(`${key}:`)
-      for (const item of value) {
-        lines.push(`  - ${yamlValue(item)}`)
-      }
-    } else {
-      lines.push(`${key}: ${yamlValue(value)}`)
-    }
-  }
+  lines.push(...serializeYamlFields(data))
   lines.push('---')
   lines.push('')
   if (body) {
