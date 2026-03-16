@@ -26,6 +26,15 @@ interface ServeOptions {
   uiDir: string
 }
 
+function apiError(error: unknown): { statusCode: number; error: string } {
+  if (error && typeof error === 'object' && 'statusCode' in error) {
+    const e = error as { statusCode: number; message?: string }
+    return { statusCode: e.statusCode, error: e.message ?? 'Unknown error' }
+  }
+  const message = error instanceof Error ? error.message : String(error)
+  return { statusCode: 500, error: message }
+}
+
 export async function createServeApp(options: ServeOptions) {
   const { projectRoot, uiDir } = options
   const crDir = join(projectRoot, '.contentrain')
@@ -51,15 +60,34 @@ export async function createServeApp(options: ServeOptions) {
 
   async function callTool(name: string, args: Record<string, unknown> = {}): Promise<unknown> {
     const result = await mcpClient.callTool({ name, arguments: args })
-    const contentArr = result.content as Array<{ type: string; text?: string }>; const textContent = contentArr.find((c: { type: string }) => c.type === 'text')
+    const contentArr = result.content as Array<{ type: string; text?: string }>
+    const textContent = contentArr.find((c: { type: string }) => c.type === 'text')
     if (!textContent || !('text' in textContent)) {
       throw createError({ statusCode: 500, message: `Tool ${name} returned no text content` })
     }
-    return JSON.parse(textContent.text as string)
+    const parsed = JSON.parse(textContent.text as string)
+    if (result.isError) {
+      const msg = typeof parsed === 'object' && parsed?.error ? parsed.error : textContent.text
+      throw createError({ statusCode: 422, message: msg as string })
+    }
+    return parsed
   }
 
+
+
   // --- H3 App ---
-  const app = createApp()
+  const app = createApp({
+    onError: (error, event) => {
+      if (event.path.startsWith('/api/')) {
+        const { statusCode, error: message } = apiError(error)
+        event.node.res.statusCode = statusCode
+        event.node.res.setHeader('Content-Type', 'application/json')
+        if (!event.node.res.writableEnded) {
+          event.node.res.end(JSON.stringify({ statusCode, error: message }))
+        }
+      }
+    },
+  })
   const router = createRouter()
 
   // --- WebSocket for file watching (ws package) ---
@@ -427,6 +455,7 @@ export async function createServeApp(options: ServeOptions) {
     if (existsSync(planPath)) {
       await unlink(planPath)
     }
+    broadcast({ type: 'normalize:plan-updated' })
     return { status: 'rejected' }
   }))
 
