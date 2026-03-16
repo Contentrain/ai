@@ -110,7 +110,11 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
         })
 
         await tx.commit('[contentrain] init: project setup')
-        const gitResult = await tx.complete()
+        const gitResult = await tx.complete({
+          tool: 'contentrain_init',
+          model: '',
+          locale: supportedLocales[0] ?? 'en',
+        })
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({

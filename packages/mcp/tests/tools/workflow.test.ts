@@ -271,7 +271,7 @@ describe('contentrain_validate', () => {
     expect(data['valid']).toBe(false)
     const issues = data['issues'] as Array<Record<string, unknown>>
     const patternIssue = issues.find(i =>
-      (i['message'] as string).includes('Pattern'),
+      (i['message'] as string).includes('pattern'),
     )
     expect(patternIssue).toBeDefined()
     expect(patternIssue!['severity']).toBe('error')
@@ -456,7 +456,7 @@ describe('contentrain_submit', () => {
     })
 
     const data = parseResult(result)
-    expect(data['error']).toContain('No contentrain')
+    expect(data['error']).toContain('No unmerged contentrain')
 
     await rm(freshDir, { recursive: true, force: true })
   })

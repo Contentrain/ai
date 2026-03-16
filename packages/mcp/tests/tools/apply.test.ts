@@ -153,8 +153,8 @@ describe('contentrain_apply mode:extract', () => {
         mode: 'extract',
         dry_run: false,
         extractions: [{
-          model: 'ui-texts',
-          kind: 'dictionary',
+          model: 'ui-copy',
+          kind: 'singleton',
           domain: 'app',
           fields: {
             welcome_title: { type: 'string' },
@@ -175,7 +175,7 @@ describe('contentrain_apply mode:extract', () => {
     expect(data['dry_run']).toBe(false)
 
     const results = data['results'] as Record<string, unknown>
-    expect(results['models_created']).toContain('ui-texts')
+    expect(results['models_created']).toContain('ui-copy')
     expect(results['entries_written']).toBe(1)
 
     // Source map should be populated
@@ -199,7 +199,7 @@ describe('contentrain_apply mode:extract', () => {
       arguments: {
         id: 'ui-texts',
         name: 'UI Texts',
-        kind: 'dictionary',
+        kind: 'singleton',
         domain: 'app',
         i18n: true,
         fields: { welcome_title: { type: 'string' } },
@@ -219,7 +219,7 @@ describe('contentrain_apply mode:extract', () => {
         dry_run: true,
         extractions: [{
           model: 'ui-texts',
-          kind: 'dictionary',
+          kind: 'singleton',
           domain: 'app',
           fields: { cta_button: { type: 'string' } },
           entries: [{ locale: 'en', data: { cta_button: 'Sign Up' } }],
@@ -293,7 +293,6 @@ describe('contentrain_apply mode:reuse', () => {
         kind: 'dictionary',
         domain: 'app',
         i18n: true,
-        fields: { welcome_title: { type: 'string' } },
       },
     })
 

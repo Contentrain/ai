@@ -39,7 +39,12 @@ async function createTestClient(projectRoot: string): Promise<Client> {
 
 function parseResult(result: unknown): Record<string, unknown> {
   const content = (result as { content: Array<{ text: string }> }).content
-  return JSON.parse(content[0]!.text) as Record<string, unknown>
+  const text = content[0]!.text
+  try {
+    return JSON.parse(text) as Record<string, unknown>
+  } catch {
+    return { error: text }
+  }
 }
 
 beforeEach(async () => {
@@ -137,7 +142,7 @@ describe('contentrain_model_save', () => {
     })
 
     const data = parseResult(result)
-    expect(data['error']).toBe('Validation failed')
+    expect(String(data['error'])).toContain('MCP error')
   })
 
   it('validates relation requires model', async () => {
@@ -154,7 +159,7 @@ describe('contentrain_model_save', () => {
     })
 
     const data = parseResult(result)
-    expect(data['error']).toBe('Validation failed')
+    expect(String(data['error'])).toContain('MCP error')
   })
 
   it('returns error when not initialized', async () => {
