@@ -1,19 +1,19 @@
 {
   "lastOperation": {
     "locale": "en",
-    "model": "docs-packages",
+    "model": "docs-guides",
     "source": "mcp-local",
-    "timestamp": "2026-03-16T19:39:40.983Z",
+    "timestamp": "2026-03-16T19:40:01.344Z",
     "tool": "contentrain_model_save"
   },
   "stats": {
     "entries": 19,
-    "lastSync": "2026-03-16T19:39:40.983Z",
+    "lastSync": "2026-03-16T19:40:01.344Z",
     "locales": [
       "en",
       "tr"
     ],
-    "models": 8
+    "models": 9
   },
   "version": "1"
 }
