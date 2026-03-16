@@ -137,7 +137,7 @@ export function serializeFrontmatter(data: Record<string, unknown>, body: string
         if (Array.isArray(value)) {
           lines.push(`${key}:`)
           for (const item of value) {
-            lines.push(`  - ${String(item)}`)
+            lines.push(`  - ${yamlValue(item)}`)
           }
         } else {
           lines.push(`${key}: ${yamlValue(value)}`)
@@ -173,10 +173,10 @@ export function serializeFrontmatter(data: Record<string, unknown>, body: string
     if (Array.isArray(value)) {
       lines.push(`${key}:`)
       for (const item of value) {
-        lines.push(`  - ${String(item)}`)
+        lines.push(`  - ${yamlValue(item)}`)
       }
     } else {
-      lines.push(`${key}: ${String(value)}`)
+      lines.push(`${key}: ${yamlValue(value)}`)
     }
   }
   lines.push('---')
