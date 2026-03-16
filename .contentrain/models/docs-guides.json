@@ -1,0 +1,20 @@
+{
+  "id": "docs-guides",
+  "name": "Documentation Guides",
+  "kind": "document",
+  "domain": "docs",
+  "i18n": false,
+  "content_path": "docs/guides",
+  "fields": {
+    "description": {
+      "type": "text"
+    },
+    "order": {
+      "type": "integer"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    }
+  }
+}
