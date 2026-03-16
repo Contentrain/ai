@@ -41,5 +41,6 @@ docs/internal/
 
 # Contentrain cache
 .contentrain/.cache/
+.release-packages/
 
 .tmp

@@ -2769,6 +2769,28 @@ Use these heuristics to identify content strings in source code. Content is user
 - JSON keys
 - Enum values used as code identifiers (not displayed to users)
 
+### Dictionary Interpolation Limitation
+
+Strings containing dynamic expressions (`${variable}`, template literals with runtime values) cannot be stored in dictionaries. These must remain as hardcoded expressions in source code.
+
+**CANNOT extract:**
+
+- `"Add a new entry to ${modelId}"` — contains runtime variable
+- `` `Hello, ${user.name}!` `` — template literal with variable
+
+**CAN extract:**
+
+- `"Add a new entry"` — static string (parameterize separately if needed)
+- `"Hello, World!"` — no runtime variables
+
+Agent should split parameterized strings: extract the static template pattern and leave the interpolation in code.
+
+```
+// Instead of: `"Add a new entry to ${modelId}"`
+// Extract: dictionary key "add-entry-to" = "Add a new entry to"
+// Code: `${t['add-entry-to']} ${modelId}`
+```
+
 ### Edge Cases
 
 | String | Extract? | Reason |
