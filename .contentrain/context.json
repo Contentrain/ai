@@ -1,17 +1,17 @@
 {
   "lastOperation": {
     "entries": [
-      "index"
+      "getting-started"
     ],
     "locale": "en",
     "model": "docs-guide",
     "source": "mcp-local",
-    "timestamp": "2026-03-16T19:28:26.095Z",
+    "timestamp": "2026-03-16T19:37:44.098Z",
     "tool": "contentrain_content_save"
   },
   "stats": {
-    "entries": 17,
-    "lastSync": "2026-03-16T19:28:26.096Z",
+    "entries": 18,
+    "lastSync": "2026-03-16T19:37:44.098Z",
     "locales": [
       "en",
       "tr"
