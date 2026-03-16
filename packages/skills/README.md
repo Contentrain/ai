@@ -1,5 +1,8 @@
 # `@contentrain/skills`
 
+[![npm version](https://img.shields.io/npm/v/%40contentrain%2Fskills?label=%40contentrain%2Fskills)](https://www.npmjs.com/package/@contentrain/skills)
+[![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/skills)
+
 Workflow skills and framework guides for Contentrain-aware AI agents.
 
 This package is the procedural layer of the Contentrain ecosystem. It tells an agent how to apply the policy from `@contentrain/rules` in concrete tasks such as:

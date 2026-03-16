@@ -1,5 +1,8 @@
 # `contentrain`
 
+[![npm version](https://img.shields.io/npm/v/contentrain?label=contentrain)](https://www.npmjs.com/package/contentrain)
+[![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/cli)
+
 CLI for Contentrain.
 
 `contentrain` is the local operations surface for a Contentrain project:

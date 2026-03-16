@@ -1,5 +1,8 @@
 # `@contentrain/mcp`
 
+[![npm version](https://img.shields.io/npm/v/%40contentrain%2Fmcp?label=%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp)
+[![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/mcp)
+
 Local-first MCP server and core primitives for Contentrain.
 
 Contentrain is AI-generated content governance infrastructure:

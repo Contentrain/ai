@@ -1,5 +1,8 @@
 # `@contentrain/query`
 
+[![npm version](https://img.shields.io/npm/v/%40contentrain%2Fquery?label=%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query)
+[![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/sdk/js)
+
 Type-safe generated query SDK for Contentrain.
 
 Contentrain stores content in a git-backed `.contentrain/` directory. This package turns that content model into a generated JS/TS client with:

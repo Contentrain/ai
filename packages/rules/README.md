@@ -1,5 +1,8 @@
 # `@contentrain/rules`
 
+[![npm version](https://img.shields.io/npm/v/%40contentrain%2Frules?label=%40contentrain%2Frules)](https://www.npmjs.com/package/@contentrain/rules)
+[![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/rules)
+
 Shared AI-agent rules for Contentrain.
 
 This package is the policy layer of the Contentrain ecosystem. It defines how agents should behave when they work with:

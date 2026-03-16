@@ -1,5 +1,13 @@
 # Contentrain AI
 
+[![npm: contentrain](https://img.shields.io/npm/v/contentrain?label=contentrain)](https://www.npmjs.com/package/contentrain)
+[![npm: @contentrain/mcp](https://img.shields.io/npm/v/%40contentrain%2Fmcp?label=%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp)
+[![npm: @contentrain/query](https://img.shields.io/npm/v/%40contentrain%2Fquery?label=%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query)
+[![npm: @contentrain/types](https://img.shields.io/npm/v/%40contentrain%2Ftypes?label=%40contentrain%2Ftypes)](https://www.npmjs.com/package/@contentrain/types)
+[![npm: @contentrain/rules](https://img.shields.io/npm/v/%40contentrain%2Frules?label=%40contentrain%2Frules)](https://www.npmjs.com/package/@contentrain/rules)
+[![npm: @contentrain/skills](https://img.shields.io/npm/v/%40contentrain%2Fskills?label=%40contentrain%2Fskills)](https://www.npmjs.com/package/@contentrain/skills)
+[![GitHub](https://img.shields.io/badge/GitHub-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai)
+
 AI-generated content governance infrastructure.
 
 Contentrain is for teams that want to use AI agents to produce content without giving up structure, reviewability, or runtime safety.
@@ -45,6 +53,15 @@ It is a system for **AI-assisted content operations**:
 - agent guidance
 
 ## 🧩 What Contentrain Is
+
+Published packages:
+
+- [`contentrain`](https://www.npmjs.com/package/contentrain)
+- [`@contentrain/mcp`](https://www.npmjs.com/package/@contentrain/mcp)
+- [`@contentrain/query`](https://www.npmjs.com/package/@contentrain/query)
+- [`@contentrain/types`](https://www.npmjs.com/package/@contentrain/types)
+- [`@contentrain/rules`](https://www.npmjs.com/package/@contentrain/rules)
+- [`@contentrain/skills`](https://www.npmjs.com/package/@contentrain/skills)
 
 Contentrain is a monorepo containing the open-source building blocks of the ecosystem:
 
