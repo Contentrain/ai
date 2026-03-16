@@ -40,7 +40,36 @@ Build tarballs for every publishable package:
 pnpm release:pack
 ```
 
-## 🚢 Recommended Publish Sequence
+## 🤖 Automated Release (Recommended)
+
+Push a version tag to trigger the CI release pipeline:
+
+```bash
+# 1. Update versions in manifest
+#    Edit scripts/release-manifest.mjs with target versions
+
+# 2. Sync versions to all package.json + runtime files
+pnpm release:version
+
+# 3. Commit and tag
+git add -A
+git commit -m "release: v1.1.0"
+git tag v1.1.0
+
+# 4. Push tag — CI handles lint, typecheck, test, build, and npm publish
+git push origin main --tags
+```
+
+The `release.yml` workflow:
+- Runs lint, typecheck, test, and release:check
+- Publishes all 6 packages to npm in dependency order
+- Creates a GitHub Release with auto-generated notes
+
+**Required:** `NPM_TOKEN` secret in GitHub repository settings.
+
+## 🚢 Manual Publish Sequence
+
+If CI is unavailable or you need to publish manually:
 
 1. update `scripts/release-manifest.mjs` with target versions
 2. `pnpm release:version`
@@ -66,8 +95,29 @@ pnpm release:pack
 - `contentrain`, `@contentrain/types`, `@contentrain/rules`, and `@contentrain/skills` start at `0.1.0`.
 - Packages do not need to share the same version.
 
+## 🏷 Tag Convention
+
+- Format: `v{major}.{minor}.{patch}` (e.g., `v1.1.0`)
+- Tags trigger the `release.yml` workflow
+- Each tag represents a monorepo-wide release point
+- Individual package versions are tracked in `release-manifest.mjs`
+
+## 📦 Published Packages
+
+All packages are live on npm:
+
+| Package | npm | Version |
+|---|---|---|
+| `@contentrain/mcp` | [npm](https://www.npmjs.com/package/@contentrain/mcp) | `1.0.0` |
+| `contentrain` | [npm](https://www.npmjs.com/package/contentrain) | `0.1.0` |
+| `@contentrain/types` | [npm](https://www.npmjs.com/package/@contentrain/types) | `0.1.0` |
+| `@contentrain/rules` | [npm](https://www.npmjs.com/package/@contentrain/rules) | `0.1.0` |
+| `@contentrain/skills` | [npm](https://www.npmjs.com/package/@contentrain/skills) | `0.1.0` |
+| `@contentrain/query` | [npm](https://www.npmjs.com/package/@contentrain/query) | `5.0.0` |
+
 ## 📝 Notes
 
 - `workspace:*` dependencies are expected during development and are resolved by the package manager during publish.
 - Do not publish with `0.0.0`.
 - Internal workspaces such as `docs` and `packages/cli/src/serve-ui` must remain `private: true`.
+- `NPM_TOKEN` GitHub secret is required for automated publishing.

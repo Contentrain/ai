@@ -1,6 +1,6 @@
 ---
 title: Core Concepts
-description: Understand the architecture: models, content kinds, domains, locales, and the agent-driven workflow
+description: "Understand the architecture: models, content kinds, domains, locales, and the agent-driven workflow"
 order: 2
 category: getting-started
 slug: concepts

@@ -7,6 +7,8 @@ slug: rules
 
 # Rules & Skills
 
+[![rules npm](https://img.shields.io/npm/v/@contentrain/rules?label=rules)](https://www.npmjs.com/package/@contentrain/rules) [![skills npm](https://img.shields.io/npm/v/@contentrain/skills?label=skills)](https://www.npmjs.com/package/@contentrain/skills)
+
 Contentrain splits agent guidance into two complementary packages:
 
 - **`@contentrain/rules`** — the policy layer (what is allowed, what is not)

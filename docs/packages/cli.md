@@ -7,6 +7,8 @@ slug: cli
 
 # CLI
 
+[![npm version](https://img.shields.io/npm/v/contentrain)](https://www.npmjs.com/package/contentrain) [![npm downloads](https://img.shields.io/npm/dm/contentrain)](https://www.npmjs.com/package/contentrain)
+
 The `contentrain` CLI is the human-facing companion to `@contentrain/mcp`. While MCP handles deterministic tool execution for AI agents, the CLI gives you direct terminal access to initialize projects, inspect health, generate typed SDK clients, review pending changes, and run the local review UI.
 
 ## Why a CLI?

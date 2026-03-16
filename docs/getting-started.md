@@ -125,6 +125,19 @@ npx contentrain serve
 
 Open `http://localhost:3333` to browse models, content, validation results, and pending branches.
 
+## Packages
+
+All Contentrain packages are published on npm and ready to use:
+
+| Package | Description | Install |
+|---|---|---|
+| [`@contentrain/mcp`](https://www.npmjs.com/package/@contentrain/mcp) | 13 MCP tools for AI agents | `pnpm add @contentrain/mcp` |
+| [`contentrain`](https://www.npmjs.com/package/contentrain) | CLI (init, serve, generate, validate) | `npx contentrain init` |
+| [`@contentrain/query`](https://www.npmjs.com/package/@contentrain/query) | Prisma-pattern query SDK | `pnpm add @contentrain/query` |
+| [`@contentrain/types`](https://www.npmjs.com/package/@contentrain/types) | Shared TypeScript types | `pnpm add @contentrain/types` |
+| [`@contentrain/rules`](https://www.npmjs.com/package/@contentrain/rules) | AI agent quality rules | `pnpm add @contentrain/rules` |
+| [`@contentrain/skills`](https://www.npmjs.com/package/@contentrain/skills) | AI agent workflow skills | `pnpm add @contentrain/skills` |
+
 ## What's Next?
 
 - [Core Concepts](/concepts) — Understand models, content kinds, and the agent-driven workflow

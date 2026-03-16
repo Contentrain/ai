@@ -7,6 +7,8 @@ slug: sdk
 
 # Query SDK
 
+[![npm version](https://img.shields.io/npm/v/@contentrain/query)](https://www.npmjs.com/package/@contentrain/query) [![npm downloads](https://img.shields.io/npm/dm/@contentrain/query)](https://www.npmjs.com/package/@contentrain/query)
+
 `@contentrain/query` is the consumption layer of the Contentrain ecosystem. It reads your model definitions and content files, then generates a fully typed JavaScript/TypeScript client that your application imports directly. Think of it like Prisma, but for content: define models, run generate, import and query.
 
 ## Why a Generated Client?

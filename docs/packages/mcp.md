@@ -7,6 +7,8 @@ slug: mcp
 
 # MCP Tools
 
+[![npm version](https://img.shields.io/npm/v/@contentrain/mcp)](https://www.npmjs.com/package/@contentrain/mcp) [![npm downloads](https://img.shields.io/npm/dm/@contentrain/mcp)](https://www.npmjs.com/package/@contentrain/mcp)
+
 Contentrain's MCP (Model Context Protocol) package is the deterministic execution layer that sits between your AI agent and your filesystem. While the agent makes intelligent content decisions, `@contentrain/mcp` enforces consistent file operations, canonical serialization, and git-backed safety.
 
 ## Why MCP?
