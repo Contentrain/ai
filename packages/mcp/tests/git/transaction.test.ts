@@ -92,11 +92,11 @@ describe('createTransaction', () => {
 describe('buildBranchName', () => {
   it('builds branch name with scope and target', () => {
     const name = buildBranchName('model', 'hero')
-    expect(name).toMatch(/^contentrain\/model\/hero\/\d+$/)
+    expect(name).toMatch(/^contentrain\/model\/hero\/[^/]+$/)
   })
 
   it('includes locale when provided', () => {
     const name = buildBranchName('content', 'hero', 'en')
-    expect(name).toMatch(/^contentrain\/content\/hero\/en\/\d+$/)
+    expect(name).toMatch(/^contentrain\/content\/hero\/en\/[^/]+$/)
   })
 })

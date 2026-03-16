@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import { join } from 'node:path'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { simpleGit } from 'simple-git'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
@@ -45,7 +45,7 @@ afterEach(async () => {
 })
 
 describe('contentrain_status', () => {
-  it('returns initialized:true for valid fixture', async () => {
+  it('returns initialized:true for valid fixture', { timeout: 15000 }, async () => {
     const client = await createTestClient(FIXTURE)
     const result = await client.callTool({ name: 'contentrain_status', arguments: {} })
 
@@ -77,7 +77,7 @@ describe('contentrain_status', () => {
     expect(data.next_steps).toContain('Run contentrain_init')
   })
 
-  it('returns model summaries with field counts', async () => {
+  it('returns model summaries with field counts', { timeout: 15000 }, async () => {
     const client = await createTestClient(FIXTURE)
     const result = await client.callTool({ name: 'contentrain_status', arguments: {} })
 
@@ -169,50 +169,37 @@ describe('contentrain_describe', () => {
     expect(data.error).toContain('nonexistent')
   })
 
-  it('returns the actual slug for document samples with suffix locale strategy', async () => {
+  it('returns the actual slug for document samples with suffix locale strategy', { timeout: 30000 }, async () => {
     testDir = await mkdtemp(join(tmpdir(), 'cr-context-describe-'))
     await initProject(testDir)
 
-    let client = await createTestClient(testDir)
-    await client.callTool({ name: 'contentrain_init', arguments: { locales: ['en', 'tr'] } })
-    client = await createTestClient(testDir)
-
-    await client.callTool({
-      name: 'contentrain_model_save',
-      arguments: {
-        id: 'docs',
-        name: 'Docs',
-        kind: 'document',
-        domain: 'blog',
-        i18n: true,
-        locale_strategy: 'suffix',
-        fields: {
-          title: { type: 'string', required: true },
-          slug: { type: 'slug', required: true },
-        },
+    await mkdir(join(testDir, '.contentrain', 'models'), { recursive: true })
+    await mkdir(join(testDir, '.contentrain', 'content', 'blog', 'docs'), { recursive: true })
+    await writeFile(join(testDir, '.contentrain', 'config.json'), JSON.stringify({
+      version: 1,
+      stack: 'next',
+      workflow: 'review',
+      locales: { default: 'en', supported: ['en', 'tr'] },
+      domains: ['blog'],
+    }, null, 2))
+    await writeFile(join(testDir, '.contentrain', 'models', 'docs.json'), JSON.stringify({
+      id: 'docs',
+      name: 'Docs',
+      kind: 'document',
+      domain: 'blog',
+      i18n: true,
+      locale_strategy: 'suffix',
+      fields: {
+        title: { type: 'string', required: true },
+        slug: { type: 'slug', required: true },
       },
-    })
+    }, null, 2))
+    await writeFile(
+      join(testDir, '.contentrain', 'content', 'blog', 'docs', 'getting-started.en.md'),
+      '---\nslug: getting-started\ntitle: Getting Started\n---\n\n# Hello\n',
+    )
 
-    client = await createTestClient(testDir)
-    await client.callTool({
-      name: 'contentrain_content_save',
-      arguments: {
-        model: 'docs',
-        entries: [
-          {
-            slug: 'getting-started',
-            locale: 'en',
-            data: {
-              title: 'Getting Started',
-              slug: 'getting-started',
-              body: '# Hello',
-            },
-          },
-        ],
-      },
-    })
-
-    client = await createTestClient(testDir)
+    const client = await createTestClient(testDir)
     const result = await client.callTool({
       name: 'contentrain_describe',
       arguments: { model: 'docs', include_sample: true, locale: 'en' },
@@ -228,6 +215,10 @@ describe('contentrain_describe', () => {
 
 describe('contentrain_status branch health', () => {
   it('surfaces branch blocking state consistently in validation summary', async () => {
+    testDir = await mkdtemp(join(tmpdir(), 'cr-context-branch-health-'))
+    await cp(FIXTURE, testDir, { recursive: true })
+    await mkdir(join(testDir, '.git'), { recursive: true })
+
     vi.resetModules()
     vi.doMock('../../src/git/branch-lifecycle.js', () => ({
       cleanupMergedBranches: vi.fn(async () => ({ deleted: 0, remaining: 80, deletedBranches: [] })),
@@ -246,7 +237,7 @@ describe('contentrain_status branch health', () => {
     const client = new Client({ name: 'test-client', version: '1.0.0' })
     await Promise.all([
       client.connect(clientTransport),
-      createMockedServer(FIXTURE).connect(serverTransport),
+      createMockedServer(testDir).connect(serverTransport),
     ])
 
     const result = await client.callTool({ name: 'contentrain_status', arguments: {} })

@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { readContext } from '../core/context.js'
 import { countEntries, listModels, readModel } from '../core/model-manager.js'
-import { resolveContentDir, resolveJsonFilePath } from '../core/content-manager.js'
+import { resolveContentDir, resolveJsonFilePath, resolveLocaleStrategy } from '../core/content-manager.js'
 import { detectStack } from '../util/detect.js'
 import { join } from 'node:path'
 import { contentrainDir, pathExists } from '../util/fs.js'
@@ -60,23 +60,26 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
       }
 
       // Branch lifecycle: lazy cleanup + health check (run BEFORE validation summary)
-      try {
-        const cleanup = await cleanupMergedBranches(projectRoot)
-        const health = await checkBranchHealth(projectRoot)
-        result['branches'] = {
-          total: health.total,
-          merged: health.merged,
-          unmerged: health.unmerged,
-          cleaned_up: cleanup.deleted,
+      const hasGitRepo = await pathExists(join(projectRoot, '.git'))
+      if (hasGitRepo) {
+        try {
+          const cleanup = await cleanupMergedBranches(projectRoot)
+          const health = await checkBranchHealth(projectRoot)
+          result['branches'] = {
+            total: health.total,
+            merged: health.merged,
+            unmerged: health.unmerged,
+            cleaned_up: cleanup.deleted,
+          }
+          if (health.message) {
+            result['branch_warning'] = health.message
+          }
+          if (health.blocked) {
+            errors.push(health.message!)
+          }
+        } catch {
+          // Branch health check is best-effort — don't fail status
         }
-        if (health.message) {
-          result['branch_warning'] = health.message
-        }
-        if (health.blocked) {
-          errors.push(health.message!)
-        }
-      } catch {
-        // Branch health check is best-effort — don't fail status
       }
 
       if (errors.length > 0) {
@@ -289,9 +292,35 @@ async function getSample(
   }
 
   if (model.kind === 'document') {
-    // Return first entry slug
-    const entries = await readDir(cDir)
-    return entries[0] ? { slug: entries[0], locale } : null
+    const strategy = resolveLocaleStrategy(model)
+
+    if (!model.i18n) {
+      const entry = (await readDir(cDir)).find(item => item.endsWith('.md'))
+      const slug = entry?.replace(/\.md$/u, '')
+      return slug ? { slug, locale } : null
+    }
+
+    if (strategy === 'file') {
+      const slug = (await readDir(cDir))[0]
+      return slug ? { slug, locale } : null
+    }
+
+    if (strategy === 'suffix') {
+      const suffix = `.${locale}.md`
+      const entry = (await readDir(cDir)).find(file => file.endsWith(suffix))
+      const slug = entry?.slice(0, -suffix.length)
+      return slug ? { slug, locale } : null
+    }
+
+    if (strategy === 'directory') {
+      const entry = (await readDir(join(cDir, locale))).find(item => item.endsWith('.md'))
+      const slug = entry?.replace(/\.md$/u, '')
+      return slug ? { slug, locale } : null
+    }
+
+    const entry = (await readDir(cDir)).find(item => item.endsWith('.md'))
+    const slug = entry?.replace(/\.md$/u, '')
+    return slug ? { slug, locale } : null
   }
 
   return null
