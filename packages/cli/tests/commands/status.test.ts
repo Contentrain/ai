@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest'
 const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
 const branchMock = vi.fn().mockResolvedValue({ all: [] })
 const warningMock = vi.fn()
+const errorMock = vi.fn()
 
 vi.mock('@contentrain/mcp/core/config', () => ({
   readConfig: vi.fn().mockResolvedValue({
@@ -48,7 +49,7 @@ vi.mock('simple-git', () => ({
 vi.mock('@clack/prompts', () => ({
   intro: vi.fn(),
   outro: vi.fn(),
-  log: { message: vi.fn(), success: vi.fn(), error: vi.fn(), warning: warningMock, info: vi.fn() },
+  log: { message: vi.fn(), success: vi.fn(), error: errorMock, warning: warningMock, info: vi.fn() },
 }))
 
 describe('status command', () => {
@@ -75,7 +76,7 @@ describe('status command', () => {
     expect(payload['pending_branches']).toBeDefined()
   })
 
-  it('should surface a branch-health warning when the project is blocked at 80 pending branches', async () => {
+  it('should surface a blocked branch-health state when the project reaches 80 pending branches', async () => {
     branchMock.mockResolvedValueOnce({
       all: Array.from({ length: 80 }, (_, i) => `contentrain/review/test-${i}`),
     })
@@ -83,6 +84,6 @@ describe('status command', () => {
     const mod = await import('../../src/commands/status.js')
     await mod.default.run?.({ args: { root: '/test/project' } })
 
-    expect(warningMock).toHaveBeenCalledWith(expect.stringContaining('80'))
+    expect(errorMock).toHaveBeenCalledWith(expect.stringContaining('80'))
   })
 })

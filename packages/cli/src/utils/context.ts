@@ -22,20 +22,24 @@ export async function resolveProjectRoot(argRoot?: string): Promise<string> {
 
 export async function loadProjectContext(projectRoot: string): Promise<ProjectContext> {
   const crDir = contentrainDir(projectRoot)
-  const initialized = await pathExists(join(crDir, 'config.json'))
+  const hasConfigFile = await pathExists(join(crDir, 'config.json'))
 
-  if (!initialized) {
-    return { projectRoot, crDir, initialized, config: null, context: null, models: [], vocabulary: null }
+  if (!hasConfigFile) {
+    return { projectRoot, crDir, initialized: false, config: null, context: null, models: [], vocabulary: null }
   }
 
-  const [config, context, models, vocabulary] = await Promise.all([
-    readConfig(projectRoot),
+  const config = await readConfig(projectRoot)
+  if (!config) {
+    return { projectRoot, crDir, initialized: false, config: null, context: null, models: [], vocabulary: null }
+  }
+
+  const [context, models, vocabulary] = await Promise.all([
     readContext(projectRoot),
     listModels(projectRoot),
     readVocabulary(projectRoot),
   ])
 
-  return { projectRoot, crDir, initialized, config, context, models, vocabulary }
+  return { projectRoot, crDir, initialized: true, config, context, models, vocabulary }
 }
 
 export function requireInitialized(

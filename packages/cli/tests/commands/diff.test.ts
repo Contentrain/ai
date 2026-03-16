@@ -35,7 +35,7 @@ describe('diff command', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     process.env['CONTENTRAIN_BRANCH'] = 'main'
-    selectMock.mockResolvedValueOnce('__skip')
+    selectMock.mockResolvedValue('__skip')
   })
 
   it('should diff against the configured base branch, not the current feature branch', async () => {
@@ -53,7 +53,7 @@ describe('diff command', () => {
     await mod.default.run?.({ args: { root: '/test/project' } })
 
     expect(checkoutMock).toHaveBeenCalledWith('main')
-    expect(mergeMock).toHaveBeenCalledWith(['contentrain/review/hero'])
+    expect(mergeMock).toHaveBeenCalledWith(['contentrain/review/hero', '--no-edit'])
   })
 
   it('should label the merge action with the actual base branch instead of current branch', async () => {

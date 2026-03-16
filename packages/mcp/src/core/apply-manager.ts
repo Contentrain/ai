@@ -689,56 +689,68 @@ export async function applyReuse(
     }
 
     // Step 4: Semantic source→model cross-check via normalize-sources.json
-    // Works for both scope.model (exact model match) and scope.domain (all models in domain)
+    // Source map is written by extract into the review branch worktree.
+    // It only exists on base after extract branch is merged.
+    // If missing: dry_run proceeds with warning, execute is blocked.
     if (scope.model || scope.domain) {
-      try {
-        const sourcesPath = join(projectRoot, '.contentrain', 'normalize-sources.json')
-        const sourcesRaw = await readText(sourcesPath)
-        if (sourcesRaw) {
-          const sourcesData = JSON.parse(sourcesRaw) as {
-            models?: Record<string, { source_files?: string[] }>
+      const sourcesPath = join(projectRoot, '.contentrain', 'normalize-sources.json')
+      const sourcesRaw = await readText(sourcesPath)
+
+      if (!sourcesRaw) {
+        // Source map not found — extract branch not yet merged
+        if (dry_run !== false) {
+          // Preview is allowed without source map — show warning
+          scopeWarnings.push(
+            'normalize-sources.json not found. Semantic scope enforcement is unavailable. ' +
+            'Merge the extract branch first, then reuse will have full scope protection.',
+          )
+        } else {
+          // Execute blocked — require source map for safety
+          throw new Error(
+            'Cannot execute reuse: normalize-sources.json not found on base branch. ' +
+            'The extract branch must be merged before reuse can execute. ' +
+            'This ensures semantic scope enforcement protects against out-of-scope patching.',
+          )
+        }
+      } else {
+        const sourcesData = JSON.parse(sourcesRaw) as {
+          models?: Record<string, { source_files?: string[] }>
+        }
+
+        // Collect all allowed source files for the scope
+        let allowedSourceFiles: string[] = []
+        let scopeLabel = ''
+
+        if (scope.model) {
+          const modelSources = sourcesData.models?.[scope.model]?.source_files
+          if (modelSources) allowedSourceFiles = modelSources
+          scopeLabel = `model "${scope.model}"`
+        } else if (scope.domain) {
+          const domainModelIds = scopeModels.map(m => m.id)
+          for (const modelId of domainModelIds) {
+            const modelSources = sourcesData.models?.[modelId]?.source_files
+            if (modelSources) allowedSourceFiles.push(...modelSources)
           }
+          allowedSourceFiles = [...new Set(allowedSourceFiles)]
+          scopeLabel = `domain "${scope.domain}"`
+        }
 
-          // Collect all allowed source files for the scope
-          let allowedSourceFiles: string[] = []
-          let scopeLabel = ''
-
-          if (scope.model) {
-            // Exact model scope
-            const modelSources = sourcesData.models?.[scope.model]?.source_files
-            if (modelSources) allowedSourceFiles = modelSources
-            scopeLabel = `model "${scope.model}"`
-          } else if (scope.domain) {
-            // Domain scope — collect source files from ALL models in the domain
-            const domainModelIds = scopeModels.map(m => m.id)
-            for (const modelId of domainModelIds) {
-              const modelSources = sourcesData.models?.[modelId]?.source_files
-              if (modelSources) allowedSourceFiles.push(...modelSources)
+        if (allowedSourceFiles.length > 0) {
+          const outOfScopePatches: string[] = []
+          for (const patch of patches) {
+            const normalizedPath = patch.file.replace(/\\/g, '/')
+            if (!allowedSourceFiles.includes(normalizedPath)) {
+              outOfScopePatches.push(patch.file)
             }
-            allowedSourceFiles = [...new Set(allowedSourceFiles)] // dedupe
-            scopeLabel = `domain "${scope.domain}"`
           }
-
-          if (allowedSourceFiles.length > 0) {
-            const outOfScopePatches: string[] = []
-            for (const patch of patches) {
-              const normalizedPath = patch.file.replace(/\\/g, '/')
-              if (!allowedSourceFiles.includes(normalizedPath)) {
-                outOfScopePatches.push(patch.file)
-              }
-            }
-            if (outOfScopePatches.length > 0) {
-              throw new Error(
-                `Scope enforcement: ${outOfScopePatches.length} patch file(s) are not associated with ${scopeLabel}. ` +
-                `Out-of-scope files: ${outOfScopePatches.join(', ')}. ` +
-                `Known source files: ${allowedSourceFiles.join(', ')}.`,
-              )
-            }
+          if (outOfScopePatches.length > 0) {
+            throw new Error(
+              `Scope enforcement: ${outOfScopePatches.length} patch file(s) are not associated with ${scopeLabel}. ` +
+              `Out-of-scope files: ${outOfScopePatches.join(', ')}. ` +
+              `Known source files: ${allowedSourceFiles.join(', ')}.`,
+            )
           }
         }
-      } catch (err) {
-        // Re-throw scope enforcement errors, ignore file read errors
-        if (err instanceof Error && err.message.startsWith('Scope enforcement:')) throw err
       }
     }
   }

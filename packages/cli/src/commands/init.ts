@@ -182,7 +182,7 @@ export default defineCommand({
     log.message(`  ${pc.cyan('contentrain status')}     — see your project overview`)
     log.message(`  ${pc.cyan('contentrain doctor')}     — verify setup health`)
     if (templateChoice === 'none') {
-      log.message(`  ${pc.cyan('contentrain normalize')} — extract hardcoded strings`)
+      log.message(`  ${pc.cyan('contentrain serve')}      — open the local review and normalize UI`)
     }
     log.message(`  ${pc.cyan('contentrain generate')}   — generate SDK client`)
 
@@ -287,14 +287,14 @@ async function executeInit(projectRoot: string, opts: InitOptions): Promise<void
 async function installRules(projectRoot: string): Promise<void> {
   try {
     const ruleFiles = {
-      'claude-code': 'rules/claude-code/contentrain.md',
-      'cursor': 'rules/cursor/contentrain.cursorrules',
-      'windsurf': 'rules/windsurf/contentrain.windsurfrules',
-      'generic': 'rules/generic/contentrain.md',
+      'claude-code': 'ide/claude-code/contentrain.md',
+      'cursor': 'ide/cursor/contentrain.cursorrules',
+      'windsurf': 'ide/windsurf/contentrain.windsurfrules',
+      'generic': 'ide/generic/contentrain.md',
     }
     const { createRequire } = await import('node:module')
     const require = createRequire(import.meta.url)
-    const rulesDir = join(require.resolve('@contentrain/rules/package.json'), '..')
+    const resolveRuleFile = (rulePath: string) => require.resolve(`@contentrain/rules/${rulePath}`)
 
     const targets: Array<{ ide: string; source: string; dest: string; append?: boolean }> = []
 
@@ -302,7 +302,7 @@ async function installRules(projectRoot: string): Promise<void> {
     if (await pathExists(join(projectRoot, 'CLAUDE.md')) || await pathExists(join(projectRoot, '.claude'))) {
       targets.push({
         ide: 'Claude Code',
-        source: join(rulesDir, ruleFiles['claude-code']),
+        source: resolveRuleFile(ruleFiles['claude-code']),
         dest: join(projectRoot, 'CLAUDE.md'),
         append: true,
       })
@@ -311,7 +311,7 @@ async function installRules(projectRoot: string): Promise<void> {
     if (await pathExists(join(projectRoot, '.cursorrules')) || await pathExists(join(projectRoot, '.cursor'))) {
       targets.push({
         ide: 'Cursor',
-        source: join(rulesDir, ruleFiles['cursor']),
+        source: resolveRuleFile(ruleFiles['cursor']),
         dest: join(projectRoot, '.cursorrules'),
       })
     }
@@ -319,7 +319,7 @@ async function installRules(projectRoot: string): Promise<void> {
     if (await pathExists(join(projectRoot, '.windsurf'))) {
       targets.push({
         ide: 'Windsurf',
-        source: join(rulesDir, ruleFiles['windsurf']),
+        source: resolveRuleFile(ruleFiles['windsurf']),
         dest: join(projectRoot, '.windsurfrules'),
       })
     }
@@ -328,7 +328,7 @@ async function installRules(projectRoot: string): Promise<void> {
     if (targets.length === 0) {
       targets.push({
         ide: 'Generic',
-        source: join(rulesDir, ruleFiles['generic']),
+        source: resolveRuleFile(ruleFiles['generic']),
         dest: join(projectRoot, 'CLAUDE.md'),
       })
     }

@@ -75,9 +75,18 @@ async function seedProject(dir: string): Promise<void> {
 
 async function createActiveContentrainBranches(dir: string, count: number): Promise<void> {
   const git = simpleGit(dir)
+  const baseBranch = (await git.raw(['branch', '--show-current'])).trim() || 'main'
+
+  await git.checkoutLocalBranch('contentrain-source')
+  await git.commit('contentrain saturation source', { '--allow-empty': null })
+  const sourceHead = (await git.revparse(['HEAD'])).trim()
+  await git.checkout(baseBranch)
+
   for (let i = 0; i < count; i++) {
-    await git.branch([`contentrain/review/test-${i}`])
+    await git.raw(['branch', `contentrain/review/test-${i}`, sourceHead])
   }
+
+  await git.deleteLocalBranch('contentrain-source', true)
 }
 
 beforeEach(async () => {
@@ -123,8 +132,10 @@ describe('contentrain validate --fix', { sequential: true }, () => {
 
   it('should block auto-fix when 80 active contentrain branches already exist', async () => {
     await createActiveContentrainBranches(testDir, 80)
+    process.exitCode = undefined
 
     const mod = await import('../../src/commands/validate.js')
-    await expect(mod.default.run?.({ args: { root: testDir, fix: true } })).rejects.toBeDefined()
+    await expect(mod.default.run?.({ args: { root: testDir, fix: true } })).resolves.toBeUndefined()
+    expect(process.exitCode).toBe(1)
   })
 })

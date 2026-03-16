@@ -77,7 +77,7 @@ describe('doctor command', () => {
   })
 
   it('should inspect custom content_path locations for orphan content checks', async () => {
-    const { listModels } = await import('@contentrain/mcp/core/model-manager')
+    const { listModels, readModel } = await import('@contentrain/mcp/core/model-manager')
     vi.mocked(listModels).mockResolvedValueOnce([
       {
         id: 'authors',
@@ -88,6 +88,15 @@ describe('doctor command', () => {
         content_path: 'src/content/authors',
       } as never,
     ])
+    vi.mocked(readModel).mockResolvedValue({
+      id: 'authors',
+      name: 'Authors',
+      kind: 'collection',
+      domain: 'marketing',
+      i18n: true,
+      fields: { name: { type: 'string' } },
+      content_path: 'src/content/authors',
+    } as never)
 
     const mod = await import('../../src/commands/doctor.js')
     await mod.default.run?.({ args: { root: '/test/project' } })

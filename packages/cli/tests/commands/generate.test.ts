@@ -26,8 +26,12 @@ vi.mock('@contentrain/query/generate', () => ({
   }),
 }))
 
-vi.mock('node:fs', () => ({
-  watch: watchMock,
+vi.mock('@contentrain/mcp/util/fs', () => ({
+  contentrainDir: vi.fn((root: string) => `${root}/.contentrain`),
+}))
+
+vi.mock('../../src/utils/watch.js', () => ({
+  watchPath: watchMock,
 }))
 
 vi.mock('@clack/prompts', () => ({
@@ -53,7 +57,7 @@ describe('generate command', () => {
     await mod.default.run?.({ args: { root: '/test/project' } })
 
     expect(successMock).toHaveBeenCalled()
-    expect(messageMock).toHaveBeenCalledWith(expect.stringContaining('#contentrain'))
+    expect(infoMock).toHaveBeenCalledWith(expect.stringContaining('#contentrain'))
   })
 
   it('should watch config.json changes because generation depends on project config', async () => {
@@ -62,7 +66,10 @@ describe('generate command', () => {
     const mod = await import('../../src/commands/generate.js')
     const runPromise = mod.default.run?.({ args: { root: '/test/project', watch: true } })
 
-    await Promise.resolve()
+    for (let index = 0; index < 5; index++) {
+      if (watchMock.mock.calls.length > 0) break
+      await new Promise(resolve => setTimeout(resolve, 0))
+    }
 
     expect(watchMock).toHaveBeenCalledWith(
       expect.stringContaining('/.contentrain/config.json'),

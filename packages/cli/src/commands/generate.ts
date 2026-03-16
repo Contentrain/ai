@@ -1,6 +1,9 @@
 import { defineCommand } from 'citty'
 import { intro, outro, log, spinner } from '@clack/prompts'
+import { join } from 'node:path'
+import { contentrainDir } from '@contentrain/mcp/util/fs'
 import { resolveProjectRoot, loadProjectContext, requireInitialized } from '../utils/context.js'
+import { watchPath } from '../utils/watch.js'
 import { pc } from '../utils/ui.js'
 
 export default defineCommand({
@@ -40,17 +43,13 @@ export default defineCommand({
       if (args.watch) {
         log.info('Watching for changes... (Ctrl+C to stop)')
 
-        const { watch } = await import('node:fs')
-        const { join } = await import('node:path')
-        const { contentrainDir } = await import('@contentrain/mcp/util/fs')
-
         const crDir = contentrainDir(projectRoot)
         const dirsToWatch = [join(crDir, 'models'), join(crDir, 'content'), join(crDir, 'config.json')]
 
         let debounce: ReturnType<typeof setTimeout> | null = null
 
         for (const dir of dirsToWatch) {
-          watch(dir, { recursive: true }, () => {
+          watchPath(dir, { recursive: true }, () => {
             if (debounce) clearTimeout(debounce)
             debounce = setTimeout(async () => {
               log.info('Changes detected, regenerating...')

@@ -4,6 +4,27 @@
   "license": "MIT",
   "description": "CLI for Contentrain — AI content governance infrastructure",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/contentrain/contentrain-ai.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/contentrain/contentrain-ai/tree/main/packages/cli",
+  "bugs": {
+    "url": "https://github.com/contentrain/contentrain-ai/issues"
+  },
+  "keywords": [
+    "contentrain",
+    "cli",
+    "mcp",
+    "content-governance",
+    "ai",
+    "i18n",
+    "cms"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "contentrain": "./dist/index.mjs"
   },

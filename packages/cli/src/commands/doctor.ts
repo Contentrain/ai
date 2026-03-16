@@ -182,9 +182,22 @@ async function findOrphanContent(projectRoot: string): Promise<string[]> {
   const knownContentDirs = new Set<string>()
   for (const m of models) {
     const full = await readModel(projectRoot, m.id)
-    if (full) {
-      knownContentDirs.add(resolveContentDir(projectRoot, full))
-    }
+    const modelForPath = full
+      ? {
+          ...full,
+          content_path: full.content_path ?? (m as { content_path?: string }).content_path,
+        }
+      : {
+          id: m.id,
+          name: m.id,
+          kind: m.kind,
+          domain: m.domain,
+          i18n: m.i18n,
+          fields: {},
+          content_path: (m as { content_path?: string }).content_path,
+        }
+
+    knownContentDirs.add(resolveContentDir(projectRoot, modelForPath))
   }
 
   // Scan default content tree
@@ -204,11 +217,17 @@ async function findOrphanContent(projectRoot: string): Promise<string[]> {
     }
   }
 
-  // Also verify custom content_path directories exist and are tracked
+  // Also verify custom content_path directories exist and are walked
   for (const dir of knownContentDirs) {
-    if (!dir.startsWith(contentDir) && !await pathExists(dir)) {
+    if (dir.startsWith(contentDir)) continue
+
+    if (!await pathExists(dir)) {
       orphans.push(`(missing custom path) ${dir}`)
+      continue
     }
+
+    // Walk custom directories too so orphan detection covers non-default content trees.
+    await readDir(dir)
   }
 
   return orphans

@@ -90,6 +90,9 @@ importers:
       simple-git:
         specifier: ^3.27.0
         version: 3.33.0
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
       zod:
         specifier: ^3.24.0
         version: 3.25.76
@@ -110,9 +113,6 @@ importers:
       tsdown:
         specifier: ^0.21.0
         version: 0.21.2(typescript@5.9.3)
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
       vitest:
         specifier: ^3.0.0
         version: 3.2.4(@types/node@25.4.0)(tsx@4.21.0)
