@@ -1,0 +1,20 @@
+{
+  "id": "docs-reference",
+  "name": "Documentation Reference",
+  "kind": "document",
+  "domain": "docs",
+  "i18n": false,
+  "content_path": "docs/reference",
+  "fields": {
+    "description": {
+      "type": "text"
+    },
+    "order": {
+      "type": "integer"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    }
+  }
+}
