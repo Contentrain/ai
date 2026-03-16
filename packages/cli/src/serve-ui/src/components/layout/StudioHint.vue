@@ -1,30 +1,40 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { X, ExternalLink } from 'lucide-vue-next'
-import { useUiStore } from '@/stores/ui'
+import { ArrowRight } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 
-const props = defineProps<{
-  id: string
+defineProps<{
   message: string
 }>()
-
-const ui = useUiStore()
-const visible = computed(() => !ui.isHintDismissed(props.id))
 </script>
 
 <template>
-  <div v-if="visible"
-    class="flex items-center justify-between gap-3 rounded-lg border border-status-info/20 bg-linear-to-b from-status-info/5 to-transparent px-4 py-3">
-    <p class="text-sm text-muted-foreground">
-      {{ message }}
-      <a href="https://studio.contentrain.io" target="_blank" rel="noopener"
-        class="ml-1 inline-flex items-center gap-1 font-medium text-primary hover:underline">
+  <div class="relative overflow-hidden rounded-xl border border-primary/15">
+    <!-- Background pattern -->
+    <div class="absolute inset-0 bg-gradient-to-r from-primary/8 via-primary/4 to-primary/8" />
+    <img
+      src="/for-developers-1.svg"
+      alt=""
+      class="absolute inset-0 size-full object-cover opacity-[0.04] dark:opacity-[0.08] pointer-events-none select-none"
+    />
+
+    <!-- Content -->
+    <div class="relative flex items-center gap-5 px-6 py-6">
+      <!-- Message -->
+      <p class="flex-1 text-sm text-muted-foreground leading-relaxed">
+        {{ message }}
+      </p>
+
+      <!-- CTA -->
+      <Button
+        as="a"
+        href="https://studio.contentrain.io"
+        target="_blank"
+        rel="noopener"
+        size="sm"
+      >
         Open Studio
-        <ExternalLink class="size-3" />
-      </a>
-    </p>
-    <button class="shrink-0 rounded p-1 text-muted-foreground hover:bg-accent" @click="ui.dismissHint(id)">
-      <X class="size-3.5" />
-    </button>
+        <ArrowRight class="size-3.5" />
+      </Button>
+    </div>
   </div>
 </template>

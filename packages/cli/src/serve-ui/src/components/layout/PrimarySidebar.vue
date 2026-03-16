@@ -47,13 +47,10 @@ const validationIssues = computed(() => {
     class="group flex h-screen w-18 min-w-18 flex-col overflow-hidden border-r border-border bg-card transition-all duration-200 ease-in-out hover:w-55 hover:min-w-55 xl:w-55 xl:min-w-55"
   >
     <!-- Logo + Brand -->
-    <div class="flex h-14 items-center gap-3 px-4 shrink-0">
-      <img src="/icon-color.svg" alt="Contentrain" class="size-8 shrink-0" />
-      <span
-        class="truncate text-sm font-semibold text-foreground opacity-0 transition-opacity duration-200 group-hover:opacity-100 xl:opacity-100"
-      >
-        Contentrain
-      </span>
+    <div class="flex h-14 items-center px-4 shrink-0">
+      <img src="/icon-color.svg" alt="Contentrain" class="size-8 shrink-0 block group-hover:hidden xl:hidden" />
+      <img src="/logo/color-icon-black-text.svg" alt="Contentrain" class="h-7 shrink-0 hidden group-hover:block xl:block dark:hidden" />
+      <img src="/logo/color-icon-white-text.svg" alt="Contentrain" class="h-7 shrink-0 hidden dark:group-hover:block dark:xl:block" />
     </div>
 
     <!-- Navigation -->

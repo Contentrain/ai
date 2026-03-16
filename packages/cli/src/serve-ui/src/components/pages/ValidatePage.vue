@@ -377,7 +377,7 @@ onMounted(() => { fetchValidation() })
         </template>
       </template>
 
-      <StudioHint id="validate" message="Validation results update automatically when your agent runs validation tools." class="mt-4" />
+      <StudioHint message="Validation results update automatically when your agent runs validation tools." class="mt-4" />
     </div>
   </div>
 </template>

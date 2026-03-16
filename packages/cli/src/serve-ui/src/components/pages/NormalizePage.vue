@@ -326,7 +326,7 @@ onMounted(async () => {
         </div>
       </div>
 
-      <StudioHint id="normalize" message="Track normalize history and manage extractions in Contentrain Studio." class="mt-6" />
+      <StudioHint message="Track normalize history and manage extractions in Contentrain Studio." class="mt-6" />
     </div>
   </div>
 </template>

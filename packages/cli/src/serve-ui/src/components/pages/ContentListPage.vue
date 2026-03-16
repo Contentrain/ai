@@ -981,7 +981,7 @@ useWatch((event) => {
         </div>
       </template>
 
-      <StudioHint id="content" message="Content mutations are agent actions — copy a prompt above and paste it in your AI agent." class="mt-4" />
+      <StudioHint message="Content mutations are agent actions — copy a prompt above and paste it in your AI agent." class="mt-4" />
 
       <!-- Preview Dialog -->
       <Dialog v-model:open="previewOpen">

@@ -286,7 +286,6 @@ function clearSearch() {
       </AgentPromptGroup>
 
       <StudioHint
-        id="models"
         message="Create and manage models with AI chat in Contentrain Studio."
         class="mt-4"
       />

@@ -244,7 +244,7 @@ useWatch((event) => {
         </TabsContent>
       </Tabs>
 
-      <StudioHint id="branches" message="Share branch reviews with your team in Contentrain Studio." class="mt-6" />
+      <StudioHint message="Share branch reviews with your team in Contentrain Studio." class="mt-6" />
     </div>
   </div>
 </template>

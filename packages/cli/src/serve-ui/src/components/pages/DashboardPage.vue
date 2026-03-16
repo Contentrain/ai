@@ -370,7 +370,7 @@ const agentPrompts = computed(() => {
           />
         </AgentPromptGroup>
 
-        <StudioHint id="dashboard" message="Manage content with AI chat and team review in Contentrain Studio." />
+        <StudioHint message="Manage content with AI chat and team review in Contentrain Studio." />
       </template>
     </div>
   </div>

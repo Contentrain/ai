@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ExternalLink } from 'lucide-vue-next'
+import { ExternalLink, Sparkles } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 import { useWatch } from '@/composables/useWatch'
 
 defineProps<{
@@ -31,16 +32,19 @@ const { connected } = useWatch()
         <!-- Actions slot -->
         <slot name="actions" />
 
-        <!-- Studio link -->
-        <a
+        <!-- Studio CTA -->
+        <Button
+          as="a"
           href="https://studio.contentrain.io"
           target="_blank"
           rel="noopener"
-          class="hidden items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:flex"
+          size="sm"
+          class="hidden sm:inline-flex bg-gradient-to-r from-primary to-primary/80 shadow-sm hover:shadow-md hover:from-primary/90 hover:to-primary/70"
         >
+          <Sparkles class="size-3.5" />
           Open in Studio
-          <ExternalLink class="size-3" />
-        </a>
+          <ExternalLink class="size-3 opacity-60" />
+        </Button>
       </div>
     </div>
   </header>
