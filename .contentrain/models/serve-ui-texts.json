@@ -1,0 +1,7 @@
+{
+  "id": "serve-ui-texts",
+  "name": "Serve Ui Texts",
+  "kind": "dictionary",
+  "domain": "serve-ui",
+  "i18n": true
+}
