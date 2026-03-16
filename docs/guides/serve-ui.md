@@ -177,7 +177,7 @@ The agent calls `contentrain_content_save`, which creates entries on a branch an
 
 The agent tells you to review:
 
-> "I've created 5 testimonials on branch `contentrain/content/testimonials/...`. Review them at http://localhost:3333/branches"
+> "I've created 5 testimonials on branch `contentrain/content/testimonials/...`. Review them at `http://localhost:3333/branches`"
 
 In the UI, you see the branch with a diff of all new entries. You can inspect each testimonial's content, check for quality, and verify the data.
 
