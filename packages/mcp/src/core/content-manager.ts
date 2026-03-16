@@ -106,12 +106,52 @@ function parseYamlValue(raw: string): unknown {
 }
 
 export function serializeFrontmatter(data: Record<string, unknown>, body: string): string {
-  const lines: string[] = ['---']
+  // If body starts with frontmatter (---), merge model fields into body's frontmatter
+  const trimmedBody = body.trimStart()
+  if (trimmedBody.startsWith('---')) {
+    const endIdx = trimmedBody.indexOf('---', 3)
+    if (endIdx > 0) {
+      const bodyFmContent = trimmedBody.slice(3, endIdx).trim()
+      const afterFm = trimmedBody.slice(endIdx + 3)
 
+      const lines: string[] = ['---']
+      // Model fields first
+      for (const [key, value] of Object.entries(data)) {
+        if (key === 'body') continue
+        if (value === null || value === undefined) continue
+        if (Array.isArray(value)) {
+          lines.push(`${key}:`)
+          for (const item of value) {
+            lines.push(`  - ${String(item)}`)
+          }
+        } else {
+          lines.push(`${key}: ${String(value)}`)
+        }
+      }
+      // Body frontmatter fields (skip duplicates from model fields)
+      if (bodyFmContent) {
+        const modelKeys = new Set(Object.keys(data))
+        for (const line of bodyFmContent.split('\n')) {
+          const colonIdx = line.indexOf(':')
+          const lineKey = colonIdx > 0 ? line.slice(0, colonIdx).trim() : ''
+          if (lineKey && modelKeys.has(lineKey)) continue
+          lines.push(line)
+        }
+      }
+      lines.push('---')
+      if (afterFm.trim()) {
+        lines.push(afterFm.trimStart())
+      }
+      lines.push('')
+      return lines.join('\n')
+    }
+  }
+
+  // Standard: model fields as frontmatter, body as markdown
+  const lines: string[] = ['---']
   for (const [key, value] of Object.entries(data)) {
     if (key === 'body') continue
     if (value === null || value === undefined) continue
-
     if (Array.isArray(value)) {
       lines.push(`${key}:`)
       for (const item of value) {
@@ -121,15 +161,12 @@ export function serializeFrontmatter(data: Record<string, unknown>, body: string
       lines.push(`${key}: ${String(value)}`)
     }
   }
-
   lines.push('---')
   lines.push('')
-
   if (body) {
     lines.push(body)
     lines.push('')
   }
-
   return lines.join('\n')
 }
 
