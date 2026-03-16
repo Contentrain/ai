@@ -1,17 +1,130 @@
 {
   "version": 1,
-  "created_at": "2026-03-15T22:34:32.547Z",
+  "created_at": "2026-03-16T11:54:21.990Z",
   "models": {
-    "ui-labels": {
+    "nav-labels": {
       "source_files": [
-        "packages/cli/src/serve-ui/src/components/layout/PrimarySidebar.vue",
+        "packages/cli/src/serve-ui/src/components/layout/MobileNav.vue",
+        "packages/cli/src/serve-ui/src/components/layout/PrimarySidebar.vue"
+      ],
+      "entry_count": 9
+    },
+    "studio-labels": {
+      "source_files": [
         "packages/cli/src/serve-ui/src/components/layout/PageHeader.vue",
+        "packages/cli/src/serve-ui/src/components/layout/PrimarySidebar.vue",
         "packages/cli/src/serve-ui/src/components/layout/StudioHint.vue",
-        "packages/cli/src/serve-ui/src/components/layout/SubSidebarLayout.vue",
         "packages/cli/src/serve-ui/src/components/pages/BranchesPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/DashboardPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ModelsPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/NormalizePage.vue"
+      ],
+      "entry_count": 9
+    },
+    "status-labels": {
+      "source_files": [
+        "packages/cli/src/serve-ui/src/components/layout/StatusBar.vue"
+      ],
+      "entry_count": 2
+    },
+    "table-labels": {
+      "source_files": [
+        "packages/cli/src/serve-ui/src/components/layout/SubSidebarLayout.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ContentListPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ModelsPage.vue"
+      ],
+      "entry_count": 6
+    },
+    "empty-states": {
+      "source_files": [
+        "packages/cli/src/serve-ui/src/components/layout/SubSidebarLayout.vue",
+        "packages/cli/src/serve-ui/src/components/pages/BranchDetailPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/BranchesPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ContentListPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ContentPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/DashboardPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ModelDetailPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ModelsPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/NormalizePage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ValidatePage.vue",
+        "packages/cli/src/serve-ui/src/components/ui/alert/index.ts",
+        "packages/cli/src/serve-ui/src/components/ui/badge/index.ts",
+        "packages/cli/src/serve-ui/src/components/ui/button/index.ts",
+        "packages/cli/src/serve-ui/src/components/ui/tree-select/TreeSelect.vue"
+      ],
+      "entry_count": 50
+    },
+    "panel-labels": {
+      "source_files": [
+        "packages/cli/src/serve-ui/src/components/normalize/ExtractionReviewPanel.vue",
+        "packages/cli/src/serve-ui/src/components/normalize/SourceTracePanel.vue",
         "packages/cli/src/serve-ui/src/components/pages/BranchDetailPage.vue"
       ],
-      "entry_count": 18
+      "entry_count": 6
+    },
+    "page-titles": {
+      "source_files": [
+        "packages/cli/src/serve-ui/src/components/pages/BranchDetailPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/BranchesPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ContentPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/DashboardPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ModelDetailPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ModelsPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/NormalizePage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ValidatePage.vue",
+        "packages/cli/src/serve-ui/src/components/ui/button/index.ts"
+      ],
+      "entry_count": 24
+    },
+    "action-labels": {
+      "source_files": [
+        "packages/cli/src/serve-ui/src/components/pages/BranchDetailPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/BranchesPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ContentListPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ContentPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/DashboardPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ModelDetailPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ModelsPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/NormalizePage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ValidatePage.vue",
+        "packages/cli/src/serve-ui/src/components/ui/alert/Alert.vue",
+        "packages/cli/src/serve-ui/src/components/ui/breadcrumb/BreadcrumbEllipsis.vue",
+        "packages/cli/src/serve-ui/src/components/ui/button/Button.vue",
+        "packages/cli/src/serve-ui/src/components/ui/button/index.ts",
+        "packages/cli/src/serve-ui/src/components/ui/scroll-area/ScrollBar.vue",
+        "packages/cli/src/serve-ui/src/components/ui/select/SelectContent.vue",
+        "packages/cli/src/serve-ui/src/components/ui/separator/Separator.vue",
+        "packages/cli/src/serve-ui/src/components/ui/trust-badge/TrustBadge.vue",
+        "packages/cli/src/serve-ui/src/composables/useApi.ts",
+        "packages/cli/src/serve-ui/src/composables/useFormatters.ts",
+        "packages/cli/src/serve-ui/src/router.ts"
+      ],
+      "entry_count": 108
+    },
+    "dialog-messages": {
+      "source_files": [
+        "packages/cli/src/serve-ui/src/components/pages/BranchDetailPage.vue"
+      ],
+      "entry_count": 4
+    },
+    "prompt-hints": {
+      "source_files": [
+        "packages/cli/src/serve-ui/src/components/pages/BranchDetailPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/BranchesPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ContentListPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/DashboardPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ModelDetailPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ModelsPage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/NormalizePage.vue",
+        "packages/cli/src/serve-ui/src/components/pages/ValidatePage.vue"
+      ],
+      "entry_count": 32
+    },
+    "feedback-messages": {
+      "source_files": [
+        "packages/cli/src/serve-ui/src/components/pages/BranchDetailPage.vue"
+      ],
+      "entry_count": 3
     }
   }
 }
