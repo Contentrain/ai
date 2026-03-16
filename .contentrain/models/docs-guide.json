@@ -1,0 +1,30 @@
+{
+  "id": "docs-guide",
+  "name": "Documentation Guide",
+  "kind": "document",
+  "domain": "docs",
+  "i18n": false,
+  "content_path": "docs",
+  "fields": {
+    "category": {
+      "options": [
+        "getting-started",
+        "packages",
+        "guides",
+        "reference",
+        "examples"
+      ],
+      "type": "select"
+    },
+    "description": {
+      "type": "text"
+    },
+    "order": {
+      "type": "integer"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    }
+  }
+}
