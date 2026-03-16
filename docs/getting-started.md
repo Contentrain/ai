@@ -158,3 +158,7 @@ All Contentrain packages are published on npm and ready to use:
 - [MCP Tools](/packages/mcp) — Explore all 13 MCP tools available to your agent
 - [Normalize Flow](/guides/normalize) — Extract hardcoded strings from your codebase
 - [Framework Integration](/guides/frameworks) — Set up Contentrain with Vue, Nuxt, Next.js, Astro, or SvelteKit
+
+::: info Contentrain Studio
+For team collaboration, visual content review, and CDN delivery, check out [Contentrain Studio](https://studio.contentrain.io) — the hosted governance UI that connects to your Git repo.
+:::

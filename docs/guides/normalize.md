@@ -7,7 +7,7 @@ slug: normalize
 
 # Normalize Flow
 
-The normalize flow is Contentrain's core workflow for extracting hardcoded strings from your codebase into structured, manageable content. It runs in three phases: **Extract**, **Reuse**, and **Translate**.
+The normalize flow is Contentrain's **primary value proposition** — the fastest path from "500 hardcoded strings scattered across my codebase" to "structured, translatable, manageable content." It runs in three phases: **Extract**, **Reuse**, and **Translate**.
 
 ## The Problem
 
@@ -387,6 +387,20 @@ And UI labels in `.contentrain/content/ui/cta-labels/en.json`:
   "cta.get_started": "Get started free",
   "cta.view_docs": "View documentation"
 }
+```
+
+## Why Normalize is the Starting Point
+
+Most developers discover Contentrain through normalize. The pain is immediate and universal:
+
+- You've been vibe-coding with AI for weeks — 50+ generated files, strings everywhere
+- The founder asks for Turkish. Or the marketer wants to change the CTA on 12 pages.
+- You realize there's no content layer — just hardcoded text in components
+
+Normalize solves this in minutes. And once your content is extracted and structured, the rest of Contentrain's value (SDK queries, i18n, Studio review, CDN delivery) becomes available naturally.
+
+```
+normalize → content exists → SDK queries work → i18n is possible → Studio review makes sense
 ```
 
 ## Important Rules

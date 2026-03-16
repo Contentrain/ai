@@ -23,7 +23,10 @@
     "release:check": "node scripts/release-check.mjs",
     "release:pack": "node scripts/release-pack.mjs",
     "release:bump": "node scripts/release-bump.mjs",
-    "release": "node scripts/release-tag.mjs"
+    "release": "node scripts/release-tag.mjs",
+    "docs:dev": "pnpm --dir docs dev",
+    "docs:build": "pnpm --dir docs build",
+    "docs:preview": "pnpm --dir docs preview"
   },
   "devDependencies": {
     "lefthook": "^2.1.4",

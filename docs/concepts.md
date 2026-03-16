@@ -10,9 +10,21 @@ slug: concepts
 
 ## The Big Idea
 
+**Governance, not generation.**
+
+Contentrain is not an AI content generator — there are dozens of those. Contentrain is the infrastructure that governs what happens _after_ AI generates content: validation, structure, review, approval, and delivery.
+
 Most content tools ask you to learn their system — their dashboard, their API, their markup syntax. Contentrain inverts this: **your AI agent already understands your codebase**, so let it manage your content. Contentrain provides the deterministic infrastructure (MCP tools, validation, Git transactions) while the agent provides the intelligence (what to extract, how to structure, where to replace).
 
-The result is a content pipeline where the agent generates, the system standardizes, and the human approves.
+> Agent generates. Human approves. System standardizes.
+
+The result is a content pipeline with full auditability:
+
+```
+Agent generates → MCP validates → Human reviews → Git commits → SDK serves
+```
+
+Every step is a git diff. Nothing reaches production without your approval.
 
 ## The Agent-Driven Content Model
 
@@ -182,3 +194,27 @@ Branches are auto-merged or held for review depending on your workflow config.
 ::: tip No Lock-In
 Contentrain stores everything as plain JSON and Markdown files in your Git repo. If you stop using Contentrain tomorrow, your content is still there — readable, portable, yours.
 :::
+
+## Beyond Web: Content CDN
+
+Web projects deploy content with `git push` — no extra infrastructure needed. But non-web platforms (iOS, Android, React Native, Flutter, desktop apps, game engines, IoT) can't read from a git repo at runtime.
+
+For these use cases, Contentrain publishes merged content to a CDN (`cdn.contentrain.io`), delivering the same structured JSON your SDK queries — just over HTTP instead of the filesystem.
+
+```
+Git repo → merge → CDN publish → iOS/Android/Flutter fetch → typed response
+```
+
+This means one content source powers your website, mobile app, and any other platform — all governed by the same review workflow.
+
+## Contentrain Studio
+
+[Contentrain Studio](https://studio.contentrain.io) is the hosted governance UI that complements the local CLI and MCP tools. While the open-source packages handle local operations, Studio adds:
+
+- **Chat-first interface** — talk to your agent through a web UI with full MCP access
+- **Team collaboration** — invite editors and reviewers with role-based access
+- **Visual diff review** — approve or reject content changes with a proper diff viewer
+- **GitHub integration** — connect your repo, manage branches, track PRs
+- **Content CDN** — publish merged content for non-web platforms
+
+The local tools and Studio share the same MCP server — same tools, same behavior, different context.
