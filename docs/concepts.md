@@ -8,6 +8,12 @@ slug: concepts
 
 # Core Concepts
 
+## The Big Idea
+
+Most content tools ask you to learn their system — their dashboard, their API, their markup syntax. Contentrain inverts this: **your AI agent already understands your codebase**, so let it manage your content. Contentrain provides the deterministic infrastructure (MCP tools, validation, Git transactions) while the agent provides the intelligence (what to extract, how to structure, where to replace).
+
+The result is a content pipeline where the agent generates, the system standardizes, and the human approves.
+
 ## The Agent-Driven Content Model
 
 Contentrain AI inverts the traditional CMS workflow:
@@ -159,3 +165,20 @@ contentrain/normalize/reuse/...       ← source patching
 ```
 
 Branches are auto-merged or held for review depending on your workflow config.
+
+## How It Compares
+
+| | Contentrain AI | Headless CMS (Sanity, Strapi) | Git CMS (Tina, Decap) |
+|---|---|---|---|
+| **Content source** | Your existing codebase | External dashboard | Markdown/JSON in repo |
+| **AI integration** | Native (MCP tools) | Manual API calls | None |
+| **Extract from code** | Yes (normalize flow) | No | No |
+| **Vendor lock-in** | None (plain files + Git) | API dependency | Editor dependency |
+| **Type safety** | Generated SDK | Manual types | Manual types |
+| **i18n** | Built-in (per-locale files) | Plugin/addon | Plugin/addon |
+| **Review workflow** | Git branches + local UI | Dashboard roles | PR-based |
+| **Runtime dependency** | Zero (static files) | API availability | Build-time |
+
+::: tip No Lock-In
+Contentrain stores everything as plain JSON and Markdown files in your Git repo. If you stop using Contentrain tomorrow, your content is still there — readable, portable, yours.
+:::

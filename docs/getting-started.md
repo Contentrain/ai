@@ -12,21 +12,35 @@ Contentrain AI is an open-source content governance infrastructure that lets AI 
 
 ## Why Contentrain AI?
 
-Modern web projects have a content problem:
+You've shipped your landing page. 47 components, 500+ hardcoded strings. Now the founder says "we need Turkish" and the marketer wants to A/B test the hero copy. You're looking at a week of grep-and-replace.
 
-- **Headless CMS platforms** require API calls, dashboards, and manual editing
-- **Git-based CMS tools** store content but don't understand your codebase
-- **Hardcoded strings** scattered across components are impossible to manage at scale
+**This is the content problem every frontend team hits:**
 
-Contentrain AI solves this differently:
+- **Headless CMS platforms** need dashboards, API calls, and manual copy-paste between systems
+- **Git-based CMS tools** store content but have no idea what's in your components
+- **Hardcoded strings** scattered across 47 files — no single source of truth, no translation path
 
-> Your AI agent scans your code, extracts content into structured models, and patches your source files — all through Git, all reviewable, all type-safe.
+Contentrain AI takes a different approach:
+
+> Tell your AI agent what you need. It scans your code, extracts strings into structured content models, patches your source files with i18n references, and opens a review UI — all through Git, all type-safe, zero vendor lock-in.
 
 ```
-You: "Extract the hardcoded strings from my landing page"
-Agent: scans → classifies → creates models → writes content → opens review UI
-You: approve in UI → content is live
+You: "Extract the hardcoded strings from my landing page and translate to Turkish"
+Agent: scans 47 files → finds 523 strings → classifies → creates models → writes content → patches source
+You: review in UI → approve → content is live in 2 languages
 ```
+
+### Bring Your Own Agent (BYOA)
+
+Contentrain doesn't ship its own AI. Your IDE agent (Claude Code, Cursor, Windsurf, or any MCP-compatible agent) **is** the intelligence layer. Contentrain provides 13 deterministic MCP tools that any agent can call. No AI markup in your code, no proprietary syntax — just Git files and a typed SDK.
+
+### The Content Pipeline
+
+```
+Agent generates → MCP validates → Human reviews → Git commits → SDK serves
+```
+
+Every step is auditable. Every change is a git diff. Nothing reaches production without your approval.
 
 ## Quick Start
 

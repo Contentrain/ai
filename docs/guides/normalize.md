@@ -11,7 +11,7 @@ The normalize flow is Contentrain's core workflow for extracting hardcoded strin
 
 ## The Problem
 
-Every frontend project accumulates hardcoded strings:
+A typical SaaS landing page has 40-60 components with 300-800 hardcoded strings. Nobody notices until someone asks for a second language or a copy change across 12 pages.
 
 ```vue
 <template>
@@ -23,9 +23,9 @@ Every frontend project accumulates hardcoded strings:
 </template>
 ```
 
-These strings are scattered across dozens of components. Translating them means grep-and-replace. Updating copy means hunting through templates. There is no single source of truth.
+These strings are scattered across dozens of files. Translating means grep-and-replace. Updating copy means hunting through templates. There is no single source of truth, no way to hand off content to a non-developer, and no translation path that doesn't involve touching every component.
 
-Contentrain's normalize flow fixes this systematically.
+**The normalize flow extracts all of this in minutes, not days.** The agent scans your components, classifies every string, creates structured content models, and patches your source files — all reviewable, all through Git.
 
 ## Three Phases Overview
 
