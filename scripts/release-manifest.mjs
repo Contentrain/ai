@@ -35,3 +35,8 @@ export const LOCKSTEP_FILES = [
   'packages/cli/src/index.ts',
   'packages/mcp/src/server.ts',
 ]
+
+export const PRIVATE_PACKAGE_JSONS = [
+  'docs/package.json',
+  'packages/cli/src/serve-ui/package.json',
+]

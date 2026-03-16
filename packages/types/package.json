@@ -4,6 +4,26 @@
   "license": "MIT",
   "description": "Shared TypeScript types for Contentrain ecosystem",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/contentrain/contentrain-ai.git",
+    "directory": "packages/types"
+  },
+  "homepage": "https://github.com/contentrain/contentrain-ai/tree/main/packages/types",
+  "bugs": {
+    "url": "https://github.com/contentrain/contentrain-ai/issues"
+  },
+  "keywords": [
+    "contentrain",
+    "types",
+    "typescript",
+    "schema",
+    "content-governance"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

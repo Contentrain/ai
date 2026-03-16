@@ -4,6 +4,28 @@
   "license": "MIT",
   "description": "Type-safe content query SDK for Contentrain — universal JS/TS",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/contentrain/contentrain-ai.git",
+    "directory": "packages/sdk/js"
+  },
+  "homepage": "https://github.com/contentrain/contentrain-ai/tree/main/packages/sdk/js",
+  "bugs": {
+    "url": "https://github.com/contentrain/contentrain-ai/issues"
+  },
+  "keywords": [
+    "contentrain",
+    "query",
+    "sdk",
+    "typescript",
+    "content",
+    "i18n",
+    "vite",
+    "nextjs"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "contentrain-query": "./dist/cli.mjs"
   },
