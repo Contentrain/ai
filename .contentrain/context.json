@@ -1,22 +1,19 @@
 {
   "lastOperation": {
-    "entries": [
-      "concepts"
-    ],
     "locale": "en",
-    "model": "docs-guide",
+    "model": "docs-packages",
     "source": "mcp-local",
-    "timestamp": "2026-03-16T19:38:26.342Z",
-    "tool": "contentrain_content_save"
+    "timestamp": "2026-03-16T19:39:40.983Z",
+    "tool": "contentrain_model_save"
   },
   "stats": {
     "entries": 19,
-    "lastSync": "2026-03-16T19:38:26.343Z",
+    "lastSync": "2026-03-16T19:39:40.983Z",
     "locales": [
       "en",
       "tr"
     ],
-    "models": 7
+    "models": 8
   },
   "version": "1"
 }
