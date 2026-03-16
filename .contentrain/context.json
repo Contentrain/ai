@@ -1,17 +1,18 @@
 {
   "lastOperation": {
     "entries": [
-      "frameworks"
+      "i18n",
+      "serve-ui"
     ],
     "locale": "en",
     "model": "docs-guides",
     "source": "mcp-local",
-    "timestamp": "2026-03-16T20:22:17.321Z",
+    "timestamp": "2026-03-16T20:24:28.066Z",
     "tool": "contentrain_content_save"
   },
   "stats": {
     "entries": 30,
-    "lastSync": "2026-03-16T20:22:17.321Z",
+    "lastSync": "2026-03-16T20:24:28.066Z",
     "locales": [
       "en",
       "tr"
