@@ -676,6 +676,17 @@ export function Broken() {
       },
     })
     await expectGitClean(testDir)
+
+    // Create normalize-sources.json so reuse execute is not blocked
+    await writeFile(join(testDir, '.contentrain', 'normalize-sources.json'), JSON.stringify({
+      version: 1,
+      created_at: new Date().toISOString(),
+      models: { 'ui-texts': { source_files: ['src/broken.tsx'], entry_count: 1 } },
+    }, null, 2) + '\n')
+    const git2 = simpleGit(testDir)
+    await git2.add('.')
+    await git2.commit('add normalize-sources')
+
     client = await createTestClient(testDir)
   })
 

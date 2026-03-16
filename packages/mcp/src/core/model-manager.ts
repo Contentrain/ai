@@ -428,6 +428,11 @@ export function validateModelDefinition(input: { id: string; kind: string; field
     errors.push(`Invalid model ID "${input.id}": must be kebab-case`)
   }
 
+  // Dictionary models cannot have fields
+  if (input.kind === 'dictionary' && input.fields && Object.keys(input.fields).length > 0) {
+    errors.push('Dictionary models cannot have fields. Dictionaries store flat key-value pairs.')
+  }
+
   // Fields validation
   if (input.fields) {
     for (const [fieldName, fieldDef] of Object.entries(input.fields)) {

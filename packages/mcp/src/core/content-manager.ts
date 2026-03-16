@@ -307,6 +307,18 @@ export async function writeContent(
       case 'dictionary': {
         const filePath = resolveJsonFilePath(resolveContentDir(projectRoot, model), model, locale)
         const existing = await readJson<Record<string, string>>(filePath) ?? {}
+        const collisions: string[] = []
+        for (const key of Object.keys(entry.data as Record<string, string>)) {
+          if (key in existing && existing[key] !== (entry.data as Record<string, string>)[key]) {
+            collisions.push(key)
+          }
+        }
+        if (collisions.length > 0) {
+          throw new Error(
+            `Dictionary "${model.id}" (${locale}): ${collisions.length} key collision(s) — [${collisions.join(', ')}] already exist with different values. ` +
+            `Read existing keys with contentrain_content_list first, or include all keys in a single save call.`,
+          )
+        }
         const merged = { ...existing, ...entry.data as Record<string, string> }
         await writeJson(filePath, merged)
         await writeMeta(projectRoot, model, { locale }, defaultMeta(entry.data))

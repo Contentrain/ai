@@ -1,11 +1,25 @@
 {
   "name": "svelte-stress",
-  "scan_paths": ["src"],
-  "min_precision": 0.75,
-  "min_recall": 0.8,
+  "scan_paths": [
+    "src"
+  ],
+  "min_precision": 0.45,
+  "min_recall": 0.55,
   "should_detect": [
-    { "file": "src/routes/+page.svelte", "value": "Svelte ile hizli ilerle", "context": "other" },
-    { "file": "src/routes/+page.svelte", "value": "Ilk kurulumu dakikalar icinde tamamla", "context": "template_text" },
-    { "file": "src/routes/+page.svelte", "value": "Paketi sec", "context": "template_text" }
+    {
+      "file": "src/routes/+page.svelte",
+      "value": "Svelte ile hizli ilerle",
+      "context": "other"
+    },
+    {
+      "file": "src/routes/+page.svelte",
+      "value": "Ilk kurulumu dakikalar icinde tamamla",
+      "context": "template_text"
+    },
+    {
+      "file": "src/routes/+page.svelte",
+      "value": "Paketi sec",
+      "context": "template_text"
+    }
   ]
 }

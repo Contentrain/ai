@@ -11,7 +11,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
   // ─── contentrain_content_save ───
   server.tool(
     'contentrain_content_save',
-    'Save content entries (singleton/collection/document/dictionary). Changes are auto-committed to git — do NOT manually edit .contentrain/ files after calling this tool.',
+    'Save content entries. Entry format varies by model kind: DICTIONARY — provide "locale" and "data" (flat key-value, all string values); "id" and "slug" are ignored; data keys are the identities. COLLECTION — provide "locale" and "data"; "id" is optional (auto-generated if omitted); "slug" is ignored. DOCUMENT — provide "slug" (required), "locale", and "data"; use the "body" key inside data for markdown content. SINGLETON — provide only "locale" and "data". Changes are auto-committed to git — do NOT manually edit .contentrain/ files after calling this tool.',
     {
       model: z.string().describe('Model ID'),
       entries: z.array(z.object({

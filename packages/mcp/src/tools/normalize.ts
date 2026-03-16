@@ -11,7 +11,7 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
   // ─── contentrain_scan ───
   server.tool(
     'contentrain_scan',
-    'Scan project source code for content strings. Three modes: "graph" builds import/component graph for project intelligence, "candidates" extracts string literals with pre-filtering and pagination, "summary" provides quick overview stats. Read-only — no git transaction. MCP finds strings deterministically; the agent decides what is content.',
+    'Scan project source code for content strings. Three modes: "graph" builds import/component graph for project intelligence, "candidates" extracts string literals with pre-filtering and pagination, "summary" provides quick overview stats. Read-only — no changes to disk or git. MCP finds strings deterministically; the agent decides what is content. Recommended workflow: start with "summary" or "graph" for orientation, then paginate through "candidates" to evaluate strings.',
     {
       mode: z.enum(['graph', 'candidates', 'summary']).optional().describe('Scan mode. Default: candidates'),
       paths: z.array(z.string()).optional().describe('Directories to scan (relative to project root). Default: auto-detect'),
@@ -124,7 +124,7 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
   // ─── contentrain_apply ───
   server.tool(
     'contentrain_apply',
-    'Apply normalize operations. Two modes: "extract" writes agent-approved strings to Contentrain content files (source untouched), "reuse" patches source files with agent-provided replacement expressions. Defaults to preview mode (dry_run:true). Set dry_run:false to execute after reviewing the preview. Normalize operations always use review workflow (never auto-merge). Extract creates/merges models and content; reuse replaces strings in source code with SDK/i18n calls.',
+    'Apply normalize operations. Two modes: "extract" writes agent-approved strings to Contentrain content files (source untouched), "reuse" patches source files with agent-provided replacement expressions. DRY RUN (default, dry_run:true): validates inputs, resolves conflicts, and returns a full preview — NO changes to disk or git. EXECUTE (dry_run:false): writes files to disk, commits to a branch, and requires branch health check to pass. Recommended workflow: always run dry_run first, review the preview, then call again with dry_run:false to execute. Normalize operations always use review workflow (never auto-merge).',
     {
       mode: z.enum(['extract', 'reuse']).describe('Apply mode: extract (content creation) or reuse (source patching)'),
       dry_run: z.boolean().optional().default(true).describe('Defaults to preview mode (dry_run:true). Set dry_run:false to execute after reviewing the preview.'),

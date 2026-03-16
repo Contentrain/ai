@@ -398,6 +398,31 @@ export async function applyExtract(
       validationErrors.push(...modelErrors.map(e => `[${ext.model}] ${e}`))
     }
 
+    for (const entry of ext.entries) {
+      if (ext.kind === 'dictionary') {
+        if (entry.data['id'] !== undefined || entry.data['slug'] !== undefined) {
+          validationErrors.push(`[${ext.model}] Dictionary entries should not have id or slug`)
+        }
+        for (const [key, val] of Object.entries(entry.data)) {
+          if (typeof val !== 'string') {
+            validationErrors.push(`[${ext.model}] Dictionary entry value for key "${key}" must be a string, got ${typeof val}`)
+          }
+        }
+      } else if (ext.kind === 'document') {
+        if (!entry.slug && !entry.data['slug']) {
+          validationErrors.push(`[${ext.model}] Document entries must have a slug`)
+        }
+      } else if (ext.kind === 'collection') {
+        if (entry.slug !== undefined || entry.data['slug'] !== undefined) {
+          validationErrors.push(`[${ext.model}] Collection entries should not have slug`)
+        }
+      } else if (ext.kind === 'singleton') {
+        if (entry.data['id'] !== undefined || entry.slug !== undefined || entry.data['slug'] !== undefined) {
+          validationErrors.push(`[${ext.model}] Singleton entries should not have id or slug`)
+        }
+      }
+    }
+
     if (existingIds.has(ext.model)) {
       modelsToUpdate.push(ext.model)
     } else {
