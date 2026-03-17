@@ -4,6 +4,10 @@ export default defineConfig({
   title: 'Contentrain AI',
   description: 'AI content governance infrastructure — MCP tools, CLI, SDK, and AI rules for managing content across any framework.',
 
+  sitemap: {
+    hostname: 'https://ai.contentrain.io',
+  },
+
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     ['meta', { name: 'theme-color', content: '#3b5afc' }],
