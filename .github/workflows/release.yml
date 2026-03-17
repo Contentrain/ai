@@ -38,6 +38,11 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
+      - name: Configure git for tests
+        run: |
+          git config --global user.name "CI"
+          git config --global user.email "ci@contentrain.io"
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
