@@ -9,11 +9,15 @@ slug: sdk
 
 [![npm version](https://img.shields.io/npm/v/@contentrain/query)](https://www.npmjs.com/package/@contentrain/query) [![npm downloads](https://img.shields.io/npm/dm/@contentrain/query)](https://www.npmjs.com/package/@contentrain/query)
 
-`@contentrain/query` is the consumption layer of the Contentrain ecosystem. It reads your model definitions and content files, then generates a fully typed JavaScript/TypeScript client that your application imports directly. Think of it like Prisma, but for content: define models, run generate, import and query.
+`@contentrain/query` is an **optional** TypeScript convenience layer for consuming Contentrain content. It generates a fully typed client from your model definitions — think Prisma, but for content.
+
+::: tip SDK is optional
+Contentrain stores content as plain JSON and Markdown. Any language that reads JSON (Go, Python, Swift, Kotlin, Rust) can consume your content directly. The SDK adds type safety, query API, and relation resolution for TypeScript projects.
+:::
 
 ## Why a Generated Client?
 
-You could read `.contentrain/content/` files directly with `fs.readFileSync`. But that gives you:
+You could read `.contentrain/content/` files directly — and for non-TypeScript platforms, that's exactly what you should do. But for TypeScript projects, raw file reads give you:
 
 - No TypeScript types
 - No query API (filtering, sorting, pagination)

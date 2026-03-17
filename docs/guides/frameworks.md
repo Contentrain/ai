@@ -1,13 +1,13 @@
 ---
 title: Framework Integration
-description: Step-by-step setup and usage patterns for Nuxt, Next.js, Astro, SvelteKit, Vue, React, and Expo with the Contentrain SDK
+description: "Setup and usage patterns for Nuxt, Next.js, Astro, SvelteKit, Vue, React, Expo, and any platform that reads JSON"
 order: 2
 slug: frameworks
 ---
 
-# Framework Integration
+# Framework & Platform Integration
 
-Contentrain works with any JavaScript framework through the `@contentrain/query` SDK. This guide covers setup, configuration, and usage patterns for the top frameworks.
+Contentrain content is plain JSON and Markdown — **any platform that reads files can consume it**. The `@contentrain/query` SDK adds TypeScript type safety and a query API as an optional convenience layer. This guide covers setup patterns for popular frameworks and platforms.
 
 ## Universal Setup
 
