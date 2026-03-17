@@ -1,5 +1,13 @@
 # contentrain
 
+## 0.1.3
+
+### Patch Changes
+
+- Fix CI pipeline: add build step before tests, configure git identity, add serve-ui to workspace, fix apply-guardrails tests.
+- Updated dependencies
+  - @contentrain/mcp@1.0.3
+
 ## 0.1.2
 
 ### Patch Changes
