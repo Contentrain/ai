@@ -113,7 +113,7 @@ The agent calls `contentrain_model_save` and creates:
 
 ```
 Add content to the hero section: title is "Build faster with AI",
-subtitle is "Content governance for modern web projects"
+subtitle is "Content governance for any platform"
 ```
 
 ### 5. Generate the SDK client

@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'Contentrain AI',
-  description: 'AI content governance infrastructure — MCP tools, CLI, SDK, and AI rules for managing content across any framework.',
+  description: 'AI-generated content governance infrastructure — extract, structure, review, and deliver content across any platform.',
 
   sitemap: {
     hostname: 'https://ai.contentrain.io',
@@ -13,7 +13,7 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: '#3b5afc' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'Contentrain AI' }],
-    ['meta', { property: 'og:description', content: 'AI content governance infrastructure for modern web projects' }],
+    ['meta', { property: 'og:description', content: 'Extract, structure, review, and deliver AI-generated content across any platform' }],
     ['meta', { property: 'og:url', content: 'https://ai.contentrain.io' }],
   ],
 
