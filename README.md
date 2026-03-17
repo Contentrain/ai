@@ -17,7 +17,7 @@ Instead of treating content generation as a loose prompt workflow, Contentrain t
 - the agent decides what content should exist
 - MCP and CLI enforce deterministic writes, validation, and git workflow
 - humans review the result
-- the generated SDK consumes content safely inside the app
+- content is delivered as plain JSON/Markdown to any platform (optional TypeScript SDK for convenience)
 
 In one sentence:
 
@@ -80,7 +80,7 @@ Together, these packages form a single workflow:
 2. write it into a governed `.contentrain/` structure
 3. validate it
 4. review it through branches and UI
-5. consume it through a typed runtime client
+5. deliver content as plain JSON/Markdown to any platform
 
 ## 🔄 Core Workflow
 
@@ -125,15 +125,15 @@ That gives you:
 - cleaner merge flow
 - branch-pressure awareness
 
-### 4. Generate the runtime client
+### 4. Use your content
+
+Content is plain JSON and Markdown — any platform that reads files can consume it directly.
+
+For TypeScript projects, optionally generate a typed SDK client:
 
 ```bash
 contentrain generate
 ```
-
-This produces `.contentrain/client/` and injects `#contentrain` imports into your project.
-
-Then your app can read content through a typed generated client:
 
 ```ts
 import { query, singleton, dictionary, document } from '#contentrain'
@@ -201,10 +201,10 @@ This makes agent behavior part of the product surface instead of leaving it impl
 - **Review is a product feature**  
   Branch-backed review is not an afterthought; it is part of the core workflow.
 
-- **Generated runtime over dynamic magic**  
-  The SDK follows a generate-then-consume model instead of late-bound runtime filesystem reads.
+- **Platform-independent output**
+  Content is plain JSON and Markdown. Any language (Go, Python, Swift, Kotlin, Rust) can consume it. The TypeScript SDK is optional convenience, not a requirement.
 
-- **Framework-agnostic core**  
+- **Framework-agnostic core**
   Stack-specific decisions belong to the agent and framework guides, not to the MCP engine.
 
 - **Local-first**  
@@ -289,7 +289,7 @@ Let an agent propose docs, landing page copy, or UI labels while keeping schema,
 
 ### Build app-facing content without a separate CMS
 
-Store content in the repo, generate a typed runtime client, and consume it from Vue, React, Next, Nuxt, Node, Expo, or React Native.
+Store content in the repo as plain JSON. Consume from any platform — Vue, React, Next, Nuxt, Astro, Node, Go, Python, Swift, Flutter, Expo, or React Native. Optionally use the TypeScript SDK for type-safe queries.
 
 ### Standardize agent behavior across IDEs
 
@@ -306,18 +306,16 @@ If you want to go deeper package by package:
 - [`packages/skills/README.md`](packages/skills/README.md)
 - [`packages/sdk/js/README.md`](packages/sdk/js/README.md)
 
-## 📚 Documentation and Release Sources
+## 📚 Documentation
 
-The old internal spec files are no longer the source of truth.
-
-Current sources:
-
-- this root README for product and monorepo overview
-- package READMEs for public package contracts
+- **[ai.contentrain.io](https://ai.contentrain.io)** — full documentation site
+- Package READMEs for public package contracts
 - [`RELEASING.md`](RELEASING.md) for versioning and publish flow
 - `packages/rules/` and `packages/skills/` for agent-facing operational guidance
 
-The future canonical docs site will live under `docs/`.
+## 🌐 Contentrain Studio
+
+For team collaboration, visual content review, and content CDN for non-web platforms — [Contentrain Studio](https://studio.contentrain.io) extends the open-source tools with a hosted governance UI.
 
 ## 🧪 Development
 

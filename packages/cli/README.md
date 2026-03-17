@@ -160,6 +160,10 @@ to understand:
 
 If the target file already exists, Contentrain appends its rules instead of overwriting unrelated content where possible.
 
+## 📚 Documentation
+
+Full documentation at **[ai.contentrain.io/packages/cli](https://ai.contentrain.io/packages/cli)**.
+
 ## 🛠 Development
 
 From the monorepo root:

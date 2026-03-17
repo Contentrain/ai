@@ -189,6 +189,10 @@ pnpm exec oxlint packages/mcp/src packages/mcp/tests
 - `@contentrain/rules` — IDE/agent rules and prompts
 - `@contentrain/types` — shared schema and model types
 
+## 📚 Documentation
+
+Full documentation at **[ai.contentrain.io/packages/mcp](https://ai.contentrain.io/packages/mcp)**.
+
 ## 📄 License
 
 MIT

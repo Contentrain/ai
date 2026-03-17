@@ -3,9 +3,9 @@
 [![npm version](https://img.shields.io/npm/v/%40contentrain%2Fquery?label=%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query)
 [![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/sdk/js)
 
-Type-safe generated query SDK for Contentrain.
+**Optional** type-safe generated query SDK for Contentrain.
 
-Contentrain stores content in a git-backed `.contentrain/` directory. This package turns that content model into a generated JS/TS client with:
+Contentrain stores content as plain JSON and Markdown in a git-backed `.contentrain/` directory. Any platform that reads JSON can consume this content directly. This package adds a TypeScript convenience layer that turns content models into a generated JS/TS client with:
 
 - exact TypeScript types from your models
 - zero-dependency query runtime
@@ -243,6 +243,10 @@ pnpm exec oxlint packages/sdk/js/src packages/sdk/js/tests
 - `@contentrain/mcp` — local-first MCP server and core content workflow engine
 - `@contentrain/types` — shared schema and model definitions
 - `@contentrain/rules` — agent rules and prompts
+
+## 📚 Documentation
+
+Full documentation at **[ai.contentrain.io/packages/sdk](https://ai.contentrain.io/packages/sdk)**.
 
 ## 📄 License
 
