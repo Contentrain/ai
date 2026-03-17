@@ -284,78 +284,213 @@ async function executeInit(projectRoot: string, opts: InitOptions): Promise<void
   }
 }
 
+// Granular rule filenames — order matches shared/ rule files
+const RULE_BASE_NAMES = [
+  'content-quality',
+  'seo-rules',
+  'i18n-quality',
+  'accessibility-rules',
+  'security-rules',
+  'media-rules',
+  'content-conventions',
+  'schema-rules',
+  'mcp-usage',
+  'workflow-rules',
+  'normalize-rules',
+]
+
+const SKILL_FILE_NAMES = [
+  'contentrain-normalize.md',
+  'contentrain-content.md',
+  'contentrain-model.md',
+  'contentrain-bulk.md',
+  'contentrain-validate-fix.md',
+  'contentrain-review.md',
+  'contentrain-translate.md',
+  'contentrain-generate.md',
+  'contentrain-serve.md',
+  'contentrain-diff.md',
+  'contentrain-doctor.md',
+  'contentrain-init.md',
+]
+
 async function installRules(projectRoot: string): Promise<void> {
   try {
-    const ruleFiles = {
-      'claude-code': 'ide/claude-code/contentrain.md',
-      'cursor': 'ide/cursor/contentrain.cursorrules',
-      'windsurf': 'ide/windsurf/contentrain.windsurfrules',
-      'generic': 'ide/generic/contentrain.md',
-    }
     const { createRequire } = await import('node:module')
     const require = createRequire(import.meta.url)
-    const resolveRuleFile = (rulePath: string) => require.resolve(`@contentrain/rules/${rulePath}`)
+    const resolveRuleFile = (p: string) => require.resolve(`@contentrain/rules/${p}`)
 
-    const targets: Array<{ ide: string; source: string; dest: string; append?: boolean }> = []
+    let resolveSkillFile: ((p: string) => string) | null = null
+    try {
+      const requireSkills = createRequire(import.meta.url)
+      resolveSkillFile = (p: string) => requireSkills.resolve(`@contentrain/skills/${p}`)
+    } catch { /* @contentrain/skills not installed */ }
 
     // Detect which IDEs are in use
-    if (await pathExists(join(projectRoot, 'CLAUDE.md')) || await pathExists(join(projectRoot, '.claude'))) {
-      targets.push({
-        ide: 'Claude Code',
-        source: resolveRuleFile(ruleFiles['claude-code']),
-        dest: join(projectRoot, 'CLAUDE.md'),
-        append: true,
-      })
+    const hasClaudeCode = await pathExists(join(projectRoot, 'CLAUDE.md')) || await pathExists(join(projectRoot, '.claude'))
+    const hasCursorDir = await pathExists(join(projectRoot, '.cursor'))
+    const hasCursorRules = await pathExists(join(projectRoot, '.cursorrules'))
+    const hasWindsurfDir = await pathExists(join(projectRoot, '.windsurf'))
+    const noIDEDetected = !hasClaudeCode && !hasCursorDir && !hasCursorRules && !hasWindsurfDir
+
+    if (hasClaudeCode) {
+      await installClaudeCodeRules(projectRoot, resolveRuleFile, resolveSkillFile)
     }
 
-    if (await pathExists(join(projectRoot, '.cursorrules')) || await pathExists(join(projectRoot, '.cursor'))) {
-      targets.push({
-        ide: 'Cursor',
-        source: resolveRuleFile(ruleFiles['cursor']),
-        dest: join(projectRoot, '.cursorrules'),
-      })
-    }
-
-    if (await pathExists(join(projectRoot, '.windsurf'))) {
-      targets.push({
-        ide: 'Windsurf',
-        source: resolveRuleFile(ruleFiles['windsurf']),
-        dest: join(projectRoot, '.windsurfrules'),
-      })
-    }
-
-    // If no IDE detected, install generic rules as CLAUDE.md (most common)
-    if (targets.length === 0) {
-      targets.push({
-        ide: 'Generic',
-        source: resolveRuleFile(ruleFiles['generic']),
-        dest: join(projectRoot, 'CLAUDE.md'),
-      })
-    }
-
-    for (const target of targets) {
-      const ruleContent = await readFile(target.source, 'utf-8')
-      const marker = '# Contentrain AI Rules'
-
-      if (target.append && await pathExists(target.dest)) {
-        const existing = await readFile(target.dest, 'utf-8')
-        if (existing.includes(marker)) continue // already installed
-        await appendFile(target.dest, `\n\n${ruleContent}\n`)
-      } else {
-        await writeFile(target.dest, ruleContent, 'utf-8')
-      }
-
-      // Commit the rule file
+    if (hasCursorDir) {
+      await installCursorRules(projectRoot, resolveRuleFile)
+    } else if (hasCursorRules) {
+      // Legacy .cursorrules — write monolithic bundle
+      const source = resolveRuleFile('ide/cursor/contentrain.cursorrules')
+      const dest = join(projectRoot, '.cursorrules')
+      await writeFile(dest, await readFile(source, 'utf-8'), 'utf-8')
       const git = simpleGit(projectRoot)
-      await git.add(target.dest)
-      try {
-        await git.commit(`[contentrain] install ${target.ide} rules`)
-      } catch {
-        // Nothing to commit if file unchanged
-      }
+      await git.add(dest)
+      try { await git.commit('[contentrain] install Cursor rules') } catch { /* nothing to commit */ }
+    }
+
+    if (hasWindsurfDir) {
+      await installWindsurfRules(projectRoot, resolveRuleFile)
+    }
+
+    // Fallback: no IDE detected — write CLAUDE.md with generic rules
+    if (noIDEDetected) {
+      const source = resolveRuleFile('ide/generic/contentrain.md')
+      const dest = join(projectRoot, 'CLAUDE.md')
+      await writeFile(dest, await readFile(source, 'utf-8'), 'utf-8')
+      const git = simpleGit(projectRoot)
+      await git.add(dest)
+      try { await git.commit('[contentrain] install AI rules') } catch { /* nothing to commit */ }
     }
   } catch {
     // rules package may not be installed — skip silently
+  }
+}
+
+async function installClaudeCodeRules(
+  projectRoot: string,
+  resolveRuleFile: (p: string) => string,
+  resolveSkillFile: ((p: string) => string) | null,
+): Promise<void> {
+  const rulesDir = join(projectRoot, '.claude', 'rules')
+  const skillsDir = join(projectRoot, '.claude', 'skills')
+  const git = simpleGit(projectRoot)
+  const filesToAdd: string[] = []
+
+  // Install granular rule files — one per shared rule
+  await ensureDir(rulesDir)
+  for (const baseName of RULE_BASE_NAMES) {
+    const fileName = `contentrain-${baseName}.md`
+    const dest = join(rulesDir, fileName)
+    if (await pathExists(dest)) continue
+    try {
+      const src = resolveRuleFile(`ide/claude-code/rules/${fileName}`)
+      await writeFile(dest, await readFile(src, 'utf-8'), 'utf-8')
+      filesToAdd.push(dest)
+    } catch { /* rule file unavailable in this package version */ }
+  }
+
+  // Install workflow skills from @contentrain/skills
+  if (resolveSkillFile) {
+    await ensureDir(skillsDir)
+    for (const fileName of SKILL_FILE_NAMES) {
+      const dest = join(skillsDir, fileName)
+      if (await pathExists(dest)) continue
+      try {
+        const src = resolveSkillFile(`workflows/${fileName}`)
+        await writeFile(dest, await readFile(src, 'utf-8'), 'utf-8')
+        filesToAdd.push(dest)
+      } catch { /* skill file unavailable */ }
+    }
+  }
+
+  // Add lightweight reference to CLAUDE.md instead of full 2984-line bundle
+  const claudeMdPath = join(projectRoot, 'CLAUDE.md')
+  const marker = '# Contentrain AI Rules'
+  const reference = [
+    '# Contentrain AI Rules',
+    '',
+    'This project uses [Contentrain](https://ai.contentrain.io) for AI-driven content management.',
+    '',
+    '- **Rules** are in `.claude/rules/` — auto-loaded each conversation',
+    '- **Skills** are in `.claude/skills/` — invoke with `/contentrain-normalize` etc.',
+    '- **Docs:** https://ai.contentrain.io',
+  ].join('\n')
+
+  if (await pathExists(claudeMdPath)) {
+    const existing = await readFile(claudeMdPath, 'utf-8')
+    if (!existing.includes(marker)) {
+      await appendFile(claudeMdPath, `\n\n${reference}\n`)
+      filesToAdd.push(claudeMdPath)
+    }
+  } else {
+    await writeFile(claudeMdPath, `${reference}\n`, 'utf-8')
+    filesToAdd.push(claudeMdPath)
+  }
+
+  if (filesToAdd.length > 0) {
+    await git.add(filesToAdd)
+    try {
+      await git.commit('[contentrain] install Claude Code rules and skills')
+    } catch { /* nothing to commit */ }
+  }
+}
+
+async function installCursorRules(
+  projectRoot: string,
+  resolveRuleFile: (p: string) => string,
+): Promise<void> {
+  // Cursor modern format: .cursor/rules/*.mdc with alwaysApply frontmatter
+  const rulesDir = join(projectRoot, '.cursor', 'rules')
+  await ensureDir(rulesDir)
+  const git = simpleGit(projectRoot)
+  const filesToAdd: string[] = []
+
+  for (const baseName of RULE_BASE_NAMES) {
+    const srcFile = `contentrain-${baseName}.mdc`
+    const dest = join(rulesDir, srcFile)
+    if (await pathExists(dest)) continue
+    try {
+      const src = resolveRuleFile(`ide/cursor/rules/${srcFile}`)
+      await writeFile(dest, await readFile(src, 'utf-8'), 'utf-8')
+      filesToAdd.push(dest)
+    } catch { /* rule file unavailable */ }
+  }
+
+  if (filesToAdd.length > 0) {
+    await git.add(filesToAdd)
+    try {
+      await git.commit('[contentrain] install Cursor rules')
+    } catch { /* nothing to commit */ }
+  }
+}
+
+async function installWindsurfRules(
+  projectRoot: string,
+  resolveRuleFile: (p: string) => string,
+): Promise<void> {
+  // Windsurf format: .windsurf/rules/*.md with trigger: always_on frontmatter
+  const rulesDir = join(projectRoot, '.windsurf', 'rules')
+  await ensureDir(rulesDir)
+  const git = simpleGit(projectRoot)
+  const filesToAdd: string[] = []
+
+  for (const baseName of RULE_BASE_NAMES) {
+    const fileName = `contentrain-${baseName}.md`
+    const dest = join(rulesDir, fileName)
+    if (await pathExists(dest)) continue
+    try {
+      const src = resolveRuleFile(`ide/windsurf/rules/${fileName}`)
+      await writeFile(dest, await readFile(src, 'utf-8'), 'utf-8')
+      filesToAdd.push(dest)
+    } catch { /* rule file unavailable */ }
+  }
+
+  if (filesToAdd.length > 0) {
+    await git.add(filesToAdd)
+    try {
+      await git.commit('[contentrain] install Windsurf rules')
+    } catch { /* nothing to commit */ }
   }
 }
 

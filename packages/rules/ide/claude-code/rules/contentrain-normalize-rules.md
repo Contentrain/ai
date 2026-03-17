@@ -1,0 +1,312 @@
+# Contentrain Normalize Rules
+
+> These rules govern the normalize flow: extracting hardcoded content from source code into `.contentrain/` (Phase 1) and patching source files to reference extracted content (Phase 2).
+
+---
+
+## 1. Purpose
+
+Normalize converts a codebase with hardcoded strings into a Contentrain-managed content architecture:
+
+- **Phase 1 (Extraction):** Pull content from source code into `.contentrain/` structure. Source files are NOT modified.
+- **Phase 2 (Reuse):** Patch source files to replace hardcoded strings with content references. Requires completed extraction.
+
+Each phase produces a separate branch for independent review. This separation ensures extraction can be reviewed and merged before any source file modifications occur.
+
+---
+
+## 2. Two-Phase Architecture
+
+| Aspect | Phase 1: Extraction | Phase 2: Reuse |
+|--------|-------------------|----------------|
+| Purpose | Pull content from source to `.contentrain/` | Patch source files with content references |
+| Scope | Full project scan | Per model or per domain |
+| Source files modified | No | Yes |
+| Branch pattern | `contentrain/normalize/extract/{domain}/{timestamp}` | `contentrain/normalize/reuse/{model}/{locale}/{timestamp}` |
+| Prerequisite | Initialized `.contentrain/` | Completed extraction (content exists in `.contentrain/`) |
+| Workflow mode | Always `review` | Always `review` |
+| Standalone value | Yes -- content is manageable in Studio immediately | Depends on Phase 1 |
+
+### Why Two Phases?
+
+- Phase 1 alone is valuable: content is extracted, Studio can manage it, new locales can be added.
+- Phase 2 can be done incrementally, model by model, reducing risk.
+- Separate reviews mean clearer diffs and easier rollback.
+
+---
+
+## 3. Agent vs MCP Responsibilities
+
+### Agent (Intelligence Layer -- You)
+
+- **Decide what is content vs code.** This is a semantic judgment that requires understanding context.
+- **Assign domain grouping.** Determine which domain each piece of content belongs to.
+- **Determine model structure.** Group related content into models, choose the right kind.
+- **Create replacement expressions.** These are stack-specific and require framework knowledge:
+  - Vue/Nuxt: `{{ $t('key') }}` or `{{ t('key') }}`
+  - React/Next: `{t('key')}` or `{intl.formatMessage({id: 'key'})}`
+  - Svelte/SvelteKit: `{$t('key')}`
+  - Astro: `{t('key')}`
+  - Generic: direct import from `#contentrain`
+- **Filter false positives** from scan candidates.
+- **Evaluate and group** candidates into logical models.
+
+### MCP (Deterministic Infrastructure)
+
+- **Scan the file system** (build graph, find candidates).
+- **Read and write files** in `.contentrain/`.
+- **Patch source files** with exact string replacement (agent provides the replacement expression).
+- **Create branches, commit, validate** all changes.
+- **Enforce guardrails** (file limits, type restrictions, dry-run requirement).
+
+**Rule:** MCP is framework-agnostic. It does NOT know how `{t('key')}` differs from `{{ $t('key') }}`. The agent provides all stack-specific logic.
+
+---
+
+## 4. Guardrails
+
+These limits protect against runaway operations and ensure reviewable changes.
+
+| Guardrail | Limit | Rationale |
+|-----------|-------|-----------|
+| Allowed source file types | `.vue`, `.tsx`, `.jsx`, `.ts`, `.js`, `.mjs`, `.astro`, `.svelte` | Only scan files that can contain UI content |
+| Max files per scan | 500 | Prevent scanning entire monorepos |
+| Max files per apply | 100 | Keep diffs reviewable |
+| Dry-run before apply | **MANDATORY** | Preview all changes before executing |
+| Workflow mode | Always `review` | Normalize changes are never auto-merged |
+| Reuse scope | Per model or per domain | No whole-project reuse in one operation |
+| Reuse prerequisite | Extraction must be complete | Content must exist in `.contentrain/` before patching source |
+
+### Enforcement
+
+- Attempting to apply without a prior dry-run will be rejected.
+- Attempting to reuse without completed extraction will be rejected.
+- Exceeding file limits will truncate results with a warning.
+
+---
+
+## 5. What IS Content
+
+Use these heuristics to identify content strings in source code. Content is user-visible text that should be managed separately from code.
+
+### Extract These
+
+- **Headings and titles** in templates/JSX (`<h1>`, `<h2>`, etc.)
+- **Paragraph text** and body copy
+- **Button labels** (`<button>Submit</button>`)
+- **Link text** (`<a>Learn more</a>`)
+- **Form labels and placeholders** (`<label>`, `placeholder="..."`)
+- **Error messages** shown to users
+- **Success/notification messages**
+- **Alt text** on images (`alt="..."`)
+- **ARIA labels** (`aria-label="..."`)
+- **Meta descriptions and page titles** (`<title>`, `<meta name="description">`)
+- **Navigation items** (menu labels, breadcrumbs)
+- **Tooltip text**
+- **Empty state messages** ("No results found")
+- **CTA (call-to-action) text**
+
+### Do NOT Extract These
+
+- CSS class names, HTML IDs
+- Variable names, function names, parameter names
+- Technical identifiers (API endpoints, route paths, event names)
+- Import paths and file paths
+- Numbers used as constants (port numbers, HTTP status codes, pixel dimensions, timeouts)
+- Strings shorter than 3 characters (unless semantically meaningful: "OK", "No", "Yes")
+- Regular expressions
+- Configuration values (environment variables, feature flags)
+- Log messages (internal, not user-facing)
+- Code comments
+- Test assertion strings
+- JSON keys
+- Enum values used as code identifiers (not displayed to users)
+
+### Dictionary Interpolation Limitation
+
+Strings containing dynamic expressions (`${variable}`, template literals with runtime values) cannot be stored in dictionaries. These must remain as hardcoded expressions in source code.
+
+**CANNOT extract:**
+
+- `"Add a new entry to ${modelId}"` — contains runtime variable
+- `` `Hello, ${user.name}!` `` — template literal with variable
+
+**CAN extract:**
+
+- `"Add a new entry"` — static string (parameterize separately if needed)
+- `"Hello, World!"` — no runtime variables
+
+Agent should split parameterized strings: extract the static template pattern and leave the interpolation in code.
+
+```
+// Instead of: `"Add a new entry to ${modelId}"`
+// Extract: dictionary key "add-entry-to" = "Add a new entry to"
+// Code: `${t['add-entry-to']} ${modelId}`
+```
+
+### Edge Cases
+
+| String | Extract? | Reason |
+|--------|----------|--------|
+| `"OK"` | Yes | User-visible confirmation |
+| `"px"` | No | CSS unit, not content |
+| `"Loading..."` | Yes | User-visible state message |
+| `"GET"` | No | HTTP method, technical |
+| `"en"` | No | Locale code, technical |
+| `"Submit Form"` | Yes | User-visible button label |
+| `"/api/users"` | No | API endpoint |
+| `"flex"` | No | CSS value |
+| `"user.name"` | No | Object property path |
+| `"An error occurred"` | Yes | User-facing error message |
+
+---
+
+## 6. Phase 1: Extraction Flow
+
+### Step-by-Step
+
+1. **Build project graph:**
+   ```
+   contentrain_scan(mode: "graph")
+   ```
+   Returns import/component dependency graph. Use this to understand project structure and prioritize files.
+
+2. **Find candidates:**
+   ```
+   contentrain_scan(mode: "candidates")
+   ```
+   Returns hardcoded string candidates with file locations, line numbers, and surrounding context.
+
+3. **Agent evaluation (your job):**
+   - Filter out false positives using the heuristics in Section 5.
+   - Group candidates by domain (e.g., `marketing`, `blog`, `system`).
+   - Determine model structure: which kind (singleton, collection, dictionary), which fields.
+   - Assign field names and keys.
+
+4. **Preview extraction:**
+   ```
+   contentrain_apply(mode: "extract", dry_run: true)
+   ```
+   Returns a preview of what will be created in `.contentrain/` without making changes.
+
+5. **Review dry-run output:**
+   - Verify models are structured correctly.
+   - Verify content assignments are accurate.
+   - Check for missing or misclassified candidates.
+
+6. **Execute extraction:**
+   ```
+   contentrain_apply(mode: "extract")
+   ```
+   Creates model definitions and content files in `.contentrain/`.
+
+7. **Validate and submit:**
+   ```
+   contentrain_validate
+   contentrain_submit
+   ```
+   Submit always uses `review` mode for normalize operations.
+
+### Extraction Rules
+
+- Extraction creates content in `.contentrain/` but does NOT modify source files.
+- Each extraction produces a single branch with all extracted content.
+- Group related content into the fewest models that make semantic sense.
+- Prefer dictionary kind for UI labels and error messages.
+- Prefer singleton kind for page-specific content (hero, features).
+- Prefer collection kind for repeating items (team members, FAQs, testimonials).
+
+---
+
+## 7. Phase 2: Reuse Flow
+
+### Step-by-Step
+
+1. **Select scope:** Choose one model or domain to process.
+
+2. **Determine replacement expressions (your job):**
+   Based on the project's tech stack, determine how source files should reference content:
+
+   | Stack | Pattern | Example |
+   |-------|---------|---------|
+   | Vue/Nuxt (i18n) | `{{ $t('key') }}` | `{{ $t('hero.title') }}` |
+   | React/Next (react-intl) | `{intl.formatMessage({id: 'key'})}` | `{intl.formatMessage({id: 'hero.title'})}` |
+   | React/Next (next-intl) | `{t('key')}` | `{t('hero.title')}` |
+   | Svelte/SvelteKit | `{$t('key')}` | `{$t('hero.title')}` |
+   | Astro | `{t('key')}` | `{t('hero.title')}` |
+   | SDK import | `query('model').all()` | Direct data access via `#contentrain` |
+
+3. **Preview reuse:**
+   ```
+   contentrain_apply(mode: "reuse", scope: "model-id", dry_run: true)
+   ```
+   Returns a preview of source file patches.
+
+4. **Review dry-run output:**
+   - Verify each replacement is correct.
+   - Verify import statements will be added where needed.
+   - Check that no non-content strings are being replaced.
+
+5. **Execute reuse:**
+   ```
+   contentrain_apply(mode: "reuse", scope: "model-id")
+   ```
+   Patches source files with content references.
+
+6. **Validate and submit:**
+   ```
+   contentrain_validate
+   contentrain_submit
+   ```
+
+7. **Repeat** for each model/domain until all extracted content is referenced.
+
+### Reuse Rules
+
+- Process one model or domain at a time. Do NOT reuse the entire project in one operation.
+- Ensure the i18n/content library is properly configured in the project before reuse.
+- Add necessary imports to patched files (e.g., `import { useTranslation } from 'next-intl'`).
+- Do NOT change the structure or behavior of components -- only replace string literals with content references.
+- If a source file requires setup code (composable import, hook call), include it in the patch.
+
+---
+
+## 8. Domain and Model Grouping Guidelines
+
+When evaluating scan candidates, group content logically:
+
+### Domain Assignment
+
+| Content Location | Suggested Domain |
+|------------------|-----------------|
+| Landing page, marketing sections | `marketing` |
+| Blog, articles, posts | `blog` |
+| Navigation, footer, header | `ui` |
+| Error messages, validation | `system` |
+| Product pages, e-commerce | `product` |
+| Documentation, help | `docs` |
+| User-facing app strings | `app` |
+
+### Model Kind Selection
+
+| Content Pattern | Kind | Rationale |
+|----------------|------|-----------|
+| One set of fields per page section | `singleton` | Hero, features, pricing header |
+| Multiple items of same type | `collection` | Team members, FAQs, testimonials |
+| Long-form with metadata | `document` | Blog posts, documentation pages |
+| Key-value UI strings | `dictionary` | Error messages, button labels, form labels |
+
+---
+
+## 9. Common Mistakes to Avoid
+
+| Mistake | Correct Approach |
+|---------|-----------------|
+| Extracting CSS values as content | Only extract user-visible text |
+| Creating one model per component | Group related content into shared models |
+| Skipping dry-run | ALWAYS preview before apply |
+| Auto-merging normalize changes | Normalize ALWAYS uses review mode |
+| Reusing before extraction is merged | Wait for extraction review and merge first |
+| Processing all models in one reuse | Scope reuse to one model/domain at a time |
+| Ignoring project graph | Use graph output to understand component relationships |
+| Hardcoding replacement patterns | Detect the project's i18n stack and use its conventions |

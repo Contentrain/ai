@@ -107,6 +107,73 @@ function buildGeneric(rules: { name: string; content: string }[]): string {
   return lines.join('\n')
 }
 
+// Derive a human-readable description from the rule filename
+function ruleDescription(baseName: string): string {
+  return baseName
+    .split('-')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+    + ' — Contentrain content governance'
+}
+
+async function buildClaudeCodeGranular(rules: { name: string; content: string }[]): Promise<void> {
+  const dirPath = join(ROOT, 'ide/claude-code/rules')
+  await mkdir(dirPath, { recursive: true })
+
+  for (const rule of rules) {
+    const baseName = rule.name.replace(/\.md$/, '')
+    const fileName = `contentrain-${baseName}.md`
+    await writeFile(join(dirPath, fileName), `${rule.content}\n`, 'utf-8')
+    console.log(`  Written: ide/claude-code/rules/${fileName}`)
+  }
+}
+
+async function buildCursorGranular(rules: { name: string; content: string }[]): Promise<void> {
+  // .cursor/rules/*.mdc — Cursor's modern granular rules format
+  const dirPath = join(ROOT, 'ide/cursor/rules')
+  await mkdir(dirPath, { recursive: true })
+
+  for (const rule of rules) {
+    const baseName = rule.name.replace(/\.md$/, '')
+    const fileName = `contentrain-${baseName}.mdc`
+    const description = ruleDescription(baseName)
+    const content = [
+      '---',
+      `description: ${description}`,
+      'alwaysApply: true',
+      '---',
+      '',
+      rule.content,
+      '',
+    ].join('\n')
+    await writeFile(join(dirPath, fileName), content, 'utf-8')
+    console.log(`  Written: ide/cursor/rules/${fileName}`)
+  }
+}
+
+async function buildWindsurfGranular(rules: { name: string; content: string }[]): Promise<void> {
+  // .windsurf/rules/*.md — Windsurf's granular rules format
+  const dirPath = join(ROOT, 'ide/windsurf/rules')
+  await mkdir(dirPath, { recursive: true })
+
+  for (const rule of rules) {
+    const baseName = rule.name.replace(/\.md$/, '')
+    const fileName = `contentrain-${baseName}.md`
+    const description = ruleDescription(baseName)
+    const content = [
+      '---',
+      `description: ${description}`,
+      'trigger: always_on',
+      '---',
+      '',
+      rule.content,
+      '',
+    ].join('\n')
+    await writeFile(join(dirPath, fileName), content, 'utf-8')
+    console.log(`  Written: ide/windsurf/rules/${fileName}`)
+  }
+}
+
 async function main() {
   const rules = await readSharedRules()
 
@@ -117,6 +184,7 @@ async function main() {
 
   console.log(`Read ${rules.length} shared rule files`)
 
+  // Monolithic bundles (fallback / legacy)
   const outputs = [
     { dir: 'ide/claude-code', file: 'contentrain.md', content: buildClaudeCode(rules) },
     { dir: 'ide/cursor', file: 'contentrain.cursorrules', content: buildCursor(rules) },
@@ -131,6 +199,11 @@ async function main() {
     await writeFile(filePath, output.content, 'utf-8')
     console.log(`  Written: ${output.dir}/${output.file}`)
   }
+
+  // Granular rule files for each IDE
+  await buildClaudeCodeGranular(rules)
+  await buildCursorGranular(rules)
+  await buildWindsurfGranular(rules)
 
   console.log('Done.')
 }
