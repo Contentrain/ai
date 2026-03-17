@@ -1,4 +1,5 @@
 packages:
   - "packages/*"
   - "packages/sdk/*"
+  - "packages/cli/src/serve-ui"
   - "docs"
