@@ -15,6 +15,11 @@ export default defineConfig({
     ['meta', { property: 'og:title', content: 'Contentrain AI' }],
     ['meta', { property: 'og:description', content: 'Extract, structure, review, and deliver AI-generated content across any platform' }],
     ['meta', { property: 'og:url', content: 'https://ai.contentrain.io' }],
+    ['meta', { property: 'og:image', content: 'https://ai.contentrain.io/og-image.png' }],
+    ['meta', { property: 'og:image:width', content: '1200' }],
+    ['meta', { property: 'og:image:height', content: '630' }],
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:image', content: 'https://ai.contentrain.io/og-image.png' }],
   ],
 
   themeConfig: {
