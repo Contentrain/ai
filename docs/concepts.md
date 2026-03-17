@@ -21,7 +21,7 @@ Most content tools ask you to learn their system — their dashboard, their API,
 The result is a content pipeline with full auditability:
 
 ```
-Agent generates → MCP validates → Human reviews → Git commits → SDK serves
+Agent generates → MCP validates → Human reviews → Git commits → Content delivered
 ```
 
 Every step is a git diff. Nothing reaches production without your approval.
@@ -36,8 +36,8 @@ Contentrain AI inverts the traditional CMS workflow:
 | Human creates schema manually | Agent creates models via MCP |
 | Human types content in forms | Agent writes content to Git |
 | Content stored in database | Content stored as files in `.contentrain/` |
-| API calls to read content | Generated SDK client with type-safe imports |
-| Deploys need API availability | Static files — works offline, zero runtime deps |
+| API calls to read content | Plain JSON files — read from any language, optional typed SDK |
+| Deploys need API availability | Static files — works offline, zero runtime deps, any platform |
 
 ## Three Layers
 
@@ -159,10 +159,14 @@ Every model can be i18n-enabled (`i18n: true`). Content is stored per locale:
   tr.json    ← Turkish
 ```
 
-The SDK resolves locale automatically:
+Any platform can read the locale files directly. The TypeScript SDK adds convenience:
 
 ```ts
-singleton('hero').locale('tr').get()  // Turkish content
+// Option 1: Read JSON directly (any language)
+// Just read .contentrain/content/marketing/hero/tr.json
+
+// Option 2: TypeScript SDK (optional)
+singleton('hero').locale('tr').get()  // typed, with query API
 ```
 
 ## Git Workflow
@@ -182,11 +186,11 @@ Branches are auto-merged or held for review depending on your workflow config.
 
 | | Contentrain AI | Headless CMS (Sanity, Strapi) | Git CMS (Tina, Decap) |
 |---|---|---|---|
-| **Content source** | Your existing codebase | External dashboard | Markdown/JSON in repo |
+| **Content source** | Your codebase or agent-created from scratch | External dashboard | Markdown/JSON in repo |
 | **AI integration** | Native (MCP tools) | Manual API calls | None |
 | **Extract from code** | Yes (normalize flow) | No | No |
 | **Vendor lock-in** | None (plain files + Git) | API dependency | Editor dependency |
-| **Type safety** | Generated SDK | Manual types | Manual types |
+| **Type safety** | Generated SDK (optional) | Manual types | Manual types |
 | **i18n** | Built-in (per-locale files) | Plugin/addon | Plugin/addon |
 | **Review workflow** | Git branches + local UI | Dashboard roles | PR-based |
 | **Runtime dependency** | Zero (static files) | API availability | Build-time |
