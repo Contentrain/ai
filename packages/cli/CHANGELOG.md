@@ -1,5 +1,11 @@
 # contentrain
 
+## 0.1.4
+
+### Patch Changes
+
+- Add Docs and GitHub external links to serve UI sidebar.
+
 ## 0.1.3
 
 ### Patch Changes
