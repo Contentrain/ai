@@ -13,6 +13,8 @@ import {
   Moon,
   Sun,
   Settings,
+  Github,
+  BookOpen,
 } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -90,8 +92,38 @@ const validationIssues = computed(() => {
       </RouterLink>
     </nav>
 
-    <!-- Bottom: Theme toggle -->
-    <div class="flex items-center gap-3 px-3 pb-4 mt-auto">
+    <!-- Bottom: External links + Theme toggle -->
+    <div class="flex flex-col gap-1 px-3 mt-auto">
+      <a
+        href="https://ai.contentrain.io"
+        target="_blank"
+        rel="noopener"
+        :class="cn(
+          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150',
+          'text-muted-foreground hover:bg-background/60 hover:text-foreground',
+        )"
+      >
+        <BookOpen class="size-5 shrink-0" />
+        <span class="truncate opacity-0 transition-opacity duration-200 group-hover:opacity-100 xl:opacity-100">
+          Docs
+        </span>
+      </a>
+      <a
+        href="https://github.com/Contentrain/ai"
+        target="_blank"
+        rel="noopener"
+        :class="cn(
+          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150',
+          'text-muted-foreground hover:bg-background/60 hover:text-foreground',
+        )"
+      >
+        <Github class="size-5 shrink-0" />
+        <span class="truncate opacity-0 transition-opacity duration-200 group-hover:opacity-100 xl:opacity-100">
+          GitHub
+        </span>
+      </a>
+    </div>
+    <div class="flex items-center gap-3 px-3 pb-4">
       <button
         :class="cn(
           'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm w-full transition-all duration-150',
