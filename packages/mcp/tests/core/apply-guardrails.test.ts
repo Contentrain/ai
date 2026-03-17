@@ -467,7 +467,7 @@ describe('Guardrail #1: Scope enforcement via MCP', () => {
       arguments: {
         id: 'ui-texts',
         name: 'UI Texts',
-        kind: 'dictionary',
+        kind: 'collection',
         domain: 'app',
         i18n: true,
         fields: { welcome_title: { type: 'string' } },
@@ -600,7 +600,7 @@ describe('Guardrail #3: Preview-Execute Parity', () => {
       arguments: {
         id: 'ui-texts',
         name: 'UI Texts',
-        kind: 'dictionary',
+        kind: 'collection',
         domain: 'app',
         i18n: true,
         fields: { welcome_title: { type: 'string' } },
@@ -617,8 +617,9 @@ describe('Guardrail #3: Preview-Execute Parity', () => {
         dry_run: true,
         extractions: [{
           model: 'ui-texts',
-          kind: 'dictionary',
+          kind: 'collection',
           domain: 'app',
+          fields: { welcome_title: { type: 'string' } },
           entries: [
             { locale: 'en', data: { welcome_title: 'Welcome to our platform' } },
           ],
@@ -669,7 +670,7 @@ export function Broken() {
       arguments: {
         id: 'ui-texts',
         name: 'UI Texts',
-        kind: 'dictionary',
+        kind: 'collection',
         domain: 'app',
         i18n: true,
         fields: { text: { type: 'string' } },
