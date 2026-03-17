@@ -6,7 +6,7 @@
   NODE_VERSION = "22"
   COREPACK_ENABLE_STRICT = "0"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Content-Type = "application/xml"
