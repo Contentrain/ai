@@ -8,8 +8,8 @@ layout: home
 
 hero:
   name: Contentrain AI
-  text: You ship fast with AI. But then what?
-  tagline: "500 hardcoded strings. No translation path. No structure. Contentrain extracts, standardizes, and governs your content — all through Git, any platform, any AI agent."
+  text: AI generates fast. Who governs what it produces?
+  tagline: "Whether you're cleaning up 500 hardcoded strings or starting a new project — Contentrain gives your AI-generated content structure, review, and delivery. All through Git, any platform, any agent."
   image:
     src: /hero-pipeline.png
     alt: Contentrain AI Pipeline — Agent generates, MCP validates, Human reviews, Git commits, content delivered
@@ -22,10 +22,10 @@ hero:
       link: https://github.com/Contentrain/ai
 
 features:
-  - icon: 🔍
-    title: Extract
-    details: Your AI agent scans your codebase, finds hardcoded strings, classifies them into structured content models — in minutes, not days.
-    link: /guides/normalize
+  - icon: 🏗️
+    title: Structure
+    details: Define content models or extract them from existing code. Your AI agent handles the work — Contentrain provides the deterministic infrastructure.
+    link: /getting-started
   - icon: ✅
     title: Govern
     details: Every content change goes through Git branches, validation, and human review. Nothing reaches production without approval.
@@ -36,52 +36,62 @@ features:
     link: /guides/i18n
   - icon: 📦
     title: Deliver
-    details: Plain JSON and Markdown files — consumable by any platform. TypeScript SDK for convenience, but any language can read the output.
+    details: Plain JSON and Markdown files — consumable by any platform, any language. TypeScript SDK for convenience, but the files are the product.
     link: /packages/sdk
 ---
 
 ## The Problem
 
-You've been shipping fast with AI — Cursor, Claude Code, Copilot. Your landing page is live. 47 components, 500+ strings hardcoded in templates.
+AI made you 10x faster at producing code. But nobody solved what happens to the content inside that code.
 
-Then reality hits:
+**Already shipped?** 47 components, 500+ hardcoded strings. No translation path, no single source of truth:
 
 - **Monday:** Founder says "we need Turkish"
 - **Tuesday:** Marketer wants to change the hero headline — it's in 7 files
 - **Wednesday:** Mobile team asks for the same content via API
-- **Thursday:** New hire can't find where "Get started free" lives
 - **Friday:** You're still doing grep-and-replace
 
-**This isn't a CMS problem. It's a governance problem.** Your AI generates content fast, but there's no structure, no review, no single source of truth.
+**Starting fresh?** Without a content layer from day one, you'll be in the same place in 2 weeks. AI generates fast, but the strings it produces have no structure, no governance, no review process.
 
-## The Fix: 3 Minutes, Not 3 Days
+**This isn't a CMS problem. It's a governance problem.** AI produces content — but who validates it, who reviews it, who standardizes it, and how does it reach every platform?
 
-```bash
-# 1. Initialize
+## Two Starting Points
+
+::: code-group
+
+```bash [Existing Project — Rescue]
+# Extract 500+ hardcoded strings in minutes
 npx contentrain init
-
-# 2. Tell your agent
+# Then tell your agent:
 "Scan my project and extract all hardcoded strings"
-
-# 3. Done
 # Content extracted → models created → source patched → review UI ready
 ```
 
-**Before:**
+```bash [New Project — Prevention]
+# Start with structured content from day one
+npx contentrain init
+# Then tell your agent:
+"Create a hero section model with title, subtitle, and CTA"
+# Models defined → content structured → SDK ready → i18n built in
+```
+
+:::
+
+**Before** (hardcoded, untranslatable, unmanageable):
 ```vue
 <h1>Build faster with AI-powered content</h1>
 <p>Ship your next project in days, not weeks</p>
 <button>Get started free</button>
 ```
 
-**After:**
+**After** (structured, translatable, platform-independent):
 ```vue
 <h1>{{ t('hero.title') }}</h1>
 <p>{{ t('hero.subtitle') }}</p>
 <button>{{ t('cta.get_started') }}</button>
 ```
 
-Content now lives in structured JSON files — translatable, manageable, platform-independent:
+Content lives in plain JSON — any platform can read it:
 
 ```json
 {
