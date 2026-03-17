@@ -2,11 +2,28 @@
   "name": "contentrain-ai",
   "private": true,
   "license": "MIT",
-  "description": "AI-generated content governance infrastructure — Agent üretir, insan onaylar, sistem standardize eder.",
+  "description": "AI-generated content governance infrastructure — agent produces, human approves, system standardizes.",
+  "homepage": "https://ai.contentrain.io",
   "repository": {
     "type": "git",
     "url": "https://github.com/Contentrain/ai.git"
   },
+  "bugs": {
+    "url": "https://github.com/Contentrain/ai/issues"
+  },
+  "keywords": [
+    "contentrain",
+    "content-governance",
+    "ai",
+    "mcp",
+    "model-context-protocol",
+    "git",
+    "i18n",
+    "normalize",
+    "platform-independent",
+    "byoa",
+    "open-source"
+  ],
   "engines": {
     "node": ">=22",
     "pnpm": ">=9"

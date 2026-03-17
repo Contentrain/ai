@@ -2,7 +2,7 @@
   "name": "@contentrain/mcp",
   "version": "1.0.2",
   "license": "MIT",
-  "description": "MCP tools for AI-powered content management with Contentrain",
+  "description": "Local-first MCP server for AI-generated content governance — 13 deterministic tools for any platform",
   "type": "module",
   "repository": {
     "type": "git",
@@ -16,11 +16,17 @@
   "keywords": [
     "contentrain",
     "mcp",
+    "model-context-protocol",
     "ai",
     "content-governance",
     "git",
     "i18n",
-    "local-first"
+    "normalize",
+    "local-first",
+    "platform-independent",
+    "claude",
+    "cursor",
+    "windsurf"
   ],
   "publishConfig": {
     "access": "public"

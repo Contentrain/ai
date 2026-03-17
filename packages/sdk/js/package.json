@@ -2,7 +2,7 @@
   "name": "@contentrain/query",
   "version": "5.0.0",
   "license": "MIT",
-  "description": "Type-safe content query SDK for Contentrain — universal JS/TS",
+  "description": "Optional type-safe query SDK for Contentrain — generated TypeScript client for platform-independent JSON content",
   "type": "module",
   "repository": {
     "type": "git",
@@ -20,8 +20,15 @@
     "typescript",
     "content",
     "i18n",
-    "vite",
-    "nextjs"
+    "generated-client",
+    "platform-independent",
+    "json",
+    "vue",
+    "react",
+    "nuxt",
+    "nextjs",
+    "astro",
+    "sveltekit"
   ],
   "publishConfig": {
     "access": "public"

@@ -20,7 +20,11 @@
     "content-governance",
     "ai",
     "i18n",
-    "cms"
+    "normalize",
+    "git",
+    "review-workflow",
+    "sdk-generator",
+    "platform-independent"
   ],
   "publishConfig": {
     "access": "public"
