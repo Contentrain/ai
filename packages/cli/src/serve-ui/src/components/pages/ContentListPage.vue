@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { marked } from 'marked'
 import { useContentStore } from '@/stores/content'
 import { useProjectStore } from '@/stores/project'
 import { useWatch } from '@/composables/useWatch'
@@ -81,7 +82,20 @@ const copiedId = ref<string | null>(null)
 const rawEntries = computed((): Record<string, unknown>[] => {
   const cl = store.contentList
   if (!cl) return []
-  if (cl.kind === 'collection' || cl.kind === 'document')
+  if (cl.kind === 'document') {
+    const arr = Array.isArray(cl.data) ? cl.data : []
+    const result: Record<string, unknown>[] = []
+    for (const item of arr) {
+      const entry = item as Record<string, unknown>
+      const fm = entry.frontmatter as Record<string, unknown> | undefined
+      const flat: Record<string, unknown> = { slug: entry.slug }
+      if (fm) Object.assign(flat, fm)
+      flat.body = entry.body ?? ''
+      result.push(flat)
+    }
+    return result
+  }
+  if (cl.kind === 'collection')
     return (Array.isArray(cl.data) ? cl.data : []) as Record<string, unknown>[]
   if (cl.kind === 'singleton') return [cl.data as Record<string, unknown>]
   if (cl.kind === 'dictionary')
@@ -263,8 +277,8 @@ function onDragEnd() {
 // --- Model field type + required maps from description ---
 const fieldTypeMap = computed((): Record<string, string> => {
   const desc = store.modelDescription
-  if (!desc?.fields) return {}
-  const map: Record<string, string> = {}
+  const map: Record<string, string> = { body: 'markdown' }
+  if (!desc?.fields) return map
   for (const [key, field] of Object.entries(desc.fields)) {
     map[key] = field.type
   }
@@ -309,24 +323,13 @@ const previewType = ref('')
 function openPreview(fieldName: string, value: unknown) {
   previewField.value = fieldName
   previewValue.value = value
-  previewType.value = fieldTypeMap.value[fieldName] ?? 'string'
+  previewType.value = fieldName === 'body' ? 'markdown' : (fieldTypeMap.value[fieldName] ?? 'string')
   previewOpen.value = true
 }
 
-// Simple markdown→HTML for preview (no external deps)
+// Markdown → HTML via marked (sync)
 function renderMarkdown(md: string): string {
-  return md
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br>')
-    .replace(/^(.+)$/gm, (match) => match.startsWith('<') ? match : `<p>${match}</p>`)
+  return marked.parse(md, { async: false }) as string
 }
 
 function isLongContent(val: unknown, fieldName: string): boolean {

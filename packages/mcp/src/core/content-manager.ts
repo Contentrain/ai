@@ -608,7 +608,7 @@ export async function listContent(
     }
 
     case 'document': {
-      const entries: Array<{ slug: string; frontmatter: Record<string, unknown> }> = []
+      const entries: Array<{ slug: string; frontmatter: Record<string, unknown>; body: string }> = []
       const strategy = resolveLocaleStrategy(model)
 
       if (!model.i18n) {
@@ -619,8 +619,8 @@ export async function listContent(
           const slug = f.replace('.md', '')
           const raw = await readText(join(cDir, f))
           if (!raw) continue
-          const { frontmatter } = parseFrontmatter(raw)
-          entries.push({ slug, frontmatter })
+          const { frontmatter, body } = parseFrontmatter(raw)
+          entries.push({ slug, frontmatter, body })
         }
       } else if (strategy === 'file') {
         // Each slug is a subdirectory containing locale.md files
@@ -628,8 +628,8 @@ export async function listContent(
         for (const slug of slugDirs) {
           const raw = await readText(join(cDir, slug, `${locale}.md`))
           if (!raw) continue
-          const { frontmatter } = parseFrontmatter(raw)
-          entries.push({ slug, frontmatter })
+          const { frontmatter, body } = parseFrontmatter(raw)
+          entries.push({ slug, frontmatter, body })
         }
       } else if (strategy === 'suffix') {
         // Files like {slug}.{locale}.md in flat directory
@@ -640,8 +640,8 @@ export async function listContent(
           const slug = f.slice(0, -suffix.length)
           const raw = await readText(join(cDir, f))
           if (!raw) continue
-          const { frontmatter } = parseFrontmatter(raw)
-          entries.push({ slug, frontmatter })
+          const { frontmatter, body } = parseFrontmatter(raw)
+          entries.push({ slug, frontmatter, body })
         }
       } else if (strategy === 'directory') {
         // Files in {locale}/ directory as {slug}.md
@@ -652,8 +652,8 @@ export async function listContent(
           const slug = f.replace('.md', '')
           const raw = await readText(join(localeDir, f))
           if (!raw) continue
-          const { frontmatter } = parseFrontmatter(raw)
-          entries.push({ slug, frontmatter })
+          const { frontmatter, body } = parseFrontmatter(raw)
+          entries.push({ slug, frontmatter, body })
         }
       } else {
         // none — {slug}.md, no locale in filename
@@ -663,8 +663,8 @@ export async function listContent(
           const slug = f.replace('.md', '')
           const raw = await readText(join(cDir, f))
           if (!raw) continue
-          const { frontmatter } = parseFrontmatter(raw)
-          entries.push({ slug, frontmatter })
+          const { frontmatter, body } = parseFrontmatter(raw)
+          entries.push({ slug, frontmatter, body })
         }
       }
 
