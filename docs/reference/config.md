@@ -400,16 +400,70 @@ Each model independently controls whether it uses localization:
 | `true` | Separate file per locale (`en.json`, `tr.json`) | Translatable content |
 | `false` | Single `data.json` file | Language-independent content (e.g., color codes, API keys) |
 
+## Path Patterns by Kind
+
+All content files follow predictable path conventions. These are exported as `PATH_PATTERNS` from `@contentrain/types`.
+
+### Content Paths
+
+| Kind | i18n: true | i18n: false |
+|---|---|---|
+| **Collection** | `.contentrain/content/{domain}/{modelId}/{locale}.json` | `.contentrain/content/{domain}/{modelId}/data.json` |
+| **Singleton** | `.contentrain/content/{domain}/{modelId}/{locale}.json` | `.contentrain/content/{domain}/{modelId}/data.json` |
+| **Dictionary** | `.contentrain/content/{domain}/{modelId}/{locale}.json` | `.contentrain/content/{domain}/{modelId}/data.json` |
+| **Document** | `.contentrain/content/{domain}/{slug}/{locale}.md` | `.contentrain/content/{domain}/{slug}.md` |
+
+### Meta Paths
+
+| Kind | Path |
+|---|---|
+| **Collection** | `.contentrain/meta/{modelId}/{locale}.json` |
+| **Singleton** | `.contentrain/meta/{modelId}/{locale}.json` |
+| **Dictionary** | `.contentrain/meta/{modelId}/{locale}.json` |
+| **Document** | `.contentrain/meta/{modelId}/{slug}/{locale}.json` |
+
+::: warning
+Document meta files include the `{slug}` segment in the path, unlike other kinds. This is because each document is a separate entity with its own lifecycle.
+:::
+
+### Other Paths
+
+| File | Path |
+|---|---|
+| Config | `.contentrain/config.json` |
+| Context | `.contentrain/context.json` |
+| Vocabulary | `.contentrain/vocabulary.json` |
+| Model definition | `.contentrain/models/{modelId}.json` |
+
+## Validation Patterns
+
+Contentrain enforces consistent formats for identifiers. These are exported as regex patterns from `@contentrain/types`:
+
+| Pattern | Regex | Valid Examples | Invalid Examples |
+|---|---|---|---|
+| **Slug** | `/^[a-z0-9]+(?:-[a-z0-9]+)*$/` | `hello-world`, `post1` | `Hello`, `post_1`, `--bad` |
+| **Entry ID** | `/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,39}$/` | `a1b2c3d4e5f6`, `my-entry` | `""`, `-start`, `@invalid` |
+| **Locale** | `/^[a-z]{2}(?:-[A-Z]{2})?$/` | `en`, `tr`, `en-US`, `pt-BR` | `english`, `EN`, `e` |
+
 ## Canonical Serialization
 
-All JSON files written by Contentrain follow strict serialization rules for clean git diffs:
+All JSON files written by Contentrain follow strict serialization rules for deterministic, clean git diffs. These rules are exported as `CANONICAL_JSON` from `@contentrain/types`.
 
-| Rule | Description |
-|---|---|
-| **Sorted keys** | Object keys are sorted alphabetically |
-| **2-space indent** | Consistent indentation |
-| **Trailing newline** | Every file ends with `\n` |
-| **No trailing commas** | Standard JSON format |
-| **UTF-8 encoding** | Universal character support |
+| Rule | Value | Rationale |
+|---|---|---|
+| **Key sorting** | Lexicographic (alphabetical) | Parallel edits land in different positions — reduces merge conflicts |
+| **Indent** | 2 spaces | Standard, readable |
+| **Encoding** | UTF-8 | Universal character support |
+| **Trailing newline** | Yes (single `\n`) | POSIX compliance, clean git diffs |
+| **Null values** | Omitted entirely | Token efficiency — don't write what doesn't exist |
+| **Default values** | Omitted entirely | Token efficiency — don't write what's implied |
+| **No trailing commas** | Standard JSON | Compatibility |
 
-This ensures that content changes produce minimal, reviewable git diffs — critical for the review workflow.
+### Why Canonical Serialization Matters
+
+- **Collection entries** are sorted by entry ID → adding entries in parallel produces conflict-free merges
+- **Entry fields** follow the schema definition order → consistent, predictable diffs
+- **Omitting null/default** saves tokens when AI agents read content → lower cost, faster processing
+- **Deterministic output** means running the same operation twice produces identical files — no noise in git history
+
+All MCP tools, the CLI, and the SDK follow these rules. The `contentrain_validate` tool can detect and auto-fix serialization violations with `fix: true`.

@@ -76,6 +76,41 @@ Collections store **multiple typed entries** as a JSON object-map keyed by auto-
 }
 ```
 
+### Output Format (MCP / SDK)
+
+When you read a collection via `content_list`, entries are returned as an **array** — not the object-map used on disk:
+
+```json
+[
+  {
+    "id": "a1b2c3",
+    "title": "Getting Started",
+    "slug": "getting-started",
+    "category": "tutorial",
+    "published": true
+  },
+  {
+    "id": "d4e5f6",
+    "title": "Advanced Usage",
+    "slug": "advanced-usage",
+    "category": "guide",
+    "published": false
+  }
+]
+```
+
+::: info Storage vs Output
+On disk, collections use **object-map** format (keys = IDs) for git-friendly merges. MCP and SDK convert this to an **array** with `id` injected into each entry. This is intentional — storage is optimized for git, output is optimized for consumers.
+:::
+
+### Path Patterns
+
+| Scenario | Path |
+|---|---|
+| i18n: true | `.contentrain/content/{domain}/{model-id}/{locale}.json` |
+| i18n: false | `.contentrain/content/{domain}/{model-id}/data.json` |
+| Meta (i18n: true) | `.contentrain/meta/{model-id}/{locale}.json` |
+
 ### MCP content_save Call
 
 ```json
@@ -139,6 +174,19 @@ Singletons store a **single entry** per locale — ideal for one-off content lik
 }
 ```
 
+### Output Format (MCP / SDK)
+
+Singletons are returned as a plain object — the same shape as on disk:
+
+```json
+{
+  "site_name": "My Website",
+  "tagline": "Build faster with AI",
+  "logo": "/images/logo.svg",
+  "social_links": ["https://twitter.com/example"]
+}
+```
+
 ### MCP content_save Call
 
 ```json
@@ -196,6 +244,20 @@ Dictionary models must NOT have `fields` defined. The keys in the data object ar
   "domain": "system",
   "i18n": true,
   "content_path": "locales"
+}
+```
+
+### Output Format (MCP / SDK)
+
+Dictionaries are returned as a flat key-value object — same shape as on disk:
+
+```json
+{
+  "auth.login.title": "Sign In",
+  "auth.login.submit": "Log In",
+  "auth.login.forgot": "Forgot your password?",
+  "common.save": "Save",
+  "common.cancel": "Cancel"
 }
 ```
 
@@ -270,6 +332,49 @@ Welcome to Contentrain. This guide walks you through...
 }
 ```
 
+### Output Format (MCP / SDK)
+
+When you read documents via `content_list`, each entry is returned as a `DocumentEntry`:
+
+```ts
+interface DocumentEntry {
+  slug: string
+  frontmatter: Record<string, unknown>
+  body: string
+}
+```
+
+```json
+[
+  {
+    "slug": "getting-started",
+    "frontmatter": {
+      "title": "Getting Started",
+      "description": "Learn how to set up Contentrain in your project",
+      "order": 1
+    },
+    "body": "# Getting Started\n\nWelcome to Contentrain. This guide walks you through..."
+  }
+]
+```
+
+::: info
+The `frontmatter` object contains all fields defined in the model schema. The `body` field contains everything below the `---` delimiter. When listing documents without requesting full content, `body` may be empty.
+:::
+
+### Path Patterns
+
+| Scenario | Path |
+|---|---|
+| i18n: true | `.contentrain/content/{domain}/{slug}/{locale}.md` |
+| i18n: false | `.contentrain/content/{domain}/{slug}.md` |
+| Meta (i18n: true) | `.contentrain/meta/{model-id}/{slug}/{locale}.json` |
+| Meta (i18n: false) | `.contentrain/meta/{model-id}/{slug}.json` |
+
+::: warning
+Document meta files have a **different path structure** than other kinds. They include the `{slug}` segment: `.contentrain/meta/{model-id}/{slug}/{locale}.json`. Other kinds use `.contentrain/meta/{model-id}/{locale}.json` directly.
+:::
+
 ### MCP content_save Call
 
 ```json
@@ -290,7 +395,7 @@ Welcome to Contentrain. This guide walks you through...
 ```
 
 ::: tip
-The `slug` field is required for documents. It determines the file name and URL path. The `body` key inside `data` is reserved for the markdown content.
+The `slug` field is required for documents. It determines the file path and URL. The `body` key inside `data` is reserved for the markdown content.
 :::
 
 ## Locale Strategies
@@ -388,3 +493,69 @@ This is a common source of confusion. Here is a detailed comparison:
 | **Nested data** | Supports complex field types | Flat key-value only |
 | **Use case** | Structured entities (posts, products) | Translation strings, labels |
 | **ID in data** | Added on output (`{ id, ...fields }`) | Key IS the data address |
+
+## Relation System
+
+Fields with type `relation` or `relations` create references between models.
+
+### Relation Types
+
+| Type | Cardinality | Storage Value | Example |
+|---|---|---|---|
+| `relation` | One-to-one | `"author": "a1b2c3"` | Blog post → Author |
+| `relations` | One-to-many | `"tags": ["t1", "t2"]` | Blog post → Tags |
+
+### Reference Keys by Target Kind
+
+| Target Kind | Reference Key | Example |
+|---|---|---|
+| Collection | Entry `id` | `"author": "a1b2c3d4e5f6"` |
+| Document | Document `slug` | `"related_doc": "getting-started"` |
+| Singleton | Not referenceable | Single instance, no need for reference |
+| Dictionary | Not referenceable | No schema, no stable identity |
+
+### Polymorphic Relations
+
+When `model` is an array, the relation can target multiple model types:
+
+```json
+{
+  "related_content": {
+    "type": "relation",
+    "model": ["blog-post", "docs-guide", "case-study"]
+  }
+}
+```
+
+Polymorphic values are stored as `{ model, ref }` objects:
+
+```json
+{
+  "related_content": { "model": "blog-post", "ref": "getting-started" }
+}
+```
+
+### Self-Referencing
+
+A model can reference itself for tree structures:
+
+```json
+{
+  "id": "categories",
+  "kind": "collection",
+  "fields": {
+    "name": { "type": "string", "required": true },
+    "parent": { "type": "relation", "model": "categories" }
+  }
+}
+```
+
+### Relation Validation
+
+| Rule | Description |
+|---|---|
+| **Referential integrity** | Referenced ID/slug must exist in the target model |
+| **Locale-agnostic** | IDs and slugs are the same across all locales |
+| **Cascade warning** | Deleting a referenced entry triggers a validation warning |
+| **Array ordering** | `relations` array order is preserved |
+| **Min/max** | `relations` supports `min` and `max` element count |
