@@ -1,5 +1,16 @@
 # @contentrain/mcp
 
+## 1.0.4
+
+### Patch Changes
+
+- feat(types): complete content architecture types — DocumentEntry, ModelSummary, path constants, validation patterns
+
+  Internal packages updated to use centralized types from @contentrain/types.
+
+- Updated dependencies
+  - @contentrain/types@0.2.0
+
 ## 1.0.3
 
 ### Patch Changes
