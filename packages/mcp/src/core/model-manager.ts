@@ -1,17 +1,11 @@
-import type { ModelDefinition } from '@contentrain/types'
+import type { ModelDefinition, ModelSummary } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { z } from 'zod'
 import { contentrainDir, ensureDir, readDir, readJson, writeJson } from '../util/fs.js'
 import { resolveContentDir, resolveLocaleStrategy } from './content-manager.js'
 
-export interface ModelSummary {
-  id: string
-  kind: ModelDefinition['kind']
-  domain: string
-  i18n: boolean
-  fields: number
-}
+export type { ModelSummary } from '@contentrain/types'
 
 export async function listModels(projectRoot: string): Promise<ModelSummary[]> {
   const modelsDir = join(contentrainDir(projectRoot), 'models')
@@ -66,7 +60,7 @@ async function countDocumentFileStrategy(
 }
 
 async function countDocumentSuffixStrategy(
-  contentDir: string,
+  _contentDir: string,
   files: string[],
 ): Promise<{ total: number; locales: Record<string, number> }> {
   const locales: Record<string, number> = {}

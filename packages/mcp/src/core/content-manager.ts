@@ -1,4 +1,4 @@
-import type { ModelDefinition, ContentrainConfig, EntryMeta, LocaleStrategy } from '@contentrain/types'
+import type { ModelDefinition, ContentrainConfig, EntryMeta, LocaleStrategy, DocumentEntry } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { contentrainDir, readDir, readJson, readText, writeJson, writeText } from '../util/fs.js'
@@ -608,7 +608,7 @@ export async function listContent(
     }
 
     case 'document': {
-      const entries: Array<{ slug: string; frontmatter: Record<string, unknown>; body: string }> = []
+      const entries: DocumentEntry[] = []
       const strategy = resolveLocaleStrategy(model)
 
       if (!model.i18n) {

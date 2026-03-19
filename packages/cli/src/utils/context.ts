@@ -1,5 +1,4 @@
-import type { ContentrainConfig, ContextJson, Vocabulary } from '@contentrain/types'
-import type { ModelSummary } from '@contentrain/mcp/core/model-manager'
+import type { ContentrainConfig, ContextJson, Vocabulary, ModelSummary } from '@contentrain/types'
 import { resolve, join } from 'node:path'
 import { readConfig, readVocabulary } from '@contentrain/mcp/core/config'
 import { readContext } from '@contentrain/mcp/core/context'

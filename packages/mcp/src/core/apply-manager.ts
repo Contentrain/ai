@@ -1,4 +1,4 @@
-import type { ModelDefinition, FieldDef } from '@contentrain/types'
+import type { ModelDefinition, FieldDef, FileFramework } from '@contentrain/types'
 import { join, extname } from 'node:path'
 import { readText, writeText, pathExists } from '../util/fs.js'
 import { readModel, writeModel, listModels, validateModelDefinition } from './model-manager.js'
@@ -109,7 +109,7 @@ const FORBIDDEN_PATH_SEGMENTS = new Set([
 
 // ─── Framework Detection (Guardrail #2) ───
 
-export type FileFramework = 'vue' | 'svelte' | 'jsx' | 'astro' | 'script'
+export type { FileFramework } from '@contentrain/types'
 
 export function detectFileFramework(filePath: string): FileFramework {
   const ext = extname(filePath).toLowerCase()

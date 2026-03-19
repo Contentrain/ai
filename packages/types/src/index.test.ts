@@ -1,4 +1,4 @@
-import { describe, it, expectTypeOf } from 'vitest'
+import { describe, it, expect, expectTypeOf } from 'vitest'
 import type {
   FieldType,
   ModelKind,
@@ -26,7 +26,20 @@ import type {
   DictionaryContentFile,
   CollectionEntry,
   CollectionContentOutput,
+  DocumentEntry,
+  DocumentContentOutput,
+  PolymorphicRelationRef,
+  ModelSummary,
+  FileFramework,
   ContextJson,
+} from './index'
+import {
+  CONTENTRAIN_DIR,
+  PATH_PATTERNS,
+  SLUG_PATTERN,
+  ENTRY_ID_PATTERN,
+  LOCALE_PATTERN,
+  CANONICAL_JSON,
 } from './index'
 
 describe('@contentrain/types', () => {
@@ -313,6 +326,82 @@ describe('@contentrain/types', () => {
     it('alt is optional', () => {
       const asset: AssetEntry = { path: 'a.png', type: 'image/png', size: 100 }
       expectTypeOf(asset).toMatchTypeOf<AssetEntry>()
+    })
+  })
+
+  describe('DocumentEntry', () => {
+    it('has slug, frontmatter, body', () => {
+      expectTypeOf<DocumentEntry>().toHaveProperty('slug')
+      expectTypeOf<DocumentEntry>().toHaveProperty('frontmatter')
+      expectTypeOf<DocumentEntry>().toHaveProperty('body')
+      expectTypeOf<DocumentEntry['slug']>().toEqualTypeOf<string>()
+      expectTypeOf<DocumentEntry['frontmatter']>().toEqualTypeOf<Record<string, unknown>>()
+      expectTypeOf<DocumentEntry['body']>().toEqualTypeOf<string>()
+    })
+
+    it('DocumentContentOutput is array of DocumentEntry', () => {
+      expectTypeOf<DocumentContentOutput>().toEqualTypeOf<DocumentEntry[]>()
+    })
+  })
+
+  describe('PolymorphicRelationRef', () => {
+    it('has model and ref', () => {
+      expectTypeOf<PolymorphicRelationRef>().toHaveProperty('model')
+      expectTypeOf<PolymorphicRelationRef>().toHaveProperty('ref')
+      expectTypeOf<PolymorphicRelationRef['model']>().toEqualTypeOf<string>()
+      expectTypeOf<PolymorphicRelationRef['ref']>().toEqualTypeOf<string>()
+    })
+  })
+
+  describe('ModelSummary', () => {
+    it('has id, kind, domain, i18n, fields', () => {
+      expectTypeOf<ModelSummary>().toHaveProperty('id')
+      expectTypeOf<ModelSummary['kind']>().toEqualTypeOf<ModelKind>()
+      expectTypeOf<ModelSummary['fields']>().toEqualTypeOf<number>()
+    })
+  })
+
+  describe('FileFramework', () => {
+    it('has 5 members', () => {
+      expectTypeOf<'vue'>().toMatchTypeOf<FileFramework>()
+      expectTypeOf<'svelte'>().toMatchTypeOf<FileFramework>()
+      expectTypeOf<'jsx'>().toMatchTypeOf<FileFramework>()
+      expectTypeOf<'astro'>().toMatchTypeOf<FileFramework>()
+      expectTypeOf<'script'>().toMatchTypeOf<FileFramework>()
+      expectTypeOf<'python'>().not.toMatchTypeOf<FileFramework>()
+    })
+  })
+
+  describe('constants', () => {
+    it('CONTENTRAIN_DIR is .contentrain', () => {
+      expect(CONTENTRAIN_DIR).toBe('.contentrain')
+    })
+
+    it('PATH_PATTERNS has all kind paths', () => {
+      expect(PATH_PATTERNS.config).toContain('.contentrain')
+      expect(PATH_PATTERNS.content.singleton).toContain('{locale}')
+      expect(PATH_PATTERNS.content.collection).toContain('{locale}')
+      expect(PATH_PATTERNS.content.document).toContain('{slug}')
+      expect(PATH_PATTERNS.content.document).toContain('.md')
+      expect(PATH_PATTERNS.content.dictionary).toContain('{locale}')
+      expect(PATH_PATTERNS.content.noLocale).toContain('data.json')
+      expect(PATH_PATTERNS.meta.document).toContain('{slug}')
+    })
+
+    it('validation patterns match expected formats', () => {
+      expect(SLUG_PATTERN.test('hello-world')).toBe(true)
+      expect(SLUG_PATTERN.test('Hello')).toBe(false)
+      expect(ENTRY_ID_PATTERN.test('a1b2c3d4e5f6')).toBe(true)
+      expect(ENTRY_ID_PATTERN.test('')).toBe(false)
+      expect(LOCALE_PATTERN.test('en')).toBe(true)
+      expect(LOCALE_PATTERN.test('en-US')).toBe(true)
+      expect(LOCALE_PATTERN.test('english')).toBe(false)
+    })
+
+    it('CANONICAL_JSON has serialization rules', () => {
+      expect(CANONICAL_JSON.indent).toBe(2)
+      expect(CANONICAL_JSON.trailingNewline).toBe(true)
+      expect(CANONICAL_JSON.sortKeys).toBe(true)
     })
   })
 })

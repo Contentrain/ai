@@ -145,12 +145,97 @@ export interface ValidationResult {
 
 // ─── Content Types (Storage vs Output) ───
 
+// Storage formats — how content is written to disk (canonical JSON)
 export type SingletonContentFile = Record<string, unknown>
 export type CollectionContentFile = Record<string, Record<string, unknown>>
 export type DictionaryContentFile = Record<string, string>
+// Document storage = markdown file (frontmatter + body), not JSON
 
+// Output formats — how MCP/SDK returns content to consumers
 export type CollectionEntry = { id: string } & Record<string, unknown>
 export type CollectionContentOutput = CollectionEntry[]
+
+/** Document entry as returned by MCP/SDK — parsed markdown with frontmatter */
+export interface DocumentEntry {
+  slug: string
+  frontmatter: Record<string, unknown>
+  body: string
+}
+
+export type DocumentContentOutput = DocumentEntry[]
+
+/** Polymorphic relation storage — used when model field is string[] (multiple targets) */
+export interface PolymorphicRelationRef {
+  model: string
+  ref: string
+}
+
+// ─── Model Summary ───
+
+/** Lightweight model info for listing and status operations */
+export interface ModelSummary {
+  id: string
+  kind: ModelKind
+  domain: string
+  i18n: boolean
+  fields: number
+}
+
+// ─── File Framework ───
+
+/** Source file framework — detected from extension for normalize/apply operations */
+export type FileFramework = 'vue' | 'svelte' | 'jsx' | 'astro' | 'script'
+
+// ─── Path Conventions ───
+
+/** Root directory name for all Contentrain data */
+export const CONTENTRAIN_DIR = '.contentrain' as const
+
+/**
+ * Standard path patterns for Contentrain projects.
+ * Variables: {domain}, {modelId}, {locale}, {slug}
+ */
+export const PATH_PATTERNS = {
+  config: '.contentrain/config.json',
+  context: '.contentrain/context.json',
+  vocabulary: '.contentrain/vocabulary.json',
+  model: '.contentrain/models/{modelId}.json',
+  content: {
+    singleton: '.contentrain/content/{domain}/{modelId}/{locale}.json',
+    collection: '.contentrain/content/{domain}/{modelId}/{locale}.json',
+    document: '.contentrain/content/{domain}/{slug}/{locale}.md',
+    dictionary: '.contentrain/content/{domain}/{modelId}/{locale}.json',
+    /** Non-i18n content (i18n: false) */
+    noLocale: '.contentrain/content/{domain}/{modelId}/data.json',
+  },
+  meta: {
+    singleton: '.contentrain/meta/{modelId}/{locale}.json',
+    collection: '.contentrain/meta/{modelId}/{locale}.json',
+    document: '.contentrain/meta/{modelId}/{slug}/{locale}.json',
+    dictionary: '.contentrain/meta/{modelId}/{locale}.json',
+  },
+} as const
+
+// ─── Validation Patterns ───
+
+/** Slug: lowercase alphanumeric with hyphens */
+export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+/** Entry ID: alphanumeric, 1-40 chars, starts with alphanumeric */
+export const ENTRY_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,39}$/
+/** Locale: ISO 639-1 with optional region code */
+export const LOCALE_PATTERN = /^[a-z]{2}(?:-[A-Z]{2})?$/
+
+// ─── Canonical Serialization ───
+
+/** Rules for deterministic JSON output — ensures stable git diffs */
+export const CANONICAL_JSON = {
+  indent: 2,
+  encoding: 'utf-8',
+  trailingNewline: true,
+  omitNull: true,
+  omitDefaults: true,
+  sortKeys: true,
+} as const
 
 // ─── Scaffold ───
 
