@@ -422,27 +422,54 @@ When a model has `i18n: false`, locale is ignored entirely:
 
 ## content_path Override
 
-By default, content files are stored in `.contentrain/content/{domain}/{model-id}/`. The `content_path` field overrides this to store content in framework-specific directories:
+By default, content files are stored inside `.contentrain/content/{domain}/{model-id}/`. The `content_path` field overrides this, writing content directly into framework-specific directories at the project root.
+
+### How It Works
 
 ```json
 {
   "id": "blog-posts",
   "kind": "collection",
+  "domain": "blog",
+  "i18n": true,
   "content_path": "content/blog"
 }
 ```
 
-This writes files to `{project-root}/content/blog/` instead of `.contentrain/content/blog/blog-posts/`.
-
-**Common content_path patterns:**
-
-| Framework | content_path | Purpose |
+| | Without content_path | With `content_path: "content/blog"` |
 |---|---|---|
-| Nuxt Content | `content/blog` | Nuxt reads from `content/` |
-| Astro | `src/content/blog` | Astro content collections |
-| Next.js | `content/posts` | Custom content directory |
-| i18n libraries | `locales` | Translation files |
-| VitePress | `docs/guide` | Documentation pages |
+| **Content** | `.contentrain/content/blog/blog-posts/en.json` | `content/blog/en.json` |
+| **Meta** | `.contentrain/meta/blog-posts/en.json` | `.contentrain/meta/blog-posts/en.json` |
+
+::: warning
+**Meta files always stay in `.contentrain/meta/`** regardless of `content_path`. Only content files are redirected. This ensures governance data (status, source, approvals) remains in the Contentrain directory.
+:::
+
+### content_path + locale_strategy
+
+The `locale_strategy` applies to the overridden path too:
+
+| locale_strategy | content_path: `locales` | Result |
+|---|---|---|
+| `file` (default) | `locales/{locale}.json` | `locales/en.json`, `locales/tr.json` |
+| `suffix` | `locales/ui-labels.{locale}.json` | `locales/ui-labels.en.json` |
+| `directory` | `locales/{locale}/ui-labels.json` | `locales/en/ui-labels.json` |
+| `none` | `locales/ui-labels.json` | Single file (no locale) |
+
+### Common content_path Patterns
+
+| Framework | content_path | Kind | Purpose |
+|---|---|---|---|
+| Nuxt Content | `content/blog` | document | Nuxt reads from `content/` |
+| Astro | `src/content/blog` | collection | Astro content collections |
+| Next.js | `content/posts` | collection | Custom content directory |
+| i18n (vue-i18n, next-intl) | `locales` | dictionary | Translation JSON files |
+| VitePress | `docs/guide` | document | Documentation pages |
+
+### When to Use content_path
+
+- **Use it** when your framework expects content in a specific directory (e.g., Nuxt Content reads from `content/`, i18n libraries read from `locales/`)
+- **Don't use it** for content that only Contentrain SDK consumes — the default `.contentrain/content/` path works fine and keeps everything centralized
 
 ## Meta Files
 

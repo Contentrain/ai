@@ -192,8 +192,12 @@ export type FileFramework = 'vue' | 'svelte' | 'jsx' | 'astro' | 'script'
 export const CONTENTRAIN_DIR = '.contentrain' as const
 
 /**
- * Standard path patterns for Contentrain projects.
+ * Default path patterns for Contentrain projects.
  * Variables: {domain}, {modelId}, {locale}, {slug}
+ *
+ * When a model has `content_path` set, content files are written to
+ * `{projectRoot}/{content_path}/` instead — but meta files always
+ * remain under `.contentrain/meta/`.
  */
 export const PATH_PATTERNS = {
   config: '.contentrain/config.json',
