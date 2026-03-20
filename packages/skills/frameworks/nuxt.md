@@ -30,7 +30,32 @@ The generator reads `.contentrain/models/` and produces a typed client in `.cont
 
 The generator adds this automatically. After generation, restart the Nuxt dev server to pick up the new import map.
 
-### 1.2 Watch Mode
+### 1.2 Bundler Alias
+
+The `#contentrain` subpath import works natively in Node.js 22+ but does NOT resolve in Nuxt's bundler. Add a top-level alias:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  alias: {
+    '#contentrain': './.contentrain/client/index.mjs',
+  },
+})
+```
+
+Also add a `paths` entry to `tsconfig.json` so the TypeScript language server resolves it:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "#contentrain": ["./.contentrain/client/index.d.ts"]
+    }
+  }
+}
+```
+
+### 1.3 Watch Mode
 
 Run the generator in watch mode alongside Nuxt dev:
 

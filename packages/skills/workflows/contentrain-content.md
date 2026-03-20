@@ -102,7 +102,7 @@ contentrain_content_save({
 - **dictionary:** `{ "locale": "en", "data": { "auth.login": "Log In", "auth.logout": "Log Out" } }` -- flat key-value pairs, no `id` or `slug`.
 
 **Critical rules:**
-- NEVER include system fields (`status`, `source`, `updated_by`, `updated_at`, `createdAt`, `updatedAt`) in `data`.
+- NEVER include system fields (`status`, `source`, `updated_by`, `approved_by`) in `data`. These are managed in meta files, not content. Temporal data (created/updated timestamps) comes from git history.
 - Prefer batch mode -- send multiple entries in a single call when possible.
 - Locale defaults to the project's default locale if omitted, but explicit locale is recommended.
 

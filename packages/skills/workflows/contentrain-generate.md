@@ -96,7 +96,7 @@ Ensure `tsconfig.json` does not block the generated client:
 - `rootDir` or `include` should not exclude `.contentrain/client/`.
 - If using `moduleResolution: "bundler"` or `"node16"`, subpath imports resolve natively.
 
-### 5.5. Configure Bundler Alias
+### 6. Configure Bundler Alias
 
 The `#contentrain` subpath import works natively in Node.js 22+ but **does NOT resolve in browser bundlers**. If the project uses a bundler, configure an alias so `#contentrain` resolves to the generated client.
 
@@ -188,7 +188,7 @@ module.exports = {
 
 No alias needed. Node.js 22+ resolves `#contentrain` from `package.json` imports natively.
 
-### 6. Verify Imports Work
+### 7. Verify Imports Work
 
 Run a quick verification that the imports resolve correctly.
 
@@ -222,7 +222,7 @@ If verification fails, check:
 - The `.contentrain/client/` directory was generated successfully.
 - The bundler alias is configured (see Step 5.5) for browser projects.
 
-### 7. Show Usage Examples
+### 8. Show Usage Examples
 
 Based on the detected stack and available models, show relevant examples using actual model IDs and field names from the project — not generic placeholders.
 
@@ -319,7 +319,7 @@ const article = document('blog-article').locale('en').include('author').bySlug('
 | Expo / RN | `const hero = singleton('hero').locale('en').get()` | `metro.config.js` resolver (Step 5.5) |
 | Node.js / SSR | Direct import — no alias needed | Native subpath imports |
 
-### 8. Offer Watch Mode
+### 9. Offer Watch Mode
 
 Suggest setting up watch mode for development:
 
@@ -339,7 +339,7 @@ For convenience, suggest adding a script to `package.json`:
 }
 ```
 
-### 9. Final Summary
+### 10. Final Summary
 
 Report to the user:
 
