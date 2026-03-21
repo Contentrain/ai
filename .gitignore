@@ -46,3 +46,4 @@ docs/.vitepress/dist/
 .release-packages/
 
 .tmp
+.mcpregistry_*

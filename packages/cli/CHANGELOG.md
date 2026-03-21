@@ -1,5 +1,19 @@
 # contentrain
 
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @contentrain/mcp@1.0.6
+
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @contentrain/mcp@1.0.5
+
 ## 0.2.1
 
 ### Patch Changes
