@@ -1,5 +1,11 @@
 # @contentrain/mcp
 
+## 1.0.5
+
+### Patch Changes
+
+- chore(mcp): add mcpName for MCP Registry listing
+
 ## 1.0.4
 
 ### Patch Changes
