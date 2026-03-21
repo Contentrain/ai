@@ -1,346 +1,165 @@
 # Contentrain AI
 
-[![npm: contentrain](https://img.shields.io/npm/v/contentrain?label=contentrain)](https://www.npmjs.com/package/contentrain)
 [![npm: @contentrain/mcp](https://img.shields.io/npm/v/%40contentrain%2Fmcp?label=%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp)
+[![npm: contentrain](https://img.shields.io/npm/v/contentrain?label=contentrain)](https://www.npmjs.com/package/contentrain)
 [![npm: @contentrain/query](https://img.shields.io/npm/v/%40contentrain%2Fquery?label=%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query)
-[![npm: @contentrain/types](https://img.shields.io/npm/v/%40contentrain%2Ftypes?label=%40contentrain%2Ftypes)](https://www.npmjs.com/package/@contentrain/types)
-[![npm: @contentrain/rules](https://img.shields.io/npm/v/%40contentrain%2Frules?label=%40contentrain%2Frules)](https://www.npmjs.com/package/@contentrain/rules)
-[![npm: @contentrain/skills](https://img.shields.io/npm/v/%40contentrain%2Fskills?label=%40contentrain%2Fskills)](https://www.npmjs.com/package/@contentrain/skills)
-[![GitHub](https://img.shields.io/badge/GitHub-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-AI-generated content governance infrastructure.
+**Your AI agent writes content. Contentrain makes sure it doesn't wreck your repo.**
 
-Contentrain is for teams that want to use AI agents to produce content without giving up structure, reviewability, or runtime safety.
+Contentrain gives AI agents a governed place to create models, content, translations, and docs — with typed schemas, git-backed review, and deterministic file output that any platform can consume.
 
-Instead of treating content generation as a loose prompt workflow, Contentrain turns it into a governed system:
-
-- the agent decides what content should exist
-- MCP and CLI enforce deterministic writes, validation, and git workflow
-- humans review the result
-- content is delivered as plain JSON/Markdown to any platform (optional TypeScript SDK for convenience)
-
-In one sentence:
-
-**Agent produces. Human approves. System standardizes.**
-
-## ✨ Why This Exists
-
-AI is very good at producing copy, labels, docs, translations, and structured content.
-
-AI is not good at protecting your repository from drift.
-
-Without a governance layer, AI-assisted content work usually turns into one or more of these problems:
-
-- hardcoded strings spread through source files
-- schema drift between teams and environments
-- inconsistent locales and missing translations
-- direct edits with no review branch or audit trail
-- content that is easy to generate but hard to consume safely at runtime
-- IDE agents that each invent their own workflow
-
-Contentrain exists to solve that gap.
-
-It is not just "AI for content".
-
-It is a system for **AI-assisted content operations**:
-
-- content modeling
-- content storage
-- validation
-- normalization
-- review workflow
-- runtime consumption
-- agent guidance
-
-## 🧩 What Contentrain Is
-
-Published packages:
-
-- [`contentrain`](https://www.npmjs.com/package/contentrain)
-- [`@contentrain/mcp`](https://www.npmjs.com/package/@contentrain/mcp)
-- [`@contentrain/query`](https://www.npmjs.com/package/@contentrain/query)
-- [`@contentrain/types`](https://www.npmjs.com/package/@contentrain/types)
-- [`@contentrain/rules`](https://www.npmjs.com/package/@contentrain/rules)
-- [`@contentrain/skills`](https://www.npmjs.com/package/@contentrain/skills)
-
-Contentrain is a monorepo containing the open-source building blocks of the ecosystem:
-
-| Package | Name | Role |
-| --- | --- | --- |
-| `packages/mcp` | `@contentrain/mcp` | local-first MCP server and deterministic content operations |
-| `packages/cli` | `contentrain` | CLI, local review UI, stdio MCP entrypoint |
-| `packages/types` | `@contentrain/types` | shared domain contracts |
-| `packages/rules` | `@contentrain/rules` | agent policy, quality rules, IDE bundles |
-| `packages/skills` | `@contentrain/skills` | workflow procedures and framework guides |
-| `packages/sdk/js` | `@contentrain/query` | generated query SDK and runtime |
-
-Together, these packages form a single workflow:
-
-1. detect or model content
-2. write it into a governed `.contentrain/` structure
-3. validate it
-4. review it through branches and UI
-5. deliver content as plain JSON/Markdown to any platform
-
-## 🔄 Core Workflow
-
-### 1. Initialize a project
-
-`contentrain init` creates the `.contentrain/` workspace, project config, vocabulary, context file, git-safe defaults, and project-level agent rules.
-
-```bash
-npx contentrain init
+```
+Agent produces → System standardizes → Human approves → Any platform consumes
 ```
 
-### 2. Model and write content
-
-Content is stored in a deterministic JSON and markdown structure inside `.contentrain/`.
-
-The MCP layer handles:
-
-- config
-- models
-- entries
-- metadata
-- validation
-- branch lifecycle
-
-The agent decides *what* to write.
-The system decides *how* it is stored and reviewed.
-
-### 3. Validate and review
+## Try it in 30 seconds
 
 ```bash
-contentrain validate
-contentrain diff
-contentrain serve
+npx contentrain init        # create .contentrain/ workspace
+npx contentrain serve       # open the local review UI
 ```
 
-Write operations can flow through review branches instead of mutating the base branch directly.
+That's it. You now have a governed content workspace with models, validation, and a local UI — no account, no cloud, no config files.
 
-That gives you:
+## What it looks like
 
-- auditability
-- safer collaboration with agents
-- cleaner merge flow
-- branch-pressure awareness
+**Before:** Hardcoded strings scattered across your codebase — no structure, no translations, no review.
 
-### 4. Use your content
+```tsx
+export default function Hero() {
+  return (
+    <section>
+      <h1>Welcome to our platform</h1>
+      <p>Start your free trial today</p>
+      <button>Get Started</button>
+    </section>
+  )
+}
+```
 
-Content is plain JSON and Markdown — any platform that reads files can consume it directly.
+**After:** Content lives in `.contentrain/`, typed and structured. Source files use i18n keys.
 
-For TypeScript projects, optionally generate a typed SDK client:
+```tsx
+export default function Hero() {
+  const t = useTranslations()
+  return (
+    <section>
+      <h1>{t('hero.title')}</h1>
+      <p>{t('hero.subtitle')}</p>
+      <button>{t('hero.cta')}</button>
+    </section>
+  )
+}
+```
+
+```json
+// .contentrain/content/marketing/hero/en.json
+{
+  "cta": "Get Started",
+  "subtitle": "Start your free trial today",
+  "title": "Welcome to our platform"
+}
+```
+
+The normalize flow extracts strings, creates models, and patches your source files — all through reviewable git branches.
+
+## How it works
+
+```
+┌─────────────┐     ┌──────────────────┐     ┌──────────────┐
+│  AI Agent    │────▶│  MCP (13 tools)  │────▶│ .contentrain/│
+│  (decides)   │     │  (enforces)      │     │ (stores)     │
+└─────────────┘     └──────────────────┘     └──────┬───────┘
+                                                     │
+                    ┌──────────────────┐              │
+                    │  Review UI / Git │◀─────────────┘
+                    │  (human approves)│
+                    └──────────────────┘
+```
+
+- **Agent** decides what content should exist
+- **MCP** enforces schemas, validation, canonical serialization, and git workflow
+- **Human** reviews through branches, PRs, or the local Serve UI
+- **Output** is plain JSON + Markdown — consumed by any language or framework
+
+## 4 content kinds
+
+| Kind | What it stores | Storage | Example |
+|---|---|---|---|
+| **Collection** | Multiple typed entries | JSON object-map | Blog posts, products, team |
+| **Singleton** | Single entry per locale | JSON object | Hero section, site config |
+| **Document** | Markdown + frontmatter | `.md` files | Docs, articles, changelog |
+| **Dictionary** | Flat key-value strings | JSON flat map | i18n translations, UI labels |
+
+27 field types (string, email, url, image, relation, array, object, markdown, ...) with built-in validation.
+
+## Use your content anywhere
+
+Content is plain JSON and Markdown. Any language reads it directly.
+
+For TypeScript projects, generate a typed SDK:
 
 ```bash
-contentrain generate
+npx contentrain generate
 ```
 
 ```ts
 import { query, singleton, dictionary, document } from '#contentrain'
 
-const hero = singleton('hero').locale('en').get()
-const posts = query('blog-post').locale('en').all()
+const hero    = singleton('hero').locale('en').get()
+const posts   = query('blog-post').locale('en').include('author').all()
+const labels  = dictionary('ui-labels').locale('tr').get('auth.login')
+const article = document('docs').locale('en').bySlug('getting-started')
 ```
 
-## ⚙️ How It Works
+Works with Nuxt, Next.js, Astro, SvelteKit, Vue, React, Node, Go, Python, Swift, Flutter, and 20+ stacks.
 
-### MCP is deterministic infrastructure
+## Key features
 
-`@contentrain/mcp` is the execution engine.
+- **Git-native** — every write goes through worktree isolation + review branches
+- **Normalize flow** — scan codebase for hardcoded strings → extract → create i18n-ready content → patch source files
+- **Local-first MCP** — 13 tools, stdio transport, works with Claude Code, Cursor, Windsurf, or any MCP client
+- **Canonical serialization** — sorted keys, deterministic output, clean git diffs, conflict-free parallel edits
+- **Agent rules & skills** — behavioral policies and step-by-step workflows ship as npm packages
+- **Serve UI** — local web dashboard for browsing models, content, validation, and normalize status
+- **Framework-agnostic** — MCP doesn't know your framework. Agent + skills handle stack-specific logic
 
-It manages:
+## Packages
 
-- filesystem writes
-- canonical serialization
-- schema-aware validation
-- git-backed branch workflow
-- normalize scan and apply flows
-- context tracking
+| Package | npm | Role |
+|---|---|---|
+| [`@contentrain/mcp`](packages/mcp) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp) | 13 MCP tools — content operations engine |
+| [`contentrain`](packages/cli) | [![npm](https://img.shields.io/npm/v/contentrain)](https://www.npmjs.com/package/contentrain) | CLI + Serve UI + MCP stdio entrypoint |
+| [`@contentrain/query`](packages/sdk/js) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query) | Generated TypeScript query SDK |
+| [`@contentrain/types`](packages/types) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Ftypes)](https://www.npmjs.com/package/@contentrain/types) | Shared type definitions + constants |
+| [`@contentrain/rules`](packages/rules) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Frules)](https://www.npmjs.com/package/@contentrain/rules) | Agent quality rules for IDE integration |
+| [`@contentrain/skills`](packages/skills) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fskills)](https://www.npmjs.com/package/@contentrain/skills) | Workflow procedures + framework guides |
 
-It does **not** decide content semantics for you.
-
-That boundary is deliberate.
-
-### The agent is the intelligence layer
-
-The agent decides:
-
-- whether a string is user-facing
-- how to model content
-- what key or entry should be created
-- which replacement expression is correct for the current framework
-
-This split matters.
-
-Contentrain is designed around:
-
-- **MCP = deterministic infra**
-- **Agent = intelligence**
-
-That is the reason the system stays predictable even when the content work itself is AI-assisted.
-
-### Rules and skills are first-class
-
-Most tools stop at APIs.
-
-Contentrain also packages how agents should behave:
-
-- `@contentrain/rules` defines policy and constraints
-- `@contentrain/skills` defines workflow playbooks and framework-specific guidance
-
-This makes agent behavior part of the product surface instead of leaving it implicit.
-
-## 🧠 Key Design Principles
-
-- **JSON only**  
-  Contentrain uses JSON and markdown. No YAML storage layer.
-
-- **Git is mandatory**  
-  Content work is part of the repository lifecycle, not a side channel.
-
-- **Review is a product feature**  
-  Branch-backed review is not an afterthought; it is part of the core workflow.
-
-- **Platform-independent output**
-  Content is plain JSON and Markdown. Any language (Go, Python, Swift, Kotlin, Rust) can consume it. The TypeScript SDK is optional convenience, not a requirement.
-
-- **Framework-agnostic core**
-  Stack-specific decisions belong to the agent and framework guides, not to the MCP engine.
-
-- **Local-first**  
-  The MCP layer works locally and does not depend on a hosted Git provider API.
-
-## 🚀 What Makes Contentrain Different
-
-Contentrain is not best described as a CMS.
-
-It is closer to a **content governance operating layer for codebase-native teams**.
-
-It combines traits from several categories:
-
-- headless CMS: models, entries, locales
-- GitOps: review branches, merge flow, auditability
-- MCP tooling: agent-native local execution
-- code generation: typed runtime client
-- agent operations: rules and workflow skills
-
-That combination is the point.
-
-The problem Contentrain solves is not just "where should content live?"
-
-It is:
-
-**How do we let AI agents work on content inside a real codebase without turning the repository into chaos?**
-
-## 🚀 Quick Start
-
-Requirements:
-
-- Node.js 22+
-- pnpm 9+
-- Git in `PATH`
-
-Install dependencies:
+## Quick reference
 
 ```bash
-pnpm install
+npx contentrain init         # initialize project
+npx contentrain serve        # local review UI (port 3333)
+npx contentrain serve --stdio # MCP over stdio for IDE agents
+npx contentrain validate     # check content health
+npx contentrain generate     # generate typed SDK client
+npx contentrain status       # project overview
+npx contentrain doctor       # setup health check
 ```
 
-Initialize a project:
+## Documentation
+
+**[ai.contentrain.io](https://ai.contentrain.io)** — full docs with guides, reference, and framework integration.
+
+## Development
 
 ```bash
-contentrain init
+pnpm install && pnpm build && pnpm test
 ```
 
-Inspect state:
+See [`RELEASING.md`](RELEASING.md) for the versioning and publish workflow.
 
-```bash
-contentrain status
-contentrain doctor
-```
-
-Generate the SDK:
-
-```bash
-contentrain generate
-```
-
-Open the local UI:
-
-```bash
-contentrain serve
-```
-
-Use MCP over stdio for IDE agents:
-
-```bash
-contentrain serve --stdio
-```
-
-## 🛠 Example Use Cases
-
-### Normalize hardcoded strings
-
-Scan a product codebase, extract user-facing strings into governed content, and patch source files through a two-phase normalize workflow.
-
-### Run AI-assisted docs or marketing workflows
-
-Let an agent propose docs, landing page copy, or UI labels while keeping schema, locale coverage, and review flow intact.
-
-### Build app-facing content without a separate CMS
-
-Store content in the repo as plain JSON. Consume from any platform — Vue, React, Next, Nuxt, Astro, Node, Go, Python, Swift, Flutter, Expo, or React Native. Optionally use the TypeScript SDK for type-safe queries.
-
-### Standardize agent behavior across IDEs
-
-Ship the same behavioral rules to Claude Code, Cursor, Windsurf, and generic agent setups.
-
-## 📦 Package Guide
-
-If you want to go deeper package by package:
-
-- [`packages/mcp/README.md`](packages/mcp/README.md)
-- [`packages/cli/README.md`](packages/cli/README.md)
-- [`packages/types/README.md`](packages/types/README.md)
-- [`packages/rules/README.md`](packages/rules/README.md)
-- [`packages/skills/README.md`](packages/skills/README.md)
-- [`packages/sdk/js/README.md`](packages/sdk/js/README.md)
-
-## 📚 Documentation
-
-- **[ai.contentrain.io](https://ai.contentrain.io)** — full documentation site
-- Package READMEs for public package contracts
-- [`RELEASING.md`](RELEASING.md) for versioning and publish flow
-- `packages/rules/` and `packages/skills/` for agent-facing operational guidance
-
-## 🌐 Contentrain Studio
-
-For team collaboration, visual content review, and content CDN for non-web platforms — [Contentrain Studio](https://studio.contentrain.io) extends the open-source tools with a hosted governance UI.
-
-## 🧪 Development
-
-From the monorepo root:
-
-```bash
-pnpm build
-pnpm test
-pnpm lint
-pnpm typecheck
-```
-
-## 🚢 Release
-
-Contentrain uses [Changesets](https://github.com/changesets/changesets) for package-specific versioning, changelogs, tags, and npm publishing.
-
-```bash
-pnpm changeset
-pnpm version-packages
-pnpm release:check
-pnpm release
-```
-
-For the full release workflow, see [`RELEASING.md`](RELEASING.md).
-
-## 📄 License
+## License
 
 MIT
