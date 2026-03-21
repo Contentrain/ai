@@ -1,5 +1,11 @@
 # @contentrain/mcp
 
+## 1.0.6
+
+### Patch Changes
+
+- fix(mcp): correct mcpName casing for MCP Registry (Contentrain, not contentrain)
+
 ## 1.0.5
 
 ### Patch Changes

@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.contentrain/contentrain",
-  "description": "Local-first MCP server for AI-generated content governance — 13 deterministic tools for model/content/schema management, validation, normalization, and i18n across any framework",
+  "name": "io.github.Contentrain/contentrain",
+  "description": "Local-first MCP server for AI content governance — models, content, validation, i18n",
   "repository": {
     "url": "https://github.com/Contentrain/ai",
     "source": "github"
   },
-  "version": "1.0.4",
+  "version": "1.0.6",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@contentrain/mcp",
-      "version": "1.0.4",
+      "version": "1.0.6",
       "transport": {
         "type": "stdio"
       }
