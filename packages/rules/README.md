@@ -12,33 +12,22 @@ This package is the policy layer of the Contentrain ecosystem. It defines how ag
 - content quality
 - normalize workflows
 - git-backed review flows
-- IDE rule distribution
 
 If `@contentrain/mcp` is the deterministic execution layer, `@contentrain/rules` is the behavioral contract.
 
-## 🚀 Install
+## Install
 
 ```bash
 pnpm add @contentrain/rules
 ```
 
-## 📦 What It Contains
+## What It Contains
 
-### Shared rule sets
+### Essential guardrails
 
-Published under `shared/*`:
+Published under `essential/*`:
 
-- `content-quality.md`
-- `seo-rules.md`
-- `i18n-quality.md`
-- `accessibility-rules.md`
-- `security-rules.md`
-- `media-rules.md`
-- `content-conventions.md`
-- `schema-rules.md`
-- `mcp-usage.md`
-- `workflow-rules.md`
-- `normalize-rules.md`
+- `contentrain-essentials.md` — compact, always-loaded rules (~86 lines) covering architecture, model kinds, MCP tools, mandatory protocols, and security basics
 
 ### Prompt layers
 
@@ -55,39 +44,27 @@ Published under `context/*`:
 
 - `context-bridge.md`
 
-### IDE bundles
-
-Published under `ide/*`:
-
-- `ide/claude-code/contentrain.md`
-- `ide/cursor/contentrain.cursorrules`
-- `ide/windsurf/contentrain.windsurfrules`
-- `ide/generic/contentrain.md`
-
-## 🧰 Public Exports
+## Public Exports
 
 The package root exports constants that can be used by tooling:
 
-- `FIELD_TYPES`
-- `MODEL_KINDS`
-- `MCP_TOOLS`
-- `CONTENT_QUALITY_RULES`
-- `ARCHITECTURE_RULES`
-- `ALL_SHARED_RULES`
-- `IDE_RULE_FILES`
-- `STACKS`
+- `FIELD_TYPES` — 27 flat field types
+- `MODEL_KINDS` — singleton, collection, document, dictionary
+- `MCP_TOOLS` — 15 MCP tool names
+- `ESSENTIAL_RULES_FILE` — path to essential guardrails markdown
+- `STACKS` — supported framework stacks
 
-## 🧪 Example
+## Example
 
 ```ts
-import { IDE_RULE_FILES, MCP_TOOLS, ALL_SHARED_RULES } from '@contentrain/rules'
+import { MCP_TOOLS, ESSENTIAL_RULES_FILE, FIELD_TYPES } from '@contentrain/rules'
 
 console.log(MCP_TOOLS.includes('contentrain_validate'))
-console.log(IDE_RULE_FILES['claude-code'])
-console.log(ALL_SHARED_RULES)
+console.log(ESSENTIAL_RULES_FILE) // 'essential/contentrain-essentials.md'
+console.log(FIELD_TYPES.length)   // 27
 ```
 
-## 🧠 Design Role
+## Design Role
 
 `@contentrain/rules` exists to keep agent behavior aligned across tools and environments.
 
@@ -97,26 +74,22 @@ It should answer questions like:
 - How should an agent use MCP tools?
 - What is the normalize contract?
 - What workflow and review constraints exist?
-- How should rules be packaged for Claude Code, Cursor, Windsurf, and generic agents?
 
-## 🔗 Relationship To Other Packages
+Detailed reference material and step-by-step procedures live in `@contentrain/skills` (Agent Skills standard format).
+
+## Relationship To Other Packages
 
 - `@contentrain/mcp` enforces file, validation, and git behavior
-- `@contentrain/skills` provides step-by-step workflow playbooks
+- `@contentrain/skills` provides Agent Skills with progressive disclosure (SKILL.md + references/)
 - `contentrain` exposes CLI and serve UX
 - `@contentrain/query` is the generated runtime consumption layer
 
 Rule of thumb:
 
-- `rules` = policy and constraints
-- `skills` = procedures and playbooks
+- `rules` = essential guardrails (always loaded, ~86 lines)
+- `skills` = detailed procedures and reference docs (on-demand)
 
-## 🛠 Build
-
-The build does two things:
-
-1. builds the typed JS entry from `src/index.ts`
-2. generates IDE bundle files from the shared markdown rules
+## Build
 
 From the monorepo root:
 
@@ -126,6 +99,6 @@ pnpm --filter @contentrain/rules test
 pnpm --filter @contentrain/rules typecheck
 ```
 
-## 📄 License
+## License
 
 MIT

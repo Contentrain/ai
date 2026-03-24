@@ -1,16 +1,25 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { FIELD_TYPES, MODEL_KINDS, MCP_TOOLS, ALL_SHARED_RULES, IDE_RULE_FILES } from '../src/index.js'
+import { FIELD_TYPES, MODEL_KINDS, MCP_TOOLS, ESSENTIAL_RULES_FILE } from '../src/index.js'
 
 const PKG_ROOT = join(import.meta.dirname, '..')
 
-describe('shared rules', () => {
-  for (const rule of ALL_SHARED_RULES) {
-    it(`shared/${rule}.md exists`, () => {
-      expect(existsSync(join(PKG_ROOT, 'shared', `${rule}.md`))).toBe(true)
-    })
-  }
+describe('essential rules', () => {
+  it('essential guardrails file exists', () => {
+    expect(existsSync(join(PKG_ROOT, ESSENTIAL_RULES_FILE))).toBe(true)
+  })
+
+  it('essential guardrails is under 150 lines', () => {
+    const content = readFileSync(join(PKG_ROOT, ESSENTIAL_RULES_FILE), 'utf-8')
+    const lines = content.split('\n').length
+    expect(lines).toBeLessThanOrEqual(150)
+  })
+
+  it('essential guardrails mentions all MCP tools', () => {
+    const content = readFileSync(join(PKG_ROOT, ESSENTIAL_RULES_FILE), 'utf-8')
+    for (const t of MCP_TOOLS) expect(content).toContain(t)
+  })
 })
 
 describe('constants', () => {
@@ -19,22 +28,6 @@ describe('constants', () => {
   it('MCP_TOOLS has 15 entries', () => { expect(MCP_TOOLS).toHaveLength(15) })
   it('all MCP tools match pattern', () => {
     for (const t of MCP_TOOLS) expect(t).toMatch(/^contentrain_/)
-  })
-  it('mcp-usage.md documents every MCP tool', () => {
-    const usage = readFileSync(join(PKG_ROOT, 'shared', 'mcp-usage.md'), 'utf-8')
-    for (const t of MCP_TOOLS) expect(usage).toContain(t)
-  })
-})
-
-describe('IDE bundles', () => {
-  for (const [ide, path] of Object.entries(IDE_RULE_FILES)) {
-    it(`${ide} bundle exists`, () => {
-      expect(existsSync(join(PKG_ROOT, path))).toBe(true)
-    })
-  }
-
-  it('does not ship legacy windsurf markdown bundle', () => {
-    expect(existsSync(join(PKG_ROOT, 'ide', 'windsurf', 'contentrain.md'))).toBe(false)
   })
 })
 

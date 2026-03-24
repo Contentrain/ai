@@ -40,11 +40,13 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
     },
+    "./skills/*": "./skills/*",
     "./workflows/*": "./workflows/*",
     "./frameworks/*": "./frameworks/*"
   },
   "files": [
     "dist",
+    "skills",
     "workflows",
     "frameworks"
   ],

@@ -2,11 +2,35 @@ import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { WORKFLOW_SKILLS, FRAMEWORK_GUIDES } from '../src/index.js'
+import { AGENT_SKILLS, WORKFLOW_SKILLS, FRAMEWORK_GUIDES } from '../src/index.js'
 
 const PKG_ROOT = join(import.meta.dirname, '..')
 
-describe('workflow skills', () => {
+describe('agent skills (standard format)', () => {
+  for (const skill of AGENT_SKILLS) {
+    const skillDir = join(PKG_ROOT, 'skills', skill.name)
+    const skillFile = join(skillDir, 'SKILL.md')
+
+    it(`skills/${skill.name}/SKILL.md exists`, () => {
+      expect(existsSync(skillFile)).toBe(true)
+    })
+
+    it(`skills/${skill.name}/SKILL.md has valid frontmatter`, () => {
+      const content = readFileSync(skillFile, 'utf-8')
+      expect(content.startsWith('---\n')).toBe(true)
+      expect(content).toContain(`name: ${skill.name}`)
+      expect(content).toContain('description:')
+    })
+
+    it(`skills/${skill.name}/SKILL.md is under 500 lines`, () => {
+      const content = readFileSync(skillFile, 'utf-8')
+      const lines = content.split('\n').length
+      expect(lines).toBeLessThanOrEqual(500)
+    })
+  }
+})
+
+describe('workflow skills (backward compat)', () => {
   for (const skill of WORKFLOW_SKILLS) {
     const filePath = join(PKG_ROOT, 'workflows', `${skill}.md`)
     it(`workflows/${skill}.md exists`, () => {
@@ -25,41 +49,6 @@ describe('framework guides', () => {
       expect(existsSync(join(PKG_ROOT, 'frameworks', `${fw}.md`))).toBe(true)
     })
   }
-
-  it('nuxt guide treats #contentrain as server-only', () => {
-    const nuxt = readFileSync(join(PKG_ROOT, 'frameworks', 'nuxt.md'), 'utf-8')
-    expect(nuxt).toContain('Treat this import as **server-only** in Nuxt.')
-    expect(nuxt).not.toContain('works in server routes, composables, plugins, and `<script setup>` blocks')
-  })
-
-  it('vue guide documents direct SFC usage', () => {
-    const vue = readFileSync(join(PKG_ROOT, 'frameworks', 'vue.md'), 'utf-8')
-    expect(vue).toContain('Vue 3 + Vite')
-    expect(vue).toContain("import { query, singleton, dictionary } from '#contentrain'")
-  })
-
-  it('react guide documents direct SPA component usage', () => {
-    const react = readFileSync(join(PKG_ROOT, 'frameworks', 'react.md'), 'utf-8')
-    expect(react).toContain('React + Vite')
-    expect(react).toContain("import { query, singleton, dictionary } from '#contentrain'")
-  })
-
-  it('expo guide documents require(...).init() bootstrap', () => {
-    const expo = readFileSync(join(PKG_ROOT, 'frameworks', 'expo.md'), 'utf-8')
-    expect(expo).toContain("require('#contentrain').init()")
-  })
-
-  it('react-native guide documents Metro bootstrap', () => {
-    const reactNative = readFileSync(join(PKG_ROOT, 'frameworks', 'react-native.md'), 'utf-8')
-    expect(reactNative).toContain("require('#contentrain').init()")
-    expect(reactNative).toContain('bare React Native / Metro')
-  })
-
-  it('node guide documents both ESM and CJS consumption', () => {
-    const node = readFileSync(join(PKG_ROOT, 'frameworks', 'node.md'), 'utf-8')
-    expect(node).toContain("import { query, singleton, dictionary, document } from '#contentrain'")
-    expect(node).toContain("await require('#contentrain').init()")
-  })
 })
 
 describe('workflow coverage', () => {

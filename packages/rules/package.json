@@ -34,27 +34,24 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
     },
-    "./shared/*": "./shared/*",
+    "./essential/*": "./essential/*",
     "./prompts/*": "./prompts/*",
-    "./context/*": "./context/*",
-    "./ide/*": "./ide/*"
+    "./context/*": "./context/*"
   },
   "files": [
     "dist",
-    "shared",
+    "essential",
     "prompts",
-    "context",
-    "ide"
+    "context"
   ],
   "scripts": {
-    "build": "tsdown src/index.ts --format esm,cjs --dts && node --import tsx scripts/build-rules.ts",
+    "build": "tsdown src/index.ts --format esm,cjs --dts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsdown": "^0.21.0",
-    "tsx": "^4.0.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
   }

@@ -5,92 +5,97 @@
 
 Workflow skills and framework guides for Contentrain-aware AI agents.
 
-This package is the procedural layer of the Contentrain ecosystem. It tells an agent how to apply the policy from `@contentrain/rules` in concrete tasks such as:
+This package follows the [Agent Skills standard](https://agentskills.io) for progressive disclosure: each skill has a `SKILL.md` (loaded on activation) and optional `references/` (loaded on demand).
 
-- initializing a project
-- creating content
-- running normalize
-- reviewing and submitting changes
-- generating the SDK client
-- translating content
-
-If `@contentrain/rules` defines constraints, `@contentrain/skills` defines execution playbooks.
-
-## 🚀 Install
+## Install
 
 ```bash
 pnpm add @contentrain/skills
 ```
 
-## 📦 What It Contains
+Or install directly via the skills CLI:
 
-### Workflow skills
+```bash
+npx skills add contentrain/contentrain-ai --skill='*'
+```
 
-Published under `workflows/*`:
+## What It Contains
 
-- `contentrain-init.md`
-- `contentrain-model.md`
-- `contentrain-content.md`
-- `contentrain-bulk.md`
-- `contentrain-normalize.md`
-- `contentrain-validate-fix.md`
-- `contentrain-review.md`
-- `contentrain-diff.md`
-- `contentrain-doctor.md`
-- `contentrain-serve.md`
-- `contentrain-translate.md`
-- `contentrain-generate.md`
+### Agent Skills (standard format)
+
+Published under `skills/`:
+
+| Skill | Description |
+|-------|-------------|
+| `contentrain` | Core architecture, MCP tools, content formats |
+| `contentrain-normalize` | Two-phase normalize (extract + reuse) |
+| `contentrain-quality` | Content quality, SEO, accessibility, media |
+| `contentrain-sdk` | @contentrain/query SDK usage (local + CDN) |
+| `contentrain-content` | Content CRUD operations |
+| `contentrain-model` | Model creation/update |
+| `contentrain-init` | Project initialization |
+| `contentrain-bulk` | Batch operations |
+| `contentrain-validate-fix` | Validation and auto-fix |
+| `contentrain-review` | Content quality review |
+| `contentrain-translate` | Multi-locale translation |
+| `contentrain-generate` | SDK client generation |
+| `contentrain-serve` | Local review/normalize UI |
+| `contentrain-diff` | Branch content diffs |
+| `contentrain-doctor` | Project health diagnostics |
+
+Each skill directory contains:
+```
+skills/{name}/
+├── SKILL.md           # Instructions (< 500 lines)
+└── references/        # Detailed docs (loaded on demand)
+    └── *.md
+```
+
+### Workflow skills (backward compat)
+
+Published under `workflows/*` — flat markdown files from previous versions. Still functional.
 
 ### Framework guides
 
 Published under `frameworks/*`:
 
-- `nuxt.md`
-- `next.md`
-- `astro.md`
-- `sveltekit.md`
-- `vue.md`
-- `react.md`
-- `expo.md`
-- `react-native.md`
-- `node.md`
+- `nuxt.md`, `next.md`, `astro.md`, `sveltekit.md`, `vue.md`, `react.md`, `expo.md`, `react-native.md`, `node.md`
 
-## 🧰 Public Exports
-
-The package root exports:
-
-- `WORKFLOW_SKILLS`
-- `FRAMEWORK_GUIDES`
-
-## 🧪 Example
+## Public Exports
 
 ```ts
-import { WORKFLOW_SKILLS, FRAMEWORK_GUIDES } from '@contentrain/skills'
+import { AGENT_SKILLS, WORKFLOW_SKILLS, FRAMEWORK_GUIDES } from '@contentrain/skills'
 
+// Agent Skills catalog (name + description for Tier 1 discovery)
+console.log(AGENT_SKILLS)
+
+// Backward compat
 console.log(WORKFLOW_SKILLS)
-console.log(FRAMEWORK_GUIDES.includes('next'))
+console.log(FRAMEWORK_GUIDES)
 ```
 
-## 🧠 Design Role
+## Progressive Disclosure
 
-`@contentrain/skills` is for step-by-step execution guidance:
+| Tier | What's Loaded | When | Token Cost |
+|------|--------------|------|------------|
+| 1. Catalog | `name` + `description` | Session start | ~50 tokens/skill |
+| 2. Instructions | Full `SKILL.md` body | Skill activated | < 5000 tokens |
+| 3. References | `references/*.md` | Agent needs detail | Varies |
 
-- `skills` = procedures and operational playbooks
-- `rules` = policy and non-negotiable constraints
+This reduces always-loaded context from ~4,700 lines to ~86 lines (essential guardrails only).
 
-In practice:
+## IDE Support
 
-- use `@contentrain/rules` to understand what is allowed
-- use `@contentrain/skills` to decide which workflow to run next
+Skills are installed by `contentrain init` for detected IDEs:
 
-## 🔗 Relationship To Other Packages
+| IDE | Rules Dir | Skills Dir |
+|-----|-----------|------------|
+| Claude Code | `.claude/rules/` | `.claude/skills/` |
+| Cursor | `.cursor/rules/` | `.cursor/skills/` |
+| Windsurf | `.windsurf/rules/` | `.windsurf/skills/` |
+| GitHub Copilot | `.github/` | `.agents/skills/` |
 
-- `@contentrain/mcp` provides the actual tool surface
-- `@contentrain/rules` defines policy and quality constraints
-- `contentrain` exposes CLI and serve workflows
-- `@contentrain/query` provides the generated content runtime
-
-## 🛠 Build
+## Build
 
 From the monorepo root:
 
@@ -100,6 +105,6 @@ pnpm --filter @contentrain/skills test
 pnpm --filter @contentrain/skills typecheck
 ```
 
-## 📄 License
+## License
 
 MIT

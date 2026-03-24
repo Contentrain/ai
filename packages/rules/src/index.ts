@@ -37,30 +37,9 @@ export const MCP_TOOLS = [
 
 export type McpTool = (typeof MCP_TOOLS)[number]
 
-// ─── Rule Sets ───
+// ─── Essential Rules ───
 
-export const CONTENT_QUALITY_RULES = [
-  'content-quality', 'seo-rules', 'i18n-quality',
-  'accessibility-rules', 'security-rules', 'media-rules',
-] as const
-
-export const ARCHITECTURE_RULES = [
-  'content-conventions', 'schema-rules', 'mcp-usage',
-  'workflow-rules', 'normalize-rules',
-] as const
-
-export const ALL_SHARED_RULES = [...CONTENT_QUALITY_RULES, ...ARCHITECTURE_RULES] as const
-
-// ─── IDE Rule Paths ───
-
-export const IDE_RULE_FILES = {
-  'claude-code': 'ide/claude-code/contentrain.md',
-  'cursor': 'ide/cursor/contentrain.cursorrules',
-  'windsurf': 'ide/windsurf/contentrain.windsurfrules',
-  'generic': 'ide/generic/contentrain.md',
-} as const
-
-export type IdeTarget = keyof typeof IDE_RULE_FILES
+export const ESSENTIAL_RULES_FILE = 'essential/contentrain-essentials.md' as const
 
 // ─── Stacks ───
 
