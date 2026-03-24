@@ -42,5 +42,10 @@ export async function createContentrainClient(
   return client
 }
 
+// CDN client factory — async, HTTP-based
+export { createContentrain } from './cdn/index.js'
+export type { ContentrainCDNConfig, ContentrainCDNClient } from './cdn/index.js'
+export { ContentrainError } from './cdn/errors.js'
+
 // Sync factory for CJS — requires generated client to be pre-loaded
 export { createContentrainClient as default }

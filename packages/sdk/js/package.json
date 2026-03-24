@@ -47,6 +47,11 @@
       "types": "./dist/generator/generate.d.ts",
       "import": "./dist/generator/generate.mjs",
       "require": "./dist/generator/generate.cjs"
+    },
+    "./cdn": {
+      "types": "./dist/cdn/index.d.ts",
+      "import": "./dist/cdn/index.mjs",
+      "require": "./dist/cdn/index.cjs"
     }
   },
   "main": "./dist/index.cjs",
@@ -57,8 +62,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown src/index.ts src/generator/generate.ts src/cli.ts --format esm,cjs --dts",
-    "dev": "tsdown src/index.ts src/generator/generate.ts src/cli.ts --format esm,cjs --dts --watch",
+    "build": "tsdown src/index.ts src/cdn/index.ts src/generator/generate.ts src/cli.ts --format esm,cjs --dts",
+    "dev": "tsdown src/index.ts src/cdn/index.ts src/generator/generate.ts src/cli.ts --format esm,cjs --dts --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
