@@ -173,9 +173,61 @@ Public root exports:
 - `SingletonAccessor`
 - `DictionaryAccessor`
 - `DocumentQuery`
-- `createContentrainClient`
+- `createContentrainClient` — local generated client loader
+- `createContentrain` — CDN client factory
+- `ContentrainError` — HTTP error class for CDN mode
 
-## 🧩 CommonJS Usage
+## CDN Transport
+
+For apps that fetch content from Contentrain Studio CDN (SSR, serverless, mobile):
+
+```ts
+import { createContentrain } from '@contentrain/query/cdn'
+
+const client = createContentrain({
+  projectId: '350696e8-...',
+  apiKey: 'crn_live_xxx',
+  // baseUrl: 'https://studio.contentrain.io/api/cdn/v1'  (default)
+})
+
+// All CDN queries are async
+const posts = await client.collection('faq').locale('en').all()
+const hero  = await client.singleton('hero').locale('en').get()
+const t     = await client.dictionary('ui').locale('en').get()
+const doc   = await client.document('docs').locale('en').bySlug('intro')
+```
+
+CDN collection queries support extended operators:
+
+```ts
+const filtered = await client.collection('faq')
+  .locale('en')
+  .where('order', 'gt', 5)
+  .where('category', 'in', ['general', 'billing'])
+  .sort('order', 'desc')
+  .limit(10)
+  .all()
+```
+
+CDN also exposes metadata endpoints:
+
+```ts
+const manifest = await client.manifest()
+const models   = await client.models()
+const model    = await client.model('faq')
+```
+
+### CDN vs Local
+
+| Aspect | Local (`#contentrain`) | CDN (`createContentrain()`) |
+|--------|----------------------|---------------------------|
+| Data source | Bundled `.mjs` files | HTTP fetch from CDN |
+| Return type | Sync (`T[]`) | Async (`Promise<T[]>`) |
+| Auth | None | API key required |
+| Caching | In-memory (embedded) | ETag-based HTTP cache |
+| Use case | SSG, build-time | SSR, client-side, serverless |
+
+## CommonJS Usage
 
 Generated clients support CommonJS through `init()`:
 
@@ -210,11 +262,15 @@ npx contentrain-query generate --root /path/to/project
 
 Main package:
 
-- `@contentrain/query`
+- `@contentrain/query` — runtime classes + `createContentrain()` CDN factory
 
 Generator entry:
 
-- `@contentrain/query/generate`
+- `@contentrain/query/generate` — programmatic generation API
+
+CDN transport:
+
+- `@contentrain/query/cdn` — CDN client with `HttpTransport`, async query classes
 
 ## 🧠 Design Constraints
 

@@ -73,49 +73,51 @@ import {
   FIELD_TYPES,
   MODEL_KINDS,
   MCP_TOOLS,
-  CONTENT_QUALITY_RULES,
-  ARCHITECTURE_RULES,
-  ALL_SHARED_RULES,
-  IDE_RULE_FILES,
+  ESSENTIAL_RULES_FILE,
   STACKS,
 } from '@contentrain/rules'
 
 // Check if a tool exists
 console.log(MCP_TOOLS.includes('contentrain_validate')) // true
 
-// Get IDE rule file paths
-console.log(IDE_RULE_FILES['claude-code'])
+// Path to essential guardrails markdown
+console.log(ESSENTIAL_RULES_FILE) // 'essential/contentrain-essentials.md'
 
-// List all shared rules
-console.log(ALL_SHARED_RULES)
+// All 27 field types
+console.log(FIELD_TYPES.length) // 27
 ```
 
 ## Skills (`@contentrain/skills`)
 
-### Workflow Skills
+### Agent Skills (Standard Format)
 
-Skills are step-by-step playbooks that guide agents through complete workflows:
+Skills follow the [Agent Skills standard](https://agentskills.io) with progressive disclosure: each skill has a `SKILL.md` (loaded on activation, < 500 lines) and optional `references/` (loaded on demand).
 
-| Skill | File | When to Use |
-|-------|------|------------|
-| Init | `contentrain-init.md` | "Initialize Contentrain in my project" |
-| Model | `contentrain-model.md` | "Create a blog post model" |
-| Content | `contentrain-content.md` | "Add content to my blog" |
-| Bulk | `contentrain-bulk.md` | "Copy all content to Turkish locale" |
-| Normalize | `contentrain-normalize.md` | "Extract hardcoded strings from my components" |
-| Validate & Fix | `contentrain-validate-fix.md` | "Check my content for errors" |
-| Review | `contentrain-review.md` | "Review pending content changes" |
-| Diff | `contentrain-diff.md` | "Show me what changed in the contentrain branches" |
-| Doctor | `contentrain-doctor.md` | "Check my project health" |
-| Serve | `contentrain-serve.md` | "Start the review UI" |
-| Translate | `contentrain-translate.md` | "Translate my content to French" |
-| Generate | `contentrain-generate.md` | "Generate the SDK client" |
+| Skill | Directory | When to Use |
+|-------|-----------|------------|
+| Contentrain | `skills/contentrain/` | Core architecture, MCP tools, content formats |
+| Normalize | `skills/contentrain-normalize/` | Extract hardcoded strings, patch source files |
+| Quality | `skills/contentrain-quality/` | Content quality, SEO, accessibility, media |
+| SDK | `skills/contentrain-sdk/` | @contentrain/query usage (local + CDN) |
+| Content | `skills/contentrain-content/` | Add/update content entries |
+| Model | `skills/contentrain-model/` | Create/modify model definitions |
+| Init | `skills/contentrain-init/` | Initialize Contentrain project |
+| Bulk | `skills/contentrain-bulk/` | Batch operations |
+| Validate | `skills/contentrain-validate-fix/` | Validate and auto-fix |
+| Review | `skills/contentrain-review/` | Review content changes |
+| Translate | `skills/contentrain-translate/` | Multi-locale translation |
+| Generate | `skills/contentrain-generate/` | Generate SDK client |
+| Serve | `skills/contentrain-serve/` | Local review/normalize UI |
+| Diff | `skills/contentrain-diff/` | Branch content diffs |
+| Doctor | `skills/contentrain-doctor/` | Project health check |
 
-Each skill follows a consistent structure:
-1. **When to Use** — trigger phrases and conditions
-2. **Steps** — numbered sequence of MCP tool calls and agent decisions
-3. **Verification** — how to confirm the operation succeeded
-4. **Error Handling** — what to do when things go wrong
+Each skill directory contains:
+```
+skills/{name}/
+├── SKILL.md           # Instructions (< 500 lines, < 5000 tokens)
+└── references/        # Detailed reference docs (loaded on demand)
+    └── *.md
+```
 
 ### Framework Guides
 
@@ -136,67 +138,48 @@ Skills include framework-specific guides that teach agents how Contentrain integ
 ### Programmatic Access
 
 ```ts
-import { WORKFLOW_SKILLS, FRAMEWORK_GUIDES } from '@contentrain/skills'
+import { AGENT_SKILLS, WORKFLOW_SKILLS, FRAMEWORK_GUIDES } from '@contentrain/skills'
 
+// Agent Skills catalog (name + description)
+console.log(AGENT_SKILLS)
+
+// Backward compat
 console.log(WORKFLOW_SKILLS)
-// ['contentrain-init', 'contentrain-model', 'contentrain-content', ...]
-
 console.log(FRAMEWORK_GUIDES.includes('next'))
-// true
+```
+
+You can also install skills directly:
+
+```bash
+npx skills add contentrain/contentrain-ai --skill='*'
 ```
 
 ## IDE Integration
 
-`contentrain init` automatically installs rule files for your IDE agent:
+`contentrain init` installs a compact essential guardrails file (~86 lines, always-loaded) plus Agent Skills directories (on-demand) for detected IDEs:
 
-### Claude Code
-
-Rules are appended to `CLAUDE.md` in your project root. Claude Code reads this file automatically.
-
-```bash
-# After contentrain init, CLAUDE.md contains:
-# - Project-level Contentrain rules
-# - MCP tool usage guidelines
-# - Quality gate requirements
-```
-
-### Cursor
-
-Rules are written to `.cursorrules` in your project root:
-
-```bash
-# .cursorrules contains Contentrain agent rules
-# Cursor loads this automatically for every conversation
-```
-
-### Windsurf
-
-Rules are written to `.windsurfrules` in your project root:
-
-```bash
-# .windsurfrules contains Contentrain agent rules
-# Windsurf loads this automatically
-```
+| IDE | Rules Dir | Skills Dir | Format |
+|-----|-----------|------------|--------|
+| Claude Code | `.claude/rules/` | `.claude/skills/` | Plain markdown |
+| Cursor | `.cursor/rules/` | `.cursor/skills/` | `.mdc` with `alwaysApply: true` |
+| Windsurf | `.windsurf/rules/` | `.windsurf/skills/` | `trigger: always_on` frontmatter |
+| GitHub Copilot | `.github/` | `.agents/skills/` | `copilot-instructions.md` |
 
 ::: info Non-Destructive Installation
-If rule files already exist, `contentrain init` appends Contentrain rules instead of overwriting your existing content.
+Existing rule files are not overwritten. Old granular rule files from previous versions are automatically cleaned up.
 :::
 
 ## How Agents Use Rules and Skills Together
 
 Here is a real example of the agent workflow when a user says "Extract the hardcoded strings from my header component":
 
-### 1. Rules Load First
+### 1. Essential Rules Load First
 
-The agent loads from its IDE rules file:
-- `mcp-usage.md` — tool calling protocol (always dry-run first)
-- `normalize-rules.md` — extraction safety constraints
-- `security-rules.md` — never extract secrets or credentials
-- `content-quality.md` — extracted content must meet quality standards
+The agent's essential guardrails (~86 lines) are always loaded from `.claude/rules/contentrain-essentials.md` (or equivalent IDE path). These cover MCP tool catalog, mandatory protocols, and security basics.
 
 ### 2. Skill Guides the Workflow
 
-The agent follows `contentrain-normalize.md`:
+The agent activates `contentrain-normalize` skill (SKILL.md + references/):
 
 ```
 Step 1: Call contentrain_status (check project is initialized)

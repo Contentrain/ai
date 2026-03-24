@@ -36,17 +36,18 @@ Use these references instead:
 
 When working with Contentrain content operations (models, content, normalize, validate), you MUST follow the rules and skills in this repo:
 
-### Rules (read before any content operation)
-- **Main rules:** `packages/rules/ide/claude-code/contentrain.md` — content quality, schema, MCP usage, and security rules
-- **Shared rules:** `packages/rules/shared/` — normalize-rules, content-quality, schema-rules, i18n-quality, security-rules, mcp-usage
+### Essential Rules (always-loaded, ~86 lines)
+- `packages/rules/essential/contentrain-essentials.md` — compact guardrails for every conversation
 
-### Skills (follow step-by-step for workflows)
-- `packages/skills/workflows/contentrain-normalize.md` — Two-phase normalize (extract + reuse)
-- `packages/skills/workflows/contentrain-content.md` — Content CRUD operations
-- `packages/skills/workflows/contentrain-model.md` — Model creation/update
-- `packages/skills/workflows/contentrain-review.md` — Content quality review
-- `packages/skills/workflows/contentrain-serve.md` — Serve UI management
-- `packages/skills/workflows/contentrain-validate-fix.md` — Validation and auto-fix
+### Skills (Agent Skills standard, on-demand)
+- `packages/skills/skills/contentrain/` — core architecture, MCP tools, content formats
+- `packages/skills/skills/contentrain-normalize/` — two-phase normalize (extract + reuse)
+- `packages/skills/skills/contentrain-quality/` — content quality, SEO, accessibility, media
+- `packages/skills/skills/contentrain-sdk/` — @contentrain/query SDK usage
+- `packages/skills/skills/contentrain-content/` — content CRUD operations
+- `packages/skills/skills/contentrain-model/` — model creation/update
+- `packages/skills/skills/contentrain-generate/` — SDK client generation
+- See `packages/skills/skills/` for all 15 skills
 
 ### Critical rules to always follow:
 1. **Always call `contentrain_describe_format` before creating models or content** — understand storage formats

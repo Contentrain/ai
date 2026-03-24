@@ -368,6 +368,72 @@ Common mistakes to avoid:
 - `.get()` on QueryBuilder — use `.all()` or `.first()`
 :::
 
+## CDN Transport
+
+For apps that fetch content from Contentrain Studio CDN instead of local files:
+
+```ts
+import { createContentrain } from '@contentrain/query/cdn'
+
+const client = createContentrain({
+  projectId: '350696e8-...',
+  apiKey: 'crn_live_xxx',
+})
+
+// All CDN queries return Promises
+const posts = await client.collection('faq').locale('en').all()
+const hero  = await client.singleton('hero').locale('en').get()
+const t     = await client.dictionary('ui').locale('en').get()
+const doc   = await client.document('docs').locale('en').bySlug('intro')
+```
+
+### CDN Collection Operators
+
+```ts
+await client.collection('products')
+  .locale('en')
+  .where('price', 'lt', 100)
+  .where('category', 'in', ['electronics', 'accessories'])
+  .sort('price', 'asc')
+  .limit(20)
+  .all()
+```
+
+Supported operators: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `contains`.
+
+### CDN Metadata
+
+```ts
+const manifest = await client.manifest()   // _manifest.json
+const models   = await client.models()     // models/_index.json
+const model    = await client.model('faq') // models/faq.json
+```
+
+### CDN vs Local Comparison
+
+| Aspect | Local (`#contentrain`) | CDN (`createContentrain()`) |
+|--------|----------------------|---------------------------|
+| Data source | Bundled `.mjs` files | HTTP fetch from Studio CDN |
+| Return type | Sync (`T[]`) | Async (`Promise<T[]>`) |
+| Auth | None | API key required |
+| Caching | In-memory (embedded) | ETag-based HTTP cache |
+| Use case | SSG, build-time | SSR, client-side, serverless, mobile |
+
+### Error Handling
+
+```ts
+import { ContentrainError } from '@contentrain/query'
+
+try {
+  await client.collection('faq').locale('en').all()
+} catch (err) {
+  if (err instanceof ContentrainError) {
+    console.log(err.status)  // 401, 403, 404, 429
+    console.log(err.message)
+  }
+}
+```
+
 ## For Framework SDK Authors
 
 The package root exports runtime primitives for building framework-specific SDKs:
@@ -394,3 +460,11 @@ The base SDK is framework-agnostic and MIT-licensed. Community-built framework S
 - [MCP Tools](/packages/mcp) — The tool layer that creates models and content the SDK consumes
 - [Rules & Skills](/packages/rules) — Agent guidance for content operations
 - [Contentrain Studio](https://studio.contentrain.io) — Content CDN for non-web platforms (iOS, Android, Flutter) that can't import from Git at runtime
+
+## Package Exports
+
+| Export Path | Description |
+|-------------|-------------|
+| `@contentrain/query` | Runtime classes + `createContentrain()` CDN factory |
+| `@contentrain/query/cdn` | CDN transport module (standalone) |
+| `@contentrain/query/generate` | Programmatic generation API |

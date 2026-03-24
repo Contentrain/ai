@@ -70,12 +70,12 @@ This creates:
 - `.contentrain/config.json` — project configuration
 - `.contentrain/models/` — model schema directory
 - `.contentrain/content/` — content storage directory
-- IDE rule files (`CLAUDE.md`, `.cursorrules`, `.windsurfrules`)
+- IDE rules and Agent Skills (Claude Code, Cursor, Windsurf, GitHub Copilot)
 
 If the directory is not a git repo, `contentrain init` runs `git init` automatically.
 
-::: info IDE Rules
-`contentrain init` installs project-level AI rules automatically. If rule files already exist, Contentrain appends its rules instead of overwriting your content.
+::: info IDE Rules & Skills
+`contentrain init` installs a compact essential guardrails file (~86 lines, always-loaded) plus Agent Skills directories (on-demand) for detected IDEs. Old granular rule files from previous versions are automatically cleaned up. GitHub Copilot support is included via `.github/copilot-instructions.md`.
 :::
 
 ---
