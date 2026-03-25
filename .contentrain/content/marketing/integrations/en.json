@@ -1,0 +1,209 @@
+{
+  "1a0e1d7c68b9": {
+    "category": "platform",
+    "description": "React Native framework for building cross-platform mobile apps with CDN-based content delivery.",
+    "difficulty": 3,
+    "features": [
+      {
+        "description": "Fetch content from Contentrain Studio CDN — no local files needed",
+        "icon": "cloud",
+        "title": "CDN Transport"
+      },
+      {
+        "description": "Cache content locally for offline-first mobile experiences",
+        "icon": "wifi-off",
+        "title": "Offline Cache"
+      },
+      {
+        "description": "Works with Metro via CJS wrapper and alias configuration",
+        "icon": "package",
+        "title": "Metro Bundler"
+      }
+    ],
+    "is_official": true,
+    "name": "Expo",
+    "order": 5,
+    "slug": "expo",
+    "supported_since": "v5.1.0",
+    "tags": [
+      "react-native",
+      "mobile",
+      "ios",
+      "android",
+      "cdn"
+    ],
+    "website": "https://expo.dev"
+  },
+  "24c9ea438b07": {
+    "category": "framework",
+    "description": "Full-stack Vue framework with server routes, auto-imports, and hybrid rendering. The recommended framework for Contentrain projects.",
+    "difficulty": 2,
+    "features": [
+      {
+        "description": "Query content in server API routes with full type safety",
+        "icon": "server",
+        "title": "Server Routes"
+      },
+      {
+        "description": "Use #contentrain imports without manual configuration",
+        "icon": "sparkles",
+        "title": "Auto Import"
+      },
+      {
+        "description": "SSR, SSG, and ISR modes supported out of the box",
+        "icon": "layers",
+        "title": "Hybrid Rendering"
+      },
+      {
+        "description": "Deploy to any platform — Vercel, Netlify, Cloudflare, Node",
+        "icon": "rocket",
+        "title": "Nitro Engine"
+      }
+    ],
+    "is_official": true,
+    "name": "Nuxt 3",
+    "order": 1,
+    "slug": "nuxt",
+    "supported_since": "v0.1.0",
+    "tags": [
+      "vue",
+      "ssr",
+      "fullstack",
+      "typescript",
+      "nitro"
+    ],
+    "website": "https://nuxt.com"
+  },
+  "3df380f46e50": {
+    "category": "framework",
+    "description": "React framework for production with App Router, React Server Components, and edge runtime support.",
+    "difficulty": 2,
+    "features": [
+      {
+        "description": "React Server Components with streaming and parallel routes",
+        "icon": "layout",
+        "title": "App Router"
+      },
+      {
+        "description": "Pre-render content pages at build time for instant loading",
+        "icon": "zap",
+        "title": "Static Generation"
+      },
+      {
+        "description": "Run content queries at the edge for low-latency responses",
+        "icon": "globe",
+        "title": "Edge Runtime"
+      }
+    ],
+    "is_official": true,
+    "name": "Next.js",
+    "order": 2,
+    "slug": "nextjs",
+    "supported_since": "v0.1.0",
+    "tags": [
+      "react",
+      "ssr",
+      "fullstack",
+      "typescript",
+      "vercel"
+    ],
+    "website": "https://nextjs.org"
+  },
+  "b676b113bd15": {
+    "category": "tool",
+    "description": "Anthropic's CLI coding agent with auto-loaded Contentrain rules and on-demand Agent Skills for content operations.",
+    "difficulty": 1,
+    "features": [
+      {
+        "description": "86-line guardrails auto-loaded in every conversation",
+        "icon": "shield",
+        "title": "Essential Rules"
+      },
+      {
+        "description": "15 on-demand skills for normalize, content CRUD, model design, and more",
+        "icon": "book-open",
+        "title": "Agent Skills"
+      },
+      {
+        "description": "Direct tool access to all 15 Contentrain MCP tools",
+        "icon": "terminal",
+        "title": "MCP Integration"
+      }
+    ],
+    "is_official": true,
+    "name": "Claude Code",
+    "order": 6,
+    "slug": "claude-code",
+    "supported_since": "v0.3.0",
+    "tags": [
+      "ai",
+      "agent",
+      "mcp",
+      "cli"
+    ],
+    "website": "https://claude.ai/code"
+  },
+  "e7d593bce6b4": {
+    "category": "framework",
+    "description": "Full-stack Svelte framework with filesystem routing, server-side rendering, and progressive enhancement.",
+    "difficulty": 2,
+    "features": [
+      {
+        "description": "Query content in +page.server.ts with type-safe load functions",
+        "icon": "download",
+        "title": "Load Functions"
+      },
+      {
+        "description": "Stream content responses for faster time-to-first-byte",
+        "icon": "activity",
+        "title": "Streaming"
+      }
+    ],
+    "is_official": true,
+    "name": "SvelteKit",
+    "order": 4,
+    "slug": "sveltekit",
+    "supported_since": "v0.2.0",
+    "tags": [
+      "svelte",
+      "ssr",
+      "fullstack",
+      "typescript"
+    ],
+    "website": "https://kit.svelte.dev"
+  },
+  "f93beb7ebd8e": {
+    "category": "framework",
+    "description": "Content-focused web framework with zero JS by default, island architecture, and multi-framework support.",
+    "difficulty": 1,
+    "features": [
+      {
+        "description": "Ship pure HTML with content — add interactivity only where needed",
+        "icon": "feather",
+        "title": "Zero JS Default"
+      },
+      {
+        "description": "Native content layer integrates seamlessly with Contentrain models",
+        "icon": "database",
+        "title": "Content Collections"
+      },
+      {
+        "description": "Use React, Vue, Svelte, or Solid components in the same project",
+        "icon": "puzzle",
+        "title": "Multi-Framework"
+      }
+    ],
+    "is_official": true,
+    "name": "Astro",
+    "order": 3,
+    "slug": "astro",
+    "supported_since": "v0.1.0",
+    "tags": [
+      "static",
+      "content",
+      "multi-framework",
+      "islands"
+    ],
+    "website": "https://astro.build"
+  }
+}
