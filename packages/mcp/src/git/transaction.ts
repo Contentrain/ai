@@ -18,7 +18,7 @@ export interface GitTransaction {
   branch: string
   write(callback: (worktreePath: string) => Promise<void>): Promise<void>
   commit(message: string): Promise<string>
-  complete(contextUpdate?: ContextUpdate): Promise<{ action: 'auto-merged' | 'pending-review'; commit: string }>
+  complete(contextUpdate?: ContextUpdate): Promise<{ action: 'auto-merged' | 'pending-review'; commit: string; warning?: string }>
   cleanup(): Promise<void>
 }
 
@@ -121,50 +121,68 @@ export async function createTransaction(
         }
       }
 
-      // Ensure working tree is clean before checkout
+      // Stash dirty working tree so checkout + merge can proceed.
+      // MCP writes to .contentrain/ while the developer works in src/ —
+      // stash pop conflicts are extremely unlikely.
       const status = await git.status()
-      if (status.modified.length > 0 || status.not_added.length > 0 || status.created.length > 0) {
-        throw new Error('Working tree has uncommitted changes. Commit or stash them before completing the transaction.')
+      const needsStash = status.files.length > 0
+      if (needsStash) {
+        await git.stash(['push', '--include-untracked', '-m', 'contentrain-auto-stash'])
       }
 
-      await git.checkout(baseBranch)
-
+      let stashPopFailed = false
       try {
-        await git.merge([branch, '--no-edit'])
-      } catch {
-        // Merge conflict — abort and let the user resolve manually.
+        await git.checkout(baseBranch)
+
         try {
-          await git.merge(['--abort'])
+          await git.merge([branch, '--no-edit'])
         } catch {
-          // abort may fail if not in merge state
+          // Merge conflict — abort and let the user resolve manually.
+          try {
+            await git.merge(['--abort'])
+          } catch {
+            // abort may fail if not in merge state
+          }
+          throw new Error(
+            `Merge conflict when merging branch "${branch}" into "${baseBranch}". `
+            + `The branch still exists with your changes intact. `
+            + `Resolve the conflict manually, or delete the branch and retry.`,
+          )
         }
-        throw new Error(
-          `Merge conflict when merging branch "${branch}" into "${baseBranch}". `
-          + `The branch still exists with your changes intact. `
-          + `Resolve the conflict manually, or delete the branch and retry.`,
-        )
+
+        if (hasRemote) {
+          try {
+            await git.push(remoteName, baseBranch)
+          } catch {
+            // push may fail, branch is merged locally
+          }
+        }
+
+        // Update context.json on base branch after successful merge
+        if (contextUpdate) {
+          try {
+            await writeContext(projectRoot, contextUpdate)
+            await git.add('.contentrain/context.json')
+            await git.commit('[contentrain] update context', { '--allow-empty': null, '--author': `${authorName} <${authorEmail}>` })
+          } catch {
+            // Context update is best-effort — don't fail the transaction
+          }
+        }
+      } finally {
+        if (needsStash) {
+          try {
+            await git.stash(['pop'])
+          } catch {
+            stashPopFailed = true
+          }
+        }
       }
 
-      if (hasRemote) {
-        try {
-          await git.push(remoteName, baseBranch)
-        } catch {
-          // push may fail, branch is merged locally
-        }
+      return {
+        action: 'auto-merged' as const,
+        commit: commitHash,
+        ...(stashPopFailed ? { warning: 'Your uncommitted changes were stashed but could not be restored automatically. Run `git stash pop` to recover them.' } : {}),
       }
-
-      // Update context.json on base branch after successful merge
-      if (contextUpdate) {
-        try {
-          await writeContext(projectRoot, contextUpdate)
-          await git.add('.contentrain/context.json')
-          await git.commit('[contentrain] update context', { '--allow-empty': null, '--author': `${authorName} <${authorEmail}>` })
-        } catch {
-          // Context update is best-effort — don't fail the transaction
-        }
-      }
-
-      return { action: 'auto-merged', commit: commitHash }
     },
 
     async cleanup() {
