@@ -1,5 +1,13 @@
 # @contentrain/mcp
 
+## 1.0.7
+
+### Patch Changes
+
+- 2feb3b8: fix(mcp): auto-stash dirty working tree during auto-merge
+
+  MCP's auto-merge flow no longer blocks when developers have staged or unstaged changes. Working tree is automatically stashed before checkout + merge, then restored after completion.
+
 ## 1.0.6
 
 ### Patch Changes
