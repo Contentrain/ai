@@ -1,22 +1,19 @@
 {
   "lastOperation": {
-    "entries": [
-      "demo-full"
-    ],
     "locale": "en",
-    "model": "showcase",
-    "source": "mcp-studio",
-    "timestamp": "2026-03-21T19:04:39.246Z",
-    "tool": "delete_content"
+    "model": "integrations",
+    "source": "mcp-local",
+    "timestamp": "2026-03-25T15:14:58.359Z",
+    "tool": "contentrain_model_save"
   },
   "stats": {
-    "entries": 30,
-    "lastSync": "2026-03-21T19:04:39.246Z",
+    "entries": 29,
+    "lastSync": "2026-03-25T15:14:58.359Z",
     "locales": [
       "en",
       "tr"
     ],
-    "models": 10
+    "models": 11
   },
   "version": "1"
 }
