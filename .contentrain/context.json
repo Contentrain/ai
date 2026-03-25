@@ -8,15 +8,15 @@
       "1a0e1d7c68b9",
       "b676b113bd15"
     ],
-    "locale": "en",
+    "locale": "tr",
     "model": "integrations",
     "source": "mcp-local",
-    "timestamp": "2026-03-25T15:15:29.627Z",
+    "timestamp": "2026-03-25T15:16:06.258Z",
     "tool": "contentrain_content_save"
   },
   "stats": {
-    "entries": 35,
-    "lastSync": "2026-03-25T15:15:29.627Z",
+    "entries": 41,
+    "lastSync": "2026-03-25T15:16:06.258Z",
     "locales": [
       "en",
       "tr"
