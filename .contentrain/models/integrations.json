@@ -1,0 +1,79 @@
+{
+  "id": "integrations",
+  "name": "Integrations",
+  "kind": "collection",
+  "domain": "marketing",
+  "i18n": true,
+  "description": "Framework and platform integrations with logos, descriptions, and feature highlights",
+  "fields": {
+    "category": {
+      "options": [
+        "framework",
+        "platform",
+        "tool",
+        "cms"
+      ],
+      "required": true,
+      "type": "select"
+    },
+    "description": {
+      "max": 280,
+      "required": true,
+      "type": "text"
+    },
+    "difficulty": {
+      "type": "rating"
+    },
+    "features": {
+      "items": {
+        "fields": {
+          "description": {
+            "type": "text"
+          },
+          "icon": {
+            "type": "icon"
+          },
+          "title": {
+            "required": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "max": 6,
+      "type": "array"
+    },
+    "is_official": {
+      "default": false,
+      "type": "boolean"
+    },
+    "logo": {
+      "type": "image"
+    },
+    "name": {
+      "max": 60,
+      "required": true,
+      "type": "string"
+    },
+    "order": {
+      "default": 0,
+      "type": "integer"
+    },
+    "slug": {
+      "required": true,
+      "type": "slug",
+      "unique": true
+    },
+    "supported_since": {
+      "type": "string"
+    },
+    "tags": {
+      "items": "string",
+      "max": 10,
+      "type": "array"
+    },
+    "website": {
+      "type": "url"
+    }
+  }
+}
