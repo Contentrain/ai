@@ -10,6 +10,8 @@ import { writeJson, ensureDir, pathExists } from '../../src/util/fs.js'
 
 let testDir: string
 
+let defaultBranch: string
+
 beforeEach(async () => {
   testDir = await mkdtemp(join(tmpdir(), 'cr-tx-test-'))
   const git = simpleGit(testDir)
@@ -17,7 +19,7 @@ beforeEach(async () => {
   await git.addConfig('user.name', 'Test')
   await git.addConfig('user.email', 'test@test.com')
 
-  // Create initial commit so we have a main branch
+  // Create initial commit
   await ensureDir(join(testDir, '.contentrain'))
   await writeJson(join(testDir, '.contentrain', 'config.json'), {
     version: 1,
@@ -28,6 +30,9 @@ beforeEach(async () => {
   })
   await git.add('.')
   await git.commit('initial commit')
+
+  // Detect default branch name (may be 'main' or 'master' depending on git config)
+  defaultBranch = (await git.raw(['branch', '--show-current'])).trim()
 })
 
 afterEach(async () => {
@@ -59,8 +64,8 @@ describe('contentrain branch checked out error', () => {
       createTransaction(testDir, 'cr/model/test/err-1'),
     ).rejects.toThrow('contentrain')
 
-    // Clean up: go back to main
-    await git.checkout('main')
+    // Clean up: go back to default branch
+    await git.checkout(defaultBranch)
   })
 })
 
@@ -127,9 +132,9 @@ describe('createTransaction', () => {
     const branches = await simpleGit(testDir).branchLocal()
     expect(branches.all).toContain('contentrain')
 
-    // Verify baseBranch (main) was advanced to contentrain tip
+    // Verify baseBranch was advanced to contentrain tip
     const mainGit = simpleGit(testDir)
-    const mainLog = await mainGit.log(['main', '-1'])
+    const mainLog = await mainGit.log([defaultBranch, '-1'])
     const contentrainLog = await mainGit.log(['contentrain', '-1'])
     expect(mainLog.latest!.hash).toBe(contentrainLog.latest!.hash)
 
