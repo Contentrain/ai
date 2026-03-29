@@ -145,7 +145,7 @@ describe('createTransaction', () => {
 
     // Verify file exists on main after update-ref + selectiveSync
     // The file may have been synced or may need to be verified via git show
-    const fileInCommit = await mainGit.show([`main:.contentrain/models/new-model.json`])
+    const fileInCommit = await mainGit.show([`${defaultBranch}:.contentrain/models/new-model.json`])
     expect(fileInCommit).toBeTruthy()
 
     // If selectiveSync synced files, they should exist on disk
