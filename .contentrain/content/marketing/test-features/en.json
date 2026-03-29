@@ -1,0 +1,17 @@
+{
+  "238da9e22650": {
+    "description": "Query anywhere",
+    "icon": "code",
+    "title": "Multi-Platform SDK"
+  },
+  "3d2c72f05d1f": {
+    "description": "Manage with AI",
+    "icon": "brain",
+    "title": "AI Content Management"
+  },
+  "d616c1cc5cb8": {
+    "description": "Stored in Git",
+    "icon": "git-branch",
+    "title": "Git-Native Storage"
+  }
+}
