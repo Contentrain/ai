@@ -3,17 +3,17 @@
     "locale": "en",
     "model": "test-features",
     "source": "mcp-local",
-    "timestamp": "2026-03-29T16:14:26.103Z",
-    "tool": "contentrain_model_save"
+    "timestamp": "2026-03-29T16:29:14.314Z",
+    "tool": "contentrain_model_delete"
   },
   "stats": {
     "entries": 41,
-    "lastSync": "2026-03-29T16:14:26.103Z",
+    "lastSync": "2026-03-29T16:29:14.314Z",
     "locales": [
       "en",
       "tr"
     ],
-    "models": 12
+    "models": 11
   },
   "version": "1"
 }
