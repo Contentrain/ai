@@ -38,6 +38,36 @@ export async function ensureContentBranch(projectRoot: string): Promise<void> {
     || (await git.raw(['branch', '--show-current'])).trim()
     || 'main'
 
+  // Migration: old system used `contentrain/*` feature branches which conflict
+  // with creating a `contentrain` branch (git ref namespace: path can't be both
+  // file and directory). Clean up merged old-prefix branches before creating.
+  const oldPrefixBranches = branches.all.filter(b => b.startsWith('contentrain/'))
+  if (oldPrefixBranches.length > 0) {
+    // Get merged branches (safe to delete)
+    let mergedBranches: string[] = []
+    try {
+      const mergedOutput = await git.raw(['branch', '--merged', baseBranch])
+      mergedBranches = mergedOutput.split('\n')
+        .map(b => b.trim().replace(/^\*\s*/, ''))
+        .filter(b => b.startsWith('contentrain/'))
+    } catch { /* ignore */ }
+
+    // Delete merged old-prefix branches
+    for (const b of mergedBranches) {
+      try { await git.raw(['branch', '-d', b]) } catch { /* skip if protected */ }
+    }
+
+    // Check if unmerged old-prefix branches still block creation
+    const remaining = (await git.branchLocal()).all.filter(b => b.startsWith('contentrain/'))
+    if (remaining.length > 0) {
+      // Force-delete remaining old-prefix branches (they use the old system,
+      // content is already on main via previous auto-merges)
+      for (const b of remaining) {
+        try { await git.raw(['branch', '-D', b]) } catch { /* skip */ }
+      }
+    }
+  }
+
   // Create contentrain branch from base
   await git.branch([CONTENTRAIN_BRANCH, baseBranch])
 
@@ -172,14 +202,8 @@ export async function createTransaction(
     })
   }
 
-  // Ensure contentrain branch exists (lightweight: single branchLocal check)
-  const branches = await git.branchLocal()
-  if (!branches.all.includes(CONTENTRAIN_BRANCH)) {
-    await git.branch([CONTENTRAIN_BRANCH, baseBranch])
-    if (hasRemote) {
-      try { await git.push(['-u', remoteName, CONTENTRAIN_BRANCH]) } catch { /* best-effort */ }
-    }
-  }
+  // Ensure contentrain branch exists (with migration for old contentrain/* branches)
+  await ensureContentBranch(projectRoot)
 
   // Fetch latest from remote (parallel fetch for both branches)
   if (hasRemote) {
