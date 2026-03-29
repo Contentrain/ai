@@ -43,6 +43,8 @@ vi.mock('@contentrain/mcp/util/fs', () => ({
 vi.mock('simple-git', () => ({
   simpleGit: vi.fn(() => ({
     branch: branchMock,
+    branchLocal: vi.fn().mockResolvedValue({ all: ['main'], current: 'main' }),
+    raw: vi.fn().mockResolvedValue('0'),
   })),
 }))
 

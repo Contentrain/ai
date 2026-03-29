@@ -83,7 +83,7 @@ async function createActiveContentrainBranches(dir: string, count: number): Prom
   await git.checkout(baseBranch)
 
   for (let i = 0; i < count; i++) {
-    await git.raw(['branch', `contentrain/review/test-${i}`, sourceHead])
+    await git.raw(['branch', `cr/review/test-${i}`, sourceHead])
   }
 
   await git.deleteLocalBranch('contentrain-source', true)
@@ -113,7 +113,7 @@ describe('contentrain validate --fix', { sequential: true }, () => {
 
     expect(await pathExists(join(testDir, '.contentrain', 'content', 'marketing', 'authors', 'tr.json'))).toBe(false)
     expect(status.files).toHaveLength(0)
-    expect(branches.all.some(b => b.startsWith('contentrain/fix/validate/'))).toBe(true)
+    expect(branches.all.some(b => b.startsWith('cr/fix/validate/'))).toBe(true)
   })
 
   it('should not report remaining errors from the untouched base worktree after interactive fix on review workflow', async () => {
@@ -125,7 +125,7 @@ describe('contentrain validate --fix', { sequential: true }, () => {
     const git = simpleGit(testDir)
     const branches = await git.branch()
 
-    expect(branches.all.some(b => b.startsWith('contentrain/fix/validate/'))).toBe(true)
+    expect(branches.all.some(b => b.startsWith('cr/fix/validate/'))).toBe(true)
     expect(warningMock).not.toHaveBeenCalledWith(expect.stringContaining('remaining'))
     expect(successMock).toHaveBeenCalled()
   })

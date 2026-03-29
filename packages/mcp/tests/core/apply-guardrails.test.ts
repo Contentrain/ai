@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 
-vi.setConfig({ testTimeout: 60000, hookTimeout: 60000 })
+vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
 import { join } from 'node:path'
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'

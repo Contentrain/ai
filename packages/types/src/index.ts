@@ -337,3 +337,30 @@ export interface ContextJson {
     lastSync: string
   }
 }
+
+// ─── Git Transaction Types ───
+
+/** Standard name for the dedicated content branch */
+export const CONTENTRAIN_BRANCH = 'contentrain' as const
+
+/** Result of selective file sync to developer's working tree */
+export interface SyncResult {
+  /** Files successfully synced to working tree */
+  synced: string[]
+  /** Files skipped due to uncommitted local changes */
+  skipped: string[]
+  /** Human-readable warning if files were skipped */
+  warning?: string
+}
+
+/** Structured error for git operations with actionable guidance */
+export interface ContentrainError {
+  /** Machine-readable error code */
+  code: string
+  /** Human-readable error message */
+  message: string
+  /** Guidance for AI agents on how to handle this error */
+  agent_hint: string
+  /** Command or action the developer should take */
+  developer_action: string
+}

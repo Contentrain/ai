@@ -51,9 +51,13 @@ They are listed as optional dependencies. The scanner still works without them, 
 
 All write operations are designed around git-backed safety:
 
-- write to a dedicated `contentrain/*` branch
+- a dedicated `contentrain` branch serves as the content state single source of truth
+- each write creates a temporary worktree on a feature branch forked from `contentrain`
+- auto-merge: feature merges into `contentrain`, baseBranch advanced via update-ref, `.contentrain/` files selectively synced to developer's working tree
+- review: feature branch pushed to remote for team review
+- developer's working tree is never mutated during MCP git operations (no stash, no checkout, no merge)
+- context.json is committed together with content changes, not as a separate commit
 - keep canonical JSON output
-- update `.contentrain/context.json`
 - surface validation and next-step hints to the caller
 
 ## 🧰 Tool Surface

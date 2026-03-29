@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const branchMock = vi.fn().mockResolvedValue({ all: ['contentrain/new/init'] })
+const branchMock = vi.fn().mockResolvedValue({ all: ['cr/new/init'] })
 const readDirMock = vi.fn().mockResolvedValue([])
 const outroMock = vi.fn()
 
@@ -67,7 +67,7 @@ describe('doctor command', () => {
 
   it('should not fail health when only 6 pending contentrain branches exist', async () => {
     branchMock.mockResolvedValueOnce({
-      all: Array.from({ length: 6 }, (_, i) => `contentrain/review/test-${i}`),
+      all: Array.from({ length: 6 }, (_, i) => `cr/review/test-${i}`),
     })
 
     const mod = await import('../../src/commands/doctor.js')

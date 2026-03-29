@@ -21,7 +21,7 @@ MCP is **deterministic infrastructure**. The agent is the **intelligence layer**
 - Read/write/delete content and models (4 kinds).
 - Patch source files (exact string replacement).
 - Validate against schema rules.
-- Manage Git transactions (worktree, branch, commit, merge/push).
+- Manage Git transactions (dedicated contentrain branch, worktree, commit, update-ref, selective sync).
 
 **Rule:** MCP does NOT make content decisions. It provides reliable, framework-agnostic tooling. The agent provides stack-specific intelligence.
 
@@ -285,11 +285,14 @@ contentrain_apply(mode: "reuse", scope: {model: "model-id"}, dry_run: true) (pre
 
 ### 4.6 Branch and Worktree
 
-- Every write operation automatically creates a worktree and branch.
+- A dedicated `contentrain` branch is the single source of truth for content state, created at init and protected from deletion.
+- Every write operation creates a temporary worktree on a new feature branch forked from `contentrain`.
 - Branch naming: `contentrain/{operation}/{model}/{timestamp}` (locale included when applicable).
 - You do not create branches manually. MCP handles Git transactions.
-- In `auto-merge` mode: branch is merged to the base branch after the write operation commits.
-- In `review` mode: branch stays local until `contentrain_submit` pushes it to remote.
+- Developer's working tree is never mutated during MCP operations (no stash, no checkout, no merge on the developer's tree).
+- context.json is committed together with content changes, not as a separate commit.
+- In `auto-merge` mode: feature branch is merged into `contentrain`, then baseBranch is advanced via update-ref (fast-forward), then `.contentrain/` files are selectively synced to the developer's working tree. Dirty files are skipped with a warning.
+- In `review` mode: feature branch stays local until `contentrain_submit` pushes it to remote.
 
 ### 4.7 Branch Health
 

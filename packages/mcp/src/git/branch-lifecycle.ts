@@ -1,4 +1,5 @@
 import { simpleGit } from 'simple-git'
+import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { readConfig } from '../core/config.js'
 
 export interface CleanupResult {
@@ -29,21 +30,28 @@ export async function cleanupMergedBranches(projectRoot: string): Promise<Cleanu
     ?? process.env['CONTENTRAIN_BRANCH']
     ?? ((await git.raw(['branch', '--show-current'])).trim() || 'main')
 
-  // Get all local branches
+  // Get all local branches (exclude the dedicated contentrain branch itself)
   const branchSummary = await git.branchLocal()
-  const contentrainBranches = branchSummary.all.filter(b => b.startsWith('contentrain/'))
+  const contentrainBranches = branchSummary.all
+    .filter(b => b.startsWith('cr/'))
+    .filter(b => b !== CONTENTRAIN_BRANCH)
 
   if (contentrainBranches.length === 0) {
     return { deleted: 0, remaining: 0, deletedBranches: [] }
   }
 
-  // Get merged branches
+  // Check merged into the dedicated contentrain branch, falling back to baseBranch
   let mergedRaw = ''
   try {
-    mergedRaw = await git.raw(['branch', '--merged', baseBranch])
+    mergedRaw = await git.raw(['branch', '--merged', CONTENTRAIN_BRANCH])
   } catch {
-    // Base branch may not exist; nothing is merged
-    return { deleted: 0, remaining: contentrainBranches.length, deletedBranches: [] }
+    // Contentrain branch may not exist yet (pre-init); fall back to baseBranch
+    try {
+      mergedRaw = await git.raw(['branch', '--merged', baseBranch])
+    } catch {
+      // Base branch may not exist either; nothing is merged
+      return { deleted: 0, remaining: contentrainBranches.length, deletedBranches: [] }
+    }
   }
 
   const mergedSet = new Set(
@@ -91,19 +99,30 @@ export async function checkBranchHealth(projectRoot: string): Promise<BranchHeal
     ?? ((await git.raw(['branch', '--show-current'])).trim() || 'main')
 
   const branchSummary = await git.branchLocal()
-  const contentrainBranches = branchSummary.all.filter(b => b.startsWith('contentrain/'))
+  const contentrainBranches = branchSummary.all
+    .filter(b => b.startsWith('cr/'))
+    .filter(b => b !== CONTENTRAIN_BRANCH)
   const total = contentrainBranches.length
 
-  // Count merged
+  // Count merged into contentrain branch, falling back to baseBranch
   let mergedCount = 0
   try {
-    const mergedRaw = await git.raw(['branch', '--merged', baseBranch])
+    const mergedRaw = await git.raw(['branch', '--merged', CONTENTRAIN_BRANCH])
     const mergedSet = new Set(
       mergedRaw.split('\n').map(b => b.replace(/^\*?\s+/, '').trim()).filter(Boolean),
     )
     mergedCount = contentrainBranches.filter(b => mergedSet.has(b)).length
   } catch {
-    // ignore
+    // Contentrain branch may not exist yet (pre-init); fall back to baseBranch
+    try {
+      const mergedRaw = await git.raw(['branch', '--merged', baseBranch])
+      const mergedSet = new Set(
+        mergedRaw.split('\n').map(b => b.replace(/^\*?\s+/, '').trim()).filter(Boolean),
+      )
+      mergedCount = contentrainBranches.filter(b => mergedSet.has(b)).length
+    } catch {
+      // ignore — neither branch exists
+    }
   }
 
   const unmerged = total - mergedCount

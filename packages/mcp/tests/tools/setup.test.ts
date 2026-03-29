@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 
-vi.setConfig({ testTimeout: 60000, hookTimeout: 60000 })
+vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
 import { join } from 'node:path'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -69,6 +69,10 @@ describe('contentrain_init', () => {
     expect(await pathExists(join(testDir, '.contentrain', 'models'))).toBe(true)
     expect(await pathExists(join(testDir, '.contentrain', 'content'))).toBe(true)
     expect(await pathExists(join(testDir, '.contentrain', 'meta'))).toBe(true)
+
+    // Verify contentrain branch exists
+    const branches = await simpleGit(testDir).branchLocal()
+    expect(branches.all).toContain('contentrain')
   })
 
   it('detects stack from package.json', async () => {

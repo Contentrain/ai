@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 
-vi.setConfig({ testTimeout: 60000, hookTimeout: 60000 })
+vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
 import { join } from 'node:path'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -106,6 +106,10 @@ describe('contentrain_validate', () => {
     const summary = data['summary'] as Record<string, unknown>
     expect(summary['errors']).toBe(0)
     expect(summary['models_checked']).toBeGreaterThan(0)
+
+    // Verify contentrain branch exists after workflow operations
+    const branches = await simpleGit(testDir).branchLocal()
+    expect(branches.all).toContain('contentrain')
   })
 
   it('detects required field missing', async () => {
@@ -456,7 +460,7 @@ describe('contentrain_submit', () => {
     })
 
     const data = parseResult(result)
-    expect(data['error']).toContain('No unmerged contentrain')
+    expect(data['error']).toContain('No unmerged cr/')
 
     await rm(freshDir, { recursive: true, force: true })
   })

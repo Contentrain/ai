@@ -12,7 +12,7 @@ All Contentrain data lives under the `.contentrain/` directory at the project ro
 .contentrain/
   config.json               # Project configuration (stack, workflow, locales, domains)
   vocabulary.json            # Canonical terms for consistent terminology
-  context.json               # Project intelligence — MCP writes after every write op, agents READ ONLY
+  context.json               # Project intelligence — committed with content changes, agents READ ONLY
   assets.json                # Media asset registry
   models/
     {model-id}.json          # Model definitions (one file per model)

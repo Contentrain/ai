@@ -135,7 +135,7 @@ contentrain generate --watch
 
 ## 👀 Review Workflow
 
-Most write operations create `contentrain/*` branches in review mode.
+Most write operations create feature branches from the dedicated `contentrain` branch. In review mode, these branches are pushed to remote for team review. In auto-merge mode, they are merged into the `contentrain` branch and baseBranch is advanced via update-ref.
 
 Use:
 
@@ -146,7 +146,7 @@ contentrain diff
 
 to understand:
 
-- how many active review branches exist
+- how many active review branches exist on the `contentrain` branch
 - whether branch health is blocking new writes
 - what changed before merging or deleting a branch
 

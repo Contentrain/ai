@@ -38,7 +38,7 @@ vi.mock('@contentrain/mcp/git/transaction', () => ({
     complete: vi.fn().mockResolvedValue({ action: 'merged', commit: 'abc123' }),
     cleanup: vi.fn().mockResolvedValue(undefined),
   }),
-  buildBranchName: vi.fn().mockReturnValue('contentrain/new/init/20260313'),
+  buildBranchName: vi.fn().mockReturnValue('cr/new/init/20260313'),
 }))
 
 vi.mock('@contentrain/mcp/core/scanner', () => ({

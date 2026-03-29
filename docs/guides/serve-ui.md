@@ -183,7 +183,7 @@ In the UI, you see the branch with a diff of all new entries. You can inspect ea
 
 ### Step 3. Approve or reject
 
-- **Approve:** Click **Merge** — the branch merges into main, content is live
+- **Approve:** Click **Merge** — the branch merges into the `contentrain` branch, baseBranch is advanced, content is live
 - **Reject:** Click **Delete** — the branch is removed, content is discarded
 
 ### Step 4. Agent detects the decision
@@ -227,7 +227,7 @@ The approval flow behavior is controlled by the workflow setting in `.contentrai
 | Mode | Behavior |
 |---|---|
 | `review` | All content changes create branches for review |
-| `auto-merge` | Content changes merge directly to main |
+| `auto-merge` | Content changes merge into `contentrain` branch, baseBranch is advanced via update-ref |
 
 ::: info
 Normalize operations always use review mode regardless of this setting. Only standard content operations (create, update, delete) respect the auto-merge setting.
@@ -272,7 +272,7 @@ If real-time updates stop:
 
 If content created by the agent does not appear:
 
-1. Check if the content is on a branch (not yet merged to main)
+1. Check if the content is on a feature branch (not yet merged into the `contentrain` branch)
 2. Navigate to the Branches page to see pending branches
 3. Merge the branch to make content visible on the Content page
 

@@ -2,6 +2,10 @@ import { defineCommand } from 'citty'
 import { intro, outro, log, select, confirm, isCancel } from '@clack/prompts'
 import { simpleGit } from 'simple-git'
 import { readConfig } from '@contentrain/mcp/core/config'
+import { CONTENTRAIN_BRANCH } from '@contentrain/types'
+import { tmpdir } from 'node:os'
+import { randomUUID } from 'node:crypto'
+import { join } from 'node:path'
 import { resolveProjectRoot } from '../utils/context.js'
 import { pc } from '../utils/ui.js'
 
@@ -19,27 +23,27 @@ export default defineCommand({
 
     intro(pc.bold('contentrain diff'))
 
-    // List contentrain branches
-    const branches = await git.branch(['--list', 'contentrain/*'])
+    // List contentrain branches (filter out the system contentrain branch)
+    const branches = await git.branch(['--list', 'cr/*'])
+    const featureBranches = branches.all.filter(b => b !== CONTENTRAIN_BRANCH)
 
-    if (branches.all.length === 0) {
+    if (featureBranches.length === 0) {
       log.message('No pending contentrain branches.')
       outro('')
       return
     }
 
-    log.info(pc.bold(`Pending branches (${branches.all.length})`))
+    log.info(pc.bold(`Pending branches (${featureBranches.length})`))
 
     // Get base branch from config, env, or fallback
     const config = await readConfig(projectRoot)
-    const baseBranch = process.env['CONTENTRAIN_BRANCH']
-      ?? config?.repository?.default_branch
+    const baseBranch = config?.repository?.default_branch
       ?? ((await git.raw(['branch', '--show-current'])).trim() || 'main')
 
     // Show each branch with summary
     const branchInfos: Array<{ name: string; summary: string; files: number }> = []
 
-    for (const branch of branches.all) {
+    for (const branch of featureBranches) {
       try {
         const diffStat = await git.diffSummary([`${baseBranch}...${branch}`])
         branchInfos.push({
@@ -114,13 +118,45 @@ export default defineCommand({
     if (action === 'merge') {
       const confirmMerge = await confirm({ message: `Merge ${selectedBranch} into ${baseBranch}?` })
       if (!isCancel(confirmMerge) && confirmMerge) {
+        const mergePath = join(tmpdir(), `cr-merge-${randomUUID()}`)
         try {
-          await git.checkout(baseBranch)
-          await git.merge([selectedBranch, '--no-edit'])
+          // Ensure contentrain branch exists
+          const localBranches = await git.branchLocal()
+          if (!localBranches.all.includes(CONTENTRAIN_BRANCH)) {
+            await git.branch([CONTENTRAIN_BRANCH, baseBranch])
+          }
+
+          // Create temp worktree on contentrain branch
+          await git.raw(['worktree', 'add', mergePath, CONTENTRAIN_BRANCH])
+          const mergeGit = simpleGit(mergePath)
+
+          // Sync contentrain with base
+          await mergeGit.merge([baseBranch, '--no-edit']).catch(() => {})
+
+          // Merge selected branch into contentrain
+          await mergeGit.merge([selectedBranch, '--no-edit'])
+
+          // Get contentrain tip
+          const tip = (await mergeGit.raw(['rev-parse', 'HEAD'])).trim()
+
+          // Advance base branch via update-ref
+          await git.raw(['update-ref', `refs/heads/${baseBranch}`, tip])
+
+          // Sync .contentrain/ files to developer's tree
+          const currentBranch = (await git.raw(['branch', '--show-current'])).trim()
+          if (currentBranch === baseBranch) {
+            await git.checkout([tip, '--', '.contentrain/'])
+          }
+
+          // Delete the merged feature branch
           await git.deleteLocalBranch(selectedBranch, true)
+
           log.success(`Merged and deleted ${selectedBranch}`)
         } catch (error) {
           log.error(`Merge failed: ${error instanceof Error ? error.message : String(error)}`)
+        } finally {
+          // Cleanup worktree
+          await git.raw(['worktree', 'remove', mergePath, '--force']).catch(() => {})
         }
       }
     } else if (action === 'delete') {

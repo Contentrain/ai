@@ -1,4 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { z } from 'zod'
 import { simpleGit } from 'simple-git'
 import { validateProject } from '../core/validator.js'
@@ -51,11 +52,11 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
             })
 
             if (result!.fixed > 0) {
-              await tx.commit(`[contentrain] validate: auto-fix ${result!.fixed} issue(s)`)
-              const gitResult = await tx.complete({
+              await tx.commit(`[contentrain] validate: auto-fix ${result!.fixed} issue(s)`, {
                 tool: 'contentrain_validate',
                 model: input.model ?? '*',
               })
+              const gitResult = await tx.complete()
 
               const nextSteps: string[] = []
               if (result!.summary.errors > 0) nextSteps.push('Fix remaining errors manually')
@@ -67,7 +68,7 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
                   status: 'committed',
                   message: `Validation complete. ${result!.fixed} issue(s) auto-fixed and committed to git. Do NOT manually edit .contentrain/ files.`,
                   ...result!,
-                  git: { branch, action: gitResult.action, commit: gitResult.commit },
+                  git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
                   context_updated: true,
                   next_steps: nextSteps,
                 }, null, 2) }],
@@ -191,13 +192,13 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
           // Filter out already-merged branches from explicit list
           branchesToPush = branchesToPush.filter(b => unmergedSet.has(b))
         } else {
-          branchesToPush = branchSummary.all.filter(b => b.startsWith('contentrain/') && unmergedSet.has(b))
+          branchesToPush = branchSummary.all.filter(b => b.startsWith('cr/') && unmergedSet.has(b))
         }
 
         if (branchesToPush.length === 0) {
           return {
             content: [{ type: 'text' as const, text: JSON.stringify({
-              error: 'No unmerged contentrain/* branches found to push.',
+              error: 'No unmerged cr/* branches found to push.',
               next_steps: ['Make changes first with contentrain_content_save or contentrain_model_save'],
             }) }],
             isError: true,
@@ -218,6 +219,13 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
               error: error instanceof Error ? error.message : String(error),
             })
           }
+        }
+
+        // Best-effort: push the contentrain branch itself
+        try {
+          await git.push(remoteName, CONTENTRAIN_BRANCH)
+        } catch {
+          // contentrain branch push is best-effort
         }
 
         // Lazy cleanup: delete merged branches after push

@@ -16,9 +16,12 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { watch } from 'chokidar'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { randomUUID } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { simpleGit } from 'simple-git'
+import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 
 interface ServeOptions {
   projectRoot: string
@@ -240,16 +243,22 @@ export async function createServeApp(options: ServeOptions) {
     const git = simpleGit(projectRoot)
     const branches = await git.branchLocal()
     const crBranches = branches.all
-      .filter(b => b.startsWith('contentrain/'))
-      .map(b => ({ name: b, current: b === branches.current }))
-    return { branches: crBranches, total: crBranches.length }
+      .filter(b => b.startsWith('cr/'))
+      .map(b => ({
+        name: b,
+        current: b === branches.current,
+        system: b === CONTENTRAIN_BRANCH,
+      }))
+    // Feature branches (exclude system contentrain branch) for the count
+    const featureBranches = crBranches.filter(b => !b.system)
+    return { branches: crBranches, total: featureBranches.length }
   }))
 
   // Branch diff
   router.add('/api/branches/diff', defineEventHandler(async (event) => {
     const query = getQuery(event)
     const branchName = query['name'] as string
-    if (!branchName?.startsWith('contentrain/')) {
+    if (!branchName?.startsWith('cr/')) {
       throw createError({ statusCode: 400, message: 'Invalid branch name' })
     }
     const git = simpleGit(projectRoot)
@@ -259,21 +268,56 @@ export async function createServeApp(options: ServeOptions) {
     return { branch: branchName, base: defaultBranch, stat: diff, diff: rawDiff }
   }))
 
-  // Branch approve (merge)
+  // Branch approve (merge via contentrain worktree)
   router.add('/api/branches/approve', defineEventHandler(async (event) => {
     if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
     const body = await readBody(event)
     const branchName = body.branch as string
-    if (!branchName?.startsWith('contentrain/')) {
+    if (!branchName?.startsWith('cr/')) {
       throw createError({ statusCode: 400, message: 'Invalid branch name' })
     }
     const git = simpleGit(projectRoot)
     const baseBranch = getDefaultBranch()
-    await git.checkout(baseBranch)
-    await git.merge([branchName, '--no-edit', '-X', 'theirs'])
-    await git.deleteLocalBranch(branchName, true)
-    broadcast({ type: 'branch:merged', branch: branchName })
-    return { status: 'merged', branch: branchName, into: baseBranch }
+
+    // Ensure contentrain branch exists
+    const localBranches = await git.branchLocal()
+    if (!localBranches.all.includes(CONTENTRAIN_BRANCH)) {
+      await git.branch([CONTENTRAIN_BRANCH, baseBranch])
+    }
+
+    // Create temp worktree on contentrain branch
+    const mergePath = join(tmpdir(), `cr-merge-${randomUUID()}`)
+    await git.raw(['worktree', 'add', mergePath, CONTENTRAIN_BRANCH])
+    const mergeGit = simpleGit(mergePath)
+
+    try {
+      // Sync contentrain with base
+      await mergeGit.merge([baseBranch, '--no-edit']).catch(() => {})
+
+      // Merge selected branch into contentrain
+      await mergeGit.merge([branchName, '--no-edit'])
+
+      // Get contentrain tip
+      const tip = (await mergeGit.raw(['rev-parse', 'HEAD'])).trim()
+
+      // Advance base branch via update-ref
+      await git.raw(['update-ref', `refs/heads/${baseBranch}`, tip])
+
+      // Sync .contentrain/ files to developer's tree
+      const currentBranch = (await git.raw(['branch', '--show-current'])).trim()
+      if (currentBranch === baseBranch) {
+        await git.checkout([tip, '--', '.contentrain/'])
+      }
+
+      // Delete the merged feature branch
+      await git.deleteLocalBranch(branchName, true)
+
+      broadcast({ type: 'branch:merged', branch: branchName })
+      return { status: 'merged', branch: branchName, into: baseBranch }
+    } finally {
+      // Cleanup worktree
+      await git.raw(['worktree', 'remove', mergePath, '--force']).catch(() => {})
+    }
   }))
 
   // Branch reject (delete)
@@ -281,7 +325,7 @@ export async function createServeApp(options: ServeOptions) {
     if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
     const body = await readBody(event)
     const branchName = body.branch as string
-    if (!branchName?.startsWith('contentrain/')) {
+    if (!branchName?.startsWith('cr/')) {
       throw createError({ statusCode: 400, message: 'Invalid branch name' })
     }
     const git = simpleGit(projectRoot)
@@ -428,7 +472,7 @@ export async function createServeApp(options: ServeOptions) {
 
     const git = simpleGit(projectRoot)
     const branches = (await git.branchLocal()).all
-      .filter(b => b.startsWith('contentrain/normalize/'))
+      .filter(b => b.startsWith('cr/normalize/'))
       .map(b => ({ name: b }))
 
     return { lastOperation: lastNormalize, pendingBranches: branches }
@@ -535,20 +579,56 @@ export async function createServeApp(options: ServeOptions) {
     return await callTool('contentrain_apply', body)
   }))
 
-  // Normalize — approve branch (merge normalize branch)
+  // Normalize — approve branch (merge normalize branch via contentrain worktree)
   router.add('/api/normalize/approve', defineEventHandler(async (event) => {
     if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
     const body = await readBody(event)
     const branchName = body.branch as string
-    if (!branchName?.startsWith('contentrain/')) {
+    if (!branchName?.startsWith('cr/')) {
       throw createError({ statusCode: 400, message: 'Invalid branch name' })
     }
     const git = simpleGit(projectRoot)
-    const currentBranch = (await git.branchLocal()).current
-    await git.merge([branchName])
-    await git.deleteLocalBranch(branchName, true)
-    broadcast({ type: 'branch:merged', branch: branchName })
-    return { status: 'merged', branch: branchName, into: currentBranch }
+    const baseBranch = getDefaultBranch()
+
+    // Ensure contentrain branch exists
+    const localBranches = await git.branchLocal()
+    if (!localBranches.all.includes(CONTENTRAIN_BRANCH)) {
+      await git.branch([CONTENTRAIN_BRANCH, baseBranch])
+    }
+
+    // Create temp worktree on contentrain branch
+    const mergePath = join(tmpdir(), `cr-merge-${randomUUID()}`)
+    await git.raw(['worktree', 'add', mergePath, CONTENTRAIN_BRANCH])
+    const mergeGit = simpleGit(mergePath)
+
+    try {
+      // Sync contentrain with base
+      await mergeGit.merge([baseBranch, '--no-edit']).catch(() => {})
+
+      // Merge normalize branch into contentrain
+      await mergeGit.merge([branchName, '--no-edit'])
+
+      // Get contentrain tip
+      const tip = (await mergeGit.raw(['rev-parse', 'HEAD'])).trim()
+
+      // Advance base branch via update-ref
+      await git.raw(['update-ref', `refs/heads/${baseBranch}`, tip])
+
+      // Sync .contentrain/ files to developer's tree
+      const currentBranch = (await git.raw(['branch', '--show-current'])).trim()
+      if (currentBranch === baseBranch) {
+        await git.checkout([tip, '--', '.contentrain/'])
+      }
+
+      // Delete the merged normalize branch
+      await git.deleteLocalBranch(branchName, true)
+
+      broadcast({ type: 'branch:merged', branch: branchName })
+      return { status: 'merged', branch: branchName, into: baseBranch }
+    } finally {
+      // Cleanup worktree
+      await git.raw(['worktree', 'remove', mergePath, '--force']).catch(() => {})
+    }
   }))
 
   // Normalize — read source map (normalize-sources.json)

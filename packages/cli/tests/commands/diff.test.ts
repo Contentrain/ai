@@ -1,21 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const branchMock = vi.fn().mockResolvedValue({ all: ['contentrain/review/hero'] })
+const branchMock = vi.fn()
+const branchLocalMock = vi.fn()
 const revparseMock = vi.fn().mockResolvedValue('feature/redesign')
 const diffSummaryMock = vi.fn().mockResolvedValue({ changed: 1, insertions: 5, deletions: 1 })
 const mergeMock = vi.fn()
 const checkoutMock = vi.fn()
+const rawMock = vi.fn()
+const deleteLocalBranchMock = vi.fn()
 
 vi.mock('simple-git', () => ({
   simpleGit: vi.fn(() => ({
     branch: branchMock,
+    branchLocal: branchLocalMock,
     revparse: revparseMock,
     diffSummary: diffSummaryMock,
     diff: vi.fn().mockResolvedValue(''),
     merge: mergeMock,
     checkout: checkoutMock,
-    deleteLocalBranch: vi.fn(),
-    raw: vi.fn().mockResolvedValue('feature/redesign'),
+    deleteLocalBranch: deleteLocalBranchMock,
+    raw: rawMock,
   })),
 }))
 
@@ -34,7 +38,9 @@ vi.mock('@clack/prompts', () => ({
 describe('diff command', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    process.env['CONTENTRAIN_BRANCH'] = 'main'
+    branchMock.mockResolvedValue({ all: ['contentrain/review/hero'] })
+    branchLocalMock.mockResolvedValue({ all: ['main', 'contentrain'], current: 'main' })
+    rawMock.mockResolvedValue('main')
     selectMock.mockResolvedValue('__skip')
   })
 
@@ -45,15 +51,35 @@ describe('diff command', () => {
     expect(diffSummaryMock).toHaveBeenCalledWith(['main...contentrain/review/hero'])
   })
 
-  it('should merge into the configured base branch instead of whichever branch is currently checked out', async () => {
-    selectMock.mockResolvedValueOnce('contentrain/review/hero').mockResolvedValueOnce('merge')
-    confirmMock.mockResolvedValueOnce(true)
+  it('should filter out contentrain system branch from branch listing', async () => {
+    branchMock.mockResolvedValue({ all: ['contentrain', 'contentrain/review/hero'] })
+    diffSummaryMock.mockClear()
 
     const mod = await import('../../src/commands/diff.js')
     await mod.default.run?.({ args: { root: '/test/project' } })
 
-    expect(checkoutMock).toHaveBeenCalledWith('main')
-    expect(mergeMock).toHaveBeenCalledWith(['contentrain/review/hero', '--no-edit'])
+    // Should only diff contentrain/review/hero, not the system 'contentrain' branch
+    expect(diffSummaryMock).toHaveBeenCalledTimes(1)
+    expect(diffSummaryMock).toHaveBeenCalledWith(['main...contentrain/review/hero'])
+  })
+
+  it('should use worktree merge pattern when merging a branch', async () => {
+    selectMock.mockResolvedValueOnce('contentrain/review/hero').mockResolvedValueOnce('merge')
+    confirmMock.mockResolvedValueOnce(true)
+    rawMock.mockImplementation(async (args: string[]) => {
+      if (args[0] === 'branch' && args[1] === '--show-current') return 'main'
+      if (args[0] === 'rev-parse') return 'abc123'
+      return ''
+    })
+
+    const mod = await import('../../src/commands/diff.js')
+    await mod.default.run?.({ args: { root: '/test/project' } })
+
+    // Should NOT checkout baseBranch directly (old pattern)
+    // Instead should use worktree add + update-ref
+    expect(rawMock).toHaveBeenCalledWith(
+      expect.arrayContaining(['worktree', 'add']),
+    )
   })
 
   it('should label the merge action with the actual base branch instead of current branch', async () => {

@@ -73,10 +73,11 @@ When working with Contentrain content operations (models, content, normalize, va
 - **JSON only** — no YAML
 - **Git mandatory** — `contentrain init` auto `git init`
 - **Octokit YOK in MCP** — MCP = local-first, platform-agnostic. GitHub API = Studio/CLI only
-- **Every write uses worktree + branch** — model_save and content_save alike
+- **Every write uses worktree + dedicated contentrain branch + update-ref** — model_save and content_save alike
 - **Collection storage = object-map** — `{ entryId: { fields } }`, sorted by ID
 - **Canonical serialization** — deterministic JSON output, sorted keys, 2-space indent, trailing newline
-- **context.json** — MCP writes after every write op, Studio/IDE reads
+- **Dedicated contentrain branch** — content state SSOT, created at init, auto-synced with baseBranch via update-ref. Developer's working tree is never mutated during MCP operations
+- **context.json** — committed with content changes (not separately), Studio/IDE reads
 - **Workflow config** — `"auto-merge"` or `"review"` in config.json
 - **Agent-MCP split** — MCP = deterministic infra, Agent = intelligence. MCP does NOT make content decisions
 - **Normalize two phases** — Phase 1: Extraction (content-only), Phase 2: Reuse (source patching). Separate branches, separate reviews

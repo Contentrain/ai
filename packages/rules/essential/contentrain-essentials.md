@@ -7,7 +7,7 @@ This project uses Contentrain for AI-driven content management. These rules are 
 MCP is **deterministic infrastructure**. The agent (you) is the **intelligence layer**.
 
 - **Agent decides:** what is content vs code, domain grouping, model structure, replacement expressions (stack-aware), content quality
-- **MCP handles:** file I/O, validation, Git transactions (worktree/branch/commit/merge), project scanning
+- **MCP handles:** file I/O, validation, Git transactions (dedicated contentrain branch/worktree/commit/update-ref), project scanning
 - MCP does NOT make content decisions. It is framework-agnostic.
 
 ## Four Model Kinds
@@ -65,11 +65,16 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 
 ## Git Workflow
 
-- Every write operation creates a worktree + branch automatically
-- **auto-merge** mode: branch merges to main after commit
-- **review** mode: branch pushed to remote for team review
-- Branch naming: `contentrain/{operation}/{model}/{locale}/{timestamp}`
-- Never create branches manually, never commit directly to main
+- A dedicated `contentrain` branch is the single source of truth for content state, created at init
+- Every write operation creates a temporary worktree on the `contentrain` branch automatically
+- Feature branches (`contentrain/{operation}/{model}/{locale}/{timestamp}`) are created from `contentrain` for each operation
+- **auto-merge** mode: feature branch merges into `contentrain`, then `contentrain` advances baseBranch via update-ref (fast-forward), then `.contentrain/` files are selectively synced to the developer's working tree
+- **review** mode: feature branch pushed to remote for team review
+- Developer's working tree is never mutated during MCP git operations (no stash, no checkout, no merge on the developer's tree)
+- If the developer manually edits `.contentrain/` files, MCP sync skips dirty files and warns
+- The `contentrain` branch is protected from deletion
+- context.json is committed together with content changes, not as a separate commit
+- Never create branches manually, never commit directly to main or the `contentrain` branch
 - 50+ active branches = warning, 80+ = blocked
 
 ## Localization

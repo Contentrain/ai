@@ -104,7 +104,7 @@ All write operations create or update `contentrain/*` branches:
 
 - Content changes go to isolated branches
 - Humans review via `contentrain diff` or the serve UI
-- Approved changes merge to main
+- Approved changes merge into the `contentrain` branch, baseBranch is advanced via update-ref
 - Branch health is tracked and surfaced via `contentrain_status`
 
 ### 4. Local-First, No API Dependencies

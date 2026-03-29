@@ -10,7 +10,7 @@ import { readConfig, readVocabulary } from '../core/config.js'
 import { writeModel } from '../core/model-manager.js'
 import { writeContent, type ContentEntry } from '../core/content-manager.js'
 import { getTemplate, listTemplates } from '../templates/index.js'
-import { createTransaction, buildBranchName } from '../git/transaction.js'
+import { createTransaction, buildBranchName, ensureContentBranch } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 
 export function registerSetupTools(server: McpServer, projectRoot: string): void {
@@ -109,12 +109,15 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
           await updateGitignore(wt)
         })
 
-        await tx.commit('[contentrain] init: project setup')
-        const gitResult = await tx.complete({
+        await tx.commit('[contentrain] init: project setup', {
           tool: 'contentrain_init',
           model: '',
           locale: supportedLocales[0] ?? 'en',
         })
+        const gitResult = await tx.complete()
+
+        // Ensure the contentrain branch exists after init
+        await ensureContentBranch(projectRoot)
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
@@ -135,7 +138,7 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
               '.contentrain/meta/',
             ],
             gitignore_updated: true,
-            git: { branch, action: gitResult.action, commit: gitResult.commit },
+            git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
             next_steps: [
               'Create models with contentrain_model_save or contentrain_scaffold',
               'Use contentrain_scan to find hardcoded strings',
@@ -233,12 +236,12 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
 
         })
 
-        await tx.commit(`[contentrain] scaffold: ${templateId} (${defaultLocale})`)
-        const gitResult = await tx.complete({
+        await tx.commit(`[contentrain] scaffold: ${templateId} (${defaultLocale})`, {
           tool: 'contentrain_scaffold',
           model: tmpl.models.map(m => m.id).join(', '),
           locale: defaultLocale,
         })
+        const gitResult = await tx.complete()
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
@@ -247,7 +250,7 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
             models_created: modelsCreated,
             content_created: contentCreated,
             vocabulary_terms_added: vocabAdded,
-            git: { branch, action: gitResult.action, commit: gitResult.commit },
+            git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
             context_updated: true,
             next_steps: [
               'Customize models with contentrain_model_save',

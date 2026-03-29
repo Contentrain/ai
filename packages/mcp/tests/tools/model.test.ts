@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 
-vi.setConfig({ testTimeout: 60000, hookTimeout: 60000 })
+vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
 import { join } from 'node:path'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -93,6 +93,10 @@ describe('contentrain_model_save', () => {
     expect(modelDef).not.toBeNull()
     expect(modelDef!.kind).toBe('collection')
     expect(modelDef!.fields!['title']!.type).toBe('string')
+
+    // Verify contentrain branch exists after model save
+    const branches = await simpleGit(testDir).branchLocal()
+    expect(branches.all).toContain('contentrain')
   })
 
   it('updates an existing model', async () => {

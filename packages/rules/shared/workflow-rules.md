@@ -14,7 +14,7 @@ Contentrain supports two workflow modes, configured in `.contentrain/config.json
 { "workflow": "auto-merge" }
 ```
 
-- Branch is created, changes are committed, branch is **automatically merged to main**.
+- Feature branch is created from the `contentrain` branch, changes are committed, feature branch is **merged into `contentrain`**, then baseBranch is advanced via **update-ref** (fast-forward), and `.contentrain/` files are **selectively synced** to the developer's working tree.
 - No review step -- changes go live immediately.
 - Best for: solo developers, rapid iteration, prototyping, vibe coding.
 - Status flow: `draft` --> `published` (skips `in_review`).
@@ -67,37 +67,55 @@ contentrain/{operation}/{model}/{locale}/{timestamp}
 
 ## 3. Git Workflow
 
-### 3.1 Worktree-Based Transactions
+### 3.1 Dedicated `contentrain` Branch
+
+The `contentrain` branch is the **single source of truth** for content state:
+
+- Created automatically at `contentrain_init`.
+- All content writes happen on feature branches forked from `contentrain`.
+- The `contentrain` branch is **protected from deletion**.
+- context.json is committed together with content changes, not as a separate commit.
+
+### 3.2 Worktree-Based Transactions
 
 Every write operation follows this flow:
 
-1. MCP creates a **Git worktree** on a new branch.
-2. Changes are made in the worktree (content files, model files).
-3. Changes are committed to the branch.
-4. **auto-merge mode:** Branch is merged to main. Worktree is cleaned up.
-5. **review mode:** Branch is pushed to remote. Worktree is cleaned up. Studio notifies reviewers.
+1. MCP creates a **temporary Git worktree** on a new feature branch forked from `contentrain`.
+2. Changes are made in the worktree (content files, model files, context.json).
+3. Changes are committed to the feature branch.
+4. **auto-merge mode:** Feature branch is merged into `contentrain`, then baseBranch is advanced via **update-ref** (fast-forward), then `.contentrain/` files are **selectively synced** to the developer's working tree. Dirty files are skipped with a warning. Worktree is cleaned up.
+5. **review mode:** Feature branch is pushed to remote for team review. Worktree is cleaned up. Studio notifies reviewers.
 
-### 3.2 Critical Rules
+Developer's working tree is **never mutated** during MCP git operations. There is no stash, no checkout, and no merge on the developer's tree.
 
-- **NEVER commit directly to main.** All changes go through branches.
+### 3.3 Developer Manual Editing
+
+If the developer manually edits `.contentrain/` files in their working tree, MCP selective sync skips those dirty files and issues a warning. The developer must commit or discard their local changes before MCP can sync those files.
+
+### 3.4 Critical Rules
+
+- **NEVER commit directly to main or the `contentrain` branch.** All changes go through feature branches.
 - **NEVER create branches manually.** MCP tools handle all Git operations.
 - **NEVER force-push or rebase** Contentrain branches.
+- **NEVER delete the `contentrain` branch.** It is the content state SSOT.
 - Worktrees are temporary. They are created for the operation and cleaned up afterward.
 - Each branch contains a cohesive set of changes (e.g., all entries for one model update).
 
-### 3.3 Branch Lifecycle
+### 3.5 Branch Lifecycle
 
 ```
-Created (worktree) --> Committed --> Merged/Pushed --> Cleaned up
-                                         |
-                                         v
-                            auto-merge: merged to main
-                            review: pushed to remote, awaiting review
+Feature branch created (worktree on contentrain)
+  --> Changes committed
+  --> auto-merge: feature merged into contentrain
+                  --> update-ref advances baseBranch
+                  --> selective sync .contentrain/ to developer's tree
+  --> review: feature pushed to remote, awaiting review
+  --> Worktree cleaned up
 ```
 
-Merged branches are retained for `branchRetention` days (default: 30) for audit trail, then pruned.
+The `contentrain` branch is permanent and protected. Feature branches are retained for `branchRetention` days (default: 30) for audit trail, then pruned.
 
-### 3.4 Branch Health
+### 3.6 Branch Health
 
 MCP enforces branch health limits to prevent branch accumulation:
 
@@ -155,7 +173,7 @@ published --> archived
 |-------|-----------|---------|
 | `draft` | Branch exists, not yet reviewed/merged | Content created or updated |
 | `in_review` | PR/branch open, labeled `contentrain-content` | `contentrain_submit` in review mode |
-| `published` | Content is on main branch | Auto-merge, or PR merged after review |
+| `published` | Content is on `contentrain` branch and synced to baseBranch | Auto-merge, or PR merged after review |
 | `rejected` | PR closed without merge | Studio reviewer rejects changes |
 | `archived` | Metadata-only state | Manual action -- content hidden but retained |
 
@@ -203,8 +221,9 @@ published --> archived
 
 ```
 contentrain_submit
-  --> Merge branch to main
-  --> Update context.json
+  --> Merge feature branch into contentrain
+  --> Advance baseBranch via update-ref (fast-forward)
+  --> Selectively sync .contentrain/ files to developer's working tree
   --> Clean up worktree
   --> Status: published
 ```
@@ -213,8 +232,7 @@ contentrain_submit
 
 ```
 contentrain_submit
-  --> Push branch to remote
-  --> Update context.json
+  --> Push feature branch to remote
   --> Clean up worktree
   --> Status: in_review
   --> Studio notifies reviewers

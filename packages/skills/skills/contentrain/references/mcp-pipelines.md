@@ -145,11 +145,14 @@ contentrain_submit                              # Push (always review mode)
 
 ### Rule 6: Branch and Worktree
 
-- Every write operation automatically creates a worktree and branch
+- A dedicated `contentrain` branch is the single source of truth for content state, created at init and protected from deletion
+- Every write operation creates a temporary worktree on a new feature branch forked from `contentrain`
 - Branch naming: `contentrain/{operation}/{model}/{timestamp}` (locale included when applicable)
 - Do not create branches manually. MCP handles Git transactions
-- `auto-merge` mode: branch merged to base branch after commit
-- `review` mode: branch pushed to remote by `contentrain_submit`
+- Developer's working tree is never mutated during MCP operations (no stash, no checkout, no merge on the developer's tree)
+- context.json is committed together with content changes, not as a separate commit
+- `auto-merge` mode: feature branch merged into `contentrain`, baseBranch advanced via update-ref, `.contentrain/` files selectively synced to developer's working tree (dirty files skipped with warning)
+- `review` mode: feature branch pushed to remote by `contentrain_submit`
 
 ### Rule 7: Branch Health
 

@@ -116,13 +116,13 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
           entryIds = results!.map(r => r.id ?? r.slug ?? r.locale).filter(Boolean) as string[]
         })
 
-        await tx.commit(`[contentrain] content: ${input.model}`)
-        const gitResult = await tx.complete({
+        await tx.commit(`[contentrain] content: ${input.model}`, {
           tool: 'contentrain_content_save',
           model: input.model,
           locale: input.entries[0]?.locale,
           entries: entryIds,
         })
+        const gitResult = await tx.complete()
 
         // Run real validation after save — don't fake it
         const validationResult = await validateProject(projectRoot, { model: input.model })
@@ -132,7 +132,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
             status: 'committed',
             message: 'Content saved and committed to git. Do NOT manually edit .contentrain/ files.',
             results: results!,
-            git: { branch, action: gitResult.action, commit: gitResult.commit },
+            git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
             validation: {
               valid: validationResult.valid,
               errors: validationResult.issues.filter(i => i.severity === 'error').map(i => i.message),
@@ -217,12 +217,12 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
           })
         })
 
-        await tx.commit(`[contentrain] delete content: ${input.model}`)
-        const gitResult = await tx.complete({
+        await tx.commit(`[contentrain] delete content: ${input.model}`, {
           tool: 'contentrain_content_delete',
           model: input.model,
           locale: input.locale,
         })
+        const gitResult = await tx.complete()
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
@@ -230,7 +230,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
             message: 'Content deleted and committed to git. Do NOT manually edit .contentrain/ files.',
             deleted: true,
             files_removed: removed,
-            git: { branch, action: gitResult.action, commit: gitResult.commit },
+            git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
             context_updated: true,
           }, null, 2) }],
         }

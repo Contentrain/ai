@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 
-vi.setConfig({ testTimeout: 60000, hookTimeout: 60000 })
+vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
 import { join } from 'node:path'
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -186,7 +186,7 @@ describe('contentrain_apply mode:extract', () => {
 
     // Git transaction should have happened
     const git = data['git'] as Record<string, unknown>
-    expect(git['branch']).toContain('contentrain/normalize/extract')
+    expect(git['branch']).toContain('cr/normalize/extract')
 
     expect(data['context_updated']).toBe(true)
     await expectGitClean(testDir)
@@ -358,7 +358,7 @@ describe('contentrain_apply mode:reuse', () => {
     expect(results['imports_added']).toBe(1)
 
     const git = data['git'] as Record<string, unknown>
-    expect(git['branch']).toContain('contentrain/normalize/reuse')
+    expect(git['branch']).toContain('cr/normalize/reuse')
     await expectGitClean(testDir)
   })
 

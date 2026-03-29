@@ -173,7 +173,7 @@ Call `contentrain_validate` after all content is created.
 
 Call `contentrain_submit` to finalize.
 
-- In `auto-merge` mode: branch is merged to main, content is published.
+- In `auto-merge` mode: feature branch is merged into `contentrain`, baseBranch is advanced via update-ref, `.contentrain/` files are selectively synced to the developer's working tree, content is published.
 - In `review` mode: branch is pushed to remote for team review.
 - Normalize operations always use review mode regardless of config.
 

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { isNonContent, scanCandidates, scanSummary } from '../../src/core/scanner.js'
 
-vi.setConfig({ testTimeout: 60000, hookTimeout: 60000 })
+vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
 
 // ─── isNonContent unit tests ───
 

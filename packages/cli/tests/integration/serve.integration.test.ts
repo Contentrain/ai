@@ -10,7 +10,7 @@ const appUseMock = vi.fn()
 const callToolMock = vi.fn()
 const branchLocalMock = vi.fn().mockResolvedValue({
   current: 'main',
-  all: ['main', 'contentrain/review/hero/en/123', 'feature/redesign'],
+  all: ['main', 'cr/review/hero/en/123', 'feature/redesign'],
 })
 const diffMock = vi.fn().mockResolvedValue('diff --stat')
 const checkoutMock = vi.fn().mockResolvedValue(undefined)
@@ -90,9 +90,13 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
   },
 }))
 
+const branchMock = vi.fn().mockResolvedValue(undefined)
+const rawMock = vi.fn().mockResolvedValue('')
+
 vi.mock('simple-git', () => ({
   simpleGit: vi.fn(() => ({
     branchLocal: branchLocalMock,
+    branch: branchMock,
     diff: diffMock,
     checkout: checkoutMock,
     merge: mergeMock,
@@ -100,6 +104,7 @@ vi.mock('simple-git', () => ({
     add: vi.fn().mockResolvedValue(undefined),
     commit: vi.fn().mockResolvedValue(undefined),
     log: vi.fn().mockResolvedValue({ all: [] }),
+    raw: rawMock,
   })),
 }))
 
@@ -180,7 +185,7 @@ describe('serve server contract', { sequential: true }, () => {
         text: JSON.stringify({
           success: true,
           git: {
-            branch: 'contentrain/content/hero/homepage/20260314-120000',
+            branch: 'cr/content/hero/homepage/20260314-120000',
             action: 'pending-review',
           },
         }),
@@ -199,7 +204,7 @@ describe('serve server contract', { sequential: true }, () => {
 
     expect(lastWs?.send).toHaveBeenLastCalledWith(JSON.stringify({
       type: 'branch:created',
-      branch: 'contentrain/content/hero/homepage/20260314-120000',
+      branch: 'cr/content/hero/homepage/20260314-120000',
     }))
   })
 
@@ -232,7 +237,7 @@ describe('serve server contract', { sequential: true }, () => {
 
     const handler = routes.get('/api/branches')
     await expect(handler?.()).resolves.toEqual({
-      branches: [{ name: 'contentrain/review/hero/en/123', current: false }],
+      branches: [{ name: 'cr/review/hero/en/123', current: false, system: false }],
       total: 1,
     })
   })
@@ -266,27 +271,32 @@ describe('serve server contract', { sequential: true }, () => {
     branchLocalMock.mockReset()
     branchLocalMock.mockResolvedValue({
       current: 'feature/redesign',
-      all: ['main', 'feature/redesign', 'contentrain/review/hero/en/123'],
+      all: ['main', 'feature/redesign', 'cr/review/hero/en/123'],
     })
 
     await boot()
 
     const handler = routes.get('/api/branches/diff')
     await handler?.({
-      query: { name: 'contentrain/review/hero/en/123' },
+      query: { name: 'cr/review/hero/en/123' },
     })
 
-    expect(diffMock).toHaveBeenCalledWith(['main...contentrain/review/hero/en/123', '--stat'])
+    expect(diffMock).toHaveBeenCalledWith(['main...cr/review/hero/en/123', '--stat'])
   })
 
-  it('checks out the configured base branch before approving a review branch', async () => {
+  it('uses worktree merge pattern when approving a review branch', async () => {
     await writeFile(join(testDir, '.contentrain', 'config.json'), JSON.stringify({
       version: 1,
       repository: { default_branch: 'main' },
     }, null, 2))
     branchLocalMock.mockResolvedValueOnce({
       current: 'feature/redesign',
-      all: ['main', 'feature/redesign', 'contentrain/review/hero/en/123'],
+      all: ['main', 'feature/redesign', 'contentrain', 'cr/review/hero/en/123'],
+    })
+    rawMock.mockImplementation(async (args: string[]) => {
+      if (args[0] === 'rev-parse') return 'abc123'
+      if (args[0] === 'branch' && args[1] === '--show-current') return 'feature/redesign'
+      return ''
     })
 
     await boot()
@@ -294,11 +304,17 @@ describe('serve server contract', { sequential: true }, () => {
     const handler = routes.get('/api/branches/approve')
     await handler?.({
       method: 'POST',
-      body: { branch: 'contentrain/review/hero/en/123' },
+      body: { branch: 'cr/review/hero/en/123' },
     })
 
-    expect(checkoutMock).toHaveBeenCalledWith('main')
-    expect(mergeMock).toHaveBeenCalledWith(['contentrain/review/hero/en/123', '--no-edit', '-X', 'theirs'])
+    // Should use worktree add (not direct checkout of base branch)
+    expect(rawMock).toHaveBeenCalledWith(
+      expect.arrayContaining(['worktree', 'add']),
+    )
+    // Should merge the feature branch into contentrain
+    expect(mergeMock).toHaveBeenCalledWith(['cr/review/hero/en/123', '--no-edit'])
+    // Should advance base via update-ref
+    expect(rawMock).toHaveBeenCalledWith(['update-ref', 'refs/heads/main', 'abc123'])
   })
 
   it('serves the SPA index for client-side routes', async () => {

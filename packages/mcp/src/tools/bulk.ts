@@ -135,12 +135,12 @@ export function registerBulkTools(server: McpServer, projectRoot: string): void 
 
             })
 
-            await tx.commit(`[contentrain] bulk: copy ${input.source_locale} → ${input.target_locale} for ${input.model}`)
-            const gitResult = await tx.complete({
+            await tx.commit(`[contentrain] bulk: copy ${input.source_locale} → ${input.target_locale} for ${input.model}`, {
               tool: 'contentrain_bulk',
               model: input.model,
               locale: input.target_locale!,
             })
+            const gitResult = await tx.complete()
 
             return {
               content: [{ type: 'text' as const, text: JSON.stringify({
@@ -148,7 +148,7 @@ export function registerBulkTools(server: McpServer, projectRoot: string): void 
                 operation: 'copy_locale',
                 message: `Copied ${copiedCount} entries from ${input.source_locale} to ${input.target_locale}.`,
                 copied: copiedCount,
-                git: { branch, action: gitResult.action, commit: gitResult.commit },
+                git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
                 context_updated: true,
               }, null, 2) }],
             }
@@ -216,12 +216,12 @@ export function registerBulkTools(server: McpServer, projectRoot: string): void 
 
             })
 
-            await tx.commit(`[contentrain] bulk: update status → ${input.status} for ${input.model}`)
-            const gitResult = await tx.complete({
+            await tx.commit(`[contentrain] bulk: update status → ${input.status} for ${input.model}`, {
               tool: 'contentrain_bulk',
               model: input.model,
               entries: input.entry_ids!,
             })
+            const gitResult = await tx.complete()
 
             return {
               content: [{ type: 'text' as const, text: JSON.stringify({
@@ -230,7 +230,7 @@ export function registerBulkTools(server: McpServer, projectRoot: string): void 
                 message: `Updated ${updatedCount} meta entries to status "${input.status}".`,
                 updated: updatedCount,
                 not_found: notFound.length > 0 ? notFound : undefined,
-                git: { branch, action: gitResult.action, commit: gitResult.commit },
+                git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
                 context_updated: true,
               }, null, 2) }],
             }
@@ -282,12 +282,12 @@ export function registerBulkTools(server: McpServer, projectRoot: string): void 
 
             })
 
-            await tx.commit(`[contentrain] bulk: delete ${input.entry_ids.length} entries from ${input.model}`)
-            const gitResult = await tx.complete({
+            await tx.commit(`[contentrain] bulk: delete ${input.entry_ids.length} entries from ${input.model}`, {
               tool: 'contentrain_bulk',
               model: input.model,
               entries: input.entry_ids!,
             })
+            const gitResult = await tx.complete()
 
             return {
               content: [{ type: 'text' as const, text: JSON.stringify({
@@ -296,7 +296,7 @@ export function registerBulkTools(server: McpServer, projectRoot: string): void 
                 message: `Deleted ${input.entry_ids.length} entries.`,
                 deleted: input.entry_ids.length,
                 files_removed: allRemoved,
-                git: { branch, action: gitResult.action, commit: gitResult.commit },
+                git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
                 context_updated: true,
               }, null, 2) }],
             }

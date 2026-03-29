@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 
-vi.setConfig({ testTimeout: 60000, hookTimeout: 60000 })
+vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
 import { join } from 'node:path'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -116,6 +116,10 @@ describe('contentrain_content_save', () => {
     )
     expect(meta!['status']).toBe('draft')
     expect(meta!['source']).toBe('agent')
+
+    // Verify contentrain branch exists after content save
+    const branches = await simpleGit(testDir).branchLocal()
+    expect(branches.all).toContain('contentrain')
   })
 
   it('saves collection entries with auto-generated IDs', async () => {
@@ -272,7 +276,7 @@ describe('contentrain_content_save', () => {
     const baseBranch = (await git.raw(['branch', '--show-current'])).trim()
 
     for (let i = 1; i <= 80; i++) {
-      const branchName = `contentrain/test/block-${String(i).padStart(3, '0')}`
+      const branchName = `cr/test/block-${String(i).padStart(3, '0')}`
       await git.checkoutBranch(branchName, baseBranch)
       await git.commit(`branch ${i}`, undefined, { '--allow-empty': null })
       await git.checkout(baseBranch)

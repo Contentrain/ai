@@ -3,6 +3,7 @@ import { intro, outro, log } from '@clack/prompts'
 import { simpleGit } from 'simple-git'
 import { readModel, countEntries } from '@contentrain/mcp/core/model-manager'
 import { validateProject } from '@contentrain/mcp/core/validator'
+import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { resolveProjectRoot, loadProjectContext, requireInitialized } from '../utils/context.js'
 import { pc, formatTable, formatPercent, formatCount } from '../utils/ui.js'
 
@@ -41,8 +42,22 @@ export default defineCommand({
         // Pending branches
         try {
           const git = simpleGit(projectRoot)
-          const branches = await git.branch(['--list', 'contentrain/*'])
-          jsonResult['pending_branches'] = branches.all
+          const branches = await git.branch(['--list', 'cr/*'])
+          const allLocal = await git.branchLocal()
+          const featureBranches = branches.all.filter(b => b !== CONTENTRAIN_BRANCH)
+          jsonResult['pending_branches'] = featureBranches
+
+          // Content branch info
+          const contentBranchExists = allLocal.all.includes(CONTENTRAIN_BRANCH)
+          const contentBranchInfo: Record<string, unknown> = { exists: contentBranchExists }
+          if (contentBranchExists) {
+            try {
+              const baseBranch = ctx.config?.repository?.default_branch ?? 'main'
+              const aheadRaw = await git.raw(['rev-list', '--count', `${baseBranch}..${CONTENTRAIN_BRANCH}`])
+              contentBranchInfo['ahead'] = Number.parseInt(aheadRaw.trim(), 10)
+            } catch { /* best effort */ }
+          }
+          jsonResult['content_branch'] = contentBranchInfo
         } catch { /* best effort */ }
       }
 
@@ -108,12 +123,32 @@ export default defineCommand({
       log.message('  No models yet. Run `contentrain init` with a template or create models.')
     }
 
-    // Pending branches
+    // Content branch status
     try {
       const git = simpleGit(projectRoot)
-      const branches = await git.branch(['--list', 'contentrain/*'])
-      if (branches.all.length > 0) {
-        const count = branches.all.length
+      const allLocal = await git.branchLocal()
+      const contentBranchExists = allLocal.all.includes(CONTENTRAIN_BRANCH)
+
+      if (contentBranchExists) {
+        try {
+          const baseBranch = ctx.config?.repository?.default_branch ?? 'main'
+          const aheadRaw = await git.raw(['rev-list', '--count', `${baseBranch}..${CONTENTRAIN_BRANCH}`])
+          const ahead = Number.parseInt(aheadRaw.trim(), 10)
+          if (ahead > 0) {
+            log.info(pc.bold(`\nContent branch`))
+            log.message(`  ${pc.cyan(CONTENTRAIN_BRANCH)} is ${pc.yellow(String(ahead))} commit(s) ahead of ${baseBranch}`)
+          } else {
+            log.info(pc.bold(`\nContent branch`))
+            log.message(`  ${pc.cyan(CONTENTRAIN_BRANCH)} is in sync with ${baseBranch}`)
+          }
+        } catch { /* best effort */ }
+      }
+
+      // Pending branches (excluding the system contentrain branch)
+      const branches = await git.branch(['--list', 'cr/*'])
+      const featureBranches = branches.all.filter(b => b !== CONTENTRAIN_BRANCH)
+      if (featureBranches.length > 0) {
+        const count = featureBranches.length
         if (count >= 80) {
           log.error(pc.bold(`\nBLOCKED: ${count} active contentrain branches (limit: 80)`))
           log.message(`  New writes are blocked. Merge or delete old branches with ${pc.cyan('contentrain diff')}.`)
@@ -123,7 +158,7 @@ export default defineCommand({
         } else {
           log.info(pc.bold(`\nPending branches (${count})`))
         }
-        for (const branch of branches.all) {
+        for (const branch of featureBranches) {
           log.message(`  ${pc.yellow('●')} ${branch}`)
         }
         log.message(`  Run ${pc.cyan('contentrain diff')} to review.`)

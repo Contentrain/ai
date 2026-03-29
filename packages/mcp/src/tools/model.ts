@@ -91,8 +91,8 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
           await writeModel(wt, model)
         })
 
-        await tx.commit(`[contentrain] ${action}: ${input.id}`)
-        const gitResult = await tx.complete({ tool: 'contentrain_model_save', model: input.id })
+        await tx.commit(`[contentrain] ${action}: ${input.id}`, { tool: 'contentrain_model_save', model: input.id })
+        const gitResult = await tx.complete()
 
         const defaultLocale = config.locales.default
         // Build accurate content path using path resolvers
@@ -122,7 +122,7 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
             action,
             model: input.id,
             validation: { valid: true, errors: [] },
-            git: { branch, action: gitResult.action, commit: gitResult.commit },
+            git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
             context_updated: true,
             content_path: contentPath + '/',
             example_file: displayPath,
@@ -206,15 +206,15 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
           filesRemoved = await deleteModel(wt, modelId)
         })
 
-        await tx.commit(`[contentrain] delete: ${modelId}`)
-        const gitResult = await tx.complete({ tool: 'contentrain_model_delete', model: modelId })
+        await tx.commit(`[contentrain] delete: ${modelId}`, { tool: 'contentrain_model_delete', model: modelId })
+        const gitResult = await tx.complete()
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             status: 'committed',
             message: 'Model deleted and committed to git. Do NOT manually edit .contentrain/ files.',
             deleted: true,
-            git: { branch, action: gitResult.action, commit: gitResult.commit },
+            git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
             files_removed: filesRemoved,
             context_updated: true,
           }, null, 2) }],

@@ -4,7 +4,7 @@
 
 `context.json` is the project intelligence file. It provides AI agents and Contentrain Studio with structured knowledge about the project: its tech stack, content patterns, conventions, and normalize configuration.
 
-- **Written by:** MCP tools (updated after every write operation)
+- **Written by:** MCP tools (committed together with content changes in the same branch, not as a separate commit)
 - **Read by:** AI agents (at the start of every session) and Studio (for UI configuration)
 - **Location:** `.contentrain/context.json`
 
@@ -206,7 +206,7 @@ When creating `context.json` for the first time, use stack-appropriate defaults.
 
 ## Update Behavior
 
-MCP tools update `context.json` after every write operation:
+MCP tools update `context.json` as part of each write operation, committed together with the content changes in the same branch (not as a separate commit):
 - `contentrain_init` creates the initial file
 - `contentrain_model_save` updates the domains list if a new domain is used
 - `contentrain_content_save` updates content stats
