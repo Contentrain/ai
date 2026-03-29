@@ -1,0 +1,19 @@
+{
+  "id": "test-features",
+  "name": "Test Features",
+  "kind": "collection",
+  "domain": "marketing",
+  "i18n": true,
+  "fields": {
+    "description": {
+      "type": "text"
+    },
+    "icon": {
+      "type": "icon"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    }
+  }
+}
