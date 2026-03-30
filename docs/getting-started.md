@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: "Set up Contentrain AI in under 5 minutes — for new projects or existing codebases"
+description: "Set up repo-native content governance for AI agents in under 5 minutes — for new projects or existing codebases"
 order: 1
 category: getting-started
 slug: getting-started
@@ -8,7 +8,7 @@ slug: getting-started
 
 # Getting Started
 
-Contentrain AI is an open-source content governance infrastructure. Your AI agent creates and manages content through [Model Context Protocol (MCP)](https://modelcontextprotocol.io) tools — Contentrain ensures that content is structured, validated, reviewed, and deliverable to any platform.
+Contentrain AI is an open-source, repo-native content governance stack. Your AI agent creates, extracts, and updates content through [Model Context Protocol (MCP)](https://modelcontextprotocol.io) tools, while Contentrain ensures that content is structured, validated, reviewed, and deliverable to any platform.
 
 ## Prerequisites
 

@@ -1,6 +1,6 @@
 ---
 title: Contentrain AI
-description: "AI-generated content governance infrastructure — extract, structure, review, and deliver content across any platform"
+description: "Repo-native content governance for AI agents — extract, review, and deliver UI text, docs, and structured content from Git"
 order: 0
 category: getting-started
 slug: index
@@ -8,8 +8,8 @@ layout: home
 
 hero:
   name: Contentrain AI
-  text: AI generates fast. Who governs what it produces?
-  tagline: "Whether you're cleaning up 500 hardcoded strings or starting a new project — Contentrain gives your AI-generated content structure, review, and delivery. All through Git, any platform, any agent."
+  text: Repo-native content governance for AI agents
+  tagline: "Move hardcoded UI text, docs, and structured content out of source files into a governed content layer. Agents do the work, Contentrain enforces schema, Git review, and portable output."
   image:
     src: /hero-pipeline.png
     alt: Contentrain AI Pipeline — Agent generates, MCP validates, Human reviews, Git commits, content delivered
@@ -42,37 +42,39 @@ features:
 
 ## The Problem
 
-AI made you 10x faster at producing code. But nobody solved what happens to the content inside that code.
+AI made you faster at producing code. It did not solve what happens to the content inside that code.
 
-**Already shipped?** 47 components, 500+ hardcoded strings. No translation path, no single source of truth:
+**Already shipped?** Hardcoded UI text lives across components, pages, and docs. No translation path, no single source of truth:
 
 - **Monday:** Founder says "we need Turkish"
 - **Tuesday:** Marketer wants to change the hero headline — it's in 7 files
 - **Wednesday:** Mobile team asks for the same content via API
 - **Friday:** You're still doing grep-and-replace
 
-**Starting fresh?** Without a content layer from day one, you'll be in the same place in 2 weeks. AI generates fast, but the strings it produces have no structure, no governance, no review process.
+**Starting fresh?** Without a content layer from day one, your AI agent will still generate strings directly into source files. Fast output, no structure, no review path, no shared content model.
 
-**This isn't a CMS problem. It's a governance problem.** AI produces content — but who validates it, who reviews it, who standardizes it, and how does it reach every platform?
+**This is not mainly a CMS problem. It's a governance problem.** AI can produce content quickly; Contentrain governs how that content gets structured, reviewed, translated, and delivered.
 
-## Two Starting Points
+## Three Core Use Cases
 
 ::: code-group
 
-```bash [Existing Project — Rescue]
-# Extract 500+ hardcoded strings in minutes
+```bash [Hardcoded Strings Rescue]
+# Existing app? Extract scattered copy into a governed content layer
 npx contentrain init
-# Then tell your agent:
-"Scan my project and extract all hardcoded strings"
-# Content extracted → models created → source patched → review UI ready
+# Then tell your agent: "Scan my project and extract hardcoded UI strings"
 ```
 
-```bash [New Project — Prevention]
-# Start with structured content from day one
+```bash [Day-One Content Layer]
+# New project? Start with structured content instead of inline strings
 npx contentrain init
-# Then tell your agent:
-"Create a hero section model with title, subtitle, and CTA"
-# Models defined → content structured → SDK ready → i18n built in
+# Then tell your agent: "Create a hero section model with title, subtitle, and CTA"
+```
+
+```bash [Cross-Platform Delivery]
+# Same content for web, docs, mobile, and backend consumers
+npx contentrain generate
+# Use plain JSON/Markdown or the typed SDK in TypeScript apps
 ```
 
 :::
@@ -101,23 +103,25 @@ Content lives in plain JSON — any platform can read it:
 }
 ```
 
-## Who Is This For?
+## Who It Is For
 
-### Vibe Coders & Solo Developers
+### AI-assisted product teams
 
-You ship 50+ AI-generated files per week. Content is scattered across every component. `contentrain init` + one prompt to your agent = structured, translatable content in minutes. Zero infrastructure cost — just Git files.
+You already use Claude Code, Cursor, or another agent and want content changes to go through a real reviewable system instead of landing as random string edits.
 
-### Indie Hackers & Small Teams
+### Teams with hardcoded UI copy or docs in source
 
-You need i18n but keep postponing it. You want to hand off copy changes to a non-developer. Contentrain gives you structured content without CMS complexity — and [Studio](https://studio.contentrain.io) when you're ready for team review.
+You need to extract strings, make i18n possible, and stop treating copy updates like grep-and-replace work.
 
-### Agencies & Freelancers
+### Builders who want Git-native content, not dashboard-first content
 
-Same content architecture for every client project. Scaffold in 5 minutes, deliver a Studio login, move on. No more "can you change this text?" support tickets.
+You want plain JSON and Markdown in Git, optional SDK ergonomics, and a content layer your stack can consume directly.
 
-### Startups
+## Who It Is Not For
 
-Your marketer can't change a headline without a developer PR. Your mobile app needs the same content as your website. Contentrain breaks the developer bottleneck — agent generates, marketer reviews, same content serves everywhere.
+- Teams looking for a hosted CMS as the primary product experience
+- Teams that do not want Git in the content workflow
+- Teams that do not use AI agents and do not need a governed extraction/review layer
 
 ## Platform Independent
 
@@ -133,7 +137,7 @@ The TypeScript SDK (`@contentrain/query`) provides type-safe queries as a conven
 
 ## Bring Your Own Agent
 
-Contentrain doesn't ship AI. Your agent (Claude Code, Cursor, Windsurf, or any MCP-compatible tool) **is** the intelligence layer. Contentrain provides 13 deterministic MCP tools that enforce consistency:
+Contentrain does not ship its own model. Your agent (Claude Code, Cursor, Windsurf, or any MCP-compatible tool) **is** the intelligence layer. Contentrain provides deterministic MCP tools and CLI workflows that enforce consistency:
 
 ```
 Agent decides what to extract → MCP validates and writes → Human reviews → Git commits

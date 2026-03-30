@@ -5,12 +5,12 @@
 [![npm: @contentrain/query](https://img.shields.io/npm/v/%40contentrain%2Fquery?label=%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Your AI agent writes content. Contentrain makes sure it doesn't wreck your repo.**
+**Repo-native content governance for AI agents.**
 
-Contentrain gives AI agents a governed place to create models, content, translations, and docs — with typed schemas, git-backed review, and deterministic file output that any platform can consume.
+Contentrain helps teams move hardcoded UI text, docs, and structured content out of source files into a governed content layer. Agents can extract, create, translate, and update content, while Contentrain enforces schema, git review, and portable file output.
 
 ```
-Agent produces → System standardizes → Human approves → Any platform consumes
+Agent extracts or updates content → Contentrain standardizes → Human reviews → Any platform consumes
 ```
 
 ## Try it in 30 seconds
@@ -20,7 +20,19 @@ npx contentrain init        # create .contentrain/ workspace
 npx contentrain serve       # open the local review UI
 ```
 
-That's it. You now have a governed content workspace with models, validation, and a local UI — no account, no cloud, no config files.
+That's it. You now have a governed content workspace with models, validation, review branches, and a local UI — no account, no cloud, no proprietary content format.
+
+## What Contentrain is for
+
+- **Rescuing hardcoded strings** from existing apps and turning them into structured, translatable content
+- **Starting new projects with a real content layer** instead of scattering copy across components
+- **Serving the same content across web, docs, mobile, and backend systems** from plain JSON and Markdown in Git
+
+## What it is not
+
+- Not an AI writing app
+- Not a hosted headless CMS replacement for every team
+- Not a proprietary content runtime that locks your app to one platform
 
 ## What it looks like
 
@@ -78,10 +90,10 @@ The normalize flow extracts strings, creates models, and patches your source fil
                     └──────────────────┘
 ```
 
-- **Agent** decides what content should exist
-- **MCP** enforces schemas, validation, canonical serialization, and git workflow
+- **Agent** decides what content should exist and where it should come from
+- **Contentrain** enforces schemas, validation, canonical serialization, and git workflow
 - **Human** reviews through branches, PRs, or the local Serve UI
-- **Output** is plain JSON + Markdown — consumed by any language or framework
+- **Output** is plain JSON + Markdown that any language or framework can consume
 
 ## 4 content kinds
 
@@ -115,7 +127,7 @@ const article = document('docs').locale('en').bySlug('getting-started')
 
 Works with Nuxt, Next.js, Astro, SvelteKit, Vue, React, Node, Go, Python, Swift, Flutter, and 20+ stacks.
 
-## Key features
+## Why teams use it
 
 - **Git-native** — every write goes through worktree isolation + review branches
 - **Normalize flow** — scan codebase for hardcoded strings → extract → create i18n-ready content → patch source files
