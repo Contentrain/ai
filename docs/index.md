@@ -18,8 +18,8 @@ hero:
       text: Get Started
       link: /getting-started
     - theme: alt
-      text: View on GitHub
-      link: https://github.com/Contentrain/ai
+      text: See 2-Minute Demo
+      link: /demo
 
 features:
   - icon: 🏗️
@@ -78,6 +78,14 @@ npx contentrain generate
 ```
 
 :::
+
+## Start Here
+
+If you only want to understand the product once before going deeper:
+
+1. Read the [2-Minute Demo](/demo)
+2. Follow [Getting Started](/getting-started)
+3. Use the full [Normalize Flow](/guides/normalize) on a real repo
 
 **Before** (hardcoded, untranslatable, unmanageable):
 ```vue
