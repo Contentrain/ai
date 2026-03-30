@@ -1,6 +1,6 @@
 ---
 title: MCP Tools
-description: Complete reference for @contentrain/mcp — the local-first MCP server powering AI content governance with 13 deterministic tools
+description: Complete reference for @contentrain/mcp — the local-first MCP server powering AI content governance with 15 deterministic tools
 order: 1
 slug: mcp
 ---
@@ -43,7 +43,7 @@ Optional parser support for higher-quality source scanning:
 
 ## Tool Catalog
 
-The MCP server exposes 13 tools organized by function:
+The MCP server exposes 15 tools organized by function:
 
 ### Read Tools (Safe, No Side Effects)
 
@@ -225,7 +225,7 @@ Connect your IDE agent to the Contentrain MCP server:
 
 :::
 
-Once connected, the agent has access to all 13 MCP tools and can manage your content through natural language.
+Once connected, the agent has access to all 15 MCP tools and can manage your content through natural language.
 
 ## Trust Model
 
@@ -283,4 +283,4 @@ Available subpath exports:
 - [CLI](/packages/cli) — Human-facing companion for local operations
 - [Query SDK](/packages/sdk) — Generated runtime client for consuming content
 - [Rules & Skills](/packages/rules) — Agent behavior policies and workflow playbooks
-- [Contentrain Studio](https://studio.contentrain.io) — Hosted governance UI with team review, chat-first agent interface, and content CDN
+- [Contentrain Studio](/studio) — Hosted workspace, review, chat-first operations, and content CDN

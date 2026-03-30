@@ -6,9 +6,9 @@
 [![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Repo-native content governance for AI agents.**
+**Extract, govern, and ship structured content from your codebase.**
 
-Contentrain helps teams move hardcoded UI text, docs, and structured content out of source files into a governed content layer. Agents can extract, create, translate, and update content, while Contentrain enforces schema, git review, and portable file output.
+Contentrain helps teams turn hardcoded UI text, docs, and structured content into a governed, reviewable content layer. Agents can extract, create, translate, and update content, while Contentrain enforces schema, Git review, and portable file output.
 
 ```
 Agent extracts or updates content → Contentrain standardizes → Human reviews → Any platform consumes
@@ -26,8 +26,8 @@ That's it. You now have a governed content workspace with models, validation, re
 Start here:
 
 - [See the 2-minute demo](https://ai.contentrain.io/demo)
-- [Read the docs](https://ai.contentrain.io)
 - [Open the normalize guide](https://ai.contentrain.io/guides/normalize)
+- [Read the docs](https://ai.contentrain.io)
 
 ## What Contentrain is for
 
@@ -83,11 +83,15 @@ export default function Hero() {
 
 The normalize flow extracts strings, creates models, and patches your source files — all through reviewable git branches.
 
+This is the strongest entry point into the product:
+
+**take the content chaos already in your codebase and turn it into a governed, reviewable content layer.**
+
 ## How it works
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌──────────────┐
-│  AI Agent    │────▶│  MCP (13 tools)  │────▶│ .contentrain/│
+│  AI Agent    │────▶│  MCP (15 tools)  │────▶│ .contentrain/│
 │  (decides)   │     │  (enforces)      │     │ (stores)     │
 └─────────────┘     └──────────────────┘     └──────┬───────┘
                                                      │
@@ -138,7 +142,7 @@ Works with Nuxt, Next.js, Astro, SvelteKit, Vue, React, Node, Go, Python, Swift,
 
 - **Git-native** — every write goes through worktree isolation + review branches
 - **Normalize flow** — scan codebase for hardcoded strings → extract → create i18n-ready content → patch source files
-- **Local-first MCP** — 13 tools, stdio transport, works with Claude Code, Cursor, Windsurf, or any MCP client
+- **Local-first MCP** — 15 tools, stdio transport, works with Claude Code, Cursor, Windsurf, or any MCP client
 - **Canonical serialization** — sorted keys, deterministic output, clean git diffs, conflict-free parallel edits
 - **Agent rules & skills** — behavioral policies and step-by-step workflows ship as npm packages
 - **Serve UI** — local web dashboard for browsing models, content, validation, and normalize status
@@ -148,7 +152,7 @@ Works with Nuxt, Next.js, Astro, SvelteKit, Vue, React, Node, Go, Python, Swift,
 
 | Package | npm | Role |
 |---|---|---|
-| [`@contentrain/mcp`](packages/mcp) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp) | 13 MCP tools — content operations engine |
+| [`@contentrain/mcp`](packages/mcp) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp) | 15 MCP tools — content operations engine |
 | [`contentrain`](packages/cli) | [![npm](https://img.shields.io/npm/v/contentrain)](https://www.npmjs.com/package/contentrain) | CLI + Serve UI + MCP stdio entrypoint |
 | [`@contentrain/query`](packages/sdk/js) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query) | Generated TypeScript query SDK |
 | [`@contentrain/types`](packages/types) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Ftypes)](https://www.npmjs.com/package/@contentrain/types) | Shared type definitions + constants |
@@ -172,6 +176,7 @@ npx contentrain doctor       # setup health check
 - **[2-Minute Demo](https://ai.contentrain.io/demo)** — the fastest way to understand the product
 - **[Getting Started](https://ai.contentrain.io/getting-started)** — install, connect an agent, and run the first workflow
 - **[Normalize Guide](https://ai.contentrain.io/guides/normalize)** — the main hardcoded-string rescue flow
+- **[Contentrain Studio](https://ai.contentrain.io/studio)** — hosted team operations for Git-native structured content
 - **[Full Docs](https://ai.contentrain.io)** — guides, package reference, and framework integration
 
 ## Development

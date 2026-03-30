@@ -1,6 +1,6 @@
 ---
 title: Contentrain AI
-description: "Repo-native content governance for AI agents — extract, review, and deliver UI text, docs, and structured content from Git"
+description: "Extract, govern, and ship structured content from your codebase."
 order: 0
 category: getting-started
 slug: index
@@ -8,18 +8,18 @@ layout: home
 
 hero:
   name: Contentrain AI
-  text: Repo-native content governance for AI agents
-  tagline: "Move hardcoded UI text, docs, and structured content out of source files into a governed content layer. Agents do the work, Contentrain enforces schema, Git review, and portable output."
+  text: Extract, govern, and ship structured content from your codebase
+  tagline: "Turn hardcoded UI text, docs, and structured content into a governed, reviewable content layer. Agents do the extraction work, Contentrain enforces schema, Git review, and portable output."
   image:
     src: /hero-pipeline.png
     alt: Contentrain AI Pipeline — Agent generates, MCP validates, Human reviews, Git commits, content delivered
   actions:
     - theme: brand
-      text: Get Started
-      link: /getting-started
-    - theme: alt
       text: See 2-Minute Demo
       link: /demo
+    - theme: alt
+      text: Start the Normalize Flow
+      link: /guides/normalize
 
 features:
   - icon: 🏗️
@@ -40,7 +40,7 @@ features:
     link: /packages/sdk
 ---
 
-## The Problem
+## Start With the Mess You Already Have
 
 AI made you faster at producing code. It did not solve what happens to the content inside that code.
 
@@ -51,7 +51,11 @@ AI made you faster at producing code. It did not solve what happens to the conte
 - **Wednesday:** Mobile team asks for the same content via API
 - **Friday:** You're still doing grep-and-replace
 
-**Starting fresh?** Without a content layer from day one, your AI agent will still generate strings directly into source files. Fast output, no structure, no review path, no shared content model.
+This is the first wedge for Contentrain:
+
+**take the content chaos already living in your codebase and turn it into a governed, reviewable content layer.**
+
+**Starting fresh?** That still matters. You can begin with a real content layer from day one. But the most urgent use case is rescue, not prevention.
 
 **This is not mainly a CMS problem. It's a governance problem.** AI can produce content quickly; Contentrain governs how that content gets structured, reviewed, translated, and delivered.
 
@@ -60,7 +64,7 @@ AI made you faster at producing code. It did not solve what happens to the conte
 ::: code-group
 
 ```bash [Hardcoded Strings Rescue]
-# Existing app? Extract scattered copy into a governed content layer
+# Existing app? This is the main entry point
 npx contentrain init
 # Then tell your agent: "Scan my project and extract hardcoded UI strings"
 ```
@@ -84,8 +88,8 @@ npx contentrain generate
 If you only want to understand the product once before going deeper:
 
 1. Read the [2-Minute Demo](/demo)
-2. Follow [Getting Started](/getting-started)
-3. Use the full [Normalize Flow](/guides/normalize) on a real repo
+2. Use the full [Normalize Flow](/guides/normalize) on a real repo
+3. Follow [Getting Started](/getting-started)
 
 **Before** (hardcoded, untranslatable, unmanageable):
 ```vue
@@ -154,5 +158,5 @@ Agent decides what to extract → MCP validates and writes → Human reviews →
 No AI markup in your code. No proprietary syntax. No vendor lock-in. If you stop using Contentrain, your content files are still plain JSON in your Git repo.
 
 ::: info Contentrain Studio
-When you need team collaboration, visual diff review, and content CDN for non-web platforms — [Contentrain Studio](https://studio.contentrain.io) extends everything with a hosted governance UI.
+[Contentrain Studio](/studio) is the hosted team layer for Contentrain: chat-first operations, role-based collaboration, branch review, media management, and CDN delivery on top of the same Git-native content model.
 :::

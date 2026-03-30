@@ -278,7 +278,7 @@ If content created by the agent does not appear:
 
 ## Beyond Local: Contentrain Studio
 
-`contentrain serve` is designed for single-developer, local workflows. When your team grows, [Contentrain Studio](https://studio.contentrain.io) extends this with:
+`contentrain serve` is designed for single-developer, local workflows. When your team grows, [Contentrain Studio](/studio) extends this with:
 
 - **GitHub-connected review** — PRs created from agent branches, reviewable in a web UI
 - **Team roles** — invite editors and reviewers with scoped permissions

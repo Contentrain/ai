@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: "Set up repo-native content governance for AI agents in under 5 minutes — for new projects or existing codebases"
+description: "Set up structured content governance in under 5 minutes — start with an existing codebase rescue or a new content layer"
 order: 1
 category: getting-started
 slug: getting-started
@@ -20,18 +20,41 @@ Contentrain AI is an open-source, repo-native content governance stack. Your AI 
 
 ::: code-group
 
+```bash [Existing Project]
+# This is the main wedge: rescue hardcoded strings
+npx contentrain init
+# Then tell your agent: "Scan my project and extract all hardcoded strings"
+```
+
 ```bash [New Project]
 # Start with structured content from day one
 npx contentrain init
 ```
 
-```bash [Existing Project]
-# Already have hardcoded strings? Extract them
+:::
+
+## Quick Start: Existing Project
+
+Already have hardcoded strings scattered across your codebase? Start here.
+
+```bash
 npx contentrain init
-# Then tell your agent: "Scan my project and extract all hardcoded strings"
+npx contentrain serve --stdio
 ```
 
-:::
+Then tell your agent:
+
+```text
+Scan my project and extract all hardcoded UI strings into structured content.
+```
+
+Typical outcome:
+
+```text
+Agent scans 47 files → finds 523 strings → classifies → creates models → writes content → proposes source patches
+```
+
+Review the extracted content and branch diffs locally, then continue with the full [Normalize Flow](/guides/normalize).
 
 ## Quick Start: New Project
 
@@ -143,17 +166,16 @@ npx contentrain serve
 
 Open `http://localhost:3333` to browse models, content, validation results, and pending branches.
 
-## Quick Start: Existing Project
+## Team Workflows
 
-Already have hardcoded strings scattered across your codebase? The [Normalize Flow](/guides/normalize) extracts them into structured content:
+When the local CLI and MCP flow are not enough, [Contentrain Studio](/studio) adds the hosted team layer:
 
-```
-You: "Scan my project and extract all hardcoded strings"
-Agent: scans 47 files → finds 523 strings → classifies → creates models → patches source
-You: review in UI → approve → structured content, ready for any language
-```
-
-See the [Normalize Flow guide](/guides/normalize) for the complete walkthrough.
+- workspace and project management
+- role-based access and review responsibilities
+- chat-first content operations
+- branch and diff review
+- media management
+- CDN delivery for non-web platforms
 
 ## The Content Pipeline
 
@@ -165,7 +187,7 @@ Agent generates → MCP validates → Human reviews → Git commits → Content 
 
 - **Agent** decides what to create (your AI, your choice — BYOA)
 - **MCP** enforces structure, validation, and canonical serialization
-- **Human** reviews and approves through the local UI or [Studio](https://studio.contentrain.io)
+- **Human** reviews and approves through the local UI or [Studio](/studio)
 - **Git** stores everything — full history, rollback, audit trail
 - **Content** is delivered as plain JSON/Markdown to any platform
 
@@ -176,7 +198,7 @@ All packages are published on npm:
 | Package | Description | Install |
 |---|---|---|
 | [`contentrain`](https://www.npmjs.com/package/contentrain) | CLI (init, serve, generate, validate) | `npx contentrain init` |
-| [`@contentrain/mcp`](https://www.npmjs.com/package/@contentrain/mcp) | 13 MCP tools for AI agents | `pnpm add @contentrain/mcp` |
+| [`@contentrain/mcp`](https://www.npmjs.com/package/@contentrain/mcp) | 15 MCP tools for AI agents | `pnpm add @contentrain/mcp` |
 | [`@contentrain/query`](https://www.npmjs.com/package/@contentrain/query) | TypeScript query SDK (optional) | `pnpm add @contentrain/query` |
 | [`@contentrain/types`](https://www.npmjs.com/package/@contentrain/types) | Shared TypeScript types | `pnpm add @contentrain/types` |
 | [`@contentrain/rules`](https://www.npmjs.com/package/@contentrain/rules) | AI agent quality rules | `pnpm add @contentrain/rules` |
@@ -185,11 +207,11 @@ All packages are published on npm:
 ## What's Next?
 
 - [Core Concepts](/concepts) — Models, content kinds, domains, and the governance architecture
-- [MCP Tools](/packages/mcp) — All 13 tools available to your agent
+- [MCP Tools](/packages/mcp) — All 15 tools available to your agent
 - [Normalize Flow](/guides/normalize) — Extract hardcoded strings from existing code
 - [i18n Workflow](/guides/i18n) — Add languages to your content
 - [Framework Integration](/guides/frameworks) — Platform-specific setup patterns
 
 ::: info Contentrain Studio
-When you need team collaboration, visual diff review, and content CDN for non-web platforms — [Contentrain Studio](https://studio.contentrain.io) extends everything with a hosted governance UI.
+[Contentrain Studio](/studio) is the team operations panel for Git-native structured content. Use it when you want hosted collaboration, review, media, and CDN delivery on top of the same content model.
 :::

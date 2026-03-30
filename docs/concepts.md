@@ -43,11 +43,13 @@ Contentrain AI inverts the traditional CMS workflow:
 
 ### 1. MCP (Infrastructure)
 
-13 tools that AI agents call to manage content:
+15 tools that AI agents call to manage content:
 
-- **Read:** `contentrain_status`, `contentrain_describe`, `contentrain_content_list`, `contentrain_scan`
-- **Write:** `contentrain_model_save`, `contentrain_content_save`, `contentrain_apply`, `contentrain_bulk`
-- **Workflow:** `contentrain_validate`, `contentrain_submit`
+- **Read:** `contentrain_status`, `contentrain_describe`, `contentrain_describe_format`, `contentrain_content_list`
+- **Project setup:** `contentrain_init`, `contentrain_scaffold`
+- **Content and schema writes:** `contentrain_model_save`, `contentrain_model_delete`, `contentrain_content_save`, `contentrain_content_delete`
+- **Normalize:** `contentrain_scan`, `contentrain_apply`
+- **Workflow and operations:** `contentrain_validate`, `contentrain_submit`, `contentrain_bulk`
 
 MCP is **deterministic infrastructure** — it doesn't make content decisions. The agent decides what to create; MCP executes it.
 
@@ -213,12 +215,23 @@ This means one content source powers your website, mobile app, and any other pla
 
 ## Contentrain Studio
 
-[Contentrain Studio](https://studio.contentrain.io) is the hosted governance UI that complements the local CLI and MCP tools. While the open-source packages handle local operations, Studio adds:
+[Contentrain Studio](/studio) is the hosted team operations panel for Git-native structured content.
 
-- **Chat-first interface** — talk to your agent through a web UI with full MCP access
-- **Team collaboration** — invite editors and reviewers with role-based access
-- **Visual diff review** — approve or reject content changes with a proper diff viewer
-- **GitHub integration** — connect your repo, manage branches, track PRs
-- **Content CDN** — publish merged content for non-web platforms
+The local open-source stack gives you:
 
-The local tools and Studio share the same MCP server — same tools, same behavior, different context.
+- MCP tools
+- CLI workflows
+- local review UI
+- generated SDK
+- rules and skills
+
+Studio adds the multi-user operating layer on top of that:
+
+- **Workspace and project management** — organize repos, teams, and environments
+- **Chat-first operations** — run bounded content workflows through a web app
+- **Permissioned collaboration** — owners, admins, editors, reviewers, and viewers
+- **Branch and diff review** — inspect, merge, reject, and track content changes
+- **Media and submissions** — manage assets and inbound content workflows
+- **CDN delivery** — publish merged content to apps that cannot read from Git at runtime
+
+The local tools and Studio share the same Git-native content model. The difference is not the content format — it is the operating surface.

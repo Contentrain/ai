@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'Contentrain AI',
-  description: 'AI-generated content governance infrastructure — extract, structure, review, and deliver content across any platform.',
+  description: 'Extract, govern, and ship structured content from your codebase.',
 
   sitemap: {
     hostname: 'https://ai.contentrain.io',
@@ -13,7 +13,7 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: '#3b5afc' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'Contentrain AI' }],
-    ['meta', { property: 'og:description', content: 'Extract, structure, review, and deliver AI-generated content across any platform' }],
+    ['meta', { property: 'og:description', content: 'Extract, govern, and ship structured content from your codebase.' }],
     ['meta', { property: 'og:url', content: 'https://ai.contentrain.io' }],
     ['meta', { property: 'og:image', content: 'https://ai.contentrain.io/og-image.png' }],
     ['meta', { property: 'og:image:width', content: '1200' }],
@@ -32,6 +32,7 @@ export default defineConfig({
 
     nav: [
       { text: 'Getting Started', link: '/getting-started' },
+      { text: 'Studio', link: '/studio' },
       { text: 'Packages', items: [
         { text: 'MCP Tools', link: '/packages/mcp' },
         { text: 'CLI', link: '/packages/cli' },
@@ -58,6 +59,7 @@ export default defineConfig({
           items: [
             { text: 'What is Contentrain AI?', link: '/getting-started' },
             { text: 'Core Concepts', link: '/concepts' },
+            { text: 'Contentrain Studio', link: '/studio' },
           ],
         },
         {

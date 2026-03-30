@@ -242,7 +242,7 @@ The web UI provides:
 contentrain serve --stdio
 ```
 
-Use stdio mode when connecting an IDE agent (Claude Code, Cursor, Windsurf) to the local project. This exposes all 13 MCP tools over the stdio transport.
+Use stdio mode when connecting an IDE agent (Claude Code, Cursor, Windsurf) to the local project. This exposes all 15 MCP tools over the stdio transport.
 
 ::: code-group
 
@@ -307,7 +307,7 @@ contentrain serve
 ```
 
 ::: tip From Local to Team
-The CLI covers single-developer workflows. When you need team collaboration, visual diff review, and content CDN, [Contentrain Studio](https://studio.contentrain.io) extends everything the CLI does with a hosted governance UI.
+The CLI covers single-developer workflows. When you need workspace/project management, role-based collaboration, visual diff review, media operations, and content CDN delivery, [Contentrain Studio](/studio) extends the same Git-native model with a hosted team surface.
 :::
 
 ## Related Pages
@@ -315,4 +315,4 @@ The CLI covers single-developer workflows. When you need team collaboration, vis
 - [MCP Tools](/packages/mcp) — The deterministic tool layer the CLI wraps
 - [Query SDK](/packages/sdk) — The generated client that `contentrain generate` produces
 - [Rules & Skills](/packages/rules) — Agent behavior policies installed by `contentrain init`
-- [Contentrain Studio](https://studio.contentrain.io) — Hosted team review, chat-first agent, and CDN
+- [Contentrain Studio](/studio) — Hosted workspace, review, media, and CDN operations
