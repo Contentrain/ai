@@ -22,19 +22,35 @@ hero:
       link: /guides/normalize
 
 features:
-  - icon: 🏗️
+  - icon:
+      src: /icons/structure.svg
+      alt: Structure
+      width: 24
+      height: 24
     title: Structure
     details: Define content models or extract them from existing code. Your AI agent handles the work — Contentrain provides the deterministic infrastructure.
     link: /getting-started
-  - icon: ✅
+  - icon:
+      src: /icons/govern.svg
+      alt: Govern
+      width: 24
+      height: 24
     title: Govern
     details: Every content change goes through Git branches, validation, and human review. Nothing reaches production without approval.
     link: /packages/mcp
-  - icon: 🌍
+  - icon:
+      src: /icons/translate.svg
+      alt: Translate
+      width: 24
+      height: 24
     title: Translate
     details: Per-locale JSON files, dictionary models with parameterized templates, and bulk locale operations. i18n is built in, not bolted on.
     link: /guides/i18n
-  - icon: 📦
+  - icon:
+      src: /icons/deliver.svg
+      alt: Deliver
+      width: 24
+      height: 24
     title: Deliver
     details: Plain JSON and Markdown files — consumable by any platform, any language. TypeScript SDK for convenience, but the files are the product.
     link: /packages/sdk
