@@ -2,8 +2,15 @@
 
 [![npm version](https://img.shields.io/npm/v/%40contentrain%2Fskills?label=%40contentrain%2Fskills)](https://www.npmjs.com/package/@contentrain/skills)
 [![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/skills)
+[![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io/packages/rules)
 
 Workflow skills and framework guides for Contentrain-aware AI agents.
+
+Start here:
+
+- [2-minute product demo](https://ai.contentrain.io/demo)
+- [Rules & skills docs](https://ai.contentrain.io/packages/rules)
+- [Framework integration guide](https://ai.contentrain.io/guides/frameworks)
 
 This package follows the [Agent Skills standard](https://agentskills.io) for progressive disclosure: each skill has a `SKILL.md` (loaded on activation) and optional `references/` (loaded on demand).
 

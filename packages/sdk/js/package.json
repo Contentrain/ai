@@ -9,7 +9,7 @@
     "url": "git+https://github.com/Contentrain/ai.git",
     "directory": "packages/sdk/js"
   },
-  "homepage": "https://github.com/Contentrain/ai/tree/main/packages/sdk/js",
+  "homepage": "https://ai.contentrain.io/packages/sdk",
   "bugs": {
     "url": "https://github.com/Contentrain/ai/issues"
   },

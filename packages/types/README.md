@@ -2,8 +2,14 @@
 
 [![npm version](https://img.shields.io/npm/v/%40contentrain%2Ftypes?label=%40contentrain%2Ftypes)](https://www.npmjs.com/package/@contentrain/types)
 [![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/types)
+[![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io/reference/config)
 
 Shared TypeScript types for the Contentrain ecosystem.
+
+Start here:
+
+- [2-minute product demo](https://ai.contentrain.io/demo)
+- [Config and format reference](https://ai.contentrain.io/reference/config)
 
 This package is the common schema layer used by:
 

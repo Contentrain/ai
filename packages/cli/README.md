@@ -2,8 +2,15 @@
 
 [![npm version](https://img.shields.io/npm/v/contentrain?label=contentrain)](https://www.npmjs.com/package/contentrain)
 [![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/cli)
+[![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io/packages/cli)
 
 CLI for Contentrain.
+
+Start here:
+
+- [2-minute product demo](https://ai.contentrain.io/demo)
+- [CLI docs](https://ai.contentrain.io/packages/cli)
+- [Getting started](https://ai.contentrain.io/getting-started)
 
 `contentrain` is the local operations surface for a Contentrain project:
 

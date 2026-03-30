@@ -3,6 +3,7 @@
 [![npm: @contentrain/mcp](https://img.shields.io/npm/v/%40contentrain%2Fmcp?label=%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp)
 [![npm: contentrain](https://img.shields.io/npm/v/contentrain?label=contentrain)](https://www.npmjs.com/package/contentrain)
 [![npm: @contentrain/query](https://img.shields.io/npm/v/%40contentrain%2Fquery?label=%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query)
+[![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **Repo-native content governance for AI agents.**
@@ -21,6 +22,12 @@ npx contentrain serve       # open the local review UI
 ```
 
 That's it. You now have a governed content workspace with models, validation, review branches, and a local UI — no account, no cloud, no proprietary content format.
+
+Start here:
+
+- [See the 2-minute demo](https://ai.contentrain.io/demo)
+- [Read the docs](https://ai.contentrain.io)
+- [Open the normalize guide](https://ai.contentrain.io/guides/normalize)
 
 ## What Contentrain is for
 
@@ -162,7 +169,10 @@ npx contentrain doctor       # setup health check
 
 ## Documentation
 
-**[ai.contentrain.io](https://ai.contentrain.io)** — full docs with guides, reference, and framework integration.
+- **[2-Minute Demo](https://ai.contentrain.io/demo)** — the fastest way to understand the product
+- **[Getting Started](https://ai.contentrain.io/getting-started)** — install, connect an agent, and run the first workflow
+- **[Normalize Guide](https://ai.contentrain.io/guides/normalize)** — the main hardcoded-string rescue flow
+- **[Full Docs](https://ai.contentrain.io)** — guides, package reference, and framework integration
 
 ## Development
 

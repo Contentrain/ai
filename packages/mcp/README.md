@@ -2,8 +2,15 @@
 
 [![npm version](https://img.shields.io/npm/v/%40contentrain%2Fmcp?label=%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp)
 [![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/mcp)
+[![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io/packages/mcp)
 
 Local-first MCP server and core primitives for Contentrain.
+
+Start here:
+
+- [2-minute product demo](https://ai.contentrain.io/demo)
+- [MCP package docs](https://ai.contentrain.io/packages/mcp)
+- [Normalize guide](https://ai.contentrain.io/guides/normalize)
 
 Contentrain is AI-generated content governance infrastructure:
 

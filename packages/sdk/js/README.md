@@ -2,8 +2,15 @@
 
 [![npm version](https://img.shields.io/npm/v/%40contentrain%2Fquery?label=%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query)
 [![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/sdk/js)
+[![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io/packages/sdk)
 
 **Optional** type-safe generated query SDK for Contentrain.
+
+Start here:
+
+- [2-minute product demo](https://ai.contentrain.io/demo)
+- [SDK docs](https://ai.contentrain.io/packages/sdk)
+- [Framework integration guide](https://ai.contentrain.io/guides/frameworks)
 
 Contentrain stores content as plain JSON and Markdown in a git-backed `.contentrain/` directory. Any platform that reads JSON can consume this content directly. This package adds a TypeScript convenience layer that turns content models into a generated JS/TS client with:
 

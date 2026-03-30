@@ -9,7 +9,7 @@
     "url": "git+https://github.com/Contentrain/ai.git",
     "directory": "packages/rules"
   },
-  "homepage": "https://github.com/Contentrain/ai/tree/main/packages/rules",
+  "homepage": "https://ai.contentrain.io/packages/rules",
   "bugs": {
     "url": "https://github.com/Contentrain/ai/issues"
   },
