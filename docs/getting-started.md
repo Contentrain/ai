@@ -168,7 +168,7 @@ Open `http://localhost:3333` to browse models, content, validation results, and 
 
 ## Team Workflows
 
-When the local CLI and MCP flow are not enough, [Contentrain Studio](/studio) adds the hosted team layer:
+When the local CLI and MCP flow are not enough, [Contentrain Studio](/studio) adds the team web layer:
 
 - workspace and project management
 - role-based access and review responsibilities
@@ -207,11 +207,12 @@ All packages are published on npm:
 ## What's Next?
 
 - [Core Concepts](/concepts) — Models, content kinds, domains, and the governance architecture
+- [Ecosystem Map](/ecosystem) — How AI packages and Studio fit together
 - [MCP Tools](/packages/mcp) — All 15 tools available to your agent
 - [Normalize Flow](/guides/normalize) — Extract hardcoded strings from existing code
 - [i18n Workflow](/guides/i18n) — Add languages to your content
 - [Framework Integration](/guides/frameworks) — Platform-specific setup patterns
 
 ::: info Contentrain Studio
-[Contentrain Studio](/studio) is the team operations panel for Git-native structured content. Use it when you want hosted collaboration, review, media, and CDN delivery on top of the same content model.
+[Contentrain Studio](/studio) is the open-core team operations surface for Git-native structured content. Teams can self-host the AGPL core or use a managed Pro/Enterprise offering when they want web-based collaboration, review, media, and CDN delivery on top of the same content model.
 :::

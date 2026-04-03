@@ -1,6 +1,6 @@
 ---
 title: Contentrain Studio
-description: "Hosted team operations for Git-native structured content — chat, review, media, and delivery on top of the same content model"
+description: "Open-core team operations and delivery for the same Git-native content contract used by Contentrain AI"
 order: 3
 category: getting-started
 slug: studio
@@ -8,11 +8,13 @@ slug: studio
 
 # Contentrain Studio
 
-Contentrain Studio is the hosted team operations panel for Git-native structured content.
+Contentrain Studio is the open-core team operations and delivery surface for Git-native structured content.
 
 In short:
 
-> Studio lets teams manage structured content that lives in Git through chat, visual workflows, branch review, and delivery APIs.
+> Contentrain AI gives developers local-first packages and agent workflows. Studio gives teams an authenticated web surface for review, collaboration, media, APIs, and CDN delivery on top of the same `.contentrain/` contract.
+
+Teams can self-host the AGPL core or use a managed Pro/Enterprise offering, depending on how much infrastructure and operations they want to own.
 
 It is not a separate content format and it is not a different storage engine. Studio sits on top of the same Contentrain model:
 
@@ -32,7 +34,7 @@ It combines three layers:
 - **Content execution layer** — chat-driven and UI-driven content operations backed by Git
 - **Delivery layer** — CDN publishing, API access, media, and external conversation endpoints
 
-If the open-source stack is the local operating core, Studio is the hosted collaborative surface.
+If the open-source stack is the local operating core, Studio is the collaboration and delivery surface.
 
 ## What Studio Handles
 
@@ -64,7 +66,19 @@ The core flow looks like this:
 7. the workflow either auto-merges or leaves a review branch open
 8. the UI exposes the result through conversations, branches, diffs, and snapshots
 
-That means Studio is not just a dashboard. It is a hosted execution and review surface for governed content operations.
+That means Studio is not just a dashboard. It is the governed web operating surface for reviewable content operations.
+
+## Package Bridges
+
+Studio is where the AI package surfaces meet team operations:
+
+| AI surface | What starts in AI | What continues in Studio |
+|---|---|---|
+| `@contentrain/mcp` | deterministic local content operations, normalize, validation | governed web workflows, review, approval, project-level operations |
+| `contentrain` CLI | init, serve, diff, generate, validate | authenticated review, role-based collaboration, project/workspace management |
+| `@contentrain/rules` | quality and schema guardrails | shared content quality expectations across chat, review, and validation |
+| `@contentrain/skills` | workflow playbooks and promotion hints | mirrored chat-led workflows, onboarding moments, and review handoffs |
+| `@contentrain/query` | local typed consumption and CDN transport | remote delivery, API key management, CDN publishing, and non-web distribution |
 
 ## Core Concepts
 
@@ -214,7 +228,7 @@ The open-source stack remains the foundation:
 - `@contentrain/rules`
 - `@contentrain/skills`
 
-Studio is the hosted layer on top:
+Studio is the open-core web layer on top:
 
 - team access
 - web workflows
@@ -225,7 +239,15 @@ Studio is the hosted layer on top:
 So the split is:
 
 - **open-source Contentrain** = local, Git-native content governance core
-- **Contentrain Studio** = hosted team operations and delivery layer
+- **Contentrain Studio** = team operations and delivery layer for the same content contract
+
+## Go Deeper
+
+- [Ecosystem Map](/ecosystem)
+- [Studio AI Chat](https://docs.contentrain.io/guide/ai-chat)
+- [Studio Branches & Review](https://docs.contentrain.io/guide/branches-and-review)
+- [Studio CDN](https://docs.contentrain.io/guide/cdn)
+- [Studio Self-Hosting](https://docs.contentrain.io/developer/self-hosting)
 
 ## Short Definition
 

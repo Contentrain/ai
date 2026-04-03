@@ -85,6 +85,20 @@ const labels = dictionary('ui-labels').locale('en').get()
 const article = document('blog-article').locale('en').bySlug('welcome')
 ```
 
+## Studio Bridge
+
+`@contentrain/query` is the local typed read surface for TypeScript apps. Studio extends the same content contract into remote delivery workflows:
+
+- local apps can import `#contentrain` for generated, type-safe reads
+- Studio adds API keys, CDN publishing, media distribution, and team-facing delivery controls
+- both sides should point back to the same model definitions and locale structure
+
+Use [Ecosystem Map](/ecosystem) for the package relationship, and use Studio docs when the same content needs remote delivery:
+
+- [Contentrain Studio](/studio)
+- [Studio CDN](https://docs.contentrain.io/guide/cdn)
+- [Studio Ecosystem Map](https://docs.contentrain.io/guide/ecosystem)
+
 ## API Reference
 
 The generated client exposes four entry points, one for each model kind.
@@ -452,7 +466,7 @@ const client = await createContentrainClient(process.cwd())
 const posts = client.query('blog-post').locale('en').all()
 ```
 
-The base SDK is framework-agnostic and MIT-licensed. Community-built framework SDKs (e.g., `@contentrain/nuxt`, `@contentrain/next`) can extend these primitives.
+The base SDK is framework-agnostic and MIT-licensed. Framework-specific integrations should build on top of these primitives without changing the underlying `.contentrain/` contract.
 
 ## Related Pages
 

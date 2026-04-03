@@ -116,6 +116,22 @@ MCP operates entirely on the local filesystem. There is no GitHub API, no cloud 
 - No API keys or authentication needed
 - Full data sovereignty
 
+## Studio Bridge
+
+`@contentrain/mcp` is the local execution layer for the ecosystem. It is where agents do deterministic work such as init, schema changes, validation, and normalize.
+
+When a project moves from solo or IDE-led work into team review and delivery, [Contentrain Studio](/studio) becomes the authenticated web surface on top of the same `.contentrain/` contract:
+
+- MCP keeps local writes deterministic and git-safe
+- Studio adds team roles, review UI, media, forms, APIs, and CDN delivery
+- both surfaces should describe the same models, locales, and branch semantics
+
+Use the [Ecosystem Map](/ecosystem) when you need the full package-to-product relationship, or jump to the Studio docs for the team-facing workflow:
+
+- [Studio Overview](/studio)
+- [Studio AI Chat](https://docs.contentrain.io/guide/ai-chat)
+- [Studio Branches & Review](https://docs.contentrain.io/guide/branches-and-review)
+
 ## Usage Examples
 
 ### Check Project Status

@@ -31,6 +31,22 @@ An agent needs both. Rules prevent it from producing invalid content or breaking
 - **Skills** = workflow procedures (what steps to follow)
 :::
 
+## Studio Bridge
+
+`@contentrain/rules` and `@contentrain/skills` are not only for local IDE agents. They are also the package-level contract that Studio should mirror in its chat, validation, onboarding, and review flows.
+
+The alignment model is simple:
+
+- local agents use rules and skills directly through IDE integrations
+- Studio translates the same standards into its authenticated web workflows
+- marketing and distribution should point users from the normalize wedge into Studio without changing the underlying quality model
+
+See [Ecosystem Map](/ecosystem) for the full package map, then compare the Studio surface here:
+
+- [Contentrain Studio](/studio)
+- [Studio Ecosystem Map](https://docs.contentrain.io/guide/ecosystem)
+- [Studio Architecture](https://docs.contentrain.io/developer/architecture)
+
 ## Rules (`@contentrain/rules`)
 
 ### What Rules Govern

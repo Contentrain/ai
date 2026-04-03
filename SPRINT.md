@@ -270,8 +270,7 @@
 ## Sprint 8 — Documentation & Release
 **Hedef:** Docs siteleri + npm publish + v1.0.0
 
-- [ ] docs/mcp/ — VitePress site (mcp.contentrain.io)
-- [ ] docs/ai/ — VitePress site (ai.contentrain.io)
+- [ ] Unified `docs/` VitePress site for the public AI/package surface
 - [ ] README.md (root + her paket)
 - [ ] CHANGELOG.md setup
 - [ ] npm publish pipeline

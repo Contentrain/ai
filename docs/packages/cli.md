@@ -307,7 +307,7 @@ contentrain serve
 ```
 
 ::: tip From Local to Team
-The CLI covers single-developer workflows. When you need workspace/project management, role-based collaboration, visual diff review, media operations, and content CDN delivery, [Contentrain Studio](/studio) extends the same Git-native model with a hosted team surface.
+The CLI covers single-developer workflows. When you need workspace/project management, role-based collaboration, visual diff review, media operations, and content CDN delivery, [Contentrain Studio](/studio) extends the same Git-native model with an open-core team web surface that can be self-hosted or run as a managed Pro/Enterprise offering.
 :::
 
 ## Related Pages
@@ -315,4 +315,4 @@ The CLI covers single-developer workflows. When you need workspace/project manag
 - [MCP Tools](/packages/mcp) — The deterministic tool layer the CLI wraps
 - [Query SDK](/packages/sdk) — The generated client that `contentrain generate` produces
 - [Rules & Skills](/packages/rules) — Agent behavior policies installed by `contentrain init`
-- [Contentrain Studio](/studio) — Hosted workspace, review, media, and CDN operations
+- [Contentrain Studio](/studio) — Team workspace, review, media, and CDN operations

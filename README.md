@@ -38,7 +38,7 @@ Start here:
 ## What it is not
 
 - Not an AI writing app
-- Not a hosted headless CMS replacement for every team
+- Not a database-first or dashboard-first CMS replacement for every team
 - Not a proprietary content runtime that locks your app to one platform
 
 ## What it looks like
@@ -176,7 +176,8 @@ npx contentrain doctor       # setup health check
 - **[2-Minute Demo](https://ai.contentrain.io/demo)** — the fastest way to understand the product
 - **[Getting Started](https://ai.contentrain.io/getting-started)** — install, connect an agent, and run the first workflow
 - **[Normalize Guide](https://ai.contentrain.io/guides/normalize)** — the main hardcoded-string rescue flow
-- **[Contentrain Studio](https://ai.contentrain.io/studio)** — hosted team operations for Git-native structured content
+- **[Ecosystem Map](https://ai.contentrain.io/ecosystem)** — package-to-product bridges across AI and Studio
+- **[Contentrain Studio](https://ai.contentrain.io/studio)** — open-core team operations for Git-native structured content, self-hostable or available as a managed Pro/Enterprise offering
 - **[Full Docs](https://ai.contentrain.io)** — guides, package reference, and framework integration
 
 ## Development

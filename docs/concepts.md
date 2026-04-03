@@ -215,7 +215,7 @@ This means one content source powers your website, mobile app, and any other pla
 
 ## Contentrain Studio
 
-[Contentrain Studio](/studio) is the hosted team operations panel for Git-native structured content.
+[Contentrain Studio](/studio) is the open-core team operations panel for Git-native structured content. Teams can self-host the AGPL core or use a managed Pro/Enterprise offering on top of the same model.
 
 The local open-source stack gives you:
 

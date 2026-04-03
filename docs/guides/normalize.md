@@ -275,6 +275,26 @@ npx contentrain generate
 
 The application now serves localized content.
 
+## When Studio Enters
+
+Normalize is the wedge, not the final surface.
+
+Use local AI packages first when you need to scan code, extract hardcoded strings, patch source files, and validate everything in git. Move into [Contentrain Studio](/studio) when the same structured content now needs:
+
+- authenticated review and approval
+- editor, reviewer, and viewer roles
+- web-based media, forms, and conversation workflows
+- CDN delivery and API distribution for other clients
+
+The package bridge looks like this:
+
+- `@contentrain/mcp` handles deterministic extract and reuse locally
+- `@contentrain/rules` and `@contentrain/skills` keep agent behavior consistent
+- `@contentrain/query` consumes the resulting content in apps
+- Studio becomes the team-facing web surface on top of the same `.contentrain/` contract
+
+See the full [Ecosystem Map](/ecosystem) and the Studio docs [Ecosystem page](https://docs.contentrain.io/guide/ecosystem).
+
 ## SDK Direct Import Pattern
 
 Instead of using an i18n library, you can import content directly via the SDK:

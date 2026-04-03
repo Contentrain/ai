@@ -32,6 +32,7 @@ export default defineConfig({
 
     nav: [
       { text: 'Getting Started', link: '/getting-started' },
+      { text: 'Ecosystem', link: '/ecosystem' },
       { text: 'Studio', link: '/studio' },
       { text: 'Packages', items: [
         { text: 'MCP Tools', link: '/packages/mcp' },
@@ -58,6 +59,7 @@ export default defineConfig({
           text: 'Introduction',
           items: [
             { text: 'What is Contentrain AI?', link: '/getting-started' },
+            { text: 'Ecosystem Map', link: '/ecosystem' },
             { text: 'Core Concepts', link: '/concepts' },
             { text: 'Contentrain Studio', link: '/studio' },
           ],

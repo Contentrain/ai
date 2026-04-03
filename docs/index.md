@@ -106,6 +106,7 @@ If you only want to understand the product once before going deeper:
 1. Read the [2-Minute Demo](/demo)
 2. Use the full [Normalize Flow](/guides/normalize) on a real repo
 3. Follow [Getting Started](/getting-started)
+4. Use the [Ecosystem Map](/ecosystem) once review, team ops, or CDN delivery matter
 
 **Before** (hardcoded, untranslatable, unmanageable):
 ```vue
@@ -147,7 +148,7 @@ You want plain JSON and Markdown in Git, optional SDK ergonomics, and a content 
 
 ## Who It Is Not For
 
-- Teams looking for a hosted CMS as the primary product experience
+- Teams looking for a database-first or dashboard-first CMS without Git in the workflow
 - Teams that do not want Git in the content workflow
 - Teams that do not use AI agents and do not need a governed extraction/review layer
 
@@ -174,5 +175,5 @@ Agent decides what to extract → MCP validates and writes → Human reviews →
 No AI markup in your code. No proprietary syntax. No vendor lock-in. If you stop using Contentrain, your content files are still plain JSON in your Git repo.
 
 ::: info Contentrain Studio
-[Contentrain Studio](/studio) is the hosted team layer for Contentrain: chat-first operations, role-based collaboration, branch review, media management, and CDN delivery on top of the same Git-native content model.
+[Contentrain Studio](/studio) is the open-core team web layer for Contentrain: chat-first operations, role-based collaboration, branch review, media management, and CDN delivery on top of the same Git-native content model. Teams can self-host the AGPL core or use a managed Pro/Enterprise offering.
 :::
