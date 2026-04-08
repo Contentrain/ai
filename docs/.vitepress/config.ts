@@ -39,6 +39,7 @@ export default defineConfig({
         { text: 'CLI', link: '/packages/cli' },
         { text: 'Query SDK', link: '/packages/sdk' },
         { text: 'Rules & Skills', link: '/packages/rules' },
+        { text: 'Types', link: '/packages/types' },
       ]},
       { text: 'Guides', items: [
         { text: 'Normalize Flow', link: '/guides/normalize' },
@@ -71,6 +72,7 @@ export default defineConfig({
             { text: 'CLI', link: '/packages/cli' },
             { text: 'Query SDK', link: '/packages/sdk' },
             { text: 'Rules & Skills', link: '/packages/rules' },
+            { text: 'Types', link: '/packages/types' },
           ],
         },
         {
