@@ -1,4 +1,5 @@
 import type { ValidationError, ModelDefinition, ContentrainConfig, FieldDef, EntryMeta } from '@contentrain/types'
+import { detectSecrets, validateFieldValue } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { contentrainDir, readDir, readJson, readText, writeJson, writeText, pathExists } from '../util/fs.js'
@@ -25,105 +26,6 @@ export interface ValidateResult {
   }
   issues: ValidationError[]
   fixed: number
-}
-
-// ─── Secret detection patterns ───
-
-const SECRET_PATTERNS = [
-  /sk_/,
-  /pk_/,
-  /api_key/i,
-  /apikey/i,
-  /ghp_/,
-  /gho_/,
-  /Bearer /,
-  /postgres:\/\//,
-  /mysql:\/\//,
-  /mongodb:\/\//,
-  /-----BEGIN/,
-  /AKIA/,
-  /aws_secret/i,
-]
-
-// ─── Validation helpers ───
-
-function checkSecret(value: unknown): boolean {
-  if (typeof value !== 'string') return false
-  return SECRET_PATTERNS.some(p => p.test(value))
-}
-
-function fieldTypeMatches(value: unknown, fieldDef: FieldDef): boolean {
-  if (value === null || value === undefined) return true
-
-  switch (fieldDef.type) {
-    case 'string':
-    case 'text':
-    case 'email':
-    case 'url':
-    case 'slug':
-    case 'color':
-    case 'phone':
-    case 'code':
-    case 'icon':
-    case 'markdown':
-    case 'richtext':
-    case 'date':
-    case 'datetime':
-    case 'image':
-    case 'video':
-    case 'file':
-    case 'select':
-      return typeof value === 'string'
-
-    case 'number':
-    case 'integer':
-    case 'decimal':
-    case 'percent':
-    case 'rating':
-      return typeof value === 'number'
-
-    case 'boolean':
-      return typeof value === 'boolean'
-
-    case 'relation':
-      return typeof value === 'string'
-
-    case 'relations':
-    case 'array':
-      return Array.isArray(value)
-
-    case 'object':
-      return typeof value === 'object' && !Array.isArray(value)
-
-    default:
-      return true
-  }
-}
-
-function checkMinMax(value: unknown, fieldDef: FieldDef): string | null {
-  if (fieldDef.min !== undefined) {
-    if (typeof value === 'number' && value < fieldDef.min) {
-      return `Value ${value} is below minimum ${fieldDef.min}`
-    }
-    if (typeof value === 'string' && value.length < fieldDef.min) {
-      return `String length ${value.length} is below minimum ${fieldDef.min}`
-    }
-    if (Array.isArray(value) && value.length < fieldDef.min) {
-      return `Array length ${value.length} is below minimum ${fieldDef.min}`
-    }
-  }
-  if (fieldDef.max !== undefined) {
-    if (typeof value === 'number' && value > fieldDef.max) {
-      return `Value ${value} is above maximum ${fieldDef.max}`
-    }
-    if (typeof value === 'string' && value.length > fieldDef.max) {
-      return `String length ${value.length} is above maximum ${fieldDef.max}`
-    }
-    if (Array.isArray(value) && value.length > fieldDef.max) {
-      return `Array length ${value.length} is above maximum ${fieldDef.max}`
-    }
-  }
-  return null
 }
 
 // ─── Schedule validation ───
@@ -312,7 +214,7 @@ async function validateCollectionModel(
 
       // Secret detection
       for (const [fieldName, value] of Object.entries(fields)) {
-        if (checkSecret(value)) {
+        if (detectSecrets(value).length > 0) {
           issues.push({
             severity: 'error',
             model: model.id,
@@ -330,70 +232,10 @@ async function validateCollectionModel(
       for (const [fieldName, fieldDef] of Object.entries(model.fields)) {
         const value = fields[fieldName]
 
-        // Required check
-        if (fieldDef.required && (value === undefined || value === null || value === '')) {
-          issues.push({
-            severity: 'error',
-            model: model.id,
-            locale,
-            entry: entryId,
-            field: fieldName,
-            message: `Required field "${fieldName}" is missing`,
-          })
-        }
-
-        // Type mismatch
-        if (value !== undefined && value !== null && !fieldTypeMatches(value, fieldDef)) {
-          issues.push({
-            severity: 'error',
-            model: model.id,
-            locale,
-            entry: entryId,
-            field: fieldName,
-            message: `Type mismatch: expected ${fieldDef.type}, got ${typeof value}`,
-          })
-        }
-
-        // Min/max
-        if (value !== undefined && value !== null) {
-          const minMaxErr = checkMinMax(value, fieldDef)
-          if (minMaxErr) {
-            issues.push({
-              severity: 'error',
-              model: model.id,
-              locale,
-              entry: entryId,
-              field: fieldName,
-              message: minMaxErr,
-            })
-          }
-        }
-
-        // Pattern regex check
-        if (fieldDef.pattern && typeof value === 'string') {
-          try {
-            const regex = new RegExp(fieldDef.pattern)
-            if (!regex.test(value)) {
-              issues.push({
-                severity: 'error',
-                model: model.id,
-                locale,
-                entry: entryId,
-                field: fieldName,
-                message: `Value "${value}" does not match pattern /${fieldDef.pattern}/`,
-              })
-            }
-          } catch {
-            // Invalid regex in schema — report as warning
-            issues.push({
-              severity: 'warning',
-              model: model.id,
-              locale,
-              entry: entryId,
-              field: fieldName,
-              message: `Invalid pattern regex: ${fieldDef.pattern}`,
-            })
-          }
+        // Field schema validation (type, required, min/max, pattern, select)
+        const fieldErrors = validateFieldValue(value, fieldDef)
+        for (const err of fieldErrors) {
+          issues.push({ ...err, model: model.id, locale, entry: entryId, field: fieldName })
         }
 
         // Unique constraint
@@ -548,7 +390,7 @@ async function validateSingletonModel(
 
     // Secret detection
     for (const [fieldName, value] of Object.entries(data)) {
-      if (checkSecret(value)) {
+      if (detectSecrets(value).length > 0) {
         issues.push({
           severity: 'error',
           model: model.id,
@@ -564,61 +406,10 @@ async function validateSingletonModel(
       for (const [fieldName, fieldDef] of Object.entries(model.fields)) {
         const value = data[fieldName]
 
-        if (fieldDef.required && (value === undefined || value === null || value === '')) {
-          issues.push({
-            severity: 'error',
-            model: model.id,
-            locale,
-            field: fieldName,
-            message: `Required field "${fieldName}" is missing`,
-          })
-        }
-
-        if (value !== undefined && value !== null && !fieldTypeMatches(value, fieldDef)) {
-          issues.push({
-            severity: 'error',
-            model: model.id,
-            locale,
-            field: fieldName,
-            message: `Type mismatch: expected ${fieldDef.type}, got ${typeof value}`,
-          })
-        }
-
-        if (value !== undefined && value !== null) {
-          const minMaxErr = checkMinMax(value, fieldDef)
-          if (minMaxErr) {
-            issues.push({
-              severity: 'error',
-              model: model.id,
-              locale,
-              field: fieldName,
-              message: minMaxErr,
-            })
-          }
-        }
-
-        // Pattern regex check
-        if (fieldDef.pattern && typeof value === 'string') {
-          try {
-            const regex = new RegExp(fieldDef.pattern)
-            if (!regex.test(value)) {
-              issues.push({
-                severity: 'error',
-                model: model.id,
-                locale,
-                field: fieldName,
-                message: `Value "${value}" does not match pattern /${fieldDef.pattern}/`,
-              })
-            }
-          } catch {
-            issues.push({
-              severity: 'warning',
-              model: model.id,
-              locale,
-              field: fieldName,
-              message: `Invalid pattern regex: ${fieldDef.pattern}`,
-            })
-          }
+        // Field schema validation (type, required, min/max, pattern, select)
+        const sFieldErrors = validateFieldValue(value, fieldDef)
+        for (const err of sFieldErrors) {
+          issues.push({ ...err, model: model.id, locale, field: fieldName })
         }
 
         // Broken relation
@@ -695,7 +486,7 @@ async function validateDictionaryModel(
 
     // Secret detection
     for (const [key, value] of Object.entries(data)) {
-      if (checkSecret(value)) {
+      if (detectSecrets(value).length > 0) {
         issues.push({
           severity: 'error',
           model: model.id,
@@ -860,7 +651,7 @@ async function validateDocumentModel(
 
       // Secret detection in frontmatter
       for (const [fieldName, value] of Object.entries(frontmatter)) {
-        if (checkSecret(value)) {
+        if (detectSecrets(value).length > 0) {
           issues.push({
             severity: 'error',
             model: model.id,
@@ -873,7 +664,7 @@ async function validateDocumentModel(
       }
 
       // Secret detection in body
-      if (checkSecret(body)) {
+      if (detectSecrets(body).length > 0) {
         issues.push({
           severity: 'error',
           model: model.id,
@@ -890,66 +681,10 @@ async function validateDocumentModel(
           if (fieldName === 'body') continue
           const value = frontmatter[fieldName]
 
-          if (fieldDef.required && (value === undefined || value === null || value === '')) {
-            issues.push({
-              severity: 'error',
-              model: model.id,
-              locale,
-              slug,
-              field: fieldName,
-              message: `Required field "${fieldName}" is missing`,
-            })
-          }
-
-          if (value !== undefined && value !== null && !fieldTypeMatches(value, fieldDef)) {
-            issues.push({
-              severity: 'error',
-              model: model.id,
-              locale,
-              slug,
-              field: fieldName,
-              message: `Type mismatch: expected ${fieldDef.type}, got ${typeof value}`,
-            })
-          }
-
-          if (value !== undefined && value !== null) {
-            const minMaxErr = checkMinMax(value, fieldDef)
-            if (minMaxErr) {
-              issues.push({
-                severity: 'error',
-                model: model.id,
-                locale,
-                slug,
-                field: fieldName,
-                message: minMaxErr,
-              })
-            }
-          }
-
-          // Pattern regex check
-          if (fieldDef.pattern && typeof value === 'string') {
-            try {
-              const regex = new RegExp(fieldDef.pattern)
-              if (!regex.test(value)) {
-                issues.push({
-                  severity: 'error',
-                  model: model.id,
-                  locale,
-                  slug,
-                  field: fieldName,
-                  message: `Value "${value}" does not match pattern /${fieldDef.pattern}/`,
-                })
-              }
-            } catch {
-              issues.push({
-                severity: 'warning',
-                model: model.id,
-                locale,
-                slug,
-                field: fieldName,
-                message: `Invalid pattern regex: ${fieldDef.pattern}`,
-              })
-            }
+          // Field schema validation (type, required, min/max, pattern, select)
+          const dFieldErrors = validateFieldValue(value, fieldDef)
+          for (const err of dFieldErrors) {
+            issues.push({ ...err, model: model.id, locale, slug, field: fieldName })
           }
 
           // Broken relation

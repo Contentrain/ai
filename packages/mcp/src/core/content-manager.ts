@@ -1,245 +1,14 @@
 import type { ModelDefinition, ContentrainConfig, EntryMeta, LocaleStrategy, DocumentEntry } from '@contentrain/types'
+import { validateSlug, validateEntryId, validateLocale, generateEntryId, parseMarkdownFrontmatter, serializeMarkdownFrontmatter } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { contentrainDir, readDir, readJson, readText, writeJson, writeText } from '../util/fs.js'
-import { generateEntryId } from '../util/id.js'
 import { writeMeta, deleteMeta } from './meta-manager.js'
 import { readModel } from './model-manager.js'
 
-// ─── Validation helpers ───
-
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-const ENTRY_ID_RE = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,39}$/
-const LOCALE_RE = /^[a-z]{2}(?:-[A-Z]{2})?$/
-
-export function validateSlug(slug: string): string | null {
-  if (!slug) return 'Slug is required'
-  if (!SLUG_RE.test(slug)) return `Invalid slug "${slug}": must be kebab-case alphanumeric (a-z, 0-9, hyphens)`
-  if (slug.startsWith('.') || slug.includes('..')) return `Invalid slug "${slug}": path traversal not allowed`
-  return null
-}
-
-export function validateEntryId(id: string): string | null {
-  if (!ENTRY_ID_RE.test(id)) return `Invalid entry ID "${id}": must be 1-40 alphanumeric characters (hyphens and underscores allowed)`
-  return null
-}
-
-export function validateLocale(locale: string, config: ContentrainConfig): string | null {
-  if (!LOCALE_RE.test(locale)) return `Invalid locale "${locale}": must be ISO 639-1 format (e.g. "en", "tr", "pt-BR")`
-  if (!config.locales.supported.includes(locale)) {
-    return `Locale "${locale}" is not in supported locales [${config.locales.supported.join(', ')}]. Update config first.`
-  }
-  return null
-}
-
-// ─── Frontmatter helpers ───
-
-export function parseFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
-  // Normalize CRLF to LF for cross-platform compatibility
-  const normalized = content.replace(/\r\n/g, '\n')
-  const match = normalized.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
-  if (!match) return { frontmatter: {}, body: normalized }
-
-  const frontmatterStr = match[1]!
-  const body = match[2]!.trim()
-  const frontmatter: Record<string, unknown> = {}
-
-  let currentKey: string | null = null
-  let currentArray: string[] | null = null
-
-  for (const line of frontmatterStr.split('\n')) {
-    // Array item
-    if (/^\s+-\s+/.test(line) && currentKey) {
-      const value = line.replace(/^\s+-\s+/, '').trim()
-      if (!currentArray) currentArray = []
-      currentArray.push(value)
-      continue
-    }
-
-    // Flush previous array
-    if (currentKey && currentArray) {
-      frontmatter[currentKey] = currentArray
-      currentKey = null
-      currentArray = null
-    }
-
-    const kvMatch = line.match(/^([\w][\w.-]*)\s*:\s*(.*)$/)
-    if (!kvMatch) continue
-
-    const key = kvMatch[1]!
-    const rawValue = kvMatch[2]!.trim()
-
-    if (rawValue === '') {
-      currentKey = key
-      currentArray = []
-      continue
-    }
-
-    // Inline array: [item1, item2]
-    if (rawValue.startsWith('[') && rawValue.endsWith(']')) {
-      const items = rawValue.slice(1, -1).split(',').map(s => s.trim()).filter(Boolean)
-      frontmatter[key] = items
-      continue
-    }
-
-    frontmatter[key] = parseYamlValue(rawValue)
-  }
-
-  // Flush last array
-  if (currentKey && currentArray) {
-    frontmatter[currentKey] = currentArray
-  }
-
-  return { frontmatter, body }
-}
-
-function parseYamlValue(raw: string): unknown {
-  if (raw === 'true') return true
-  if (raw === 'false') return false
-  if (raw === 'null') return null
-  if (/^-?\d+$/.test(raw)) return parseInt(raw, 10)
-  if (/^-?\d+\.\d+$/.test(raw)) return parseFloat(raw)
-  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
-    return raw.slice(1, -1)
-  }
-  return raw
-}
-
-function yamlScalar(value: unknown): string {
-  const str = String(value)
-  // Quote strings that contain YAML-special characters
-  if (str.includes(':') || str.includes('#') || str.includes('{') || str.includes('}')
-    || str.includes('[') || str.includes(']') || str.includes('*') || str.includes('&')
-    || str.includes('!') || str.includes('|') || str.includes('>') || str.includes("'")
-    || str.includes('"') || str.includes('%') || str.includes('@') || str.includes('`')
-    || str.startsWith('-') || str.startsWith('?')
-    || str === 'true' || str === 'false' || str === 'null' || str === 'yes' || str === 'no'
-    || str === '') {
-    return `"${str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
-  }
-  return str
-}
-
-function serializeYamlValue(value: unknown, indent: number): string[] {
-  const pad = '  '.repeat(indent)
-  if (value === null || value === undefined) return []
-  if (typeof value === 'object' && !Array.isArray(value)) {
-    const lines: string[] = []
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (v === null || v === undefined) continue
-      if (typeof v === 'object' && !Array.isArray(v)) {
-        lines.push(`${pad}${k}:`)
-        lines.push(...serializeYamlValue(v, indent + 1))
-      } else if (Array.isArray(v)) {
-        lines.push(`${pad}${k}:`)
-        for (const item of v) {
-          if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-            const nested = serializeYamlValue(item, indent + 2)
-            if (nested.length > 0) {
-              // First line of nested object gets the "- " prefix
-              lines.push(`${pad}  - ${nested[0]!.trimStart()}`)
-              lines.push(...nested.slice(1))
-            }
-          } else {
-            lines.push(`${pad}  - ${yamlScalar(item)}`)
-          }
-        }
-      } else {
-        lines.push(`${pad}${k}: ${yamlScalar(v)}`)
-      }
-    }
-    return lines
-  }
-  if (Array.isArray(value)) {
-    const lines: string[] = []
-    for (const item of value) {
-      if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-        const nested = serializeYamlValue(item, indent + 1)
-        if (nested.length > 0) {
-          lines.push(`${pad}- ${nested[0]!.trimStart()}`)
-          lines.push(...nested.slice(1))
-        }
-      } else {
-        lines.push(`${pad}- ${yamlScalar(item)}`)
-      }
-    }
-    return lines
-  }
-  return [`${pad}${yamlScalar(value)}`]
-}
-
-function serializeYamlFields(data: Record<string, unknown>): string[] {
-  const lines: string[] = []
-  for (const [key, value] of Object.entries(data)) {
-    if (key === 'body') continue
-    if (value === null || value === undefined) continue
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      lines.push(`${key}:`)
-      lines.push(...serializeYamlValue(value, 1))
-    } else if (Array.isArray(value)) {
-      lines.push(`${key}:`)
-      for (const item of value) {
-        if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-          const nested = serializeYamlValue(item, 2)
-          if (nested.length > 0) {
-            lines.push(`  - ${nested[0]!.trimStart()}`)
-            lines.push(...nested.slice(1))
-          }
-        } else {
-          lines.push(`  - ${yamlScalar(item)}`)
-        }
-      }
-    } else {
-      lines.push(`${key}: ${yamlScalar(value)}`)
-    }
-  }
-  return lines
-}
-
-export function serializeFrontmatter(data: Record<string, unknown>, body: string): string {
-  // If body starts with frontmatter (---), merge model fields into body's frontmatter
-  const trimmedBody = body.trimStart()
-  if (trimmedBody.startsWith('---')) {
-    const endIdx = trimmedBody.indexOf('---', 3)
-    if (endIdx > 0) {
-      const bodyFmContent = trimmedBody.slice(3, endIdx).trim()
-      const afterFm = trimmedBody.slice(endIdx + 3)
-
-      const lines: string[] = ['---']
-      lines.push(...serializeYamlFields(data))
-      // Body frontmatter fields (skip top-level duplicates from model fields)
-      if (bodyFmContent) {
-        const modelKeys = new Set(Object.keys(data))
-        for (const line of bodyFmContent.split('\n')) {
-          // Only check top-level keys (lines that don't start with whitespace)
-          if (line.length > 0 && line[0] !== ' ' && line[0] !== '-') {
-            const colonIdx = line.indexOf(':')
-            const lineKey = colonIdx > 0 ? line.slice(0, colonIdx).trim() : ''
-            if (lineKey && modelKeys.has(lineKey)) continue
-          }
-          lines.push(line)
-        }
-      }
-      lines.push('---')
-      if (afterFm.trim()) {
-        lines.push(afterFm.trimStart())
-      }
-      lines.push('')
-      return lines.join('\n')
-    }
-  }
-
-  // Standard: model fields as frontmatter, body as markdown
-  const lines: string[] = ['---']
-  lines.push(...serializeYamlFields(data))
-  lines.push('---')
-  lines.push('')
-  if (body) {
-    lines.push(body)
-    lines.push('')
-  }
-  return lines.join('\n')
-}
+// Re-export for backward compatibility (MCP internal consumers)
+export { validateSlug, validateEntryId, validateLocale }
+export { parseMarkdownFrontmatter as parseFrontmatter, serializeMarkdownFrontmatter as serializeFrontmatter } from '@contentrain/types'
 
 // ─── Content paths ───
 
@@ -406,7 +175,7 @@ export async function writeContent(
         const existingRaw = await readText(docPath)
         const action: 'created' | 'updated' = existingRaw ? 'updated' : 'created'
 
-        const mdContent = serializeFrontmatter(fmData, bodyContent)
+        const mdContent = serializeMarkdownFrontmatter(fmData, bodyContent)
         await writeText(docPath, mdContent)
         await writeMeta(projectRoot, model, { locale, slug }, defaultMeta(entry.data))
         results.push({ action, slug, locale })
@@ -619,7 +388,7 @@ export async function listContent(
           const slug = f.replace('.md', '')
           const raw = await readText(join(cDir, f))
           if (!raw) continue
-          const { frontmatter, body } = parseFrontmatter(raw)
+          const { frontmatter, body } = parseMarkdownFrontmatter(raw)
           entries.push({ slug, frontmatter, body })
         }
       } else if (strategy === 'file') {
@@ -628,7 +397,7 @@ export async function listContent(
         for (const slug of slugDirs) {
           const raw = await readText(join(cDir, slug, `${locale}.md`))
           if (!raw) continue
-          const { frontmatter, body } = parseFrontmatter(raw)
+          const { frontmatter, body } = parseMarkdownFrontmatter(raw)
           entries.push({ slug, frontmatter, body })
         }
       } else if (strategy === 'suffix') {
@@ -640,7 +409,7 @@ export async function listContent(
           const slug = f.slice(0, -suffix.length)
           const raw = await readText(join(cDir, f))
           if (!raw) continue
-          const { frontmatter, body } = parseFrontmatter(raw)
+          const { frontmatter, body } = parseMarkdownFrontmatter(raw)
           entries.push({ slug, frontmatter, body })
         }
       } else if (strategy === 'directory') {
@@ -652,7 +421,7 @@ export async function listContent(
           const slug = f.replace('.md', '')
           const raw = await readText(join(localeDir, f))
           if (!raw) continue
-          const { frontmatter, body } = parseFrontmatter(raw)
+          const { frontmatter, body } = parseMarkdownFrontmatter(raw)
           entries.push({ slug, frontmatter, body })
         }
       } else {
@@ -663,7 +432,7 @@ export async function listContent(
           const slug = f.replace('.md', '')
           const raw = await readText(join(cDir, f))
           if (!raw) continue
-          const { frontmatter, body } = parseFrontmatter(raw)
+          const { frontmatter, body } = parseMarkdownFrontmatter(raw)
           entries.push({ slug, frontmatter, body })
         }
       }
@@ -706,7 +475,7 @@ export async function readContent(
       if (!opts.slug) return null
       const raw = await readText(resolveMdFilePath(cDir, model, opts.locale, opts.slug))
       if (!raw) return null
-      const { frontmatter, body } = parseFrontmatter(raw)
+      const { frontmatter, body } = parseMarkdownFrontmatter(raw)
       return { slug: opts.slug, ...frontmatter, body }
     }
 
@@ -765,7 +534,7 @@ async function resolveRelations(
             const slug = f.replace('.md', '')
             const raw = await readText(join(cDir, f))
             if (!raw) continue
-            const { frontmatter, body } = parseFrontmatter(raw)
+            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
             docCache[slug] = { slug, ...frontmatter, body }
           }
         } else if (strategy === 'file') {
@@ -773,7 +542,7 @@ async function resolveRelations(
           for (const slug of slugDirs) {
             const raw = await readText(join(cDir, slug, `${locale}.md`))
             if (!raw) continue
-            const { frontmatter, body } = parseFrontmatter(raw)
+            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
             docCache[slug] = { slug, ...frontmatter, body }
           }
         } else if (strategy === 'suffix') {
@@ -784,7 +553,7 @@ async function resolveRelations(
             const slug = f.slice(0, -suffix.length)
             const raw = await readText(join(cDir, f))
             if (!raw) continue
-            const { frontmatter, body } = parseFrontmatter(raw)
+            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
             docCache[slug] = { slug, ...frontmatter, body }
           }
         } else if (strategy === 'directory') {
@@ -795,7 +564,7 @@ async function resolveRelations(
             const slug = f.replace('.md', '')
             const raw = await readText(join(localeDir, f))
             if (!raw) continue
-            const { frontmatter, body } = parseFrontmatter(raw)
+            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
             docCache[slug] = { slug, ...frontmatter, body }
           }
         } else {
@@ -806,7 +575,7 @@ async function resolveRelations(
             const slug = f.replace('.md', '')
             const raw = await readText(join(cDir, f))
             if (!raw) continue
-            const { frontmatter, body } = parseFrontmatter(raw)
+            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
             docCache[slug] = { slug, ...frontmatter, body }
           }
         }

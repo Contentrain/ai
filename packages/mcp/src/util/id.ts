@@ -6,6 +6,5 @@ export function branchTimestamp(): string {
   return `${ts}-${suffix}`
 }
 
-export function generateEntryId(): string {
-  return randomUUID().replace(/-/g, '').slice(0, 12)
-}
+// generateEntryId is now exported from @contentrain/types
+export { generateEntryId } from '@contentrain/types'
