@@ -81,6 +81,22 @@ Storage/runtime helper types:
 - `DocumentMeta`
 - `DictionaryMeta`
 
+Validate functions (pure, dependency-free):
+
+- `validateSlug(slug)` — kebab-case slug validation
+- `validateEntryId(id)` — entry ID format validation
+- `validateLocale(locale, config)` — locale format + config support check
+- `detectSecrets(value)` — detect potential secrets in field values
+- `validateFieldValue(value, fieldDef)` — full field schema validation (type, required, min/max, pattern, select)
+
+Serialize functions (pure, dependency-free):
+
+- `sortKeys(obj, fieldOrder?)` — recursive key sorting for canonical output
+- `canonicalStringify(data, fieldOrder?)` — deterministic JSON serialization
+- `generateEntryId()` — 12-char hex ID generation
+- `parseMarkdownFrontmatter(content)` — parse YAML frontmatter + body from markdown
+- `serializeMarkdownFrontmatter(data, body)` — serialize data + body into markdown frontmatter
+
 ## 🧭 Stability
 
 This package is intended to be the shared public contract across the Contentrain ecosystem.
@@ -137,11 +153,108 @@ Type-only usage:
 import type { ModelDefinition, ContentrainConfig } from '@contentrain/types'
 ```
 
-Runtime-safe mixed usage:
+Mixed usage (types + runtime functions):
 
 ```ts
-import type { FieldDef } from '@contentrain/types'
+import type { FieldDef, ValidationError } from '@contentrain/types'
+import {
+  validateFieldValue,
+  validateSlug,
+  detectSecrets,
+  canonicalStringify,
+  parseMarkdownFrontmatter,
+} from '@contentrain/types'
 ```
+
+## 🏢 Studio Integration
+
+Studio (Nuxt 4, web) cannot import `@contentrain/mcp` directly because MCP depends on Node.js-only packages (`simple-git`, `@modelcontextprotocol/sdk`). The validate and serialize functions in this package are **pure, dependency-free, and browser-compatible** — designed for Studio to share the same validation contract as MCP.
+
+### What Studio gets from `@contentrain/types`
+
+| Function | Use case |
+|---|---|
+| `validateSlug(slug)` | Form validation for document slugs |
+| `validateEntryId(id)` | Validate collection entry IDs |
+| `validateLocale(locale, config)` | Locale picker validation |
+| `detectSecrets(value)` | Content editor secret detection warnings |
+| `validateFieldValue(value, fieldDef)` | Full field-level validation in content forms |
+| `canonicalStringify(data, fieldOrder?)` | Preview canonical JSON output |
+| `parseMarkdownFrontmatter(content)` | Document editor frontmatter parsing |
+| `serializeMarkdownFrontmatter(data, body)` | Document editor serialization |
+| `generateEntryId()` | Client-side entry ID generation |
+| `SECRET_PATTERNS` | Extend or customize secret detection |
+
+### What stays in MCP (not available to Studio directly)
+
+These require file system I/O or Node.js dependencies:
+
+- `checkRelation()` — validates relation references against actual content files on disk
+- `validateProject()` — full project validation with file reading
+- `writeContent()` / `deleteContent()` — content persistence with git worktree
+- `resolveContentDir()` / `resolveJsonFilePath()` — path resolution with `node:path`
+
+### Studio implementation example
+
+```ts
+// composables/useContentValidation.ts
+import type { FieldDef, ContentrainConfig, ValidationError } from '@contentrain/types'
+import { validateFieldValue, validateSlug, detectSecrets } from '@contentrain/types'
+
+export function useContentValidation(config: ContentrainConfig) {
+  function validateEntry(
+    fields: Record<string, FieldDef>,
+    data: Record<string, unknown>,
+  ): ValidationError[] {
+    const issues: ValidationError[] = []
+
+    for (const [fieldName, fieldDef] of Object.entries(fields)) {
+      // Schema validation (type, required, min/max, pattern, select)
+      const fieldErrors = validateFieldValue(data[fieldName], fieldDef)
+      for (const err of fieldErrors) {
+        issues.push({ ...err, field: fieldName })
+      }
+
+      // Secret detection on all string values
+      const secretErrors = detectSecrets(data[fieldName])
+      for (const err of secretErrors) {
+        issues.push({ ...err, field: fieldName })
+      }
+    }
+
+    return issues
+  }
+
+  return { validateEntry, validateSlug }
+}
+```
+
+```ts
+// composables/useDocumentEditor.ts
+import { parseMarkdownFrontmatter, serializeMarkdownFrontmatter } from '@contentrain/types'
+
+export function useDocumentEditor() {
+  function loadDocument(rawMarkdown: string) {
+    const { frontmatter, body } = parseMarkdownFrontmatter(rawMarkdown)
+    return { frontmatter, body }
+  }
+
+  function saveDocument(data: Record<string, unknown>, body: string): string {
+    return serializeMarkdownFrontmatter(data, body)
+  }
+
+  return { loadDocument, saveDocument }
+}
+```
+
+### Unique constraints and relation validation
+
+`validateFieldValue` handles schema-level checks. Two things require external state:
+
+- **Unique constraints** — need to check across all entries (Studio should query its API/store)
+- **Relation references** — need to verify target entries exist (Studio should query its content API)
+
+These are left to Studio's server-side or API layer to implement on top of the pure validation.
 
 ## 🧠 Design Role
 
@@ -153,11 +266,13 @@ Examples:
 - CLI reads `ContextJson`
 - SDK codegen consumes `ModelDefinition` and `FieldDef`
 - AI rules align with the same model and workflow vocabulary
+- Studio uses the same validation functions in the browser
 
 This package should stay:
 
 - small
-- dependency-light
+- zero runtime dependencies
+- browser + Node.js compatible
 - stable
 - free of package-specific behavior
 
