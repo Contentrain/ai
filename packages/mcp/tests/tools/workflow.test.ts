@@ -138,7 +138,7 @@ describe('contentrain_validate', () => {
     expect(data['valid']).toBe(false)
     const issues = data['issues'] as Array<Record<string, unknown>>
     const requiredIssue = issues.find(i =>
-      (i['message'] as string).includes('Required field "name" is missing'),
+      i['field'] === 'name' && (i['message'] as string).includes('Required'),
     )
     expect(requiredIssue).toBeDefined()
     expect(requiredIssue!['severity']).toBe('error')
