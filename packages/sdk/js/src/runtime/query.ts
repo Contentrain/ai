@@ -1,3 +1,8 @@
+import type { WhereOp, WhereClause } from '../shared/where.js'
+import { applyWhere } from '../shared/where.js'
+
+export type { WhereOp }
+
 export interface RelationMeta {
   target: string | string[]
   multi: boolean
@@ -8,7 +13,7 @@ export type RelationResolver = (model: string, id: string, locale: string | null
 export class QueryBuilder<T extends object> {
   private _data: Map<string, T[]>
   private _locale: string | null = null
-  private _filters: Array<(item: T) => boolean> = []
+  private _filters: WhereClause[] = []
   private _sortField: string | null = null
   private _sortOrder: 'asc' | 'desc' = 'asc'
   private _limit: number | null = null
@@ -35,12 +40,14 @@ export class QueryBuilder<T extends object> {
     return this
   }
 
-  where<K extends string & keyof T>(field: K, value: T[K]): this {
-    this._filters.push((item) => {
-      const v = item[field]
-      if (Array.isArray(v)) return v.includes(value)
-      return v === value
-    })
+  where<K extends string & keyof T>(field: K, value: T[K]): this
+  where<K extends string & keyof T>(field: K, op: WhereOp, value: unknown): this
+  where<K extends string & keyof T>(field: K, opOrValue: WhereOp | T[K], value?: unknown): this {
+    if (value !== undefined) {
+      this._filters.push({ field, op: opOrValue as WhereOp, value })
+    } else {
+      this._filters.push({ field, op: 'eq', value: opOrValue })
+    }
     return this
   }
 
@@ -65,12 +72,16 @@ export class QueryBuilder<T extends object> {
     return this
   }
 
+  count(): number {
+    return this.all().length
+  }
+
   all(): T[] {
     let items = this._resolveData()
 
     // Filter
-    for (const filter of this._filters) {
-      items = items.filter(filter)
+    for (const clause of this._filters) {
+      items = items.filter(item => applyWhere(item, clause))
     }
 
     // Sort

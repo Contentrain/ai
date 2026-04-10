@@ -130,13 +130,24 @@ const latest = query('blog-post')
 | Method | Signature | Returns | Description |
 |--------|-----------|---------|-------------|
 | `locale` | `locale(lang: string)` | `this` | Set the content locale |
-| `where` | `where(field, value)` | `this` | Exact match filter on a field |
+| `where` | `where(field, value)` | `this` | Equality filter (shorthand for `eq`) |
+| `where` | `where(field, op, value)` | `this` | Operator filter: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `contains` |
 | `sort` | `sort(field, order?)` | `this` | Sort by field, order is `'asc'` or `'desc'` |
 | `limit` | `limit(n: number)` | `this` | Limit number of results |
 | `offset` | `offset(n: number)` | `this` | Skip first N results |
 | `include` | `include(...fields)` | `this` | Resolve relation fields |
+| `count` | `count()` | `number` | Return count of matching entries |
 | `all` | `all()` | `T[]` | Execute query, return all matches |
 | `first` | `first()` | `T \| undefined` | Execute query, return first match |
+
+Where operator examples:
+
+```ts
+query('plans').where('slug', 'ne', 'free').all()
+query('plans').where('price', 'gte', 10).where('price', 'lte', 50).all()
+query('starters').where('framework', 'in', ['nuxt', 'next']).all()
+query('blog').where('title', 'contains', 'Guide').count()
+```
 
 ### SingletonAccessor — Singletons
 
@@ -221,9 +232,11 @@ const latest = document('blog-article')
 | Method | Signature | Returns | Description |
 |--------|-----------|---------|-------------|
 | `locale` | `locale(lang: string)` | `this` | Set the content locale |
-| `where` | `where(field, value)` | `this` | Exact match filter |
+| `where` | `where(field, value)` | `this` | Equality filter (shorthand) |
+| `where` | `where(field, op, value)` | `this` | Operator filter (same operators as QueryBuilder) |
 | `include` | `include(...fields)` | `this` | Resolve relation fields |
 | `bySlug` | `bySlug(slug)` | `T \| undefined` | Find document by slug |
+| `count` | `count()` | `number` | Return count of matching documents |
 | `all` | `all()` | `T[]` | Execute query, return all matches |
 | `first` | `first()` | `T \| undefined` | Execute query, return first match |
 
@@ -373,12 +386,10 @@ const hero = client.singleton('hero').get()
 Common mistakes to avoid:
 
 ::: danger These APIs do not exist
-- `.filter()` — use `.where(field, value)` instead
+- `.filter()` — use `.where(field, value)` or `.where(field, op, value)` instead
 - `.byId()` — use `.where('id', value).first()` instead
-- `.count()` — use `.all().length` instead
 - `dictionary().all()` — use `.get()` instead
-- `await query(...)` — queries are **synchronous**, do not use `await`
-- `.where('field', 'eq', value)` — just `.where('field', value)`, no operator
+- `await query(...)` — local queries are **synchronous**, do not use `await`
 - `.get()` on QueryBuilder — use `.all()` or `.first()`
 :::
 
@@ -415,7 +426,46 @@ await client.collection('products')
 
 Supported operators: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `contains`.
 
-### CDN Metadata
+### CDN Entry Metadata
+
+Enrich collection entries with status, publish/expire dates:
+
+```ts
+const posts = await client.collection('blog')
+  .locale('en')
+  .withMeta()
+  .all()
+// posts[0]._meta → { status: 'published', publish_at: '...', expire_at: '...' }
+```
+
+### CDN Media
+
+Access the media asset manifest and resolve variant URLs:
+
+```ts
+const media = client.media()
+const assets = await media.list()           // All assets with path + meta
+const asset  = await media.asset('hero.jpg') // Single asset
+const url    = media.url(asset, 'thumb')    // Full CDN variant URL
+
+asset.meta.width      // 1920
+asset.meta.blurhash   // 'LEHV6nWB...'
+asset.meta.alt        // 'Hero image'
+```
+
+### CDN Forms
+
+Fetch form schema and submit data from external sites:
+
+```ts
+const form = client.form()
+const config = await form.config('contact')
+const result = await form.submit('contact', {
+  name: 'Alice', email: 'alice@example.com',
+}, { captchaToken: 'tok_xxx' })
+```
+
+### CDN Metadata Endpoints
 
 ```ts
 const manifest = await client.manifest()   // _manifest.json
@@ -479,6 +529,6 @@ The base SDK is framework-agnostic and MIT-licensed. Framework-specific integrat
 
 | Export Path | Description |
 |-------------|-------------|
-| `@contentrain/query` | Runtime classes + `createContentrain()` CDN factory |
-| `@contentrain/query/cdn` | CDN transport module (standalone) |
+| `@contentrain/query` | Runtime classes + `createContentrain()` CDN factory + `MediaAccessor` + `FormsClient` |
+| `@contentrain/query/cdn` | CDN transport module: `HttpTransport`, async query classes, `MediaAccessor`, `FormsClient` |
 | `@contentrain/query/generate` | Programmatic generation API |

@@ -318,19 +318,41 @@ function parseDataFileName(fileName: string): { modelId: string; locale: string 
 
 // Inlined runtime code — zero dependencies
 const RUNTIME_CODE = `
+// ─── Runtime Helpers ───
+
+function _applyWhere(item, clause) {
+  const val = item[clause.field];
+  switch (clause.op) {
+    case 'eq': return Array.isArray(val) ? val.includes(clause.value) : val === clause.value;
+    case 'ne': return val !== clause.value;
+    case 'gt': return val > clause.value;
+    case 'gte': return val >= clause.value;
+    case 'lt': return val < clause.value;
+    case 'lte': return val <= clause.value;
+    case 'in': return Array.isArray(clause.value) && clause.value.includes(val);
+    case 'contains': {
+      if (typeof val === 'string') return val.includes(clause.value);
+      if (Array.isArray(val)) return val.includes(clause.value);
+      return false;
+    }
+    default: return true;
+  }
+}
+
 // ─── Runtime Classes ───
 
 class QueryBuilder {
   constructor(data, relationMeta, resolver, defaultLocale) { this._data = data; this._filters = []; this._sortField = null; this._sortOrder = 'asc'; this._limit = null; this._offset = 0; this._locale = null; this._includes = []; this._relationMeta = relationMeta || {}; this._resolver = resolver || null; this._defaultLocale = defaultLocale || null; }
   locale(lang) { this._locale = lang; return this; }
-  where(field, value) { this._filters.push(item => { const v = item[field]; return Array.isArray(v) ? v.includes(value) : v === value; }); return this; }
+  where(field, opOrValue, value) { if (value !== undefined) { this._filters.push({ field, op: opOrValue, value }); } else { this._filters.push({ field, op: 'eq', value: opOrValue }); } return this; }
   sort(field, order = 'asc') { this._sortField = field; this._sortOrder = order; return this; }
   limit(n) { this._limit = n; return this; }
   offset(n) { this._offset = n; return this; }
   include(...fields) { this._includes.push(...fields); return this; }
+  count() { return this.all().length; }
   all() {
     let items; if (this._locale) { items = [...(this._data.get(this._locale) ?? [])]; } else if (this._defaultLocale && this._data.has(this._defaultLocale)) { items = [...this._data.get(this._defaultLocale)]; } else { items = [...(this._data.get(this._data.keys().next().value) ?? [])]; }
-    for (const f of this._filters) items = items.filter(f);
+    for (const clause of this._filters) items = items.filter(item => _applyWhere(item, clause));
     if (this._sortField) { const sf = this._sortField; const d = this._sortOrder === 'asc' ? 1 : -1; items.sort((a, b) => { const va = a[sf], vb = b[sf]; if (va == null && vb == null) return 0; if (va == null) return d; if (vb == null) return -d; return va < vb ? -d : va > vb ? d : 0; }); }
     if (this._offset > 0 || this._limit !== null) { const end = this._limit !== null ? this._offset + this._limit : undefined; items = items.slice(this._offset, end); }
     if (this._includes.length > 0 && this._resolver) { items = items.map(item => this._resolveIncludes(item)); }
@@ -389,15 +411,16 @@ class DictionaryAccessor {
 class DocumentQuery {
   constructor(data, relationMeta, resolver, defaultLocale) { this._data = data; this._filters = []; this._locale = null; this._includes = []; this._relationMeta = relationMeta || {}; this._resolver = resolver || null; this._defaultLocale = defaultLocale || null; }
   locale(lang) { this._locale = lang; return this; }
-  where(field, value) { this._filters.push(item => item[field] === value); return this; }
+  where(field, opOrValue, value) { if (value !== undefined) { this._filters.push({ field, op: opOrValue, value }); } else { this._filters.push({ field, op: 'eq', value: opOrValue }); } return this; }
   include(...fields) { this._includes.push(...fields); return this; }
   bySlug(slug) {
     const items = this._resolveData(); const item = items.find(x => x.slug === slug);
     if (item && this._includes.length > 0 && this._resolver) return this._resolveIncludes(item);
     return item;
   }
+  count() { return this.all().length; }
   first() { return this.all()[0]; }
-  all() { let items = this._resolveData(); for (const f of this._filters) items = items.filter(f); if (this._includes.length > 0 && this._resolver) { items = items.map(item => this._resolveIncludes(item)); } return items; }
+  all() { let items = this._resolveData(); for (const clause of this._filters) items = items.filter(item => _applyWhere(item, clause)); if (this._includes.length > 0 && this._resolver) { items = items.map(item => this._resolveIncludes(item)); } return items; }
   _resolveData() { let key; if (this._locale) { key = this._locale; } else if (this._defaultLocale && this._data.has(this._defaultLocale)) { key = this._defaultLocale; } else { key = this._data.keys().next().value; } return [...(this._data.get(key) ?? [])]; }
   _resolveIncludes(item) {
     const resolved = { ...item };

@@ -104,13 +104,24 @@ For collection models.
 Supported methods:
 
 - `locale(lang)`
-- `where(field, value)`
+- `where(field, value)` — equality shorthand
+- `where(field, op, value)` — operators: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `contains`
 - `sort(field, order?)`
 - `limit(n)`
 - `offset(n)`
 - `include(...fields)`
+- `count()`
 - `first()`
 - `all()`
+
+Where operator examples:
+
+```ts
+query('plans').where('slug', 'ne', 'free').all()
+query('plans').where('price', 'gte', 10).where('price', 'lte', 50).all()
+query('starters').where('framework', 'in', ['nuxt', 'next']).all()
+query('blog').where('title', 'contains', 'Guide').count()
+```
 
 ### `singleton(model)`
 
@@ -139,9 +150,11 @@ For markdown/document models.
 Supported methods:
 
 - `locale(lang)`
-- `where(field, value)`
+- `where(field, value)` — equality shorthand
+- `where(field, op, value)` — same operators as `query()`
 - `include(...fields)`
 - `bySlug(slug)`
+- `count()`
 - `first()`
 - `all()`
 
@@ -176,13 +189,13 @@ const posts = client.query('blog-post').locale('en').all()
 
 Public root exports:
 
-- `QueryBuilder`
-- `SingletonAccessor`
-- `DictionaryAccessor`
-- `DocumentQuery`
+- `QueryBuilder`, `SingletonAccessor`, `DictionaryAccessor`, `DocumentQuery` — runtime classes
 - `createContentrainClient` — local generated client loader
 - `createContentrain` — CDN client factory
+- `MediaAccessor` — CDN media manifest reader
+- `FormsClient` — CDN forms API client
 - `ContentrainError` — HTTP error class for CDN mode
+- `applyWhere` — shared where filter helper
 
 ## CDN Transport
 
@@ -216,7 +229,59 @@ const filtered = await client.collection('faq')
   .all()
 ```
 
-CDN also exposes metadata endpoints:
+CDN collection queries support `count()` and entry metadata:
+
+```ts
+const total = await client.collection('faq').locale('en').count()
+
+// Enrich entries with _meta (status, publish_at, expire_at)
+const posts = await client.collection('blog')
+  .locale('en')
+  .withMeta()
+  .all()
+// posts[0]._meta → { status: 'published', publish_at: '...', ... }
+```
+
+### Media
+
+Access the media manifest and resolve asset variant URLs:
+
+```ts
+const media = client.media()
+const assets = await media.list()           // All assets with paths
+const asset  = await media.asset('hero.jpg') // Single asset
+
+// Resolve variant URL
+const thumbUrl = media.url(asset, 'thumb')  // Full CDN URL
+const original = media.url(asset)           // Original URL
+
+// Asset metadata
+asset.meta.width      // 1920
+asset.meta.blurhash   // 'LEHV6nWB...'
+asset.meta.alt        // 'Hero image'
+```
+
+### Forms
+
+Fetch form schema and submit data from external sites:
+
+```ts
+const form = client.form()
+
+// Get form field configuration
+const config = await form.config('contact')
+// config.fields → [{ id: 'name', type: 'string', required: true }, ...]
+
+// Submit form data
+const result = await form.submit('contact', {
+  name: 'Alice',
+  email: 'alice@example.com',
+  message: 'Hello!',
+}, { captchaToken: 'tok_xxx' })
+// result → { success: true, message: 'Thank you!' }
+```
+
+### Metadata Endpoints
 
 ```ts
 const manifest = await client.manifest()
@@ -277,7 +342,7 @@ Generator entry:
 
 CDN transport:
 
-- `@contentrain/query/cdn` — CDN client with `HttpTransport`, async query classes
+- `@contentrain/query/cdn` — CDN client with `HttpTransport`, async query classes, `MediaAccessor`, `FormsClient`
 
 ## 🧠 Design Constraints
 

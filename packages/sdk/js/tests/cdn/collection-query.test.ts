@@ -119,4 +119,76 @@ describe('CdnCollectionQuery', () => {
     expect(items).toHaveLength(1)
     expect(items[0]!.order).toBe(3)
   })
+
+  it('count() returns number of results', async () => {
+    const q = createQuery()
+    const count = await q.count()
+    expect(count).toBe(3)
+  })
+
+  it('count() respects filters', async () => {
+    const q = createQuery()
+    const count = await q.where('order', 'gt', 1).count()
+    expect(count).toBe(2)
+  })
+
+  it('withMeta() enriches entries with _meta field', async () => {
+    const metaData = {
+      aaa: { status: 'published', updated_by: 'user1' },
+      bbb: { status: 'draft', publish_at: '2026-05-01T00:00:00Z' },
+      ccc: { status: 'published' },
+    }
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
+      const body = (url as string).includes('meta/') ? metaData : sampleData
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        json: () => Promise.resolve(body),
+        text: () => Promise.resolve(JSON.stringify(body)),
+      })
+    }))
+    const transport = new HttpTransport({
+      baseUrl: 'https://cdn.test/v1',
+      projectId: 'p1',
+      apiKey: 'key',
+    })
+    const q = new CdnCollectionQuery<{ id: string; question: string; answer: string; order: number }>(transport, 'faq', 'en')
+    const items = await q.withMeta().all()
+    expect(items).toHaveLength(3)
+    const first = items[0] as Record<string, unknown>
+    expect(first._meta).toEqual({ status: 'published', updated_by: 'user1' })
+  })
+
+  it('withMeta() gracefully handles missing meta endpoint', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
+      if ((url as string).includes('meta/')) {
+        return Promise.resolve({
+          ok: false,
+          status: 404,
+          headers: { get: () => null },
+          json: () => Promise.resolve({}),
+          text: () => Promise.resolve('Not Found'),
+        })
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        json: () => Promise.resolve(sampleData),
+        text: () => Promise.resolve(JSON.stringify(sampleData)),
+      })
+    }))
+    const transport = new HttpTransport({
+      baseUrl: 'https://cdn.test/v1',
+      projectId: 'p1',
+      apiKey: 'key',
+    })
+    const q = new CdnCollectionQuery<{ id: string; question: string; answer: string; order: number }>(transport, 'faq', 'en')
+    const items = await q.withMeta().all()
+    expect(items).toHaveLength(3)
+    // No _meta field when meta endpoint is unavailable
+    const first = items[0] as Record<string, unknown>
+    expect(first._meta).toBeUndefined()
+  })
 })

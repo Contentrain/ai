@@ -43,7 +43,9 @@ const doc = document('blog-post').bySlug('getting-started')
 |--------|-------------|
 | `.all()` | Get all entries |
 | `.first()` | Get first entry |
-| `.where(field, op, value)` | Filter (`eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `contains`) |
+| `.count()` | Return count of matching entries |
+| `.where(field, value)` | Equality filter (shorthand for `eq`) |
+| `.where(field, op, value)` | Operator filter: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `contains` |
 | `.sort(field, direction?)` | Sort (`asc`/`desc`, default `asc`) |
 | `.limit(n)` | Limit results |
 | `.offset(n)` | Skip results |
@@ -71,7 +73,9 @@ const doc = document('blog-post').bySlug('getting-started')
 | `.all()` | Get all documents |
 | `.bySlug(slug)` | Get document by slug |
 | `.first()` | Get first document |
-| `.where(field, op, value)` | Filter by frontmatter field |
+| `.count()` | Return count of matching documents |
+| `.where(field, value)` | Equality filter (shorthand) |
+| `.where(field, op, value)` | Operator filter (same ops as QueryBuilder) |
 | `.include(relation)` | Resolve relation fields |
 
 ## CDN Mode (Remote Data)
@@ -106,6 +110,23 @@ const doc = await client.document('docs').locale('en').bySlug('intro')
 | `lte` | `.where('price', 'lte', 100)` | Less than or equal |
 | `in` | `.where('category', 'in', ['a','b'])` | In array |
 | `contains` | `.where('tags', 'contains', 'vue')` | String/array contains |
+
+### CDN Entry Metadata, Media & Forms
+
+```typescript
+// Entry metadata (status, publish_at, expire_at)
+const posts = await client.collection('blog').locale('en').withMeta().all()
+
+// Media manifest & variant URLs
+const media = client.media()
+const asset = await media.asset('hero.jpg')
+const url = media.url(asset, 'thumb')
+
+// Forms (config fetch + submit)
+const form = client.form()
+const config = await form.config('contact')
+const result = await form.submit('contact', { name: 'Alice' })
+```
 
 ### CDN vs Local
 
