@@ -1,5 +1,11 @@
 # @contentrain/types
 
+## 0.4.1
+
+### Patch Changes
+
+- 1d25752: Fix declaration file path in package.json — point to `index.d.mts` instead of non-existent `index.d.ts`
+
 ## 0.4.0
 
 ### Minor Changes
