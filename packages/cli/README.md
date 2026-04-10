@@ -58,6 +58,17 @@ Requirements:
 | `contentrain generate` | Generate `.contentrain/client/` and `#contentrain` package imports |
 | `contentrain diff` | Review and merge or reject pending `contentrain/*` branches |
 | `contentrain serve` | Start the local review UI or the MCP stdio server |
+| `contentrain studio login` | Authenticate with Contentrain Studio |
+| `contentrain studio logout` | Log out from Studio |
+| `contentrain studio whoami` | Show current authentication status |
+| `contentrain studio status` | Show project overview from Studio |
+| `contentrain studio activity` | Show recent activity feed |
+| `contentrain studio usage` | Show workspace usage metrics |
+| `contentrain studio branches` | Manage remote content branches |
+| `contentrain studio cdn-init` | Set up CDN for content delivery |
+| `contentrain studio cdn-build` | Trigger a CDN rebuild |
+| `contentrain studio webhooks` | Manage webhooks |
+| `contentrain studio submissions` | Manage form submissions |
 
 ## 🔄 Typical Flow
 
@@ -156,6 +167,42 @@ to understand:
 - how many active review branches exist on the `contentrain` branch
 - whether branch health is blocking new writes
 - what changed before merging or deleting a branch
+
+## 🔗 Studio Integration
+
+The `studio` command group connects the CLI to [Contentrain Studio](https://studio.contentrain.io) for enterprise workflows.
+
+Authenticate:
+
+```bash
+contentrain studio login
+contentrain studio whoami
+```
+
+Set up CDN for content delivery:
+
+```bash
+contentrain studio cdn-init
+contentrain studio cdn-build --wait
+```
+
+Monitor project activity and usage:
+
+```bash
+contentrain studio status
+contentrain studio activity --limit 10
+contentrain studio usage
+```
+
+Manage branches, webhooks, and form submissions:
+
+```bash
+contentrain studio branches
+contentrain studio webhooks
+contentrain studio submissions --form contact-form
+```
+
+Credentials are stored securely in `~/.contentrain/credentials.json` with `0o600` permissions. Use `CONTENTRAIN_STUDIO_TOKEN` environment variable for CI/CD.
 
 ## 🤖 IDE Rules
 

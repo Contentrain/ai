@@ -55,6 +55,17 @@ Requirements:
 | `contentrain generate` | Generate `.contentrain/client/` and `#contentrain` package imports |
 | `contentrain diff` | Review and merge or reject pending `contentrain/*` branches |
 | `contentrain serve` | Start the local review UI or the MCP stdio server |
+| `contentrain studio login` | Authenticate with Contentrain Studio |
+| `contentrain studio logout` | Log out from Studio |
+| `contentrain studio whoami` | Show current authentication status |
+| `contentrain studio status` | Show project overview from Studio |
+| `contentrain studio activity` | Show recent activity feed |
+| `contentrain studio usage` | Show workspace usage metrics |
+| `contentrain studio branches` | Manage remote content branches |
+| `contentrain studio cdn-init` | Set up CDN for content delivery |
+| `contentrain studio cdn-build` | Trigger a CDN rebuild |
+| `contentrain studio webhooks` | Manage webhooks |
+| `contentrain studio submissions` | Manage form submissions |
 
 ---
 
@@ -280,6 +291,76 @@ Use stdio mode when connecting an IDE agent (Claude Code, Cursor, Windsurf) to t
 ```
 
 :::
+
+## Studio Integration
+
+The `studio` command group connects the CLI to [Contentrain Studio](/studio) — the enterprise web surface for team content management.
+
+### Authentication
+
+```bash
+# Sign in via GitHub or Google OAuth
+contentrain studio login
+
+# Check who you're logged in as
+contentrain studio whoami
+
+# Sign out and clear stored credentials
+contentrain studio logout
+```
+
+Credentials are stored in `~/.contentrain/credentials.json` with `0o600` permissions — never inside the project directory. For CI/CD, set the `CONTENTRAIN_STUDIO_TOKEN` environment variable to skip interactive login.
+
+### CDN Setup & Delivery
+
+```bash
+# Interactive setup: create API key, trigger first build, get SDK snippet
+contentrain studio cdn-init
+
+# Trigger a CDN rebuild after content changes
+contentrain studio cdn-build
+
+# Wait for the build to complete
+contentrain studio cdn-build --wait
+```
+
+### Project Monitoring
+
+```bash
+# Project overview: branches, CDN status, team
+contentrain studio status
+
+# Recent activity feed
+contentrain studio activity --limit 10
+
+# Workspace usage metrics (AI messages, storage, bandwidth)
+contentrain studio usage
+```
+
+### Branch Management
+
+```bash
+# List pending branches, interactively merge or reject
+contentrain studio branches
+```
+
+### Webhooks & Form Submissions
+
+```bash
+# Manage webhooks: create, delete, test, view deliveries
+contentrain studio webhooks
+
+# Manage form submissions: list, approve, reject
+contentrain studio submissions --form contact-form
+```
+
+All `studio` commands support `--json` for CI/CD integration and `--workspace` / `--project` flags to skip interactive selection.
+
+::: tip Studio + CLI = Full Developer Experience
+Studio handles team collaboration, media management, AI conversations, and CDN delivery in the browser. The CLI gives developers terminal access to the same operations — authenticate once, then manage branches, trigger builds, and monitor usage without leaving the editor.
+:::
+
+---
 
 ## Typical Workflow
 

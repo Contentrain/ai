@@ -47,3 +47,6 @@ docs/.vitepress/dist/
 
 .tmp
 .mcpregistry_*
+
+# Symlinked projects
+/studio
