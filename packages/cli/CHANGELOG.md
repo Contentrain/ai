@@ -1,5 +1,14 @@
 # contentrain
 
+## 0.3.4
+
+### Patch Changes
+
+- Updated dependencies [1d25752]
+  - @contentrain/types@0.4.1
+  - @contentrain/mcp@1.1.2
+  - @contentrain/query@5.1.3
+
 ## 0.3.3
 
 ### Patch Changes
