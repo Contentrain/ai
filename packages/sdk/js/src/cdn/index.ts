@@ -5,6 +5,7 @@ import { CdnDictionaryAccessor } from './dictionary-accessor.js'
 import { CdnDocumentQuery } from './document-query.js'
 import { MediaAccessor } from './media-accessor.js'
 import { FormsClient } from './forms-client.js'
+import { ConversationClient } from './conversation-client.js'
 
 export interface ContentrainCDNConfig {
   projectId: string
@@ -44,6 +45,12 @@ export function createContentrain(config: ContentrainCDNConfig) {
       apiKey: config.apiKey,
     }),
 
+    conversation: () => new ConversationClient({
+      baseUrl: (config.baseUrl ?? 'https://studio.contentrain.io/api/cdn/v1').replace('/cdn/v1', '/conversation/v1'),
+      projectId: config.projectId,
+      apiKey: config.apiKey,
+    }),
+
     manifest: () => transport.fetch<unknown>('_manifest.json'),
     models: () => transport.fetch<unknown[]>('models/_index.json'),
     model: (id: string) => transport.fetch<unknown>(`models/${id}.json`),
@@ -62,3 +69,14 @@ export { MediaAccessor } from './media-accessor.js'
 export type { MediaAsset, MediaAssetMeta, MediaManifest } from './media-accessor.js'
 export { FormsClient } from './forms-client.js'
 export type { FormConfig, FormFieldConfig, FormSubmitResult, FormsClientConfig } from './forms-client.js'
+export { ConversationClient } from './conversation-client.js'
+export type {
+  ConversationClientConfig,
+  ConversationContext,
+  ConversationSendOptions,
+  ConversationResponse,
+  ConversationToolResult,
+  ConversationUsage,
+  ConversationMessage,
+  ConversationHistory,
+} from './conversation-client.js'

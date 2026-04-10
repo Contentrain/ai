@@ -465,6 +465,33 @@ const result = await form.submit('contact', {
 }, { captchaToken: 'tok_xxx' })
 ```
 
+### CDN Conversation API
+
+Send messages to the AI content agent for external content operations:
+
+```ts
+const conv = client.conversation()
+
+// Send a message — returns complete response
+const response = await conv.send('Create a blog post about Vue 4')
+response.conversationId   // 'conv-abc123'
+response.message          // 'I created the blog post...'
+response.toolResults      // [{ id, name, result }]
+response.usage            // { inputTokens, outputTokens }
+
+// Continue conversation
+await conv.send('Translate to Turkish', {
+  conversationId: response.conversationId,
+})
+
+// Fetch history
+const history = await conv.history('conv-abc123', { limit: 50 })
+```
+
+::: info Conversation API Keys
+Conversation API uses dedicated keys (`crn_conv_*` prefix) with per-key role, tool allowlist, model restrictions, and rate limits. Keys are managed in Studio workspace settings.
+:::
+
 ### CDN Metadata Endpoints
 
 ```ts
@@ -529,6 +556,6 @@ The base SDK is framework-agnostic and MIT-licensed. Framework-specific integrat
 
 | Export Path | Description |
 |-------------|-------------|
-| `@contentrain/query` | Runtime classes + `createContentrain()` CDN factory + `MediaAccessor` + `FormsClient` |
-| `@contentrain/query/cdn` | CDN transport module: `HttpTransport`, async query classes, `MediaAccessor`, `FormsClient` |
+| `@contentrain/query` | Runtime classes + `createContentrain()` CDN factory + `MediaAccessor` + `FormsClient` + `ConversationClient` |
+| `@contentrain/query/cdn` | CDN transport: `HttpTransport`, async queries, `MediaAccessor`, `FormsClient`, `ConversationClient` |
 | `@contentrain/query/generate` | Programmatic generation API |

@@ -57,6 +57,13 @@ export type { MediaAsset, MediaAssetMeta, MediaManifest } from './cdn/media-acce
 export { FormsClient } from './cdn/forms-client.js'
 export type { FormConfig, FormFieldConfig, FormSubmitResult, FormsClientConfig } from './cdn/forms-client.js'
 export type { EntryMeta } from './cdn/collection-query.js'
+export { ConversationClient } from './cdn/conversation-client.js'
+export type {
+  ConversationClientConfig,
+  ConversationResponse,
+  ConversationMessage,
+  ConversationHistory,
+} from './cdn/conversation-client.js'
 
 // Sync factory for CJS — requires generated client to be pre-loaded
 export { createContentrainClient as default }

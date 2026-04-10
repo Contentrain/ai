@@ -180,4 +180,27 @@ describe('createContentrain (CDN client)', () => {
     const result = await form.submit('contact', { name: 'Test' })
     expect(result.success).toBe(true)
   })
+
+  it('conversation() client sends message and fetches history', async () => {
+    vi.stubGlobal('fetch', mockFetch({
+      'message': {
+        conversationId: 'conv-1',
+        message: 'Done!',
+        usage: { inputTokens: 50, outputTokens: 30 },
+      },
+      'history': {
+        conversationId: 'conv-1',
+        messages: [{ id: 'm-1', role: 'user', content: 'Hi', createdAt: '2026-04-10T00:00:00Z' }],
+      },
+    }))
+
+    const client = createContentrain(config)
+    const conv = client.conversation()
+
+    const response = await conv.send('Create post')
+    expect(response.conversationId).toBe('conv-1')
+
+    const history = await conv.history('conv-1')
+    expect(history.messages).toHaveLength(1)
+  })
 })

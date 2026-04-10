@@ -194,6 +194,7 @@ Public root exports:
 - `createContentrain` — CDN client factory
 - `MediaAccessor` — CDN media manifest reader
 - `FormsClient` — CDN forms API client
+- `ConversationClient` — Conversation API client
 - `ContentrainError` — HTTP error class for CDN mode
 - `applyWhere` — shared where filter helper
 
@@ -281,6 +282,35 @@ const result = await form.submit('contact', {
 // result → { success: true, message: 'Thank you!' }
 ```
 
+### Conversation API
+
+Send messages to the AI content agent and manage conversation history:
+
+```ts
+const conv = client.conversation()
+
+// Send a message — returns complete response with tool results
+const response = await conv.send('Create a new blog post about Vue 4')
+response.conversationId   // 'conv-abc123'
+response.message          // 'I created the blog post...'
+response.toolResults      // [{ id: 't-1', name: 'save_content', result: {...} }]
+response.usage            // { inputTokens: 150, outputTokens: 80 }
+
+// Continue a conversation
+const followUp = await conv.send('Now translate it to Turkish', {
+  conversationId: response.conversationId,
+})
+
+// Provide UI context
+await conv.send('Update the hero section', {
+  context: { activeModelId: 'hero', activeLocale: 'en' },
+})
+
+// Fetch conversation history
+const history = await conv.history('conv-abc123', { limit: 50 })
+history.messages  // [{ id, role, content, createdAt }, ...]
+```
+
 ### Metadata Endpoints
 
 ```ts
@@ -342,7 +372,7 @@ Generator entry:
 
 CDN transport:
 
-- `@contentrain/query/cdn` — CDN client with `HttpTransport`, async query classes, `MediaAccessor`, `FormsClient`
+- `@contentrain/query/cdn` — CDN client with `HttpTransport`, async query classes, `MediaAccessor`, `FormsClient`, `ConversationClient`
 
 ## 🧠 Design Constraints
 

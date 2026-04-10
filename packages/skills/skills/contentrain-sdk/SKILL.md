@@ -126,6 +126,11 @@ const url = media.url(asset, 'thumb')
 const form = client.form()
 const config = await form.config('contact')
 const result = await form.submit('contact', { name: 'Alice' })
+
+// Conversation API (external AI content operations)
+const conv = client.conversation()
+const response = await conv.send('Create a blog post about Vue 4')
+const history = await conv.history(response.conversationId)
 ```
 
 ### CDN vs Local
