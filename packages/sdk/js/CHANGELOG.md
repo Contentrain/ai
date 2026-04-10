@@ -1,5 +1,12 @@
 # @contentrain/query
 
+## 5.1.2
+
+### Patch Changes
+
+- Updated dependencies [131c752]
+  - @contentrain/types@0.4.0
+
 ## 5.1.1
 
 ### Patch Changes

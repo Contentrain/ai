@@ -1,5 +1,17 @@
 # @contentrain/types
 
+## 0.4.0
+
+### Minor Changes
+
+- 131c752: Add pure, dependency-free validate and serialize functions for shared use across MCP (Node.js) and Studio (web).
+
+  **Validate:** `validateSlug`, `validateEntryId`, `validateLocale`, `detectSecrets`, `validateFieldValue` (type, required, min/max, pattern, select options).
+
+  **Serialize:** `sortKeys`, `canonicalStringify`, `generateEntryId`, `parseMarkdownFrontmatter`, `serializeMarkdownFrontmatter`.
+
+  All functions are browser-compatible with zero runtime dependencies.
+
 ## 0.3.0
 
 ### Minor Changes
