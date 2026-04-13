@@ -55,6 +55,7 @@ Requirements:
 | `contentrain generate` | Generate `.contentrain/client/` and `#contentrain` package imports |
 | `contentrain diff` | Review and merge or reject pending `contentrain/*` branches |
 | `contentrain serve` | Start the local review UI or the MCP stdio server |
+| `contentrain studio connect` | Connect a repository to a Studio project |
 | `contentrain studio login` | Authenticate with Contentrain Studio |
 | `contentrain studio logout` | Log out from Studio |
 | `contentrain studio whoami` | Show current authentication status |
@@ -310,6 +311,30 @@ contentrain studio logout
 ```
 
 Credentials are stored in `~/.contentrain/credentials.json` with `0o600` permissions — never inside the project directory. For CI/CD, set the `CONTENTRAIN_STUDIO_TOKEN` environment variable to skip interactive login.
+
+### Connecting a Repository
+
+```bash
+# Interactive flow: workspace → GitHub App → repo → scan → create project
+contentrain studio connect
+
+# Skip workspace selection
+contentrain studio connect --workspace ws-123
+```
+
+The `connect` command links your local repository to a Studio project in one interactive flow:
+
+1. **Workspace** — select an existing workspace (auto-selects if only one)
+2. **GitHub App** — checks if the Contentrain GitHub App is installed; if not, opens the browser for installation
+3. **Repository** — detects the current git remote and matches it against accessible repos
+4. **Scan** — checks the repository for `.contentrain/` configuration, reports found models and locales
+5. **Create** — prompts for a project name and creates the project in Studio
+
+After a successful connection, workspace and project IDs are saved as defaults so subsequent `studio` commands skip interactive selection.
+
+::: tip Run `contentrain init` First
+The connect flow works best when `.contentrain/` is already initialized and pushed to the repository. The scan step confirms your setup, but you can also connect first and initialize later.
+:::
 
 ### CDN Setup & Delivery
 
