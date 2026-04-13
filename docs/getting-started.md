@@ -177,6 +177,15 @@ When the local CLI and MCP flow are not enough, [Contentrain Studio](/studio) ad
 - media management
 - CDN delivery for non-web platforms
 
+Connect your local project to Studio with two commands:
+
+```bash
+contentrain studio login
+contentrain studio connect
+```
+
+The `connect` command detects your git remote, verifies GitHub App installation, scans for `.contentrain/` configuration, and creates the project — all in one interactive flow. See [CLI Studio Integration](/packages/cli#connecting-a-repository) for details.
+
 ## The Content Pipeline
 
 Every operation follows the same governance pipeline:

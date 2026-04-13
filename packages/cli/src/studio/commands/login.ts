@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty'
 import { intro, outro, log, spinner, select, confirm, isCancel } from '@clack/prompts'
 import { pc } from '../../utils/ui.js'
+import { openBrowser } from '../../utils/browser.js'
 import { loadCredentials, saveCredentials, checkPermissions } from '../auth/credential-store.js'
 import { startOAuthServer } from '../auth/oauth-server.js'
 import { StudioApiClient } from '../client.js'
@@ -170,21 +171,3 @@ export default defineCommand({
   },
 })
 
-// ── Helpers ───────────────────────────────────────────────────────────────
-
-async function openBrowser(url: string): Promise<void> {
-  const { exec } = await import('node:child_process')
-
-  const command = process.platform === 'darwin'
-    ? `open "${url}"`
-    : process.platform === 'win32'
-      ? `start "" "${url}"`
-      : `xdg-open "${url}"`
-
-  return new Promise((resolve) => {
-    exec(command, () => {
-      // Best-effort — resolve regardless of result
-      resolve()
-    })
-  })
-}

@@ -241,6 +241,17 @@ So the split is:
 - **open-source Contentrain** = local, Git-native content governance core
 - **Contentrain Studio** = team operations and delivery layer for the same content contract
 
+## Connecting from the CLI
+
+The fastest way to create a Studio project from an existing repository is the CLI `connect` command:
+
+```bash
+contentrain studio login
+contentrain studio connect
+```
+
+This single interactive flow handles workspace selection, GitHub App installation, repository detection, `.contentrain/` scanning, and project creation. See the [CLI Studio Integration](/packages/cli#connecting-a-repository) section for the full step-by-step.
+
 ## Go Deeper
 
 - [Ecosystem Map](/ecosystem)

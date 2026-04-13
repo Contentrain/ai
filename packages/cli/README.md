@@ -58,6 +58,7 @@ Requirements:
 | `contentrain generate` | Generate `.contentrain/client/` and `#contentrain` package imports |
 | `contentrain diff` | Review and merge or reject pending `contentrain/*` branches |
 | `contentrain serve` | Start the local review UI or the MCP stdio server |
+| `contentrain studio connect` | Connect a repository to a Studio project |
 | `contentrain studio login` | Authenticate with Contentrain Studio |
 | `contentrain studio logout` | Log out from Studio |
 | `contentrain studio whoami` | Show current authentication status |
@@ -172,11 +173,18 @@ to understand:
 
 The `studio` command group connects the CLI to [Contentrain Studio](https://studio.contentrain.io) for enterprise workflows.
 
-Authenticate:
+Authenticate and connect:
 
 ```bash
 contentrain studio login
 contentrain studio whoami
+contentrain studio connect
+```
+
+The `connect` command links your local repository to a Studio project. It detects the git remote, verifies GitHub App installation, scans for `.contentrain/` configuration, and creates the project — all in one interactive flow.
+
+```bash
+contentrain studio connect --workspace ws-123
 ```
 
 Set up CDN for content delivery:

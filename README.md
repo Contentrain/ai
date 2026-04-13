@@ -190,6 +190,8 @@ npx contentrain validate     # check content health
 npx contentrain generate     # generate typed SDK client
 npx contentrain status       # project overview
 npx contentrain doctor       # setup health check
+npx contentrain studio login   # authenticate with Studio
+npx contentrain studio connect # connect repo to Studio project
 ```
 
 ## Documentation

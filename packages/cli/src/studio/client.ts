@@ -27,6 +27,11 @@ import {
   type ActivityEntry,
   type UsageMetrics,
   type PaginatedResponse,
+  type GitHubInstallation,
+  type GitHubRepo,
+  type GitHubSetupUrl,
+  type ScanResult,
+  type CreateProjectPayload,
 } from './types.js'
 
 // ── Client ────────────────────────────────────────────────────────────────
@@ -161,6 +166,37 @@ export class StudioApiClient {
 
   async listProjects(workspaceId: string): Promise<Project[]> {
     return this.request<Project[]>('GET', `/api/workspaces/${workspaceId}/projects`)
+  }
+
+  // ── GitHub / Connect ───────────────────────────────────────────────────
+
+  async createProject(workspaceId: string, payload: CreateProjectPayload): Promise<Project> {
+    return this.request<Project>('POST', `/api/workspaces/${workspaceId}/projects`, {
+      body: payload,
+    })
+  }
+
+  async listGitHubInstallations(): Promise<GitHubInstallation[]> {
+    return this.request<GitHubInstallation[]>('GET', '/api/github/installations')
+  }
+
+  async getGitHubSetupUrl(): Promise<GitHubSetupUrl> {
+    return this.request<GitHubSetupUrl>('GET', '/api/github/setup')
+  }
+
+  async listGitHubRepos(installationId: number): Promise<GitHubRepo[]> {
+    return this.request<GitHubRepo[]>('GET', '/api/github/repos', {
+      query: { installationId: String(installationId) },
+    })
+  }
+
+  async scanRepository(installationId: number, repoFullName: string): Promise<ScanResult> {
+    return this.request<ScanResult>('GET', '/api/github/scan', {
+      query: {
+        installationId: String(installationId),
+        repo: repoFullName,
+      },
+    })
   }
 
   // ── Branches ──────────────────────────────────────────────────────────
