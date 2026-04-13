@@ -53,6 +53,42 @@ export interface Project {
   memberCount: number
 }
 
+// ── GitHub Integration ───────────────────────────────────────────────────
+
+export interface GitHubInstallation {
+  id: number
+  accountLogin: string
+  accountType: 'User' | 'Organization'
+  avatarUrl: string | null
+  appSlug: string
+}
+
+export interface GitHubRepo {
+  id: number
+  fullName: string
+  private: boolean
+  defaultBranch: string
+  htmlUrl: string
+}
+
+export interface ScanResult {
+  hasContentrain: boolean
+  models: string[]
+  locales: string[]
+  configPath: string | null
+}
+
+export interface CreateProjectPayload {
+  name: string
+  installationId: number
+  repositoryFullName: string
+  defaultBranch: string
+}
+
+export interface GitHubSetupUrl {
+  url: string
+}
+
 // ── Branches ──────────────────────────────────────────────────────────────
 
 export interface Branch {

@@ -9,6 +9,7 @@ export default defineCommand({
     login: () => import('./commands/login.js').then(m => m.default),
     logout: () => import('./commands/logout.js').then(m => m.default),
     whoami: () => import('./commands/whoami.js').then(m => m.default),
+    connect: () => import('./commands/connect.js').then(m => m.default),
     status: () => import('./commands/status.js').then(m => m.default),
     activity: () => import('./commands/activity.js').then(m => m.default),
     usage: () => import('./commands/usage.js').then(m => m.default),
