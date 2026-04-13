@@ -545,6 +545,19 @@ const posts = client.query('blog-post').locale('en').all()
 
 The base SDK is framework-agnostic and MIT-licensed. Framework-specific integrations should build on top of these primitives without changing the underlying `.contentrain/` contract.
 
+## Starter Templates
+
+Every starter template comes with a pre-configured SDK client and content models:
+
+| Template | Framework | Use Case |
+|---|---|---|
+| [astro-blog](https://github.com/Contentrain/contentrain-starter-astro-blog) | Astro | Blog / editorial |
+| [next-commerce](https://github.com/Contentrain/contentrain-starter-next-commerce) | Next.js | E-commerce |
+| [nuxt-saas](https://github.com/Contentrain/contentrain-starter-nuxt-saas) | Nuxt | SaaS marketing |
+| [sveltekit-editorial](https://github.com/Contentrain/contentrain-starter-sveltekit-editorial) | SvelteKit | Editorial |
+
+[See all 10 templates](https://github.com/orgs/Contentrain/repositories?q=contentrain-starter&type=template)
+
 ## Related Pages
 
 - [CLI](/packages/cli) — `contentrain generate` command that runs the SDK generator

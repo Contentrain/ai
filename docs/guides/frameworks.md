@@ -9,6 +9,20 @@ slug: frameworks
 
 Contentrain content is plain JSON and Markdown — **any platform that reads files can consume it**. The `@contentrain/query` SDK adds TypeScript type safety and a query API as an optional convenience layer. This guide covers setup patterns for popular frameworks and platforms.
 
+## Starter Templates
+
+Each framework has production-ready starter templates with content models, generated SDK client, and best practices pre-configured:
+
+| Framework | Starters |
+|---|---|
+| **Astro** | [Blog](https://github.com/Contentrain/contentrain-starter-astro-blog), [Landing Page](https://github.com/Contentrain/contentrain-starter-astro-landing) |
+| **Next.js** | [Commerce](https://github.com/Contentrain/contentrain-starter-next-commerce), [Multi-Surface SaaS](https://github.com/Contentrain/contentrain-starter-next-multi-surface-saas), [SaaS Dashboard](https://github.com/Contentrain/contentrain-starter-next-saas-dashboard), [White-Label Portal](https://github.com/Contentrain/contentrain-starter-next-white-label-portal) |
+| **Nuxt** | [SaaS Marketing](https://github.com/Contentrain/contentrain-starter-nuxt-saas), [Admin Console](https://github.com/Contentrain/contentrain-starter-nuxt-admin-console) |
+| **SvelteKit** | [Editorial](https://github.com/Contentrain/contentrain-starter-sveltekit-editorial) |
+| **VitePress** | [Documentation](https://github.com/Contentrain/contentrain-starter-vitepress-docs) |
+
+Each is a GitHub template — click **"Use this template"** to create your own repo.
+
 ## Universal Setup
 
 Every framework follows the same initial steps:

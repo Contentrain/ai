@@ -6,6 +6,8 @@
 [![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+[Website](https://contentrain.io) · [Docs](https://ai.contentrain.io) · [Discord](https://discord.gg/8XbFKfgeZx) · [Twitter](https://x.com/Contentrain_io) · [LinkedIn](https://www.linkedin.com/company/contentrain)
+
 **Extract, govern, and ship structured content from your codebase.**
 
 Contentrain helps teams turn hardcoded UI text, docs, and structured content into a governed, reviewable content layer. Agents can extract, create, translate, and update content, while Contentrain enforces schema, Git review, and portable file output.
@@ -159,6 +161,25 @@ Works with Nuxt, Next.js, Astro, SvelteKit, Vue, React, Node, Go, Python, Swift,
 | [`@contentrain/rules`](packages/rules) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Frules)](https://www.npmjs.com/package/@contentrain/rules) | Agent quality rules for IDE integration |
 | [`@contentrain/skills`](packages/skills) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fskills)](https://www.npmjs.com/package/@contentrain/skills) | Workflow procedures + framework guides |
 
+## Starter Templates
+
+Production-ready templates with Contentrain content models, generated SDK client, and framework-specific patterns:
+
+| Template | Framework | Use Case |
+|---|---|---|
+| [astro-blog](https://github.com/Contentrain/contentrain-starter-astro-blog) | Astro | Blog / editorial |
+| [astro-landing](https://github.com/Contentrain/contentrain-starter-astro-landing) | Astro | Landing page |
+| [next-commerce](https://github.com/Contentrain/contentrain-starter-next-commerce) | Next.js | E-commerce storytelling |
+| [next-multi-surface-saas](https://github.com/Contentrain/contentrain-starter-next-multi-surface-saas) | Next.js | Marketing + app + docs unified |
+| [next-saas-dashboard](https://github.com/Contentrain/contentrain-starter-next-saas-dashboard) | Next.js | SaaS dashboard UI copy |
+| [next-white-label-portal](https://github.com/Contentrain/contentrain-starter-next-white-label-portal) | Next.js | White-label / multi-tenant |
+| [nuxt-admin-console](https://github.com/Contentrain/contentrain-starter-nuxt-admin-console) | Nuxt | Admin console / operations |
+| [nuxt-saas](https://github.com/Contentrain/contentrain-starter-nuxt-saas) | Nuxt | SaaS marketing site |
+| [sveltekit-editorial](https://github.com/Contentrain/contentrain-starter-sveltekit-editorial) | SvelteKit | Editorial / publication |
+| [vitepress-docs](https://github.com/Contentrain/contentrain-starter-vitepress-docs) | VitePress | Documentation site |
+
+Each template is a GitHub template repo — click "Use this template" to start.
+
 ## Quick reference
 
 ```bash
@@ -187,6 +208,17 @@ pnpm install && pnpm build && pnpm test
 ```
 
 See [`RELEASING.md`](RELEASING.md) for the versioning and publish workflow.
+
+## Community
+
+- [Discord](https://discord.gg/8XbFKfgeZx) — chat with the team and community
+- [GitHub Discussions](https://github.com/Contentrain/ai/discussions) — questions and ideas
+- [Twitter / X](https://x.com/Contentrain_io) — product updates and announcements
+- [LinkedIn](https://www.linkedin.com/company/contentrain) — company news
+- [YouTube](https://www.youtube.com/@contentrain) — tutorials and demos
+- [GitHub Issues](https://github.com/Contentrain/ai/issues) — bug reports and feature requests
+
+If Contentrain AI is useful to you, consider giving it a star — it helps others discover the project.
 
 ## License
 

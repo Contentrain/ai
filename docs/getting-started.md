@@ -204,6 +204,22 @@ All packages are published on npm:
 | [`@contentrain/rules`](https://www.npmjs.com/package/@contentrain/rules) | AI agent quality rules | `pnpm add @contentrain/rules` |
 | [`@contentrain/skills`](https://www.npmjs.com/package/@contentrain/skills) | AI agent workflow procedures | `pnpm add @contentrain/skills` |
 
+## Starter Templates
+
+Want to skip setup? Start from a production-ready template with content models, SDK client, and framework patterns pre-configured:
+
+| Template | Framework | Use Case |
+|---|---|---|
+| [astro-blog](https://github.com/Contentrain/contentrain-starter-astro-blog) | Astro | Blog / editorial |
+| [astro-landing](https://github.com/Contentrain/contentrain-starter-astro-landing) | Astro | Landing page |
+| [next-commerce](https://github.com/Contentrain/contentrain-starter-next-commerce) | Next.js | E-commerce |
+| [next-saas-dashboard](https://github.com/Contentrain/contentrain-starter-next-saas-dashboard) | Next.js | SaaS dashboard |
+| [nuxt-saas](https://github.com/Contentrain/contentrain-starter-nuxt-saas) | Nuxt | SaaS marketing |
+| [sveltekit-editorial](https://github.com/Contentrain/contentrain-starter-sveltekit-editorial) | SvelteKit | Editorial |
+| [vitepress-docs](https://github.com/Contentrain/contentrain-starter-vitepress-docs) | VitePress | Documentation |
+
+[See all 10 templates on GitHub](https://github.com/orgs/Contentrain/repositories?q=contentrain-starter&type=template)
+
 ## What's Next?
 
 - [Core Concepts](/concepts) — Models, content kinds, domains, and the governance architecture

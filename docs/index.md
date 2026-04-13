@@ -132,6 +132,25 @@ Content lives in plain JSON — any platform can read it:
 }
 ```
 
+## Start From a Template
+
+Pick a production-ready starter with Contentrain content models, generated SDK client, and framework best practices:
+
+| Template | Framework | Use Case |
+|---|---|---|
+| [astro-blog](https://github.com/Contentrain/contentrain-starter-astro-blog) | Astro | Blog / editorial |
+| [astro-landing](https://github.com/Contentrain/contentrain-starter-astro-landing) | Astro | Landing page |
+| [next-commerce](https://github.com/Contentrain/contentrain-starter-next-commerce) | Next.js | E-commerce |
+| [next-multi-surface-saas](https://github.com/Contentrain/contentrain-starter-next-multi-surface-saas) | Next.js | Marketing + app + docs |
+| [next-saas-dashboard](https://github.com/Contentrain/contentrain-starter-next-saas-dashboard) | Next.js | SaaS dashboard |
+| [next-white-label-portal](https://github.com/Contentrain/contentrain-starter-next-white-label-portal) | Next.js | White-label portal |
+| [nuxt-admin-console](https://github.com/Contentrain/contentrain-starter-nuxt-admin-console) | Nuxt | Admin console |
+| [nuxt-saas](https://github.com/Contentrain/contentrain-starter-nuxt-saas) | Nuxt | SaaS marketing |
+| [sveltekit-editorial](https://github.com/Contentrain/contentrain-starter-sveltekit-editorial) | SvelteKit | Editorial |
+| [vitepress-docs](https://github.com/Contentrain/contentrain-starter-vitepress-docs) | VitePress | Documentation |
+
+Each is a GitHub template — click **"Use this template"** to create your own repo.
+
 ## Who It Is For
 
 ### AI-assisted product teams

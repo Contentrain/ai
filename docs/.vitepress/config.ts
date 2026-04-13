@@ -19,6 +19,7 @@ export default defineConfig({
     ['meta', { property: 'og:image:width', content: '1200' }],
     ['meta', { property: 'og:image:height', content: '630' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:site', content: '@Contentrain_io' }],
     ['meta', { name: 'twitter:image', content: 'https://ai.contentrain.io/og-image.png' }],
   ],
 
@@ -52,6 +53,7 @@ export default defineConfig({
         { text: 'Field Types', link: '/reference/field-types' },
         { text: 'Configuration', link: '/reference/config' },
       ]},
+      { text: 'Starters', link: 'https://github.com/orgs/Contentrain/repositories?q=contentrain-starter&type=template' },
     ],
 
     sidebar: {
@@ -97,6 +99,12 @@ export default defineConfig({
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/Contentrain/ai' },
+      { icon: 'discord', link: 'https://discord.gg/8XbFKfgeZx' },
+      { icon: 'x', link: 'https://x.com/Contentrain_io' },
+      { icon: 'linkedin', link: 'https://www.linkedin.com/company/contentrain' },
+      { icon: 'youtube', link: 'https://www.youtube.com/@contentrain' },
+      { icon: 'instagram', link: 'https://www.instagram.com/contentrain_' },
+      { icon: 'facebook', link: 'https://www.facebook.com/Contentrain.io' },
     ],
 
     footer: {
