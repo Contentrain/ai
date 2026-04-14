@@ -248,6 +248,18 @@ pnpm add @contentrain/skills
 
 In most cases, you do not install these manually. `contentrain init` handles IDE rule distribution, and MCP agents load skills through their configuration.
 
+To update skills and rules after upgrading packages:
+
+```bash
+contentrain skills --update
+```
+
+To check installed status:
+
+```bash
+contentrain skills --list
+```
+
 ## Related Pages
 
 - [MCP Tools](/packages/mcp) — The deterministic execution layer that rules and skills govern

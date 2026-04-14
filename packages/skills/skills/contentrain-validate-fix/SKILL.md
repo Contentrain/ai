@@ -90,3 +90,9 @@ If validation still fails:
 
 - summarize remaining blockers precisely
 - tell the user which model/entry needs manual attention
+
+## Related Skills
+
+- **contentrain-review** — Full content review workflow
+- **contentrain-content** — Fix content entries after validation errors
+- **contentrain** — Core architecture and MCP tool catalog

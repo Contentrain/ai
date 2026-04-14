@@ -169,3 +169,8 @@ const history = await conv.history(response.conversationId)
 | Reference | Description |
 |-----------|-------------|
 | [Bundler Configuration](references/bundler-config.md) | Vite, Next.js, Nuxt, SvelteKit, Metro alias setup |
+
+## Related Skills
+
+- **contentrain-generate** — Generate the SDK client before using it
+- **contentrain** — Core architecture and MCP tool catalog

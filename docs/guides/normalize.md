@@ -159,6 +159,14 @@ This creates model definitions and content files in `.contentrain/` on a dedicat
 
 The agent calls `contentrain_validate` then `contentrain_submit` to push the branch.
 
+### Step 9. Merge Phase 1 branch
+
+Before starting Phase 2, the extraction branch must be merged:
+
+- **Browser:** http://localhost:3333/branches → click Merge
+- **MCP Tool:** The agent calls `contentrain_merge(branch: "cr/normalize/extract/...", confirm: true)`
+- **Git platform:** Create PR → review → merge
+
 ## Phase 2: Reuse
 
 Replace hardcoded strings in source files with content references. Start only after Phase 1 is reviewed and merged.

@@ -66,6 +66,7 @@ The MCP server exposes 15 tools organized by function:
 | `contentrain_content_delete` | Remove content | Delete specific content entries |
 | `contentrain_validate` | Check & fix | Validate content against schemas, optionally auto-fix structural issues |
 | `contentrain_submit` | Push branches | Push `contentrain/*` review branches to remote |
+| `contentrain_merge` | Merge branches | Merge a review-mode branch into contentrain locally (no external platform needed) |
 
 ### Normalize Tools (Scan + Apply)
 

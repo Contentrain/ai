@@ -97,3 +97,10 @@ Report:
 - locale or entry count affected
 - validation outcome if run
 - submit status
+
+## Related Skills
+
+- **contentrain-content** — Single-entry content operations
+- **contentrain-validate-fix** — Validate after bulk changes
+- **contentrain-generate** — Regenerate SDK after bulk locale copy
+- **contentrain** — Core architecture and MCP tool catalog

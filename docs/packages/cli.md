@@ -54,6 +54,7 @@ Requirements:
 | `contentrain validate` | Validate content against schemas, optionally create review-branch fixes |
 | `contentrain generate` | Generate `.contentrain/client/` and `#contentrain` package imports |
 | `contentrain diff` | Review and merge or reject pending `contentrain/*` branches |
+| `contentrain skills` | Install, update, or list AI skills and rules for your IDE |
 | `contentrain serve` | Start the local review UI or the MCP stdio server |
 | `contentrain studio connect` | Connect a repository to a Studio project |
 | `contentrain studio login` | Authenticate with Contentrain Studio |
@@ -280,6 +281,53 @@ Shows:
 - Options to merge or reject each branch
 
 Use `contentrain status` first to see how many branches are pending.
+
+---
+
+### `contentrain skills`
+
+Install, update, or list Contentrain AI skills and rules for your IDE.
+
+```bash
+# Install skills and rules for detected IDEs
+contentrain skills
+
+# Force update all skills (overwrite existing)
+contentrain skills --update
+
+# List installed skills and their status
+contentrain skills --list
+
+# Specify project root
+contentrain skills --root /path/to/project
+```
+
+| Flag | Description |
+|------|-------------|
+| `--list` | List installed skills with ✓/✗ status per IDE |
+| `--update` | Force update all skills and rules (overwrites existing files) |
+| `--root <path>` | Project root path |
+
+Detects and installs for all major AI-powered IDEs:
+
+| IDE | Rules Directory | Skills Directory |
+|-----|----------------|-----------------|
+| Claude Code | `.claude/rules/` | `.claude/skills/` |
+| Cursor | `.cursor/rules/` | `.cursor/skills/` |
+| Windsurf | `.windsurf/rules/` | `.windsurf/skills/` |
+| GitHub Copilot | `.github/` | `.agents/skills/` |
+
+Installs:
+- **Essential rules** (~86 lines, always-loaded guardrails)
+- **15 Agent Skills** (on-demand workflow procedures with reference docs)
+
+::: tip Skills vs Rules
+**Rules** are always-loaded behavioral guardrails (compact, ~86 lines). **Skills** are on-demand procedural workflows the agent loads when needed (normalize, content CRUD, translation, etc.). Both are plain markdown files that IDEs auto-discover.
+:::
+
+::: info Already installed by `contentrain init`
+`contentrain init` automatically installs skills and rules during project setup. Use `contentrain skills --update` to refresh them after upgrading `@contentrain/skills` or `@contentrain/rules` packages.
+:::
 
 ---
 

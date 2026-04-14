@@ -181,3 +181,10 @@ Report to the user:
 - TypeScript types: available via `index.d.ts`.
 - Next steps: import `query` from `#contentrain` and start querying content.
 - Reminder: re-run `contentrain generate` after model or content changes.
+
+## Related Skills
+
+- **contentrain** — Core architecture and MCP tool catalog
+- **contentrain-normalize** — Normalize workflow requires SDK regen after Phase 2
+- **contentrain-content** — Content changes require SDK regen for type updates
+- **contentrain-sdk** — @contentrain/query usage after generation

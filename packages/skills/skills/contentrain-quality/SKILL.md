@@ -178,3 +178,10 @@ Noun or noun phrase, sentence case, no trailing colons. Helper text: one sentenc
 - [SEO Rules](references/seo.md) -- SEO optimization rules for content fields, meta tags, and structured data
 - [Accessibility](references/accessibility.md) -- Accessibility rules for content: alt text, ARIA, color contrast, reading level
 - [Media Rules](references/media.md) -- Media asset rules: image optimization, video handling, file naming conventions
+
+## Related Skills
+
+- **contentrain-review** — Apply quality checks during content review
+- **contentrain-content** — Content creation following quality rules
+- **contentrain-translate** — Translation quality and i18n rules
+- **contentrain** — Core architecture and MCP tool catalog

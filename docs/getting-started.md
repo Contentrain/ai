@@ -207,11 +207,15 @@ All packages are published on npm:
 | Package | Description | Install |
 |---|---|---|
 | [`contentrain`](https://www.npmjs.com/package/contentrain) | CLI (init, serve, generate, validate) | `npx contentrain init` |
-| [`@contentrain/mcp`](https://www.npmjs.com/package/@contentrain/mcp) | 15 MCP tools for AI agents | `pnpm add @contentrain/mcp` |
+| [`@contentrain/mcp`](https://www.npmjs.com/package/@contentrain/mcp) | 16 MCP tools for AI agents | `pnpm add @contentrain/mcp` |
 | [`@contentrain/query`](https://www.npmjs.com/package/@contentrain/query) | TypeScript query SDK (optional) | `pnpm add @contentrain/query` |
 | [`@contentrain/types`](https://www.npmjs.com/package/@contentrain/types) | Shared TypeScript types | `pnpm add @contentrain/types` |
 | [`@contentrain/rules`](https://www.npmjs.com/package/@contentrain/rules) | AI agent quality rules | `pnpm add @contentrain/rules` |
 | [`@contentrain/skills`](https://www.npmjs.com/package/@contentrain/skills) | AI agent workflow procedures | `pnpm add @contentrain/skills` |
+
+::: tip Updating Skills & Rules
+After upgrading packages, run `contentrain skills --update` to refresh IDE skills and rules. Use `contentrain skills --list` to check installation status.
+:::
 
 ## Starter Templates
 
