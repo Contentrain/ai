@@ -24,6 +24,7 @@ Without a single source of truth, each package would define its own `ModelDefini
 - **CLI** reads `ContentrainConfig` and `ContextJson`
 - **SDK codegen** consumes `ModelDefinition` and `FieldDef`
 - **Rules** align with the same model and workflow vocabulary
+- **[Contentrain Studio](/studio)** operates on the same type contract — schemas defined locally work identically in team workflows
 :::
 
 ## Install

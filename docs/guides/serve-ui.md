@@ -285,3 +285,5 @@ If content created by the agent does not appear:
 - **Chat-first agent** — talk to your agent through a web interface with full MCP access
 - **Content CDN** — publish approved content for mobile and non-web platforms
 - **Audit trail** — track who created, reviewed, and approved every content change
+
+Connect your local project to Studio with [`contentrain studio connect`](/packages/cli#connecting-a-repository) — it detects your repo, installs the GitHub App, and creates the project in one interactive flow.

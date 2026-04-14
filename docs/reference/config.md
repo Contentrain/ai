@@ -50,6 +50,10 @@ The `.contentrain/` directory is the central hub for all Contentrain data:
 Models with a `content_path` override store their content files outside `.contentrain/content/` — for example, directly in `content/blog/` or `locales/`. The meta files always remain in `.contentrain/meta/`.
 :::
 
+::: info Shared Configuration
+`config.json` defines the project contract used by both Contentrain AI (local packages and CLI) and [Contentrain Studio](/studio). The same configuration governs local and team workflows — changes propagate across both surfaces.
+:::
+
 ## config.json
 
 The primary project configuration file. Created by `contentrain init` and updated by MCP tools.

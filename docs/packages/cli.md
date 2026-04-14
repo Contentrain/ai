@@ -136,7 +136,24 @@ contentrain validate
 
 # Auto-fix structural issues and create a review branch
 contentrain validate --fix
+
+# Interactive mode — choose which issues to fix
+contentrain validate --interactive
+
+# Validate a single model
+contentrain validate --model blog-posts
+
+# JSON output for CI pipelines
+contentrain validate --json
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--fix` | Auto-fix structural issues and create a review branch |
+| `--interactive` | Choose which issues to fix interactively |
+| `--model <id>` | Validate a single model instead of all |
+| `--json` | Output results as JSON (for CI/CD) |
+| `--root <path>` | Project root path |
 
 Validation catches:
 - Missing required fields
@@ -303,6 +320,12 @@ The `studio` command group connects the CLI to [Contentrain Studio](/studio) —
 # Sign in via GitHub or Google OAuth
 contentrain studio login
 
+# Select provider directly
+contentrain studio login --provider github
+
+# Connect to a self-hosted Studio instance
+contentrain studio login --url https://studio.example.com
+
 # Check who you're logged in as
 contentrain studio whoami
 
@@ -310,7 +333,19 @@ contentrain studio whoami
 contentrain studio logout
 ```
 
-Credentials are stored in `~/.contentrain/credentials.json` with `0o600` permissions — never inside the project directory. For CI/CD, set the `CONTENTRAIN_STUDIO_TOKEN` environment variable to skip interactive login.
+| Flag | Description |
+|------|-------------|
+| `--provider <github\|google>` | Skip provider selection prompt |
+| `--url <url>` | Studio instance URL (default: `https://studio.contentrain.io`) |
+
+Credentials are stored in `~/.contentrain/credentials.json` with `0o600` permissions — never inside the project directory.
+
+**Environment variables:**
+
+| Variable | Description |
+|----------|-------------|
+| `CONTENTRAIN_STUDIO_TOKEN` | Skip interactive login in CI/CD |
+| `CONTENTRAIN_STUDIO_URL` | Override Studio instance URL |
 
 ### Connecting a Repository
 
@@ -320,7 +355,15 @@ contentrain studio connect
 
 # Skip workspace selection
 contentrain studio connect --workspace ws-123
+
+# JSON output for scripting
+contentrain studio connect --json
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--workspace <id>` | Skip workspace selection prompt |
+| `--json` | Output result as JSON (workspace, project, repository, scan) |
 
 The `connect` command links your local repository to a Studio project in one interactive flow:
 
@@ -377,6 +420,9 @@ contentrain studio webhooks
 
 # Manage form submissions: list, approve, reject
 contentrain studio submissions --form contact-form
+
+# Filter by status
+contentrain studio submissions --form contact-form --status pending
 ```
 
 All `studio` commands support `--json` for CI/CD integration and `--workspace` / `--project` flags to skip interactive selection.

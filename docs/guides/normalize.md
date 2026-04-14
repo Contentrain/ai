@@ -423,6 +423,17 @@ Normalize solves this in minutes. And once your content is extracted and structu
 normalize → content exists → SDK queries work → i18n is possible → Studio review makes sense
 ```
 
+::: tip Ready for Team Collaboration?
+After extracting content, connect your project to [Contentrain Studio](/studio) for team review, CDN delivery, and collaboration:
+
+```bash
+contentrain studio login
+contentrain studio connect
+```
+
+See [CLI Studio Integration](/packages/cli#connecting-a-repository) for the full setup flow.
+:::
+
 ## Important Rules
 
 ::: warning
