@@ -171,6 +171,8 @@ export default defineCommand({
       }
     }
 
+    log.message(pc.dim(`\n  Tip: ${pc.cyan('contentrain studio branches')} — visual review and approval in ${pc.bold('Contentrain Studio')} → ${pc.underline('https://studio.contentrain.io')}`))
+
     outro('')
   },
 })
