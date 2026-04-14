@@ -163,7 +163,7 @@ The agent calls `contentrain_validate` then `contentrain_submit` to push the bra
 
 Before starting Phase 2, the extraction branch must be merged:
 
-- **Browser:** http://localhost:3333/branches → click Merge
+- **Browser:** `http://localhost:3333/branches` → click Merge
 - **MCP Tool:** The agent calls `contentrain_merge(branch: "cr/normalize/extract/...", confirm: true)`
 - **Git platform:** Create PR → review → merge
 

@@ -4,6 +4,10 @@ export default defineConfig({
   title: 'Contentrain AI',
   description: 'Extract, govern, and ship structured content from your codebase.',
 
+  ignoreDeadLinks: [
+    /localhost/,
+  ],
+
   sitemap: {
     hostname: 'https://ai.contentrain.io',
   },
