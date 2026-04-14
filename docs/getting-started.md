@@ -68,44 +68,42 @@ This creates `.contentrain/` in your project root with configuration, model defi
 
 ### 2. Connect your AI agent
 
-Add the Contentrain MCP server to your IDE:
+The `setup` command auto-configures the MCP server for your IDE:
 
-::: code-group
-
-```json [Claude Code (.mcp.json)]
-{
-  "mcpServers": {
-    "contentrain": {
-      "command": "npx",
-      "args": ["contentrain", "serve", "--stdio"]
-    }
-  }
-}
+```bash
+npx contentrain setup claude-code   # → creates .mcp.json
+npx contentrain setup cursor        # → creates .cursor/mcp.json
+npx contentrain setup vscode        # → creates .vscode/mcp.json
+npx contentrain setup windsurf      # → creates .windsurf/mcp.json
+npx contentrain setup --all         # → configures all detected IDEs
 ```
 
-```json [Cursor (.cursor/mcp.json)]
-{
-  "mcpServers": {
-    "contentrain": {
-      "command": "npx",
-      "args": ["contentrain", "serve", "--stdio"]
-    }
-  }
-}
-```
-
-```json [Windsurf]
-{
-  "mcpServers": {
-    "contentrain": {
-      "command": "npx",
-      "args": ["contentrain", "serve", "--stdio"]
-    }
-  }
-}
-```
-
+::: tip Auto-configured during init
+If your IDE is detected during `contentrain init`, the MCP config is created automatically — you may already be set up.
 :::
+
+<details>
+<summary>Manual configuration (all IDEs use the same config)</summary>
+
+```json
+{
+  "mcpServers": {
+    "contentrain": {
+      "command": "npx",
+      "args": ["contentrain", "serve", "--stdio"]
+    }
+  }
+}
+```
+
+| IDE | Config file |
+|-----|-------------|
+| Claude Code | `.mcp.json` (project root) |
+| Cursor | `.cursor/mcp.json` |
+| VS Code | `.vscode/mcp.json` |
+| Windsurf | `.windsurf/mcp.json` |
+
+</details>
 
 ### 3. Create a content model
 
@@ -215,6 +213,14 @@ All packages are published on npm:
 
 ::: tip Updating Skills & Rules
 After upgrading packages, run `contentrain skills --update` to refresh IDE skills and rules. Use `contentrain skills --list` to check installation status.
+
+You can also install skills directly via the [Agent Skills CLI](https://agentskills.io):
+
+```bash
+npx skills add Contentrain/ai/packages/skills
+```
+
+This works with Claude Code, Cursor, Windsurf, GitHub Copilot, OpenAI Codex, Gemini CLI, and 40+ other agents.
 :::
 
 ## Starter Templates
@@ -237,7 +243,7 @@ Want to skip setup? Start from a production-ready template with content models, 
 
 - [Core Concepts](/concepts) — Models, content kinds, domains, and the governance architecture
 - [Ecosystem Map](/ecosystem) — How AI packages and Studio fit together
-- [MCP Tools](/packages/mcp) — All 15 tools available to your agent
+- [MCP Tools](/packages/mcp) — All 16 tools available to your agent
 - [Normalize Flow](/guides/normalize) — Extract hardcoded strings from existing code
 - [i18n Workflow](/guides/i18n) — Add languages to your content
 - [Framework Integration](/guides/frameworks) — Platform-specific setup patterns

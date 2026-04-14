@@ -12,6 +12,7 @@ import { writeContent, type ContentEntry } from '../core/content-manager.js'
 import { getTemplate, listTemplates } from '../templates/index.js'
 import { createTransaction, buildBranchName, ensureContentBranch } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
+import { TOOL_ANNOTATIONS } from './annotations.js'
 
 export function registerSetupTools(server: McpServer, projectRoot: string): void {
   // ─── contentrain_init ───
@@ -23,6 +24,7 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
       locales: z.array(z.string()).optional().describe('Supported locales. Default: ["en"]'),
       domains: z.array(z.string()).optional().describe('Content domains. Default: auto-suggested'),
     },
+    TOOL_ANNOTATIONS['contentrain_init']!,
     async ({ stack, locales, domains }) => {
       const crDir = contentrainDir(projectRoot)
 
@@ -168,6 +170,7 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
       locales: z.array(z.string()).optional().describe('Override locales'),
       with_sample_content: z.boolean().optional().default(true).describe('Include sample content (default: true)'),
     },
+    TOOL_ANNOTATIONS['contentrain_scaffold']!,
     async ({ template: templateId, locales, with_sample_content }) => {
       const config = await readConfig(projectRoot)
       if (!config) {

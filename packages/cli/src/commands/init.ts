@@ -10,6 +10,7 @@ import { createTransaction, buildBranchName } from '@contentrain/mcp/git/transac
 import { scanSummary } from '@contentrain/mcp/core/scanner'
 import { resolveProjectRoot, loadProjectContext } from '../utils/context.js'
 import { pc } from '../utils/ui.js'
+import { IDE_CONFIGS, detectIdes, installIdeRulesAndSkills, addClaudeMdReference, writeMcpConfig } from '../utils/ide.js'
 import { writeFile, readFile, appendFile } from 'node:fs/promises'
 import type { ContentrainConfig, Vocabulary } from '@contentrain/types'
 
@@ -279,78 +280,15 @@ async function executeInit(projectRoot: string, opts: InitOptions): Promise<void
 
     // Install AI rules for detected IDEs
     await installRules(projectRoot)
+
+    // Auto-configure MCP for detected IDEs
+    await configureMcp(projectRoot)
   } catch (error) {
     s.stop('Failed')
     throw error
   } finally {
     await tx.cleanup()
   }
-}
-
-// Agent Skills to install — each is a directory with SKILL.md + references/
-const AGENT_SKILL_NAMES = [
-  'contentrain',
-  'contentrain-normalize',
-  'contentrain-quality',
-  'contentrain-sdk',
-  'contentrain-content',
-  'contentrain-model',
-  'contentrain-init',
-  'contentrain-bulk',
-  'contentrain-validate-fix',
-  'contentrain-review',
-  'contentrain-translate',
-  'contentrain-generate',
-  'contentrain-serve',
-  'contentrain-diff',
-  'contentrain-doctor',
-]
-
-// Old granular rule files to clean up during migration
-const OLD_RULE_FILES = [
-  'contentrain-content-quality.md', 'contentrain-seo-rules.md',
-  'contentrain-i18n-quality.md', 'contentrain-accessibility-rules.md',
-  'contentrain-security-rules.md', 'contentrain-media-rules.md',
-  'contentrain-content-conventions.md', 'contentrain-schema-rules.md',
-  'contentrain-mcp-usage.md', 'contentrain-workflow-rules.md',
-  'contentrain-normalize-rules.md',
-]
-
-interface IdeConfig {
-  name: string
-  rulesDir: string
-  skillsDir: string
-  guardrailsFileName: string
-  guardrailsFrontmatter?: string
-}
-
-const IDE_CONFIGS: Record<string, IdeConfig> = {
-  'claude-code': {
-    name: 'Claude Code',
-    rulesDir: '.claude/rules',
-    skillsDir: '.claude/skills',
-    guardrailsFileName: 'contentrain-essentials.md',
-  },
-  cursor: {
-    name: 'Cursor',
-    rulesDir: '.cursor/rules',
-    skillsDir: '.cursor/skills',
-    guardrailsFileName: 'contentrain-essentials.mdc',
-    guardrailsFrontmatter: '---\ndescription: Contentrain essential content governance rules\nalwaysApply: true\n---\n\n',
-  },
-  windsurf: {
-    name: 'Windsurf',
-    rulesDir: '.windsurf/rules',
-    skillsDir: '.windsurf/skills',
-    guardrailsFileName: 'contentrain-essentials.md',
-    guardrailsFrontmatter: '---\ndescription: Contentrain essential content governance rules\ntrigger: always_on\n---\n\n',
-  },
-  copilot: {
-    name: 'GitHub Copilot',
-    rulesDir: '.github',
-    skillsDir: '.agents/skills',
-    guardrailsFileName: 'copilot-instructions.md',
-  },
 }
 
 async function installRules(projectRoot: string): Promise<void> {
@@ -366,25 +304,16 @@ async function installRules(projectRoot: string): Promise<void> {
     } catch { /* @contentrain/skills not installed */ }
 
     // Detect which IDEs are in use
-    const hasClaudeCode = await pathExists(join(projectRoot, 'CLAUDE.md')) || await pathExists(join(projectRoot, '.claude'))
-    const hasCursor = await pathExists(join(projectRoot, '.cursor'))
-    const hasWindsurf = await pathExists(join(projectRoot, '.windsurf'))
-    const hasCopilot = await pathExists(join(projectRoot, '.github'))
-    const noIDEDetected = !hasClaudeCode && !hasCursor && !hasWindsurf && !hasCopilot
+    const detectedIdeKeys = await detectIdes(projectRoot)
+    const noIDEDetected = detectedIdeKeys.length === 0
 
-    const detectedIdes: string[] = []
-    if (hasClaudeCode) detectedIdes.push('claude-code')
-    if (hasCursor) detectedIdes.push('cursor')
-    if (hasWindsurf) detectedIdes.push('windsurf')
-    if (hasCopilot) detectedIdes.push('copilot')
-
-    for (const ideKey of detectedIdes) {
+    for (const ideKey of detectedIdeKeys) {
       const ide = IDE_CONFIGS[ideKey]!
       await installIdeRulesAndSkills(projectRoot, ide, resolveRuleFile, resolveSkillFile)
     }
 
     // Claude Code: also add lightweight CLAUDE.md reference
-    if (hasClaudeCode) {
+    if (detectedIdeKeys.includes('claude-code')) {
       await addClaudeMdReference(projectRoot)
     }
 
@@ -402,115 +331,22 @@ async function installRules(projectRoot: string): Promise<void> {
   }
 }
 
-async function installIdeRulesAndSkills(
-  projectRoot: string,
-  ide: IdeConfig,
-  resolveRuleFile: (p: string) => string,
-  resolveSkillFile: ((p: string) => string) | null,
-): Promise<void> {
-  const rulesDir = join(projectRoot, ide.rulesDir)
-  const skillsDir = join(projectRoot, ide.skillsDir)
-  const git = simpleGit(projectRoot)
-  const filesToAdd: string[] = []
+async function configureMcp(projectRoot: string): Promise<void> {
+  try {
+    const detectedIdeKeys = await detectIdes(projectRoot)
+    if (detectedIdeKeys.length === 0) {
+      // No IDE detected — create .mcp.json as default (Claude Code compatible)
+      detectedIdeKeys.push('claude-code')
+    }
 
-  // 1. Install essential guardrails (single compact file, always-loaded)
-  await ensureDir(rulesDir)
-  const guardrailsDest = join(rulesDir, ide.guardrailsFileName)
-  if (!(await pathExists(guardrailsDest))) {
-    try {
-      let content = await readFile(resolveRuleFile('essential/contentrain-essentials.md'), 'utf-8')
-      if (ide.guardrailsFrontmatter) {
-        content = ide.guardrailsFrontmatter + content
+    for (const ideKey of detectedIdeKeys) {
+      const result = await writeMcpConfig(projectRoot, ideKey)
+      if (result.written) {
+        log.info(`MCP configured: ${pc.cyan(result.path)}`)
       }
-      // Copilot: append to existing copilot-instructions.md
-      if (ide.name === 'GitHub Copilot' && await pathExists(guardrailsDest)) {
-        const existing = await readFile(guardrailsDest, 'utf-8')
-        if (!existing.includes('# Contentrain')) {
-          await appendFile(guardrailsDest, `\n\n${content}`)
-        }
-      } else {
-        await writeFile(guardrailsDest, content, 'utf-8')
-      }
-      filesToAdd.push(guardrailsDest)
-    } catch { /* essential file unavailable */ }
-  }
-
-  // 2. Clean up old granular rule files (migration from previous versions)
-  for (const oldFile of OLD_RULE_FILES) {
-    const oldPath = join(rulesDir, oldFile)
-    if (await pathExists(oldPath)) {
-      const { unlink } = await import('node:fs/promises')
-      await unlink(oldPath)
     }
-  }
-
-  // 3. Install Agent Skills format directories
-  if (resolveSkillFile) {
-    await ensureDir(skillsDir)
-    for (const skillName of AGENT_SKILL_NAMES) {
-      const skillDir = join(skillsDir, skillName)
-      const skillMd = join(skillDir, 'SKILL.md')
-      if (await pathExists(skillMd)) continue
-      try {
-        // Copy SKILL.md
-        const src = resolveSkillFile(`skills/${skillName}/SKILL.md`)
-        await ensureDir(skillDir)
-        await writeFile(skillMd, await readFile(src, 'utf-8'), 'utf-8')
-        filesToAdd.push(skillMd)
-
-        // Copy references/ if they exist
-        const { readdirSync } = await import('node:fs')
-        try {
-          const refsDir = join(resolveSkillFile(`skills/${skillName}/SKILL.md`), '..', 'references')
-          const refs = readdirSync(refsDir)
-          if (refs.length > 0) {
-            const destRefsDir = join(skillDir, 'references')
-            await ensureDir(destRefsDir)
-            for (const ref of refs) {
-              const refSrc = join(refsDir, ref)
-              const refDest = join(destRefsDir, ref)
-              await writeFile(refDest, await readFile(refSrc, 'utf-8'), 'utf-8')
-              filesToAdd.push(refDest)
-            }
-          }
-        } catch { /* no references directory */ }
-      } catch { /* skill unavailable */ }
-    }
-  }
-
-  if (filesToAdd.length > 0) {
-    await git.add(filesToAdd)
-    try {
-      await git.commit(`[contentrain] install ${ide.name} rules and skills`)
-    } catch { /* nothing to commit */ }
-  }
-}
-
-async function addClaudeMdReference(projectRoot: string): Promise<void> {
-  const claudeMdPath = join(projectRoot, 'CLAUDE.md')
-  const marker = '# Contentrain AI Rules'
-  const reference = [
-    '# Contentrain AI Rules',
-    '',
-    'This project uses [Contentrain](https://ai.contentrain.io) for AI-driven content management.',
-    '',
-    '- **Rules** are in `.claude/rules/contentrain-essentials.md` — auto-loaded each conversation',
-    '- **Skills** are in `.claude/skills/` — loaded on demand by the agent',
-    '- **Docs:** https://ai.contentrain.io',
-  ].join('\n')
-
-  const git = simpleGit(projectRoot)
-  if (await pathExists(claudeMdPath)) {
-    const existing = await readFile(claudeMdPath, 'utf-8')
-    if (!existing.includes(marker)) {
-      await appendFile(claudeMdPath, `\n\n${reference}\n`)
-      await git.add(claudeMdPath)
-      try { await git.commit('[contentrain] add CLAUDE.md reference') } catch { /* nothing to commit */ }
-    }
-  } else {
-    await writeFile(claudeMdPath, `${reference}\n`, 'utf-8')
-    await git.add(claudeMdPath)
-    try { await git.commit('[contentrain] add CLAUDE.md reference') } catch { /* nothing to commit */ }
+  } catch {
+    // MCP config is best-effort — don't fail init
   }
 }
 

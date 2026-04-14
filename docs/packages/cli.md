@@ -54,6 +54,7 @@ Requirements:
 | `contentrain validate` | Validate content against schemas, optionally create review-branch fixes |
 | `contentrain generate` | Generate `.contentrain/client/` and `#contentrain` package imports |
 | `contentrain diff` | Review and merge or reject pending `contentrain/*` branches |
+| `contentrain setup` | Configure MCP server and AI rules for your IDE |
 | `contentrain skills` | Install, update, or list AI skills and rules for your IDE |
 | `contentrain serve` | Start the local review UI or the MCP stdio server |
 | `contentrain studio connect` | Connect a repository to a Studio project |
@@ -284,6 +285,49 @@ Use `contentrain status` first to see how many branches are pending.
 
 ---
 
+### `contentrain setup`
+
+Configures the MCP server and installs AI rules/skills for your IDE in one command.
+
+```bash
+# Configure for a specific IDE
+contentrain setup claude-code
+contentrain setup cursor
+contentrain setup vscode
+contentrain setup windsurf
+contentrain setup copilot
+
+# Configure all detected IDEs at once
+contentrain setup --all
+
+# Specify project root
+contentrain setup --root /path/to/project
+```
+
+| Flag | Description |
+|------|-------------|
+| `--all` | Configure all detected IDEs |
+| `--root <path>` | Project root path |
+
+What it does:
+1. Writes the correct MCP config file for the target IDE
+2. Installs AI rules and skills if not already present
+3. Merges into existing config without overwriting other MCP servers
+
+| Agent | Config File Created |
+|-------|-------------------|
+| `claude-code` | `.mcp.json` |
+| `cursor` | `.cursor/mcp.json` |
+| `vscode` | `.vscode/mcp.json` |
+| `windsurf` | `.windsurf/mcp.json` |
+| `copilot` | `.vscode/mcp.json` |
+
+::: tip Already done by `contentrain init`
+`contentrain init` auto-detects your IDE and writes the MCP config during project setup. Use `contentrain setup` when you switch IDEs or want to add another IDE to an existing project.
+:::
+
+---
+
 ### `contentrain skills`
 
 Install, update, or list Contentrain AI skills and rules for your IDE.
@@ -346,6 +390,9 @@ contentrain serve --port 8080 --host 0.0.0.0
 
 # Open browser automatically
 contentrain serve --open
+
+# Demo mode — try without a real project
+contentrain serve --demo
 ```
 
 | Flag | Description |
@@ -353,7 +400,20 @@ contentrain serve --open
 | `--port <number>` | HTTP server port (default: `3333`) |
 | `--host <address>` | Bind address (default: `localhost`) |
 | `--open` | Open browser automatically |
+| `--demo` | Start with a temporary demo project (no setup needed) |
 | `--root <path>` | Project root path |
+
+**Environment variable overrides:**
+
+| Variable | Equivalent Flag | Description |
+|----------|----------------|-------------|
+| `CONTENTRAIN_STDIO=true` | `--stdio` | Use stdio MCP transport |
+| `CONTENTRAIN_PORT` | `--port` | HTTP server port |
+| `CONTENTRAIN_HOST` | `--host` | Bind address |
+| `CONTENTRAIN_NO_OPEN=true` | — | Disable auto browser open |
+| `CONTENTRAIN_PROJECT_ROOT` | `--root` | Project root path |
+
+CLI flags take precedence over environment variables.
 
 The web UI provides:
 - REST endpoints for status, content, validation, branches, and normalize data
@@ -371,11 +431,18 @@ contentrain serve --stdio
 |------|-------------|
 | `--stdio` | Use stdio MCP transport (for IDE integration) |
 
-Use stdio mode when connecting an IDE agent (Claude Code, Cursor, Windsurf) to the local project. This exposes all 15 MCP tools over the stdio transport.
+Use stdio mode when connecting an IDE agent (Claude Code, Cursor, Windsurf) to the local project. This exposes all 16 MCP tools over the stdio transport.
 
-::: code-group
+The fastest way to configure this is with the `setup` command:
 
-```json [Claude Code]
+```bash
+contentrain setup claude-code   # or: cursor, vscode, windsurf, copilot
+```
+
+<details>
+<summary>Manual config (all IDEs use the same JSON)</summary>
+
+```json
 {
   "mcpServers": {
     "contentrain": {
@@ -386,29 +453,14 @@ Use stdio mode when connecting an IDE agent (Claude Code, Cursor, Windsurf) to t
 }
 ```
 
-```json [Cursor]
-{
-  "mcpServers": {
-    "contentrain": {
-      "command": "npx",
-      "args": ["contentrain", "serve", "--stdio"]
-    }
-  }
-}
-```
+| IDE | Config file |
+|-----|-------------|
+| Claude Code | `.mcp.json` |
+| Cursor | `.cursor/mcp.json` |
+| VS Code | `.vscode/mcp.json` |
+| Windsurf | `.windsurf/mcp.json` |
 
-```json [Windsurf]
-{
-  "mcpServers": {
-    "contentrain": {
-      "command": "npx",
-      "args": ["contentrain", "serve", "--stdio"]
-    }
-  }
-}
-```
-
-:::
+</details>
 
 ## Studio Integration
 
@@ -621,25 +673,28 @@ Studio handles team collaboration, media management, AI conversations, and CDN d
 ## Typical Workflow
 
 ```bash
-# 1. Initialize the project
+# 1. Initialize the project (auto-configures MCP for detected IDEs)
 contentrain init
 
-# 2. Check project health
+# 2. Or set up MCP for a specific IDE manually
+contentrain setup claude-code
+
+# 3. Check project health
 contentrain status
 contentrain doctor
 
-# 3. Let the agent create models and content via MCP...
+# 4. Let the agent create models and content via MCP...
 
-# 4. Generate the typed SDK client
+# 5. Generate the typed SDK client
 contentrain generate
 
-# 5. Validate everything
+# 6. Validate everything
 contentrain validate
 
-# 6. Review agent-created branches
+# 7. Review agent-created branches
 contentrain diff
 
-# 7. Open the local review UI
+# 8. Open the local review UI
 contentrain serve
 ```
 

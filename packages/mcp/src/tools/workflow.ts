@@ -6,6 +6,7 @@ import { validateProject } from '../core/validator.js'
 import { readConfig } from '../core/config.js'
 import { createTransaction, buildBranchName, mergeBranch } from '../git/transaction.js'
 import { checkBranchHealth, cleanupMergedBranches } from '../git/branch-lifecycle.js'
+import { TOOL_ANNOTATIONS } from './annotations.js'
 
 export function registerWorkflowTools(server: McpServer, projectRoot: string): void {
   // ─── contentrain_validate ───
@@ -16,6 +17,7 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
       model: z.string().optional().describe('Model ID to validate (omit for all models)'),
       fix: z.boolean().optional().describe('Auto-fix structural issues (canonical sort, orphan meta, missing locale files). Default: false'),
     },
+    TOOL_ANNOTATIONS['contentrain_validate']!,
     async (input) => {
       const config = await readConfig(projectRoot)
       if (!config) {
@@ -124,6 +126,7 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
       branches: z.array(z.string()).optional().describe('Specific branch names to push (omit for all contentrain/* branches)'),
       message: z.string().optional().describe('Optional message for the push operation'),
     },
+    TOOL_ANNOTATIONS['contentrain_submit']!,
     async (input) => {
       const config = await readConfig(projectRoot)
       if (!config) {
@@ -267,6 +270,7 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
       branch: z.string().describe('Branch name to merge (e.g. cr/normalize/extract/...)'),
       confirm: z.literal(true).describe('Must be true to confirm the merge'),
     },
+    TOOL_ANNOTATIONS['contentrain_merge']!,
     async (input) => {
       const config = await readConfig(projectRoot)
       if (!config) {

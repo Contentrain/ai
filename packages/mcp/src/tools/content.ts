@@ -6,6 +6,7 @@ import { writeContent, deleteContent, listContent } from '../core/content-manage
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { validateProject } from '../core/validator.js'
+import { TOOL_ANNOTATIONS } from './annotations.js'
 
 export function registerContentTools(server: McpServer, projectRoot: string): void {
   // ─── contentrain_content_save ───
@@ -23,6 +24,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         expire_at: z.string().optional().describe('ISO 8601 date for scheduled expiry (stored in meta, must be after publish_at)'),
       })).describe('Content entries to save'),
     },
+    TOOL_ANNOTATIONS['contentrain_content_save']!,
     async (input) => {
       const config = await readConfig(projectRoot)
       if (!config) {
@@ -172,6 +174,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
       keys: z.array(z.string()).optional().describe('Dictionary only: specific keys to remove. Omit to delete entire locale file.'),
       confirm: z.literal(true).describe('Must be true to confirm deletion'),
     },
+    TOOL_ANNOTATIONS['contentrain_content_delete']!,
     async (input) => {
       const config = await readConfig(projectRoot)
       if (!config) {
@@ -260,6 +263,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
       limit: z.number().optional().describe('Max entries to return'),
       offset: z.number().optional().describe('Skip N entries'),
     },
+    TOOL_ANNOTATIONS['contentrain_content_list']!,
     async (input) => {
       const config = await readConfig(projectRoot)
       if (!config) {

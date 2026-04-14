@@ -1,35 +1,10 @@
 import { defineCommand } from 'citty'
 import { intro, outro, log, spinner } from '@clack/prompts'
 import { join } from 'node:path'
-import { readFile, writeFile } from 'node:fs/promises'
 import { resolveProjectRoot } from '../utils/context.js'
 import { pc } from '../utils/ui.js'
-import { ensureDir, pathExists } from '@contentrain/mcp/util/fs'
-
-// ─── Skill and rule definitions ───
-
-const AGENT_SKILL_NAMES = [
-  'contentrain', 'contentrain-normalize', 'contentrain-quality',
-  'contentrain-sdk', 'contentrain-content', 'contentrain-model',
-  'contentrain-init', 'contentrain-bulk', 'contentrain-validate-fix',
-  'contentrain-review', 'contentrain-translate', 'contentrain-generate',
-  'contentrain-serve', 'contentrain-diff', 'contentrain-doctor',
-]
-
-interface IdeConfig {
-  name: string
-  rulesDir: string
-  skillsDir: string
-  guardrailsFileName: string
-  guardrailsFrontmatter?: string
-}
-
-const IDE_CONFIGS: Record<string, IdeConfig> = {
-  'claude-code': { name: 'Claude Code', rulesDir: '.claude/rules', skillsDir: '.claude/skills', guardrailsFileName: 'contentrain-essentials.md' },
-  cursor: { name: 'Cursor', rulesDir: '.cursor/rules', skillsDir: '.cursor/skills', guardrailsFileName: 'contentrain-essentials.mdc', guardrailsFrontmatter: '---\ndescription: Contentrain essential content governance rules\nalwaysApply: true\n---\n\n' },
-  windsurf: { name: 'Windsurf', rulesDir: '.windsurf/rules', skillsDir: '.windsurf/skills', guardrailsFileName: 'contentrain-essentials.md', guardrailsFrontmatter: '---\ndescription: Contentrain essential content governance rules\ntrigger: always_on\n---\n\n' },
-  copilot: { name: 'GitHub Copilot', rulesDir: '.github', skillsDir: '.agents/skills', guardrailsFileName: 'copilot-instructions.md' },
-}
+import { pathExists } from '@contentrain/mcp/util/fs'
+import { AGENT_SKILL_NAMES, IDE_CONFIGS, detectIdes, installIdeRulesAndSkills } from '../utils/ide.js'
 
 // ─── Command ───
 
@@ -84,7 +59,7 @@ export default defineCommand({
 
       for (const ideKey of detectedIdes) {
         const ide = IDE_CONFIGS[ideKey]!
-        const result = await installForIde(projectRoot, ide, resolveRuleFile, resolveSkillFile, args.update ?? false)
+        const result = await installIdeRulesAndSkills(projectRoot, ide, resolveRuleFile, resolveSkillFile, args.update ?? false)
         totalInstalled += result.installed
         totalUpdated += result.updated
       }
@@ -103,81 +78,6 @@ export default defineCommand({
   },
 })
 
-// ─── IDE detection ───
-
-async function detectIdes(projectRoot: string): Promise<string[]> {
-  const ides: string[] = []
-  if (await pathExists(join(projectRoot, 'CLAUDE.md')) || await pathExists(join(projectRoot, '.claude'))) ides.push('claude-code')
-  if (await pathExists(join(projectRoot, '.cursor'))) ides.push('cursor')
-  if (await pathExists(join(projectRoot, '.windsurf'))) ides.push('windsurf')
-  if (await pathExists(join(projectRoot, '.github'))) ides.push('copilot')
-  return ides
-}
-
-// ─── Install skills + rules for one IDE ───
-
-async function installForIde(
-  projectRoot: string,
-  ide: IdeConfig,
-  resolveRuleFile: (p: string) => string,
-  resolveSkillFile: ((p: string) => string) | null,
-  forceUpdate: boolean,
-): Promise<{ installed: number; updated: number }> {
-  let installed = 0
-  let updated = 0
-
-  // Essential guardrails
-  const rulesDir = join(projectRoot, ide.rulesDir)
-  await ensureDir(rulesDir)
-  const guardrailsDest = join(rulesDir, ide.guardrailsFileName)
-  try {
-    let content = await readFile(resolveRuleFile('essential/contentrain-essentials.md'), 'utf-8')
-    if (ide.guardrailsFrontmatter) content = ide.guardrailsFrontmatter + content
-    if (await pathExists(guardrailsDest)) {
-      if (forceUpdate) { await writeFile(guardrailsDest, content, 'utf-8'); updated++ }
-    } else {
-      await writeFile(guardrailsDest, content, 'utf-8'); installed++
-    }
-  } catch { /* essential file unavailable */ }
-
-  // Skills
-  if (resolveSkillFile) {
-    const skillsDir = join(projectRoot, ide.skillsDir)
-    await ensureDir(skillsDir)
-    for (const skillName of AGENT_SKILL_NAMES) {
-      const skillDir = join(skillsDir, skillName)
-      const skillMd = join(skillDir, 'SKILL.md')
-      try {
-        const src = resolveSkillFile(`skills/${skillName}/SKILL.md`)
-        const srcContent = await readFile(src, 'utf-8')
-        await ensureDir(skillDir)
-        if (await pathExists(skillMd)) {
-          if (forceUpdate) { await writeFile(skillMd, srcContent, 'utf-8'); updated++ }
-        } else {
-          await writeFile(skillMd, srcContent, 'utf-8'); installed++
-        }
-        // Copy references/
-        const { readdirSync } = await import('node:fs')
-        try {
-          const refsDir = join(src, '..', 'references')
-          const refs = readdirSync(refsDir)
-          if (refs.length > 0) {
-            const destRefsDir = join(skillDir, 'references')
-            await ensureDir(destRefsDir)
-            for (const ref of refs) {
-              const refDest = join(destRefsDir, ref)
-              if (forceUpdate || !(await pathExists(refDest))) {
-                await writeFile(refDest, await readFile(join(refsDir, ref), 'utf-8'), 'utf-8')
-              }
-            }
-          }
-        } catch { /* no references */ }
-      } catch { /* skill unavailable */ }
-    }
-  }
-
-  return { installed, updated }
-}
 
 // ─── List installed skills ───
 

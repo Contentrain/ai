@@ -8,6 +8,7 @@ import { detectStack } from '../util/detect.js'
 import { join } from 'node:path'
 import { contentrainDir, pathExists } from '../util/fs.js'
 import { checkBranchHealth, cleanupMergedBranches } from '../git/branch-lifecycle.js'
+import { TOOL_ANNOTATIONS } from './annotations.js'
 
 export function registerContextTools(server: McpServer, projectRoot: string): void {
   // ─── contentrain_status ───
@@ -15,6 +16,7 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
     'contentrain_status',
     'Get full project status (read-only). Returns config, models, context. Do NOT manually edit .contentrain/ based on this output.',
     {},
+    TOOL_ANNOTATIONS['contentrain_status']!,
     async () => {
       const crDir = contentrainDir(projectRoot)
       const initialized = await pathExists(join(crDir, 'config.json'))
@@ -107,6 +109,7 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
       include_sample: z.boolean().optional().default(false).describe('Include one sample entry'),
       locale: z.string().optional().describe('Locale for sample content (default: config default locale)'),
     },
+    TOOL_ANNOTATIONS['contentrain_describe']!,
     async ({ model: modelId, include_sample, locale }) => {
       const modelDef = await readModel(projectRoot, modelId)
       if (!modelDef) {
@@ -151,6 +154,7 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
     'contentrain_describe_format',
     'Describes the Contentrain content file format for any language/platform. Returns a comprehensive specification of the file structure, JSON formats, markdown conventions, meta files, and locale strategies.',
     {},
+    TOOL_ANNOTATIONS['contentrain_describe_format']!,
     async () => {
       const formatSpec = {
         overview: 'Contentrain stores content as plain JSON and Markdown files in a .contentrain/ directory at the project root. All files are committed to git.',

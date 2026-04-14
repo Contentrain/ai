@@ -7,6 +7,7 @@ import { resolveContentDir, resolveJsonFilePath, resolveMdFilePath } from '../co
 import { checkReferences, deleteModel, readModel, writeModel, validateModelDefinition, fieldDefZodSchema } from '../core/model-manager.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
+import { TOOL_ANNOTATIONS } from './annotations.js'
 
 // Shared field definition schema — single source of truth with normalize extract
 const fieldDefSchema = fieldDefZodSchema
@@ -27,6 +28,7 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
       content_path: z.string().optional().describe('Framework-relative path for content files (e.g. "content/blog", "locales"). When set, content is written here instead of .contentrain/content/'),
       locale_strategy: z.enum(['file', 'suffix', 'directory', 'none']).optional().describe('How locale is encoded in file names. Default: "file"'),
     },
+    TOOL_ANNOTATIONS['contentrain_model_save']!,
     async (input) => {
       const config = await readConfig(projectRoot)
       if (!config) {
@@ -152,6 +154,7 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
       model: z.string().describe('Model ID to delete'),
       confirm: z.literal(true).describe('Must be true to confirm deletion'),
     },
+    TOOL_ANNOTATIONS['contentrain_model_delete']!,
     async ({ model: modelId }) => {
       const config = await readConfig(projectRoot)
       if (!config) {
