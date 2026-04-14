@@ -1,5 +1,11 @@
 # contentrain
 
+## 0.4.1
+
+### Patch Changes
+
+- 228610f: Add contextual Contentrain Studio tips to CLI command output (init, generate, diff, status) with proper branding, colored commands, and clickable Studio link.
+
 ## 0.4.0
 
 ### Minor Changes
