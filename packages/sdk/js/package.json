@@ -22,6 +22,7 @@
     "i18n",
     "generated-client",
     "platform-independent",
+    "agent-skills",
     "json",
     "vue",
     "react",
@@ -52,14 +53,16 @@
       "types": "./dist/cdn/index.d.ts",
       "import": "./dist/cdn/index.mjs",
       "require": "./dist/cdn/index.cjs"
-    }
+    },
+    "./skills/*": "./skills/*"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "files": [
-    "dist"
+    "dist",
+    "skills"
   ],
   "scripts": {
     "build": "tsdown src/index.ts src/cdn/index.ts src/generator/generate.ts src/cli.ts --format esm,cjs --dts",

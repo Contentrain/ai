@@ -3,6 +3,7 @@
 [![npm: @contentrain/mcp](https://img.shields.io/npm/v/%40contentrain%2Fmcp?label=%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp)
 [![npm: contentrain](https://img.shields.io/npm/v/contentrain?label=contentrain)](https://www.npmjs.com/package/contentrain)
 [![npm: @contentrain/query](https://img.shields.io/npm/v/%40contentrain%2Fquery?label=%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query)
+[![Agent Skills](https://img.shields.io/badge/Agent_Skills-15_skills-8B5CF6)](https://agentskills.io)
 [![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -149,6 +150,26 @@ Works with Nuxt, Next.js, Astro, SvelteKit, Vue, React, Node, Go, Python, Swift,
 - **Agent rules & skills** — behavioral policies and step-by-step workflows ship as npm packages
 - **Serve UI** — local web dashboard for browsing models, content, validation, and normalize status
 - **Framework-agnostic** — MCP doesn't know your framework. Agent + skills handle stack-specific logic
+
+## Agent Skills
+
+This repo ships 15 [Agent Skills](https://agentskills.io) — reusable workflow procedures that any AI coding agent can load on demand.
+
+Install all skills to your agent:
+
+```bash
+npx skills add Contentrain/ai/packages/skills
+```
+
+Or install a specific skill:
+
+```bash
+npx skills add Contentrain/ai/packages/skills --skill contentrain-normalize
+```
+
+Skills work with Claude Code, Cursor, Windsurf, GitHub Copilot, OpenAI Codex, Gemini CLI, and 40+ other agents.
+
+See [`AGENTS.md`](AGENTS.md) for the full skill catalog and agent guidance.
 
 ## Packages
 

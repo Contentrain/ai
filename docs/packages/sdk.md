@@ -565,6 +565,16 @@ Every starter template comes with a pre-configured SDK client and content models
 - [Rules & Skills](/packages/rules) — Agent guidance for content operations
 - [Contentrain Studio](/studio) — Hosted team workflows and CDN delivery for non-web platforms
 
+## Embedded Agent Skill
+
+This package ships an embedded [Agent Skill](https://agentskills.io) at `skills/contentrain-query/SKILL.md`. AI coding agents can discover and load it for type-safe SDK usage guidance, including:
+
+- QueryBuilder, SingletonAccessor, DictionaryAccessor, DocumentQuery APIs
+- Local mode vs CDN mode differences
+- Framework-specific bundler configuration (Vite, Next.js, Nuxt, SvelteKit, Metro)
+
+The skill and its references are available via the `@contentrain/query/skills/*` subpath export.
+
 ## Package Exports
 
 | Export Path | Description |
@@ -572,3 +582,4 @@ Every starter template comes with a pre-configured SDK client and content models
 | `@contentrain/query` | Runtime classes + `createContentrain()` CDN factory + `MediaAccessor` + `FormsClient` + `ConversationClient` |
 | `@contentrain/query/cdn` | CDN transport: `HttpTransport`, async queries, `MediaAccessor`, `FormsClient`, `ConversationClient` |
 | `@contentrain/query/generate` | Programmatic generation API |
+| `@contentrain/query/skills/*` | Embedded Agent Skill (SKILL.md + references/) |

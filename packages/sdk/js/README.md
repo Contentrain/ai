@@ -1,6 +1,7 @@
 # `@contentrain/query`
 
 [![npm version](https://img.shields.io/npm/v/%40contentrain%2Fquery?label=%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query)
+[![Agent Skills](https://img.shields.io/badge/Agent_Skill-contentrain--query-8B5CF6)](https://agentskills.io)
 [![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/sdk/js)
 [![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io/packages/sdk)
 
@@ -394,6 +395,16 @@ pnpm --filter @contentrain/query test
 pnpm --filter @contentrain/query typecheck
 pnpm exec oxlint packages/sdk/js/src packages/sdk/js/tests
 ```
+
+## Agent Skill (embedded)
+
+This package ships an embedded [Agent Skill](https://agentskills.io) at `skills/contentrain-query/SKILL.md`. AI coding agents can discover and load it for type-safe SDK usage guidance, including:
+
+- QueryBuilder, SingletonAccessor, DictionaryAccessor, DocumentQuery APIs
+- Local mode vs CDN mode differences
+- Framework-specific bundler configuration (Vite, Next.js, Nuxt, SvelteKit, Metro)
+
+The skill is available via the `@contentrain/query/skills/*` subpath export.
 
 ## 🔗 Related Packages
 
