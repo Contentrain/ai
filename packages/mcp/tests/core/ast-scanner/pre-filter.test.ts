@@ -254,8 +254,6 @@ describe('calculateContentScore', () => {
 
   it('boosts non-ASCII characters', () => {
     const ascii = calculateContentScore(makeString('Save'))
-    const nonAscii = calculateContentScore(makeString('Kaydet'))
-    // Kaydet has non-ASCII (ö would, but Kaydet is ASCII... let's use actual Turkish)
     const turkish = calculateContentScore(makeString('Hoş geldiniz'))
     expect(turkish).toBeGreaterThan(ascii)
   })
