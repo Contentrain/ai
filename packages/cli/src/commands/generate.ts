@@ -40,6 +40,8 @@ export default defineCommand({
         log.info(`${pc.cyan('#contentrain')} imports added to package.json`)
       }
 
+      log.message(pc.dim(`\n  Tip: ${pc.cyan('contentrain studio cdn-init')} — deliver content via ${pc.bold('Contentrain Studio')} CDN → ${pc.underline('https://studio.contentrain.io')}`))
+
       if (args.watch) {
         log.info('Watching for changes... (Ctrl+C to stop)')
 

@@ -185,6 +185,9 @@ export default defineCommand({
       log.message(`  ${pc.cyan('contentrain serve')}      — open the local review and normalize UI`)
     }
     log.message(`  ${pc.cyan('contentrain generate')}   — generate SDK client`)
+    log.message('')
+    log.message(pc.dim(`  Tip: ${pc.cyan('contentrain studio connect')} — link this project to ${pc.bold('Contentrain Studio')} for`))
+    log.message(pc.dim(`       team review, CDN delivery, and collaboration → ${pc.underline('https://studio.contentrain.io')}`))
 
     outro('')
   },

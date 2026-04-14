@@ -186,6 +186,8 @@ export default defineCommand({
       // Validation might fail if no models exist
     }
 
+    log.message(pc.dim(`\n  Tip: ${pc.cyan('contentrain studio status')} — team activity, usage, and CDN in ${pc.bold('Contentrain Studio')} → ${pc.underline('https://studio.contentrain.io')}`))
+
     outro('')
   },
 })
