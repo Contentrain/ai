@@ -420,14 +420,28 @@ async function loadTsxParser(): Promise<TsxParserFn | null> {
   }
 }
 
+/**
+ * Map script block lang to a file extension that tsx-parser's getScriptKind understands.
+ * Without this, .vue files default to ScriptKind.JS — causing TypeScript type annotations
+ * (e.g. defineEmits<{ 'update:modelValue': [...] }>) to be misclassified as object literals.
+ */
+function resolveScriptFileName(vueFileName: string, lang?: string): string {
+  if (lang === 'tsx') return vueFileName.replace(/\.vue$/, '.tsx')
+  if (lang === 'ts') return vueFileName.replace(/\.vue$/, '.ts')
+  if (lang === 'jsx') return vueFileName.replace(/\.vue$/, '.jsx')
+  return vueFileName.replace(/\.vue$/, '.js')
+}
+
 function parseScriptBlock(
   scriptContent: string,
   scriptStartLine: number,
   fileName: string,
   parseTsx: TsxParserFn,
+  lang?: string,
 ): ExtractedString[] {
-  // Parse script content using tsx-parser
-  const scriptResults = parseTsx(scriptContent, fileName)
+  // Resolve filename with correct extension for TypeScript parser
+  const resolvedFileName = resolveScriptFileName(fileName, lang)
+  const scriptResults = parseTsx(scriptContent, resolvedFileName)
 
   // Adjust line numbers by script block offset
   return scriptResults.map(r => {
@@ -481,6 +495,7 @@ export async function parseVue(content: string, fileName: string): Promise<Extra
         scriptStartLine,
         fileName,
         parseTsx,
+        scriptBlock.lang,
       )
       results.push(...scriptResults)
     }

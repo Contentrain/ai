@@ -267,6 +267,10 @@ export interface ScanCandidate {
   value: string
   context: StringContext
   surrounding: string
+  /** Content confidence score (0-1). Higher = more likely user-visible content. */
+  contentScore: number
+  /** All locations where this value appears (populated when dedup is enabled). */
+  occurrences: Array<{ file: string; line: number }>
 }
 
 export interface DuplicateGroup {
@@ -303,9 +307,12 @@ export interface ScanCandidatesResult {
   stats: {
     files_scanned: number
     raw_strings_found: number
-    after_filtering: number
+    skipped: number
+    low_confidence: number
+    unique_candidates: number
     candidates_returned: number
     has_more: boolean
+    skip_reasons: Record<string, number>
   }
 }
 

@@ -188,7 +188,7 @@ function classifyByParentChain(node: ts.Node, sourceFile: ts.SourceFile): Classi
       if (attrName === 'className' || attrName === 'class' || attrName === 'style') {
         return { context: 'css_class', parent: attrName }
       }
-      return { context: 'jsx_attribute', parent: attrName }
+      return { context: 'jsx_attribute', parent: attrName, parentProperty: attrName }
     }
 
     // Variable declaration → variable_assignment
