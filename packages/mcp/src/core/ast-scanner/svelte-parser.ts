@@ -418,14 +418,25 @@ function processAttribute(
 
 // ─── Script Block Parsing ───
 
+/**
+ * Resolve script filename with correct extension for TypeScript parser.
+ * Svelte files with <script lang="ts"> need ScriptKind.TS, not ScriptKind.JS.
+ */
+function resolveScriptFileName(svelteFileName: string, lang?: string): string {
+  if (lang === 'ts' || lang === 'typescript') return svelteFileName.replace(/\.svelte$/, '.ts')
+  return svelteFileName.replace(/\.svelte$/, '.js')
+}
+
 function parseScriptBlock(
   scriptContent: string,
   scriptStartOffset: number,
   fullContent: string,
   fileName: string,
   parseTsx: TsxParserFn,
+  lang?: string,
 ): ExtractedString[] {
-  const scriptResults = parseTsx(scriptContent, fileName)
+  const resolvedFileName = resolveScriptFileName(fileName, lang)
+  const scriptResults = parseTsx(scriptContent, resolvedFileName)
   const scriptStartPos = getLineAndColumn(fullContent, scriptStartOffset)
   const scriptStartLine = scriptStartPos.line
 
@@ -468,6 +479,9 @@ export async function parseSvelte(content: string, fileName: string): Promise<Ex
       const scriptContentMatch = scriptSource.match(/<script[^>]*>([\s\S]*?)<\/script>/)
       if (scriptContentMatch?.[1]) {
         const scriptContentStr = scriptContentMatch[1]
+        // Extract lang attribute from <script lang="ts">
+        const langMatch = scriptSource.match(/<script[^>]*\slang=["'](\w+)["']/)
+        const scriptLang = langMatch?.[1]
         // Calculate offset of script content within the file
         const scriptTagEnd = scriptSource.indexOf('>') + 1
         const contentOffset = scriptStart + scriptTagEnd
@@ -477,6 +491,7 @@ export async function parseSvelte(content: string, fileName: string): Promise<Ex
           content,
           fileName,
           tsxParser,
+          scriptLang,
         )
         results.push(...scriptResults)
       }
@@ -490,6 +505,8 @@ export async function parseSvelte(content: string, fileName: string): Promise<Ex
       const moduleContentMatch = moduleSource.match(/<script[^>]*>([\s\S]*?)<\/script>/)
       if (moduleContentMatch?.[1]) {
         const moduleContentStr = moduleContentMatch[1]
+        const moduleLangMatch = moduleSource.match(/<script[^>]*\slang=["'](\w+)["']/)
+        const moduleLang = moduleLangMatch?.[1]
         const scriptTagEnd = moduleSource.indexOf('>') + 1
         const contentOffset = moduleStart + scriptTagEnd
         const moduleResults = parseScriptBlock(
@@ -498,6 +515,7 @@ export async function parseSvelte(content: string, fileName: string): Promise<Ex
           content,
           fileName,
           tsxParser,
+          moduleLang,
         )
         results.push(...moduleResults)
       }

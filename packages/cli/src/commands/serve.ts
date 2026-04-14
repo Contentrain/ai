@@ -9,14 +9,26 @@ export default defineCommand({
     description: 'Start local content viewer or MCP stdio server',
   },
   args: {
-    root: { type: 'string', description: 'Project root path', required: false },
-    stdio: { type: 'boolean', description: 'Use stdio MCP transport (for IDE integration)', required: false },
-    port: { type: 'string', description: 'HTTP server port (default: 3333)', required: false },
-    open: { type: 'boolean', description: 'Open browser automatically', required: false },
-    host: { type: 'string', description: 'Bind address (default: localhost)', required: false },
+    root: { type: 'string', description: 'Project root path (env: CONTENTRAIN_PROJECT_ROOT)', required: false },
+    stdio: { type: 'boolean', description: 'Use stdio MCP transport for IDE integration (env: CONTENTRAIN_STDIO=true)', required: false },
+    port: { type: 'string', description: 'HTTP server port, default: 3333 (env: CONTENTRAIN_PORT)', required: false },
+    open: { type: 'boolean', description: 'Open browser automatically (env: CONTENTRAIN_NO_OPEN=true to disable)', required: false },
+    host: { type: 'string', description: 'Bind address, default: localhost (env: CONTENTRAIN_HOST)', required: false },
+    demo: { type: 'boolean', description: 'Start with a temporary demo project (no setup needed)', required: false },
   },
   async run({ args }) {
-    const projectRoot = await resolveProjectRoot(args.root)
+    let projectRoot = await resolveProjectRoot(args.root)
+
+    // --- Demo mode: create temporary project ---
+    let demoDir: string | undefined
+    if (args.demo) {
+      const { createDemoProject, cleanupDemoProject } = await import('../utils/demo.js')
+      demoDir = await createDemoProject()
+      projectRoot = demoDir
+      consola.info(`Demo project created at ${demoDir}`)
+      process.on('exit', () => { cleanupDemoProject(demoDir!) })
+      process.on('SIGINT', () => { cleanupDemoProject(demoDir!); process.exit(0) })
+    }
 
     // Set environment for MCP context tracking
     process.env['CONTENTRAIN_PROJECT_ROOT'] = projectRoot
@@ -36,7 +48,8 @@ export default defineCommand({
     }
 
     // --- Stdio mode (IDE integration) ---
-    if (args.stdio) {
+    const useStdio = args.stdio || process.env['CONTENTRAIN_STDIO'] === 'true' || process.env['CONTENTRAIN_STDIO'] === '1'
+    if (useStdio) {
       const server = createServer(projectRoot)
       const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js')
       const transport = new StdioServerTransport()
@@ -46,9 +59,9 @@ export default defineCommand({
     }
 
     // --- Web UI mode (default) ---
-    const port = Number(args.port) || 3333
-    const host = args.host ?? 'localhost'
-    const shouldOpen = args.open !== false
+    const port = Number(args.port) || Number(process.env['CONTENTRAIN_PORT']) || 3333
+    const host = args.host ?? process.env['CONTENTRAIN_HOST'] ?? 'localhost'
+    const shouldOpen = args.open !== false && process.env['CONTENTRAIN_NO_OPEN'] !== 'true'
 
     // Resolve UI directory (pre-built static assets next to CLI bundle)
     const { join, dirname } = await import('node:path')

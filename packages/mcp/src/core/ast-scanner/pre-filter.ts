@@ -1,56 +1,46 @@
-import type { ExtractedString, PreFilterRule } from './types.js'
+import type { ExtractedString } from './types.js'
 
 // ─── Pre-filter Result ───
 
 export interface PreFilterResult {
   /** Strings that passed the pre-filter (candidates for agent) */
   candidates: ExtractedString[]
-  /** Total number of strings removed by the pre-filter */
-  filtered: number
-  /** Breakdown: reason string -> count of strings filtered for that reason */
-  filterReasons: Record<string, number>
+  /** Total number of strings removed by shouldSkip */
+  skipped: number
+  /** Total number of strings removed by low content score */
+  lowConfidence: number
+  /** Breakdown: skip reason → count */
+  skipReasons: Record<string, number>
 }
 
-// ─── Value-based patterns (deterministic, no intelligence) ───
+// ─── Value-based regexes ───
 
-const PURE_NUMBER_RE = /^\d+(\.\d+)?$/
+const PURE_NUMBER_RE = /^-?\d+(\.\d+)?$/
 const HEX_COLOR_RE = /^#[0-9a-f]{3,8}$/i
 const FILE_EXT_RE = /\.(png|jpg|jpeg|gif|svg|webp|ico|css|scss|less|js|ts|tsx|jsx|json|md|html|xml|yaml|yml|woff|woff2|ttf|eot|mp4|webm|mp3|wav|pdf)$/i
+const SVG_PATH_DATA_RE = /^[Mm][\d\s.,LHVCSQTAZlhvcsqtazmMzZ-]+$/
+const SVG_VIEWBOX_RE = /^\d+(\.\d+)?\s+\d+(\.\d+)?\s+\d+(\.\d+)?\s+\d+(\.\d+)?$/
+const I18N_KEY_RE = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/
+const TECHNICAL_IDENTIFIER_RE = /^[a-z][a-z0-9_-]*$/
+const ERROR_CODE_RE = /^[A-Z][A-Z0-9_]+$/
+const PLACEHOLDER_RE = /^\{\d+\}$|^\.{2,}$/
+const CAMEL_CASE_RE = /^[a-z]+[A-Z]/
 
-// ─── HTML / component prop technical values ───
+// ─── URL / path detection (consolidated from legacy isNonContent) ───
 
-const HTML_PROP_VALUES = new Set([
-  // CSS / variant keywords
-  'class', 'variant', 'secondary', 'outline', 'ghost', 'destructive', 'default', 'primary',
-  // Link / target
-  '_blank', 'noopener', 'noreferrer',
-  // Input / button types
-  'button', 'submit', 'reset', 'text', 'numeric', 'password', 'email', 'checkbox', 'radio',
-  // Layout / display
-  'hidden', 'none', 'auto', 'inherit', 'initial',
-  // Size tokens
-  'sm', 'md', 'lg', 'xl', 'xs', '2xl', '3xl',
-  // Icon variants
-  'icon', 'icon-sm', 'icon-lg',
-])
+function isURLLike(str: string): boolean {
+  if (/^(https?|ftp|file|mailto|data):/.test(str)) return true
+  if (/^(\.\.?\/|\/|[A-Za-z]:\\)/.test(str)) return true
+  if (/^['"]?[@a-z][\w-]*/.test(str.toLowerCase()) && !str.includes(' ') && (str.includes('/') || str.includes('.'))) {
+    return true
+  }
+  return false
+}
 
-// ─── Slot / event technical names (single lowercase word) ───
-
-const SLOT_EVENT_NAMES = new Set([
-  'header', 'footer', 'default', 'trigger', 'content',
-  'sidebar', 'overlay', 'body', 'actions',
-  'click', 'change', 'input', 'focus', 'blur', 'submit',
-  'mounted', 'unmounted', 'updated',
-])
-
-// ─── Tailwind / CSS utility detection ───
+// ─── CSS / Tailwind detection ───
 
 const TAILWIND_SEGMENT_RE = /^(?:bg-|text-|border-|flex|grid|p-|px-|py-|pt-|pb-|pl-|pr-|m-|mx-|my-|mt-|mb-|ml-|mr-|rounded|shadow|w-|h-|min-|max-|gap-|space-|items-|justify-|self-|overflow-|z-|opacity-|transition|duration-|ease-|animate-|font-|leading-|tracking-|decoration-|underline|line-through|uppercase|lowercase|capitalize|truncate|whitespace-|break-|sr-only|not-sr-only|hover:|focus:|active:|disabled:|dark:|sm:|md:|lg:|xl:|2xl:|group-|peer-|ring-|outline-|divide-|table-|col-|row-|aspect-|object-|inset-|top-|right-|bottom-|left-|translate-|rotate-|scale-|skew-|origin-|cursor-|select-|resize-|fill-|stroke-|block|inline|absolute|relative|fixed|sticky|static|float-|clear-|isolate|visible|invisible|grow|shrink|basis-|order-|place-)/
 
-/**
- * Returns true if the string looks like a CSS class list (Tailwind or similar).
- * Requires 2+ space-separated segments with majority matching utility patterns.
- */
 function isCssClassList(value: string): boolean {
   const segments = value.trim().split(/\s+/)
   if (segments.length < 2) return false
@@ -61,90 +51,253 @@ function isCssClassList(value: string): boolean {
   return matched / segments.length >= 0.5
 }
 
-/**
- * Returns true if the string is a single CSS utility token (e.g. "bg-blue-500").
- */
 function isSingleCssUtility(value: string): boolean {
   const trimmed = value.trim()
-  // Must be a single token, no spaces
   if (trimmed.includes(' ')) return false
   return TAILWIND_SEGMENT_RE.test(trimmed)
 }
 
-// ─── Pre-filter Rules ───
+// ─── SVG technical attributes ───
 
-const PRE_FILTER_RULES: PreFilterRule[] = [
-  // Context-based rules (AST-determined, 100% accurate)
-  { context: 'import_path', reason: 'import_path' },
-  { context: 'type_annotation', reason: 'type_annotation' },
-  { context: 'css_class', reason: 'css_class' },
-  { context: 'css_utility_call', reason: 'css_utility_call' },
-  { context: 'console_call', reason: 'console_call' },
-  { context: 'test_assertion', reason: 'test_assertion' },
-  { context: 'switch_case', reason: 'switch_case' },
+const SVG_TECHNICAL_ATTRIBUTES = new Set([
+  'd', 'viewBox', 'points', 'transform', 'pathLength',
+  'xmlns', 'preserveAspectRatio',
+  'stroke-linecap', 'stroke-linejoin', 'stroke-width',
+  'stroke-dasharray', 'stroke-dashoffset', 'stroke-miterlimit',
+  'fill-rule', 'clip-rule',
+])
 
-  // Value-based rules (structural, not heuristic)
-  { condition: (v) => v.length <= 1, reason: 'single_char' },
-  { condition: (v) => PURE_NUMBER_RE.test(v), reason: 'pure_number' },
-  { condition: (v) => v.startsWith('--'), reason: 'cli_flag' },
-  { condition: (v) => HEX_COLOR_RE.test(v), reason: 'hex_color' },
-  { condition: (v) => FILE_EXT_RE.test(v), reason: 'file_extension' },
+const SVG_GRAPHIC_ELEMENTS = new Set([
+  'svg', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon',
+  'ellipse', 'g', 'defs', 'use', 'symbol', 'clipPath', 'mask',
+  'pattern', 'linearGradient', 'radialGradient', 'stop',
+  'marker', 'animate', 'animateTransform', 'image',
+])
 
-  // HTML / component prop technical values (exact match, case-insensitive)
-  { condition: (v) => HTML_PROP_VALUES.has(v.toLowerCase()), reason: 'html_prop_value' },
+// ─── Known function names ───
 
-  // CSS class lists (Tailwind-style multi-segment strings)
-  { condition: (v) => isCssClassList(v), reason: 'css_class_list' },
+const I18N_FUNCTIONS = new Set([
+  't', '$t', 'i18n', 'translate', 'formatMessage', 'msg',
+])
 
-  // Single CSS utility token (e.g. "bg-blue-500", "rounded-lg")
-  { condition: (v) => isSingleCssUtility(v), reason: 'css_utility_token' },
+const EMIT_FUNCTIONS = new Set([
+  'emit', '$emit',
+])
 
-  // Slot / event technical names (single lowercase word only)
-  { condition: (v) => {
-    const lower = v.toLowerCase()
-    return v === lower && !v.includes(' ') && SLOT_EVENT_NAMES.has(lower)
-  }, reason: 'slot_event_name' },
-]
+// ─── Translatable attribute whitelist (i18next-cli compatible + extended) ───
+
+const TRANSLATABLE_ATTRIBUTES = new Set([
+  // Standard HTML content attributes
+  'title', 'alt', 'placeholder', 'label', 'summary', 'caption',
+  'abbr', 'accesskey', 'content', 'description',
+  // ARIA content
+  'aria-label', 'aria-description', 'aria-placeholder',
+  'aria-roledescription', 'aria-valuetext',
+  // React Native accessibility (equivalent to aria-label)
+  'accessibilityLabel', 'accessibilityHint', 'accessibilityValue',
+  // Common component content props
+  'heading', 'subheading', 'message', 'hint', 'tooltip',
+  'helper-text', 'error-message', 'success-message',
+  'confirm-text', 'cancel-text', 'empty-text', 'loading-text',
+  'no-data-text', 'no-results-text',
+])
+
+// ─── Translatable object property whitelist (i18next-cli compatible) ───
+
+const TRANSLATABLE_PROPERTIES = new Set([
+  'label', 'title', 'description', 'text', 'message', 'placeholder',
+  'caption', 'summary', 'heading', 'subheading', 'subtitle', 'tooltip',
+  'hint', 'helpText', 'errorMessage', 'successMessage', 'name',
+])
+
+// ─── shouldSkip: Binary non-content detection ───
+
+/**
+ * Determines if a string is definitely NOT user-visible content.
+ * Returns skip reason if it should be filtered, null if it should proceed to scoring.
+ *
+ * Conservative for template_text/jsx_text (tag-between text is almost always content).
+ * Aggressive for everything else (technical tokens, config values, framework artifacts).
+ */
+export function shouldSkip(str: ExtractedString): string | null {
+  // ── Context-based rules (AST-determined, 100% accurate) ──
+
+  if (str.context === 'import_path') return 'import_path'
+  if (str.context === 'type_annotation') return 'type_annotation'
+  if (str.context === 'css_class') return 'css_class'
+  if (str.context === 'css_utility_call') return 'css_utility_call'
+  if (str.context === 'console_call') return 'console_call'
+  if (str.context === 'test_assertion') return 'test_assertion'
+  if (str.context === 'switch_case') return 'switch_case'
+
+  const v = str.value
+
+  // ── Value-based rules (structural patterns) ──
+
+  if (v.length <= 1) return 'single_char'
+  if (/^\s+$/.test(v)) return 'whitespace'
+  if (PURE_NUMBER_RE.test(v)) return 'pure_number'
+  if (HEX_COLOR_RE.test(v)) return 'hex_color'
+  if (FILE_EXT_RE.test(v)) return 'file_extension'
+  if (v.startsWith('--')) return 'cli_flag'
+
+  // ── i18n key paths (checked before URL — both contain dots, but i18n keys are more specific) ──
+
+  if (I18N_KEY_RE.test(v)) return 'i18n_key'
+
+  // ── URL/path patterns ──
+
+  if (isURLLike(v)) return 'url_path'
+
+  // ── CSS patterns ──
+
+  if (isCssClassList(v)) return 'css_class_list'
+  if (isSingleCssUtility(v)) return 'css_utility_token'
+
+  // ── SVG patterns ──
+
+  if (v.length > 3 && SVG_PATH_DATA_RE.test(v)) return 'svg_path_data'
+  if (SVG_VIEWBOX_RE.test(v)) return 'svg_viewbox'
+  if (str.parentProperty !== undefined && SVG_TECHNICAL_ATTRIBUTES.has(str.parentProperty)) return 'svg_technical_attr'
+  if (str.context === 'template_attribute' && SVG_GRAPHIC_ELEMENTS.has(str.parent)) return 'svg_element_attr'
+
+  // ── Framework event patterns ──
+
+  if (v.startsWith('update:')) return 'vue_emit_event'
+
+  // ── Placeholder / interpolation ──
+
+  if (PLACEHOLDER_RE.test(v)) return 'placeholder'
+
+  // ── Known function argument detection ──
+
+  if (str.context === 'function_argument' && I18N_FUNCTIONS.has(str.parent)) {
+    // i18n function args: filter lowercase identifiers (namespace/key), keep sentences
+    if (/^[a-z][a-z0-9_.-]*$/.test(v)) return 'i18n_function_arg'
+  }
+
+  if (str.context === 'function_argument' && EMIT_FUNCTIONS.has(str.parent)) {
+    return 'emit_event_arg'
+  }
+
+  // ── CRITICAL: Technical identifier detection (i18next-cli proven pattern) ──
+  // Single lowercase ASCII word/kebab-case/snake_case < 30 chars → technical token
+  // EXEMPT: template_text and jsx_text (tag-between text IS content, even lowercase)
+
+  if (str.context !== 'template_text' && str.context !== 'jsx_text') {
+    if (TECHNICAL_IDENTIFIER_RE.test(v) && v.length < 30) {
+      return 'technical_identifier'
+    }
+  }
+
+  // ── Error codes (SCREAMING_SNAKE_CASE with underscores) ──
+
+  if (ERROR_CODE_RE.test(v) && v.includes('_') && v.length > 3) {
+    return 'error_code'
+  }
+
+  return null
+}
+
+// ─── calculateContentScore: 0-1 confidence scoring ───
+
+/**
+ * Calculates a content confidence score (0-1) for a string that passed shouldSkip.
+ * Uses AST context metadata (our advantage over offset-based tools) combined with
+ * value-based signals proven by i18next-cli.
+ *
+ * Base score: 0.5. Boosted/penalized by context and value characteristics.
+ */
+export function calculateContentScore(str: ExtractedString): number {
+  let score = 0.5
+
+  // ── Context signals (AST metadata advantage) ──
+
+  // Template/JSX text = almost certainly user-visible content
+  if (str.context === 'template_text' || str.context === 'jsx_text') {
+    score += 0.3
+  }
+
+  // Content-bearing attribute (title, alt, placeholder, aria-label, etc.)
+  if (str.context === 'template_attribute' || str.context === 'jsx_attribute') {
+    if (str.parentProperty && TRANSLATABLE_ATTRIBUTES.has(str.parentProperty)) {
+      score += 0.2
+    } else {
+      score -= 0.2  // Unknown/technical attribute
+    }
+  }
+
+  // Content-bearing object property (message, label, description, etc.)
+  if (str.context === 'object_property') {
+    if (str.parentProperty && TRANSLATABLE_PROPERTIES.has(str.parentProperty)) {
+      score += 0.25
+    }
+  }
+
+  // ── Value signals (i18next-cli proven heuristics) ──
+
+  // Multi-word strings are more likely content
+  const wordCount = str.value.split(/\s+/).length
+  if (wordCount >= 3) score += 0.2
+  else if (wordCount === 2) score += 0.1
+
+  // Terminal punctuation suggests a sentence
+  if (/[.!?:;]$/.test(str.value)) score += 0.1
+
+  // Non-ASCII characters (Turkish, Chinese, Arabic, etc.) → almost certainly content
+  if (/[\u0080-\uFFFF]/.test(str.value)) score += 0.15
+
+  // Capitalized first letter with lowercase body (Dashboard, Kaydet, Settings)
+  if (/^[A-Z]/.test(str.value) && /[a-z]/.test(str.value)) score += 0.1
+
+  // camelCase → probably a technical identifier
+  if (CAMEL_CASE_RE.test(str.value)) score -= 0.3
+
+  // Contains slash without spaces → path-like
+  if (str.value.includes('/') && !str.value.includes(' ')) score -= 0.2
+
+  return Math.max(0, Math.min(1, score))
+}
 
 // ─── Public API ───
 
 /**
- * Structural pre-filter: removes strings that are 100% NOT content.
+ * Two-phase pre-filter:
+ * 1. shouldSkip(): Binary removal of definite non-content
+ * 2. calculateContentScore(): 0-1 confidence scoring for ambiguous strings
  *
- * Conservative — when in doubt, INCLUDE the string.
- * Returns candidates (passed), count of filtered, and reason breakdown.
+ * Returns candidates that passed both phases, with content scores attached.
  */
-export function applyPreFilter(strings: ExtractedString[]): PreFilterResult {
+export function applyPreFilter(
+  strings: ExtractedString[],
+  minScore: number = 0.4,
+): PreFilterResult {
   const candidates: ExtractedString[] = []
-  const filterReasons: Record<string, number> = {}
-  let filtered = 0
+  const skipReasons: Record<string, number> = {}
+  let skipped = 0
+  let lowConfidence = 0
 
   for (const str of strings) {
-    const matchedRule = findMatchingRule(str)
-
-    if (matchedRule) {
-      filtered++
-      filterReasons[matchedRule.reason] = (filterReasons[matchedRule.reason] ?? 0) + 1
-    } else {
-      candidates.push(str)
+    // Phase 1: Binary skip
+    const skipReason = shouldSkip(str)
+    if (skipReason) {
+      skipped++
+      skipReasons[skipReason] = (skipReasons[skipReason] ?? 0) + 1
+      continue
     }
+
+    // Phase 2: Content scoring
+    const contentScore = calculateContentScore(str)
+    if (contentScore < minScore) {
+      lowConfidence++
+      skipReasons['low_confidence'] = (skipReasons['low_confidence'] ?? 0) + 1
+      continue
+    }
+
+    // Attach score to the extraction for downstream use
+    ;(str as ExtractedString & { contentScore: number }).contentScore = contentScore
+    candidates.push(str)
   }
 
-  return { candidates, filtered, filterReasons }
-}
-
-/**
- * Find the first pre-filter rule that matches this string.
- * Returns the rule if matched, undefined if the string should pass through.
- */
-function findMatchingRule(str: ExtractedString): PreFilterRule | undefined {
-  for (const rule of PRE_FILTER_RULES) {
-    if (rule.context !== undefined && str.context === rule.context) {
-      return rule
-    }
-    if (rule.condition !== undefined && rule.condition(str.value)) {
-      return rule
-    }
-  }
-  return undefined
+  return { candidates, skipped, lowConfidence, skipReasons }
 }

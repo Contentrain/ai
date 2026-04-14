@@ -1,6 +1,7 @@
 # `@contentrain/rules`
 
 [![npm version](https://img.shields.io/npm/v/%40contentrain%2Frules?label=%40contentrain%2Frules)](https://www.npmjs.com/package/@contentrain/rules)
+[![Agent Skills](https://img.shields.io/badge/Agent_Skills-compatible-8B5CF6)](https://agentskills.io)
 [![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/rules)
 [![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io/packages/rules)
 
@@ -94,6 +95,8 @@ Rule of thumb:
 
 - `rules` = essential guardrails (always loaded, ~86 lines)
 - `skills` = detailed procedures and reference docs (on-demand)
+
+See [`AGENTS.md`](../../AGENTS.md) at the repo root for agent-level project guidance.
 
 ## Build
 

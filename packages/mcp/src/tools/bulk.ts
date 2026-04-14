@@ -8,6 +8,7 @@ import { readMeta, writeMeta } from '../core/meta-manager.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { readJson, writeJson } from '../util/fs.js'
+import { TOOL_ANNOTATIONS } from './annotations.js'
 
 export function registerBulkTools(server: McpServer, projectRoot: string): void {
   server.tool(
@@ -22,6 +23,7 @@ export function registerBulkTools(server: McpServer, projectRoot: string): void 
       status: z.enum(['draft', 'in_review', 'published', 'rejected', 'archived']).optional().describe('New status for update_status'),
       confirm: z.boolean().optional().describe('Must be true for delete_entries'),
     },
+    TOOL_ANNOTATIONS['contentrain_bulk']!,
     async (input) => {
       const config = await readConfig(projectRoot)
       if (!config) {

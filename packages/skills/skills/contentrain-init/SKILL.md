@@ -96,4 +96,21 @@ Report to the user:
 - What was created in `.contentrain/`.
 - Which models were set up.
 - How to import content in their code (show the `#contentrain` import).
-- Next steps: create content, run `npx contentrain generate`, start the dev server.
+- **Next step: Run `npx contentrain generate` to create the typed SDK client.** Without this, `#contentrain` imports won't work. See: **contentrain-generate** skill.
+- Start the dev server and verify imports work.
+
+### Post-Init: Start Review UI
+
+After initialization, start the local review UI to explore the project:
+
+```bash
+contentrain serve
+```
+
+This opens http://localhost:3333 where you can browse models, content, and validation results.
+
+## Related Skills
+
+- **contentrain-serve** — Local review UI
+- **contentrain-generate** — SDK client generation
+- **contentrain** — Core architecture and MCP tool catalog

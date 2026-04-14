@@ -386,6 +386,131 @@ export async function createTransaction(
   }
 }
 
+export async function mergeBranch(
+  projectRoot: string,
+  branchName: string,
+): Promise<{ action: 'merged'; commit: string; sync: SyncResult }> {
+  const git = simpleGit(projectRoot)
+  const config = await readConfig(projectRoot)
+  const remoteName = process.env['CONTENTRAIN_REMOTE'] ?? 'origin'
+
+  // Detect base branch
+  const baseBranch = process.env['CONTENTRAIN_BRANCH']
+    ?? config?.repository?.default_branch
+    ?? ((await git.raw(['branch', '--show-current'])).trim() || 'main')
+
+  // Ensure contentrain branch exists
+  await ensureContentBranch(projectRoot)
+
+  // Check remote
+  let hasRemote = false
+  try {
+    const remotes = await git.getRemotes()
+    hasRemote = remotes.some(r => r.name === remoteName)
+  } catch {
+    hasRemote = false
+  }
+
+  // Create temp worktree on contentrain branch
+  const worktreePath = join(tmpdir(), `cr-merge-${randomUUID()}`)
+  await git.raw(['worktree', 'add', worktreePath, CONTENTRAIN_BRANCH])
+
+  const wtGit = simpleGit(worktreePath)
+
+  // Configure author
+  const authorName = process.env['CONTENTRAIN_AUTHOR_NAME'] ?? 'Contentrain'
+  const authorEmail = process.env['CONTENTRAIN_AUTHOR_EMAIL'] ?? 'mcp@contentrain.io'
+  await wtGit.addConfig('user.name', authorName)
+  await wtGit.addConfig('user.email', authorEmail)
+
+  try {
+    // Merge the feature branch into contentrain
+    try {
+      await wtGit.merge([branchName, '--no-edit'])
+    } catch {
+      try { await wtGit.merge(['--abort']) } catch { /* not in merge state */ }
+      throw Object.assign(new Error(
+        `Merge conflict when merging branch "${branchName}" into "${CONTENTRAIN_BRANCH}". `
+        + `The branch still exists with your changes intact. `
+        + `Resolve the conflict manually, or delete the branch and retry.`,
+      ), {
+        code: 'CONTENT_BRANCH_MERGE_CONFLICT',
+        agent_hint: 'The feature branch could not be merged into the contentrain branch. Ask the developer to resolve the conflict.',
+        developer_action: `git checkout ${CONTENTRAIN_BRANCH} && git merge ${branchName}`,
+      })
+    }
+
+    // Get contentrain tip + old base ref + dirty files in parallel
+    const [contentrainTip, previousBaseRef, statusBeforeUpdate] = await Promise.all([
+      wtGit.raw(['rev-parse', 'HEAD']).then(s => s.trim()),
+      git.raw(['rev-parse', baseBranch]).then(s => s.trim()),
+      git.status(),
+    ])
+    const dirtyFilesBeforeUpdate = new Set(statusBeforeUpdate.files.map(f => f.path))
+
+    // Verify fast-forward: baseBranch must be an ancestor of contentrainTip
+    try {
+      await git.raw(['merge-base', '--is-ancestor', previousBaseRef, contentrainTip])
+    } catch {
+      throw Object.assign(new Error(
+        `Cannot fast-forward "${baseBranch}" to contentrain tip. `
+        + `The base branch has diverged. Merge "${baseBranch}" into "${CONTENTRAIN_BRANCH}" first.`,
+      ), {
+        code: 'BASE_UPDATE_FAILED',
+        agent_hint: `The base branch has commits not in contentrain. Merge ${baseBranch} into ${CONTENTRAIN_BRANCH} first.`,
+        developer_action: `git checkout ${CONTENTRAIN_BRANCH} && git merge ${baseBranch} && git checkout ${baseBranch}`,
+      })
+    }
+
+    // Advance base branch to contentrain tip via update-ref
+    await git.raw(['update-ref', `refs/heads/${baseBranch}`, contentrainTip])
+
+    // Refresh index to match new HEAD
+    try {
+      await git.raw(['read-tree', 'HEAD'])
+    } catch {
+      try { await git.raw(['reset', 'HEAD']) } catch { /* ignore */ }
+    }
+
+    // Selective sync: copy .contentrain/ files to developer's working tree
+    const sync = await selectiveSync(projectRoot, worktreePath, contentrainTip, previousBaseRef, dirtyFilesBeforeUpdate)
+
+    // Push to remote (best-effort)
+    if (hasRemote) {
+      try {
+        await git.push(remoteName, CONTENTRAIN_BRANCH)
+      } catch {
+        try {
+          await wtGit.fetch(remoteName, CONTENTRAIN_BRANCH)
+          await wtGit.merge([`${remoteName}/${CONTENTRAIN_BRANCH}`, '--no-edit'])
+          await git.push(remoteName, CONTENTRAIN_BRANCH)
+        } catch {
+          // Push failed after retry — continue, local state is fine
+        }
+      }
+
+      try {
+        await git.push(remoteName, baseBranch)
+      } catch {
+        // push may fail, local merge succeeded
+      }
+    }
+
+    return {
+      action: 'merged' as const,
+      commit: contentrainTip,
+      sync,
+    }
+  } finally {
+    // Cleanup worktree
+    try {
+      await git.raw(['worktree', 'remove', worktreePath, '--force'])
+    } catch {
+      // worktree may already be cleaned up
+    }
+  }
+}
+
 export function buildBranchName(scope: string, target: string, locale?: string): string {
   const ts = branchTimestamp()
   const parts = ['cr', scope, target]

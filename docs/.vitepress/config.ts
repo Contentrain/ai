@@ -4,6 +4,10 @@ export default defineConfig({
   title: 'Contentrain AI',
   description: 'Extract, govern, and ship structured content from your codebase.',
 
+  ignoreDeadLinks: [
+    /localhost/,
+  ],
+
   sitemap: {
     hostname: 'https://ai.contentrain.io',
   },
@@ -99,16 +103,10 @@ export default defineConfig({
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/Contentrain/ai' },
-      { icon: 'discord', link: 'https://discord.gg/8XbFKfgeZx' },
-      { icon: 'x', link: 'https://x.com/Contentrain_io' },
-      { icon: 'linkedin', link: 'https://www.linkedin.com/company/contentrain' },
-      { icon: 'youtube', link: 'https://www.youtube.com/@contentrain' },
-      { icon: 'instagram', link: 'https://www.instagram.com/contentrain_' },
-      { icon: 'facebook', link: 'https://www.facebook.com/Contentrain.io' },
     ],
 
     footer: {
-      message: 'Released under the MIT License.',
+      message: 'Released under the MIT License.<br><div class="footer-social-links"><a href="https://discord.gg/8XbFKfgeZx" target="_blank" rel="noopener" aria-label="Discord">Discord</a> · <a href="https://x.com/Contentrain_io" target="_blank" rel="noopener" aria-label="X">X</a> · <a href="https://www.linkedin.com/company/contentrain" target="_blank" rel="noopener" aria-label="LinkedIn">LinkedIn</a> · <a href="https://www.youtube.com/@contentrain" target="_blank" rel="noopener" aria-label="YouTube">YouTube</a> · <a href="https://www.instagram.com/contentrain_" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a> · <a href="https://www.facebook.com/Contentrain.io" target="_blank" rel="noopener" aria-label="Facebook">Facebook</a></div>',
       copyright: 'Copyright © 2024-present Contentrain',
     },
 

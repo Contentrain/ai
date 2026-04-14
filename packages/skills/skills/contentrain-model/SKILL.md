@@ -139,3 +139,10 @@ Report:
 - field count
 - any relation targets
 - whether content migration is needed next
+
+## Related Skills
+
+- **contentrain-content** — Create content for this model after defining it
+- **contentrain-validate-fix** — Validate model and content after changes
+- **contentrain-generate** — Regenerate SDK after model changes
+- **contentrain** — Core architecture and MCP tool catalog

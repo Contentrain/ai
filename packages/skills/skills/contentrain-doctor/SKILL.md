@@ -60,3 +60,10 @@ Recommended order:
 ### 5. Re-run Doctor
 
 After changes, run `contentrain doctor` again to confirm the project is healthy.
+
+## Related Skills
+
+- **contentrain-init** — Re-initialize if project structure is broken
+- **contentrain-validate-fix** — Fix content/model validation errors
+- **contentrain-generate** — Regenerate SDK if client is stale
+- **contentrain** — Core architecture and MCP tool catalog

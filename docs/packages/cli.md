@@ -54,6 +54,8 @@ Requirements:
 | `contentrain validate` | Validate content against schemas, optionally create review-branch fixes |
 | `contentrain generate` | Generate `.contentrain/client/` and `#contentrain` package imports |
 | `contentrain diff` | Review and merge or reject pending `contentrain/*` branches |
+| `contentrain setup` | Configure MCP server and AI rules for your IDE |
+| `contentrain skills` | Install, update, or list AI skills and rules for your IDE |
 | `contentrain serve` | Start the local review UI or the MCP stdio server |
 | `contentrain studio connect` | Connect a repository to a Studio project |
 | `contentrain studio login` | Authenticate with Contentrain Studio |
@@ -75,8 +77,20 @@ Requirements:
 Bootstraps a Contentrain project in your repository.
 
 ```bash
+# Interactive setup
 contentrain init
+
+# Skip prompts, use defaults
+contentrain init --yes
+
+# Specify project root
+contentrain init --root /path/to/project
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--yes` | Skip prompts, use defaults |
+| `--root <path>` | Project root path |
 
 This creates:
 - `.contentrain/config.json` — project configuration
@@ -97,8 +111,20 @@ If the directory is not a git repo, `contentrain init` runs `git init` automatic
 Shows a comprehensive project overview.
 
 ```bash
+# Human-readable output
 contentrain status
+
+# JSON output for CI pipelines
+contentrain status --json
+
+# Specify project root
+contentrain status --root /path/to/project
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output results as JSON (for CI/CD) |
+| `--root <path>` | Project root path |
 
 Outputs:
 - Project configuration (stack, workflow mode, locales)
@@ -115,7 +141,14 @@ Runs a health check on your project setup.
 
 ```bash
 contentrain doctor
+
+# Specify project root
+contentrain doctor --root /path/to/project
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--root <path>` | Project root path |
 
 Checks for:
 - Missing or misconfigured `.contentrain/config.json`
@@ -136,7 +169,24 @@ contentrain validate
 
 # Auto-fix structural issues and create a review branch
 contentrain validate --fix
+
+# Interactive mode — choose which issues to fix
+contentrain validate --interactive
+
+# Validate a single model
+contentrain validate --model blog-posts
+
+# JSON output for CI pipelines
+contentrain validate --json
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--fix` | Auto-fix structural issues and create a review branch |
+| `--interactive` | Choose which issues to fix interactively |
+| `--model <id>` | Validate a single model instead of all |
+| `--json` | Output results as JSON (for CI/CD) |
+| `--root <path>` | Project root path |
 
 Validation catches:
 - Missing required fields
@@ -217,7 +267,14 @@ Review pending `contentrain/*` branches.
 
 ```bash
 contentrain diff
+
+# Specify project root
+contentrain diff --root /path/to/project
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--root <path>` | Project root path |
 
 Shows:
 - List of pending review branches
@@ -228,6 +285,96 @@ Use `contentrain status` first to see how many branches are pending.
 
 ---
 
+### `contentrain setup`
+
+Configures the MCP server and installs AI rules/skills for your IDE in one command.
+
+```bash
+# Configure for a specific IDE
+contentrain setup claude-code
+contentrain setup cursor
+contentrain setup vscode
+contentrain setup windsurf
+contentrain setup copilot
+
+# Configure all detected IDEs at once
+contentrain setup --all
+
+# Specify project root
+contentrain setup --root /path/to/project
+```
+
+| Flag | Description |
+|------|-------------|
+| `--all` | Configure all detected IDEs |
+| `--root <path>` | Project root path |
+
+What it does:
+1. Writes the correct MCP config file for the target IDE
+2. Installs AI rules and skills if not already present
+3. Merges into existing config without overwriting other MCP servers
+
+| Agent | Config File Created |
+|-------|-------------------|
+| `claude-code` | `.mcp.json` |
+| `cursor` | `.cursor/mcp.json` |
+| `vscode` | `.vscode/mcp.json` |
+| `windsurf` | `.windsurf/mcp.json` |
+| `copilot` | `.vscode/mcp.json` |
+
+::: tip Already done by `contentrain init`
+`contentrain init` auto-detects your IDE and writes the MCP config during project setup. Use `contentrain setup` when you switch IDEs or want to add another IDE to an existing project.
+:::
+
+---
+
+### `contentrain skills`
+
+Install, update, or list Contentrain AI skills and rules for your IDE.
+
+```bash
+# Install skills and rules for detected IDEs
+contentrain skills
+
+# Force update all skills (overwrite existing)
+contentrain skills --update
+
+# List installed skills and their status
+contentrain skills --list
+
+# Specify project root
+contentrain skills --root /path/to/project
+```
+
+| Flag | Description |
+|------|-------------|
+| `--list` | List installed skills with ✓/✗ status per IDE |
+| `--update` | Force update all skills and rules (overwrites existing files) |
+| `--root <path>` | Project root path |
+
+Detects and installs for all major AI-powered IDEs:
+
+| IDE | Rules Directory | Skills Directory |
+|-----|----------------|-----------------|
+| Claude Code | `.claude/rules/` | `.claude/skills/` |
+| Cursor | `.cursor/rules/` | `.cursor/skills/` |
+| Windsurf | `.windsurf/rules/` | `.windsurf/skills/` |
+| GitHub Copilot | `.github/` | `.agents/skills/` |
+
+Installs:
+- **Essential rules** (~86 lines, always-loaded guardrails)
+- **15 Agent Skills** (on-demand workflow procedures with reference docs)
+
+::: tip Skills vs Rules
+**Rules** are always-loaded behavioral guardrails (compact, ~86 lines). **Skills** are on-demand procedural workflows the agent loads when needed (normalize, content CRUD, translation, etc.). Both are plain markdown files that IDEs auto-discover.
+:::
+
+::: info Already installed by `contentrain init`
+`contentrain init` automatically installs skills and rules during project setup. Use `contentrain skills --update` to refresh them after upgrading `@contentrain/skills` or `@contentrain/rules` packages.
+:::
+
+---
+
 ### `contentrain serve`
 
 Starts the local review UI or the MCP stdio server.
@@ -235,12 +382,38 @@ Starts the local review UI or the MCP stdio server.
 #### Web UI Mode (default)
 
 ```bash
-# Default: localhost:4321
+# Default: localhost:3333
 contentrain serve
 
 # Custom host and port
-contentrain serve --port 3333 --host localhost
+contentrain serve --port 8080 --host 0.0.0.0
+
+# Open browser automatically
+contentrain serve --open
+
+# Demo mode — try without a real project
+contentrain serve --demo
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--port <number>` | HTTP server port (default: `3333`) |
+| `--host <address>` | Bind address (default: `localhost`) |
+| `--open` | Open browser automatically |
+| `--demo` | Start with a temporary demo project (no setup needed) |
+| `--root <path>` | Project root path |
+
+**Environment variable overrides:**
+
+| Variable | Equivalent Flag | Description |
+|----------|----------------|-------------|
+| `CONTENTRAIN_STDIO=true` | `--stdio` | Use stdio MCP transport |
+| `CONTENTRAIN_PORT` | `--port` | HTTP server port |
+| `CONTENTRAIN_HOST` | `--host` | Bind address |
+| `CONTENTRAIN_NO_OPEN=true` | — | Disable auto browser open |
+| `CONTENTRAIN_PROJECT_ROOT` | `--root` | Project root path |
+
+CLI flags take precedence over environment variables.
 
 The web UI provides:
 - REST endpoints for status, content, validation, branches, and normalize data
@@ -254,11 +427,22 @@ The web UI provides:
 contentrain serve --stdio
 ```
 
-Use stdio mode when connecting an IDE agent (Claude Code, Cursor, Windsurf) to the local project. This exposes all 15 MCP tools over the stdio transport.
+| Flag | Description |
+|------|-------------|
+| `--stdio` | Use stdio MCP transport (for IDE integration) |
 
-::: code-group
+Use stdio mode when connecting an IDE agent (Claude Code, Cursor, Windsurf) to the local project. This exposes all 16 MCP tools over the stdio transport.
 
-```json [Claude Code]
+The fastest way to configure this is with the `setup` command:
+
+```bash
+contentrain setup claude-code   # or: cursor, vscode, windsurf, copilot
+```
+
+<details>
+<summary>Manual config (all IDEs use the same JSON)</summary>
+
+```json
 {
   "mcpServers": {
     "contentrain": {
@@ -269,29 +453,14 @@ Use stdio mode when connecting an IDE agent (Claude Code, Cursor, Windsurf) to t
 }
 ```
 
-```json [Cursor]
-{
-  "mcpServers": {
-    "contentrain": {
-      "command": "npx",
-      "args": ["contentrain", "serve", "--stdio"]
-    }
-  }
-}
-```
+| IDE | Config file |
+|-----|-------------|
+| Claude Code | `.mcp.json` |
+| Cursor | `.cursor/mcp.json` |
+| VS Code | `.vscode/mcp.json` |
+| Windsurf | `.windsurf/mcp.json` |
 
-```json [Windsurf]
-{
-  "mcpServers": {
-    "contentrain": {
-      "command": "npx",
-      "args": ["contentrain", "serve", "--stdio"]
-    }
-  }
-}
-```
-
-:::
+</details>
 
 ## Studio Integration
 
@@ -303,6 +472,12 @@ The `studio` command group connects the CLI to [Contentrain Studio](/studio) —
 # Sign in via GitHub or Google OAuth
 contentrain studio login
 
+# Select provider directly
+contentrain studio login --provider github
+
+# Connect to a self-hosted Studio instance
+contentrain studio login --url https://studio.example.com
+
 # Check who you're logged in as
 contentrain studio whoami
 
@@ -310,7 +485,19 @@ contentrain studio whoami
 contentrain studio logout
 ```
 
-Credentials are stored in `~/.contentrain/credentials.json` with `0o600` permissions — never inside the project directory. For CI/CD, set the `CONTENTRAIN_STUDIO_TOKEN` environment variable to skip interactive login.
+| Flag | Description |
+|------|-------------|
+| `--provider <github\|google>` | Skip provider selection prompt |
+| `--url <url>` | Studio instance URL (default: `https://studio.contentrain.io`) |
+
+Credentials are stored in `~/.contentrain/credentials.json` with `0o600` permissions — never inside the project directory.
+
+**Environment variables:**
+
+| Variable | Description |
+|----------|-------------|
+| `CONTENTRAIN_STUDIO_TOKEN` | Skip interactive login in CI/CD |
+| `CONTENTRAIN_STUDIO_URL` | Override Studio instance URL |
 
 ### Connecting a Repository
 
@@ -320,7 +507,15 @@ contentrain studio connect
 
 # Skip workspace selection
 contentrain studio connect --workspace ws-123
+
+# JSON output for scripting
+contentrain studio connect --json
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--workspace <id>` | Skip workspace selection prompt |
+| `--json` | Output result as JSON (workspace, project, repository, scan) |
 
 The `connect` command links your local repository to a Studio project in one interactive flow:
 
@@ -336,50 +531,138 @@ After a successful connection, workspace and project IDs are saved as defaults s
 The connect flow works best when `.contentrain/` is already initialized and pushed to the repository. The scan step confirms your setup, but you can also connect first and initialize later.
 :::
 
-### CDN Setup & Delivery
-
-```bash
-# Interactive setup: create API key, trigger first build, get SDK snippet
-contentrain studio cdn-init
-
-# Trigger a CDN rebuild after content changes
-contentrain studio cdn-build
-
-# Wait for the build to complete
-contentrain studio cdn-build --wait
-```
-
 ### Project Monitoring
 
+#### `contentrain studio status`
+
 ```bash
-# Project overview: branches, CDN status, team
 contentrain studio status
-
-# Recent activity feed
-contentrain studio activity --limit 10
-
-# Workspace usage metrics (AI messages, storage, bandwidth)
-contentrain studio usage
+contentrain studio status --workspace ws-123 --project proj-456 --json
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--workspace <id>` | Workspace ID (skip selection prompt) |
+| `--project <id>` | Project ID (skip selection prompt) |
+| `--json` | Output as JSON |
+
+Shows project overview: branches, CDN status, and team.
+
+#### `contentrain studio activity`
+
+```bash
+contentrain studio activity
+contentrain studio activity --limit 10 --json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--limit <number>` | Number of entries (default: `20`) |
+| `--workspace <id>` | Workspace ID |
+| `--project <id>` | Project ID |
+| `--json` | Output as JSON |
+
+Shows recent activity feed.
+
+#### `contentrain studio usage`
+
+```bash
+contentrain studio usage
+contentrain studio usage --workspace ws-123 --json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--workspace <id>` | Workspace ID |
+| `--project <id>` | Project ID (for context resolution) |
+| `--json` | Output as JSON |
+
+Shows workspace usage metrics (AI messages, storage, bandwidth).
 
 ### Branch Management
 
+#### `contentrain studio branches`
+
 ```bash
-# List pending branches, interactively merge or reject
 contentrain studio branches
+contentrain studio branches --workspace ws-123 --project proj-456 --json
 ```
 
-### Webhooks & Form Submissions
+| Flag | Description |
+|------|-------------|
+| `--workspace <id>` | Workspace ID |
+| `--project <id>` | Project ID |
+| `--json` | Output as JSON |
+
+List pending branches, interactively merge or reject.
+
+### CDN Setup & Delivery
+
+#### `contentrain studio cdn-init`
 
 ```bash
-# Manage webhooks: create, delete, test, view deliveries
-contentrain studio webhooks
-
-# Manage form submissions: list, approve, reject
-contentrain studio submissions --form contact-form
+contentrain studio cdn-init
+contentrain studio cdn-init --workspace ws-123 --project proj-456
 ```
 
-All `studio` commands support `--json` for CI/CD integration and `--workspace` / `--project` flags to skip interactive selection.
+| Flag | Description |
+|------|-------------|
+| `--workspace <id>` | Workspace ID |
+| `--project <id>` | Project ID |
+
+Interactive setup: create API key, trigger first build, get SDK snippet.
+
+#### `contentrain studio cdn-build`
+
+```bash
+contentrain studio cdn-build
+contentrain studio cdn-build --wait --json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--wait` | Wait for build to complete |
+| `--workspace <id>` | Workspace ID |
+| `--project <id>` | Project ID |
+| `--json` | Output as JSON |
+
+Trigger a CDN rebuild after content changes.
+
+### Webhooks
+
+#### `contentrain studio webhooks`
+
+```bash
+contentrain studio webhooks
+contentrain studio webhooks --workspace ws-123 --project proj-456 --json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--workspace <id>` | Workspace ID |
+| `--project <id>` | Project ID |
+| `--json` | Output as JSON |
+
+Manage webhooks: create, delete, test, view deliveries.
+
+### Form Submissions
+
+#### `contentrain studio submissions`
+
+```bash
+contentrain studio submissions --form contact-form
+contentrain studio submissions --form contact-form --status pending --json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--form <id>` | Form model ID |
+| `--status <status>` | Filter by status (`pending`, `approved`, `rejected`) |
+| `--workspace <id>` | Workspace ID |
+| `--project <id>` | Project ID |
+| `--json` | Output as JSON |
+
+Manage form submissions: list, approve, reject.
 
 ::: tip Studio + CLI = Full Developer Experience
 Studio handles team collaboration, media management, AI conversations, and CDN delivery in the browser. The CLI gives developers terminal access to the same operations — authenticate once, then manage branches, trigger builds, and monitor usage without leaving the editor.
@@ -390,25 +673,28 @@ Studio handles team collaboration, media management, AI conversations, and CDN d
 ## Typical Workflow
 
 ```bash
-# 1. Initialize the project
+# 1. Initialize the project (auto-configures MCP for detected IDEs)
 contentrain init
 
-# 2. Check project health
+# 2. Or set up MCP for a specific IDE manually
+contentrain setup claude-code
+
+# 3. Check project health
 contentrain status
 contentrain doctor
 
-# 3. Let the agent create models and content via MCP...
+# 4. Let the agent create models and content via MCP...
 
-# 4. Generate the typed SDK client
+# 5. Generate the typed SDK client
 contentrain generate
 
-# 5. Validate everything
+# 6. Validate everything
 contentrain validate
 
-# 6. Review agent-created branches
+# 7. Review agent-created branches
 contentrain diff
 
-# 7. Open the local review UI
+# 8. Open the local review UI
 contentrain serve
 ```
 

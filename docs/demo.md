@@ -117,3 +117,14 @@ This one flow shows Contentrain's full value:
 - Follow the full [Getting Started](/getting-started) guide
 - Read the full [Normalize Flow](/guides/normalize)
 - Use [Framework Integration](/guides/frameworks) for your stack
+
+## Ready for Team Collaboration?
+
+This demo shows extraction and reuse locally. When your team needs role-based review, web-based collaboration, or CDN delivery for mobile and non-web platforms, connect your project to [Contentrain Studio](/studio):
+
+```bash
+contentrain studio login
+contentrain studio connect
+```
+
+Studio uses the same `.contentrain/` content model — no changes needed.

@@ -164,11 +164,23 @@ console.log(WORKFLOW_SKILLS)
 console.log(FRAMEWORK_GUIDES.includes('next'))
 ```
 
-You can also install skills directly:
+You can also install skills directly via the [Agent Skills CLI](https://agentskills.io):
 
 ```bash
-npx skills add contentrain/contentrain-ai --skill='*'
+# Install all 15 skills
+npx skills add Contentrain/ai/packages/skills
+
+# Install a specific skill
+npx skills add Contentrain/ai/packages/skills --skill contentrain-normalize
+
+# Install to a specific agent
+npx skills add Contentrain/ai/packages/skills --agent claude-code
+
+# List available skills
+npx skills add Contentrain/ai/packages/skills --list
 ```
+
+Works with Claude Code, Cursor, Windsurf, GitHub Copilot, OpenAI Codex, Gemini CLI, and 40+ other agents.
 
 ## IDE Integration
 
@@ -248,9 +260,29 @@ pnpm add @contentrain/skills
 
 In most cases, you do not install these manually. `contentrain init` handles IDE rule distribution, and MCP agents load skills through their configuration.
 
+To update skills and rules after upgrading packages:
+
+```bash
+contentrain skills --update
+```
+
+To check installed status:
+
+```bash
+contentrain skills --list
+```
+
+## AGENTS.md
+
+The repo root includes an [`AGENTS.md`](https://github.com/Contentrain/ai/blob/main/AGENTS.md) file following the [AGENTS.md standard](https://agents.md). This file provides project-level guidance for any AI agent (Codex, Copilot, Gemini CLI, etc.) working with the repo — skill catalog, essential rules reference, key constraints, and framework guides.
+
+## Embedded SDK Skill
+
+`@contentrain/query` ships an embedded Agent Skill at `skills/contentrain-query/SKILL.md` inside the npm package. AI coding agents can discover and load it for type-safe SDK usage guidance, bundler configuration, and framework integration patterns.
+
 ## Related Pages
 
 - [MCP Tools](/packages/mcp) — The deterministic execution layer that rules and skills govern
 - [CLI](/packages/cli) — `contentrain init` installs IDE rules automatically
-- [Query SDK](/packages/sdk) — The generated client for consuming content
+- [Query SDK](/packages/sdk) — The generated client for consuming content (ships embedded skill)
 - [Contentrain Studio](/studio) — Chat-first team UI where agents use the same rules and skills through a web interface

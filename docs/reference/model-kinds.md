@@ -586,3 +586,7 @@ A model can reference itself for tree structures:
 | **Cascade warning** | Deleting a referenced entry triggers a validation warning |
 | **Array ordering** | `relations` array order is preserved |
 | **Min/max** | `relations` supports `min` and `max` element count |
+
+::: tip Unified Across Surfaces
+Model kinds, storage formats, and content paths are the same whether you define them locally with `@contentrain/mcp` or in [Contentrain Studio](/studio). Content created in one surface works seamlessly in the other.
+:::

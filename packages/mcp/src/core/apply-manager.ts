@@ -633,6 +633,9 @@ export async function applyExtract(
       next_steps: [
         'Run contentrain_validate to check the extracted content',
         'Run contentrain_submit to push the branch for review',
+        'For browser-based review: ensure `contentrain serve` is running, direct user to http://localhost:3333/normalize',
+        'For terminal workflow: use contentrain_merge to merge the branch locally',
+        'After merge, run `npx contentrain generate` to update SDK client',
         'After review, proceed with mode:reuse to patch source files',
       ],
     }
@@ -982,6 +985,8 @@ export async function applyReuse(
         syntaxErrors.length > 0 ? `WARNING: ${syntaxErrors.length} file(s) may have syntax errors after patching — review manually` : '',
         scopeWarnings.length > 0 ? `NOTE: ${scopeWarnings.length} patch file(s) not in extract source map` : '',
         'Run contentrain_submit to push the branch for review',
+        'For review: direct user to http://localhost:3333/branches or use contentrain_merge',
+        'After all reuse phases complete, run `npx contentrain generate` to update SDK types',
       ].filter(Boolean),
     }
   } catch (error) {

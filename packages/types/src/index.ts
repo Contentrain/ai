@@ -267,6 +267,10 @@ export interface ScanCandidate {
   value: string
   context: StringContext
   surrounding: string
+  /** Content confidence score (0-1). Higher = more likely user-visible content. */
+  contentScore: number
+  /** All locations where this value appears (populated when dedup is enabled). */
+  occurrences: Array<{ file: string; line: number }>
 }
 
 export interface DuplicateGroup {
@@ -303,9 +307,12 @@ export interface ScanCandidatesResult {
   stats: {
     files_scanned: number
     raw_strings_found: number
-    after_filtering: number
+    skipped: number
+    low_confidence: number
+    unique_candidates: number
     candidates_returned: number
     has_more: boolean
+    skip_reasons: Record<string, number>
   }
 }
 
@@ -316,6 +323,52 @@ export interface ScanSummaryResult {
   top_repeated: Array<{ value: string; count: number }>
   sampling_note?: string
   file_types: Record<string, number>
+}
+
+// ─── Normalize Plan ───
+
+export interface NormalizePlan {
+  version: number
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+  approved_at?: string
+  agent: string
+  scan_stats: {
+    files_scanned: number
+    raw_strings: number
+    candidates_sent: number
+    extracted: number
+    skipped: number
+  }
+  models: NormalizePlanModel[]
+  extractions: NormalizePlanExtraction[]
+  patches: NormalizePlanPatch[]
+  approved_models?: string[]
+}
+
+export interface NormalizePlanModel {
+  id: string
+  kind: ModelKind
+  domain: string
+  i18n?: boolean
+  fields: Record<string, FieldDef>
+}
+
+export interface NormalizePlanExtraction {
+  value: string
+  file: string
+  line: number
+  model: string
+  field: string
+  locale?: string
+}
+
+export interface NormalizePlanPatch {
+  file: string
+  line: number
+  old_value: string
+  new_expression: string
+  import_statement?: string
 }
 
 // ─── Context ───

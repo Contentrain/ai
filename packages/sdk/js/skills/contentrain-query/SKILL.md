@@ -1,14 +1,12 @@
 ---
-name: contentrain-sdk
-description: "Use the @contentrain/query SDK to query Contentrain content with type safety. Use when importing from #contentrain, using QueryBuilder, SingletonAccessor, DictionaryAccessor, or DocumentQuery."
+name: contentrain-query
+description: "Use the @contentrain/query SDK to query Contentrain content with type safety. Use when importing from #contentrain, using QueryBuilder, SingletonAccessor, DictionaryAccessor, DocumentQuery, or CDN client."
 metadata:
   author: Contentrain
   version: "1.0.0"
 ---
 
 # Contentrain Query SDK
-
-## Overview
 
 `@contentrain/query` is a Prisma-pattern generated client that provides type-safe access to Contentrain content. Generated output lives in `.contentrain/client/` — never edit it manually.
 
@@ -88,7 +86,6 @@ import { createContentrain } from '@contentrain/query/cdn'
 const client = createContentrain({
   projectId: '350696e8-...',
   apiKey: 'crn_live_xxx',
-  // baseUrl: 'https://studio.contentrain.io/api/cdn/v1'  (default)
 })
 
 // All CDN queries are async (return Promise)
@@ -97,51 +94,6 @@ const hero = await client.singleton('hero').locale('en').get()
 const t = await client.dictionary('ui').locale('en').get()
 const doc = await client.document('docs').locale('en').bySlug('intro')
 ```
-
-### CDN Collection Query Operators
-
-| Operator | Example | Description |
-|----------|---------|-------------|
-| `eq` | `.where('status', 'eq', 'published')` | Equals |
-| `ne` | `.where('status', 'ne', 'draft')` | Not equals |
-| `gt` | `.where('order', 'gt', 5)` | Greater than |
-| `gte` | `.where('order', 'gte', 5)` | Greater than or equal |
-| `lt` | `.where('price', 'lt', 100)` | Less than |
-| `lte` | `.where('price', 'lte', 100)` | Less than or equal |
-| `in` | `.where('category', 'in', ['a','b'])` | In array |
-| `contains` | `.where('tags', 'contains', 'vue')` | String/array contains |
-
-### CDN Entry Metadata, Media & Forms
-
-```typescript
-// Entry metadata (status, publish_at, expire_at)
-const posts = await client.collection('blog').locale('en').withMeta().all()
-
-// Media manifest & variant URLs
-const media = client.media()
-const asset = await media.asset('hero.jpg')
-const url = media.url(asset, 'thumb')
-
-// Forms (config fetch + submit)
-const form = client.form()
-const config = await form.config('contact')
-const result = await form.submit('contact', { name: 'Alice' })
-
-// Conversation API (external AI content operations)
-const conv = client.conversation()
-const response = await conv.send('Create a blog post about Vue 4')
-const history = await conv.history(response.conversationId)
-```
-
-### CDN vs Local
-
-| Aspect | Local (`#contentrain`) | CDN (`createContentrain()`) |
-|--------|----------------------|---------------------------|
-| Data source | Bundled `.mjs` files | HTTP fetch from CDN |
-| Return type | Sync (`T[]`) | Async (`Promise<T[]>`) |
-| Auth | None | API key required |
-| Caching | In-memory (embedded) | ETag-based HTTP cache |
-| Use case | SSG, build-time | SSR, client-side, serverless |
 
 ## Key Rules
 

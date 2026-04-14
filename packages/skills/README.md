@@ -1,8 +1,9 @@
 # `@contentrain/skills`
 
 [![npm version](https://img.shields.io/npm/v/%40contentrain%2Fskills?label=%40contentrain%2Fskills)](https://www.npmjs.com/package/@contentrain/skills)
+[![Agent Skills](https://img.shields.io/badge/Agent_Skills-15_skills-8B5CF6)](https://agentskills.io)
 [![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/skills)
-[![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io/packages/rules)
+[![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io/packages/skills)
 
 Workflow skills and framework guides for Contentrain-aware AI agents.
 
@@ -16,15 +17,29 @@ This package follows the [Agent Skills standard](https://agentskills.io) for pro
 
 ## Install
 
+### Via npm (programmatic access to catalogs and constants)
+
 ```bash
 pnpm add @contentrain/skills
 ```
 
-Or install directly via the skills CLI:
+### Via skills CLI (install skills into your AI agent)
 
 ```bash
-npx skills add contentrain/contentrain-ai --skill='*'
+# Install all 15 skills
+npx skills add Contentrain/ai/packages/skills
+
+# Install a specific skill
+npx skills add Contentrain/ai/packages/skills --skill contentrain-normalize
+
+# Install to a specific agent
+npx skills add Contentrain/ai/packages/skills --agent claude-code
+
+# List available skills
+npx skills add Contentrain/ai/packages/skills --list
 ```
+
+Works with Claude Code, Cursor, Windsurf, GitHub Copilot, OpenAI Codex, Gemini CLI, and 40+ other agents.
 
 ## What It Contains
 

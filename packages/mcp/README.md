@@ -69,29 +69,38 @@ All write operations are designed around git-backed safety:
 
 ## 🧰 Tool Surface
 
-Current MCP tools exposed by the server:
+16 MCP tools with [annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`) for client safety hints:
 
-| Tool | Purpose |
-| --- | --- |
-| `contentrain_status` | Project status, config, models, branch health, context |
-| `contentrain_describe` | Full schema and sample data for a model |
-| `contentrain_describe_format` | File-format and storage contract reference |
-| `contentrain_init` | Create `.contentrain/` structure and base config |
-| `contentrain_scaffold` | Apply a starter template such as blog, docs, landing, saas |
-| `contentrain_model_save` | Create or update a model definition |
-| `contentrain_model_delete` | Delete a model definition |
-| `contentrain_content_save` | Save content entries for any model kind |
-| `contentrain_content_delete` | Delete content entries |
-| `contentrain_content_list` | Read content entries |
-| `contentrain_validate` | Validate project content, optionally auto-fix structural issues |
-| `contentrain_submit` | Push `contentrain/*` branches to remote |
-| `contentrain_scan` | Graph- and candidate-based hardcoded string scan |
-| `contentrain_apply` | Normalize extract/reuse execution with dry-run support |
-| `contentrain_bulk` | Bulk locale copy, status updates, and deletes |
+| Tool | Purpose | Read-only | Destructive |
+| --- | --- | --- | --- |
+| `contentrain_status` | Project status, config, models, branch health, context | Yes | — |
+| `contentrain_describe` | Full schema and sample data for a model | Yes | — |
+| `contentrain_describe_format` | File-format and storage contract reference | Yes | — |
+| `contentrain_init` | Create `.contentrain/` structure and base config | — | — |
+| `contentrain_scaffold` | Apply a starter template such as blog, docs, landing, saas | — | — |
+| `contentrain_model_save` | Create or update a model definition | — | — |
+| `contentrain_model_delete` | Delete a model definition | — | **Yes** |
+| `contentrain_content_save` | Save content entries for any model kind | — | — |
+| `contentrain_content_delete` | Delete content entries | — | **Yes** |
+| `contentrain_content_list` | Read content entries | Yes | — |
+| `contentrain_validate` | Validate project content, optionally auto-fix structural issues | — | — |
+| `contentrain_submit` | Push `contentrain/*` branches to remote | — | — |
+| `contentrain_merge` | Merge a review-mode branch into contentrain locally | — | — |
+| `contentrain_scan` | Graph- and candidate-based hardcoded string scan | Yes | — |
+| `contentrain_apply` | Normalize extract/reuse execution with dry-run support | — | — |
+| `contentrain_bulk` | Bulk locale copy, status updates, and deletes | — | — |
 
 ## 🚀 Quick Start
 
-### Run as an MCP server
+### Configure via CLI (recommended)
+
+```bash
+npx contentrain setup claude-code   # or: cursor, vscode, windsurf, copilot
+```
+
+This auto-creates the correct MCP config file for your IDE. See [CLI docs](https://ai.contentrain.io/packages/cli) for details.
+
+### Run as a standalone MCP server
 
 ```bash
 CONTENTRAIN_PROJECT_ROOT=/path/to/project npx contentrain-mcp

@@ -17,11 +17,15 @@
     "contentrain",
     "ai",
     "rules",
+    "agent-skills",
+    "agent-rules",
     "mcp",
     "prompt-engineering",
     "claude-code",
     "cursor",
-    "windsurf"
+    "windsurf",
+    "copilot",
+    "codex"
   ],
   "sideEffects": false,
   "publishConfig": {

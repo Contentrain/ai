@@ -18,6 +18,16 @@ The user wants to create new content, add entries to a collection, populate a si
 
 ---
 
+## MUST Rules
+
+- MUST call `contentrain_describe` before writing content (know the schema)
+- MUST provide ALL required fields in entries
+- MUST create entries for ALL supported locales when model has `i18n: true`
+- MUST NOT set system fields (id, slug, createdAt, updatedAt, status, source)
+- MUST run `npx contentrain generate` after adding new models or changing fields
+
+---
+
 ## Steps
 
 ### 1. Check Project State
@@ -150,6 +160,16 @@ Call `contentrain_submit` to push branches to remote:
 
 Report the Studio URL if provided in the tool response -- the user can review and approve content there.
 
+### After Save: SDK Regeneration
+
+When new models are created or fields change, regenerate the SDK client:
+
+```bash
+npx contentrain generate
+```
+
+This updates TypeScript types for the new content. See: **contentrain-generate** skill.
+
 ### 12. Final Summary
 
 Report to the user:
@@ -160,3 +180,10 @@ Report to the user:
 - The submission status (auto-merged or pending review).
 - Studio link for visual review (if available).
 - Next steps: run `/contentrain-generate` to update SDK types if models changed.
+
+## Related Skills
+
+- **contentrain-serve** — Browser-based review for content branches
+- **contentrain-generate** — SDK client regeneration after content changes
+- **contentrain-quality** — Content quality, SEO, and accessibility rules
+- **contentrain** — Core architecture and MCP tool catalog

@@ -6,6 +6,7 @@ import { buildGraph } from '../core/graph-builder.js'
 import { scanCandidates, scanSummary } from '../core/scanner.js'
 import { applyExtract, applyReuse } from '../core/apply-manager.js'
 import { fieldDefZodSchema } from '../core/model-manager.js'
+import { TOOL_ANNOTATIONS } from './annotations.js'
 
 export function registerNormalizeTools(server: McpServer, projectRoot: string): void {
   // ─── contentrain_scan ───
@@ -22,6 +23,7 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
       min_length: z.number().optional().describe('Candidates mode: minimum string length. Default: 2'),
       max_length: z.number().optional().describe('Candidates mode: maximum string length. Default: 500'),
     },
+    TOOL_ANNOTATIONS['contentrain_scan']!,
     async (input) => {
       const config = await readConfig(projectRoot)
       if (!config) {
@@ -167,6 +169,7 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
         import_statement: z.string().optional().describe('Import to add if needed'),
       })).optional().describe('Reuse mode: patches to apply (max 100)'),
     },
+    TOOL_ANNOTATIONS['contentrain_apply']!,
     async (input) => {
       const config = await readConfig(projectRoot)
       if (!config) {

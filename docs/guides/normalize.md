@@ -159,6 +159,14 @@ This creates model definitions and content files in `.contentrain/` on a dedicat
 
 The agent calls `contentrain_validate` then `contentrain_submit` to push the branch.
 
+### Step 9. Merge Phase 1 branch
+
+Before starting Phase 2, the extraction branch must be merged:
+
+- **Browser:** `http://localhost:3333/branches` → click Merge
+- **MCP Tool:** The agent calls `contentrain_merge(branch: "cr/normalize/extract/...", confirm: true)`
+- **Git platform:** Create PR → review → merge
+
 ## Phase 2: Reuse
 
 Replace hardcoded strings in source files with content references. Start only after Phase 1 is reviewed and merged.
@@ -422,6 +430,17 @@ Normalize solves this in minutes. And once your content is extracted and structu
 ```
 normalize → content exists → SDK queries work → i18n is possible → Studio review makes sense
 ```
+
+::: tip Ready for Team Collaboration?
+After extracting content, connect your project to [Contentrain Studio](/studio) for team review, CDN delivery, and collaboration:
+
+```bash
+contentrain studio login
+contentrain studio connect
+```
+
+See [CLI Studio Integration](/packages/cli#connecting-a-repository) for the full setup flow.
+:::
 
 ## Important Rules
 
