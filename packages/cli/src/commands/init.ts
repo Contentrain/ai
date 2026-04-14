@@ -339,11 +339,19 @@ async function configureMcp(projectRoot: string): Promise<void> {
       detectedIdeKeys.push('claude-code')
     }
 
+    const writtenPaths: string[] = []
     for (const ideKey of detectedIdeKeys) {
       const result = await writeMcpConfig(projectRoot, ideKey)
       if (result.written) {
         log.info(`MCP configured: ${pc.cyan(result.path)}`)
+        writtenPaths.push(join(projectRoot, result.path))
       }
+    }
+
+    if (writtenPaths.length > 0) {
+      const git = simpleGit(projectRoot)
+      await git.add(writtenPaths)
+      try { await git.commit('[contentrain] configure MCP servers') } catch { /* nothing to commit */ }
     }
   } catch {
     // MCP config is best-effort — don't fail init
