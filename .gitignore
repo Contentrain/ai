@@ -46,6 +46,6 @@ docs/.vitepress/dist/
 
 .tmp
 .mcpregistry_*
-
+tmp/
 # Symlinked projects
 /studio

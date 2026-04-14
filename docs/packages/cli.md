@@ -75,8 +75,20 @@ Requirements:
 Bootstraps a Contentrain project in your repository.
 
 ```bash
+# Interactive setup
 contentrain init
+
+# Skip prompts, use defaults
+contentrain init --yes
+
+# Specify project root
+contentrain init --root /path/to/project
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--yes` | Skip prompts, use defaults |
+| `--root <path>` | Project root path |
 
 This creates:
 - `.contentrain/config.json` — project configuration
@@ -97,8 +109,20 @@ If the directory is not a git repo, `contentrain init` runs `git init` automatic
 Shows a comprehensive project overview.
 
 ```bash
+# Human-readable output
 contentrain status
+
+# JSON output for CI pipelines
+contentrain status --json
+
+# Specify project root
+contentrain status --root /path/to/project
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output results as JSON (for CI/CD) |
+| `--root <path>` | Project root path |
 
 Outputs:
 - Project configuration (stack, workflow mode, locales)
@@ -115,7 +139,14 @@ Runs a health check on your project setup.
 
 ```bash
 contentrain doctor
+
+# Specify project root
+contentrain doctor --root /path/to/project
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--root <path>` | Project root path |
 
 Checks for:
 - Missing or misconfigured `.contentrain/config.json`
@@ -234,7 +265,14 @@ Review pending `contentrain/*` branches.
 
 ```bash
 contentrain diff
+
+# Specify project root
+contentrain diff --root /path/to/project
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--root <path>` | Project root path |
 
 Shows:
 - List of pending review branches
@@ -252,12 +290,22 @@ Starts the local review UI or the MCP stdio server.
 #### Web UI Mode (default)
 
 ```bash
-# Default: localhost:4321
+# Default: localhost:3333
 contentrain serve
 
 # Custom host and port
-contentrain serve --port 3333 --host localhost
+contentrain serve --port 8080 --host 0.0.0.0
+
+# Open browser automatically
+contentrain serve --open
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--port <number>` | HTTP server port (default: `3333`) |
+| `--host <address>` | Bind address (default: `localhost`) |
+| `--open` | Open browser automatically |
+| `--root <path>` | Project root path |
 
 The web UI provides:
 - REST endpoints for status, content, validation, branches, and normalize data
@@ -270,6 +318,10 @@ The web UI provides:
 ```bash
 contentrain serve --stdio
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--stdio` | Use stdio MCP transport (for IDE integration) |
 
 Use stdio mode when connecting an IDE agent (Claude Code, Cursor, Windsurf) to the local project. This exposes all 15 MCP tools over the stdio transport.
 
@@ -379,53 +431,138 @@ After a successful connection, workspace and project IDs are saved as defaults s
 The connect flow works best when `.contentrain/` is already initialized and pushed to the repository. The scan step confirms your setup, but you can also connect first and initialize later.
 :::
 
-### CDN Setup & Delivery
-
-```bash
-# Interactive setup: create API key, trigger first build, get SDK snippet
-contentrain studio cdn-init
-
-# Trigger a CDN rebuild after content changes
-contentrain studio cdn-build
-
-# Wait for the build to complete
-contentrain studio cdn-build --wait
-```
-
 ### Project Monitoring
 
+#### `contentrain studio status`
+
 ```bash
-# Project overview: branches, CDN status, team
 contentrain studio status
-
-# Recent activity feed
-contentrain studio activity --limit 10
-
-# Workspace usage metrics (AI messages, storage, bandwidth)
-contentrain studio usage
+contentrain studio status --workspace ws-123 --project proj-456 --json
 ```
+
+| Flag | Description |
+|------|-------------|
+| `--workspace <id>` | Workspace ID (skip selection prompt) |
+| `--project <id>` | Project ID (skip selection prompt) |
+| `--json` | Output as JSON |
+
+Shows project overview: branches, CDN status, and team.
+
+#### `contentrain studio activity`
+
+```bash
+contentrain studio activity
+contentrain studio activity --limit 10 --json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--limit <number>` | Number of entries (default: `20`) |
+| `--workspace <id>` | Workspace ID |
+| `--project <id>` | Project ID |
+| `--json` | Output as JSON |
+
+Shows recent activity feed.
+
+#### `contentrain studio usage`
+
+```bash
+contentrain studio usage
+contentrain studio usage --workspace ws-123 --json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--workspace <id>` | Workspace ID |
+| `--project <id>` | Project ID (for context resolution) |
+| `--json` | Output as JSON |
+
+Shows workspace usage metrics (AI messages, storage, bandwidth).
 
 ### Branch Management
 
+#### `contentrain studio branches`
+
 ```bash
-# List pending branches, interactively merge or reject
 contentrain studio branches
+contentrain studio branches --workspace ws-123 --project proj-456 --json
 ```
 
-### Webhooks & Form Submissions
+| Flag | Description |
+|------|-------------|
+| `--workspace <id>` | Workspace ID |
+| `--project <id>` | Project ID |
+| `--json` | Output as JSON |
+
+List pending branches, interactively merge or reject.
+
+### CDN Setup & Delivery
+
+#### `contentrain studio cdn-init`
 
 ```bash
-# Manage webhooks: create, delete, test, view deliveries
-contentrain studio webhooks
-
-# Manage form submissions: list, approve, reject
-contentrain studio submissions --form contact-form
-
-# Filter by status
-contentrain studio submissions --form contact-form --status pending
+contentrain studio cdn-init
+contentrain studio cdn-init --workspace ws-123 --project proj-456
 ```
 
-All `studio` commands support `--json` for CI/CD integration and `--workspace` / `--project` flags to skip interactive selection.
+| Flag | Description |
+|------|-------------|
+| `--workspace <id>` | Workspace ID |
+| `--project <id>` | Project ID |
+
+Interactive setup: create API key, trigger first build, get SDK snippet.
+
+#### `contentrain studio cdn-build`
+
+```bash
+contentrain studio cdn-build
+contentrain studio cdn-build --wait --json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--wait` | Wait for build to complete |
+| `--workspace <id>` | Workspace ID |
+| `--project <id>` | Project ID |
+| `--json` | Output as JSON |
+
+Trigger a CDN rebuild after content changes.
+
+### Webhooks
+
+#### `contentrain studio webhooks`
+
+```bash
+contentrain studio webhooks
+contentrain studio webhooks --workspace ws-123 --project proj-456 --json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--workspace <id>` | Workspace ID |
+| `--project <id>` | Project ID |
+| `--json` | Output as JSON |
+
+Manage webhooks: create, delete, test, view deliveries.
+
+### Form Submissions
+
+#### `contentrain studio submissions`
+
+```bash
+contentrain studio submissions --form contact-form
+contentrain studio submissions --form contact-form --status pending --json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--form <id>` | Form model ID |
+| `--status <status>` | Filter by status (`pending`, `approved`, `rejected`) |
+| `--workspace <id>` | Workspace ID |
+| `--project <id>` | Project ID |
+| `--json` | Output as JSON |
+
+Manage form submissions: list, approve, reject.
 
 ::: tip Studio + CLI = Full Developer Experience
 Studio handles team collaboration, media management, AI conversations, and CDN delivery in the browser. The CLI gives developers terminal access to the same operations — authenticate once, then manage branches, trigger builds, and monitor usage without leaving the editor.
