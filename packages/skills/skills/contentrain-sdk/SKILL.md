@@ -173,4 +173,5 @@ const history = await conv.history(response.conversationId)
 ## Related Skills
 
 - **contentrain-generate** — Generate the SDK client before using it
+- **contentrain-quality** — Content quality rules for entries you query
 - **contentrain** — Core architecture and MCP tool catalog
