@@ -52,6 +52,7 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 | `contentrain_apply` | Apply normalize (extract/reuse) |
 | `contentrain_validate` | Validate content against schemas |
 | `contentrain_submit` | Push branches to remote |
+| `contentrain_merge` | Merge a review-mode branch into contentrain locally |
 | `contentrain_bulk` | Batch operations (copy_locale/update_status/delete_entries) |
 
 ## Mandatory Protocols
@@ -76,6 +77,33 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 - context.json is committed together with content changes, not as a separate commit
 - Never create branches manually, never commit directly to main or the `contentrain` branch
 - 50+ active branches = warning, 80+ = blocked
+
+## CLI Serve — Review & Approval
+
+Normalize and review workflows often need browser-based approval:
+
+```bash
+contentrain serve  # starts http://localhost:3333
+```
+
+Key pages: `/normalize` (extraction approval), `/branches` (merge/delete), `/validate` (error review), `/content` (browse).
+
+Agent should start or ensure serve is running when:
+- Normalize extraction needs user approval
+- Multiple branches await review
+- Validation errors need visual inspection
+
+Branch merge options: CLI serve UI (localhost:3333/branches), `contentrain_merge` MCP tool, or git platform PR.
+
+## SDK Regeneration
+
+After model/content changes or normalize reuse, run:
+
+```bash
+npx contentrain generate
+```
+
+This regenerates `.contentrain/client/` — required for `#contentrain` imports to work.
 
 ## Localization
 

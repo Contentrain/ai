@@ -325,6 +325,52 @@ export interface ScanSummaryResult {
   file_types: Record<string, number>
 }
 
+// ─── Normalize Plan ───
+
+export interface NormalizePlan {
+  version: number
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+  approved_at?: string
+  agent: string
+  scan_stats: {
+    files_scanned: number
+    raw_strings: number
+    candidates_sent: number
+    extracted: number
+    skipped: number
+  }
+  models: NormalizePlanModel[]
+  extractions: NormalizePlanExtraction[]
+  patches: NormalizePlanPatch[]
+  approved_models?: string[]
+}
+
+export interface NormalizePlanModel {
+  id: string
+  kind: ModelKind
+  domain: string
+  i18n?: boolean
+  fields: Record<string, FieldDef>
+}
+
+export interface NormalizePlanExtraction {
+  value: string
+  file: string
+  line: number
+  model: string
+  field: string
+  locale?: string
+}
+
+export interface NormalizePlanPatch {
+  file: string
+  line: number
+  old_value: string
+  new_expression: string
+  import_statement?: string
+}
+
 // ─── Context ───
 
 export interface ContextJson {

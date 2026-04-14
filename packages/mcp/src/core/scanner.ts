@@ -12,7 +12,7 @@ import {
   discoverFiles,
 } from './scan-config.js'
 import { extractStrings } from './ast-scanner/index.js'
-import { shouldSkip, calculateContentScore } from './ast-scanner/pre-filter.js'
+import { calculateContentScore } from './ast-scanner/pre-filter.js'
 import type { StructuralContext } from './ast-scanner/types.js'
 
 // ─── Options ───

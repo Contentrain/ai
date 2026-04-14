@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { simpleGit } from 'simple-git'
 import { validateProject } from '../core/validator.js'
 import { readConfig } from '../core/config.js'
-import { createTransaction, buildBranchName } from '../git/transaction.js'
+import { createTransaction, buildBranchName, mergeBranch } from '../git/transaction.js'
 import { checkBranchHealth, cleanupMergedBranches } from '../git/branch-lifecycle.js'
 
 export function registerWorkflowTools(server: McpServer, projectRoot: string): void {
@@ -233,6 +233,7 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
 
         const nextSteps: string[] = []
         if (pushed.length > 0) nextSteps.push('Create PRs on your git platform for review')
+        if (pushed.length > 0) nextSteps.push('For merge: use contentrain_merge or direct user to http://localhost:3333/branches')
         if (errors.length > 0) nextSteps.push('Fix push errors and retry')
         if (cleanup.remaining >= 50) nextSteps.push(`Warning: ${cleanup.remaining} active contentrain branches. Consider reviewing old branches.`)
 
@@ -251,6 +252,65 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             error: `Submit failed: ${error instanceof Error ? error.message : String(error)}`,
+          }) }],
+          isError: true,
+        }
+      }
+    },
+  )
+
+  // ─── contentrain_merge ───
+  server.tool(
+    'contentrain_merge',
+    'Merge a review-mode branch into contentrain. Local git operation — no external platform needed. Merges the feature branch into the contentrain branch, advances the base branch via update-ref, and selectively syncs .contentrain/ files to the working tree.',
+    {
+      branch: z.string().describe('Branch name to merge (e.g. cr/normalize/extract/...)'),
+      confirm: z.literal(true).describe('Must be true to confirm the merge'),
+    },
+    async (input) => {
+      const config = await readConfig(projectRoot)
+      if (!config) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized. Run contentrain_init first.' }) }],
+          isError: true,
+        }
+      }
+
+      try {
+        // Verify branch exists
+        const git = simpleGit(projectRoot)
+        const branches = await git.branchLocal()
+        if (!branches.all.includes(input.branch)) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({
+              error: `Branch "${input.branch}" not found locally.`,
+              next_steps: ['Check branch name with git branch -l', 'Use contentrain_submit to push first if needed'],
+            }) }],
+            isError: true,
+          }
+        }
+
+        const result = await mergeBranch(projectRoot, input.branch)
+
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            status: 'merged',
+            action: result.action,
+            commit: result.commit,
+            sync: result.sync,
+            next_steps: [
+              'Run `npx contentrain generate` to update SDK client',
+              'Run contentrain_validate to verify content integrity',
+              result.sync.skipped.length > 0
+                ? `${result.sync.skipped.length} file(s) skipped due to local changes — resolve manually`
+                : '',
+            ].filter(Boolean),
+          }, null, 2) }],
+        }
+      } catch (error) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: `Merge failed: ${error instanceof Error ? error.message : String(error)}`,
           }) }],
           isError: true,
         }

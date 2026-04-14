@@ -10,6 +10,34 @@ metadata:
 
 Contentrain is a Git-based, AI-first content management system. Content lives in `.contentrain/` as JSON and Markdown files, managed through MCP tools. This skill covers architecture, content formats, and tool usage.
 
+## Ecosystem Overview
+
+Contentrain consists of 6 packages that work together:
+
+| Package | Role | How agent uses it |
+|---|---|---|
+| @contentrain/mcp | 16 MCP tools (scan, apply, validate, merge...) | MCP tool calls |
+| contentrain (CLI) | init, serve, generate, doctor, diff, status | Shell commands |
+| @contentrain/types | Shared TypeScript contracts | Type safety |
+| @contentrain/query | Generated SDK client (Prisma-pattern) | `import from '#contentrain'` |
+| @contentrain/rules | Behavioral guardrails (~86 lines, always-loaded) | Auto-loaded by IDE |
+| @contentrain/skills | Procedural workflows (this file) | On-demand by agent |
+
+### CLI Serve — Review & Approval Bridge
+
+For workflows requiring human review (normalize, content review):
+
+```bash
+contentrain serve  # http://localhost:3333
+```
+
+| Page | When to use |
+|---|---|
+| /normalize | Extraction/reuse preview and approval |
+| /branches | Merge or delete pending branches |
+| /validate | Review validation errors visually |
+| /content | Browse models and entries |
+
 ## Architecture: Agent vs MCP
 
 The system separates **intelligence** (agent) from **infrastructure** (MCP tools).
@@ -94,6 +122,7 @@ slug: getting-started
 | `contentrain_apply` | Apply normalize operation (extract or reuse) |
 | `contentrain_validate` | Validate content against model schemas |
 | `contentrain_submit` | Push contentrain/* branches to remote |
+| `contentrain_merge` | Merge a review-mode branch into contentrain locally |
 | `contentrain_bulk` | Run batch operations on existing content |
 
 ## Calling Sequences
@@ -121,6 +150,18 @@ apply(reuse, dry_run:true) --> [review] --> apply(reuse, dry_run:false)
   --> validate --> submit --> [repeat per model]
 ```
 
+## MUST Rules
+
+These are enforced by MCP — violating them causes errors. Know them upfront:
+
+- MUST call `contentrain_status` before any write operation on existing projects
+- MUST call `contentrain_describe_format` before creating models or content
+- MUST use `dry_run: true` before `contentrain_apply` execute
+- MUST call `contentrain_validate` before `contentrain_submit`
+- MUST run `npx contentrain generate` after model/content changes that affect SDK
+- MUST NOT write to `.contentrain/meta/`, `.contentrain/client/`, `.contentrain/context.json` directly
+- MUST NOT auto-merge normalize branches (always review mode)
+
 ## Key Guardrails
 
 1. **Always call `contentrain_status` first** when working with an existing project
@@ -147,3 +188,10 @@ apply(reuse, dry_run:true) --> [review] --> apply(reuse, dry_run:false)
 | [i18n](references/i18n.md) | Internationalization quality rules |
 | [Security](references/security.md) | XSS prevention, secret detection, URL validation |
 | [Workflow](references/workflow.md) | Git workflow, branch naming, conflict resolution |
+
+## Related Skills
+
+- **contentrain-normalize** — Two-phase extraction and source patching
+- **contentrain-serve** — Browser-based review and approval UI
+- **contentrain-generate** — SDK client generation
+- **contentrain-sdk** — @contentrain/query usage

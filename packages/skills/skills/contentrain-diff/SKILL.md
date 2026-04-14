@@ -60,3 +60,18 @@ Summarize:
 - action taken
 - base branch affected
 - any follow-up branch still pending
+
+## Browser Alternative
+
+For visual branch review, use CLI serve:
+
+```bash
+contentrain serve
+```
+
+Navigate to http://localhost:3333/branches to see all pending branches with diffs, and merge or delete them visually.
+
+## Related Skills
+
+- **contentrain-serve** — Browser-based branch review and merge
+- **contentrain** — Core architecture and MCP tool catalog

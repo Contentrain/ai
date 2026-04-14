@@ -245,7 +245,7 @@ export function calculateContentScore(str: ExtractedString): number {
   if (/[.!?:;]$/.test(str.value)) score += 0.1
 
   // Non-ASCII characters (Turkish, Chinese, Arabic, etc.) → almost certainly content
-  if (/[^\u0000-\u007F]/.test(str.value)) score += 0.15
+  if (/[\u0080-\uFFFF]/.test(str.value)) score += 0.15
 
   // Capitalized first letter with lowercase body (Dashboard, Kaydet, Settings)
   if (/^[A-Z]/.test(str.value) && /[a-z]/.test(str.value)) score += 0.1

@@ -245,6 +245,43 @@ contentrain_submit
 - After submit, the agent can continue with other operations (new branch will be created for new changes).
 - Normalize operations ALWAYS submit in review mode, regardless of project workflow setting.
 
+### 7.4 Branch Merge Mechanisms
+
+Review-mode branches can be merged three ways:
+
+**1. CLI Serve UI (Browser — recommended for normalize)**
+
+```bash
+contentrain serve
+```
+
+Navigate to http://localhost:3333/branches → select branch → click Merge.
+
+**2. MCP Tool (Programmatic — for agent-driven workflows)**
+
+```
+contentrain_merge(branch: "cr/normalize/extract/...", confirm: true)
+```
+
+Local git merge: feature → contentrain → update-ref → selective sync.
+No external platform required. Agent can continue immediately.
+
+**3. Git Platform (GitHub/GitLab — for team governance)**
+
+```
+contentrain_submit  # pushes to remote
+```
+
+Then create PR on platform → review → merge.
+
+**Agent Decision Guide:**
+
+| Workflow | Recommended Merge Method |
+|----------|--------------------------|
+| Normalize (extract/reuse) | CLI serve UI (visual review of content) |
+| Content CRUD | `contentrain_merge` (programmatic, fast) |
+| Team with code review | Git platform PR |
+
 ---
 
 ## 8. Metadata Structure

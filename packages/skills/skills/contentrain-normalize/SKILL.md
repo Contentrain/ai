@@ -17,6 +17,18 @@ Phase 1 alone is valuable: content becomes manageable in Studio, translatable, a
 
 ---
 
+## MUST Rules
+
+- MUST scan before extract (`contentrain_scan` → `contentrain_apply`)
+- MUST `dry_run: true` before `dry_run: false` for every `contentrain_apply` call
+- MUST merge Phase 1 branch before starting Phase 2
+- MUST run `npx contentrain generate` after Phase 2 completes
+- MUST NOT reuse without scoped model or domain (whole-project patching is blocked)
+- MUST NOT patch `.contentrain/` files via reuse (content files are read-only for reuse)
+- MUST NOT exceed 100 patches per `contentrain_apply` call
+
+---
+
 ## Two-Phase Architecture
 
 | Aspect | Phase 1: Extraction | Phase 2: Reuse |
@@ -105,6 +117,52 @@ Call `contentrain_validate` to check schema compliance, i18n completeness, and d
 
 Tell the user: "Phase 1 complete. Content is now in Contentrain and can be managed, translated, and published from Studio. When ready, proceed with Phase 2 to update source files."
 
+### Step 5: User Review
+
+Two paths — agent chooses based on context:
+
+**Path A — Browser Review (recommended for visual diff):**
+1. Ensure `contentrain serve` is running (or ask user to start it)
+2. Summarize the dry_run output to the user
+3. Direct user to http://localhost:3333/normalize
+4. Explain: "On this page you can review the extraction plan and Approve or Reject it."
+5. Wait for user decision
+
+**Path B — Terminal Review:**
+1. Show dry_run output to user
+2. Ask for explicit approval
+3. If approved: `contentrain_apply(mode: 'extract', dry_run: false)` → execute
+4. `contentrain_validate` → `contentrain_submit`
+5. `contentrain_merge(branch: 'cr/normalize/extract/...', confirm: true)` to merge locally
+
+### Step 6: Merge Phase 1 Branch
+
+Phase 2 CANNOT start until Phase 1 branch is merged. Three options:
+- **Browser:** localhost:3333/branches → click Merge
+- **MCP Tool:** `contentrain_merge(branch: 'cr/normalize/extract/...', confirm: true)`
+- **Git platform:** Create PR → review → merge
+
+Verify with `contentrain_status` — check that extract branch is no longer in unmerged list.
+
+### Step 7: Phase 2 Prerequisite Check
+
+Before starting reuse:
+1. Call `contentrain_status` and verify extract branch is merged
+2. If not merged → inform user and wait
+3. If merged → proceed to Phase 2 reuse
+
+### Step 8: SDK Regeneration (after Phase 2)
+
+After all reuse operations are complete, source files now use `#contentrain` imports.
+The SDK client MUST be regenerated:
+
+```bash
+npx contentrain generate
+```
+
+Without this, `#contentrain` imports will fail at build time.
+See: **contentrain-generate** skill for details.
+
 ---
 
 ## Phase 2: Reuse (Step-by-Step)
@@ -183,3 +241,10 @@ Ask the user which model or domain to process next. Repeat steps 1-5 for each re
 - [Extraction Details](references/extraction.md) -- Phase 1 extraction rules, parameters, and examples
 - [Reuse Details](references/reuse.md) -- Phase 2 replacement expressions by stack and patching rules
 - [What Is Content](references/what-is-content.md) -- Heuristics for identifying content vs code strings
+
+## Related Skills
+
+- **contentrain-serve** — Browser-based review UI for extraction approval
+- **contentrain-generate** — SDK client regeneration (required after reuse)
+- **contentrain-sdk** — @contentrain/query usage in source code
+- **contentrain** — Core architecture and full MCP tool catalog

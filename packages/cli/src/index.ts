@@ -16,6 +16,7 @@ const main = defineCommand({
     serve: () => import('./commands/serve.js').then(m => m.default),
     generate: () => import('./commands/generate.js').then(m => m.default),
     diff: () => import('./commands/diff.js').then(m => m.default),
+    skills: () => import('./commands/skills.js').then(m => m.default),
     studio: () => import('./studio/index.js').then(m => m.default),
   },
 })
