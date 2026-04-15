@@ -269,10 +269,10 @@ export async function installIdeRulesAndSkills(
   }
 
   if (filesToAdd.length > 0) {
-    await git.add(filesToAdd)
     try {
+      await git.add(filesToAdd)
       await git.commit(`[contentrain] install ${ide.name} rules and skills`)
-    } catch { /* nothing to commit */ }
+    } catch { /* files may be gitignored or nothing to commit */ }
   }
 
   return { installed, updated }
@@ -296,12 +296,10 @@ export async function addClaudeMdReference(projectRoot: string): Promise<void> {
     const existing = await readFile(claudeMdPath, 'utf-8')
     if (!existing.includes(marker)) {
       await appendFile(claudeMdPath, `\n\n${reference}\n`)
-      await git.add(claudeMdPath)
-      try { await git.commit('[contentrain] add CLAUDE.md reference') } catch { /* nothing to commit */ }
+      try { await git.add(claudeMdPath); await git.commit('[contentrain] add CLAUDE.md reference') } catch { /* gitignored or nothing to commit */ }
     }
   } else {
     await writeFile(claudeMdPath, `${reference}\n`, 'utf-8')
-    await git.add(claudeMdPath)
-    try { await git.commit('[contentrain] add CLAUDE.md reference') } catch { /* nothing to commit */ }
+    try { await git.add(claudeMdPath); await git.commit('[contentrain] add CLAUDE.md reference') } catch { /* gitignored or nothing to commit */ }
   }
 }
