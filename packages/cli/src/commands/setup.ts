@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 import { intro, outro, log, spinner } from '@clack/prompts'
 import { resolveProjectRoot, loadProjectContext } from '../utils/context.js'
 import { pc } from '../utils/ui.js'
-import { IDE_CONFIGS, MCP_CONFIGS, detectIdes, writeMcpConfig, installIdeRulesAndSkills } from '../utils/ide.js'
+import { IDE_CONFIGS, MCP_CONFIGS, detectIdes, writeMcpConfig, installIdeRulesAndSkills, createPackageResolver } from '../utils/ide.js'
 
 const SUPPORTED_AGENTS = Object.keys(MCP_CONFIGS)
 
@@ -76,20 +76,23 @@ export default defineCommand({
       let rulesStatus = 'skipped'
       const ideConfig = IDE_CONFIGS[agentKey]
       if (ideConfig) {
-        try {
-          const { createRequire } = await import('node:module')
-          const req = createRequire(import.meta.url)
-          const resolveRuleFile = (p: string) => req.resolve(`@contentrain/rules/${p}`)
-          let resolveSkillFile: ((p: string) => string) | null = null
-          try {
-            resolveSkillFile = (p: string) => req.resolve(`@contentrain/skills/${p}`)
-          } catch { /* not installed */ }
+        const resolveRuleFile = await createPackageResolver('@contentrain/rules', projectRoot)
+        const resolveSkillFile = await createPackageResolver('@contentrain/skills', projectRoot)
 
-          const result = await installIdeRulesAndSkills(projectRoot, ideConfig, resolveRuleFile, resolveSkillFile)
-          if (result.installed > 0) rulesStatus = `${result.installed} installed`
-          else rulesStatus = 'up to date'
-        } catch {
-          rulesStatus = 'failed (packages not installed)'
+        if (!resolveRuleFile && !resolveSkillFile) {
+          rulesStatus = 'failed (install @contentrain/rules @contentrain/skills)'
+        } else {
+          try {
+            const result = await installIdeRulesAndSkills(projectRoot, ideConfig, resolveRuleFile, resolveSkillFile)
+            const parts: string[] = []
+            if (result.installed > 0) parts.push(`${result.installed} installed`)
+            if (result.updated > 0) parts.push(`${result.updated} updated`)
+            rulesStatus = parts.length > 0 ? parts.join(', ') : 'up to date'
+            if (!resolveRuleFile) rulesStatus += ' (rules package not found)'
+            if (!resolveSkillFile) rulesStatus += ' (skills package not found)'
+          } catch (err) {
+            rulesStatus = `failed (${err instanceof Error ? err.message : String(err)})`
+          }
         }
       }
 

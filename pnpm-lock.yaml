@@ -41,6 +41,9 @@ importers:
       '@contentrain/rules':
         specifier: workspace:*
         version: link:../rules
+      '@contentrain/skills':
+        specifier: workspace:*
+        version: link:../skills
       '@contentrain/types':
         specifier: workspace:*
         version: link:../types
