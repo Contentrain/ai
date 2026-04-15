@@ -166,7 +166,7 @@ describe('shouldSkip', () => {
     })
 
     it('does NOT filter strings >= 30 chars', () => {
-      expect(shouldSkip(makeString('a'.repeat(30), 'function_argument'))).toBeNull()
+      expect(shouldSkip(makeString('abcdefghijklmnopqrstuvwxyzabcd', 'function_argument'))).toBeNull()
     })
 
     it('does NOT filter strings with spaces', () => {
@@ -190,6 +190,68 @@ describe('shouldSkip', () => {
     })
   })
 
+  describe('structural value patterns', () => {
+    it('filters locale codes', () => {
+      expect(shouldSkip(makeString('tr-TR'))).toBe('locale_code')
+      expect(shouldSkip(makeString('en-US'))).toBe('locale_code')
+      expect(shouldSkip(makeString('fr_FR'))).toBe('locale_code')
+    })
+
+    it('does NOT filter locale-like content', () => {
+      // tr-TRY is 3 chars after dash (not 2) → not a locale
+      expect(shouldSkip(makeString('tr-TRY'))).toBeNull()
+      // tur-TR is 3 chars before dash (not 2) → not a locale
+      expect(shouldSkip(makeString('tur-TR'))).toBeNull()
+    })
+
+    it('filters dimension patterns', () => {
+      expect(shouldSkip(makeString('512x512'))).toBe('dimension')
+      expect(shouldSkip(makeString('1920x1080'))).toBe('dimension')
+      expect(shouldSkip(makeString('16×9'))).toBe('dimension')
+    })
+
+    it('does NOT filter dimension-like content', () => {
+      expect(shouldSkip(makeString('2x faster'))).toBeNull()
+    })
+
+    it('filters repeat character patterns', () => {
+      expect(shouldSkip(makeString('****'))).toBe('repeat_chars')
+      expect(shouldSkip(makeString('####'))).toBe('repeat_chars')
+      expect(shouldSkip(makeString('========'))).toBe('repeat_chars')
+      expect(shouldSkip(makeString('aaaaaaa'))).toBe('repeat_chars')
+    })
+
+    it('does NOT filter short repeats (3 or fewer)', () => {
+      expect(shouldSkip(makeString('...'))).toBe('placeholder') // caught by placeholder
+      expect(shouldSkip(makeString('==='))).toBeNull()
+    })
+
+    it('filters MIME types', () => {
+      expect(shouldSkip(makeString('application/json'))).toBe('mime_type')
+      expect(shouldSkip(makeString('text/plain'))).toBe('mime_type')
+      expect(shouldSkip(makeString('image/svg+xml'))).toBe('mime_type')
+    })
+
+    it('filters HTML target values', () => {
+      expect(shouldSkip(makeString('_blank'))).toBe('html_target')
+      expect(shouldSkip(makeString('_self'))).toBe('html_target')
+      expect(shouldSkip(makeString('_parent'))).toBe('html_target')
+      expect(shouldSkip(makeString('_top'))).toBe('html_target')
+    })
+  })
+
+  describe('extended technical identifier (underscore-start)', () => {
+    it('filters underscore-prefixed identifiers in non-text contexts', () => {
+      expect(shouldSkip(makeString('_id', 'function_argument'))).toBe('technical_identifier')
+      expect(shouldSkip(makeString('_type', 'object_property'))).toBe('technical_identifier')
+      expect(shouldSkip(makeString('_callback', 'template_attribute'))).toBe('technical_identifier')
+    })
+
+    it('does NOT filter underscore-prefixed in template_text', () => {
+      expect(shouldSkip(makeString('_something', 'template_text'))).toBeNull()
+    })
+  })
+
   describe('pass-through (content should survive)', () => {
     it('passes normal text content', () => {
       expect(shouldSkip(makeString('Welcome to our app'))).toBeNull()
@@ -205,6 +267,21 @@ describe('shouldSkip', () => {
     it('passes Turkish content', () => {
       expect(shouldSkip(makeString('Kaydet'))).toBeNull()
       expect(shouldSkip(makeString('Hoş geldiniz'))).toBeNull()
+      expect(shouldSkip(makeString('Karadeniz'))).toBeNull()
+      expect(shouldSkip(makeString('İç Anadolu'))).toBeNull()
+      expect(shouldSkip(makeString('Doğu Anadolu'))).toBeNull()
+    })
+
+    it('passes single uppercase words (could be UI labels)', () => {
+      expect(shouldSkip(makeString('Escape'))).toBeNull()
+      expect(shouldSkip(makeString('Enter'))).toBeNull()
+      expect(shouldSkip(makeString('Bearer'))).toBeNull()
+    })
+
+    it('passes short ALL-CAPS (handled by scoring, not hard filter)', () => {
+      expect(shouldSkip(makeString('FAQ'))).toBeNull()
+      expect(shouldSkip(makeString('TRY'))).toBeNull()
+      expect(shouldSkip(makeString('GET'))).toBeNull()
     })
 
     it('passes template_text even if lowercase', () => {
@@ -262,6 +339,35 @@ describe('calculateContentScore', () => {
     const normal = calculateContentScore(makeString('Dashboard'))
     const camel = calculateContentScore(makeString('userName'))
     expect(camel).toBeLessThan(normal)
+  })
+
+  it('penalizes PascalCase with internal uppercase (component/icon names)', () => {
+    const singleUpper = calculateContentScore(makeString('Dashboard'))
+    const pascalCase = calculateContentScore(makeString('GameController'))
+    expect(pascalCase).toBeLessThan(singleUpper)
+  })
+
+  it('does NOT penalize single-uppercase words (Karadeniz, Settings)', () => {
+    const dashboard = calculateContentScore(makeString('Dashboard'))
+    const karadeniz = calculateContentScore(makeString('Karadeniz'))
+    // Both are single-uppercase — same PascalCase treatment (no penalty)
+    expect(karadeniz).toBeCloseTo(dashboard, 1)
+  })
+
+  it('penalizes short ALL-CAPS strings', () => {
+    const normal = calculateContentScore(makeString('Save'))
+    const allCaps = calculateContentScore(makeString('GET'))
+    expect(allCaps).toBeLessThan(normal)
+  })
+
+  it('keeps ALL-CAPS above threshold in template_text (FAQ as label)', () => {
+    const score = calculateContentScore(makeString('FAQ', 'template_text'))
+    expect(score).toBeGreaterThanOrEqual(0.4)
+  })
+
+  it('drops ALL-CAPS below threshold in non-content context', () => {
+    const score = calculateContentScore(makeString('GET', 'function_argument'))
+    expect(score).toBeLessThan(0.4)
   })
 
   it('clamps score to [0, 1]', () => {

@@ -21,10 +21,17 @@ const FILE_EXT_RE = /\.(png|jpg|jpeg|gif|svg|webp|ico|css|scss|less|js|ts|tsx|js
 const SVG_PATH_DATA_RE = /^[Mm][\d\s.,LHVCSQTAZlhvcsqtazmMzZ-]+$/
 const SVG_VIEWBOX_RE = /^\d+(\.\d+)?\s+\d+(\.\d+)?\s+\d+(\.\d+)?\s+\d+(\.\d+)?$/
 const I18N_KEY_RE = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/
-const TECHNICAL_IDENTIFIER_RE = /^[a-z][a-z0-9_-]*$/
+const TECHNICAL_IDENTIFIER_RE = /^[_a-z][a-z0-9_-]*$/
 const ERROR_CODE_RE = /^[A-Z][A-Z0-9_]+$/
 const PLACEHOLDER_RE = /^\{\d+\}$|^\.{2,}$/
 const CAMEL_CASE_RE = /^[a-z]+[A-Z]/
+const LOCALE_CODE_RE = /^[a-z]{2}[-_][A-Z]{2}$/
+const DIMENSION_RE = /^\d+[x×]\d+$/
+const REPEAT_CHAR_RE = /^(.)\1{3,}$/
+const MIME_TYPE_RE = /^(application|text|image|audio|video|multipart|font)\/[\w.+-]+$/
+const PASCAL_CASE_RE = /^[A-Z][a-z]+[A-Z]/
+
+const HTML_TARGETS = new Set(['_blank', '_self', '_parent', '_top'])
 
 // ─── URL / path detection (consolidated from legacy isNonContent) ───
 
@@ -145,6 +152,10 @@ export function shouldSkip(str: ExtractedString): string | null {
 
   if (I18N_KEY_RE.test(v)) return 'i18n_key'
 
+  // ── MIME types (checked before URL — both contain slash, MIME is more specific) ──
+
+  if (MIME_TYPE_RE.test(v)) return 'mime_type'
+
   // ── URL/path patterns ──
 
   if (isURLLike(v)) return 'url_path'
@@ -168,6 +179,13 @@ export function shouldSkip(str: ExtractedString): string | null {
   // ── Placeholder / interpolation ──
 
   if (PLACEHOLDER_RE.test(v)) return 'placeholder'
+
+  // ── Structural value patterns (100% non-content) ──
+
+  if (LOCALE_CODE_RE.test(v)) return 'locale_code'
+  if (DIMENSION_RE.test(v)) return 'dimension'
+  if (REPEAT_CHAR_RE.test(v)) return 'repeat_chars'
+  if (HTML_TARGETS.has(v)) return 'html_target'
 
   // ── Known function argument detection ──
 
@@ -252,6 +270,14 @@ export function calculateContentScore(str: ExtractedString): number {
 
   // camelCase → probably a technical identifier
   if (CAMEL_CASE_RE.test(str.value)) score -= 0.3
+
+  // PascalCase with internal uppercase (PhGameController, GameCard) → likely component/icon name
+  // Does NOT match single-uppercase words (Dashboard, Karadeniz, Settings)
+  if (PASCAL_CASE_RE.test(str.value) && !str.value.includes(' ')) score -= 0.25
+
+  // Short ALL-CAPS (TRY, GET, USD) → likely code/abbreviation, not content
+  // In template_text the +0.3 context boost keeps real labels like "FAQ" above threshold
+  if (/^[A-Z]{2,5}$/.test(str.value)) score -= 0.15
 
   // Contains slash without spaces → path-like
   if (str.value.includes('/') && !str.value.includes(' ')) score -= 0.2
