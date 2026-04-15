@@ -10,7 +10,7 @@ import { createTransaction, buildBranchName } from '@contentrain/mcp/git/transac
 import { scanSummary } from '@contentrain/mcp/core/scanner'
 import { resolveProjectRoot, loadProjectContext } from '../utils/context.js'
 import { pc } from '../utils/ui.js'
-import { IDE_CONFIGS, detectIdes, installIdeRulesAndSkills, addClaudeMdReference, writeMcpConfig } from '../utils/ide.js'
+import { IDE_CONFIGS, detectIdes, installIdeRulesAndSkills, addClaudeMdReference, writeMcpConfig, createPackageResolver } from '../utils/ide.js'
 import { writeFile, readFile, appendFile } from 'node:fs/promises'
 import type { ContentrainConfig, Vocabulary } from '@contentrain/types'
 
@@ -292,42 +292,35 @@ async function executeInit(projectRoot: string, opts: InitOptions): Promise<void
 }
 
 async function installRules(projectRoot: string): Promise<void> {
-  try {
-    const { createRequire } = await import('node:module')
-    const require = createRequire(import.meta.url)
-    const resolveRuleFile = (p: string) => require.resolve(`@contentrain/rules/${p}`)
+  const resolveRuleFile = await createPackageResolver('@contentrain/rules', projectRoot)
+  const resolveSkillFile = await createPackageResolver('@contentrain/skills', projectRoot)
 
-    let resolveSkillFile: ((p: string) => string) | null = null
+  if (!resolveRuleFile && !resolveSkillFile) return
+
+  // Detect which IDEs are in use
+  const detectedIdeKeys = await detectIdes(projectRoot)
+  const noIDEDetected = detectedIdeKeys.length === 0
+
+  for (const ideKey of detectedIdeKeys) {
+    const ide = IDE_CONFIGS[ideKey]!
+    await installIdeRulesAndSkills(projectRoot, ide, resolveRuleFile, resolveSkillFile)
+  }
+
+  // Claude Code: also add lightweight CLAUDE.md reference
+  if (detectedIdeKeys.includes('claude-code')) {
+    await addClaudeMdReference(projectRoot)
+  }
+
+  // Fallback: no IDE detected — write compact CLAUDE.md with essentials
+  if (noIDEDetected && resolveRuleFile) {
     try {
-      const requireSkills = createRequire(import.meta.url)
-      resolveSkillFile = (p: string) => requireSkills.resolve(`@contentrain/skills/${p}`)
-    } catch { /* @contentrain/skills not installed */ }
-
-    // Detect which IDEs are in use
-    const detectedIdeKeys = await detectIdes(projectRoot)
-    const noIDEDetected = detectedIdeKeys.length === 0
-
-    for (const ideKey of detectedIdeKeys) {
-      const ide = IDE_CONFIGS[ideKey]!
-      await installIdeRulesAndSkills(projectRoot, ide, resolveRuleFile, resolveSkillFile)
-    }
-
-    // Claude Code: also add lightweight CLAUDE.md reference
-    if (detectedIdeKeys.includes('claude-code')) {
-      await addClaudeMdReference(projectRoot)
-    }
-
-    // Fallback: no IDE detected — write compact CLAUDE.md with essentials
-    if (noIDEDetected) {
       const essentials = await readFile(resolveRuleFile('essential/contentrain-essentials.md'), 'utf-8')
       const dest = join(projectRoot, 'CLAUDE.md')
       await writeFile(dest, essentials, 'utf-8')
       const git = simpleGit(projectRoot)
       await git.add(dest)
       try { await git.commit('[contentrain] install AI rules') } catch { /* nothing to commit */ }
-    }
-  } catch {
-    // rules/skills packages may not be installed — skip silently
+    } catch { /* essential file unavailable */ }
   }
 }
 

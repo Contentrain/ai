@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { resolveProjectRoot } from '../utils/context.js'
 import { pc } from '../utils/ui.js'
 import { pathExists } from '@contentrain/mcp/util/fs'
-import { AGENT_SKILL_NAMES, IDE_CONFIGS, detectIdes, installIdeRulesAndSkills } from '../utils/ide.js'
+import { AGENT_SKILL_NAMES, IDE_CONFIGS, detectIdes, installIdeRulesAndSkills, createPackageResolver } from '../utils/ide.js'
 
 // ─── Command ───
 
@@ -31,23 +31,18 @@ export default defineCommand({
     const s = spinner()
     s.start('Installing skills and rules...')
 
+    const resolveRuleFile = await createPackageResolver('@contentrain/rules', projectRoot)
+    const resolveSkillFile = await createPackageResolver('@contentrain/skills', projectRoot)
+
+    if (!resolveRuleFile && !resolveSkillFile) {
+      s.stop('Failed')
+      log.error('Required packages not found. Install them:')
+      log.message(pc.cyan('  pnpm add -D @contentrain/skills @contentrain/rules'))
+      outro('')
+      return
+    }
+
     try {
-      const { createRequire } = await import('node:module')
-      const require = createRequire(import.meta.url)
-      const resolveRuleFile = (p: string) => require.resolve(`@contentrain/rules/${p}`)
-
-      let resolveSkillFile: ((p: string) => string) | null = null
-      try {
-        const requireSkills = createRequire(import.meta.url)
-        resolveSkillFile = (p: string) => requireSkills.resolve(`@contentrain/skills/${p}`)
-      } catch {
-        s.stop('Failed')
-        log.error('@contentrain/skills package not found. Install it:')
-        log.message(pc.cyan('  pnpm add -D @contentrain/skills @contentrain/rules'))
-        outro('')
-        return
-      }
-
       // Detect IDEs
       const detectedIdes = await detectIdes(projectRoot)
       if (detectedIdes.length === 0) {
@@ -69,6 +64,8 @@ export default defineCommand({
       if (totalUpdated > 0) log.success(`Updated ${totalUpdated} skill(s)`)
       if (totalInstalled > 0) log.success(`Installed ${totalInstalled} new skill(s)`)
       if (totalInstalled === 0 && totalUpdated === 0) log.info('All skills are up to date')
+      if (!resolveRuleFile) log.warning('@contentrain/rules package not found — rules skipped')
+      if (!resolveSkillFile) log.warning('@contentrain/skills package not found — skills skipped')
 
       outro('')
     } catch (error) {

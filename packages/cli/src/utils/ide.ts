@@ -144,12 +144,47 @@ export async function writeMcpConfig(projectRoot: string, agent: string): Promis
   return { written: true, path: relativePath }
 }
 
+// ─── Package resolution ───
+
+/**
+ * Create a resolver function for a package's files.
+ * Tries multiple strategies to handle npm, pnpm, and workspace layouts.
+ */
+export async function createPackageResolver(
+  packageName: string,
+  projectRoot: string,
+): Promise<((subpath: string) => string) | null> {
+  const { createRequire } = await import('node:module')
+
+  // Strategy 1: resolve from CLI bundle (import.meta.url → real path in pnpm)
+  try {
+    const req = createRequire(import.meta.url)
+    req.resolve(packageName)
+    return (p: string) => req.resolve(`${packageName}/${p}`)
+  } catch { /* not resolvable from CLI bundle */ }
+
+  // Strategy 2: resolve from project root (covers hoisted deps, workspace setups)
+  try {
+    const req = createRequire(join(projectRoot, 'package.json'))
+    req.resolve(packageName)
+    return (p: string) => req.resolve(`${packageName}/${p}`)
+  } catch { /* not resolvable from project root */ }
+
+  // Strategy 3: direct node_modules path (last resort)
+  const directBase = join(projectRoot, 'node_modules', packageName)
+  if (await pathExists(directBase)) {
+    return (p: string) => join(directBase, p)
+  }
+
+  return null
+}
+
 // ─── Rules & skills installation ───
 
 export async function installIdeRulesAndSkills(
   projectRoot: string,
   ide: IdeConfig,
-  resolveRuleFile: (p: string) => string,
+  resolveRuleFile: ((p: string) => string) | null,
   resolveSkillFile: ((p: string) => string) | null,
   forceUpdate = false,
 ): Promise<{ installed: number; updated: number }> {
@@ -161,35 +196,39 @@ export async function installIdeRulesAndSkills(
   const filesToAdd: string[] = []
 
   // 1. Essential guardrails
-  await ensureDir(rulesDir)
-  const guardrailsDest = join(rulesDir, ide.guardrailsFileName)
-  try {
-    let content = await readFile(resolveRuleFile('essential/contentrain-essentials.md'), 'utf-8')
-    if (ide.guardrailsFrontmatter) content = ide.guardrailsFrontmatter + content
+  if (resolveRuleFile) {
+    await ensureDir(rulesDir)
+    const guardrailsDest = join(rulesDir, ide.guardrailsFileName)
+    try {
+      let content = await readFile(resolveRuleFile('essential/contentrain-essentials.md'), 'utf-8')
+      if (ide.guardrailsFrontmatter) content = ide.guardrailsFrontmatter + content
 
-    if (await pathExists(guardrailsDest)) {
-      if (forceUpdate) { await writeFile(guardrailsDest, content, 'utf-8'); updated++ }
-    } else {
-      // Copilot: append to existing copilot-instructions.md
-      if (ide.name === 'GitHub Copilot' && await pathExists(guardrailsDest)) {
-        const existing = await readFile(guardrailsDest, 'utf-8')
-        if (!existing.includes('# Contentrain')) {
-          await appendFile(guardrailsDest, `\n\n${content}`)
-        }
+      if (await pathExists(guardrailsDest)) {
+        if (forceUpdate) { await writeFile(guardrailsDest, content, 'utf-8'); updated++ }
       } else {
-        await writeFile(guardrailsDest, content, 'utf-8')
+        // Copilot: append to existing copilot-instructions.md
+        if (ide.name === 'GitHub Copilot' && await pathExists(guardrailsDest)) {
+          const existing = await readFile(guardrailsDest, 'utf-8')
+          if (!existing.includes('# Contentrain')) {
+            await appendFile(guardrailsDest, `\n\n${content}`)
+          }
+        } else {
+          await writeFile(guardrailsDest, content, 'utf-8')
+        }
+        installed++
       }
-      installed++
-    }
-    filesToAdd.push(guardrailsDest)
-  } catch { /* essential file unavailable */ }
+      filesToAdd.push(guardrailsDest)
+    } catch { /* essential file unavailable */ }
+  }
 
   // 2. Clean up old rule files
-  for (const oldFile of OLD_RULE_FILES) {
-    const oldPath = join(rulesDir, oldFile)
-    if (await pathExists(oldPath)) {
-      const { unlink } = await import('node:fs/promises')
-      await unlink(oldPath)
+  if (await pathExists(rulesDir)) {
+    for (const oldFile of OLD_RULE_FILES) {
+      const oldPath = join(rulesDir, oldFile)
+      if (await pathExists(oldPath)) {
+        const { unlink } = await import('node:fs/promises')
+        await unlink(oldPath)
+      }
     }
   }
 

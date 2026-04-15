@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "@contentrain/rules": "workspace:*",
+    "@contentrain/skills": "workspace:*",
     "@contentrain/mcp": "workspace:*",
     "@contentrain/query": "workspace:*",
     "@contentrain/types": "workspace:*",

@@ -39,12 +39,14 @@
       "default": "./dist/index.mjs"
     },
     "./essential/*": "./essential/*",
+    "./shared/*": "./shared/*",
     "./prompts/*": "./prompts/*",
     "./context/*": "./context/*"
   },
   "files": [
     "dist",
     "essential",
+    "shared",
     "prompts",
     "context"
   ],
