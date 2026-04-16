@@ -8,7 +8,7 @@
       "@contentrain/types": ["packages/types/src/index.ts"],
       "@contentrain/mcp": ["packages/mcp/src/index.ts"],
       "@contentrain/mcp/server": ["packages/mcp/src/server.ts"],
-      "@contentrain/mcp/core/*": ["packages/mcp/src/core/*.ts"],
+      "@contentrain/mcp/core/*": ["packages/mcp/src/core/*.ts", "packages/mcp/src/core/*/index.ts"],
       "@contentrain/mcp/util/*": ["packages/mcp/src/util/*.ts"],
       "@contentrain/mcp/git/*": ["packages/mcp/src/git/*.ts"],
       "@contentrain/mcp/templates": ["packages/mcp/src/templates/index.ts"],
