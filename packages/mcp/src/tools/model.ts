@@ -4,7 +4,9 @@ import { z } from 'zod'
 import { readConfig } from '../core/config.js'
 
 import { resolveContentDir, resolveJsonFilePath, resolveMdFilePath } from '../core/content-manager.js'
-import { checkReferences, deleteModel, readModel, writeModel, validateModelDefinition, fieldDefZodSchema } from '../core/model-manager.js'
+import { checkReferences, readModel, validateModelDefinition, fieldDefZodSchema } from '../core/model-manager.js'
+import { applyChangesToWorktree, planModelDelete, planModelSave } from '../core/ops/index.js'
+import { LocalReader } from '../providers/local/index.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
@@ -70,9 +72,6 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
         }
       }
 
-      const existing = await readModel(projectRoot, input.id)
-      const action = existing ? 'updated' : 'created'
-
       const model: ModelDefinition = {
         id: input.id,
         name: input.name,
@@ -85,12 +84,16 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
         locale_strategy: input.locale_strategy,
       }
 
+      const saveReader = new LocalReader(projectRoot)
+      const savePlan = await planModelSave(saveReader, { model })
+      const action = savePlan.result.action
+
       const branch = buildBranchName('model', input.id)
       const tx = await createTransaction(projectRoot, branch)
 
       try {
         await tx.write(async (wt) => {
-          await writeModel(wt, model)
+          await applyChangesToWorktree(wt, savePlan.changes)
         })
 
         await tx.commit(`[contentrain] ${action}: ${input.id}`, { tool: 'contentrain_model_save', model: input.id })
@@ -199,14 +202,15 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
         }
       }
 
+      const deleteReader = new LocalReader(projectRoot)
+      const deletePlan = await planModelDelete(deleteReader, { model: existing })
+
       const branch = buildBranchName('model', modelId)
       const tx = await createTransaction(projectRoot, branch)
 
       try {
-        let filesRemoved: string[] = []
-
         await tx.write(async (wt) => {
-          filesRemoved = await deleteModel(wt, modelId)
+          await applyChangesToWorktree(wt, deletePlan.changes)
         })
 
         await tx.commit(`[contentrain] delete: ${modelId}`, { tool: 'contentrain_model_delete', model: modelId })
@@ -218,7 +222,7 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
             message: 'Model deleted and committed to git. Do NOT manually edit .contentrain/ files.',
             deleted: true,
             git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
-            files_removed: filesRemoved,
+            files_removed: deletePlan.result,
             context_updated: true,
           }, null, 2) }],
         }
