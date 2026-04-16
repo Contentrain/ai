@@ -1,5 +1,11 @@
 # @contentrain/mcp
 
+## 1.2.1
+
+### Patch Changes
+
+- 048fd78: fix(mcp): reduce scanner pre-filter noise with locale codes, dimensions, repeat chars, MIME types, PascalCase and short ALL-CAPS scoring
+
 ## 1.2.0
 
 ### Minor Changes

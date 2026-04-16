@@ -1,5 +1,12 @@
 # contentrain
 
+## 0.4.4
+
+### Patch Changes
+
+- Updated dependencies [048fd78]
+  - @contentrain/mcp@1.2.1
+
 ## 0.4.3
 
 ### Patch Changes
