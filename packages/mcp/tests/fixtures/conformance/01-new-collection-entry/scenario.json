@@ -1,0 +1,19 @@
+{
+  "context_tool": "contentrain_content_save",
+  "description": "Save a new collection entry for a model",
+  "id": "01-new-collection-entry",
+  "input": {
+    "entries": [
+      {
+        "data": {
+          "body": "First post content",
+          "title": "Hello World"
+        },
+        "id": "abc123def456",
+        "locale": "en"
+      }
+    ],
+    "model": "blog"
+  },
+  "operation": "save_content"
+}

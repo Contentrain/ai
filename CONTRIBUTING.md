@@ -46,6 +46,18 @@ If a change affects a published package, add a changeset:
 pnpm changeset
 ```
 
+## Contributor License Agreement
+
+Before your first Pull Request can be merged, you must sign the [Contentrain Contributor License Agreement](./CLA.md).
+
+Signing is a single comment on your PR:
+
+> I have read the CLA Document and I hereby sign the CLA
+
+The CLA bot records your GitHub username in `.github/cla-signatures.json` and unblocks your PR automatically. The signature applies to all your future contributions to this repo.
+
+If you are contributing on behalf of an employer, please ensure your employer has authorized you to do so. For questions, email `cla@contentrain.io`.
+
 ## Issues
 
 Please open an issue before large changes.

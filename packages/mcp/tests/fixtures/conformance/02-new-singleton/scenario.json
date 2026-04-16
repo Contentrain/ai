@@ -1,0 +1,18 @@
+{
+  "context_tool": "contentrain_content_save",
+  "description": "Save a new singleton content block",
+  "id": "02-new-singleton",
+  "input": {
+    "entries": [
+      {
+        "data": {
+          "subtitle": "Build the web with AI agents",
+          "title": "Welcome to Contentrain"
+        },
+        "locale": "en"
+      }
+    ],
+    "model": "hero"
+  },
+  "operation": "save_content"
+}
