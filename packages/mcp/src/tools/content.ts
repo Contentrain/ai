@@ -2,8 +2,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { readModel } from '../core/model-manager.js'
-import { deleteContent, listContent } from '../core/content-manager.js'
-import { applyChangesToWorktree, planContentSave } from '../core/ops/index.js'
+import { listContent } from '../core/content-manager.js'
+import { applyChangesToWorktree, planContentDelete, planContentSave } from '../core/ops/index.js'
 import { LocalReader } from '../providers/local/index.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
@@ -234,19 +234,32 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         }
       }
 
+      const deleteReader = new LocalReader(projectRoot)
+
+      let deletePlan: Awaited<ReturnType<typeof planContentDelete>>
+      try {
+        deletePlan = await planContentDelete(deleteReader, {
+          model,
+          id: input.id,
+          slug: input.slug,
+          locale: input.locale,
+          keys: input.keys,
+        })
+      } catch (error) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: `Delete failed: ${error instanceof Error ? error.message : String(error)}`,
+          }) }],
+          isError: true,
+        }
+      }
+
       const branch = buildBranchName('content', input.model)
       const tx = await createTransaction(projectRoot, branch)
 
       try {
-        let removed: string[] = []
-
         await tx.write(async (wt) => {
-          removed = await deleteContent(wt, model, {
-            id: input.id,
-            slug: input.slug,
-            locale: input.locale,
-            keys: input.keys,
-          })
+          await applyChangesToWorktree(wt, deletePlan.changes)
         })
 
         await tx.commit(`[contentrain] delete content: ${input.model}`, {
@@ -261,7 +274,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
             status: 'committed',
             message: 'Content deleted and committed to git. Do NOT manually edit .contentrain/ files.',
             deleted: true,
-            files_removed: removed,
+            files_removed: deletePlan.result,
             git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
             context_updated: true,
           }, null, 2) }],
