@@ -3,9 +3,9 @@ import { z } from 'zod'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { readModel } from '../core/model-manager.js'
 import { listContent } from '../core/content-manager.js'
-import { applyChangesToWorktree, planContentDelete, planContentSave } from '../core/ops/index.js'
-import { LocalReader } from '../providers/local/index.js'
-import { createTransaction, buildBranchName } from '../git/transaction.js'
+import { planContentDelete, planContentSave } from '../core/ops/index.js'
+import { LocalProvider } from '../providers/local/index.js'
+import { buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { validateProject } from '../core/validator.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
@@ -108,11 +108,11 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
       }
 
       const vocabulary = await readVocabulary(projectRoot)
-      const reader = new LocalReader(projectRoot)
+      const provider = new LocalProvider(projectRoot)
 
       let plan: Awaited<ReturnType<typeof planContentSave>>
       try {
-        plan = await planContentSave(reader, {
+        plan = await planContentSave(provider, {
           model,
           entries: input.entries,
           config,
@@ -132,20 +132,19 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         .filter((v): v is string => Boolean(v))
 
       const branch = buildBranchName('content', input.model)
-      const tx = await createTransaction(projectRoot, branch)
 
       try {
-        await tx.write(async (wt) => {
-          await applyChangesToWorktree(wt, plan.changes)
+        const result = await provider.applyPlan({
+          branch,
+          changes: plan.changes,
+          message: `[contentrain] content: ${input.model}`,
+          context: {
+            tool: 'contentrain_content_save',
+            model: input.model,
+            locale: input.entries[0]?.locale,
+            entries: entryIds,
+          },
         })
-
-        await tx.commit(`[contentrain] content: ${input.model}`, {
-          tool: 'contentrain_content_save',
-          model: input.model,
-          locale: input.entries[0]?.locale,
-          entries: entryIds,
-        })
-        const gitResult = await tx.complete()
 
         // Run real validation after save — don't fake it
         const validationResult = await validateProject(projectRoot, { model: input.model })
@@ -158,7 +157,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
             status: 'committed',
             message: 'Content saved and committed to git. Do NOT manually edit .contentrain/ files.',
             results: plan.result,
-            git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
+            git: { branch, action: result.workflowAction, commit: result.sha, ...(result.sync ? { sync: result.sync } : {}) },
             ...(allAdvisories.length > 0 ? {
               advisories: allAdvisories,
               advisory_note: 'Save succeeded. Review these warnings and consider consolidating duplicate values.',
@@ -178,15 +177,12 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
           }, null, 2) }],
         }
       } catch (error) {
-        await tx.cleanup()
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             error: `Content save failed: ${error instanceof Error ? error.message : String(error)}`,
           }) }],
           isError: true,
         }
-      } finally {
-        await tx.cleanup()
       }
     },
   )
@@ -234,11 +230,11 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         }
       }
 
-      const deleteReader = new LocalReader(projectRoot)
+      const deleteProvider = new LocalProvider(projectRoot)
 
       let deletePlan: Awaited<ReturnType<typeof planContentDelete>>
       try {
-        deletePlan = await planContentDelete(deleteReader, {
+        deletePlan = await planContentDelete(deleteProvider, {
           model,
           id: input.id,
           slug: input.slug,
@@ -255,19 +251,18 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
       }
 
       const branch = buildBranchName('content', input.model)
-      const tx = await createTransaction(projectRoot, branch)
 
       try {
-        await tx.write(async (wt) => {
-          await applyChangesToWorktree(wt, deletePlan.changes)
+        const result = await deleteProvider.applyPlan({
+          branch,
+          changes: deletePlan.changes,
+          message: `[contentrain] delete content: ${input.model}`,
+          context: {
+            tool: 'contentrain_content_delete',
+            model: input.model,
+            locale: input.locale,
+          },
         })
-
-        await tx.commit(`[contentrain] delete content: ${input.model}`, {
-          tool: 'contentrain_content_delete',
-          model: input.model,
-          locale: input.locale,
-        })
-        const gitResult = await tx.complete()
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
@@ -275,20 +270,17 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
             message: 'Content deleted and committed to git. Do NOT manually edit .contentrain/ files.',
             deleted: true,
             files_removed: deletePlan.result,
-            git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
+            git: { branch, action: result.workflowAction, commit: result.sha, ...(result.sync ? { sync: result.sync } : {}) },
             context_updated: true,
           }, null, 2) }],
         }
       } catch (error) {
-        await tx.cleanup()
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             error: `Delete failed: ${error instanceof Error ? error.message : String(error)}`,
           }) }],
           isError: true,
         }
-      } finally {
-        await tx.cleanup()
       }
     },
   )
