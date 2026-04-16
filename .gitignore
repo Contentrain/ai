@@ -49,3 +49,4 @@ docs/.vitepress/dist/
 tmp/
 # Symlinked projects
 /studio
+/.internal

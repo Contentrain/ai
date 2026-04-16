@@ -1,0 +1,22 @@
+{
+  "lastOperation": {
+    "entries": [
+      "abc123def456"
+    ],
+    "locale": "en",
+    "model": "blog",
+    "source": "mcp-local",
+    "timestamp": "2026-01-01T00:00:00.000Z",
+    "tool": "contentrain_content_save"
+  },
+  "stats": {
+    "entries": 1,
+    "lastSync": "2026-01-01T00:00:00.000Z",
+    "locales": [
+      "en",
+      "tr"
+    ],
+    "models": 1
+  },
+  "version": "1"
+}

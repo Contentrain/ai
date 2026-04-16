@@ -1,0 +1,16 @@
+{
+  "domain": "marketing",
+  "fields": {
+    "subtitle": {
+      "type": "text"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    }
+  },
+  "i18n": true,
+  "id": "hero",
+  "kind": "singleton",
+  "name": "Hero"
+}
