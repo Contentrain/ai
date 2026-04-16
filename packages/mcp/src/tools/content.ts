@@ -2,7 +2,9 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { readModel } from '../core/model-manager.js'
-import { writeContent, deleteContent, listContent } from '../core/content-manager.js'
+import { deleteContent, listContent } from '../core/content-manager.js'
+import { applyChangesToWorktree, planContentSave } from '../core/ops/index.js'
+import { LocalReader } from '../providers/local/index.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { validateProject } from '../core/validator.js'
@@ -106,17 +108,35 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
       }
 
       const vocabulary = await readVocabulary(projectRoot)
+      const reader = new LocalReader(projectRoot)
+
+      let plan: Awaited<ReturnType<typeof planContentSave>>
+      try {
+        plan = await planContentSave(reader, {
+          model,
+          entries: input.entries,
+          config,
+          vocabulary,
+        })
+      } catch (error) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: `Content save failed: ${error instanceof Error ? error.message : String(error)}`,
+          }) }],
+          isError: true,
+        }
+      }
+
+      const entryIds = plan.result
+        .map(r => r.id ?? r.slug ?? r.locale)
+        .filter((v): v is string => Boolean(v))
+
       const branch = buildBranchName('content', input.model)
       const tx = await createTransaction(projectRoot, branch)
 
       try {
-        let results: Awaited<ReturnType<typeof writeContent>>
-
-        let entryIds: string[] = []
-
         await tx.write(async (wt) => {
-          results = await writeContent(wt, model, input.entries, config, vocabulary)
-          entryIds = results!.map(r => r.id ?? r.slug ?? r.locale).filter(Boolean) as string[]
+          await applyChangesToWorktree(wt, plan.changes)
         })
 
         await tx.commit(`[contentrain] content: ${input.model}`, {
@@ -131,13 +151,13 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         const validationResult = await validateProject(projectRoot, { model: input.model })
 
         // Collect advisories from write results (e.g., duplicate value warnings)
-        const allAdvisories = results!.flatMap(r => r.advisories ?? [])
+        const allAdvisories = plan.result.flatMap(r => r.advisories ?? [])
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             status: 'committed',
             message: 'Content saved and committed to git. Do NOT manually edit .contentrain/ files.',
-            results: results!,
+            results: plan.result,
             git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
             ...(allAdvisories.length > 0 ? {
               advisories: allAdvisories,
