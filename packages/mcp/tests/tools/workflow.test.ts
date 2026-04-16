@@ -368,6 +368,38 @@ describe('contentrain_validate', () => {
     expect(updatedMeta!['keep-me']!['source']).toBe('import')
   })
 
+  it('detects duplicate dictionary values', async () => {
+    client = await createModel(client, 'ui-labels', 'dictionary', 'system')
+
+    // Save dictionary with duplicate values
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'ui-labels',
+        entries: [
+          { locale: 'en', data: { 'dialog.cancel': 'Cancel', 'form.cancel': 'Cancel', 'nav.home': 'Home' } },
+          { locale: 'tr', data: { 'dialog.cancel': 'İptal', 'form.cancel': 'İptal', 'nav.home': 'Ana Sayfa' } },
+        ],
+      },
+    })
+
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_validate',
+      arguments: { model: 'ui-labels' },
+    })
+
+    const data = parseResult(result)
+    const issues = data['issues'] as Array<Record<string, unknown>>
+    const dupeIssue = issues.find(i =>
+      (i['message'] as string).includes('Duplicate value') && (i['message'] as string).includes('Cancel'),
+    )
+    expect(dupeIssue).toBeDefined()
+    expect(dupeIssue!['severity']).toBe('warning')
+    expect(dupeIssue!['model']).toBe('ui-labels')
+  })
+
   it('auto-fix canonical sort', async () => {
     client = await createModel(client, 'authors', 'collection', 'blog', {
       name: { type: 'string' },

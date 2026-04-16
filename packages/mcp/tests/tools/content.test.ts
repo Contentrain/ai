@@ -575,3 +575,63 @@ describe('contentrain_content_list', () => {
     expect(author['name']).toBe('Alice')
   })
 })
+
+describe('contentrain_content_save advisories', () => {
+  it('returns advisory when dictionary value already exists under different key', async () => {
+    client = await createModel(client, 'ui-strings', 'dictionary', 'system')
+
+    // Save initial keys
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'ui-strings',
+        entries: [{ locale: 'en', data: { 'dialog.cancel': 'Cancel' } }],
+      },
+    })
+
+    client = await createTestClient(testDir)
+
+    // Save duplicate value under new key
+    const result = await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'ui-strings',
+        entries: [{ locale: 'en', data: { 'form.cancel': 'Cancel' } }],
+      },
+    })
+
+    const data = parseResult(result)
+    expect(data['status']).toBe('committed')
+    expect(data['advisories']).toBeDefined()
+    const advisories = data['advisories'] as string[]
+    expect(advisories.length).toBeGreaterThan(0)
+    expect(advisories[0]).toContain('dialog.cancel')
+    expect(data['advisory_note']).toBeDefined()
+  })
+
+  it('returns no advisory when dictionary values are unique', async () => {
+    client = await createModel(client, 'ui-strings', 'dictionary', 'system')
+
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'ui-strings',
+        entries: [{ locale: 'en', data: { 'key1': 'Hello' } }],
+      },
+    })
+
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'ui-strings',
+        entries: [{ locale: 'en', data: { 'key2': 'World' } }],
+      },
+    })
+
+    const data = parseResult(result)
+    expect(data['status']).toBe('committed')
+    expect(data['advisories']).toBeUndefined()
+  })
+})

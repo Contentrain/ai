@@ -76,6 +76,10 @@
       "types": "./dist/core/apply-manager.d.ts",
       "import": "./dist/core/apply-manager.mjs"
     },
+    "./core/scan-config": {
+      "types": "./dist/core/scan-config.d.ts",
+      "import": "./dist/core/scan-config.mjs"
+    },
     "./util/detect": {
       "types": "./dist/util/detect.d.ts",
       "import": "./dist/util/detect.mjs"

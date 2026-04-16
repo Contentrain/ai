@@ -497,6 +497,25 @@ async function validateDictionaryModel(
       }
     }
 
+    // Duplicate value detection
+    const valueToKeys = new Map<string, string[]>()
+    for (const [key, value] of Object.entries(data)) {
+      const arr = valueToKeys.get(value)
+      if (arr) arr.push(key)
+      else valueToKeys.set(value, [key])
+    }
+    for (const [value, dupeKeys] of valueToKeys) {
+      if (dupeKeys.length > 1) {
+        const truncated = value.length > 40 ? `${value.slice(0, 40)}...` : value
+        issues.push({
+          severity: 'warning',
+          model: model.id,
+          locale,
+          message: `Duplicate value "${truncated}" mapped to ${dupeKeys.length} keys: [${dupeKeys.join(', ')}]`,
+        })
+      }
+    }
+
     // Canonical sort check
     const keys = Object.keys(data)
     const sorted = [...keys].toSorted()
@@ -788,6 +807,46 @@ export async function validateProject(
   // Orphan content check (only when checking all models)
   if (!options?.model) {
     totalFixed += await checkOrphanContent(projectRoot, validModelIds, issues, fix)
+  }
+
+  // Cross-dictionary duplicate value detection (only when checking all models)
+  if (!options?.model) {
+    const dictModels = modelsToCheck.filter(m => m.kind === 'dictionary')
+    if (dictModels.length > 1) {
+      const globalValueMap: Record<string, Map<string, Array<{ model: string; key: string }>>> = {}
+
+      for (const summary of dictModels) {
+        const model = await readModel(projectRoot, summary.id)
+        if (!model) continue
+        const cDir = resolveContentDir(projectRoot, model)
+
+        for (const locale of config.locales.supported) {
+          if (!globalValueMap[locale]) globalValueMap[locale] = new Map()
+          const data = await readJson<Record<string, string>>(resolveJsonFilePath(cDir, model, locale))
+          if (!data) continue
+
+          for (const [key, value] of Object.entries(data)) {
+            const refs = globalValueMap[locale]!.get(value)
+            if (refs) refs.push({ model: model.id, key })
+            else globalValueMap[locale]!.set(value, [{ model: model.id, key }])
+          }
+        }
+      }
+
+      for (const [locale, valueMap] of Object.entries(globalValueMap)) {
+        for (const [value, refs] of valueMap) {
+          const uniqueModels = new Set(refs.map(r => r.model))
+          if (uniqueModels.size > 1) {
+            const truncated = value.length > 40 ? `${value.slice(0, 40)}...` : value
+            issues.push({
+              severity: 'notice',
+              locale,
+              message: `Cross-model duplicate value "${truncated}" in ${refs.map(r => `${r.model}/${r.key}`).join(', ')}`,
+            })
+          }
+        }
+      }
+    }
   }
 
   const errors = issues.filter(i => i.severity === 'error').length

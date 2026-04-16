@@ -111,6 +111,13 @@ This regenerates `.contentrain/client/` — required for `#contentrain` imports 
 - Collection entry IDs and dictionary keys must match across all locales
 - IDs and slugs are locale-agnostic — same reference works everywhere
 
+## Content Governance
+
+- **No duplicate values** — before creating a dictionary key, check if the value already exists under another key (MCP warns automatically via advisories)
+- **Vocabulary first** — check `.contentrain/vocabulary.json` for canonical terms before creating content. Use approved terms exactly, do not invent synonyms
+- **Run validation** — after bulk content operations, call `contentrain_validate` to catch duplicate values, missing translations, and schema issues
+- **Periodic health check** — run `contentrain doctor --usage` to detect unused keys, duplicate values, and locale coverage gaps
+
 ## Security
 
 - No `<script>`, `javascript:`, or event handlers in richtext/markdown

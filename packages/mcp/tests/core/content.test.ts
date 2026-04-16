@@ -309,6 +309,64 @@ describe('writeContent', () => {
     expect(content!['key2']).toBe('value2')
   })
 
+  it('returns advisory when dictionary value already exists under different key', async () => {
+    // Write initial key
+    await writeContent(testDir, dictionaryModel, [
+      { locale: 'en', data: { 'dialog.cancel': 'Cancel' } },
+    ], config)
+
+    // Write same value under a new key
+    const results = await writeContent(testDir, dictionaryModel, [
+      { locale: 'en', data: { 'form.cancel': 'Cancel' } },
+    ], config)
+
+    expect(results[0]!.advisories).toBeDefined()
+    expect(results[0]!.advisories).toHaveLength(1)
+    expect(results[0]!.advisories![0]).toContain('dialog.cancel')
+    expect(results[0]!.advisories![0]).toContain('Cancel')
+  })
+
+  it('returns no advisory when dictionary values are unique', async () => {
+    await writeContent(testDir, dictionaryModel, [
+      { locale: 'en', data: { 'key1': 'Hello' } },
+    ], config)
+
+    const results = await writeContent(testDir, dictionaryModel, [
+      { locale: 'en', data: { 'key2': 'World' } },
+    ], config)
+
+    expect(results[0]!.advisories).toBeUndefined()
+  })
+
+  it('returns no advisory when updating existing dictionary key with same value', async () => {
+    await writeContent(testDir, dictionaryModel, [
+      { locale: 'en', data: { 'key1': 'Hello' } },
+    ], config)
+
+    // Re-write same key with same value — not a duplicate, just an update
+    const results = await writeContent(testDir, dictionaryModel, [
+      { locale: 'en', data: { 'key1': 'Hello' } },
+    ], config)
+
+    expect(results[0]!.advisories).toBeUndefined()
+  })
+
+  it('returns vocabulary advisory when value matches a vocabulary term', async () => {
+    const vocabulary = {
+      version: 1,
+      terms: {
+        actions: { approve: 'Approve', cancel: 'Cancel' },
+      },
+    }
+
+    const results = await writeContent(testDir, dictionaryModel, [
+      { locale: 'en', data: { 'dialog.approve': 'Approve' } },
+    ], config, vocabulary)
+
+    expect(results[0]!.advisories).toBeDefined()
+    expect(results[0]!.advisories!.some(a => a.includes('vocabulary'))).toBe(true)
+  })
+
   it('writes meta for every content write', async () => {
     await writeContent(testDir, singletonModel, [
       { locale: 'en', data: { title: 'Test' } },

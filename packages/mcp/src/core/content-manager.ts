@@ -1,4 +1,4 @@
-import type { ModelDefinition, ContentrainConfig, EntryMeta, LocaleStrategy, DocumentEntry } from '@contentrain/types'
+import type { ModelDefinition, ContentrainConfig, EntryMeta, LocaleStrategy, DocumentEntry, Vocabulary } from '@contentrain/types'
 import { validateSlug, validateEntryId, validateLocale, generateEntryId, parseMarkdownFrontmatter, serializeMarkdownFrontmatter } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
@@ -65,6 +65,7 @@ export interface WriteResult {
   id?: string
   slug?: string
   locale: string
+  advisories?: string[]
 }
 
 export interface DeleteOpts {
@@ -106,6 +107,7 @@ export async function writeContent(
   model: ModelDefinition,
   entries: ContentEntry[],
   config: ContentrainConfig,
+  vocabulary?: Vocabulary | null,
 ): Promise<WriteResult[]> {
   const results: WriteResult[] = []
   const defaultLocale = config.locales.default
@@ -197,10 +199,42 @@ export async function writeContent(
             `Read existing keys with contentrain_content_list first, or include all keys in a single save call.`,
           )
         }
+
+        // Duplicate value advisory: warn when a new key maps to a value that already exists
+        const advisories: string[] = []
+        const reverseMap = new Map<string, string>()
+        for (const [k, v] of Object.entries(existing)) {
+          reverseMap.set(v, k)
+        }
+        for (const [newKey, newValue] of Object.entries(entry.data as Record<string, string>)) {
+          if (newKey in existing) continue
+          const existingKey = reverseMap.get(newValue as string)
+          if (existingKey && existingKey !== newKey) {
+            advisories.push(
+              `Value "${newValue}" already exists as key "${existingKey}". Consider reusing instead of creating "${newKey}".`,
+            )
+          }
+        }
+
+        // Vocabulary cross-reference: warn when a value matches a known vocabulary term
+        if (vocabulary && Object.keys(vocabulary.terms).length > 0) {
+          for (const [newKey, newValue] of Object.entries(entry.data as Record<string, string>)) {
+            if (newKey in existing) continue
+            for (const [, translations] of Object.entries(vocabulary.terms)) {
+              if (Object.values(translations).includes(newValue as string)) {
+                advisories.push(
+                  `Value "${newValue}" matches a vocabulary term. Use the canonical form for consistency.`,
+                )
+                break
+              }
+            }
+          }
+        }
+
         const merged = { ...existing, ...entry.data as Record<string, string> }
         await writeJson(filePath, merged)
         await writeMeta(projectRoot, model, { locale }, defaultMeta(entry.data))
-        results.push({ action: 'updated', locale })
+        results.push({ action: 'updated', locale, ...(advisories.length > 0 ? { advisories } : {}) })
         break
       }
     }

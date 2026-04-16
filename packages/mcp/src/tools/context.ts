@@ -58,7 +58,9 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
           lastOperation: context.lastOperation,
           stats: context.stats,
         } : null,
-        vocabulary_size: vocabulary ? Object.keys(vocabulary.terms).length : 0,
+        vocabulary: vocabulary && Object.keys(vocabulary.terms).length > 0
+          ? { size: Object.keys(vocabulary.terms).length, terms: vocabulary.terms }
+          : { size: 0 },
       }
 
       // Branch lifecycle: lazy cleanup + health check (run BEFORE validation summary)
@@ -142,6 +144,17 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
       // Stack-aware import snippet
       const stack = config?.stack ?? 'other'
       result['import_snippet'] = generateImportSnippet(modelDef, stack, effectiveLocale)
+
+      // Vocabulary hint for dictionary models
+      if (modelDef.kind === 'dictionary') {
+        const vocabulary = await readVocabulary(projectRoot)
+        if (vocabulary && Object.keys(vocabulary.terms).length > 0) {
+          result['vocabulary_hint'] = {
+            note: 'Check these approved terms before creating new dictionary keys',
+            terms: vocabulary.terms,
+          }
+        }
+      }
 
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
@@ -265,6 +278,19 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
             '4. Determine file path using locale_strategy and i18n flag',
             '5. Parse JSON (collection/singleton/dictionary) or Markdown frontmatter (document)',
             '6. Optionally read .contentrain/meta/{model-id}/{locale}.json for status/metadata',
+          ],
+        },
+        vocabulary: {
+          description: 'Canonical terms for content consistency across models and locales.',
+          file: '.contentrain/vocabulary.json',
+          format: {
+            version: 'number',
+            terms: 'Record<category, Record<slug, translation_value>>',
+          },
+          usage: [
+            'Check vocabulary before creating dictionary entries — reuse canonical terms',
+            'If a new term is needed, consider adding it to vocabulary first',
+            'Vocabulary applies across ALL dictionary models and ALL locales',
           ],
         },
       }
