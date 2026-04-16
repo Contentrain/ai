@@ -11,6 +11,8 @@ export default defineCommand({
   args: {
     root: { type: 'string', description: 'Project root path (env: CONTENTRAIN_PROJECT_ROOT)', required: false },
     stdio: { type: 'boolean', description: 'Use stdio MCP transport for IDE integration (env: CONTENTRAIN_STDIO=true)', required: false },
+    mcpHttp: { type: 'boolean', description: 'Use HTTP MCP transport (serves tool calls at POST /mcp)', required: false },
+    authToken: { type: 'string', description: 'Bearer token required for HTTP MCP requests (env: CONTENTRAIN_AUTH_TOKEN)', required: false },
     port: { type: 'string', description: 'HTTP server port, default: 3333 (env: CONTENTRAIN_PORT)', required: false },
     open: { type: 'boolean', description: 'Open browser automatically (env: CONTENTRAIN_NO_OPEN=true to disable)', required: false },
     host: { type: 'string', description: 'Bind address, default: localhost (env: CONTENTRAIN_HOST)', required: false },
@@ -58,9 +60,39 @@ export default defineCommand({
       return
     }
 
-    // --- Web UI mode (default) ---
     const port = Number(args.port) || Number(process.env['CONTENTRAIN_PORT']) || 3333
     const host = args.host ?? process.env['CONTENTRAIN_HOST'] ?? 'localhost'
+
+    // --- MCP over HTTP mode ---
+    const useMcpHttp = args.mcpHttp || process.env['CONTENTRAIN_MCP_HTTP'] === 'true' || process.env['CONTENTRAIN_MCP_HTTP'] === '1'
+    if (useMcpHttp) {
+      const { startHttpMcpServer } = await import('@contentrain/mcp/server/http')
+      const authToken = args.authToken ?? process.env['CONTENTRAIN_AUTH_TOKEN']
+      const handle = await startHttpMcpServer({
+        projectRoot,
+        host,
+        port,
+        authToken,
+      })
+      consola.box({
+        title: 'Contentrain MCP (HTTP)',
+        message: [
+          `Endpoint: ${handle.url}`,
+          `Root:     ${projectRoot}`,
+          authToken ? 'Auth:     Bearer token required' : 'Auth:     none (local-only server)',
+          '',
+          'Press Ctrl+C to stop',
+        ].join('\n'),
+      })
+      if (host === '0.0.0.0' && !authToken) {
+        consola.warn('HTTP MCP server is accessible from the network with no Bearer token. Set --auth-token or CONTENTRAIN_AUTH_TOKEN.')
+      }
+      process.on('SIGINT', () => { void handle.close().finally(() => process.exit(0)) })
+      process.on('SIGTERM', () => { void handle.close().finally(() => process.exit(0)) })
+      return
+    }
+
+    // --- Web UI mode (default) ---
     const shouldOpen = args.open !== false && process.env['CONTENTRAIN_NO_OPEN'] !== 'true'
 
     // Resolve UI directory (pre-built static assets next to CLI bundle)

@@ -44,6 +44,10 @@
       "types": "./dist/server.d.ts",
       "import": "./dist/server.mjs"
     },
+    "./server/http": {
+      "types": "./dist/server/http/index.d.ts",
+      "import": "./dist/server/http/index.mjs"
+    },
     "./core/config": {
       "types": "./dist/core/config.d.ts",
       "import": "./dist/core/config.mjs"
@@ -111,8 +115,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts src/providers/github/index.ts --format esm --dts --external typescript",
-    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts src/providers/github/index.ts --format esm --dts --external typescript --watch",
+    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts src/providers/github/index.ts src/server/http/index.ts --format esm --dts --external typescript",
+    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts src/providers/github/index.ts src/server/http/index.ts --format esm --dts --external typescript --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
