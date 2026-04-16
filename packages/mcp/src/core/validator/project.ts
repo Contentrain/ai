@@ -2,11 +2,12 @@ import type { ValidationError, ModelDefinition, ContentrainConfig, FieldDef, Ent
 import { detectSecrets, validateFieldValue } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
-import { contentrainDir, readDir, readJson, readText, writeJson, writeText, pathExists } from '../util/fs.js'
-import { readConfig } from './config.js'
-import { listModels, readModel } from './model-manager.js'
-import { writeMeta } from './meta-manager.js'
-import { parseFrontmatter, resolveContentDir, resolveJsonFilePath, resolveMdFilePath, resolveLocaleStrategy } from './content-manager.js'
+import { contentrainDir, readDir, readJson, readText, writeJson, writeText, pathExists } from '../../util/fs.js'
+import { readConfig } from '../config.js'
+import { listModels, readModel } from '../model-manager.js'
+import { writeMeta } from '../meta-manager.js'
+import { parseFrontmatter, resolveContentDir, resolveJsonFilePath, resolveMdFilePath, resolveLocaleStrategy } from '../content-manager.js'
+import { validateScheduleFields } from './schedule.js'
 
 // ─── Types ───
 
@@ -26,46 +27,6 @@ export interface ValidateResult {
   }
   issues: ValidationError[]
   fixed: number
-}
-
-// ─── Schedule validation ───
-
-function validateScheduleFields(
-  meta: EntryMeta,
-  ctx: { model: string; locale: string; entry?: string; slug?: string },
-  issues: ValidationError[],
-): void {
-  if (meta.publish_at !== undefined) {
-    const d = new Date(meta.publish_at)
-    if (Number.isNaN(d.getTime())) {
-      issues.push({
-        severity: 'error',
-        ...ctx,
-        message: `Invalid publish_at date: "${meta.publish_at}". Must be a valid ISO 8601 date string.`,
-      })
-    }
-  }
-  if (meta.expire_at !== undefined) {
-    const d = new Date(meta.expire_at)
-    if (Number.isNaN(d.getTime())) {
-      issues.push({
-        severity: 'error',
-        ...ctx,
-        message: `Invalid expire_at date: "${meta.expire_at}". Must be a valid ISO 8601 date string.`,
-      })
-    }
-  }
-  if (meta.publish_at !== undefined && meta.expire_at !== undefined) {
-    const pubDate = new Date(meta.publish_at)
-    const expDate = new Date(meta.expire_at)
-    if (!Number.isNaN(pubDate.getTime()) && !Number.isNaN(expDate.getTime()) && expDate <= pubDate) {
-      issues.push({
-        severity: 'error',
-        ...ctx,
-        message: `expire_at ("${meta.expire_at}") must be after publish_at ("${meta.publish_at}").`,
-      })
-    }
-  }
 }
 
 // ─── Shared field validation ───

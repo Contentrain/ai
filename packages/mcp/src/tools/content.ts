@@ -7,7 +7,7 @@ import { planContentDelete, planContentSave } from '../core/ops/index.js'
 import { LocalProvider } from '../providers/local/index.js'
 import { buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
-import { validateProject } from '../core/validator.js'
+import { validateProject } from '../core/validator/index.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 
 export function registerContentTools(server: McpServer, projectRoot: string): void {
