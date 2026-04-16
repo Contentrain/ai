@@ -1,0 +1,7 @@
+export type { Branch, FileDiff, MergeResult } from './branch.js'
+export type { ProviderCapabilities } from './capabilities.js'
+export { LOCAL_CAPABILITIES } from './capabilities.js'
+export type { FileChange } from './file-change.js'
+export type { RepoProvider } from './provider.js'
+export type { RepoReader } from './repo-reader.js'
+export type { ApplyPlanInput, Commit, CommitAuthor, RepoWriter } from './repo-writer.js'
