@@ -61,8 +61,8 @@
       "import": "./dist/core/content-manager.mjs"
     },
     "./core/validator": {
-      "types": "./dist/core/validator.d.ts",
-      "import": "./dist/core/validator.mjs"
+      "types": "./dist/core/validator/index.d.ts",
+      "import": "./dist/core/validator/index.mjs"
     },
     "./core/scanner": {
       "types": "./dist/core/scanner.d.ts",
@@ -107,8 +107,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts --format esm --dts --external typescript",
-    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts --format esm --dts --external typescript --watch",
+    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts --format esm --dts --external typescript",
+    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts --format esm --dts --external typescript --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
