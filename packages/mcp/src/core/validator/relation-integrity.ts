@@ -1,20 +1,52 @@
 import type { FieldDef, ValidationError } from '@contentrain/types'
 
 /**
- * Check relation referential integrity: verify that the IDs/slugs referenced
- * by `relation` and `relations` fields actually exist in their target model's
- * content. I/O is isolated from the synchronous `validateContent` call so
- * callers can decide when (if ever) to pay the lookup cost.
+ * Resolution of a target model for a relation integrity check.
  *
- * `loadContent(modelId, locale)` is a host-provided callback that returns the
- * object-map content for a model at a locale (or null if the file is missing).
- * MCP wires it to `readJson` over the local filesystem; Studio wires it to a
- * `GitProvider.readFile`-backed loader. The validator stays agnostic.
+ * - `{ exists: true, content: {...} }` — target model is known and its
+ *   content for the requested locale was loaded. The ref must appear
+ *   as a key in `content`.
+ * - `{ exists: true, content: null }` — target model exists (e.g. a
+ *   singleton or dictionary) but per-entry key enforcement does not
+ *   apply. The checker skips the ref existence test for this target.
+ * - `{ exists: false }` — the referenced model is not defined at all.
+ *   The checker emits a "target model not found" error.
+ */
+export interface ResolvedTarget {
+  exists: boolean
+  content?: Record<string, unknown> | null
+}
+
+/** Back-compat loader signature used by Studio. A null return means "nothing to check". */
+export type LegacyLoadContent = (
+  targetModelId: string,
+  targetLocale: string,
+) => Promise<Record<string, unknown> | null>
+
+export interface CheckRelationIntegrityOptions {
+  /** Severity for broken-relation errors. Default: `warning` (Studio-compat). */
+  severity?: 'error' | 'warning'
+  /**
+   * Richer target resolver — when provided, it can signal target-model
+   * absence. MCP's project validator passes one so `contentrain_validate`
+   * still emits "target model not found" errors.
+   */
+  resolveTarget?: (
+    targetModelId: string,
+    targetLocale: string,
+  ) => Promise<ResolvedTarget>
+}
+
+/**
+ * Verify that relation and relations fields reference targets that actually
+ * exist. Two severities are supported — Studio's per-save flow emits
+ * `warning` (the referenced entry may still be drafted), while MCP's
+ * project-wide validator emits `error` and additionally flags missing
+ * target models via `resolveTarget`.
  *
- * Severity is `warning` — a broken reference should surface but not block
- * writes (matches Studio's existing behaviour; MCP's legacy `checkRelation`
- * raised `error`, but the unified policy leans towards warnings to avoid
- * blocking content writes while a referenced entry is being drafted).
+ * The loader abstraction keeps this function I/O-agnostic: MCP wires it
+ * to filesystem reads through LocalReader, Studio wires it to a
+ * `GitProvider.readFile`-backed loader, mocks pass in-memory maps.
  */
 export async function checkRelationIntegrity(
   data: Record<string, unknown>,
@@ -22,9 +54,17 @@ export async function checkRelationIntegrity(
   modelId: string,
   locale: string,
   entryId: string | undefined,
-  loadContent: (targetModelId: string, targetLocale: string) => Promise<Record<string, unknown> | null>,
+  loadContent: LegacyLoadContent,
+  opts: CheckRelationIntegrityOptions = {},
 ): Promise<ValidationError[]> {
   const errors: ValidationError[] = []
+  const severity = opts.severity ?? 'warning'
+
+  const resolve = opts.resolveTarget
+    ?? (async (id: string, loc: string): Promise<ResolvedTarget> => {
+      const content = await loadContent(id, loc)
+      return { exists: true, content }
+    })
 
   for (const [fieldId, def] of Object.entries(fields)) {
     const value = data[fieldId]
@@ -36,10 +76,19 @@ export async function checkRelationIntegrity(
       if (targets.length > 1 && typeof value === 'object' && value !== null) {
         const polyVal = value as { model: string, ref: string }
         if (polyVal.model && polyVal.ref) {
-          const targetContent = await loadContent(polyVal.model, locale)
-          if (targetContent && !(polyVal.ref in targetContent)) {
+          const resolved = await resolve(polyVal.model, locale)
+          if (!resolved.exists) {
             errors.push({
-              severity: 'warning',
+              severity,
+              model: modelId,
+              locale,
+              entry: entryId,
+              field: fieldId,
+              message: `Broken relation: target model "${polyVal.model}" not found`,
+            })
+          } else if (resolved.content && !(polyVal.ref in resolved.content)) {
+            errors.push({
+              severity,
               model: modelId,
               locale,
               entry: entryId,
@@ -49,10 +98,19 @@ export async function checkRelationIntegrity(
           }
         }
       } else if (typeof value === 'string' && targets[0]) {
-        const targetContent = await loadContent(targets[0], locale)
-        if (targetContent && !(value in targetContent)) {
+        const resolved = await resolve(targets[0], locale)
+        if (!resolved.exists) {
           errors.push({
-            severity: 'warning',
+            severity,
+            model: modelId,
+            locale,
+            entry: entryId,
+            field: fieldId,
+            message: `Broken relation: target model "${targets[0]}" not found`,
+          })
+        } else if (resolved.content && !(value in resolved.content)) {
+          errors.push({
+            severity,
             model: modelId,
             locale,
             entry: entryId,
@@ -66,12 +124,21 @@ export async function checkRelationIntegrity(
     if (def.type === 'relations' && def.model && Array.isArray(value)) {
       const target = Array.isArray(def.model) ? def.model[0] : def.model
       if (target) {
-        const targetContent = await loadContent(target, locale)
-        if (targetContent) {
+        const resolved = await resolve(target, locale)
+        if (!resolved.exists) {
+          errors.push({
+            severity,
+            model: modelId,
+            locale,
+            entry: entryId,
+            field: fieldId,
+            message: `Broken relation: target model "${target}" not found`,
+          })
+        } else if (resolved.content) {
           for (const ref of value) {
-            if (typeof ref === 'string' && !(ref in targetContent)) {
+            if (typeof ref === 'string' && !(ref in resolved.content)) {
               errors.push({
-                severity: 'warning',
+                severity,
                 model: modelId,
                 locale,
                 entry: entryId,

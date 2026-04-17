@@ -85,9 +85,13 @@ function validateField(
   if (value === null || value === undefined) return errors
 
   if (def.unique && ctx?.allEntries) {
+    // String() comparison — matches legacy validator.ts uniqueness semantics
+    // (catches cross-type duplicates like 42 vs '42' that strict === would miss).
+    const valueKey = String(value)
     for (const [otherId, otherEntry] of Object.entries(ctx.allEntries)) {
       if (otherId === ctx.currentEntryId) continue
-      if (otherEntry[fieldId] === value) {
+      const otherValue = otherEntry[fieldId]
+      if (otherValue !== null && otherValue !== undefined && String(otherValue) === valueKey) {
         errors.push({
           severity: 'error',
           ...errCtx,
