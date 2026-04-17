@@ -26,6 +26,8 @@ export const router = createRouter({
         { path: 'branches', name: 'branches', component: () => import('./components/pages/BranchesPage.vue') },
         { path: 'branches/:branchName(.*)', name: 'branch-detail', component: () => import('./components/pages/BranchDetailPage.vue') },
         { path: 'normalize', name: 'normalize', component: () => import('./components/pages/NormalizePage.vue') },
+        { path: 'doctor', name: 'doctor', component: () => import('./components/pages/DoctorPage.vue') },
+        { path: 'format', name: 'format', component: () => import('./components/pages/FormatReferencePage.vue') },
       ],
     },
   ],

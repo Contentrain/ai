@@ -36,6 +36,43 @@ export interface ProjectStatus {
   }
 }
 
+/** `/api/doctor` — structured project health report. */
+export interface DoctorCheck {
+  name: string
+  pass: boolean
+  detail: string
+  severity?: 'error' | 'warning' | 'info'
+}
+
+export interface DoctorUsage {
+  unusedKeys: Array<{ model: string, kind: string, key: string, locale: string }>
+  duplicateValues: Array<{ model: string, locale: string, value: string, keys: string[] }>
+  missingLocaleKeys: Array<{ model: string, key: string, missingIn: string }>
+}
+
+export interface DoctorReport {
+  checks: DoctorCheck[]
+  summary: { total: number, passed: number, failed: number, warnings: number }
+  usage?: DoctorUsage
+}
+
+/** `/api/preview/merge?branch=cr/...` — side-effect-free merge preview. */
+export interface MergePreview {
+  branch: string
+  base: string
+  alreadyMerged: boolean
+  canFastForward: boolean
+  conflicts: string[] | null
+  filesChanged: number
+  stat: string
+}
+
+/** Latest file-watcher error — surfaced as a dismissible banner. */
+export interface FileWatchError {
+  message: string
+  timestamp: string
+}
+
 /**
  * `/api/capabilities` — provider + transport + capability manifest +
  * branch health. Populated once on app mount and invalidated on
@@ -72,6 +109,9 @@ export interface Capabilities {
 export const useProjectStore = defineStore('project', () => {
   const status = ref<ProjectStatus | null>(null)
   const capabilities = ref<Capabilities | null>(null)
+  const doctor = ref<DoctorReport | null>(null)
+  const formatReference = ref<Record<string, unknown> | null>(null)
+  const fileWatchError = ref<FileWatchError | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -107,5 +147,60 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
-  return { status, capabilities, loading, error, branchHealthAlarm, fetchStatus, fetchCapabilities }
+  /**
+   * Fetch the structured doctor report. `usage` opts into the heavier
+   * analysis (unused keys, duplicates, locale gaps). Silent on error —
+   * the Doctor page surfaces its own empty state when `doctor.value`
+   * is null so the global shell doesn't have to care.
+   */
+  async function fetchDoctor(opts: { usage?: boolean } = {}) {
+    try {
+      const query = opts.usage ? '?usage=true' : ''
+      doctor.value = await api.get<DoctorReport>(`/doctor${query}`)
+    } catch {
+      doctor.value = null
+    }
+  }
+
+  async function fetchFormatReference() {
+    try {
+      formatReference.value = await api.get<Record<string, unknown>>('/describe-format')
+    } catch {
+      formatReference.value = null
+    }
+  }
+
+  async function fetchMergePreview(branch: string): Promise<MergePreview | null> {
+    try {
+      return await api.get<MergePreview>(`/preview/merge?branch=${encodeURIComponent(branch)}`)
+    } catch {
+      return null
+    }
+  }
+
+  function setFileWatchError(message: string, timestamp: string) {
+    fileWatchError.value = { message, timestamp }
+  }
+
+  function dismissFileWatchError() {
+    fileWatchError.value = null
+  }
+
+  return {
+    status,
+    capabilities,
+    doctor,
+    formatReference,
+    fileWatchError,
+    loading,
+    error,
+    branchHealthAlarm,
+    fetchStatus,
+    fetchCapabilities,
+    fetchDoctor,
+    fetchFormatReference,
+    fetchMergePreview,
+    setFileWatchError,
+    dismissFileWatchError,
+  }
 })

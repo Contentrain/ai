@@ -15,13 +15,17 @@ import {
   Settings,
   Github,
   BookOpen,
+  Stethoscope,
+  FileCode,
 } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { dictionary } from '#contentrain'
 
 const route = useRoute()
 const ui = useUiStore()
 const project = useProjectStore()
+const t = dictionary('serve-ui-texts').locale('en').get()
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', to: '/', exact: true },
@@ -30,6 +34,8 @@ const navItems = [
   { icon: ShieldCheck, label: 'Validate', to: '/validate' },
   { icon: GitBranch, label: 'Branches', to: '/branches' },
   { icon: ScanSearch, label: 'Normalize', to: '/normalize' },
+  { icon: Stethoscope, label: t['primary-nav.doctor'], to: '/doctor' },
+  { icon: FileCode, label: t['primary-nav.format'], to: '/format' },
 ]
 
 function isActive(item: typeof navItems[0]): boolean {

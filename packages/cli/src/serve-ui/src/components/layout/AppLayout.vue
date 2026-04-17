@@ -2,12 +2,15 @@
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { computed, onMounted } from 'vue'
 import { toast } from 'vue-sonner'
+import { dictionary } from '#contentrain'
 import PrimarySidebar from './PrimarySidebar.vue'
 import SubSidebarLayout from './SubSidebarLayout.vue'
 import StatusBar from './StatusBar.vue'
 import MobileNav from './MobileNav.vue'
 import { useProjectStore } from '@/stores/project'
 import { useWatch } from '@/composables/useWatch'
+
+const t = dictionary('serve-ui-texts').locale('en').get()
 
 const route = useRoute()
 const router = useRouter()
@@ -52,6 +55,26 @@ useWatch((event) => {
       description: event.message ?? 'Merge failed — resolve manually and retry.',
     })
   }
+  if (event.type === 'meta:changed' && event.modelId) {
+    // Light touch — SEO metadata doesn't drive the review workflow, so
+    // only surface a low-priority toast. The store cache invalidates
+    // through `fetchStatus` on the next real trigger.
+    const scope = event.entryId
+      ? `${event.modelId}/${event.entryId}`
+      : event.modelId
+    toast.message(t['layout.meta-changed-title'], {
+      description: `${scope}${event.locale ? ` (${event.locale})` : ''}`,
+    })
+  }
+  if (event.type === 'file-watch:error') {
+    // Banner state — persists until the user dismisses. chokidar
+    // failures mean live updates have stopped; silence would leave
+    // the UI rendering stale data indefinitely.
+    project.setFileWatchError(
+      event.message ?? 'File watcher stopped unexpectedly.',
+      event.timestamp ?? new Date().toISOString(),
+    )
+  }
 })
 
 onMounted(() => {
@@ -80,6 +103,26 @@ onMounted(() => {
           {{ project.branchHealthAlarm.message }}
         </span>
         <RouterLink to="/branches" class="underline">Review branches</RouterLink>
+      </div>
+
+      <!-- File-watcher error banner: chokidar stopped — live updates
+           are no longer flowing and the UI must surface that instead
+           of silently rendering stale data. -->
+      <div
+        v-if="project.fileWatchError"
+        class="px-4 py-2 text-sm font-medium border-b flex items-center justify-between gap-4 bg-destructive text-destructive-foreground border-destructive/50"
+      >
+        <span>
+          <strong>{{ t['layout.watcher-paused-label'] }}</strong>
+          {{ project.fileWatchError.message }}
+          <span class="opacity-80 ml-1 text-xs">({{ t['layout.watcher-restart-hint'] }})</span>
+        </span>
+        <button
+          class="underline hover:no-underline shrink-0"
+          @click="project.dismissFileWatchError()"
+        >
+          {{ t['layout.dismiss'] }}
+        </button>
       </div>
 
       <main class="flex-1 overflow-hidden pb-16 md:pb-0">
