@@ -41,13 +41,13 @@ interface ApplyPlanInput {
   changes: FileChange[]
   message: string
   author: CommitAuthor
-  base?: string     // Defaults to provider's content-tracking branch
+  base?: string     // Defaults to CONTENTRAIN_BRANCH ('contentrain')
 }
 ```
 
 `changes` entries are `{ path, content }`; `content: null` means delete. Providers are responsible for resolving paths against their backing store and translating the change set into whatever commit primitive the backend supports.
 
-## Branch ops
+## Branch operations
 
 Providers extend `RepoReader` and `RepoWriter` with branch / merge / diff operations to form the full `RepoProvider`:
 
@@ -65,7 +65,7 @@ interface RepoProvider extends RepoReader, RepoWriter {
 }
 ```
 
-`MergeResult` is `{ merged, sha, pullRequestUrl }`. GitHub's `repos.merge` fills `sha`; GitLab's MR-based flow fills both `sha` and `pullRequestUrl`; a provider that hits branch protection returns `merged: false` with a `pullRequestUrl` so the caller can delegate.
+`MergeResult` is `{ merged, sha, pullRequestUrl, sync? }`. GitHubProvider fills `sha` on direct merges; GitLabProvider fills both `sha` and `pullRequestUrl` (merges via MR). LocalProvider populates `sync: SyncResult` to describe file syncing to the working tree. When branch protection blocks a direct merge, any provider may return `merged: false` with a `pullRequestUrl` fallback.
 
 ## Capabilities
 
@@ -83,6 +83,18 @@ interface ProviderCapabilities {
 }
 ```
 
+Capability meanings:
+
+| Capability | Purpose |
+|---|---|
+| `localWorktree` | Provider backs onto a local filesystem worktree and can selectively sync changes to developer's working tree |
+| `sourceRead` | Provider can read arbitrary source files outside `.contentrain/` (required for normalize extract) |
+| `sourceWrite` | Provider can write arbitrary source files outside `.contentrain/` (required for normalize reuse) |
+| `pushRemote` | Provider can push commits to a remote repository (required for submit) |
+| `branchProtection` | Provider detects branch protection rules on the remote |
+| `pullRequestFallback` | Provider can open a pull request as a fallback when direct merge is blocked |
+| `astScan` | Provider can execute AST scanners against source files (implies local disk access) |
+
 Built-in capability sets:
 
 | Capability | LocalProvider | GitHubProvider | GitLabProvider |
@@ -95,7 +107,19 @@ Built-in capability sets:
 | `pullRequestFallback` | — | ✓ | ✓ |
 | `astScan` | ✓ | — | — |
 
-`LOCAL_CAPABILITIES` is exported from `@contentrain/types` for ergonomic use in custom providers that back onto the local filesystem.
+`LOCAL_CAPABILITIES` is exported from `@contentrain/types` for ergonomic use in custom providers that back onto the local filesystem:
+
+```ts
+export const LOCAL_CAPABILITIES: ProviderCapabilities = {
+  localWorktree: true,
+  sourceRead: true,
+  sourceWrite: true,
+  pushRemote: true,
+  branchProtection: false,
+  pullRequestFallback: false,
+  astScan: true,
+}
+```
 
 ## Supporting types
 
@@ -124,6 +148,13 @@ interface MergeResult {
   merged: boolean
   sha: string | null
   pullRequestUrl: string | null
+  sync?: SyncResult   // Only populated by LocalProvider
+}
+
+interface SyncResult {
+  synced: string[]     // Files successfully synced to working tree
+  skipped: string[]    // Files skipped due to uncommitted local changes
+  warning?: string     // Human-readable warning if files were skipped
 }
 ```
 

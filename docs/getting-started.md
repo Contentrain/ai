@@ -215,7 +215,7 @@ All packages are published on npm:
 | Package | Description | Install |
 |---|---|---|
 | [`contentrain`](https://www.npmjs.com/package/contentrain) | CLI (init, serve, generate, validate) | `npx contentrain init` |
-| [`@contentrain/mcp`](https://www.npmjs.com/package/@contentrain/mcp) | 16 MCP tools for AI agents | `pnpm add @contentrain/mcp` |
+| [`@contentrain/mcp`](https://www.npmjs.com/package/@contentrain/mcp) | 17 MCP tools for AI agents | `pnpm add @contentrain/mcp` |
 | [`@contentrain/query`](https://www.npmjs.com/package/@contentrain/query) | TypeScript query SDK (optional) | `pnpm add @contentrain/query` |
 | [`@contentrain/types`](https://www.npmjs.com/package/@contentrain/types) | Shared TypeScript types | `pnpm add @contentrain/types` |
 | [`@contentrain/rules`](https://www.npmjs.com/package/@contentrain/rules) | AI agent quality rules | `pnpm add @contentrain/rules` |
@@ -253,7 +253,7 @@ Want to skip setup? Start from a production-ready template with content models, 
 
 - [Core Concepts](/concepts) — Models, content kinds, domains, and the governance architecture
 - [Ecosystem Map](/ecosystem) — How AI packages and Studio fit together
-- [MCP Tools](/packages/mcp) — All 16 tools available to your agent
+- [MCP Tools](/packages/mcp) — All 17 tools available to your agent
 - [Normalize Flow](/guides/normalize) — Extract hardcoded strings from existing code
 - [i18n Workflow](/guides/i18n) — Add languages to your content
 - [Framework Integration](/guides/frameworks) — Platform-specific setup patterns

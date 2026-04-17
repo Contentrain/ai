@@ -114,6 +114,31 @@ const result: ValidationResult = {
 | `ContextJson` | Last operation context written by MCP |
 | `ModelSummary` | Lightweight model info for listing operations |
 
+### Provider Contract Types
+
+Third-party developers can implement custom providers by implementing these interfaces:
+
+| Interface / Type | Purpose |
+|-----------|---------|
+| `RepoProvider` | Full provider contract: read, write, branch, merge, diff operations |
+| `RepoReader` | Read-only interface (readFile, listDirectory, fileExists) |
+| `RepoWriter` | Write interface (applyPlan for atomic commits) |
+| `ProviderCapabilities` | Capability flags (localWorktree, sourceRead, sourceWrite, pushRemote, branchProtection, pullRequestFallback, astScan) |
+| `FileChange` | A single file addition, modification, or deletion (`{ path, content: string \| null }`) |
+| `ApplyPlanInput` | Input for a single atomic commit (branch, changes, message, author, optional base) |
+| `Commit` | Result of a commit operation (sha, message, author, timestamp) |
+| `Branch` | Git branch metadata (name, sha, protected) |
+| `FileDiff` | File change within a plan (path, status, before, after) |
+| `MergeResult` | Merge outcome (merged flag, sha, pullRequestUrl, optional `sync?: SyncResult` for LocalProvider) |
+| `SyncResult` | Selective file sync result (synced, skipped, optional warning) |
+| `CommitAuthor` | Commit author metadata (name, email) |
+
+Pre-built capability set:
+
+- `LOCAL_CAPABILITIES` — Full capability set for LocalProvider (all seven capabilities enabled). Exported from `@contentrain/types` for custom providers that back onto the local filesystem.
+
+See [RepoProvider Reference](/reference/providers) for the complete interface definitions and a minimum-viable provider recipe.
+
 ### Storage Types
 
 These types define the canonical JSON structure for each model kind on disk:

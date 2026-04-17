@@ -43,9 +43,9 @@ Contentrain AI inverts the traditional CMS workflow:
 
 ### 1. MCP (Infrastructure)
 
-16 tools that AI agents call to manage content:
+17 tools that AI agents call to manage content:
 
-- **Read:** `contentrain_status`, `contentrain_describe`, `contentrain_describe_format`, `contentrain_content_list`
+- **Read:** `contentrain_status`, `contentrain_describe`, `contentrain_describe_format`, `contentrain_doctor`, `contentrain_content_list`
 - **Project setup:** `contentrain_init`, `contentrain_scaffold`
 - **Content and schema writes:** `contentrain_model_save`, `contentrain_model_delete`, `contentrain_content_save`, `contentrain_content_delete`
 - **Normalize:** `contentrain_scan`, `contentrain_apply`
@@ -178,10 +178,10 @@ singleton('hero').locale('tr').get()  // typed, with query API
 Every write operation creates a Git commit on a namespaced branch:
 
 ```
-contentrain/model/hero-section        ← model changes
-contentrain/content/blog-post         ← content changes
-contentrain/normalize/extract/...     ← normalize extraction
-contentrain/normalize/reuse/...       ← source patching
+cr/model/hero-section        ← model changes
+cr/content/blog-post         ← content changes
+cr/normalize/extract/...     ← normalize extraction
+cr/normalize/reuse/...       ← source patching
 ```
 
 Branches are auto-merged or held for review depending on your workflow config.

@@ -90,6 +90,8 @@ The agent proposes a dry-run patch, then `contentrain_apply(mode: "reuse")` upda
 ## After
 
 ```tsx
+import { singleton } from '#contentrain'
+
 export default function Hero() {
   const hero = singleton('hero-section').locale('en').get()
 

@@ -37,8 +37,8 @@ These strings are scattered across dozens of files. Translating means grep-and-r
 
 | Phase | What happens | Source files modified? | Branch pattern |
 |---|---|---|---|
-| 1. Extract | Strings pulled into `.contentrain/content/` | No | `contentrain/normalize/extract/{ts}` |
-| 2. Reuse | Source files patched to reference content | Yes | `contentrain/normalize/reuse/{model}/{ts}` |
+| 1. Extract | Strings pulled into `.contentrain/content/` | No | `cr/normalize/extract/{ts}` |
+| 2. Reuse | Source files patched to reference content | Yes | `cr/normalize/reuse/{model}/{ts}` |
 | 3. Translate | Content copied to new locales and translated | No | Standard content branch |
 
 ::: tip
@@ -246,7 +246,7 @@ After your confirmation:
 
 > "Apply the reuse patches"
 
-The agent calls `contentrain_apply(mode: "reuse", ..., dry_run: false)`. This patches source files and creates a `contentrain/normalize/reuse/hero-section/{timestamp}` branch.
+The agent calls `contentrain_apply(mode: "reuse", ..., dry_run: false)`. This patches source files and creates a `cr/normalize/reuse/hero-section/{timestamp}` branch.
 
 ### Step 5. Validate, submit, and repeat
 
