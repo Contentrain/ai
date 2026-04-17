@@ -17,6 +17,7 @@ import { registerContentTools } from './tools/content.js'
 import { registerWorkflowTools } from './tools/workflow.js'
 import { registerNormalizeTools } from './tools/normalize.js'
 import { registerBulkTools } from './tools/bulk.js'
+import { registerDoctorTools } from './tools/doctor.js'
 import packageJson from '../package.json' with { type: 'json' }
 
 export interface CreateServerOptions {
@@ -70,6 +71,7 @@ export function createServer(input: string | CreateServerOptions): McpServer {
   registerWorkflowTools(server, provider, projectRoot)
   registerNormalizeTools(server, provider, projectRoot)
   registerBulkTools(server, provider, projectRoot)
+  registerDoctorTools(server, provider, projectRoot)
 
   return server
 }

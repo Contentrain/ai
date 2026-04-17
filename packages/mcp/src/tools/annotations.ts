@@ -24,6 +24,12 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
     destructiveHint: false,
     idempotentHint: true,
   },
+  contentrain_doctor: {
+    title: 'Project Health Report',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+  },
 
   // ─── Setup (write + git) ───
   contentrain_init: {

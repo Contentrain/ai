@@ -279,6 +279,17 @@ export async function createServeApp(options: ServeOptions) {
     return await callTool('contentrain_describe_format')
   }))
 
+  // Doctor — structured project health report wrapping the
+  // `contentrain_doctor` MCP tool. `?usage=true` opts into the heavier
+  // content-key usage analysis (unused keys, duplicate dictionary
+  // values, locale coverage). The UI renders each check row-by-row
+  // with its severity (error / warning / info).
+  router.add('/api/doctor', defineEventHandler(async (event) => {
+    const query = getQuery(event)
+    const usage = query['usage'] === 'true' || query['usage'] === '1'
+    return await callTool('contentrain_doctor', { usage })
+  }))
+
   // Content list
   router.add('/api/content/:modelId', defineEventHandler(async (event) => {
     const modelId = getRouterParam(event, 'modelId')
