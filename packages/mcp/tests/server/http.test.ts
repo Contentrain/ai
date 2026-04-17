@@ -662,8 +662,25 @@ describe('startHttpMcpServer', () => {
     const { GitHubProvider } = await import('../../src/providers/github/index.js')
     const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
 
+    const committedContext = {
+      version: '1',
+      lastOperation: {
+        tool: 'contentrain_content_save',
+        model: 'blog',
+        locale: 'en',
+        timestamp: '2026-04-17T12:00:00.000Z',
+        source: 'mcp-studio',
+      },
+      stats: {
+        models: 1,
+        entries: 3,
+        locales: ['en', 'tr'],
+        lastSync: '2026-04-17T12:00:00.000Z',
+      },
+    }
     const filesOnHead: Record<string, string> = {
       '.contentrain/config.json': JSON.stringify(makeConfig()),
+      '.contentrain/context.json': JSON.stringify(committedContext),
     }
     const fixture = makeGitHubMock(filesOnHead)
     const provider = new GitHubProvider(
@@ -687,6 +704,15 @@ describe('startHttpMcpServer', () => {
         expect(parsed).not.toHaveProperty('capability_required')
         // Branch health is local-only and is skipped for remote providers.
         expect(parsed).not.toHaveProperty('branches')
+        // Remote reads pick up the committed .contentrain/context.json
+        // through the provider — no longer hardcoded to null.
+        const context = parsed['context'] as Record<string, unknown>
+        expect(context).toBeDefined()
+        const lastOp = context['lastOperation'] as Record<string, unknown>
+        expect(lastOp['tool']).toBe('contentrain_content_save')
+        expect(lastOp['model']).toBe('blog')
+        const stats = context['stats'] as Record<string, unknown>
+        expect(stats['entries']).toBe(3)
       } finally {
         await mcpClient.close()
       }

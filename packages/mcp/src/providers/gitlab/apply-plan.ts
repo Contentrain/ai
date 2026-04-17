@@ -1,3 +1,4 @@
+import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import type { ApplyPlanInput, Commit, FileChange } from '../../core/contracts/index.js'
 import { isNotFoundError, resolveRepoPath } from '../shared/index.js'
 import type { GitLabClient } from './client.js'
@@ -37,7 +38,10 @@ export async function applyPlanToGitLab(
   input: ApplyPlanInput,
 ): Promise<Commit> {
   const branchExists = await branchHasRef(client, project, input.branch)
-  const baseBranch = input.base ?? await resolveDefaultBranch(client, project)
+  // Invariant: fork from the Contentrain content-tracking branch, not
+  // the repo's default branch. See ApplyPlanInput.base docstring in
+  // @contentrain/types.
+  const baseBranch = input.base ?? CONTENTRAIN_BRANCH
 
   // Actions are computed against the HEAD of the feature branch when it
   // exists, otherwise against the fork point (baseBranch). GitLab
@@ -148,13 +152,6 @@ async function fileExistsAtRef(
   }
 }
 
-async function resolveDefaultBranch(
-  client: GitLabClient,
-  project: ProjectRef,
-): Promise<string> {
-  const p = await client.Projects.show(project.projectId) as { default_branch?: string }
-  return p.default_branch ?? 'main'
-}
 
 function toIsoTimestamp(raw: unknown): string | null {
   if (typeof raw !== 'string') return null

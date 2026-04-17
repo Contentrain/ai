@@ -8,8 +8,28 @@ import { readConfig } from './config.js'
 
 const CONTEXT_PATH = '.contentrain/context.json'
 
-export async function readContext(projectRoot: string): Promise<ContextJson | null> {
-  return readJson<ContextJson>(join(contentrainDir(projectRoot), 'context.json'))
+/**
+ * Read the committed `.contentrain/context.json` payload written by the
+ * most recent content or model operation. Returns `null` when the file
+ * does not exist (fresh project, or reader lookup failure).
+ *
+ * Dual signature — the local flow passes a `projectRoot` string, remote
+ * flows (GitHubProvider, GitLabProvider, any custom `RepoReader`) pass
+ * the reader directly so `contentrain_status` over HTTP can still
+ * report the last operation + stats.
+ */
+export function readContext(projectRoot: string): Promise<ContextJson | null>
+export function readContext(reader: RepoReader): Promise<ContextJson | null>
+export async function readContext(input: string | RepoReader): Promise<ContextJson | null> {
+  if (typeof input === 'string') {
+    return readJson<ContextJson>(join(contentrainDir(input), 'context.json'))
+  }
+  try {
+    const raw = await input.readFile(CONTEXT_PATH)
+    return JSON.parse(raw) as ContextJson
+  } catch {
+    return null
+  }
 }
 
 function resolveSource(explicit?: ContextSource): ContextSource {

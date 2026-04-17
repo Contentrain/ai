@@ -49,6 +49,7 @@ export default defineConfig({
       { text: 'Guides', items: [
         { text: 'Providers & Transports', link: '/guides/providers' },
         { text: 'HTTP Transport', link: '/guides/http-transport' },
+        { text: 'Embedding MCP', link: '/guides/embedding-mcp' },
         { text: 'Normalize Flow', link: '/guides/normalize' },
         { text: 'Framework Integration', link: '/guides/frameworks' },
         { text: 'i18n Workflow', link: '/guides/i18n' },
@@ -89,6 +90,7 @@ export default defineConfig({
           items: [
             { text: 'Providers & Transports', link: '/guides/providers' },
             { text: 'HTTP Transport', link: '/guides/http-transport' },
+            { text: 'Embedding MCP', link: '/guides/embedding-mcp' },
             { text: 'Normalize Flow', link: '/guides/normalize' },
             { text: 'Framework Integration', link: '/guides/frameworks' },
             { text: 'i18n Workflow', link: '/guides/i18n' },
