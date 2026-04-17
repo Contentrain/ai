@@ -56,7 +56,11 @@ Requirements:
 | `contentrain doctor` | Check setup health, SDK freshness, orphan content, and branch limits |
 | `contentrain validate` | Validate content against schemas, optionally create review-branch fixes |
 | `contentrain generate` | Generate `.contentrain/client/` and `#contentrain` package imports |
-| `contentrain diff` | Review and merge or reject pending `cr/*` branches |
+| `contentrain diff` | Review and merge or reject pending `cr/*` branches interactively |
+| `contentrain merge <branch>` | Merge one pending `cr/*` branch non-interactively (CI/agents) |
+| `contentrain describe <model>` | Inspect a model's schema, stats, and import snippet |
+| `contentrain describe-format` | Print the Contentrain content-format specification |
+| `contentrain scaffold --template` | Apply a template (`blog`, `landing`, `docs`, `ecommerce`, `saas`, `i18n`, `mobile`) |
 | `contentrain serve` | Start the local review UI, the MCP stdio server (`--stdio`), or the MCP HTTP server (`--mcpHttp`) |
 | `contentrain studio connect` | Connect a repository to a Studio project |
 | `contentrain studio login` | Authenticate with Contentrain Studio |

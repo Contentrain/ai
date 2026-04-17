@@ -7,7 +7,7 @@ import { readConfig } from '../core/config.js'
 import { writeContext } from '../core/context.js'
 import { branchTimestamp } from '../util/id.js'
 import { migrateLegacyBranches } from '../providers/local/migration.js'
-import type { SyncResult } from '@contentrain/types'
+import type { SyncResult, WorkflowMode } from '@contentrain/types'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 
 export interface ContextUpdate {
@@ -143,7 +143,7 @@ async function selectiveSync(
 export async function createTransaction(
   projectRoot: string,
   branchName: string,
-  options?: { workflowOverride?: 'review' | 'auto-merge' },
+  options?: { workflowOverride?: WorkflowMode },
 ): Promise<GitTransaction> {
   const git = simpleGit(projectRoot)
   const config = await readConfig(projectRoot)
