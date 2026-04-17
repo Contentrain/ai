@@ -8,6 +8,7 @@ import { resolveContentDir, resolveJsonFilePath, resolveLocaleStrategy } from '@
 import { readConfig } from '@contentrain/mcp/core/config'
 import { pathExists, contentrainDir, readDir, readJson, readText } from '@contentrain/mcp/util/fs'
 import { autoDetectSourceDirs, discoverFiles } from '@contentrain/mcp/core/scan-config'
+import { checkBranchHealth } from '@contentrain/mcp/git/branch-lifecycle'
 import type { ModelDefinition, ContentrainConfig } from '@contentrain/types'
 import { resolveProjectRoot } from '../utils/context.js'
 import { statusIcon, pc } from '../utils/ui.js'
@@ -123,17 +124,19 @@ export default defineCommand({
 
     // 8. Stale contentrain branches
     if (hasGit) {
+      // Delegate to MCP's checkBranchHealth — it filters cr/* feature
+      // branches and applies the same warning / blocked thresholds
+      // MCP uses internally. Keeps doctor honest with the rest of the
+      // stack (previously this used a stale `contentrain/*` filter
+      // that returned zero after the Phase 7 naming migration, so the
+      // check was effectively a no-op).
       try {
-        const git = simpleGit(projectRoot)
-        const branches = await git.branch(['--list', 'contentrain/*'])
-        const staleCount = branches.all.length
+        const health = await checkBranchHealth(projectRoot)
         checks.push({
           name: 'Pending branches',
-          pass: staleCount < 50,
-          detail: staleCount === 0 ? 'None'
-            : staleCount >= 80 ? `${staleCount} branches (BLOCKED — limit: 80)`
-            : staleCount >= 50 ? `${staleCount} branches (WARNING — limit: 50)`
-            : `${staleCount} contentrain branch(es)`,
+          pass: !health.blocked && !health.warning,
+          detail: health.message
+            ?? (health.unmerged === 0 ? 'None' : `${health.unmerged} active cr/* branch(es)`),
         })
       } catch {
         checks.push({ name: 'Pending branches', pass: true, detail: 'Could not check' })

@@ -110,6 +110,30 @@ describe('contentrain_init', () => {
 
     expect(data.error).toBe('Already initialized')
   })
+
+  it('initialises a greenfield directory with no .git and no commits', async () => {
+    // Tear down the default fixture's git repo + starting commit so we
+    // can exercise the empty-repo path. MCP's contentrain_init must
+    // seed an `--allow-empty` initial commit itself, because
+    // `ensureContentBranch` needs a base ref to fork from.
+    await rm(join(testDir, '.git'), { recursive: true, force: true })
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({ name: 'contentrain_init', arguments: { locales: ['en'] } })
+    const content = result.content as Array<{ type: string; text: string }>
+    const data = JSON.parse(content[0]!.text)
+
+    expect(data.error).toBeUndefined()
+    expect(data.status).toBe('committed')
+    expect(await pathExists(join(testDir, '.contentrain/config.json'))).toBe(true)
+    expect(await pathExists(join(testDir, '.git'))).toBe(true)
+
+    // Verify at least two commits exist: the synthetic initial commit
+    // + the contentrain init commit.
+    const git = simpleGit(testDir)
+    const log = await git.log()
+    expect(log.total).toBeGreaterThanOrEqual(2)
+  })
 })
 
 describe('contentrain_scaffold', () => {
