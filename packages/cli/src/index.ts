@@ -1,6 +1,18 @@
 #!/usr/bin/env node
 import { defineCommand, runMain } from 'citty'
 import packageJson from '../package.json' with { type: 'json' }
+import { enableDebug } from './utils/debug.js'
+
+// Global --debug opt-in — parse before citty takes over so every
+// subcommand's debug() / debugTimer() calls see the flag. Env var
+// `CONTENTRAIN_DEBUG=1` also flips this on (handled inside the
+// helper). Stripped from argv so citty doesn't complain about an
+// unknown root flag.
+const debugIndex = process.argv.findIndex(a => a === '--debug')
+if (debugIndex !== -1) {
+  enableDebug()
+  process.argv.splice(debugIndex, 1)
+}
 
 const main = defineCommand({
   meta: {

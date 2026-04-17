@@ -14,16 +14,50 @@ export default defineCommand({
   },
   args: {
     root: { type: 'string', description: 'Project root path', required: false },
+    json: { type: 'boolean', description: 'Emit pending-branches summary as JSON and exit (no interactive review)', required: false },
   },
   async run({ args }) {
     const projectRoot = await resolveProjectRoot(args.root)
     const git = simpleGit(projectRoot)
+    const useJson = Boolean(args.json)
 
-    intro(pc.bold('contentrain diff'))
+    if (!useJson) intro(pc.bold('contentrain diff'))
 
     // List contentrain branches (filter out the system contentrain branch)
     const branches = await git.branch(['--list', 'cr/*'])
     const featureBranches = branches.all.filter(b => b !== CONTENTRAIN_BRANCH)
+
+    if (useJson) {
+      // JSON mode is scriptable: emit branch summaries and exit without
+      // entering the interactive review loop. Meant for CI / agent
+      // automation that wants to inspect what's pending without a TTY.
+      const payload = await Promise.all(featureBranches.map(async (branch) => {
+        try {
+          const diff = await branchDiff(projectRoot, { branch })
+          const insertions = (diff.patch.match(/^\+(?!\+\+)/gmu) ?? []).length
+          const deletions = (diff.patch.match(/^-(?!--)/gmu) ?? []).length
+          return {
+            name: branch,
+            base: diff.base,
+            filesChanged: diff.filesChanged,
+            insertions,
+            deletions,
+            stat: diff.stat,
+          }
+        } catch (error) {
+          return {
+            name: branch,
+            base: CONTENTRAIN_BRANCH,
+            filesChanged: 0,
+            insertions: 0,
+            deletions: 0,
+            error: error instanceof Error ? error.message : String(error),
+          }
+        }
+      }))
+      process.stdout.write(JSON.stringify({ branches: payload }, null, 2))
+      return
+    }
 
     if (featureBranches.length === 0) {
       log.message('No pending contentrain branches.')

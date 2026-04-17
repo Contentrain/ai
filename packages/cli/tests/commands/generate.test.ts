@@ -79,4 +79,21 @@ describe('generate command', () => {
 
     void runPromise
   })
+
+  it('emits the generate result as JSON on --json and skips pretty output', async () => {
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const mod = await import('../../src/commands/generate.js')
+    await mod.default.run?.({ args: { root: '/test/project', json: true } })
+
+    expect(writeSpy).toHaveBeenCalledTimes(1)
+    const payload = JSON.parse(writeSpy.mock.calls[0]?.[0] as string)
+    expect(payload).toMatchObject({
+      generatedFiles: ['index.d.ts', 'index.mjs', 'index.cjs'],
+      typesCount: 2,
+      dataModulesCount: 3,
+      packageJsonUpdated: true,
+    })
+    expect(successMock).not.toHaveBeenCalled()
+    writeSpy.mockRestore()
+  })
 })
