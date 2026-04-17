@@ -29,6 +29,7 @@ import {
   FileContextQuerySchema,
   NormalizeApplyBodySchema,
   NormalizePlanApproveBodySchema,
+  NormalizePlanRejectBodySchema,
   parseOrThrow,
 } from './schemas.js'
 
@@ -186,6 +187,18 @@ export async function createServeApp(options: ServeOptions) {
       } else if (rel.startsWith('content/')) {
         const parts = rel.replace('content/', '').split('/')
         event = { type: 'content:changed', modelId: parts[1], locale: parts[2]?.replace('.json', '') }
+      } else if (rel.startsWith('meta/') && rel.endsWith('.json')) {
+        // `.contentrain/meta/<model>/<locale>.json` and
+        // `.contentrain/meta/<model>/<entryId>/<locale>.json` — SEO and
+        // model-level metadata edited independently of content. The
+        // Serve UI's model inspector and SEO panels consume this.
+        const parts = rel.replace('meta/', '').split('/')
+        const locale = parts[parts.length - 1]?.replace('.json', '')
+        const modelId = parts[0]
+        const entryId = parts.length === 3 ? parts[1] : undefined
+        event = entryId
+          ? { type: 'meta:changed', modelId, entryId, locale }
+          : { type: 'meta:changed', modelId, locale }
       } else {
         return
       }
@@ -193,6 +206,15 @@ export async function createServeApp(options: ServeOptions) {
       pendingEvents.push(event)
       if (debounceTimer) clearTimeout(debounceTimer)
       debounceTimer = setTimeout(flush, 300)
+    })
+
+    // Surface watcher failures instead of silently degrading to a
+    // no-op. Without this the UI keeps rendering stale data after,
+    // e.g., hitting the OS inotify limit — the user has no way to
+    // know live updates stopped flowing.
+    watcher.on('error', (err) => {
+      const message = err instanceof Error ? err.message : String(err)
+      broadcast({ type: 'file-watch:error', message, timestamp: new Date().toISOString() })
     })
   }
 
@@ -247,6 +269,14 @@ export async function createServeApp(options: ServeOptions) {
   router.add('/api/describe/:modelId', defineEventHandler(async (event) => {
     const modelId = getRouterParam(event, 'modelId')
     return await callTool('contentrain_describe', { model: modelId, include_sample: true })
+  }))
+
+  // Format reference — thin wrapper around contentrain_describe_format.
+  // Serves a static spec of how Contentrain stores models, content,
+  // meta, and vocabulary. The UI renders this as a reference panel for
+  // humans who want to learn the file layout without reading docs.
+  router.add('/api/describe-format', defineEventHandler(async () => {
+    return await callTool('contentrain_describe_format')
   }))
 
   // Content list
@@ -341,6 +371,96 @@ export async function createServeApp(options: ServeOptions) {
       stat: result.stat,
       diff: result.patch,
       filesChanged: result.filesChanged,
+    }
+  }))
+
+  // Merge preview — answers "if I approve this branch right now, what
+  // would happen?" without running the merge. Three signals:
+  //   - `alreadyMerged` — the feature branch is already in
+  //     CONTENTRAIN_BRANCH's history (approve would be a no-op)
+  //   - `canFastForward` — CONTENTRAIN_BRANCH is an ancestor of the
+  //     feature branch (approve will fast-forward cleanly)
+  //   - `conflicts` — best-effort list of conflicting paths detected
+  //     via `git merge-tree`. Empty array when the check succeeds
+  //     with no conflicts; `null` when the check couldn't run (older
+  //     git, detached refs, etc.).
+  //
+  // Intentionally does NOT run the real merge — the approve route
+  // already surfaces runtime conflicts by throwing. This is a fast,
+  // side-effect-free signal for the UI to render a "preview" banner
+  // before the user commits to approve.
+  router.add('/api/preview/merge', defineEventHandler(async (event) => {
+    const query = getQuery(event)
+    const branchName = query['branch'] as string | undefined
+    if (!branchName || !branchName.startsWith('cr/')) {
+      throw createError({ statusCode: 400, message: 'Missing or invalid `branch` query (must start with "cr/")' })
+    }
+
+    const git = simpleGit(projectRoot)
+
+    // Confirm the branch exists locally.
+    const local = await git.branchLocal()
+    if (!local.all.includes(branchName)) {
+      throw createError({ statusCode: 404, message: `Branch "${branchName}" does not exist locally` })
+    }
+
+    // Fast-forward / already-merged checks.
+    let alreadyMerged = false
+    let canFastForward = false
+    try {
+      await git.raw(['merge-base', '--is-ancestor', branchName, CONTENTRAIN_BRANCH])
+      alreadyMerged = true
+    } catch { /* not merged yet */ }
+    if (!alreadyMerged) {
+      try {
+        await git.raw(['merge-base', '--is-ancestor', CONTENTRAIN_BRANCH, branchName])
+        canFastForward = true
+      } catch { /* would require a 3-way merge */ }
+    }
+
+    // Best-effort conflict scan via `git merge-tree`. The legacy 3-way
+    // form (`merge-tree <base> <ours> <theirs>`) is widely supported
+    // and prints conflict sections on stdout; silence = clean.
+    let conflicts: string[] | null = null
+    try {
+      const mergeBase = (await git.raw(['merge-base', CONTENTRAIN_BRANCH, branchName])).trim()
+      if (mergeBase) {
+        const out = await git.raw(['merge-tree', mergeBase, CONTENTRAIN_BRANCH, branchName])
+        // Conflict sections look like `changed in both\n  base   100644 <sha> <path>...`
+        // — extract unique paths from the `<<<<<<<` / `>>>>>>>` surrounds.
+        const paths = new Set<string>()
+        const conflictBlockRegex = /^(?:changed in both|added in both|removed in (?:local|remote))\b[^\n]*\n((?:[ \t][^\n]*\n)+)/gmu
+        let match: RegExpExecArray | null
+        while ((match = conflictBlockRegex.exec(out)) !== null) {
+          const block = match[1] ?? ''
+          const pathMatch = /\b100644\s+[0-9a-f]{4,}\s+(\S+)/u.exec(block)
+          if (pathMatch?.[1]) paths.add(pathMatch[1])
+        }
+        conflicts = [...paths]
+      }
+    } catch { /* merge-tree unavailable or failed — leave as null */ }
+
+    // Diff summary against CONTENTRAIN_BRANCH (the same base the
+    // actual merge will use). Skip when already merged — the diff is
+    // empty and the MCP helper would error on a zero-commit range.
+    let stat = ''
+    let filesChanged = 0
+    if (!alreadyMerged) {
+      try {
+        const diff = await branchDiff(projectRoot, { branch: branchName })
+        stat = diff.stat
+        filesChanged = diff.filesChanged
+      } catch { /* leave zeroed */ }
+    }
+
+    return {
+      branch: branchName,
+      base: CONTENTRAIN_BRANCH,
+      alreadyMerged,
+      canFastForward,
+      conflicts,
+      filesChanged,
+      stat,
     }
   }))
 
@@ -563,6 +683,13 @@ export async function createServeApp(options: ServeOptions) {
   router.add('/api/normalize/plan/reject', defineEventHandler(async (event) => {
     if (event.method !== 'DELETE' && event.method !== 'POST') {
       throw createError({ statusCode: 405, message: 'Method not allowed' })
+    }
+    // Validate the (optional) body so future callers that want to
+    // record a rejection reason have a well-defined contract, and so
+    // every write route here parses through the same Zod gate.
+    if (event.method === 'POST') {
+      const raw = await readBody(event).catch(() => undefined)
+      if (raw !== undefined) parseOrThrow(NormalizePlanRejectBodySchema, raw)
     }
     const planPath = join(crDir, 'normalize-plan.json')
     if (existsSync(planPath)) {

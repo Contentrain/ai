@@ -52,6 +52,16 @@ export const NormalizePlanApproveBodySchema = z.object({
   models: z.array(z.string()).optional(),
 })
 
+/**
+ * Body for `/api/normalize/plan/reject`. Currently the route only
+ * deletes the plan file, but we validate the body shape anyway so
+ * any future caller that wants to record a rejection reason has a
+ * well-defined contract. Both an empty body and `{ reason? }` pass.
+ */
+export const NormalizePlanRejectBodySchema = z.object({
+  reason: z.string().max(500).optional(),
+}).optional()
+
 /** Query params for `/api/normalize/file-context`. */
 export const FileContextQuerySchema = z.object({
   file: z.string()
