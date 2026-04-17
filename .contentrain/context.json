@@ -1,14 +1,17 @@
 {
   "lastOperation": {
+    "entries": [
+      "en"
+    ],
     "locale": "en",
-    "model": "test-v2",
+    "model": "serve-ui-texts",
     "source": "mcp-local",
-    "timestamp": "2026-03-29T17:42:45.825Z",
-    "tool": "contentrain_model_delete"
+    "timestamp": "2026-04-17T21:21:18.103Z",
+    "tool": "contentrain_content_save"
   },
   "stats": {
-    "entries": 41,
-    "lastSync": "2026-03-29T17:42:45.825Z",
+    "entries": 49,
+    "lastSync": "2026-04-17T21:21:18.104Z",
     "locales": [
       "en",
       "tr"
