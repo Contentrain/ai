@@ -37,80 +37,80 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     },
     "./server": {
-      "types": "./dist/server.d.ts",
+      "types": "./dist/server.d.mts",
       "import": "./dist/server.mjs"
     },
     "./server/http": {
-      "types": "./dist/server/http/index.d.ts",
+      "types": "./dist/server/http/index.d.mts",
       "import": "./dist/server/http/index.mjs"
     },
     "./core/config": {
-      "types": "./dist/core/config.d.ts",
+      "types": "./dist/core/config.d.mts",
       "import": "./dist/core/config.mjs"
     },
     "./core/context": {
-      "types": "./dist/core/context.d.ts",
+      "types": "./dist/core/context.d.mts",
       "import": "./dist/core/context.mjs"
     },
     "./core/model-manager": {
-      "types": "./dist/core/model-manager.d.ts",
+      "types": "./dist/core/model-manager.d.mts",
       "import": "./dist/core/model-manager.mjs"
     },
     "./core/content-manager": {
-      "types": "./dist/core/content-manager.d.ts",
+      "types": "./dist/core/content-manager.d.mts",
       "import": "./dist/core/content-manager.mjs"
     },
     "./core/validator": {
-      "types": "./dist/core/validator/index.d.ts",
+      "types": "./dist/core/validator/index.d.mts",
       "import": "./dist/core/validator/index.mjs"
     },
     "./core/scanner": {
-      "types": "./dist/core/scanner.d.ts",
+      "types": "./dist/core/scanner.d.mts",
       "import": "./dist/core/scanner.mjs"
     },
     "./core/graph-builder": {
-      "types": "./dist/core/graph-builder.d.ts",
+      "types": "./dist/core/graph-builder.d.mts",
       "import": "./dist/core/graph-builder.mjs"
     },
     "./core/apply-manager": {
-      "types": "./dist/core/apply-manager.d.ts",
+      "types": "./dist/core/apply-manager.d.mts",
       "import": "./dist/core/apply-manager.mjs"
     },
     "./core/scan-config": {
-      "types": "./dist/core/scan-config.d.ts",
+      "types": "./dist/core/scan-config.d.mts",
       "import": "./dist/core/scan-config.mjs"
     },
     "./util/detect": {
-      "types": "./dist/util/detect.d.ts",
+      "types": "./dist/util/detect.d.mts",
       "import": "./dist/util/detect.mjs"
     },
     "./util/fs": {
-      "types": "./dist/util/fs.d.ts",
+      "types": "./dist/util/fs.d.mts",
       "import": "./dist/util/fs.mjs"
     },
     "./git/transaction": {
-      "types": "./dist/git/transaction.d.ts",
+      "types": "./dist/git/transaction.d.mts",
       "import": "./dist/git/transaction.mjs"
     },
     "./git/branch-lifecycle": {
-      "types": "./dist/git/branch-lifecycle.d.ts",
+      "types": "./dist/git/branch-lifecycle.d.mts",
       "import": "./dist/git/branch-lifecycle.mjs"
     },
     "./templates": {
-      "types": "./dist/templates/index.d.ts",
+      "types": "./dist/templates/index.d.mts",
       "import": "./dist/templates/index.mjs"
     },
     "./providers/github": {
-      "types": "./dist/providers/github/index.d.ts",
+      "types": "./dist/providers/github/index.d.mts",
       "import": "./dist/providers/github/index.mjs"
     }
   },
   "main": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "files": [
     "dist"
   ],
