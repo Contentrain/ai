@@ -3,6 +3,7 @@ import type { ModelDefinition } from '@contentrain/types'
 import { z } from 'zod'
 import type { ToolProvider } from '../server.js'
 import { readConfig } from '../core/config.js'
+import { buildContextChange } from '../core/context.js'
 
 import { resolveContentDir, resolveJsonFilePath, resolveMdFilePath } from '../core/content-manager.js'
 import { checkReferences, readModel, validateModelDefinition, fieldDefZodSchema } from '../core/model-manager.js'
@@ -11,14 +12,13 @@ import { LocalProvider } from '../providers/local/index.js'
 import { buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
-import { capabilityError } from './guards.js'
 
 // Shared field definition schema — single source of truth with normalize extract
 const fieldDefSchema = fieldDefZodSchema
 
 export function registerModelTools(
   server: McpServer,
-  _provider: ToolProvider,
+  provider: ToolProvider,
   projectRoot: string | undefined,
 ): void {
   // ─── contentrain_model_save ───
@@ -38,8 +38,7 @@ export function registerModelTools(
     },
     TOOL_ANNOTATIONS['contentrain_model_save']!,
     async (input) => {
-      if (!projectRoot) return capabilityError('contentrain_model_save', 'localWorktree')
-      const config = await readConfig(projectRoot)
+      const config = await readConfig(provider)
       if (!config) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized. Run contentrain_init first.' }) }],
@@ -47,7 +46,6 @@ export function registerModelTools(
         }
       }
 
-      // Validate
       const errors = validateModel(input)
       if (errors.length > 0) {
         return {
@@ -56,7 +54,6 @@ export function registerModelTools(
         }
       }
 
-      // Reject invalid locale_strategy + i18n combinations
       if (input.locale_strategy === 'none' && input.i18n !== false) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
@@ -66,16 +63,17 @@ export function registerModelTools(
         }
       }
 
-      // Branch health gate
-      const health = await checkBranchHealth(projectRoot)
-      if (health.blocked) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({
-            error: health.message,
-            action: 'blocked',
-            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
-          }, null, 2) }],
-          isError: true,
+      if (provider instanceof LocalProvider) {
+        const health = await checkBranchHealth(provider.projectRoot)
+        if (health.blocked) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({
+              error: health.message,
+              action: 'blocked',
+              hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+            }, null, 2) }],
+            isError: true,
+          }
         }
       }
 
@@ -91,55 +89,40 @@ export function registerModelTools(
         locale_strategy: input.locale_strategy,
       }
 
-      const saveProvider = new LocalProvider(projectRoot)
-      const savePlan = await planModelSave(saveProvider, { model })
+      const savePlan = await planModelSave(provider, { model })
       const action = savePlan.result.action
-
       const branch = buildBranchName('model', input.id)
+      const message = `[contentrain] ${action}: ${input.id}`
+      const contextPayload = { tool: 'contentrain_model_save', model: input.id }
+
+      let commitSha: string
+      let workflowAction: 'auto-merged' | 'pending-review'
+      let sync: unknown
 
       try {
-        const result = await saveProvider.applyPlan({
-          branch,
-          changes: savePlan.changes,
-          message: `[contentrain] ${action}: ${input.id}`,
-          context: { tool: 'contentrain_model_save', model: input.id },
-        })
-
-        const defaultLocale = config.locales.default
-        // Build accurate content path using path resolvers
-        const contentDir = resolveContentDir(projectRoot, model)
-        const contentPath = model.content_path ?? `.contentrain/content/${input.domain}/${input.id}`
-        let exampleFilePath: string
-        if (model.kind === 'document') {
-          exampleFilePath = resolveMdFilePath(contentDir, model, defaultLocale, '{slug}')
+        if (provider instanceof LocalProvider) {
+          const result = await provider.applyPlan({
+            branch,
+            changes: savePlan.changes,
+            message,
+            context: contextPayload,
+          })
+          commitSha = result.sha
+          workflowAction = result.workflowAction
+          sync = result.sync
         } else {
-          exampleFilePath = resolveJsonFilePath(contentDir, model, defaultLocale)
-        }
-        // Make the path relative for display
-        const displayPath = exampleFilePath.replace(projectRoot + '/', '').replace(projectRoot, '')
-        const importSnippet: Record<string, string> = {
-          generic: `import data from '${displayPath}'`,
-        }
-        if (config.stack === 'nuxt') {
-          importSnippet['nuxt'] = model.kind === 'document'
-            ? `const { data } = await useAsyncData(() => queryContent('${model.domain}/${model.id}').locale('${defaultLocale}').find())`
-            : `const { data } = await useFetch('/api/content/${model.id}?locale=${defaultLocale}')`
-        }
-
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({
-            status: 'committed',
-            message: 'Model saved and committed to git. Do NOT manually edit .contentrain/ files.',
-            action,
-            model: input.id,
-            validation: { valid: true, errors: [] },
-            git: { branch, action: result.workflowAction, commit: result.sha, ...(result.sync ? { sync: result.sync } : {}) },
-            context_updated: true,
-            content_path: contentPath + '/',
-            example_file: displayPath,
-            import_snippet: importSnippet,
-            next_steps: ['Add content with contentrain_content_save'],
-          }, null, 2) }],
+          const contextChange = await buildContextChange(provider, contextPayload)
+          const allChanges = [...savePlan.changes, contextChange]
+            .toSorted((a, b) => a.path.localeCompare(b.path))
+          const commit = await provider.applyPlan({
+            branch,
+            changes: allChanges,
+            message,
+            author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
+            base: config.repository?.default_branch ?? 'contentrain',
+          })
+          commitSha = commit.sha
+          workflowAction = 'pending-review'
         }
       } catch (error) {
         return {
@@ -148,6 +131,44 @@ export function registerModelTools(
           }) }],
           isError: true,
         }
+      }
+
+      // DX helpers (import snippet, example path) are only computed when we
+      // can resolve local paths — they do not apply to remote-only flows.
+      const defaultLocale = config.locales.default
+      const contentPath = model.content_path ?? `.contentrain/content/${input.domain}/${input.id}`
+      let displayPath: string | undefined
+      let importSnippet: Record<string, string> | undefined
+      if (projectRoot) {
+        const contentDir = resolveContentDir(projectRoot, model)
+        const exampleFilePath = model.kind === 'document'
+          ? resolveMdFilePath(contentDir, model, defaultLocale, '{slug}')
+          : resolveJsonFilePath(contentDir, model, defaultLocale)
+        displayPath = exampleFilePath.replace(projectRoot + '/', '').replace(projectRoot, '')
+        importSnippet = {
+          generic: `import data from '${displayPath}'`,
+        }
+        if (config.stack === 'nuxt') {
+          importSnippet['nuxt'] = model.kind === 'document'
+            ? `const { data } = await useAsyncData(() => queryContent('${model.domain}/${model.id}').locale('${defaultLocale}').find())`
+            : `const { data } = await useFetch('/api/content/${model.id}?locale=${defaultLocale}')`
+        }
+      }
+
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({
+          status: 'committed',
+          message: 'Model saved and committed to git. Do NOT manually edit .contentrain/ files.',
+          action,
+          model: input.id,
+          validation: { valid: true, errors: [] },
+          git: { branch, action: workflowAction, commit: commitSha, ...(sync ? { sync } : {}) },
+          context_updated: true,
+          content_path: contentPath + '/',
+          ...(displayPath ? { example_file: displayPath } : {}),
+          ...(importSnippet ? { import_snippet: importSnippet } : {}),
+          next_steps: ['Add content with contentrain_content_save'],
+        }, null, 2) }],
       }
     },
   )
@@ -162,8 +183,7 @@ export function registerModelTools(
     },
     TOOL_ANNOTATIONS['contentrain_model_delete']!,
     async ({ model: modelId }) => {
-      if (!projectRoot) return capabilityError('contentrain_model_delete', 'localWorktree')
-      const config = await readConfig(projectRoot)
+      const config = await readConfig(provider)
       if (!config) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized.' }) }],
@@ -171,8 +191,7 @@ export function registerModelTools(
         }
       }
 
-      // Check model exists
-      const existing = await readModel(projectRoot, modelId)
+      const existing = await readModel(provider, modelId)
       if (!existing) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: `Model "${modelId}" not found` }) }],
@@ -180,51 +199,77 @@ export function registerModelTools(
         }
       }
 
-      // Branch health gate
-      const deleteHealth = await checkBranchHealth(projectRoot)
-      if (deleteHealth.blocked) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({
-            error: deleteHealth.message,
-            action: 'blocked',
-            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
-          }, null, 2) }],
-          isError: true,
+      if (provider instanceof LocalProvider) {
+        const deleteHealth = await checkBranchHealth(provider.projectRoot)
+        if (deleteHealth.blocked) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({
+              error: deleteHealth.message,
+              action: 'blocked',
+              hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+            }, null, 2) }],
+            isError: true,
+          }
+        }
+
+        // Reference integrity check walks every model on disk — reader
+        // fallback is planned with Phase 5.5 when checkReferences gets a
+        // RepoReader overload. Remote writes skip the pre-check and rely
+        // on the caller (Studio) to enforce referential integrity.
+        const refs = await checkReferences(provider.projectRoot, modelId)
+        if (refs.length > 0) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({
+              deleted: false,
+              error: 'REFERENCED_MODEL',
+              referenced_by: refs,
+              next_steps: ['Remove relation fields from referencing models first'],
+            }, null, 2) }],
+          }
         }
       }
 
-      // Check references
-      const refs = await checkReferences(projectRoot, modelId)
-      if (refs.length > 0) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({
-            deleted: false,
-            error: 'REFERENCED_MODEL',
-            referenced_by: refs,
-            next_steps: ['Remove relation fields from referencing models first'],
-          }, null, 2) }],
-        }
-      }
-
-      const deleteProvider = new LocalProvider(projectRoot)
-      const deletePlan = await planModelDelete(deleteProvider, { model: existing })
-
+      const deletePlan = await planModelDelete(provider, { model: existing })
       const branch = buildBranchName('model', modelId)
+      const message = `[contentrain] delete: ${modelId}`
+      const contextPayload = { tool: 'contentrain_model_delete', model: modelId }
+
+      let commitSha: string
+      let workflowAction: 'auto-merged' | 'pending-review'
+      let sync: unknown
 
       try {
-        const result = await deleteProvider.applyPlan({
-          branch,
-          changes: deletePlan.changes,
-          message: `[contentrain] delete: ${modelId}`,
-          context: { tool: 'contentrain_model_delete', model: modelId },
-        })
+        if (provider instanceof LocalProvider) {
+          const result = await provider.applyPlan({
+            branch,
+            changes: deletePlan.changes,
+            message,
+            context: contextPayload,
+          })
+          commitSha = result.sha
+          workflowAction = result.workflowAction
+          sync = result.sync
+        } else {
+          const contextChange = await buildContextChange(provider, contextPayload)
+          const allChanges = [...deletePlan.changes, contextChange]
+            .toSorted((a, b) => a.path.localeCompare(b.path))
+          const commit = await provider.applyPlan({
+            branch,
+            changes: allChanges,
+            message,
+            author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
+            base: config.repository?.default_branch ?? 'contentrain',
+          })
+          commitSha = commit.sha
+          workflowAction = 'pending-review'
+        }
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             status: 'committed',
             message: 'Model deleted and committed to git. Do NOT manually edit .contentrain/ files.',
             deleted: true,
-            git: { branch, action: result.workflowAction, commit: result.sha, ...(result.sync ? { sync: result.sync } : {}) },
+            git: { branch, action: workflowAction, commit: commitSha, ...(sync ? { sync } : {}) },
             files_removed: deletePlan.result,
             context_updated: true,
           }, null, 2) }],

@@ -1,4 +1,4 @@
-import type { Commit, FileChange } from '../../core/contracts/index.js'
+import type { Commit, CommitAuthor, FileChange } from '../../core/contracts/index.js'
 
 /** Optional payload written to `.contentrain/context.json` after changes apply. */
 export interface LocalContextUpdate {
@@ -8,6 +8,15 @@ export interface LocalContextUpdate {
   entries?: string[]
 }
 
+/**
+ * Input to `LocalProvider.applyPlan`.
+ *
+ * The shape is a superset of the generic `RepoWriter.ApplyPlanInput` so
+ * `LocalProvider` cleanly satisfies `RepoWriter`; the extra fields
+ * (`context`, `workflowOverride`) are Local-only. `author` and `base` are
+ * accepted for interface parity but not yet threaded into the underlying
+ * transaction — author still comes from `CONTENTRAIN_AUTHOR_*` env vars.
+ */
 export interface LocalApplyPlanInput {
   /** Feature branch to create (from the content-tracking branch) and commit onto. */
   branch: string
@@ -15,6 +24,10 @@ export interface LocalApplyPlanInput {
   changes: FileChange[]
   /** Commit message. */
   message: string
+  /** Optional commit author — parity with `RepoWriter.ApplyPlanInput`. */
+  author?: CommitAuthor
+  /** Optional base branch — parity with `RepoWriter.ApplyPlanInput`. */
+  base?: string
   /** Optional context.json payload written through after changes apply. */
   context?: LocalContextUpdate
   /** Override workflow for this call; defaults to the project's configured workflow. */

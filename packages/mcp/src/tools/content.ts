@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import type { ToolProvider } from '../server.js'
+import { buildContextChange } from '../core/context.js'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { readModel } from '../core/model-manager.js'
 import { listContent } from '../core/content-manager.js'
@@ -14,7 +15,7 @@ import { capabilityError } from './guards.js'
 
 export function registerContentTools(
   server: McpServer,
-  _provider: ToolProvider,
+  provider: ToolProvider,
   projectRoot: string | undefined,
 ): void {
   // ─── contentrain_content_save ───
@@ -34,8 +35,7 @@ export function registerContentTools(
     },
     TOOL_ANNOTATIONS['contentrain_content_save']!,
     async (input) => {
-      if (!projectRoot) return capabilityError('contentrain_content_save', 'localWorktree')
-      const config = await readConfig(projectRoot)
+      const config = await readConfig(provider)
       if (!config) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized. Run contentrain_init first.' }) }],
@@ -43,7 +43,7 @@ export function registerContentTools(
         }
       }
 
-      const model = await readModel(projectRoot, input.model)
+      const model = await readModel(provider, input.model)
       if (!model) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: `Model "${input.model}" not found` }) }],
@@ -101,21 +101,22 @@ export function registerContentTools(
         if (entry.expire_at !== undefined) entry.data['expire_at'] = entry.expire_at
       }
 
-      // Branch health gate
-      const health = await checkBranchHealth(projectRoot)
-      if (health.blocked) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({
-            error: health.message,
-            action: 'blocked',
-            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
-          }, null, 2) }],
-          isError: true,
+      // Branch health gate — LocalProvider only (git branch count check).
+      if (provider instanceof LocalProvider) {
+        const health = await checkBranchHealth(provider.projectRoot)
+        if (health.blocked) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({
+              error: health.message,
+              action: 'blocked',
+              hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+            }, null, 2) }],
+            isError: true,
+          }
         }
       }
 
-      const vocabulary = await readVocabulary(projectRoot)
-      const provider = new LocalProvider(projectRoot)
+      const vocabulary = await readVocabulary(provider)
 
       let plan: Awaited<ReturnType<typeof planContentSave>>
       try {
@@ -139,49 +140,46 @@ export function registerContentTools(
         .filter((v): v is string => Boolean(v))
 
       const branch = buildBranchName('content', input.model)
+      const message = `[contentrain] content: ${input.model}`
+      const contextPayload = {
+        tool: 'contentrain_content_save',
+        model: input.model,
+        locale: input.entries[0]?.locale,
+        entries: entryIds,
+      }
+
+      let commitSha: string
+      let workflowAction: 'auto-merged' | 'pending-review'
+      let sync: unknown
 
       try {
-        const result = await provider.applyPlan({
-          branch,
-          changes: plan.changes,
-          message: `[contentrain] content: ${input.model}`,
-          context: {
-            tool: 'contentrain_content_save',
-            model: input.model,
-            locale: input.entries[0]?.locale,
-            entries: entryIds,
-          },
-        })
-
-        // Run real validation after save — don't fake it
-        const validationResult = await validateProject(projectRoot, { model: input.model })
-
-        // Collect advisories from write results (e.g., duplicate value warnings)
-        const allAdvisories = plan.result.flatMap(r => r.advisories ?? [])
-
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({
-            status: 'committed',
-            message: 'Content saved and committed to git. Do NOT manually edit .contentrain/ files.',
-            results: plan.result,
-            git: { branch, action: result.workflowAction, commit: result.sha, ...(result.sync ? { sync: result.sync } : {}) },
-            ...(allAdvisories.length > 0 ? {
-              advisories: allAdvisories,
-              advisory_note: 'Save succeeded. Review these warnings and consider consolidating duplicate values.',
-            } : {}),
-            validation: {
-              valid: validationResult.valid,
-              errors: validationResult.issues.filter(i => i.severity === 'error').map(i => i.message),
-            },
-            context_updated: true,
-            next_steps: [
-              ...(allAdvisories.length > 0 ? ['ADVISORY: Duplicate values detected — review advisories above'] : []),
-              ...(!validationResult.valid ? ['WARNING: Content has validation errors — run contentrain_validate for details'] : []),
-              ...(model.kind === 'collection'
-                ? ['Use contentrain_content_list to verify', 'Add more entries or publish']
-                : ['Use contentrain_content_list to verify']),
-            ],
-          }, null, 2) }],
+        if (provider instanceof LocalProvider) {
+          // Legacy flow — preserves selective sync + auto-merge workflow.
+          const result = await provider.applyPlan({
+            branch,
+            changes: plan.changes,
+            message,
+            context: contextPayload,
+          })
+          commitSha = result.sha
+          workflowAction = result.workflowAction
+          sync = result.sync
+        } else {
+          // Remote provider — bundle context as a FileChange and commit via
+          // the generic RepoWriter interface. Remote writes are always
+          // pending-review; Studio (or the caller) orchestrates the merge.
+          const contextChange = await buildContextChange(provider, contextPayload)
+          const allChanges = [...plan.changes, contextChange]
+            .toSorted((a, b) => a.path.localeCompare(b.path))
+          const commit = await provider.applyPlan({
+            branch,
+            changes: allChanges,
+            message,
+            author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
+            base: config.repository?.default_branch ?? 'contentrain',
+          })
+          commitSha = commit.sha
+          workflowAction = 'pending-review'
         }
       } catch (error) {
         return {
@@ -190,6 +188,38 @@ export function registerContentTools(
           }) }],
           isError: true,
         }
+      }
+
+      // Post-save validation — LocalProvider only (needs filesystem walk).
+      const validationResult = projectRoot
+        ? await validateProject(projectRoot, { model: input.model })
+        : { valid: true, issues: [], summary: { errors: 0, warnings: 0, notices: 0, models_checked: 0, entries_checked: 0 }, fixed: 0 }
+
+      const allAdvisories = plan.result.flatMap(r => r.advisories ?? [])
+
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({
+          status: 'committed',
+          message: 'Content saved and committed to git. Do NOT manually edit .contentrain/ files.',
+          results: plan.result,
+          git: { branch, action: workflowAction, commit: commitSha, ...(sync ? { sync } : {}) },
+          ...(allAdvisories.length > 0 ? {
+            advisories: allAdvisories,
+            advisory_note: 'Save succeeded. Review these warnings and consider consolidating duplicate values.',
+          } : {}),
+          validation: {
+            valid: validationResult.valid,
+            errors: validationResult.issues.filter(i => i.severity === 'error').map(i => i.message),
+          },
+          context_updated: true,
+          next_steps: [
+            ...(allAdvisories.length > 0 ? ['ADVISORY: Duplicate values detected — review advisories above'] : []),
+            ...(!validationResult.valid ? ['WARNING: Content has validation errors — run contentrain_validate for details'] : []),
+            ...(model.kind === 'collection'
+              ? ['Use contentrain_content_list to verify', 'Add more entries or publish']
+              : ['Use contentrain_content_list to verify']),
+          ],
+        }, null, 2) }],
       }
     },
   )
@@ -208,8 +238,7 @@ export function registerContentTools(
     },
     TOOL_ANNOTATIONS['contentrain_content_delete']!,
     async (input) => {
-      if (!projectRoot) return capabilityError('contentrain_content_delete', 'localWorktree')
-      const config = await readConfig(projectRoot)
+      const config = await readConfig(provider)
       if (!config) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized.' }) }],
@@ -217,7 +246,7 @@ export function registerContentTools(
         }
       }
 
-      const model = await readModel(projectRoot, input.model)
+      const model = await readModel(provider, input.model)
       if (!model) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: `Model "${input.model}" not found` }) }],
@@ -225,24 +254,23 @@ export function registerContentTools(
         }
       }
 
-      // Branch health gate
-      const deleteHealth = await checkBranchHealth(projectRoot)
-      if (deleteHealth.blocked) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({
-            error: deleteHealth.message,
-            action: 'blocked',
-            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
-          }, null, 2) }],
-          isError: true,
+      if (provider instanceof LocalProvider) {
+        const deleteHealth = await checkBranchHealth(provider.projectRoot)
+        if (deleteHealth.blocked) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({
+              error: deleteHealth.message,
+              action: 'blocked',
+              hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+            }, null, 2) }],
+            isError: true,
+          }
         }
       }
 
-      const deleteProvider = new LocalProvider(projectRoot)
-
       let deletePlan: Awaited<ReturnType<typeof planContentDelete>>
       try {
-        deletePlan = await planContentDelete(deleteProvider, {
+        deletePlan = await planContentDelete(provider, {
           model,
           id: input.id,
           slug: input.slug,
@@ -259,18 +287,42 @@ export function registerContentTools(
       }
 
       const branch = buildBranchName('content', input.model)
+      const message = `[contentrain] delete content: ${input.model}`
+      const contextPayload = {
+        tool: 'contentrain_content_delete',
+        model: input.model,
+        locale: input.locale,
+      }
+
+      let commitSha: string
+      let workflowAction: 'auto-merged' | 'pending-review'
+      let sync: unknown
 
       try {
-        const result = await deleteProvider.applyPlan({
-          branch,
-          changes: deletePlan.changes,
-          message: `[contentrain] delete content: ${input.model}`,
-          context: {
-            tool: 'contentrain_content_delete',
-            model: input.model,
-            locale: input.locale,
-          },
-        })
+        if (provider instanceof LocalProvider) {
+          const result = await provider.applyPlan({
+            branch,
+            changes: deletePlan.changes,
+            message,
+            context: contextPayload,
+          })
+          commitSha = result.sha
+          workflowAction = result.workflowAction
+          sync = result.sync
+        } else {
+          const contextChange = await buildContextChange(provider, contextPayload)
+          const allChanges = [...deletePlan.changes, contextChange]
+            .toSorted((a, b) => a.path.localeCompare(b.path))
+          const commit = await provider.applyPlan({
+            branch,
+            changes: allChanges,
+            message,
+            author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
+            base: config.repository?.default_branch ?? 'contentrain',
+          })
+          commitSha = commit.sha
+          workflowAction = 'pending-review'
+        }
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
@@ -278,7 +330,7 @@ export function registerContentTools(
             message: 'Content deleted and committed to git. Do NOT manually edit .contentrain/ files.',
             deleted: true,
             files_removed: deletePlan.result,
-            git: { branch, action: result.workflowAction, commit: result.sha, ...(result.sync ? { sync: result.sync } : {}) },
+            git: { branch, action: workflowAction, commit: commitSha, ...(sync ? { sync } : {}) },
             context_updated: true,
           }, null, 2) }],
         }
