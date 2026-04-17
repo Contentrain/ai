@@ -28,10 +28,13 @@ vi.mock('../../src/serve/server.js', () => ({
   createServeApp: createServeAppMock,
 }))
 
+const errorMock = vi.fn()
+
 vi.mock('consola', () => ({
   default: {
     info: infoMock,
     warn: warnMock,
+    error: errorMock,
     box: boxMock,
   },
 }))
@@ -98,9 +101,19 @@ describe('serve command', () => {
   })
 
   it('starts the web UI server with derived options and does not auto-open when disabled', async () => {
+    // Non-localhost hosts now REQUIRE an authToken (secure-by-default).
+    // The previous behaviour was to warn and proceed — the test locked
+    // that in and has been updated to pass an authToken so the
+    // success path still exercises `--host 0.0.0.0`.
     const mod = await import('../../src/commands/serve.js')
     await mod.default.run?.({
-      args: { root: '/test/project', port: '4444', host: '0.0.0.0', open: false },
+      args: {
+        root: '/test/project',
+        port: '4444',
+        host: '0.0.0.0',
+        open: false,
+        authToken: 'test-secret',
+      },
     })
 
     expect(createServeAppMock).toHaveBeenCalledWith(expect.objectContaining({
@@ -110,7 +123,22 @@ describe('serve command', () => {
     }))
     expect(httpOnMock).toHaveBeenCalledWith('upgrade', expect.any(Function))
     expect(boxMock).toHaveBeenCalled()
-    expect(warnMock).toHaveBeenCalledWith(expect.stringContaining('network'))
     expect(execMock).not.toHaveBeenCalled()
+  })
+
+  it('refuses to start on a non-localhost host without --authToken', async () => {
+    // Secure-by-default. Binding to the network without a token is a
+    // hard error with a clear message, not a warning. Matches OWASP
+    // and the pattern in Postgres / helm / kubectl port-forward.
+    const prevExit = process.exitCode
+    const mod = await import('../../src/commands/serve.js')
+    await mod.default.run?.({
+      args: { root: '/test/project', host: '0.0.0.0', open: false },
+    })
+
+    expect(errorMock).toHaveBeenCalledWith(expect.stringContaining('Refusing to start'))
+    expect(createServeAppMock).not.toHaveBeenCalled()
+    expect(process.exitCode).toBe(1)
+    process.exitCode = prevExit
   })
 })
