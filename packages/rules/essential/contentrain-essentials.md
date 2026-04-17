@@ -54,6 +54,7 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 | `contentrain_submit` | Push branches to remote |
 | `contentrain_merge` | Merge a review-mode branch into contentrain locally |
 | `contentrain_bulk` | Batch operations (copy_locale/update_status/delete_entries) |
+| `contentrain_doctor` | Project health report (env + structure + orphan content + branch pressure + SDK freshness) |
 
 ## Mandatory Protocols
 
@@ -68,7 +69,7 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 
 - A dedicated `contentrain` branch is the single source of truth for content state, created at init
 - Every write operation creates a temporary worktree on the `contentrain` branch automatically
-- Feature branches (`contentrain/{operation}/{model}/{locale}/{timestamp}`) are created from `contentrain` for each operation
+- Feature branches (`cr/{operation}/{model}/{locale}/{timestamp}`) are created from `contentrain` for each operation
 - **auto-merge** mode: feature branch merges into `contentrain`, then `contentrain` advances baseBranch via update-ref (fast-forward), then `.contentrain/` files are selectively synced to the developer's working tree
 - **review** mode: feature branch pushed to remote for team review
 - Developer's working tree is never mutated during MCP git operations (no stash, no checkout, no merge on the developer's tree)
@@ -76,7 +77,7 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 - The `contentrain` branch is protected from deletion
 - context.json is committed together with content changes, not as a separate commit
 - Never create branches manually, never commit directly to main or the `contentrain` branch
-- 50+ active branches = warning, 80+ = blocked
+- 50+ active `cr/*` branches = warning, 80+ = blocked
 
 ## CLI Serve — Review & Approval
 

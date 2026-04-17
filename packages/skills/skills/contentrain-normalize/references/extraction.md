@@ -113,7 +113,7 @@ Returns a preview of what will be created in `.contentrain/` without making chan
 contentrain_apply(mode: "extract", dry_run: false)
 ```
 
-Creates model definitions and content files in `.contentrain/` on a `contentrain/normalize/extract/{timestamp}` branch. `dry_run` defaults to `true`, so you MUST explicitly set `dry_run: false` to execute.
+Creates model definitions and content files in `.contentrain/` on a `cr/normalize/extract/{timestamp}` branch. `dry_run` defaults to `true`, so you MUST explicitly set `dry_run: false` to execute.
 
 ### 7. Validate and Submit
 

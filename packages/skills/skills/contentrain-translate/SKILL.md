@@ -170,7 +170,7 @@ If validation fails, fix issues and re-save.
 
 Call `contentrain_submit` to commit the translations:
 
-- Branch: `contentrain/content/{model}/{targetLocale}/{timestamp}`.
+- Branch: `cr/content/{model}/{targetLocale}/{timestamp}`.
 - Each locale can be submitted independently.
 
 ### 11. Final Summary

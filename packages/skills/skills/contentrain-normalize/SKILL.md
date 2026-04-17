@@ -60,7 +60,7 @@ branch is pushed.
 | Purpose | Pull content from source to `.contentrain/` | Patch source files with content references |
 | Scope | Full project scan | Per model or per domain |
 | Source files modified | No | Yes |
-| Branch pattern | `contentrain/normalize/extract/{domain}/{timestamp}` | `contentrain/normalize/reuse/{model}/{locale}/{timestamp}` |
+| Branch pattern | `cr/normalize/extract/{domain}/{timestamp}` | `cr/normalize/reuse/{model}/{locale}/{timestamp}` |
 | Prerequisite | Initialized `.contentrain/` | Completed extraction (content exists in `.contentrain/`) |
 | Workflow mode | Always `review` | Always `review` |
 | Standalone value | Yes -- content is manageable in Studio immediately | Depends on Phase 1 |
@@ -133,7 +133,7 @@ Call `contentrain_apply(mode: "extract", dry_run: true)` to generate a preview. 
 
 ### 6. Execute Extraction
 
-After user approval, call `contentrain_apply(mode: "extract", dry_run: false)`. This creates model definitions and content files in `.contentrain/` on a `contentrain/normalize/extract/{timestamp}` branch. Source files are NOT modified.
+After user approval, call `contentrain_apply(mode: "extract", dry_run: false)`. This creates model definitions and content files in `.contentrain/` on a `cr/normalize/extract/{timestamp}` branch. Source files are NOT modified.
 
 ### 7. Validate and Submit
 
@@ -207,7 +207,7 @@ Call `contentrain_apply(mode: "reuse", scope: { model: "<model-id>" }, patches: 
 
 ### 4. Execute Reuse
 
-After user confirmation, call `contentrain_apply(mode: "reuse", scope: { model: "<model-id>" }, patches: [...], dry_run: false)`. This patches source files and creates a `contentrain/normalize/reuse/{model}/{timestamp}` branch.
+After user confirmation, call `contentrain_apply(mode: "reuse", scope: { model: "<model-id>" }, patches: [...], dry_run: false)`. This patches source files and creates a `cr/normalize/reuse/{model}/{timestamp}` branch.
 
 ### 5. Validate and Submit
 

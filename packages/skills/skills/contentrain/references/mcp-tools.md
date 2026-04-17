@@ -269,12 +269,34 @@ Validate project content against model schemas.
 
 ### contentrain_submit
 
-Push contentrain/* branches to remote.
+Push `cr/*` feature branches to remote.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `branches` | string[] | No | Specific branches to push (omit for all contentrain/* branches) |
+| `branches` | string[] | No | Specific branches to push (omit for all `cr/*` branches) |
 | `message` | string | No | Optional message for the push operation |
+
+### contentrain_merge
+
+Merge a single review-mode `cr/*` branch into the content-tracking `contentrain` branch and advance the base branch via `update-ref`. Runs the worktree transaction with selective sync — dirty files in the developer's working tree are preserved rather than overwritten.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `branch` | string | Yes | Feature branch name (must start with `cr/`) |
+
+Returns `{ action, commit, sync }` — `sync.skipped[]` lists files the selective sync skipped because the developer has uncommitted changes. The CLI surfaces this as a warning.
+
+## Doctor Tools
+
+### contentrain_doctor
+
+Structured project health report: git install, Node version, `.contentrain/` structure, model parse, orphan content, pending branch pressure, SDK client freshness. Read-only. Local-filesystem only (`localWorktree` capability — unavailable over remote providers).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `usage` | boolean | No | Run the heavier usage-analysis branch (unused content keys, duplicate dictionary values, locale coverage). Default `false` |
+
+Returns `{ checks[], summary: { total, passed, failed, warnings }, usage? }`. Each check carries `name`, `pass`, `detail`, optional `severity: 'error' | 'warning' | 'info'`.
 
 ## Bulk Tools
 

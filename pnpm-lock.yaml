@@ -204,6 +204,9 @@ importers:
 
   packages/rules:
     devDependencies:
+      '@contentrain/mcp':
+        specifier: workspace:*
+        version: link:../mcp
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.15
@@ -238,6 +241,9 @@ importers:
 
   packages/skills:
     devDependencies:
+      '@contentrain/mcp':
+        specifier: workspace:*
+        version: link:../mcp
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.15

@@ -43,7 +43,7 @@ Contentrain supports two workflow modes, configured in `.contentrain/config.json
 All Contentrain branches follow a strict naming pattern:
 
 ```
-contentrain/{operation}/{model}/{locale}/{timestamp}
+cr/{operation}/{model}/{locale}/{timestamp}
 ```
 
 ### Examples
