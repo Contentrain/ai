@@ -2,13 +2,19 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { z } from 'zod'
 import { simpleGit } from 'simple-git'
+import type { ToolProvider } from '../server.js'
 import { validateProject } from '../core/validator/index.js'
 import { readConfig } from '../core/config.js'
 import { createTransaction, buildBranchName, mergeBranch } from '../git/transaction.js'
 import { checkBranchHealth, cleanupMergedBranches } from '../git/branch-lifecycle.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
+import { capabilityError } from './guards.js'
 
-export function registerWorkflowTools(server: McpServer, projectRoot: string): void {
+export function registerWorkflowTools(
+  server: McpServer,
+  _provider: ToolProvider,
+  projectRoot: string | undefined,
+): void {
   // ─── contentrain_validate ───
   server.tool(
     'contentrain_validate',
@@ -19,6 +25,7 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
     },
     TOOL_ANNOTATIONS['contentrain_validate']!,
     async (input) => {
+      if (!projectRoot) return capabilityError('contentrain_validate', 'localWorktree')
       const config = await readConfig(projectRoot)
       if (!config) {
         return {
@@ -128,6 +135,7 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
     },
     TOOL_ANNOTATIONS['contentrain_submit']!,
     async (input) => {
+      if (!projectRoot) return capabilityError('contentrain_submit', 'localWorktree')
       const config = await readConfig(projectRoot)
       if (!config) {
         return {
@@ -272,6 +280,7 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
     },
     TOOL_ANNOTATIONS['contentrain_merge']!,
     async (input) => {
+      if (!projectRoot) return capabilityError('contentrain_merge', 'localWorktree')
       const config = await readConfig(projectRoot)
       if (!config) {
         return {

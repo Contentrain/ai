@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
+import type { ToolProvider } from '../server.js'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { readContext } from '../core/context.js'
 import { countEntries, listModels, readModel } from '../core/model-manager.js'
@@ -9,8 +10,13 @@ import { join } from 'node:path'
 import { contentrainDir, pathExists } from '../util/fs.js'
 import { checkBranchHealth, cleanupMergedBranches } from '../git/branch-lifecycle.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
+import { capabilityError } from './guards.js'
 
-export function registerContextTools(server: McpServer, projectRoot: string): void {
+export function registerContextTools(
+  server: McpServer,
+  _provider: ToolProvider,
+  projectRoot: string | undefined,
+): void {
   // ─── contentrain_status ───
   server.tool(
     'contentrain_status',
@@ -18,6 +24,7 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
     {},
     TOOL_ANNOTATIONS['contentrain_status']!,
     async () => {
+      if (!projectRoot) return capabilityError('contentrain_status', 'localWorktree')
       const crDir = contentrainDir(projectRoot)
       const initialized = await pathExists(join(crDir, 'config.json'))
 
@@ -113,6 +120,7 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
     },
     TOOL_ANNOTATIONS['contentrain_describe']!,
     async ({ model: modelId, include_sample, locale }) => {
+      if (!projectRoot) return capabilityError('contentrain_describe', 'localWorktree')
       const modelDef = await readModel(projectRoot, modelId)
       if (!modelDef) {
         return {
