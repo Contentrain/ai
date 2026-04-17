@@ -1,16 +1,16 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { ProviderCapabilities, RepoReader } from './core/contracts/index.js'
+import type { ProviderCapabilities, RepoReader, RepoWriter } from './core/contracts/index.js'
 import { LocalProvider } from './providers/local/index.js'
 
 /**
  * Subset of a `RepoProvider` that tool handlers currently consume — a
- * `RepoReader` plus the `capabilities` manifest. Narrower than the full
- * `RepoProvider` so both `LocalProvider` (which implements reader +
- * applyPlan today) and `GitHubProvider` (full provider) satisfy it without
- * requiring LocalProvider to stub out the branch-ops methods it does not
- * yet own.
+ * `RepoReader`, a `RepoWriter`, and the `capabilities` manifest. Narrower
+ * than the full `RepoProvider` so both `LocalProvider` (which implements
+ * reader + writer + applyPlan) and `GitHubProvider` (full provider)
+ * satisfy it without requiring LocalProvider to stub out the branch-ops
+ * methods it does not yet own.
  */
-export type ToolProvider = RepoReader & { capabilities: ProviderCapabilities }
+export type ToolProvider = RepoReader & RepoWriter & { capabilities: ProviderCapabilities }
 import { registerContextTools } from './tools/context.js'
 import { registerSetupTools } from './tools/setup.js'
 import { registerModelTools } from './tools/model.js'

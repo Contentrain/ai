@@ -147,6 +147,123 @@ describe('startHttpMcpServer', () => {
     }
   })
 
+  it('commits content_save through a GitHubProvider-like remote provider', async () => {
+    // Seed the in-memory GitHub by pre-populating config + model read responses.
+    const models: Record<string, unknown> = {
+      blog: {
+        id: 'blog',
+        name: 'Blog',
+        kind: 'collection',
+        domain: 'marketing',
+        i18n: true,
+        fields: { title: { type: 'string', required: true }, body: { type: 'text' } },
+      },
+    }
+    const config = {
+      version: 1,
+      stack: 'vue-nuxt',
+      workflow: 'review',
+      locales: { default: 'en', supported: ['en', 'tr'] },
+      domains: ['marketing'],
+      repository: { provider: 'github', owner: 'acme', name: 'site', default_branch: 'contentrain' },
+    }
+    const filesOnHead: Record<string, string> = {
+      '.contentrain/config.json': JSON.stringify(config),
+      '.contentrain/models/blog.json': JSON.stringify(models['blog']),
+    }
+
+    // Minimal Octokit surface — only the methods the provider actually calls.
+    const createdBlobs: Array<{ content: string, encoding: string }> = []
+    let capturedTree: unknown
+    let capturedCommit: unknown
+    const client = {
+      paginate: {
+        iterator: () => ({ [Symbol.asyncIterator]() { return { next: async () => ({ done: true, value: undefined as never }) } } }),
+      },
+      rest: {
+        repos: {
+          get: vi.fn().mockResolvedValue({ data: { default_branch: 'contentrain' } }),
+          async getContent({ path }: { path: string }) {
+            if (filesOnHead[path]) {
+              return { data: { type: 'file', encoding: 'base64', content: Buffer.from(filesOnHead[path]!).toString('base64'), size: filesOnHead[path]!.length, sha: `sha-${path}` } }
+            }
+            if (path.endsWith('.contentrain/models')) {
+              return { data: [{ name: 'blog.json', type: 'file' }] }
+            }
+            const err = Object.assign(new Error('Not Found'), { status: 404 })
+            throw err
+          },
+        },
+        git: {
+          async getRef({ ref }: { ref: string }) {
+            if (ref === 'heads/contentrain') return { data: { object: { sha: 'base-sha' } } }
+            const err = Object.assign(new Error('Not Found'), { status: 404 })
+            throw err
+          },
+          async getCommit() { return { data: { tree: { sha: 'base-tree-sha' } } } },
+          async createBlob({ content, encoding }: { content: string, encoding: string }) {
+            createdBlobs.push({ content, encoding })
+            return { data: { sha: `blob-${createdBlobs.length}` } }
+          },
+          async createTree(input: unknown) { capturedTree = input; return { data: { sha: 'new-tree-sha' } } },
+          async createCommit(input: unknown) {
+            capturedCommit = input
+            return {
+              data: {
+                sha: 'new-commit-sha',
+                message: (input as { message: string }).message,
+                author: { name: 'Contentrain', email: 'mcp@contentrain.io', date: '2026-04-17T12:00:00Z' },
+              },
+            }
+          },
+          async createRef() { return {} },
+          async updateRef() { return {} },
+        },
+      },
+    }
+
+    const { GitHubProvider } = await import('../../src/providers/github/index.js')
+    const provider = new GitHubProvider(client as unknown as import('../../src/providers/github/client.js').GitHubClient, { owner: 'acme', name: 'site' })
+
+    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
+    const handle = await startHttpMcpServerWith({ provider, port: 0 })
+    try {
+      const mcpClient = new Client({ name: 'test-http-client', version: '1.0.0' })
+      const transport = new StreamableHTTPClientTransport(new URL(handle.url))
+      await mcpClient.connect(transport)
+
+      try {
+        const result = await mcpClient.callTool({
+          name: 'contentrain_content_save',
+          arguments: {
+            model: 'blog',
+            entries: [{ id: 'abc123def456', locale: 'en', data: { title: 'Hello', body: 'World' } }],
+          },
+        })
+        const parsed = parseResult(result)
+        expect(parsed['status']).toBe('committed')
+        const git = parsed['git'] as Record<string, unknown>
+        expect(git['action']).toBe('pending-review')
+        expect(git['commit']).toBe('new-commit-sha')
+        // Commit is addressed to the feature branch, not the base.
+        expect((git['branch'] as string).startsWith('cr/content/blog')).toBe(true)
+        // The tree payload contains our content blob + meta blob + context.json blob.
+        const tree = (capturedTree as { tree: Array<{ path: string }> }).tree
+        const paths = tree.map(t => t.path)
+        expect(paths).toContain('.contentrain/content/marketing/blog/en.json')
+        expect(paths).toContain('.contentrain/meta/blog/en.json')
+        expect(paths).toContain('.contentrain/context.json')
+        // Commit parent resolved from contentrain branch (branchExists: false,
+        // so we end up creating a new ref).
+        expect((capturedCommit as { parents: string[] }).parents).toEqual(['base-sha'])
+      } finally {
+        await mcpClient.close()
+      }
+    } finally {
+      await handle.close()
+    }
+  })
+
   it('returns capability error for write tools when projectRoot is absent', async () => {
     const readOnlyProvider = {
       capabilities: {
