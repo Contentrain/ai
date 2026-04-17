@@ -56,6 +56,8 @@
   "branches.validate": "Validate",
   "breadcrumb-ellipsis.more": "More",
   "button.button": "button",
+  "common.off": "Off",
+  "common.on": "On",
   "content-list.add-a-new-entry": "Add a new entry to ${modelId}",
   "content-list.all-locales": "All locales",
   "content-list.ask-your-agent": "Ask your agent",
