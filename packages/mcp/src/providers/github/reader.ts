@@ -1,6 +1,6 @@
 import type { RepoReader } from '../../core/contracts/index.js'
+import { isNotFoundError, resolveRepoPath } from '../shared/index.js'
 import type { GitHubClient } from './client.js'
-import { resolveRepoPath } from './paths.js'
 import type { RepoRef } from './types.js'
 
 /**
@@ -70,7 +70,7 @@ export class GitHubReader implements RepoReader {
       if (!Array.isArray(data)) return []
       return data.map(entry => entry.name)
     } catch (error) {
-      if (isNotFound(error)) return []
+      if (isNotFoundError(error)) return []
       throw error
     }
   }
@@ -86,12 +86,8 @@ export class GitHubReader implements RepoReader {
       })
       return true
     } catch (error) {
-      if (isNotFound(error)) return false
+      if (isNotFoundError(error)) return false
       throw error
     }
   }
-}
-
-function isNotFound(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && (error as { status?: number }).status === 404
 }

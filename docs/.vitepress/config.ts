@@ -47,6 +47,8 @@ export default defineConfig({
         { text: 'Types', link: '/packages/types' },
       ]},
       { text: 'Guides', items: [
+        { text: 'Providers & Transports', link: '/guides/providers' },
+        { text: 'HTTP Transport', link: '/guides/http-transport' },
         { text: 'Normalize Flow', link: '/guides/normalize' },
         { text: 'Framework Integration', link: '/guides/frameworks' },
         { text: 'i18n Workflow', link: '/guides/i18n' },
@@ -56,6 +58,7 @@ export default defineConfig({
         { text: 'Model Kinds', link: '/reference/model-kinds' },
         { text: 'Field Types', link: '/reference/field-types' },
         { text: 'Configuration', link: '/reference/config' },
+        { text: 'RepoProvider', link: '/reference/providers' },
       ]},
       { text: 'Starters', link: 'https://github.com/orgs/Contentrain/repositories?q=contentrain-starter&type=template' },
     ],
@@ -84,6 +87,8 @@ export default defineConfig({
         {
           text: 'Guides',
           items: [
+            { text: 'Providers & Transports', link: '/guides/providers' },
+            { text: 'HTTP Transport', link: '/guides/http-transport' },
             { text: 'Normalize Flow', link: '/guides/normalize' },
             { text: 'Framework Integration', link: '/guides/frameworks' },
             { text: 'i18n Workflow', link: '/guides/i18n' },
@@ -96,6 +101,7 @@ export default defineConfig({
             { text: 'Model Kinds', link: '/reference/model-kinds' },
             { text: 'Field Types', link: '/reference/field-types' },
             { text: 'Configuration', link: '/reference/config' },
+            { text: 'RepoProvider', link: '/reference/providers' },
           ],
         },
       ],

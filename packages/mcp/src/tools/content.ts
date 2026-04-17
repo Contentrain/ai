@@ -1,7 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import type { ToolProvider } from '../server.js'
-import { buildContextChange } from '../core/context.js'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { readModel } from '../core/model-manager.js'
 import { listContent } from '../core/content-manager.js'
@@ -10,8 +9,9 @@ import { LocalProvider } from '../providers/local/index.js'
 import { buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { validateProject } from '../core/validator/index.js'
+import { OverlayReader } from '../core/overlay-reader.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
-import { capabilityError } from './guards.js'
+import { commitThroughProvider } from './commit-plan.js'
 
 export function registerContentTools(
   server: McpServer,
@@ -153,34 +153,15 @@ export function registerContentTools(
       let sync: unknown
 
       try {
-        if (provider instanceof LocalProvider) {
-          // Legacy flow — preserves selective sync + auto-merge workflow.
-          const result = await provider.applyPlan({
-            branch,
-            changes: plan.changes,
-            message,
-            context: contextPayload,
-          })
-          commitSha = result.sha
-          workflowAction = result.workflowAction
-          sync = result.sync
-        } else {
-          // Remote provider — bundle context as a FileChange and commit via
-          // the generic RepoWriter interface. Remote writes are always
-          // pending-review; Studio (or the caller) orchestrates the merge.
-          const contextChange = await buildContextChange(provider, contextPayload)
-          const allChanges = [...plan.changes, contextChange]
-            .toSorted((a, b) => a.path.localeCompare(b.path))
-          const commit = await provider.applyPlan({
-            branch,
-            changes: allChanges,
-            message,
-            author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
-            base: config.repository?.default_branch ?? 'contentrain',
-          })
-          commitSha = commit.sha
-          workflowAction = 'pending-review'
-        }
+        const result = await commitThroughProvider(provider, {
+          branch,
+          changes: plan.changes,
+          message,
+          contextPayload,
+        })
+        commitSha = result.commitSha
+        workflowAction = result.workflowAction
+        sync = result.sync
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
@@ -191,12 +172,15 @@ export function registerContentTools(
       }
 
       // Post-save validation — runs against whichever provider backed the
-      // write. LocalProvider gets filesystem parity by walking `projectRoot`;
-      // remote providers (GitHubProvider et al.) walk their read surface via
-      // the shared `RepoReader` so the validation envelope matches.
+      // write. LocalProvider sees the post-commit state via its
+      // filesystem (the worktree transaction has already landed the
+      // files). Remote providers see the pre-commit state in their
+      // reader; wrap the reader in an OverlayReader so the validator
+      // evaluates the committed-but-not-yet-visible state instead of
+      // the pre-change base branch.
       const validationResult = projectRoot
         ? await validateProject(projectRoot, { model: input.model })
-        : await validateProject(provider, { model: input.model })
+        : await validateProject(new OverlayReader(provider, plan.changes), { model: input.model })
 
       const allAdvisories = plan.result.flatMap(r => r.advisories ?? [])
 
@@ -302,30 +286,15 @@ export function registerContentTools(
       let sync: unknown
 
       try {
-        if (provider instanceof LocalProvider) {
-          const result = await provider.applyPlan({
-            branch,
-            changes: deletePlan.changes,
-            message,
-            context: contextPayload,
-          })
-          commitSha = result.sha
-          workflowAction = result.workflowAction
-          sync = result.sync
-        } else {
-          const contextChange = await buildContextChange(provider, contextPayload)
-          const allChanges = [...deletePlan.changes, contextChange]
-            .toSorted((a, b) => a.path.localeCompare(b.path))
-          const commit = await provider.applyPlan({
-            branch,
-            changes: allChanges,
-            message,
-            author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
-            base: config.repository?.default_branch ?? 'contentrain',
-          })
-          commitSha = commit.sha
-          workflowAction = 'pending-review'
-        }
+        const result = await commitThroughProvider(provider, {
+          branch,
+          changes: deletePlan.changes,
+          message,
+          contextPayload,
+        })
+        commitSha = result.commitSha
+        workflowAction = result.workflowAction
+        sync = result.sync
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
@@ -362,8 +331,7 @@ export function registerContentTools(
     },
     TOOL_ANNOTATIONS['contentrain_content_list']!,
     async (input) => {
-      if (!projectRoot) return capabilityError('contentrain_content_list', 'localWorktree')
-      const config = await readConfig(projectRoot)
+      const config = await readConfig(provider)
       if (!config) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized.' }) }],
@@ -371,7 +339,7 @@ export function registerContentTools(
         }
       }
 
-      const model = await readModel(projectRoot, input.model)
+      const model = await readModel(provider, input.model)
       if (!model) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: `Model "${input.model}" not found` }) }],
@@ -380,13 +348,20 @@ export function registerContentTools(
       }
 
       try {
-        const result = await listContent(projectRoot, model, {
+        // LocalProvider path keeps the legacy filesystem implementation
+        // (with full `resolve:true` relation hydration). Remote providers
+        // get the reader-based path — `resolve:true` is rejected there
+        // because cross-model relation walks need local disk today.
+        const listOpts = {
           locale: input.locale,
           filter: input.filter as Record<string, unknown>,
           resolve: input.resolve,
           limit: input.limit,
           offset: input.offset,
-        }, config)
+        }
+        const result = projectRoot
+          ? await listContent(projectRoot, model, listOpts, config)
+          : await listContent(provider, model, listOpts, config)
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],

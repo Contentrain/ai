@@ -17,9 +17,9 @@ Start here:
 - initialize `.contentrain/` in an existing repo
 - inspect project health and validation state
 - generate the typed `#contentrain` SDK client
-- review pending `contentrain/*` branches
+- review pending `cr/*` branches
 - run the local review UI
-- expose the MCP server over stdio for IDE agents
+- expose the MCP server over stdio (IDE agents) or HTTP (Studio, CI, remote drivers)
 
 This package is the human-facing companion to:
 
@@ -56,8 +56,8 @@ Requirements:
 | `contentrain doctor` | Check setup health, SDK freshness, orphan content, and branch limits |
 | `contentrain validate` | Validate content against schemas, optionally create review-branch fixes |
 | `contentrain generate` | Generate `.contentrain/client/` and `#contentrain` package imports |
-| `contentrain diff` | Review and merge or reject pending `contentrain/*` branches |
-| `contentrain serve` | Start the local review UI or the MCP stdio server |
+| `contentrain diff` | Review and merge or reject pending `cr/*` branches |
+| `contentrain serve` | Start the local review UI, the MCP stdio server (`--stdio`), or the MCP HTTP server (`--mcpHttp`) |
 | `contentrain studio connect` | Connect a repository to a Studio project |
 | `contentrain studio login` | Authenticate with Contentrain Studio |
 | `contentrain studio logout` | Log out from Studio |
@@ -113,28 +113,39 @@ contentrain serve
 
 ## 🖥 `serve` Modes
 
-`contentrain serve` has two roles.
+`contentrain serve` has three roles.
 
-Start the local review UI:
+### Local review UI (default)
 
 ```bash
 contentrain serve
 contentrain serve --port 3333 --host localhost
 ```
 
-This serves:
+Serves the REST endpoints for status / content / validation / branches / normalize, a WebSocket stream for live updates, and the embedded Vue `serve-ui` app bundled with the CLI.
 
-- REST endpoints for status, content, validation, branches, and normalize data
-- a WebSocket stream for live updates
-- the embedded Vue `serve-ui` app bundled with the CLI
-
-Start the MCP server for IDE integration:
+### MCP stdio (IDE agents)
 
 ```bash
 contentrain serve --stdio
 ```
 
 Use stdio mode when connecting Claude Code, Cursor, Windsurf, or another MCP client to the local project.
+
+### MCP HTTP (Studio, CI, remote drivers)
+
+```bash
+contentrain serve --mcpHttp --authToken $(openssl rand -hex 32)
+contentrain serve --mcpHttp --port 3333 --host 0.0.0.0 --authToken $TOKEN
+```
+
+Spins up a [Streamable HTTP MCP](https://modelcontextprotocol.io) server at `POST /mcp`. Bearer auth is enforced when `--authToken` is set (or `CONTENTRAIN_AUTH_TOKEN` is exported). Use HTTP mode when:
+
+- Studio's agent drives MCP remotely
+- a CI runner needs deterministic content operations
+- an agent on another machine orchestrates content changes
+
+HTTP sessions use the same `LocalProvider` backing as stdio — the transport differs, the behaviour does not. Remote git-host providers (`GitHubProvider`, `GitLabProvider`) are constructed by embedders who instantiate the MCP server programmatically; see the MCP package docs for that flow.
 
 ## 📦 `generate` and `#contentrain`
 
@@ -165,7 +176,7 @@ contentrain diff
 
 to understand:
 
-- how many active review branches exist on the `contentrain` branch
+- how many active `cr/*` review branches exist on the `contentrain` branch
 - whether branch health is blocking new writes
 - what changed before merging or deleting a branch
 

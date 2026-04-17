@@ -1,6 +1,6 @@
 import type { ApplyPlanInput, Commit, FileChange } from '../../core/contracts/index.js'
+import { isNotFoundError, resolveRepoPath } from '../shared/index.js'
 import type { GitLabClient } from './client.js'
-import { resolveRepoPath } from './paths.js'
 import type { ProjectRef } from './types.js'
 
 type CommitActionType = 'create' | 'update' | 'delete'
@@ -128,7 +128,7 @@ async function branchHasRef(
     await client.Branches.show(project.projectId, branch)
     return true
   } catch (error) {
-    if (isNotFound(error)) return false
+    if (isNotFoundError(error)) return false
     throw error
   }
 }
@@ -143,7 +143,7 @@ async function fileExistsAtRef(
     await client.RepositoryFiles.show(project.projectId, filePath, ref)
     return true
   } catch (error) {
-    if (isNotFound(error)) return false
+    if (isNotFoundError(error)) return false
     throw error
   }
 }
@@ -163,11 +163,3 @@ function toIsoTimestamp(raw: unknown): string | null {
   return date.toISOString()
 }
 
-function isNotFound(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) return false
-  const err = error as { cause?: { response?: { status?: number } }, description?: unknown }
-  const status = err.cause?.response?.status
-  if (status === 404) return true
-  const description = typeof err.description === 'string' ? err.description : ''
-  return /not found/i.test(description)
-}

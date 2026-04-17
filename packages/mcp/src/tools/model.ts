@@ -3,7 +3,6 @@ import type { ModelDefinition } from '@contentrain/types'
 import { z } from 'zod'
 import type { ToolProvider } from '../server.js'
 import { readConfig } from '../core/config.js'
-import { buildContextChange } from '../core/context.js'
 
 import { resolveContentDir, resolveJsonFilePath, resolveMdFilePath } from '../core/content-manager.js'
 import { checkReferences, readModel, validateModelDefinition, fieldDefZodSchema } from '../core/model-manager.js'
@@ -12,6 +11,7 @@ import { LocalProvider } from '../providers/local/index.js'
 import { buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
+import { commitThroughProvider } from './commit-plan.js'
 
 // Shared field definition schema — single source of truth with normalize extract
 const fieldDefSchema = fieldDefZodSchema
@@ -100,30 +100,15 @@ export function registerModelTools(
       let sync: unknown
 
       try {
-        if (provider instanceof LocalProvider) {
-          const result = await provider.applyPlan({
-            branch,
-            changes: savePlan.changes,
-            message,
-            context: contextPayload,
-          })
-          commitSha = result.sha
-          workflowAction = result.workflowAction
-          sync = result.sync
-        } else {
-          const contextChange = await buildContextChange(provider, contextPayload)
-          const allChanges = [...savePlan.changes, contextChange]
-            .toSorted((a, b) => a.path.localeCompare(b.path))
-          const commit = await provider.applyPlan({
-            branch,
-            changes: allChanges,
-            message,
-            author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
-            base: config.repository?.default_branch ?? 'contentrain',
-          })
-          commitSha = commit.sha
-          workflowAction = 'pending-review'
-        }
+        const result = await commitThroughProvider(provider, {
+          branch,
+          changes: savePlan.changes,
+          message,
+          contextPayload,
+        })
+        commitSha = result.commitSha
+        workflowAction = result.workflowAction
+        sync = result.sync
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
@@ -238,30 +223,15 @@ export function registerModelTools(
       let sync: unknown
 
       try {
-        if (provider instanceof LocalProvider) {
-          const result = await provider.applyPlan({
-            branch,
-            changes: deletePlan.changes,
-            message,
-            context: contextPayload,
-          })
-          commitSha = result.sha
-          workflowAction = result.workflowAction
-          sync = result.sync
-        } else {
-          const contextChange = await buildContextChange(provider, contextPayload)
-          const allChanges = [...deletePlan.changes, contextChange]
-            .toSorted((a, b) => a.path.localeCompare(b.path))
-          const commit = await provider.applyPlan({
-            branch,
-            changes: allChanges,
-            message,
-            author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
-            base: config.repository?.default_branch ?? 'contentrain',
-          })
-          commitSha = commit.sha
-          workflowAction = 'pending-review'
-        }
+        const result = await commitThroughProvider(provider, {
+          branch,
+          changes: deletePlan.changes,
+          message,
+          contextPayload,
+        })
+        commitSha = result.commitSha
+        workflowAction = result.workflowAction
+        sync = result.sync
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({

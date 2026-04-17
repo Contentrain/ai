@@ -84,6 +84,10 @@
       "types": "./dist/core/scan-config.d.mts",
       "import": "./dist/core/scan-config.mjs"
     },
+    "./core/contracts": {
+      "types": "./dist/core/contracts/index.d.mts",
+      "import": "./dist/core/contracts/index.mjs"
+    },
     "./util/detect": {
       "types": "./dist/util/detect.d.mts",
       "import": "./dist/util/detect.mjs"
@@ -104,6 +108,10 @@
       "types": "./dist/templates/index.d.mts",
       "import": "./dist/templates/index.mjs"
     },
+    "./providers/local": {
+      "types": "./dist/providers/local/index.d.mts",
+      "import": "./dist/providers/local/index.mjs"
+    },
     "./providers/github": {
       "types": "./dist/providers/github/index.d.mts",
       "import": "./dist/providers/github/index.mjs"
@@ -119,8 +127,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts src/providers/github/index.ts src/providers/gitlab/index.ts src/server/http/index.ts --format esm --dts --external typescript",
-    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts src/providers/github/index.ts src/providers/gitlab/index.ts src/server/http/index.ts --format esm --dts --external typescript --watch",
+    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts src/core/contracts/index.ts src/providers/local/index.ts src/providers/github/index.ts src/providers/gitlab/index.ts src/server/http/index.ts --format esm --dts --external typescript",
+    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts src/core/contracts/index.ts src/providers/local/index.ts src/providers/github/index.ts src/providers/gitlab/index.ts src/server/http/index.ts --format esm --dts --external typescript --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"

@@ -1,7 +1,21 @@
-export type { Branch, FileDiff, MergeResult } from './branch.js'
-export type { ProviderCapabilities } from './capabilities.js'
-export { LOCAL_CAPABILITIES } from './capabilities.js'
-export type { FileChange } from './file-change.js'
-export type { RepoProvider } from './provider.js'
-export type { RepoReader } from './repo-reader.js'
-export type { ApplyPlanInput, Commit, CommitAuthor, RepoWriter } from './repo-writer.js'
+// ─── RepoProvider contracts ───
+//
+// The canonical definitions live in `@contentrain/types/provider` so
+// third-party tools can implement a custom provider without depending on
+// @contentrain/mcp. This barrel re-exports them for MCP's internal
+// imports and for consumers who have been using
+// `@contentrain/mcp/core/contracts` directly.
+export type {
+  ApplyPlanInput,
+  Branch,
+  Commit,
+  CommitAuthor,
+  FileChange,
+  FileDiff,
+  MergeResult,
+  ProviderCapabilities,
+  RepoProvider,
+  RepoReader,
+  RepoWriter,
+} from '@contentrain/types'
+export { LOCAL_CAPABILITIES } from '@contentrain/types'

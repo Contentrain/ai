@@ -4,7 +4,7 @@
 [![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/mcp)
 [![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io/packages/mcp)
 
-Local-first MCP server and core primitives for Contentrain.
+Provider-agnostic MCP engine for Contentrain — local-first by default, with optional GitHub and GitLab backends and an HTTP transport for remote drivers such as Studio.
 
 Start here:
 
@@ -262,13 +262,15 @@ These are intended for Contentrain tooling and advanced integrations, not for di
 
 Key design decisions in this package:
 
-- local-first, filesystem-based MCP
-- no GitHub API dependency in MCP
+- local-first **by default** — stdio transport + LocalProvider works without any network dependency
+- provider-agnostic engine — the same 16 tools run over LocalProvider, GitHubProvider, or GitLabProvider behind a single `RepoProvider` contract
+- remote provider SDKs (`@octokit/rest`, `@gitbeaker/rest`) are optional peer dependencies — pulled in only when their provider is used
 - JSON-only content storage
-- git-backed write workflow
-- canonical serialization
+- git-backed write workflow (worktree transaction locally, single atomic commit over the Git Data / REST APIs remotely)
+- canonical serialization — byte-deterministic output, sorted keys, trailing newline
 - framework-agnostic MCP layer
 - agent decides content semantics, MCP enforces deterministic execution
+- capability gates — tools that need source-tree access (normalize, scan, apply) reject with a uniform `capability_required` error on remote providers
 
 ## 🛠 Development
 

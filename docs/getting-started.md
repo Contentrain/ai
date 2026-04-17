@@ -105,6 +105,16 @@ If your IDE is detected during `contentrain init`, the MCP config is created aut
 
 </details>
 
+::: tip HTTP Transport
+In addition to stdio, MCP also serves over HTTP at `POST /mcp`. Useful for Studio / CI runners / remote agents that drive Contentrain operations without a local IDE:
+
+```bash
+npx contentrain serve --mcpHttp --authToken $(openssl rand -hex 32)
+```
+
+See the [HTTP Transport guide](/guides/http-transport) for auth, deployment patterns, and programmatic embedding.
+:::
+
 ### 3. Create a content model
 
 Tell your agent:
