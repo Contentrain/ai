@@ -485,6 +485,31 @@ describe('serve server contract', { sequential: true }, () => {
     })
   })
 
+  it('/api/doctor wraps contentrain_doctor and forwards ?usage=true', async () => {
+    await boot()
+
+    const handler = routes.get('/api/doctor')
+    expect(handler).toBeDefined()
+
+    await handler?.({ query: {} })
+    expect(callToolMock).toHaveBeenLastCalledWith({
+      name: 'contentrain_doctor',
+      arguments: { usage: false },
+    })
+
+    await handler?.({ query: { usage: 'true' } })
+    expect(callToolMock).toHaveBeenLastCalledWith({
+      name: 'contentrain_doctor',
+      arguments: { usage: true },
+    })
+
+    await handler?.({ query: { usage: '1' } })
+    expect(callToolMock).toHaveBeenLastCalledWith({
+      name: 'contentrain_doctor',
+      arguments: { usage: true },
+    })
+  })
+
   it('exposes /api/preview/merge and rejects requests for non-cr branches', async () => {
     await boot()
 

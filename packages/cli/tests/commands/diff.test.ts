@@ -112,4 +112,31 @@ describe('diff command', () => {
       ]),
     )
   })
+
+  it('emits pending-branches JSON and skips the interactive review on --json', async () => {
+    branchMock.mockResolvedValue({ all: ['cr/content/blog/1234-aaaa', 'cr/review/hero/5678-bbbb'] })
+    branchDiffMock.mockImplementation(async ({ branch }: { branch: string }) => ({
+      branch,
+      base: 'contentrain',
+      stat: ` ${branch}.json | 2 +-`,
+      patch: '+{"k":"v"}\n',
+      filesChanged: 1,
+    }))
+
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const mod = await import('../../src/commands/diff.js')
+    await mod.default.run?.({ args: { root: '/test/project', json: true } })
+
+    expect(writeSpy).toHaveBeenCalledTimes(1)
+    const payload = JSON.parse(writeSpy.mock.calls[0]?.[0] as string)
+    expect(payload.branches).toHaveLength(2)
+    expect(payload.branches[0]).toMatchObject({
+      name: 'cr/content/blog/1234-aaaa',
+      base: 'contentrain',
+      filesChanged: 1,
+      insertions: 1,
+    })
+    expect(selectMock).not.toHaveBeenCalled()
+    writeSpy.mockRestore()
+  })
 })

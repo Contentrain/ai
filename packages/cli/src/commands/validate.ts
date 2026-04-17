@@ -1,10 +1,13 @@
 import { defineCommand } from 'citty'
 import { intro, outro, log, spinner, select, isCancel } from '@clack/prompts'
+import { join } from 'node:path'
 import { validateProject, type ValidateResult } from '@contentrain/mcp/core/validator'
 import { createTransaction, buildBranchName } from '@contentrain/mcp/git/transaction'
 import { writeContext } from '@contentrain/mcp/core/context'
+import { contentrainDir } from '@contentrain/mcp/util/fs'
 import { resolveProjectRoot, loadProjectContext, requireInitialized } from '../utils/context.js'
 import { pc, severityColor, formatCount } from '../utils/ui.js'
+import { debug } from '../utils/debug.js'
 
 export default defineCommand({
   meta: {
@@ -17,11 +20,22 @@ export default defineCommand({
     interactive: { type: 'boolean', description: 'Interactive fix mode', required: false },
     json: { type: 'boolean', description: 'JSON output for CI', required: false },
     model: { type: 'string', description: 'Validate single model', required: false },
+    watch: { type: 'boolean', description: 'Re-run validation when .contentrain/ changes (read-only, forces fix off)', required: false },
   },
   async run({ args }) {
     const projectRoot = await resolveProjectRoot(args.root)
     const ctx = await loadProjectContext(projectRoot)
     requireInitialized(ctx)
+
+    if (args.watch) {
+      // Watch mode is a dev-loop feature — re-run validation on every
+      // change under .contentrain/ and print the new report. Fix /
+      // interactive paths are disabled because they'd produce a fresh
+      // cr/fix/* branch on every keystroke; read-only is the only
+      // sensible posture for a polling loop.
+      await runWatchMode(projectRoot, { model: args.model, json: Boolean(args.json) })
+      return
+    }
 
     if (!args.json) {
       intro(pc.bold('contentrain validate'))
@@ -169,3 +183,92 @@ export default defineCommand({
     }
   },
 })
+
+/**
+ * Watch `.contentrain/content/` + `.contentrain/models/` and re-run
+ * validation on every change. Debounced 300ms (same as the serve
+ * watcher) so a burst of writes produces one report, not one per file.
+ * JSON mode prints one JSON object per run, newline-separated, so
+ * line-oriented consumers (jq, tail -f) can process the stream.
+ */
+async function runWatchMode(
+  projectRoot: string,
+  options: { model?: string, json: boolean },
+): Promise<void> {
+  const { watch } = await import('chokidar')
+  const crDir = contentrainDir(projectRoot)
+  const targets = [join(crDir, 'content'), join(crDir, 'models'), join(crDir, 'config.json')]
+
+  if (!options.json) {
+    intro(pc.bold('contentrain validate --watch'))
+    log.info('Watching .contentrain/ for changes (Ctrl+C to exit).')
+  }
+
+  let running = false
+  let queued = false
+
+  async function runOnce() {
+    if (running) { queued = true; return }
+    running = true
+    try {
+      debug('validate', 'running validateProject')
+      const result = await validateProject(projectRoot, { model: options.model })
+      if (options.json) {
+        process.stdout.write(JSON.stringify(result) + '\n')
+      } else {
+        const e = result.summary.errors
+        const w = result.summary.warnings
+        const stamp = new Date().toLocaleTimeString()
+        const headline = e === 0 && w === 0
+          ? pc.green(`${stamp} — clean`)
+          : `${stamp} — ${e > 0 ? pc.red(`${e} error${e === 1 ? '' : 's'}`) : '0 errors'}, ${w > 0 ? pc.yellow(`${w} warning${w === 1 ? '' : 's'}`) : '0 warnings'}`
+        log.message(headline)
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (options.json) {
+        process.stdout.write(JSON.stringify({ error: message }) + '\n')
+      } else {
+        log.error(message)
+      }
+    } finally {
+      running = false
+      if (queued) { queued = false; void runOnce() }
+    }
+  }
+
+  const watcher = watch(targets, {
+    ignoreInitial: true,
+    ignored: ['**/node_modules/**', '**/.git/**'],
+  })
+
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
+  watcher.on('all', (eventType, filePath) => {
+    debug('validate', `chokidar ${eventType} ${filePath}`)
+    if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => { void runOnce() }, 300)
+  })
+
+  watcher.on('error', (err) => {
+    const message = err instanceof Error ? err.message : String(err)
+    if (options.json) {
+      process.stdout.write(JSON.stringify({ watcherError: message }) + '\n')
+    } else {
+      log.error(`Watcher error: ${message}`)
+    }
+  })
+
+  // Initial run.
+  void runOnce()
+
+  // Keep the process alive until the user quits. Watchers do not
+  // count as Node event-loop refs reliably, so we park on an
+  // unresolved promise and rely on SIGINT to tear everything down.
+  await new Promise<void>((resolve) => {
+    process.on('SIGINT', () => {
+      void watcher.close()
+      if (!options.json) log.info('\nStopped watching.')
+      resolve()
+    })
+  })
+}
