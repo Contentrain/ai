@@ -452,6 +452,107 @@ describe('contentrain_validate', () => {
     const fixedKeys = Object.keys(fixed!)
     expect(fixedKeys).toEqual([...fixedKeys].toSorted())
   })
+
+  // ─── Phase 4.2: validateProject delegates per-entry checks to validateContent,
+  // so the email/url heuristics, polymorphic relation structure, and nested-field
+  // recursion that used to live in Studio's content-validation.ts now fire here too.
+  it('emits email heuristic warning from validateProject', async () => {
+    client = await createModel(client, 'team', 'collection', 'marketing', {
+      contact: { type: 'email' },
+    })
+
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'team',
+        entries: [
+          { id: 'member-a', locale: 'en', data: { contact: 'not-an-email' } },
+          { id: 'member-a', locale: 'tr', data: { contact: 'not-an-email' } },
+        ],
+      },
+    })
+
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_validate',
+      arguments: { model: 'team' },
+    })
+
+    const data = parseResult(result)
+    const issues = data['issues'] as Array<Record<string, unknown>>
+    const emailWarning = issues.find(i =>
+      i['severity'] === 'warning' && i['field'] === 'contact' && (i['message'] as string).includes('valid email'),
+    )
+    expect(emailWarning).toBeDefined()
+  })
+
+  it('emits url heuristic warning from validateProject', async () => {
+    client = await createModel(client, 'links', 'collection', 'marketing', {
+      href: { type: 'url' },
+    })
+
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'links',
+        entries: [
+          { id: 'link-a', locale: 'en', data: { href: 'example.com' } },
+          { id: 'link-a', locale: 'tr', data: { href: 'example.com' } },
+        ],
+      },
+    })
+
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_validate',
+      arguments: { model: 'links' },
+    })
+
+    const data = parseResult(result)
+    const issues = data['issues'] as Array<Record<string, unknown>>
+    const urlWarning = issues.find(i =>
+      i['severity'] === 'warning' && i['field'] === 'href' && (i['message'] as string).includes('valid URL'),
+    )
+    expect(urlWarning).toBeDefined()
+  })
+
+  it('flags nested object field errors via validateProject', async () => {
+    client = await createModel(client, 'pages', 'collection', 'marketing', {
+      seo: {
+        type: 'object',
+        fields: {
+          title: { type: 'string', required: true },
+        },
+      },
+    })
+
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'pages',
+        entries: [
+          { id: 'page-a', locale: 'en', data: { seo: {} } },
+          { id: 'page-a', locale: 'tr', data: { seo: {} } },
+        ],
+      },
+    })
+
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_validate',
+      arguments: { model: 'pages' },
+    })
+
+    const data = parseResult(result)
+    const issues = data['issues'] as Array<Record<string, unknown>>
+    const nestedError = issues.find(i =>
+      i['severity'] === 'error' && i['field'] === 'title',
+    )
+    expect(nestedError).toBeDefined()
+  })
 })
 
 describe('contentrain_submit', () => {

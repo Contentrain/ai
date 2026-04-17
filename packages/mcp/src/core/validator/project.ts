@@ -1,5 +1,5 @@
-import type { ValidationError, ModelDefinition, ContentrainConfig, FieldDef, EntryMeta } from '@contentrain/types'
-import { detectSecrets, validateFieldValue } from '@contentrain/types'
+import type { ValidationError, ModelDefinition, ContentrainConfig, EntryMeta } from '@contentrain/types'
+import { detectSecrets } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { contentrainDir, readDir, readJson, readText, writeJson, writeText, pathExists } from '../../util/fs.js'
@@ -7,6 +7,8 @@ import { readConfig } from '../config.js'
 import { listModels, readModel } from '../model-manager.js'
 import { writeMeta } from '../meta-manager.js'
 import { parseFrontmatter, resolveContentDir, resolveJsonFilePath, resolveMdFilePath, resolveLocaleStrategy } from '../content-manager.js'
+import { validateContent } from './entry.js'
+import { checkRelationIntegrity, type ResolvedTarget } from './relation-integrity.js'
 import { validateScheduleFields } from './schedule.js'
 
 // ─── Types ───
@@ -29,75 +31,60 @@ export interface ValidateResult {
   fixed: number
 }
 
-// ─── Shared field validation ───
+// ─── Shared field validation helpers ───
 
-interface FieldContext {
-  model: string
-  locale: string
-  entry?: string
-  slug?: string
+/**
+ * Build a `resolveTarget` adapter for `checkRelationIntegrity` that walks
+ * the project's filesystem. Mirrors the target-resolution shape the legacy
+ * `checkRelation` used — collection targets return their entry object-map,
+ * documents return a "slug exists" marker map, singletons and dictionaries
+ * return null content so the checker skips key enforcement for them.
+ */
+function buildProjectTargetResolver(
+  projectRoot: string,
+): (targetModelId: string, targetLocale: string) => Promise<ResolvedTarget> {
+  return async (targetModelId, targetLocale) => {
+    const targetModel = await readModel(projectRoot, targetModelId)
+    if (!targetModel) return { exists: false }
+
+    if (targetModel.kind === 'document') {
+      const docContentDir = resolveContentDir(projectRoot, targetModel)
+      const slugs = await discoverDocumentSlugs(docContentDir, targetModel)
+      return { exists: true, content: Object.fromEntries(slugs.map(s => [s, true])) }
+    }
+    if (targetModel.kind === 'singleton' || targetModel.kind === 'dictionary') {
+      return { exists: true, content: null }
+    }
+    // Collection: return empty object when the locale file is missing so
+    // broken-ref detection still fires (legacy parity with `checkRelation`).
+    const targetDir = resolveContentDir(projectRoot, targetModel)
+    const targetData = await readJson<Record<string, unknown>>(
+      resolveJsonFilePath(targetDir, targetModel, targetLocale),
+    )
+    return { exists: true, content: targetData ?? {} }
+  }
 }
 
-async function checkRelation(
-  projectRoot: string,
-  fieldName: string,
-  fieldDef: FieldDef,
-  value: unknown,
-  locale: string,
-  ctx: FieldContext,
+/**
+ * Scan an entry's data fields for detected secrets in UNDECLARED keys —
+ * the legacy validator also flagged stray/rogue fields that were not in
+ * `model.fields`. `validateContent` only knows about declared fields, so
+ * this complementary pass preserves that coverage.
+ */
+function scanUndeclaredFieldsForSecrets(
+  data: Record<string, unknown>,
+  declared: Record<string, unknown> | undefined,
+  ctx: { model: string, locale: string, entry?: string, slug?: string },
   issues: ValidationError[],
-): Promise<void> {
-  if ((fieldDef.type !== 'relation' && fieldDef.type !== 'relations') || value === undefined || value === null) return
-
-  const targets = Array.isArray(fieldDef.model) ? fieldDef.model : fieldDef.model ? [fieldDef.model] : []
-  const refs = fieldDef.type === 'relations' && Array.isArray(value) ? value : [value]
-
-  for (const ref of refs) {
-    if (typeof ref !== 'string') continue
-    let found = false
-    for (const targetModelId of targets) {
-      const targetModel = await readModel(projectRoot, targetModelId)
-      if (!targetModel) {
-        issues.push({
-          severity: 'error',
-          ...ctx,
-          field: fieldName,
-          message: `Broken relation: target model "${targetModelId}" not found`,
-        })
-        found = true
-        break
-      }
-
-      if (targetModel.kind === 'document') {
-        // Document relations reference by slug — use locale-strategy-aware discovery
-        const docContentDir = resolveContentDir(projectRoot, targetModel)
-        const slugs = await discoverDocumentSlugs(docContentDir, targetModel)
-        if (slugs.includes(ref)) {
-          found = true
-          break
-        }
-      } else if (targetModel.kind === 'singleton' || targetModel.kind === 'dictionary') {
-        // Relations to singletons/dictionaries are unusual but shouldn't error
-        found = true
-        break
-      } else {
-        // Collection: validate against entry IDs (object-map keys)
-        const targetDir = resolveContentDir(projectRoot, targetModel)
-        const targetData = await readJson<Record<string, unknown>>(
-          resolveJsonFilePath(targetDir, targetModel, locale),
-        )
-        if (targetData && ref in targetData) {
-          found = true
-          break
-        }
-      }
-    }
-    if (!found) {
+): void {
+  for (const [fieldName, value] of Object.entries(data)) {
+    if (declared && fieldName in declared) continue
+    if (detectSecrets(value).length > 0) {
       issues.push({
         severity: 'error',
         ...ctx,
         field: fieldName,
-        message: `Broken relation: referenced ${targets.some(t => t) ? 'ref' : 'ID'} "${ref}" not found in target model(s)`,
+        message: `Potential secret detected in field "${fieldName}"`,
       })
     }
   }
@@ -122,8 +109,7 @@ async function validateCollectionModel(
   const localeEntryIds: Record<string, Set<string>> = {}
   const allEntryIds = new Set<string>()
 
-  // Collect unique values for unique constraint check
-  const uniqueFieldValues: Record<string, Map<string, string>> = {}
+  const resolveTarget = buildProjectTargetResolver(projectRoot)
 
   for (const locale of locales) {
     const filePath = resolveJsonFilePath(cDir, model, locale)
@@ -169,58 +155,41 @@ async function validateCollectionModel(
       }
     }
 
-    // Validate each entry
+    // Validate each entry — validateContent covers secret/field/unique/email-url/
+    // polymorphic/nested on declared fields; supplementary scans below catch
+    // undeclared-field secrets and async relation integrity.
     for (const [entryId, fields] of Object.entries(data)) {
       entriesChecked++
 
-      // Secret detection
-      for (const [fieldName, value] of Object.entries(fields)) {
-        if (detectSecrets(value).length > 0) {
-          issues.push({
-            severity: 'error',
-            model: model.id,
-            locale,
-            entry: entryId,
-            field: fieldName,
-            message: `Potential secret detected in field "${fieldName}"`,
-          })
-        }
-      }
+      scanUndeclaredFieldsForSecrets(
+        fields,
+        model.fields,
+        { model: model.id, locale, entry: entryId },
+        issues,
+      )
 
       if (!model.fields) continue
 
-      // Field-level validation
-      for (const [fieldName, fieldDef] of Object.entries(model.fields)) {
-        const value = fields[fieldName]
+      const entryResult = validateContent(
+        fields,
+        model.fields,
+        model.id,
+        locale,
+        entryId,
+        { allEntries: data, currentEntryId: entryId },
+      )
+      issues.push(...entryResult.errors)
 
-        // Field schema validation (type, required, min/max, pattern, select)
-        const fieldErrors = validateFieldValue(value, fieldDef)
-        for (const err of fieldErrors) {
-          issues.push({ ...err, model: model.id, locale, entry: entryId, field: fieldName })
-        }
-
-        // Unique constraint
-        if (fieldDef.unique && value !== undefined && value !== null) {
-          const key = `${fieldName}:${locale}`
-          if (!uniqueFieldValues[key]) uniqueFieldValues[key] = new Map()
-          const existing = uniqueFieldValues[key]!.get(String(value))
-          if (existing) {
-            issues.push({
-              severity: 'error',
-              model: model.id,
-              locale,
-              entry: entryId,
-              field: fieldName,
-              message: `Duplicate value "${value}" violates unique constraint (also in entry "${existing}")`,
-            })
-          } else {
-            uniqueFieldValues[key]!.set(String(value), entryId)
-          }
-        }
-
-        // Broken relation
-        await checkRelation(projectRoot, fieldName, fieldDef, value, locale, { model: model.id, locale, entry: entryId }, issues)
-      }
+      const relationErrors = await checkRelationIntegrity(
+        fields,
+        model.fields,
+        model.id,
+        locale,
+        entryId,
+        async () => null,
+        { severity: 'error', resolveTarget },
+      )
+      issues.push(...relationErrors)
     }
   }
 
@@ -349,33 +318,23 @@ async function validateSingletonModel(
 
     entriesChecked++
 
-    // Secret detection
-    for (const [fieldName, value] of Object.entries(data)) {
-      if (detectSecrets(value).length > 0) {
-        issues.push({
-          severity: 'error',
-          model: model.id,
-          locale,
-          field: fieldName,
-          message: `Potential secret detected in field "${fieldName}"`,
-        })
-      }
-    }
+    scanUndeclaredFieldsForSecrets(data, model.fields, { model: model.id, locale }, issues)
 
-    // Field validation
     if (model.fields) {
-      for (const [fieldName, fieldDef] of Object.entries(model.fields)) {
-        const value = data[fieldName]
+      const entryResult = validateContent(data, model.fields, model.id, locale)
+      issues.push(...entryResult.errors)
 
-        // Field schema validation (type, required, min/max, pattern, select)
-        const sFieldErrors = validateFieldValue(value, fieldDef)
-        for (const err of sFieldErrors) {
-          issues.push({ ...err, model: model.id, locale, field: fieldName })
-        }
-
-        // Broken relation
-        await checkRelation(projectRoot, fieldName, fieldDef, value, locale, { model: model.id, locale }, issues)
-      }
+      const resolveTarget = buildProjectTargetResolver(projectRoot)
+      const relationErrors = await checkRelationIntegrity(
+        data,
+        model.fields,
+        model.id,
+        locale,
+        undefined,
+        async () => null,
+        { severity: 'error', resolveTarget },
+      )
+      issues.push(...relationErrors)
     }
 
     // Canonical sort check
@@ -629,21 +588,16 @@ async function validateDocumentModel(
       entriesChecked++
       const { frontmatter, body } = parseFrontmatter(raw)
 
-      // Secret detection in frontmatter
-      for (const [fieldName, value] of Object.entries(frontmatter)) {
-        if (detectSecrets(value).length > 0) {
-          issues.push({
-            severity: 'error',
-            model: model.id,
-            locale,
-            slug,
-            field: fieldName,
-            message: `Potential secret detected in field "${fieldName}"`,
-          })
-        }
-      }
+      // Always scan undeclared frontmatter fields + body for secrets.
+      scanUndeclaredFieldsForSecrets(
+        frontmatter,
+        // Treat `body` as a declared field so the undeclared-scan skips it; body
+        // is scanned separately below.
+        { ...model.fields, body: true } as Record<string, unknown>,
+        { model: model.id, locale, slug },
+        issues,
+      )
 
-      // Secret detection in body
       if (detectSecrets(body).length > 0) {
         issues.push({
           severity: 'error',
@@ -655,20 +609,32 @@ async function validateDocumentModel(
         })
       }
 
-      // Field validation
       if (model.fields) {
-        for (const [fieldName, fieldDef] of Object.entries(model.fields)) {
-          if (fieldName === 'body') continue
-          const value = frontmatter[fieldName]
+        const fieldsWithoutBody = Object.fromEntries(
+          Object.entries(model.fields).filter(([name]) => name !== 'body'),
+        )
+        const entryResult = validateContent(
+          frontmatter,
+          fieldsWithoutBody,
+          model.id,
+          locale,
+        )
+        for (const err of entryResult.errors) {
+          issues.push({ ...err, slug })
+        }
 
-          // Field schema validation (type, required, min/max, pattern, select)
-          const dFieldErrors = validateFieldValue(value, fieldDef)
-          for (const err of dFieldErrors) {
-            issues.push({ ...err, model: model.id, locale, slug, field: fieldName })
-          }
-
-          // Broken relation
-          await checkRelation(projectRoot, fieldName, fieldDef, value, locale, { model: model.id, locale, slug }, issues)
+        const resolveTarget = buildProjectTargetResolver(projectRoot)
+        const relationErrors = await checkRelationIntegrity(
+          frontmatter,
+          fieldsWithoutBody,
+          model.id,
+          locale,
+          undefined,
+          async () => null,
+          { severity: 'error', resolveTarget },
+        )
+        for (const err of relationErrors) {
+          issues.push({ ...err, slug })
         }
       }
     }
