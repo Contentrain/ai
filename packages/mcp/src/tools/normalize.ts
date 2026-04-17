@@ -12,7 +12,7 @@ import { capabilityError } from './guards.js'
 
 export function registerNormalizeTools(
   server: McpServer,
-  _provider: ToolProvider,
+  provider: ToolProvider,
   projectRoot: string | undefined,
 ): void {
   // ─── contentrain_scan ───
@@ -31,7 +31,11 @@ export function registerNormalizeTools(
     },
     TOOL_ANNOTATIONS['contentrain_scan']!,
     async (input) => {
-      if (!projectRoot) return capabilityError('contentrain_scan', 'astScan')
+      // AST scans require local disk access — GitHubProvider et al. expose
+      // `astScan: false`, so this rejects with a uniform capability error.
+      if (!provider.capabilities.astScan || !projectRoot) {
+        return capabilityError('contentrain_scan', 'astScan')
+      }
       const config = await readConfig(projectRoot)
       if (!config) {
         return {
@@ -178,8 +182,11 @@ export function registerNormalizeTools(
     },
     TOOL_ANNOTATIONS['contentrain_apply']!,
     async (input) => {
-      if (!projectRoot) {
-        const capability = input.mode === 'reuse' ? 'sourceWrite' : 'sourceRead'
+      // Normalize extract needs to read source files; reuse needs to write
+      // them back. Remote providers expose both capabilities as `false` and
+      // get rejected before any work starts.
+      const capability = input.mode === 'reuse' ? 'sourceWrite' : 'sourceRead'
+      if (!provider.capabilities[capability] || !projectRoot) {
         return capabilityError('contentrain_apply', capability)
       }
       const config = await readConfig(projectRoot)

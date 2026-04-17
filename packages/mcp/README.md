@@ -158,6 +158,28 @@ Normalize is intentionally split into two phases:
 
 This split keeps content extraction separate from source rewriting.
 
+### Transport / provider requirements
+
+Normalize (`contentrain_scan` and `contentrain_apply`) requires local
+disk access — AST scanners walk the source tree and patch files in
+place. It runs only on a `LocalProvider` (stdio transport, or HTTP
+transport configured with a `LocalProvider`).
+
+Remote providers such as `GitHubProvider` expose `astScan: false`,
+`sourceRead: false`, and `sourceWrite: false`. Calling these tools
+over a remote provider returns a uniform capability error:
+
+```json
+{
+  "error": "contentrain_scan requires local filesystem access.",
+  "capability_required": "astScan",
+  "hint": "This tool is unavailable when MCP is driven by a remote provider (e.g. GitHubProvider). Use a LocalProvider or the stdio transport."
+}
+```
+
+Agents driving a remote transport should fall back to a local transport
+(or a local checkout) before invoking normalize.
+
 ## 📦 Core Exports
 
 The package also exposes low-level modules for embedding and advanced use:
