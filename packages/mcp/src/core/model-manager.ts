@@ -6,6 +6,7 @@ import { contentrainDir, ensureDir, readDir, readJson, writeJson } from '../util
 import type { RepoReader } from './contracts/index.js'
 import { LocalReader } from '../providers/local/reader.js'
 import { resolveContentDir, resolveLocaleStrategy } from './content-manager.js'
+import { contentDirPath } from './ops/paths.js'
 
 export type { ModelSummary } from '@contentrain/types'
 
@@ -17,12 +18,6 @@ async function tryReadJsonViaReader<T>(reader: RepoReader, path: string): Promis
   } catch {
     return null
   }
-}
-
-/** Content-root-relative path to a model's content directory. Mirrors resolveContentDir with projectRoot=''. */
-function contentDirPath(model: Pick<ModelDefinition, 'domain' | 'id' | 'content_path'>): string {
-  if (model.content_path) return model.content_path
-  return `.contentrain/content/${model.domain}/${model.id}`
 }
 
 /**

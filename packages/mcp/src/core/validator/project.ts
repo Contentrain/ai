@@ -2,11 +2,14 @@ import type { ValidationError, ModelDefinition, ContentrainConfig, EntryMeta } f
 import { detectSecrets } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
-import { contentrainDir, readDir, readJson, readText, writeJson, writeText, pathExists } from '../../util/fs.js'
+import { writeJson, writeText } from '../../util/fs.js'
 import { readConfig } from '../config.js'
 import { listModels, readModel } from '../model-manager.js'
 import { writeMeta } from '../meta-manager.js'
-import { parseFrontmatter, resolveContentDir, resolveJsonFilePath, resolveMdFilePath, resolveLocaleStrategy } from '../content-manager.js'
+import { parseFrontmatter, resolveLocaleStrategy } from '../content-manager.js'
+import type { RepoReader } from '../contracts/index.js'
+import { LocalReader } from '../../providers/local/reader.js'
+import { contentDirPath, contentFilePath, documentFilePath, metaFilePath } from '../ops/paths.js'
 import { validateContent } from './entry.js'
 import { checkRelationIntegrity, type ResolvedTarget } from './relation-integrity.js'
 import { validateScheduleFields } from './schedule.js'
@@ -31,25 +34,44 @@ export interface ValidateResult {
   fixed: number
 }
 
+// ─── Reader-backed IO helpers ───
+
+async function readJsonViaReader<T>(reader: RepoReader, path: string): Promise<T | null> {
+  try {
+    return JSON.parse(await reader.readFile(path)) as T
+  } catch {
+    return null
+  }
+}
+
+async function readTextViaReader(reader: RepoReader, path: string): Promise<string | null> {
+  try {
+    return await reader.readFile(path)
+  } catch {
+    return null
+  }
+}
+
 // ─── Shared field validation helpers ───
 
 /**
  * Build a `resolveTarget` adapter for `checkRelationIntegrity` that walks
- * the project's filesystem. Mirrors the target-resolution shape the legacy
- * `checkRelation` used — collection targets return their entry object-map,
- * documents return a "slug exists" marker map, singletons and dictionaries
- * return null content so the checker skips key enforcement for them.
+ * the project's content store via the shared {@link RepoReader}. Mirrors
+ * the target-resolution shape the legacy `checkRelation` used — collection
+ * targets return their entry object-map, documents return a "slug exists"
+ * marker map, singletons and dictionaries return null content so the
+ * checker skips key enforcement for them.
  */
 function buildProjectTargetResolver(
-  projectRoot: string,
+  reader: RepoReader,
 ): (targetModelId: string, targetLocale: string) => Promise<ResolvedTarget> {
   return async (targetModelId, targetLocale) => {
-    const targetModel = await readModel(projectRoot, targetModelId)
+    const targetModel = await readModel(reader, targetModelId)
     if (!targetModel) return { exists: false }
 
     if (targetModel.kind === 'document') {
-      const docContentDir = resolveContentDir(projectRoot, targetModel)
-      const slugs = await discoverDocumentSlugs(docContentDir, targetModel)
+      const docContentDir = contentDirPath(targetModel)
+      const slugs = await discoverDocumentSlugs(reader, docContentDir, targetModel)
       return { exists: true, content: Object.fromEntries(slugs.map(s => [s, true])) }
     }
     if (targetModel.kind === 'singleton' || targetModel.kind === 'dictionary') {
@@ -57,9 +79,9 @@ function buildProjectTargetResolver(
     }
     // Collection: return empty object when the locale file is missing so
     // broken-ref detection still fires (legacy parity with `checkRelation`).
-    const targetDir = resolveContentDir(projectRoot, targetModel)
-    const targetData = await readJson<Record<string, unknown>>(
-      resolveJsonFilePath(targetDir, targetModel, targetLocale),
+    const targetData = await readJsonViaReader<Record<string, unknown>>(
+      reader,
+      contentFilePath(targetModel, targetLocale),
     )
     return { exists: true, content: targetData ?? {} }
   }
@@ -93,7 +115,8 @@ function scanUndeclaredFieldsForSecrets(
 // ─── Per-model validators ───
 
 async function validateCollectionModel(
-  projectRoot: string,
+  reader: RepoReader,
+  projectRoot: string | undefined,
   model: ModelDefinition,
   config: ContentrainConfig,
   issues: ValidationError[],
@@ -101,19 +124,17 @@ async function validateCollectionModel(
 ): Promise<{ entries: number; fixed: number }> {
   let entriesChecked = 0
   let fixed = 0
-  const cDir = resolveContentDir(projectRoot, model)
-  const metaDir = join(contentrainDir(projectRoot), 'meta', model.id)
   const locales = config.locales.supported
 
   // Collect all entry IDs per locale for parity check
   const localeEntryIds: Record<string, Set<string>> = {}
   const allEntryIds = new Set<string>()
 
-  const resolveTarget = buildProjectTargetResolver(projectRoot)
+  const resolveTarget = buildProjectTargetResolver(reader)
 
   for (const locale of locales) {
-    const filePath = resolveJsonFilePath(cDir, model, locale)
-    const data = await readJson<Record<string, Record<string, unknown>>>(filePath)
+    const filePath = contentFilePath(model, locale)
+    const data = await readJsonViaReader<Record<string, Record<string, unknown>>>(reader, filePath)
     if (!data) {
       if (model.i18n) {
         issues.push({
@@ -123,8 +144,8 @@ async function validateCollectionModel(
           message: `Locale file missing: ${locale}.json`,
         })
 
-        if (fix) {
-          await writeJson(filePath, {})
+        if (fix && projectRoot) {
+          await writeJson(join(projectRoot, filePath), {})
           fixed++
         }
       }
@@ -145,12 +166,12 @@ async function validateCollectionModel(
         locale,
         message: 'Content file keys not in canonical order',
       })
-      if (fix) {
+      if (fix && projectRoot) {
         const resorted: Record<string, Record<string, unknown>> = {}
         for (const key of sorted) {
           resorted[key] = data[key]!
         }
-        await writeJson(filePath, resorted)
+        await writeJson(join(projectRoot, filePath), resorted)
         fixed++
       }
     }
@@ -229,9 +250,12 @@ async function validateCollectionModel(
 
   // Orphan meta check
   for (const locale of locales) {
-    const metaPath = join(metaDir, `${locale}.json`)
-    const metaData = await readJson<Record<string, EntryMeta>>(metaPath)
-    const contentData = await readJson<Record<string, unknown>>(resolveJsonFilePath(cDir, model, locale)) ?? {}
+    const metaRelPath = metaFilePath(model, locale)
+    const metaData = await readJsonViaReader<Record<string, EntryMeta>>(reader, metaRelPath)
+    const contentData = await readJsonViaReader<Record<string, unknown>>(
+      reader,
+      contentFilePath(model, locale),
+    ) ?? {}
 
     // Forward check: meta entries without content + schedule validation
     if (metaData) {
@@ -247,12 +271,13 @@ async function validateCollectionModel(
             entry: metaEntryId,
             message: `Orphan meta: meta entry "${metaEntryId}" exists but content entry missing`,
           })
-          if (fix) {
+          if (fix && projectRoot) {
             delete metaData[metaEntryId]
+            const metaAbs = join(projectRoot, metaRelPath)
             if (Object.keys(metaData).length > 0) {
-              await writeJson(metaPath, metaData)
+              await writeJson(metaAbs, metaData)
             } else {
-              await rm(metaPath, { force: true })
+              await rm(metaAbs, { force: true })
             }
             fixed++
           }
@@ -270,7 +295,7 @@ async function validateCollectionModel(
           entry: entryId,
           message: `Orphan content: entry "${entryId}" has no metadata`,
         })
-        if (fix) {
+        if (fix && projectRoot) {
           await writeMeta(projectRoot, model, { locale, entryId }, {
             status: 'draft',
             source: 'import',
@@ -286,7 +311,8 @@ async function validateCollectionModel(
 }
 
 async function validateSingletonModel(
-  projectRoot: string,
+  reader: RepoReader,
+  projectRoot: string | undefined,
   model: ModelDefinition,
   config: ContentrainConfig,
   issues: ValidationError[],
@@ -294,11 +320,10 @@ async function validateSingletonModel(
 ): Promise<{ entries: number; fixed: number }> {
   let entriesChecked = 0
   let fixed = 0
-  const cDir = resolveContentDir(projectRoot, model)
 
   for (const locale of config.locales.supported) {
-    const filePath = resolveJsonFilePath(cDir, model, locale)
-    const data = await readJson<Record<string, unknown>>(filePath)
+    const filePath = contentFilePath(model, locale)
+    const data = await readJsonViaReader<Record<string, unknown>>(reader, filePath)
 
     if (!data) {
       if (model.i18n) {
@@ -308,8 +333,8 @@ async function validateSingletonModel(
           locale,
           message: `Locale file missing: ${locale}.json`,
         })
-        if (fix) {
-          await writeJson(filePath, {})
+        if (fix && projectRoot) {
+          await writeJson(join(projectRoot, filePath), {})
           fixed++
         }
       }
@@ -324,7 +349,7 @@ async function validateSingletonModel(
       const entryResult = validateContent(data, model.fields, model.id, locale)
       issues.push(...entryResult.errors)
 
-      const resolveTarget = buildProjectTargetResolver(projectRoot)
+      const resolveTarget = buildProjectTargetResolver(reader)
       const relationErrors = await checkRelationIntegrity(
         data,
         model.fields,
@@ -347,19 +372,18 @@ async function validateSingletonModel(
         locale,
         message: 'Content file keys not in canonical order',
       })
-      if (fix) {
+      if (fix && projectRoot) {
         const resorted: Record<string, unknown> = {}
         for (const key of sorted) {
           resorted[key] = data[key]
         }
-        await writeJson(filePath, resorted)
+        await writeJson(join(projectRoot, filePath), resorted)
         fixed++
       }
     }
 
     // Validate schedule fields in singleton meta
-    const singletonMetaPath = join(contentrainDir(projectRoot), 'meta', model.id, `${locale}.json`)
-    const singletonMetaData = await readJson<EntryMeta>(singletonMetaPath)
+    const singletonMetaData = await readJsonViaReader<EntryMeta>(reader, metaFilePath(model, locale))
     if (singletonMetaData) {
       validateScheduleFields(singletonMetaData, { model: model.id, locale }, issues)
     }
@@ -369,7 +393,8 @@ async function validateSingletonModel(
 }
 
 async function validateDictionaryModel(
-  projectRoot: string,
+  reader: RepoReader,
+  projectRoot: string | undefined,
   model: ModelDefinition,
   config: ContentrainConfig,
   issues: ValidationError[],
@@ -377,13 +402,12 @@ async function validateDictionaryModel(
 ): Promise<{ entries: number; fixed: number }> {
   let entriesChecked = 0
   let fixed = 0
-  const cDir = resolveContentDir(projectRoot, model)
 
   const localeKeys: Record<string, Set<string>> = {}
 
   for (const locale of config.locales.supported) {
-    const filePath = resolveJsonFilePath(cDir, model, locale)
-    const data = await readJson<Record<string, string>>(filePath)
+    const filePath = contentFilePath(model, locale)
+    const data = await readJsonViaReader<Record<string, string>>(reader, filePath)
 
     if (!data) {
       if (model.i18n) {
@@ -393,8 +417,8 @@ async function validateDictionaryModel(
           locale,
           message: `Locale file missing: ${locale}.json`,
         })
-        if (fix) {
-          await writeJson(filePath, {})
+        if (fix && projectRoot) {
+          await writeJson(join(projectRoot, filePath), {})
           fixed++
         }
       }
@@ -446,12 +470,12 @@ async function validateDictionaryModel(
         locale,
         message: 'Content file keys not in canonical order',
       })
-      if (fix) {
+      if (fix && projectRoot) {
         const resorted: Record<string, string> = {}
         for (const key of sorted) {
           resorted[key] = data[key]!
         }
-        await writeJson(filePath, resorted)
+        await writeJson(join(projectRoot, filePath), resorted)
         fixed++
       }
     }
@@ -495,11 +519,12 @@ async function validateDictionaryModel(
 }
 
 async function discoverDocumentSlugs(
+  reader: RepoReader,
   cDir: string,
   model: ModelDefinition,
 ): Promise<string[]> {
   const strategy = resolveLocaleStrategy(model)
-  const entries = await readDir(cDir)
+  const entries = await reader.listDirectory(cDir)
 
   // When i18n is disabled, documents are flat {slug}.md files
   if (!model.i18n) {
@@ -529,9 +554,12 @@ async function discoverDocumentSlugs(
   if (strategy === 'directory') {
     // Locale subdirectories contain {slug}.md files — collect slugs from all locale dirs
     const slugs = new Set<string>()
-    for (const localeDir of entries) {
-      if (localeDir.startsWith('.')) continue
-      const files = await readDir(join(cDir, localeDir))
+    const localeLists = await Promise.all(
+      entries
+        .filter(localeDir => !localeDir.startsWith('.'))
+        .map(localeDir => reader.listDirectory(`${cDir}/${localeDir}`)),
+    )
+    for (const files of localeLists) {
       for (const f of files) {
         if (f.endsWith('.md')) slugs.add(f.replace(/\.md$/, ''))
       }
@@ -544,7 +572,8 @@ async function discoverDocumentSlugs(
 }
 
 async function validateDocumentModel(
-  projectRoot: string,
+  reader: RepoReader,
+  projectRoot: string | undefined,
   model: ModelDefinition,
   config: ContentrainConfig,
   issues: ValidationError[],
@@ -552,19 +581,19 @@ async function validateDocumentModel(
 ): Promise<{ entries: number; fixed: number }> {
   let entriesChecked = 0
   let fixed = 0
-  const cDir = resolveContentDir(projectRoot, model)
+  const cDir = contentDirPath(model)
 
-  if (!await pathExists(cDir)) return { entries: 0, fixed: 0 }
+  if (!await reader.fileExists(cDir)) return { entries: 0, fixed: 0 }
 
-  const slugs = await discoverDocumentSlugs(cDir, model)
+  const slugs = await discoverDocumentSlugs(reader, cDir, model)
   const locales = config.locales.supported
 
   for (const slug of slugs) {
     if (slug.startsWith('.')) continue
 
     for (const locale of locales) {
-      const filePath = resolveMdFilePath(cDir, model, locale, slug)
-      const raw = await readText(filePath)
+      const filePath = documentFilePath(model, locale, slug)
+      const raw = await readTextViaReader(reader, filePath)
 
       if (!raw) {
         if (model.i18n) {
@@ -575,10 +604,10 @@ async function validateDocumentModel(
             slug,
             message: `Missing translation: document "${slug}" missing ${locale} locale file`,
           })
-          if (fix) {
+          if (fix && projectRoot) {
             // Create empty template
             const template = `---\nslug: ${slug}\n---\n`
-            await writeText(filePath, template)
+            await writeText(join(projectRoot, filePath), template)
             fixed++
           }
         }
@@ -623,7 +652,7 @@ async function validateDocumentModel(
           issues.push({ ...err, slug })
         }
 
-        const resolveTarget = buildProjectTargetResolver(projectRoot)
+        const resolveTarget = buildProjectTargetResolver(reader)
         const relationErrors = await checkRelationIntegrity(
           frontmatter,
           fieldsWithoutBody,
@@ -646,21 +675,23 @@ async function validateDocumentModel(
 // ─── Orphan content check ───
 
 async function checkOrphanContent(
-  projectRoot: string,
+  reader: RepoReader,
   validModelIds: Set<string>,
   issues: ValidationError[],
   _fix: boolean,
 ): Promise<number> {
-  let fixed = 0
-  const contentBase = join(contentrainDir(projectRoot), 'content')
-  const domains = await readDir(contentBase)
+  const fixed = 0
+  const contentBase = '.contentrain/content'
+  const domains = await reader.listDirectory(contentBase)
 
-  for (const domain of domains) {
-    if (domain.startsWith('.')) continue
-    const domainDir = join(contentBase, domain)
-    const modelDirs = await readDir(domainDir)
+  const modelLists = await Promise.all(
+    domains
+      .filter(d => !d.startsWith('.'))
+      .map(async d => ({ domain: d, dirs: await reader.listDirectory(`${contentBase}/${d}`) })),
+  )
 
-    for (const modelDir of modelDirs) {
+  for (const { dirs } of modelLists) {
+    for (const modelDir of dirs) {
       if (modelDir.startsWith('.')) continue
       if (!validModelIds.has(modelDir)) {
         issues.push({
@@ -677,17 +708,37 @@ async function checkOrphanContent(
 
 // ─── Main validation function ───
 
+/**
+ * Validate a project's content against its model schemas.
+ *
+ * Two signatures:
+ *
+ * - `validateProject(projectRoot, options?)` — legacy disk-backed flow.
+ *   `options.fix: true` applies structural repairs (canonical sort,
+ *   orphan meta, missing locale files) directly on disk.
+ * - `validateProject(reader, options?)` — reader-backed flow used by
+ *   HTTP/remote callers (e.g. GitHubProvider). `options.fix` is ignored
+ *   because remote flows cannot write to the local filesystem.
+ *
+ * Read-side behavior is identical across both signatures so Studio and
+ * local CLIs see the same issue set for the same content state.
+ */
+export async function validateProject(projectRoot: string, options?: ValidateOptions): Promise<ValidateResult>
+export async function validateProject(reader: RepoReader, options?: ValidateOptions): Promise<ValidateResult>
 export async function validateProject(
-  projectRoot: string,
+  input: string | RepoReader,
   options?: ValidateOptions,
 ): Promise<ValidateResult> {
+  const reader: RepoReader = typeof input === 'string' ? new LocalReader(input) : input
+  const projectRoot: string | undefined = typeof input === 'string' ? input : undefined
+  const fix = Boolean(options?.fix) && projectRoot !== undefined
+
   const issues: ValidationError[] = []
-  const fix = options?.fix ?? false
   let totalEntries = 0
   let totalFixed = 0
   let modelsChecked = 0
 
-  const config = await readConfig(projectRoot)
+  const config = await readConfig(reader)
   if (!config) {
     return {
       valid: false,
@@ -697,14 +748,14 @@ export async function validateProject(
     }
   }
 
-  const modelSummaries = await listModels(projectRoot)
+  const modelSummaries = await listModels(reader)
   const validModelIds = new Set(modelSummaries.map(m => m.id))
   const modelsToCheck = options?.model
     ? modelSummaries.filter(m => m.id === options.model)
     : modelSummaries
 
   for (const summary of modelsToCheck) {
-    const model = await readModel(projectRoot, summary.id)
+    const model = await readModel(reader, summary.id)
     if (!model) continue
 
     modelsChecked++
@@ -712,16 +763,16 @@ export async function validateProject(
 
     switch (model.kind) {
       case 'collection':
-        result = await validateCollectionModel(projectRoot, model, config, issues, fix)
+        result = await validateCollectionModel(reader, projectRoot, model, config, issues, fix)
         break
       case 'singleton':
-        result = await validateSingletonModel(projectRoot, model, config, issues, fix)
+        result = await validateSingletonModel(reader, projectRoot, model, config, issues, fix)
         break
       case 'dictionary':
-        result = await validateDictionaryModel(projectRoot, model, config, issues, fix)
+        result = await validateDictionaryModel(reader, projectRoot, model, config, issues, fix)
         break
       case 'document':
-        result = await validateDocumentModel(projectRoot, model, config, issues, fix)
+        result = await validateDocumentModel(reader, projectRoot, model, config, issues, fix)
         break
       default:
         result = { entries: 0, fixed: 0 }
@@ -733,7 +784,7 @@ export async function validateProject(
 
   // Orphan content check (only when checking all models)
   if (!options?.model) {
-    totalFixed += await checkOrphanContent(projectRoot, validModelIds, issues, fix)
+    totalFixed += await checkOrphanContent(reader, validModelIds, issues, fix)
   }
 
   // Cross-dictionary duplicate value detection (only when checking all models)
@@ -743,13 +794,12 @@ export async function validateProject(
       const globalValueMap: Record<string, Map<string, Array<{ model: string; key: string }>>> = {}
 
       for (const summary of dictModels) {
-        const model = await readModel(projectRoot, summary.id)
+        const model = await readModel(reader, summary.id)
         if (!model) continue
-        const cDir = resolveContentDir(projectRoot, model)
 
         for (const locale of config.locales.supported) {
           if (!globalValueMap[locale]) globalValueMap[locale] = new Map()
-          const data = await readJson<Record<string, string>>(resolveJsonFilePath(cDir, model, locale))
+          const data = await readJsonViaReader<Record<string, string>>(reader, contentFilePath(model, locale))
           if (!data) continue
 
           for (const [key, value] of Object.entries(data)) {

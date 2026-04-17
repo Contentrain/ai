@@ -12,7 +12,7 @@ import { capabilityError } from './guards.js'
 
 export function registerWorkflowTools(
   server: McpServer,
-  _provider: ToolProvider,
+  provider: ToolProvider,
   projectRoot: string | undefined,
 ): void {
   // ─── contentrain_validate ───
@@ -25,8 +25,15 @@ export function registerWorkflowTools(
     },
     TOOL_ANNOTATIONS['contentrain_validate']!,
     async (input) => {
-      if (!projectRoot) return capabilityError('contentrain_validate', 'localWorktree')
-      const config = await readConfig(projectRoot)
+      // Read-only validate runs over any provider (LocalProvider or remote
+      // GitHubProvider). Fix mode still needs a local worktree — it opens a
+      // git transaction — so it short-circuits with a capability error when
+      // no projectRoot is available.
+      if (input.fix && !projectRoot) {
+        return capabilityError('contentrain_validate', 'localWorktree')
+      }
+
+      const config = await readConfig(provider)
       if (!config) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized. Run contentrain_init first.' }) }],
@@ -37,7 +44,7 @@ export function registerWorkflowTools(
       try {
         let result: Awaited<ReturnType<typeof validateProject>> | undefined
 
-        if (input.fix) {
+        if (input.fix && projectRoot) {
           // Branch health gate for fix mode (creates a branch)
           const fixHealth = await checkBranchHealth(projectRoot)
           if (fixHealth.blocked) {
@@ -94,9 +101,14 @@ export function registerWorkflowTools(
           }
         }
 
-        // No fix or nothing was fixed — run read-only validation
+        // No fix or nothing was fixed — run read-only validation. Prefer the
+        // local disk walk when we have a projectRoot (identical behavior to
+        // pre-5.5 callers); otherwise drive the reader-based path so remote
+        // providers stay supported.
         if (!result) {
-          result = await validateProject(projectRoot, { model: input.model, fix: false })
+          result = projectRoot
+            ? await validateProject(projectRoot, { model: input.model, fix: false })
+            : await validateProject(provider, { model: input.model, fix: false })
         }
 
         const nextSteps: string[] = []
