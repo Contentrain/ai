@@ -107,6 +107,10 @@
     "./providers/github": {
       "types": "./dist/providers/github/index.d.mts",
       "import": "./dist/providers/github/index.mjs"
+    },
+    "./providers/gitlab": {
+      "types": "./dist/providers/gitlab/index.d.mts",
+      "import": "./dist/providers/gitlab/index.mjs"
     }
   },
   "main": "./dist/index.mjs",
@@ -115,8 +119,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts src/providers/github/index.ts src/server/http/index.ts --format esm --dts --external typescript",
-    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts src/providers/github/index.ts src/server/http/index.ts --format esm --dts --external typescript --watch",
+    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts src/providers/github/index.ts src/providers/gitlab/index.ts src/server/http/index.ts --format esm --dts --external typescript",
+    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/util/serializer.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/templates/index.ts src/providers/github/index.ts src/providers/gitlab/index.ts src/server/http/index.ts --format esm --dts --external typescript --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
@@ -134,15 +138,20 @@
     "svelte": "^4.2.0"
   },
   "peerDependencies": {
+    "@gitbeaker/rest": ">=43.0.0",
     "@octokit/rest": ">=20.0.0"
   },
   "peerDependenciesMeta": {
+    "@gitbeaker/rest": {
+      "optional": true
+    },
     "@octokit/rest": {
       "optional": true
     }
   },
   "devDependencies": {
     "@astrojs/compiler": "^2.10.0",
+    "@gitbeaker/rest": "^43.8.0",
     "@octokit/rest": "^22.0.1",
     "@types/node": "^25.4.0",
     "@vue/compiler-sfc": "^3.5.30",

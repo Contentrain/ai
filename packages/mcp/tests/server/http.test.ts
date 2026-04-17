@@ -264,6 +264,122 @@ describe('startHttpMcpServer', () => {
     }
   })
 
+  it('commits content_save through a GitLabProvider-like remote provider', async () => {
+    // Seed the in-memory GitLab with config + model read responses.
+    const models: Record<string, unknown> = {
+      blog: {
+        id: 'blog',
+        name: 'Blog',
+        kind: 'collection',
+        domain: 'marketing',
+        i18n: true,
+        fields: { title: { type: 'string', required: true }, body: { type: 'text' } },
+      },
+    }
+    const config = {
+      version: 1,
+      stack: 'vue-nuxt',
+      workflow: 'review',
+      locales: { default: 'en', supported: ['en', 'tr'] },
+      domains: ['marketing'],
+      repository: { provider: 'gitlab', owner: 'acme', name: 'site', default_branch: 'contentrain' },
+    }
+    const filesOnHead: Record<string, string> = {
+      '.contentrain/config.json': JSON.stringify(config),
+      '.contentrain/models/blog.json': JSON.stringify(models['blog']),
+    }
+
+    // Capture the Commits.create payload for the content save.
+    let capturedCommitsCall: { projectId: string | number, branch: string, message: string, actions: unknown[], options: Record<string, unknown> } | undefined
+
+    const gitlabClient = {
+      RepositoryFiles: {
+        async show(_projectId: string | number, filePath: string, _ref: string) {
+          if (filesOnHead[filePath]) return { file_path: filePath }
+          const err = Object.assign(new Error('Not Found'), { cause: { response: { status: 404 } } })
+          throw err
+        },
+        async showRaw(_projectId: string | number, filePath: string, _ref: string) {
+          if (filesOnHead[filePath]) return filesOnHead[filePath]!
+          const err = Object.assign(new Error('Not Found'), { cause: { response: { status: 404 } } })
+          throw err
+        },
+      },
+      Repositories: {
+        async allRepositoryTrees(_projectId: string | number, opts: { path?: string }) {
+          // Minimal tree: `.contentrain/models` contains blog.json; everything else empty.
+          if (opts.path === '.contentrain/models') return [{ name: 'blog.json', type: 'blob' }]
+          return []
+        },
+      },
+      Projects: {
+        async show() { return { default_branch: 'contentrain' } },
+      },
+      Branches: {
+        async show() {
+          const err = Object.assign(new Error('Not Found'), { cause: { response: { status: 404 } } })
+          throw err
+        },
+      },
+      Commits: {
+        async create(projectId: string | number, branch: string, message: string, actions: unknown[], options: Record<string, unknown>) {
+          capturedCommitsCall = { projectId, branch, message, actions, options }
+          return {
+            id: 'gitlab-commit-sha',
+            message,
+            author_name: 'Contentrain',
+            author_email: 'mcp@contentrain.io',
+            created_at: '2026-04-17T12:00:00Z',
+          }
+        },
+      },
+    }
+
+    const { GitLabProvider } = await import('../../src/providers/gitlab/index.js')
+    const provider = new GitLabProvider(
+      gitlabClient as unknown as import('../../src/providers/gitlab/client.js').GitLabClient,
+      { projectId: 'acme/site' },
+    )
+
+    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
+    const handle = await startHttpMcpServerWith({ provider, port: 0 })
+    try {
+      const mcpClient = new Client({ name: 'test-http-client', version: '1.0.0' })
+      const transport = new StreamableHTTPClientTransport(new URL(handle.url))
+      await mcpClient.connect(transport)
+
+      try {
+        const result = await mcpClient.callTool({
+          name: 'contentrain_content_save',
+          arguments: {
+            model: 'blog',
+            entries: [{ id: 'abc123def456', locale: 'en', data: { title: 'Hello', body: 'World' } }],
+          },
+        })
+        const parsed = parseResult(result)
+        expect(parsed['status']).toBe('committed')
+        const git = parsed['git'] as Record<string, unknown>
+        expect(git['action']).toBe('pending-review')
+        expect(git['commit']).toBe('gitlab-commit-sha')
+        expect((git['branch'] as string).startsWith('cr/content/blog')).toBe(true)
+
+        // One Commits.create call with content + meta + context.json actions.
+        expect(capturedCommitsCall).toBeDefined()
+        const actions = capturedCommitsCall!.actions as Array<{ filePath: string, action: string }>
+        const paths = actions.map(a => a.filePath)
+        expect(paths).toContain('.contentrain/content/marketing/blog/en.json')
+        expect(paths).toContain('.contentrain/meta/blog/en.json')
+        expect(paths).toContain('.contentrain/context.json')
+        // startBranch is used because the feature branch does not exist yet.
+        expect(capturedCommitsCall!.options.startBranch).toBe('contentrain')
+      } finally {
+        await mcpClient.close()
+      }
+    } finally {
+      await handle.close()
+    }
+  })
+
   it('returns capability error for write tools when projectRoot is absent', async () => {
     const readOnlyProvider = {
       capabilities: {
