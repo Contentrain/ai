@@ -341,24 +341,31 @@ const client = await clientModule.init()
 const hero = client.singleton('hero').get()
 ```
 
-## 🛠 CLI
+## 🛠 Generation Commands
 
-Generate once:
+**Via the `contentrain` CLI (recommended for most users):**
+
+```bash
+contentrain generate                # Generate once
+contentrain generate --watch        # Regenerate on model/content changes
+contentrain generate --json         # Machine-readable JSON for CI
+```
+
+**Via `contentrain-query` (programmatic / build tool flows):**
 
 ```bash
 npx contentrain-query generate
-```
-
-Generate in watch mode:
-
-```bash
 npx contentrain-query generate --watch
+npx contentrain-query generate --root /path/to/project
 ```
 
-Use a different project root:
+Or from TypeScript:
 
-```bash
-npx contentrain-query generate --root /path/to/project
+```ts
+import { generate } from '@contentrain/query/generate'
+
+const result = await generate({ projectRoot: process.cwd() })
+console.log(result.generatedFiles.length)
 ```
 
 ## 📤 Package Exports
