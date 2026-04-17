@@ -67,7 +67,7 @@ interface ContentrainConfig {
   stack: StackType         // Framework/stack identifier
   workflow: WorkflowMode   // Content workflow mode
   repository?: {           // Git repository info (optional)
-    provider: 'github'
+    provider: 'github' | 'gitlab'  // Git host (Bitbucket coming)
     owner: string
     name: string
     default_branch: string

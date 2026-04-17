@@ -1,6 +1,6 @@
 ---
 title: MCP Tools
-description: Complete reference for @contentrain/mcp — the local-first MCP server powering AI content governance with 15 deterministic tools
+description: Complete reference for @contentrain/mcp — the provider-agnostic MCP engine powering AI content governance with 16 deterministic tools over stdio or HTTP
 order: 1
 slug: mcp
 ---
@@ -124,21 +124,56 @@ Always call write tools with `dry_run: true` first. This is not optional — it 
 
 ### 3. Git-Native Workflow
 
-All write operations create or update `contentrain/*` branches:
+All write operations create or update `cr/*` branches:
 
-- Content changes go to isolated branches
+- Content changes go to isolated branches (`cr/{scope}/{target}[/{locale}]/{timestamp}-{suffix}`)
 - Humans review via `contentrain diff` or the serve UI
 - Approved changes merge into the `contentrain` branch, baseBranch is advanced via update-ref
 - Branch health is tracked and surfaced via `contentrain_status`
+- Legacy `contentrain/*` branches are auto-migrated on first init
 
-### 4. Local-First, No API Dependencies
+### 4. Local-First by Default, Remote Providers Opt-In
 
-MCP operates entirely on the local filesystem. There is no GitHub API, no cloud service, no external dependency. This means:
+The default shape — stdio transport + `LocalProvider` — operates entirely on the local filesystem. No GitHub API, no cloud service, no external dependency.
 
-- Works offline
-- Works with any git provider
-- No API keys or authentication needed
-- Full data sovereignty
+Remote providers (`GitHubProvider` via `@octokit/rest`, `GitLabProvider` via `@gitbeaker/rest`) are **optional peer dependencies**. They are installed only when Studio, CI, or a remote agent needs to drive MCP over an HTTP transport against a hosted git repo. A session that uses `LocalProvider` never loads these SDKs.
+
+That means:
+
+- Default install works offline and needs no API keys
+- Optional remote backends ship on the same tool contract — see [Providers and transports](/guides/providers) for the full capability matrix
+- Normalize, scan, and apply always need a `LocalProvider` — they return a `capability_required` error on remote providers
+
+### 5. Capability Gates
+
+Every tool declares the capabilities it needs. Tools that require `astScan`, `sourceRead`, `sourceWrite`, or `localWorktree` reject on providers that do not expose them with a uniform error:
+
+```json
+{
+  "error": "contentrain_scan requires local filesystem access.",
+  "capability_required": "astScan",
+  "hint": "This tool is unavailable when MCP is driven by a remote provider. Use a LocalProvider or the stdio transport."
+}
+```
+
+Agent drivers treat `capability_required` as a retry signal. See [Providers & Transports](/guides/providers) for the full capability matrix.
+
+## Transports
+
+- **stdio** — `contentrain serve --stdio` or `npx contentrain-mcp`. IDE agents (Claude Code, Cursor, Windsurf) connect over stdin/stdout.
+- **HTTP** — `contentrain serve --mcpHttp --authToken $TOKEN` or the programmatic `startHttpMcpServer({...})` / `startHttpMcpServerWith({ provider })` exports. Streamable HTTP at `POST /mcp` with optional Bearer auth. See the [HTTP Transport guide](/guides/http-transport).
+
+Both transports serve the same 16 tools and the same JSON response shapes.
+
+## Providers
+
+`@contentrain/mcp` ships three `RepoProvider` implementations behind a single contract:
+
+- **`LocalProvider`** — simple-git + temporary worktree on your disk
+- **`GitHubProvider`** — Octokit over the Git Data + Repos APIs (no clone)
+- **`GitLabProvider`** — gitbeaker over the GitLab REST API (no clone; supports self-hosted)
+
+Bitbucket is on the roadmap. See [Providers & Transports](/guides/providers) for the capability matrix and [RepoProvider Reference](/reference/providers) for the interface definitions.
 
 ## Studio Bridge
 

@@ -150,9 +150,9 @@ So the chat surface is an operations UI, not a generic assistant shell.
 
 ## Content Engine
 
-The content engine is the execution core behind Studio.
+The content engine is the execution core behind Studio. It is a [`@contentrain/mcp`](/packages/mcp) server driven over HTTP (`POST /mcp`) with a `GitHubProvider` or `GitLabProvider` pointed at the team's content repository. Studio never talks to Git directly — every operation flows through MCP's `RepoProvider` contract and lands as an atomic commit on a `cr/*` feature branch.
 
-It is responsible for:
+The engine is responsible for:
 
 - reading model definitions
 - loading current content
@@ -173,7 +173,9 @@ Supported operations include:
 - project init
 - branch merge / reject
 
-Neither the UI nor the AI writes directly to Git. The content engine does.
+Studio uses the same tool contract the stdio-driven IDE agents use. A new git host support added to MCP (today: Local / GitHub / GitLab; Bitbucket coming) becomes a Studio connector automatically.
+
+See [Providers & Transports](/guides/providers) for the capability matrix and [HTTP Transport](/guides/http-transport) for the deployment pattern.
 
 ## Review, Branches, and Diffs
 

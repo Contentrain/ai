@@ -1,6 +1,6 @@
 import type { ApplyPlanInput, Commit, FileChange } from '../../core/contracts/index.js'
+import { isNotFoundError, resolveRepoPath } from '../shared/index.js'
 import type { GitHubClient } from './client.js'
-import { resolveRepoPath } from './paths.js'
 import type { RepoRef } from './types.js'
 
 interface TreeEntry {
@@ -127,7 +127,7 @@ async function resolveBaseSha(
     })
     return { baseSha: ref.data.object.sha, branchExists: true }
   } catch (error) {
-    if (!isNotFound(error)) throw error
+    if (!isNotFoundError(error)) throw error
   }
 
   const baseRefName = base ?? (await client.rest.repos.get({
@@ -141,8 +141,4 @@ async function resolveBaseSha(
     ref: `heads/${baseRefName}`,
   })
   return { baseSha: baseRef.data.object.sha, branchExists: false }
-}
-
-function isNotFound(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && (error as { status?: number }).status === 404
 }

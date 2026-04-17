@@ -134,7 +134,7 @@ Do NOT proceed to apply unless the user approves (either via UI or explicit conf
 
 4. **Detect the user's decision.** After directing the user to the UI, check the plan file to determine the outcome:
    - **Plan file exists** (`status: "pending"`) → user has not decided yet — wait
-   - **Plan file deleted + new `contentrain/normalize/extract/*` branch exists** → user approved, extraction applied
+   - **Plan file deleted + new `cr/normalize/extract/*` branch exists** → user approved, extraction applied
    - **Plan file deleted + no new branch** → user rejected the plan
 
    If rejected, ask the user what to change and iterate from Step 4 (re-evaluate candidates).
@@ -161,7 +161,7 @@ After user approval (via UI or chat), call `contentrain_apply(mode: "extract", d
 
 Note: `dry_run` defaults to `true`, so you MUST explicitly set `dry_run: false` to execute.
 
-This creates model definitions and content files in `.contentrain/` on a `contentrain/normalize/extract/{timestamp}` branch. Source files are NOT modified.
+This creates model definitions and content files in `.contentrain/` on a `cr/normalize/extract/{timestamp}-{suffix}` branch. Source files are NOT modified.
 
 If approved via UI, the UI calls this automatically — no additional agent action needed.
 
@@ -230,7 +230,7 @@ After user confirmation, call `contentrain_apply(mode: "reuse", scope: { model: 
 
 Note: `dry_run` defaults to `true`, so you MUST explicitly set `dry_run: false` to execute.
 
-This patches source files and creates a `contentrain/normalize/reuse/{model}/{timestamp}` branch.
+This patches source files and creates a `cr/normalize/reuse/{model}/{timestamp}-{suffix}` branch.
 
 ### Step 5. Validate and Submit
 

@@ -27,6 +27,30 @@ Phase 1 alone is valuable: content becomes manageable in Studio, translatable, a
 - MUST NOT patch `.contentrain/` files via reuse (content files are read-only for reuse)
 - MUST NOT exceed 100 patches per `contentrain_apply` call
 
+## Transport Requirements
+
+Normalize (`contentrain_scan` and `contentrain_apply`) requires **local
+disk access** — AST scanners walk the source tree and patch files in
+place. It runs only on a `LocalProvider` (stdio transport, or an HTTP
+transport configured with a `LocalProvider`).
+
+Remote providers (`GitHubProvider`, `GitLabProvider`, future
+`BitbucketProvider`) expose `astScan: false`, `sourceRead: false`, and
+`sourceWrite: false`. Calling these tools over a remote provider
+returns a uniform capability error:
+
+```json
+{
+  "error": "contentrain_scan requires local filesystem access.",
+  "capability_required": "astScan",
+  "hint": "This tool is unavailable when MCP is driven by a remote provider. Use a LocalProvider or the stdio transport."
+}
+```
+
+If the agent is driving a remote-only MCP session, normalize must run
+in a separate local-checkout session before the extracted content
+branch is pushed.
+
 ---
 
 ## Two-Phase Architecture

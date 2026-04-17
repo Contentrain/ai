@@ -22,7 +22,7 @@ Each phase produces a separate branch for independent review. This separation en
 | Purpose | Pull content from source to `.contentrain/` | Patch source files with content references |
 | Scope | Full project scan | Per model or per domain |
 | Source files modified | No | Yes |
-| Branch pattern | `contentrain/normalize/extract/{domain}/{timestamp}` | `contentrain/normalize/reuse/{model}/{locale}/{timestamp}` |
+| Branch pattern | `cr/normalize/extract/{domain}/{timestamp}-{suffix}` | `cr/normalize/reuse/{model}/{locale}/{timestamp}-{suffix}` |
 | Prerequisite | Initialized `.contentrain/` | Completed extraction (content exists in `.contentrain/`) |
 | Workflow mode | Always `review` | Always `review` |
 | Standalone value | Yes -- content is manageable in Studio immediately | Depends on Phase 1 |

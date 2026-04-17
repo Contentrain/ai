@@ -9,6 +9,12 @@ slug: normalize
 
 The normalize flow is Contentrain's **primary value proposition** — the fastest path from "500 hardcoded strings scattered across my codebase" to "structured, translatable, manageable content." It runs in three phases: **Extract**, **Reuse**, and **Translate**.
 
+::: warning LocalProvider required
+Normalize (`contentrain_scan` and `contentrain_apply`) requires local disk access — AST scanners walk the source tree and patch files in place. It runs only on a `LocalProvider` (stdio or HTTP+LocalProvider).
+
+Remote providers (`GitHubProvider`, `GitLabProvider`) reject these calls with `capability_required: astScan / sourceRead / sourceWrite`. Run normalize in a local checkout, then push the extracted content branch. See [Providers & Transports](/guides/providers) for the capability matrix.
+:::
+
 ## The Problem
 
 A typical SaaS landing page has 40-60 components with 300-800 hardcoded strings. Nobody notices until someone asks for a second language or a copy change across 12 pages.

@@ -6,7 +6,7 @@ import consola from 'consola'
 export default defineCommand({
   meta: {
     name: 'serve',
-    description: 'Start local content viewer or MCP stdio server',
+    description: 'Start the local content viewer or the MCP server (stdio for IDE agents, --mcpHttp for Studio / CI / remote drivers)',
   },
   args: {
     root: { type: 'string', description: 'Project root path (env: CONTENTRAIN_PROJECT_ROOT)', required: false },

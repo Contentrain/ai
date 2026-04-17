@@ -147,7 +147,13 @@ export function registerWorkflowTools(
     },
     TOOL_ANNOTATIONS['contentrain_submit']!,
     async (input) => {
-      if (!projectRoot) return capabilityError('contentrain_submit', 'localWorktree')
+      // Submit pushes a branch to origin via simple-git — needs both a
+      // local worktree (to enumerate cr/* branches) and pushRemote
+      // (semantic capability name, even though the underlying code is
+      // simple-git rather than a provider call).
+      if (!provider.capabilities.localWorktree || !provider.capabilities.pushRemote || !projectRoot) {
+        return capabilityError('contentrain_submit', 'localWorktree')
+      }
       const config = await readConfig(projectRoot)
       if (!config) {
         return {
@@ -292,7 +298,12 @@ export function registerWorkflowTools(
     },
     TOOL_ANNOTATIONS['contentrain_merge']!,
     async (input) => {
-      if (!projectRoot) return capabilityError('contentrain_merge', 'localWorktree')
+      // Merge runs a local git transaction (worktree + update-ref +
+      // selective sync). Remote providers do not expose this today; use
+      // provider.mergeBranch directly from a Studio-style driver instead.
+      if (!provider.capabilities.localWorktree || !projectRoot) {
+        return capabilityError('contentrain_merge', 'localWorktree')
+      }
       const config = await readConfig(projectRoot)
       if (!config) {
         return {

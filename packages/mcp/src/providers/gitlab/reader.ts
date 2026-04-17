@@ -1,6 +1,6 @@
 import type { RepoReader } from '../../core/contracts/index.js'
+import { isNotFoundError, resolveRepoPath } from '../shared/index.js'
 import type { GitLabClient } from './client.js'
-import { resolveRepoPath } from './paths.js'
 import type { ProjectRef } from './types.js'
 
 /**
@@ -52,7 +52,7 @@ export class GitLabReader implements RepoReader {
       )
       return Array.isArray(entries) ? entries.map(e => e.name) : []
     } catch (error) {
-      if (isNotFound(error)) return []
+      if (isNotFoundError(error)) return []
       throw error
     }
   }
@@ -70,7 +70,7 @@ export class GitLabReader implements RepoReader {
       )
       return true
     } catch (error) {
-      if (!isNotFound(error)) throw error
+      if (!isNotFoundError(error)) throw error
     }
 
     // 2. Fall back to a tree listing — directories and empty dirs show
@@ -82,7 +82,7 @@ export class GitLabReader implements RepoReader {
       )
       return Array.isArray(entries) && entries.length > 0
     } catch (error) {
-      if (isNotFound(error)) return false
+      if (isNotFoundError(error)) return false
       throw error
     }
   }
@@ -93,18 +93,3 @@ export class GitLabReader implements RepoReader {
   }
 }
 
-/**
- * Gitbeaker surfaces HTTP errors as a plain `Error` whose `.cause`
- * includes `response.status`. 404 semantics are important enough to
- * justify this dedicated check — we collapse them into "missing"
- * instead of bubbling up.
- */
-function isNotFound(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) return false
-  const err = error as { cause?: { response?: { status?: number } }, description?: unknown }
-  const status = err.cause?.response?.status
-  if (status === 404) return true
-  // Fallback — some gitbeaker versions expose `description` with "Not Found".
-  const description = typeof err.description === 'string' ? err.description : ''
-  return /not found/i.test(description)
-}

@@ -380,7 +380,242 @@ describe('startHttpMcpServer', () => {
     }
   })
 
-  it('returns capability error for write tools when projectRoot is absent', async () => {
+  it('commits content_delete through a GitHubProvider-like remote provider', async () => {
+    const { makeGitHubMock, makeConfig } = await import('./fixtures/github-mock.js')
+    const { GitHubProvider } = await import('../../src/providers/github/index.js')
+    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
+
+    const model = {
+      id: 'blog',
+      name: 'Blog',
+      kind: 'collection',
+      domain: 'marketing',
+      i18n: true,
+      fields: { title: { type: 'string', required: true } },
+    }
+    const config = makeConfig()
+    const filesOnHead: Record<string, string> = {
+      '.contentrain/config.json': JSON.stringify(config),
+      '.contentrain/models/blog.json': JSON.stringify(model),
+      '.contentrain/content/marketing/blog/en.json': JSON.stringify({
+        abc123def456: { title: 'Hello' },
+      }),
+      '.contentrain/meta/blog/en.json': JSON.stringify({
+        abc123def456: { status: 'draft' },
+      }),
+    }
+    const fixture = makeGitHubMock(filesOnHead)
+
+    const provider = new GitHubProvider(
+      fixture.client as unknown as import('../../src/providers/github/client.js').GitHubClient,
+      { owner: 'acme', name: 'site' },
+    )
+    const handle = await startHttpMcpServerWith({ provider, port: 0 })
+    try {
+      const mcpClient = new Client({ name: 'test-http-client', version: '1.0.0' })
+      const transport = new StreamableHTTPClientTransport(new URL(handle.url))
+      await mcpClient.connect(transport)
+
+      try {
+        const result = await mcpClient.callTool({
+          name: 'contentrain_content_delete',
+          arguments: {
+            model: 'blog',
+            id: 'abc123def456',
+            locale: 'en',
+            confirm: true,
+          },
+        })
+        const parsed = parseResult(result)
+        expect(parsed['status']).toBe('committed')
+        const git = parsed['git'] as Record<string, unknown>
+        expect(git['action']).toBe('pending-review')
+        expect((git['branch'] as string).startsWith('cr/content/blog')).toBe(true)
+
+        const tree = fixture.capturedTree()!.tree
+        const paths = tree.map(t => t.path)
+        expect(paths).toContain('.contentrain/context.json')
+        // The content entry is removed from the object-map; the file is
+        // rewritten (not deleted) because other entries may still live
+        // there in real flows. The meta file loses the corresponding
+        // entry too.
+        const contentEntry = tree.find(t => t.path === '.contentrain/content/marketing/blog/en.json')
+        expect(contentEntry).toBeDefined()
+        expect(contentEntry!.sha).not.toBeNull()
+      } finally {
+        await mcpClient.close()
+      }
+    } finally {
+      await handle.close()
+    }
+  })
+
+  it('commits model_save through a GitHubProvider-like remote provider', async () => {
+    const { makeGitHubMock, makeConfig } = await import('./fixtures/github-mock.js')
+    const { GitHubProvider } = await import('../../src/providers/github/index.js')
+    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
+
+    const filesOnHead: Record<string, string> = {
+      '.contentrain/config.json': JSON.stringify(makeConfig()),
+    }
+    const fixture = makeGitHubMock(filesOnHead)
+
+    const provider = new GitHubProvider(
+      fixture.client as unknown as import('../../src/providers/github/client.js').GitHubClient,
+      { owner: 'acme', name: 'site' },
+    )
+    const handle = await startHttpMcpServerWith({ provider, port: 0 })
+    try {
+      const mcpClient = new Client({ name: 'test-http-client', version: '1.0.0' })
+      const transport = new StreamableHTTPClientTransport(new URL(handle.url))
+      await mcpClient.connect(transport)
+
+      try {
+        const result = await mcpClient.callTool({
+          name: 'contentrain_model_save',
+          arguments: {
+            id: 'hero',
+            name: 'Hero',
+            kind: 'singleton',
+            domain: 'marketing',
+            i18n: true,
+            fields: { title: { type: 'string', required: true } },
+          },
+        })
+        const parsed = parseResult(result)
+        expect(parsed['status']).toBe('committed')
+        expect(parsed['model']).toBe('hero')
+        const git = parsed['git'] as Record<string, unknown>
+        expect(git['action']).toBe('pending-review')
+        expect((git['branch'] as string).startsWith('cr/model/hero')).toBe(true)
+
+        const tree = fixture.capturedTree()!.tree
+        const paths = tree.map(t => t.path)
+        expect(paths).toContain('.contentrain/models/hero.json')
+        expect(paths).toContain('.contentrain/context.json')
+      } finally {
+        await mcpClient.close()
+      }
+    } finally {
+      await handle.close()
+    }
+  })
+
+  it('commits model_delete through a GitHubProvider-like remote provider', async () => {
+    const { makeGitHubMock, makeConfig } = await import('./fixtures/github-mock.js')
+    const { GitHubProvider } = await import('../../src/providers/github/index.js')
+    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
+
+    const model = {
+      id: 'blog',
+      name: 'Blog',
+      kind: 'collection',
+      domain: 'marketing',
+      i18n: true,
+      fields: { title: { type: 'string', required: true } },
+    }
+    const filesOnHead: Record<string, string> = {
+      '.contentrain/config.json': JSON.stringify(makeConfig()),
+      '.contentrain/models/blog.json': JSON.stringify(model),
+      '.contentrain/content/marketing/blog/en.json': '{}',
+    }
+    const fixture = makeGitHubMock(filesOnHead)
+
+    const provider = new GitHubProvider(
+      fixture.client as unknown as import('../../src/providers/github/client.js').GitHubClient,
+      { owner: 'acme', name: 'site' },
+    )
+    const handle = await startHttpMcpServerWith({ provider, port: 0 })
+    try {
+      const mcpClient = new Client({ name: 'test-http-client', version: '1.0.0' })
+      const transport = new StreamableHTTPClientTransport(new URL(handle.url))
+      await mcpClient.connect(transport)
+
+      try {
+        const result = await mcpClient.callTool({
+          name: 'contentrain_model_delete',
+          arguments: { model: 'blog', confirm: true },
+        })
+        const parsed = parseResult(result)
+        expect(parsed['status']).toBe('committed')
+        expect(parsed['deleted']).toBe(true)
+        const git = parsed['git'] as Record<string, unknown>
+        expect(git['action']).toBe('pending-review')
+        expect((git['branch'] as string).startsWith('cr/model/blog')).toBe(true)
+
+        const tree = fixture.capturedTree()!.tree
+        const modelEntry = tree.find(t => t.path === '.contentrain/models/blog.json')
+        // Deletion is expressed as sha: null in the GitHub Git Data API.
+        expect(modelEntry).toBeDefined()
+        expect(modelEntry!.sha).toBeNull()
+      } finally {
+        await mcpClient.close()
+      }
+    } finally {
+      await handle.close()
+    }
+  })
+
+  it('runs contentrain_validate read-only over a GitHubProvider-like remote provider', async () => {
+    const { makeGitHubMock, makeConfig } = await import('./fixtures/github-mock.js')
+    const { GitHubProvider } = await import('../../src/providers/github/index.js')
+    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
+
+    const model = {
+      id: 'blog',
+      name: 'Blog',
+      kind: 'collection',
+      domain: 'marketing',
+      i18n: true,
+      fields: { title: { type: 'string', required: true } },
+    }
+    const filesOnHead: Record<string, string> = {
+      '.contentrain/config.json': JSON.stringify(makeConfig()),
+      '.contentrain/models/blog.json': JSON.stringify(model),
+      '.contentrain/content/marketing/blog/en.json': JSON.stringify({
+        abc123def456: { title: 'Hello' },
+      }),
+      '.contentrain/content/marketing/blog/tr.json': JSON.stringify({
+        abc123def456: { title: 'Merhaba' },
+      }),
+      '.contentrain/meta/blog/en.json': JSON.stringify({
+        abc123def456: { status: 'draft' },
+      }),
+      '.contentrain/meta/blog/tr.json': JSON.stringify({
+        abc123def456: { status: 'draft' },
+      }),
+    }
+    const fixture = makeGitHubMock(filesOnHead)
+
+    const provider = new GitHubProvider(
+      fixture.client as unknown as import('../../src/providers/github/client.js').GitHubClient,
+      { owner: 'acme', name: 'site' },
+    )
+    const handle = await startHttpMcpServerWith({ provider, port: 0 })
+    try {
+      const mcpClient = new Client({ name: 'test-http-client', version: '1.0.0' })
+      const transport = new StreamableHTTPClientTransport(new URL(handle.url))
+      await mcpClient.connect(transport)
+
+      try {
+        const result = await mcpClient.callTool({
+          name: 'contentrain_validate',
+          arguments: {},
+        })
+        const parsed = parseResult(result)
+        expect(parsed['status']).toBe('validated')
+        expect(parsed).toHaveProperty('summary')
+        // Read-only: no commit was produced.
+        expect(fixture.capturedCommit()).toBeUndefined()
+      } finally {
+        await mcpClient.close()
+      }
+    } finally {
+      await handle.close()
+    }
+  })
+
+  it('returns capability error for local-only tools on a remote provider (submit requires localWorktree)', async () => {
     const readOnlyProvider = {
       capabilities: {
         localWorktree: false,
@@ -404,8 +639,11 @@ describe('startHttpMcpServer', () => {
       await client.connect(transport)
 
       try {
+        // contentrain_submit ships feature branches to remote via simple-git
+        // — it truly needs a local worktree and rejects uniformly when the
+        // session's provider can't offer one.
         const result = await client.callTool({
-          name: 'contentrain_status',
+          name: 'contentrain_submit',
           arguments: {},
         })
         const parsed = parseResult(result)
@@ -413,6 +651,44 @@ describe('startHttpMcpServer', () => {
         expect(result.isError).toBe(true)
       } finally {
         await client.close()
+      }
+    } finally {
+      await handle.close()
+    }
+  })
+
+  it('status works read-only over a remote provider (no localWorktree rejection)', async () => {
+    const { makeGitHubMock, makeConfig } = await import('./fixtures/github-mock.js')
+    const { GitHubProvider } = await import('../../src/providers/github/index.js')
+    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
+
+    const filesOnHead: Record<string, string> = {
+      '.contentrain/config.json': JSON.stringify(makeConfig()),
+    }
+    const fixture = makeGitHubMock(filesOnHead)
+    const provider = new GitHubProvider(
+      fixture.client as unknown as import('../../src/providers/github/client.js').GitHubClient,
+      { owner: 'acme', name: 'site' },
+    )
+    const handle = await startHttpMcpServerWith({ provider, port: 0 })
+    try {
+      const mcpClient = new Client({ name: 'test-http-client', version: '1.0.0' })
+      const transport = new StreamableHTTPClientTransport(new URL(handle.url))
+      await mcpClient.connect(transport)
+
+      try {
+        const result = await mcpClient.callTool({
+          name: 'contentrain_status',
+          arguments: {},
+        })
+        const parsed = parseResult(result)
+        expect(parsed['initialized']).toBe(true)
+        // No capability_required key — status worked through the reader.
+        expect(parsed).not.toHaveProperty('capability_required')
+        // Branch health is local-only and is skipped for remote providers.
+        expect(parsed).not.toHaveProperty('branches')
+      } finally {
+        await mcpClient.close()
       }
     } finally {
       await handle.close()
