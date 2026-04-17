@@ -1,14 +1,20 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { FieldDef } from '@contentrain/types'
 import { z } from 'zod'
+import type { ToolProvider } from '../server.js'
 import { readConfig } from '../core/config.js'
 import { buildGraph } from '../core/graph-builder.js'
 import { scanCandidates, scanSummary } from '../core/scanner.js'
 import { applyExtract, applyReuse } from '../core/apply-manager.js'
 import { fieldDefZodSchema } from '../core/model-manager.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
+import { capabilityError } from './guards.js'
 
-export function registerNormalizeTools(server: McpServer, projectRoot: string): void {
+export function registerNormalizeTools(
+  server: McpServer,
+  _provider: ToolProvider,
+  projectRoot: string | undefined,
+): void {
   // ─── contentrain_scan ───
   server.tool(
     'contentrain_scan',
@@ -25,6 +31,7 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
     },
     TOOL_ANNOTATIONS['contentrain_scan']!,
     async (input) => {
+      if (!projectRoot) return capabilityError('contentrain_scan', 'astScan')
       const config = await readConfig(projectRoot)
       if (!config) {
         return {
@@ -171,6 +178,10 @@ export function registerNormalizeTools(server: McpServer, projectRoot: string): 
     },
     TOOL_ANNOTATIONS['contentrain_apply']!,
     async (input) => {
+      if (!projectRoot) {
+        const capability = input.mode === 'reuse' ? 'sourceWrite' : 'sourceRead'
+        return capabilityError('contentrain_apply', capability)
+      }
       const config = await readConfig(projectRoot)
       if (!config) {
         return {

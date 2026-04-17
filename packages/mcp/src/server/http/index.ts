@@ -1,2 +1,2 @@
-export type { HttpMcpServerHandle, HttpMcpServerOptions } from './server.js'
-export { startHttpMcpServer } from './server.js'
+export type { HttpMcpServerHandle, HttpMcpServerOptions, HttpMcpServerProviderOptions } from './server.js'
+export { startHttpMcpServer, startHttpMcpServerWith } from './server.js'

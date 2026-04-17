@@ -99,4 +99,90 @@ describe('startHttpMcpServer', () => {
       await handle.close()
     }
   })
+
+  // ─── Phase 5.3: provider threading ───
+  // createServer now accepts `{ provider, projectRoot }` so HTTP handlers can
+  // route to a non-local provider. Today the write path still needs
+  // projectRoot; read-only static tools (describe_format) work regardless of
+  // which provider is used. Phase 5.4 opens the write path to remote providers.
+
+  it('serves describe_format when only a provider is configured (no projectRoot)', async () => {
+    // Synthetic read-only provider — no projectRoot, implements the
+    // minimum ToolProvider surface (RepoReader + capabilities). describe_format
+    // must still succeed because it does not touch disk.
+    const readOnlyProvider = {
+      capabilities: {
+        localWorktree: false,
+        sourceRead: false,
+        sourceWrite: false,
+        pushRemote: false,
+        branchProtection: false,
+        pullRequestFallback: false,
+        astScan: false,
+      },
+      async readFile() { throw new Error('no reads expected') },
+      async listDirectory() { return [] },
+      async fileExists() { return false },
+    }
+
+    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
+    const handle = await startHttpMcpServerWith({ provider: readOnlyProvider, port: 0 })
+    try {
+      const client = new Client({ name: 'test-http-client', version: '1.0.0' })
+      const transport = new StreamableHTTPClientTransport(new URL(handle.url))
+      await client.connect(transport)
+
+      try {
+        const result = await client.callTool({
+          name: 'contentrain_describe_format',
+          arguments: {},
+        })
+        const parsed = parseResult(result)
+        expect(parsed['overview']).toBeDefined()
+      } finally {
+        await client.close()
+      }
+    } finally {
+      await handle.close()
+    }
+  })
+
+  it('returns capability error for write tools when projectRoot is absent', async () => {
+    const readOnlyProvider = {
+      capabilities: {
+        localWorktree: false,
+        sourceRead: false,
+        sourceWrite: false,
+        pushRemote: false,
+        branchProtection: false,
+        pullRequestFallback: false,
+        astScan: false,
+      },
+      async readFile() { throw new Error('no reads expected') },
+      async listDirectory() { return [] },
+      async fileExists() { return false },
+    }
+
+    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
+    const handle = await startHttpMcpServerWith({ provider: readOnlyProvider, port: 0 })
+    try {
+      const client = new Client({ name: 'test-http-client', version: '1.0.0' })
+      const transport = new StreamableHTTPClientTransport(new URL(handle.url))
+      await client.connect(transport)
+
+      try {
+        const result = await client.callTool({
+          name: 'contentrain_status',
+          arguments: {},
+        })
+        const parsed = parseResult(result)
+        expect(parsed['capability_required']).toBe('localWorktree')
+        expect(result.isError).toBe(true)
+      } finally {
+        await client.close()
+      }
+    } finally {
+      await handle.close()
+    }
+  })
 })

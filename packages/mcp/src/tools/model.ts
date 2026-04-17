@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ModelDefinition } from '@contentrain/types'
 import { z } from 'zod'
+import type { ToolProvider } from '../server.js'
 import { readConfig } from '../core/config.js'
 
 import { resolveContentDir, resolveJsonFilePath, resolveMdFilePath } from '../core/content-manager.js'
@@ -10,11 +11,16 @@ import { LocalProvider } from '../providers/local/index.js'
 import { buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
+import { capabilityError } from './guards.js'
 
 // Shared field definition schema — single source of truth with normalize extract
 const fieldDefSchema = fieldDefZodSchema
 
-export function registerModelTools(server: McpServer, projectRoot: string): void {
+export function registerModelTools(
+  server: McpServer,
+  _provider: ToolProvider,
+  projectRoot: string | undefined,
+): void {
   // ─── contentrain_model_save ───
   server.tool(
     'contentrain_model_save',
@@ -32,6 +38,7 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
     },
     TOOL_ANNOTATIONS['contentrain_model_save']!,
     async (input) => {
+      if (!projectRoot) return capabilityError('contentrain_model_save', 'localWorktree')
       const config = await readConfig(projectRoot)
       if (!config) {
         return {
@@ -155,6 +162,7 @@ export function registerModelTools(server: McpServer, projectRoot: string): void
     },
     TOOL_ANNOTATIONS['contentrain_model_delete']!,
     async ({ model: modelId }) => {
+      if (!projectRoot) return capabilityError('contentrain_model_delete', 'localWorktree')
       const config = await readConfig(projectRoot)
       if (!config) {
         return {

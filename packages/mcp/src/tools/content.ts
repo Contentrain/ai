@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
+import type { ToolProvider } from '../server.js'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { readModel } from '../core/model-manager.js'
 import { listContent } from '../core/content-manager.js'
@@ -9,8 +10,13 @@ import { buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { validateProject } from '../core/validator/index.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
+import { capabilityError } from './guards.js'
 
-export function registerContentTools(server: McpServer, projectRoot: string): void {
+export function registerContentTools(
+  server: McpServer,
+  _provider: ToolProvider,
+  projectRoot: string | undefined,
+): void {
   // ─── contentrain_content_save ───
   server.tool(
     'contentrain_content_save',
@@ -28,6 +34,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
     },
     TOOL_ANNOTATIONS['contentrain_content_save']!,
     async (input) => {
+      if (!projectRoot) return capabilityError('contentrain_content_save', 'localWorktree')
       const config = await readConfig(projectRoot)
       if (!config) {
         return {
@@ -201,6 +208,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
     },
     TOOL_ANNOTATIONS['contentrain_content_delete']!,
     async (input) => {
+      if (!projectRoot) return capabilityError('contentrain_content_delete', 'localWorktree')
       const config = await readConfig(projectRoot)
       if (!config) {
         return {
@@ -299,6 +307,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
     },
     TOOL_ANNOTATIONS['contentrain_content_list']!,
     async (input) => {
+      if (!projectRoot) return capabilityError('contentrain_content_list', 'localWorktree')
       const config = await readConfig(projectRoot)
       if (!config) {
         return {

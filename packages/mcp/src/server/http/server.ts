@@ -3,11 +3,22 @@ import { randomUUID } from 'node:crypto'
 import type { AddressInfo } from 'node:net'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
-import { createServer as createMcpServer } from '../../server.js'
+import { createServer as createMcpServer, type ToolProvider } from '../../server.js'
 
 export interface HttpMcpServerOptions {
   /** Project root the MCP server operates against (LocalProvider path). */
   projectRoot: string
+  /** Optional Bearer token — when set, requests must send `Authorization: Bearer <token>`. */
+  authToken?: string
+  /** Mount path for the MCP JSON-RPC endpoint. Defaults to `/mcp`. */
+  path?: string
+}
+
+export interface HttpMcpServerProviderOptions {
+  /** Pre-built content provider (GitHubProvider, a mock, etc.). */
+  provider: ToolProvider
+  /** Local project root when the provider is a LocalProvider; optional otherwise. */
+  projectRoot?: string
   /** Optional Bearer token — when set, requests must send `Authorization: Bearer <token>`. */
   authToken?: string
   /** Mount path for the MCP JSON-RPC endpoint. Defaults to `/mcp`. */
@@ -41,22 +52,58 @@ export interface HttpMcpServerHandle {
 export async function startHttpMcpServer(
   opts: HttpMcpServerOptions & { port: number, host?: string },
 ): Promise<HttpMcpServerHandle> {
-  const mcp = createMcpServer(opts.projectRoot)
+  return startHttpMcpServerInternal({
+    mcp: createMcpServer(opts.projectRoot),
+    port: opts.port,
+    host: opts.host,
+    authToken: opts.authToken,
+    path: opts.path,
+  })
+}
+
+/**
+ * Variant of {@link startHttpMcpServer} that accepts a pre-built provider
+ * (and an optional `projectRoot`). This is the phase-5.3 entry point that
+ * lets HTTP-hosted MCP route tool calls to a non-Local provider — e.g. a
+ * `GitHubProvider` shared across many projects. Read-only tools work out
+ * of the box; write-path tools return `capability_required: localWorktree`
+ * when no `projectRoot` is supplied.
+ */
+export async function startHttpMcpServerWith(
+  opts: HttpMcpServerProviderOptions & { port: number, host?: string },
+): Promise<HttpMcpServerHandle> {
+  return startHttpMcpServerInternal({
+    mcp: createMcpServer({ provider: opts.provider, projectRoot: opts.projectRoot }),
+    port: opts.port,
+    host: opts.host,
+    authToken: opts.authToken,
+    path: opts.path,
+  })
+}
+
+async function startHttpMcpServerInternal(input: {
+  mcp: McpServer
+  port: number
+  host?: string
+  authToken?: string
+  path?: string
+}): Promise<HttpMcpServerHandle> {
+  const { mcp } = input
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
   })
   await mcp.connect(transport)
 
-  const mountPath = opts.path ?? '/mcp'
-  const host = opts.host ?? '127.0.0.1'
+  const mountPath = input.path ?? '/mcp'
+  const host = input.host ?? '127.0.0.1'
 
   const server = http.createServer((req, res) => {
-    void handleRequest(req, res, { transport, mountPath, authToken: opts.authToken })
+    void handleRequest(req, res, { transport, mountPath, authToken: input.authToken })
   })
 
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject)
-    server.listen(opts.port, host, () => {
+    server.listen(input.port, host, () => {
       server.off('error', reject)
       resolve()
     })

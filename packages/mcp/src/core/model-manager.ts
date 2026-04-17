@@ -3,18 +3,45 @@ import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { z } from 'zod'
 import { contentrainDir, ensureDir, readDir, readJson, writeJson } from '../util/fs.js'
+import type { RepoReader } from './contracts/index.js'
 import { resolveContentDir, resolveLocaleStrategy } from './content-manager.js'
 
 export type { ModelSummary } from '@contentrain/types'
 
-export async function listModels(projectRoot: string): Promise<ModelSummary[]> {
-  const modelsDir = join(contentrainDir(projectRoot), 'models')
-  const files = await readDir(modelsDir)
-  const jsonFiles = files.filter(f => f.endsWith('.json'))
+const MODELS_DIR_PATH = '.contentrain/models'
 
-  const models = await Promise.all(
-    jsonFiles.map(file => readJson<ModelDefinition>(join(modelsDir, file))),
-  )
+async function tryReadJsonViaReader<T>(reader: RepoReader, path: string): Promise<T | null> {
+  try {
+    return JSON.parse(await reader.readFile(path)) as T
+  } catch {
+    return null
+  }
+}
+
+/**
+ * List every model defined under `.contentrain/models/*.json`.
+ *
+ * Accepts either a legacy `projectRoot` string (filesystem walk) or any
+ * `RepoReader` — HTTP-hosted callers pass their `GitHubProvider` so the
+ * same helper resolves model metadata over the Git Data API.
+ */
+export function listModels(projectRoot: string): Promise<ModelSummary[]>
+export function listModels(reader: RepoReader): Promise<ModelSummary[]>
+export async function listModels(input: string | RepoReader): Promise<ModelSummary[]> {
+  let files: string[]
+  let load: (file: string) => Promise<ModelDefinition | null>
+
+  if (typeof input === 'string') {
+    const modelsDir = join(contentrainDir(input), 'models')
+    files = await readDir(modelsDir)
+    load = file => readJson<ModelDefinition>(join(modelsDir, file))
+  } else {
+    files = await input.listDirectory(MODELS_DIR_PATH)
+    load = file => tryReadJsonViaReader<ModelDefinition>(input, `${MODELS_DIR_PATH}/${file}`)
+  }
+
+  const jsonFiles = files.filter(f => f.endsWith('.json'))
+  const models = await Promise.all(jsonFiles.map(load))
 
   return models
     .filter((m): m is ModelDefinition => m !== null && !!m.id)
@@ -28,9 +55,17 @@ export async function listModels(projectRoot: string): Promise<ModelSummary[]> {
     .toSorted((a, b) => a.id.localeCompare(b.id, 'en'))
 }
 
-export async function readModel(projectRoot: string, modelId: string): Promise<ModelDefinition | null> {
-  const filePath = join(contentrainDir(projectRoot), 'models', `${modelId}.json`)
-  return readJson<ModelDefinition>(filePath)
+/**
+ * Read a single model definition. Same dual signature as {@link listModels}.
+ */
+export function readModel(projectRoot: string, modelId: string): Promise<ModelDefinition | null>
+export function readModel(reader: RepoReader, modelId: string): Promise<ModelDefinition | null>
+export async function readModel(input: string | RepoReader, modelId: string): Promise<ModelDefinition | null> {
+  if (typeof input === 'string') {
+    const filePath = join(contentrainDir(input), 'models', `${modelId}.json`)
+    return readJson<ModelDefinition>(filePath)
+  }
+  return tryReadJsonViaReader<ModelDefinition>(input, `${MODELS_DIR_PATH}/${modelId}.json`)
 }
 
 async function countDocumentFileStrategy(
