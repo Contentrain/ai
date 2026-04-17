@@ -200,6 +200,10 @@ const agentPrompts = computed(() => {
           <Badge v-if="workflowMode" :variant="workflowMode === 'review' ? 'outline' : 'secondary'" class="gap-1.5">
             <GitBranch class="size-3" /> {{ workflowMode === 'review' ? 'Review workflow' : 'Auto-merge' }}
           </Badge>
+          <Badge v-if="project.capabilities" variant="outline" class="gap-1.5 font-mono text-[10px] uppercase tracking-wide">
+            <Activity class="size-3" />
+            {{ project.capabilities.provider.type }} · {{ project.capabilities.transport }}
+          </Badge>
           <Badge v-if="project.status.config?.locales" variant="secondary" class="gap-1.5">
             <Globe class="size-3" /> {{ project.status.config.locales.default }}
             <span v-if="project.status.config.locales.supported.length > 1" class="text-muted-foreground">

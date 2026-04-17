@@ -51,10 +51,24 @@ export function registerSetupTools(
       const supportedLocales = locales ?? ['en']
       const suggestedDomains = domains ?? suggestDomains(projectRoot)
 
-      // Ensure .git exists
+      // Ensure .git exists and has at least one commit.
+      //
+      // `createTransaction` forks a worktree off the project's current
+      // branch via `ensureContentBranch`, which calls `git branch
+      // contentrain <base>`. An empty repo (zero commits) has no base
+      // ref to fork from and the whole transaction fails. Parity with
+      // `contentrain init` CLI command: if we just ran `git init` — or
+      // the existing repo happens to be commit-free — seed an
+      // `--allow-empty` initial commit so the branch operation has a
+      // ref to anchor on.
       const hasGit = await pathExists(join(projectRoot, '.git'))
+      const git = simpleGit(projectRoot)
       if (!hasGit) {
-        await simpleGit(projectRoot).init()
+        await git.init()
+      }
+      const hasAnyCommit = await git.raw(['rev-list', '-n', '1', '--all']).then(out => out.trim().length > 0).catch(() => false)
+      if (!hasAnyCommit) {
+        await git.commit('initial commit', { '--allow-empty': null })
       }
 
       // Branch health gate
