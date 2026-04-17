@@ -180,6 +180,61 @@ over a remote provider returns a uniform capability error:
 Agents driving a remote transport should fall back to a local transport
 (or a local checkout) before invoking normalize.
 
+## 🌐 Remote Providers
+
+MCP supports three backends behind the same `RepoProvider` contract:
+
+- **LocalProvider** — simple-git + worktree. Every tool (normalize
+  included) works on it. Stdio transport defaults to this.
+- **GitHubProvider** — Octokit over the Git Data + Repos APIs. No
+  clone, no worktree. `@octokit/rest` ships as an optional peer
+  dependency.
+- **GitLabProvider** — gitbeaker over the GitLab REST API. No clone,
+  no worktree. `@gitbeaker/rest` ships as an optional peer
+  dependency. Supports gitlab.com and self-hosted CE / EE.
+
+Each remote provider implements the same surface: reader (readFile /
+listDirectory / fileExists), writer (applyPlan — one atomic commit),
+branch ops (list / create / delete / diff / merge / isMerged /
+getDefaultBranch). `mergeBranch` goes straight through on GitHub; on
+GitLab it opens an MR and immediately accepts it so the final
+`MergeResult` shape matches either way.
+
+### GitLab — installation & usage
+
+```bash
+pnpm add @gitbeaker/rest
+```
+
+```ts
+import { createGitLabProvider } from '@contentrain/mcp/providers/gitlab'
+import { createServer } from '@contentrain/mcp/server'
+
+const provider = await createGitLabProvider({
+  auth: { type: 'pat', token: process.env.GITLAB_TOKEN! },
+  project: {
+    projectId: 'acme/site',             // or numeric project ID
+    host: 'https://gitlab.company.com', // omit for gitlab.com
+  },
+})
+
+const server = createServer({ provider })
+// serve over stdio or the HTTP transport from @contentrain/mcp/server/http
+```
+
+Capabilities: `sourceRead`, `sourceWrite`, `astScan`, `localWorktree`
+are all `false`; `pushRemote`, `branchProtection`,
+`pullRequestFallback` are `true`. Normalize / scan / apply reject
+with a capability error on GitLabProvider — fall back to a local
+transport for those flows.
+
+### Bitbucket — coming soon
+
+Bitbucket Cloud + Data Center support is on the roadmap. Until the
+provider ships, use the `contentrain_describe_format` tool to drive
+Contentrain content operations manually from a Bitbucket checkout via
+the LocalProvider path.
+
 ## 📦 Core Exports
 
 The package also exposes low-level modules for embedding and advanced use:
@@ -198,6 +253,8 @@ The package also exposes low-level modules for embedding and advanced use:
 - `@contentrain/mcp/git/transaction`
 - `@contentrain/mcp/git/branch-lifecycle`
 - `@contentrain/mcp/templates`
+- `@contentrain/mcp/providers/github`
+- `@contentrain/mcp/providers/gitlab`
 
 These are intended for Contentrain tooling and advanced integrations, not for direct manual editing of `.contentrain/` files.
 
