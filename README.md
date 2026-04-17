@@ -146,6 +146,7 @@ Works with Nuxt, Next.js, Astro, SvelteKit, Vue, React, Node, Go, Python, Swift,
 - **Git-native** — every write goes through worktree isolation + review branches
 - **Normalize flow** — scan codebase for hardcoded strings → extract → create i18n-ready content → patch source files
 - **Local-first MCP** — 15 tools, stdio transport, works with Claude Code, Cursor, Windsurf, or any MCP client
+- **Provider-agnostic engine** — the same tool surface runs over a local worktree, GitHub, or GitLab (self-hosted included) with zero tool-code changes. HTTP transport available for remote drivers such as Studio.
 - **Canonical serialization** — sorted keys, deterministic output, clean git diffs, conflict-free parallel edits
 - **Agent rules & skills** — behavioral policies and step-by-step workflows ship as npm packages
 - **Serve UI** — local web dashboard for browsing models, content, validation, and normalize status
@@ -175,7 +176,7 @@ See [`AGENTS.md`](AGENTS.md) for the full skill catalog and agent guidance.
 
 | Package | npm | Role |
 |---|---|---|
-| [`@contentrain/mcp`](packages/mcp) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp) | 15 MCP tools — content operations engine |
+| [`@contentrain/mcp`](packages/mcp) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp) | 15 MCP tools + stdio / HTTP transport + Local / GitHub / GitLab providers |
 | [`contentrain`](packages/cli) | [![npm](https://img.shields.io/npm/v/contentrain)](https://www.npmjs.com/package/contentrain) | CLI + Serve UI + MCP stdio entrypoint |
 | [`@contentrain/query`](packages/sdk/js) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query) | Generated TypeScript query SDK |
 | [`@contentrain/types`](packages/types) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Ftypes)](https://www.npmjs.com/package/@contentrain/types) | Shared type definitions + constants |
