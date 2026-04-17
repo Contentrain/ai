@@ -190,10 +190,13 @@ export function registerContentTools(
         }
       }
 
-      // Post-save validation — LocalProvider only (needs filesystem walk).
+      // Post-save validation — runs against whichever provider backed the
+      // write. LocalProvider gets filesystem parity by walking `projectRoot`;
+      // remote providers (GitHubProvider et al.) walk their read surface via
+      // the shared `RepoReader` so the validation envelope matches.
       const validationResult = projectRoot
         ? await validateProject(projectRoot, { model: input.model })
-        : { valid: true, issues: [], summary: { errors: 0, warnings: 0, notices: 0, models_checked: 0, entries_checked: 0 }, fixed: 0 }
+        : await validateProject(provider, { model: input.model })
 
       const allAdvisories = plan.result.flatMap(r => r.advisories ?? [])
 

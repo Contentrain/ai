@@ -13,9 +13,20 @@ import type { ModelDefinition } from '@contentrain/types'
  * `core/meta-manager.ts` will call into these (or be replaced entirely).
  */
 
-function contentDir(model: Pick<ModelDefinition, 'domain' | 'id' | 'content_path'>): string {
+/**
+ * Content-root-relative content directory for a model (forward-slash paths).
+ * Mirrors `resolveContentDir` with an empty `projectRoot`, so reader-backed
+ * callers and plan-API consumers share the same path resolution.
+ */
+export function contentDirPath(
+  model: Pick<ModelDefinition, 'domain' | 'id' | 'content_path'>,
+): string {
   if (model.content_path) return model.content_path
   return `.contentrain/content/${model.domain}/${model.id}`
+}
+
+function contentDir(model: Pick<ModelDefinition, 'domain' | 'id' | 'content_path'>): string {
+  return contentDirPath(model)
 }
 
 export function contentFilePath(
