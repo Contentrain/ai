@@ -143,4 +143,64 @@ describe('createContentrain (CDN client)', () => {
     const hero = await client.singleton('hero').get()
     expect(hero).toEqual({ title: 'Merhaba' })
   })
+
+  it('media() accessor fetches manifest and resolves variants', async () => {
+    vi.stubGlobal('fetch', mockFetch({
+      '_media_manifest.json': {
+        version: '1',
+        assets: {
+          'hero.jpg': {
+            original: 'media/hero.jpg',
+            variants: { thumb: 'media/hero-thumb.webp' },
+            meta: { width: 800, height: 600, format: 'jpeg', size: 50000, blurhash: null, alt: 'Hero' },
+          },
+        },
+      },
+    }))
+
+    const client = createContentrain(config)
+    const media = client.media()
+    const asset = await media.asset('hero.jpg')
+    expect(asset).toBeDefined()
+    expect(asset!.meta.alt).toBe('Hero')
+    expect(media.url(asset!, 'thumb')).toContain('media/hero-thumb.webp')
+  })
+
+  it('form() client fetches config and submits', async () => {
+    vi.stubGlobal('fetch', mockFetch({
+      'config': { modelId: 'contact', fields: [{ id: 'name', type: 'string' }] },
+      'submit': { success: true, message: 'OK' },
+    }))
+
+    const client = createContentrain(config)
+    const form = client.form()
+    const formConfig = await form.config('contact')
+    expect(formConfig.modelId).toBe('contact')
+
+    const result = await form.submit('contact', { name: 'Test' })
+    expect(result.success).toBe(true)
+  })
+
+  it('conversation() client sends message and fetches history', async () => {
+    vi.stubGlobal('fetch', mockFetch({
+      'message': {
+        conversationId: 'conv-1',
+        message: 'Done!',
+        usage: { inputTokens: 50, outputTokens: 30 },
+      },
+      'history': {
+        conversationId: 'conv-1',
+        messages: [{ id: 'm-1', role: 'user', content: 'Hi', createdAt: '2026-04-10T00:00:00Z' }],
+      },
+    }))
+
+    const client = createContentrain(config)
+    const conv = client.conversation()
+
+    const response = await conv.send('Create post')
+    expect(response.conversationId).toBe('conv-1')
+
+    const history = await conv.history('conv-1')
+    expect(history.messages).toHaveLength(1)
+  })
 })

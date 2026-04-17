@@ -22,7 +22,7 @@ Each phase produces a separate branch for independent review. This separation en
 | Purpose | Pull content from source to `.contentrain/` | Patch source files with content references |
 | Scope | Full project scan | Per model or per domain |
 | Source files modified | No | Yes |
-| Branch pattern | `contentrain/normalize/extract/{domain}/{timestamp}` | `contentrain/normalize/reuse/{model}/{locale}/{timestamp}` |
+| Branch pattern | `cr/normalize/extract/{domain}/{timestamp}-{suffix}` | `cr/normalize/reuse/{model}/{locale}/{timestamp}-{suffix}` |
 | Prerequisite | Initialized `.contentrain/` | Completed extraction (content exists in `.contentrain/`) |
 | Workflow mode | Always `review` | Always `review` |
 | Standalone value | Yes -- content is manageable in Studio immediately | Depends on Phase 1 |
@@ -310,3 +310,26 @@ When evaluating scan candidates, group content logically:
 | Processing all models in one reuse | Scope reuse to one model/domain at a time |
 | Ignoring project graph | Use graph output to understand component relationships |
 | Hardcoding replacement patterns | Detect the project's i18n stack and use its conventions |
+
+## 10. Normalize Plan File
+
+**Path:** `.contentrain/normalize-plan.json`
+**Type:** `NormalizePlan` (from `@contentrain/types`)
+
+### Purpose
+
+Intermediate file between agent evaluation and browser-based approval.
+Agent writes the plan → CLI serve displays it at `/normalize` → user approves/rejects.
+
+### Lifecycle
+
+1. Agent evaluates scan candidates and writes `.contentrain/normalize-plan.json` with `status: "pending"`
+2. User opens http://localhost:3333/normalize in browser
+3. User clicks **Approve** → serve calls `contentrain_apply` → plan file is deleted
+4. User clicks **Reject** → plan file is deleted
+5. Agent detects decision by checking if plan file exists and if new branches were created
+
+### SDK Regeneration
+
+After normalize Phase 2 (reuse) is complete, `npx contentrain generate` **MUST** be run.
+Source files now import from `#contentrain` — without regeneration, imports will fail at build time.

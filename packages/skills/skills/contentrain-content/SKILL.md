@@ -18,6 +18,16 @@ The user wants to create new content, add entries to a collection, populate a si
 
 ---
 
+## MUST Rules
+
+- MUST call `contentrain_describe` before writing content (know the schema)
+- MUST provide ALL required fields in entries
+- MUST create entries for ALL supported locales when model has `i18n: true`
+- MUST NOT set system fields (id, slug, createdAt, updatedAt, status, source)
+- MUST run `npx contentrain generate` after adding new models or changing fields
+
+---
+
 ## Steps
 
 ### 1. Check Project State
@@ -53,6 +63,7 @@ If the user's request does not match an existing model, offer to create one firs
 
 - Check `.contentrain/vocabulary.json` for canonical terms. All content must use these terms consistently across locales. Do not use alternative spellings or synonyms for vocabulary-defined terms.
 - Check `.contentrain/context.json` for tone conventions (professional, casual, technical).
+- **For dictionaries:** Before creating any new key, call `contentrain_content_list` on the target model and scan existing values. If the value you intend to write already exists under a different key, REUSE the existing key instead of creating a new one. MCP will also warn you via `advisories` in the save response if duplicates are detected.
 
 ### 5. Generate Content
 
@@ -114,7 +125,17 @@ contentrain_content_save({
 - Prefer batch mode -- send multiple entries in a single call when possible.
 - Locale defaults to the project's default locale if omitted, but explicit locale is recommended.
 
-### 9. Handle i18n Completeness
+### 9. Review Save Advisories
+
+After `contentrain_content_save`, check the response for an `advisories` field. If present:
+
+- Review each advisory for duplicate value warnings.
+- If a duplicate is flagged, consider whether to:
+  - Remove the new key and reuse the existing one instead.
+  - Keep both keys if they serve semantically different purposes (document the reason).
+- Report any advisories to the user for their decision.
+
+### 10. Handle i18n Completeness
 
 If the project has multiple supported locales and the model has `i18n: true`:
 
@@ -128,7 +149,7 @@ If the project has multiple supported locales and the model has `i18n: true`:
 
 If the user defers translations, note incomplete locales in the final summary.
 
-### 10. Validate
+### 11. Validate
 
 Call `contentrain_validate` to check all changes:
 
@@ -139,7 +160,9 @@ Call `contentrain_validate` to check all changes:
 
 Fix any errors reported. Acknowledge any warnings.
 
-### 11. Submit
+For large content operations (10+ entries), also recommend running `contentrain doctor --usage` to detect unused keys and duplicate values across the project.
+
+### 12. Submit
 
 Call `contentrain_submit` to push branches to remote:
 
@@ -150,7 +173,17 @@ Call `contentrain_submit` to push branches to remote:
 
 Report the Studio URL if provided in the tool response -- the user can review and approve content there.
 
-### 12. Final Summary
+### After Save: SDK Regeneration
+
+When new models are created or fields change, regenerate the SDK client:
+
+```bash
+npx contentrain generate
+```
+
+This updates TypeScript types for the new content. See: **contentrain-generate** skill.
+
+### 13. Final Summary
 
 Report to the user:
 
@@ -160,3 +193,10 @@ Report to the user:
 - The submission status (auto-merged or pending review).
 - Studio link for visual review (if available).
 - Next steps: run `/contentrain-generate` to update SDK types if models changed.
+
+## Related Skills
+
+- **contentrain-serve** — Browser-based review for content branches
+- **contentrain-generate** — SDK client regeneration after content changes
+- **contentrain-quality** — Content quality, SEO, and accessibility rules
+- **contentrain** — Core architecture and MCP tool catalog

@@ -1,9 +1,17 @@
 # `@contentrain/query`
 
 [![npm version](https://img.shields.io/npm/v/%40contentrain%2Fquery?label=%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query)
+[![Agent Skills](https://img.shields.io/badge/Agent_Skill-contentrain--query-8B5CF6)](https://agentskills.io)
 [![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/sdk/js)
+[![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io/packages/sdk)
 
 **Optional** type-safe generated query SDK for Contentrain.
+
+Start here:
+
+- [2-minute product demo](https://ai.contentrain.io/demo)
+- [SDK docs](https://ai.contentrain.io/packages/sdk)
+- [Framework integration guide](https://ai.contentrain.io/guides/frameworks)
 
 Contentrain stores content as plain JSON and Markdown in a git-backed `.contentrain/` directory. Any platform that reads JSON can consume this content directly. This package adds a TypeScript convenience layer that turns content models into a generated JS/TS client with:
 
@@ -97,13 +105,24 @@ For collection models.
 Supported methods:
 
 - `locale(lang)`
-- `where(field, value)`
+- `where(field, value)` — equality shorthand
+- `where(field, op, value)` — operators: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `contains`
 - `sort(field, order?)`
 - `limit(n)`
 - `offset(n)`
 - `include(...fields)`
+- `count()`
 - `first()`
 - `all()`
+
+Where operator examples:
+
+```ts
+query('plans').where('slug', 'ne', 'free').all()
+query('plans').where('price', 'gte', 10).where('price', 'lte', 50).all()
+query('starters').where('framework', 'in', ['nuxt', 'next']).all()
+query('blog').where('title', 'contains', 'Guide').count()
+```
 
 ### `singleton(model)`
 
@@ -132,9 +151,11 @@ For markdown/document models.
 Supported methods:
 
 - `locale(lang)`
-- `where(field, value)`
+- `where(field, value)` — equality shorthand
+- `where(field, op, value)` — same operators as `query()`
 - `include(...fields)`
 - `bySlug(slug)`
+- `count()`
 - `first()`
 - `all()`
 
@@ -169,13 +190,14 @@ const posts = client.query('blog-post').locale('en').all()
 
 Public root exports:
 
-- `QueryBuilder`
-- `SingletonAccessor`
-- `DictionaryAccessor`
-- `DocumentQuery`
+- `QueryBuilder`, `SingletonAccessor`, `DictionaryAccessor`, `DocumentQuery` — runtime classes
 - `createContentrainClient` — local generated client loader
 - `createContentrain` — CDN client factory
+- `MediaAccessor` — CDN media manifest reader
+- `FormsClient` — CDN forms API client
+- `ConversationClient` — Conversation API client
 - `ContentrainError` — HTTP error class for CDN mode
+- `applyWhere` — shared where filter helper
 
 ## CDN Transport
 
@@ -209,7 +231,88 @@ const filtered = await client.collection('faq')
   .all()
 ```
 
-CDN also exposes metadata endpoints:
+CDN collection queries support `count()` and entry metadata:
+
+```ts
+const total = await client.collection('faq').locale('en').count()
+
+// Enrich entries with _meta (status, publish_at, expire_at)
+const posts = await client.collection('blog')
+  .locale('en')
+  .withMeta()
+  .all()
+// posts[0]._meta → { status: 'published', publish_at: '...', ... }
+```
+
+### Media
+
+Access the media manifest and resolve asset variant URLs:
+
+```ts
+const media = client.media()
+const assets = await media.list()           // All assets with paths
+const asset  = await media.asset('hero.jpg') // Single asset
+
+// Resolve variant URL
+const thumbUrl = media.url(asset, 'thumb')  // Full CDN URL
+const original = media.url(asset)           // Original URL
+
+// Asset metadata
+asset.meta.width      // 1920
+asset.meta.blurhash   // 'LEHV6nWB...'
+asset.meta.alt        // 'Hero image'
+```
+
+### Forms
+
+Fetch form schema and submit data from external sites:
+
+```ts
+const form = client.form()
+
+// Get form field configuration
+const config = await form.config('contact')
+// config.fields → [{ id: 'name', type: 'string', required: true }, ...]
+
+// Submit form data
+const result = await form.submit('contact', {
+  name: 'Alice',
+  email: 'alice@example.com',
+  message: 'Hello!',
+}, { captchaToken: 'tok_xxx' })
+// result → { success: true, message: 'Thank you!' }
+```
+
+### Conversation API
+
+Send messages to the AI content agent and manage conversation history:
+
+```ts
+const conv = client.conversation()
+
+// Send a message — returns complete response with tool results
+const response = await conv.send('Create a new blog post about Vue 4')
+response.conversationId   // 'conv-abc123'
+response.message          // 'I created the blog post...'
+response.toolResults      // [{ id: 't-1', name: 'save_content', result: {...} }]
+response.usage            // { inputTokens: 150, outputTokens: 80 }
+
+// Continue a conversation
+const followUp = await conv.send('Now translate it to Turkish', {
+  conversationId: response.conversationId,
+})
+
+// Provide UI context
+await conv.send('Update the hero section', {
+  context: { activeModelId: 'hero', activeLocale: 'en' },
+})
+
+// Fetch conversation history
+const history = await conv.history('conv-abc123', { limit: 50 })
+history.messages  // [{ id, role, content, createdAt }, ...]
+```
+
+### Metadata Endpoints
 
 ```ts
 const manifest = await client.manifest()
@@ -270,7 +373,7 @@ Generator entry:
 
 CDN transport:
 
-- `@contentrain/query/cdn` — CDN client with `HttpTransport`, async query classes
+- `@contentrain/query/cdn` — CDN client with `HttpTransport`, async query classes, `MediaAccessor`, `FormsClient`, `ConversationClient`
 
 ## 🧠 Design Constraints
 
@@ -292,6 +395,16 @@ pnpm --filter @contentrain/query test
 pnpm --filter @contentrain/query typecheck
 pnpm exec oxlint packages/sdk/js/src packages/sdk/js/tests
 ```
+
+## Agent Skill (embedded)
+
+This package ships an embedded [Agent Skill](https://agentskills.io) at `skills/contentrain-query/SKILL.md`. AI coding agents can discover and load it for type-safe SDK usage guidance, including:
+
+- QueryBuilder, SingletonAccessor, DictionaryAccessor, DocumentQuery APIs
+- Local mode vs CDN mode differences
+- Framework-specific bundler configuration (Vite, Next.js, Nuxt, SvelteKit, Metro)
+
+The skill is available via the `@contentrain/query/skills/*` subpath export.
 
 ## 🔗 Related Packages
 

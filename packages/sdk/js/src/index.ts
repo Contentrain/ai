@@ -1,9 +1,13 @@
 // Runtime exports — used by framework SDK authors and generated client
 export { QueryBuilder } from './runtime/query.js'
-export type { RelationMeta, RelationResolver } from './runtime/query.js'
+export type { RelationMeta, RelationResolver, WhereOp } from './runtime/query.js'
 export { SingletonAccessor } from './runtime/singleton.js'
 export { DictionaryAccessor } from './runtime/dictionary.js'
 export { DocumentQuery } from './runtime/document.js'
+
+// Shared utilities
+export type { WhereClause } from './shared/where.js'
+export { applyWhere } from './shared/where.js'
 
 // Re-export types from @contentrain/types that SDK consumers need
 export type {
@@ -46,6 +50,20 @@ export async function createContentrainClient(
 export { createContentrain } from './cdn/index.js'
 export type { ContentrainCDNConfig, ContentrainCDNClient } from './cdn/index.js'
 export { ContentrainError } from './cdn/errors.js'
+
+// CDN module re-exports — media, forms, metadata
+export { MediaAccessor } from './cdn/media-accessor.js'
+export type { MediaAsset, MediaAssetMeta, MediaManifest } from './cdn/media-accessor.js'
+export { FormsClient } from './cdn/forms-client.js'
+export type { FormConfig, FormFieldConfig, FormSubmitResult, FormsClientConfig } from './cdn/forms-client.js'
+export type { EntryMeta } from './cdn/collection-query.js'
+export { ConversationClient } from './cdn/conversation-client.js'
+export type {
+  ConversationClientConfig,
+  ConversationResponse,
+  ConversationMessage,
+  ConversationHistory,
+} from './cdn/conversation-client.js'
 
 // Sync factory for CJS — requires generated client to be pre-loaded
 export { createContentrainClient as default }

@@ -438,3 +438,7 @@ The `array` type can hold simple values (`items: "string"`) or complex objects (
 | `accept` | image, video, file | Comma-separated MIME types |
 | `maxSize` | image, video, file | Maximum file size in bytes |
 | `description` | All | Human-readable description of the field |
+
+::: info Shared Across Contentrain AI and Studio
+These 27 field types define content schemas used identically in both local workflows (`@contentrain/mcp`, CLI) and [Contentrain Studio](/studio). Content modeled locally works seamlessly in team workflows without changes.
+:::

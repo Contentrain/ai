@@ -168,3 +168,9 @@ Only make changes after user approval.
 If fixes were applied, call `contentrain_validate` again to confirm all issues are resolved.
 
 Report the final status: "All checks passed" or list remaining issues that require manual attention.
+
+## Related Skills
+
+- **contentrain-serve** — Visual review at http://localhost:3333/content
+- **contentrain-quality** — Quality checklist reference
+- **contentrain** — Core architecture and MCP tool catalog

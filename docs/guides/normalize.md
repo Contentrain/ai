@@ -9,6 +9,12 @@ slug: normalize
 
 The normalize flow is Contentrain's **primary value proposition** — the fastest path from "500 hardcoded strings scattered across my codebase" to "structured, translatable, manageable content." It runs in three phases: **Extract**, **Reuse**, and **Translate**.
 
+::: warning LocalProvider required
+Normalize (`contentrain_scan` and `contentrain_apply`) requires local disk access — AST scanners walk the source tree and patch files in place. It runs only on a `LocalProvider` (stdio or HTTP+LocalProvider).
+
+Remote providers (`GitHubProvider`, `GitLabProvider`) reject these calls with `capability_required: astScan / sourceRead / sourceWrite`. Run normalize in a local checkout, then push the extracted content branch. See [Providers & Transports](/guides/providers) for the capability matrix.
+:::
+
 ## The Problem
 
 A typical SaaS landing page has 40-60 components with 300-800 hardcoded strings. Nobody notices until someone asks for a second language or a copy change across 12 pages.
@@ -36,7 +42,7 @@ These strings are scattered across dozens of files. Translating means grep-and-r
 | 3. Translate | Content copied to new locales and translated | No | Standard content branch |
 
 ::: tip
-Phase 1 is valuable on its own. Extracted content can be managed in [Contentrain Studio](https://studio.contentrain.io), translated, and published without touching source code.
+Phase 1 is valuable on its own. Extracted content can be managed in [Contentrain Studio](/studio), translated, and published without touching source code.
 :::
 
 ## Phase 1: Extract
@@ -159,6 +165,14 @@ This creates model definitions and content files in `.contentrain/` on a dedicat
 
 The agent calls `contentrain_validate` then `contentrain_submit` to push the branch.
 
+### Step 9. Merge Phase 1 branch
+
+Before starting Phase 2, the extraction branch must be merged:
+
+- **Browser:** `http://localhost:3333/branches` → click Merge
+- **MCP Tool:** The agent calls `contentrain_merge(branch: "cr/normalize/extract/...", confirm: true)`
+- **Git platform:** Create PR → review → merge
+
 ## Phase 2: Reuse
 
 Replace hardcoded strings in source files with content references. Start only after Phase 1 is reviewed and merged.
@@ -274,6 +288,26 @@ npx contentrain generate
 ```
 
 The application now serves localized content.
+
+## When Studio Enters
+
+Normalize is the wedge, not the final surface.
+
+Use local AI packages first when you need to scan code, extract hardcoded strings, patch source files, and validate everything in git. Move into [Contentrain Studio](/studio) when the same structured content now needs:
+
+- authenticated review and approval
+- editor, reviewer, and viewer roles
+- web-based media, forms, and conversation workflows
+- CDN delivery and API distribution for other clients
+
+The package bridge looks like this:
+
+- `@contentrain/mcp` handles deterministic extract and reuse locally
+- `@contentrain/rules` and `@contentrain/skills` keep agent behavior consistent
+- `@contentrain/query` consumes the resulting content in apps
+- Studio becomes the team-facing web surface on top of the same `.contentrain/` contract
+
+See the full [Ecosystem Map](/ecosystem) and the Studio docs [Ecosystem page](https://docs.contentrain.io/guide/ecosystem).
 
 ## SDK Direct Import Pattern
 
@@ -402,6 +436,17 @@ Normalize solves this in minutes. And once your content is extracted and structu
 ```
 normalize → content exists → SDK queries work → i18n is possible → Studio review makes sense
 ```
+
+::: tip Ready for Team Collaboration?
+After extracting content, connect your project to [Contentrain Studio](/studio) for team review, CDN delivery, and collaboration:
+
+```bash
+contentrain studio login
+contentrain studio connect
+```
+
+See [CLI Studio Integration](/packages/cli#connecting-a-repository) for the full setup flow.
+:::
 
 ## Important Rules
 

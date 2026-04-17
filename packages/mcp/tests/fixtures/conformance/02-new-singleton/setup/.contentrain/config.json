@@ -1,0 +1,15 @@
+{
+  "domains": [
+    "marketing"
+  ],
+  "locales": {
+    "default": "en",
+    "supported": [
+      "en",
+      "tr"
+    ]
+  },
+  "stack": "vue-nuxt",
+  "version": 1,
+  "workflow": "auto-merge"
+}

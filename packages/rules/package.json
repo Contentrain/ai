@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/rules",
-  "version": "0.3.0",
+  "version": "0.3.3",
   "license": "MIT",
   "description": "AI agent rules for Contentrain — quality standards, architecture conventions, IDE integration",
   "type": "module",
@@ -9,7 +9,7 @@
     "url": "git+https://github.com/Contentrain/ai.git",
     "directory": "packages/rules"
   },
-  "homepage": "https://github.com/Contentrain/ai/tree/main/packages/rules",
+  "homepage": "https://ai.contentrain.io/packages/rules",
   "bugs": {
     "url": "https://github.com/Contentrain/ai/issues"
   },
@@ -17,11 +17,15 @@
     "contentrain",
     "ai",
     "rules",
+    "agent-skills",
+    "agent-rules",
     "mcp",
     "prompt-engineering",
     "claude-code",
     "cursor",
-    "windsurf"
+    "windsurf",
+    "copilot",
+    "codex"
   ],
   "sideEffects": false,
   "publishConfig": {
@@ -35,12 +39,14 @@
       "default": "./dist/index.mjs"
     },
     "./essential/*": "./essential/*",
+    "./shared/*": "./shared/*",
     "./prompts/*": "./prompts/*",
     "./context/*": "./context/*"
   },
   "files": [
     "dist",
     "essential",
+    "shared",
     "prompts",
     "context"
   ],

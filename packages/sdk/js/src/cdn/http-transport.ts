@@ -18,6 +18,10 @@ export class HttpTransport {
     this._apiKey = config.apiKey
   }
 
+  buildUrl(path: string): string {
+    return `${this._baseUrl}/${this._projectId}/${path}`
+  }
+
   async fetch<T>(path: string): Promise<T> {
     const url = `${this._baseUrl}/${this._projectId}/${path}`
     const cached = this._cache.get(path)

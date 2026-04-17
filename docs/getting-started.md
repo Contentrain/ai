@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: "Set up Contentrain AI in under 5 minutes — for new projects or existing codebases"
+description: "Set up structured content governance in under 5 minutes — start with an existing codebase rescue or a new content layer"
 order: 1
 category: getting-started
 slug: getting-started
@@ -8,7 +8,7 @@ slug: getting-started
 
 # Getting Started
 
-Contentrain AI is an open-source content governance infrastructure. Your AI agent creates and manages content through [Model Context Protocol (MCP)](https://modelcontextprotocol.io) tools — Contentrain ensures that content is structured, validated, reviewed, and deliverable to any platform.
+Contentrain AI is an open-source, repo-native content governance stack. Your AI agent creates, extracts, and updates content through [Model Context Protocol (MCP)](https://modelcontextprotocol.io) tools, while Contentrain ensures that content is structured, validated, reviewed, and deliverable to any platform.
 
 ## Prerequisites
 
@@ -20,18 +20,41 @@ Contentrain AI is an open-source content governance infrastructure. Your AI agen
 
 ::: code-group
 
+```bash [Existing Project]
+# This is the main wedge: rescue hardcoded strings
+npx contentrain init
+# Then tell your agent: "Scan my project and extract all hardcoded strings"
+```
+
 ```bash [New Project]
 # Start with structured content from day one
 npx contentrain init
 ```
 
-```bash [Existing Project]
-# Already have hardcoded strings? Extract them
+:::
+
+## Quick Start: Existing Project
+
+Already have hardcoded strings scattered across your codebase? Start here.
+
+```bash
 npx contentrain init
-# Then tell your agent: "Scan my project and extract all hardcoded strings"
+npx contentrain serve --stdio
 ```
 
-:::
+Then tell your agent:
+
+```text
+Scan my project and extract all hardcoded UI strings into structured content.
+```
+
+Typical outcome:
+
+```text
+Agent scans 47 files → finds 523 strings → classifies → creates models → writes content → proposes source patches
+```
+
+Review the extracted content and branch diffs locally, then continue with the full [Normalize Flow](/guides/normalize).
 
 ## Quick Start: New Project
 
@@ -45,11 +68,24 @@ This creates `.contentrain/` in your project root with configuration, model defi
 
 ### 2. Connect your AI agent
 
-Add the Contentrain MCP server to your IDE:
+The `setup` command auto-configures the MCP server for your IDE:
 
-::: code-group
+```bash
+npx contentrain setup claude-code   # → creates .mcp.json
+npx contentrain setup cursor        # → creates .cursor/mcp.json
+npx contentrain setup vscode        # → creates .vscode/mcp.json
+npx contentrain setup windsurf      # → creates .windsurf/mcp.json
+npx contentrain setup --all         # → configures all detected IDEs
+```
 
-```json [Claude Code (.mcp.json)]
+::: tip Auto-configured during init
+If your IDE is detected during `contentrain init`, the MCP config is created automatically — you may already be set up.
+:::
+
+<details>
+<summary>Manual configuration (all IDEs use the same config)</summary>
+
+```json
 {
   "mcpServers": {
     "contentrain": {
@@ -60,28 +96,23 @@ Add the Contentrain MCP server to your IDE:
 }
 ```
 
-```json [Cursor (.cursor/mcp.json)]
-{
-  "mcpServers": {
-    "contentrain": {
-      "command": "npx",
-      "args": ["contentrain", "serve", "--stdio"]
-    }
-  }
-}
+| IDE | Config file |
+|-----|-------------|
+| Claude Code | `.mcp.json` (project root) |
+| Cursor | `.cursor/mcp.json` |
+| VS Code | `.vscode/mcp.json` |
+| Windsurf | `.windsurf/mcp.json` |
+
+</details>
+
+::: tip HTTP Transport
+In addition to stdio, MCP also serves over HTTP at `POST /mcp`. Useful for Studio / CI runners / remote agents that drive Contentrain operations without a local IDE:
+
+```bash
+npx contentrain serve --mcpHttp --authToken $(openssl rand -hex 32)
 ```
 
-```json [Windsurf]
-{
-  "mcpServers": {
-    "contentrain": {
-      "command": "npx",
-      "args": ["contentrain", "serve", "--stdio"]
-    }
-  }
-}
-```
-
+See the [HTTP Transport guide](/guides/http-transport) for auth, deployment patterns, and programmatic embedding.
 :::
 
 ### 3. Create a content model
@@ -143,17 +174,25 @@ npx contentrain serve
 
 Open `http://localhost:3333` to browse models, content, validation results, and pending branches.
 
-## Quick Start: Existing Project
+## Team Workflows
 
-Already have hardcoded strings scattered across your codebase? The [Normalize Flow](/guides/normalize) extracts them into structured content:
+When the local CLI and MCP flow are not enough, [Contentrain Studio](/studio) adds the team web layer:
 
+- workspace and project management
+- role-based access and review responsibilities
+- chat-first content operations
+- branch and diff review
+- media management
+- CDN delivery for non-web platforms
+
+Connect your local project to Studio with two commands:
+
+```bash
+contentrain studio login
+contentrain studio connect
 ```
-You: "Scan my project and extract all hardcoded strings"
-Agent: scans 47 files → finds 523 strings → classifies → creates models → patches source
-You: review in UI → approve → structured content, ready for any language
-```
 
-See the [Normalize Flow guide](/guides/normalize) for the complete walkthrough.
+The `connect` command detects your git remote, verifies GitHub App installation, scans for `.contentrain/` configuration, and creates the project — all in one interactive flow. See [CLI Studio Integration](/packages/cli#connecting-a-repository) for details.
 
 ## The Content Pipeline
 
@@ -165,7 +204,7 @@ Agent generates → MCP validates → Human reviews → Git commits → Content 
 
 - **Agent** decides what to create (your AI, your choice — BYOA)
 - **MCP** enforces structure, validation, and canonical serialization
-- **Human** reviews and approves through the local UI or [Studio](https://studio.contentrain.io)
+- **Human** reviews and approves through the local UI or [Studio](/studio)
 - **Git** stores everything — full history, rollback, audit trail
 - **Content** is delivered as plain JSON/Markdown to any platform
 
@@ -176,20 +215,49 @@ All packages are published on npm:
 | Package | Description | Install |
 |---|---|---|
 | [`contentrain`](https://www.npmjs.com/package/contentrain) | CLI (init, serve, generate, validate) | `npx contentrain init` |
-| [`@contentrain/mcp`](https://www.npmjs.com/package/@contentrain/mcp) | 13 MCP tools for AI agents | `pnpm add @contentrain/mcp` |
+| [`@contentrain/mcp`](https://www.npmjs.com/package/@contentrain/mcp) | 16 MCP tools for AI agents | `pnpm add @contentrain/mcp` |
 | [`@contentrain/query`](https://www.npmjs.com/package/@contentrain/query) | TypeScript query SDK (optional) | `pnpm add @contentrain/query` |
 | [`@contentrain/types`](https://www.npmjs.com/package/@contentrain/types) | Shared TypeScript types | `pnpm add @contentrain/types` |
 | [`@contentrain/rules`](https://www.npmjs.com/package/@contentrain/rules) | AI agent quality rules | `pnpm add @contentrain/rules` |
 | [`@contentrain/skills`](https://www.npmjs.com/package/@contentrain/skills) | AI agent workflow procedures | `pnpm add @contentrain/skills` |
 
+::: tip Updating Skills & Rules
+After upgrading packages, run `contentrain skills --update` to refresh IDE skills and rules. Use `contentrain skills --list` to check installation status.
+
+You can also install skills directly via the [Agent Skills CLI](https://agentskills.io):
+
+```bash
+npx skills add Contentrain/ai/packages/skills
+```
+
+This works with Claude Code, Cursor, Windsurf, GitHub Copilot, OpenAI Codex, Gemini CLI, and 40+ other agents.
+:::
+
+## Starter Templates
+
+Want to skip setup? Start from a production-ready template with content models, SDK client, and framework patterns pre-configured:
+
+| Template | Framework | Use Case |
+|---|---|---|
+| [astro-blog](https://github.com/Contentrain/contentrain-starter-astro-blog) | Astro | Blog / editorial |
+| [astro-landing](https://github.com/Contentrain/contentrain-starter-astro-landing) | Astro | Landing page |
+| [next-commerce](https://github.com/Contentrain/contentrain-starter-next-commerce) | Next.js | E-commerce |
+| [next-saas-dashboard](https://github.com/Contentrain/contentrain-starter-next-saas-dashboard) | Next.js | SaaS dashboard |
+| [nuxt-saas](https://github.com/Contentrain/contentrain-starter-nuxt-saas) | Nuxt | SaaS marketing |
+| [sveltekit-editorial](https://github.com/Contentrain/contentrain-starter-sveltekit-editorial) | SvelteKit | Editorial |
+| [vitepress-docs](https://github.com/Contentrain/contentrain-starter-vitepress-docs) | VitePress | Documentation |
+
+[See all 10 templates on GitHub](https://github.com/orgs/Contentrain/repositories?q=contentrain-starter&type=template)
+
 ## What's Next?
 
 - [Core Concepts](/concepts) — Models, content kinds, domains, and the governance architecture
-- [MCP Tools](/packages/mcp) — All 13 tools available to your agent
+- [Ecosystem Map](/ecosystem) — How AI packages and Studio fit together
+- [MCP Tools](/packages/mcp) — All 16 tools available to your agent
 - [Normalize Flow](/guides/normalize) — Extract hardcoded strings from existing code
 - [i18n Workflow](/guides/i18n) — Add languages to your content
 - [Framework Integration](/guides/frameworks) — Platform-specific setup patterns
 
 ::: info Contentrain Studio
-When you need team collaboration, visual diff review, and content CDN for non-web platforms — [Contentrain Studio](https://studio.contentrain.io) extends everything with a hosted governance UI.
+[Contentrain Studio](/studio) is the open-core team operations surface for Git-native structured content. Teams can self-host the AGPL core or use a managed Pro/Enterprise offering when they want web-based collaboration, review, media, and CDN delivery on top of the same content model.
 :::

@@ -2,7 +2,11 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'Contentrain AI',
-  description: 'AI-generated content governance infrastructure — extract, structure, review, and deliver content across any platform.',
+  description: 'Extract, govern, and ship structured content from your codebase.',
+
+  ignoreDeadLinks: [
+    /localhost/,
+  ],
 
   sitemap: {
     hostname: 'https://ai.contentrain.io',
@@ -13,12 +17,13 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: '#3b5afc' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'Contentrain AI' }],
-    ['meta', { property: 'og:description', content: 'Extract, structure, review, and deliver AI-generated content across any platform' }],
+    ['meta', { property: 'og:description', content: 'Extract, govern, and ship structured content from your codebase.' }],
     ['meta', { property: 'og:url', content: 'https://ai.contentrain.io' }],
     ['meta', { property: 'og:image', content: 'https://ai.contentrain.io/og-image.png' }],
     ['meta', { property: 'og:image:width', content: '1200' }],
     ['meta', { property: 'og:image:height', content: '630' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:site', content: '@Contentrain_io' }],
     ['meta', { name: 'twitter:image', content: 'https://ai.contentrain.io/og-image.png' }],
   ],
 
@@ -32,13 +37,19 @@ export default defineConfig({
 
     nav: [
       { text: 'Getting Started', link: '/getting-started' },
+      { text: 'Ecosystem', link: '/ecosystem' },
+      { text: 'Studio', link: '/studio' },
       { text: 'Packages', items: [
         { text: 'MCP Tools', link: '/packages/mcp' },
         { text: 'CLI', link: '/packages/cli' },
         { text: 'Query SDK', link: '/packages/sdk' },
         { text: 'Rules & Skills', link: '/packages/rules' },
+        { text: 'Types', link: '/packages/types' },
       ]},
       { text: 'Guides', items: [
+        { text: 'Providers & Transports', link: '/guides/providers' },
+        { text: 'HTTP Transport', link: '/guides/http-transport' },
+        { text: 'Embedding MCP', link: '/guides/embedding-mcp' },
         { text: 'Normalize Flow', link: '/guides/normalize' },
         { text: 'Framework Integration', link: '/guides/frameworks' },
         { text: 'i18n Workflow', link: '/guides/i18n' },
@@ -48,7 +59,9 @@ export default defineConfig({
         { text: 'Model Kinds', link: '/reference/model-kinds' },
         { text: 'Field Types', link: '/reference/field-types' },
         { text: 'Configuration', link: '/reference/config' },
+        { text: 'RepoProvider', link: '/reference/providers' },
       ]},
+      { text: 'Starters', link: 'https://github.com/orgs/Contentrain/repositories?q=contentrain-starter&type=template' },
     ],
 
     sidebar: {
@@ -57,7 +70,9 @@ export default defineConfig({
           text: 'Introduction',
           items: [
             { text: 'What is Contentrain AI?', link: '/getting-started' },
+            { text: 'Ecosystem Map', link: '/ecosystem' },
             { text: 'Core Concepts', link: '/concepts' },
+            { text: 'Contentrain Studio', link: '/studio' },
           ],
         },
         {
@@ -67,11 +82,15 @@ export default defineConfig({
             { text: 'CLI', link: '/packages/cli' },
             { text: 'Query SDK', link: '/packages/sdk' },
             { text: 'Rules & Skills', link: '/packages/rules' },
+            { text: 'Types', link: '/packages/types' },
           ],
         },
         {
           text: 'Guides',
           items: [
+            { text: 'Providers & Transports', link: '/guides/providers' },
+            { text: 'HTTP Transport', link: '/guides/http-transport' },
+            { text: 'Embedding MCP', link: '/guides/embedding-mcp' },
             { text: 'Normalize Flow', link: '/guides/normalize' },
             { text: 'Framework Integration', link: '/guides/frameworks' },
             { text: 'i18n Workflow', link: '/guides/i18n' },
@@ -84,6 +103,7 @@ export default defineConfig({
             { text: 'Model Kinds', link: '/reference/model-kinds' },
             { text: 'Field Types', link: '/reference/field-types' },
             { text: 'Configuration', link: '/reference/config' },
+            { text: 'RepoProvider', link: '/reference/providers' },
           ],
         },
       ],
@@ -94,7 +114,7 @@ export default defineConfig({
     ],
 
     footer: {
-      message: 'Released under the MIT License.',
+      message: 'Released under the MIT License.<br><div class="footer-social-links"><a href="https://discord.gg/8XbFKfgeZx" target="_blank" rel="noopener" aria-label="Discord">Discord</a> · <a href="https://x.com/Contentrain_io" target="_blank" rel="noopener" aria-label="X">X</a> · <a href="https://www.linkedin.com/company/contentrain" target="_blank" rel="noopener" aria-label="LinkedIn">LinkedIn</a> · <a href="https://www.youtube.com/@contentrain" target="_blank" rel="noopener" aria-label="YouTube">YouTube</a> · <a href="https://www.instagram.com/contentrain_" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a> · <a href="https://www.facebook.com/Contentrain.io" target="_blank" rel="noopener" aria-label="Facebook">Facebook</a></div>',
       copyright: 'Copyright © 2024-present Contentrain',
     },
 

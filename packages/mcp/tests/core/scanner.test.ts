@@ -2,141 +2,9 @@ import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import { mkdir, writeFile, rm, mkdtemp } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { isNonContent, scanCandidates, scanSummary } from '../../src/core/scanner.js'
+import { scanCandidates, scanSummary } from '../../src/core/scanner.js'
 
 vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
-
-// ─── isNonContent unit tests ───
-
-describe('isNonContent', () => {
-  // --- Things that SHOULD be filtered (return true) ---
-
-  it('filters import paths', () => {
-    expect(isNonContent('./Component', '')).toBe(true)
-    expect(isNonContent('../utils/helper', '')).toBe(true)
-    expect(isNonContent('@/components/Button', '')).toBe(true)
-  })
-
-  it('filters single CSS class tokens', () => {
-    expect(isNonContent('bg-blue-500', '')).toBe(true)
-    expect(isNonContent('p-4', '')).toBe(true)
-    expect(isNonContent('hover:bg-blue-600', '')).toBe(true)
-  })
-
-  it('filters multi-token CSS class strings when all tokens are utilities', () => {
-    expect(isNonContent('text-lg font-bold', '')).toBe(true)
-    expect(isNonContent('sm:text-xl md:text-2xl', '')).toBe(true)
-  })
-
-  it('does not filter CSS class strings when some tokens are unrecognized', () => {
-    // items-center is not recognized as a CSS utility token by the scanner
-    expect(isNonContent('flex items-center', '')).toBe(false)
-  })
-
-  it('filters URLs and routes', () => {
-    expect(isNonContent('https://example.com', '')).toBe(true)
-    expect(isNonContent('/api/v1/users', '')).toBe(true)
-    expect(isNonContent('/users/:id', '')).toBe(true)
-    expect(isNonContent('mailto:test@test.com', '')).toBe(true)
-  })
-
-  it('filters color codes', () => {
-    expect(isNonContent('#ff0000', '')).toBe(true)
-    expect(isNonContent('transparent', '')).toBe(true)
-    expect(isNonContent('inherit', '')).toBe(true)
-    expect(isNonContent('currentColor', '')).toBe(true)
-  })
-
-  it('does not filter complex color function calls (only prefix matched)', () => {
-    // COLOR_RE anchors with $ so rgba(...) with args does not match
-    expect(isNonContent('rgba(0,0,0,0.5)', '')).toBe(false)
-  })
-
-  it('filters technical identifiers', () => {
-    expect(isNonContent('isLoading', '')).toBe(true)
-    expect(isNonContent('handleClick', '')).toBe(true)
-    expect(isNonContent('MAX_SIZE', '')).toBe(true)
-    expect(isNonContent('API_KEY', '')).toBe(true)
-    expect(isNonContent('data-testid', '')).toBe(true)
-  })
-
-  it('filters file paths', () => {
-    expect(isNonContent('assets/image.png', '')).toBe(true)
-    expect(isNonContent('logo.svg', '')).toBe(true)
-    expect(isNonContent('styles.css', '')).toBe(true)
-  })
-
-  it('filters regex patterns', () => {
-    expect(isNonContent('^[a-z]+$', '')).toBe(true)
-    expect(isNonContent('\\d+', '')).toBe(true)
-  })
-
-  it('filters console context', () => {
-    expect(isNonContent('some debug message', 'console.log("some debug message")')).toBe(true)
-    expect(isNonContent('error occurred', 'console.error("error occurred")')).toBe(true)
-  })
-
-  it('filters strings below min_length', () => {
-    expect(isNonContent('a', '')).toBe(true)
-    expect(isNonContent('', '')).toBe(true)
-  })
-
-  it('filters strings above max_length', () => {
-    expect(isNonContent('a'.repeat(501), '', 2, 500)).toBe(true)
-  })
-
-  // --- Things that should NOT be filtered (return false) ---
-
-  it('keeps normal content text', () => {
-    expect(isNonContent('Welcome to our platform', '')).toBe(false)
-    expect(isNonContent('Hello World', '')).toBe(false)
-    expect(isNonContent('Submit', '')).toBe(false)
-    expect(isNonContent('Cancel', '')).toBe(false)
-    expect(isNonContent('Loading...', '')).toBe(false)
-    expect(isNonContent('Are you sure?', '')).toBe(false)
-    expect(isNonContent('No results found', '')).toBe(false)
-  })
-
-  it('keeps kebab-case strings with content words', () => {
-    // Kebab-case strings containing content words should be kept
-    expect(isNonContent('sign-up', '')).toBe(false)
-    expect(isNonContent('log-in', '')).toBe(false)
-    expect(isNonContent('get-started', '')).toBe(false)
-    expect(isNonContent('learn-more', '')).toBe(false)
-  })
-
-  it('filters kebab-case strings without content words', () => {
-    // Technical kebab-case (no content words) should be filtered
-    expect(isNonContent('data-testid', '')).toBe(true)
-    expect(isNonContent('aria-label', '')).toBe(true)
-    expect(isNonContent('webpack-config', '')).toBe(true)
-  })
-
-  it('keeps sentences and phrases', () => {
-    expect(isNonContent('Enter your email address', '')).toBe(false)
-    expect(isNonContent('This field is required', '')).toBe(false)
-    expect(isNonContent('Created by John', '')).toBe(false)
-  })
-
-  it('filters SCREAMING_SNAKE_CASE with underscores', () => {
-    // True SCREAMING_SNAKE_CASE identifiers (contain underscores) should be filtered
-    expect(isNonContent('MAX_SIZE', '')).toBe(true)
-    expect(isNonContent('API_KEY', '')).toBe(true)
-  })
-
-  it('keeps short uppercase words without underscores as UI labels', () => {
-    // Short uppercase words without underscores are likely real UI labels (OK, FAQ, GPS)
-    expect(isNonContent('OK', '')).toBe(false)
-    expect(isNonContent('FAQ', '')).toBe(false)
-    expect(isNonContent('GPS', '')).toBe(false)
-  })
-
-  it('keeps short mixed-case words that are content', () => {
-    // No, Yes start with uppercase but have lowercase — not SCREAMING_SNAKE
-    expect(isNonContent('No', '')).toBe(false)
-    expect(isNonContent('Yes', '')).toBe(false)
-  })
-})
 
 // ─── scanCandidates integration tests ───
 
@@ -198,7 +66,7 @@ export function Button({ label }: Props) {
     const result = await scanCandidates(testDir, { paths: ['src'] })
 
     expect(result.stats.files_scanned).toBe(2)
-    expect(result.stats.after_filtering).toBeGreaterThan(0)
+    expect(result.stats.unique_candidates).toBeGreaterThan(0)
 
     const values = result.candidates.map(c => c.value)
     // Should find content strings
@@ -209,7 +77,6 @@ export function Button({ label }: Props) {
     expect(values).not.toContain('https://docs.example.com')
     expect(values).not.toContain('#ff0000')
     expect(values).not.toContain('react')
-    // bg-blue-500 is a single CSS class token, should be filtered
     expect(values).not.toContain('bg-blue-500')
   })
 
@@ -225,20 +92,26 @@ export function Button({ label }: Props) {
     expect(signUpCandidate!.context).toBe('jsx_attribute')
   })
 
-  it('supports pagination with limit and offset', async () => {
-    const result1 = await scanCandidates(testDir, { paths: ['src'], limit: 2, offset: 0 })
-    expect(result1.candidates.length).toBeLessThanOrEqual(2)
+  it('includes contentScore and occurrences on candidates', async () => {
+    const result = await scanCandidates(testDir, { paths: ['src'] })
 
-    if (result1.stats.after_filtering > 2) {
-      expect(result1.stats.has_more).toBe(true)
-
-      const result2 = await scanCandidates(testDir, { paths: ['src'], limit: 2, offset: 2 })
-      // Different candidates
-      expect(result2.candidates[0]?.value).not.toBe(result1.candidates[0]?.value)
+    for (const candidate of result.candidates) {
+      expect(candidate.contentScore).toBeGreaterThanOrEqual(0)
+      expect(candidate.contentScore).toBeLessThanOrEqual(1)
+      expect(Array.isArray(candidate.occurrences)).toBe(true)
+      expect(candidate.occurrences.length).toBeGreaterThanOrEqual(1)
     }
   })
 
-  it('detects duplicates', async () => {
+  it('candidates are sorted by contentScore descending', async () => {
+    const result = await scanCandidates(testDir, { paths: ['src'], limit: 50 })
+
+    for (let i = 1; i < result.candidates.length; i++) {
+      expect(result.candidates[i]!.contentScore).toBeLessThanOrEqual(result.candidates[i - 1]!.contentScore)
+    }
+  })
+
+  it('deduplicates candidates by value', async () => {
     // Add another file with a duplicate string
     await mkdir(join(testDir, 'src', 'layouts'), { recursive: true })
     await writeFile(
@@ -250,11 +123,42 @@ export function Main() {
 `,
     )
 
-    const result = await scanCandidates(testDir, { paths: ['src'] })
+    const result = await scanCandidates(testDir, { paths: ['src'], limit: 50 })
+
+    // Should only have one candidate for the duplicated value
+    const welcomeCandidates = result.candidates.filter(c => c.value === 'Welcome to our platform')
+    expect(welcomeCandidates).toHaveLength(1)
+
+    // But occurrences should list both locations
+    const welcome = welcomeCandidates[0]!
+    expect(welcome.occurrences.length).toBeGreaterThanOrEqual(2)
+
+    // Duplicates section should also reflect this
     const dupe = result.duplicates.find(d => d.value === 'Welcome to our platform')
     if (dupe) {
       expect(dupe.count).toBeGreaterThanOrEqual(2)
     }
+  })
+
+  it('supports pagination with limit and offset', async () => {
+    const result1 = await scanCandidates(testDir, { paths: ['src'], limit: 2, offset: 0 })
+    expect(result1.candidates.length).toBeLessThanOrEqual(2)
+
+    if (result1.stats.unique_candidates > 2) {
+      expect(result1.stats.has_more).toBe(true)
+
+      const result2 = await scanCandidates(testDir, { paths: ['src'], limit: 2, offset: 2 })
+      expect(result2.candidates[0]?.value).not.toBe(result1.candidates[0]?.value)
+    }
+  })
+
+  it('provides skip_reasons breakdown in stats', async () => {
+    const result = await scanCandidates(testDir, { paths: ['src'] })
+
+    expect(result.stats.skip_reasons).toBeDefined()
+    expect(typeof result.stats.skip_reasons).toBe('object')
+    // raw_strings_found counts strings after AST pre-filter; unique_candidates is after dedup
+    expect(result.stats.raw_strings_found).toBeGreaterThanOrEqual(result.stats.unique_candidates)
   })
 
   it('respects min_length and max_length', async () => {
@@ -262,6 +166,14 @@ export function Main() {
     for (const candidate of result.candidates) {
       expect(candidate.value.length).toBeGreaterThanOrEqual(10)
     }
+  })
+
+  it('respects min_score filter', async () => {
+    // Very high threshold should filter most things
+    const strict = await scanCandidates(testDir, { paths: ['src'], min_score: 0.95 })
+    const lenient = await scanCandidates(testDir, { paths: ['src'], min_score: 0.1 })
+
+    expect(strict.stats.unique_candidates).toBeLessThanOrEqual(lenient.stats.unique_candidates)
   })
 })
 
@@ -328,7 +240,6 @@ export function Header() {
   it('groups files by directory', async () => {
     const result = await scanSummary(testDir, { paths: ['src'] })
 
-    // Should have entries for pages and components directories
     const dirs = Object.keys(result.by_directory)
     expect(dirs.length).toBeGreaterThanOrEqual(2)
 
@@ -340,7 +251,6 @@ export function Header() {
   it('top_repeated is sample-based and includes sampling_note', async () => {
     await mkdir(join(testDir, 'src', 'bulk'), { recursive: true })
 
-    // Create 12 files — sample window is 10, so files 11-12 may be outside sample
     for (let i = 1; i <= 12; i++) {
       const repeated = i >= 11 ? 'Late repeated label' : `Unique label ${i}`
       await writeFile(
@@ -351,11 +261,8 @@ export function Header() {
 
     const result = await scanSummary(testDir, { paths: ['src'] })
 
-    // sampling_note must be present to warn consumers about sample-based counts
     expect(result.sampling_note).toBeDefined()
     expect(result.sampling_note).toContain('sample')
-
-    // top_repeated from sample may or may not include late strings — that's expected
     expect(result.top_repeated).toBeDefined()
     expect(result.total_candidates_estimate).toBeGreaterThan(0)
   })

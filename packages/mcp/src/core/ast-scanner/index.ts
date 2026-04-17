@@ -210,5 +210,5 @@ export async function extractStrings(
 
 // Re-export types for convenience
 export type { ExtractedString, StructuralContext, PreFilterRule } from './types.js'
-export { applyPreFilter } from './pre-filter.js'
+export { applyPreFilter, shouldSkip, calculateContentScore } from './pre-filter.js'
 export type { PreFilterResult } from './pre-filter.js'

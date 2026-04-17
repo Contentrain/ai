@@ -29,6 +29,32 @@ const validation = computed(() => store.validation)
 const summary = computed(() => validation.value?.summary)
 const allIssues = computed(() => validation.value?.issues ?? [])
 
+/**
+ * Navigate from a validation issue to its source entry. Collections +
+ * dictionaries land on `/content/:model?id=...`; documents on
+ * `/content/:model?slug=...`. Issues without an `entry` / `slug` (e.g.
+ * i18n parity errors that target the whole locale file) fall back to
+ * the model's content list.
+ */
+interface ValidationIssue {
+  severity: string
+  model?: string
+  entry?: string
+  slug?: string
+  field?: string
+  locale?: string
+  message: string
+}
+function goToIssue(issue: ValidationIssue) {
+  if (!issue.model) return
+  const params: Record<string, string> = {}
+  if (issue.locale) params['locale'] = issue.locale
+  if (issue.entry) params['id'] = issue.entry
+  if (issue.slug) params['slug'] = issue.slug
+  const query = new URLSearchParams(params).toString()
+  router.push(`/content/${issue.model}${query ? `?${query}` : ''}`)
+}
+
 const showErrors = ref(true)
 const showWarnings = ref(true)
 const showNotices = ref(true)
@@ -280,7 +306,13 @@ onMounted(() => { fetchValidation() })
                   <CollapsibleContent>
                     <Separator />
                     <div class="divide-y divide-border">
-                      <div v-for="(issue, i) in issues" :key="i" class="flex items-start gap-3 p-4">
+                      <div
+                        v-for="(issue, i) in issues"
+                        :key="i"
+                        class="flex items-start gap-3 p-4 transition-colors"
+                        :class="issue.model ? 'cursor-pointer hover:bg-muted/40' : ''"
+                        @click="issue.model && goToIssue(issue)"
+                      >
                         <component
                           :is="severityConfig[issue.severity as keyof typeof severityConfig]?.icon ?? Info"
                           :class="cn('mt-0.5 size-4 shrink-0', severityConfig[issue.severity as keyof typeof severityConfig]?.color ?? 'text-muted-foreground')"

@@ -135,6 +135,14 @@ After all translations are saved, re-generate the SDK client so the application 
 npx contentrain generate
 ```
 
+### After Translation: SDK Regeneration
+
+New locale data requires SDK client regeneration:
+
+```bash
+npx contentrain generate
+```
+
 ### 8. Save Translations
 
 After approval, call `contentrain_content_save` for each model and target locale:
@@ -178,3 +186,10 @@ Report to the user:
 - Submission status.
 - Reminder to review translations for nuance that automated checks cannot catch.
 - Suggestion: run `/contentrain-review` to verify overall i18n coverage.
+
+## Related Skills
+
+- **contentrain-serve** — Review translated content in browser
+- **contentrain-generate** — SDK regeneration for new locale data
+- **contentrain-quality** — Translation quality rules
+- **contentrain** — Core architecture and MCP tool catalog

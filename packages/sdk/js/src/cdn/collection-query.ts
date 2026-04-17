@@ -1,12 +1,15 @@
 import type { CollectionDataSource } from './data-source.js'
 import type { HttpTransport } from './http-transport.js'
+import type { WhereOp, WhereClause } from '../shared/where.js'
+import { applyWhere } from '../shared/where.js'
 
-type WhereOp = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'contains'
-
-interface WhereClause {
-  field: string
-  op: WhereOp
-  value: unknown
+export interface EntryMeta {
+  status?: string
+  publish_at?: string
+  expire_at?: string
+  updated_by?: string
+  approved_by?: string
+  [key: string]: unknown
 }
 
 export class CdnCollectionQuery<T extends object> {
@@ -20,6 +23,7 @@ export class CdnCollectionQuery<T extends object> {
   private _limit: number | null = null
   private _offset = 0
   private _includes: string[] = []
+  private _withMeta = false
 
   constructor(transport: HttpTransport, modelId: string, defaultLocale?: string) {
     this._transport = transport
@@ -59,6 +63,11 @@ export class CdnCollectionQuery<T extends object> {
     return this
   }
 
+  withMeta(): this {
+    this._withMeta = true
+    return this
+  }
+
   async all(): Promise<T[]> {
     let items = await this._source.getAll(this._locale)
 
@@ -94,7 +103,17 @@ export class CdnCollectionQuery<T extends object> {
       items = await this._resolveIncludes(items)
     }
 
+    // Enrich with entry metadata
+    if (this._withMeta) {
+      items = await this._enrichMeta(items)
+    }
+
     return items
+  }
+
+  async count(): Promise<number> {
+    const items = await this.all()
+    return items.length
   }
 
   async first(): Promise<T | undefined> {
@@ -148,23 +167,23 @@ export class CdnCollectionQuery<T extends object> {
       return resolved
     })
   }
-}
 
-function applyWhere<T>(item: T, clause: WhereClause): boolean {
-  const val = (item as Record<string, unknown>)[clause.field]
-  switch (clause.op) {
-    case 'eq': return val === clause.value
-    case 'ne': return val !== clause.value
-    case 'gt': return (val as number) > (clause.value as number)
-    case 'gte': return (val as number) >= (clause.value as number)
-    case 'lt': return (val as number) < (clause.value as number)
-    case 'lte': return (val as number) <= (clause.value as number)
-    case 'in': return Array.isArray(clause.value) && (clause.value as unknown[]).includes(val)
-    case 'contains': {
-      if (typeof val === 'string') return val.includes(clause.value as string)
-      if (Array.isArray(val)) return val.includes(clause.value)
-      return false
+  private async _enrichMeta(items: T[]): Promise<T[]> {
+    let metaMap: Record<string, EntryMeta> = {}
+    try {
+      metaMap = await this._transport.fetch<Record<string, EntryMeta>>(`meta/${this._modelId}/${this._locale}.json`)
+    } catch {
+      // No meta available — return items unchanged
+      return items
     }
-    default: return true
+    return items.map(item => {
+      const id = (item as Record<string, unknown>).id as string
+      const meta = id ? metaMap[id] : undefined
+      if (meta) {
+        return { ...item, _meta: meta }
+      }
+      return item
+    })
   }
 }
+

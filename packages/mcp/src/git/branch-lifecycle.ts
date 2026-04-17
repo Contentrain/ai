@@ -138,3 +138,52 @@ export async function checkBranchHealth(projectRoot: string): Promise<BranchHeal
 
   return { total, merged: mergedCount, unmerged, warning, blocked, message }
 }
+
+export interface BranchDiffResult {
+  /** The feature branch the diff was computed from. */
+  branch: string
+  /** The base ref the diff was computed against. Defaults to the `contentrain` branch. */
+  base: string
+  /** `git diff --stat` output — human-readable summary. */
+  stat: string
+  /** Raw unified diff. */
+  patch: string
+  /** Number of files touched in the diff. */
+  filesChanged: number
+}
+
+/**
+ * Compute the diff between a feature branch and its base.
+ *
+ * Defaults `base` to `CONTENTRAIN_BRANCH` — the singleton content-
+ * tracking branch every feature branch forks from. Passing the repo's
+ * default branch (e.g. `main`) is almost always a bug: when
+ * `contentrain` is ahead of `main`, the diff picks up unrelated
+ * historical content changes that the feature branch did not produce.
+ *
+ * Used by `contentrain serve` (branch detail view), the `contentrain
+ * diff` CLI command, and any Studio-side driver that needs to preview
+ * a feature branch before approving it.
+ */
+export async function branchDiff(
+  projectRoot: string,
+  opts: { branch: string, base?: string },
+): Promise<BranchDiffResult> {
+  const git = simpleGit(projectRoot)
+  const base = opts.base ?? CONTENTRAIN_BRANCH
+  const range = `${base}...${opts.branch}`
+
+  const [stat, patch, summary] = await Promise.all([
+    git.diff([range, '--stat']),
+    git.diff([range]),
+    git.diffSummary([range]),
+  ])
+
+  return {
+    branch: opts.branch,
+    base,
+    stat,
+    patch,
+    filesChanged: summary.changed,
+  }
+}

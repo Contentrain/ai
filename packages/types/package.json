@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/types",
-  "version": "0.2.0",
+  "version": "0.4.2",
   "license": "MIT",
   "description": "Shared TypeScript types for Contentrain ecosystem",
   "type": "module",
@@ -9,7 +9,7 @@
     "url": "git+https://github.com/Contentrain/ai.git",
     "directory": "packages/types"
   },
-  "homepage": "https://github.com/Contentrain/ai/tree/main/packages/types",
+  "homepage": "https://ai.contentrain.io/reference/config",
   "bugs": {
     "url": "https://github.com/Contentrain/ai/issues"
   },
@@ -26,12 +26,12 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     }
   },
   "main": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "files": [
     "dist"
   ],

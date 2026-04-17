@@ -37,9 +37,8 @@ docs/.vitepress/dist/
 .windsurf/
 .agents/
 
-# Changesets temp
-.changeset/*.md
-!.changeset/README.md
+# Changesets
+# .changeset/*.md files must be committed for the release workflow to work
 
 # Contentrain cache
 .contentrain/.cache/
@@ -47,3 +46,7 @@ docs/.vitepress/dist/
 
 .tmp
 .mcpregistry_*
+tmp/
+# Symlinked projects
+/studio
+/.internal

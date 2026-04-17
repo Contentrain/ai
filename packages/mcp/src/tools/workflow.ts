@@ -2,12 +2,19 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { z } from 'zod'
 import { simpleGit } from 'simple-git'
-import { validateProject } from '../core/validator.js'
+import type { ToolProvider } from '../server.js'
+import { validateProject } from '../core/validator/index.js'
 import { readConfig } from '../core/config.js'
-import { createTransaction, buildBranchName } from '../git/transaction.js'
+import { createTransaction, buildBranchName, mergeBranch } from '../git/transaction.js'
 import { checkBranchHealth, cleanupMergedBranches } from '../git/branch-lifecycle.js'
+import { TOOL_ANNOTATIONS } from './annotations.js'
+import { capabilityError } from './guards.js'
 
-export function registerWorkflowTools(server: McpServer, projectRoot: string): void {
+export function registerWorkflowTools(
+  server: McpServer,
+  provider: ToolProvider,
+  projectRoot: string | undefined,
+): void {
   // ─── contentrain_validate ───
   server.tool(
     'contentrain_validate',
@@ -16,8 +23,17 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
       model: z.string().optional().describe('Model ID to validate (omit for all models)'),
       fix: z.boolean().optional().describe('Auto-fix structural issues (canonical sort, orphan meta, missing locale files). Default: false'),
     },
+    TOOL_ANNOTATIONS['contentrain_validate']!,
     async (input) => {
-      const config = await readConfig(projectRoot)
+      // Read-only validate runs over any provider (LocalProvider or remote
+      // GitHubProvider). Fix mode still needs a local worktree — it opens a
+      // git transaction — so it short-circuits with a capability error when
+      // no projectRoot is available.
+      if (input.fix && !projectRoot) {
+        return capabilityError('contentrain_validate', 'localWorktree')
+      }
+
+      const config = await readConfig(provider)
       if (!config) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized. Run contentrain_init first.' }) }],
@@ -28,7 +44,7 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
       try {
         let result: Awaited<ReturnType<typeof validateProject>> | undefined
 
-        if (input.fix) {
+        if (input.fix && projectRoot) {
           // Branch health gate for fix mode (creates a branch)
           const fixHealth = await checkBranchHealth(projectRoot)
           if (fixHealth.blocked) {
@@ -85,9 +101,14 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
           }
         }
 
-        // No fix or nothing was fixed — run read-only validation
+        // No fix or nothing was fixed — run read-only validation. Prefer the
+        // local disk walk when we have a projectRoot (identical behavior to
+        // pre-5.5 callers); otherwise drive the reader-based path so remote
+        // providers stay supported.
         if (!result) {
-          result = await validateProject(projectRoot, { model: input.model, fix: false })
+          result = projectRoot
+            ? await validateProject(projectRoot, { model: input.model, fix: false })
+            : await validateProject(provider, { model: input.model, fix: false })
         }
 
         const nextSteps: string[] = []
@@ -124,7 +145,15 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
       branches: z.array(z.string()).optional().describe('Specific branch names to push (omit for all contentrain/* branches)'),
       message: z.string().optional().describe('Optional message for the push operation'),
     },
+    TOOL_ANNOTATIONS['contentrain_submit']!,
     async (input) => {
+      // Submit pushes a branch to origin via simple-git — needs both a
+      // local worktree (to enumerate cr/* branches) and pushRemote
+      // (semantic capability name, even though the underlying code is
+      // simple-git rather than a provider call).
+      if (!provider.capabilities.localWorktree || !provider.capabilities.pushRemote || !projectRoot) {
+        return capabilityError('contentrain_submit', 'localWorktree')
+      }
       const config = await readConfig(projectRoot)
       if (!config) {
         return {
@@ -233,6 +262,7 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
 
         const nextSteps: string[] = []
         if (pushed.length > 0) nextSteps.push('Create PRs on your git platform for review')
+        if (pushed.length > 0) nextSteps.push('For merge: use contentrain_merge or direct user to http://localhost:3333/branches')
         if (errors.length > 0) nextSteps.push('Fix push errors and retry')
         if (cleanup.remaining >= 50) nextSteps.push(`Warning: ${cleanup.remaining} active contentrain branches. Consider reviewing old branches.`)
 
@@ -251,6 +281,72 @@ export function registerWorkflowTools(server: McpServer, projectRoot: string): v
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             error: `Submit failed: ${error instanceof Error ? error.message : String(error)}`,
+          }) }],
+          isError: true,
+        }
+      }
+    },
+  )
+
+  // ─── contentrain_merge ───
+  server.tool(
+    'contentrain_merge',
+    'Merge a review-mode branch into contentrain. Local git operation — no external platform needed. Merges the feature branch into the contentrain branch, advances the base branch via update-ref, and selectively syncs .contentrain/ files to the working tree.',
+    {
+      branch: z.string().describe('Branch name to merge (e.g. cr/normalize/extract/...)'),
+      confirm: z.literal(true).describe('Must be true to confirm the merge'),
+    },
+    TOOL_ANNOTATIONS['contentrain_merge']!,
+    async (input) => {
+      // Merge runs a local git transaction (worktree + update-ref +
+      // selective sync). Remote providers do not expose this today; use
+      // provider.mergeBranch directly from a Studio-style driver instead.
+      if (!provider.capabilities.localWorktree || !projectRoot) {
+        return capabilityError('contentrain_merge', 'localWorktree')
+      }
+      const config = await readConfig(projectRoot)
+      if (!config) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized. Run contentrain_init first.' }) }],
+          isError: true,
+        }
+      }
+
+      try {
+        // Verify branch exists
+        const git = simpleGit(projectRoot)
+        const branches = await git.branchLocal()
+        if (!branches.all.includes(input.branch)) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({
+              error: `Branch "${input.branch}" not found locally.`,
+              next_steps: ['Check branch name with git branch -l', 'Use contentrain_submit to push first if needed'],
+            }) }],
+            isError: true,
+          }
+        }
+
+        const result = await mergeBranch(projectRoot, input.branch)
+
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            status: 'merged',
+            action: result.action,
+            commit: result.commit,
+            sync: result.sync,
+            next_steps: [
+              'Run `npx contentrain generate` to update SDK client',
+              'Run contentrain_validate to verify content integrity',
+              result.sync.skipped.length > 0
+                ? `${result.sync.skipped.length} file(s) skipped due to local changes — resolve manually`
+                : '',
+            ].filter(Boolean),
+          }, null, 2) }],
+        }
+      } catch (error) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: `Merge failed: ${error instanceof Error ? error.message : String(error)}`,
           }) }],
           isError: true,
         }

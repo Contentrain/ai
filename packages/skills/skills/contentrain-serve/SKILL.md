@@ -94,3 +94,10 @@ The serve UI is a **monitoring + approval surface**, not an action trigger:
 - **Prompts**: every page shows copyable agent prompts that developers paste into their AI agent
 
 All mutations (create, edit, delete, scan, fix, normalize) are **agent-driven via MCP tools**. The UI never triggers these directly.
+
+## Related Skills
+
+- **contentrain-normalize** — Normalize workflow uses serve for extraction/reuse review and approval
+- **contentrain-diff** — Terminal-based branch review alternative to serve /branches page
+- **contentrain-review** — Content review workflow uses serve for visual inspection
+- **contentrain** — Core architecture and MCP tool catalog

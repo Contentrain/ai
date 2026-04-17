@@ -52,6 +52,7 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 | `contentrain_apply` | Apply normalize (extract/reuse) |
 | `contentrain_validate` | Validate content against schemas |
 | `contentrain_submit` | Push branches to remote |
+| `contentrain_merge` | Merge a review-mode branch into contentrain locally |
 | `contentrain_bulk` | Batch operations (copy_locale/update_status/delete_entries) |
 
 ## Mandatory Protocols
@@ -77,11 +78,45 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 - Never create branches manually, never commit directly to main or the `contentrain` branch
 - 50+ active branches = warning, 80+ = blocked
 
+## CLI Serve — Review & Approval
+
+Normalize and review workflows often need browser-based approval:
+
+```bash
+contentrain serve  # starts http://localhost:3333
+```
+
+Key pages: `/normalize` (extraction approval), `/branches` (merge/delete), `/validate` (error review), `/content` (browse).
+
+Agent should start or ensure serve is running when:
+- Normalize extraction needs user approval
+- Multiple branches await review
+- Validation errors need visual inspection
+
+Branch merge options: CLI serve UI (localhost:3333/branches), `contentrain_merge` MCP tool, or git platform PR.
+
+## SDK Regeneration
+
+After model/content changes or normalize reuse, run:
+
+```bash
+npx contentrain generate
+```
+
+This regenerates `.contentrain/client/` — required for `#contentrain` imports to work.
+
 ## Localization
 
 - All supported locales must have entries for every content item
 - Collection entry IDs and dictionary keys must match across all locales
 - IDs and slugs are locale-agnostic — same reference works everywhere
+
+## Content Governance
+
+- **No duplicate values** — before creating a dictionary key, check if the value already exists under another key (MCP warns automatically via advisories)
+- **Vocabulary first** — check `.contentrain/vocabulary.json` for canonical terms before creating content. Use approved terms exactly, do not invent synonyms
+- **Run validation** — after bulk content operations, call `contentrain_validate` to catch duplicate values, missing translations, and schema issues
+- **Periodic health check** — run `contentrain doctor --usage` to detect unused keys, duplicate values, and locale coverage gaps
 
 ## Security
 

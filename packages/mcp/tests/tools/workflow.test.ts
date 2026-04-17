@@ -138,7 +138,7 @@ describe('contentrain_validate', () => {
     expect(data['valid']).toBe(false)
     const issues = data['issues'] as Array<Record<string, unknown>>
     const requiredIssue = issues.find(i =>
-      (i['message'] as string).includes('Required field "name" is missing'),
+      i['field'] === 'name' && (i['message'] as string).includes('Required'),
     )
     expect(requiredIssue).toBeDefined()
     expect(requiredIssue!['severity']).toBe('error')
@@ -368,6 +368,38 @@ describe('contentrain_validate', () => {
     expect(updatedMeta!['keep-me']!['source']).toBe('import')
   })
 
+  it('detects duplicate dictionary values', async () => {
+    client = await createModel(client, 'ui-labels', 'dictionary', 'system')
+
+    // Save dictionary with duplicate values
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'ui-labels',
+        entries: [
+          { locale: 'en', data: { 'dialog.cancel': 'Cancel', 'form.cancel': 'Cancel', 'nav.home': 'Home' } },
+          { locale: 'tr', data: { 'dialog.cancel': 'İptal', 'form.cancel': 'İptal', 'nav.home': 'Ana Sayfa' } },
+        ],
+      },
+    })
+
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_validate',
+      arguments: { model: 'ui-labels' },
+    })
+
+    const data = parseResult(result)
+    const issues = data['issues'] as Array<Record<string, unknown>>
+    const dupeIssue = issues.find(i =>
+      (i['message'] as string).includes('Duplicate value') && (i['message'] as string).includes('Cancel'),
+    )
+    expect(dupeIssue).toBeDefined()
+    expect(dupeIssue!['severity']).toBe('warning')
+    expect(dupeIssue!['model']).toBe('ui-labels')
+  })
+
   it('auto-fix canonical sort', async () => {
     client = await createModel(client, 'authors', 'collection', 'blog', {
       name: { type: 'string' },
@@ -419,6 +451,107 @@ describe('contentrain_validate', () => {
     const fixed = await readJson<Record<string, unknown>>(contentPath)
     const fixedKeys = Object.keys(fixed!)
     expect(fixedKeys).toEqual([...fixedKeys].toSorted())
+  })
+
+  // ─── Phase 4.2: validateProject delegates per-entry checks to validateContent,
+  // so the email/url heuristics, polymorphic relation structure, and nested-field
+  // recursion that used to live in Studio's content-validation.ts now fire here too.
+  it('emits email heuristic warning from validateProject', async () => {
+    client = await createModel(client, 'team', 'collection', 'marketing', {
+      contact: { type: 'email' },
+    })
+
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'team',
+        entries: [
+          { id: 'member-a', locale: 'en', data: { contact: 'not-an-email' } },
+          { id: 'member-a', locale: 'tr', data: { contact: 'not-an-email' } },
+        ],
+      },
+    })
+
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_validate',
+      arguments: { model: 'team' },
+    })
+
+    const data = parseResult(result)
+    const issues = data['issues'] as Array<Record<string, unknown>>
+    const emailWarning = issues.find(i =>
+      i['severity'] === 'warning' && i['field'] === 'contact' && (i['message'] as string).includes('valid email'),
+    )
+    expect(emailWarning).toBeDefined()
+  })
+
+  it('emits url heuristic warning from validateProject', async () => {
+    client = await createModel(client, 'links', 'collection', 'marketing', {
+      href: { type: 'url' },
+    })
+
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'links',
+        entries: [
+          { id: 'link-a', locale: 'en', data: { href: 'example.com' } },
+          { id: 'link-a', locale: 'tr', data: { href: 'example.com' } },
+        ],
+      },
+    })
+
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_validate',
+      arguments: { model: 'links' },
+    })
+
+    const data = parseResult(result)
+    const issues = data['issues'] as Array<Record<string, unknown>>
+    const urlWarning = issues.find(i =>
+      i['severity'] === 'warning' && i['field'] === 'href' && (i['message'] as string).includes('valid URL'),
+    )
+    expect(urlWarning).toBeDefined()
+  })
+
+  it('flags nested object field errors via validateProject', async () => {
+    client = await createModel(client, 'pages', 'collection', 'marketing', {
+      seo: {
+        type: 'object',
+        fields: {
+          title: { type: 'string', required: true },
+        },
+      },
+    })
+
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'pages',
+        entries: [
+          { id: 'page-a', locale: 'en', data: { seo: {} } },
+          { id: 'page-a', locale: 'tr', data: { seo: {} } },
+        ],
+      },
+    })
+
+    client = await createTestClient(testDir)
+
+    const result = await client.callTool({
+      name: 'contentrain_validate',
+      arguments: { model: 'pages' },
+    })
+
+    const data = parseResult(result)
+    const issues = data['issues'] as Array<Record<string, unknown>>
+    const nestedError = issues.find(i =>
+      i['severity'] === 'error' && i['field'] === 'title',
+    )
+    expect(nestedError).toBeDefined()
   })
 })
 

@@ -45,15 +45,31 @@ export default defineCommand({
 
       const branch = buildBranchName('fix', 'validate')
       const tx = await createTransaction(projectRoot, branch)
+      let txResult: Awaited<ReturnType<typeof tx.complete>> | undefined
       try {
         await tx.write(async (wt) => {
           result = await validateProject(wt, { model: args.model, fix: true })
           await writeContext(wt, { tool: 'contentrain_validate', model: args.model ?? '*' })
         })
         await tx.commit('[contentrain] validate: auto-fix')
-        await tx.complete()
+        txResult = await tx.complete()
       } finally {
         await tx.cleanup()
+      }
+
+      // Surface branch + workflow action to parity with the interactive
+      // path. In review mode the fix lands on a cr/fix/... branch that
+      // needs a manual merge; previously the non-interactive path
+      // reported "done" without telling the caller where the fix went.
+      if (txResult && result && result.fixed > 0) {
+        if (txResult.action === 'pending-review') {
+          log.info(`Fixes committed to branch ${pc.cyan(branch)} (pending review). Run ${pc.cyan('contentrain diff')} to merge.`)
+        } else if (txResult.action === 'auto-merged') {
+          log.success(`Fixes auto-merged into ${pc.cyan('contentrain')} (commit ${pc.dim(txResult.commit.slice(0, 8))}).`)
+        }
+        if (txResult.sync?.skipped?.length) {
+          log.warning(`${txResult.sync.skipped.length} file(s) skipped during sync — you have uncommitted changes.`)
+        }
       }
     } else {
       result = await validateProject(projectRoot, {

@@ -1,13 +1,23 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import { readConfig } from '../core/config.js'
+import type { ToolProvider } from '../server.js'
+import { readConfig, readVocabulary } from '../core/config.js'
 import { readModel } from '../core/model-manager.js'
-import { writeContent, deleteContent, listContent } from '../core/content-manager.js'
-import { createTransaction, buildBranchName } from '../git/transaction.js'
+import { listContent } from '../core/content-manager.js'
+import { planContentDelete, planContentSave } from '../core/ops/index.js'
+import { LocalProvider } from '../providers/local/index.js'
+import { buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
-import { validateProject } from '../core/validator.js'
+import { validateProject } from '../core/validator/index.js'
+import { OverlayReader } from '../core/overlay-reader.js'
+import { TOOL_ANNOTATIONS } from './annotations.js'
+import { commitThroughProvider } from './commit-plan.js'
 
-export function registerContentTools(server: McpServer, projectRoot: string): void {
+export function registerContentTools(
+  server: McpServer,
+  provider: ToolProvider,
+  projectRoot: string | undefined,
+): void {
   // ─── contentrain_content_save ───
   server.tool(
     'contentrain_content_save',
@@ -23,8 +33,9 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         expire_at: z.string().optional().describe('ISO 8601 date for scheduled expiry (stored in meta, must be after publish_at)'),
       })).describe('Content entries to save'),
     },
+    TOOL_ANNOTATIONS['contentrain_content_save']!,
     async (input) => {
-      const config = await readConfig(projectRoot)
+      const config = await readConfig(provider)
       if (!config) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized. Run contentrain_init first.' }) }],
@@ -32,7 +43,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         }
       }
 
-      const model = await readModel(projectRoot, input.model)
+      const model = await readModel(provider, input.model)
       if (!model) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: `Model "${input.model}" not found` }) }],
@@ -90,72 +101,112 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         if (entry.expire_at !== undefined) entry.data['expire_at'] = entry.expire_at
       }
 
-      // Branch health gate
-      const health = await checkBranchHealth(projectRoot)
-      if (health.blocked) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({
-            error: health.message,
-            action: 'blocked',
-            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
-          }, null, 2) }],
-          isError: true,
+      // Branch health gate — LocalProvider only (git branch count check).
+      if (provider instanceof LocalProvider) {
+        const health = await checkBranchHealth(provider.projectRoot)
+        if (health.blocked) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({
+              error: health.message,
+              action: 'blocked',
+              hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+            }, null, 2) }],
+            isError: true,
+          }
         }
       }
 
-      const branch = buildBranchName('content', input.model)
-      const tx = await createTransaction(projectRoot, branch)
+      const vocabulary = await readVocabulary(provider)
 
+      let plan: Awaited<ReturnType<typeof planContentSave>>
       try {
-        let results: Awaited<ReturnType<typeof writeContent>>
-
-        let entryIds: string[] = []
-
-        await tx.write(async (wt) => {
-          results = await writeContent(wt, model, input.entries, config)
-          entryIds = results!.map(r => r.id ?? r.slug ?? r.locale).filter(Boolean) as string[]
+        plan = await planContentSave(provider, {
+          model,
+          entries: input.entries,
+          config,
+          vocabulary,
         })
-
-        await tx.commit(`[contentrain] content: ${input.model}`, {
-          tool: 'contentrain_content_save',
-          model: input.model,
-          locale: input.entries[0]?.locale,
-          entries: entryIds,
-        })
-        const gitResult = await tx.complete()
-
-        // Run real validation after save — don't fake it
-        const validationResult = await validateProject(projectRoot, { model: input.model })
-
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({
-            status: 'committed',
-            message: 'Content saved and committed to git. Do NOT manually edit .contentrain/ files.',
-            results: results!,
-            git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
-            validation: {
-              valid: validationResult.valid,
-              errors: validationResult.issues.filter(i => i.severity === 'error').map(i => i.message),
-            },
-            context_updated: true,
-            next_steps: [
-              ...(!validationResult.valid ? ['WARNING: Content has validation errors — run contentrain_validate for details'] : []),
-              ...(model.kind === 'collection'
-                ? ['Use contentrain_content_list to verify', 'Add more entries or publish']
-                : ['Use contentrain_content_list to verify']),
-            ],
-          }, null, 2) }],
-        }
       } catch (error) {
-        await tx.cleanup()
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             error: `Content save failed: ${error instanceof Error ? error.message : String(error)}`,
           }) }],
           isError: true,
         }
-      } finally {
-        await tx.cleanup()
+      }
+
+      const entryIds = plan.result
+        .map(r => r.id ?? r.slug ?? r.locale)
+        .filter((v): v is string => Boolean(v))
+
+      const branch = buildBranchName('content', input.model)
+      const message = `[contentrain] content: ${input.model}`
+      const contextPayload = {
+        tool: 'contentrain_content_save',
+        model: input.model,
+        locale: input.entries[0]?.locale,
+        entries: entryIds,
+      }
+
+      let commitSha: string
+      let workflowAction: 'auto-merged' | 'pending-review'
+      let sync: unknown
+
+      try {
+        const result = await commitThroughProvider(provider, {
+          branch,
+          changes: plan.changes,
+          message,
+          contextPayload,
+        })
+        commitSha = result.commitSha
+        workflowAction = result.workflowAction
+        sync = result.sync
+      } catch (error) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: `Content save failed: ${error instanceof Error ? error.message : String(error)}`,
+          }) }],
+          isError: true,
+        }
+      }
+
+      // Post-save validation — runs against whichever provider backed the
+      // write. LocalProvider sees the post-commit state via its
+      // filesystem (the worktree transaction has already landed the
+      // files). Remote providers see the pre-commit state in their
+      // reader; wrap the reader in an OverlayReader so the validator
+      // evaluates the committed-but-not-yet-visible state instead of
+      // the pre-change base branch.
+      const validationResult = projectRoot
+        ? await validateProject(projectRoot, { model: input.model })
+        : await validateProject(new OverlayReader(provider, plan.changes), { model: input.model })
+
+      const allAdvisories = plan.result.flatMap(r => r.advisories ?? [])
+
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify({
+          status: 'committed',
+          message: 'Content saved and committed to git. Do NOT manually edit .contentrain/ files.',
+          results: plan.result,
+          git: { branch, action: workflowAction, commit: commitSha, ...(sync ? { sync } : {}) },
+          ...(allAdvisories.length > 0 ? {
+            advisories: allAdvisories,
+            advisory_note: 'Save succeeded. Review these warnings and consider consolidating duplicate values.',
+          } : {}),
+          validation: {
+            valid: validationResult.valid,
+            errors: validationResult.issues.filter(i => i.severity === 'error').map(i => i.message),
+          },
+          context_updated: true,
+          next_steps: [
+            ...(allAdvisories.length > 0 ? ['ADVISORY: Duplicate values detected — review advisories above'] : []),
+            ...(!validationResult.valid ? ['WARNING: Content has validation errors — run contentrain_validate for details'] : []),
+            ...(model.kind === 'collection'
+              ? ['Use contentrain_content_list to verify', 'Add more entries or publish']
+              : ['Use contentrain_content_list to verify']),
+          ],
+        }, null, 2) }],
       }
     },
   )
@@ -172,8 +223,9 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
       keys: z.array(z.string()).optional().describe('Dictionary only: specific keys to remove. Omit to delete entire locale file.'),
       confirm: z.literal(true).describe('Must be true to confirm deletion'),
     },
+    TOOL_ANNOTATIONS['contentrain_content_delete']!,
     async (input) => {
-      const config = await readConfig(projectRoot)
+      const config = await readConfig(provider)
       if (!config) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized.' }) }],
@@ -181,7 +233,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         }
       }
 
-      const model = await readModel(projectRoot, input.model)
+      const model = await readModel(provider, input.model)
       if (!model) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: `Model "${input.model}" not found` }) }],
@@ -189,61 +241,78 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         }
       }
 
-      // Branch health gate
-      const deleteHealth = await checkBranchHealth(projectRoot)
-      if (deleteHealth.blocked) {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({
-            error: deleteHealth.message,
-            action: 'blocked',
-            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
-          }, null, 2) }],
-          isError: true,
+      if (provider instanceof LocalProvider) {
+        const deleteHealth = await checkBranchHealth(provider.projectRoot)
+        if (deleteHealth.blocked) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({
+              error: deleteHealth.message,
+              action: 'blocked',
+              hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+            }, null, 2) }],
+            isError: true,
+          }
         }
       }
 
-      const branch = buildBranchName('content', input.model)
-      const tx = await createTransaction(projectRoot, branch)
-
+      let deletePlan: Awaited<ReturnType<typeof planContentDelete>>
       try {
-        let removed: string[] = []
-
-        await tx.write(async (wt) => {
-          removed = await deleteContent(wt, model, {
-            id: input.id,
-            slug: input.slug,
-            locale: input.locale,
-            keys: input.keys,
-          })
-        })
-
-        await tx.commit(`[contentrain] delete content: ${input.model}`, {
-          tool: 'contentrain_content_delete',
-          model: input.model,
+        deletePlan = await planContentDelete(provider, {
+          model,
+          id: input.id,
+          slug: input.slug,
           locale: input.locale,
+          keys: input.keys,
         })
-        const gitResult = await tx.complete()
-
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({
-            status: 'committed',
-            message: 'Content deleted and committed to git. Do NOT manually edit .contentrain/ files.',
-            deleted: true,
-            files_removed: removed,
-            git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
-            context_updated: true,
-          }, null, 2) }],
-        }
       } catch (error) {
-        await tx.cleanup()
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             error: `Delete failed: ${error instanceof Error ? error.message : String(error)}`,
           }) }],
           isError: true,
         }
-      } finally {
-        await tx.cleanup()
+      }
+
+      const branch = buildBranchName('content', input.model)
+      const message = `[contentrain] delete content: ${input.model}`
+      const contextPayload = {
+        tool: 'contentrain_content_delete',
+        model: input.model,
+        locale: input.locale,
+      }
+
+      let commitSha: string
+      let workflowAction: 'auto-merged' | 'pending-review'
+      let sync: unknown
+
+      try {
+        const result = await commitThroughProvider(provider, {
+          branch,
+          changes: deletePlan.changes,
+          message,
+          contextPayload,
+        })
+        commitSha = result.commitSha
+        workflowAction = result.workflowAction
+        sync = result.sync
+
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            status: 'committed',
+            message: 'Content deleted and committed to git. Do NOT manually edit .contentrain/ files.',
+            deleted: true,
+            files_removed: deletePlan.result,
+            git: { branch, action: workflowAction, commit: commitSha, ...(sync ? { sync } : {}) },
+            context_updated: true,
+          }, null, 2) }],
+        }
+      } catch (error) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: `Delete failed: ${error instanceof Error ? error.message : String(error)}`,
+          }) }],
+          isError: true,
+        }
       }
     },
   )
@@ -260,8 +329,9 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
       limit: z.number().optional().describe('Max entries to return'),
       offset: z.number().optional().describe('Skip N entries'),
     },
+    TOOL_ANNOTATIONS['contentrain_content_list']!,
     async (input) => {
-      const config = await readConfig(projectRoot)
+      const config = await readConfig(provider)
       if (!config) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Project not initialized.' }) }],
@@ -269,7 +339,7 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
         }
       }
 
-      const model = await readModel(projectRoot, input.model)
+      const model = await readModel(provider, input.model)
       if (!model) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: `Model "${input.model}" not found` }) }],
@@ -278,13 +348,20 @@ export function registerContentTools(server: McpServer, projectRoot: string): vo
       }
 
       try {
-        const result = await listContent(projectRoot, model, {
+        // LocalProvider path keeps the legacy filesystem implementation
+        // (with full `resolve:true` relation hydration). Remote providers
+        // get the reader-based path — `resolve:true` is rejected there
+        // because cross-model relation walks need local disk today.
+        const listOpts = {
           locale: input.locale,
           filter: input.filter as Record<string, unknown>,
           resolve: input.resolve,
           limit: input.limit,
           offset: input.offset,
-        }, config)
+        }
+        const result = projectRoot
+          ? await listContent(projectRoot, model, listOpts, config)
+          : await listContent(provider, model, listOpts, config)
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],

@@ -1,32 +1,42 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
+import type { ToolProvider } from '../server.js'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { readContext } from '../core/context.js'
 import { countEntries, listModels, readModel } from '../core/model-manager.js'
-import { resolveContentDir, resolveJsonFilePath, resolveLocaleStrategy } from '../core/content-manager.js'
+import { resolveLocaleStrategy } from '../core/content-manager.js'
+import { contentDirPath, contentFilePath } from '../core/ops/paths.js'
 import { detectStack } from '../util/detect.js'
 import { join } from 'node:path'
-import { contentrainDir, pathExists } from '../util/fs.js'
+import { pathExists } from '../util/fs.js'
 import { checkBranchHealth, cleanupMergedBranches } from '../git/branch-lifecycle.js'
+import { TOOL_ANNOTATIONS } from './annotations.js'
 
-export function registerContextTools(server: McpServer, projectRoot: string): void {
+export function registerContextTools(
+  server: McpServer,
+  provider: ToolProvider,
+  projectRoot: string | undefined,
+): void {
   // ─── contentrain_status ───
   server.tool(
     'contentrain_status',
     'Get full project status (read-only). Returns config, models, context. Do NOT manually edit .contentrain/ based on this output.',
     {},
+    TOOL_ANNOTATIONS['contentrain_status']!,
     async () => {
-      const crDir = contentrainDir(projectRoot)
-      const initialized = await pathExists(join(crDir, 'config.json'))
+      // Read-only status works over any provider. Stack detection and
+      // branch health are projectRoot-only — they degrade gracefully
+      // when the session is driven by a remote provider.
+      const initialized = await provider.fileExists('.contentrain/config.json')
 
       if (!initialized) {
-        const detectedStack = await detectStack(projectRoot)
+        const detectedStack = projectRoot ? await detectStack(projectRoot) : null
         return {
           content: [{
             type: 'text' as const,
             text: JSON.stringify({
               initialized: false,
-              detected_stack: detectedStack,
+              ...(detectedStack ? { detected_stack: detectedStack } : {}),
               suggestion: 'Run contentrain_init to set up .contentrain/ structure',
               next_steps: ['Run contentrain_init'],
             }, null, 2),
@@ -34,10 +44,14 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
         }
       }
 
-      const config = await readConfig(projectRoot)
-      const models = await listModels(projectRoot)
-      const context = await readContext(projectRoot)
-      const vocabulary = await readVocabulary(projectRoot)
+      const config = await readConfig(provider)
+      const models = await listModels(provider)
+      // Local flow uses the filesystem helper for byte-parity; remote
+      // flows read the committed `.contentrain/context.json` through
+      // the provider. Either way, the context block surfaces the last
+      // operation + stats that were written alongside the last commit.
+      const context = projectRoot ? await readContext(projectRoot) : await readContext(provider)
+      const vocabulary = await readVocabulary(provider)
 
       const errors: string[] = []
       if (!config) errors.push('.contentrain/config.json missing')
@@ -56,29 +70,35 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
           lastOperation: context.lastOperation,
           stats: context.stats,
         } : null,
-        vocabulary_size: vocabulary ? Object.keys(vocabulary.terms).length : 0,
+        vocabulary: vocabulary && Object.keys(vocabulary.terms).length > 0
+          ? { size: Object.keys(vocabulary.terms).length, terms: vocabulary.terms }
+          : { size: 0 },
       }
 
-      // Branch lifecycle: lazy cleanup + health check (run BEFORE validation summary)
-      const hasGitRepo = await pathExists(join(projectRoot, '.git'))
-      if (hasGitRepo) {
-        try {
-          const cleanup = await cleanupMergedBranches(projectRoot)
-          const health = await checkBranchHealth(projectRoot)
-          result['branches'] = {
-            total: health.total,
-            merged: health.merged,
-            unmerged: health.unmerged,
-            cleaned_up: cleanup.deleted,
+      // Branch lifecycle: lazy cleanup + health check. Local-only, uses
+      // simple-git against the working tree. Skipped on remote providers
+      // where branch state is managed by Studio / the platform.
+      if (projectRoot) {
+        const hasGitRepo = await pathExists(join(projectRoot, '.git'))
+        if (hasGitRepo) {
+          try {
+            const cleanup = await cleanupMergedBranches(projectRoot)
+            const health = await checkBranchHealth(projectRoot)
+            result['branches'] = {
+              total: health.total,
+              merged: health.merged,
+              unmerged: health.unmerged,
+              cleaned_up: cleanup.deleted,
+            }
+            if (health.message) {
+              result['branch_warning'] = health.message
+            }
+            if (health.blocked) {
+              errors.push(health.message!)
+            }
+          } catch {
+            // Branch health check is best-effort — don't fail status
           }
-          if (health.message) {
-            result['branch_warning'] = health.message
-          }
-          if (health.blocked) {
-            errors.push(health.message!)
-          }
-        } catch {
-          // Branch health check is best-effort — don't fail status
         }
       }
 
@@ -107,8 +127,9 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
       include_sample: z.boolean().optional().default(false).describe('Include one sample entry'),
       locale: z.string().optional().describe('Locale for sample content (default: config default locale)'),
     },
+    TOOL_ANNOTATIONS['contentrain_describe']!,
     async ({ model: modelId, include_sample, locale }) => {
-      const modelDef = await readModel(projectRoot, modelId)
+      const modelDef = await readModel(provider, modelId)
       if (!modelDef) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: `Model "${modelId}" not found` }) }],
@@ -116,9 +137,9 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
         }
       }
 
-      const config = await readConfig(projectRoot)
+      const config = await readConfig(provider)
       const effectiveLocale = locale ?? config?.locales.default ?? 'en'
-      const stats = await countEntries(projectRoot, modelDef)
+      const stats = await countEntries(provider, modelDef)
 
       const result: Record<string, unknown> = {
         id: modelDef.id,
@@ -132,13 +153,24 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
       }
 
       if (include_sample) {
-        const sample = await getSample(projectRoot, modelDef, effectiveLocale)
+        const sample = await getSample(provider, modelDef, effectiveLocale)
         if (sample) result['sample'] = sample
       }
 
       // Stack-aware import snippet
       const stack = config?.stack ?? 'other'
       result['import_snippet'] = generateImportSnippet(modelDef, stack, effectiveLocale)
+
+      // Vocabulary hint for dictionary models
+      if (modelDef.kind === 'dictionary') {
+        const vocabulary = await readVocabulary(provider)
+        if (vocabulary && Object.keys(vocabulary.terms).length > 0) {
+          result['vocabulary_hint'] = {
+            note: 'Check these approved terms before creating new dictionary keys',
+            terms: vocabulary.terms,
+          }
+        }
+      }
 
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
@@ -151,6 +183,7 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
     'contentrain_describe_format',
     'Describes the Contentrain content file format for any language/platform. Returns a comprehensive specification of the file structure, JSON formats, markdown conventions, meta files, and locale strategies.',
     {},
+    TOOL_ANNOTATIONS['contentrain_describe_format']!,
     async () => {
       const formatSpec = {
         overview: 'Contentrain stores content as plain JSON and Markdown files in a .contentrain/ directory at the project root. All files are committed to git.',
@@ -263,6 +296,19 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
             '6. Optionally read .contentrain/meta/{model-id}/{locale}.json for status/metadata',
           ],
         },
+        vocabulary: {
+          description: 'Canonical terms for content consistency across models and locales.',
+          file: '.contentrain/vocabulary.json',
+          format: {
+            version: 'number',
+            terms: 'Record<category, Record<slug, translation_value>>',
+          },
+          usage: [
+            'Check vocabulary before creating dictionary entries — reuse canonical terms',
+            'If a new term is needed, consider adding it to vocabulary first',
+            'Vocabulary applies across ALL dictionary models and ALL locales',
+          ],
+        },
       }
 
       return {
@@ -273,57 +319,70 @@ export function registerContextTools(server: McpServer, projectRoot: string): vo
 }
 
 async function getSample(
-  projectRoot: string,
+  reader: import('../core/contracts/index.js').RepoReader,
   model: import('@contentrain/types').ModelDefinition,
   locale: string,
 ): Promise<unknown> {
-  const { readJson, readDir } = await import('../util/fs.js')
-  const cDir = resolveContentDir(projectRoot, model)
+  const cDir = contentDirPath(model)
 
   if (model.kind === 'collection') {
-    const data = await readJson<Record<string, Record<string, unknown>>>(resolveJsonFilePath(cDir, model, locale))
+    const data = await tryReadJson<Record<string, Record<string, unknown>>>(
+      reader,
+      contentFilePath(model, locale),
+    )
     if (!data) return null
     const firstKey = Object.keys(data)[0]
     return firstKey ? { id: firstKey, ...data[firstKey] } : null
   }
 
   if (model.kind === 'singleton' || model.kind === 'dictionary') {
-    return readJson(resolveJsonFilePath(cDir, model, locale))
+    return tryReadJson(reader, contentFilePath(model, locale))
   }
 
   if (model.kind === 'document') {
     const strategy = resolveLocaleStrategy(model)
 
     if (!model.i18n) {
-      const entry = (await readDir(cDir)).find(item => item.endsWith('.md'))
+      const entry = (await reader.listDirectory(cDir)).find(item => item.endsWith('.md'))
       const slug = entry?.replace(/\.md$/u, '')
       return slug ? { slug, locale } : null
     }
 
     if (strategy === 'file') {
-      const slug = (await readDir(cDir))[0]
+      const slug = (await reader.listDirectory(cDir))[0]
       return slug ? { slug, locale } : null
     }
 
     if (strategy === 'suffix') {
       const suffix = `.${locale}.md`
-      const entry = (await readDir(cDir)).find(file => file.endsWith(suffix))
+      const entry = (await reader.listDirectory(cDir)).find(file => file.endsWith(suffix))
       const slug = entry?.slice(0, -suffix.length)
       return slug ? { slug, locale } : null
     }
 
     if (strategy === 'directory') {
-      const entry = (await readDir(join(cDir, locale))).find(item => item.endsWith('.md'))
+      const entry = (await reader.listDirectory(`${cDir}/${locale}`)).find(item => item.endsWith('.md'))
       const slug = entry?.replace(/\.md$/u, '')
       return slug ? { slug, locale } : null
     }
 
-    const entry = (await readDir(cDir)).find(item => item.endsWith('.md'))
+    const entry = (await reader.listDirectory(cDir)).find(item => item.endsWith('.md'))
     const slug = entry?.replace(/\.md$/u, '')
     return slug ? { slug, locale } : null
   }
 
   return null
+}
+
+async function tryReadJson<T>(
+  reader: import('../core/contracts/index.js').RepoReader,
+  path: string,
+): Promise<T | null> {
+  try {
+    return JSON.parse(await reader.readFile(path)) as T
+  } catch {
+    return null
+  }
 }
 
 function buildContentPath(

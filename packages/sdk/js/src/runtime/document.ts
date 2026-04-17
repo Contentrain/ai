@@ -1,9 +1,11 @@
 import type { RelationMeta, RelationResolver } from './query.js'
+import type { WhereOp, WhereClause } from '../shared/where.js'
+import { applyWhere } from '../shared/where.js'
 
 export class DocumentQuery<T extends object> {
   private _data: Map<string, T[]>
   private _locale: string | null = null
-  private _filters: Array<(item: T) => boolean> = []
+  private _filters: WhereClause[] = []
   private _includes: string[] = []
   private _relationMeta: Record<string, RelationMeta>
   private _resolver: RelationResolver | null
@@ -26,8 +28,14 @@ export class DocumentQuery<T extends object> {
     return this
   }
 
-  where<K extends string & keyof T>(field: K, value: T[K]): this {
-    this._filters.push((item) => item[field] === value)
+  where<K extends string & keyof T>(field: K, value: T[K]): this
+  where<K extends string & keyof T>(field: K, op: WhereOp, value: unknown): this
+  where<K extends string & keyof T>(field: K, opOrValue: WhereOp | T[K], value?: unknown): this {
+    if (value !== undefined) {
+      this._filters.push({ field, op: opOrValue as WhereOp, value })
+    } else {
+      this._filters.push({ field, op: 'eq', value: opOrValue })
+    }
     return this
   }
 
@@ -45,10 +53,14 @@ export class DocumentQuery<T extends object> {
     return item
   }
 
+  count(): number {
+    return this.all().length
+  }
+
   all(): T[] {
     let items = this._resolveData()
-    for (const filter of this._filters) {
-      items = items.filter(filter)
+    for (const clause of this._filters) {
+      items = items.filter(item => applyWhere(item, clause))
     }
     if (this._includes.length > 0 && this._resolver) {
       items = items.map(item => this._resolveIncludes(item))

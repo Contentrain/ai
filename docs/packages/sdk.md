@@ -85,6 +85,20 @@ const labels = dictionary('ui-labels').locale('en').get()
 const article = document('blog-article').locale('en').bySlug('welcome')
 ```
 
+## Studio Bridge
+
+`@contentrain/query` is the local typed read surface for TypeScript apps. Studio extends the same content contract into remote delivery workflows:
+
+- local apps can import `#contentrain` for generated, type-safe reads
+- Studio adds API keys, CDN publishing, media distribution, and team-facing delivery controls
+- both sides should point back to the same model definitions and locale structure
+
+Use [Ecosystem Map](/ecosystem) for the package relationship, and use Studio docs when the same content needs remote delivery:
+
+- [Contentrain Studio](/studio)
+- [Studio CDN](https://docs.contentrain.io/guide/cdn)
+- [Studio Ecosystem Map](https://docs.contentrain.io/guide/ecosystem)
+
 ## API Reference
 
 The generated client exposes four entry points, one for each model kind.
@@ -116,13 +130,24 @@ const latest = query('blog-post')
 | Method | Signature | Returns | Description |
 |--------|-----------|---------|-------------|
 | `locale` | `locale(lang: string)` | `this` | Set the content locale |
-| `where` | `where(field, value)` | `this` | Exact match filter on a field |
+| `where` | `where(field, value)` | `this` | Equality filter (shorthand for `eq`) |
+| `where` | `where(field, op, value)` | `this` | Operator filter: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `contains` |
 | `sort` | `sort(field, order?)` | `this` | Sort by field, order is `'asc'` or `'desc'` |
 | `limit` | `limit(n: number)` | `this` | Limit number of results |
 | `offset` | `offset(n: number)` | `this` | Skip first N results |
 | `include` | `include(...fields)` | `this` | Resolve relation fields |
+| `count` | `count()` | `number` | Return count of matching entries |
 | `all` | `all()` | `T[]` | Execute query, return all matches |
 | `first` | `first()` | `T \| undefined` | Execute query, return first match |
+
+Where operator examples:
+
+```ts
+query('plans').where('slug', 'ne', 'free').all()
+query('plans').where('price', 'gte', 10).where('price', 'lte', 50).all()
+query('starters').where('framework', 'in', ['nuxt', 'next']).all()
+query('blog').where('title', 'contains', 'Guide').count()
+```
 
 ### SingletonAccessor — Singletons
 
@@ -207,9 +232,11 @@ const latest = document('blog-article')
 | Method | Signature | Returns | Description |
 |--------|-----------|---------|-------------|
 | `locale` | `locale(lang: string)` | `this` | Set the content locale |
-| `where` | `where(field, value)` | `this` | Exact match filter |
+| `where` | `where(field, value)` | `this` | Equality filter (shorthand) |
+| `where` | `where(field, op, value)` | `this` | Operator filter (same operators as QueryBuilder) |
 | `include` | `include(...fields)` | `this` | Resolve relation fields |
 | `bySlug` | `bySlug(slug)` | `T \| undefined` | Find document by slug |
+| `count` | `count()` | `number` | Return count of matching documents |
 | `all` | `all()` | `T[]` | Execute query, return all matches |
 | `first` | `first()` | `T \| undefined` | Execute query, return first match |
 
@@ -359,12 +386,10 @@ const hero = client.singleton('hero').get()
 Common mistakes to avoid:
 
 ::: danger These APIs do not exist
-- `.filter()` — use `.where(field, value)` instead
+- `.filter()` — use `.where(field, value)` or `.where(field, op, value)` instead
 - `.byId()` — use `.where('id', value).first()` instead
-- `.count()` — use `.all().length` instead
 - `dictionary().all()` — use `.get()` instead
-- `await query(...)` — queries are **synchronous**, do not use `await`
-- `.where('field', 'eq', value)` — just `.where('field', value)`, no operator
+- `await query(...)` — local queries are **synchronous**, do not use `await`
 - `.get()` on QueryBuilder — use `.all()` or `.first()`
 :::
 
@@ -401,7 +426,73 @@ await client.collection('products')
 
 Supported operators: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `contains`.
 
-### CDN Metadata
+### CDN Entry Metadata
+
+Enrich collection entries with status, publish/expire dates:
+
+```ts
+const posts = await client.collection('blog')
+  .locale('en')
+  .withMeta()
+  .all()
+// posts[0]._meta → { status: 'published', publish_at: '...', expire_at: '...' }
+```
+
+### CDN Media
+
+Access the media asset manifest and resolve variant URLs:
+
+```ts
+const media = client.media()
+const assets = await media.list()           // All assets with path + meta
+const asset  = await media.asset('hero.jpg') // Single asset
+const url    = media.url(asset, 'thumb')    // Full CDN variant URL
+
+asset.meta.width      // 1920
+asset.meta.blurhash   // 'LEHV6nWB...'
+asset.meta.alt        // 'Hero image'
+```
+
+### CDN Forms
+
+Fetch form schema and submit data from external sites:
+
+```ts
+const form = client.form()
+const config = await form.config('contact')
+const result = await form.submit('contact', {
+  name: 'Alice', email: 'alice@example.com',
+}, { captchaToken: 'tok_xxx' })
+```
+
+### CDN Conversation API
+
+Send messages to the AI content agent for external content operations:
+
+```ts
+const conv = client.conversation()
+
+// Send a message — returns complete response
+const response = await conv.send('Create a blog post about Vue 4')
+response.conversationId   // 'conv-abc123'
+response.message          // 'I created the blog post...'
+response.toolResults      // [{ id, name, result }]
+response.usage            // { inputTokens, outputTokens }
+
+// Continue conversation
+await conv.send('Translate to Turkish', {
+  conversationId: response.conversationId,
+})
+
+// Fetch history
+const history = await conv.history('conv-abc123', { limit: 50 })
+```
+
+::: info Conversation API Keys
+Conversation API uses dedicated keys (`crn_conv_*` prefix) with per-key role, tool allowlist, model restrictions, and rate limits. Keys are managed in Studio workspace settings.
+:::
+
+### CDN Metadata Endpoints
 
 ```ts
 const manifest = await client.manifest()   // _manifest.json
@@ -452,19 +543,43 @@ const client = await createContentrainClient(process.cwd())
 const posts = client.query('blog-post').locale('en').all()
 ```
 
-The base SDK is framework-agnostic and MIT-licensed. Community-built framework SDKs (e.g., `@contentrain/nuxt`, `@contentrain/next`) can extend these primitives.
+The base SDK is framework-agnostic and MIT-licensed. Framework-specific integrations should build on top of these primitives without changing the underlying `.contentrain/` contract.
+
+## Starter Templates
+
+Every starter template comes with a pre-configured SDK client and content models:
+
+| Template | Framework | Use Case |
+|---|---|---|
+| [astro-blog](https://github.com/Contentrain/contentrain-starter-astro-blog) | Astro | Blog / editorial |
+| [next-commerce](https://github.com/Contentrain/contentrain-starter-next-commerce) | Next.js | E-commerce |
+| [nuxt-saas](https://github.com/Contentrain/contentrain-starter-nuxt-saas) | Nuxt | SaaS marketing |
+| [sveltekit-editorial](https://github.com/Contentrain/contentrain-starter-sveltekit-editorial) | SvelteKit | Editorial |
+
+[See all 10 templates](https://github.com/orgs/Contentrain/repositories?q=contentrain-starter&type=template)
 
 ## Related Pages
 
 - [CLI](/packages/cli) — `contentrain generate` command that runs the SDK generator
 - [MCP Tools](/packages/mcp) — The tool layer that creates models and content the SDK consumes
 - [Rules & Skills](/packages/rules) — Agent guidance for content operations
-- [Contentrain Studio](https://studio.contentrain.io) — Content CDN for non-web platforms (iOS, Android, Flutter) that can't import from Git at runtime
+- [Contentrain Studio](/studio) — Hosted team workflows and CDN delivery for non-web platforms
+
+## Embedded Agent Skill
+
+This package ships an embedded [Agent Skill](https://agentskills.io) at `skills/contentrain-query/SKILL.md`. AI coding agents can discover and load it for type-safe SDK usage guidance, including:
+
+- QueryBuilder, SingletonAccessor, DictionaryAccessor, DocumentQuery APIs
+- Local mode vs CDN mode differences
+- Framework-specific bundler configuration (Vite, Next.js, Nuxt, SvelteKit, Metro)
+
+The skill and its references are available via the `@contentrain/query/skills/*` subpath export.
 
 ## Package Exports
 
 | Export Path | Description |
 |-------------|-------------|
-| `@contentrain/query` | Runtime classes + `createContentrain()` CDN factory |
-| `@contentrain/query/cdn` | CDN transport module (standalone) |
+| `@contentrain/query` | Runtime classes + `createContentrain()` CDN factory + `MediaAccessor` + `FormsClient` + `ConversationClient` |
+| `@contentrain/query/cdn` | CDN transport: `HttpTransport`, async queries, `MediaAccessor`, `FormsClient`, `ConversationClient` |
 | `@contentrain/query/generate` | Programmatic generation API |
+| `@contentrain/query/skills/*` | Embedded Agent Skill (SKILL.md + references/) |

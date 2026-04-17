@@ -110,11 +110,13 @@ import { query, singleton, dictionary, document } from '#contentrain'
 ```ts
 const posts = query('blog-post')
   .locale('en')               // set locale
-  .where('status', 'published') // exact match filter
+  .where('status', 'published') // equality filter (shorthand)
+  .where('views', 'gt', 100)  // operator filter: eq|ne|gt|gte|lt|lte|in|contains
   .sort('date', 'desc')       // sort by field
   .limit(10)                  // limit results
   .offset(5)                  // skip results
   .include('author', 'tags')  // resolve relation fields (1 level deep)
+  .count()                    // --> number (count of matches)
   .all()                      // --> T[] (returns array)
   .first()                    // --> T | undefined (first match)
 ```
@@ -143,22 +145,22 @@ Parameterized templates use `{placeholder}` syntax in dictionary values. The `ge
 ```ts
 const article = document('blog-article')
   .locale('en')
-  .where('category', 'tech')
+  .where('category', 'tech')           // equality shorthand
+  .where('title', 'contains', 'Guide') // operator syntax
   .include('author')          // resolve relations in frontmatter
   .bySlug('getting-started')  // --> T | undefined (find by slug)
 
-const docs = document('doc-page').locale('en').all()    // --> T[]
-const first = document('doc-page').locale('en').first()  // --> T | undefined
+const docs = document('doc-page').locale('en').all()     // --> T[]
+const first = document('doc-page').locale('en').first()   // --> T | undefined
+const total = document('doc-page').locale('en').count()   // --> number
 ```
 
 ### DOES NOT EXIST -- never use these
 
-- `.filter()` -- use `.where(field, value)` instead
+- `.filter()` -- use `.where(field, value)` or `.where(field, op, value)` instead
 - `.byId()` -- use `.where('id', value).first()` instead
-- `.count()` -- use `.all().length` instead
 - `dictionary().all()` -- use `.get()` instead
 - Queries are SYNC -- do not use `await` with `query()`, `singleton()`, `dictionary()`, or `document()`
-- `.where('field', 'eq', value)` -- just `.where('field', value)`
 - `.get()` on QueryBuilder -- use `.all()` or `.first()`
 
 ---

@@ -156,7 +156,8 @@ Each entry in the `entries` array has this shape:
 | Tool | Purpose | Parameters |
 |------|---------|------------|
 | `contentrain_validate` | Validate project content against model schemas | `model?`, `fix?` (bool) |
-| `contentrain_submit` | Push contentrain/* branches to remote | `branches?` (string[]), `message?` |
+| `contentrain_submit` | Push `cr/*` branches to the remote | `branches?` (string[]), `message?` |
+| `contentrain_merge` | Merge a review-mode branch into `contentrain` and fast-forward the base | `branch`, `confirm: true` |
 
 ### 2.7 Bulk Tools
 
@@ -184,8 +185,14 @@ Each entry in the `entries` array has this shape:
 
 #### contentrain_submit parameters
 
-- `branches`: specific branch names to push (omit for all contentrain/* branches).
+- `branches`: specific branch names to push (omit for all `cr/*` branches).
 - `message`: optional message for the push operation.
+
+#### contentrain_merge parameters
+
+- `branch`: feature branch to merge (e.g. `cr/content/blog/...`).
+- `confirm`: must be `true` to execute.
+- Local-only: MCP runs the merge through a worktree + `update-ref` + selective sync. Use it when the workflow is `review` and the change has been approved.
 
 ---
 
@@ -287,7 +294,7 @@ contentrain_apply(mode: "reuse", scope: {model: "model-id"}, dry_run: true) (pre
 
 - A dedicated `contentrain` branch is the single source of truth for content state, created at init and protected from deletion.
 - Every write operation creates a temporary worktree on a new feature branch forked from `contentrain`.
-- Branch naming: `contentrain/{operation}/{model}/{timestamp}` (locale included when applicable).
+- Branch naming: `cr/{operation}/{model}[/{locale}]/{timestamp}-{suffix}` (locale included when applicable; legacy `contentrain/*` branches are auto-migrated on first init).
 - You do not create branches manually. MCP handles Git transactions.
 - Developer's working tree is never mutated during MCP operations (no stash, no checkout, no merge on the developer's tree).
 - context.json is committed together with content changes, not as a separate commit.
@@ -297,8 +304,34 @@ contentrain_apply(mode: "reuse", scope: {model: "model-id"}, dry_run: true) (pre
 ### 4.7 Branch Health
 
 - MCP enforces branch health limits: 50+ active branches triggers a warning, 80+ blocks new write operations.
-- If blocked, merge or delete old `contentrain/*` branches before proceeding.
+- If blocked, merge or delete old `cr/*` branches before proceeding.
 - `contentrain_status` reports branch health automatically.
+
+### 4.8 Transport and Provider Capabilities
+
+MCP runs over three transports / provider combinations: **LocalProvider** (stdio or HTTP), **GitHubProvider** (HTTP only), and **GitLabProvider** (HTTP only). Each provider advertises a capability set that gates which tools are available.
+
+| Capability | Local | GitHub | GitLab | Tools affected |
+|---|---|---|---|---|
+| `localWorktree` | ✓ | — | — | `init`, `scaffold`, `validate --fix`, `submit`, `merge`, `bulk` |
+| `sourceRead` | ✓ | — | — | `apply` (extract mode) |
+| `sourceWrite` | ✓ | — | — | `apply` (reuse mode) |
+| `astScan` | ✓ | — | — | `scan` |
+| `pushRemote` | ✓ | ✓ | ✓ | `submit` |
+| `branchProtection` | — | ✓ | ✓ | merge fallback detection |
+| `pullRequestFallback` | — | ✓ | ✓ | merge fallback creation |
+
+When a tool is called on a provider that lacks the required capability, MCP returns a uniform error:
+
+```json
+{
+  "error": "contentrain_scan requires local filesystem access.",
+  "capability_required": "astScan",
+  "hint": "This tool is unavailable when MCP is driven by a remote provider. Use a LocalProvider or the stdio transport."
+}
+```
+
+If the agent is driving a remote-only session (e.g. Studio-hosted MCP over HTTP + GitHubProvider), normalize and other local-only tools must run in a separate local checkout before content is pushed.
 
 ---
 
@@ -401,7 +434,8 @@ Keep suggestions brief and contextual. Do not repeat them if already mentioned.
 | `VALIDATION_FAILED` | Content does not match schema | Fix errors reported by `contentrain_validate`, then retry |
 | `REFERENCED_MODEL` | Attempting to delete a model referenced by others | Remove relation fields from referencing models first |
 | `LOCALE_MISMATCH` | Locale not in supported list | Check `config.locales.supported`, add locale or use a supported one |
-| `BRANCH_BLOCKED` | Too many active contentrain/* branches (80+) | Merge or delete old branches before creating new ones |
+| `BRANCH_BLOCKED` | Too many active `cr/*` branches (80+) | Merge or delete old branches before creating new ones |
+| `capability_required` | Tool requires a capability the active provider does not expose (e.g. `astScan` on a GitHubProvider) | Switch to a LocalProvider session, or run the tool in a local checkout before returning to the remote flow |
 
 ### Rule: Always Check Status After Errors
 

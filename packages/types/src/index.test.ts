@@ -40,6 +40,17 @@ import {
   ENTRY_ID_PATTERN,
   LOCALE_PATTERN,
   CANONICAL_JSON,
+  SECRET_PATTERNS,
+  validateSlug,
+  validateEntryId,
+  validateLocale,
+  detectSecrets,
+  validateFieldValue,
+  sortKeys,
+  canonicalStringify,
+  generateEntryId,
+  parseMarkdownFrontmatter,
+  serializeMarkdownFrontmatter,
 } from './index'
 
 describe('@contentrain/types', () => {
@@ -402,6 +413,381 @@ describe('@contentrain/types', () => {
       expect(CANONICAL_JSON.indent).toBe(2)
       expect(CANONICAL_JSON.trailingNewline).toBe(true)
       expect(CANONICAL_JSON.sortKeys).toBe(true)
+    })
+
+    it('SECRET_PATTERNS is a non-empty array of RegExp', () => {
+      expect(SECRET_PATTERNS.length).toBeGreaterThan(0)
+      for (const p of SECRET_PATTERNS) {
+        expect(p).toBeInstanceOf(RegExp)
+      }
+    })
+  })
+
+  // ─── Validate functions ───
+
+  describe('validateSlug', () => {
+    it('accepts valid kebab-case slugs', () => {
+      expect(validateSlug('hello-world')).toBeNull()
+      expect(validateSlug('my-post')).toBeNull()
+      expect(validateSlug('a')).toBeNull()
+      expect(validateSlug('abc123')).toBeNull()
+    })
+
+    it('rejects empty slugs', () => {
+      expect(validateSlug('')).toBe('Slug is required')
+    })
+
+    it('rejects uppercase slugs', () => {
+      expect(validateSlug('Hello')).toContain('kebab-case')
+    })
+
+    it('rejects path traversal attempts (caught by pattern)', () => {
+      expect(validateSlug('..evil')).toContain('kebab-case')
+      expect(validateSlug('.hidden')).toContain('kebab-case')
+    })
+
+    it('rejects slugs with special characters', () => {
+      expect(validateSlug('hello_world')).toContain('kebab-case')
+      expect(validateSlug('hello world')).toContain('kebab-case')
+    })
+  })
+
+  describe('validateEntryId', () => {
+    it('accepts valid entry IDs', () => {
+      expect(validateEntryId('a1b2c3d4e5f6')).toBeNull()
+      expect(validateEntryId('abc')).toBeNull()
+      expect(validateEntryId('A1-B2_C3')).toBeNull()
+    })
+
+    it('rejects empty IDs', () => {
+      expect(validateEntryId('')).toContain('Invalid entry ID')
+    })
+
+    it('rejects IDs starting with special chars', () => {
+      expect(validateEntryId('-abc')).toContain('Invalid entry ID')
+      expect(validateEntryId('_abc')).toContain('Invalid entry ID')
+    })
+
+    it('rejects IDs longer than 40 chars', () => {
+      expect(validateEntryId('a'.repeat(41))).toContain('Invalid entry ID')
+    })
+  })
+
+  describe('validateLocale', () => {
+    const config: ContentrainConfig = {
+      version: 1,
+      stack: 'nuxt',
+      workflow: 'review',
+      locales: { default: 'en', supported: ['en', 'tr', 'pt-BR'] },
+      domains: ['ui'],
+    }
+
+    it('accepts valid supported locales', () => {
+      expect(validateLocale('en', config)).toBeNull()
+      expect(validateLocale('tr', config)).toBeNull()
+      expect(validateLocale('pt-BR', config)).toBeNull()
+    })
+
+    it('rejects invalid format', () => {
+      expect(validateLocale('english', config)).toContain('ISO 639-1')
+    })
+
+    it('rejects unsupported locale', () => {
+      expect(validateLocale('fr', config)).toContain('not in supported locales')
+    })
+  })
+
+  describe('detectSecrets', () => {
+    it('detects API keys', () => {
+      expect(detectSecrets('sk_live_abc123')).toHaveLength(1)
+      expect(detectSecrets('my_api_key_value')).toHaveLength(1)
+    })
+
+    it('detects GitHub tokens', () => {
+      expect(detectSecrets('ghp_abcdef123456')).toHaveLength(1)
+    })
+
+    it('detects database URLs', () => {
+      expect(detectSecrets('postgres://user:pass@host/db')).toHaveLength(1)
+      expect(detectSecrets('mongodb://localhost/test')).toHaveLength(1)
+    })
+
+    it('detects AWS credentials', () => {
+      expect(detectSecrets('AKIAIOSFODNN7EXAMPLE')).toHaveLength(1)
+    })
+
+    it('returns empty for safe values', () => {
+      expect(detectSecrets('Hello world')).toHaveLength(0)
+      expect(detectSecrets('just a normal string')).toHaveLength(0)
+    })
+
+    it('returns empty for non-string values', () => {
+      expect(detectSecrets(42)).toHaveLength(0)
+      expect(detectSecrets(null)).toHaveLength(0)
+      expect(detectSecrets(undefined)).toHaveLength(0)
+    })
+  })
+
+  describe('validateFieldValue', () => {
+    it('checks required fields', () => {
+      const errors = validateFieldValue(undefined, { type: 'string', required: true })
+      expect(errors).toHaveLength(1)
+      expect(errors[0]!.message).toContain('Required')
+    })
+
+    it('allows missing optional fields', () => {
+      expect(validateFieldValue(undefined, { type: 'string' })).toHaveLength(0)
+      expect(validateFieldValue(null, { type: 'string' })).toHaveLength(0)
+    })
+
+    it('checks string types', () => {
+      expect(validateFieldValue('hello', { type: 'string' })).toHaveLength(0)
+      expect(validateFieldValue(42, { type: 'string' })).toHaveLength(1)
+    })
+
+    it('checks number types', () => {
+      expect(validateFieldValue(42, { type: 'number' })).toHaveLength(0)
+      expect(validateFieldValue('42', { type: 'number' })).toHaveLength(1)
+    })
+
+    it('checks boolean type', () => {
+      expect(validateFieldValue(true, { type: 'boolean' })).toHaveLength(0)
+      expect(validateFieldValue('true', { type: 'boolean' })).toHaveLength(1)
+    })
+
+    it('checks array types', () => {
+      expect(validateFieldValue(['a', 'b'], { type: 'array' })).toHaveLength(0)
+      expect(validateFieldValue('not-array', { type: 'array' })).toHaveLength(1)
+    })
+
+    it('checks object type', () => {
+      expect(validateFieldValue({ a: 1 }, { type: 'object' })).toHaveLength(0)
+      expect(validateFieldValue([1], { type: 'object' })).toHaveLength(1)
+    })
+
+    it('checks relation type', () => {
+      expect(validateFieldValue('entry-id', { type: 'relation', model: 'posts' })).toHaveLength(0)
+      expect(validateFieldValue(42, { type: 'relation', model: 'posts' })).toHaveLength(1)
+    })
+
+    it('checks min/max for numbers', () => {
+      expect(validateFieldValue(5, { type: 'number', min: 1, max: 10 })).toHaveLength(0)
+      expect(validateFieldValue(0, { type: 'number', min: 1 })).toHaveLength(1)
+      expect(validateFieldValue(11, { type: 'number', max: 10 })).toHaveLength(1)
+    })
+
+    it('checks min/max for string length', () => {
+      expect(validateFieldValue('abc', { type: 'string', min: 2, max: 5 })).toHaveLength(0)
+      expect(validateFieldValue('a', { type: 'string', min: 2 })).toHaveLength(1)
+      expect(validateFieldValue('abcdef', { type: 'string', max: 5 })).toHaveLength(1)
+    })
+
+    it('checks min/max for array length', () => {
+      expect(validateFieldValue([1, 2], { type: 'array', min: 1, max: 3 })).toHaveLength(0)
+      expect(validateFieldValue([], { type: 'array', min: 1 })).toHaveLength(1)
+    })
+
+    it('checks pattern regex', () => {
+      expect(validateFieldValue('abc', { type: 'string', pattern: '^[a-z]+$' })).toHaveLength(0)
+      expect(validateFieldValue('ABC', { type: 'string', pattern: '^[a-z]+$' })).toHaveLength(1)
+    })
+
+    it('warns on invalid pattern regex', () => {
+      const errors = validateFieldValue('abc', { type: 'string', pattern: '[invalid' })
+      expect(errors).toHaveLength(1)
+      expect(errors[0]!.severity).toBe('warning')
+    })
+
+    it('checks select options', () => {
+      expect(validateFieldValue('a', { type: 'select', options: ['a', 'b', 'c'] })).toHaveLength(0)
+      expect(validateFieldValue('d', { type: 'select', options: ['a', 'b', 'c'] })).toHaveLength(1)
+    })
+
+    it('returns early on type mismatch (skip further checks)', () => {
+      const errors = validateFieldValue(42, { type: 'string', min: 1, pattern: '^[a-z]+$' })
+      expect(errors).toHaveLength(1)
+      expect(errors[0]!.message).toContain('Type mismatch')
+    })
+  })
+
+  // ─── Serialize functions ───
+
+  describe('sortKeys', () => {
+    it('sorts object keys lexicographically', () => {
+      const result = sortKeys({ z: 1, a: 2, m: 3 }) as Record<string, number>
+      expect(Object.keys(result)).toEqual(['a', 'm', 'z'])
+    })
+
+    it('omits null and undefined', () => {
+      const result = sortKeys({ a: 1, b: null, c: undefined }) as Record<string, unknown>
+      expect(Object.keys(result)).toEqual(['a'])
+    })
+
+    it('sorts nested objects recursively', () => {
+      const result = sortKeys({ b: { z: 1, a: 2 }, a: 3 }) as Record<string, unknown>
+      expect(Object.keys(result)).toEqual(['a', 'b'])
+      expect(Object.keys(result['b'] as object)).toEqual(['a', 'z'])
+    })
+
+    it('preserves array order', () => {
+      const result = sortKeys({ items: [3, 1, 2] }) as Record<string, number[]>
+      expect(result['items']).toEqual([3, 1, 2])
+    })
+
+    it('respects fieldOrder', () => {
+      const result = sortKeys({ z: 1, a: 2, m: 3 }, ['m', 'z', 'a']) as Record<string, number>
+      expect(Object.keys(result)).toEqual(['m', 'z', 'a'])
+    })
+
+    it('returns undefined for null/undefined input', () => {
+      expect(sortKeys(null)).toBeUndefined()
+      expect(sortKeys(undefined)).toBeUndefined()
+    })
+
+    it('returns primitives as-is', () => {
+      expect(sortKeys(42)).toBe(42)
+      expect(sortKeys('hello')).toBe('hello')
+      expect(sortKeys(true)).toBe(true)
+    })
+  })
+
+  describe('canonicalStringify', () => {
+    it('produces sorted JSON with trailing newline', () => {
+      const result = canonicalStringify({ z: 1, a: 2 })
+      expect(result).toBe('{\n  "a": 2,\n  "z": 1\n}\n')
+    })
+
+    it('uses 2-space indent', () => {
+      const result = canonicalStringify({ a: { b: 1 } })
+      expect(result).toContain('  "a"')
+      expect(result).toContain('    "b"')
+    })
+
+    it('omits null and undefined', () => {
+      const result = canonicalStringify({ a: 1, b: null, c: undefined })
+      expect(result).not.toContain('"b"')
+      expect(result).not.toContain('"c"')
+    })
+
+    it('respects fieldOrder', () => {
+      const result = canonicalStringify({ z: 1, a: 2, m: 3 }, ['m', 'z', 'a'])
+      const keys = [...result.matchAll(/"([a-z])"/g)].map(m => m[1])
+      expect(keys).toEqual(['m', 'z', 'a'])
+    })
+  })
+
+  describe('generateEntryId', () => {
+    it('returns a 12-character hex string', () => {
+      const id = generateEntryId()
+      expect(id).toHaveLength(12)
+      expect(/^[0-9a-f]{12}$/.test(id)).toBe(true)
+    })
+
+    it('generates unique IDs', () => {
+      const ids = new Set(Array.from({ length: 100 }, () => generateEntryId()))
+      expect(ids.size).toBe(100)
+    })
+  })
+
+  // ─── Markdown frontmatter ───
+
+  describe('parseMarkdownFrontmatter', () => {
+    it('parses frontmatter and body', () => {
+      const md = '---\ntitle: Hello\nauthor: World\n---\nBody content'
+      const { frontmatter, body } = parseMarkdownFrontmatter(md)
+      expect(frontmatter['title']).toBe('Hello')
+      expect(frontmatter['author']).toBe('World')
+      expect(body).toBe('Body content')
+    })
+
+    it('parses array values', () => {
+      const md = '---\ntags:\n  - vue\n  - react\n---\nBody'
+      const { frontmatter } = parseMarkdownFrontmatter(md)
+      expect(frontmatter['tags']).toEqual(['vue', 'react'])
+    })
+
+    it('parses inline arrays', () => {
+      const md = '---\ntags: [vue, react]\n---\nBody'
+      const { frontmatter } = parseMarkdownFrontmatter(md)
+      expect(frontmatter['tags']).toEqual(['vue', 'react'])
+    })
+
+    it('parses boolean and number values', () => {
+      const md = '---\npublished: true\ncount: 42\nprice: 9.99\n---\n'
+      const { frontmatter } = parseMarkdownFrontmatter(md)
+      expect(frontmatter['published']).toBe(true)
+      expect(frontmatter['count']).toBe(42)
+      expect(frontmatter['price']).toBe(9.99)
+    })
+
+    it('returns empty frontmatter for content without frontmatter', () => {
+      const { frontmatter, body } = parseMarkdownFrontmatter('Just a paragraph')
+      expect(frontmatter).toEqual({})
+      expect(body).toBe('Just a paragraph')
+    })
+
+    it('handles CRLF line endings', () => {
+      const md = '---\r\ntitle: Hello\r\n---\r\nBody'
+      const { frontmatter, body } = parseMarkdownFrontmatter(md)
+      expect(frontmatter['title']).toBe('Hello')
+      expect(body).toBe('Body')
+    })
+
+    it('handles quoted strings', () => {
+      const md = '---\ntitle: "Hello: World"\n---\n'
+      const { frontmatter } = parseMarkdownFrontmatter(md)
+      expect(frontmatter['title']).toBe('Hello: World')
+    })
+  })
+
+  describe('serializeMarkdownFrontmatter', () => {
+    it('creates frontmatter with body', () => {
+      const result = serializeMarkdownFrontmatter({ title: 'Hello' }, 'Body content')
+      expect(result).toContain('---')
+      expect(result).toContain('title: Hello')
+      expect(result).toContain('Body content')
+    })
+
+    it('handles empty body', () => {
+      const result = serializeMarkdownFrontmatter({ title: 'Hello' }, '')
+      expect(result).toContain('---')
+      expect(result).toContain('title: Hello')
+    })
+
+    it('serializes array fields', () => {
+      const result = serializeMarkdownFrontmatter({ tags: ['vue', 'react'] }, '')
+      expect(result).toContain('tags:')
+      expect(result).toContain('  - vue')
+      expect(result).toContain('  - react')
+    })
+
+    it('quotes YAML-special characters', () => {
+      const result = serializeMarkdownFrontmatter({ title: 'Hello: World' }, '')
+      expect(result).toContain('"Hello: World"')
+    })
+
+    it('skips body key in frontmatter', () => {
+      const result = serializeMarkdownFrontmatter({ title: 'Hello', body: 'ignored' }, 'Real body')
+      expect(result).not.toContain('body: ignored')
+      expect(result).toContain('Real body')
+    })
+
+    it('merges model fields into existing frontmatter body', () => {
+      const existingBody = '---\nextra: keep-me\n---\nOriginal content'
+      const result = serializeMarkdownFrontmatter({ title: 'New' }, existingBody)
+      expect(result).toContain('title: New')
+      expect(result).toContain('extra: keep-me')
+      expect(result).toContain('Original content')
+    })
+
+    it('roundtrips with parseMarkdownFrontmatter', () => {
+      const data = { title: 'Hello', slug: 'hello-world' }
+      const body = 'Some markdown content'
+      const serialized = serializeMarkdownFrontmatter(data, body)
+      const parsed = parseMarkdownFrontmatter(serialized)
+      expect(parsed.frontmatter['title']).toBe('Hello')
+      expect(parsed.frontmatter['slug']).toBe('hello-world')
+      expect(parsed.body).toBe('Some markdown content')
     })
   })
 })

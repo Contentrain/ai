@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/skills",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "MIT",
   "description": "AI agent skills for Contentrain — workflow procedures, framework integration guides",
   "type": "module",
@@ -9,7 +9,7 @@
     "url": "git+https://github.com/Contentrain/ai.git",
     "directory": "packages/skills"
   },
-  "homepage": "https://github.com/Contentrain/ai/tree/main/packages/skills",
+  "homepage": "https://ai.contentrain.io/packages/rules#skills",
   "bugs": {
     "url": "https://github.com/Contentrain/ai/issues"
   },
@@ -17,8 +17,14 @@
     "contentrain",
     "ai",
     "skills",
+    "agent-skills",
     "mcp",
     "workflow",
+    "claude-code",
+    "cursor",
+    "windsurf",
+    "copilot",
+    "codex",
     "vue",
     "react",
     "nuxt",

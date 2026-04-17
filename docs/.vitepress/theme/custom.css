@@ -46,3 +46,44 @@
     width: 520px !important;
   }
 }
+
+/* Home feature cards */
+.VPFeatures .VPFeature .icon {
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(59, 90, 252, 0.08), rgba(59, 90, 252, 0.04));
+  border: 1px solid rgba(59, 90, 252, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.VPFeatures .VPFeature .icon img {
+  width: 24px;
+  height: 24px;
+}
+
+.dark .VPFeatures .VPFeature .icon {
+  background: linear-gradient(180deg, rgba(105, 134, 254, 0.14), rgba(105, 134, 254, 0.08));
+  border-color: rgba(105, 134, 254, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.VPFeatures .VPFeature {
+  backdrop-filter: blur(8px);
+}
+
+/* Footer social links */
+.footer-social-links {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.footer-social-links a {
+  color: var(--vp-c-text-2);
+  transition: color 0.2s;
+}
+
+.footer-social-links a:hover {
+  color: var(--vp-c-brand-1);
+}

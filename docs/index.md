@@ -1,6 +1,6 @@
 ---
 title: Contentrain AI
-description: "AI-generated content governance infrastructure — extract, structure, review, and deliver content across any platform"
+description: "Extract, govern, and ship structured content from your codebase."
 order: 0
 category: getting-started
 slug: index
@@ -8,74 +8,105 @@ layout: home
 
 hero:
   name: Contentrain AI
-  text: AI generates fast. Who governs what it produces?
-  tagline: "Whether you're cleaning up 500 hardcoded strings or starting a new project — Contentrain gives your AI-generated content structure, review, and delivery. All through Git, any platform, any agent."
+  text: Extract, govern, and ship structured content from your codebase
+  tagline: "Turn hardcoded UI text, docs, and structured content into a governed, reviewable content layer. Agents do the extraction work, Contentrain enforces schema, Git review, and portable output."
   image:
     src: /hero-pipeline.png
     alt: Contentrain AI Pipeline — Agent generates, MCP validates, Human reviews, Git commits, content delivered
   actions:
     - theme: brand
-      text: Get Started
-      link: /getting-started
+      text: See 2-Minute Demo
+      link: /demo
     - theme: alt
-      text: View on GitHub
-      link: https://github.com/Contentrain/ai
+      text: Start the Normalize Flow
+      link: /guides/normalize
 
 features:
-  - icon: 🏗️
+  - icon:
+      src: /icons/structure.svg
+      alt: Structure
+      width: 24
+      height: 24
     title: Structure
     details: Define content models or extract them from existing code. Your AI agent handles the work — Contentrain provides the deterministic infrastructure.
     link: /getting-started
-  - icon: ✅
+  - icon:
+      src: /icons/govern.svg
+      alt: Govern
+      width: 24
+      height: 24
     title: Govern
     details: Every content change goes through Git branches, validation, and human review. Nothing reaches production without approval.
     link: /packages/mcp
-  - icon: 🌍
+  - icon:
+      src: /icons/translate.svg
+      alt: Translate
+      width: 24
+      height: 24
     title: Translate
     details: Per-locale JSON files, dictionary models with parameterized templates, and bulk locale operations. i18n is built in, not bolted on.
     link: /guides/i18n
-  - icon: 📦
+  - icon:
+      src: /icons/deliver.svg
+      alt: Deliver
+      width: 24
+      height: 24
     title: Deliver
     details: Plain JSON and Markdown files — consumable by any platform, any language. TypeScript SDK for convenience, but the files are the product.
     link: /packages/sdk
 ---
 
-## The Problem
+## Start With the Mess You Already Have
 
-AI made you 10x faster at producing code. But nobody solved what happens to the content inside that code.
+AI made you faster at producing code. It did not solve what happens to the content inside that code.
 
-**Already shipped?** 47 components, 500+ hardcoded strings. No translation path, no single source of truth:
+**Already shipped?** Hardcoded UI text lives across components, pages, and docs. No translation path, no single source of truth:
 
 - **Monday:** Founder says "we need Turkish"
 - **Tuesday:** Marketer wants to change the hero headline — it's in 7 files
 - **Wednesday:** Mobile team asks for the same content via API
 - **Friday:** You're still doing grep-and-replace
 
-**Starting fresh?** Without a content layer from day one, you'll be in the same place in 2 weeks. AI generates fast, but the strings it produces have no structure, no governance, no review process.
+This is the first wedge for Contentrain:
 
-**This isn't a CMS problem. It's a governance problem.** AI produces content — but who validates it, who reviews it, who standardizes it, and how does it reach every platform?
+**take the content chaos already living in your codebase and turn it into a governed, reviewable content layer.**
 
-## Two Starting Points
+**Starting fresh?** That still matters. You can begin with a real content layer from day one. But the most urgent use case is rescue, not prevention.
+
+**This is not mainly a CMS problem. It's a governance problem.** AI can produce content quickly; Contentrain governs how that content gets structured, reviewed, translated, and delivered.
+
+## Three Core Use Cases
 
 ::: code-group
 
-```bash [Existing Project — Rescue]
-# Extract 500+ hardcoded strings in minutes
+```bash [Hardcoded Strings Rescue]
+# Existing app? This is the main entry point
 npx contentrain init
-# Then tell your agent:
-"Scan my project and extract all hardcoded strings"
-# Content extracted → models created → source patched → review UI ready
+# Then tell your agent: "Scan my project and extract hardcoded UI strings"
 ```
 
-```bash [New Project — Prevention]
-# Start with structured content from day one
+```bash [Day-One Content Layer]
+# New project? Start with structured content instead of inline strings
 npx contentrain init
-# Then tell your agent:
-"Create a hero section model with title, subtitle, and CTA"
-# Models defined → content structured → SDK ready → i18n built in
+# Then tell your agent: "Create a hero section model with title, subtitle, and CTA"
+```
+
+```bash [Cross-Platform Delivery]
+# Same content for web, docs, mobile, and backend consumers
+npx contentrain generate
+# Use plain JSON/Markdown or the typed SDK in TypeScript apps
 ```
 
 :::
+
+## Start Here
+
+If you only want to understand the product once before going deeper:
+
+1. Read the [2-Minute Demo](/demo)
+2. Use the full [Normalize Flow](/guides/normalize) on a real repo
+3. Follow [Getting Started](/getting-started)
+4. Use the [Ecosystem Map](/ecosystem) once review, team ops, or CDN delivery matter
 
 **Before** (hardcoded, untranslatable, unmanageable):
 ```vue
@@ -101,23 +132,44 @@ Content lives in plain JSON — any platform can read it:
 }
 ```
 
-## Who Is This For?
+## Start From a Template
 
-### Vibe Coders & Solo Developers
+Pick a production-ready starter with Contentrain content models, generated SDK client, and framework best practices:
 
-You ship 50+ AI-generated files per week. Content is scattered across every component. `contentrain init` + one prompt to your agent = structured, translatable content in minutes. Zero infrastructure cost — just Git files.
+| Template | Framework | Use Case |
+|---|---|---|
+| [astro-blog](https://github.com/Contentrain/contentrain-starter-astro-blog) | Astro | Blog / editorial |
+| [astro-landing](https://github.com/Contentrain/contentrain-starter-astro-landing) | Astro | Landing page |
+| [next-commerce](https://github.com/Contentrain/contentrain-starter-next-commerce) | Next.js | E-commerce |
+| [next-multi-surface-saas](https://github.com/Contentrain/contentrain-starter-next-multi-surface-saas) | Next.js | Marketing + app + docs |
+| [next-saas-dashboard](https://github.com/Contentrain/contentrain-starter-next-saas-dashboard) | Next.js | SaaS dashboard |
+| [next-white-label-portal](https://github.com/Contentrain/contentrain-starter-next-white-label-portal) | Next.js | White-label portal |
+| [nuxt-admin-console](https://github.com/Contentrain/contentrain-starter-nuxt-admin-console) | Nuxt | Admin console |
+| [nuxt-saas](https://github.com/Contentrain/contentrain-starter-nuxt-saas) | Nuxt | SaaS marketing |
+| [sveltekit-editorial](https://github.com/Contentrain/contentrain-starter-sveltekit-editorial) | SvelteKit | Editorial |
+| [vitepress-docs](https://github.com/Contentrain/contentrain-starter-vitepress-docs) | VitePress | Documentation |
 
-### Indie Hackers & Small Teams
+Each is a GitHub template — click **"Use this template"** to create your own repo.
 
-You need i18n but keep postponing it. You want to hand off copy changes to a non-developer. Contentrain gives you structured content without CMS complexity — and [Studio](https://studio.contentrain.io) when you're ready for team review.
+## Who It Is For
 
-### Agencies & Freelancers
+### AI-assisted product teams
 
-Same content architecture for every client project. Scaffold in 5 minutes, deliver a Studio login, move on. No more "can you change this text?" support tickets.
+You already use Claude Code, Cursor, or another agent and want content changes to go through a real reviewable system instead of landing as random string edits.
 
-### Startups
+### Teams with hardcoded UI copy or docs in source
 
-Your marketer can't change a headline without a developer PR. Your mobile app needs the same content as your website. Contentrain breaks the developer bottleneck — agent generates, marketer reviews, same content serves everywhere.
+You need to extract strings, make i18n possible, and stop treating copy updates like grep-and-replace work.
+
+### Builders who want Git-native content, not dashboard-first content
+
+You want plain JSON and Markdown in Git, optional SDK ergonomics, and a content layer your stack can consume directly.
+
+## Who It Is Not For
+
+- Teams looking for a database-first or dashboard-first CMS without Git in the workflow
+- Teams that do not want Git in the content workflow
+- Teams that do not use AI agents and do not need a governed extraction/review layer
 
 ## Platform Independent
 
@@ -133,7 +185,7 @@ The TypeScript SDK (`@contentrain/query`) provides type-safe queries as a conven
 
 ## Bring Your Own Agent
 
-Contentrain doesn't ship AI. Your agent (Claude Code, Cursor, Windsurf, or any MCP-compatible tool) **is** the intelligence layer. Contentrain provides 13 deterministic MCP tools that enforce consistency:
+Contentrain does not ship its own model. Your agent (Claude Code, Cursor, Windsurf, or any MCP-compatible tool) **is** the intelligence layer. Contentrain provides deterministic MCP tools and CLI workflows that enforce consistency:
 
 ```
 Agent decides what to extract → MCP validates and writes → Human reviews → Git commits
@@ -142,5 +194,5 @@ Agent decides what to extract → MCP validates and writes → Human reviews →
 No AI markup in your code. No proprietary syntax. No vendor lock-in. If you stop using Contentrain, your content files are still plain JSON in your Git repo.
 
 ::: info Contentrain Studio
-When you need team collaboration, visual diff review, and content CDN for non-web platforms — [Contentrain Studio](https://studio.contentrain.io) extends everything with a hosted governance UI.
+[Contentrain Studio](/studio) is the open-core team web layer for Contentrain: chat-first operations, role-based collaboration, branch review, media management, and CDN delivery on top of the same Git-native content model. Teams can self-host the AGPL core or use a managed Pro/Enterprise offering.
 :::

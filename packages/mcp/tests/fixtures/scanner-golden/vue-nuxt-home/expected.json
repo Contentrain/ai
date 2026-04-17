@@ -7,8 +7,6 @@
     { "file": "app/pages/index.vue", "value": "Platforma Hos Geldin", "context": "template_text" },
     { "file": "app/pages/index.vue", "value": "Teklifi Al", "context": "template_attribute" },
     { "file": "app/pages/index.vue", "value": "Uretime daha hizli basla", "context": "template_text" },
-    { "file": "app/pages/index.vue", "value": "Fiyatlari Incele", "context": "template_text" },
-    { "file": "app/pages/index.vue", "value": "Platforma Hos Geldin", "context": "object_value" },
-    { "file": "app/pages/index.vue", "value": "Uretime daha hizli basla", "context": "object_value" }
+    { "file": "app/pages/index.vue", "value": "Fiyatlari Incele", "context": "template_text" }
   ]
 }

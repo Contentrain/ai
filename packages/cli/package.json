@@ -1,6 +1,6 @@
 {
   "name": "contentrain",
-  "version": "0.3.1",
+  "version": "0.4.3",
   "license": "MIT",
   "description": "CLI for Contentrain — AI content governance infrastructure",
   "type": "module",
@@ -9,7 +9,7 @@
     "url": "git+https://github.com/Contentrain/ai.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://github.com/Contentrain/ai/tree/main/packages/cli",
+  "homepage": "https://ai.contentrain.io/packages/cli",
   "bugs": {
     "url": "https://github.com/Contentrain/ai/issues"
   },
@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "@contentrain/rules": "workspace:*",
+    "@contentrain/skills": "workspace:*",
     "@contentrain/mcp": "workspace:*",
     "@contentrain/query": "workspace:*",
     "@contentrain/types": "workspace:*",
@@ -58,7 +59,8 @@
     "h3": "^1.15.0",
     "picocolors": "^1.1.0",
     "simple-git": "^3.27.0",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "@types/ws": "^8.5.0",

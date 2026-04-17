@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { join } from 'node:path'
 import { readFile, writeFile, appendFile } from 'node:fs/promises'
 import { simpleGit } from 'simple-git'
+import type { ToolProvider } from '../server.js'
 import { detectStack } from '../util/detect.js'
 import { contentrainDir, ensureDir, pathExists, writeJson } from '../util/fs.js'
 import { readConfig, readVocabulary } from '../core/config.js'
@@ -12,8 +13,14 @@ import { writeContent, type ContentEntry } from '../core/content-manager.js'
 import { getTemplate, listTemplates } from '../templates/index.js'
 import { createTransaction, buildBranchName, ensureContentBranch } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
+import { TOOL_ANNOTATIONS } from './annotations.js'
+import { capabilityError } from './guards.js'
 
-export function registerSetupTools(server: McpServer, projectRoot: string): void {
+export function registerSetupTools(
+  server: McpServer,
+  _provider: ToolProvider,
+  projectRoot: string | undefined,
+): void {
   // ─── contentrain_init ───
   server.tool(
     'contentrain_init',
@@ -23,7 +30,9 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
       locales: z.array(z.string()).optional().describe('Supported locales. Default: ["en"]'),
       domains: z.array(z.string()).optional().describe('Content domains. Default: auto-suggested'),
     },
+    TOOL_ANNOTATIONS['contentrain_init']!,
     async ({ stack, locales, domains }) => {
+      if (!projectRoot) return capabilityError('contentrain_init', 'localWorktree')
       const crDir = contentrainDir(projectRoot)
 
       // Already initialized?
@@ -42,10 +51,24 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
       const supportedLocales = locales ?? ['en']
       const suggestedDomains = domains ?? suggestDomains(projectRoot)
 
-      // Ensure .git exists
+      // Ensure .git exists and has at least one commit.
+      //
+      // `createTransaction` forks a worktree off the project's current
+      // branch via `ensureContentBranch`, which calls `git branch
+      // contentrain <base>`. An empty repo (zero commits) has no base
+      // ref to fork from and the whole transaction fails. Parity with
+      // `contentrain init` CLI command: if we just ran `git init` — or
+      // the existing repo happens to be commit-free — seed an
+      // `--allow-empty` initial commit so the branch operation has a
+      // ref to anchor on.
       const hasGit = await pathExists(join(projectRoot, '.git'))
+      const git = simpleGit(projectRoot)
       if (!hasGit) {
-        await simpleGit(projectRoot).init()
+        await git.init()
+      }
+      const hasAnyCommit = await git.raw(['rev-list', '-n', '1', '--all']).then(out => out.trim().length > 0).catch(() => false)
+      if (!hasAnyCommit) {
+        await git.commit('initial commit', { '--allow-empty': null })
       }
 
       // Branch health gate
@@ -168,7 +191,9 @@ export function registerSetupTools(server: McpServer, projectRoot: string): void
       locales: z.array(z.string()).optional().describe('Override locales'),
       with_sample_content: z.boolean().optional().default(true).describe('Include sample content (default: true)'),
     },
+    TOOL_ANNOTATIONS['contentrain_scaffold']!,
     async ({ template: templateId, locales, with_sample_content }) => {
+      if (!projectRoot) return capabilityError('contentrain_scaffold', 'localWorktree')
       const config = await readConfig(projectRoot)
       if (!config) {
         return {

@@ -259,7 +259,7 @@ describe('contentrain_scan mode:candidates', () => {
 
     const stats = data['stats'] as Record<string, unknown>
     expect(stats['files_scanned']).toBeGreaterThan(0)
-    expect(stats['after_filtering']).toBeGreaterThan(0)
+    expect(stats['unique_candidates']).toBeGreaterThan(0)
 
     const candidates = data['candidates'] as Array<Record<string, unknown>>
     const values = candidates.map(c => c['value'] as string)
@@ -380,7 +380,7 @@ describe('contentrain_scan mode:candidates', () => {
       arguments: { mode: 'candidates', paths: ['src'], limit: 1000 },
     })
     const allData = parseResult(allResult)
-    const totalCandidates = (allData['stats'] as Record<string, unknown>)['after_filtering'] as number
+    const totalCandidates = (allData['stats'] as Record<string, unknown>)['unique_candidates'] as number
 
     if (totalCandidates > 2) {
       // Request with small limit — has_more should be true

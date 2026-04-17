@@ -1,0 +1,16 @@
+{
+  "domain": "blog",
+  "fields": {
+    "body": {
+      "type": "text"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    }
+  },
+  "i18n": true,
+  "id": "blog",
+  "kind": "collection",
+  "name": "Blog"
+}

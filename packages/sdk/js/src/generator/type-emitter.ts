@@ -8,6 +8,7 @@ export function emitTypes(models: ModelDefinition[]): string {
     '// Re-generate with: npx contentrain-query generate',
     '',
     "export type ContentStatus = 'draft' | 'published' | 'in_review' | 'rejected' | 'archived'",
+    "export type WhereOp = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'contains'",
     '',
   ]
 
@@ -42,10 +43,12 @@ export function emitTypes(models: ModelDefinition[]): string {
   lines.push(`export interface QueryBuilder<T> {
   locale(lang: string): QueryBuilder<T>
   where<K extends keyof T>(field: K, value: T[K]): QueryBuilder<T>
+  where<K extends keyof T>(field: K, op: WhereOp, value: unknown): QueryBuilder<T>
   sort<K extends keyof T>(field: K, order?: 'asc' | 'desc'): QueryBuilder<T>
   limit(n: number): QueryBuilder<T>
   offset(n: number): QueryBuilder<T>
   include(...fields: string[]): QueryBuilder<T>
+  count(): number
   first(): T | undefined
   all(): T[]
 }`)
@@ -69,8 +72,10 @@ export function emitTypes(models: ModelDefinition[]): string {
   lines.push(`export interface DocumentQuery<T> {
   locale(lang: string): DocumentQuery<T>
   where<K extends keyof T>(field: K, value: T[K]): DocumentQuery<T>
+  where<K extends keyof T>(field: K, op: WhereOp, value: unknown): DocumentQuery<T>
   include(...fields: string[]): DocumentQuery<T>
   bySlug(slug: string): T | undefined
+  count(): number
   first(): T | undefined
   all(): T[]
 }`)

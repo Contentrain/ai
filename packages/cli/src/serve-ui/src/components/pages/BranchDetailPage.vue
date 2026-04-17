@@ -22,10 +22,12 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { cn } from '@/lib/utils'
 import { toast } from 'vue-sonner'
 import { dictionary } from '#contentrain'
+import { useApi } from '@/composables/useApi'
 
 const route = useRoute()
 const router = useRouter()
 const store = useContentStore()
+const api = useApi()
 const t = dictionary('serve-ui-texts').locale('en').get()
 
 const branchName = computed(() => decodeURIComponent(route.params.branchName as string))
@@ -34,6 +36,27 @@ const acting = ref(false)
 const actionResult = ref<{ type: 'success' | 'error'; message: string } | null>(null)
 const confirmApproveOpen = ref(false)
 const confirmRejectOpen = ref(false)
+
+// Sync warning cached server-side from the last mergeBranch() call.
+// The dashboard toast surfaces the warning in real time; this panel
+// is the canonical drill-down: which files were skipped and why.
+interface SyncWarning {
+  branch: string
+  skipped: string[]
+  synced: string[]
+  recordedAt: number
+}
+const syncWarning = ref<SyncWarning | null>(null)
+
+async function fetchSyncWarning() {
+  try {
+    const encoded = encodeURIComponent(branchName.value)
+    const res = await api.get<{ warning: SyncWarning | null }>(`/branches/${encoded}/sync-status`)
+    syncWarning.value = res.warning
+  } catch {
+    syncWarning.value = null
+  }
+}
 
 // Parse branch name parts
 const branchParts = computed(() => {
@@ -142,6 +165,9 @@ onMounted(async () => {
   } catch {
     toast.error('Failed to load branch data.')
   }
+  // Fire-and-forget — missing sync status is the common case (no
+  // prior merge to produce warnings).
+  void fetchSyncWarning()
 })
 </script>
 
@@ -221,6 +247,31 @@ onMounted(async () => {
         <CheckCircle v-if="actionResult.type === 'success'" class="size-5 text-status-success shrink-0" />
         <XCircle v-else class="size-5 text-status-error shrink-0" />
         <span class="text-sm">{{ actionResult.message }}</span>
+      </div>
+
+      <!-- Sync warnings from the last mergeBranch() call: files the
+           selective sync skipped because the developer has uncommitted
+           changes in their working tree. -->
+      <div
+        v-if="syncWarning && syncWarning.skipped.length > 0"
+        class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950"
+      >
+        <div class="flex items-start gap-3">
+          <XCircle class="size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div class="flex-1 space-y-2">
+            <p class="text-sm font-medium text-amber-900 dark:text-amber-100">
+              {{ syncWarning.skipped.length }} file{{ syncWarning.skipped.length === 1 ? '' : 's' }} skipped during selective sync
+            </p>
+            <p class="text-xs text-amber-800 dark:text-amber-200">
+              The merge landed in git, but the developer's working tree has uncommitted changes that would have been overwritten. Review and commit or discard these files, then run the sync again manually if needed.
+            </p>
+            <ul class="mt-2 space-y-1 font-mono text-xs text-amber-900/80 dark:text-amber-100/80">
+              <li v-for="file in syncWarning.skipped" :key="file" class="flex items-center gap-1.5">
+                <File class="size-3 shrink-0" /> {{ file }}
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <!-- Loading -->

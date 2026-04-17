@@ -57,13 +57,15 @@ export interface ExtractedString {
 
 /**
  * Pre-filter rule: deterministic skip rule for structural pre-filtering.
- * Each rule either matches by context type or by a value condition.
+ * Each rule either matches by context type, a value condition, or a full-object match.
  */
 export interface PreFilterRule {
   /** Skip strings with this structural context */
   context?: StructuralContext
   /** Skip strings matching this value condition */
   condition?: (value: string) => boolean
+  /** Skip strings matching this full-object condition (has access to parent, parentProperty, etc.) */
+  match?: (str: ExtractedString) => boolean
   /** Human-readable reason for filtering */
   reason: string
 }

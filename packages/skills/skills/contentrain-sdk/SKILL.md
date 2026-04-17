@@ -43,7 +43,9 @@ const doc = document('blog-post').bySlug('getting-started')
 |--------|-------------|
 | `.all()` | Get all entries |
 | `.first()` | Get first entry |
-| `.where(field, op, value)` | Filter (`eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `contains`) |
+| `.count()` | Return count of matching entries |
+| `.where(field, value)` | Equality filter (shorthand for `eq`) |
+| `.where(field, op, value)` | Operator filter: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `contains` |
 | `.sort(field, direction?)` | Sort (`asc`/`desc`, default `asc`) |
 | `.limit(n)` | Limit results |
 | `.offset(n)` | Skip results |
@@ -71,7 +73,9 @@ const doc = document('blog-post').bySlug('getting-started')
 | `.all()` | Get all documents |
 | `.bySlug(slug)` | Get document by slug |
 | `.first()` | Get first document |
-| `.where(field, op, value)` | Filter by frontmatter field |
+| `.count()` | Return count of matching documents |
+| `.where(field, value)` | Equality filter (shorthand) |
+| `.where(field, op, value)` | Operator filter (same ops as QueryBuilder) |
 | `.include(relation)` | Resolve relation fields |
 
 ## CDN Mode (Remote Data)
@@ -106,6 +110,28 @@ const doc = await client.document('docs').locale('en').bySlug('intro')
 | `lte` | `.where('price', 'lte', 100)` | Less than or equal |
 | `in` | `.where('category', 'in', ['a','b'])` | In array |
 | `contains` | `.where('tags', 'contains', 'vue')` | String/array contains |
+
+### CDN Entry Metadata, Media & Forms
+
+```typescript
+// Entry metadata (status, publish_at, expire_at)
+const posts = await client.collection('blog').locale('en').withMeta().all()
+
+// Media manifest & variant URLs
+const media = client.media()
+const asset = await media.asset('hero.jpg')
+const url = media.url(asset, 'thumb')
+
+// Forms (config fetch + submit)
+const form = client.form()
+const config = await form.config('contact')
+const result = await form.submit('contact', { name: 'Alice' })
+
+// Conversation API (external AI content operations)
+const conv = client.conversation()
+const response = await conv.send('Create a blog post about Vue 4')
+const history = await conv.history(response.conversationId)
+```
 
 ### CDN vs Local
 
@@ -143,3 +169,9 @@ const doc = await client.document('docs').locale('en').bySlug('intro')
 | Reference | Description |
 |-----------|-------------|
 | [Bundler Configuration](references/bundler-config.md) | Vite, Next.js, Nuxt, SvelteKit, Metro alias setup |
+
+## Related Skills
+
+- **contentrain-generate** — Generate the SDK client before using it
+- **contentrain-quality** — Content quality rules for entries you query
+- **contentrain** — Core architecture and MCP tool catalog

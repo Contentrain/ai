@@ -18,6 +18,7 @@ const mergeMock = vi.fn().mockResolvedValue(undefined)
 
 let connectionHandler: ((ws: FakeWs, req: unknown) => void) | null = null
 let watchAllHandler: ((eventType: string, filePath: string) => void) | null = null
+let watchErrorHandler: ((err: unknown) => void) | null = null
 let lastWs: FakeWs | null = null
 
 class FakeWs {
@@ -60,8 +61,9 @@ vi.mock('ws', () => ({
 vi.mock('chokidar', () => ({
   watch: vi.fn(() => {
     const watcher = {
-      on: vi.fn((event: string, cb: (eventType: string, filePath: string) => void) => {
-        if (event === 'all') watchAllHandler = cb
+      on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
+        if (event === 'all') watchAllHandler = cb as (eventType: string, filePath: string) => void
+        if (event === 'error') watchErrorHandler = cb as (err: unknown) => void
         return watcher
       }),
     }
@@ -108,6 +110,30 @@ vi.mock('simple-git', () => ({
   })),
 }))
 
+// After the phase-13 delegation, the serve server calls MCP helpers
+// for diff + merge instead of reimplementing the git dance. Mocks
+// expose the shape the tests assert against.
+const branchDiffMock = vi.fn()
+const mergeBranchMock = vi.fn()
+const checkBranchHealthMock = vi.fn().mockResolvedValue(null)
+
+vi.mock('@contentrain/mcp/git/branch-lifecycle', () => ({
+  branchDiff: branchDiffMock,
+  checkBranchHealth: checkBranchHealthMock,
+  cleanupMergedBranches: vi.fn().mockResolvedValue({ deleted: 0, remaining: 0, deletedBranches: [] }),
+}))
+
+vi.mock('@contentrain/mcp/git/transaction', () => ({
+  mergeBranch: mergeBranchMock,
+}))
+
+vi.mock('@contentrain/mcp/core/config', () => ({
+  readConfig: vi.fn(async () => ({
+    version: 1,
+    repository: { default_branch: 'main', provider: 'github' },
+  })),
+}))
+
 let testDir: string
 let uiDir: string
 
@@ -117,6 +143,7 @@ beforeEach(async () => {
   routes.clear()
   connectionHandler = null
   watchAllHandler = null
+  watchErrorHandler = null
   lastWs = null
 
   testDir = await mkdtemp(join(tmpdir(), 'cr-cli-serve-'))
@@ -263,58 +290,81 @@ describe('serve server contract', { sequential: true }, () => {
     expect(routes.get('/api/normalize/results')).toBeDefined()
   })
 
-  it('diffs review branches against the configured default branch, not the current branch', async () => {
-    await writeFile(join(testDir, '.contentrain', 'config.json'), JSON.stringify({
-      version: 1,
-      repository: { default_branch: 'main' },
-    }, null, 2))
-    branchLocalMock.mockReset()
-    branchLocalMock.mockResolvedValue({
-      current: 'feature/redesign',
-      all: ['main', 'feature/redesign', 'cr/review/hero/en/123'],
+  it('delegates branch diff to MCP branchDiff helper (base defaults to contentrain)', async () => {
+    // Feature branches fork from CONTENTRAIN_BRANCH, so that's what
+    // the diff's base should be. The helper is called with just
+    // `{ branch }` — `branchDiff` itself defaults the base to
+    // `CONTENTRAIN_BRANCH`.
+    branchDiffMock.mockResolvedValueOnce({
+      branch: 'cr/content/hero/en/123',
+      base: 'contentrain',
+      stat: ' .contentrain/content/hero/en.json | 2 +-',
+      patch: '+{"title":"Hi"}\n',
+      filesChanged: 1,
     })
 
     await boot()
 
     const handler = routes.get('/api/branches/diff')
-    await handler?.({
-      query: { name: 'cr/review/hero/en/123' },
-    })
+    const response = await handler?.({
+      query: { name: 'cr/content/hero/en/123' },
+    }) as Record<string, unknown>
 
-    expect(diffMock).toHaveBeenCalledWith(['main...cr/review/hero/en/123', '--stat'])
+    expect(branchDiffMock).toHaveBeenCalledWith(testDir, { branch: 'cr/content/hero/en/123' })
+    expect(response.base).toBe('contentrain')
+    expect(response.filesChanged).toBe(1)
   })
 
-  it('uses worktree merge pattern when approving a review branch', async () => {
-    await writeFile(join(testDir, '.contentrain', 'config.json'), JSON.stringify({
-      version: 1,
-      repository: { default_branch: 'main' },
-    }, null, 2))
-    branchLocalMock.mockResolvedValueOnce({
-      current: 'feature/redesign',
-      all: ['main', 'feature/redesign', 'contentrain', 'cr/review/hero/en/123'],
-    })
-    rawMock.mockImplementation(async (args: string[]) => {
-      if (args[0] === 'rev-parse') return 'abc123'
-      if (args[0] === 'branch' && args[1] === '--show-current') return 'feature/redesign'
-      return ''
+  it('delegates branch approval to MCP mergeBranch helper and surfaces sync skips', async () => {
+    // The old implementation reimplemented worktree + update-ref +
+    // checkout. The new one calls MCP's mergeBranch() which runs the
+    // transaction with selective sync. Skipped files flow back via
+    // the response and a `sync:warning` broadcast.
+    mergeBranchMock.mockResolvedValueOnce({
+      action: 'auto-merged',
+      commit: 'abc1234',
+      sync: {
+        synced: ['.contentrain/content/hero/en.json'],
+        skipped: ['.contentrain/content/hero/tr.json'],
+      },
     })
 
-    await boot()
+    const { handleUpgrade } = await boot()
+    handleUpgrade({ url: '/ws' } as never, {} as never, Buffer.alloc(0))
 
     const handler = routes.get('/api/branches/approve')
-    await handler?.({
+    const response = await handler?.({
       method: 'POST',
-      body: { branch: 'cr/review/hero/en/123' },
-    })
+      body: { branch: 'cr/content/hero/en/123' },
+    }) as Record<string, unknown>
 
-    // Should use worktree add (not direct checkout of base branch)
-    expect(rawMock).toHaveBeenCalledWith(
-      expect.arrayContaining(['worktree', 'add']),
-    )
-    // Should merge the feature branch into contentrain
-    expect(mergeMock).toHaveBeenCalledWith(['cr/review/hero/en/123', '--no-edit'])
-    // Should advance base via update-ref
-    expect(rawMock).toHaveBeenCalledWith(['update-ref', 'refs/heads/main', 'abc123'])
+    expect(mergeBranchMock).toHaveBeenCalledWith(testDir, 'cr/content/hero/en/123')
+    expect(response.status).toBe('merged')
+    expect(response.commit).toBe('abc1234')
+    const sync = response.sync as { skipped: string[] }
+    expect(sync.skipped).toEqual(['.contentrain/content/hero/tr.json'])
+
+    // The broadcast surface the UI listens to — fake WS client
+    // received both branch:merged and sync:warning.
+    const messages = lastWs?.send.mock.calls.map((c: unknown[]) => JSON.parse(c[0] as string)) ?? []
+    expect(messages.some(m => m.type === 'branch:merged')).toBe(true)
+    expect(messages.some(m => m.type === 'sync:warning' && m.skippedCount === 1)).toBe(true)
+  })
+
+  it('broadcasts branch:merge-conflict when MCP mergeBranch throws', async () => {
+    mergeBranchMock.mockRejectedValueOnce(new Error('CONFLICT (content): Merge conflict in en.json'))
+
+    const { handleUpgrade } = await boot()
+    handleUpgrade({ url: '/ws' } as never, {} as never, Buffer.alloc(0))
+
+    const handler = routes.get('/api/branches/approve')
+    await expect(handler?.({
+      method: 'POST',
+      body: { branch: 'cr/content/hero/en/123' },
+    })).rejects.toThrow(/Merge failed/)
+
+    const messages = lastWs?.send.mock.calls.map((c: unknown[]) => JSON.parse(c[0] as string)) ?? []
+    expect(messages.some(m => m.type === 'branch:merge-conflict')).toBe(true)
   })
 
   it('serves the SPA index for client-side routes', async () => {
@@ -376,5 +426,159 @@ describe('serve server contract', { sequential: true }, () => {
         lastOperation: { tool: 'model_save' },
       },
     }))
+  })
+
+  // ─── Phase 14b — meta watcher, error broadcast, new routes ───
+
+  it('broadcasts meta:changed when .contentrain/meta/<model>/<locale>.json updates', async () => {
+    const { handleUpgrade } = await boot()
+    handleUpgrade({ url: '/ws' } as never, {} as never, Buffer.alloc(0))
+
+    watchAllHandler?.('change', join(testDir, '.contentrain', 'meta', 'hero', 'en.json'))
+    await vi.advanceTimersByTimeAsync(301)
+
+    expect(lastWs?.send).toHaveBeenLastCalledWith(JSON.stringify({
+      type: 'meta:changed',
+      modelId: 'hero',
+      locale: 'en',
+    }))
+  })
+
+  it('broadcasts meta:changed with entryId when the path is <model>/<entry>/<locale>.json', async () => {
+    const { handleUpgrade } = await boot()
+    handleUpgrade({ url: '/ws' } as never, {} as never, Buffer.alloc(0))
+
+    watchAllHandler?.('change', join(testDir, '.contentrain', 'meta', 'docs-packages', 'mcp', 'en.json'))
+    await vi.advanceTimersByTimeAsync(301)
+
+    expect(lastWs?.send).toHaveBeenLastCalledWith(JSON.stringify({
+      type: 'meta:changed',
+      modelId: 'docs-packages',
+      entryId: 'mcp',
+      locale: 'en',
+    }))
+  })
+
+  it('broadcasts file-watch:error when chokidar emits an error', async () => {
+    const { handleUpgrade } = await boot()
+    handleUpgrade({ url: '/ws' } as never, {} as never, Buffer.alloc(0))
+
+    watchErrorHandler?.(new Error('ENOSPC: too many watchers'))
+
+    const messages = lastWs?.send.mock.calls.map((c: unknown[]) => JSON.parse(c[0] as string)) ?? []
+    const err = messages.find(m => m.type === 'file-watch:error')
+    expect(err).toBeDefined()
+    expect(err.message).toContain('ENOSPC')
+    expect(typeof err.timestamp).toBe('string')
+  })
+
+  it('exposes /api/describe-format that invokes the contentrain_describe_format tool', async () => {
+    await boot()
+
+    const handler = routes.get('/api/describe-format')
+    expect(handler).toBeDefined()
+    await handler?.()
+
+    expect(callToolMock).toHaveBeenCalledWith({
+      name: 'contentrain_describe_format',
+      arguments: {},
+    })
+  })
+
+  it('/api/doctor wraps contentrain_doctor and forwards ?usage=true', async () => {
+    await boot()
+
+    const handler = routes.get('/api/doctor')
+    expect(handler).toBeDefined()
+
+    await handler?.({ query: {} })
+    expect(callToolMock).toHaveBeenLastCalledWith({
+      name: 'contentrain_doctor',
+      arguments: { usage: false },
+    })
+
+    await handler?.({ query: { usage: 'true' } })
+    expect(callToolMock).toHaveBeenLastCalledWith({
+      name: 'contentrain_doctor',
+      arguments: { usage: true },
+    })
+
+    await handler?.({ query: { usage: '1' } })
+    expect(callToolMock).toHaveBeenLastCalledWith({
+      name: 'contentrain_doctor',
+      arguments: { usage: true },
+    })
+  })
+
+  it('exposes /api/preview/merge and rejects requests for non-cr branches', async () => {
+    await boot()
+
+    const handler = routes.get('/api/preview/merge')
+    expect(handler).toBeDefined()
+    await expect(handler?.({ query: { branch: 'feature/redesign' } })).rejects.toMatchObject({ statusCode: 400 })
+    await expect(handler?.({ query: {} })).rejects.toMatchObject({ statusCode: 400 })
+  })
+
+  it('returns a clean FF-possible preview when CONTENTRAIN_BRANCH is an ancestor', async () => {
+    // Preview contract: the first `merge-base --is-ancestor` call
+    // (branch ancestor-of CONTENTRAIN_BRANCH) rejects — branch is NOT
+    // already merged. The second (CONTENTRAIN_BRANCH ancestor-of
+    // branch) resolves — FF is possible. `merge-base` returns a sha.
+    // `merge-tree` returns empty — no conflicts. branchDiff gives
+    // stat + filesChanged.
+    rawMock.mockImplementation(async (args: string[]) => {
+      if (args[0] === 'merge-base' && args[1] === '--is-ancestor') {
+        const from = args[2]
+        if (from === 'cr/review/hero/en/123') throw new Error('not ancestor')
+        return ''
+      }
+      if (args[0] === 'merge-base') return 'deadbeef1234\n'
+      if (args[0] === 'merge-tree') return ''
+      return ''
+    })
+    branchDiffMock.mockResolvedValueOnce({
+      branch: 'cr/review/hero/en/123',
+      base: 'contentrain',
+      stat: ' .contentrain/content/hero/en.json | 2 +-',
+      patch: '',
+      filesChanged: 1,
+    })
+
+    await boot()
+    const handler = routes.get('/api/preview/merge')
+    const response = await handler?.({ query: { branch: 'cr/review/hero/en/123' } }) as Record<string, unknown>
+
+    expect(response.alreadyMerged).toBe(false)
+    expect(response.canFastForward).toBe(true)
+    expect(response.conflicts).toEqual([])
+    expect(response.filesChanged).toBe(1)
+  })
+
+  it('plan/reject accepts an optional reason body without breaking the delete flow', async () => {
+    const { handleUpgrade } = await boot()
+    handleUpgrade({ url: '/ws' } as never, {} as never, Buffer.alloc(0))
+
+    const handler = routes.get('/api/normalize/plan/reject')
+    expect(handler).toBeDefined()
+
+    // With body: parses via Zod schema.
+    await writeFile(join(testDir, '.contentrain', 'normalize-plan.json'), JSON.stringify({ status: 'pending' }))
+    await expect(handler?.({
+      method: 'POST',
+      body: { reason: 'Too many false positives' },
+    })).resolves.toMatchObject({ status: 'rejected' })
+
+    // Without body: still works (backwards compat).
+    await writeFile(join(testDir, '.contentrain', 'normalize-plan.json'), JSON.stringify({ status: 'pending' }))
+    await expect(handler?.({
+      method: 'POST',
+    })).resolves.toMatchObject({ status: 'rejected' })
+
+    // Malformed body: rejected with 400.
+    await writeFile(join(testDir, '.contentrain', 'normalize-plan.json'), JSON.stringify({ status: 'pending' }))
+    await expect(handler?.({
+      method: 'POST',
+      body: { reason: 12345 },
+    })).rejects.toMatchObject({ statusCode: 400 })
   })
 })

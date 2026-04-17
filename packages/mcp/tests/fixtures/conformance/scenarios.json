@@ -1,0 +1,36 @@
+{
+  "seeds": [
+    {
+      "id": "01-new-collection-entry",
+      "operation": "save_content",
+      "coverage": "collection kind — new entry, merge semantics, object-map sort"
+    },
+    {
+      "id": "02-new-singleton",
+      "operation": "save_content",
+      "coverage": "singleton kind — new entry, default meta"
+    },
+    {
+      "id": "03-new-dictionary",
+      "operation": "save_content",
+      "coverage": "dictionary kind — multi-key create, flat object format"
+    }
+  ],
+  "planned": [
+    "04-collection-update",
+    "05-singleton-update",
+    "06-dictionary-update",
+    "07-new-document",
+    "08-document-i18n-directory",
+    "09-delete-collection-entry",
+    "10-locale-copy",
+    "11-model-save-new",
+    "12-model-save-update",
+    "13-entry-status-update",
+    "14-delete-entire-locale",
+    "15-relation-validation",
+    "16-unique-field-violation",
+    "17-vocabulary-advisory",
+    "18-init-project-minimal"
+  ]
+}

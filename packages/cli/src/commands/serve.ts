@@ -6,17 +6,31 @@ import consola from 'consola'
 export default defineCommand({
   meta: {
     name: 'serve',
-    description: 'Start local content viewer or MCP stdio server',
+    description: 'Start the local content viewer or the MCP server (stdio for IDE agents, --mcpHttp for Studio / CI / remote drivers)',
   },
   args: {
-    root: { type: 'string', description: 'Project root path', required: false },
-    stdio: { type: 'boolean', description: 'Use stdio MCP transport (for IDE integration)', required: false },
-    port: { type: 'string', description: 'HTTP server port (default: 3333)', required: false },
-    open: { type: 'boolean', description: 'Open browser automatically', required: false },
-    host: { type: 'string', description: 'Bind address (default: localhost)', required: false },
+    root: { type: 'string', description: 'Project root path (env: CONTENTRAIN_PROJECT_ROOT)', required: false },
+    stdio: { type: 'boolean', description: 'Use stdio MCP transport for IDE integration (env: CONTENTRAIN_STDIO=true)', required: false },
+    mcpHttp: { type: 'boolean', description: 'Use HTTP MCP transport (serves tool calls at POST /mcp)', required: false },
+    authToken: { type: 'string', description: 'Bearer token required for HTTP MCP requests (env: CONTENTRAIN_AUTH_TOKEN)', required: false },
+    port: { type: 'string', description: 'HTTP server port, default: 3333 (env: CONTENTRAIN_PORT)', required: false },
+    open: { type: 'boolean', description: 'Open browser automatically (env: CONTENTRAIN_NO_OPEN=true to disable)', required: false },
+    host: { type: 'string', description: 'Bind address, default: localhost (env: CONTENTRAIN_HOST)', required: false },
+    demo: { type: 'boolean', description: 'Start with a temporary demo project (no setup needed)', required: false },
   },
   async run({ args }) {
-    const projectRoot = await resolveProjectRoot(args.root)
+    let projectRoot = await resolveProjectRoot(args.root)
+
+    // --- Demo mode: create temporary project ---
+    let demoDir: string | undefined
+    if (args.demo) {
+      const { createDemoProject, cleanupDemoProject } = await import('../utils/demo.js')
+      demoDir = await createDemoProject()
+      projectRoot = demoDir
+      consola.info(`Demo project created at ${demoDir}`)
+      process.on('exit', () => { cleanupDemoProject(demoDir!) })
+      process.on('SIGINT', () => { cleanupDemoProject(demoDir!); process.exit(0) })
+    }
 
     // Set environment for MCP context tracking
     process.env['CONTENTRAIN_PROJECT_ROOT'] = projectRoot
@@ -36,7 +50,8 @@ export default defineCommand({
     }
 
     // --- Stdio mode (IDE integration) ---
-    if (args.stdio) {
+    const useStdio = args.stdio || process.env['CONTENTRAIN_STDIO'] === 'true' || process.env['CONTENTRAIN_STDIO'] === '1'
+    if (useStdio) {
       const server = createServer(projectRoot)
       const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js')
       const transport = new StdioServerTransport()
@@ -45,10 +60,63 @@ export default defineCommand({
       return
     }
 
+    const port = Number(args.port) || Number(process.env['CONTENTRAIN_PORT']) || 3333
+    const host = args.host ?? process.env['CONTENTRAIN_HOST'] ?? 'localhost'
+    const authToken = args.authToken ?? process.env['CONTENTRAIN_AUTH_TOKEN']
+
+    // --- MCP over HTTP mode ---
+    const useMcpHttp = args.mcpHttp || process.env['CONTENTRAIN_MCP_HTTP'] === 'true' || process.env['CONTENTRAIN_MCP_HTTP'] === '1'
+    if (useMcpHttp) {
+      const { startHttpMcpServer } = await import('@contentrain/mcp/server/http')
+      const handle = await startHttpMcpServer({
+        projectRoot,
+        host,
+        port,
+        authToken,
+      })
+      consola.box({
+        title: 'Contentrain MCP (HTTP)',
+        message: [
+          `Endpoint: ${handle.url}`,
+          `Root:     ${projectRoot}`,
+          authToken ? 'Auth:     Bearer token required' : 'Auth:     none (local-only server)',
+          '',
+          'Press Ctrl+C to stop',
+        ].join('\n'),
+      })
+      if (host === '0.0.0.0' && !authToken) {
+        consola.warn('HTTP MCP server is accessible from the network with no Bearer token. Set --auth-token or CONTENTRAIN_AUTH_TOKEN.')
+      }
+      process.on('SIGINT', () => { void handle.close().finally(() => process.exit(0)) })
+      process.on('SIGTERM', () => { void handle.close().finally(() => process.exit(0)) })
+      return
+    }
+
     // --- Web UI mode (default) ---
-    const port = Number(args.port) || 3333
-    const host = args.host ?? 'localhost'
-    const shouldOpen = args.open !== false
+    // Secure-by-default: binding to a non-localhost interface requires
+    // an explicit `--authToken`. The serve UI has no per-request auth
+    // today, so exposing it to the network without a token would give
+    // any reachable host full .contentrain/ write access. Opt-out
+    // flags (`--allow-unsafe`) are NOT provided — OWASP Secure-by-
+    // Default. Bind to localhost if you want unauthenticated access.
+    if (host !== 'localhost' && host !== '127.0.0.1' && !authToken) {
+      consola.error([
+        `Refusing to start serve UI on ${host} without a Bearer token.`,
+        '',
+        '  The serve UI exposes the full .contentrain/ write surface to any',
+        '  reachable host. Either bind to localhost:',
+        '',
+        '    contentrain serve --host localhost',
+        '',
+        '  Or pass an auth token (coming soon — today, use stdio MCP for remote agents):',
+        '',
+        '    contentrain serve --mcpHttp --host 0.0.0.0 --authToken $(openssl rand -hex 32)',
+      ].join('\n'))
+      process.exitCode = 1
+      return
+    }
+
+    const shouldOpen = args.open !== false && process.env['CONTENTRAIN_NO_OPEN'] !== 'true'
 
     // Resolve UI directory (pre-built static assets next to CLI bundle)
     const { join, dirname } = await import('node:path')
@@ -113,9 +181,5 @@ export default defineCommand({
       }
     })
 
-    // Warn if binding to 0.0.0.0
-    if (host === '0.0.0.0') {
-      consola.warn('Server is accessible from the network. No authentication is configured.')
-    }
   },
 })

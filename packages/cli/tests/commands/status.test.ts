@@ -35,6 +35,14 @@ vi.mock('@contentrain/mcp/core/validator', () => ({
   }),
 }))
 
+const checkBranchHealthMock = vi.fn().mockResolvedValue({
+  total: 0, merged: 0, unmerged: 0, warning: false, blocked: false, message: undefined,
+})
+
+vi.mock('@contentrain/mcp/git/branch-lifecycle', () => ({
+  checkBranchHealth: checkBranchHealthMock,
+}))
+
 vi.mock('@contentrain/mcp/util/fs', () => ({
   pathExists: vi.fn().mockResolvedValue(true),
   contentrainDir: vi.fn((root: string) => `${root}/.contentrain`),
@@ -80,7 +88,15 @@ describe('status command', () => {
 
   it('should surface a blocked branch-health state when the project reaches 80 pending branches', async () => {
     branchMock.mockResolvedValueOnce({
-      all: Array.from({ length: 80 }, (_, i) => `contentrain/review/test-${i}`),
+      all: Array.from({ length: 80 }, (_, i) => `cr/content/blog/test-${i}`),
+    })
+    checkBranchHealthMock.mockResolvedValueOnce({
+      total: 80,
+      merged: 0,
+      unmerged: 80,
+      warning: true,
+      blocked: true,
+      message: 'BLOCKED: 80 active contentrain branches (limit: 80). Run cleanup or merge/delete old branches before creating new ones.',
     })
 
     const mod = await import('../../src/commands/status.js')

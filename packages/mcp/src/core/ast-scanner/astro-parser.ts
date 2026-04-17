@@ -363,7 +363,9 @@ export async function parseAstro(content: string, fileName: string): Promise<Ext
       // The content starts on the line after ---
       const contentStartLine = frontmatterLine + 1
 
-      const scriptResults = tsxParser(frontmatterContent, fileName)
+      // Astro frontmatter is always TypeScript — resolve filename accordingly
+      const resolvedFileName = fileName.replace(/\.astro$/, '.ts')
+      const scriptResults = tsxParser(frontmatterContent, resolvedFileName)
       for (const r of scriptResults) {
         results.push({
           ...r,

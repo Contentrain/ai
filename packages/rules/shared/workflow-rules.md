@@ -50,18 +50,19 @@ contentrain/{operation}/{model}/{locale}/{timestamp}
 
 | Scenario | Branch Name |
 |----------|-------------|
-| Content update | `contentrain/content/blog-post/en/1710300000` |
-| Model creation | `contentrain/model/team-member/1710300000` |
-| Normalize extraction | `contentrain/normalize/extract/blog/1710300000` |
-| Normalize reuse | `contentrain/normalize/reuse/marketing-hero/en/1710300000` |
-| Scaffold | `contentrain/new/scaffold-landing/en/1710300000` |
+| Content update | `cr/content/blog-post/en/1710300000-a1b2` |
+| Model creation | `cr/model/team-member/1710300000-c3d4` |
+| Normalize extraction | `cr/normalize/extract/blog/1710300000-e5f6` |
+| Normalize reuse | `cr/normalize/reuse/marketing-hero/en/1710300000-0789` |
+| Scaffold | `cr/new/scaffold-landing/en/1710300000-1234` |
 
 ### Rules
 
 - Branches are created automatically by MCP tools. Do NOT create them manually.
-- The `{timestamp}` component ensures uniqueness.
+- The `{timestamp}-{suffix}` component ensures uniqueness across concurrent writes.
 - `{locale}` is included when the operation is locale-specific.
 - `{model}` is included when the operation targets a specific model.
+- Legacy `contentrain/*` branches from pre-`cr/*` installations are auto-migrated on first init.
 
 ---
 
@@ -244,6 +245,43 @@ contentrain_submit
 - If no changes are pending, submit is a no-op.
 - After submit, the agent can continue with other operations (new branch will be created for new changes).
 - Normalize operations ALWAYS submit in review mode, regardless of project workflow setting.
+
+### 7.4 Branch Merge Mechanisms
+
+Review-mode branches can be merged three ways:
+
+**1. CLI Serve UI (Browser — recommended for normalize)**
+
+```bash
+contentrain serve
+```
+
+Navigate to http://localhost:3333/branches → select branch → click Merge.
+
+**2. MCP Tool (Programmatic — for agent-driven workflows)**
+
+```
+contentrain_merge(branch: "cr/normalize/extract/...", confirm: true)
+```
+
+Local git merge: feature → contentrain → update-ref → selective sync.
+No external platform required. Agent can continue immediately.
+
+**3. Git Platform (GitHub/GitLab — for team governance)**
+
+```
+contentrain_submit  # pushes to remote
+```
+
+Then create PR on platform → review → merge.
+
+**Agent Decision Guide:**
+
+| Workflow | Recommended Merge Method |
+|----------|--------------------------|
+| Normalize (extract/reuse) | CLI serve UI (visual review of content) |
+| Content CRUD | `contentrain_merge` (programmatic, fast) |
+| Team with code review | Git platform PR |
 
 ---
 

@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { EntryMeta } from '@contentrain/types'
 import { z } from 'zod'
+import type { ToolProvider } from '../server.js'
 import { readConfig } from '../core/config.js'
 import { readModel } from '../core/model-manager.js'
 import { resolveContentDir, resolveJsonFilePath, deleteContent } from '../core/content-manager.js'
@@ -8,8 +9,14 @@ import { readMeta, writeMeta } from '../core/meta-manager.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { readJson, writeJson } from '../util/fs.js'
+import { TOOL_ANNOTATIONS } from './annotations.js'
+import { capabilityError } from './guards.js'
 
-export function registerBulkTools(server: McpServer, projectRoot: string): void {
+export function registerBulkTools(
+  server: McpServer,
+  _provider: ToolProvider,
+  projectRoot: string | undefined,
+): void {
   server.tool(
     'contentrain_bulk',
     'Batch operations on content entries. All operations are auto-committed to git.',
@@ -22,7 +29,9 @@ export function registerBulkTools(server: McpServer, projectRoot: string): void 
       status: z.enum(['draft', 'in_review', 'published', 'rejected', 'archived']).optional().describe('New status for update_status'),
       confirm: z.boolean().optional().describe('Must be true for delete_entries'),
     },
+    TOOL_ANNOTATIONS['contentrain_bulk']!,
     async (input) => {
+      if (!projectRoot) return capabilityError('contentrain_bulk', 'localWorktree')
       const config = await readConfig(projectRoot)
       if (!config) {
         return {

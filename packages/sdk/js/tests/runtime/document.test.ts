@@ -97,6 +97,45 @@ describe('DocumentQuery', () => {
     expect(q.first()).toBeUndefined()
     expect(q.bySlug('test')).toBeUndefined()
   })
+
+  it('count() returns document count', () => {
+    expect(createQuery().locale('en').count()).toBe(3)
+  })
+
+  it('count() respects filters', () => {
+    expect(createQuery().locale('en').where('category', 'tech').count()).toBe(2)
+  })
+})
+
+// ─── Operator-based where() Tests ───
+
+describe('DocumentQuery — where() operators', () => {
+  it('where(field, "ne", value) — not equal', () => {
+    const result = createQuery().locale('en').where('category', 'ne', 'design').all()
+    expect(result).toHaveLength(2)
+    expect(result.every(d => d.category !== 'design')).toBe(true)
+  })
+
+  it('where(field, "in", values) — in list', () => {
+    const result = createQuery().locale('en').where('slug', 'in', ['welcome-post', 'advanced-git']).all()
+    expect(result).toHaveLength(2)
+  })
+
+  it('where(field, "contains", value) — string contains', () => {
+    const result = createQuery().locale('en').where('title', 'contains', 'Design').all()
+    expect(result).toHaveLength(1)
+    expect(result[0]!.title).toBe('Design Tips')
+  })
+
+  it('mixes equality shorthand and operators', () => {
+    const result = createQuery()
+      .locale('en')
+      .where('category', 'tech')
+      .where('title', 'contains', 'Git')
+      .all()
+    expect(result).toHaveLength(1)
+    expect(result[0]!.slug).toBe('advanced-git')
+  })
 })
 
 // ─── Relation Resolution Tests ───

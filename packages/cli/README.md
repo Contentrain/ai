@@ -2,17 +2,24 @@
 
 [![npm version](https://img.shields.io/npm/v/contentrain?label=contentrain)](https://www.npmjs.com/package/contentrain)
 [![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/cli)
+[![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io/packages/cli)
 
 CLI for Contentrain.
+
+Start here:
+
+- [2-minute product demo](https://ai.contentrain.io/demo)
+- [CLI docs](https://ai.contentrain.io/packages/cli)
+- [Getting started](https://ai.contentrain.io/getting-started)
 
 `contentrain` is the local operations surface for a Contentrain project:
 
 - initialize `.contentrain/` in an existing repo
 - inspect project health and validation state
 - generate the typed `#contentrain` SDK client
-- review pending `contentrain/*` branches
+- review pending `cr/*` branches
 - run the local review UI
-- expose the MCP server over stdio for IDE agents
+- expose the MCP server over stdio (IDE agents) or HTTP (Studio, CI, remote drivers)
 
 This package is the human-facing companion to:
 
@@ -49,8 +56,24 @@ Requirements:
 | `contentrain doctor` | Check setup health, SDK freshness, orphan content, and branch limits |
 | `contentrain validate` | Validate content against schemas, optionally create review-branch fixes |
 | `contentrain generate` | Generate `.contentrain/client/` and `#contentrain` package imports |
-| `contentrain diff` | Review and merge or reject pending `contentrain/*` branches |
-| `contentrain serve` | Start the local review UI or the MCP stdio server |
+| `contentrain diff` | Review and merge or reject pending `cr/*` branches interactively |
+| `contentrain merge <branch>` | Merge one pending `cr/*` branch non-interactively (CI/agents) |
+| `contentrain describe <model>` | Inspect a model's schema, stats, and import snippet |
+| `contentrain describe-format` | Print the Contentrain content-format specification |
+| `contentrain scaffold --template` | Apply a template (`blog`, `landing`, `docs`, `ecommerce`, `saas`, `i18n`, `mobile`) |
+| `contentrain serve` | Start the local review UI, the MCP stdio server (`--stdio`), or the MCP HTTP server (`--mcpHttp`) |
+| `contentrain studio connect` | Connect a repository to a Studio project |
+| `contentrain studio login` | Authenticate with Contentrain Studio |
+| `contentrain studio logout` | Log out from Studio |
+| `contentrain studio whoami` | Show current authentication status |
+| `contentrain studio status` | Show project overview from Studio |
+| `contentrain studio activity` | Show recent activity feed |
+| `contentrain studio usage` | Show workspace usage metrics |
+| `contentrain studio branches` | Manage remote content branches |
+| `contentrain studio cdn-init` | Set up CDN for content delivery |
+| `contentrain studio cdn-build` | Trigger a CDN rebuild |
+| `contentrain studio webhooks` | Manage webhooks |
+| `contentrain studio submissions` | Manage form submissions |
 
 ## 🔄 Typical Flow
 
@@ -94,28 +117,39 @@ contentrain serve
 
 ## 🖥 `serve` Modes
 
-`contentrain serve` has two roles.
+`contentrain serve` has three roles.
 
-Start the local review UI:
+### Local review UI (default)
 
 ```bash
 contentrain serve
 contentrain serve --port 3333 --host localhost
 ```
 
-This serves:
+Serves the REST endpoints for status / content / validation / branches / normalize, a WebSocket stream for live updates, and the embedded Vue `serve-ui` app bundled with the CLI.
 
-- REST endpoints for status, content, validation, branches, and normalize data
-- a WebSocket stream for live updates
-- the embedded Vue `serve-ui` app bundled with the CLI
-
-Start the MCP server for IDE integration:
+### MCP stdio (IDE agents)
 
 ```bash
 contentrain serve --stdio
 ```
 
 Use stdio mode when connecting Claude Code, Cursor, Windsurf, or another MCP client to the local project.
+
+### MCP HTTP (Studio, CI, remote drivers)
+
+```bash
+contentrain serve --mcpHttp --authToken $(openssl rand -hex 32)
+contentrain serve --mcpHttp --port 3333 --host 0.0.0.0 --authToken $TOKEN
+```
+
+Spins up a [Streamable HTTP MCP](https://modelcontextprotocol.io) server at `POST /mcp`. Bearer auth is enforced when `--authToken` is set (or `CONTENTRAIN_AUTH_TOKEN` is exported). Use HTTP mode when:
+
+- Studio's agent drives MCP remotely
+- a CI runner needs deterministic content operations
+- an agent on another machine orchestrates content changes
+
+HTTP sessions use the same `LocalProvider` backing as stdio — the transport differs, the behaviour does not. Remote git-host providers (`GitHubProvider`, `GitLabProvider`) are constructed by embedders who instantiate the MCP server programmatically; see the MCP package docs for that flow.
 
 ## 📦 `generate` and `#contentrain`
 
@@ -146,9 +180,52 @@ contentrain diff
 
 to understand:
 
-- how many active review branches exist on the `contentrain` branch
+- how many active `cr/*` review branches exist on the `contentrain` branch
 - whether branch health is blocking new writes
 - what changed before merging or deleting a branch
+
+## 🔗 Studio Integration
+
+The `studio` command group connects the CLI to [Contentrain Studio](https://studio.contentrain.io) for enterprise workflows.
+
+Authenticate and connect:
+
+```bash
+contentrain studio login
+contentrain studio whoami
+contentrain studio connect
+```
+
+The `connect` command links your local repository to a Studio project. It detects the git remote, verifies GitHub App installation, scans for `.contentrain/` configuration, and creates the project — all in one interactive flow.
+
+```bash
+contentrain studio connect --workspace ws-123
+```
+
+Set up CDN for content delivery:
+
+```bash
+contentrain studio cdn-init
+contentrain studio cdn-build --wait
+```
+
+Monitor project activity and usage:
+
+```bash
+contentrain studio status
+contentrain studio activity --limit 10
+contentrain studio usage
+```
+
+Manage branches, webhooks, and form submissions:
+
+```bash
+contentrain studio branches
+contentrain studio webhooks
+contentrain studio submissions --form contact-form
+```
+
+Credentials are stored securely in `~/.contentrain/credentials.json` with `0o600` permissions. Use `CONTENTRAIN_STUDIO_TOKEN` environment variable for CI/CD.
 
 ## 🤖 IDE Rules
 

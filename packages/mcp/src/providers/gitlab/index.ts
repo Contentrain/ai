@@ -1,0 +1,7 @@
+export { GITLAB_CAPABILITIES } from './capabilities.js'
+export type { GitLabClient } from './client.js'
+export { createGitLabClient, createGitLabProvider } from './factory.js'
+export { GitLabProvider } from './provider.js'
+export { GitLabReader } from './reader.js'
+export type { GitLabAuth, ProjectRef } from './types.js'
+export { DEFAULT_GITLAB_AUTHOR } from './types.js'

@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/query",
-  "version": "5.1.0",
+  "version": "5.1.4",
   "license": "MIT",
   "description": "Optional type-safe query SDK for Contentrain — generated TypeScript client for platform-independent JSON content",
   "type": "module",
@@ -9,7 +9,7 @@
     "url": "git+https://github.com/Contentrain/ai.git",
     "directory": "packages/sdk/js"
   },
-  "homepage": "https://github.com/Contentrain/ai/tree/main/packages/sdk/js",
+  "homepage": "https://ai.contentrain.io/packages/sdk",
   "bugs": {
     "url": "https://github.com/Contentrain/ai/issues"
   },
@@ -22,6 +22,7 @@
     "i18n",
     "generated-client",
     "platform-independent",
+    "agent-skills",
     "json",
     "vue",
     "react",
@@ -52,14 +53,16 @@
       "types": "./dist/cdn/index.d.ts",
       "import": "./dist/cdn/index.mjs",
       "require": "./dist/cdn/index.cjs"
-    }
+    },
+    "./skills/*": "./skills/*"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "files": [
-    "dist"
+    "dist",
+    "skills"
   ],
   "scripts": {
     "build": "tsdown src/index.ts src/cdn/index.ts src/generator/generate.ts src/cli.ts --format esm,cjs --dts",

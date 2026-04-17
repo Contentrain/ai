@@ -1,245 +1,16 @@
-import type { ModelDefinition, ContentrainConfig, EntryMeta, LocaleStrategy, DocumentEntry } from '@contentrain/types'
+import type { ModelDefinition, ContentrainConfig, EntryMeta, LocaleStrategy, DocumentEntry, Vocabulary } from '@contentrain/types'
+import { validateSlug, validateEntryId, validateLocale, generateEntryId, parseMarkdownFrontmatter, serializeMarkdownFrontmatter } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { contentrainDir, readDir, readJson, readText, writeJson, writeText } from '../util/fs.js'
-import { generateEntryId } from '../util/id.js'
 import { writeMeta, deleteMeta } from './meta-manager.js'
 import { readModel } from './model-manager.js'
+import type { RepoReader } from './contracts/index.js'
+import { contentDirPath, contentFilePath, documentFilePath } from './ops/paths.js'
 
-// ─── Validation helpers ───
-
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-const ENTRY_ID_RE = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,39}$/
-const LOCALE_RE = /^[a-z]{2}(?:-[A-Z]{2})?$/
-
-export function validateSlug(slug: string): string | null {
-  if (!slug) return 'Slug is required'
-  if (!SLUG_RE.test(slug)) return `Invalid slug "${slug}": must be kebab-case alphanumeric (a-z, 0-9, hyphens)`
-  if (slug.startsWith('.') || slug.includes('..')) return `Invalid slug "${slug}": path traversal not allowed`
-  return null
-}
-
-export function validateEntryId(id: string): string | null {
-  if (!ENTRY_ID_RE.test(id)) return `Invalid entry ID "${id}": must be 1-40 alphanumeric characters (hyphens and underscores allowed)`
-  return null
-}
-
-export function validateLocale(locale: string, config: ContentrainConfig): string | null {
-  if (!LOCALE_RE.test(locale)) return `Invalid locale "${locale}": must be ISO 639-1 format (e.g. "en", "tr", "pt-BR")`
-  if (!config.locales.supported.includes(locale)) {
-    return `Locale "${locale}" is not in supported locales [${config.locales.supported.join(', ')}]. Update config first.`
-  }
-  return null
-}
-
-// ─── Frontmatter helpers ───
-
-export function parseFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
-  // Normalize CRLF to LF for cross-platform compatibility
-  const normalized = content.replace(/\r\n/g, '\n')
-  const match = normalized.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
-  if (!match) return { frontmatter: {}, body: normalized }
-
-  const frontmatterStr = match[1]!
-  const body = match[2]!.trim()
-  const frontmatter: Record<string, unknown> = {}
-
-  let currentKey: string | null = null
-  let currentArray: string[] | null = null
-
-  for (const line of frontmatterStr.split('\n')) {
-    // Array item
-    if (/^\s+-\s+/.test(line) && currentKey) {
-      const value = line.replace(/^\s+-\s+/, '').trim()
-      if (!currentArray) currentArray = []
-      currentArray.push(value)
-      continue
-    }
-
-    // Flush previous array
-    if (currentKey && currentArray) {
-      frontmatter[currentKey] = currentArray
-      currentKey = null
-      currentArray = null
-    }
-
-    const kvMatch = line.match(/^([\w][\w.-]*)\s*:\s*(.*)$/)
-    if (!kvMatch) continue
-
-    const key = kvMatch[1]!
-    const rawValue = kvMatch[2]!.trim()
-
-    if (rawValue === '') {
-      currentKey = key
-      currentArray = []
-      continue
-    }
-
-    // Inline array: [item1, item2]
-    if (rawValue.startsWith('[') && rawValue.endsWith(']')) {
-      const items = rawValue.slice(1, -1).split(',').map(s => s.trim()).filter(Boolean)
-      frontmatter[key] = items
-      continue
-    }
-
-    frontmatter[key] = parseYamlValue(rawValue)
-  }
-
-  // Flush last array
-  if (currentKey && currentArray) {
-    frontmatter[currentKey] = currentArray
-  }
-
-  return { frontmatter, body }
-}
-
-function parseYamlValue(raw: string): unknown {
-  if (raw === 'true') return true
-  if (raw === 'false') return false
-  if (raw === 'null') return null
-  if (/^-?\d+$/.test(raw)) return parseInt(raw, 10)
-  if (/^-?\d+\.\d+$/.test(raw)) return parseFloat(raw)
-  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
-    return raw.slice(1, -1)
-  }
-  return raw
-}
-
-function yamlScalar(value: unknown): string {
-  const str = String(value)
-  // Quote strings that contain YAML-special characters
-  if (str.includes(':') || str.includes('#') || str.includes('{') || str.includes('}')
-    || str.includes('[') || str.includes(']') || str.includes('*') || str.includes('&')
-    || str.includes('!') || str.includes('|') || str.includes('>') || str.includes("'")
-    || str.includes('"') || str.includes('%') || str.includes('@') || str.includes('`')
-    || str.startsWith('-') || str.startsWith('?')
-    || str === 'true' || str === 'false' || str === 'null' || str === 'yes' || str === 'no'
-    || str === '') {
-    return `"${str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
-  }
-  return str
-}
-
-function serializeYamlValue(value: unknown, indent: number): string[] {
-  const pad = '  '.repeat(indent)
-  if (value === null || value === undefined) return []
-  if (typeof value === 'object' && !Array.isArray(value)) {
-    const lines: string[] = []
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (v === null || v === undefined) continue
-      if (typeof v === 'object' && !Array.isArray(v)) {
-        lines.push(`${pad}${k}:`)
-        lines.push(...serializeYamlValue(v, indent + 1))
-      } else if (Array.isArray(v)) {
-        lines.push(`${pad}${k}:`)
-        for (const item of v) {
-          if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-            const nested = serializeYamlValue(item, indent + 2)
-            if (nested.length > 0) {
-              // First line of nested object gets the "- " prefix
-              lines.push(`${pad}  - ${nested[0]!.trimStart()}`)
-              lines.push(...nested.slice(1))
-            }
-          } else {
-            lines.push(`${pad}  - ${yamlScalar(item)}`)
-          }
-        }
-      } else {
-        lines.push(`${pad}${k}: ${yamlScalar(v)}`)
-      }
-    }
-    return lines
-  }
-  if (Array.isArray(value)) {
-    const lines: string[] = []
-    for (const item of value) {
-      if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-        const nested = serializeYamlValue(item, indent + 1)
-        if (nested.length > 0) {
-          lines.push(`${pad}- ${nested[0]!.trimStart()}`)
-          lines.push(...nested.slice(1))
-        }
-      } else {
-        lines.push(`${pad}- ${yamlScalar(item)}`)
-      }
-    }
-    return lines
-  }
-  return [`${pad}${yamlScalar(value)}`]
-}
-
-function serializeYamlFields(data: Record<string, unknown>): string[] {
-  const lines: string[] = []
-  for (const [key, value] of Object.entries(data)) {
-    if (key === 'body') continue
-    if (value === null || value === undefined) continue
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      lines.push(`${key}:`)
-      lines.push(...serializeYamlValue(value, 1))
-    } else if (Array.isArray(value)) {
-      lines.push(`${key}:`)
-      for (const item of value) {
-        if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-          const nested = serializeYamlValue(item, 2)
-          if (nested.length > 0) {
-            lines.push(`  - ${nested[0]!.trimStart()}`)
-            lines.push(...nested.slice(1))
-          }
-        } else {
-          lines.push(`  - ${yamlScalar(item)}`)
-        }
-      }
-    } else {
-      lines.push(`${key}: ${yamlScalar(value)}`)
-    }
-  }
-  return lines
-}
-
-export function serializeFrontmatter(data: Record<string, unknown>, body: string): string {
-  // If body starts with frontmatter (---), merge model fields into body's frontmatter
-  const trimmedBody = body.trimStart()
-  if (trimmedBody.startsWith('---')) {
-    const endIdx = trimmedBody.indexOf('---', 3)
-    if (endIdx > 0) {
-      const bodyFmContent = trimmedBody.slice(3, endIdx).trim()
-      const afterFm = trimmedBody.slice(endIdx + 3)
-
-      const lines: string[] = ['---']
-      lines.push(...serializeYamlFields(data))
-      // Body frontmatter fields (skip top-level duplicates from model fields)
-      if (bodyFmContent) {
-        const modelKeys = new Set(Object.keys(data))
-        for (const line of bodyFmContent.split('\n')) {
-          // Only check top-level keys (lines that don't start with whitespace)
-          if (line.length > 0 && line[0] !== ' ' && line[0] !== '-') {
-            const colonIdx = line.indexOf(':')
-            const lineKey = colonIdx > 0 ? line.slice(0, colonIdx).trim() : ''
-            if (lineKey && modelKeys.has(lineKey)) continue
-          }
-          lines.push(line)
-        }
-      }
-      lines.push('---')
-      if (afterFm.trim()) {
-        lines.push(afterFm.trimStart())
-      }
-      lines.push('')
-      return lines.join('\n')
-    }
-  }
-
-  // Standard: model fields as frontmatter, body as markdown
-  const lines: string[] = ['---']
-  lines.push(...serializeYamlFields(data))
-  lines.push('---')
-  lines.push('')
-  if (body) {
-    lines.push(body)
-    lines.push('')
-  }
-  return lines.join('\n')
-}
+// Re-export for backward compatibility (MCP internal consumers)
+export { validateSlug, validateEntryId, validateLocale }
+export { parseMarkdownFrontmatter as parseFrontmatter, serializeMarkdownFrontmatter as serializeFrontmatter } from '@contentrain/types'
 
 // ─── Content paths ───
 
@@ -296,6 +67,7 @@ export interface WriteResult {
   id?: string
   slug?: string
   locale: string
+  advisories?: string[]
 }
 
 export interface DeleteOpts {
@@ -337,6 +109,7 @@ export async function writeContent(
   model: ModelDefinition,
   entries: ContentEntry[],
   config: ContentrainConfig,
+  vocabulary?: Vocabulary | null,
 ): Promise<WriteResult[]> {
   const results: WriteResult[] = []
   const defaultLocale = config.locales.default
@@ -406,7 +179,7 @@ export async function writeContent(
         const existingRaw = await readText(docPath)
         const action: 'created' | 'updated' = existingRaw ? 'updated' : 'created'
 
-        const mdContent = serializeFrontmatter(fmData, bodyContent)
+        const mdContent = serializeMarkdownFrontmatter(fmData, bodyContent)
         await writeText(docPath, mdContent)
         await writeMeta(projectRoot, model, { locale, slug }, defaultMeta(entry.data))
         results.push({ action, slug, locale })
@@ -428,10 +201,42 @@ export async function writeContent(
             `Read existing keys with contentrain_content_list first, or include all keys in a single save call.`,
           )
         }
+
+        // Duplicate value advisory: warn when a new key maps to a value that already exists
+        const advisories: string[] = []
+        const reverseMap = new Map<string, string>()
+        for (const [k, v] of Object.entries(existing)) {
+          reverseMap.set(v, k)
+        }
+        for (const [newKey, newValue] of Object.entries(entry.data as Record<string, string>)) {
+          if (newKey in existing) continue
+          const existingKey = reverseMap.get(newValue as string)
+          if (existingKey && existingKey !== newKey) {
+            advisories.push(
+              `Value "${newValue}" already exists as key "${existingKey}". Consider reusing instead of creating "${newKey}".`,
+            )
+          }
+        }
+
+        // Vocabulary cross-reference: warn when a value matches a known vocabulary term
+        if (vocabulary && Object.keys(vocabulary.terms).length > 0) {
+          for (const [newKey, newValue] of Object.entries(entry.data as Record<string, string>)) {
+            if (newKey in existing) continue
+            for (const [, translations] of Object.entries(vocabulary.terms)) {
+              if (Object.values(translations).includes(newValue as string)) {
+                advisories.push(
+                  `Value "${newValue}" matches a vocabulary term. Use the canonical form for consistency.`,
+                )
+                break
+              }
+            }
+          }
+        }
+
         const merged = { ...existing, ...entry.data as Record<string, string> }
         await writeJson(filePath, merged)
         await writeMeta(projectRoot, model, { locale }, defaultMeta(entry.data))
-        results.push({ action: 'updated', locale })
+        results.push({ action: 'updated', locale, ...(advisories.length > 0 ? { advisories } : {}) })
         break
       }
     }
@@ -559,7 +364,46 @@ export async function deleteContent(
 
 // ─── listContent ───
 
+/**
+ * List content entries for a model. Dual signature:
+ *
+ * - `listContent(projectRoot, model, opts, config)` — legacy local flow,
+ *   uses direct filesystem reads and supports `opts.resolve` for
+ *   cross-model relation hydration.
+ * - `listContent(reader, model, opts, config)` — reader-backed flow for
+ *   remote providers. Basic list works across all four model kinds.
+ *   `opts.resolve: true` is rejected with an error on remote readers
+ *   because the cross-model walk requires local filesystem access.
+ *
+ * The reader-based function lives in {@link listContentViaReader}; the
+ * projectRoot-based entry point continues to call the legacy body to
+ * preserve bit-for-bit behaviour for every existing caller.
+ */
+export function listContent(
+  projectRoot: string,
+  model: ModelDefinition,
+  opts: ListOpts,
+  config: ContentrainConfig,
+): Promise<unknown>
+export function listContent(
+  reader: RepoReader,
+  model: ModelDefinition,
+  opts: ListOpts,
+  config: ContentrainConfig,
+): Promise<unknown>
 export async function listContent(
+  input: string | RepoReader,
+  model: ModelDefinition,
+  opts: ListOpts,
+  config: ContentrainConfig,
+): Promise<unknown> {
+  if (typeof input !== 'string') {
+    return listContentViaReader(input, model, opts, config)
+  }
+  return listContentLocal(input, model, opts, config)
+}
+
+async function listContentLocal(
   projectRoot: string,
   model: ModelDefinition,
   opts: ListOpts,
@@ -619,7 +463,7 @@ export async function listContent(
           const slug = f.replace('.md', '')
           const raw = await readText(join(cDir, f))
           if (!raw) continue
-          const { frontmatter, body } = parseFrontmatter(raw)
+          const { frontmatter, body } = parseMarkdownFrontmatter(raw)
           entries.push({ slug, frontmatter, body })
         }
       } else if (strategy === 'file') {
@@ -628,7 +472,7 @@ export async function listContent(
         for (const slug of slugDirs) {
           const raw = await readText(join(cDir, slug, `${locale}.md`))
           if (!raw) continue
-          const { frontmatter, body } = parseFrontmatter(raw)
+          const { frontmatter, body } = parseMarkdownFrontmatter(raw)
           entries.push({ slug, frontmatter, body })
         }
       } else if (strategy === 'suffix') {
@@ -640,7 +484,7 @@ export async function listContent(
           const slug = f.slice(0, -suffix.length)
           const raw = await readText(join(cDir, f))
           if (!raw) continue
-          const { frontmatter, body } = parseFrontmatter(raw)
+          const { frontmatter, body } = parseMarkdownFrontmatter(raw)
           entries.push({ slug, frontmatter, body })
         }
       } else if (strategy === 'directory') {
@@ -652,7 +496,7 @@ export async function listContent(
           const slug = f.replace('.md', '')
           const raw = await readText(join(localeDir, f))
           if (!raw) continue
-          const { frontmatter, body } = parseFrontmatter(raw)
+          const { frontmatter, body } = parseMarkdownFrontmatter(raw)
           entries.push({ slug, frontmatter, body })
         }
       } else {
@@ -663,7 +507,7 @@ export async function listContent(
           const slug = f.replace('.md', '')
           const raw = await readText(join(cDir, f))
           if (!raw) continue
-          const { frontmatter, body } = parseFrontmatter(raw)
+          const { frontmatter, body } = parseMarkdownFrontmatter(raw)
           entries.push({ slug, frontmatter, body })
         }
       }
@@ -678,6 +522,133 @@ export async function listContent(
 
     case 'dictionary': {
       const data = await readJson<Record<string, string>>(resolveJsonFilePath(cDir, model, locale)) ?? {}
+      return { kind: 'dictionary', data, total_keys: Object.keys(data).length, locale }
+    }
+  }
+}
+
+async function tryReadJsonViaReader<T>(reader: RepoReader, path: string): Promise<T | null> {
+  try {
+    return JSON.parse(await reader.readFile(path)) as T
+  } catch {
+    return null
+  }
+}
+
+async function tryReadTextViaReader(reader: RepoReader, path: string): Promise<string | null> {
+  try {
+    return await reader.readFile(path)
+  } catch {
+    return null
+  }
+}
+
+async function listContentViaReader(
+  reader: RepoReader,
+  model: ModelDefinition,
+  opts: ListOpts,
+  config: ContentrainConfig,
+): Promise<unknown> {
+  if (opts.resolve) {
+    throw new Error(
+      'contentrain_content_list with resolve:true requires local filesystem access. '
+      + 'Use a LocalProvider (stdio or HTTP+LocalProvider) or omit resolve:true.',
+    )
+  }
+
+  const cDir = contentDirPath(model)
+  const locale = opts.locale ?? config.locales.default
+
+  switch (model.kind) {
+    case 'singleton': {
+      const data = await tryReadJsonViaReader<Record<string, unknown>>(reader, contentFilePath(model, locale))
+      return { kind: 'singleton', data: data ?? {}, locale }
+    }
+
+    case 'collection': {
+      const data = await tryReadJsonViaReader<Record<string, Record<string, unknown>>>(
+        reader,
+        contentFilePath(model, locale),
+      ) ?? {}
+      let entries: Array<Record<string, unknown>> = Object.entries(data).map(([id, fields]) => {
+        const entry: Record<string, unknown> = { id }
+        Object.assign(entry, fields)
+        return entry
+      })
+
+      if (opts.filter) {
+        entries = entries.filter(entry => {
+          for (const [key, value] of Object.entries(opts.filter!)) {
+            if (entry[key] !== value) return false
+          }
+          return true
+        })
+      }
+
+      const total = entries.length
+      const offset = opts.offset ?? 0
+      const limit = opts.limit ?? entries.length
+      entries = entries.slice(offset, offset + limit)
+
+      return { kind: 'collection', data: entries, total, locale, offset, limit }
+    }
+
+    case 'document': {
+      const entries: DocumentEntry[] = []
+      const strategy = resolveLocaleStrategy(model)
+
+      const collectEntry = async (relPath: string, slug: string): Promise<void> => {
+        const raw = await tryReadTextViaReader(reader, relPath)
+        if (!raw) return
+        const { frontmatter, body } = parseMarkdownFrontmatter(raw)
+        entries.push({ slug, frontmatter, body })
+      }
+
+      if (!model.i18n) {
+        const files = await reader.listDirectory(cDir)
+        for (const f of files) {
+          if (!f.endsWith('.md')) continue
+          await collectEntry(documentFilePath(model, locale, f.replace(/\.md$/u, '')), f.replace(/\.md$/u, ''))
+        }
+      } else if (strategy === 'file') {
+        const slugDirs = await reader.listDirectory(cDir)
+        for (const slug of slugDirs) {
+          await collectEntry(documentFilePath(model, locale, slug), slug)
+        }
+      } else if (strategy === 'suffix') {
+        const files = await reader.listDirectory(cDir)
+        const suffix = `.${locale}.md`
+        for (const f of files) {
+          if (!f.endsWith(suffix)) continue
+          const slug = f.slice(0, -suffix.length)
+          await collectEntry(documentFilePath(model, locale, slug), slug)
+        }
+      } else if (strategy === 'directory') {
+        const files = await reader.listDirectory(`${cDir}/${locale}`)
+        for (const f of files) {
+          if (!f.endsWith('.md')) continue
+          const slug = f.replace(/\.md$/u, '')
+          await collectEntry(documentFilePath(model, locale, slug), slug)
+        }
+      } else {
+        const files = await reader.listDirectory(cDir)
+        for (const f of files) {
+          if (!f.endsWith('.md')) continue
+          const slug = f.replace(/\.md$/u, '')
+          await collectEntry(documentFilePath(model, locale, slug), slug)
+        }
+      }
+
+      const total = entries.length
+      const offset = opts.offset ?? 0
+      const limit = opts.limit ?? entries.length
+      const paged = entries.slice(offset, offset + limit)
+
+      return { kind: 'document', data: paged, total, locale, offset, limit }
+    }
+
+    case 'dictionary': {
+      const data = await tryReadJsonViaReader<Record<string, string>>(reader, contentFilePath(model, locale)) ?? {}
       return { kind: 'dictionary', data, total_keys: Object.keys(data).length, locale }
     }
   }
@@ -706,7 +677,7 @@ export async function readContent(
       if (!opts.slug) return null
       const raw = await readText(resolveMdFilePath(cDir, model, opts.locale, opts.slug))
       if (!raw) return null
-      const { frontmatter, body } = parseFrontmatter(raw)
+      const { frontmatter, body } = parseMarkdownFrontmatter(raw)
       return { slug: opts.slug, ...frontmatter, body }
     }
 
@@ -765,7 +736,7 @@ async function resolveRelations(
             const slug = f.replace('.md', '')
             const raw = await readText(join(cDir, f))
             if (!raw) continue
-            const { frontmatter, body } = parseFrontmatter(raw)
+            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
             docCache[slug] = { slug, ...frontmatter, body }
           }
         } else if (strategy === 'file') {
@@ -773,7 +744,7 @@ async function resolveRelations(
           for (const slug of slugDirs) {
             const raw = await readText(join(cDir, slug, `${locale}.md`))
             if (!raw) continue
-            const { frontmatter, body } = parseFrontmatter(raw)
+            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
             docCache[slug] = { slug, ...frontmatter, body }
           }
         } else if (strategy === 'suffix') {
@@ -784,7 +755,7 @@ async function resolveRelations(
             const slug = f.slice(0, -suffix.length)
             const raw = await readText(join(cDir, f))
             if (!raw) continue
-            const { frontmatter, body } = parseFrontmatter(raw)
+            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
             docCache[slug] = { slug, ...frontmatter, body }
           }
         } else if (strategy === 'directory') {
@@ -795,7 +766,7 @@ async function resolveRelations(
             const slug = f.replace('.md', '')
             const raw = await readText(join(localeDir, f))
             if (!raw) continue
-            const { frontmatter, body } = parseFrontmatter(raw)
+            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
             docCache[slug] = { slug, ...frontmatter, body }
           }
         } else {
@@ -806,7 +777,7 @@ async function resolveRelations(
             const slug = f.replace('.md', '')
             const raw = await readText(join(cDir, f))
             if (!raw) continue
-            const { frontmatter, body } = parseFrontmatter(raw)
+            const { frontmatter, body } = parseMarkdownFrontmatter(raw)
             docCache[slug] = { slug, ...frontmatter, body }
           }
         }

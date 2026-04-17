@@ -2,8 +2,15 @@
 
 [![npm version](https://img.shields.io/npm/v/%40contentrain%2Fmcp?label=%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp)
 [![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/mcp)
+[![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io/packages/mcp)
 
-Local-first MCP server and core primitives for Contentrain.
+Provider-agnostic MCP engine for Contentrain — local-first by default, with optional GitHub and GitLab backends and an HTTP transport for remote drivers such as Studio.
+
+Start here:
+
+- [2-minute product demo](https://ai.contentrain.io/demo)
+- [MCP package docs](https://ai.contentrain.io/packages/mcp)
+- [Normalize guide](https://ai.contentrain.io/guides/normalize)
 
 Contentrain is AI-generated content governance infrastructure:
 
@@ -62,29 +69,38 @@ All write operations are designed around git-backed safety:
 
 ## 🧰 Tool Surface
 
-Current MCP tools exposed by the server:
+16 MCP tools with [annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`) for client safety hints:
 
-| Tool | Purpose |
-| --- | --- |
-| `contentrain_status` | Project status, config, models, branch health, context |
-| `contentrain_describe` | Full schema and sample data for a model |
-| `contentrain_describe_format` | File-format and storage contract reference |
-| `contentrain_init` | Create `.contentrain/` structure and base config |
-| `contentrain_scaffold` | Apply a starter template such as blog, docs, landing, saas |
-| `contentrain_model_save` | Create or update a model definition |
-| `contentrain_model_delete` | Delete a model definition |
-| `contentrain_content_save` | Save content entries for any model kind |
-| `contentrain_content_delete` | Delete content entries |
-| `contentrain_content_list` | Read content entries |
-| `contentrain_validate` | Validate project content, optionally auto-fix structural issues |
-| `contentrain_submit` | Push `contentrain/*` branches to remote |
-| `contentrain_scan` | Graph- and candidate-based hardcoded string scan |
-| `contentrain_apply` | Normalize extract/reuse execution with dry-run support |
-| `contentrain_bulk` | Bulk locale copy, status updates, and deletes |
+| Tool | Purpose | Read-only | Destructive |
+| --- | --- | --- | --- |
+| `contentrain_status` | Project status, config, models, branch health, context | Yes | — |
+| `contentrain_describe` | Full schema and sample data for a model | Yes | — |
+| `contentrain_describe_format` | File-format and storage contract reference | Yes | — |
+| `contentrain_init` | Create `.contentrain/` structure and base config | — | — |
+| `contentrain_scaffold` | Apply a starter template such as blog, docs, landing, saas | — | — |
+| `contentrain_model_save` | Create or update a model definition | — | — |
+| `contentrain_model_delete` | Delete a model definition | — | **Yes** |
+| `contentrain_content_save` | Save content entries for any model kind | — | — |
+| `contentrain_content_delete` | Delete content entries | — | **Yes** |
+| `contentrain_content_list` | Read content entries | Yes | — |
+| `contentrain_validate` | Validate project content, optionally auto-fix structural issues | — | — |
+| `contentrain_submit` | Push `contentrain/*` branches to remote | — | — |
+| `contentrain_merge` | Merge a review-mode branch into contentrain locally | — | — |
+| `contentrain_scan` | Graph- and candidate-based hardcoded string scan | Yes | — |
+| `contentrain_apply` | Normalize extract/reuse execution with dry-run support | — | — |
+| `contentrain_bulk` | Bulk locale copy, status updates, and deletes | — | — |
 
 ## 🚀 Quick Start
 
-### Run as an MCP server
+### Configure via CLI (recommended)
+
+```bash
+npx contentrain setup claude-code   # or: cursor, vscode, windsurf, copilot
+```
+
+This auto-creates the correct MCP config file for your IDE. See [CLI docs](https://ai.contentrain.io/packages/cli) for details.
+
+### Run as a standalone MCP server
 
 ```bash
 CONTENTRAIN_PROJECT_ROOT=/path/to/project npx contentrain-mcp
@@ -142,6 +158,83 @@ Normalize is intentionally split into two phases:
 
 This split keeps content extraction separate from source rewriting.
 
+### Transport / provider requirements
+
+Normalize (`contentrain_scan` and `contentrain_apply`) requires local
+disk access — AST scanners walk the source tree and patch files in
+place. It runs only on a `LocalProvider` (stdio transport, or HTTP
+transport configured with a `LocalProvider`).
+
+Remote providers such as `GitHubProvider` expose `astScan: false`,
+`sourceRead: false`, and `sourceWrite: false`. Calling these tools
+over a remote provider returns a uniform capability error:
+
+```json
+{
+  "error": "contentrain_scan requires local filesystem access.",
+  "capability_required": "astScan",
+  "hint": "This tool is unavailable when MCP is driven by a remote provider (e.g. GitHubProvider). Use a LocalProvider or the stdio transport."
+}
+```
+
+Agents driving a remote transport should fall back to a local transport
+(or a local checkout) before invoking normalize.
+
+## 🌐 Remote Providers
+
+MCP supports three backends behind the same `RepoProvider` contract:
+
+- **LocalProvider** — simple-git + worktree. Every tool (normalize
+  included) works on it. Stdio transport defaults to this.
+- **GitHubProvider** — Octokit over the Git Data + Repos APIs. No
+  clone, no worktree. `@octokit/rest` ships as an optional peer
+  dependency.
+- **GitLabProvider** — gitbeaker over the GitLab REST API. No clone,
+  no worktree. `@gitbeaker/rest` ships as an optional peer
+  dependency. Supports gitlab.com and self-hosted CE / EE.
+
+Each remote provider implements the same surface: reader (readFile /
+listDirectory / fileExists), writer (applyPlan — one atomic commit),
+branch ops (list / create / delete / diff / merge / isMerged /
+getDefaultBranch). `mergeBranch` goes straight through on GitHub; on
+GitLab it opens an MR and immediately accepts it so the final
+`MergeResult` shape matches either way.
+
+### GitLab — installation & usage
+
+```bash
+pnpm add @gitbeaker/rest
+```
+
+```ts
+import { createGitLabProvider } from '@contentrain/mcp/providers/gitlab'
+import { createServer } from '@contentrain/mcp/server'
+
+const provider = await createGitLabProvider({
+  auth: { type: 'pat', token: process.env.GITLAB_TOKEN! },
+  project: {
+    projectId: 'acme/site',             // or numeric project ID
+    host: 'https://gitlab.company.com', // omit for gitlab.com
+  },
+})
+
+const server = createServer({ provider })
+// serve over stdio or the HTTP transport from @contentrain/mcp/server/http
+```
+
+Capabilities: `sourceRead`, `sourceWrite`, `astScan`, `localWorktree`
+are all `false`; `pushRemote`, `branchProtection`,
+`pullRequestFallback` are `true`. Normalize / scan / apply reject
+with a capability error on GitLabProvider — fall back to a local
+transport for those flows.
+
+### Bitbucket — coming soon
+
+Bitbucket Cloud + Data Center support is on the roadmap. Until the
+provider ships, use the `contentrain_describe_format` tool to drive
+Contentrain content operations manually from a Bitbucket checkout via
+the LocalProvider path.
+
 ## 📦 Core Exports
 
 The package also exposes low-level modules for embedding and advanced use:
@@ -160,6 +253,8 @@ The package also exposes low-level modules for embedding and advanced use:
 - `@contentrain/mcp/git/transaction`
 - `@contentrain/mcp/git/branch-lifecycle`
 - `@contentrain/mcp/templates`
+- `@contentrain/mcp/providers/github`
+- `@contentrain/mcp/providers/gitlab`
 
 These are intended for Contentrain tooling and advanced integrations, not for direct manual editing of `.contentrain/` files.
 
@@ -167,13 +262,15 @@ These are intended for Contentrain tooling and advanced integrations, not for di
 
 Key design decisions in this package:
 
-- local-first, filesystem-based MCP
-- no GitHub API dependency in MCP
+- local-first **by default** — stdio transport + LocalProvider works without any network dependency
+- provider-agnostic engine — the same 16 tools run over LocalProvider, GitHubProvider, or GitLabProvider behind a single `RepoProvider` contract
+- remote provider SDKs (`@octokit/rest`, `@gitbeaker/rest`) are optional peer dependencies — pulled in only when their provider is used
 - JSON-only content storage
-- git-backed write workflow
-- canonical serialization
+- git-backed write workflow (worktree transaction locally, single atomic commit over the Git Data / REST APIs remotely)
+- canonical serialization — byte-deterministic output, sorted keys, trailing newline
 - framework-agnostic MCP layer
 - agent decides content semantics, MCP enforces deterministic execution
+- capability gates — tools that need source-tree access (normalize, scan, apply) reject with a uniform `capability_required` error on remote providers
 
 ## 🛠 Development
 

@@ -93,6 +93,94 @@ describe('QueryBuilder', () => {
     const result = createBuilder().locale('fr').all()
     expect(result).toHaveLength(0)
   })
+
+  it('count() returns result count', () => {
+    const result = createBuilder().locale('en').count()
+    expect(result).toBe(3)
+  })
+
+  it('count() respects filters', () => {
+    const result = createBuilder().locale('en').where('status', 'published').count()
+    expect(result).toBe(2)
+  })
+})
+
+// ─── Operator-based where() Tests ───
+
+describe('QueryBuilder — where() operators', () => {
+  it('where(field, "eq", value) — explicit equality', () => {
+    const result = createBuilder().locale('en').where('status', 'eq', 'published').all()
+    expect(result).toHaveLength(2)
+    expect(result.every(p => p.status === 'published')).toBe(true)
+  })
+
+  it('where(field, "ne", value) — not equal', () => {
+    const result = createBuilder().locale('en').where('status', 'ne', 'draft').all()
+    expect(result).toHaveLength(2)
+    expect(result.every(p => p.status !== 'draft')).toBe(true)
+  })
+
+  it('where(field, "gt", value) — greater than', () => {
+    const result = createBuilder().locale('en').where('views', 'gt', 50).all()
+    expect(result).toHaveLength(2)
+    expect(result.every(p => p.views > 50)).toBe(true)
+  })
+
+  it('where(field, "gte", value) — greater than or equal', () => {
+    const result = createBuilder().locale('en').where('views', 'gte', 100).all()
+    expect(result).toHaveLength(2)
+  })
+
+  it('where(field, "lt", value) — less than', () => {
+    const result = createBuilder().locale('en').where('views', 'lt', 100).all()
+    expect(result).toHaveLength(1)
+    expect(result[0]!.views).toBe(50)
+  })
+
+  it('where(field, "lte", value) — less than or equal', () => {
+    const result = createBuilder().locale('en').where('views', 'lte', 100).all()
+    expect(result).toHaveLength(2)
+  })
+
+  it('where(field, "in", values) — in list', () => {
+    const result = createBuilder().locale('en').where('category', 'in', ['tech', 'design']).all()
+    expect(result).toHaveLength(3)
+  })
+
+  it('where(field, "in", values) — partial match', () => {
+    const result = createBuilder().locale('en').where('id', 'in', ['1', '3']).all()
+    expect(result).toHaveLength(2)
+  })
+
+  it('where(field, "contains", value) — string contains', () => {
+    const result = createBuilder().locale('en').where('title', 'contains', 'Post').all()
+    expect(result).toHaveLength(3)
+  })
+
+  it('where(field, "contains", value) — partial string', () => {
+    const result = createBuilder().locale('en').where('title', 'contains', 'First').all()
+    expect(result).toHaveLength(1)
+    expect(result[0]!.title).toBe('First Post')
+  })
+
+  it('mixes equality shorthand and operator syntax', () => {
+    const result = createBuilder()
+      .locale('en')
+      .where('status', 'published')
+      .where('views', 'gt', 100)
+      .all()
+    expect(result).toHaveLength(1)
+    expect(result[0]!.title).toBe('Third Post')
+  })
+
+  it('chains multiple operators', () => {
+    const result = createBuilder()
+      .locale('en')
+      .where('views', 'gte', 50)
+      .where('views', 'lte', 100)
+      .all()
+    expect(result).toHaveLength(2)
+  })
 })
 
 // ─── Relation Resolution Tests ───

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { join } from 'node:path'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { simpleGit } from 'simple-git'
 import { writeJson, pathExists } from '@contentrain/mcp/util/fs'
@@ -82,9 +83,11 @@ async function createActiveContentrainBranches(dir: string, count: number): Prom
   const sourceHead = (await git.revparse(['HEAD'])).trim()
   await git.checkout(baseBranch)
 
-  for (let i = 0; i < count; i++) {
-    await git.raw(['branch', `cr/review/test-${i}`, sourceHead])
-  }
+  // Batch-create all branches in a single git process via update-ref --stdin
+  const input = Array.from({ length: count }, (_, i) =>
+    `create refs/heads/cr/review/test-${i} ${sourceHead}`,
+  ).join('\n') + '\n'
+  spawnSync('git', ['update-ref', '--stdin', '--no-deref'], { input, cwd: dir })
 
   await git.deleteLocalBranch('contentrain-source', true)
 }
