@@ -107,10 +107,15 @@ describe('applyPlanToGitHub', () => {
     expect(getRef).toHaveBeenNthCalledWith(2, { owner: 'o', repo: 'r', ref: 'heads/main' })
   })
 
-  it('falls back to repo default branch when no base is provided', async () => {
+  it('defaults to the contentrain branch when no base is provided', async () => {
+    // Invariant: feature branches always fork from the content-tracking
+    // branch, never from the repo's default branch. Asserting against
+    // `heads/contentrain` and that `repos.get` is NOT called locks this
+    // in for both the GitHub implementation and the public contract
+    // documented on ApplyPlanInput.base.
     const getRef = vi.fn()
       .mockRejectedValueOnce(notFound())
-      .mockResolvedValueOnce({ data: { object: { sha: 'default-sha' } } })
+      .mockResolvedValueOnce({ data: { object: { sha: 'contentrain-sha' } } })
     const repoGet = vi.fn().mockResolvedValue({ data: { default_branch: 'main' } })
     const getCommit = vi.fn().mockResolvedValue({ data: { tree: { sha: 't' } } })
     const createBlob = vi.fn().mockResolvedValue({ data: { sha: 'b' } })
@@ -132,8 +137,8 @@ describe('applyPlanToGitHub', () => {
       author: AUTHOR,
     })
 
-    expect(repoGet).toHaveBeenCalledWith({ owner: 'o', repo: 'r' })
-    expect(getRef).toHaveBeenNthCalledWith(2, { owner: 'o', repo: 'r', ref: 'heads/main' })
+    expect(repoGet).not.toHaveBeenCalled()
+    expect(getRef).toHaveBeenNthCalledWith(2, { owner: 'o', repo: 'r', ref: 'heads/contentrain' })
   })
 
   it('emits null-sha tree entries for deletions', async () => {

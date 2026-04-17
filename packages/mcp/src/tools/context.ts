@@ -46,7 +46,11 @@ export function registerContextTools(
 
       const config = await readConfig(provider)
       const models = await listModels(provider)
-      const context = projectRoot ? await readContext(projectRoot) : null
+      // Local flow uses the filesystem helper for byte-parity; remote
+      // flows read the committed `.contentrain/context.json` through
+      // the provider. Either way, the context block surfaces the last
+      // operation + stats that were written alongside the last commit.
+      const context = projectRoot ? await readContext(projectRoot) : await readContext(provider)
       const vocabulary = await readVocabulary(provider)
 
       const errors: string[] = []

@@ -182,7 +182,10 @@ describe('applyPlanToGitLab', () => {
     expect(actions[0].filePath).toBe('apps/web/.contentrain/context.json')
   })
 
-  it('resolves the project default branch when input.base is absent', async () => {
+  it('defaults to the contentrain branch when input.base is absent', async () => {
+    // Invariant — same as the GitHub path: forks from the content-tracking
+    // branch, not the GitLab project's default branch. `Projects.show` must
+    // NOT be consulted for base resolution.
     const projectShow = vi.fn().mockResolvedValue({ default_branch: 'trunk' })
     const commitsCreate = vi.fn().mockResolvedValue({
       id: 'sha-5',
@@ -201,7 +204,8 @@ describe('applyPlanToGitLab', () => {
     })
 
     const [, , , , options] = commitsCreate.mock.calls[0]!
-    expect(options.startBranch).toBe('trunk')
+    expect(options.startBranch).toBe('contentrain')
+    expect(projectShow).not.toHaveBeenCalled()
   })
 
   it('throws when the plan reduces to zero actions', async () => {

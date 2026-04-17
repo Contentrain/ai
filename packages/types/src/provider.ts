@@ -128,7 +128,13 @@ export interface ApplyPlanInput {
   message: string
   /** Commit author. */
   author: CommitAuthor
-  /** Optional base branch. Defaults to provider's content-tracking branch. */
+  /**
+   * Optional base branch. Defaults to the Contentrain content-tracking
+   * branch (`CONTENTRAIN_BRANCH` — the `contentrain` ref) — NOT the
+   * repository's default branch. This is the single source of truth for
+   * content state; every feature branch forks from it. Pass an explicit
+   * `base` only when you know you want to bypass the invariant.
+   */
   base?: string
 }
 

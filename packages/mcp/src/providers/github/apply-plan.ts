@@ -1,3 +1,4 @@
+import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import type { ApplyPlanInput, Commit, FileChange } from '../../core/contracts/index.js'
 import { isNotFoundError, resolveRepoPath } from '../shared/index.js'
 import type { GitHubClient } from './client.js'
@@ -130,10 +131,13 @@ async function resolveBaseSha(
     if (!isNotFoundError(error)) throw error
   }
 
-  const baseRefName = base ?? (await client.rest.repos.get({
-    owner: repo.owner,
-    repo: repo.name,
-  })).data.default_branch
+  // Invariant: feature branches always fork from the Contentrain
+  // content-tracking branch. Callers that genuinely want to bypass this
+  // must pass `base` explicitly. The repository's default branch
+  // (main / master / trunk) is NOT the fallback — that would create a
+  // split-brain where remote writes derive from a different ref than
+  // local writes, which the LocalProvider transaction path forbids.
+  const baseRefName = base ?? CONTENTRAIN_BRANCH
 
   const baseRef = await client.rest.git.getRef({
     owner: repo.owner,
