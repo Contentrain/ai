@@ -211,21 +211,20 @@ export function registerModelTools(
             isError: true,
           }
         }
+      }
 
-        // Reference integrity check walks every model on disk — reader
-        // fallback is planned with Phase 5.5 when checkReferences gets a
-        // RepoReader overload. Remote writes skip the pre-check and rely
-        // on the caller (Studio) to enforce referential integrity.
-        const refs = await checkReferences(provider.projectRoot, modelId)
-        if (refs.length > 0) {
-          return {
-            content: [{ type: 'text' as const, text: JSON.stringify({
-              deleted: false,
-              error: 'REFERENCED_MODEL',
-              referenced_by: refs,
-              next_steps: ['Remove relation fields from referencing models first'],
-            }, null, 2) }],
-          }
+      // Reference integrity — both local and remote now go through the
+      // reader-based checkReferences so deletes on GitHubProvider get the
+      // same REFERENCED_MODEL guard as local flows.
+      const refs = await checkReferences(provider, modelId)
+      if (refs.length > 0) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            deleted: false,
+            error: 'REFERENCED_MODEL',
+            referenced_by: refs,
+            next_steps: ['Remove relation fields from referencing models first'],
+          }, null, 2) }],
         }
       }
 

@@ -65,14 +65,15 @@ export async function writeContext(
 
 /**
  * Build a FileChange for `.contentrain/context.json` that remote providers
- * (GitHubProvider over HTTP, for example) can slot into their plan — the
+ * (GitHubProvider over HTTP, for example) can slot into their plan. The
  * local write path still uses {@link writeContext} directly because its
- * transaction layer computes entry counts against the post-apply worktree,
- * which is cheaper than re-walking the repo via the Git Data API.
+ * transaction layer writes into the post-apply worktree with real stats.
  *
- * Entry count is left as the reader cannot enumerate directories cheaply
- * across every provider; the legacy writeContext path continues to supply
- * real counts for local flows.
+ * Remote providers (Phase 5.5+) now also get accurate entry counts: the
+ * reader-based {@link countEntries} walks each model over the provider's
+ * read surface. GitHubProvider pays an extra round trip per model; the
+ * payoff is a context.json that matches what the local write path emits,
+ * so cross-provider merges stay deterministic.
  */
 export async function buildContextChange(
   reader: RepoReader,
@@ -82,6 +83,19 @@ export async function buildContextChange(
   const config = await readConfig(reader)
   const models = await listModels(reader)
   const locales = config?.locales.supported ?? ['en']
+
+  let totalEntries: number | null = null
+  try {
+    const fullModels = await Promise.all(models.map(m => readModel(reader, m.id)))
+    const counts = await Promise.all(
+      fullModels
+        .filter((m): m is NonNullable<typeof m> => m !== null)
+        .map(m => countEntries(reader, m)),
+    )
+    totalEntries = counts.reduce((acc, c) => acc + c.total, 0)
+  } catch {
+    totalEntries = null
+  }
 
   const context: ContextJson = {
     version: '1',
@@ -95,7 +109,7 @@ export async function buildContextChange(
     },
     stats: {
       models: models.length,
-      entries: null as unknown as number,
+      entries: totalEntries as number,
       locales,
       lastSync: new Date().toISOString(),
     },
