@@ -1,7 +1,23 @@
-import type { ProviderCapabilities, RepoReader } from '../../core/contracts/index.js'
+import { CONTENTRAIN_BRANCH } from '@contentrain/types'
+import type {
+  Branch,
+  FileDiff,
+  MergeResult,
+  ProviderCapabilities,
+  RepoProvider,
+} from '../../core/contracts/index.js'
 import { LOCAL_CAPABILITIES } from '../../core/contracts/index.js'
 import { applyChangesToWorktree } from '../../core/ops/index.js'
 import { createTransaction } from '../../git/transaction.js'
+import {
+  createBranch as createBranchOp,
+  deleteBranch as deleteBranchOp,
+  getBranchDiff as getBranchDiffOp,
+  getDefaultBranch as getDefaultBranchOp,
+  isMerged as isMergedOp,
+  listBranches as listBranchesOp,
+  mergeBranch as mergeBranchOp,
+} from './branch-ops.js'
 import { LocalReader } from './reader.js'
 import type { LocalApplyPlanInput, LocalApplyResult } from './types.js'
 
@@ -11,18 +27,19 @@ const DEFAULT_AUTHOR_EMAIL = 'mcp@contentrain.io'
 /**
  * LocalProvider — the local-filesystem, worktree-backed content provider.
  *
- * Phase 3 scope: LocalProvider wraps the existing `createTransaction` flow
- * so tool handlers drive a clean plan/apply surface without knowing about
- * worktrees, the contentrain branch guard, or the auto-merge state
- * machine. Phase 6 will fold `transaction.ts`'s internals into this
- * provider; today it is a thin, behaviour-preserving wrapper.
+ * Implements the full `RepoProvider` surface:
+ * - Reader methods delegate to `LocalReader`.
+ * - `applyPlan` wraps `createTransaction` and returns `LocalApplyResult`
+ *   (a superset of `Commit` carrying workflow action + selective sync).
+ * - Branch ops mirror `GitHubProvider` — thin wrappers over the local
+ *   simple-git helpers in `./branch-ops.ts`.
  *
- * Implements `RepoReader` (through a private LocalReader). Implements a
- * superset of `RepoWriter.applyPlan` — returns `LocalApplyResult` which
- * extends `Commit` with workflow action + selective-sync details; the
- * extras are ignored by code that consumes it as a plain `Commit`.
+ * `mergeBranch` only supports merging into the singleton
+ * `CONTENTRAIN_BRANCH`; the local flow advances the base branch via
+ * `update-ref` in `transaction.mergeBranch`, so arbitrary merge targets
+ * would bypass that invariant.
  */
-export class LocalProvider implements RepoReader {
+export class LocalProvider implements RepoProvider {
   readonly capabilities: ProviderCapabilities = LOCAL_CAPABILITIES
   private readonly reader: LocalReader
 
@@ -67,5 +84,36 @@ export class LocalProvider implements RepoReader {
     } finally {
       await tx.cleanup()
     }
+  }
+
+  listBranches(prefix?: string): Promise<Branch[]> {
+    return listBranchesOp(this.projectRoot, prefix)
+  }
+
+  async createBranch(name: string, fromRef?: string): Promise<void> {
+    const resolved = fromRef ?? CONTENTRAIN_BRANCH
+    await createBranchOp(this.projectRoot, name, resolved)
+  }
+
+  deleteBranch(name: string): Promise<void> {
+    return deleteBranchOp(this.projectRoot, name)
+  }
+
+  getBranchDiff(branch: string, base?: string): Promise<FileDiff[]> {
+    const resolved = base ?? CONTENTRAIN_BRANCH
+    return getBranchDiffOp(this.projectRoot, branch, resolved)
+  }
+
+  mergeBranch(branch: string, into: string): Promise<MergeResult> {
+    return mergeBranchOp(this.projectRoot, branch, into)
+  }
+
+  isMerged(branch: string, into?: string): Promise<boolean> {
+    const resolved = into ?? CONTENTRAIN_BRANCH
+    return isMergedOp(this.projectRoot, branch, resolved)
+  }
+
+  getDefaultBranch(): Promise<string> {
+    return getDefaultBranchOp(this.projectRoot)
   }
 }

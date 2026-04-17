@@ -1,3 +1,5 @@
+import type { SyncResult } from './index.js'
+
 // ─── Repository Provider Contracts ───
 //
 // Shared interfaces for the provider-agnostic content repository model used
@@ -167,6 +169,12 @@ export interface MergeResult {
   merged: boolean
   sha: string | null
   pullRequestUrl: string | null
+  /**
+   * Selective-sync bookkeeping — only populated by providers that back onto
+   * a local worktree (LocalProvider). Remote-API providers (GitHub, GitLab,
+   * etc.) omit it because they do not touch a developer's working tree.
+   */
+  sync?: SyncResult
 }
 
 // ─── Provider (full surface) ───

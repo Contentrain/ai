@@ -1,3 +1,4 @@
+import type { SyncResult, WorkflowMode } from '@contentrain/types'
 import type { Commit, CommitAuthor, FileChange } from '../../core/contracts/index.js'
 
 /** Optional payload written to `.contentrain/context.json` after changes apply. */
@@ -31,16 +32,7 @@ export interface LocalApplyPlanInput {
   /** Optional context.json payload written through after changes apply. */
   context?: LocalContextUpdate
   /** Override workflow for this call; defaults to the project's configured workflow. */
-  workflowOverride?: 'review' | 'auto-merge'
-}
-
-export interface LocalSelectiveSyncResult {
-  /** Files in the developer's working tree that were updated to match the new HEAD. */
-  synced: string[]
-  /** Files skipped because of local modifications the developer should resolve. */
-  skipped: string[]
-  /** Human-readable advice surfaced to the agent when skips happened. */
-  warning?: string
+  workflowOverride?: WorkflowMode
 }
 
 export interface LocalApplyResult extends Commit {
@@ -52,7 +44,7 @@ export interface LocalApplyResult extends Commit {
    */
   workflowAction: 'auto-merged' | 'pending-review'
   /** Selective-sync bookkeeping; populated when `workflowAction === 'auto-merged'`. */
-  sync?: LocalSelectiveSyncResult
+  sync?: SyncResult
   /** Non-fatal warning bubbled up from the transaction layer (e.g. partial sync). */
   warning?: string
 }

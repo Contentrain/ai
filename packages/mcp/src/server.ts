@@ -1,16 +1,15 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { ProviderCapabilities, RepoReader, RepoWriter } from './core/contracts/index.js'
+import type { RepoProvider } from './core/contracts/index.js'
 import { LocalProvider } from './providers/local/index.js'
 
 /**
- * Subset of a `RepoProvider` that tool handlers currently consume — a
- * `RepoReader`, a `RepoWriter`, and the `capabilities` manifest. Narrower
- * than the full `RepoProvider` so both `LocalProvider` (which implements
- * reader + writer + applyPlan) and `GitHubProvider` (full provider)
- * satisfy it without requiring LocalProvider to stub out the branch-ops
- * methods it does not yet own.
+ * The provider shape tool handlers consume. Now that every provider
+ * (Local, GitHub, GitLab) implements the full `RepoProvider`, tools can
+ * depend on the shared surface directly — no private alias required.
+ * Kept as a re-export so callers that already import `ToolProvider` do
+ * not need to migrate.
  */
-export type ToolProvider = RepoReader & RepoWriter & { capabilities: ProviderCapabilities }
+export type ToolProvider = RepoProvider
 import { registerContextTools } from './tools/context.js'
 import { registerSetupTools } from './tools/setup.js'
 import { registerModelTools } from './tools/model.js'
