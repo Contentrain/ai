@@ -1,4 +1,5 @@
 import type { GitHubClient } from './client.js'
+import { exchangeInstallationToken } from './app-auth.js'
 import { GitHubProvider } from './provider.js'
 import type { GitHubAuth, RepoRef } from './types.js'
 
@@ -10,17 +11,19 @@ import type { GitHubAuth, RepoRef } from './types.js'
  * it. If the module is not installed, the import throws with a helpful
  * hint pointing the operator at the peer dependency.
  *
- * Phase 5.1 ships with PAT auth only. App-based auth (JWT + installation
- * token) lands in phase 5.2 together with the HTTP transport.
+ * Two auth modes:
+ *
+ * - `pat` — personal access token or fine-grained PAT. Simplest for
+ *   self-hosted MCP or CI runners.
+ * - `app` — GitHub App installation auth. The factory mints a short-
+ *   lived JWT, exchanges it for an installation token via
+ *   `exchangeInstallationToken`, and instantiates Octokit with the
+ *   resulting bearer. The returned token expires in ~1 hour; callers
+ *   that need auto-refresh should instead inject their own Octokit
+ *   built with `@octokit/auth-app`'s auth strategy and construct
+ *   `GitHubProvider` directly. See the embedding guide for trade-offs.
  */
 export async function createGitHubClient(auth: GitHubAuth): Promise<GitHubClient> {
-  if (auth.type !== 'pat') {
-    throw new Error(
-      `GitHub auth type "${auth.type}" is not yet supported. Phase 5.1 ships with "pat" only; `
-      + `"app" installation auth arrives in phase 5.2.`,
-    )
-  }
-
   let OctokitCtor: typeof import('@octokit/rest').Octokit
   try {
     ({ Octokit: OctokitCtor } = await import('@octokit/rest'))
@@ -32,7 +35,21 @@ export async function createGitHubClient(auth: GitHubAuth): Promise<GitHubClient
     )
   }
 
-  return new OctokitCtor({ auth: auth.token })
+  if (auth.type === 'pat') {
+    return new OctokitCtor({ auth: auth.token })
+  }
+
+  if (auth.type === 'app') {
+    const { token } = await exchangeInstallationToken({
+      appId: auth.appId,
+      privateKey: auth.privateKey,
+      installationId: auth.installationId,
+    })
+    return new OctokitCtor({ auth: token })
+  }
+
+  const unknown = auth as { type: string }
+  throw new Error(`GitHub auth type "${unknown.type}" is not supported. Use "pat" or "app".`)
 }
 
 /**

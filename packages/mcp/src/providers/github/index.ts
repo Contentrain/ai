@@ -1,3 +1,5 @@
+export type { AppAuthConfig, InstallationTokenResult } from './app-auth.js'
+export { exchangeInstallationToken, signAppJwt } from './app-auth.js'
 export { GITHUB_CAPABILITIES } from './capabilities.js'
 export type { GitHubClient } from './client.js'
 export { createGitHubClient, createGitHubProvider } from './factory.js'

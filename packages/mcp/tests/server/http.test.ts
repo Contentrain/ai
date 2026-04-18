@@ -5,9 +5,27 @@ import { join } from 'node:path'
 import { simpleGit } from 'simple-git'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { startHttpMcpServer } from '../../src/server/http/index.js'
+import { startHttpMcpServer, startHttpMcpServerWith } from '../../src/server/http/index.js'
 
 vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 })
+
+function makeReadOnlyTenantProvider(label: string) {
+  return {
+    label,
+    capabilities: {
+      localWorktree: false,
+      sourceRead: false,
+      sourceWrite: false,
+      pushRemote: false,
+      branchProtection: false,
+      pullRequestFallback: false,
+      astScan: false,
+    },
+    async readFile() { throw new Error(`${label}: no reads expected`) },
+    async listDirectory() { return [] },
+    async fileExists() { return false },
+  }
+}
 
 let testDir: string
 
@@ -125,7 +143,6 @@ describe('startHttpMcpServer', () => {
       async fileExists() { return false },
     }
 
-    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
     const handle = await startHttpMcpServerWith({ provider: readOnlyProvider, port: 0 })
     try {
       const client = new Client({ name: 'test-http-client', version: '1.0.0' })
@@ -225,7 +242,6 @@ describe('startHttpMcpServer', () => {
     const { GitHubProvider } = await import('../../src/providers/github/index.js')
     const provider = new GitHubProvider(client as unknown as import('../../src/providers/github/client.js').GitHubClient, { owner: 'acme', name: 'site' })
 
-    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
     const handle = await startHttpMcpServerWith({ provider, port: 0 })
     try {
       const mcpClient = new Client({ name: 'test-http-client', version: '1.0.0' })
@@ -341,7 +357,6 @@ describe('startHttpMcpServer', () => {
       { projectId: 'acme/site' },
     )
 
-    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
     const handle = await startHttpMcpServerWith({ provider, port: 0 })
     try {
       const mcpClient = new Client({ name: 'test-http-client', version: '1.0.0' })
@@ -383,7 +398,6 @@ describe('startHttpMcpServer', () => {
   it('commits content_delete through a GitHubProvider-like remote provider', async () => {
     const { makeGitHubMock, makeConfig } = await import('./fixtures/github-mock.js')
     const { GitHubProvider } = await import('../../src/providers/github/index.js')
-    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
 
     const model = {
       id: 'blog',
@@ -453,7 +467,6 @@ describe('startHttpMcpServer', () => {
   it('commits model_save through a GitHubProvider-like remote provider', async () => {
     const { makeGitHubMock, makeConfig } = await import('./fixtures/github-mock.js')
     const { GitHubProvider } = await import('../../src/providers/github/index.js')
-    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
 
     const filesOnHead: Record<string, string> = {
       '.contentrain/config.json': JSON.stringify(makeConfig()),
@@ -504,7 +517,6 @@ describe('startHttpMcpServer', () => {
   it('commits model_delete through a GitHubProvider-like remote provider', async () => {
     const { makeGitHubMock, makeConfig } = await import('./fixtures/github-mock.js')
     const { GitHubProvider } = await import('../../src/providers/github/index.js')
-    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
 
     const model = {
       id: 'blog',
@@ -559,7 +571,6 @@ describe('startHttpMcpServer', () => {
   it('runs contentrain_validate read-only over a GitHubProvider-like remote provider', async () => {
     const { makeGitHubMock, makeConfig } = await import('./fixtures/github-mock.js')
     const { GitHubProvider } = await import('../../src/providers/github/index.js')
-    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
 
     const model = {
       id: 'blog',
@@ -631,7 +642,6 @@ describe('startHttpMcpServer', () => {
       async fileExists() { return false },
     }
 
-    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
     const handle = await startHttpMcpServerWith({ provider: readOnlyProvider, port: 0 })
     try {
       const client = new Client({ name: 'test-http-client', version: '1.0.0' })
@@ -660,7 +670,6 @@ describe('startHttpMcpServer', () => {
   it('status works read-only over a remote provider (no localWorktree rejection)', async () => {
     const { makeGitHubMock, makeConfig } = await import('./fixtures/github-mock.js')
     const { GitHubProvider } = await import('../../src/providers/github/index.js')
-    const { startHttpMcpServerWith } = await import('../../src/server/http/index.js')
 
     const committedContext = {
       version: '1',
@@ -716,6 +725,111 @@ describe('startHttpMcpServer', () => {
       } finally {
         await mcpClient.close()
       }
+    } finally {
+      await handle.close()
+    }
+  })
+
+  // ─── 1.4.0: per-request provider resolver ───
+  // Studio MCP Cloud hosts one HTTP endpoint serving many projects.
+  // Each session's provider must be resolved from the inbound request
+  // (usually by a workspace or project identifier) rather than baked in
+  // at boot. The resolver runs exactly once per session; subsequent
+  // requests with the same Mcp-Session-Id reuse the resolved server.
+
+  it('invokes resolveProvider once per session and isolates provider state between sessions', async () => {
+    const alpha = makeReadOnlyTenantProvider('alpha')
+    const bravo = makeReadOnlyTenantProvider('bravo')
+    const resolveSpy = vi.fn((req: { headers: Record<string, string | string[] | undefined> }) => {
+      const header = req.headers['x-project-id']
+      const projectId = Array.isArray(header) ? header[0] : header
+      if (projectId === 'alpha') return alpha
+      if (projectId === 'bravo') return bravo
+      throw new Error(`unknown project: ${String(projectId)}`)
+    })
+
+    const handle = await startHttpMcpServerWith({
+      resolveProvider: resolveSpy,
+      port: 0,
+    })
+    try {
+      const clientAlpha = new Client({ name: 'alpha-client', version: '1.0.0' })
+      const transportAlpha = new StreamableHTTPClientTransport(new URL(handle.url), {
+        requestInit: { headers: { 'x-project-id': 'alpha' } },
+      })
+      await clientAlpha.connect(transportAlpha)
+
+      const clientBravo = new Client({ name: 'bravo-client', version: '1.0.0' })
+      const transportBravo = new StreamableHTTPClientTransport(new URL(handle.url), {
+        requestInit: { headers: { 'x-project-id': 'bravo' } },
+      })
+      await clientBravo.connect(transportBravo)
+
+      try {
+        // describe_format is a static read-only tool — it does not hit
+        // the provider, but proving it works through both sessions
+        // confirms the two sessions are wired correctly.
+        const alphaResult = await clientAlpha.callTool({ name: 'contentrain_describe_format', arguments: {} })
+        const bravoResult = await clientBravo.callTool({ name: 'contentrain_describe_format', arguments: {} })
+        expect(parseResult(alphaResult)['overview']).toBeDefined()
+        expect(parseResult(bravoResult)['overview']).toBeDefined()
+
+        // Resolver was called exactly once per session, with each
+        // request's headers distinguishing the target project.
+        expect(resolveSpy).toHaveBeenCalledTimes(2)
+        const calledWithHeaders = resolveSpy.mock.calls.map(c =>
+          (c[0] as { headers: Record<string, string> }).headers['x-project-id'],
+        )
+        expect(calledWithHeaders).toEqual(expect.arrayContaining(['alpha', 'bravo']))
+      } finally {
+        await clientAlpha.close()
+        await clientBravo.close()
+      }
+    } finally {
+      await handle.close()
+    }
+  })
+
+  it('rejects resolver failures with a 500 instead of hanging the request', async () => {
+    const handle = await startHttpMcpServerWith({
+      resolveProvider: () => { throw new Error('tenant not found') },
+      port: 0,
+    })
+    try {
+      const response = await fetch(handle.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json, text/event-stream',
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }),
+      })
+      expect(response.status).toBe(500)
+      const body = await response.json() as { error: string, message: string }
+      expect(body.message).toContain('tenant not found')
+    } finally {
+      await handle.close()
+    }
+  })
+
+  it('single-provider mode still works and exposes the shared McpServer on handle.mcp', async () => {
+    const provider = {
+      capabilities: {
+        localWorktree: false,
+        sourceRead: false,
+        sourceWrite: false,
+        pushRemote: false,
+        branchProtection: false,
+        pullRequestFallback: false,
+        astScan: false,
+      },
+      async readFile() { throw new Error('no reads') },
+      async listDirectory() { return [] },
+      async fileExists() { return false },
+    }
+    const handle = await startHttpMcpServerWith({ provider, port: 0 })
+    try {
+      expect(handle.mcp).not.toBeNull()
     } finally {
       await handle.close()
     }
