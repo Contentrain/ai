@@ -1,5 +1,14 @@
 # contentrain
 
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [cc066fe]
+  - @contentrain/mcp@1.4.0
+  - @contentrain/rules@0.4.0
+  - @contentrain/skills@0.4.0
+
 ## 0.5.0
 
 ### Minor Changes
@@ -281,13 +290,13 @@ RepoProvider`. Tool handlers now depend on the shared surface
 
   - **`@contentrain/mcp/core/doctor`** — `runDoctor(projectRoot,
 { usage? })` returns a structured `DoctorReport`:
-    ```ts
+    `ts
     interface DoctorReport {
       checks: Array<{ name; pass; detail; severity? }>;
       summary: { total; passed; failed; warnings };
       usage?: { unusedKeys; duplicateValues; missingLocaleKeys };
     }
-    ```
+    `
     Every check now carries an explicit `severity` (`error` |
     `warning` | `info`) so consumers can render pass/warn/fail
     independently instead of inferring from text. Orphan content and
@@ -303,12 +312,10 @@ RepoProvider`. Tool handlers now depend on the shared surface
   - **CLI `contentrain doctor`** collapses to a thin pretty-printer
     over `runDoctor()`. Default (interactive) output is byte-identical
     to the old command — same check labels, same `status icon name:
-detail` format, same grouped usage output. New flags:
-    - `--json` — silent, emits the raw `DoctorReport` to stdout.
-      Exits non-zero when any check fails so CI pipelines can wire
-      `contentrain doctor --json` as a gate.
-    - Interactive mode also exits non-zero now on any failure (was
-      always 0 before, which meant CI never noticed).
+detail` format, same grouped usage output. New flags: - `--json` — silent, emits the raw `DoctorReport` to stdout.
+    Exits non-zero when any check fails so CI pipelines can wire
+    `contentrain doctor --json` as a gate. - Interactive mode also exits non-zero now on any failure (was
+    always 0 before, which meant CI never noticed).
   - **`GET /api/doctor`** — wraps the MCP tool. `?usage=true` or
     `?usage=1` opts into usage analysis. The Serve UI consumes this
     for the Doctor panel being added in phase 14d.
