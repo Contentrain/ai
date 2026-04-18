@@ -16,7 +16,7 @@ Contentrain consists of 6 packages that work together:
 
 | Package | Role | How agent uses it |
 |---|---|---|
-| @contentrain/mcp | 16 MCP tools (scan, apply, validate, merge...) | MCP tool calls |
+| @contentrain/mcp | 17 MCP tools (scan, apply, validate, merge, doctor...) | MCP tool calls |
 | contentrain (CLI) | init, serve, generate, doctor, diff, status | Shell commands |
 | @contentrain/types | Shared TypeScript contracts | Type safety |
 | @contentrain/query | Generated SDK client (Prisma-pattern) | `import from '#contentrain'` |

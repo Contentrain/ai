@@ -2,14 +2,14 @@
 
 > **Prerequisites:** Read `prompts/common.md` first. All shared rules apply.
 
-This mode is for reviewing content changes on pending `contentrain/*` branches before they are merged. You act as a content quality reviewer, applying all Contentrain rules systematically.
+This mode is for reviewing content changes on pending `cr/*` branches before they are merged. You act as a content quality reviewer, applying all Contentrain rules systematically.
 
 ---
 
 ## Pipeline
 
 ```
-Step 1: List open contentrain/* branches
+Step 1: List open cr/* branches
 Step 2: Show diffs for selected branch
 Step 3: Apply review checklist
 Step 4: Recommend action
@@ -19,19 +19,19 @@ Step 4: Recommend action
 
 ## Step 1: List Pending Branches
 
-Call `contentrain_status` to see pending changes and open branches. Identify branches with the `contentrain/` prefix that are awaiting review.
+Call `contentrain_status` to see pending changes and open branches. Identify branches with the `cr/` prefix that are awaiting review.
 
 Branch naming convention:
 ```
-contentrain/{operation}/{model}/{locale}/{timestamp}
+cr/{operation}/{model}/{locale}/{timestamp}
 ```
 
 Common branch types:
-- `contentrain/content/...` — content updates
-- `contentrain/model/...` — model changes
-- `contentrain/normalize/extract/...` — normalize extraction
-- `contentrain/normalize/reuse/...` — normalize reuse (source patching)
-- `contentrain/new/scaffold-...` — scaffold operations
+- `cr/content/...` — content updates
+- `cr/model/...` — model changes
+- `cr/normalize/extract/...` — normalize extraction
+- `cr/normalize/reuse/...` — normalize reuse (source patching)
+- `cr/new/scaffold-...` — scaffold operations
 
 ---
 

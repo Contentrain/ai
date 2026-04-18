@@ -48,7 +48,7 @@ Load `packages/rules/essential/contentrain-essentials.md` (~120 lines) for compa
 - Architecture (MCP = deterministic infra, Agent = intelligence)
 - Four model kinds (singleton, collection, document, dictionary)
 - Content format rules (JSON only, canonical serialization)
-- 16 MCP tools with mandatory calling protocols
+- 17 MCP tools with mandatory calling protocols
 - Git workflow (dedicated contentrain branch, worktree isolation)
 - Security boundaries
 
@@ -56,7 +56,7 @@ Load `packages/rules/essential/contentrain-essentials.md` (~120 lines) for compa
 
 | Directory | npm | What it does |
 |-----------|-----|-------------|
-| `packages/mcp` | `@contentrain/mcp` | 16 MCP tools — content operations engine |
+| `packages/mcp` | `@contentrain/mcp` | 17 MCP tools — content operations engine |
 | `packages/cli` | `contentrain` | CLI + Serve UI + MCP stdio entrypoint |
 | `packages/sdk/js` | `@contentrain/query` | Generated TypeScript query SDK |
 | `packages/types` | `@contentrain/types` | Shared type definitions |

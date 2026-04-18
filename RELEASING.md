@@ -97,3 +97,17 @@ The GitHub `Release` workflow expects:
 - Do not maintain a custom release manifest.
 - Do not create manual monorepo-wide release tags.
 - Internal workspaces such as `docs` and `packages/cli/src/serve-ui` must remain `private: true`.
+
+## 🔌 `@contentrain/mcp` Optional Peer Dependencies
+
+`@contentrain/mcp` ships the remote providers as optional peers so
+consumers only install what they use:
+
+- `@octokit/rest` — required when using `GitHubProvider`.
+- `@gitbeaker/rest` — required when using `GitLabProvider`.
+
+Stdio + LocalProvider flows (the default) do not need either. When
+the MCP server is invoked with a provider whose peer is missing,
+the factory throws a helpful error pointing at the install command.
+Release audits do not need to bundle these peers — npm's
+`peerDependenciesMeta.optional: true` handles it.

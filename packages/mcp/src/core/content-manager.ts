@@ -1,10 +1,12 @@
-import type { ModelDefinition, ContentrainConfig, EntryMeta, LocaleStrategy, DocumentEntry } from '@contentrain/types'
+import type { ModelDefinition, ContentrainConfig, EntryMeta, LocaleStrategy, DocumentEntry, Vocabulary } from '@contentrain/types'
 import { validateSlug, validateEntryId, validateLocale, generateEntryId, parseMarkdownFrontmatter, serializeMarkdownFrontmatter } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { contentrainDir, readDir, readJson, readText, writeJson, writeText } from '../util/fs.js'
 import { writeMeta, deleteMeta } from './meta-manager.js'
 import { readModel } from './model-manager.js'
+import type { RepoReader } from './contracts/index.js'
+import { contentDirPath, contentFilePath, documentFilePath } from './ops/paths.js'
 
 // Re-export for backward compatibility (MCP internal consumers)
 export { validateSlug, validateEntryId, validateLocale }
@@ -65,6 +67,7 @@ export interface WriteResult {
   id?: string
   slug?: string
   locale: string
+  advisories?: string[]
 }
 
 export interface DeleteOpts {
@@ -106,6 +109,7 @@ export async function writeContent(
   model: ModelDefinition,
   entries: ContentEntry[],
   config: ContentrainConfig,
+  vocabulary?: Vocabulary | null,
 ): Promise<WriteResult[]> {
   const results: WriteResult[] = []
   const defaultLocale = config.locales.default
@@ -197,10 +201,42 @@ export async function writeContent(
             `Read existing keys with contentrain_content_list first, or include all keys in a single save call.`,
           )
         }
+
+        // Duplicate value advisory: warn when a new key maps to a value that already exists
+        const advisories: string[] = []
+        const reverseMap = new Map<string, string>()
+        for (const [k, v] of Object.entries(existing)) {
+          reverseMap.set(v, k)
+        }
+        for (const [newKey, newValue] of Object.entries(entry.data as Record<string, string>)) {
+          if (newKey in existing) continue
+          const existingKey = reverseMap.get(newValue as string)
+          if (existingKey && existingKey !== newKey) {
+            advisories.push(
+              `Value "${newValue}" already exists as key "${existingKey}". Consider reusing instead of creating "${newKey}".`,
+            )
+          }
+        }
+
+        // Vocabulary cross-reference: warn when a value matches a known vocabulary term
+        if (vocabulary && Object.keys(vocabulary.terms).length > 0) {
+          for (const [newKey, newValue] of Object.entries(entry.data as Record<string, string>)) {
+            if (newKey in existing) continue
+            for (const [, translations] of Object.entries(vocabulary.terms)) {
+              if (Object.values(translations).includes(newValue as string)) {
+                advisories.push(
+                  `Value "${newValue}" matches a vocabulary term. Use the canonical form for consistency.`,
+                )
+                break
+              }
+            }
+          }
+        }
+
         const merged = { ...existing, ...entry.data as Record<string, string> }
         await writeJson(filePath, merged)
         await writeMeta(projectRoot, model, { locale }, defaultMeta(entry.data))
-        results.push({ action: 'updated', locale })
+        results.push({ action: 'updated', locale, ...(advisories.length > 0 ? { advisories } : {}) })
         break
       }
     }
@@ -328,7 +364,46 @@ export async function deleteContent(
 
 // ─── listContent ───
 
+/**
+ * List content entries for a model. Dual signature:
+ *
+ * - `listContent(projectRoot, model, opts, config)` — legacy local flow,
+ *   uses direct filesystem reads and supports `opts.resolve` for
+ *   cross-model relation hydration.
+ * - `listContent(reader, model, opts, config)` — reader-backed flow for
+ *   remote providers. Basic list works across all four model kinds.
+ *   `opts.resolve: true` is rejected with an error on remote readers
+ *   because the cross-model walk requires local filesystem access.
+ *
+ * The reader-based function lives in {@link listContentViaReader}; the
+ * projectRoot-based entry point continues to call the legacy body to
+ * preserve bit-for-bit behaviour for every existing caller.
+ */
+export function listContent(
+  projectRoot: string,
+  model: ModelDefinition,
+  opts: ListOpts,
+  config: ContentrainConfig,
+): Promise<unknown>
+export function listContent(
+  reader: RepoReader,
+  model: ModelDefinition,
+  opts: ListOpts,
+  config: ContentrainConfig,
+): Promise<unknown>
 export async function listContent(
+  input: string | RepoReader,
+  model: ModelDefinition,
+  opts: ListOpts,
+  config: ContentrainConfig,
+): Promise<unknown> {
+  if (typeof input !== 'string') {
+    return listContentViaReader(input, model, opts, config)
+  }
+  return listContentLocal(input, model, opts, config)
+}
+
+async function listContentLocal(
   projectRoot: string,
   model: ModelDefinition,
   opts: ListOpts,
@@ -447,6 +522,133 @@ export async function listContent(
 
     case 'dictionary': {
       const data = await readJson<Record<string, string>>(resolveJsonFilePath(cDir, model, locale)) ?? {}
+      return { kind: 'dictionary', data, total_keys: Object.keys(data).length, locale }
+    }
+  }
+}
+
+async function tryReadJsonViaReader<T>(reader: RepoReader, path: string): Promise<T | null> {
+  try {
+    return JSON.parse(await reader.readFile(path)) as T
+  } catch {
+    return null
+  }
+}
+
+async function tryReadTextViaReader(reader: RepoReader, path: string): Promise<string | null> {
+  try {
+    return await reader.readFile(path)
+  } catch {
+    return null
+  }
+}
+
+async function listContentViaReader(
+  reader: RepoReader,
+  model: ModelDefinition,
+  opts: ListOpts,
+  config: ContentrainConfig,
+): Promise<unknown> {
+  if (opts.resolve) {
+    throw new Error(
+      'contentrain_content_list with resolve:true requires local filesystem access. '
+      + 'Use a LocalProvider (stdio or HTTP+LocalProvider) or omit resolve:true.',
+    )
+  }
+
+  const cDir = contentDirPath(model)
+  const locale = opts.locale ?? config.locales.default
+
+  switch (model.kind) {
+    case 'singleton': {
+      const data = await tryReadJsonViaReader<Record<string, unknown>>(reader, contentFilePath(model, locale))
+      return { kind: 'singleton', data: data ?? {}, locale }
+    }
+
+    case 'collection': {
+      const data = await tryReadJsonViaReader<Record<string, Record<string, unknown>>>(
+        reader,
+        contentFilePath(model, locale),
+      ) ?? {}
+      let entries: Array<Record<string, unknown>> = Object.entries(data).map(([id, fields]) => {
+        const entry: Record<string, unknown> = { id }
+        Object.assign(entry, fields)
+        return entry
+      })
+
+      if (opts.filter) {
+        entries = entries.filter(entry => {
+          for (const [key, value] of Object.entries(opts.filter!)) {
+            if (entry[key] !== value) return false
+          }
+          return true
+        })
+      }
+
+      const total = entries.length
+      const offset = opts.offset ?? 0
+      const limit = opts.limit ?? entries.length
+      entries = entries.slice(offset, offset + limit)
+
+      return { kind: 'collection', data: entries, total, locale, offset, limit }
+    }
+
+    case 'document': {
+      const entries: DocumentEntry[] = []
+      const strategy = resolveLocaleStrategy(model)
+
+      const collectEntry = async (relPath: string, slug: string): Promise<void> => {
+        const raw = await tryReadTextViaReader(reader, relPath)
+        if (!raw) return
+        const { frontmatter, body } = parseMarkdownFrontmatter(raw)
+        entries.push({ slug, frontmatter, body })
+      }
+
+      if (!model.i18n) {
+        const files = await reader.listDirectory(cDir)
+        for (const f of files) {
+          if (!f.endsWith('.md')) continue
+          await collectEntry(documentFilePath(model, locale, f.replace(/\.md$/u, '')), f.replace(/\.md$/u, ''))
+        }
+      } else if (strategy === 'file') {
+        const slugDirs = await reader.listDirectory(cDir)
+        for (const slug of slugDirs) {
+          await collectEntry(documentFilePath(model, locale, slug), slug)
+        }
+      } else if (strategy === 'suffix') {
+        const files = await reader.listDirectory(cDir)
+        const suffix = `.${locale}.md`
+        for (const f of files) {
+          if (!f.endsWith(suffix)) continue
+          const slug = f.slice(0, -suffix.length)
+          await collectEntry(documentFilePath(model, locale, slug), slug)
+        }
+      } else if (strategy === 'directory') {
+        const files = await reader.listDirectory(`${cDir}/${locale}`)
+        for (const f of files) {
+          if (!f.endsWith('.md')) continue
+          const slug = f.replace(/\.md$/u, '')
+          await collectEntry(documentFilePath(model, locale, slug), slug)
+        }
+      } else {
+        const files = await reader.listDirectory(cDir)
+        for (const f of files) {
+          if (!f.endsWith('.md')) continue
+          const slug = f.replace(/\.md$/u, '')
+          await collectEntry(documentFilePath(model, locale, slug), slug)
+        }
+      }
+
+      const total = entries.length
+      const offset = opts.offset ?? 0
+      const limit = opts.limit ?? entries.length
+      const paged = entries.slice(offset, offset + limit)
+
+      return { kind: 'document', data: paged, total, locale, offset, limit }
+    }
+
+    case 'dictionary': {
+      const data = await tryReadJsonViaReader<Record<string, string>>(reader, contentFilePath(model, locale)) ?? {}
       return { kind: 'dictionary', data, total_keys: Object.keys(data).length, locale }
     }
   }

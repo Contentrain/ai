@@ -61,6 +61,7 @@ describe('validate command', () => {
     expect(mod.default.args?.interactive?.type).toBe('boolean')
     expect(mod.default.args?.json?.type).toBe('boolean')
     expect(mod.default.args?.model?.type).toBe('string')
+    expect(mod.default.args?.watch?.type).toBe('boolean')
   })
 
   it('should fail the command when auto-fix is blocked by branch health', async () => {

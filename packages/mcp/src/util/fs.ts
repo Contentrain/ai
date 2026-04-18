@@ -1,6 +1,6 @@
 import { readFile, readdir, access, writeFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { canonicalStringify } from './serializer.js'
+import { canonicalStringify } from '@contentrain/types'
 
 export async function pathExists(filePath: string): Promise<boolean> {
   try {

@@ -63,6 +63,7 @@ If the user's request does not match an existing model, offer to create one firs
 
 - Check `.contentrain/vocabulary.json` for canonical terms. All content must use these terms consistently across locales. Do not use alternative spellings or synonyms for vocabulary-defined terms.
 - Check `.contentrain/context.json` for tone conventions (professional, casual, technical).
+- **For dictionaries:** Before creating any new key, call `contentrain_content_list` on the target model and scan existing values. If the value you intend to write already exists under a different key, REUSE the existing key instead of creating a new one. MCP will also warn you via `advisories` in the save response if duplicates are detected.
 
 ### 5. Generate Content
 
@@ -124,7 +125,17 @@ contentrain_content_save({
 - Prefer batch mode -- send multiple entries in a single call when possible.
 - Locale defaults to the project's default locale if omitted, but explicit locale is recommended.
 
-### 9. Handle i18n Completeness
+### 9. Review Save Advisories
+
+After `contentrain_content_save`, check the response for an `advisories` field. If present:
+
+- Review each advisory for duplicate value warnings.
+- If a duplicate is flagged, consider whether to:
+  - Remove the new key and reuse the existing one instead.
+  - Keep both keys if they serve semantically different purposes (document the reason).
+- Report any advisories to the user for their decision.
+
+### 10. Handle i18n Completeness
 
 If the project has multiple supported locales and the model has `i18n: true`:
 
@@ -138,7 +149,7 @@ If the project has multiple supported locales and the model has `i18n: true`:
 
 If the user defers translations, note incomplete locales in the final summary.
 
-### 10. Validate
+### 11. Validate
 
 Call `contentrain_validate` to check all changes:
 
@@ -149,7 +160,9 @@ Call `contentrain_validate` to check all changes:
 
 Fix any errors reported. Acknowledge any warnings.
 
-### 11. Submit
+For large content operations (10+ entries), also recommend running `contentrain doctor --usage` to detect unused keys and duplicate values across the project.
+
+### 12. Submit
 
 Call `contentrain_submit` to push branches to remote:
 
@@ -170,7 +183,7 @@ npx contentrain generate
 
 This updates TypeScript types for the new content. See: **contentrain-generate** skill.
 
-### 12. Final Summary
+### 13. Final Summary
 
 Report to the user:
 

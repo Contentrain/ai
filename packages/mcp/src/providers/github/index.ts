@@ -1,0 +1,7 @@
+export { GITHUB_CAPABILITIES } from './capabilities.js'
+export type { GitHubClient } from './client.js'
+export { createGitHubClient, createGitHubProvider } from './factory.js'
+export { GitHubProvider } from './provider.js'
+export { GitHubReader } from './reader.js'
+export type { GitHubAuth, RepoRef } from './types.js'
+export { DEFAULT_GITHUB_AUTHOR } from './types.js'

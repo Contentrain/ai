@@ -57,7 +57,7 @@ describe('contentrain_status', () => {
     expect(data.config.workflow).toBe('review')
     expect(data.config.locales.default).toBe('en')
     expect(data.models).toHaveLength(3)
-    expect(data.vocabulary_size).toBe(2)
+    expect(data.vocabulary.size).toBe(2)
     expect(data.context).not.toBeNull()
     expect(data.context.lastOperation.tool).toBe('content_save')
 

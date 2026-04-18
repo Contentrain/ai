@@ -94,7 +94,10 @@ import {
 } from '@contentrain/rules'
 
 // Check if a tool exists
+console.log(MCP_TOOLS.length)                           // 17
 console.log(MCP_TOOLS.includes('contentrain_validate')) // true
+console.log(MCP_TOOLS.includes('contentrain_merge'))    // true
+console.log(MCP_TOOLS.includes('contentrain_doctor'))   // true
 
 // Path to essential guardrails markdown
 console.log(ESSENTIAL_RULES_FILE) // 'essential/contentrain-essentials.md'

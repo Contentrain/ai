@@ -12,7 +12,7 @@ This mode converts a codebase with hardcoded strings into a Contentrain-managed 
 |--------|---------------------|----------------|
 | Purpose | Pull content from source code into `.contentrain/` | Patch source files to reference extracted content |
 | Source files modified | No | Yes |
-| Branch pattern | `contentrain/normalize/extract/{domain}/{timestamp}` | `contentrain/normalize/reuse/{model}/{locale}/{timestamp}` |
+| Branch pattern | `cr/normalize/extract/{domain}/{timestamp}` | `cr/normalize/reuse/{model}/{locale}/{timestamp}` |
 | Prerequisite | Initialized `.contentrain/` | Completed extraction (content exists) |
 | Workflow mode | Always `review` | Always `review` |
 | Standalone value | Yes — content is manageable in Studio immediately | Depends on Phase 1 |

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canonicalStringify } from '../../src/util/serializer.js'
+import { canonicalStringify } from '@contentrain/types'
 
 describe('canonicalStringify', () => {
   it('sorts keys lexicographically', () => {

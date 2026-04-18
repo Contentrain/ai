@@ -16,12 +16,22 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { watch } from 'chokidar'
 import { join } from 'node:path'
-import { tmpdir } from 'node:os'
-import { randomUUID } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { simpleGit } from 'simple-git'
-import { CONTENTRAIN_BRANCH } from '@contentrain/types'
+import { CONTENTRAIN_BRANCH, LOCAL_CAPABILITIES } from '@contentrain/types'
+import { mergeBranch } from '@contentrain/mcp/git/transaction'
+import { branchDiff, checkBranchHealth } from '@contentrain/mcp/git/branch-lifecycle'
+import { readConfig } from '@contentrain/mcp/core/config'
+import {
+  BranchActionBodySchema,
+  ContentFixBodySchema,
+  FileContextQuerySchema,
+  NormalizeApplyBodySchema,
+  NormalizePlanApproveBodySchema,
+  NormalizePlanRejectBodySchema,
+  parseOrThrow,
+} from './schemas.js'
 
 interface ServeOptions {
   projectRoot: string
@@ -50,6 +60,23 @@ export async function createServeApp(options: ServeOptions) {
     } catch { /* ignore */ }
     return 'main'
   }
+
+  /**
+   * In-memory cache of post-merge sync warnings. Keyed by feature
+   * branch name; populated when `mergeBranch()` returns skipped
+   * files (the developer had uncommitted `.contentrain/` changes).
+   * The UI can fetch the full list from `/api/branches/:name/sync-status`
+   * without replaying the merge. Entries expire after the branch is
+   * rejected or after 1 hour of inactivity.
+   */
+  interface SyncWarning {
+    branch: string
+    skipped: string[]
+    synced: string[]
+    recordedAt: number
+  }
+  const syncWarnings = new Map<string, SyncWarning>()
+  const SYNC_WARNING_TTL_MS = 60 * 60 * 1000
 
   // --- MCP Client setup ---
   const mcpServer = createMcpServer(projectRoot)
@@ -160,6 +187,18 @@ export async function createServeApp(options: ServeOptions) {
       } else if (rel.startsWith('content/')) {
         const parts = rel.replace('content/', '').split('/')
         event = { type: 'content:changed', modelId: parts[1], locale: parts[2]?.replace('.json', '') }
+      } else if (rel.startsWith('meta/') && rel.endsWith('.json')) {
+        // `.contentrain/meta/<model>/<locale>.json` and
+        // `.contentrain/meta/<model>/<entryId>/<locale>.json` — SEO and
+        // model-level metadata edited independently of content. The
+        // Serve UI's model inspector and SEO panels consume this.
+        const parts = rel.replace('meta/', '').split('/')
+        const locale = parts[parts.length - 1]?.replace('.json', '')
+        const modelId = parts[0]
+        const entryId = parts.length === 3 ? parts[1] : undefined
+        event = entryId
+          ? { type: 'meta:changed', modelId, entryId, locale }
+          : { type: 'meta:changed', modelId, locale }
       } else {
         return
       }
@@ -167,6 +206,15 @@ export async function createServeApp(options: ServeOptions) {
       pendingEvents.push(event)
       if (debounceTimer) clearTimeout(debounceTimer)
       debounceTimer = setTimeout(flush, 300)
+    })
+
+    // Surface watcher failures instead of silently degrading to a
+    // no-op. Without this the UI keeps rendering stale data after,
+    // e.g., hitting the OS inotify limit — the user has no way to
+    // know live updates stopped flowing.
+    watcher.on('error', (err) => {
+      const message = err instanceof Error ? err.message : String(err)
+      broadcast({ type: 'file-watch:error', message, timestamp: new Date().toISOString() })
     })
   }
 
@@ -177,10 +225,69 @@ export async function createServeApp(options: ServeOptions) {
     return await callTool('contentrain_status')
   }))
 
+  // Capabilities + transport + provider info
+  //
+  // Surfaces the data the UI needs to render its "what can this
+  // project do?" badge: provider type (local/github/gitlab), the
+  // active transport, capability manifest, content-tracking branch,
+  // and aggregated branch-health. Kept in ONE route so the Dashboard
+  // can render the badge in a single round trip instead of stitching
+  // together /status + /branches.
+  router.add('/api/capabilities', defineEventHandler(async () => {
+    const config = await readConfig(projectRoot).catch(() => null)
+    const health = await checkBranchHealth(projectRoot).catch(() => null)
+    return {
+      version: 1,
+      provider: {
+        type: 'local' as const,
+        repo: config?.repository ?? null,
+      },
+      transport: 'stdio' as const,
+      capabilities: LOCAL_CAPABILITIES,
+      contentBranch: CONTENTRAIN_BRANCH,
+      defaultBranch: getDefaultBranch(),
+      branchHealth: health,
+    }
+  }))
+
+  // Sync warnings for a specific branch — populated the last time
+  // `mergeBranch()` ran for that branch and skipped dirty files.
+  // Returns { warning: null } when no warnings are cached.
+  router.add('/api/branches/:name/sync-status', defineEventHandler(async (event) => {
+    const name = getRouterParam(event, 'name')
+    if (!name) throw createError({ statusCode: 400, message: 'Missing branch name' })
+    // Expire stale entries on read.
+    const warning = syncWarnings.get(name)
+    if (warning && Date.now() - warning.recordedAt > SYNC_WARNING_TTL_MS) {
+      syncWarnings.delete(name)
+      return { warning: null }
+    }
+    return { warning: warning ?? null }
+  }))
+
   // Describe model
   router.add('/api/describe/:modelId', defineEventHandler(async (event) => {
     const modelId = getRouterParam(event, 'modelId')
     return await callTool('contentrain_describe', { model: modelId, include_sample: true })
+  }))
+
+  // Format reference — thin wrapper around contentrain_describe_format.
+  // Serves a static spec of how Contentrain stores models, content,
+  // meta, and vocabulary. The UI renders this as a reference panel for
+  // humans who want to learn the file layout without reading docs.
+  router.add('/api/describe-format', defineEventHandler(async () => {
+    return await callTool('contentrain_describe_format')
+  }))
+
+  // Doctor — structured project health report wrapping the
+  // `contentrain_doctor` MCP tool. `?usage=true` opts into the heavier
+  // content-key usage analysis (unused keys, duplicate dictionary
+  // values, locale coverage). The UI renders each check row-by-row
+  // with its severity (error / warning / info).
+  router.add('/api/doctor', defineEventHandler(async (event) => {
+    const query = getQuery(event)
+    const usage = query['usage'] === 'true' || query['usage'] === '1'
+    return await callTool('contentrain_doctor', { usage })
   }))
 
   // Content list
@@ -213,7 +320,8 @@ export async function createServeApp(options: ServeOptions) {
     if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
     const modelId = getRouterParam(event, 'modelId')
     const entryId = getRouterParam(event, 'entryId')
-    const body = await readBody(event)
+    const raw = await readBody(event)
+    const body = parseOrThrow(ContentFixBodySchema, raw)
     const result = await callTool('contentrain_content_save', {
       model: modelId,
       entries: [{ id: entryId, locale: body.locale, data: body.data }],
@@ -255,81 +363,169 @@ export async function createServeApp(options: ServeOptions) {
   }))
 
   // Branch diff
+  //
+  // Delegates to the MCP `branchDiff` helper so the base is the
+  // `contentrain` content-tracking branch, not the repository's
+  // default branch. When `contentrain` is ahead of `main`, the old
+  // diff-against-default path surfaced unrelated historical content
+  // changes as if they belonged to the feature branch under review.
   router.add('/api/branches/diff', defineEventHandler(async (event) => {
     const query = getQuery(event)
     const branchName = query['name'] as string
     if (!branchName?.startsWith('cr/')) {
       throw createError({ statusCode: 400, message: 'Invalid branch name' })
     }
-    const git = simpleGit(projectRoot)
-    const defaultBranch = getDefaultBranch()
-    const diff = await git.diff([`${defaultBranch}...${branchName}`, '--stat'])
-    const rawDiff = await git.diff([`${defaultBranch}...${branchName}`])
-    return { branch: branchName, base: defaultBranch, stat: diff, diff: rawDiff }
+    const result = await branchDiff(projectRoot, { branch: branchName })
+    return {
+      branch: result.branch,
+      base: result.base,
+      stat: result.stat,
+      diff: result.patch,
+      filesChanged: result.filesChanged,
+    }
   }))
 
-  // Branch approve (merge via contentrain worktree)
+  // Merge preview — answers "if I approve this branch right now, what
+  // would happen?" without running the merge. Three signals:
+  //   - `alreadyMerged` — the feature branch is already in
+  //     CONTENTRAIN_BRANCH's history (approve would be a no-op)
+  //   - `canFastForward` — CONTENTRAIN_BRANCH is an ancestor of the
+  //     feature branch (approve will fast-forward cleanly)
+  //   - `conflicts` — best-effort list of conflicting paths detected
+  //     via `git merge-tree`. Empty array when the check succeeds
+  //     with no conflicts; `null` when the check couldn't run (older
+  //     git, detached refs, etc.).
+  //
+  // Intentionally does NOT run the real merge — the approve route
+  // already surfaces runtime conflicts by throwing. This is a fast,
+  // side-effect-free signal for the UI to render a "preview" banner
+  // before the user commits to approve.
+  router.add('/api/preview/merge', defineEventHandler(async (event) => {
+    const query = getQuery(event)
+    const branchName = query['branch'] as string | undefined
+    if (!branchName || !branchName.startsWith('cr/')) {
+      throw createError({ statusCode: 400, message: 'Missing or invalid `branch` query (must start with "cr/")' })
+    }
+
+    const git = simpleGit(projectRoot)
+
+    // Confirm the branch exists locally.
+    const local = await git.branchLocal()
+    if (!local.all.includes(branchName)) {
+      throw createError({ statusCode: 404, message: `Branch "${branchName}" does not exist locally` })
+    }
+
+    // Fast-forward / already-merged checks.
+    let alreadyMerged = false
+    let canFastForward = false
+    try {
+      await git.raw(['merge-base', '--is-ancestor', branchName, CONTENTRAIN_BRANCH])
+      alreadyMerged = true
+    } catch { /* not merged yet */ }
+    if (!alreadyMerged) {
+      try {
+        await git.raw(['merge-base', '--is-ancestor', CONTENTRAIN_BRANCH, branchName])
+        canFastForward = true
+      } catch { /* would require a 3-way merge */ }
+    }
+
+    // Best-effort conflict scan via `git merge-tree`. The legacy 3-way
+    // form (`merge-tree <base> <ours> <theirs>`) is widely supported
+    // and prints conflict sections on stdout; silence = clean.
+    let conflicts: string[] | null = null
+    try {
+      const mergeBase = (await git.raw(['merge-base', CONTENTRAIN_BRANCH, branchName])).trim()
+      if (mergeBase) {
+        const out = await git.raw(['merge-tree', mergeBase, CONTENTRAIN_BRANCH, branchName])
+        // Conflict sections look like `changed in both\n  base   100644 <sha> <path>...`
+        // — extract unique paths from the `<<<<<<<` / `>>>>>>>` surrounds.
+        const paths = new Set<string>()
+        const conflictBlockRegex = /^(?:changed in both|added in both|removed in (?:local|remote))\b[^\n]*\n((?:[ \t][^\n]*\n)+)/gmu
+        let match: RegExpExecArray | null
+        while ((match = conflictBlockRegex.exec(out)) !== null) {
+          const block = match[1] ?? ''
+          const pathMatch = /\b100644\s+[0-9a-f]{4,}\s+(\S+)/u.exec(block)
+          if (pathMatch?.[1]) paths.add(pathMatch[1])
+        }
+        conflicts = [...paths]
+      }
+    } catch { /* merge-tree unavailable or failed — leave as null */ }
+
+    // Diff summary against CONTENTRAIN_BRANCH (the same base the
+    // actual merge will use). Skip when already merged — the diff is
+    // empty and the MCP helper would error on a zero-commit range.
+    let stat = ''
+    let filesChanged = 0
+    if (!alreadyMerged) {
+      try {
+        const diff = await branchDiff(projectRoot, { branch: branchName })
+        stat = diff.stat
+        filesChanged = diff.filesChanged
+      } catch { /* leave zeroed */ }
+    }
+
+    return {
+      branch: branchName,
+      base: CONTENTRAIN_BRANCH,
+      alreadyMerged,
+      canFastForward,
+      conflicts,
+      filesChanged,
+      stat,
+    }
+  }))
+
+  // Branch approve — delegates to MCP's mergeBranch helper, which
+  // runs the worktree transaction + selective sync with dirty-file
+  // protection. `sync.skipped[]` surfaces files that the developer
+  // has uncommitted changes in; the UI shows those as a warning so
+  // the user can resolve them manually.
   router.add('/api/branches/approve', defineEventHandler(async (event) => {
     if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
-    const body = await readBody(event)
-    const branchName = body.branch as string
-    if (!branchName?.startsWith('cr/')) {
-      throw createError({ statusCode: 400, message: 'Invalid branch name' })
-    }
-    const git = simpleGit(projectRoot)
-    const baseBranch = getDefaultBranch()
-
-    // Ensure contentrain branch exists
-    const localBranches = await git.branchLocal()
-    if (!localBranches.all.includes(CONTENTRAIN_BRANCH)) {
-      await git.branch([CONTENTRAIN_BRANCH, baseBranch])
-    }
-
-    // Create temp worktree on contentrain branch
-    const mergePath = join(tmpdir(), `cr-merge-${randomUUID()}`)
-    await git.raw(['worktree', 'add', mergePath, CONTENTRAIN_BRANCH])
-    const mergeGit = simpleGit(mergePath)
+    const raw = await readBody(event)
+    const { branch: branchName } = parseOrThrow(BranchActionBodySchema, raw)
 
     try {
-      // Sync contentrain with base
-      await mergeGit.merge([baseBranch, '--no-edit']).catch(() => {})
-
-      // Merge selected branch into contentrain
-      await mergeGit.merge([branchName, '--no-edit'])
-
-      // Get contentrain tip
-      const tip = (await mergeGit.raw(['rev-parse', 'HEAD'])).trim()
-
-      // Advance base branch via update-ref
-      await git.raw(['update-ref', `refs/heads/${baseBranch}`, tip])
-
-      // Sync .contentrain/ files to developer's tree
-      const currentBranch = (await git.raw(['branch', '--show-current'])).trim()
-      if (currentBranch === baseBranch) {
-        await git.checkout([tip, '--', '.contentrain/'])
+      const result = await mergeBranch(projectRoot, branchName)
+      // Cache the sync warnings so the UI can fetch them via
+      // /api/branches/:name/sync-status without replaying the merge.
+      if (result.sync?.skipped?.length) {
+        syncWarnings.set(branchName, {
+          branch: branchName,
+          skipped: result.sync.skipped,
+          synced: result.sync.synced,
+          recordedAt: Date.now(),
+        })
+        broadcast({
+          type: 'sync:warning',
+          branch: branchName,
+          skippedCount: result.sync.skipped.length,
+        })
       }
-
-      // Delete the merged feature branch
-      await git.deleteLocalBranch(branchName, true)
-
       broadcast({ type: 'branch:merged', branch: branchName })
-      return { status: 'merged', branch: branchName, into: baseBranch }
-    } finally {
-      // Cleanup worktree
-      await git.raw(['worktree', 'remove', mergePath, '--force']).catch(() => {})
+      return {
+        status: 'merged',
+        branch: branchName,
+        commit: result.commit,
+        action: result.action,
+        sync: result.sync,
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      broadcast({ type: 'branch:merge-conflict', branch: branchName, message })
+      throw createError({ statusCode: 409, message: `Merge failed: ${message}` })
     }
   }))
 
   // Branch reject (delete)
   router.add('/api/branches/reject', defineEventHandler(async (event) => {
     if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
-    const body = await readBody(event)
-    const branchName = body.branch as string
-    if (!branchName?.startsWith('cr/')) {
-      throw createError({ statusCode: 400, message: 'Invalid branch name' })
-    }
+    const raw = await readBody(event)
+    const { branch: branchName } = parseOrThrow(BranchActionBodySchema, raw)
     const git = simpleGit(projectRoot)
     await git.deleteLocalBranch(branchName, true)
+    syncWarnings.delete(branchName)
+    broadcast({ type: 'branch:rejected', branch: branchName })
     return { status: 'deleted', branch: branchName }
   }))
 
@@ -342,18 +538,22 @@ export async function createServeApp(options: ServeOptions) {
       maxCount: limit * 2, // fetch more, filter after
       format: { hash: '%h', fullHash: '%H', message: '%s', author: '%an', email: '%ae', date: '%aI', relativeDate: '%ar' },
     })
-    // Filter to contentrain-related commits
+    // Filter to Contentrain-related commits. Tolerant of BOTH the
+    // current `cr/*` branch naming and the legacy `contentrain/*`
+    // format (auto-merged commits produced by git before Phase 7 of
+    // the MCP refactor). Commit message body prefix `[contentrain]`
+    // is still current — it's just the human-readable tag.
+    const mergeBranchPattern = /^Merge branch '(cr\/|contentrain\/)/u
     const entries = log.all
       .filter((c) => {
         const msg = c.message ?? ''
-        return msg.startsWith('[contentrain]') || msg.startsWith('Merge branch \'contentrain/') || msg.includes('contentrain')
+        return msg.startsWith('[contentrain]') || mergeBranchPattern.test(msg)
       })
       .slice(0, limit)
       .map((c) => {
         const msg = c.message ?? ''
         let type: string = 'other'
         let target = ''
-        // Parse commit message
         if (msg.startsWith('[contentrain] created:')) {
           type = 'model_create'
           target = msg.replace('[contentrain] created: ', '')
@@ -363,14 +563,14 @@ export async function createServeApp(options: ServeOptions) {
         } else if (msg.startsWith('[contentrain] content:')) {
           type = 'content_save'
           target = msg.replace('[contentrain] content: ', '')
-        } else if (msg.startsWith('[contentrain] deleted:')) {
+        } else if (msg.startsWith('[contentrain] deleted:') || msg.startsWith('[contentrain] delete')) {
           type = 'delete'
-          target = msg.replace('[contentrain] deleted: ', '')
+          target = msg.replace(/^\[contentrain\] delete(?:d)?:?\s*/u, '')
         } else if (msg.startsWith('[contentrain] update context')) {
           type = 'context_update'
-        } else if (msg.startsWith('Merge branch \'contentrain/')) {
+        } else if (mergeBranchPattern.test(msg)) {
           type = 'merge'
-          target = msg.replace("Merge branch '", '').replace("'", '')
+          target = msg.replace(/^Merge branch '/u, '').replace(/'$/u, '')
         } else if (msg.startsWith('[contentrain]')) {
           type = 'operation'
           target = msg.replace('[contentrain] ', '')
@@ -495,6 +695,13 @@ export async function createServeApp(options: ServeOptions) {
     if (event.method !== 'DELETE' && event.method !== 'POST') {
       throw createError({ statusCode: 405, message: 'Method not allowed' })
     }
+    // Validate the (optional) body so future callers that want to
+    // record a rejection reason have a well-defined contract, and so
+    // every write route here parses through the same Zod gate.
+    if (event.method === 'POST') {
+      const raw = await readBody(event).catch(() => undefined)
+      if (raw !== undefined) parseOrThrow(NormalizePlanRejectBodySchema, raw)
+    }
     const planPath = join(crDir, 'normalize-plan.json')
     if (existsSync(planPath)) {
       await unlink(planPath)
@@ -510,10 +717,11 @@ export async function createServeApp(options: ServeOptions) {
     if (!existsSync(planPath)) {
       throw createError({ statusCode: 404, message: 'No normalize plan found' })
     }
-    const raw = await readFile(planPath, 'utf-8')
-    const plan = JSON.parse(raw)
-    const body = await readBody(event)
-    const selectedModels = body?.models as string[] | undefined
+    const rawPlan = await readFile(planPath, 'utf-8')
+    const plan = JSON.parse(rawPlan)
+    const rawBody = await readBody(event)
+    const body = parseOrThrow(NormalizePlanApproveBodySchema, rawBody)
+    const selectedModels = body.models
 
     // Update plan status
     plan.status = 'approved'
@@ -561,11 +769,19 @@ export async function createServeApp(options: ServeOptions) {
       dry_run: false,
       extractions: applyExtractions,
     }
-    const result = await callTool('contentrain_apply', applyArgs)
+    const result = await callTool('contentrain_apply', applyArgs) as Record<string, unknown>
 
     // Clean up plan file after successful apply
     if (existsSync(planPath)) {
       await unlink(planPath)
+    }
+
+    // Surface the git metadata the same way /api/content/:modelId/:entryId/fix
+    // does — so the BranchesPage picks up the new normalize branch
+    // without a manual refresh.
+    const git = result?.['git'] as Record<string, unknown> | undefined
+    if (git?.['branch'] && git?.['action'] === 'pending-review') {
+      broadcast({ type: 'branch:created', branch: String(git['branch']) })
     }
 
     broadcast({ type: 'normalize:plan-updated' })
@@ -575,59 +791,47 @@ export async function createServeApp(options: ServeOptions) {
   // Normalize — apply extraction (dry-run by default)
   router.add('/api/normalize/apply', defineEventHandler(async (event) => {
     if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
-    const body = await readBody(event)
-    return await callTool('contentrain_apply', body)
+    const raw = await readBody(event)
+    const body = parseOrThrow(NormalizeApplyBodySchema, raw)
+    return await callTool('contentrain_apply', body as Record<string, unknown>)
   }))
 
-  // Normalize — approve branch (merge normalize branch via contentrain worktree)
+  // Normalize — approve branch. Same invariants as /api/branches/approve:
+  // delegate to MCP's mergeBranch, surface sync.skipped warnings,
+  // broadcast merge-conflict on failure.
   router.add('/api/normalize/approve', defineEventHandler(async (event) => {
     if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
-    const body = await readBody(event)
-    const branchName = body.branch as string
-    if (!branchName?.startsWith('cr/')) {
-      throw createError({ statusCode: 400, message: 'Invalid branch name' })
-    }
-    const git = simpleGit(projectRoot)
-    const baseBranch = getDefaultBranch()
-
-    // Ensure contentrain branch exists
-    const localBranches = await git.branchLocal()
-    if (!localBranches.all.includes(CONTENTRAIN_BRANCH)) {
-      await git.branch([CONTENTRAIN_BRANCH, baseBranch])
-    }
-
-    // Create temp worktree on contentrain branch
-    const mergePath = join(tmpdir(), `cr-merge-${randomUUID()}`)
-    await git.raw(['worktree', 'add', mergePath, CONTENTRAIN_BRANCH])
-    const mergeGit = simpleGit(mergePath)
+    const raw = await readBody(event)
+    const { branch: branchName } = parseOrThrow(BranchActionBodySchema, raw)
 
     try {
-      // Sync contentrain with base
-      await mergeGit.merge([baseBranch, '--no-edit']).catch(() => {})
-
-      // Merge normalize branch into contentrain
-      await mergeGit.merge([branchName, '--no-edit'])
-
-      // Get contentrain tip
-      const tip = (await mergeGit.raw(['rev-parse', 'HEAD'])).trim()
-
-      // Advance base branch via update-ref
-      await git.raw(['update-ref', `refs/heads/${baseBranch}`, tip])
-
-      // Sync .contentrain/ files to developer's tree
-      const currentBranch = (await git.raw(['branch', '--show-current'])).trim()
-      if (currentBranch === baseBranch) {
-        await git.checkout([tip, '--', '.contentrain/'])
+      const result = await mergeBranch(projectRoot, branchName)
+      if (result.sync?.skipped?.length) {
+        syncWarnings.set(branchName, {
+          branch: branchName,
+          skipped: result.sync.skipped,
+          synced: result.sync.synced,
+          recordedAt: Date.now(),
+        })
+        broadcast({
+          type: 'sync:warning',
+          branch: branchName,
+          skippedCount: result.sync.skipped.length,
+        })
       }
 
-      // Delete the merged normalize branch
-      await git.deleteLocalBranch(branchName, true)
-
       broadcast({ type: 'branch:merged', branch: branchName })
-      return { status: 'merged', branch: branchName, into: baseBranch }
-    } finally {
-      // Cleanup worktree
-      await git.raw(['worktree', 'remove', mergePath, '--force']).catch(() => {})
+      return {
+        status: 'merged',
+        branch: branchName,
+        commit: result.commit,
+        action: result.action,
+        sync: result.sync,
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      broadcast({ type: 'branch:merge-conflict', branch: branchName, message })
+      throw createError({ statusCode: 409, message: `Merge failed: ${message}` })
     }
   }))
 
@@ -646,15 +850,18 @@ export async function createServeApp(options: ServeOptions) {
   // Normalize — read file context around a line
   router.add('/api/normalize/file-context', defineEventHandler(async (event) => {
     const query = getQuery(event)
-    const filePath = query['file'] as string
-    const line = Number(query['line']) || 1
-    const range = Number(query['range']) || 5
+    const { file: filePath, line = 1, range = 5 } = parseOrThrow(FileContextQuerySchema, query, 'query')
 
-    if (!filePath || filePath.includes('..') || filePath.startsWith('/')) {
-      throw createError({ statusCode: 400, message: 'Invalid file path' })
-    }
-
+    // Defense-in-depth beyond the Zod schema: resolve the full path
+    // and assert it stays inside projectRoot. Catches clever encoded
+    // escapes the regex might miss on quirky filesystems.
     const fullPath = join(projectRoot, filePath)
+    const { resolve: resolvePath, sep } = await import('node:path')
+    const resolvedRoot = resolvePath(projectRoot)
+    const resolvedFull = resolvePath(fullPath)
+    if (!resolvedFull.startsWith(resolvedRoot + sep) && resolvedFull !== resolvedRoot) {
+      throw createError({ statusCode: 400, message: 'Path escapes project root' })
+    }
     if (!existsSync(fullPath)) {
       throw createError({ statusCode: 404, message: 'File not found' })
     }

@@ -79,7 +79,14 @@ export interface ContentrainConfig {
   stack: StackType
   workflow: WorkflowMode
   repository?: {
-    provider: 'github'
+    /**
+     * Git host backing this project's remote. Widens as new providers ship
+     * in @contentrain/mcp — `github` and `gitlab` are currently supported.
+     * The value is informational for tooling: the concrete provider the
+     * MCP server talks to is chosen at server construction time, not from
+     * this config.
+     */
+    provider: 'github' | 'gitlab'
     owner: string
     name: string
     default_branch: string
@@ -819,3 +826,23 @@ export function serializeMarkdownFrontmatter(data: Record<string, unknown>, body
   }
   return lines.join('\n')
 }
+
+// ─── Repository provider contracts ───
+//
+// Provider-agnostic engine contracts used by @contentrain/mcp. Exposed from
+// @contentrain/types so third-party tools can implement a custom
+// RepoProvider without taking a dependency on @contentrain/mcp.
+export type {
+  ApplyPlanInput,
+  Branch,
+  Commit,
+  CommitAuthor,
+  FileChange,
+  FileDiff,
+  MergeResult,
+  ProviderCapabilities,
+  RepoProvider,
+  RepoReader,
+  RepoWriter,
+} from './provider.js'
+export { LOCAL_CAPABILITIES } from './provider.js'

@@ -27,6 +27,30 @@ Phase 1 alone is valuable: content becomes manageable in Studio, translatable, a
 - MUST NOT patch `.contentrain/` files via reuse (content files are read-only for reuse)
 - MUST NOT exceed 100 patches per `contentrain_apply` call
 
+## Transport Requirements
+
+Normalize (`contentrain_scan` and `contentrain_apply`) requires **local
+disk access** — AST scanners walk the source tree and patch files in
+place. It runs only on a `LocalProvider` (stdio transport, or an HTTP
+transport configured with a `LocalProvider`).
+
+Remote providers (`GitHubProvider`, `GitLabProvider`, future
+`BitbucketProvider`) expose `astScan: false`, `sourceRead: false`, and
+`sourceWrite: false`. Calling these tools over a remote provider
+returns a uniform capability error:
+
+```json
+{
+  "error": "contentrain_scan requires local filesystem access.",
+  "capability_required": "astScan",
+  "hint": "This tool is unavailable when MCP is driven by a remote provider. Use a LocalProvider or the stdio transport."
+}
+```
+
+If the agent is driving a remote-only MCP session, normalize must run
+in a separate local-checkout session before the extracted content
+branch is pushed.
+
 ---
 
 ## Two-Phase Architecture
@@ -36,7 +60,7 @@ Phase 1 alone is valuable: content becomes manageable in Studio, translatable, a
 | Purpose | Pull content from source to `.contentrain/` | Patch source files with content references |
 | Scope | Full project scan | Per model or per domain |
 | Source files modified | No | Yes |
-| Branch pattern | `contentrain/normalize/extract/{domain}/{timestamp}` | `contentrain/normalize/reuse/{model}/{locale}/{timestamp}` |
+| Branch pattern | `cr/normalize/extract/{domain}/{timestamp}` | `cr/normalize/reuse/{model}/{locale}/{timestamp}` |
 | Prerequisite | Initialized `.contentrain/` | Completed extraction (content exists in `.contentrain/`) |
 | Workflow mode | Always `review` | Always `review` |
 | Standalone value | Yes -- content is manageable in Studio immediately | Depends on Phase 1 |
@@ -109,7 +133,7 @@ Call `contentrain_apply(mode: "extract", dry_run: true)` to generate a preview. 
 
 ### 6. Execute Extraction
 
-After user approval, call `contentrain_apply(mode: "extract", dry_run: false)`. This creates model definitions and content files in `.contentrain/` on a `contentrain/normalize/extract/{timestamp}` branch. Source files are NOT modified.
+After user approval, call `contentrain_apply(mode: "extract", dry_run: false)`. This creates model definitions and content files in `.contentrain/` on a `cr/normalize/extract/{timestamp}` branch. Source files are NOT modified.
 
 ### 7. Validate and Submit
 
@@ -183,7 +207,7 @@ Call `contentrain_apply(mode: "reuse", scope: { model: "<model-id>" }, patches: 
 
 ### 4. Execute Reuse
 
-After user confirmation, call `contentrain_apply(mode: "reuse", scope: { model: "<model-id>" }, patches: [...], dry_run: false)`. This patches source files and creates a `contentrain/normalize/reuse/{model}/{timestamp}` branch.
+After user confirmation, call `contentrain_apply(mode: "reuse", scope: { model: "<model-id>" }, patches: [...], dry_run: false)`. This patches source files and creates a `cr/normalize/reuse/{model}/{timestamp}` branch.
 
 ### 5. Validate and Submit
 

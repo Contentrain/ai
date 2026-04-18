@@ -3,18 +3,47 @@ import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { z } from 'zod'
 import { contentrainDir, ensureDir, readDir, readJson, writeJson } from '../util/fs.js'
+import type { RepoReader } from './contracts/index.js'
+import { LocalReader } from '../providers/local/reader.js'
 import { resolveContentDir, resolveLocaleStrategy } from './content-manager.js'
+import { contentDirPath } from './ops/paths.js'
 
 export type { ModelSummary } from '@contentrain/types'
 
-export async function listModels(projectRoot: string): Promise<ModelSummary[]> {
-  const modelsDir = join(contentrainDir(projectRoot), 'models')
-  const files = await readDir(modelsDir)
-  const jsonFiles = files.filter(f => f.endsWith('.json'))
+const MODELS_DIR_PATH = '.contentrain/models'
 
-  const models = await Promise.all(
-    jsonFiles.map(file => readJson<ModelDefinition>(join(modelsDir, file))),
-  )
+async function tryReadJsonViaReader<T>(reader: RepoReader, path: string): Promise<T | null> {
+  try {
+    return JSON.parse(await reader.readFile(path)) as T
+  } catch {
+    return null
+  }
+}
+
+/**
+ * List every model defined under `.contentrain/models/*.json`.
+ *
+ * Accepts either a legacy `projectRoot` string (filesystem walk) or any
+ * `RepoReader` — HTTP-hosted callers pass their `GitHubProvider` so the
+ * same helper resolves model metadata over the Git Data API.
+ */
+export function listModels(projectRoot: string): Promise<ModelSummary[]>
+export function listModels(reader: RepoReader): Promise<ModelSummary[]>
+export async function listModels(input: string | RepoReader): Promise<ModelSummary[]> {
+  let files: string[]
+  let load: (file: string) => Promise<ModelDefinition | null>
+
+  if (typeof input === 'string') {
+    const modelsDir = join(contentrainDir(input), 'models')
+    files = await readDir(modelsDir)
+    load = file => readJson<ModelDefinition>(join(modelsDir, file))
+  } else {
+    files = await input.listDirectory(MODELS_DIR_PATH)
+    load = file => tryReadJsonViaReader<ModelDefinition>(input, `${MODELS_DIR_PATH}/${file}`)
+  }
+
+  const jsonFiles = files.filter(f => f.endsWith('.json'))
+  const models = await Promise.all(jsonFiles.map(load))
 
   return models
     .filter((m): m is ModelDefinition => m !== null && !!m.id)
@@ -28,21 +57,30 @@ export async function listModels(projectRoot: string): Promise<ModelSummary[]> {
     .toSorted((a, b) => a.id.localeCompare(b.id, 'en'))
 }
 
-export async function readModel(projectRoot: string, modelId: string): Promise<ModelDefinition | null> {
-  const filePath = join(contentrainDir(projectRoot), 'models', `${modelId}.json`)
-  return readJson<ModelDefinition>(filePath)
+/**
+ * Read a single model definition. Same dual signature as {@link listModels}.
+ */
+export function readModel(projectRoot: string, modelId: string): Promise<ModelDefinition | null>
+export function readModel(reader: RepoReader, modelId: string): Promise<ModelDefinition | null>
+export async function readModel(input: string | RepoReader, modelId: string): Promise<ModelDefinition | null> {
+  if (typeof input === 'string') {
+    const filePath = join(contentrainDir(input), 'models', `${modelId}.json`)
+    return readJson<ModelDefinition>(filePath)
+  }
+  return tryReadJsonViaReader<ModelDefinition>(input, `${MODELS_DIR_PATH}/${modelId}.json`)
 }
 
 async function countDocumentFileStrategy(
+  reader: RepoReader,
   contentDir: string,
   entries: string[],
-): Promise<{ total: number; locales: Record<string, number> }> {
+): Promise<{ total: number, locales: Record<string, number> }> {
   const locales: Record<string, number> = {}
   let total = 0
 
   const results = await Promise.all(
     entries.map(async (entry) => {
-      const localeFiles = await readDir(join(contentDir, entry))
+      const localeFiles = await reader.listDirectory(`${contentDir}/${entry}`)
       return localeFiles
         .map(lf => lf.replace(/\.(json|md|mdx)$/, ''))
         .filter((locale, i) => locale !== localeFiles[i])
@@ -60,9 +98,10 @@ async function countDocumentFileStrategy(
 }
 
 async function countDocumentSuffixStrategy(
+  _reader: RepoReader,
   _contentDir: string,
   files: string[],
-): Promise<{ total: number; locales: Record<string, number> }> {
+): Promise<{ total: number, locales: Record<string, number> }> {
   const locales: Record<string, number> = {}
   const slugsByLocale: Record<string, Set<string>> = {}
 
@@ -86,15 +125,16 @@ async function countDocumentSuffixStrategy(
 }
 
 async function countDocumentDirectoryStrategy(
+  reader: RepoReader,
   contentDir: string,
   localeDirs: string[],
-): Promise<{ total: number; locales: Record<string, number> }> {
+): Promise<{ total: number, locales: Record<string, number> }> {
   const locales: Record<string, number> = {}
   let total = 0
 
   const results = await Promise.all(
     localeDirs.map(async (localeDir) => {
-      const files = await readDir(join(contentDir, localeDir))
+      const files = await reader.listDirectory(`${contentDir}/${localeDir}`)
       const mdFiles = files.filter(f => f.endsWith('.md'))
       return { locale: localeDir, count: mdFiles.length }
     }),
@@ -109,11 +149,11 @@ async function countDocumentDirectoryStrategy(
 }
 
 async function countDocumentNoneStrategy(
-  projectRoot: string,
+  reader: RepoReader,
   modelId: string,
   files: string[],
   i18n: boolean,
-): Promise<{ total: number; locales: Record<string, number> }> {
+): Promise<{ total: number, locales: Record<string, number> }> {
   const mdFiles = files.filter(f => f.endsWith('.md'))
 
   if (!i18n) {
@@ -122,14 +162,14 @@ async function countDocumentNoneStrategy(
 
   // With i18n + none strategy, content files have no locale info.
   // Use meta/{modelId}/{slug}/ directories to determine locale counts.
-  const metaDir = join(contentrainDir(projectRoot), 'meta', modelId)
+  const metaDir = `.contentrain/meta/${modelId}`
   const locales: Record<string, number> = {}
   let total = 0
 
   const slugs = mdFiles.map(f => f.replace('.md', ''))
   const results = await Promise.all(
     slugs.map(async (slug) => {
-      const metaFiles = await readDir(join(metaDir, slug))
+      const metaFiles = await reader.listDirectory(`${metaDir}/${slug}`)
       return metaFiles
         .filter(f => f.endsWith('.json'))
         .map(f => f.replace('.json', ''))
@@ -147,16 +187,17 @@ async function countDocumentNoneStrategy(
 }
 
 async function countCollectionEntries(
+  reader: RepoReader,
   contentDir: string,
   jsonFiles: string[],
-): Promise<{ total: number; locales: Record<string, number> }> {
+): Promise<{ total: number, locales: Record<string, number> }> {
   const locales: Record<string, number> = {}
   let total = 0
 
   const results = await Promise.all(
     jsonFiles.map(async (file) => {
       const locale = file.replace(/\.json$/, '')
-      const data = await readJson<Record<string, unknown>>(join(contentDir, file))
+      const data = await tryReadJsonViaReader<Record<string, unknown>>(reader, `${contentDir}/${file}`)
       return { locale, count: data ? Object.keys(data).length : 0 }
     }),
   )
@@ -169,29 +210,45 @@ async function countCollectionEntries(
   return { total, locales }
 }
 
-export async function countEntries(
+/**
+ * Count content entries across locales for a model.
+ *
+ * Accepts either a legacy `projectRoot` string (wraps LocalReader internally)
+ * or any `RepoReader` — so remote providers (GitHubProvider) feed the same
+ * counting logic via the Git Data API.
+ */
+export function countEntries(
   projectRoot: string,
   model: ModelDefinition,
-): Promise<{ total: number; locales: Record<string, number> }> {
-  const cDir = resolveContentDir(projectRoot, model)
+): Promise<{ total: number, locales: Record<string, number> }>
+export function countEntries(
+  reader: RepoReader,
+  model: ModelDefinition,
+): Promise<{ total: number, locales: Record<string, number> }>
+export async function countEntries(
+  input: string | RepoReader,
+  model: ModelDefinition,
+): Promise<{ total: number, locales: Record<string, number> }> {
+  const reader: RepoReader = typeof input === 'string' ? new LocalReader(input) : input
+  const cDir = contentDirPath(model)
   const strategy = resolveLocaleStrategy(model)
-  const files = await readDir(cDir)
+  const files = await reader.listDirectory(cDir)
 
   if (model.kind === 'document') {
     if (!model.i18n) {
       // No i18n: flat {slug}.md files
-      return countDocumentNoneStrategy(projectRoot, model.id, files, false)
+      return countDocumentNoneStrategy(reader, model.id, files, false)
     }
 
     switch (strategy) {
       case 'file':
-        return countDocumentFileStrategy(cDir, files)
+        return countDocumentFileStrategy(reader, cDir, files)
       case 'suffix':
-        return countDocumentSuffixStrategy(cDir, files)
+        return countDocumentSuffixStrategy(reader, cDir, files)
       case 'directory':
-        return countDocumentDirectoryStrategy(cDir, files)
+        return countDocumentDirectoryStrategy(reader, cDir, files)
       case 'none':
-        return countDocumentNoneStrategy(projectRoot, model.id, files, true)
+        return countDocumentNoneStrategy(reader, model.id, files, true)
     }
   }
 
@@ -199,7 +256,7 @@ export async function countEntries(
     if (!model.i18n) {
       // Non-i18n: single data.json
       const jsonFiles = files.filter(f => f.endsWith('.json'))
-      return countCollectionEntries(cDir, jsonFiles)
+      return countCollectionEntries(reader, cDir, jsonFiles)
     }
     switch (strategy) {
       case 'suffix': {
@@ -209,7 +266,7 @@ export async function countEntries(
         for (const f of jsonFiles) {
           const match = f.match(/^.+\.([a-z]{2}(?:-[A-Z]{2})?)\.json$/)
           if (match) {
-            const data = await readJson<Record<string, unknown>>(join(cDir, f))
+            const data = await tryReadJsonViaReader<Record<string, unknown>>(reader, `${cDir}/${f}`)
             locales[match[1]!] = data ? Object.keys(data).length : 0
           }
         }
@@ -221,10 +278,10 @@ export async function countEntries(
         const locales: Record<string, number> = {}
         let total = 0
         for (const localeDir of files) {
-          const subFiles = await readDir(join(cDir, localeDir))
+          const subFiles = await reader.listDirectory(`${cDir}/${localeDir}`)
           const jsonFile = subFiles.find(f => f.endsWith('.json'))
           if (jsonFile) {
-            const data = await readJson<Record<string, unknown>>(join(cDir, localeDir, jsonFile))
+            const data = await tryReadJsonViaReader<Record<string, unknown>>(reader, `${cDir}/${localeDir}/${jsonFile}`)
             const count = data ? Object.keys(data).length : 0
             locales[localeDir] = count
             total += count
@@ -236,14 +293,14 @@ export async function countEntries(
         // Single file: {model}.json — count entries inside
         const noneFile = files.find(f => f === `${model.id}.json`)
         if (!noneFile) return { total: 0, locales: {} }
-        const data = await readJson<Record<string, unknown>>(join(cDir, noneFile))
+        const data = await tryReadJsonViaReader<Record<string, unknown>>(reader, `${cDir}/${noneFile}`)
         const count = data ? Object.keys(data).length : 0
         return { total: count, locales: { _: count } }
       }
       default: {
         // 'file': {locale}.json
         const jsonFiles = files.filter(f => f.endsWith('.json'))
-        return countCollectionEntries(cDir, jsonFiles)
+        return countCollectionEntries(reader, cDir, jsonFiles)
       }
     }
   }
@@ -269,7 +326,7 @@ export async function countEntries(
       // Dirs: {locale}/...
       const locales: Record<string, number> = {}
       for (const localeDir of files) {
-        const subFiles = await readDir(join(cDir, localeDir))
+        const subFiles = await reader.listDirectory(`${cDir}/${localeDir}`)
         if (subFiles.some(f => f.endsWith('.json'))) {
           locales[localeDir] = 1
         }
@@ -341,12 +398,25 @@ export interface ModelReference {
   type: 'relation' | 'relations'
 }
 
-export async function checkReferences(projectRoot: string, modelId: string): Promise<ModelReference[]> {
-  const summaries = await listModels(projectRoot)
+/**
+ * Enumerate models that reference `modelId` through relation or relations
+ * fields. Used by `model_delete` to block destructive deletes when other
+ * models still depend on the target.
+ *
+ * Accepts either a legacy `projectRoot` string (LocalReader wraps internally)
+ * or any `RepoReader` — remote providers get the same pre-check.
+ */
+export function checkReferences(projectRoot: string, modelId: string): Promise<ModelReference[]>
+export function checkReferences(reader: RepoReader, modelId: string): Promise<ModelReference[]>
+export async function checkReferences(
+  input: string | RepoReader,
+  modelId: string,
+): Promise<ModelReference[]> {
+  const summaries = typeof input === 'string' ? await listModels(input) : await listModels(input)
   const others = summaries.filter(s => s.id !== modelId)
 
   const models = await Promise.all(
-    others.map(s => readModel(projectRoot, s.id)),
+    others.map(s => typeof input === 'string' ? readModel(input, s.id) : readModel(input, s.id)),
   )
 
   const refs: ModelReference[] = []

@@ -3,6 +3,7 @@ import { intro, outro, log } from '@clack/prompts'
 import { simpleGit } from 'simple-git'
 import { readModel, countEntries } from '@contentrain/mcp/core/model-manager'
 import { validateProject } from '@contentrain/mcp/core/validator'
+import { checkBranchHealth } from '@contentrain/mcp/git/branch-lifecycle'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { resolveProjectRoot, loadProjectContext, requireInitialized } from '../utils/context.js'
 import { pc, formatTable, formatPercent, formatCount } from '../utils/ui.js'
@@ -39,13 +40,25 @@ export default defineCommand({
           }
         } catch { /* best effort */ }
 
-        // Pending branches
+        // Pending branches + health (shared thresholds with MCP)
         try {
           const git = simpleGit(projectRoot)
           const branches = await git.branch(['--list', 'cr/*'])
           const allLocal = await git.branchLocal()
           const featureBranches = branches.all.filter(b => b !== CONTENTRAIN_BRANCH)
           jsonResult['pending_branches'] = featureBranches
+
+          try {
+            const health = await checkBranchHealth(projectRoot)
+            jsonResult['branch_health'] = {
+              total: health.total,
+              merged: health.merged,
+              unmerged: health.unmerged,
+              warning: health.warning,
+              blocked: health.blocked,
+              message: health.message ?? null,
+            }
+          } catch { /* best effort */ }
 
           // Content branch info
           const contentBranchExists = allLocal.all.includes(CONTENTRAIN_BRANCH)
@@ -144,19 +157,22 @@ export default defineCommand({
         } catch { /* best effort */ }
       }
 
-      // Pending branches (excluding the system contentrain branch)
+      // Pending branches — share warning/blocked thresholds with MCP.
       const branches = await git.branch(['--list', 'cr/*'])
       const featureBranches = branches.all.filter(b => b !== CONTENTRAIN_BRANCH)
       if (featureBranches.length > 0) {
-        const count = featureBranches.length
-        if (count >= 80) {
-          log.error(pc.bold(`\nBLOCKED: ${count} active contentrain branches (limit: 80)`))
-          log.message(`  New writes are blocked. Merge or delete old branches with ${pc.cyan('contentrain diff')}.`)
-        } else if (count >= 50) {
-          log.warning(pc.bold(`\nWARNING: ${count} active contentrain branches (limit: 50)`))
-          log.message(`  Consider merging or deleting old branches with ${pc.cyan('contentrain diff')}.`)
+        const health = await checkBranchHealth(projectRoot).catch(() => null)
+        const headerLabel = health
+          ? `\nPending branches (${health.unmerged} unmerged / ${health.total} total)`
+          : `\nPending branches (${featureBranches.length})`
+        if (health?.blocked) {
+          log.error(pc.bold(headerLabel))
+          log.message(`  ${health.message}`)
+        } else if (health?.warning) {
+          log.warning(pc.bold(headerLabel))
+          log.message(`  ${health.message}`)
         } else {
-          log.info(pc.bold(`\nPending branches (${count})`))
+          log.info(pc.bold(headerLabel))
         }
         for (const branch of featureBranches) {
           log.message(`  ${pc.yellow('●')} ${branch}`)

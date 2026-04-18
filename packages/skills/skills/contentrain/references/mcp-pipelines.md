@@ -147,7 +147,7 @@ contentrain_submit                              # Push (always review mode)
 
 - A dedicated `contentrain` branch is the single source of truth for content state, created at init and protected from deletion
 - Every write operation creates a temporary worktree on a new feature branch forked from `contentrain`
-- Branch naming: `contentrain/{operation}/{model}/{timestamp}` (locale included when applicable)
+- Branch naming: `cr/{operation}/{model}/{timestamp}` (locale included when applicable)
 - Do not create branches manually. MCP handles Git transactions
 - Developer's working tree is never mutated during MCP operations (no stash, no checkout, no merge on the developer's tree)
 - context.json is committed together with content changes, not as a separate commit

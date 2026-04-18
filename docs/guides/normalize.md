@@ -9,6 +9,12 @@ slug: normalize
 
 The normalize flow is Contentrain's **primary value proposition** — the fastest path from "500 hardcoded strings scattered across my codebase" to "structured, translatable, manageable content." It runs in three phases: **Extract**, **Reuse**, and **Translate**.
 
+::: warning LocalProvider required
+Normalize (`contentrain_scan` and `contentrain_apply`) requires local disk access — AST scanners walk the source tree and patch files in place. It runs only on a `LocalProvider` (stdio or HTTP+LocalProvider).
+
+Remote providers (`GitHubProvider`, `GitLabProvider`) reject these calls with `capability_required: astScan / sourceRead / sourceWrite`. Run normalize in a local checkout, then push the extracted content branch. See [Providers & Transports](/guides/providers) for the capability matrix.
+:::
+
 ## The Problem
 
 A typical SaaS landing page has 40-60 components with 300-800 hardcoded strings. Nobody notices until someone asks for a second language or a copy change across 12 pages.
@@ -31,8 +37,8 @@ These strings are scattered across dozens of files. Translating means grep-and-r
 
 | Phase | What happens | Source files modified? | Branch pattern |
 |---|---|---|---|
-| 1. Extract | Strings pulled into `.contentrain/content/` | No | `contentrain/normalize/extract/{ts}` |
-| 2. Reuse | Source files patched to reference content | Yes | `contentrain/normalize/reuse/{model}/{ts}` |
+| 1. Extract | Strings pulled into `.contentrain/content/` | No | `cr/normalize/extract/{ts}` |
+| 2. Reuse | Source files patched to reference content | Yes | `cr/normalize/reuse/{model}/{ts}` |
 | 3. Translate | Content copied to new locales and translated | No | Standard content branch |
 
 ::: tip
@@ -240,7 +246,7 @@ After your confirmation:
 
 > "Apply the reuse patches"
 
-The agent calls `contentrain_apply(mode: "reuse", ..., dry_run: false)`. This patches source files and creates a `contentrain/normalize/reuse/hero-section/{timestamp}` branch.
+The agent calls `contentrain_apply(mode: "reuse", ..., dry_run: false)`. This patches source files and creates a `cr/normalize/reuse/hero-section/{timestamp}` branch.
 
 ### Step 5. Validate, submit, and repeat
 

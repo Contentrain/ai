@@ -1,10 +1,29 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 
 export interface WSEvent {
-  type: 'content:changed' | 'model:changed' | 'config:changed' | 'context:changed' | 'branch:created' | 'branch:merged' | 'validation:updated' | 'normalize:plan-updated'
+  type:
+    | 'connected'
+    | 'content:changed'
+    | 'model:changed'
+    | 'config:changed'
+    | 'context:changed'
+    | 'meta:changed'
+    | 'branch:created'
+    | 'branch:merged'
+    | 'branch:rejected'
+    | 'branch:merge-conflict'
+    | 'sync:warning'
+    | 'validation:updated'
+    | 'normalize:plan-updated'
+    | 'file-watch:error'
   modelId?: string
+  entryId?: string
   locale?: string
   branch?: string
+  skippedCount?: number
+  message?: string
+  /** ISO timestamp — currently only set on `file-watch:error`. */
+  timestamp?: string
   context?: unknown
 }
 

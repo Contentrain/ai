@@ -14,22 +14,36 @@ export default defineCommand({
   args: {
     root: { type: 'string', description: 'Project root path', required: false },
     watch: { type: 'boolean', description: 'Watch for changes and regenerate', required: false },
+    json: { type: 'boolean', description: 'Emit the generate result as JSON (silences pretty output)', required: false },
   },
   async run({ args }) {
     const projectRoot = await resolveProjectRoot(args.root)
     const ctx = await loadProjectContext(projectRoot)
     requireInitialized(ctx)
+    const useJson = Boolean(args.json)
 
-    intro(pc.bold('contentrain generate'))
+    if (!useJson) {
+      intro(pc.bold('contentrain generate'))
+    }
 
-    const s = spinner()
-    s.start('Generating SDK client...')
+    const s = useJson ? null : spinner()
+    s?.start('Generating SDK client...')
 
     try {
       const { generate } = await import('@contentrain/query/generate')
       const result = await generate({ projectRoot })
 
-      s.stop('SDK client generated')
+      s?.stop('SDK client generated')
+
+      if (useJson) {
+        process.stdout.write(JSON.stringify({
+          generatedFiles: result.generatedFiles,
+          typesCount: result.typesCount,
+          dataModulesCount: result.dataModulesCount,
+          packageJsonUpdated: Boolean(result.packageJsonUpdated),
+        }, null, 2))
+        return
+      }
 
       log.success(`Output: ${pc.cyan('.contentrain/client/')}`)
       log.message(`  Files:  ${result.generatedFiles.length}`)
@@ -69,11 +83,16 @@ export default defineCommand({
         await new Promise(() => {})
       }
     } catch (error) {
-      s.stop('Generation failed')
-      log.error(error instanceof Error ? error.message : String(error))
+      s?.stop('Generation failed')
+      const message = error instanceof Error ? error.message : String(error)
+      if (useJson) {
+        process.stdout.write(JSON.stringify({ error: message }, null, 2))
+      } else {
+        log.error(message)
+      }
       process.exitCode = 1
     }
 
-    outro('')
+    if (!useJson) outro('')
   },
 })

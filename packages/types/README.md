@@ -18,9 +18,9 @@ This package is the common schema layer used by:
 - `@contentrain/query`
 - `@contentrain/rules`
 
-It defines the stable type vocabulary for models, config, metadata, validation, scanning, and context files.
+It defines the stable type vocabulary for models, config, metadata, validation, scanning, context files, and provider contracts (enabling third-party RepoProvider implementations).
 
-## ✨ When To Use It
+## When To Use It
 
 Use `@contentrain/types` when you are:
 
@@ -28,14 +28,15 @@ Use `@contentrain/types` when you are:
 - sharing model/config types between packages in a workspace
 - authoring framework integrations or SDK extensions
 - consuming Contentrain JSON structures directly in TypeScript
+- implementing a custom `RepoProvider` for a new git backend
 
-## 🚀 Install
+## Install
 
 ```bash
 pnpm add @contentrain/types
 ```
 
-## 📦 What It Exports
+## What It Exports
 
 Core unions:
 
@@ -54,6 +55,7 @@ Core interfaces:
 
 - `FieldDef`
 - `ModelDefinition`
+- `ModelSummary`
 - `ContentrainConfig`
 - `Vocabulary`
 - `EntryMeta`
@@ -76,10 +78,39 @@ Storage/runtime helper types:
 - `DictionaryContentFile`
 - `CollectionEntry`
 - `CollectionContentOutput`
+- `DocumentEntry`
+- `DocumentContentOutput`
 - `SingletonMeta`
 - `CollectionMeta`
 - `DocumentMeta`
 - `DictionaryMeta`
+
+Normalize/plan types:
+
+- `NormalizePlan`
+- `NormalizePlanModel`
+- `NormalizePlanExtraction`
+- `NormalizePlanPatch`
+
+Provider contracts (re-exported from `provider.ts` — implement these to add a new git backend):
+
+- `RepoProvider`
+- `RepoReader`
+- `RepoWriter`
+- `ProviderCapabilities`
+- `FileChange`
+- `CommitAuthor`
+- `Commit`
+- `ApplyPlanInput`
+- `Branch`
+- `FileDiff`
+- `MergeResult` (includes optional `sync?: SyncResult` for local-worktree providers)
+- `LOCAL_CAPABILITIES` (const — capability set for LocalProvider)
+
+Git transaction types:
+
+- `SyncResult`
+- `ContentrainError`
 
 Validate functions (pure, dependency-free):
 
@@ -97,7 +128,18 @@ Serialize functions (pure, dependency-free):
 - `parseMarkdownFrontmatter(content)` — parse YAML frontmatter + body from markdown
 - `serializeMarkdownFrontmatter(data, body)` — serialize data + body into markdown frontmatter
 
-## 🧭 Stability
+Constants:
+
+- `CONTENTRAIN_DIR` — default `.contentrain` folder name
+- `CONTENTRAIN_BRANCH` — default `contentrain` branch name for content tracking
+- `PATH_PATTERNS` — file path conventions for models, content, meta
+- `SLUG_PATTERN` — regex for valid slugs
+- `ENTRY_ID_PATTERN` — regex for valid entry IDs
+- `LOCALE_PATTERN` — regex for valid locale codes
+- `CANONICAL_JSON` — serialization rules (indent, encoding, trailing newline, key sort)
+- `SECRET_PATTERNS` — regex patterns for secret detection
+
+## Stability
 
 This package is intended to be the shared public contract across the Contentrain ecosystem.
 
@@ -106,8 +148,9 @@ In practice that means:
 - types exported from the package root are the public surface
 - packages should depend on these shared definitions instead of redefining domain types
 - breaking changes here should be treated as ecosystem-level breaking changes
+- the `RepoProvider` contract enables third-party implementations without depending on `@contentrain/mcp` internals
 
-## 🧪 Quick Example
+## Quick Example
 
 ```ts
 import type {
@@ -145,7 +188,7 @@ const result: ValidationResult = {
 }
 ```
 
-## 📝 Import Style
+## Import Style
 
 Type-only usage:
 
@@ -166,7 +209,26 @@ import {
 } from '@contentrain/types'
 ```
 
-## 🏢 Studio Integration
+Provider contract usage (for custom RepoProvider implementations):
+
+```ts
+import type { RepoProvider, ProviderCapabilities } from '@contentrain/types'
+
+export class MyCustomProvider implements RepoProvider {
+  readonly capabilities: ProviderCapabilities = {
+    localWorktree: false,
+    sourceRead: true,
+    sourceWrite: true,
+    pushRemote: true,
+    branchProtection: true,
+    pullRequestFallback: true,
+    astScan: false,
+  }
+  // ...implement RepoProvider methods
+}
+```
+
+## Studio Integration
 
 Studio (Nuxt 4, web) cannot import `@contentrain/mcp` directly because MCP depends on Node.js-only packages (`simple-git`, `@modelcontextprotocol/sdk`). The validate and serialize functions in this package are **pure, dependency-free, and browser-compatible** — designed for Studio to share the same validation contract as MCP.
 
@@ -194,59 +256,6 @@ These require file system I/O or Node.js dependencies:
 - `writeContent()` / `deleteContent()` — content persistence with git worktree
 - `resolveContentDir()` / `resolveJsonFilePath()` — path resolution with `node:path`
 
-### Studio implementation example
-
-```ts
-// composables/useContentValidation.ts
-import type { FieldDef, ContentrainConfig, ValidationError } from '@contentrain/types'
-import { validateFieldValue, validateSlug, detectSecrets } from '@contentrain/types'
-
-export function useContentValidation(config: ContentrainConfig) {
-  function validateEntry(
-    fields: Record<string, FieldDef>,
-    data: Record<string, unknown>,
-  ): ValidationError[] {
-    const issues: ValidationError[] = []
-
-    for (const [fieldName, fieldDef] of Object.entries(fields)) {
-      // Schema validation (type, required, min/max, pattern, select)
-      const fieldErrors = validateFieldValue(data[fieldName], fieldDef)
-      for (const err of fieldErrors) {
-        issues.push({ ...err, field: fieldName })
-      }
-
-      // Secret detection on all string values
-      const secretErrors = detectSecrets(data[fieldName])
-      for (const err of secretErrors) {
-        issues.push({ ...err, field: fieldName })
-      }
-    }
-
-    return issues
-  }
-
-  return { validateEntry, validateSlug }
-}
-```
-
-```ts
-// composables/useDocumentEditor.ts
-import { parseMarkdownFrontmatter, serializeMarkdownFrontmatter } from '@contentrain/types'
-
-export function useDocumentEditor() {
-  function loadDocument(rawMarkdown: string) {
-    const { frontmatter, body } = parseMarkdownFrontmatter(rawMarkdown)
-    return { frontmatter, body }
-  }
-
-  function saveDocument(data: Record<string, unknown>, body: string): string {
-    return serializeMarkdownFrontmatter(data, body)
-  }
-
-  return { loadDocument, saveDocument }
-}
-```
-
 ### Unique constraints and relation validation
 
 `validateFieldValue` handles schema-level checks. Two things require external state:
@@ -256,7 +265,7 @@ export function useDocumentEditor() {
 
 These are left to Studio's server-side or API layer to implement on top of the pure validation.
 
-## 🧠 Design Role
+## Design Role
 
 `@contentrain/types` exists so every package in the monorepo speaks the same domain language.
 
@@ -267,6 +276,7 @@ Examples:
 - SDK codegen consumes `ModelDefinition` and `FieldDef`
 - AI rules align with the same model and workflow vocabulary
 - Studio uses the same validation functions in the browser
+- Third-party providers implement `RepoProvider` to plug into MCP
 
 This package should stay:
 
@@ -276,7 +286,7 @@ This package should stay:
 - stable
 - free of package-specific behavior
 
-## 🛠 Development
+## Development
 
 From the monorepo root:
 
@@ -286,13 +296,13 @@ pnpm --filter @contentrain/types test
 pnpm --filter @contentrain/types typecheck
 ```
 
-## 🔗 Related Packages
+## Related Packages
 
 - `@contentrain/mcp`
 - `contentrain`
 - `@contentrain/query`
 - `@contentrain/rules`
 
-## 📄 License
+## License
 
 MIT

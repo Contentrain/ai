@@ -2,9 +2,10 @@
 import { onMounted, computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useContentStore } from '@/stores/content'
+import { useProjectStore, type MergePreview } from '@/stores/project'
 import {
   ArrowLeft, Check, X, GitMerge, GitBranch, FileText, Plus, Minus,
-  Loader2, CheckCircle, XCircle, File,
+  Loader2, CheckCircle, XCircle, File, AlertTriangle, Info,
 } from 'lucide-vue-next'
 import PageHeader from '@/components/layout/PageHeader.vue'
 import AgentPrompt from '@/components/layout/AgentPrompt.vue'
@@ -22,10 +23,13 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { cn } from '@/lib/utils'
 import { toast } from 'vue-sonner'
 import { dictionary } from '#contentrain'
+import { useApi } from '@/composables/useApi'
 
 const route = useRoute()
 const router = useRouter()
 const store = useContentStore()
+const project = useProjectStore()
+const api = useApi()
 const t = dictionary('serve-ui-texts').locale('en').get()
 
 const branchName = computed(() => decodeURIComponent(route.params.branchName as string))
@@ -34,6 +38,36 @@ const acting = ref(false)
 const actionResult = ref<{ type: 'success' | 'error'; message: string } | null>(null)
 const confirmApproveOpen = ref(false)
 const confirmRejectOpen = ref(false)
+
+// Sync warning cached server-side from the last mergeBranch() call.
+// The dashboard toast surfaces the warning in real time; this panel
+// is the canonical drill-down: which files were skipped and why.
+interface SyncWarning {
+  branch: string
+  skipped: string[]
+  synced: string[]
+  recordedAt: number
+}
+const syncWarning = ref<SyncWarning | null>(null)
+
+async function fetchSyncWarning() {
+  try {
+    const encoded = encodeURIComponent(branchName.value)
+    const res = await api.get<{ warning: SyncWarning | null }>(`/branches/${encoded}/sync-status`)
+    syncWarning.value = res.warning
+  } catch {
+    syncWarning.value = null
+  }
+}
+
+// Merge preview from `/api/preview/merge` — fast-forward / conflict /
+// already-merged signal so the reviewer knows what approve will do
+// before clicking.
+const mergePreview = ref<MergePreview | null>(null)
+
+async function fetchMergePreview() {
+  mergePreview.value = await project.fetchMergePreview(branchName.value)
+}
 
 // Parse branch name parts
 const branchParts = computed(() => {
@@ -142,6 +176,10 @@ onMounted(async () => {
   } catch {
     toast.error('Failed to load branch data.')
   }
+  // Fire-and-forget — missing sync status is the common case (no
+  // prior merge to produce warnings).
+  void fetchSyncWarning()
+  void fetchMergePreview()
 })
 </script>
 
@@ -221,6 +259,86 @@ onMounted(async () => {
         <CheckCircle v-if="actionResult.type === 'success'" class="size-5 text-status-success shrink-0" />
         <XCircle v-else class="size-5 text-status-error shrink-0" />
         <span class="text-sm">{{ actionResult.message }}</span>
+      </div>
+
+      <!-- Merge preview — side-effect-free probe of what approve will
+           do. Fetched on mount from /api/preview/merge. Renders one of:
+           already-merged (green info), FF-clean (green info), requires
+           3-way with optional conflicts list (amber / red). -->
+      <div v-if="mergePreview" class="rounded-lg border p-4"
+        :class="mergePreview.alreadyMerged
+          ? 'border-status-info/30 bg-status-info/5'
+          : mergePreview.conflicts && mergePreview.conflicts.length > 0
+            ? 'border-status-error/30 bg-status-error/5'
+            : mergePreview.canFastForward
+              ? 'border-status-success/30 bg-status-success/5'
+              : 'border-status-warning/30 bg-status-warning/5'"
+      >
+        <div class="flex items-start gap-3">
+          <CheckCircle v-if="mergePreview.alreadyMerged" class="size-5 shrink-0 text-status-info" />
+          <CheckCircle v-else-if="mergePreview.canFastForward && (!mergePreview.conflicts || mergePreview.conflicts.length === 0)" class="size-5 shrink-0 text-status-success" />
+          <AlertTriangle v-else-if="mergePreview.conflicts && mergePreview.conflicts.length > 0" class="size-5 shrink-0 text-status-error" />
+          <Info v-else class="size-5 shrink-0 text-status-warning" />
+          <div class="flex-1 space-y-2 min-w-0">
+            <p class="text-sm font-medium">{{ t['branch-detail.preview-title'] }}</p>
+            <p class="text-xs text-muted-foreground">
+              <template v-if="mergePreview.alreadyMerged">
+                {{ t['branch-detail.preview-already-merged'] }}
+              </template>
+              <template v-else-if="mergePreview.canFastForward && (!mergePreview.conflicts || mergePreview.conflicts.length === 0)">
+                {{ t['branch-detail.preview-ff-clean'] }}
+              </template>
+              <template v-else>
+                {{ t['branch-detail.preview-requires-3way'] }}
+              </template>
+            </p>
+            <p v-if="!mergePreview.alreadyMerged && mergePreview.filesChanged > 0" class="text-xs text-muted-foreground">
+              {{ mergePreview.filesChanged }} {{ t['branch-detail.preview-files-changed-suffix'] }}
+            </p>
+            <div v-if="mergePreview.conflicts && mergePreview.conflicts.length > 0" class="space-y-1 mt-1">
+              <p class="text-xs font-medium flex items-center gap-2">
+                {{ t['branch-detail.preview-conflicts-heading'] }}
+                <Badge variant="outline" class="text-[10px] border-status-error/50 text-status-error">
+                  {{ mergePreview.conflicts.length }}
+                </Badge>
+              </p>
+              <ul class="space-y-1 font-mono text-xs">
+                <li v-for="path in mergePreview.conflicts" :key="path" class="flex items-center gap-1.5">
+                  <File class="size-3 shrink-0 text-status-error" />
+                  {{ path }}
+                </li>
+              </ul>
+            </div>
+            <p v-if="mergePreview.conflicts === null" class="text-xs text-muted-foreground italic">
+              {{ t['branch-detail.preview-check-unavailable'] }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sync warnings from the last mergeBranch() call: files the
+           selective sync skipped because the developer has uncommitted
+           changes in their working tree. -->
+      <div
+        v-if="syncWarning && syncWarning.skipped.length > 0"
+        class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950"
+      >
+        <div class="flex items-start gap-3">
+          <XCircle class="size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div class="flex-1 space-y-2">
+            <p class="text-sm font-medium text-amber-900 dark:text-amber-100">
+              {{ syncWarning.skipped.length }} file{{ syncWarning.skipped.length === 1 ? '' : 's' }} skipped during selective sync
+            </p>
+            <p class="text-xs text-amber-800 dark:text-amber-200">
+              The merge landed in git, but the developer's working tree has uncommitted changes that would have been overwritten. Review and commit or discard these files, then run the sync again manually if needed.
+            </p>
+            <ul class="mt-2 space-y-1 font-mono text-xs text-amber-900/80 dark:text-amber-100/80">
+              <li v-for="file in syncWarning.skipped" :key="file" class="flex items-center gap-1.5">
+                <File class="size-3 shrink-0" /> {{ file }}
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <!-- Loading -->

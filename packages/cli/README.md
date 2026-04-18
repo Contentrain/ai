@@ -17,9 +17,9 @@ Start here:
 - initialize `.contentrain/` in an existing repo
 - inspect project health and validation state
 - generate the typed `#contentrain` SDK client
-- review pending `contentrain/*` branches
+- review pending `cr/*` branches
 - run the local review UI
-- expose the MCP server over stdio for IDE agents
+- expose the MCP server over stdio (IDE agents) or HTTP (Studio, CI, remote drivers)
 
 This package is the human-facing companion to:
 
@@ -27,7 +27,7 @@ This package is the human-facing companion to:
 - [`@contentrain/query`](https://github.com/Contentrain/ai/tree/main/packages/sdk/js) for generated runtime queries
 - [`@contentrain/rules`](https://github.com/Contentrain/ai/tree/main/packages/rules) and [`@contentrain/skills`](https://github.com/Contentrain/ai/tree/main/packages/skills) for agent guidance
 
-## 🚀 Install
+## Install
 
 Use `npx`:
 
@@ -47,7 +47,15 @@ Requirements:
 - Node.js 22+
 - Git available in `PATH`
 
-## 🧰 Commands
+## Global Flags
+
+| Flag | Env var | Description |
+| --- | --- | --- |
+| `--debug` | `CONTENTRAIN_DEBUG=1` | Verbose debug logging to stderr (works on every subcommand) |
+
+Example: `contentrain --debug status` or `CONTENTRAIN_DEBUG=1 contentrain validate`.
+
+## Commands
 
 | Command | Purpose |
 | --- | --- |
@@ -56,8 +64,14 @@ Requirements:
 | `contentrain doctor` | Check setup health, SDK freshness, orphan content, and branch limits |
 | `contentrain validate` | Validate content against schemas, optionally create review-branch fixes |
 | `contentrain generate` | Generate `.contentrain/client/` and `#contentrain` package imports |
-| `contentrain diff` | Review and merge or reject pending `contentrain/*` branches |
-| `contentrain serve` | Start the local review UI or the MCP stdio server |
+| `contentrain diff` | Review and merge or reject pending `cr/*` branches interactively |
+| `contentrain merge <branch>` | Merge one pending `cr/*` branch non-interactively (CI/agents) |
+| `contentrain describe <model>` | Inspect a model's schema, stats, and import snippet |
+| `contentrain describe-format` | Print the Contentrain content-format specification |
+| `contentrain scaffold --template` | Apply a template (`blog`, `landing`, `docs`, `ecommerce`, `saas`, `i18n`, `mobile`) |
+| `contentrain setup <agent\|--all>` | Configure MCP server + AI rules for IDE (Claude Code, Cursor, Windsurf, VSCode, Copilot) |
+| `contentrain skills` | Install, update, or list Contentrain AI skills and IDE rules |
+| `contentrain serve` | Start the local review UI (REST + WS), MCP stdio server (`--stdio`), or MCP HTTP server (`--mcpHttp`) |
 | `contentrain studio connect` | Connect a repository to a Studio project |
 | `contentrain studio login` | Authenticate with Contentrain Studio |
 | `contentrain studio logout` | Log out from Studio |
@@ -71,7 +85,23 @@ Requirements:
 | `contentrain studio webhooks` | Manage webhooks |
 | `contentrain studio submissions` | Manage form submissions |
 
-## 🔄 Typical Flow
+## Flag Matrix
+
+Every read command supports `--json` for CI use; write commands surface `--watch` or `--yes` where they apply:
+
+| Command | Notable flags |
+| --- | --- |
+| `status` | `--json` |
+| `doctor` | `--json`, `--usage` — non-zero exit on failure |
+| `validate` | `--json`, `--fix`, `--interactive`, `--watch`, `--model <id>` |
+| `generate` | `--json`, `--watch` |
+| `diff` | `--json` |
+| `merge` | `--yes` (skip confirm) |
+| `describe` | `--sample`, `--locale`, `--json` |
+| `scaffold` | `--template <id>`, `--locales <csv>`, `--no-sample`, `--json` |
+| `serve` | `--port`, `--host`, `--open`, `--demo`, `--stdio`, `--mcpHttp`, `--authToken` |
+
+## Typical Flow
 
 Initialize a project:
 
@@ -79,56 +109,72 @@ Initialize a project:
 contentrain init
 ```
 
-Check project state:
+Check project state (with optional JSON for CI):
 
 ```bash
 contentrain status
+contentrain status --json
+
 contentrain doctor
+contentrain doctor --json
+contentrain doctor --usage  # Analyze content key usage
 ```
 
 Generate the typed SDK client:
 
 ```bash
 contentrain generate
+contentrain generate --watch    # Watch for changes
+contentrain generate --json     # CI-friendly JSON output
 ```
 
-Validate content and create review-branch fixes when possible:
+Validate content and create review-branch fixes:
 
 ```bash
 contentrain validate
 contentrain validate --fix
+contentrain validate --watch    # Live validation in dev mode
+contentrain validate --json     # CI output
 ```
 
 Review pending changes:
 
 ```bash
 contentrain diff
+contentrain diff --json  # CI integration
 ```
 
 Open the local UI:
 
 ```bash
 contentrain serve
+contentrain serve --demo  # Start with a temporary demo project
 ```
 
-## 🖥 `serve` Modes
+Enable detailed logging:
 
-`contentrain serve` has two roles.
+```bash
+contentrain --debug status
+CONTENTRAIN_DEBUG=1 contentrain validate  # Via environment variable
+```
 
-Start the local review UI:
+## `serve` Modes
+
+`contentrain serve` has three roles.
+
+### Local review UI (default)
 
 ```bash
 contentrain serve
 contentrain serve --port 3333 --host localhost
+contentrain serve --demo  # Temporary project (no setup needed)
 ```
 
-This serves:
+Serves REST endpoints for status / content / validation / branches / normalize / doctor / describe-format / preview-merge, a WebSocket stream for live updates, and the embedded Vue `serve-ui` app bundled with the CLI.
 
-- REST endpoints for status, content, validation, branches, and normalize data
-- a WebSocket stream for live updates
-- the embedded Vue `serve-ui` app bundled with the CLI
+WebSocket event types: `connected`, `config:changed`, `context:changed`, `meta:changed`, `model:changed`, `content:changed`, `branch:created`, `branch:merged`, `branch:rejected`, `branch:merge-conflict`, `sync:warning`, `validation:updated`, `normalize:plan-updated`, `file-watch:error`.
 
-Start the MCP server for IDE integration:
+### MCP stdio (IDE agents)
 
 ```bash
 contentrain serve --stdio
@@ -136,7 +182,22 @@ contentrain serve --stdio
 
 Use stdio mode when connecting Claude Code, Cursor, Windsurf, or another MCP client to the local project.
 
-## 📦 `generate` and `#contentrain`
+### MCP HTTP (Studio, CI, remote drivers)
+
+```bash
+contentrain serve --mcpHttp --authToken $(openssl rand -hex 32)
+contentrain serve --mcpHttp --port 3333 --host 0.0.0.0 --authToken $TOKEN
+```
+
+Spins up a [Streamable HTTP MCP](https://modelcontextprotocol.io) server at `POST /mcp`. Bearer auth is **required** on non-localhost binds — the CLI hard-errors when no `--authToken` is set for an exposed interface (OWASP Secure-by-Default). Use HTTP mode when:
+
+- Studio's agent drives MCP remotely
+- a CI runner needs deterministic content operations
+- an agent on another machine orchestrates content changes
+
+HTTP sessions use the same `LocalProvider` backing as stdio — the transport differs, the behaviour does not. Remote git-host providers (`GitHubProvider`, `GitLabProvider`) are constructed by embedders who instantiate the MCP server programmatically; see the MCP package docs for that flow.
+
+## `generate` and `#contentrain`
 
 `contentrain generate` writes a typed client to `.contentrain/client/` and injects `#contentrain` imports into your `package.json`.
 
@@ -152,7 +213,30 @@ Run with watch mode during local model/content work:
 contentrain generate --watch
 ```
 
-## 👀 Review Workflow
+## IDE Setup and AI Skills
+
+Configure your IDE to use Contentrain's MCP server and AI agent rules:
+
+```bash
+contentrain setup claude-code
+contentrain setup cursor
+contentrain setup vscode
+contentrain setup --all  # Configure all detected IDEs
+```
+
+Install or update AI agent skills and IDE rules:
+
+```bash
+contentrain skills
+contentrain skills --update  # Force update
+contentrain skills --list    # List installed skills
+```
+
+This installs:
+- Contentrain Agent Skills (task guidance for Claude, Cursor, etc.)
+- IDE rules files (CLAUDE.md, .cursorrules, .windsurfrules)
+
+## Review Workflow
 
 Most write operations create feature branches from the dedicated `contentrain` branch. In review mode, these branches are pushed to remote for team review. In auto-merge mode, they are merged into the `contentrain` branch and baseBranch is advanced via update-ref.
 
@@ -165,11 +249,11 @@ contentrain diff
 
 to understand:
 
-- how many active review branches exist on the `contentrain` branch
-- whether branch health is blocking new writes
+- how many active `cr/*` review branches exist on the `contentrain` branch
+- whether branch health is blocking new writes (warning at 50, blocked at 80)
 - what changed before merging or deleting a branch
 
-## 🔗 Studio Integration
+## Studio Integration
 
 The `studio` command group connects the CLI to [Contentrain Studio](https://studio.contentrain.io) for enterprise workflows.
 
@@ -212,21 +296,11 @@ contentrain studio submissions --form contact-form
 
 Credentials are stored securely in `~/.contentrain/credentials.json` with `0o600` permissions. Use `CONTENTRAIN_STUDIO_TOKEN` environment variable for CI/CD.
 
-## 🤖 IDE Rules
-
-`contentrain init` installs project-level AI rules automatically:
-
-- `CLAUDE.md` for Claude Code or generic fallback
-- `.cursorrules` for Cursor
-- `.windsurfrules` for Windsurf
-
-If the target file already exists, Contentrain appends its rules instead of overwriting unrelated content where possible.
-
-## 📚 Documentation
+## Documentation
 
 Full documentation at **[ai.contentrain.io/packages/cli](https://ai.contentrain.io/packages/cli)**.
 
-## 🛠 Development
+## Development
 
 From the monorepo root:
 
@@ -235,3 +309,7 @@ pnpm --filter contentrain test -- --run
 pnpm --filter contentrain exec tsc --noEmit
 pnpm --filter contentrain build
 ```
+
+## License
+
+MIT

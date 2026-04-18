@@ -8,9 +8,12 @@
       "@contentrain/types": ["packages/types/src/index.ts"],
       "@contentrain/mcp": ["packages/mcp/src/index.ts"],
       "@contentrain/mcp/server": ["packages/mcp/src/server.ts"],
-      "@contentrain/mcp/core/*": ["packages/mcp/src/core/*.ts"],
+      "@contentrain/mcp/server/http": ["packages/mcp/src/server/http/index.ts"],
+      "@contentrain/mcp/core/*": ["packages/mcp/src/core/*.ts", "packages/mcp/src/core/*/index.ts"],
       "@contentrain/mcp/util/*": ["packages/mcp/src/util/*.ts"],
       "@contentrain/mcp/git/*": ["packages/mcp/src/git/*.ts"],
+      "@contentrain/mcp/providers/*": ["packages/mcp/src/providers/*.ts", "packages/mcp/src/providers/*/index.ts"],
+      "@contentrain/mcp/tools/*": ["packages/mcp/src/tools/*.ts"],
       "@contentrain/mcp/templates": ["packages/mcp/src/templates/index.ts"],
       "@contentrain/query": ["packages/sdk/js/src/index.ts"],
       "@contentrain/query/generate": ["packages/sdk/js/src/generator/generate.ts"]

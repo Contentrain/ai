@@ -43,25 +43,26 @@ Contentrain supports two workflow modes, configured in `.contentrain/config.json
 All Contentrain branches follow a strict naming pattern:
 
 ```
-contentrain/{operation}/{model}/{locale}/{timestamp}
+cr/{operation}/{model}/{locale}/{timestamp}
 ```
 
 ### Examples
 
 | Scenario | Branch Name |
 |----------|-------------|
-| Content update | `contentrain/content/blog-post/en/1710300000` |
-| Model creation | `contentrain/model/team-member/1710300000` |
-| Normalize extraction | `contentrain/normalize/extract/blog/1710300000` |
-| Normalize reuse | `contentrain/normalize/reuse/marketing-hero/en/1710300000` |
-| Scaffold | `contentrain/new/scaffold-landing/en/1710300000` |
+| Content update | `cr/content/blog-post/en/1710300000-a1b2` |
+| Model creation | `cr/model/team-member/1710300000-c3d4` |
+| Normalize extraction | `cr/normalize/extract/blog/1710300000-e5f6` |
+| Normalize reuse | `cr/normalize/reuse/marketing-hero/en/1710300000-0789` |
+| Scaffold | `cr/new/scaffold-landing/en/1710300000-1234` |
 
 ### Rules
 
 - Branches are created automatically by MCP tools. Do NOT create them manually.
-- The `{timestamp}` component ensures uniqueness.
+- The `{timestamp}-{suffix}` component ensures uniqueness across concurrent writes.
 - `{locale}` is included when the operation is locale-specific.
 - `{model}` is included when the operation targets a specific model.
+- Legacy `contentrain/*` branches from pre-`cr/*` installations are auto-migrated on first init.
 
 ---
 

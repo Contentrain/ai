@@ -74,6 +74,8 @@ If the agent cannot produce real content, it must leave the entry in `draft` sta
 - Descriptions/excerpts must be unique across all entries in the same collection.
 - If content is shared across entries, extract it to a referenced entry and use a `relation` field.
 - Before writing, query existing entries to confirm no duplication.
+- **Dictionary values:** Different keys must not map to identical values. If "Cancel" exists under `dialog.cancel`, do not create `form.cancel` with the same value — reuse the existing key. MCP warns automatically via `advisories` in the save response.
+- **Cross-model deduplication:** If the same text appears across multiple dictionary models, consider moving it to a shared dictionary or using vocabulary terms for consistency.
 
 ---
 

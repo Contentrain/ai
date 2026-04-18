@@ -1,0 +1,19 @@
+{
+  "context_tool": "contentrain_content_save",
+  "description": "Create a dictionary with multiple string keys",
+  "id": "03-new-dictionary",
+  "input": {
+    "entries": [
+      {
+        "data": {
+          "hero.cta": "Get started",
+          "hero.subtitle": "Build the web with AI agents",
+          "hero.title": "Welcome to Contentrain"
+        },
+        "locale": "en"
+      }
+    ],
+    "model": "ui-strings"
+  },
+  "operation": "save_content"
+}
