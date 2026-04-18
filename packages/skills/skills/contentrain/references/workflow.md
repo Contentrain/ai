@@ -45,21 +45,21 @@ Contentrain supports two workflow modes, configured in `.contentrain/config.json
 
 ## 2. Branch Naming Convention
 
-All Contentrain branches follow a strict naming pattern:
+All Contentrain feature branches follow a strict naming pattern:
 
 ```
-contentrain/{operation}/{model}/{locale}/{timestamp}
+cr/{operation}/{model}/{locale}/{timestamp}-{suffix}
 ```
 
 ### Examples
 
 | Scenario | Branch Name |
 |----------|-------------|
-| Content update | `contentrain/content/blog-post/en/1710300000` |
-| Model creation | `contentrain/model/team-member/1710300000` |
-| Normalize extraction | `contentrain/normalize/extract/blog/1710300000` |
-| Normalize reuse | `contentrain/normalize/reuse/marketing-hero/en/1710300000` |
-| Scaffold | `contentrain/new/scaffold-landing/en/1710300000` |
+| Content update | `cr/content/blog-post/en/1710300000-a1b2` |
+| Model creation | `cr/model/team-member/1710300000-c3d4` |
+| Normalize extraction | `cr/normalize/extract/blog/1710300000-e5f6` |
+| Normalize reuse | `cr/normalize/reuse/marketing-hero/en/1710300000-0789` |
+| Scaffold | `cr/new/scaffold-landing/en/1710300000-1234` |
 
 ### Rules
 

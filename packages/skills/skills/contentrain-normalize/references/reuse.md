@@ -42,7 +42,7 @@ Review the dry-run output:
 contentrain_apply(mode: "reuse", scope: { model: "<model-id>" }, patches: [...], dry_run: false)
 ```
 
-`dry_run` defaults to `true`, so you MUST explicitly set `dry_run: false` to execute. This patches source files and creates a `contentrain/normalize/reuse/{model}/{timestamp}` branch.
+`dry_run` defaults to `true`, so you MUST explicitly set `dry_run: false` to execute. This patches source files and creates a `cr/normalize/reuse/{model}/{timestamp}` branch.
 
 ### 5. Validate and Submit
 

@@ -3,6 +3,11 @@ import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js'
 /**
  * Centralized tool annotations registry.
  * MCP clients use these hints to distinguish read-only vs. write vs. destructive tools.
+ *
+ * Also serves as the **single source of truth for the tool name list**. Consumers
+ * that need to enumerate every registered tool (e.g. parity tests in
+ * `@contentrain/rules` / `@contentrain/skills`) should import `TOOL_NAMES` below
+ * rather than hardcoding the list.
  */
 export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
   // ─── Context (read-only) ───
@@ -121,3 +126,12 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
     idempotentHint: false,
   },
 }
+
+/**
+ * Canonical list of every registered MCP tool name, derived from the
+ * single source of truth above. Re-exported here with a stable name so
+ * parity tests in sibling packages (`@contentrain/rules`,
+ * `@contentrain/skills`) can assert against it without depending on
+ * `TOOL_ANNOTATIONS` internals.
+ */
+export const TOOL_NAMES: readonly string[] = Object.freeze(Object.keys(TOOL_ANNOTATIONS))
