@@ -38,7 +38,10 @@ The server starts on `http://localhost:3333` by default.
 | `--port` | `3333` | Port number |
 | `--host` | `localhost` | Host address |
 | `--open=false` | `true` | Prevent auto-opening browser |
+| `--demo` | disabled | Temporary demo project (no setup required) |
 | `--stdio` | disabled | MCP stdio transport for IDE integration (no web UI) |
+| `--mcpHttp` | disabled | MCP HTTP transport at `POST /mcp` (secure-by-default Bearer auth) |
+| `--authToken` | — | Bearer token required on non-localhost HTTP binds |
 
 ### Check if already running
 
@@ -75,10 +78,6 @@ Browse all model definitions:
 - Content path and locale strategy
 - Entry count per locale
 
-**Agent prompt hint:**
-
-> "Create a new collection model for team members with name, role, and avatar fields"
-
 ### Content (`/content`)
 
 Browse and inspect content entries:
@@ -87,10 +86,6 @@ Browse and inspect content entries:
 - View entry details with all field values
 - See metadata (status, source, timestamps)
 - Locale switcher to compare translations side by side
-
-**Agent prompt hint:**
-
-> "Add a new blog post about our latest feature release"
 
 ::: tip
 The content page is read-only. To edit content, copy the agent prompt from the UI and paste it into your AI agent.
@@ -105,36 +100,58 @@ Inspect validation results:
 - Duplicate entry detection
 - Vocabulary alignment checks
 
-After reviewing issues, ask the agent to fix them:
-
-> "Fix all validation errors in the blog-post model"
-
-The agent calls `contentrain_validate` to get the error list, then `contentrain_content_save` to fix each issue.
-
-**Agent prompt hint:**
-
-> "Validate all content and fix any errors"
-
 ### Branches (`/branches`)
 
 Manage content branches:
 
-- List all `contentrain/*` branches
+- List all `cr/*` branches
 - See diff summary for each branch
 - **Merge** approved branches
 - **Delete** rejected branches
 - View commit history per branch
+- Click a branch to see a detailed preview with merge conflict detection
 
-This is where you approve or reject agent-created content:
+### Branch Detail (`/branches/:name`)
 
-1. Agent creates content on a branch via MCP tools
-2. You review the changes in the Branches page
-3. Click **Merge** to accept or **Delete** to reject
-4. The agent detects your decision and proceeds accordingly
+When you click a branch in the list, you see a detailed **merge preview** fetched from `/api/preview/merge`:
+
+- Fast-forward status (can the branch merge cleanly?)
+- Already-merged check (is this branch already in the content-tracking branch?)
+- Conflict detection (best-effort list of conflicting paths via `git merge-tree`)
+- Diff summary and file-by-file changes
+- Sync-warning panel surfacing any files the last selective sync skipped
+
+This preview is generated without running the actual merge — a safe way to answer "what happens if I approve this?" before committing to the action.
+
+### Doctor (`/doctor`)
+
+Project health dashboard wrapping the `contentrain_doctor` MCP tool:
+
+- Environment checks (Node ≥22, git available)
+- `.contentrain/` structure validation
+- Model definition parsing
+- Orphan content detection
+- Branch pressure (warning at 50 `cr/*`, blocked at 80)
+- SDK client freshness (comparing mtimes)
+- Optional **usage analysis** toggle: unused keys, duplicate dictionary values, missing locale keys
+
+Each check renders with severity (error / warning / info). The "Run" button re-fetches `/api/doctor?usage=...`.
 
 **Agent prompt hint:**
 
-> "Submit the current changes for review"
+> "Run a full project health check and fix any errors"
+
+### Format Reference (`/format`)
+
+A read-only reference of how Contentrain stores content — renders the output of the `contentrain_describe_format` tool via `/api/describe-format`:
+
+- Models schema (JSON structure of `.contentrain/models/`)
+- Content layout (directory and file structure)
+- Metadata organization (SEO, entry-level metadata)
+- Vocabulary format
+- Locale strategies
+
+Useful as a living spec for developers and integrators who need the physical file format without reading docs.
 
 ### Normalize (`/normalize`)
 
@@ -146,73 +163,72 @@ The normalize page is active when a normalize plan exists (`.contentrain/normali
 - **Approve & Apply** button: Executes the extraction
 - **Reject** button: Deletes the plan
 
-This page appears only during the [normalize flow](./normalize). When no plan exists, it shows a prompt to start normalization:
-
-> "Scan my project and extract hardcoded strings into Contentrain"
+This page appears only during the [normalize flow](/guides/normalize). When no plan exists, it shows a prompt to start normalization.
 
 ## WebSocket Real-time Updates
 
-Serve UI uses WebSocket connections for real-time updates:
+Serve UI uses WebSocket connections for real-time updates. You do not need to manually refresh the page.
 
-- **File watcher:** When `.contentrain/` files change (from agent operations), the UI updates automatically
-- **Context updates:** After every MCP write operation, `context.json` is updated and the UI reflects the latest state
-- **Branch events:** New branches, merges, and deletions appear instantly
-- **Normalize plan:** Plan file creation and status changes trigger UI refresh
+### WebSocket Events
 
-You do not need to manually refresh the page. Changes made by the agent appear in real time.
+The serve server broadcasts the following events over the WebSocket connection:
+
+| Event | Emitted when | Payload |
+|---|---|---|
+| `connected` | Client connects | (none) |
+| `config:changed` | `.contentrain/config.json` changes | (none) |
+| `context:changed` | `.contentrain/context.json` changes | `{ context }` |
+| `model:changed` | A model definition is created/updated | `{ modelId }` |
+| `content:changed` | Content entries are created/updated | `{ modelId, locale }` |
+| `meta:changed` | SEO or model metadata is written | `{ modelId, entryId?, locale }` |
+| `normalize:plan-updated` | Normalize plan is created/updated/deleted | (none) |
+| `validation:updated` | Validation results change | (none) |
+| `branch:created` | A new `cr/*` branch is created | `{ branch }` |
+| `branch:merged` | A branch is merged into `contentrain` | `{ branch }` |
+| `branch:rejected` | A branch is deleted | `{ branch }` |
+| `branch:merge-conflict` | Branch merge fails | `{ branch, message }` |
+| `sync:warning` | Merge succeeds but skips dirty working-tree files | `{ branch, skippedCount }` |
+| `file-watch:error` | chokidar file watcher encounters an error | `{ message, timestamp }` |
+
+## HTTP API Surface
+
+The serve backend exposes REST endpoints at `http://localhost:3333/api/*`. Key routes:
+
+| Route | Method | Purpose |
+|---|---|---|
+| `/api/status` | GET | Wraps `contentrain_status` |
+| `/api/capabilities` | GET | Provider + transport + branch health in one call |
+| `/api/doctor?usage=...` | GET | Wraps `contentrain_doctor` (optional usage analysis) |
+| `/api/describe-format` | GET | Wraps `contentrain_describe_format` |
+| `/api/describe/:modelId` | GET | Wraps `contentrain_describe` |
+| `/api/content/:modelId` | GET | List content entries |
+| `/api/content/:modelId/:entryId` | GET | Single entry read |
+| `/api/content/:modelId/:entryId/fix` | POST | Quick fix (content save) |
+| `/api/validate?fix=true` | GET | Wraps `contentrain_validate` |
+| `/api/branches` | GET | List `cr/*` branches |
+| `/api/branches/diff?name=cr/...` | GET | Branch diff against `contentrain` |
+| `/api/branches/approve` | POST | Approve & merge a branch |
+| `/api/branches/reject` | POST | Delete a branch |
+| `/api/branches/:name/sync-status` | GET | Cached sync warnings from last merge |
+| `/api/preview/merge?branch=cr/...` | GET | Side-effect-free merge preview (FF / conflicts / already-merged) |
+| `/api/history` | GET | Recent contentrain-related commits |
+| `/api/context` | GET | `.contentrain/context.json` |
+| `/api/normalize/*` | various | Scan / plan / approve / reject / apply / approve-branch |
+
+Every write route validates its body through Zod schemas (`parseOrThrow`) before reaching the MCP tool layer.
 
 ## Approval Flow
 
 The typical workflow between agent and developer:
 
-### Step 1. Agent creates content
-
-You ask the agent to create or update content:
-
-> "Create 5 testimonials for the landing page"
-
-The agent calls `contentrain_content_save`, which creates entries on a branch and commits to Git.
-
-### Step 2. Developer reviews in UI
-
-The agent tells you to review:
-
-> "I've created 5 testimonials on branch `contentrain/content/testimonials/...`. Review them at `http://localhost:3333/branches`"
-
-In the UI, you see the branch with a diff of all new entries. You can inspect each testimonial's content, check for quality, and verify the data.
-
-### Step 3. Approve or reject
-
-- **Approve:** Click **Merge** — the branch merges into the `contentrain` branch, baseBranch is advanced, content is live
-- **Reject:** Click **Delete** — the branch is removed, content is discarded
-
-### Step 4. Agent detects the decision
-
-The agent reads the filesystem state:
-
-- Branch merged → content is on main, agent confirms success
-- Branch deleted → agent asks what to change and iterates
+1. **Agent creates content** via `contentrain_content_save` (or similar write tool), landing on a `cr/*` branch.
+2. **Developer reviews in UI** at `/branches/:name` — sees the merge preview, per-file diff, sync warnings if any.
+3. **Approve or Reject** — click **Merge** or **Delete**.
+4. **Agent detects the decision** by re-reading the filesystem/context state.
 
 ::: warning
 For normalize operations, the workflow always uses review mode. Even if the project is configured for auto-merge, normalize branches require explicit approval.
 :::
-
-## Agent Prompt Hints in UI
-
-Every page in Serve UI includes context-aware agent prompts. These are copyable text blocks that you paste directly into your AI agent (Claude Code, Cursor, Copilot, etc.).
-
-Examples by page:
-
-| Page | Prompt |
-|---|---|
-| Dashboard | "Show me project status and pending changes" |
-| Models | "Create a new singleton model for the pricing section" |
-| Content | "Update the hero section title to ..." |
-| Validate | "Fix all validation errors" |
-| Branches | "Submit current changes for review" |
-| Normalize | "Scan my project and extract hardcoded strings" |
-
-This design keeps the UI as a monitoring surface while the agent handles all actions.
 
 ## Workflow Configuration
 
@@ -230,42 +246,45 @@ The approval flow behavior is controlled by the workflow setting in `.contentrai
 | `auto-merge` | Content changes merge into `contentrain` branch, baseBranch is advanced via update-ref |
 
 ::: info
-Normalize operations always use review mode regardless of this setting. Only standard content operations (create, update, delete) respect the auto-merge setting.
+Normalize operations always use review mode regardless of this setting.
 :::
 
 ## IDE Integration (stdio mode)
 
-For IDE-embedded use (VS Code, Cursor), serve can run in stdio mode:
+For IDE-embedded use (VS Code, Cursor, Claude Code), serve can run in stdio mode:
 
 ```bash
 npx contentrain serve --stdio
 ```
 
-This starts the MCP server with stdio transport instead of the web UI. The IDE connects directly to the MCP tools without a browser.
+This starts the MCP server with stdio transport instead of the web UI.
 
-Both modes (web UI and stdio) use the same MCP tools underneath. The difference is the transport layer:
+## HTTP MCP Transport
 
-- **Web UI:** HTTP + WebSocket, human reviews in browser
-- **stdio:** Direct MCP protocol, IDE handles the interaction
+For Studio, CI, or remote agents, serve can expose MCP over Streamable HTTP:
+
+```bash
+npx contentrain serve --mcpHttp --authToken $(openssl rand -hex 32)
+```
+
+**Secure-by-default:** binding to a non-localhost address (`0.0.0.0` / specific IPs) without `--authToken` (or `CONTENTRAIN_AUTH_TOKEN` env var) is a hard error — the HTTP MCP endpoint exposes full project write access.
+
+See the [HTTP Transport guide](/guides/http-transport) for deployment patterns.
 
 ## Troubleshooting
 
 ### Port already in use
 
 ```bash
-# Find and kill the existing process
 lsof -ti:3333 | xargs kill
-
-# Or use a different port
+# or
 npx contentrain serve --port 4444
 ```
 
 ### UI not updating
 
-If real-time updates stop:
-
 1. Check that the serve process is still running
-2. Refresh the browser page to re-establish the WebSocket connection
+2. Look for a `file-watch:error` banner at the top of the UI — this indicates the chokidar watcher stopped (e.g. OS inotify limit). Restart `contentrain serve` to reattach.
 3. Verify that `.contentrain/` files are being written (check `context.json` timestamp)
 
 ### Content not appearing
@@ -274,7 +293,17 @@ If content created by the agent does not appear:
 
 1. Check if the content is on a feature branch (not yet merged into the `contentrain` branch)
 2. Navigate to the Branches page to see pending branches
-3. Merge the branch to make content visible on the Content page
+3. Click the branch for a detailed merge preview
+4. Merge the branch to make content visible on the Content page
+
+### Merge conflicts when approving
+
+When clicking **Merge** on a branch, the UI performs a real merge using the MCP `mergeBranch` helper. Conflicts can occur when:
+
+1. The branch and `contentrain` branch have diverged
+2. You've made manual edits to `.contentrain/` files outside the agent workflow
+
+The UI surfaces the conflict message. Resolve it manually or ask the agent to create a fresh branch from the current `contentrain` state.
 
 ## Beyond Local: Contentrain Studio
 

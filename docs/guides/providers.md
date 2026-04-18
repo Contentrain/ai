@@ -6,7 +6,7 @@ slug: providers
 
 # Providers & Transports
 
-Contentrain MCP runs the same 16 tools over three backends:
+Contentrain MCP runs the same 17 tools over three backends:
 
 - **LocalProvider** — simple-git + a temporary worktree on your disk. Default for `npx contentrain serve --stdio` and the HTTP transport when driven by the CLI.
 - **GitHubProvider** — Octokit over the GitHub Git Data + Repos APIs. No clone, no worktree.
