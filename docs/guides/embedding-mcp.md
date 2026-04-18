@@ -71,14 +71,21 @@ const handle = await startHttpMcpServer({
 
 CLI equivalent: `contentrain serve --mcpHttp --authToken $TOKEN`.
 
-### 3. HTTP + Remote Provider (Studio's pattern)
+### 3. HTTP + Remote Provider (three patterns)
+
+**a. Factory with GitHub App credentials.** Simplest for one-off scripts and CI runners — the factory signs the JWT, exchanges it for an installation token, and hands Octokit a bearer. The returned token lasts ~1 hour; at that point the factory must be re-called.
 
 ```ts
 import { createGitHubProvider } from '@contentrain/mcp/providers/github'
 import { startHttpMcpServerWith } from '@contentrain/mcp/server/http'
 
 const provider = await createGitHubProvider({
-  auth: { type: 'pat', token: await exchangeInstallationToken(installationId) },
+  auth: {
+    type: 'app',
+    appId: Number(process.env.GITHUB_APP_ID),
+    privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
+    installationId: Number(process.env.GITHUB_INSTALLATION_ID),
+  },
   repo: { owner: 'acme', name: 'site' },
 })
 
@@ -89,7 +96,86 @@ const handle = await startHttpMcpServerWith({
 })
 ```
 
+**b. `exchangeInstallationToken` helper for external token caching.** When you want to pin the token lifecycle yourself (cache across requests, refresh on a schedule, share across workers), call the helper directly and pass the opaque bearer to `createGitHubProvider({ auth: { type: 'pat', token } })`.
+
+```ts
+import {
+  createGitHubProvider,
+  exchangeInstallationToken,
+} from '@contentrain/mcp/providers/github'
+
+const { token, expiresAt } = await exchangeInstallationToken({
+  appId: Number(process.env.GITHUB_APP_ID),
+  privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
+  installationId: Number(process.env.GITHUB_INSTALLATION_ID),
+})
+// cache { token, expiresAt } in redis / your KV of choice
+
+const provider = await createGitHubProvider({
+  auth: { type: 'pat', token },
+  repo: { owner: 'acme', name: 'site' },
+})
+```
+
+**c. Inject your own Octokit with `@octokit/auth-app` (recommended for hosted / long-lived providers).** This is Studio's pattern. The Octokit SDK auto-refreshes installation tokens for the lifetime of the instance, so your provider never has to think about expiry.
+
+```ts
+import { Octokit } from '@octokit/rest'
+import { createAppAuth } from '@octokit/auth-app'
+import { GitHubProvider } from '@contentrain/mcp/providers/github'
+import { startHttpMcpServerWith } from '@contentrain/mcp/server/http'
+
+const octokit = new Octokit({
+  authStrategy: createAppAuth,
+  auth: {
+    appId: Number(process.env.GITHUB_APP_ID),
+    privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
+    installationId: Number(process.env.GITHUB_INSTALLATION_ID),
+  },
+})
+
+const provider = new GitHubProvider(octokit, { owner: 'acme', name: 'site' })
+
+const handle = await startHttpMcpServerWith({
+  provider,
+  port: 3333,
+  authToken: workspaceBearerToken,
+})
+```
+
+**Trade-offs:**
+
+| Pattern | Best for | Auto-refresh | Deps |
+|---|---|---|---|
+| a — factory `auth.type: 'app'` | Short-lived scripts, CI | No (1-hour TTL) | `@octokit/rest` |
+| b — `exchangeInstallationToken` + PAT | External token cache (redis, KV) | You decide | `@octokit/rest` |
+| c — Octokit injection + `@octokit/auth-app` | Long-lived hosted providers (Studio) | Yes | `@octokit/rest` + `@octokit/auth-app` |
+
+For **multi-tenant** deployments where each request targets a different project, see the **per-request resolver** section below.
+
 Swap in `createGitLabProvider({ auth, project })` for GitLab. Self-hosted GitLab instances pass `project.host`.
+
+### 3a. HTTP + per-request provider resolver (multi-tenant)
+
+When one HTTP endpoint serves many projects (Studio's MCP Cloud), pass a `resolveProvider` function instead of a single provider. The resolver is invoked once per MCP session; subsequent requests with the same `Mcp-Session-Id` header reuse the same server + transport pair. Idle sessions are cleaned up after `sessionTtlMs` (default 15 minutes).
+
+```ts
+import { createGitHubProvider } from '@contentrain/mcp/providers/github'
+import { startHttpMcpServerWith } from '@contentrain/mcp/server/http'
+
+const handle = await startHttpMcpServerWith({
+  resolveProvider: async (req) => {
+    const projectId = req.headers['x-project-id'] as string
+    const { repo, auth } = await lookupProjectFromDatabase(projectId)
+    return createGitHubProvider({ auth, repo })
+  },
+  authToken: workspaceBearerToken,
+  port: 3333,
+  sessionTtlMs: 15 * 60 * 1000,
+})
+```
+
+The single-provider shape (`{ provider }`) and the resolver shape (`{ resolveProvider }`) are mutually exclusive — pass one or the other.
 
 ### 4. Programmatic tool calls (no transport at all)
 

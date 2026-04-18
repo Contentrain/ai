@@ -26,7 +26,10 @@ import { writeContext } from '../src/core/context.js'
  * differently.
  */
 
-const FIXTURES_DIR = new URL('./fixtures/conformance/', import.meta.url).pathname
+// Fixtures live under `packages/mcp/testing/conformance/` so they can be
+// published as `@contentrain/mcp/testing/conformance` for external
+// byte-parity testing (Studio, alt-provider harnesses, etc.).
+const FIXTURES_DIR = new URL('../testing/conformance/', import.meta.url).pathname
 const FIXED_DATE = new Date('2026-01-01T00:00:00.000Z')
 const GENERATE_MODE = process.env['GENERATE_FIXTURES'] === '1'
 

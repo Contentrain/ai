@@ -3,7 +3,7 @@
   "version": "1.3.0",
   "mcpName": "io.github.Contentrain/contentrain",
   "license": "MIT",
-  "description": "Local-first MCP server for AI-generated content governance — 13 deterministic tools for any platform",
+  "description": "Local-first MCP server for AI-generated content governance — 17 deterministic tools, stdio + HTTP transports, Local / GitHub / GitLab providers",
   "type": "module",
   "repository": {
     "type": "git",
@@ -120,6 +120,10 @@
       "types": "./dist/tools/annotations.d.mts",
       "import": "./dist/tools/annotations.mjs"
     },
+    "./testing/conformance": {
+      "types": "./dist/testing/conformance.d.mts",
+      "import": "./dist/testing/conformance.mjs"
+    },
     "./templates": {
       "types": "./dist/templates/index.d.mts",
       "import": "./dist/templates/index.mjs"
@@ -140,11 +144,12 @@
   "main": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "files": [
-    "dist"
+    "dist",
+    "testing"
   ],
   "scripts": {
-    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/doctor.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/tools/annotations.ts src/templates/index.ts src/core/contracts/index.ts src/core/ops/index.ts src/core/overlay-reader.ts src/providers/local/index.ts src/providers/github/index.ts src/providers/gitlab/index.ts src/server/http/index.ts --format esm --dts --external typescript",
-    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/doctor.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/tools/annotations.ts src/templates/index.ts src/core/contracts/index.ts src/core/ops/index.ts src/core/overlay-reader.ts src/providers/local/index.ts src/providers/github/index.ts src/providers/gitlab/index.ts src/server/http/index.ts --format esm --dts --external typescript --watch",
+    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/doctor.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/tools/annotations.ts src/testing/conformance.ts src/templates/index.ts src/core/contracts/index.ts src/core/ops/index.ts src/core/overlay-reader.ts src/providers/local/index.ts src/providers/github/index.ts src/providers/gitlab/index.ts src/server/http/index.ts --format esm --dts --external typescript",
+    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/doctor.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/tools/annotations.ts src/testing/conformance.ts src/templates/index.ts src/core/contracts/index.ts src/core/ops/index.ts src/core/overlay-reader.ts src/providers/local/index.ts src/providers/github/index.ts src/providers/gitlab/index.ts src/server/http/index.ts --format esm --dts --external typescript --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
