@@ -11,7 +11,7 @@ MIT-licensed monorepo for Contentrain's open-source packages: MCP tools, CLI, Ty
 ```
 contentrain-ai/
 ├── packages/
-│   ├── mcp/          — 16 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers (simple-git + zod + MCP SDK)
+│   ├── mcp/          — 17 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers (simple-git + zod + MCP SDK)
 │   ├── cli/          — citty + tsdown (init/serve/validate/normalize/connect)
 │   ├── types/        — Shared TypeScript types (@contentrain/types)
 │   ├── rules/        — AI agent quality rules & conventions
@@ -72,7 +72,7 @@ When working with Contentrain content operations (models, content, normalize, va
 
 - **JSON only** — no YAML
 - **Git mandatory** — `contentrain init` auto `git init`
-- **Octokit YOK in MCP** — MCP = local-first, platform-agnostic. GitHub API = Studio/CLI only
+- **Optional remote providers** — MCP is local-first by default (stdio + LocalProvider). `@octokit/rest` (GitHubProvider) and `@gitbeaker/rest` (GitLabProvider) ship as **optional peer dependencies** — installed only when a remote provider is used
 - **Every write uses worktree + dedicated contentrain branch + update-ref** — model_save and content_save alike
 - **Collection storage = object-map** — `{ entryId: { fields } }`, sorted by ID
 - **Canonical serialization** — deterministic JSON output, sorted keys, 2-space indent, trailing newline
@@ -90,7 +90,7 @@ When working with Contentrain content operations (models, content, normalize, va
 
 | Package | Name | Description |
 |---|---|---|
-| packages/mcp | @contentrain/mcp | 16 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers |
+| packages/mcp | @contentrain/mcp | 17 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers |
 | packages/cli | contentrain | CLI (npx contentrain) |
 | packages/types | @contentrain/types | Shared TypeScript types |
 | packages/rules | @contentrain/rules | AI agent quality rules & conventions |
