@@ -97,7 +97,12 @@ export interface ContentrainConfig {
   }
   domains: string[]
   assets_path?: string
+  /** Days a merged `cr/*` branch is kept before lazy cleanup. Default: 30. */
   branchRetention?: number
+  /** Unmerged `cr/*` branch count that triggers a warning. Default: 50. */
+  branchWarnLimit?: number
+  /** Unmerged `cr/*` branch count that blocks new writes. Default: 80. */
+  branchBlockLimit?: number
 }
 
 // ─── Vocabulary ───

@@ -125,15 +125,17 @@ export async function checkBranchHealth(projectRoot: string): Promise<BranchHeal
     }
   }
 
+  const warnLimit = config?.branchWarnLimit ?? 50
+  const blockLimit = config?.branchBlockLimit ?? 80
   const unmerged = total - mergedCount
-  const warning = unmerged >= 50
-  const blocked = unmerged >= 80
+  const warning = unmerged >= warnLimit
+  const blocked = unmerged >= blockLimit
 
   let message: string | undefined
   if (blocked) {
-    message = `BLOCKED: ${unmerged} active contentrain branches (limit: 80). Run cleanup or merge/delete old branches before creating new ones.`
+    message = `BLOCKED: ${unmerged} active contentrain branches (limit: ${blockLimit}). Run cleanup or merge/delete old branches before creating new ones.`
   } else if (warning) {
-    message = `WARNING: ${unmerged} active contentrain branches. Consider merging or deleting old branches (warning at 50, blocked at 80).`
+    message = `WARNING: ${unmerged} active contentrain branches. Consider merging or deleting old branches (warning at ${warnLimit}, blocked at ${blockLimit}).`
   }
 
   return { total, merged: mergedCount, unmerged, warning, blocked, message }

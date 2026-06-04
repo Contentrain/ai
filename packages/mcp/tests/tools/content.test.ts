@@ -267,19 +267,27 @@ describe('contentrain_content_save', () => {
     expect(data['error']).toContain('not found')
   })
 
-  it('blocks new writes when 80 active contentrain branches exist', async () => {
+  it('blocks new writes when the unmerged branch limit is reached', async () => {
     client = await createModel(client, 'hero', 'singleton', 'marketing', {
       title: { type: 'string', required: true },
     })
 
-    const git = simpleGit(testDir)
-    const baseBranch = (await git.raw(['branch', '--show-current'])).trim()
+    // Lower the configurable block limit so the test doesn't have to create 80
+    // real branches (hundreds of git subprocesses that lock up the machine).
+    const configPath = join(testDir, '.contentrain', 'config.json')
+    const config = await readJson<Record<string, unknown>>(configPath)
+    config!['branchBlockLimit'] = 3
+    await writeFile(configPath, JSON.stringify(config, null, 2) + '\n')
 
-    for (let i = 1; i <= 80; i++) {
-      const branchName = `cr/test/block-${String(i).padStart(3, '0')}`
-      await git.checkoutBranch(branchName, baseBranch)
-      await git.commit(`branch ${i}`, undefined, { '--allow-empty': null })
-      await git.checkout(baseBranch)
+    // Create 3 unmerged cr/* branches cheaply: one divergent commit object
+    // (commit-tree touches neither the index nor the working tree), then point
+    // each branch ref at it — no checkouts, no per-branch commits.
+    const git = simpleGit(testDir)
+    const head = (await git.raw(['rev-parse', 'HEAD'])).trim()
+    const tree = (await git.raw(['rev-parse', 'HEAD^{tree}'])).trim()
+    const divergent = (await git.raw(['commit-tree', tree, '-p', head, '-m', 'divergent'])).trim()
+    for (let i = 1; i <= 3; i++) {
+      await git.raw(['branch', `cr/test/block-${i}`, divergent])
     }
 
     client = await createTestClient(testDir)
@@ -294,8 +302,9 @@ describe('contentrain_content_save', () => {
 
     expect(result.isError).toBe(true)
     const data = parseResult(result)
-    expect(data['error']).toContain('80')
-  }, 120000)
+    expect(data['action']).toBe('blocked')
+    expect(data['error']).toContain('BLOCKED')
+  }, 60000)
 
   it('handles two writes to the same model in the same second without branch collision', async () => {
     client = await createModel(client, 'hero', 'singleton', 'marketing', {

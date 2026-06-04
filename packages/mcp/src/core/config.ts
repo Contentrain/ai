@@ -28,6 +28,8 @@ function normaliseConfig(raw: Partial<ContentrainConfig> | null): ContentrainCon
     repository: raw.repository,
     assets_path: raw.assets_path,
     branchRetention: raw.branchRetention,
+    branchWarnLimit: raw.branchWarnLimit,
+    branchBlockLimit: raw.branchBlockLimit,
   }
 }
 
