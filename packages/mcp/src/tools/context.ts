@@ -53,6 +53,28 @@ export function registerContextTools(
       const context = projectRoot ? await readContext(projectRoot) : await readContext(provider)
       const vocabulary = await readVocabulary(provider)
 
+      // Stats source depends on the provider:
+      //   - Local (projectRoot): context.json's stats can lag (init writes 0/0,
+      //     and the working-tree copy may be unsynced after a write), which made
+      //     status report models:0/entries:0 alongside a non-empty models array.
+      //     Derive both live from the just-enumerated models. #19
+      //   - Remote: the committed context.json is rebuilt per-commit and is the
+      //     source of truth; the reader can't always walk content cheaply, so
+      //     trust context.stats.
+      let stats: Record<string, unknown> | null = context?.stats ?? null
+      if (projectRoot) {
+        const fullModels = await Promise.all(models.map(m => readModel(provider, m.id)))
+        const entryCounts = await Promise.all(
+          fullModels.filter((m): m is NonNullable<typeof m> => m !== null).map(m => countEntries(provider, m)),
+        )
+        stats = {
+          models: models.length,
+          entries: entryCounts.reduce((acc, c) => acc + c.total, 0),
+          locales: config?.locales.supported ?? context?.stats?.locales ?? ['en'],
+          ...(context?.stats?.lastSync ? { lastSync: context.stats.lastSync } : {}),
+        }
+      }
+
       const errors: string[] = []
       if (!config) errors.push('.contentrain/config.json missing')
 
@@ -66,9 +88,9 @@ export function registerContextTools(
           repository: config.repository,
         } : null,
         models,
-        context: context ? {
-          lastOperation: context.lastOperation,
-          stats: context.stats,
+        context: (context || stats) ? {
+          lastOperation: context?.lastOperation ?? null,
+          stats,
         } : null,
         vocabulary: vocabulary && Object.keys(vocabulary.terms).length > 0
           ? { size: Object.keys(vocabulary.terms).length, terms: vocabulary.terms }

@@ -8,6 +8,7 @@ import { planContentDelete, planContentSave } from '../core/ops/index.js'
 import { LocalProvider } from '../providers/local/index.js'
 import { buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
+import { normalizeOperationError } from '../git/errors.js'
 import { validateProject } from '../core/validator/index.js'
 import { OverlayReader } from '../core/overlay-reader.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
@@ -129,7 +130,7 @@ export function registerContentTools(
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
-            error: `Content save failed: ${error instanceof Error ? error.message : String(error)}`,
+            ...normalizeOperationError(error, 'content_save'),
           }) }],
           isError: true,
         }
@@ -165,22 +166,23 @@ export function registerContentTools(
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
-            error: `Content save failed: ${error instanceof Error ? error.message : String(error)}`,
+            ...normalizeOperationError(error, 'content_save'),
           }) }],
           isError: true,
         }
       }
 
-      // Post-save validation — runs against whichever provider backed the
-      // write. LocalProvider sees the post-commit state via its
-      // filesystem (the worktree transaction has already landed the
-      // files). Remote providers see the pre-commit state in their
-      // reader; wrap the reader in an OverlayReader so the validator
-      // evaluates the committed-but-not-yet-visible state instead of
-      // the pre-change base branch.
-      const validationResult = projectRoot
-        ? await validateProject(projectRoot, { model: input.model })
-        : await validateProject(new OverlayReader(provider, plan.changes), { model: input.model })
+      // Post-save validation — runs against an OverlayReader that layers the
+      // just-saved changes on top of the provider's base view. This validates
+      // the committed state for BOTH providers and BOTH workflow modes. The
+      // old local path validated `projectRoot` (the developer working tree),
+      // which in review mode (or before selectiveSync) had not yet received the
+      // feature-branch files — producing false "locale file missing" errors for
+      // content that was just created. #7
+      const validationResult = await validateProject(
+        new OverlayReader(provider, plan.changes),
+        { model: input.model },
+      )
 
       const allAdvisories = plan.result.flatMap(r => r.advisories ?? [])
 
@@ -267,7 +269,7 @@ export function registerContentTools(
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
-            error: `Delete failed: ${error instanceof Error ? error.message : String(error)}`,
+            ...normalizeOperationError(error, 'content_delete'),
           }) }],
           isError: true,
         }
@@ -309,7 +311,7 @@ export function registerContentTools(
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
-            error: `Delete failed: ${error instanceof Error ? error.message : String(error)}`,
+            ...normalizeOperationError(error, 'content_delete'),
           }) }],
           isError: true,
         }
@@ -369,7 +371,7 @@ export function registerContentTools(
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
-            error: `List failed: ${error instanceof Error ? error.message : String(error)}`,
+            ...normalizeOperationError(error, 'content_list'),
           }) }],
           isError: true,
         }

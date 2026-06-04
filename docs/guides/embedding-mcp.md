@@ -332,7 +332,7 @@ A GitHub Actions job:
 4. Drive it with an MCP client
 5. Let `contentrain_submit` push the `cr/*` branch
 
-All 17 tools are available because the runner has `LocalProvider`.
+All 19 tools are available because the runner has `LocalProvider`.
 
 ### Scripted automation
 

@@ -11,7 +11,7 @@ MIT-licensed monorepo for Contentrain's open-source packages: MCP tools, CLI, Ty
 ```
 contentrain-ai/
 ├── packages/
-│   ├── mcp/          — 17 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers (simple-git + zod + MCP SDK)
+│   ├── mcp/          — 19 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers (simple-git + zod + MCP SDK)
 │   ├── cli/          — citty + tsdown (init/serve/validate/normalize/connect)
 │   ├── types/        — Shared TypeScript types (@contentrain/types)
 │   ├── rules/        — AI agent quality rules & conventions
@@ -77,7 +77,7 @@ When working with Contentrain content operations (models, content, normalize, va
 - **Collection storage = object-map** — `{ entryId: { fields } }`, sorted by ID
 - **Canonical serialization** — deterministic JSON output, sorted keys, 2-space indent, trailing newline
 - **Dedicated contentrain branch** — content state SSOT, created at init, auto-synced with baseBranch via update-ref. Developer's working tree is never mutated during MCP operations
-- **context.json** — committed with content changes (not separately), Studio/IDE reads
+- **context.json** — NOT committed on feature branches; regenerated deterministically on the `contentrain` branch after merge (single-threaded), so parallel content saves never conflict on it. Studio/IDE reads it; `contentrain_status` derives live stats rather than trusting the file
 - **Workflow config** — `"auto-merge"` or `"review"` in config.json
 - **Agent-MCP split** — MCP = deterministic infra, Agent = intelligence. MCP does NOT make content decisions
 - **Normalize two phases** — Phase 1: Extraction (content-only), Phase 2: Reuse (source patching). Separate branches, separate reviews
@@ -90,7 +90,7 @@ When working with Contentrain content operations (models, content, normalize, va
 
 | Package | Name | Description |
 |---|---|---|
-| packages/mcp | @contentrain/mcp | 17 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers |
+| packages/mcp | @contentrain/mcp | 19 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers |
 | packages/cli | contentrain | CLI (npx contentrain) |
 | packages/types | @contentrain/types | Shared TypeScript types |
 | packages/rules | @contentrain/rules | AI agent quality rules & conventions |

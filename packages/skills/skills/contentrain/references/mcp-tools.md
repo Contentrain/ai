@@ -278,13 +278,42 @@ Push `cr/*` feature branches to remote.
 
 ### contentrain_merge
 
-Merge a single review-mode `cr/*` branch into the content-tracking `contentrain` branch and advance the base branch via `update-ref`. Runs the worktree transaction with selective sync — dirty files in the developer's working tree are preserved rather than overwritten.
+Merge a single review-mode `cr/*` branch into the content-tracking `contentrain` branch and advance the base branch via `update-ref`. Runs the worktree transaction with selective sync — dirty files in the developer's working tree are preserved rather than overwritten. The merged feature branch is pruned afterward.
+
+Target the branch by exact name, or resolve it by model:
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `branch` | string | Yes | Feature branch name (must start with `cr/`) |
+| `branch` | string | No* | Exact feature branch name (must start with `cr/`) |
+| `model` | string | No* | Resolve the branch by model id (e.g. `blog-post`) |
+| `locale` | string | No | Narrow model resolution to a locale |
+| `latest` | boolean | No | When multiple branches match the model, merge the most recently committed one |
+| `confirm` | `true` | Yes | Must be `true` to confirm |
 
-Returns `{ action, commit, sync }` — `sync.skipped[]` lists files the selective sync skipped because the developer has uncommitted changes. The CLI surfaces this as a warning.
+\* Provide either `branch` or `model`. Ambiguous model matches return the candidate branches so you can pick one (or pass `latest: true`).
+
+Returns `{ branch, action, commit, sync }` — `sync.skipped[]` lists files the selective sync skipped because the developer has uncommitted changes. The CLI surfaces this as a warning.
+
+### contentrain_branch_list
+
+List pending `cr/*` branches with their merge status against the `contentrain` branch. Use it to discover branch names for `contentrain_merge` / `contentrain_branch_delete` and to monitor branch-health pressure (warning at 50, blocked at 80 unmerged). Read-only. Local-filesystem only (`localWorktree`).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `unmerged_only` | boolean | No | Only list branches not yet merged into `contentrain`. Default `false` |
+
+Returns `{ total, unmerged, branches: [{ name, sha, merged, lastCommit }], health }`.
+
+### contentrain_branch_delete
+
+Delete a pending `cr/*` branch that will not be merged — e.g. one left by a failed operation, or a superseded draft. Only `cr/*` branches can be deleted; the `contentrain` branch is protected. Destructive: the branch and its unmerged commits are removed.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `branch` | string | Yes | The `cr/*` branch to delete |
+| `confirm` | `true` | Yes | Must be `true` to confirm deletion |
+
+Returns `{ status: 'deleted', branch, was_merged }`. Note: in normal operation Contentrain prunes feature branches automatically after auto-merge / `contentrain_merge`, so this tool is for cleanup of leftover branches only.
 
 ## Doctor Tools
 

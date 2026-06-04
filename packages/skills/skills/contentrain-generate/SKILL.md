@@ -54,6 +54,10 @@ Execute the generation command:
 npx contentrain generate
 ```
 
+> **Two ways to invoke the generator:**
+> - `contentrain generate` — via the `contentrain` CLI (recommended; requires the `contentrain` package installed). This is what all examples in this skill use.
+> - `npx contentrain-query generate` — directly via the `@contentrain/query` package's own bin, for projects that depend only on `@contentrain/query` (programmatic / build-tool flows). Both run the same generator.
+
 If the project uses a non-standard root directory, specify it:
 
 ```bash
@@ -169,6 +173,25 @@ For convenience, suggest adding a script to `package.json`:
   }
 }
 ```
+
+### 9b. Wire generate into build/CI (REQUIRED for fresh clones)
+
+`.contentrain/client/` is git-ignored (it is generated output, like Prisma's client). That means a **fresh clone or CI checkout has no client**, so any `#contentrain` import fails at typecheck/build until `generate` runs.
+
+Wire generation into the build lifecycle so it always runs before a build:
+
+```json
+{
+  "scripts": {
+    "prebuild": "contentrain generate",
+    "predev": "contentrain generate"
+  }
+}
+```
+
+- `prebuild`/`predev` run automatically before `build`/`dev` (npm/pnpm lifecycle), so CI and teammates regenerate the client without a manual step.
+- Alternatively use a `postinstall` hook, but `prebuild`/`predev` are preferred (they don't run on every dependency install and stay close to when the client is actually needed).
+- If you only commit content occasionally, the watch script above covers local dev; the `prebuild` hook covers CI and fresh clones.
 
 ### 10. Final Summary
 

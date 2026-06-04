@@ -13,7 +13,10 @@ export function applyWhere<T>(item: T, clause: WhereClause): boolean {
       if (Array.isArray(val)) return val.includes(clause.value)
       return val === clause.value
     }
-    case 'ne': return val !== clause.value
+    case 'ne': {
+      if (Array.isArray(val)) return !val.includes(clause.value)
+      return val !== clause.value
+    }
     case 'gt': return (val as number) > (clause.value as number)
     case 'gte': return (val as number) >= (clause.value as number)
     case 'lt': return (val as number) < (clause.value as number)

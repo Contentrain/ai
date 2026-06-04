@@ -10,6 +10,7 @@ import { planModelDelete, planModelSave } from '../core/ops/index.js'
 import { LocalProvider } from '../providers/local/index.js'
 import { buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
+import { normalizeOperationError } from '../git/errors.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 import { commitThroughProvider } from './commit-plan.js'
 
@@ -112,7 +113,7 @@ export function registerModelTools(
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
-            error: `Model save failed: ${error instanceof Error ? error.message : String(error)}`,
+            ...normalizeOperationError(error, 'model_save'),
           }) }],
           isError: true,
         }
@@ -246,7 +247,7 @@ export function registerModelTools(
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
-            error: `Delete failed: ${error instanceof Error ? error.message : String(error)}`,
+            ...normalizeOperationError(error, 'model_delete'),
           }) }],
           isError: true,
         }

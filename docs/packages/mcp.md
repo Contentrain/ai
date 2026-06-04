@@ -43,7 +43,7 @@ Optional parser support for higher-quality source scanning:
 
 ## Tool Catalog
 
-The MCP server exposes **17 tools** organized by function. Each tool includes [MCP annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`) so clients can distinguish safe reads from writes and destructive operations.
+The MCP server exposes **19 tools** organized by function. Each tool includes [MCP annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`) so clients can distinguish safe reads from writes and destructive operations.
 
 | Tool | Title | Read-only | Destructive |
 |------|-------|-----------|-------------|
@@ -61,6 +61,8 @@ The MCP server exposes **17 tools** organized by function. Each tool includes [M
 | `contentrain_validate` | Validate Project | — | — |
 | `contentrain_submit` | Submit Branches | — | — |
 | `contentrain_merge` | Merge Branch | — | — |
+| `contentrain_branch_list` | List Branches | Yes | — |
+| `contentrain_branch_delete` | Delete Branch | — | **Yes** |
 | `contentrain_scan` | Scan Source Code | Yes | — |
 | `contentrain_apply` | Apply Normalize | — | — |
 | `contentrain_bulk` | Bulk Operations | — | — |
@@ -89,7 +91,9 @@ The MCP server exposes **17 tools** organized by function. Each tool includes [M
 | `contentrain_content_delete` | Remove content | Delete specific content entries |
 | `contentrain_validate` | Check & fix | Validate content against schemas, optionally auto-fix structural issues |
 | `contentrain_submit` | Push branches | Push `cr/*` review branches to remote |
-| `contentrain_merge` | Merge branches | Merge a review-mode branch into contentrain locally (no external platform needed) |
+| `contentrain_merge` | Merge branches | Merge a review-mode branch into contentrain locally (by exact branch or model; no external platform needed) |
+| `contentrain_branch_list` | Inspect branches | List pending `cr/*` branches with merge status and branch-health pressure |
+| `contentrain_branch_delete` | Clean up branches | Delete a stale/failed `cr/*` branch (the contentrain branch is protected) |
 
 ### Normalize Tools (Scan + Apply)
 
@@ -163,7 +167,7 @@ Agent drivers treat `capability_required` as a retry signal. See [Providers & Tr
 - **stdio** — `contentrain serve --stdio` or `npx contentrain-mcp`. IDE agents (Claude Code, Cursor, Windsurf) connect over stdin/stdout.
 - **HTTP** — `contentrain serve --mcpHttp --authToken $TOKEN` or the programmatic `startHttpMcpServer({...})` / `startHttpMcpServerWith({ provider })` exports. Streamable HTTP at `POST /mcp` with secure-by-default Bearer auth. See the [HTTP Transport guide](/guides/http-transport).
 
-Both transports serve the same 17 tools and the same JSON response shapes.
+Both transports serve the same 19 tools and the same JSON response shapes.
 
 ## Providers
 
@@ -291,7 +295,7 @@ This auto-creates the correct MCP config file and installs AI rules/skills.
 
 </details>
 
-Once connected, the agent has access to all 17 MCP tools and can manage your content through natural language.
+Once connected, the agent has access to all 19 MCP tools and can manage your content through natural language.
 
 ## Trust Model
 

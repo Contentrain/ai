@@ -103,6 +103,18 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
     destructiveHint: false,
     idempotentHint: false,
   },
+  contentrain_branch_list: {
+    title: 'List Branches',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+  },
+  contentrain_branch_delete: {
+    title: 'Delete Branch',
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+  },
 
   // ─── Normalize (mixed) ───
   contentrain_scan: {

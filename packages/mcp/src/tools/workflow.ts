@@ -1,14 +1,60 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { z } from 'zod'
-import { simpleGit } from 'simple-git'
+import { simpleGit, type SimpleGit } from 'simple-git'
 import type { ToolProvider } from '../server.js'
 import { validateProject } from '../core/validator/index.js'
 import { readConfig } from '../core/config.js'
 import { createTransaction, buildBranchName, mergeBranch } from '../git/transaction.js'
 import { checkBranchHealth, cleanupMergedBranches } from '../git/branch-lifecycle.js'
+import { isMerged } from '../providers/local/branch-ops.js'
+import { normalizeOperationError } from '../git/errors.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 import { capabilityError } from './guards.js'
+
+/**
+ * Resolve a merge target from either an exact branch name or a
+ * model/locale/latest selector. Returns the concrete branch, or an error with
+ * candidate branches when the selector is ambiguous or matches nothing.
+ */
+async function resolveMergeBranch(
+  git: SimpleGit,
+  input: { branch?: string, model?: string, locale?: string, latest?: boolean },
+): Promise<{ branch: string } | { error: string, candidates: string[] }> {
+  const summary = await git.branchLocal()
+  const crBranches = summary.all.filter(b => b.startsWith('cr/') && b !== CONTENTRAIN_BRANCH)
+
+  if (input.branch) {
+    if (summary.all.includes(input.branch)) return { branch: input.branch }
+    return { error: `Branch "${input.branch}" not found locally.`, candidates: crBranches }
+  }
+
+  if (!input.model) {
+    return { error: 'Provide either "branch" (exact name) or "model" (to resolve the branch).', candidates: crBranches }
+  }
+
+  const prefix = input.locale
+    ? `cr/content/${input.model}/${input.locale}/`
+    : `cr/content/${input.model}/`
+  let matches = crBranches.filter(b => b.startsWith(prefix))
+  if (matches.length === 0) {
+    // Fall back to any scope whose path contains the model segment (fix/bulk/...)
+    matches = crBranches.filter(b => b.split('/').includes(input.model!))
+  }
+  if (matches.length === 0) {
+    return { error: `No pending cr/* branch found for model "${input.model}".`, candidates: crBranches }
+  }
+  if (matches.length === 1) return { branch: matches[0]! }
+  if (!input.latest) {
+    return { error: `Multiple branches match model "${input.model}". Pass latest:true or an exact branch.`, candidates: matches }
+  }
+  const withTimes = await Promise.all(matches.map(async (b) => {
+    const t = await git.raw(['log', '-1', '--format=%ct', b]).then(s => Number(s.trim())).catch(() => 0)
+    return { b, t }
+  }))
+  const newest = withTimes.toSorted((left, right) => right.t - left.t)[0]!
+  return { branch: newest.b }
+}
 
 export function registerWorkflowTools(
   server: McpServer,
@@ -58,9 +104,12 @@ export function registerWorkflowTools(
             }
           }
 
-          // Use git transaction for fixes
+          // Use git transaction for fixes. Force auto-merge: structural fixes
+          // (canonical sort, orphan meta, missing locale files) are cosmetic
+          // infra repairs and should land directly on contentrain rather than
+          // spawn a pending cr/fix/validate review branch.
           const branch = buildBranchName('fix', 'validate')
-          const tx = await createTransaction(projectRoot, branch)
+          const tx = await createTransaction(projectRoot, branch, { workflowOverride: 'auto-merge' })
 
           try {
             await tx.write(async (wt) => {
@@ -175,11 +224,21 @@ export function registerWorkflowTools(
       }
 
       if (!hasRemote) {
+        const summary = await git.branchLocal().catch(() => ({ all: [] as string[] }))
+        const pending = summary.all.filter(b => b.startsWith('cr/') && b !== CONTENTRAIN_BRANCH)
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
-            error: `No remote "${remoteName}" found. Configure a git remote first.`,
-            next_steps: [`git remote add ${remoteName} <url>`],
-          }) }],
+            error: `No remote "${remoteName}" configured — contentrain_submit (push) is unavailable.`,
+            stage: 'submit',
+            agent_hint: 'This project has no git remote. In a local/solo workflow, land pending review branches with contentrain_merge instead of submit, or set workflow:"auto-merge" in config.json so saves merge locally without a remote.',
+            pending_branches: pending,
+            next_steps: [
+              pending.length > 0
+                ? `Merge a pending branch locally: contentrain_merge { branch: "${pending[0]}", confirm: true }`
+                : 'Make changes with contentrain_content_save — auto-merge lands them locally without a remote',
+              `Or add a remote to enable submit: git remote add ${remoteName} <url>`,
+            ],
+          }, null, 2) }],
           isError: true,
         }
       }
@@ -291,9 +350,12 @@ export function registerWorkflowTools(
   // ─── contentrain_merge ───
   server.tool(
     'contentrain_merge',
-    'Merge a review-mode branch into contentrain. Local git operation — no external platform needed. Merges the feature branch into the contentrain branch, advances the base branch via update-ref, and selectively syncs .contentrain/ files to the working tree.',
+    'Merge a review-mode branch into contentrain. Local git operation — no external platform needed. Merges the feature branch into the contentrain branch, advances the base branch via update-ref, selectively syncs .contentrain/ files to the working tree, and prunes the merged branch. Target by exact "branch" name, or resolve by "model" (+ optional "locale"/"latest").',
     {
-      branch: z.string().describe('Branch name to merge (e.g. cr/normalize/extract/...)'),
+      branch: z.string().optional().describe('Exact branch name to merge (e.g. cr/content/blog-post/...). Omit to resolve by model.'),
+      model: z.string().optional().describe('Resolve the branch by model id (e.g. "blog-post").'),
+      locale: z.string().optional().describe('Narrow model resolution to a locale.'),
+      latest: z.boolean().optional().describe('When multiple branches match the model, merge the most recently committed one.'),
       confirm: z.literal(true).describe('Must be true to confirm the merge'),
     },
     TOOL_ANNOTATIONS['contentrain_merge']!,
@@ -313,29 +375,35 @@ export function registerWorkflowTools(
       }
 
       try {
-        // Verify branch exists
+        // Resolve the target branch from exact name or model/locale/latest selector
         const git = simpleGit(projectRoot)
-        const branches = await git.branchLocal()
-        if (!branches.all.includes(input.branch)) {
+        const resolved = await resolveMergeBranch(git, input)
+        if ('error' in resolved) {
           return {
             content: [{ type: 'text' as const, text: JSON.stringify({
-              error: `Branch "${input.branch}" not found locally.`,
-              next_steps: ['Check branch name with git branch -l', 'Use contentrain_submit to push first if needed'],
-            }) }],
+              error: resolved.error,
+              candidates: resolved.candidates,
+              next_steps: [
+                'Pass an exact { branch } or { model, latest: true }',
+                'List pending branches with contentrain_branch_list',
+              ],
+            }, null, 2) }],
             isError: true,
           }
         }
+        const targetBranch = resolved.branch
 
-        const result = await mergeBranch(projectRoot, input.branch)
+        const result = await mergeBranch(projectRoot, targetBranch)
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             status: 'merged',
+            branch: targetBranch,
             action: result.action,
             commit: result.commit,
             sync: result.sync,
             next_steps: [
-              'Run `npx contentrain generate` to update SDK client',
+              'Run `contentrain generate` (or `npx contentrain-query generate`) to update the SDK client',
               'Run contentrain_validate to verify content integrity',
               result.sync.skipped.length > 0
                 ? `${result.sync.skipped.length} file(s) skipped due to local changes — resolve manually`
@@ -345,9 +413,111 @@ export function registerWorkflowTools(
         }
       } catch (error) {
         return {
+          content: [{ type: 'text' as const, text: JSON.stringify(normalizeOperationError(error, 'merge'), null, 2) }],
+          isError: true,
+        }
+      }
+    },
+  )
+
+  // ─── contentrain_branch_list ───
+  server.tool(
+    'contentrain_branch_list',
+    'List pending contentrain (cr/*) branches with their merge status against the contentrain branch. Use this to discover branch names for contentrain_merge / contentrain_branch_delete, and to monitor branch-health limits (warning at 50, blocked at 80 unmerged).',
+    {
+      unmerged_only: z.boolean().optional().describe('Only list branches not yet merged into contentrain. Default: false'),
+    },
+    TOOL_ANNOTATIONS['contentrain_branch_list']!,
+    async (input) => {
+      if (!provider.capabilities.localWorktree || !projectRoot) {
+        return capabilityError('contentrain_branch_list', 'localWorktree')
+      }
+      try {
+        const git = simpleGit(projectRoot)
+        const summary = await git.branchLocal()
+        const crBranches = summary.all.filter(b => b.startsWith('cr/') && b !== CONTENTRAIN_BRANCH)
+
+        const branches = await Promise.all(crBranches.map(async (name) => {
+          const [merged, ts] = await Promise.all([
+            isMerged(projectRoot, name, CONTENTRAIN_BRANCH),
+            git.raw(['log', '-1', '--format=%cI', name]).then(s => s.trim()).catch(() => ''),
+          ])
+          return { name, sha: summary.branches[name]?.commit ?? '', merged, lastCommit: ts }
+        }))
+        const ordered = branches.toSorted((left, right) => right.lastCommit.localeCompare(left.lastCommit))
+        const filtered = input.unmerged_only ? ordered.filter(b => !b.merged) : ordered
+        const health = await checkBranchHealth(projectRoot)
+
+        return {
           content: [{ type: 'text' as const, text: JSON.stringify({
-            error: `Merge failed: ${error instanceof Error ? error.message : String(error)}`,
+            total: ordered.length,
+            unmerged: ordered.filter(b => !b.merged).length,
+            branches: filtered,
+            health: { warning: health.warning, blocked: health.blocked, message: health.message },
+            next_steps: [
+              'Merge a branch: contentrain_merge { branch: "...", confirm: true }',
+              'Delete a stale branch: contentrain_branch_delete { branch: "...", confirm: true }',
+            ],
+          }, null, 2) }],
+        }
+      } catch (error) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(normalizeOperationError(error, 'branch_list'), null, 2) }],
+          isError: true,
+        }
+      }
+    },
+  )
+
+  // ─── contentrain_branch_delete ───
+  server.tool(
+    'contentrain_branch_delete',
+    'Delete a pending contentrain (cr/*) branch that will not be merged — e.g. a branch left behind by a failed operation, or a superseded draft. Only cr/* branches can be deleted; the contentrain branch is protected. This is destructive: the branch and its unmerged commits are removed.',
+    {
+      branch: z.string().describe('The cr/* branch to delete'),
+      confirm: z.literal(true).describe('Must be true to confirm deletion'),
+    },
+    TOOL_ANNOTATIONS['contentrain_branch_delete']!,
+    async (input) => {
+      if (!provider.capabilities.localWorktree || !projectRoot) {
+        return capabilityError('contentrain_branch_delete', 'localWorktree')
+      }
+      if (!input.branch.startsWith('cr/') || input.branch === CONTENTRAIN_BRANCH) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: `Refusing to delete "${input.branch}". Only cr/* feature branches can be deleted (the contentrain branch is protected).`,
           }) }],
+          isError: true,
+        }
+      }
+      try {
+        const git = simpleGit(projectRoot)
+        const summary = await git.branchLocal()
+        if (!summary.all.includes(input.branch)) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({
+              error: `Branch "${input.branch}" not found locally.`,
+              next_steps: ['List branches with contentrain_branch_list'],
+            }) }],
+            isError: true,
+          }
+        }
+        const merged = await isMerged(projectRoot, input.branch, CONTENTRAIN_BRANCH)
+        // Force-delete (-D): the branch may carry unmerged commits the caller
+        // has explicitly decided to discard.
+        await git.raw(['branch', '-D', input.branch])
+
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            status: 'deleted',
+            branch: input.branch,
+            was_merged: merged,
+            warning: merged ? undefined : 'Branch was not merged — its commits were discarded.',
+          }, null, 2) }],
+        }
+      } catch (error) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(normalizeOperationError(error, 'branch_delete'), null, 2) }],
           isError: true,
         }
       }

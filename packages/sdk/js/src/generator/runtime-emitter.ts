@@ -52,17 +52,23 @@ export function emitRuntimeModule(models: ModelDefinition[], dataModules: DataMo
     lines.push('// ─── Relation Resolver ───')
     lines.push('')
     lines.push('function _resolveEntry(model, id, locale) {')
-    lines.push('  const localeKey = locale ?? \'_default\'')
+    // Try the requested locale first, then fall back to the locale-agnostic
+    // '_default' key. i18n:true targets are keyed by locale string ('en'),
+    // i18n:false targets are keyed '_default' — this fallback resolves both
+    // regardless of the source query's active locale.
+    lines.push('  const localeKeys = locale ? [locale, \'_default\'] : [\'_default\']')
+    lines.push('  for (const localeKey of localeKeys) {')
     // Search in collection registry
     if (collections.length > 0) {
-      lines.push('  const colData = _collectionRegistry[model]?.get(localeKey)')
-      lines.push('  if (colData) { const e = colData.find(x => x.id === id); if (e) return e; }')
+      lines.push('    const colData = _collectionRegistry[model]?.get(localeKey)')
+      lines.push('    if (colData) { const e = colData.find(x => x.id === id); if (e) return e; }')
     }
     // Search in document registry
     if (documents.length > 0) {
-      lines.push('  const docData = _documentRegistry[model]?.get(localeKey)')
-      lines.push('  if (docData) { const e = docData.find(x => x.slug === id); if (e) return e; }')
+      lines.push('    const docData = _documentRegistry[model]?.get(localeKey)')
+      lines.push('    if (docData) { const e = docData.find(x => x.slug === id); if (e) return e; }')
     }
+    lines.push('  }')
     lines.push('  return undefined')
     lines.push('}')
     lines.push('')
@@ -219,19 +225,14 @@ export function emitCjsWrapper(models: ModelDefinition[]): string {
   return `/* eslint-disable */
 /* oxlint-disable */
 // Auto-generated CJS proxy — delegates to ESM via dynamic import()
-// Sync usage: const client = require('#contentrain'); client.query('model')
-// Async usage: const client = await require('#contentrain').init()
+// The generated client is ESM-first. From CommonJS, await init() once before
+// accessing exports:
+//   const client = await require('#contentrain').init()
+//   client.query('model')
+// Prefer native ESM (import) where possible.
 'use strict'
 let _mod = null
 let _promise = null
-
-function _ensure() {
-  if (_mod) return _mod
-  throw new Error(
-    'Contentrain client not initialized. Call .init() first, then access exports.\\n'
-    + 'Example: require("#contentrain").init().then(c => c.query("model"))'
-  )
-}
 
 module.exports.init = function() {
   if (!_promise) _promise = import('./index.mjs').then(function(m) {
@@ -324,7 +325,7 @@ function _applyWhere(item, clause) {
   const val = item[clause.field];
   switch (clause.op) {
     case 'eq': return Array.isArray(val) ? val.includes(clause.value) : val === clause.value;
-    case 'ne': return val !== clause.value;
+    case 'ne': return Array.isArray(val) ? !val.includes(clause.value) : val !== clause.value;
     case 'gt': return val > clause.value;
     case 'gte': return val >= clause.value;
     case 'lt': return val < clause.value;
@@ -361,11 +362,12 @@ class QueryBuilder {
   first() { return this.all()[0]; }
   _resolveIncludes(item) {
     const resolved = { ...item };
+    const _loc = this._locale ?? this._defaultLocale;
     for (const field of this._includes) {
       const meta = this._relationMeta[field]; if (!meta) continue;
       const targets = Array.isArray(meta.target) ? meta.target : [meta.target];
-      if (meta.multi) { const ids = item[field]; if (Array.isArray(ids)) { resolved[field] = ids.map(id => { if (typeof id === 'string') { for (const t of targets) { const r = this._resolver(t, id, this._locale); if (r) return r; } return id; } if (typeof id === 'object' && id !== null && 'model' in id && 'ref' in id) { const r = this._resolver(id.model, id.ref, this._locale); if (r) return r; } return id; }); } }
-      else { const id = item[field]; if (typeof id === 'string') { for (const t of targets) { const r = this._resolver(t, id, this._locale); if (r) { resolved[field] = r; break; } } } else if (typeof id === 'object' && id !== null && 'model' in id && 'ref' in id) { const r = this._resolver(id.model, id.ref, this._locale); if (r) resolved[field] = r; } }
+      if (meta.multi) { const ids = item[field]; if (Array.isArray(ids)) { resolved[field] = ids.map(id => { if (typeof id === 'string') { for (const t of targets) { const r = this._resolver(t, id, _loc); if (r) return r; } return id; } if (typeof id === 'object' && id !== null && 'model' in id && 'ref' in id) { const r = this._resolver(id.model, id.ref, _loc); if (r) return r; } return id; }); } }
+      else { const id = item[field]; if (typeof id === 'string') { for (const t of targets) { const r = this._resolver(t, id, _loc); if (r) { resolved[field] = r; break; } } } else if (typeof id === 'object' && id !== null && 'model' in id && 'ref' in id) { const r = this._resolver(id.model, id.ref, _loc); if (r) resolved[field] = r; } }
     }
     return resolved;
   }
@@ -403,15 +405,16 @@ class DictionaryAccessor {
     if (key === undefined) return dict;
     const val = dict[key];
     if (val === undefined) return undefined;
-    if (params) return val.replace(/{(w+)}/g, (m, k) => { const v = params[k]; return v !== undefined ? String(v) : m; });
+    if (params) return val.replace(/\\{(\\w+)\\}/g, (m, k) => { const v = params[k]; return v !== undefined ? String(v) : m; });
     return val;
   }
 }
 
 class DocumentQuery {
-  constructor(data, relationMeta, resolver, defaultLocale) { this._data = data; this._filters = []; this._locale = null; this._includes = []; this._relationMeta = relationMeta || {}; this._resolver = resolver || null; this._defaultLocale = defaultLocale || null; }
+  constructor(data, relationMeta, resolver, defaultLocale) { this._data = data; this._filters = []; this._sortField = null; this._sortOrder = 'asc'; this._locale = null; this._includes = []; this._relationMeta = relationMeta || {}; this._resolver = resolver || null; this._defaultLocale = defaultLocale || null; }
   locale(lang) { this._locale = lang; return this; }
   where(field, opOrValue, value) { if (value !== undefined) { this._filters.push({ field, op: opOrValue, value }); } else { this._filters.push({ field, op: 'eq', value: opOrValue }); } return this; }
+  sort(field, order = 'asc') { this._sortField = field; this._sortOrder = order; return this; }
   include(...fields) { this._includes.push(...fields); return this; }
   bySlug(slug) {
     const items = this._resolveData(); const item = items.find(x => x.slug === slug);
@@ -420,15 +423,16 @@ class DocumentQuery {
   }
   count() { return this.all().length; }
   first() { return this.all()[0]; }
-  all() { let items = this._resolveData(); for (const clause of this._filters) items = items.filter(item => _applyWhere(item, clause)); if (this._includes.length > 0 && this._resolver) { items = items.map(item => this._resolveIncludes(item)); } return items; }
+  all() { let items = this._resolveData(); for (const clause of this._filters) items = items.filter(item => _applyWhere(item, clause)); if (this._sortField) { const sf = this._sortField; const d = this._sortOrder === 'asc' ? 1 : -1; items.sort((a, b) => { const va = a[sf], vb = b[sf]; if (va == null && vb == null) return 0; if (va == null) return d; if (vb == null) return -d; return va < vb ? -d : va > vb ? d : 0; }); } if (this._includes.length > 0 && this._resolver) { items = items.map(item => this._resolveIncludes(item)); } return items; }
   _resolveData() { let key; if (this._locale) { key = this._locale; } else if (this._defaultLocale && this._data.has(this._defaultLocale)) { key = this._defaultLocale; } else { key = this._data.keys().next().value; } return [...(this._data.get(key) ?? [])]; }
   _resolveIncludes(item) {
     const resolved = { ...item };
+    const _loc = this._locale ?? this._defaultLocale;
     for (const field of this._includes) {
       const meta = this._relationMeta[field]; if (!meta) continue;
       const targets = Array.isArray(meta.target) ? meta.target : [meta.target];
-      if (meta.multi) { const ids = item[field]; if (Array.isArray(ids)) { resolved[field] = ids.map(id => { if (typeof id === 'string') { for (const t of targets) { const r = this._resolver(t, id, this._locale); if (r) return r; } return id; } if (typeof id === 'object' && id !== null && 'model' in id && 'ref' in id) { const r = this._resolver(id.model, id.ref, this._locale); if (r) return r; } return id; }); } }
-      else { const id = item[field]; if (typeof id === 'string') { for (const t of targets) { const r = this._resolver(t, id, this._locale); if (r) { resolved[field] = r; break; } } } else if (typeof id === 'object' && id !== null && 'model' in id && 'ref' in id) { const r = this._resolver(id.model, id.ref, this._locale); if (r) resolved[field] = r; } }
+      if (meta.multi) { const ids = item[field]; if (Array.isArray(ids)) { resolved[field] = ids.map(id => { if (typeof id === 'string') { for (const t of targets) { const r = this._resolver(t, id, _loc); if (r) return r; } return id; } if (typeof id === 'object' && id !== null && 'model' in id && 'ref' in id) { const r = this._resolver(id.model, id.ref, _loc); if (r) return r; } return id; }); } }
+      else { const id = item[field]; if (typeof id === 'string') { for (const t of targets) { const r = this._resolver(t, id, _loc); if (r) { resolved[field] = r; break; } } } else if (typeof id === 'object' && id !== null && 'model' in id && 'ref' in id) { const r = this._resolver(id.model, id.ref, _loc); if (r) resolved[field] = r; } }
     }
     return resolved;
   }

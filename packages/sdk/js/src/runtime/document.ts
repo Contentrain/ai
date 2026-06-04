@@ -6,6 +6,8 @@ export class DocumentQuery<T extends object> {
   private _data: Map<string, T[]>
   private _locale: string | null = null
   private _filters: WhereClause[] = []
+  private _sortField: string | null = null
+  private _sortOrder: 'asc' | 'desc' = 'asc'
   private _includes: string[] = []
   private _relationMeta: Record<string, RelationMeta>
   private _resolver: RelationResolver | null
@@ -39,6 +41,12 @@ export class DocumentQuery<T extends object> {
     return this
   }
 
+  sort<K extends string & keyof T>(field: K, order: 'asc' | 'desc' = 'asc'): this {
+    this._sortField = field
+    this._sortOrder = order
+    return this
+  }
+
   include(...fields: string[]): this {
     this._includes.push(...fields)
     return this
@@ -61,6 +69,18 @@ export class DocumentQuery<T extends object> {
     let items = this._resolveData()
     for (const clause of this._filters) {
       items = items.filter(item => applyWhere(item, clause))
+    }
+    if (this._sortField) {
+      const sf = this._sortField
+      const dir = this._sortOrder === 'asc' ? 1 : -1
+      items = items.toSorted((a, b) => {
+        const va = (a as Record<string, unknown>)[sf] as number | string | null | undefined
+        const vb = (b as Record<string, unknown>)[sf] as number | string | null | undefined
+        if (va == null && vb == null) return 0
+        if (va == null) return dir
+        if (vb == null) return -dir
+        return va < vb ? -dir : va > vb ? dir : 0
+      })
     }
     if (this._includes.length > 0 && this._resolver) {
       items = items.map(item => this._resolveIncludes(item))
@@ -124,8 +144,9 @@ export class DocumentQuery<T extends object> {
   }
 
   private _resolveId(targets: string[], id: string): Record<string, unknown> | undefined {
+    const loc = this._locale ?? this._defaultLocale
     for (const target of targets) {
-      const result = this._resolver!(target, id, this._locale)
+      const result = this._resolver!(target, id, loc)
       if (result) return result
     }
     return undefined

@@ -70,7 +70,7 @@ All write operations are designed around git-backed safety:
 
 ## Tool Surface
 
-17 MCP tools with [annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`) for client safety hints:
+19 MCP tools with [annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`) for client safety hints:
 
 | Tool | Purpose | Read-only | Destructive |
 | --- | --- | --- | --- |
@@ -87,7 +87,9 @@ All write operations are designed around git-backed safety:
 | `contentrain_content_list` | Read content entries | Yes | — |
 | `contentrain_validate` | Validate project content, optionally auto-fix structural issues | — | — |
 | `contentrain_submit` | Push `cr/*` branches to remote | — | — |
-| `contentrain_merge` | Merge a review-mode branch into contentrain locally | — | — |
+| `contentrain_merge` | Merge a review-mode branch into contentrain locally (by exact branch or model) | — | — |
+| `contentrain_branch_list` | List pending `cr/*` branches with merge status | Yes | — |
+| `contentrain_branch_delete` | Delete a stale/failed `cr/*` branch (contentrain branch protected) | — | **Yes** |
 | `contentrain_scan` | Graph- and candidate-based hardcoded string scan | Yes | — |
 | `contentrain_apply` | Normalize extract/reuse execution with dry-run support | — | — |
 | `contentrain_bulk` | Bulk locale copy, status updates, and deletes | — | — |
@@ -250,7 +252,7 @@ These are intended for Contentrain tooling and advanced integrations, not for di
 Key design decisions in this package:
 
 - local-first **by default** — stdio transport + LocalProvider works without any network dependency
-- provider-agnostic engine — the same 17 tools run over LocalProvider, GitHubProvider, or GitLabProvider behind a single `RepoProvider` contract
+- provider-agnostic engine — the same 19 tools run over LocalProvider, GitHubProvider, or GitLabProvider behind a single `RepoProvider` contract
 - remote provider SDKs (`@octokit/rest`, `@gitbeaker/rest`) are optional peer dependencies — pulled in only when their provider is used
 - JSON-only content storage
 - git-backed write workflow (worktree transaction locally, single atomic commit over the Git Data / REST APIs remotely)

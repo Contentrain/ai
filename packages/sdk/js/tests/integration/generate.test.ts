@@ -56,17 +56,17 @@ describe('generate (integration)', () => {
     // Document
     expect(types).toContain('export interface BlogArticle')
     expect(types).toContain('slug: string')
-    expect(types).toContain('content: string')
+    expect(types).toContain('body: string')
     // Relation model types
     expect(types).toContain('export interface Author')
     expect(types).toContain('export interface Tag')
     // Query interfaces with include()
     expect(types).toContain('export interface QueryBuilder<T>')
-    expect(types).toContain('include(...fields: string[]): QueryBuilder<T>')
+    expect(types).toContain('include<K extends keyof T & string>(...fields: K[]): QueryBuilder<T>')
     expect(types).toContain('export interface SingletonAccessor<T>')
     expect(types).toContain('export interface DictionaryAccessor')
     expect(types).toContain('export interface DocumentQuery<T>')
-    expect(types).toContain('include(...fields: string[]): DocumentQuery<T>')
+    expect(types).toContain('include<K extends keyof T & string>(...fields: K[]): DocumentQuery<T>')
     // Overloaded entry points — typed overloads
     expect(types).toContain("export declare function query(model: 'blog-post'): QueryBuilder<BlogPost>")
     expect(types).toContain("export declare function query(model: 'author'): QueryBuilder<Author>")
@@ -158,7 +158,7 @@ describe('generate (integration)', () => {
     const docData = await readFile(join(clientDir, 'data', 'blog-article--welcome-post.en.mjs'), 'utf-8')
     expect(docData).toContain('export default')
     expect(docData).toContain('"slug": "welcome-post"')
-    expect(docData).toContain('"content"')
+    expect(docData).toContain('"body"')
     // Canonical JSON: keys sorted
     const jsonStr = docData.replace('export default ', '').trim()
     const parsed = JSON.parse(jsonStr)
@@ -243,6 +243,69 @@ describe('generate (integration)', () => {
       await generate({ projectRoot: tempRoot })
 
       await expect(access(staleModulePath)).rejects.toThrow()
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('interpolates dictionary params in the generated runtime (regex survives emit)', async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), 'contentrain-sdk-dict-'))
+    try {
+      await cp(FIXTURE, tempRoot, { recursive: true })
+      // Add an interpolated value to the error-messages dictionary (en)
+      const dictEn = join(tempRoot, '.contentrain', 'content', 'system', 'error-messages', 'en.json')
+      const raw = JSON.parse(await readFile(dictEn, 'utf-8')) as Record<string, string>
+      raw['greeting'] = 'Hello {name}, you have {count} messages'
+      await writeFile(dictEn, JSON.stringify(raw, null, 2) + '\n', 'utf-8')
+
+      await generate({ projectRoot: tempRoot })
+      const clientPath = pathToFileURL(join(tempRoot, '.contentrain', 'client', 'index.mjs')).href
+      const client = await import(clientPath)
+
+      const out = client.dictionary('error-messages').get('greeting', { name: 'Ada', count: 3 })
+      expect(out).toBe('Hello Ada, you have 3 messages')
+      // No-params call returns the raw template untouched
+      expect(client.dictionary('error-messages').get('greeting')).toBe('Hello {name}, you have {count} messages')
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('DocumentQuery.sort() orders documents in the generated runtime', async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), 'contentrain-sdk-docsort-'))
+    try {
+      await cp(FIXTURE, tempRoot, { recursive: true })
+      await generate({ projectRoot: tempRoot })
+      const clientPath = pathToFileURL(join(tempRoot, '.contentrain', 'client', 'index.mjs')).href
+      const client = await import(clientPath)
+
+      const asc = client.document('blog-article').sort('title', 'asc').all().map((d: { title: string }) => d.title)
+      const desc = client.document('blog-article').sort('title', 'desc').all().map((d: { title: string }) => d.title)
+      expect(asc).toEqual([...asc].toSorted())
+      expect(desc).toEqual([...asc].toReversed())
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('include() resolves an i18n:false relation target from an i18n:true source', async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), 'contentrain-sdk-include-'))
+    try {
+      await cp(FIXTURE, tempRoot, { recursive: true })
+      await generate({ projectRoot: tempRoot })
+      const clientPath = pathToFileURL(join(tempRoot, '.contentrain', 'client', 'index.mjs')).href
+      const client = await import(clientPath)
+
+      // blog-post is i18n:true, author is i18n:false (stored under '_default').
+      // Without an explicit .locale(): effective locale = default → must still resolve.
+      const noLocale = client.query('blog-post').include('author').first()
+      expect(typeof noLocale.author).toBe('object')
+      expect(noLocale.author.name).toBeTruthy()
+
+      // With an explicit .locale('en'): must also resolve the '_default' author.
+      const withLocale = client.query('blog-post').locale('en').include('author').first()
+      expect(typeof withLocale.author).toBe('object')
+      expect(withLocale.author.name).toBeTruthy()
     } finally {
       await rm(tempRoot, { recursive: true, force: true })
     }

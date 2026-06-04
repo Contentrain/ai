@@ -23,7 +23,7 @@ export type FieldType = (typeof FIELD_TYPES)[number]
 export const MODEL_KINDS = ['singleton', 'collection', 'document', 'dictionary'] as const
 export type ModelKind = (typeof MODEL_KINDS)[number]
 
-// ─── MCP Tools (17 tools) ───
+// ─── MCP Tools (19 tools) ───
 
 export const MCP_TOOLS = [
   'contentrain_status', 'contentrain_describe', 'contentrain_describe_format',
@@ -33,6 +33,7 @@ export const MCP_TOOLS = [
   'contentrain_scan', 'contentrain_apply',
   'contentrain_validate', 'contentrain_submit',
   'contentrain_merge',
+  'contentrain_branch_list', 'contentrain_branch_delete',
   'contentrain_bulk',
   'contentrain_doctor',
 ] as const

@@ -277,7 +277,7 @@ Serves REST endpoints (`/api/status`, `/api/content`, `/api/branches`, `/api/doc
 contentrain serve --stdio
 ```
 
-For IDE agents. Same 17 tools, stdio transport.
+For IDE agents. Same 19 tools, stdio transport.
 
 #### MCP HTTP
 
