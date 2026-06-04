@@ -52,7 +52,9 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 | `contentrain_apply` | Apply normalize (extract/reuse) |
 | `contentrain_validate` | Validate content against schemas |
 | `contentrain_submit` | Push branches to remote |
-| `contentrain_merge` | Merge a review-mode branch into contentrain locally |
+| `contentrain_merge` | Merge a review-mode branch into contentrain locally (by exact branch or model) |
+| `contentrain_branch_list` | List pending `cr/*` branches + merge status |
+| `contentrain_branch_delete` | Delete a stale/failed `cr/*` branch (the contentrain branch is protected) |
 | `contentrain_bulk` | Batch operations (copy_locale/update_status/delete_entries) |
 | `contentrain_doctor` | Project health report (env + structure + orphan content + branch pressure + SDK freshness) |
 

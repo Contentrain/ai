@@ -13,6 +13,7 @@ import { writeContent, type ContentEntry } from '../core/content-manager.js'
 import { getTemplate, listTemplates } from '../templates/index.js'
 import { createTransaction, buildBranchName, ensureContentBranch } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
+import { normalizeOperationError } from '../git/errors.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 import { capabilityError } from './guards.js'
 
@@ -68,7 +69,7 @@ export function registerSetupTools(
       }
       const hasAnyCommit = await git.raw(['rev-list', '-n', '1', '--all']).then(out => out.trim().length > 0).catch(() => false)
       if (!hasAnyCommit) {
-        await git.commit('initial commit', { '--allow-empty': null })
+        await git.commit('initial commit', { '--allow-empty': null, '--no-verify': null })
       }
 
       // Branch health gate
@@ -172,7 +173,7 @@ export function registerSetupTools(
         await tx.cleanup()
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
-            error: `Init failed: ${error instanceof Error ? error.message : String(error)}`,
+            ...normalizeOperationError(error, 'init'),
           }) }],
           isError: true,
         }
@@ -288,7 +289,7 @@ export function registerSetupTools(
         await tx.cleanup()
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
-            error: `Scaffold failed: ${error instanceof Error ? error.message : String(error)}`,
+            ...normalizeOperationError(error, 'scaffold'),
           }) }],
           isError: true,
         }

@@ -186,6 +186,12 @@ export default defineCommand({
       log.message(`  ${pc.cyan('contentrain serve')}      — open the local review and normalize UI`)
     }
     log.message(`  ${pc.cyan('contentrain generate')}   — generate SDK client`)
+
+    // Stack-aware SDK wiring guidance. The generated client lives at
+    // .contentrain/client/ (git-ignored), so a fresh clone/CI needs both the
+    // #contentrain subpath import and a generate step before build.
+    printStackWiring(stackChoice as string)
+
     log.message('')
     log.message(pc.dim(`  Tip: ${pc.cyan('contentrain studio connect')} — link this project to ${pc.bold('Contentrain Studio')} for`))
     log.message(pc.dim(`       team review, CDN delivery, and collaboration → ${pc.underline('https://studio.contentrain.io')}`))
@@ -193,6 +199,28 @@ export default defineCommand({
     outro('')
   },
 })
+
+/**
+ * Print stack-aware guidance for wiring the generated `#contentrain` client
+ * into the host project. Init does not mutate the host's bundler config or
+ * package.json (agent = intelligence), but a fresh `contentrain init` user has
+ * no signal about the alias + prebuild step, so we surface it here.
+ */
+function printStackWiring(stack: string): void {
+  const bundlerStacks = new Set(['nuxt', 'next', 'astro', 'sveltekit', 'svelte', 'react', 'react-vite', 'vue', 'vite'])
+  if (!bundlerStacks.has(stack)) return
+
+  log.message('')
+  log.message(pc.bold(`  SDK wiring (${stack}):`))
+  log.message(`    1. Add the subpath import to ${pc.cyan('package.json')}:`)
+  log.message(pc.dim('       "imports": { "#contentrain": "./.contentrain/client/index.mjs" }'))
+  log.message(`    2. Add a ${pc.cyan('#contentrain')} bundler alias — see the ${pc.cyan('contentrain-sdk')} skill (bundler-config).`)
+  log.message(`    3. ${pc.cyan('.contentrain/client/')} is git-ignored, so wire generate into build for CI/fresh clones:`)
+  log.message(pc.dim('       "scripts": { "prebuild": "contentrain generate", "predev": "contentrain generate" }'))
+  if (stack === 'nuxt') {
+    log.message(pc.dim('    Note (Nuxt): treat #contentrain as server-only — use it under server/ (e.g. server/api/*).'))
+  }
+}
 
 interface InitOptions {
   stack: string

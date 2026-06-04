@@ -1,4 +1,4 @@
-import { simpleGit } from 'simple-git'
+import { simpleGit, type SimpleGit } from 'simple-git'
 import { join } from 'node:path'
 import { rm as removeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -230,6 +230,8 @@ export async function createTransaction(
   await wtGit.checkout(['-b', branch])
 
   let commitHash = ''
+  let pendingReview = false
+  let savedContextUpdate: ContextUpdate | undefined
 
   return {
     worktree: worktreePath,
@@ -240,12 +242,15 @@ export async function createTransaction(
     },
 
     async commit(message, contextUpdate?) {
-      // Write context.json together with content (no separate commit)
-      if (contextUpdate) {
-        await writeContext(worktreePath, contextUpdate)
-      }
+      // context.json is intentionally NOT committed on the feature branch — it
+      // is regenerated on the contentrain branch after the merge (see
+      // complete()). Committing it per-branch caused cross-branch merge
+      // conflicts on a single mutable file. `--no-verify` keeps the repo's
+      // commit-msg / pre-commit hooks (commitlint, lefthook, husky) from
+      // rejecting these machine-generated infra commits.
+      savedContextUpdate = contextUpdate
       await wtGit.add('.')
-      const result = await wtGit.commit(message, { '--allow-empty': null })
+      const result = await wtGit.commit(message, { '--allow-empty': null, '--no-verify': null })
       commitHash = result.commit || ''
       return commitHash
     },
@@ -255,6 +260,8 @@ export async function createTransaction(
         if (hasRemote) {
           await git.push(remoteName, branch)
         }
+        // Pending-review branches must survive for a later contentrain_merge.
+        pendingReview = true
         return { action: 'pending-review', commit: commitHash }
       }
 
@@ -279,6 +286,12 @@ export async function createTransaction(
           agent_hint: 'The feature branch could not be merged into the contentrain branch. Ask the developer to resolve the conflict.',
           developer_action: `git checkout ${CONTENTRAIN_BRANCH} && git merge ${branch}`,
         })
+      }
+
+      // Regenerate context.json on the contentrain branch (post-merge,
+      // single-threaded) and fold it into the tip before advancing the base.
+      if (savedContextUpdate) {
+        await regenerateContextOnContentrain(wtGit, worktreePath, savedContextUpdate)
       }
 
       // Get contentrain tip + old base ref + dirty files in parallel
@@ -358,6 +371,13 @@ export async function createTransaction(
       } catch {
         // worktree may already be cleaned up
       }
+      // Prune the feature branch unless it is a pending-review branch that must
+      // survive for a later contentrain_merge. Auto-merged branches (already in
+      // contentrain) and failed/empty branches are both safe to delete, so
+      // failed saves and merged saves no longer leak dangling cr/* refs.
+      if (!pendingReview) {
+        await safeDeleteBranch(git, branch)
+      }
     },
   }
 }
@@ -416,6 +436,11 @@ export async function mergeBranch(
       })
     }
 
+    // Regenerate context.json on contentrain post-merge (deterministic,
+    // single-threaded) so review-mode branches — which carry no context.json —
+    // still produce up-to-date stats once landed.
+    await regenerateContextOnContentrain(wtGit, worktreePath, { tool: 'contentrain_merge', model: '*' })
+
     // Get contentrain tip + old base ref + dirty files in parallel
     const [contentrainTip, previousBaseRef, statusBeforeUpdate] = await Promise.all([
       wtGit.raw(['rev-parse', 'HEAD']).then(s => s.trim()),
@@ -472,6 +497,9 @@ export async function mergeBranch(
       }
     }
 
+    // Prune the now-merged feature branch so merged cr/* refs don't accumulate.
+    await safeDeleteBranch(git, branchName)
+
     return {
       action: 'merged' as const,
       commit: contentrainTip,
@@ -493,4 +521,40 @@ export function buildBranchName(scope: string, target: string, locale?: string):
   if (locale) parts.push(locale)
   parts.push(ts)
   return parts.join('/')
+}
+
+/**
+ * Force-delete a local branch, swallowing all errors. Never deletes the
+ * singleton `contentrain` branch. Used to prune feature branches after they
+ * are merged (auto-merge / contentrain_merge) or when a transaction fails
+ * before completing — so failed/merged `cr/*` refs do not accumulate.
+ */
+async function safeDeleteBranch(git: SimpleGit, branch: string): Promise<void> {
+  if (!branch || branch === CONTENTRAIN_BRANCH) return
+  try {
+    await git.raw(['branch', '-D', branch])
+  } catch {
+    // Branch may not exist, be checked out, or already be deleted — ignore.
+  }
+}
+
+/**
+ * Regenerate `.contentrain/context.json` deterministically inside a worktree
+ * that is currently on the `contentrain` branch, then commit it (hooks
+ * bypassed). Called AFTER a feature branch is merged so context.json is only
+ * ever written on `contentrain`, single-threaded — eliminating the per-branch
+ * merge conflicts that came from committing it on every feature branch.
+ */
+async function regenerateContextOnContentrain(
+  wtGit: SimpleGit,
+  worktreePath: string,
+  contextUpdate: ContextUpdate,
+): Promise<void> {
+  await writeContext(worktreePath, contextUpdate)
+  await wtGit.add('.contentrain/context.json')
+  try {
+    await wtGit.commit('[contentrain] context: update', { '--no-verify': null })
+  } catch {
+    // Nothing staged (context.json unchanged) — fine.
+  }
 }

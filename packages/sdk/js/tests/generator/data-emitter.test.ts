@@ -74,7 +74,9 @@ describe('data-emitter', () => {
     expect(content).toContain('export default')
     expect(content).toContain('"slug": "welcome-post"')
     expect(content).toContain('"title": "Welcome to Contentrain"')
-    expect(content).toContain('"content": "# Welcome')
+    // Canonical document body key is `body` (matches @contentrain/types)
+    expect(content).toContain('"body": "# Welcome')
+    expect(content).not.toContain('"content":')
     // Keys should be sorted (canonical)
     const jsonStr = content.replace('export default ', '').trim()
     const parsed = JSON.parse(jsonStr)
@@ -145,6 +147,48 @@ Body.`, 'utf-8')
       const parsed = JSON.parse(modules[0]!.content.replace('export default ', '').trim()) as Record<string, unknown>
 
       expect(parsed['seo']).toEqual({ title: 'SEO Title', noindex: true })
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('does not numerically coerce string-typed frontmatter (preserves leading zeros)', async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), 'contentrain-sdk-coerce-'))
+
+    try {
+      const docPath = join(tempRoot, 'product.md')
+      await mkdir(tempRoot, { recursive: true })
+      await writeFile(docPath, `---
+title: Widget
+sku: 007
+views: 42
+---
+# Product`, 'utf-8')
+
+      const models: ModelDefinition[] = [{
+        id: 'product',
+        name: 'Product',
+        kind: 'document',
+        domain: 'shop',
+        i18n: false,
+        fields: {
+          title: { type: 'string', required: true },
+          sku: { type: 'string' },      // declared string → must stay "007"
+          views: { type: 'integer' },   // declared number → may coerce to 42
+        },
+      }]
+
+      const refs: ContentFileRef[] = [{
+        modelId: 'product', locale: null, filePath: docPath, kind: 'document', slug: 'widget',
+      }]
+
+      const modules = await emitDataModules(models, refs)
+      const parsed = JSON.parse(modules[0]!.content.replace('export default ', '').trim()) as Record<string, unknown>
+
+      expect(parsed['sku']).toBe('007')
+      expect(parsed['views']).toBe(42)
+      // Body uses the canonical key
+      expect(parsed['body']).toBe('# Product')
     } finally {
       await rm(tempRoot, { recursive: true, force: true })
     }

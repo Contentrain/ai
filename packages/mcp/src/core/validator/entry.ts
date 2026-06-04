@@ -143,9 +143,26 @@ function validateField(
       if (def.max !== undefined && value.length > def.max) {
         errors.push({ severity: 'error', ...errCtx, message: `${fieldId} must have at most ${def.max} items` })
       }
+      // Polymorphic multi-relations (model targets multiple kinds) store
+      // { model, ref } items — mirror the single-relation rule so content that
+      // conforms to the generated type isn't rejected. Single-target relations
+      // store plain id/slug strings.
+      const targets = Array.isArray(def.model) ? def.model : (def.model ? [def.model] : [])
+      const polymorphic = targets.length > 1
       for (let i = 0; i < value.length; i++) {
-        if (typeof value[i] !== 'string') {
-          errors.push({ severity: 'error', ...errCtx, message: `${fieldId}[${i}] must be a string (entry ID or slug)` })
+        const item = value[i]
+        const itemCtx = { ...errCtx, field: `${fieldId}[${i}]` }
+        if (polymorphic) {
+          if (typeof item !== 'object' || item === null || !('model' in item) || !('ref' in item)) {
+            errors.push({ severity: 'error', ...itemCtx, message: `${fieldId}[${i}] must be { model, ref } for polymorphic relations` })
+          } else {
+            const polyItem = item as { model: string, ref: string }
+            if (!targets.includes(polyItem.model)) {
+              errors.push({ severity: 'error', ...itemCtx, message: `${fieldId}[${i}] target model "${polyItem.model}" must be one of: ${targets.join(', ')}` })
+            }
+          }
+        } else if (typeof item !== 'string') {
+          errors.push({ severity: 'error', ...itemCtx, message: `${fieldId}[${i}] must be a string (entry ID or slug)` })
         }
       }
     }

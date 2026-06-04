@@ -64,9 +64,11 @@ async function emitSingleModule(
     case 'document': {
       const rawText = await readText(ref.filePath)
       if (!rawText) return null
-      const { frontmatter, body } = parseFrontmatter(rawText)
+      const { frontmatter, body } = parseFrontmatter(rawText, stringLikeFieldKeys(model))
       const slug = ref.slug ?? model.id
-      const data = { slug, ...frontmatter, content: body }
+      // Canonical document field is `body` (matches @contentrain/types
+      // DocumentEntry.body and the MCP document_save schema).
+      const data = { slug, ...frontmatter, body }
       return { fileName: `${model.id}--${slug}${localeSuffix}.mjs`, content: `export default ${canonicalStringify(data)}\n` }
     }
 
@@ -75,8 +77,26 @@ async function emitSingleModule(
   }
 }
 
+// Field types that map to `string` in the generated types — their frontmatter
+// values must NOT be numerically coerced (e.g. a string SKU "007").
+const STRING_LIKE_TYPES = new Set([
+  'string', 'text', 'email', 'url', 'slug', 'color', 'phone', 'code', 'icon',
+  'markdown', 'richtext', 'date', 'datetime', 'image', 'video', 'file',
+  'select', 'relation',
+])
+
+function stringLikeFieldKeys(model: ModelDefinition): Set<string> {
+  const keys = new Set<string>()
+  if (model.fields) {
+    for (const [name, field] of Object.entries(model.fields)) {
+      if (STRING_LIKE_TYPES.has(field.type)) keys.add(name)
+    }
+  }
+  return keys
+}
+
 // Minimal frontmatter parser (replicated from MCP pattern)
-function parseFrontmatter(text: string): { frontmatter: Record<string, unknown>; body: string } {
+function parseFrontmatter(text: string, stringKeys: Set<string> = new Set()): { frontmatter: Record<string, unknown>; body: string } {
   const normalized = text.replace(/\r\n/g, '\n')
   const match = normalized.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
   if (!match) return { frontmatter: {}, body: normalized }
@@ -143,20 +163,23 @@ function parseFrontmatter(text: string): { frontmatter: Record<string, unknown>;
       continue
     }
 
-    current[key] = parseValue(rawValue)
+    // Only top-level keys are matched against the model's declared field types.
+    const forceString = current === frontmatter && stringKeys.has(key)
+    current[key] = parseValue(rawValue, forceString)
   }
 
   return { frontmatter, body }
 }
 
-function parseValue(raw: string): unknown {
+function parseValue(raw: string, forceString = false): unknown {
+  const isQuoted = (raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))
+  const unquoted = isQuoted ? raw.slice(1, -1) : raw
+  if (forceString) return unquoted
+  if (isQuoted) return unquoted
   if (raw === 'true') return true
   if (raw === 'false') return false
   if (raw === 'null') return null
   if (/^-?\d+$/.test(raw)) return parseInt(raw, 10)
   if (/^-?\d+\.\d+$/.test(raw)) return parseFloat(raw)
-  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
-    return raw.slice(1, -1)
-  }
   return raw
 }

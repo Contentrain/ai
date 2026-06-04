@@ -12,12 +12,12 @@ The `#contentrain` subpath import works natively in Node.js 22+ but **does NOT r
 ### Vite (Vue, React, Svelte, Astro)
 
 ```ts
-// vite.config.ts
-import { resolve } from 'node:path'
+// vite.config.ts (ESM — __dirname is not defined; use import.meta.url)
+import { fileURLToPath } from 'node:url'
 export default defineConfig({
   resolve: {
     alias: {
-      '#contentrain': resolve(__dirname, '.contentrain/client/index.mjs'),
+      '#contentrain': fileURLToPath(new URL('.contentrain/client/index.mjs', import.meta.url)),
     },
   },
 })
@@ -60,9 +60,9 @@ Add the same `tsconfig.json` paths entry:
 }
 ```
 
-### Nuxt 3
+### Nuxt 3 / Nuxt 4
 
-Nuxt provides a top-level `alias` option — no Vite config needed:
+Nuxt provides a top-level `alias` option — no Vite config needed (the relative string avoids `__dirname` entirely):
 
 ```ts
 // nuxt.config.ts

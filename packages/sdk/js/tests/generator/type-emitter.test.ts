@@ -99,7 +99,7 @@ describe('type-emitter', () => {
 
   it('includes relation resolution API on SingletonAccessor', () => {
     const result = emitTypes([])
-    expect(result).toContain('include(...fields: string[]): SingletonAccessor<T>')
+    expect(result).toContain('include<K extends keyof T & string>(...fields: K[]): SingletonAccessor<T>')
   })
 
   it('generates dictionary overloads', () => {
@@ -116,8 +116,13 @@ describe('type-emitter', () => {
 
   it('generates include() in QueryBuilder and DocumentQuery interfaces', () => {
     const result = emitTypes([])
-    expect(result).toContain('include(...fields: string[]): QueryBuilder<T>')
-    expect(result).toContain('include(...fields: string[]): DocumentQuery<T>')
+    expect(result).toContain('include<K extends keyof T & string>(...fields: K[]): QueryBuilder<T>')
+    expect(result).toContain('include<K extends keyof T & string>(...fields: K[]): DocumentQuery<T>')
+  })
+
+  it('generates sort() on the DocumentQuery interface (parity with QueryBuilder)', () => {
+    const result = emitTypes([])
+    expect(result).toContain("sort<K extends keyof T>(field: K, order?: 'asc' | 'desc'): DocumentQuery<T>")
   })
 
   it('generates fallback string overload for query', () => {
@@ -254,8 +259,9 @@ describe('type-emitter', () => {
     expect(result).toContain('f_boolean?: boolean')
     expect(result).toContain('f_date?: string')
     expect(result).toContain('f_image?: string')
-    expect(result).toContain('f_relation?: string')
-    expect(result).toContain('f_relations?: string[]')
+    // Single-target relations are typed as `id | ResolvedTarget` to reflect include()
+    expect(result).toContain('f_relation?: string | Author')
+    expect(result).toContain('f_relations?: Array<string | Tag>')
   })
 
   it('emits object shape for polymorphic relation fields', () => {
@@ -271,5 +277,29 @@ describe('type-emitter', () => {
     }]
     const result = emitTypes(models)
     expect(result).toContain("target?: { model: 'blog-post' | 'page'; ref: string }")
+  })
+
+  it('emits document body as `body` and does not duplicate a model-defined slug field', () => {
+    const models: ModelDefinition[] = [{
+      id: 'blog-article',
+      name: 'Blog Article',
+      kind: 'document',
+      domain: 'blog',
+      i18n: true,
+      fields: {
+        // A model that explicitly declares slug/body must NOT produce duplicate
+        // interface members — the base field wins.
+        slug: { type: 'slug', required: true },
+        title: { type: 'string', required: true },
+      },
+    }]
+    const result = emitTypes(models)
+    const iface = result.slice(result.indexOf('export interface BlogArticle {'))
+    const body = iface.slice(0, iface.indexOf('}'))
+    // Canonical body field name
+    expect(body).toContain('body: string')
+    expect(body).not.toContain('content: string')
+    // slug appears exactly once
+    expect(body.match(/slug/g)?.length).toBe(1)
   })
 })

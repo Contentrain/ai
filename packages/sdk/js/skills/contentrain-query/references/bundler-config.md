@@ -20,14 +20,14 @@ The `#contentrain` import requires subpath imports configuration in `package.jso
 ## Vite (Vue, React, Svelte)
 
 ```typescript
-// vite.config.ts
-import { resolve } from 'node:path'
+// vite.config.ts (ESM — __dirname is not defined here)
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
   resolve: {
     alias: {
-      '#contentrain': resolve(__dirname, '.contentrain/client/index.mjs')
+      '#contentrain': fileURLToPath(new URL('.contentrain/client/index.mjs', import.meta.url))
     }
   }
 })
@@ -47,20 +47,22 @@ export default {
 }
 ```
 
-## Nuxt 3
+## Nuxt 3 / Nuxt 4
 
 ```typescript
-// nuxt.config.ts
-import { resolve } from 'node:path'
+// nuxt.config.ts (ESM — use import.meta.url, not __dirname)
+import { fileURLToPath } from 'node:url'
 
 export default defineNuxtConfig({
   alias: {
-    '#contentrain': resolve(__dirname, '.contentrain/client/index.mjs')
+    '#contentrain': fileURLToPath(new URL('.contentrain/client/index.mjs', import.meta.url))
   }
 })
 ```
 
-**Important:** Treat `#contentrain` as **server-only** in Nuxt. Use in server routes, server plugins, and `useAsyncData` callbacks only.
+**Important:** Treat `#contentrain` as **server-only** in Nuxt. Use it in server routes (`server/`), server plugins, and `useAsyncData` callbacks only.
+
+**Nuxt 4 note:** Nuxt 4 moves app code under `app/` and keeps server code under `server/`. The alias above resolves relative to `nuxt.config.ts` (project root), so it is unchanged — keep your `#contentrain` calls in `server/` (e.g. `server/api/*`), never in client-side `app/` components.
 
 ## SvelteKit
 

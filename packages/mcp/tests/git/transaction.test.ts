@@ -118,13 +118,18 @@ describe('createTransaction', () => {
     const hash = await tx.commit('[contentrain] create: new-model', { tool: 'test', model: 'new-model' })
     expect(hash).toBeTruthy()
 
-    // Verify context.json was committed (not excluded)
+    // context.json is NOT committed on the feature branch — it is regenerated
+    // on the contentrain branch post-merge (avoids cross-branch conflicts).
     const wtGit = simpleGit(tx.worktree)
     const show = await wtGit.show(['HEAD', '--name-only', '--format='])
-    expect(show).toContain('context.json')
+    expect(show).not.toContain('context.json')
 
     const result = await tx.complete()
     expect(result.action).toBe('auto-merged')
+
+    // After complete(), context.json exists on the contentrain branch tip.
+    const ctxOnContentrain = await simpleGit(testDir).show(['contentrain:.contentrain/context.json'])
+    expect(ctxOnContentrain).toContain('"lastOperation"')
     expect(result.sync).toBeDefined()
     expect(result.sync!.synced).toBeDefined()
 
@@ -162,8 +167,8 @@ describe('createTransaction', () => {
   })
 })
 
-describe('context.json committed with content', () => {
-  it('includes context.json in the commit', async () => {
+describe('context.json regenerated on contentrain (not feature branch)', () => {
+  it('keeps context.json out of the feature-branch commit and regenerates it on merge', async () => {
     const tx = await createTransaction(testDir, 'cr/model/test/ctx-1')
     await tx.write(async (wt) => {
       await mkdir(join(wt, '.contentrain', 'models'), { recursive: true })
@@ -171,12 +176,32 @@ describe('context.json committed with content', () => {
     })
     await tx.commit('[contentrain] test context', { tool: 'test', model: 'ctx-test' })
 
-    // Verify context.json was committed (not excluded)
+    // Feature-branch commit excludes context.json
     const wtGit = simpleGit(tx.worktree)
     const show = await wtGit.show(['HEAD', '--name-only', '--format='])
-    expect(show).toContain('context.json')
+    expect(show).not.toContain('context.json')
+
+    await tx.complete()
+
+    // contentrain branch tip has a regenerated context.json
+    const ctx = await simpleGit(testDir).show(['contentrain:.contentrain/context.json'])
+    expect(ctx).toContain('"version"')
 
     await tx.cleanup()
+  })
+
+  it('prunes the feature branch after auto-merge cleanup', async () => {
+    const tx = await createTransaction(testDir, 'cr/model/test/prune-1')
+    await tx.write(async (wt) => {
+      await mkdir(join(wt, '.contentrain', 'models'), { recursive: true })
+      await writeFile(join(wt, '.contentrain', 'models', 'prune-test.json'), '{}')
+    })
+    await tx.commit('[contentrain] prune test', { tool: 'test', model: 'prune-test' })
+    await tx.complete()
+    await tx.cleanup()
+
+    const branches = await simpleGit(testDir).branchLocal()
+    expect(branches.all).not.toContain('cr/model/test/prune-1')
   })
 })
 

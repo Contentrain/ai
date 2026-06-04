@@ -64,6 +64,7 @@ async function readTextViaReader(reader: RepoReader, path: string): Promise<stri
  */
 function buildProjectTargetResolver(
   reader: RepoReader,
+  config: ContentrainConfig,
 ): (targetModelId: string, targetLocale: string) => Promise<ResolvedTarget> {
   return async (targetModelId, targetLocale) => {
     const targetModel = await readModel(reader, targetModelId)
@@ -77,13 +78,25 @@ function buildProjectTargetResolver(
     if (targetModel.kind === 'singleton' || targetModel.kind === 'dictionary') {
       return { exists: true, content: null }
     }
-    // Collection: return empty object when the locale file is missing so
-    // broken-ref detection still fires (legacy parity with `checkRelation`).
-    const targetData = await readJsonViaReader<Record<string, unknown>>(
+    // Collection: resolve against the target model's own storage. i18n:false
+    // targets are locale-agnostic (data.json). For i18n:true targets, fall back
+    // to the default-locale file when the source locale lacks the entry — a
+    // relation legitimately points at an entry that may be translated under
+    // another locale, so the id set is merged to avoid phantom broken refs. #Y5
+    const merged: Record<string, unknown> = {}
+    const primary = await readJsonViaReader<Record<string, unknown>>(
       reader,
       contentFilePath(targetModel, targetLocale),
     )
-    return { exists: true, content: targetData ?? {} }
+    if (primary) Object.assign(merged, primary)
+    if (targetModel.i18n && targetLocale !== config.locales.default) {
+      const fallback = await readJsonViaReader<Record<string, unknown>>(
+        reader,
+        contentFilePath(targetModel, config.locales.default),
+      )
+      if (fallback) Object.assign(merged, fallback)
+    }
+    return { exists: true, content: merged }
   }
 }
 
@@ -124,13 +137,16 @@ async function validateCollectionModel(
 ): Promise<{ entries: number; fixed: number }> {
   let entriesChecked = 0
   let fixed = 0
-  const locales = config.locales.supported
+  // Non-i18n models store content + meta locale-agnostically (data.json, a
+  // single meta set), so iterating every supported locale produces phantom
+  // per-locale orphan/parity warnings. Iterate just the default locale. #8/Y3
+  const locales = model.i18n ? config.locales.supported : [config.locales.default]
 
   // Collect all entry IDs per locale for parity check
   const localeEntryIds: Record<string, Set<string>> = {}
   const allEntryIds = new Set<string>()
 
-  const resolveTarget = buildProjectTargetResolver(reader)
+  const resolveTarget = buildProjectTargetResolver(reader, config)
 
   for (const locale of locales) {
     const filePath = contentFilePath(model, locale)
@@ -321,7 +337,7 @@ async function validateSingletonModel(
   let entriesChecked = 0
   let fixed = 0
 
-  for (const locale of config.locales.supported) {
+  for (const locale of (model.i18n ? config.locales.supported : [config.locales.default])) {
     const filePath = contentFilePath(model, locale)
     const data = await readJsonViaReader<Record<string, unknown>>(reader, filePath)
 
@@ -349,7 +365,7 @@ async function validateSingletonModel(
       const entryResult = validateContent(data, model.fields, model.id, locale)
       issues.push(...entryResult.errors)
 
-      const resolveTarget = buildProjectTargetResolver(reader)
+      const resolveTarget = buildProjectTargetResolver(reader, config)
       const relationErrors = await checkRelationIntegrity(
         data,
         model.fields,
@@ -405,7 +421,7 @@ async function validateDictionaryModel(
 
   const localeKeys: Record<string, Set<string>> = {}
 
-  for (const locale of config.locales.supported) {
+  for (const locale of (model.i18n ? config.locales.supported : [config.locales.default])) {
     const filePath = contentFilePath(model, locale)
     const data = await readJsonViaReader<Record<string, string>>(reader, filePath)
 
@@ -586,7 +602,10 @@ async function validateDocumentModel(
   if (!await reader.fileExists(cDir)) return { entries: 0, fixed: 0 }
 
   const slugs = await discoverDocumentSlugs(reader, cDir, model)
-  const locales = config.locales.supported
+  // Non-i18n models store content + meta locale-agnostically (data.json, a
+  // single meta set), so iterating every supported locale produces phantom
+  // per-locale orphan/parity warnings. Iterate just the default locale. #8/Y3
+  const locales = model.i18n ? config.locales.supported : [config.locales.default]
 
   for (const slug of slugs) {
     if (slug.startsWith('.')) continue
@@ -652,7 +671,7 @@ async function validateDocumentModel(
           issues.push({ ...err, slug })
         }
 
-        const resolveTarget = buildProjectTargetResolver(reader)
+        const resolveTarget = buildProjectTargetResolver(reader, config)
         const relationErrors = await checkRelationIntegrity(
           frontmatter,
           fieldsWithoutBody,
@@ -797,7 +816,7 @@ export async function validateProject(
         const model = await readModel(reader, summary.id)
         if (!model) continue
 
-        for (const locale of config.locales.supported) {
+        for (const locale of (model.i18n ? config.locales.supported : [config.locales.default])) {
           if (!globalValueMap[locale]) globalValueMap[locale] = new Map()
           const data = await readJsonViaReader<Record<string, string>>(reader, contentFilePath(model, locale))
           if (!data) continue

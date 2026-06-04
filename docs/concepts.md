@@ -43,7 +43,7 @@ Contentrain AI inverts the traditional CMS workflow:
 
 ### 1. MCP (Infrastructure)
 
-17 tools that AI agents call to manage content:
+19 tools that AI agents call to manage content:
 
 - **Read:** `contentrain_status`, `contentrain_describe`, `contentrain_describe_format`, `contentrain_doctor`, `contentrain_content_list`
 - **Project setup:** `contentrain_init`, `contentrain_scaffold`

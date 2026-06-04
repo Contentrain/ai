@@ -18,17 +18,23 @@ export function emitTypes(models: ModelDefinition[]): string {
       lines.push(`export type ${kebabToPascal(model.id)} = Record<string, string>`)
     } else {
       lines.push(`export interface ${kebabToPascal(model.id)} {`)
-      // System fields by kind
+      // System fields by kind. Track their names so a model-defined field of
+      // the same name is not emitted twice (the base field wins).
+      const baseNames = new Set<string>()
       if (model.kind === 'collection') {
         lines.push('  id: string')
+        baseNames.add('id')
       }
       if (model.kind === 'document') {
         lines.push('  slug: string')
-        lines.push('  content: string')
+        lines.push('  body: string')
+        baseNames.add('slug')
+        baseNames.add('body')
       }
       // User fields
       if (model.fields) {
         for (const [name, field] of Object.entries(model.fields)) {
+          if (baseNames.has(name)) continue
           const tsType = fieldToTS(field)
           const optional = field.required ? '' : '?'
           lines.push(`  ${name}${optional}: ${tsType}`)
@@ -47,7 +53,7 @@ export function emitTypes(models: ModelDefinition[]): string {
   sort<K extends keyof T>(field: K, order?: 'asc' | 'desc'): QueryBuilder<T>
   limit(n: number): QueryBuilder<T>
   offset(n: number): QueryBuilder<T>
-  include(...fields: string[]): QueryBuilder<T>
+  include<K extends keyof T & string>(...fields: K[]): QueryBuilder<T>
   count(): number
   first(): T | undefined
   all(): T[]
@@ -56,7 +62,7 @@ export function emitTypes(models: ModelDefinition[]): string {
 
   lines.push(`export interface SingletonAccessor<T> {
   locale(lang: string): SingletonAccessor<T>
-  include(...fields: string[]): SingletonAccessor<T>
+  include<K extends keyof T & string>(...fields: K[]): SingletonAccessor<T>
   get(): T
 }`)
   lines.push('')
@@ -73,7 +79,8 @@ export function emitTypes(models: ModelDefinition[]): string {
   locale(lang: string): DocumentQuery<T>
   where<K extends keyof T>(field: K, value: T[K]): DocumentQuery<T>
   where<K extends keyof T>(field: K, op: WhereOp, value: unknown): DocumentQuery<T>
-  include(...fields: string[]): DocumentQuery<T>
+  sort<K extends keyof T>(field: K, order?: 'asc' | 'desc'): DocumentQuery<T>
+  include<K extends keyof T & string>(...fields: K[]): DocumentQuery<T>
   bySlug(slug: string): T | undefined
   count(): number
   first(): T | undefined
@@ -148,19 +155,25 @@ function fieldToTS(field: FieldDef): string {
     case 'markdown': case 'richtext':
     case 'date': case 'datetime':
     case 'image': case 'video': case 'file':
-    case 'relation':
+    case 'relation': {
       if (Array.isArray(field.model) && field.model.length > 1) {
         const union = field.model.map(m => `'${m}'`).join(' | ')
         return `{ model: ${union}; ref: string }`
       }
-      return 'string'
+      // Single-target relation: stored as an id string, but include() resolves
+      // it to the target entry, so the field can be either at read time.
+      const target = Array.isArray(field.model) ? field.model[0] : field.model
+      return target ? `string | ${kebabToPascal(target)}` : 'string'
+    }
 
-    case 'relations':
+    case 'relations': {
       if (Array.isArray(field.model) && field.model.length > 1) {
         const union = field.model.map(m => `'${m}'`).join(' | ')
         return `Array<{ model: ${union}; ref: string }>`
       }
-      return 'string[]'
+      const target = Array.isArray(field.model) ? field.model[0] : field.model
+      return target ? `Array<string | ${kebabToPascal(target)}>` : 'string[]'
+    }
 
     case 'number': case 'integer': case 'decimal': case 'percent': case 'rating':
       return 'number'

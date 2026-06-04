@@ -8,6 +8,7 @@ import { resolveContentDir, resolveJsonFilePath, deleteContent } from '../core/c
 import { readMeta, writeMeta } from '../core/meta-manager.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
+import { normalizeOperationError } from '../git/errors.js'
 import { readJson, writeJson } from '../util/fs.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 import { capabilityError } from './guards.js'
@@ -165,7 +166,7 @@ export function registerBulkTools(
             await tx.cleanup()
             return {
               content: [{ type: 'text' as const, text: JSON.stringify({
-                error: `copy_locale failed: ${error instanceof Error ? error.message : String(error)}`,
+                ...normalizeOperationError(error, 'bulk_copy_locale'),
               }) }],
               isError: true,
             }
@@ -247,7 +248,7 @@ export function registerBulkTools(
             await tx.cleanup()
             return {
               content: [{ type: 'text' as const, text: JSON.stringify({
-                error: `update_status failed: ${error instanceof Error ? error.message : String(error)}`,
+                ...normalizeOperationError(error, 'bulk_update_status'),
               }) }],
               isError: true,
             }
@@ -313,7 +314,7 @@ export function registerBulkTools(
             await tx.cleanup()
             return {
               content: [{ type: 'text' as const, text: JSON.stringify({
-                error: `delete_entries failed: ${error instanceof Error ? error.message : String(error)}`,
+                ...normalizeOperationError(error, 'bulk_delete_entries'),
               }) }],
               isError: true,
             }

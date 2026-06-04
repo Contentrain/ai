@@ -233,4 +233,34 @@ describe('validateContent', () => {
     expect(err?.locale).toBe('tr')
     expect(err?.entry).toBe('my-entry')
   })
+
+  it('single-target relations accept string id arrays', () => {
+    const fields: Record<string, FieldDef> = {
+      tags: { type: 'relations', model: 'tag' },
+    }
+    const result = validateContent({ tags: ['t1', 't2'] }, fields, 'post', 'en', 'p1')
+    expect(result.errors.filter(e => e.field?.startsWith('tags'))).toEqual([])
+  })
+
+  it('polymorphic relations accept { model, ref } items (matches generated type)', () => {
+    const fields: Record<string, FieldDef> = {
+      blocks: { type: 'relations', model: ['blog-post', 'page'] },
+    }
+    const ok = validateContent(
+      { blocks: [{ model: 'blog-post', ref: 'a1' }, { model: 'page', ref: 'p2' }] },
+      fields, 'home', 'en', 'h1',
+    )
+    expect(ok.errors.filter(e => e.field?.startsWith('blocks'))).toEqual([])
+
+    // A plain string is invalid for a polymorphic multi-relation
+    const bad = validateContent({ blocks: ['a1'] }, fields, 'home', 'en', 'h1')
+    expect(bad.errors.some(e => e.field === 'blocks[0]' && e.severity === 'error')).toBe(true)
+
+    // An item targeting a model outside the union is rejected
+    const wrong = validateContent(
+      { blocks: [{ model: 'author', ref: 'x' }] },
+      fields, 'home', 'en', 'h1',
+    )
+    expect(wrong.errors.some(e => e.field === 'blocks[0]' && e.message.includes('must be one of'))).toBe(true)
+  })
 })

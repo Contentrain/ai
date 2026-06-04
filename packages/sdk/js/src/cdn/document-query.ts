@@ -6,6 +6,8 @@ export class CdnDocumentQuery<T extends object> {
   private _source: DocumentDataSource<T>
   private _locale: string = 'en'
   private _filters: WhereClause[] = []
+  private _sortField: string | null = null
+  private _sortOrder: 'asc' | 'desc' = 'asc'
 
   constructor(source: DocumentDataSource<T>, defaultLocale?: string) {
     this._source = source
@@ -22,11 +24,30 @@ export class CdnDocumentQuery<T extends object> {
     return this
   }
 
+  sort(field: string, order: 'asc' | 'desc' = 'asc'): this {
+    this._sortField = field
+    this._sortOrder = order
+    return this
+  }
+
   async all(): Promise<T[]> {
     let items = await this._source.getIndex(this._locale)
 
     for (const clause of this._filters) {
       items = items.filter(item => applyWhere(item, clause))
+    }
+
+    if (this._sortField) {
+      const sf = this._sortField
+      const dir = this._sortOrder === 'asc' ? 1 : -1
+      items = items.toSorted((a, b) => {
+        const va = (a as Record<string, unknown>)[sf] as number | string | null | undefined
+        const vb = (b as Record<string, unknown>)[sf] as number | string | null | undefined
+        if (va == null && vb == null) return 0
+        if (va == null) return dir
+        if (vb == null) return -dir
+        return va < vb ? -dir : va > vb ? dir : 0
+      })
     }
 
     return items

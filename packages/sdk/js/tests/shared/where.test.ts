@@ -19,6 +19,13 @@ describe('applyWhere', () => {
     expect(applyWhere(item, { field: 'name', op: 'ne', value: 'Alice' })).toBe(false)
   })
 
+  it('ne — array is the complement of eq (membership)', () => {
+    // 'admin' IS a member → ne must be false (mirrors eq array semantics)
+    expect(applyWhere(item, { field: 'tags', op: 'ne', value: 'admin' })).toBe(false)
+    // 'guest' is NOT a member → ne must be true
+    expect(applyWhere(item, { field: 'tags', op: 'ne', value: 'guest' })).toBe(true)
+  })
+
   it('gt — greater than', () => {
     expect(applyWhere(item, { field: 'age', op: 'gt', value: 25 })).toBe(true)
     expect(applyWhere(item, { field: 'age', op: 'gt', value: 30 })).toBe(false)

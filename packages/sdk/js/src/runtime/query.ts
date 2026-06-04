@@ -170,8 +170,9 @@ export class QueryBuilder<T extends object> {
   }
 
   private _resolveId(targets: string[], id: string): Record<string, unknown> | undefined {
+    const loc = this._locale ?? this._defaultLocale
     for (const target of targets) {
-      const result = this._resolver!(target, id, this._locale)
+      const result = this._resolver!(target, id, loc)
       if (result) return result
     }
     return undefined
