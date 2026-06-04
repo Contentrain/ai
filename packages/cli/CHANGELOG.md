@@ -1,5 +1,19 @@
 # contentrain
 
+## 0.5.2
+
+### Patch Changes
+
+- 149fa6b: `contentrain init` now prints stack-aware SDK wiring guidance after setup: for bundler stacks (Nuxt/Next/Vite/etc.) it shows the `#contentrain` subpath import, points to the `contentrain-sdk` bundler-alias skill, and recommends a `prebuild`/`predev` generate step (because `.contentrain/client/` is git-ignored and must be regenerated on fresh clones / CI). Nuxt projects also get a server-only reminder.
+- Updated dependencies [149fa6b]
+- Updated dependencies [149fa6b]
+- Updated dependencies [149fa6b]
+  - @contentrain/mcp@1.5.0
+  - @contentrain/types@0.5.1
+  - @contentrain/query@6.0.0
+  - @contentrain/rules@0.5.0
+  - @contentrain/skills@0.5.0
+
 ## 0.5.1
 
 ### Patch Changes
