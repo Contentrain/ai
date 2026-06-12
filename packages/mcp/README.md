@@ -64,7 +64,7 @@ All write operations are designed around git-backed safety:
 - auto-merge: feature merges into `contentrain`, baseBranch advanced via update-ref, `.contentrain/` files selectively synced to developer's working tree
 - review: feature branch pushed to remote for team review
 - developer's working tree is never mutated during MCP git operations (no stash, no checkout, no merge)
-- context.json is committed together with content changes, not as a separate commit
+- context.json never lands on feature branches — it is regenerated on the `contentrain` branch after merge (locally by the transaction layer; in remote flows by the orchestrator that owns the merge)
 - canonical JSON output — sorted keys, 2-space indent, trailing newline
 - validation + next-step hints surfaced to the caller
 

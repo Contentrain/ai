@@ -1,15 +1,15 @@
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import type { FileChange } from '../core/contracts/index.js'
-import { buildContextChange } from '../core/context.js'
-import { OverlayReader } from '../core/overlay-reader.js'
 import { LocalProvider } from '../providers/local/index.js'
 import type { ToolProvider } from '../server.js'
 
 /**
- * Context payload written into `.contentrain/context.json` as part of the
- * same commit. Kept as a loose object so tool-specific payloads can add
- * optional fields (`locale`, `entries`) without churning the helper's
- * signature.
+ * Context payload describing the operation, threaded into the local
+ * transaction so it can regenerate `.contentrain/context.json` on the
+ * contentrain branch after merge. Kept as a loose object so tool-specific
+ * payloads can add optional fields (`locale`, `entries`) without churning
+ * the helper's signature. Remote providers ignore it — see
+ * `commitThroughProvider` below.
  */
 export interface CommitContextPayload {
   tool: string
@@ -43,11 +43,17 @@ export interface CommitThroughProviderResult {
  *   the project's configured workflow. Selective-sync result is surfaced
  *   to the caller via `sync`.
  *
- * - **Any other RepoProvider** — the context.json write becomes an extra
- *   `FileChange` bundled into the plan so the whole commit lands
- *   atomically through the generic `RepoWriter.applyPlan`. Remote flows
+ * - **Any other RepoProvider** — only the plan's own changes are
+ *   committed. Feature branches NEVER carry `.contentrain/context.json`:
+ *   the file embeds timestamps, so two parallel cr/* branches forked from
+ *   the same contentrain commit would always conflict on it and the
+ *   second merge would fail permanently. This mirrors the local
+ *   transaction flow, which regenerates context.json on the contentrain
+ *   branch after merge (single-threaded, deterministic). Remote flows
  *   always report `pending-review`; Studio (or whatever orchestrator is
- *   driving the server) owns the merge.
+ *   driving the server) owns the merge AND the post-merge context
+ *   regeneration on the contentrain branch (`buildContextChange` from
+ *   `@contentrain/mcp/core/context` is exported for exactly that).
  *
  * The return shape is deliberately uniform so callers don't have to
  * branch on provider type again.
@@ -72,15 +78,7 @@ export async function commitThroughProvider(
     }
   }
 
-  // Build context.json against an overlay of the pending FileChanges so
-  // `stats.entries` / `stats.models` reflect the state *after* this
-  // commit lands, not the pre-change base branch. Without the overlay
-  // the committed context.json would be stale — a new entry added in
-  // this commit would not appear in the entry count until the next
-  // write.
-  const overlay = new OverlayReader(provider, changes)
-  const contextChange = await buildContextChange(overlay, contextPayload)
-  const allChanges = [...changes, contextChange]
+  const allChanges = changes
     .toSorted((a, b) => a.path.localeCompare(b.path))
   // Feature branches ALWAYS fork from the `contentrain` branch — that's
   // the single source of truth the local transaction flow enforces, and

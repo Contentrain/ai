@@ -297,7 +297,7 @@ contentrain_apply(mode: "reuse", scope: {model: "model-id"}, dry_run: true) (pre
 - Branch naming: `cr/{operation}/{model}[/{locale}]/{timestamp}-{suffix}` (locale included when applicable; legacy `contentrain/*` branches are auto-migrated on first init).
 - You do not create branches manually. MCP handles Git transactions.
 - Developer's working tree is never mutated during MCP operations (no stash, no checkout, no merge on the developer's tree).
-- context.json is committed together with content changes, not as a separate commit.
+- context.json is never committed on feature branches — it is regenerated on the `contentrain` branch after merge.
 - In `auto-merge` mode: feature branch is merged into `contentrain`, then baseBranch is advanced via update-ref (fast-forward), then `.contentrain/` files are selectively synced to the developer's working tree. Dirty files are skipped with a warning.
 - In `review` mode: feature branch stays local until `contentrain_submit` pushes it to remote.
 

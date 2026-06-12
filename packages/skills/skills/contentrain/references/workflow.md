@@ -79,7 +79,7 @@ The `contentrain` branch is the **single source of truth** for content state:
 - Created automatically at `contentrain_init`.
 - All content writes happen on feature branches forked from `contentrain`.
 - The `contentrain` branch is **protected from deletion**.
-- context.json is committed together with content changes, not as a separate commit.
+- context.json is never committed on feature branches — it is regenerated on the `contentrain` branch after merge.
 
 ### 3.2 Worktree-Based Transactions
 
