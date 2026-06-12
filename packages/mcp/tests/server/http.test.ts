@@ -263,12 +263,15 @@ describe('startHttpMcpServer', () => {
         expect(git['commit']).toBe('new-commit-sha')
         // Commit is addressed to the feature branch, not the base.
         expect((git['branch'] as string).startsWith('cr/content/blog')).toBe(true)
-        // The tree payload contains our content blob + meta blob + context.json blob.
+        // The tree payload contains our content blob + meta blob. Feature
+        // branches never carry context.json — it embeds timestamps, so
+        // parallel cr/* branches would permanently conflict on it. The
+        // orchestrator regenerates it on contentrain after merge.
         const tree = (capturedTree as { tree: Array<{ path: string }> }).tree
         const paths = tree.map(t => t.path)
         expect(paths).toContain('.contentrain/content/marketing/blog/en.json')
         expect(paths).toContain('.contentrain/meta/blog/en.json')
-        expect(paths).toContain('.contentrain/context.json')
+        expect(paths).not.toContain('.contentrain/context.json')
         // Commit parent resolved from contentrain branch (branchExists: false,
         // so we end up creating a new ref).
         expect((capturedCommit as { parents: string[] }).parents).toEqual(['base-sha'])
@@ -378,13 +381,14 @@ describe('startHttpMcpServer', () => {
         expect(git['commit']).toBe('gitlab-commit-sha')
         expect((git['branch'] as string).startsWith('cr/content/blog')).toBe(true)
 
-        // One Commits.create call with content + meta + context.json actions.
+        // One Commits.create call with content + meta actions — no
+        // context.json on feature branches.
         expect(capturedCommitsCall).toBeDefined()
         const actions = capturedCommitsCall!.actions as Array<{ filePath: string, action: string }>
         const paths = actions.map(a => a.filePath)
         expect(paths).toContain('.contentrain/content/marketing/blog/en.json')
         expect(paths).toContain('.contentrain/meta/blog/en.json')
-        expect(paths).toContain('.contentrain/context.json')
+        expect(paths).not.toContain('.contentrain/context.json')
         // startBranch is used because the feature branch does not exist yet.
         expect(capturedCommitsCall!.options.startBranch).toBe('contentrain')
       } finally {
@@ -448,7 +452,7 @@ describe('startHttpMcpServer', () => {
 
         const tree = fixture.capturedTree()!.tree
         const paths = tree.map(t => t.path)
-        expect(paths).toContain('.contentrain/context.json')
+        expect(paths).not.toContain('.contentrain/context.json')
         // The content entry is removed from the object-map; the file is
         // rewritten (not deleted) because other entries may still live
         // there in real flows. The meta file loses the corresponding
@@ -505,7 +509,7 @@ describe('startHttpMcpServer', () => {
         const tree = fixture.capturedTree()!.tree
         const paths = tree.map(t => t.path)
         expect(paths).toContain('.contentrain/models/hero.json')
-        expect(paths).toContain('.contentrain/context.json')
+        expect(paths).not.toContain('.contentrain/context.json')
       } finally {
         await mcpClient.close()
       }
