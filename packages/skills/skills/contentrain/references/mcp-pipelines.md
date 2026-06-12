@@ -150,7 +150,7 @@ contentrain_submit                              # Push (always review mode)
 - Branch naming: `cr/{operation}/{model}/{timestamp}` (locale included when applicable)
 - Do not create branches manually. MCP handles Git transactions
 - Developer's working tree is never mutated during MCP operations (no stash, no checkout, no merge on the developer's tree)
-- context.json is committed together with content changes, not as a separate commit
+- context.json is never committed on feature branches — it is regenerated on the `contentrain` branch after merge
 - `auto-merge` mode: feature branch merged into `contentrain`, baseBranch advanced via update-ref, `.contentrain/` files selectively synced to developer's working tree (dirty files skipped with warning)
 - `review` mode: feature branch pushed to remote by `contentrain_submit`
 

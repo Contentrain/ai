@@ -77,7 +77,7 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 - Developer's working tree is never mutated during MCP git operations (no stash, no checkout, no merge on the developer's tree)
 - If the developer manually edits `.contentrain/` files, MCP sync skips dirty files and warns
 - The `contentrain` branch is protected from deletion
-- context.json is committed together with content changes, not as a separate commit
+- context.json is never committed on feature branches — it is regenerated on the `contentrain` branch after merge
 - Never create branches manually, never commit directly to main or the `contentrain` branch
 - 50+ active `cr/*` branches = warning, 80+ = blocked
 
