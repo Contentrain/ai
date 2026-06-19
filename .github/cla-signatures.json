@@ -1,3 +1,12 @@
 {
-   "signedContributors": []
+  "signedContributors": [
+    {
+      "name": "ABB65",
+      "id": 49499275,
+      "comment_id": 4752166950,
+      "created_at": "2026-06-19T13:55:02Z",
+      "repoId": 1176973105,
+      "pullRequestNo": 55
+    }
+  ]
 }
