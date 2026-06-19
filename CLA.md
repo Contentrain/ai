@@ -54,4 +54,4 @@ The CLA assistant will record your GitHub username in `.github/cla-signatures.js
 
 If you are contributing on behalf of your employer, please ensure your employer has authorized you to do so.
 
-If you have questions, email: cla@contentrain.io
+If you have questions, email: info@contentrain.io

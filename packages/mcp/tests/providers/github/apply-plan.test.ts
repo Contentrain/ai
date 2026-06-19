@@ -38,7 +38,7 @@ function mockClient(s: StubShape): GitHubClient {
 }
 
 const REPO = { owner: 'o', name: 'r' }
-const AUTHOR = { name: 'MCP', email: 'mcp@contentrain.io' }
+const AUTHOR = { name: 'MCP', email: 'ai@contentrain.io' }
 
 function notFound(): Error {
   return Object.assign(new Error('Not Found'), { status: 404 })
@@ -54,7 +54,7 @@ describe('applyPlanToGitHub', () => {
       data: {
         sha: 'new-commit',
         message: 'test',
-        author: { name: 'MCP', email: 'mcp@contentrain.io', date: '2026-01-01T00:00:00Z' },
+        author: { name: 'MCP', email: 'ai@contentrain.io', date: '2026-01-01T00:00:00Z' },
       },
     })
     const updateRef = vi.fn().mockResolvedValue({})
@@ -88,7 +88,7 @@ describe('applyPlanToGitHub', () => {
       data: {
         sha: 'c',
         message: 'test',
-        author: { name: 'MCP', email: 'mcp@contentrain.io', date: '2026-01-01T00:00:00Z' },
+        author: { name: 'MCP', email: 'ai@contentrain.io', date: '2026-01-01T00:00:00Z' },
       },
     })
     const createRef = vi.fn().mockResolvedValue({})
@@ -124,7 +124,7 @@ describe('applyPlanToGitHub', () => {
       data: {
         sha: 'c',
         message: 'm',
-        author: { name: 'MCP', email: 'mcp@contentrain.io', date: '2026-01-01T00:00:00Z' },
+        author: { name: 'MCP', email: 'ai@contentrain.io', date: '2026-01-01T00:00:00Z' },
       },
     })
     const createRef = vi.fn().mockResolvedValue({})
@@ -150,7 +150,7 @@ describe('applyPlanToGitHub', () => {
       data: {
         sha: 'c',
         message: 'm',
-        author: { name: 'MCP', email: 'mcp@contentrain.io', date: '2026-01-01T00:00:00Z' },
+        author: { name: 'MCP', email: 'ai@contentrain.io', date: '2026-01-01T00:00:00Z' },
       },
     })
     const updateRef = vi.fn().mockResolvedValue({})
@@ -187,7 +187,7 @@ describe('applyPlanToGitHub', () => {
       data: {
         sha: 'c',
         message: 'm',
-        author: { name: 'MCP', email: 'mcp@contentrain.io', date: '2026-01-01T00:00:00Z' },
+        author: { name: 'MCP', email: 'ai@contentrain.io', date: '2026-01-01T00:00:00Z' },
       },
     })
     const updateRef = vi.fn().mockResolvedValue({})

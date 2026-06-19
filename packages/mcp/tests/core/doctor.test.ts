@@ -18,7 +18,7 @@ async function seedMinimalProject(root: string) {
   const git = simpleGit(root)
   await git.init()
   await git.addConfig('user.name', 'Test')
-  await git.addConfig('user.email', 'test@contentrain.io')
+  await git.addConfig('user.email', 'ai@contentrain.io')
   await writeFileSafe(join(root, 'README.md'), '# test\n')
   await git.add('.')
   await git.commit('initial')

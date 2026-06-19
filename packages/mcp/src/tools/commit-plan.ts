@@ -90,7 +90,7 @@ export async function commitThroughProvider(
     branch,
     changes: allChanges,
     message,
-    author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
+    author: { name: 'Contentrain', email: 'ai@contentrain.io' },
     base: CONTENTRAIN_BRANCH,
   })
   return {

@@ -304,7 +304,7 @@ Metadata files track governance information. They are system-managed -- agents N
   "status": "published",
   "source": "agent",
   "updated_by": "claude",
-  "approved_by": "ahmet@contentrain.io",
+  "approved_by": "info@contentrain.io",
   "version": "1"
 }
 ```

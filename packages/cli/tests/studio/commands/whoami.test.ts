@@ -6,7 +6,7 @@ vi.mock('../../../src/studio/client.js', () => ({
   resolveStudioClient: vi.fn().mockResolvedValue({
     me: vi.fn().mockResolvedValue({
       id: 'user-1',
-      email: 'test@contentrain.io',
+      email: 'ai@contentrain.io',
       name: 'Test User',
       avatarUrl: null,
       provider: 'github',
@@ -51,7 +51,7 @@ describe('whoami command', () => {
     const output = JSON.parse(String(writeSpy.mock.calls.at(-1)?.[0] ?? '{}')) as Record<string, unknown>
 
     expect(output['user']).toBeDefined()
-    expect((output['user'] as Record<string, unknown>)['email']).toBe('test@contentrain.io')
+    expect((output['user'] as Record<string, unknown>)['email']).toBe('ai@contentrain.io')
     expect(output['workspaces']).toBeDefined()
     expect((output['workspaces'] as unknown[]).length).toBe(1)
   })

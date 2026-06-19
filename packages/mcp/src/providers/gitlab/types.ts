@@ -39,5 +39,5 @@ export type GitLabAuth =
 /** Default author used when a call does not provide one. */
 export const DEFAULT_GITLAB_AUTHOR: CommitAuthor = {
   name: 'Contentrain',
-  email: 'mcp@contentrain.io',
+  email: 'ai@contentrain.io',
 }
