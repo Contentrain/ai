@@ -199,7 +199,7 @@ export async function createTransaction(
 
   // Configure author (sequential — git config uses lock file)
   const authorName = process.env['CONTENTRAIN_AUTHOR_NAME'] ?? 'Contentrain'
-  const authorEmail = process.env['CONTENTRAIN_AUTHOR_EMAIL'] ?? 'mcp@contentrain.io'
+  const authorEmail = process.env['CONTENTRAIN_AUTHOR_EMAIL'] ?? 'ai@contentrain.io'
   await wtGit.addConfig('user.name', authorName)
   await wtGit.addConfig('user.email', authorEmail)
 
@@ -415,7 +415,7 @@ export async function mergeBranch(
 
   // Configure author
   const authorName = process.env['CONTENTRAIN_AUTHOR_NAME'] ?? 'Contentrain'
-  const authorEmail = process.env['CONTENTRAIN_AUTHOR_EMAIL'] ?? 'mcp@contentrain.io'
+  const authorEmail = process.env['CONTENTRAIN_AUTHOR_EMAIL'] ?? 'ai@contentrain.io'
   await wtGit.addConfig('user.name', authorName)
   await wtGit.addConfig('user.email', authorEmail)
 

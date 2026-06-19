@@ -56,7 +56,7 @@ Signing is a single comment on your PR:
 
 The CLA bot records your GitHub username in `.github/cla-signatures.json` and unblocks your PR automatically. The signature applies to all your future contributions to this repo.
 
-If you are contributing on behalf of an employer, please ensure your employer has authorized you to do so. For questions, email `cla@contentrain.io`.
+If you are contributing on behalf of an employer, please ensure your employer has authorized you to do so. For questions, email `info@contentrain.io`.
 
 ## Issues
 

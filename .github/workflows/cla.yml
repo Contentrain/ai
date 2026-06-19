@@ -37,6 +37,6 @@ jobs:
           path-to-document: 'https://github.com/Contentrain/ai/blob/main/CLA.md'
           branch: 'main'
           # Allowlist includes maintainers, bots, and dependabot so they bypass the CLA flow
-          allowlist: 'bayhanbayramoglu,Contentrain,*[bot],dependabot[bot],renovate[bot]'
+          allowlist: 'ABB65,bayhanbayramoglu,Contentrain,*[bot],dependabot[bot],renovate[bot]'
           custom-pr-sign-comment: 'I have read the CLA Document and I hereby sign the CLA'
           custom-allsigned-prcomment: 'All contributors have signed the CLA ✓'

@@ -35,5 +35,5 @@ export type GitHubAuth =
 /** Default author used when a call does not provide one. */
 export const DEFAULT_GITHUB_AUTHOR: CommitAuthor = {
   name: 'Contentrain',
-  email: 'mcp@contentrain.io',
+  email: 'ai@contentrain.io',
 }

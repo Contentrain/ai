@@ -82,7 +82,7 @@ export function makeGitHubMock(filesOnHead: Record<string, string>): GitHubMockF
             data: {
               sha: 'new-commit-sha',
               message: (input as { message: string }).message,
-              author: { name: 'Contentrain', email: 'mcp@contentrain.io', date: '2026-04-17T12:00:00Z' },
+              author: { name: 'Contentrain', email: 'ai@contentrain.io', date: '2026-04-17T12:00:00Z' },
             },
           }
         },

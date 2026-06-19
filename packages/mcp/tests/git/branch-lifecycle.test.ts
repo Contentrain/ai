@@ -20,7 +20,7 @@ beforeEach(async () => {
   const git = simpleGit(testDir)
   await git.init()
   await git.addConfig('user.name', 'Test')
-  await git.addConfig('user.email', 'test@contentrain.io')
+  await git.addConfig('user.email', 'ai@contentrain.io')
   await writeFileSafe(join(testDir, 'README.md'), 'base\n')
   await git.add('.')
   await git.commit('initial')

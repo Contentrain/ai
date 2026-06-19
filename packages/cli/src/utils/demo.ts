@@ -18,7 +18,7 @@ export async function createDemoProject(): Promise<string> {
   // Git init
   const git = simpleGit(dir)
   await git.init()
-  await git.addConfig('user.email', 'demo@contentrain.io')
+  await git.addConfig('user.email', 'ai@contentrain.io')
   await git.addConfig('user.name', 'Contentrain Demo')
 
   // Create .contentrain/ structure

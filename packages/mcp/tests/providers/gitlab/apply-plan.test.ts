@@ -31,7 +31,7 @@ function mockClient(overrides: Mocks = {}): GitLabClient {
         id: 'new-commit-sha',
         message: 'test',
         author_name: 'Contentrain',
-        author_email: 'mcp@contentrain.io',
+        author_email: 'ai@contentrain.io',
         created_at: '2026-04-17T12:00:00Z',
       }),
     },
@@ -48,7 +48,7 @@ describe('applyPlanToGitLab', () => {
       id: 'sha-1',
       message: '[contentrain] test',
       author_name: 'Contentrain',
-      author_email: 'mcp@contentrain.io',
+      author_email: 'ai@contentrain.io',
       created_at: '2026-04-17T12:00:00Z',
     })
     const client = mockClient({ commitsCreate })
@@ -57,7 +57,7 @@ describe('applyPlanToGitLab', () => {
       branch: 'cr/content/blog/1234',
       base: 'contentrain',
       message: '[contentrain] test',
-      author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
+      author: { name: 'Contentrain', email: 'ai@contentrain.io' },
       changes: [
         { path: '.contentrain/content/m/blog/en.json', content: '{"a":1}' },
         { path: '.contentrain/meta/blog/en.json', content: '{}' },
@@ -86,7 +86,7 @@ describe('applyPlanToGitLab', () => {
     ])
     expect(options).toEqual({
       authorName: 'Contentrain',
-      authorEmail: 'mcp@contentrain.io',
+      authorEmail: 'ai@contentrain.io',
       startBranch: 'contentrain',
     })
   })
@@ -101,7 +101,7 @@ describe('applyPlanToGitLab', () => {
       id: 'sha-2',
       message: '[contentrain] update',
       author_name: 'Contentrain',
-      author_email: 'mcp@contentrain.io',
+      author_email: 'ai@contentrain.io',
       created_at: '2026-04-17T12:00:00Z',
     })
 
@@ -109,7 +109,7 @@ describe('applyPlanToGitLab', () => {
     await applyPlanToGitLab(client, { projectId: 7 }, {
       branch: 'cr/content/blog/1234',
       message: '[contentrain] update',
-      author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
+      author: { name: 'Contentrain', email: 'ai@contentrain.io' },
       changes: [
         { path: '.contentrain/content/m/blog/en.json', content: '{"a":2}' },
         { path: '.contentrain/meta/blog/en.json', content: '{}' },
@@ -132,7 +132,7 @@ describe('applyPlanToGitLab', () => {
       id: 'sha-3',
       message: 'mix',
       author_name: 'Contentrain',
-      author_email: 'mcp@contentrain.io',
+      author_email: 'ai@contentrain.io',
       created_at: '2026-04-17T12:00:00Z',
     })
     const client = mockClient({ branchShow, fileShow, commitsCreate })
@@ -140,7 +140,7 @@ describe('applyPlanToGitLab', () => {
     await applyPlanToGitLab(client, { projectId: 'o/r' }, {
       branch: 'cr/content/blog/1234',
       message: 'mix',
-      author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
+      author: { name: 'Contentrain', email: 'ai@contentrain.io' },
       changes: [
         { path: 'exists.json', content: null },
         { path: 'absent.json', content: null },
@@ -164,7 +164,7 @@ describe('applyPlanToGitLab', () => {
       id: 'sha-4',
       message: 'root',
       author_name: 'Contentrain',
-      author_email: 'mcp@contentrain.io',
+      author_email: 'ai@contentrain.io',
       created_at: '2026-04-17T12:00:00Z',
     })
     const client = mockClient({ commitsCreate })
@@ -172,7 +172,7 @@ describe('applyPlanToGitLab', () => {
     await applyPlanToGitLab(client, { projectId: 'o/r', contentRoot: 'apps/web' }, {
       branch: 'new',
       message: 'root',
-      author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
+      author: { name: 'Contentrain', email: 'ai@contentrain.io' },
       changes: [
         { path: '.contentrain/context.json', content: '{}' },
       ],
@@ -191,7 +191,7 @@ describe('applyPlanToGitLab', () => {
       id: 'sha-5',
       message: 'default',
       author_name: 'Contentrain',
-      author_email: 'mcp@contentrain.io',
+      author_email: 'ai@contentrain.io',
       created_at: '2026-04-17T12:00:00Z',
     })
     const client = mockClient({ projectShow, commitsCreate })
@@ -199,7 +199,7 @@ describe('applyPlanToGitLab', () => {
     await applyPlanToGitLab(client, { projectId: 'o/r' }, {
       branch: 'new',
       message: 'default',
-      author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
+      author: { name: 'Contentrain', email: 'ai@contentrain.io' },
       changes: [{ path: 'x.json', content: '{}' }],
     })
 
@@ -217,7 +217,7 @@ describe('applyPlanToGitLab', () => {
       applyPlanToGitLab(client, { projectId: 'o/r' }, {
         branch: 'exists',
         message: 'empty',
-        author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
+        author: { name: 'Contentrain', email: 'ai@contentrain.io' },
         changes: [{ path: 'gone.json', content: null }],
       }),
     ).rejects.toThrow(/no applicable actions/)
@@ -236,7 +236,7 @@ describe('applyPlanToGitLab', () => {
     const commit = await applyPlanToGitLab(client, { projectId: 'o/r' }, {
       branch: 'new',
       message: 'client msg',
-      author: { name: 'Contentrain', email: 'mcp@contentrain.io' },
+      author: { name: 'Contentrain', email: 'ai@contentrain.io' },
       changes: [{ path: 'x.json', content: '{}' }],
     })
 

@@ -9,7 +9,7 @@ export default [
     "demo_video": "/assets/demo.mp4",
     "difficulty": 4,
     "discount": 15,
-    "email": "demo@contentrain.io",
+    "email": "ai@contentrain.io",
     "event_time": "2026-03-14T10:30:00Z",
     "handle": "complete-showcase",
     "html_body": "<h2>Rich Text</h2><p>This is <strong>bold</strong> and <em>italic</em>.</p>",

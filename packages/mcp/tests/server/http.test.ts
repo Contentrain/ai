@@ -34,7 +34,7 @@ beforeEach(async () => {
   const git = simpleGit(testDir)
   await git.init()
   await git.addConfig('user.name', 'Test')
-  await git.addConfig('user.email', 'test@contentrain.io')
+  await git.addConfig('user.email', 'ai@contentrain.io')
   await writeFile(join(testDir, '.gitkeep'), '')
   await git.add('.')
   await git.commit('initial')
@@ -229,7 +229,7 @@ describe('startHttpMcpServer', () => {
               data: {
                 sha: 'new-commit-sha',
                 message: (input as { message: string }).message,
-                author: { name: 'Contentrain', email: 'mcp@contentrain.io', date: '2026-04-17T12:00:00Z' },
+                author: { name: 'Contentrain', email: 'ai@contentrain.io', date: '2026-04-17T12:00:00Z' },
               },
             }
           },
@@ -347,7 +347,7 @@ describe('startHttpMcpServer', () => {
             id: 'gitlab-commit-sha',
             message,
             author_name: 'Contentrain',
-            author_email: 'mcp@contentrain.io',
+            author_email: 'ai@contentrain.io',
             created_at: '2026-04-17T12:00:00Z',
           }
         },

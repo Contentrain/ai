@@ -22,7 +22,7 @@ import { LocalReader } from './reader.js'
 import type { LocalApplyPlanInput, LocalApplyResult } from './types.js'
 
 const DEFAULT_AUTHOR_NAME = 'Contentrain'
-const DEFAULT_AUTHOR_EMAIL = 'mcp@contentrain.io'
+const DEFAULT_AUTHOR_EMAIL = 'ai@contentrain.io'
 
 /**
  * LocalProvider — the local-filesystem, worktree-backed content provider.
