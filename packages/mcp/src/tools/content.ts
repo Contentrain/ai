@@ -22,7 +22,7 @@ export function registerContentTools(
   // ─── contentrain_content_save ───
   server.tool(
     'contentrain_content_save',
-    'Save content entries. Entry format varies by model kind: DICTIONARY — provide "locale" and "data" (flat key-value, all string values); "id" and "slug" are ignored; data keys are the identities. COLLECTION — provide "locale" and "data"; "id" is optional (auto-generated if omitted); "slug" is ignored. DOCUMENT — provide "slug" (required), "locale", and "data"; use the "body" key inside data for markdown content. SINGLETON — provide only "locale" and "data". Changes are auto-committed to git — do NOT manually edit .contentrain/ files after calling this tool.',
+    'Save content entries. Entry format varies by model kind: DICTIONARY — provide "locale" and "data" (flat key-value, all string values); "id" and "slug" are ignored; data keys are the identities. COLLECTION — provide "locale" and "data"; "id" is optional (auto-generated if omitted); "slug" is ignored. DOCUMENT — provide "slug" (required), "locale", and "data"; use the "body" key inside data for markdown content. SINGLETON — provide only "locale" and "data". MEDIA FIELDS (image/video/file): for a media-library asset, pass its storage path ("media/...") or URL; in cloud mode these are automatically normalized to absolute public delivery URLs on save (in markdown bodies too), so saved content renders in a browser anywhere with no SDK — in local mode the relative path is kept as-is. For external images (e.g. a CDN or Unsplash URL), pass the URL directly; it is saved untouched. Changes are auto-committed to git — do NOT manually edit .contentrain/ files after calling this tool.',
     {
       model: z.string().describe('Model ID'),
       entries: z.array(z.object({
@@ -126,6 +126,7 @@ export function registerContentTools(
           entries: input.entries,
           config,
           vocabulary,
+          mediaBaseUrl: provider.mediaBaseUrl,
         })
       } catch (error) {
         return {

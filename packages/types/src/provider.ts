@@ -194,6 +194,20 @@ export interface MergeResult {
 export interface RepoProvider extends RepoReader, RepoWriter {
   readonly capabilities: ProviderCapabilities
 
+  /**
+   * Per-project public media delivery base, e.g.
+   * `https://studio.example/api/cdn/v1/{projectId}` — already includes the
+   * project segment, so the content-write path only joins `{base}/{path}`.
+   *
+   * Set by hosted providers (Studio's MCP Cloud loopback resolves it from a
+   * request header and attaches it here). When present, content writes
+   * normalize relative `media/...` references — in media/image/file fields and
+   * markdown bodies — to absolute delivery URLs, so external-agent writes
+   * render anywhere without an SDK. Undefined for local/CLI providers, where
+   * media stays a relative path (the OSS file model). Never affects reads.
+   */
+  readonly mediaBaseUrl?: string
+
   listBranches(prefix?: string): Promise<Branch[]>
   createBranch(name: string, fromRef?: string): Promise<void>
   deleteBranch(name: string): Promise<void>

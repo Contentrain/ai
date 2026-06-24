@@ -97,6 +97,17 @@ export interface ContentrainConfig {
   }
   domains: string[]
   assets_path?: string
+  /**
+   * Public media delivery base for resolving relative `media/...` references to
+   * absolute URLs (e.g. a deployed CDN delivery endpoint). When set,
+   * `@contentrain/query`'s `generate` bakes a `media()` resolver into the
+   * generated client. The base may already include any project segment — the
+   * resolver only joins `{cdn.url}/{path}`. Distinct from `assets_path` (the
+   * local on-disk asset directory).
+   */
+  cdn?: {
+    url?: string
+  }
   /** Days a merged `cr/*` branch is kept before lazy cleanup. Default: 30. */
   branchRetention?: number
   /** Unmerged `cr/*` branch count that triggers a warning. Default: 50. */

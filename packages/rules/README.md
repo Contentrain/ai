@@ -44,7 +44,7 @@ Published under `shared/` — detailed standards per domain:
 - `content-quality.md` — structure, required fields, content completeness
 - `seo-rules.md` — meta optimization, keywords, canonical URLs
 - `accessibility-rules.md` — alt text, ARIA labels, color contrast
-- `media-rules.md` — image optimization, responsive sizing, asset naming
+- `media-rules.md` — storage models (local-file vs Studio-CDN delivery), image optimization, responsive sizing, asset naming
 - `schema-rules.md` — model design, field types, relations, inheritance
 - `i18n-quality.md` — translation completeness, locale parity
 - `security-rules.md` — sensitive data patterns, secret detection, XSS prevention

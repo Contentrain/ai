@@ -1,7 +1,7 @@
 import type { ModelDefinition } from '@contentrain/types'
 import type { DataModule } from './data-emitter.js'
 
-export function emitRuntimeModule(models: ModelDefinition[], dataModules: DataModule[], defaultLocale?: string): string {
+export function emitRuntimeModule(models: ModelDefinition[], dataModules: DataModule[], defaultLocale?: string, cdnBaseUrl?: string): string {
   const lines: string[] = [
     '/* eslint-disable */',
     '/* oxlint-disable */',
@@ -12,6 +12,13 @@ export function emitRuntimeModule(models: ModelDefinition[], dataModules: DataMo
   // Emit default locale constant if provided
   if (defaultLocale) {
     lines.push(`const _defaultLocale = '${defaultLocale}'`)
+    lines.push('')
+  }
+
+  // Emit the media delivery base constant if a CDN base was configured. The
+  // base is trimmed of trailing slashes here so the resolver is a plain join.
+  if (cdnBaseUrl) {
+    lines.push(`const _mediaBase = ${JSON.stringify(cdnBaseUrl.replace(/\/+$/, ''))}`)
     lines.push('')
   }
 
@@ -212,15 +219,30 @@ export function emitRuntimeModule(models: ModelDefinition[], dataModules: DataMo
     lines.push('')
   }
 
+  // media() resolver — only when a CDN base is configured. Mirrors the rewrite
+  // rules of the write path: a stored `media/...` path becomes an absolute
+  // delivery URL; external URLs and already-absolute values pass through, so it
+  // is safe to call on any field value (idempotent).
+  if (cdnBaseUrl) {
+    lines.push('// ─── Media ───')
+    lines.push('')
+    lines.push('export function media(value) {')
+    lines.push('  if (typeof value !== \'string\' || !value.startsWith(\'media/\')) return value')
+    lines.push('  return _mediaBase + \'/\' + value')
+    lines.push('}')
+    lines.push('')
+  }
+
   return lines.join('\n') + '\n'
 }
 
-export function emitCjsWrapper(models: ModelDefinition[]): string {
+export function emitCjsWrapper(models: ModelDefinition[], hasMedia = false): string {
   const exports: string[] = []
   if (models.some(m => m.kind === 'collection')) exports.push('query')
   if (models.some(m => m.kind === 'singleton')) exports.push('singleton')
   if (models.some(m => m.kind === 'dictionary')) exports.push('dictionary')
   if (models.some(m => m.kind === 'document')) exports.push('document')
+  if (hasMedia) exports.push('media')
 
   return `/* eslint-disable */
 /* oxlint-disable */

@@ -15,6 +15,7 @@ export default defineCommand({
     root: { type: 'string', description: 'Project root path', required: false },
     watch: { type: 'boolean', description: 'Watch for changes and regenerate', required: false },
     json: { type: 'boolean', description: 'Emit the generate result as JSON (silences pretty output)', required: false },
+    cdnBaseUrl: { type: 'string', description: 'Public media delivery base baked into the generated client\'s media() resolver (overrides config.cdn.url)', required: false },
   },
   async run({ args }) {
     const projectRoot = await resolveProjectRoot(args.root)
@@ -31,7 +32,8 @@ export default defineCommand({
 
     try {
       const { generate } = await import('@contentrain/query/generate')
-      const result = await generate({ projectRoot })
+      const cdnBaseUrl = args.cdnBaseUrl || undefined
+      const result = await generate({ projectRoot, cdnBaseUrl })
 
       s?.stop('SDK client generated')
 
@@ -70,7 +72,7 @@ export default defineCommand({
             debounce = setTimeout(async () => {
               log.info('Changes detected, regenerating...')
               try {
-                const r = await generate({ projectRoot })
+                const r = await generate({ projectRoot, cdnBaseUrl })
                 log.success(`Regenerated: ${r.generatedFiles.length} files`)
               } catch (err) {
                 log.error(`Regeneration failed: ${err instanceof Error ? err.message : String(err)}`)

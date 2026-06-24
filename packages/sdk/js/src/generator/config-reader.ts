@@ -33,6 +33,7 @@ export async function readProjectManifest(projectRoot: string): Promise<ProjectM
     domains: rawConfig?.domains ?? [],
     repository: rawConfig?.repository,
     assets_path: rawConfig?.assets_path,
+    cdn: rawConfig?.cdn,
     branchRetention: rawConfig?.branchRetention,
   }
 

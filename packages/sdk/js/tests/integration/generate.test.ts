@@ -331,4 +331,37 @@ describe('generate (integration)', () => {
       await rm(tempRoot, { recursive: true, force: true })
     }
   })
+
+  it('bakes a working media() resolver into the client when cdnBaseUrl is set', async () => {
+    const tempRoot = await mkdtemp(join(tmpdir(), 'contentrain-sdk-media-'))
+
+    try {
+      await cp(FIXTURE, tempRoot, { recursive: true })
+      await generate({ projectRoot: tempRoot, cdnBaseUrl: 'https://cdn.test/api/cdn/v1/proj/' })
+
+      const types = await readFile(join(tempRoot, '.contentrain', 'client', 'index.d.ts'), 'utf-8')
+      expect(types).toContain('export declare function media(value: string): string')
+
+      const clientPath = pathToFileURL(join(tempRoot, '.contentrain', 'client', 'index.mjs')).href
+      const client = await import(clientPath)
+
+      // stored path → absolute delivery URL (trailing slash on base trimmed)
+      expect(client.media('media/original/a.webp')).toBe('https://cdn.test/api/cdn/v1/proj/media/original/a.webp')
+      // external + already-absolute pass through untouched (idempotent)
+      expect(client.media('https://images.unsplash.com/y.jpg')).toBe('https://images.unsplash.com/y.jpg')
+      expect(client.media('https://cdn.test/api/cdn/v1/proj/media/original/a.webp'))
+        .toBe('https://cdn.test/api/cdn/v1/proj/media/original/a.webp')
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('omits media() from the client when no CDN base is configured', async () => {
+    await generate({ projectRoot })
+
+    const types = await readFile(join(clientDir, 'index.d.ts'), 'utf-8')
+    const esm = await readFile(join(clientDir, 'index.mjs'), 'utf-8')
+    expect(types).not.toContain('function media(')
+    expect(esm).not.toContain('export function media(')
+  })
 })

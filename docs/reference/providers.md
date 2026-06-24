@@ -55,6 +55,12 @@ Providers extend `RepoReader` and `RepoWriter` with branch / merge / diff operat
 interface RepoProvider extends RepoReader, RepoWriter {
   readonly capabilities: ProviderCapabilities
 
+  // Optional per-project public media delivery base (project segment included).
+  // When set by a hosted provider, the content-write path normalizes relative
+  // `media/...` references to absolute delivery URLs. Undefined for local/CLI
+  // providers, where media stays a relative path.
+  readonly mediaBaseUrl?: string
+
   listBranches(prefix?: string): Promise<Branch[]>
   createBranch(name: string, fromRef?: string): Promise<void>
   deleteBranch(name: string): Promise<void>

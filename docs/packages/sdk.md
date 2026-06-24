@@ -240,6 +240,19 @@ const latest = document('blog-article')
 | `all` | `all()` | `T[]` | Execute query, return all matches |
 | `first` | `first()` | `T \| undefined` | Execute query, return first match |
 
+### media — Delivery URLs
+
+A fifth export, `media(value)`, is generated **only** when a CDN delivery base is configured — set `cdn.url` in [`config.json`](/reference/config) or run `contentrain generate --cdnBaseUrl <base>`. It resolves a stored `media/...` path to its absolute delivery URL:
+
+```ts
+import { media } from '#contentrain'
+
+media('media/original/hero.webp')          // → '{cdn.url}/media/original/hero.webp'
+media('https://images.unsplash.com/x.jpg') // → unchanged (external pass-through)
+```
+
+It is idempotent — external URLs (`http(s)://`, `//`, `data:`) and already-absolute delivery URLs pass through untouched — and is the local-mode counterpart of CDN mode's `MediaAccessor.url()`. For content delivered through Studio CDN, media fields already carry absolute URLs (normalized on write), so `media()` is only needed for the relative-path / local-file model.
+
 ## Relations
 
 All model kinds support relation resolution via `.include()`:

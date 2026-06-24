@@ -5,6 +5,18 @@ Follow these guidelines when populating image, video, or file fields in any cont
 
 ---
 
+## Storage & Reference Models
+
+Media references are stored in one of two models. Identify which one the project uses before populating image, video, or file fields. The asset rules below (dimensions, formats, size limits, naming) apply to **both**; only the **Asset Organization** section (paths under `assets_path`, relative references) is specific to the local-file model.
+
+1. **Local file model (default / OSS).** Media lives on disk under `config.json > assets_path` (default `.contentrain/assets/`) and is referenced by a **relative path from the project root** (e.g. `.contentrain/assets/blog/hero.webp`). To turn relative paths into URLs at read time, set `config.json > cdn.url` (or `contentrain generate --cdnBaseUrl <base>`) and use the `media()` resolver baked into the `@contentrain/query` generated client — `media('media/...') → {cdn.url}/{path}`.
+
+2. **Studio CDN model.** Media lives in the Studio CDN/object store and is referenced by a relative storage path (`media/...`) returned by the media library. Pass either that `media/...` path or its URL to `contentrain_content_save`: in **cloud mode** the value is **automatically normalized to an absolute public delivery URL** on save (`{base}/{path}`), in both media fields and markdown bodies, so the committed content renders in a browser anywhere with no SDK. In **local mode** the relative path is kept verbatim. The rewrite is idempotent and never touches external URLs (`http(s)://`, `//`, `data:`) or already-absolute delivery URLs — so for external images (a CDN or Unsplash URL), just save the URL directly.
+
+Never hand-build delivery URLs or guess the CDN base. Save the path or URL the media library gives you; the platform resolves it.
+
+---
+
 ## Image Dimensions (Recommended)
 
 1. Use these standard dimensions unless the project's `context.json` specifies overrides:
