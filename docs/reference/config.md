@@ -78,6 +78,9 @@ interface ContentrainConfig {
   }
   domains: string[]        // Content domain names
   assets_path?: string     // Path for media assets
+  cdn?: {                  // Public media delivery base (optional)
+    url?: string           // e.g. https://cdn.example.com/api/cdn/v1/<project>
+  }
   branchRetention?: number // Auto-cleanup branch count
 }
 ```
@@ -102,6 +105,7 @@ interface ContentrainConfig {
   },
   "domains": ["marketing", "blog", "system"],
   "assets_path": "public/uploads",
+  "cdn": { "url": "https://cdn.example.com/api/cdn/v1/my-project" },
   "branchRetention": 10
 }
 ```
@@ -119,6 +123,7 @@ interface ContentrainConfig {
 | `locales.supported` | `string[]` | Yes | All supported locale codes. Must include `default`. |
 | `domains` | `string[]` | Yes | Content domain names for organizing models. |
 | `assets_path` | `string` | No | Directory for media assets relative to project root. |
+| `cdn.url` | `string` | No | Public media delivery base. When set, `contentrain generate` bakes a `media()` resolver into the client that turns relative `media/...` paths into absolute `{cdn.url}/{path}` URLs. |
 | `branchRetention` | `number` | No | Number of merged content branches to keep before auto-cleanup. |
 
 ### Supported Stacks

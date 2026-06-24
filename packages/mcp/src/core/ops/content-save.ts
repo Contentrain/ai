@@ -3,6 +3,7 @@ import { generateEntryId, validateEntryId, validateLocale, validateSlug } from '
 import type { FileChange, RepoReader } from '../contracts/index.js'
 import type { ContentEntry } from '../content-manager.js'
 import { canonicalStringify, serializeMarkdownFrontmatter } from '../serialization/index.js'
+import { rewriteEntryMedia, rewriteMarkdownMedia } from '../media/media-rewrite.js'
 import type { ContentSaveEntryResult, ContentSavePlan } from './types.js'
 import { contentFilePath, documentFilePath, metaFilePath } from './paths.js'
 
@@ -11,6 +12,13 @@ interface PlanInput {
   entries: ContentEntry[]
   config: ContentrainConfig
   vocabulary?: Vocabulary | null
+  /**
+   * Per-project public media delivery base (`RepoProvider.mediaBaseUrl`). When
+   * set (hosted/cloud mode), relative `media/...` references in media fields
+   * and markdown bodies are normalized to absolute delivery URLs before the
+   * value is committed. Undefined in local mode — paths are kept verbatim.
+   */
+  mediaBaseUrl?: string
 }
 
 /**
@@ -23,9 +31,15 @@ interface PlanInput {
  * so repeated reads of the same path during a plan are one IO.
  */
 export async function planContentSave(reader: RepoReader, input: PlanInput): Promise<ContentSavePlan> {
-  const { model, entries, config, vocabulary } = input
+  const { model, entries, config, vocabulary, mediaBaseUrl } = input
   const result: ContentSaveEntryResult[] = []
   const advisories: string[] = []
+
+  // Hosted/cloud mode: normalize relative `media/...` references to absolute
+  // delivery URLs so the committed value renders anywhere with no SDK. A no-op
+  // in local mode (no base) or for field-less models (e.g. dictionaries).
+  const normalizeMedia = (data: Record<string, unknown>): Record<string, unknown> =>
+    mediaBaseUrl && model.fields ? rewriteEntryMedia(data, model.fields, mediaBaseUrl) : data
 
   // In-memory accumulators keyed by content-root-relative path.
   const contentByPath = new Map<string, unknown>()
@@ -60,7 +74,7 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
       case 'singleton': {
         const cPath = contentFilePath(model, locale)
         const mPath = metaFilePath(model, locale)
-        contentByPath.set(cPath, entry.data)
+        contentByPath.set(cPath, normalizeMedia(entry.data))
         metaByPath.set(mPath, defaultMeta(entry.data))
         result.push({ action: 'updated', locale })
         break
@@ -76,7 +90,7 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
           ?? await readJsonOrEmpty<Record<string, unknown>>(cPath)
 
         const action: 'created' | 'updated' = isNew || !(id in existing) ? 'created' : 'updated'
-        existing[id] = entry.data
+        existing[id] = normalizeMedia(entry.data)
 
         const sorted: Record<string, unknown> = {}
         for (const key of Object.keys(existing).toSorted()) {
@@ -171,7 +185,10 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
         catch { /* not yet */ }
         const action: 'created' | 'updated' = existingRaw ? 'updated' : 'created'
 
-        markdownChanges.set(dPath, serializeMarkdownFrontmatter(fmData, bodyContent))
+        // Frontmatter media fields go through the schema-guided rewrite; the
+        // markdown body has its `media/...` image/link targets rewritten too.
+        const normalizedBody = mediaBaseUrl ? rewriteMarkdownMedia(bodyContent, mediaBaseUrl) : bodyContent
+        markdownChanges.set(dPath, serializeMarkdownFrontmatter(normalizeMedia(fmData), normalizedBody))
         metaByPath.set(mPath, defaultMeta(entry.data))
 
         result.push({ action, slug, locale })

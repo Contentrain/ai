@@ -170,9 +170,17 @@ Generates the typed SDK client from model definitions.
 contentrain generate
 contentrain generate --watch  # Regen on model/content changes
 contentrain generate --json   # CI-friendly JSON
+contentrain generate --cdnBaseUrl https://cdn.example.com/api/cdn/v1/<project>  # bake a media() resolver
 ```
 
 Writes `.contentrain/client/` (ESM, CJS, types + per-model data modules) and adds `#contentrain` subpath to `package.json`.
+
+| Flag | Description |
+|------|-------------|
+| `--watch` | Regenerate on model/content changes. |
+| `--json` | Emit the result as JSON (silences pretty output). |
+| `--cdnBaseUrl <base>` | Public media delivery base. Bakes a [`media()`](/packages/sdk#media-delivery-urls) resolver into the client that turns relative `media/...` paths into absolute URLs. Overrides `cdn.url` in [`config.json`](/reference/config). |
+| `--root <path>` | Project root path. |
 
 ---
 

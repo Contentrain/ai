@@ -159,6 +159,19 @@ Supported methods:
 - `first()`
 - `all()`
 
+### `media(value)`
+
+Resolves a stored `media/...` path to its absolute delivery URL. Emitted **only** when a CDN base is configured — set `cdn.url` in `.contentrain/config.json` or run `contentrain generate --cdnBaseUrl <base>`:
+
+```ts
+import { media } from '#contentrain'
+
+media('media/original/hero.webp')          // → '{cdn.url}/media/original/hero.webp'
+media('https://images.unsplash.com/x.jpg') // → unchanged (external pass-through)
+```
+
+Idempotent — external URLs (`http(s)://`, `//`, `data:`) and already-absolute delivery URLs pass through untouched. It is the local-mode counterpart of CDN mode's `MediaAccessor.url()`. For Studio-CDN content, media fields already carry absolute URLs, so no resolution is needed.
+
 ## 🔗 Relations
 
 Generated clients support relation resolution via `include(...)`.

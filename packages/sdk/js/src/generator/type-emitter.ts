@@ -1,6 +1,6 @@
 import type { ModelDefinition, FieldDef } from '@contentrain/types'
 
-export function emitTypes(models: ModelDefinition[]): string {
+export function emitTypes(models: ModelDefinition[], hasMedia = false): string {
   const lines: string[] = [
     '/* eslint-disable */',
     '/* oxlint-disable */',
@@ -121,6 +121,13 @@ export function emitTypes(models: ModelDefinition[]): string {
   }
   lines.push('export declare function document(model: string): DocumentQuery<Record<string, unknown>>')
   lines.push('')
+
+  // media() resolver — emitted only when a CDN delivery base is configured.
+  if (hasMedia) {
+    lines.push('/** Resolve a stored `media/...` path to its absolute delivery URL. External URLs and already-absolute values pass through unchanged. */')
+    lines.push('export declare function media(value: string): string')
+    lines.push('')
+  }
 
   // Typed client interface
   lines.push('export interface ContentrainClient {')

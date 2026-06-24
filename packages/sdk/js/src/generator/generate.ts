@@ -9,6 +9,14 @@ import { readDir, writeText } from './utils.js'
 
 export interface GenerateOptions {
   projectRoot: string
+  /**
+   * Public media delivery base for resolving relative `media/...` references to
+   * absolute URLs. When set (or when `config.cdn.url` is present), the emitted
+   * client gains a `media(path)` resolver. The explicit option wins over the
+   * config value. Omit for the pure local-file model — media stays a relative
+   * path.
+   */
+  cdnBaseUrl?: string
 }
 
 export interface GenerateResult {
@@ -26,13 +34,18 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
   // 1. Read project manifest
   const manifest = await readProjectManifest(projectRoot)
 
+  // Media delivery base: explicit option wins over config.cdn.url. When set,
+  // the emitted client gains a `media()` resolver.
+  const cdnBaseUrl = options.cdnBaseUrl ?? manifest.config.cdn?.url
+  const hasMedia = Boolean(cdnBaseUrl)
+
   // 2. Generate data modules (async — reads content files)
   const dataModules = await emitDataModules(manifest.models, manifest.contentFiles)
 
   // 3. Generate all output content (sync — pure string transforms)
-  const typesContent = emitTypes(manifest.models)
-  const runtimeContent = emitRuntimeModule(manifest.models, dataModules, manifest.config.locales.default)
-  const cjsContent = emitCjsWrapper(manifest.models)
+  const typesContent = emitTypes(manifest.models, hasMedia)
+  const runtimeContent = emitRuntimeModule(manifest.models, dataModules, manifest.config.locales.default, cdnBaseUrl)
+  const cjsContent = emitCjsWrapper(manifest.models, hasMedia)
 
   // 4. Clean stale data modules
   const newFileNames = new Set(dataModules.map(dm => dm.fileName))

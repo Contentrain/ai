@@ -245,6 +245,10 @@ Ask your agent: *"Create a blog post model with title, excerpt, author relation,
 
 Ask your agent: *"Add a new blog post about getting started"*
 
+::: tip Media in cloud mode
+For `image`/`video`/`file` fields (and `media/...` references in markdown bodies), pass either the media-library storage path (`media/...`) or a URL. When the server runs in cloud mode with a delivery base (Studio's MCP Cloud supplies one per project), `contentrain_content_save` normalizes those references to absolute public delivery URLs on save, so committed content renders anywhere with no SDK. In local mode the relative path is kept verbatim, and external URLs always pass through untouched.
+:::
+
 ### Normalize Flow (Scan + Extract + Reuse)
 
 ```ts
