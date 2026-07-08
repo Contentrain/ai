@@ -15,6 +15,7 @@ vi.mock('@contentrain/mcp/git/transaction', () => ({
 
 vi.mock('@contentrain/mcp/git/branch-lifecycle', () => ({
   branchDiff: branchDiffMock,
+  deleteRemoteBranch: vi.fn().mockResolvedValue({ deleted: false, skipped: 'no-remote' }),
 }))
 
 // `simple-git` is still used for branch listing (not yet migrated to a

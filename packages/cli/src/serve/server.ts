@@ -21,7 +21,7 @@ import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { simpleGit } from 'simple-git'
 import { CONTENTRAIN_BRANCH, LOCAL_CAPABILITIES } from '@contentrain/types'
 import { mergeBranch } from '@contentrain/mcp/git/transaction'
-import { branchDiff, checkBranchHealth } from '@contentrain/mcp/git/branch-lifecycle'
+import { branchDiff, checkBranchHealth, deleteRemoteBranch } from '@contentrain/mcp/git/branch-lifecycle'
 import { readConfig } from '@contentrain/mcp/core/config'
 import {
   BranchActionBodySchema,
@@ -509,6 +509,7 @@ export async function createServeApp(options: ServeOptions) {
         commit: result.commit,
         action: result.action,
         sync: result.sync,
+        remote: result.remote,
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -524,9 +525,12 @@ export async function createServeApp(options: ServeOptions) {
     const { branch: branchName } = parseOrThrow(BranchActionBodySchema, raw)
     const git = simpleGit(projectRoot)
     await git.deleteLocalBranch(branchName, true)
+    // A rejected draft may have been pushed (review workflow) — remove the
+    // remote copy too so it doesn't linger as a phantom pending review.
+    const remote = await deleteRemoteBranch(projectRoot, branchName)
     syncWarnings.delete(branchName)
     broadcast({ type: 'branch:rejected', branch: branchName })
-    return { status: 'deleted', branch: branchName }
+    return { status: 'deleted', branch: branchName, remote }
   }))
 
   // History — git log for contentrain operations
@@ -827,6 +831,7 @@ export async function createServeApp(options: ServeOptions) {
         commit: result.commit,
         action: result.action,
         sync: result.sync,
+        remote: result.remote,
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)

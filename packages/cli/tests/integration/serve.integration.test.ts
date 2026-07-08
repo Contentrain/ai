@@ -121,6 +121,7 @@ vi.mock('@contentrain/mcp/git/branch-lifecycle', () => ({
   branchDiff: branchDiffMock,
   checkBranchHealth: checkBranchHealthMock,
   cleanupMergedBranches: vi.fn().mockResolvedValue({ deleted: 0, remaining: 0, deletedBranches: [] }),
+  deleteRemoteBranch: vi.fn().mockResolvedValue({ deleted: false, skipped: 'no-remote' }),
 }))
 
 vi.mock('@contentrain/mcp/git/transaction', () => ({

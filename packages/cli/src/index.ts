@@ -29,6 +29,7 @@ const main = defineCommand({
     generate: () => import('./commands/generate.js').then(m => m.default),
     diff: () => import('./commands/diff.js').then(m => m.default),
     merge: () => import('./commands/merge.js').then(m => m.default),
+    prune: () => import('./commands/prune.js').then(m => m.default),
     describe: () => import('./commands/describe.js').then(m => m.default),
     'describe-format': () => import('./commands/describe-format.js').then(m => m.default),
     scaffold: () => import('./commands/scaffold.js').then(m => m.default),

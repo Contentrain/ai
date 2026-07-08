@@ -3,7 +3,7 @@ import { intro, outro, log, select, confirm, isCancel } from '@clack/prompts'
 import { simpleGit } from 'simple-git'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { mergeBranch } from '@contentrain/mcp/git/transaction'
-import { branchDiff } from '@contentrain/mcp/git/branch-lifecycle'
+import { branchDiff, deleteRemoteBranch } from '@contentrain/mcp/git/branch-lifecycle'
 import { resolveProjectRoot } from '../utils/context.js'
 import { pc } from '../utils/ui.js'
 
@@ -155,6 +155,12 @@ export default defineCommand({
         try {
           const result = await mergeBranch(projectRoot, selectedBranch)
           log.success(`Merged ${selectedBranch} (commit ${result.commit.slice(0, 8)})`)
+          if (result.remote?.deleted) {
+            log.message(pc.dim('  Deleted remote copy.'))
+          }
+          if (result.remote?.warning) {
+            log.warning(`Remote copy not deleted: ${result.remote.warning}`)
+          }
           if (result.sync?.skipped?.length) {
             log.warning(`${result.sync.skipped.length} file(s) skipped during sync — you have uncommitted changes:`)
             for (const f of result.sync.skipped) {
@@ -171,7 +177,14 @@ export default defineCommand({
       if (!isCancel(confirmDelete) && confirmDelete) {
         try {
           await git.deleteLocalBranch(selectedBranch, true)
+          const remote = await deleteRemoteBranch(projectRoot, selectedBranch)
           log.success(`Deleted ${selectedBranch}`)
+          if (remote.deleted) {
+            log.message(pc.dim('  Deleted remote copy.'))
+          }
+          if (remote.warning) {
+            log.warning(`Remote copy not deleted: ${remote.warning}`)
+          }
         } catch (error) {
           log.error(`Delete failed: ${error instanceof Error ? error.message : String(error)}`)
         }
