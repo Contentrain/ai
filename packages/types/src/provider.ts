@@ -175,6 +175,17 @@ export interface MergeResult {
    * etc.) omit it because they do not touch a developer's working tree.
    */
   sync?: SyncResult
+  /**
+   * Outcome of the post-merge source-branch cleanup on the remote.
+   * `deleted: false` with `skipped` is an expected no-op (cleanup disabled,
+   * no remote, ref already gone); `warning` is a real failure (offline,
+   * auth) that did NOT fail the merge itself.
+   */
+  remote?: {
+    deleted: boolean
+    skipped?: string
+    warning?: string
+  }
 }
 
 // ─── Provider (full surface) ───
@@ -212,7 +223,15 @@ export interface RepoProvider extends RepoReader, RepoWriter {
   createBranch(name: string, fromRef?: string): Promise<void>
   deleteBranch(name: string): Promise<void>
   getBranchDiff(branch: string, base?: string): Promise<FileDiff[]>
-  mergeBranch(branch: string, into: string): Promise<MergeResult>
+  /**
+   * Merge `branch` into `into`. By default the source branch's remote copy
+   * is removed after a successful merge (best-effort — reported via
+   * `MergeResult.remote`, never a thrown error). Pass
+   * `opts.removeSourceBranch: false` to keep it (e.g. a driver that owns
+   * cleanup separately). LocalProvider ignores the option: its cleanup is
+   * governed by `config.remoteBranchCleanup`.
+   */
+  mergeBranch(branch: string, into: string, opts?: { removeSourceBranch?: boolean }): Promise<MergeResult>
   isMerged(branch: string, into?: string): Promise<boolean>
   getDefaultBranch(): Promise<string>
 }
