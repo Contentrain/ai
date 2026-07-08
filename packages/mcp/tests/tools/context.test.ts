@@ -220,7 +220,10 @@ describe('contentrain_status branch health', () => {
     await mkdir(join(testDir, '.git'), { recursive: true })
 
     vi.resetModules()
-    vi.doMock('../../src/git/branch-lifecycle.js', () => ({
+    vi.doMock('../../src/git/branch-lifecycle.js', async (importOriginal) => ({
+      // Keep the real module surface (deleteRemoteBranch, listRemoteCrBranches,
+      // ...) — workflow/doctor/transaction import those too.
+      ...(await importOriginal<typeof import('../../src/git/branch-lifecycle.js')>()),
       cleanupMergedBranches: vi.fn(async () => ({ deleted: 0, remaining: 80, deletedBranches: [] })),
       checkBranchHealth: vi.fn(async () => ({
         total: 80,

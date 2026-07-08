@@ -81,7 +81,10 @@ interface ContentrainConfig {
   cdn?: {                  // Public media delivery base (optional)
     url?: string           // e.g. https://cdn.example.com/api/cdn/v1/<project>
   }
-  branchRetention?: number // Auto-cleanup branch count
+  branchRetention?: number      // Days a merged cr/* branch is kept before lazy cleanup (default: 30)
+  branchWarnLimit?: number      // Unmerged cr/* count that triggers a warning (default: 50)
+  branchBlockLimit?: number     // Unmerged cr/* count that blocks new writes (default: 80)
+  remoteBranchCleanup?: boolean // Delete remote cr/* copies on merge/delete + allow pruning (default: true)
 }
 ```
 
@@ -106,7 +109,8 @@ interface ContentrainConfig {
   "domains": ["marketing", "blog", "system"],
   "assets_path": "public/uploads",
   "cdn": { "url": "https://cdn.example.com/api/cdn/v1/my-project" },
-  "branchRetention": 10
+  "branchRetention": 10,
+  "remoteBranchCleanup": true
 }
 ```
 
@@ -124,7 +128,10 @@ interface ContentrainConfig {
 | `domains` | `string[]` | Yes | Content domain names for organizing models. |
 | `assets_path` | `string` | No | Directory for media assets relative to project root. |
 | `cdn.url` | `string` | No | Public media delivery base. When set, `contentrain generate` bakes a `media()` resolver into the client that turns relative `media/...` paths into absolute `{cdn.url}/{path}` URLs. |
-| `branchRetention` | `number` | No | Number of merged content branches to keep before auto-cleanup. |
+| `branchRetention` | `number` | No | Days a merged `cr/*` branch is kept locally before lazy cleanup. Default: `30`. |
+| `branchWarnLimit` | `number` | No | Unmerged `cr/*` branch count that triggers a warning. Default: `50`. |
+| `branchBlockLimit` | `number` | No | Unmerged `cr/*` branch count that blocks new writes. Default: `80`. |
+| `remoteBranchCleanup` | `boolean` | No | Delete the remote copy of a `cr/*` branch when it is merged or deleted locally, and allow `contentrain prune` / lazy sweeps to remove merged remote leftovers. Default: `true`. |
 
 ### Supported Stacks
 

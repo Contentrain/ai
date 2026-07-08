@@ -70,8 +70,8 @@ export class GitHubProvider implements RepoProvider {
     const resolved = base ?? 'main'
     return getBranchDiffOp(this.client, this.repo, branch, resolved)
   }
-  mergeBranch(branch: string, into: string): Promise<MergeResult> {
-    return mergeBranchOp(this.client, this.repo, branch, into)
+  mergeBranch(branch: string, into: string, opts?: { removeSourceBranch?: boolean }): Promise<MergeResult> {
+    return mergeBranchOp(this.client, this.repo, branch, into, opts)
   }
   isMerged(branch: string, into?: string): Promise<boolean> {
     const resolved = into ?? 'main'

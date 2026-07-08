@@ -62,7 +62,8 @@ All write operations are designed around git-backed safety:
 - a dedicated `contentrain` branch serves as the content state single source of truth
 - each write creates a temporary worktree on a feature branch forked from `contentrain` (branch name: `cr/{operation}/{model}/{locale}/{timestamp}-{suffix}`)
 - auto-merge: feature merges into `contentrain`, baseBranch advanced via update-ref, `.contentrain/` files selectively synced to developer's working tree
-- review: feature branch pushed to remote for team review
+- review: feature branch pushed to remote for team review; once merged (or deleted), its remote copy is removed too — best-effort, opt out with `remoteBranchCleanup: false` in config.json
+- merged-branch detection survives base-history rewrites (ancestry check with a patch-id fallback), so rebases/squashes don't strand stale branches
 - developer's working tree is never mutated during MCP git operations (no stash, no checkout, no merge)
 - context.json never lands on feature branches — it is regenerated on the `contentrain` branch after merge (locally by the transaction layer; in remote flows by the orchestrator that owns the merge)
 - canonical JSON output — sorted keys, 2-space indent, trailing newline
@@ -77,7 +78,7 @@ All write operations are designed around git-backed safety:
 | `contentrain_status` | Project status, config, models, branch health, context | Yes | — |
 | `contentrain_describe` | Full schema and sample data for a model | Yes | — |
 | `contentrain_describe_format` | File-format and storage contract reference | Yes | — |
-| `contentrain_doctor` | Project health report (env, structure, models, orphans, branches, SDK) | Yes | — |
+| `contentrain_doctor` | Project health report (env, structure, models, orphans, local + remote branches, SDK) | Yes | — |
 | `contentrain_init` | Create `.contentrain/` structure and base config | — | — |
 | `contentrain_scaffold` | Apply a starter template such as blog, docs, landing, saas | — | — |
 | `contentrain_model_save` | Create or update a model definition | — | — |
@@ -86,10 +87,10 @@ All write operations are designed around git-backed safety:
 | `contentrain_content_delete` | Delete content entries | — | **Yes** |
 | `contentrain_content_list` | Read content entries | Yes | — |
 | `contentrain_validate` | Validate project content, optionally auto-fix structural issues | — | — |
-| `contentrain_submit` | Push `cr/*` branches to remote | — | — |
-| `contentrain_merge` | Merge a review-mode branch into contentrain locally (by exact branch or model) | — | — |
-| `contentrain_branch_list` | List pending `cr/*` branches with merge status | Yes | — |
-| `contentrain_branch_delete` | Delete a stale/failed `cr/*` branch (contentrain branch protected) | — | **Yes** |
+| `contentrain_submit` | Push `cr/*` branches to remote, then lazily prune merged local + remote leftovers | — | — |
+| `contentrain_merge` | Merge a review-mode branch into contentrain locally (by exact branch or model); deletes its remote copy | — | — |
+| `contentrain_branch_list` | List pending `cr/*` branches with merge status (`remote: true` adds remote view) | Yes | — |
+| `contentrain_branch_delete` | Delete a stale/failed `cr/*` branch locally and on the remote (contentrain branch protected) | — | **Yes** |
 | `contentrain_scan` | Graph- and candidate-based hardcoded string scan | Yes | — |
 | `contentrain_apply` | Normalize extract/reuse execution with dry-run support | — | — |
 | `contentrain_bulk` | Bulk locale copy, status updates, and deletes | — | — |
@@ -238,7 +239,7 @@ The package also exposes low-level modules for embedding and advanced use:
 - `@contentrain/mcp/util/detect`
 - `@contentrain/mcp/util/fs`
 - `@contentrain/mcp/git/transaction`
-- `@contentrain/mcp/git/branch-lifecycle`
+- `@contentrain/mcp/git/branch-lifecycle` — branch health/cleanup plus the remote cr/* lifecycle: `deleteRemoteBranch`, `listRemoteCrBranches`, `pruneMergedRemoteBranches`, `isRefMerged`, `classifyMergedBranches`
 - `@contentrain/mcp/tools/annotations`
 - `@contentrain/mcp/templates`
 - `@contentrain/mcp/providers/local`

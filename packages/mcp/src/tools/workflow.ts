@@ -6,7 +6,7 @@ import type { ToolProvider } from '../server.js'
 import { validateProject } from '../core/validator/index.js'
 import { readConfig } from '../core/config.js'
 import { createTransaction, buildBranchName, mergeBranch } from '../git/transaction.js'
-import { checkBranchHealth, cleanupMergedBranches } from '../git/branch-lifecycle.js'
+import { checkBranchHealth, cleanupMergedBranches, deleteRemoteBranch, listRemoteCrBranches, pruneMergedRemoteBranches } from '../git/branch-lifecycle.js'
 import { isMerged } from '../providers/local/branch-ops.js'
 import { normalizeOperationError } from '../git/errors.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
@@ -319,10 +319,16 @@ export function registerWorkflowTools(
         // Lazy cleanup: delete merged branches after push
         const cleanup = await cleanupMergedBranches(projectRoot)
 
+        // Lazy remote sweep: prune already-merged cr/* leftovers on the
+        // remote (capped, config-gated, never throws) so review workflows
+        // self-heal instead of accumulating phantom pending reviews.
+        const remotePrune = await pruneMergedRemoteBranches(projectRoot, { config, max: 20 })
+
         const nextSteps: string[] = []
         if (pushed.length > 0) nextSteps.push('Create PRs on your git platform for review')
         if (pushed.length > 0) nextSteps.push('For merge: use contentrain_merge or direct user to http://localhost:3333/branches')
         if (errors.length > 0) nextSteps.push('Fix push errors and retry')
+        if (remotePrune.errors.length > 0) nextSteps.push('Some merged remote branches could not be pruned — run `contentrain prune`')
         if (cleanup.remaining >= 50) nextSteps.push(`Warning: ${cleanup.remaining} active contentrain branches. Consider reviewing old branches.`)
 
         return {
@@ -333,6 +339,7 @@ export function registerWorkflowTools(
             errors: errors.length > 0 ? errors : undefined,
             remote: remoteName,
             cleanup: cleanup.deleted > 0 ? { deleted: cleanup.deleted, remaining: cleanup.remaining } : undefined,
+            remote_cleanup: remotePrune.deleted.length > 0 ? { deleted: remotePrune.deleted.length } : undefined,
             next_steps: nextSteps,
           }, null, 2) }],
         }
@@ -402,11 +409,15 @@ export function registerWorkflowTools(
             action: result.action,
             commit: result.commit,
             sync: result.sync,
+            ...(result.remote ? { remote: result.remote } : {}),
             next_steps: [
               'Run `contentrain generate` (or `npx contentrain-query generate`) to update the SDK client',
               'Run contentrain_validate to verify content integrity',
               result.sync.skipped.length > 0
                 ? `${result.sync.skipped.length} file(s) skipped due to local changes — resolve manually`
+                : '',
+              result.remote?.warning
+                ? `Remote copy not deleted (${result.remote.warning}) — delete it manually: git push <remote> --delete ${targetBranch}`
                 : '',
             ].filter(Boolean),
           }, null, 2) }],
@@ -426,6 +437,7 @@ export function registerWorkflowTools(
     'List pending contentrain (cr/*) branches with their merge status against the contentrain branch. Use this to discover branch names for contentrain_merge / contentrain_branch_delete, and to monitor branch-health limits (warning at 50, blocked at 80 unmerged).',
     {
       unmerged_only: z.boolean().optional().describe('Only list branches not yet merged into contentrain. Default: false'),
+      remote: z.boolean().optional().describe('Also check the git remote: annotate entries with on_remote and report remote-only cr/* leftovers. Requires network. Default: false'),
     },
     TOOL_ANNOTATIONS['contentrain_branch_list']!,
     async (input) => {
@@ -437,22 +449,43 @@ export function registerWorkflowTools(
         const summary = await git.branchLocal()
         const crBranches = summary.all.filter(b => b.startsWith('cr/') && b !== CONTENTRAIN_BRANCH)
 
+        const remoteList = input.remote ? await listRemoteCrBranches(projectRoot) : undefined
+        const remoteNames = remoteList && !remoteList.error
+          ? new Set(remoteList.branches.map(b => b.name))
+          : undefined
+
         const branches = await Promise.all(crBranches.map(async (name) => {
           const [merged, ts] = await Promise.all([
             isMerged(projectRoot, name, CONTENTRAIN_BRANCH),
             git.raw(['log', '-1', '--format=%cI', name]).then(s => s.trim()).catch(() => ''),
           ])
-          return { name, sha: summary.branches[name]?.commit ?? '', merged, lastCommit: ts }
+          return {
+            name,
+            sha: summary.branches[name]?.commit ?? '',
+            merged,
+            lastCommit: ts,
+            ...(remoteNames ? { on_remote: remoteNames.has(name) } : {}),
+          }
         }))
         const ordered = branches.toSorted((left, right) => right.lastCommit.localeCompare(left.lastCommit))
         const filtered = input.unmerged_only ? ordered.filter(b => !b.merged) : ordered
         const health = await checkBranchHealth(projectRoot)
+
+        const localNames = new Set(crBranches)
+        const remoteExtras = input.remote
+          ? (remoteList === null
+              ? { remote_error: 'No git remote configured.' }
+              : remoteList!.error
+                ? { remote_error: remoteList!.error }
+                : { remote_only: remoteList!.branches.filter(b => !localNames.has(b.name)).map(b => b.name) })
+          : {}
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             total: ordered.length,
             unmerged: ordered.filter(b => !b.merged).length,
             branches: filtered,
+            ...remoteExtras,
             health: { warning: health.warning, blocked: health.blocked, message: health.message },
             next_steps: [
               'Merge a branch: contentrain_merge { branch: "...", confirm: true }',
@@ -494,9 +527,24 @@ export function registerWorkflowTools(
         const git = simpleGit(projectRoot)
         const summary = await git.branchLocal()
         if (!summary.all.includes(input.branch)) {
+          // The local copy may already be pruned while the pushed copy
+          // leaked on the remote — attempt a remote-only delete before
+          // giving up.
+          const remoteOnly = await deleteRemoteBranch(projectRoot, input.branch)
+          if (remoteOnly.deleted) {
+            return {
+              content: [{ type: 'text' as const, text: JSON.stringify({
+                status: 'deleted',
+                branch: input.branch,
+                scope: 'remote-only',
+                message: 'Branch was not present locally; its remote copy was deleted.',
+              }, null, 2) }],
+            }
+          }
           return {
             content: [{ type: 'text' as const, text: JSON.stringify({
-              error: `Branch "${input.branch}" not found locally.`,
+              error: `Branch "${input.branch}" not found locally${remoteOnly.skipped === 'not-found' ? ' or on the remote' : ''}.`,
+              ...(remoteOnly.warning ? { remote_warning: remoteOnly.warning } : {}),
               next_steps: ['List branches with contentrain_branch_list'],
             }) }],
             isError: true,
@@ -506,12 +554,18 @@ export function registerWorkflowTools(
         // Force-delete (-D): the branch may carry unmerged commits the caller
         // has explicitly decided to discard.
         await git.raw(['branch', '-D', input.branch])
+        // Delete the pushed copy too — a discarded draft must not linger on
+        // the remote as a phantom pending review. Best-effort, config-gated.
+        const remote = await deleteRemoteBranch(projectRoot, input.branch)
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             status: 'deleted',
             branch: input.branch,
             was_merged: merged,
+            remote_deleted: remote.deleted,
+            ...(remote.skipped ? { remote_skipped: remote.skipped } : {}),
+            ...(remote.warning ? { remote_warning: remote.warning } : {}),
             warning: merged ? undefined : 'Branch was not merged — its commits were discarded.',
           }, null, 2) }],
         }

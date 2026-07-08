@@ -74,8 +74,8 @@ export class GitLabProvider implements RepoProvider {
     const resolved = base ?? await getDefaultBranchOp(this.client, this.project)
     return getBranchDiffOp(this.client, this.project, branch, resolved)
   }
-  mergeBranch(branch: string, into: string): Promise<MergeResult> {
-    return mergeBranchOp(this.client, this.project, branch, into)
+  mergeBranch(branch: string, into: string, opts?: { removeSourceBranch?: boolean }): Promise<MergeResult> {
+    return mergeBranchOp(this.client, this.project, branch, into, opts)
   }
   async isMerged(branch: string, into?: string): Promise<boolean> {
     const resolved = into ?? await getDefaultBranchOp(this.client, this.project)
