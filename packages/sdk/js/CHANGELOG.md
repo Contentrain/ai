@@ -1,5 +1,12 @@
 # @contentrain/query
 
+## 6.1.1
+
+### Patch Changes
+
+- Updated dependencies [ee8da2d]
+  - @contentrain/types@0.7.0
+
 ## 6.1.0
 
 ### Minor Changes
