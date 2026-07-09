@@ -9,6 +9,17 @@ import { readConfig } from './config.js'
 const CONTEXT_PATH = '.contentrain/context.json'
 
 /**
+ * Pre-computed stats a caller can pass to {@link buildContextChange} to skip
+ * the model/entry scan. `entries` is nullable — a `null` is dropped from the
+ * emitted context.json by {@link canonicalStringify}, exactly as a failed
+ * scan is today.
+ */
+export interface ContextStats {
+  models: number
+  entries: number | null
+}
+
+/**
  * Read the committed `.contentrain/context.json` payload written by the
  * most recent content or model operation. Returns `null` when the file
  * does not exist (fresh project, or reader lookup failure).
@@ -94,27 +105,41 @@ export async function writeContext(
  * read surface. GitHubProvider pays an extra round trip per model; the
  * payoff is a context.json that matches what the local write path emits,
  * so cross-provider merges stay deterministic.
+ *
+ * A caller that already knows the model/entry counts (e.g. Studio deriving
+ * them from its own index) can pass `opts.stats` to skip that O(models·
+ * locales) scan entirely — only `readConfig` remains, for the locale list
+ * and the `lastOperation.locale` default. The emitted context.json is
+ * byte-identical to the scanned variant for the same logical state.
  */
 export async function buildContextChange(
   reader: RepoReader,
   operation: { tool: string, model: string, locale?: string, entries?: string[] },
   source?: ContextSource,
+  opts?: { stats?: ContextStats },
 ): Promise<FileChange> {
   const config = await readConfig(reader)
-  const models = await listModels(reader)
   const locales = config?.locales.supported ?? ['en']
 
-  let totalEntries: number | null = null
-  try {
-    const fullModels = await Promise.all(models.map(m => readModel(reader, m.id)))
-    const counts = await Promise.all(
-      fullModels
-        .filter((m): m is NonNullable<typeof m> => m !== null)
-        .map(m => countEntries(reader, m)),
-    )
-    totalEntries = counts.reduce((acc, c) => acc + c.total, 0)
-  } catch {
-    totalEntries = null
+  let modelCount: number
+  let totalEntries: number | null
+  if (opts?.stats) {
+    modelCount = opts.stats.models
+    totalEntries = opts.stats.entries
+  } else {
+    const models = await listModels(reader)
+    modelCount = models.length
+    try {
+      const fullModels = await Promise.all(models.map(m => readModel(reader, m.id)))
+      const counts = await Promise.all(
+        fullModels
+          .filter((m): m is NonNullable<typeof m> => m !== null)
+          .map(m => countEntries(reader, m)),
+      )
+      totalEntries = counts.reduce((acc, c) => acc + c.total, 0)
+    } catch {
+      totalEntries = null
+    }
   }
 
   const context: ContextJson = {
@@ -128,7 +153,7 @@ export async function buildContextChange(
       source: resolveSource(source),
     },
     stats: {
-      models: models.length,
+      models: modelCount,
       entries: totalEntries as number,
       locales,
       lastSync: new Date().toISOString(),
