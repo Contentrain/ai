@@ -39,8 +39,12 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       # Node 22 ships npm 10.x; npm trusted publishing (OIDC) requires >= 11.5.1.
+      # Pinned to 11.x on purpose: npm 12.0.0 ships libnpmpublish's
+      # provenance.js but does NOT bundle its `sigstore` dependency, so
+      # `changeset publish` dies with "Cannot find module 'sigstore'" while
+      # generating provenance. 11.18.0 bundles sigstore correctly.
       - name: Upgrade npm for trusted publishing (OIDC)
-        run: npm install -g npm@latest
+        run: npm install -g npm@11.18.0
 
       - name: Configure git for tests
         run: |
