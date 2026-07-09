@@ -76,7 +76,7 @@ The MCP server exposes **19 tools** organized by function. Each tool includes [M
 | `contentrain_status` | Project overview | Config, models, branch health, context, validation summary |
 | `contentrain_describe` | Model deep-dive | Full schema, sample data, field types for any model |
 | `contentrain_describe_format` | Format reference | File structure, JSON formats, markdown conventions, locale strategies |
-| `contentrain_doctor` | Health diagnostics | Setup validation, SDK freshness, orphan content, branch limits, unused keys, missing translations |
+| `contentrain_doctor` | Health diagnostics | Setup validation, SDK freshness, orphan content, local branch limits, remote `cr/*` count, unused keys, missing translations |
 | `contentrain_content_list` | Read content | List and filter content entries with optional relation resolution |
 
 ### Write Tools (Git-Backed, Branch-Isolated)
@@ -90,10 +90,10 @@ The MCP server exposes **19 tools** organized by function. Each tool includes [M
 | `contentrain_content_save` | Write content | Save entries for any model kind (collection, singleton, dictionary, document) |
 | `contentrain_content_delete` | Remove content | Delete specific content entries |
 | `contentrain_validate` | Check & fix | Validate content against schemas, optionally auto-fix structural issues |
-| `contentrain_submit` | Push branches | Push `cr/*` review branches to remote |
-| `contentrain_merge` | Merge branches | Merge a review-mode branch into contentrain locally (by exact branch or model; no external platform needed) |
-| `contentrain_branch_list` | Inspect branches | List pending `cr/*` branches with merge status and branch-health pressure |
-| `contentrain_branch_delete` | Clean up branches | Delete a stale/failed `cr/*` branch (the contentrain branch is protected) |
+| `contentrain_submit` | Push branches | Push `cr/*` review branches to remote, then lazily prune merged local + remote leftovers |
+| `contentrain_merge` | Merge branches | Merge a review-mode branch into contentrain locally (by exact branch or model; no external platform needed); deletes the branch's remote copy |
+| `contentrain_branch_list` | Inspect branches | List pending `cr/*` branches with merge status and branch-health pressure (`remote: true` adds a remote view + remote-only leftovers) |
+| `contentrain_branch_delete` | Clean up branches | Delete a stale/failed `cr/*` branch locally and on the remote (the contentrain branch is protected; supports remote-only deletion) |
 
 ### Normalize Tools (Scan + Apply)
 
@@ -133,7 +133,9 @@ All write operations create or update `cr/*` branches:
 - Content changes go to isolated branches (`cr/{scope}/{target}[/{locale}]/{timestamp}-{suffix}`)
 - Humans review via `contentrain diff` or the serve UI
 - Approved changes merge into the `contentrain` branch, baseBranch is advanced via update-ref
-- Branch health is tracked and surfaced via `contentrain_status` (warning at 50, blocked at 80 active branches)
+- Merging (or deleting) a branch also removes its copy on the remote, so merged branches don't pile up as phantom pending reviews — best-effort, opt out with `remoteBranchCleanup: false` in `config.json`. Drain an existing backlog with `contentrain prune`
+- Merged-branch detection survives base-history rewrites (ancestry check with a patch-id fallback)
+- Branch health is tracked and surfaced via `contentrain_status` (warning at 50, blocked at 80 active branches); `contentrain_doctor` adds a remote `cr/*` count
 - Legacy `contentrain/*` branches are auto-migrated on first init
 
 ### 4. Local-First by Default, Remote Providers Opt-In
