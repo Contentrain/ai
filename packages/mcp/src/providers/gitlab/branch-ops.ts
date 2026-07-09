@@ -1,3 +1,4 @@
+import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import type { Branch, FileDiff, MergeResult } from '../../core/contracts/index.js'
 import type { GitLabClient } from './client.js'
 import type { ProjectRef } from './types.js'
@@ -125,24 +126,54 @@ export async function mergeBranch(
   const webUrl = (mr as { web_url?: string }).web_url ?? null
   const merged = mergeSha !== null
 
-  // 3. Best-effort source-branch cleanup so merged cr/* branches don't
-  //    pile up on the remote. Opt out per call with
-  //    `removeSourceBranch: false` (e.g. a driver that owns cleanup
-  //    separately). Never throws — the merge itself already succeeded.
-  let remote: MergeResult['remote']
-  if (merged && opts?.removeSourceBranch !== false) {
-    try {
-      await deleteBranch(client, project, branch)
-      remote = { deleted: true }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      remote = /404|not found/i.test(message)
-        ? { deleted: false, skipped: 'not-found' }
-        : { deleted: false, warning: `Could not delete "${branch}": ${message}` }
-    }
-  }
+  // 3. Source-branch cleanup — OPT-IN (`removeSourceBranch: true`). Like git
+  //    and GitLab's own merge, `mergeBranch` leaves the source alone by
+  //    default. Even when opted in, a long-lived branch is NEVER deleted:
+  //    not the merge target (`into`), not the `contentrain` content branch,
+  //    not the project's default branch. Mirrors the LocalProvider guard;
+  //    defends against head/base confusion and contentrain↔default flows.
+  //    Never throws — the merge itself already succeeded.
+  const remote = merged ? await cleanupSourceBranch(client, project, branch, into, opts) : undefined
 
   return { merged, sha: mergeSha, pullRequestUrl: webUrl, ...(remote ? { remote } : {}) }
+}
+
+/**
+ * Opt-in ({@link mergeBranch} `removeSourceBranch: true`) deletion of the
+ * merged source branch, with the same guard as the GitHub provider and the
+ * LocalProvider: never delete the merge target, the `contentrain` content
+ * branch, or the project default branch — even when opted in. Fail-safe
+ * skips the delete if the default branch cannot be resolved. Never throws.
+ */
+async function cleanupSourceBranch(
+  client: GitLabClient,
+  project: ProjectRef,
+  branch: string,
+  into: string,
+  opts?: { removeSourceBranch?: boolean },
+): Promise<MergeResult['remote'] | undefined> {
+  if (opts?.removeSourceBranch !== true) return undefined
+
+  if (branch === into || branch === CONTENTRAIN_BRANCH) {
+    return { deleted: false, skipped: 'protected' }
+  }
+  try {
+    if (branch === await getDefaultBranch(client, project)) {
+      return { deleted: false, skipped: 'protected' }
+    }
+  } catch {
+    return { deleted: false, skipped: 'protected' }
+  }
+
+  try {
+    await deleteBranch(client, project, branch)
+    return { deleted: true }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return /404|not found/i.test(message)
+      ? { deleted: false, skipped: 'not-found' }
+      : { deleted: false, warning: `Could not delete "${branch}": ${message}` }
+  }
 }
 
 export async function isMerged(
