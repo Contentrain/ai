@@ -4,12 +4,12 @@ import { isNotFoundError, resolveRepoPath } from '../shared/index.js'
 import type { GitHubClient } from './client.js'
 import type { RepoRef } from './types.js'
 
-interface TreeEntry {
-  path: string
-  mode: '100644' | '100755' | '040000' | '160000' | '120000'
-  type: 'blob' | 'tree' | 'commit'
-  sha: string | null
-}
+// A GitHub Git-tree entry. Writes carry `content` inline (GitHub creates the
+// blob as part of createTree); deletions carry `sha: null`. The two are
+// mutually exclusive — an entry may set `content` OR `sha`, never both.
+type TreeEntry =
+  | { path: string, mode: '100644', type: 'blob', content: string }
+  | { path: string, mode: '100644', type: 'blob', sha: null }
 
 /**
  * Apply a plan to a GitHub repository as a single atomic commit via the
@@ -19,8 +19,12 @@ interface TreeEntry {
  *    branch, or the HEAD of `input.base` (or the repo's default branch)
  *    when the target branch does not yet exist.
  * 2. Read the base tree SHA from that commit.
- * 3. Walk `input.changes` in parallel — create a blob per non-null
- *    content, emit a tree entry with `sha: null` for each deletion.
+ * 3. Map `input.changes` to tree entries — `content` inline for each write,
+ *    `sha: null` for each deletion. No per-file blob round trip: GitHub
+ *    creates the blobs as part of `createTree`, which keeps the write to a
+ *    fixed 3 mutations (tree + commit + ref) regardless of file count and
+ *    stays under the mutation-rate secondary limit. Mirrors the GitLab
+ *    provider, which already inlines content in its commit actions.
  * 4. Create a new tree layered on top of the base tree with the collected
  *    entries.
  * 5. Create the commit (tree, parents, author).
@@ -44,9 +48,7 @@ export async function applyPlanToGitHub(
   })
   const baseTreeSha = baseCommit.data.tree.sha
 
-  const treeEntries = await Promise.all(
-    input.changes.map(change => buildTreeEntry(client, repo, change)),
-  )
+  const treeEntries = input.changes.map(change => buildTreeEntry(repo, change))
 
   const tree = await client.rest.git.createTree({
     owner: repo.owner,
@@ -96,22 +98,15 @@ export async function applyPlanToGitHub(
   }
 }
 
-async function buildTreeEntry(
-  client: GitHubClient,
-  repo: RepoRef,
-  change: FileChange,
-): Promise<TreeEntry> {
+function buildTreeEntry(repo: RepoRef, change: FileChange): TreeEntry {
   const path = resolveRepoPath(repo.contentRoot, change.path)
   if (change.content === null) {
     return { path, mode: '100644', type: 'blob', sha: null }
   }
-  const blob = await client.rest.git.createBlob({
-    owner: repo.owner,
-    repo: repo.name,
-    content: change.content,
-    encoding: 'utf-8',
-  })
-  return { path, mode: '100644', type: 'blob', sha: blob.data.sha }
+  // Inline UTF-8 content — the write path never produces binary/base64, so
+  // there is no blob-encoding branch to preserve. GitHub creates the blob
+  // when the tree is created.
+  return { path, mode: '100644', type: 'blob', content: change.content }
 }
 
 async function resolveBaseSha(
