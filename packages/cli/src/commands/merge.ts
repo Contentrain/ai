@@ -59,6 +59,12 @@ export default defineCommand({
     try {
       const result = await mergeBranch(projectRoot, branch)
       log.success(`Merged ${branch} (commit ${result.commit.slice(0, 8)})`)
+      if (result.remote?.deleted) {
+        log.message(pc.dim('  Deleted remote copy.'))
+      }
+      if (result.remote?.warning) {
+        log.warning(`Remote copy not deleted: ${result.remote.warning}`)
+      }
       if (result.sync?.synced?.length) {
         log.message(pc.dim(`  Synced ${result.sync.synced.length} file(s) to working tree.`))
       }

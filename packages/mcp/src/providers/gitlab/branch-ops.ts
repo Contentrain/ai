@@ -96,6 +96,7 @@ export async function mergeBranch(
   project: ProjectRef,
   branch: string,
   into: string,
+  opts?: { removeSourceBranch?: boolean },
 ): Promise<MergeResult> {
   // 1. Open MR — GitLab rejects create when source === target or when
   //    an MR is already open for this pair. Let the error propagate in
@@ -108,9 +109,10 @@ export async function mergeBranch(
     { removeSourceBranch: false },
   )
 
-  // 2. Accept the MR immediately. `shouldRemoveSourceBranch: false`
-  //    preserves the feature branch so audit/retry logic still has
-  //    access to it; Studio's cleanup flow deletes it separately.
+  // 2. Accept the MR immediately. `shouldRemoveSourceBranch: false` keeps
+  //    GitLab's async server-side deletion out of the accept call — the
+  //    explicit cleanup below owns it, so the outcome is deterministic and
+  //    reported via `MergeResult.remote`.
   const accepted = await client.MergeRequests.accept(
     project.projectId,
     (mr as { iid: number }).iid,
@@ -121,8 +123,26 @@ export async function mergeBranch(
     ?? (accepted as { sha?: string | null }).sha
     ?? null
   const webUrl = (mr as { web_url?: string }).web_url ?? null
+  const merged = mergeSha !== null
 
-  return { merged: mergeSha !== null, sha: mergeSha, pullRequestUrl: webUrl }
+  // 3. Best-effort source-branch cleanup so merged cr/* branches don't
+  //    pile up on the remote. Opt out per call with
+  //    `removeSourceBranch: false` (e.g. a driver that owns cleanup
+  //    separately). Never throws — the merge itself already succeeded.
+  let remote: MergeResult['remote']
+  if (merged && opts?.removeSourceBranch !== false) {
+    try {
+      await deleteBranch(client, project, branch)
+      remote = { deleted: true }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      remote = /404|not found/i.test(message)
+        ? { deleted: false, skipped: 'not-found' }
+        : { deleted: false, warning: `Could not delete "${branch}": ${message}` }
+    }
+  }
+
+  return { merged, sha: mergeSha, pullRequestUrl: webUrl, ...(remote ? { remote } : {}) }
 }
 
 export async function isMerged(

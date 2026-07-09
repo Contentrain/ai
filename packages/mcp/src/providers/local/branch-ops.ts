@@ -2,6 +2,7 @@ import { simpleGit } from 'simple-git'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import type { Branch, FileDiff, MergeResult } from '../../core/contracts/index.js'
 import { readConfig } from '../../core/config.js'
+import { classifyMergedBranches, deleteRemoteBranch } from '../../git/branch-lifecycle.js'
 import { mergeBranch as mergeBranchOp } from '../../git/transaction.js'
 
 /**
@@ -54,6 +55,9 @@ export async function deleteBranch(
 ): Promise<void> {
   const git = simpleGit(projectRoot)
   await git.deleteLocalBranch(name, true)
+  // Parity with the remote-API providers, whose deleteBranch removes the
+  // remote ref: best-effort, config-gated inside the helper, never throws.
+  await deleteRemoteBranch(projectRoot, name)
 }
 
 export async function getBranchDiff(
@@ -100,6 +104,7 @@ export async function mergeBranch(
     sha: result.commit,
     pullRequestUrl: null,
     sync: result.sync,
+    ...(result.remote ? { remote: result.remote } : {}),
   }
 }
 
@@ -108,12 +113,8 @@ export async function isMerged(
   branch: string,
   into: string,
 ): Promise<boolean> {
-  const git = simpleGit(projectRoot)
   try {
-    const raw = await git.raw(['branch', '--merged', into])
-    const merged = new Set(
-      raw.split('\n').map(b => b.replace(/^\*?\s+/, '').trim()).filter(Boolean),
-    )
+    const merged = await classifyMergedBranches(projectRoot, [branch], into)
     return merged.has(branch)
   } catch {
     return false

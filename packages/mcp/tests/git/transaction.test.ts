@@ -5,8 +5,10 @@ import { join } from 'node:path'
 import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { simpleGit } from 'simple-git'
-import { createTransaction, buildBranchName, ensureContentBranch } from '../../src/git/transaction.js'
+import { CONTENTRAIN_BRANCH } from '@contentrain/types'
+import { createTransaction, buildBranchName, ensureContentBranch, mergeBranch } from '../../src/git/transaction.js'
 import { writeJson, ensureDir, pathExists } from '../../src/util/fs.js'
+import { addBareRemote, remoteHeads } from '../fixtures/bare-remote.js'
 
 let testDir: string
 
@@ -245,5 +247,94 @@ describe('buildBranchName', () => {
   it('includes locale when provided', () => {
     const name = buildBranchName('content', 'hero', 'en')
     expect(name).toMatch(/^cr\/content\/hero\/en\/[^/]+$/)
+  })
+})
+
+describe('mergeBranch (remote cleanup)', () => {
+  const extraDirs: string[] = []
+
+  afterEach(async () => {
+    await Promise.all(extraDirs.splice(0).map(d => rm(d, { recursive: true, force: true })))
+  })
+
+  /**
+   * Simulate a review-mode save: create a cr/* branch from contentrain with
+   * one commit and (when a remote exists) push it — exactly what review-mode
+   * complete() does.
+   */
+  async function seedReviewBranch(withRemote: boolean): Promise<string> {
+    const git = simpleGit(testDir)
+    await ensureContentBranch(testDir)
+    if (withRemote) {
+      extraDirs.push(await addBareRemote(testDir))
+    }
+    const branch = 'cr/content/blog/1700000000-test'
+    await git.checkoutBranch(branch, CONTENTRAIN_BRANCH)
+    await mkdir(join(testDir, '.contentrain', 'content', 'blog'), { recursive: true })
+    await writeFile(join(testDir, '.contentrain', 'content', 'blog', 'en.json'), '{"title":"hi"}\n')
+    await git.add('.')
+    await git.commit('[contentrain] content: blog')
+    await git.checkout(defaultBranch)
+    if (withRemote) {
+      await git.push('origin', branch)
+    }
+    return branch
+  }
+
+  it('deletes both the local and the remote copy after a merge', async () => {
+    const branch = await seedReviewBranch(true)
+    const remoteDir = extraDirs[0]!
+    expect(await remoteHeads(remoteDir)).toContain(branch)
+
+    const result = await mergeBranch(testDir, branch)
+
+    expect(result.action).toBe('merged')
+    expect(result.remote?.deleted).toBe(true)
+    expect((await simpleGit(testDir).branchLocal()).all).not.toContain(branch)
+    const heads = await remoteHeads(remoteDir)
+    expect(heads).not.toContain(branch)
+    // The merge also pushed the content-tracking + base branches.
+    expect(heads).toContain(CONTENTRAIN_BRANCH)
+  })
+
+  it('keeps the remote copy when remoteBranchCleanup is disabled', async () => {
+    const branch = await seedReviewBranch(true)
+    const remoteDir = extraDirs[0]!
+    await writeJson(join(testDir, '.contentrain', 'config.json'), {
+      version: 1,
+      stack: 'other',
+      workflow: 'review',
+      locales: { default: 'en', supported: ['en'] },
+      domains: ['test'],
+      remoteBranchCleanup: false,
+    })
+
+    const result = await mergeBranch(testDir, branch)
+
+    expect(result.remote?.deleted).toBe(false)
+    expect(result.remote?.skipped).toBe('disabled')
+    expect(await remoteHeads(remoteDir)).toContain(branch)
+  })
+
+  it('still merges and surfaces a warning when the remote is unreachable', async () => {
+    const branch = await seedReviewBranch(true)
+    const git = simpleGit(testDir)
+    await git.raw(['remote', 'set-url', 'origin', join(testDir, 'no-such-remote')])
+
+    const result = await mergeBranch(testDir, branch)
+
+    expect(result.action).toBe('merged')
+    expect(result.remote?.deleted).toBe(false)
+    expect(result.remote?.warning).toBeTruthy()
+    expect((await git.branchLocal()).all).not.toContain(branch)
+  })
+
+  it('omits remote info entirely when no remote is configured', async () => {
+    const branch = await seedReviewBranch(false)
+
+    const result = await mergeBranch(testDir, branch)
+
+    expect(result.action).toBe('merged')
+    expect(result.remote).toBeUndefined()
   })
 })

@@ -6,7 +6,7 @@ import { readConfig } from './config.js'
 import { listModels, readModel } from './model-manager.js'
 import { resolveContentDir, resolveJsonFilePath, resolveLocaleStrategy } from './content-manager.js'
 import { autoDetectSourceDirs, discoverFiles } from './scan-config.js'
-import { checkBranchHealth } from '../git/branch-lifecycle.js'
+import { checkBranchHealth, listRemoteCrBranches } from '../git/branch-lifecycle.js'
 import { contentrainDir, pathExists, readDir, readJson, readText } from '../util/fs.js'
 
 /**
@@ -204,6 +204,34 @@ export async function runDoctor(
       })
     } catch {
       checks.push({ name: 'Pending branches', pass: true, detail: 'Could not check' })
+    }
+
+    // ─── 8b. Remote cr/* branches ───
+    // Authoritative ls-remote count (local branch pressure cannot see the
+    // remote pile). Best-effort: skipped entirely without a remote, and an
+    // unreachable remote is informational — doctor never fails offline.
+    const remoteList = await listRemoteCrBranches(projectRoot, { timeoutMs: 5000 })
+    if (remoteList) {
+      if (remoteList.error) {
+        checks.push({
+          name: 'Remote branches',
+          pass: true,
+          detail: `Could not check ${remoteList.remote} (offline?)`,
+          severity: 'info',
+        })
+      } else {
+        const count = remoteList.branches.length
+        const warnLimit = config?.branchWarnLimit ?? 50
+        const warn = count >= warnLimit
+        checks.push({
+          name: 'Remote branches',
+          pass: !warn,
+          detail: count === 0
+            ? `None on ${remoteList.remote}`
+            : `${count} cr/* branch(es) on ${remoteList.remote}${warn ? ' — run `contentrain prune` to remove merged leftovers' : ''}`,
+          severity: warn ? 'warning' : undefined,
+        })
+      }
     }
   }
 

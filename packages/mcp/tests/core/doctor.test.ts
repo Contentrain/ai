@@ -149,3 +149,47 @@ describe('runDoctor', () => {
     expect(sdk?.severity).toBe('warning')
   })
 })
+
+describe('runDoctor — Remote branches check', () => {
+  const extraDirs: string[] = []
+
+  afterEach(async () => {
+    await Promise.all(extraDirs.splice(0).map(d => rm(d, { recursive: true, force: true })))
+  })
+
+  it('omits the check when no remote is configured', async () => {
+    await seedMinimalProject(testDir)
+    const report = await runDoctor(testDir)
+    expect(report.checks.find(c => c.name === 'Remote branches')).toBeUndefined()
+  })
+
+  it('reports the remote cr/* count', async () => {
+    await seedMinimalProject(testDir)
+    const { addBareRemote } = await import('../fixtures/bare-remote.js')
+    extraDirs.push(await addBareRemote(testDir))
+    const git = simpleGit(testDir)
+    await git.branch(['cr/content/blog/1'])
+    await git.push('origin', 'cr/content/blog/1')
+
+    const report = await runDoctor(testDir)
+
+    const check = report.checks.find(c => c.name === 'Remote branches')
+    expect(check).toBeDefined()
+    expect(check?.pass).toBe(true)
+    expect(check?.detail).toContain('1 cr/* branch(es) on origin')
+  })
+
+  it('degrades to an informational check when the remote is unreachable', async () => {
+    await seedMinimalProject(testDir)
+    const git = simpleGit(testDir)
+    await git.addRemote('origin', join(testDir, 'no-such-remote'))
+
+    const report = await runDoctor(testDir)
+
+    const check = report.checks.find(c => c.name === 'Remote branches')
+    expect(check).toBeDefined()
+    expect(check?.pass).toBe(true)
+    expect(check?.severity).toBe('info')
+    expect(check?.detail).toContain('Could not check')
+  })
+})

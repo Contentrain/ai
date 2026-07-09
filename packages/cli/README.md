@@ -65,7 +65,8 @@ Example: `contentrain --debug status` or `CONTENTRAIN_DEBUG=1 contentrain valida
 | `contentrain validate` | Validate content against schemas, optionally create review-branch fixes |
 | `contentrain generate` | Generate `.contentrain/client/` and `#contentrain` package imports |
 | `contentrain diff` | Review and merge or reject pending `cr/*` branches interactively |
-| `contentrain merge <branch>` | Merge one pending `cr/*` branch non-interactively (CI/agents) |
+| `contentrain merge <branch>` | Merge one pending `cr/*` branch non-interactively (CI/agents); deletes its remote copy |
+| `contentrain prune` | Delete merged `cr/*` branches locally and on the remote (backlog drain) |
 | `contentrain describe <model>` | Inspect a model's schema, stats, and import snippet |
 | `contentrain describe-format` | Print the Contentrain content-format specification |
 | `contentrain scaffold --template` | Apply a template (`blog`, `landing`, `docs`, `ecommerce`, `saas`, `i18n`, `mobile`) |
@@ -92,11 +93,12 @@ Every read command supports `--json` for CI use; write commands surface `--watch
 | Command | Notable flags |
 | --- | --- |
 | `status` | `--json` |
-| `doctor` | `--json`, `--usage` — non-zero exit on failure |
+| `doctor` | `--json`, `--usage` — non-zero exit on failure; includes a remote `cr/*` branch check |
 | `validate` | `--json`, `--fix`, `--interactive`, `--watch`, `--model <id>` |
 | `generate` | `--json`, `--watch` |
 | `diff` | `--json` |
 | `merge` | `--yes` (skip confirm) |
+| `prune` | `--dry-run`, `--yes`, `--json` (mutates only with `--yes`) |
 | `describe` | `--sample`, `--locale`, `--json` |
 | `scaffold` | `--template <id>`, `--locales <csv>`, `--no-sample`, `--json` |
 | `serve` | `--port`, `--host`, `--open`, `--demo`, `--stdio`, `--mcpHttp`, `--authToken` |
@@ -240,16 +242,19 @@ This installs:
 
 Most write operations create feature branches from the dedicated `contentrain` branch. In review mode, these branches are pushed to remote for team review. In auto-merge mode, they are merged into the `contentrain` branch and baseBranch is advanced via update-ref.
 
+Merging a review branch (via `contentrain merge`, `contentrain diff`, the Serve UI, or the MCP tools) also deletes its remote copy, so merged branches never pile up as phantom pending reviews. The same applies to rejected/deleted drafts. This is best-effort — an offline or permission failure only produces a warning — and can be disabled with `remoteBranchCleanup: false` in `config.json`. Note that deleting a pushed branch closes any open PR/MR on it.
+
 Use:
 
 ```bash
 contentrain status
 contentrain diff
+contentrain prune --dry-run   # preview merged local/remote leftovers, then run with --yes
 ```
 
 to understand:
 
-- how many active `cr/*` review branches exist on the `contentrain` branch
+- how many active `cr/*` review branches exist on the `contentrain` branch (and on the remote — `contentrain doctor`)
 - whether branch health is blocking new writes (warning at 50, blocked at 80)
 - what changed before merging or deleting a branch
 

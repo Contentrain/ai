@@ -93,6 +93,7 @@ export async function mergeBranch(
   repo: RepoRef,
   branch: string,
   into: string,
+  opts?: { removeSourceBranch?: boolean },
 ): Promise<MergeResult> {
   try {
     const response = await client.rest.repos.merge({
@@ -101,12 +102,43 @@ export async function mergeBranch(
       base: into,
       head: branch,
     })
-    return { merged: true, sha: response.data.sha, pullRequestUrl: null }
+    const remote = await cleanupSourceBranch(client, repo, branch, opts)
+    return { merged: true, sha: response.data.sha, pullRequestUrl: null, ...(remote ? { remote } : {}) }
   } catch (error) {
     if (isNotModified(error)) {
-      return { merged: true, sha: null, pullRequestUrl: null }
+      const remote = await cleanupSourceBranch(client, repo, branch, opts)
+      return { merged: true, sha: null, pullRequestUrl: null, ...(remote ? { remote } : {}) }
     }
     throw error
+  }
+}
+
+/**
+ * Best-effort post-merge deletion of the source branch so merged cr/*
+ * branches don't pile up on the remote. Opt out per call with
+ * `removeSourceBranch: false` (e.g. a driver that owns cleanup separately).
+ * Never throws — the merge itself already succeeded.
+ */
+async function cleanupSourceBranch(
+  client: GitHubClient,
+  repo: RepoRef,
+  branch: string,
+  opts?: { removeSourceBranch?: boolean },
+): Promise<MergeResult['remote'] | undefined> {
+  if (opts?.removeSourceBranch === false) return undefined
+  try {
+    await deleteBranch(client, repo, branch)
+    return { deleted: true }
+  } catch (error) {
+    const status = (error as { status?: number }).status
+    // 404/422: ref already gone (e.g. a concurrent cleanup) — expected no-op.
+    if (status === 404 || status === 422) {
+      return { deleted: false, skipped: 'not-found' }
+    }
+    return {
+      deleted: false,
+      warning: `Could not delete "${branch}": ${error instanceof Error ? error.message : String(error)}`,
+    }
   }
 }
 

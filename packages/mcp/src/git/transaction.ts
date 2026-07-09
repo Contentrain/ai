@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { readConfig } from '../core/config.js'
 import { writeContext } from '../core/context.js'
+import { deleteRemoteBranch, type RemoteDeleteResult } from './branch-lifecycle.js'
 import { branchTimestamp } from '../util/id.js'
 import { migrateLegacyBranches } from '../providers/local/migration.js'
 import type { SyncResult, WorkflowMode } from '@contentrain/types'
@@ -303,10 +304,11 @@ export async function createTransaction(
       const dirtyFilesBeforeUpdate = new Set(statusBeforeUpdate.files.map(f => f.path))
 
       // Verify fast-forward: baseBranch must be an ancestor of contentrainTip
-      // (guaranteed by the merge above, but verify for safety)
-      try {
-        await git.raw(['merge-base', '--is-ancestor', previousBaseRef, contentrainTip])
-      } catch {
+      // (guaranteed by the merge above, but verify for safety).
+      // `rev-list --count` instead of `merge-base --is-ancestor`: the latter
+      // signals via exit code with empty stderr, which simple-git reports as
+      // success — the guard would silently pass on divergence.
+      if (!(await isAncestor(git, previousBaseRef, contentrainTip))) {
         throw Object.assign(new Error(
           `Cannot fast-forward "${baseBranch}" to contentrain tip. `
           + `The base branch has diverged. Merge "${baseBranch}" into "${CONTENTRAIN_BRANCH}" first.`,
@@ -385,7 +387,7 @@ export async function createTransaction(
 export async function mergeBranch(
   projectRoot: string,
   branchName: string,
-): Promise<{ action: 'merged'; commit: string; sync: SyncResult }> {
+): Promise<{ action: 'merged'; commit: string; sync: SyncResult; remote?: RemoteDeleteResult }> {
   const git = simpleGit(projectRoot)
   const config = await readConfig(projectRoot)
   const remoteName = process.env['CONTENTRAIN_REMOTE'] ?? 'origin'
@@ -449,10 +451,9 @@ export async function mergeBranch(
     ])
     const dirtyFilesBeforeUpdate = new Set(statusBeforeUpdate.files.map(f => f.path))
 
-    // Verify fast-forward: baseBranch must be an ancestor of contentrainTip
-    try {
-      await git.raw(['merge-base', '--is-ancestor', previousBaseRef, contentrainTip])
-    } catch {
+    // Verify fast-forward: baseBranch must be an ancestor of contentrainTip.
+    // (See complete() — merge-base --is-ancestor is unusable via simple-git.)
+    if (!(await isAncestor(git, previousBaseRef, contentrainTip))) {
       throw Object.assign(new Error(
         `Cannot fast-forward "${baseBranch}" to contentrain tip. `
         + `The base branch has diverged. Merge "${baseBranch}" into "${CONTENTRAIN_BRANCH}" first.`,
@@ -500,10 +501,19 @@ export async function mergeBranch(
     // Prune the now-merged feature branch so merged cr/* refs don't accumulate.
     await safeDeleteBranch(git, branchName)
 
+    // Delete the remote copy too (review-mode branches were pushed on save).
+    // Best-effort and config-gated inside the helper: a failure surfaces as
+    // `remote.warning`, never as a failed merge.
+    let remote: RemoteDeleteResult | undefined
+    if (hasRemote) {
+      remote = await deleteRemoteBranch(projectRoot, branchName, { config })
+    }
+
     return {
       action: 'merged' as const,
       commit: contentrainTip,
       sync,
+      ...(remote ? { remote } : {}),
     }
   } finally {
     // Cleanup worktree
@@ -521,6 +531,21 @@ export function buildBranchName(scope: string, target: string, locale?: string):
   if (locale) parts.push(locale)
   parts.push(ts)
   return parts.join('/')
+}
+
+/**
+ * True when `ancestor` is an ancestor of (or equal to) `descendant`.
+ * Implemented with `rev-list --count` because `merge-base --is-ancestor`
+ * signals via exit code with empty stderr — simple-git reports that as
+ * success, so it cannot express a negative verdict.
+ */
+async function isAncestor(git: SimpleGit, ancestor: string, descendant: string): Promise<boolean> {
+  try {
+    const count = Number((await git.raw(['rev-list', '--count', ancestor, `^${descendant}`])).trim())
+    return count === 0
+  } catch {
+    return false
+  }
 }
 
 /**

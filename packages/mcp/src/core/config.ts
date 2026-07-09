@@ -30,6 +30,7 @@ function normaliseConfig(raw: Partial<ContentrainConfig> | null): ContentrainCon
     branchRetention: raw.branchRetention,
     branchWarnLimit: raw.branchWarnLimit,
     branchBlockLimit: raw.branchBlockLimit,
+    remoteBranchCleanup: raw.remoteBranchCleanup,
   }
 }
 

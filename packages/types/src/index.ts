@@ -114,6 +114,13 @@ export interface ContentrainConfig {
   branchWarnLimit?: number
   /** Unmerged `cr/*` branch count that blocks new writes. Default: 80. */
   branchBlockLimit?: number
+  /**
+   * Delete the remote copy of a `cr/*` branch when it is merged or deleted
+   * locally, and allow lazy pruning of already-merged remote branches.
+   * Read-only remote visibility (doctor, branch listing) is not affected.
+   * Default: true.
+   */
+  remoteBranchCleanup?: boolean
 }
 
 // ─── Vocabulary ───
