@@ -4,9 +4,10 @@ import type { GitHubClient } from '../../../src/providers/github/client.js'
 
 /**
  * applyPlanToGitHub unit tests — exercise the Git Data API write flow
- * against a mocked Octokit. Validates that blobs are created for writes,
- * deletions emit null-sha tree entries, branches are created vs. updated
- * depending on existence, and the default branch is the fallback base.
+ * against a mocked Octokit. Validates that writes carry their content
+ * inline in the tree (no per-file blob round trip), deletions emit
+ * null-sha tree entries, branches are created vs. updated depending on
+ * existence, and the default branch is the fallback base.
  */
 
 interface StubShape {
@@ -69,12 +70,12 @@ describe('applyPlanToGitHub', () => {
 
     expect(commit.sha).toBe('new-commit')
     expect(updateRef).toHaveBeenCalledWith({ owner: 'o', repo: 'r', ref: 'heads/cr/test', sha: 'new-commit' })
-    expect(createBlob).toHaveBeenCalledWith({
-      owner: 'o',
-      repo: 'r',
-      content: '{}',
-      encoding: 'utf-8',
-    })
+    // Content is inlined into the tree entry — no per-file blob POST.
+    expect(createBlob).not.toHaveBeenCalled()
+    const treeArg = createTree.mock.calls[0]![0].tree
+    expect(treeArg).toEqual([
+      { path: '.contentrain/config.json', mode: '100644', type: 'blob', content: '{}' },
+    ])
   })
 
   it('creates a branch from input.base when the target does not exist', async () => {
@@ -166,16 +167,44 @@ describe('applyPlanToGitHub', () => {
       author: AUTHOR,
     })
 
-    // Exactly one blob was created (the keep), the deletion should not trigger createBlob.
-    expect(createBlob).toHaveBeenCalledTimes(1)
-    expect(createBlob).toHaveBeenCalledWith({ owner: 'o', repo: 'r', content: '{}', encoding: 'utf-8' })
+    // No blob POSTs at all — writes go inline, deletions carry null sha.
+    expect(createBlob).not.toHaveBeenCalled()
 
-    // The tree passed to createTree contains a null-sha entry for the deleted path.
+    // The tree passed to createTree: inline content for the keep, null-sha
+    // entry for the delete.
     const treeArg = createTree.mock.calls[0]![0].tree
     expect(treeArg).toEqual(expect.arrayContaining([
-      { path: 'keep.json', mode: '100644', type: 'blob', sha: 'b' },
+      { path: 'keep.json', mode: '100644', type: 'blob', content: '{}' },
       { path: 'gone.json', mode: '100644', type: 'blob', sha: null },
     ]))
+  })
+
+  it('passes write content through byte-for-byte (unicode, emoji, newlines)', async () => {
+    const getRef = vi.fn().mockResolvedValue({ data: { object: { sha: 'base' } } })
+    const getCommit = vi.fn().mockResolvedValue({ data: { tree: { sha: 'bt' } } })
+    const createBlob = vi.fn()
+    const createTree = vi.fn().mockResolvedValue({ data: { sha: 't' } })
+    const createCommit = vi.fn().mockResolvedValue({
+      data: {
+        sha: 'c',
+        message: 'm',
+        author: { name: 'MCP', email: 'ai@contentrain.io', date: '2026-01-01T00:00:00Z' },
+      },
+    })
+    const updateRef = vi.fn().mockResolvedValue({})
+
+    const payload = '{\n  "title": "Merhaba 🚀",\n  "emoji": "café — naïve"\n}\n'
+    const client = mockClient({ getRef, getCommit, createBlob, createTree, createCommit, updateRef })
+    await applyPlanToGitHub(client, REPO, {
+      branch: 'cr/utf8',
+      changes: [{ path: 'body.json', content: payload }],
+      message: 'utf8',
+      author: AUTHOR,
+    })
+
+    expect(createBlob).not.toHaveBeenCalled()
+    const treeArg = createTree.mock.calls[0]![0].tree
+    expect(treeArg[0].content).toBe(payload)
   })
 
   it('prefixes change paths with repo.contentRoot', async () => {
