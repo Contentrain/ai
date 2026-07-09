@@ -60,6 +60,25 @@ export async function ensureContentBranch(projectRoot: string): Promise<void> {
   }
 }
 
+/**
+ * Commit identity for worktree operations, supplied via environment instead
+ * of two `git config` spawns per transaction. Git honors GIT_AUTHOR_* /
+ * GIT_COMMITTER_* for both the sync merges and the feature-branch commit, so
+ * a worktree git built with this env needs no `git config user.*` calls.
+ * `process.env` is spread so PATH/HOME and any GIT_* already set survive.
+ */
+function authorEnv(): Record<string, string | undefined> {
+  const name = process.env['CONTENTRAIN_AUTHOR_NAME'] ?? 'Contentrain'
+  const email = process.env['CONTENTRAIN_AUTHOR_EMAIL'] ?? 'ai@contentrain.io'
+  return {
+    ...process.env,
+    GIT_AUTHOR_NAME: name,
+    GIT_AUTHOR_EMAIL: email,
+    GIT_COMMITTER_NAME: name,
+    GIT_COMMITTER_EMAIL: email,
+  }
+}
+
 async function selectiveSync(
   projectRoot: string,
   _worktreePath: string,
@@ -99,40 +118,66 @@ async function selectiveSync(
   // didn't touch them. We use the pre-update state to know what was truly dirty.
   const dirtyFiles = dirtyFilesBeforeUpdate ?? new Set<string>()
 
-  // Determine which changed files still exist in contentrainTip (HEAD after update-ref)
-  // Check each changed file individually — `ls-tree` on specific paths is efficient
+  // Which changed files still exist in contentrainTip (HEAD after update-ref)?
+  // ONE `ls-tree` over the changed paths lists exactly the survivors, instead
+  // of a `cat-file -e` spawn per file. Falls back to per-file probing if
+  // ls-tree fails so behavior is preserved on any edge.
   const filesInTip = new Set<string>()
-  for (const file of changedFiles) {
-    try {
-      await git.raw(['cat-file', '-e', `${contentrainTip}:${file}`])
-      filesInTip.add(file)
-    } catch {
-      // File does not exist in tip (was deleted)
+  try {
+    const lsOutput = await git.raw(['ls-tree', '-r', '--name-only', contentrainTip, '--', ...changedFiles])
+    for (const f of lsOutput.split('\n')) {
+      const trimmed = f.trim()
+      if (trimmed) filesInTip.add(trimmed)
+    }
+  } catch {
+    for (const file of changedFiles) {
+      try {
+        await git.raw(['cat-file', '-e', `${contentrainTip}:${file}`])
+        filesInTip.add(file)
+      } catch {
+        // File does not exist in tip (was deleted)
+      }
     }
   }
 
+  // Partition: dirty developer files are skipped; survivors get checked out
+  // from HEAD; the rest were deleted in the new HEAD and are removed on disk.
+  const toCheckout: string[] = []
+  const toRemove: string[] = []
   for (const file of changedFiles) {
-    if (dirtyFiles.has(file)) {
-      skipped.push(file)
-    } else if (filesInTip.has(file)) {
-      // File exists in new HEAD — checkout from HEAD
-      try {
-        await git.checkout(['HEAD', '--', file])
-        synced.push(file)
-      } catch {
-        skipped.push(file)
-      }
-    } else {
-      // File was deleted in new HEAD — remove from working tree
-      try {
-        const filePath = join(projectRoot, file)
-        await removeFile(filePath, { force: true })
-        synced.push(file)
-      } catch {
-        skipped.push(file)
+    if (dirtyFiles.has(file)) skipped.push(file)
+    else if (filesInTip.has(file)) toCheckout.push(file)
+    else toRemove.push(file)
+  }
+
+  // ONE `git checkout HEAD -- f1 f2 …` restores every clean survivor at once.
+  // On failure, fall back to per-file so a single unresolvable path still
+  // yields precise skip accounting (dirty files were already excluded).
+  if (toCheckout.length > 0) {
+    try {
+      await git.checkout(['HEAD', '--', ...toCheckout])
+      synced.push(...toCheckout)
+    } catch {
+      for (const file of toCheckout) {
+        try {
+          await git.checkout(['HEAD', '--', file])
+          synced.push(file)
+        } catch {
+          skipped.push(file)
+        }
       }
     }
   }
+
+  // Deletions are working-tree fs removals — no git spawn, safe to parallelize.
+  await Promise.all(toRemove.map(async (file) => {
+    try {
+      await removeFile(join(projectRoot, file), { force: true })
+      synced.push(file)
+    } catch {
+      skipped.push(file)
+    }
+  }))
 
   const warning = skipped.length > 0
     ? `${skipped.length} file(s) skipped due to local changes: ${skipped.join(', ')}. Commit your changes, then run: git checkout HEAD -- ${skipped.join(' ')}`
@@ -196,13 +241,9 @@ export async function createTransaction(
   // Create worktree on contentrain branch
   await git.raw(['worktree', 'add', worktreePath, CONTENTRAIN_BRANCH])
 
-  const wtGit = simpleGit(worktreePath)
-
-  // Configure author (sequential — git config uses lock file)
-  const authorName = process.env['CONTENTRAIN_AUTHOR_NAME'] ?? 'Contentrain'
-  const authorEmail = process.env['CONTENTRAIN_AUTHOR_EMAIL'] ?? 'ai@contentrain.io'
-  await wtGit.addConfig('user.name', authorName)
-  await wtGit.addConfig('user.email', authorEmail)
+  // Commit identity comes from the environment (see authorEnv) — no
+  // `git config user.*` spawns.
+  const wtGit = simpleGit(worktreePath).env(authorEnv())
 
   // Sync contentrain with base branch (bring main changes into contentrain)
   try {
@@ -413,13 +454,8 @@ export async function mergeBranch(
   const worktreePath = join(tmpdir(), `cr-merge-${randomUUID()}`)
   await git.raw(['worktree', 'add', worktreePath, CONTENTRAIN_BRANCH])
 
-  const wtGit = simpleGit(worktreePath)
-
-  // Configure author
-  const authorName = process.env['CONTENTRAIN_AUTHOR_NAME'] ?? 'Contentrain'
-  const authorEmail = process.env['CONTENTRAIN_AUTHOR_EMAIL'] ?? 'ai@contentrain.io'
-  await wtGit.addConfig('user.name', authorName)
-  await wtGit.addConfig('user.email', authorEmail)
+  // Commit identity from the environment (see authorEnv) — no config spawns.
+  const wtGit = simpleGit(worktreePath).env(authorEnv())
 
   try {
     // Merge the feature branch into contentrain
