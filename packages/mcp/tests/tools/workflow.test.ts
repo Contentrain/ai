@@ -1,45 +1,17 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
+import { describe, expect, it, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest'
 
 vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
 import { join } from 'node:path'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { simpleGit } from 'simple-git'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { createServer } from '../../src/server.js'
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { createClient, cloneTemplate, makeInitedTemplate, parseResult } from '../support/project.js'
 import { readJson, writeJson } from '../../src/util/fs.js'
 
+let template: string
 let testDir: string
 let client: Client
-
-async function initProject(dir: string): Promise<void> {
-  const git = simpleGit(dir)
-  await git.init()
-  await git.addConfig('user.name', 'Test')
-  await git.addConfig('user.email', 'test@test.com')
-  await writeFile(join(dir, '.gitkeep'), '')
-  await git.add('.')
-  await git.commit('initial')
-}
-
-async function createTestClient(projectRoot: string): Promise<Client> {
-  const server = createServer(projectRoot)
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
-
-  const c = new Client({ name: 'test-client', version: '1.0.0' })
-  await Promise.all([
-    c.connect(clientTransport),
-    server.connect(serverTransport),
-  ])
-
-  return c
-}
-
-function parseResult(result: unknown): Record<string, unknown> {
-  const content = (result as { content: Array<{ text: string }> }).content
-  return JSON.parse(content[0]!.text) as Record<string, unknown>
-}
 
 async function createModel(
   c: Client,
@@ -59,17 +31,22 @@ async function createModel(
       fields,
     },
   })
-  return createTestClient(testDir)
+  return createClient(testDir)
 }
 
-beforeEach(async () => {
-  testDir = await mkdtemp(join(tmpdir(), 'cr-workflow-test-'))
-  await initProject(testDir)
-  client = await createTestClient(testDir)
+// Init the en+tr project ONCE; each mutating test gets an isolated copy via a
+// file-copy (zero git spawns) instead of re-running the ~28-spawn init.
+beforeAll(async () => {
+  template = await makeInitedTemplate({ locales: ['en', 'tr'] })
+})
 
-  // Initialize project with en + tr locales
-  await client.callTool({ name: 'contentrain_init', arguments: { locales: ['en', 'tr'] } })
-  client = await createTestClient(testDir)
+afterAll(async () => {
+  await rm(template, { recursive: true, force: true })
+})
+
+beforeEach(async () => {
+  testDir = await cloneTemplate(template)
+  client = await createClient(testDir)
 })
 
 afterEach(async () => {
@@ -94,7 +71,7 @@ describe('contentrain_validate', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const result = await client.callTool({
       name: 'contentrain_validate',
@@ -127,7 +104,7 @@ describe('contentrain_validate', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const result = await client.callTool({
       name: 'contentrain_validate',
@@ -166,7 +143,7 @@ describe('contentrain_validate', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const result = await client.callTool({
       name: 'contentrain_validate',
@@ -198,7 +175,7 @@ describe('contentrain_validate', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const result = await client.callTool({
       name: 'contentrain_validate',
@@ -231,7 +208,7 @@ describe('contentrain_validate', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const result = await client.callTool({
       name: 'contentrain_validate',
@@ -264,7 +241,7 @@ describe('contentrain_validate', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const result = await client.callTool({
       name: 'contentrain_validate',
@@ -296,7 +273,7 @@ describe('contentrain_validate', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     // Manually inject orphan meta entry
     const metaPath = join(testDir, '.contentrain', 'meta', 'authors', 'en.json')
@@ -309,7 +286,7 @@ describe('contentrain_validate', () => {
     await git.add('.')
     await git.commit('add orphan meta')
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const result = await client.callTool({
       name: 'contentrain_validate',
@@ -341,7 +318,7 @@ describe('contentrain_validate', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const metaPath = join(testDir, '.contentrain', 'meta', 'authors', 'en.json')
     const metaData = await readJson<Record<string, Record<string, unknown>>>(metaPath) ?? {}
@@ -352,7 +329,7 @@ describe('contentrain_validate', () => {
     await git.add('.')
     await git.commit('remove author meta')
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const result = await client.callTool({
       name: 'contentrain_validate',
@@ -383,7 +360,7 @@ describe('contentrain_validate', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const result = await client.callTool({
       name: 'contentrain_validate',
@@ -417,7 +394,7 @@ describe('contentrain_validate', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     // Manually mess up the order
     const contentPath = join(testDir, '.contentrain', 'content', 'blog', 'authors', 'en.json')
@@ -437,7 +414,7 @@ describe('contentrain_validate', () => {
     await git.add('.')
     await git.commit('mess up order')
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const result = await client.callTool({
       name: 'contentrain_validate',
@@ -472,7 +449,7 @@ describe('contentrain_validate', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const result = await client.callTool({
       name: 'contentrain_validate',
@@ -503,7 +480,7 @@ describe('contentrain_validate', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const result = await client.callTool({
       name: 'contentrain_validate',
@@ -539,7 +516,7 @@ describe('contentrain_validate', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const result = await client.callTool({
       name: 'contentrain_validate',
@@ -585,7 +562,7 @@ describe('contentrain_submit', () => {
     await freshGit.add('.')
     await freshGit.commit('add config')
 
-    const freshClient = await createTestClient(freshDir)
+    const freshClient = await createClient(freshDir)
 
     const result = await freshClient.callTool({
       name: 'contentrain_submit',
