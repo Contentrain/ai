@@ -1,44 +1,14 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
+import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest'
 
 vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
 import { join } from 'node:path'
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { simpleGit } from 'simple-git'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { createServer } from '../../src/server.js'
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { createClient, initGitRepo, makeInitedTemplate, parseResult } from '../support/project.js'
 
 let testDir: string
 let client: Client
-
-async function initGitRepo(dir: string): Promise<void> {
-  const git = simpleGit(dir)
-  await git.init()
-  await git.addConfig('user.name', 'Test')
-  await git.addConfig('user.email', 'test@test.com')
-  await writeFile(join(dir, '.gitkeep'), '')
-  await git.add('.')
-  await git.commit('initial')
-}
-
-async function createTestClient(projectRoot: string): Promise<Client> {
-  const server = createServer(projectRoot)
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
-
-  const c = new Client({ name: 'test-client', version: '1.0.0' })
-  await Promise.all([
-    c.connect(clientTransport),
-    server.connect(serverTransport),
-  ])
-
-  return c
-}
-
-function parseResult(result: unknown): Record<string, unknown> {
-  const content = (result as { content: Array<{ text: string }> }).content
-  return JSON.parse(content[0]!.text) as Record<string, unknown>
-}
 
 async function createSourceFiles(dir: string): Promise<void> {
   // Create directory structure
@@ -126,27 +96,14 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 `)
 }
 
-beforeEach(async () => {
-  testDir = await mkdtemp(join(tmpdir(), 'cr-scan-test-'))
-  await initGitRepo(testDir)
-
-  // Create source files before init so they exist during project setup
-  await createSourceFiles(testDir)
-
-  // Commit source files so git is clean
-  const git = simpleGit(testDir)
-  await git.add('.')
-  await git.commit('add source files')
-
-  // Create client and initialize project
-  client = await createTestClient(testDir)
-  await client.callTool({ name: 'contentrain_init', arguments: {} })
-
-  // Re-create client after init
-  client = await createTestClient(testDir)
+// contentrain_scan is read-only (no disk/git writes), so all tests share ONE
+// inited fixture built once — instead of paying a ~28-git-spawn init per test.
+beforeAll(async () => {
+  testDir = await makeInitedTemplate({ prepare: createSourceFiles })
+  client = await createClient(testDir)
 })
 
-afterEach(async () => {
+afterAll(async () => {
   await rm(testDir, { recursive: true, force: true })
 })
 
@@ -396,15 +353,9 @@ describe('contentrain_scan mode:candidates', () => {
 
   it('returns error if not initialized', async () => {
     const emptyDir = await mkdtemp(join(tmpdir(), 'cr-scan-empty-'))
-    const git = simpleGit(emptyDir)
-    await git.init()
-    await git.addConfig('user.name', 'Test')
-    await git.addConfig('user.email', 'test@test.com')
-    await writeFile(join(emptyDir, '.gitkeep'), '')
-    await git.add('.')
-    await git.commit('initial')
+    await initGitRepo(emptyDir)
 
-    const emptyClient = await createTestClient(emptyDir)
+    const emptyClient = await createClient(emptyDir)
     const result = await emptyClient.callTool({
       name: 'contentrain_scan',
       arguments: { mode: 'candidates' },

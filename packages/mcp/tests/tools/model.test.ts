@@ -1,41 +1,18 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
+import { describe, expect, it, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest'
 
 vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
-import { join } from 'node:path'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { simpleGit } from 'simple-git'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { createServer } from '../../src/server.js'
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { createClient, cloneTemplate, initGitRepo, makeInitedTemplate } from '../support/project.js'
 import { pathExists, readJson } from '../../src/util/fs.js'
 import type { ModelDefinition } from '@contentrain/types'
 
+let template: string
 let testDir: string
 let client: Client
-
-async function initProject(dir: string): Promise<void> {
-  const git = simpleGit(dir)
-  await git.init()
-  await git.addConfig('user.name', 'Test')
-  await git.addConfig('user.email', 'test@test.com')
-  await writeFile(join(dir, '.gitkeep'), '')
-  await git.add('.')
-  await git.commit('initial')
-}
-
-async function createTestClient(projectRoot: string): Promise<Client> {
-  const server = createServer(projectRoot)
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
-
-  const c = new Client({ name: 'test-client', version: '1.0.0' })
-  await Promise.all([
-    c.connect(clientTransport),
-    server.connect(serverTransport),
-  ])
-
-  return c
-}
 
 function parseResult(result: unknown): Record<string, unknown> {
   const content = (result as { content: Array<{ text: string }> }).content
@@ -47,14 +24,19 @@ function parseResult(result: unknown): Record<string, unknown> {
   }
 }
 
-beforeEach(async () => {
-  testDir = await mkdtemp(join(tmpdir(), 'cr-model-test-'))
-  await initProject(testDir)
-  client = await createTestClient(testDir)
+// Init the project ONCE; each test gets an isolated copy via a file-copy
+// (zero git spawns) instead of re-running the ~28-spawn init transaction.
+beforeAll(async () => {
+  template = await makeInitedTemplate()
+})
 
-  // Initialize project first
-  await client.callTool({ name: 'contentrain_init', arguments: {} })
-  client = await createTestClient(testDir)
+afterAll(async () => {
+  await rm(template, { recursive: true, force: true })
+})
+
+beforeEach(async () => {
+  testDir = await cloneTemplate(template)
+  client = await createClient(testDir)
 })
 
 afterEach(async () => {
@@ -113,7 +95,7 @@ describe('contentrain_model_save', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     // Update
     const result = await client.callTool({
@@ -168,15 +150,9 @@ describe('contentrain_model_save', () => {
 
   it('returns error when not initialized', async () => {
     const emptyDir = await mkdtemp(join(tmpdir(), 'cr-empty-'))
-    const git = simpleGit(emptyDir)
-    await git.init()
-    await git.addConfig('user.name', 'Test')
-    await git.addConfig('user.email', 'test@test.com')
-    await writeFile(join(emptyDir, '.gitkeep'), '')
-    await git.add('.')
-    await git.commit('initial')
+    await initGitRepo(emptyDir)
 
-    const emptyClient = await createTestClient(emptyDir)
+    const emptyClient = await createClient(emptyDir)
     const result = await emptyClient.callTool({
       name: 'contentrain_model_save',
       arguments: {
@@ -210,7 +186,7 @@ describe('contentrain_model_delete', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     const result = await client.callTool({
       name: 'contentrain_model_delete',
@@ -241,7 +217,7 @@ describe('contentrain_model_delete', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     // Create referencing model
     await client.callTool({
@@ -259,7 +235,7 @@ describe('contentrain_model_delete', () => {
       },
     })
 
-    client = await createTestClient(testDir)
+    client = await createClient(testDir)
 
     // Try to delete authors — should be blocked
     const result = await client.callTool({
