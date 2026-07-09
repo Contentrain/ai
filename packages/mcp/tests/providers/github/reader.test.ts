@@ -160,3 +160,69 @@ describe('GitHubReader.fileExists', () => {
     await expect(reader.fileExists('a.json')).rejects.toThrow(/Rate limited/)
   })
 })
+
+describe('GitHubReader memoization (opt-in)', () => {
+  function fileResponse(body: string) {
+    return { data: { type: 'file', encoding: 'base64', content: b64(body), size: body.length, sha: 'a' } }
+  }
+
+  it('is OFF by default — repeated reads hit getContent every time', async () => {
+    const getContent = vi.fn().mockResolvedValue(fileResponse('{}'))
+    const reader = new GitHubReader(mockClient({ getContent }), { owner: 'o', name: 'r' })
+
+    await reader.readFile('a.json', 'contentrain')
+    await reader.readFile('a.json', 'contentrain')
+
+    expect(getContent).toHaveBeenCalledTimes(2)
+  })
+
+  it('when ON, dedupes repeated readFile for the same (path, ref) to one getContent', async () => {
+    const getContent = vi.fn().mockResolvedValue(fileResponse('{}'))
+    const reader = new GitHubReader(mockClient({ getContent }), { owner: 'o', name: 'r' }, { memoize: true })
+
+    const [a, b] = await Promise.all([
+      reader.readFile('a.json', 'contentrain'),
+      reader.readFile('a.json', 'contentrain'),
+    ])
+    await reader.readFile('a.json', 'contentrain')
+
+    expect(a).toBe('{}')
+    expect(b).toBe('{}')
+    expect(getContent).toHaveBeenCalledTimes(1)
+  })
+
+  it('when ON, keys by ref — the same path on a different ref is a separate read', async () => {
+    const getContent = vi.fn().mockResolvedValue(fileResponse('{}'))
+    const reader = new GitHubReader(mockClient({ getContent }), { owner: 'o', name: 'r' }, { memoize: true })
+
+    await reader.readFile('a.json', 'contentrain')
+    await reader.readFile('a.json', 'main')
+
+    expect(getContent).toHaveBeenCalledTimes(2)
+  })
+
+  it('when ON, dedupes listDirectory and fileExists independently', async () => {
+    const getContent = vi.fn().mockResolvedValue({ data: [{ name: 'en.json' }] })
+    const reader = new GitHubReader(mockClient({ getContent }), { owner: 'o', name: 'r' }, { memoize: true })
+
+    await reader.listDirectory('dir', 'contentrain')
+    await reader.listDirectory('dir', 'contentrain')
+    await reader.fileExists('dir', 'contentrain')
+    await reader.fileExists('dir', 'contentrain')
+
+    // 1 for listDirectory, 1 for fileExists — each method has its own memo.
+    expect(getContent).toHaveBeenCalledTimes(2)
+  })
+
+  it('when ON, does NOT cache a rejected read — the next call retries', async () => {
+    const getContent = vi.fn()
+      .mockRejectedValueOnce(Object.assign(new Error('Server Error'), { status: 500 }))
+      .mockResolvedValueOnce(fileResponse('{"ok":true}'))
+    const reader = new GitHubReader(mockClient({ getContent }), { owner: 'o', name: 'r' }, { memoize: true })
+
+    await expect(reader.readFile('a.json', 'contentrain')).rejects.toThrow(/Server Error/)
+    // Second call must issue a fresh request rather than replay the failure.
+    expect(await reader.readFile('a.json', 'contentrain')).toBe('{"ok":true}')
+    expect(getContent).toHaveBeenCalledTimes(2)
+  })
+})
