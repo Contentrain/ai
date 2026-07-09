@@ -184,7 +184,7 @@ cr/normalize/extract/...     ← normalize extraction
 cr/normalize/reuse/...       ← source patching
 ```
 
-Branches are auto-merged or held for review depending on your workflow config.
+Branches are auto-merged or held for review depending on your workflow config. When a review branch is merged or rejected, its remote copy is deleted too, so merged branches don't linger as phantom pending reviews — run `contentrain prune` to drain any existing backlog, or set `remoteBranchCleanup: false` to opt out.
 
 ## How It Compares
 

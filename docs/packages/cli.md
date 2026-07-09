@@ -60,14 +60,15 @@ Example: `contentrain --debug status` or `CONTENTRAIN_DEBUG=1 contentrain status
 |---------|--------|
 | `contentrain init` | Initialize `.contentrain/`, git workflow, templates, and IDE rules |
 | `contentrain status` | Show project overview, models, branch pressure, and validation summary |
-| `contentrain doctor` | Check setup health, SDK freshness, orphan content, and branch limits |
+| `contentrain doctor` | Check setup health, SDK freshness, orphan content, local branch limits, and remote `cr/*` count |
 | `contentrain validate` | Validate content against schemas, optionally create review-branch fixes |
 | `contentrain generate` | Generate `.contentrain/client/` and `#contentrain` package imports |
 | `contentrain describe` | Display full model schema and sample data |
 | `contentrain describe-format` | Show file format specification and storage conventions |
 | `contentrain scaffold` | Apply starter templates (blog, landing, docs, SaaS, ...) |
-| `contentrain diff` | Review and merge or reject pending `cr/*` branches interactively |
-| `contentrain merge <branch>` | Merge one pending `cr/*` branch non-interactively |
+| `contentrain diff` | Review and merge or reject pending `cr/*` branches interactively (deletes the remote copy on merge/reject) |
+| `contentrain merge <branch>` | Merge one pending `cr/*` branch non-interactively (deletes the remote copy) |
+| `contentrain prune` | Delete merged `cr/*` branches locally and on the remote (drain the backlog) |
 | `contentrain setup` | Configure MCP server and AI rules for your IDE |
 | `contentrain skills` | Install, update, or list AI skills and rules for your IDE |
 | `contentrain serve` | Start the local review UI, the MCP stdio server, or the MCP HTTP server |
@@ -238,7 +239,20 @@ contentrain merge cr/content/faq/1234-abcd
 contentrain merge cr/content/faq/1234-abcd --yes  # Skip confirm (CI)
 ```
 
-Non-interactive single-branch sibling of `contentrain diff`. Delegates to MCP's `mergeBranch` so dirty-file protections + selective sync warnings behave identically.
+Non-interactive single-branch sibling of `contentrain diff`. Delegates to MCP's `mergeBranch` so dirty-file protections + selective sync warnings behave identically. After a successful merge it also deletes the branch's copy on the remote — best-effort, so an offline or permission failure only prints a warning. Opt out with `remoteBranchCleanup: false` in `config.json`.
+
+---
+
+### `contentrain prune`
+
+```bash
+contentrain prune --dry-run   # Preview merged cr/* branches (local + remote)
+contentrain prune             # Confirm, then delete them
+contentrain prune --yes       # Skip confirm (CI)
+contentrain prune --json      # Machine-readable output (mutates only with --yes)
+```
+
+Drains already-merged `cr/*` branches: local ones past their retention period plus every merged copy left on the remote. This is the operator-facing cleanup for backlogs the per-merge deletion could not remove — e.g. branches merged before remote cleanup shipped, or after an offline/permission failure. Merged detection uses the same ancestry + patch-id classification as the rest of the toolchain, so branches orphaned by a base-history rewrite are still recognised. Governed by `remoteBranchCleanup` in `config.json`; exits non-zero if any remote deletion fails.
 
 ---
 
