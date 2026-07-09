@@ -139,7 +139,7 @@ describe('getBranchDiff', () => {
 })
 
 describe('mergeBranch', () => {
-  it('opens an MR, accepts it and deletes the source branch — returns merged: true with the merge SHA', async () => {
+  it('opens an MR and accepts it, but does NOT delete the source branch by default (opt-in)', async () => {
     const mrCreate = vi.fn().mockResolvedValue({
       iid: 42,
       web_url: 'https://gitlab.com/o/r/-/merge_requests/42',
@@ -164,13 +164,24 @@ describe('mergeBranch', () => {
       42,
       { shouldRemoveSourceBranch: false, squash: false },
     )
-    expect(branchRemove).toHaveBeenCalledWith('o/r', 'cr/feat')
+    expect(branchRemove).not.toHaveBeenCalled()
     expect(result).toEqual({
       merged: true,
       sha: 'merge-sha-1',
       pullRequestUrl: 'https://gitlab.com/o/r/-/merge_requests/42',
-      remote: { deleted: true },
     })
+  })
+
+  it('deletes the source branch when removeSourceBranch: true', async () => {
+    const mrCreate = vi.fn().mockResolvedValue({ iid: 42, web_url: 'u' })
+    const mrAccept = vi.fn().mockResolvedValue({ merge_commit_sha: 'merge-sha-1' })
+    const branchRemove = vi.fn().mockResolvedValue(undefined)
+    const client = mockClient({ mrCreate, mrAccept, branchRemove })
+
+    const result = await mergeBranch(client, { projectId: 'o/r' }, 'cr/feat', 'contentrain', { removeSourceBranch: true })
+
+    expect(branchRemove).toHaveBeenCalledWith('o/r', 'cr/feat')
+    expect(result.remote).toEqual({ deleted: true })
   })
 
   it('keeps the source branch when removeSourceBranch is false', async () => {
@@ -185,13 +196,53 @@ describe('mergeBranch', () => {
     expect(result.remote).toBeUndefined()
   })
 
+  // ─── Guard: never delete a long-lived branch, even when opted in ───
+
+  it('refuses to delete the merge target, the default branch, or contentrain — even with removeSourceBranch: true', async () => {
+    const cases: Array<[string, string]> = [
+      ['contentrain', 'contentrain'], // branch === into
+      ['main', 'contentrain'],        // branch === default branch
+      ['contentrain', 'main'],        // branch === contentrain content branch
+    ]
+    for (const [branch, into] of cases) {
+      const mrAccept = vi.fn().mockResolvedValue({ merge_commit_sha: 's' })
+      const branchRemove = vi.fn()
+      const client = mockClient({
+        mrCreate: vi.fn().mockResolvedValue({ iid: 1, web_url: 'u' }),
+        mrAccept,
+        branchRemove,
+        projectShow: vi.fn().mockResolvedValue({ default_branch: 'main' }),
+      })
+
+      const result = await mergeBranch(client, { projectId: 'o/r' }, branch, into, { removeSourceBranch: true })
+
+      expect(branchRemove).not.toHaveBeenCalled()
+      expect(result.remote).toEqual({ deleted: false, skipped: 'protected' })
+    }
+  })
+
+  it('fails safe (no delete) when the default branch cannot be resolved', async () => {
+    const branchRemove = vi.fn()
+    const client = mockClient({
+      mrCreate: vi.fn().mockResolvedValue({ iid: 1, web_url: 'u' }),
+      mrAccept: vi.fn().mockResolvedValue({ merge_commit_sha: 's' }),
+      branchRemove,
+      projectShow: vi.fn().mockRejectedValue(new Error('500')),
+    })
+
+    const result = await mergeBranch(client, { projectId: 'o/r' }, 'cr/feat', 'contentrain', { removeSourceBranch: true })
+
+    expect(branchRemove).not.toHaveBeenCalled()
+    expect(result.remote).toEqual({ deleted: false, skipped: 'protected' })
+  })
+
   it('surfaces a cleanup failure as a warning without failing the merge', async () => {
     const mrCreate = vi.fn().mockResolvedValue({ iid: 44, web_url: 'https://gitlab.com/o/r/-/merge_requests/44' })
     const mrAccept = vi.fn().mockResolvedValue({ merge_commit_sha: 'merge-sha-3' })
     const branchRemove = vi.fn().mockRejectedValue(new Error('403 Forbidden'))
     const client = mockClient({ mrCreate, mrAccept, branchRemove })
 
-    const result = await mergeBranch(client, { projectId: 'o/r' }, 'cr/feat', 'contentrain')
+    const result = await mergeBranch(client, { projectId: 'o/r' }, 'cr/feat', 'contentrain', { removeSourceBranch: true })
 
     expect(result.merged).toBe(true)
     expect(result.remote?.deleted).toBe(false)
@@ -204,7 +255,7 @@ describe('mergeBranch', () => {
     const branchRemove = vi.fn().mockRejectedValue(new Error('404 Branch Not Found'))
     const client = mockClient({ mrCreate, mrAccept, branchRemove })
 
-    const result = await mergeBranch(client, { projectId: 'o/r' }, 'cr/feat', 'contentrain')
+    const result = await mergeBranch(client, { projectId: 'o/r' }, 'cr/feat', 'contentrain', { removeSourceBranch: true })
 
     expect(result.remote).toEqual({ deleted: false, skipped: 'not-found' })
   })

@@ -1,3 +1,4 @@
+import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import type { Branch, FileDiff, MergeResult } from '../../core/contracts/index.js'
 import type { GitHubClient } from './client.js'
 import type { RepoRef } from './types.js'
@@ -102,11 +103,11 @@ export async function mergeBranch(
       base: into,
       head: branch,
     })
-    const remote = await cleanupSourceBranch(client, repo, branch, opts)
+    const remote = await cleanupSourceBranch(client, repo, branch, into, opts)
     return { merged: true, sha: response.data.sha, pullRequestUrl: null, ...(remote ? { remote } : {}) }
   } catch (error) {
     if (isNotModified(error)) {
-      const remote = await cleanupSourceBranch(client, repo, branch, opts)
+      const remote = await cleanupSourceBranch(client, repo, branch, into, opts)
       return { merged: true, sha: null, pullRequestUrl: null, ...(remote ? { remote } : {}) }
     }
     throw error
@@ -114,18 +115,41 @@ export async function mergeBranch(
 }
 
 /**
- * Best-effort post-merge deletion of the source branch so merged cr/*
- * branches don't pile up on the remote. Opt out per call with
- * `removeSourceBranch: false` (e.g. a driver that owns cleanup separately).
- * Never throws — the merge itself already succeeded.
+ * Post-merge deletion of the source branch — **opt-in**. `mergeBranch` is a
+ * general merge primitive: like `git merge` and GitHub's merge API it leaves
+ * the source branch alone by default. A caller that wants the merged branch
+ * removed (e.g. cr/* review-branch cleanup) opts in with
+ * `removeSourceBranch: true`.
+ *
+ * Even when opted in, a long-lived branch is NEVER deleted: not the merge
+ * target (`into`), not the `contentrain` content branch, and not the repo's
+ * default branch. This mirrors the LocalProvider's `deleteRemoteBranch`
+ * guard and defends against head/base confusion and `contentrain→main` /
+ * `main→contentrain` flows. If the default branch can't be resolved, the
+ * delete is skipped (fail safe). Never throws — the merge already succeeded.
  */
 async function cleanupSourceBranch(
   client: GitHubClient,
   repo: RepoRef,
   branch: string,
+  into: string,
   opts?: { removeSourceBranch?: boolean },
 ): Promise<MergeResult['remote'] | undefined> {
-  if (opts?.removeSourceBranch === false) return undefined
+  if (opts?.removeSourceBranch !== true) return undefined
+
+  // Free guards first — no API call for the obvious protected refs.
+  if (branch === into || branch === CONTENTRAIN_BRANCH) {
+    return { deleted: false, skipped: 'protected' }
+  }
+  try {
+    if (branch === await getDefaultBranch(client, repo)) {
+      return { deleted: false, skipped: 'protected' }
+    }
+  } catch {
+    // Cannot verify the default branch — refuse to delete rather than risk it.
+    return { deleted: false, skipped: 'protected' }
+  }
+
   try {
     await deleteBranch(client, repo, branch)
     return { deleted: true }

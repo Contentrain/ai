@@ -224,12 +224,14 @@ export interface RepoProvider extends RepoReader, RepoWriter {
   deleteBranch(name: string): Promise<void>
   getBranchDiff(branch: string, base?: string): Promise<FileDiff[]>
   /**
-   * Merge `branch` into `into`. By default the source branch's remote copy
-   * is removed after a successful merge (best-effort — reported via
-   * `MergeResult.remote`, never a thrown error). Pass
-   * `opts.removeSourceBranch: false` to keep it (e.g. a driver that owns
-   * cleanup separately). LocalProvider ignores the option: its cleanup is
-   * governed by `config.remoteBranchCleanup`.
+   * Merge `branch` into `into`. Like `git merge` and the platform merge APIs,
+   * the source branch is left in place by default. Pass
+   * `opts.removeSourceBranch: true` to also delete it after a successful merge
+   * (best-effort — reported via `MergeResult.remote`, never a thrown error).
+   * Even when opted in, a long-lived branch is never deleted: not `into`, not
+   * the `contentrain` content branch, and not the repo's default branch.
+   * LocalProvider ignores the option: its cleanup is governed by
+   * `config.remoteBranchCleanup` and its own `cr/*`-only guard.
    */
   mergeBranch(branch: string, into: string, opts?: { removeSourceBranch?: boolean }): Promise<MergeResult>
   isMerged(branch: string, into?: string): Promise<boolean>
