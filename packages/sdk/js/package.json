@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/query",
-  "version": "6.1.1",
+  "version": "6.2.0",
   "license": "MIT",
   "description": "Optional type-safe query SDK for Contentrain — generated TypeScript client for platform-independent JSON content",
   "type": "module",

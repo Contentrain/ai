@@ -1,5 +1,12 @@
 # contentrain
 
+## 0.7.3
+
+### Patch Changes
+
+- Updated dependencies [d8caad3]
+  - @contentrain/query@6.2.0
+
 ## 0.7.2
 
 ### Patch Changes
