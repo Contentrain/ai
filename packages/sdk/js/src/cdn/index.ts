@@ -12,6 +12,8 @@ export interface ContentrainCDNConfig {
   apiKey: string
   baseUrl?: string
   defaultLocale?: string
+  /** Bundle preload mode. `true` → `{ revalidateMs: 60_000 }` */
+  bundle?: boolean | { revalidateMs?: number }
 }
 
 export type ContentrainCDNClient = ReturnType<typeof createContentrain>
@@ -21,6 +23,8 @@ export function createContentrain(config: ContentrainCDNConfig) {
     baseUrl: config.baseUrl ?? 'https://studio.contentrain.io/api/cdn/v1',
     projectId: config.projectId,
     apiKey: config.apiKey,
+    bundle: config.bundle,
+    defaultLocale: config.defaultLocale,
   })
   const defaultLocale = config.defaultLocale
 
@@ -54,6 +58,8 @@ export function createContentrain(config: ContentrainCDNConfig) {
     manifest: () => transport.fetch<unknown>('_manifest.json'),
     models: () => transport.fetch<unknown[]>('models/_index.json'),
     model: (id: string) => transport.fetch<unknown>(`models/${id}.json`),
+
+    preload: (locale?: string) => transport.preload(locale),
   }
 }
 
@@ -61,6 +67,7 @@ export function createContentrain(config: ContentrainCDNConfig) {
 export { ContentrainError } from './errors.js'
 export type { CollectionDataSource, SingletonDataSource, DictionaryDataSource, DocumentDataSource } from './data-source.js'
 export { HttpTransport } from './http-transport.js'
+export type { TransportConfig } from './http-transport.js'
 export { CdnCollectionQuery } from './collection-query.js'
 export { CdnSingletonAccessor } from './singleton-accessor.js'
 export { CdnDictionaryAccessor } from './dictionary-accessor.js'
