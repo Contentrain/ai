@@ -513,6 +513,34 @@ const models   = await client.models()     // models/_index.json
 const model    = await client.model('faq') // models/faq.json
 ```
 
+### Bundle Preload
+
+Opt-in mode that collapses per-render fetch waterfalls (N content requests + include resolution) into a single conditional GET. The transport fetches `_bundle/{locale}.json` — one artifact containing every JSON model for that locale — and serves all content, document-index, and dictionary reads from memory:
+
+```ts
+const client = createContentrain({
+  projectId: '350696e8-...',
+  apiKey: 'crn_live_xxx',
+  bundle: true,                        // or { revalidateMs: 30_000 }
+})
+
+// Optional eager warmup (e.g. SSR boot) — resolves true when a bundle was found
+await client.preload('en')
+
+// Zero network: served from the primed bundle
+const posts = await client.collection('faq').locale('en').all()
+const t     = await client.dictionary('ui').locale('en').get()
+```
+
+- **Coverage** — all JSON models (collections, singletons, dictionaries, document indexes) come from the bundle. Document bodies (`bySlug()`), entry metadata (`withMeta()`), and media manifests keep using per-path fetch.
+- **Revalidation** — the bundle is re-checked after `revalidateMs` (default `60_000`) with a conditional request; an unchanged bundle answers `304` at negligible cost.
+- **Fallback** — if the bundle is missing (`404`), invalid, or the request fails, the transport transparently falls back to per-path fetching and retries after `revalidateMs`. With `bundle` unset, behavior is identical to previous versions.
+- **Non-i18n paths** — `content/{model}/data.json` entries ship in every locale bundle and are resolved via `defaultLocale` (default `'en'`).
+
+::: info Requires bundle publishing
+The `_bundle/{locale}.json` artifact is produced by Studio CDN publishing. Until the project's first rebuild publishes a bundle, the SDK silently uses per-path fetching — enabling `bundle: true` early is safe.
+:::
+
 ### CDN vs Local Comparison
 
 | Aspect | Local (`#contentrain`) | CDN (`createContentrain()`) |
@@ -520,7 +548,7 @@ const model    = await client.model('faq') // models/faq.json
 | Data source | Bundled `.mjs` files | HTTP fetch from Studio CDN |
 | Return type | Sync (`T[]`) | Async (`Promise<T[]>`) |
 | Auth | None | API key required |
-| Caching | In-memory (embedded) | ETag-based HTTP cache |
+| Caching | In-memory (embedded) | ETag-based HTTP cache + optional bundle preload |
 | Use case | SSG, build-time | SSR, client-side, serverless, mobile |
 
 ### Error Handling
