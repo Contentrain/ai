@@ -42,6 +42,16 @@ Use **Contentrain Studio** when you need:
 | `@contentrain/rules` | Quality standard and schema/content guardrails | Studio should match the same quality standard in chat, review, and content validation | [Rules & Skills](/packages/rules), [Studio Architecture](https://docs.contentrain.io/developer/architecture) |
 | `@contentrain/skills` | Agent playbooks, workflow hints, and normalize/review procedures | Studio mirrors these workflows in chat-led operations, onboarding, and promotion moments | [Rules & Skills](/packages/rules), [Studio AI Chat](https://docs.contentrain.io/guide/ai-chat) |
 
+## MCP Distribution Surfaces
+
+| Surface | What users see | Best fit |
+|---|---|---|
+| MCP Registry | `io.github.Contentrain/contentrain` | Discover and install the local `@contentrain/mcp` server from MCP-compatible clients |
+| OpenAI Codex | `codex mcp add`, `.codex/config.toml`, and future plugin packaging | Developers who want Contentrain tools inside Codex CLI, desktop, or IDE workflows |
+| Claude Desktop | `claude_desktop_config.json` | Local desktop users who want a checkout-scoped Contentrain server |
+| Claude Code | `claude mcp add`, `.mcp.json`, and plugin marketplaces | Coding-agent workflows with project-scoped MCP approval and skills |
+| Studio MCP Cloud | Hosted Streamable HTTP endpoint + API key | Teams that want external agents to operate a Studio project without sharing a local checkout |
+
 ## Product Philosophy
 
 - **Governance, not generation** — Contentrain standardizes, validates, and reviews content. Your model provider still does the generation.

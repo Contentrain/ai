@@ -3,7 +3,7 @@
   "version": "1.8.1",
   "mcpName": "io.github.Contentrain/contentrain",
   "license": "MIT",
-  "description": "Local-first MCP server for AI-generated content governance — 17 deterministic tools, stdio + HTTP transports, Local / GitHub / GitLab providers",
+  "description": "Local-first MCP server for AI-generated content governance — 19 deterministic tools, stdio + HTTP transports, Local / GitHub / GitLab providers",
   "type": "module",
   "repository": {
     "type": "git",
@@ -26,6 +26,8 @@
     "local-first",
     "platform-independent",
     "claude",
+    "claude-code",
+    "codex",
     "cursor",
     "windsurf"
   ],
