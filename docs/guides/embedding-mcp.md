@@ -169,6 +169,9 @@ const handle = await startHttpMcpServerWith({
     const { repo, auth } = await lookupProjectFromDatabase(projectId)
     return createGitHubProvider({ auth, repo })
   },
+  // Bind each session to its tenant: follow-up requests must produce the
+  // same fingerprint or they get 404 and the client re-initializes.
+  sessionFingerprint: (req) => req.headers['x-project-id'] as string,
   authToken: workspaceBearerToken,
   port: 3333,
   sessionTtlMs: 15 * 60 * 1000,
@@ -176,6 +179,8 @@ const handle = await startHttpMcpServerWith({
 ```
 
 The single-provider shape (`{ provider }`) and the resolver shape (`{ resolveProvider }`) are mutually exclusive — pass one or the other.
+
+**Session tenant binding.** A session's provider is resolved once, at `initialize`. Without `sessionFingerprint`, any caller that presents a known `Mcp-Session-Id` reaches that session's provider — fine on trusted loopback, not across tenants. Set `sessionFingerprint` to derive a stable tenant identity from each request (e.g. the same headers `resolveProvider` uses); a mismatch answers `404 Session not found`, which per the Streamable HTTP spec makes the client transparently re-initialize its own session.
 
 ### 4. Programmatic tool calls (no transport at all)
 
@@ -234,17 +239,17 @@ This is only needed for remote / reader-based flows. `LocalProvider`'s transacti
 
 ### `capability_required` is a structured error
 
-Tools that need capabilities the active provider doesn't expose return:
+Tools whose requirements can never be met by the session's provider are not registered at all (see [Capability gating](#capability-gating)), so most capability mismatches never reach a handler. The structured error remains for the two input-dependent cases — `validate` with `fix: true` and `apply` in `reuse` mode:
 
 ```json
 {
-  "error": "contentrain_scan requires local filesystem access.",
-  "capability_required": "astScan",
+  "error": "contentrain_validate requires local filesystem access.",
+  "capability_required": "localWorktree",
   "hint": "This tool is unavailable when MCP is driven by a remote provider. Use a LocalProvider or the stdio transport."
 }
 ```
 
-Treat `capability_required` as a retry signal at the client. Typical fallback: prompt the user to switch to a local checkout, or downgrade the request (e.g. `content_list` with `resolve: true` → `resolve: false`).
+Treat `capability_required` as a retry signal at the client. Typical fallback: prompt the user to switch to a local checkout, or downgrade the request (e.g. `validate` without `fix`).
 
 See [Providers & Transports](/guides/providers) for the full capability matrix.
 
@@ -258,17 +263,19 @@ Rotate Bearer tokens regularly. MCP does not support per-tool ACLs; a valid toke
 
 ## Capability gating
 
-Each provider advertises a `ProviderCapabilities` manifest. Tools gate on capabilities and reject uniformly when the active provider can't satisfy them.
+Each provider advertises a `ProviderCapabilities` manifest. `createServer` consults it (together with `projectRoot`) at registration time: tools whose requirements can never be met by the session's provider are **not registered**, so `tools/list` only shows what can actually run. The declarative requirement map is exported as `TOOL_REQUIREMENTS` from `@contentrain/mcp/tools/availability`, alongside an `isToolAvailable(name, provider, projectRoot)` helper for embedders that want to reason about the effective surface without spinning up a server.
 
 | Capability | Local | GitHub | GitLab | Gated tools |
 |---|---|---|---|---|
-| `localWorktree` | ✓ | — | — | `init`, `scaffold`, `validate --fix`, `submit`, `merge`, `bulk` |
+| `localWorktree` | ✓ | — | — | `validate --fix`, `submit`, `merge`, `branch_list`, `branch_delete` |
 | `sourceRead` | ✓ | — | — | `apply` (extract) |
 | `sourceWrite` | ✓ | — | — | `apply` (reuse) |
 | `astScan` | ✓ | — | — | `scan` |
 | `pushRemote` | ✓ | ✓ | ✓ | `submit` |
 | `branchProtection` | — | ✓ | ✓ | merge fallback |
 | `pullRequestFallback` | — | ✓ | ✓ | merge fallback |
+
+`init`, `scaffold`, `doctor`, and `bulk` additionally require a local `projectRoot` on disk. Input-dependent checks (`validate --fix`, `apply` reuse) stay as call-time guards and return the structured `capability_required` error above.
 
 Read-only tools (`status`, `describe`, `describe_format`, `content_list`, `validate` without `--fix`) work on every provider — they use only the reader surface.
 
