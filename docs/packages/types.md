@@ -120,7 +120,7 @@ Third-party developers can implement custom providers by implementing these inte
 
 | Interface / Type | Purpose |
 |-----------|---------|
-| `RepoProvider` | Full provider contract: read, write, branch, merge, diff operations |
+| `RepoProvider` | Full provider contract: read, write, branch, merge, diff operations, plus an optional `media?: MediaProvider` facet |
 | `RepoReader` | Read-only interface (readFile, listDirectory, fileExists) |
 | `RepoWriter` | Write interface (applyPlan for atomic commits) |
 | `ProviderCapabilities` | Capability flags (localWorktree, sourceRead, sourceWrite, pushRemote, branchProtection, pullRequestFallback, astScan) |
@@ -129,9 +129,20 @@ Third-party developers can implement custom providers by implementing these inte
 | `Commit` | Result of a commit operation (sha, message, author, timestamp) |
 | `Branch` | Git branch metadata (name, sha, protected) |
 | `FileDiff` | File change within a plan (path, status, before, after) |
-| `MergeResult` | Merge outcome (merged flag, sha, pullRequestUrl, optional `sync?: SyncResult` for LocalProvider) |
+| `MergeResult` | Merge outcome (merged flag, sha, pullRequestUrl, optional `sync?: SyncResult` for LocalProvider, optional `remote?` source-branch cleanup outcome) |
 | `SyncResult` | Selective file sync result (synced, skipped, optional warning) |
 | `CommitAuthor` | Commit author metadata (name, email) |
+
+Media facet types (implemented by providers exposing a media stack — drives the `contentrain_media_*` tools):
+
+| Interface / Type | Purpose |
+|-----------|---------|
+| `MediaProvider` | Optional `RepoProvider.media` facet: `list` / `get` / `ingest` / `update` / `delete` |
+| `MediaAsset` | One asset — `id`, `path` (`media/...`), optional `url`, `mime`, `size`, `alt`, `tags`, `createdAt`, `meta` |
+| `MediaListOptions` | List filters (`search`, `tag`, `limit`, `cursor`) |
+| `MediaListResult` | List page (`assets`, optional `nextCursor`, `total`) |
+| `MediaIngestInput` | URL-based ingest input (`url`, optional `filename`, `alt`, `tags`) |
+| `MediaUpdateInput` | Metadata patch (`alt`, `tags`, `filename`) |
 
 Pre-built capability set:
 

@@ -31,13 +31,17 @@ Some tools need more than a git provider can offer — normalize has to walk you
 
 | Capability | LocalProvider | GitHubProvider | GitLabProvider | Tools that require it |
 |---|---|---|---|---|
-| `localWorktree` | ✓ | — | — | `init`, `scaffold`, `validate --fix`, `submit`, `merge`, `bulk` |
+| `localWorktree` | ✓ | — | — | `validate --fix`, `submit`, `merge`, `branch_list`, `branch_delete` |
 | `sourceRead` | ✓ | — | — | `apply` (extract mode) |
 | `sourceWrite` | ✓ | — | — | `apply` (reuse mode) |
 | `astScan` | ✓ | — | — | `scan` |
 | `pushRemote` | ✓ | ✓ | ✓ | `submit` |
 | `branchProtection` | — | ✓ | ✓ | merge fallback detection |
 | `pullRequestFallback` | — | ✓ | ✓ | merge fallback creation |
+
+A separate requirement — a local `projectRoot` on disk, not a capability flag — gates `init`, `scaffold`, `doctor`, and `bulk`. Tool listing is capability-aware: `tools/list` only advertises tools the resolved provider + `projectRoot` pair can satisfy, so a remote-provider session simply doesn't show the tools it couldn't run (see [MCP Tools](/packages/mcp) and `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`).
+
+The five `contentrain_media_*` tools gate on a separate optional facet, `RepoProvider.media` (an object, not a capability flag). They appear only on providers that expose a media stack — Studio MCP Cloud — and never on Local / GitHub / GitLab.
 
 Read-only tools (`status`, `describe`, `describe_format`, `content_list`, `validate` without `--fix`) work on every provider. Write tools (`content_save`, `content_delete`, `model_save`, `model_delete`) work over any provider too — a remote provider posts the changes as a single atomic commit and always returns `action: pending-review` so Studio (or whoever orchestrates the server) drives the merge.
 
