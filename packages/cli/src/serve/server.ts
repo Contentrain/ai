@@ -242,7 +242,10 @@ export async function createServeApp(options: ServeOptions) {
         type: 'local' as const,
         repo: config?.repository ?? null,
       },
-      transport: 'stdio' as const,
+      // The web dashboard is reached over HTTP (REST + WS); the MCP engine
+      // is embedded in-process. `stdio` only applies to `serve --stdio`,
+      // which does not serve this UI.
+      transport: 'http' as const,
       capabilities: LOCAL_CAPABILITIES,
       contentBranch: CONTENTRAIN_BRANCH,
       defaultBranch: getDefaultBranch(),
