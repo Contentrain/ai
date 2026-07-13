@@ -299,7 +299,7 @@ Serves REST endpoints (`/api/status`, `/api/content`, `/api/branches`, `/api/doc
 contentrain serve --stdio
 ```
 
-For IDE agents. Same 19 tools, stdio transport.
+For IDE agents. Uses `LocalProvider`, so it serves the 19 core tools over stdio (the `contentrain_media_*` tools need a media-capable provider such as Studio MCP Cloud).
 
 #### MCP HTTP
 

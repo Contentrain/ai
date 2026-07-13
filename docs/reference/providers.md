@@ -61,17 +61,25 @@ interface RepoProvider extends RepoReader, RepoWriter {
   // providers, where media stays a relative path.
   readonly mediaBaseUrl?: string
 
+  // Optional media facet. Present only on providers whose backend exposes a
+  // media stack (e.g. Studio MCP Cloud); drives the `contentrain_media_*`
+  // tools, which are not registered when this is absent.
+  readonly media?: MediaProvider
+
   listBranches(prefix?: string): Promise<Branch[]>
   createBranch(name: string, fromRef?: string): Promise<void>
   deleteBranch(name: string): Promise<void>
   getBranchDiff(branch: string, base?: string): Promise<FileDiff[]>
-  mergeBranch(branch: string, into: string): Promise<MergeResult>
+  // opts.removeSourceBranch deletes the source after a successful merge
+  // (opt-in, best-effort — reported via MergeResult.remote). Long-lived
+  // branches (into, contentrain, the default branch) are never deleted.
+  mergeBranch(branch: string, into: string, opts?: { removeSourceBranch?: boolean }): Promise<MergeResult>
   isMerged(branch: string, into?: string): Promise<boolean>
   getDefaultBranch(): Promise<string>
 }
 ```
 
-`MergeResult` is `{ merged, sha, pullRequestUrl, sync? }`. GitHubProvider fills `sha` on direct merges; GitLabProvider fills both `sha` and `pullRequestUrl` (merges via MR). LocalProvider populates `sync: SyncResult` to describe file syncing to the working tree. When branch protection blocks a direct merge, any provider may return `merged: false` with a `pullRequestUrl` fallback.
+`MergeResult` is `{ merged, sha, pullRequestUrl, sync?, remote? }`. GitHubProvider fills `sha` on direct merges; GitLabProvider fills both `sha` and `pullRequestUrl` (merges via MR). LocalProvider populates `sync: SyncResult` to describe file syncing to the working tree. When branch protection blocks a direct merge, any provider may return `merged: false` with a `pullRequestUrl` fallback. `remote` reports the outcome of the optional post-merge source-branch cleanup (`deleted`, plus `skipped` for an expected no-op or `warning` for a non-fatal failure).
 
 ## Capabilities
 
@@ -127,6 +135,39 @@ export const LOCAL_CAPABILITIES: ProviderCapabilities = {
 }
 ```
 
+## Media facet (optional)
+
+`RepoProvider.media` is an optional facet — not a capability flag. When a provider implements it (hosted providers such as Studio MCP Cloud), the `contentrain_media_*` tools are registered; when it is absent (Local / GitHub / GitLab), those tools never appear in `tools/list`. It is a deterministic passthrough to the backend's media stack — MCP makes no media decisions.
+
+```ts
+interface MediaProvider {
+  list(opts?: MediaListOptions): Promise<MediaListResult>
+  get(id: string): Promise<MediaAsset | null>
+  ingest(input: MediaIngestInput): Promise<MediaAsset>   // URL-based; provider owns SSRF/MIME/size policy
+  update(id: string, patch: MediaUpdateInput): Promise<MediaAsset>
+  delete(id: string): Promise<void>
+}
+
+interface MediaAsset {
+  id: string
+  path: string          // repo-relative storage path content fields reference (media/...)
+  url?: string          // absolute delivery URL when resolvable (see mediaBaseUrl)
+  mime?: string
+  size?: number
+  alt?: string
+  tags?: string[]
+  createdAt?: string
+  meta?: Record<string, unknown>   // provider-defined extras (dimensions, blurhash, variants)
+}
+
+interface MediaListOptions { search?: string; tag?: string; limit?: number; cursor?: string }
+interface MediaListResult { assets: MediaAsset[]; nextCursor?: string; total?: number }
+interface MediaIngestInput { url: string; filename?: string; alt?: string; tags?: string[] }
+interface MediaUpdateInput { alt?: string; tags?: string[]; filename?: string }
+```
+
+MCP has no binary channel, so ingest is URL-based: the agent supplies a source URL and the provider fetches it server-side under its own SSRF/MIME/size policy. See [MCP Tools → Media Tools](/packages/mcp) for the tool-level reference.
+
 ## Supporting types
 
 ```ts
@@ -155,6 +196,11 @@ interface MergeResult {
   sha: string | null
   pullRequestUrl: string | null
   sync?: SyncResult   // Only populated by LocalProvider
+  remote?: {          // Post-merge source-branch cleanup outcome
+    deleted: boolean
+    skipped?: string  // Expected no-op (cleanup disabled, no remote, ref gone)
+    warning?: string  // Non-fatal failure (offline, auth) — merge still succeeded
+  }
 }
 
 interface SyncResult {
