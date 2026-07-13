@@ -1,6 +1,7 @@
 import { simpleGit, type SimpleGit } from 'simple-git'
 import { CONTENTRAIN_BRANCH, type ContentrainConfig } from '@contentrain/types'
 import { readConfig } from '../core/config.js'
+import { NETWORK_UNSAFE } from './identity.js'
 
 export interface CleanupResult {
   deleted: number
@@ -356,9 +357,15 @@ function contentrainRemoteName(): string {
  * simple-git instance hardened for network operations: `timeout.block` kills
  * the child after N ms without output (hung SSH passphrase prompts), and
  * `GIT_TERMINAL_PROMPT=0` refuses interactive HTTPS credential prompts.
+ *
+ * This is the one place that legitimately inherits the real environment — push
+ * needs the host's askpass/SSH/proxy setup to authenticate. Because `.env()` is
+ * therefore unavoidable, `unsafe` opts out of the block-unsafe guard categories
+ * that inherited variables (EDITOR, GIT_ASKPASS, …) would otherwise trip; see
+ * NETWORK_UNSAFE. Arg-injection protections stay intact.
  */
 function networkGit(projectRoot: string, timeoutMs: number): SimpleGit {
-  return simpleGit({ baseDir: projectRoot, timeout: { block: timeoutMs } })
+  return simpleGit({ baseDir: projectRoot, timeout: { block: timeoutMs }, unsafe: NETWORK_UNSAFE })
     .env({ ...process.env, GIT_TERMINAL_PROMPT: '0' })
 }
 

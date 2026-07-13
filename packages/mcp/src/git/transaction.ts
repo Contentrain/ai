@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto'
 import { readConfig } from '../core/config.js'
 import { writeContext } from '../core/context.js'
 import { deleteRemoteBranch, type RemoteDeleteResult } from './branch-lifecycle.js'
+import { authorConfig } from './identity.js'
 import { branchTimestamp } from '../util/id.js'
 import { migrateLegacyBranches } from '../providers/local/migration.js'
 import type { SyncResult, WorkflowMode } from '@contentrain/types'
@@ -57,25 +58,6 @@ export async function ensureContentBranch(projectRoot: string): Promise<void> {
     }
   } catch {
     // Remote push is best-effort
-  }
-}
-
-/**
- * Commit identity for worktree operations, supplied via environment instead
- * of two `git config` spawns per transaction. Git honors GIT_AUTHOR_* /
- * GIT_COMMITTER_* for both the sync merges and the feature-branch commit, so
- * a worktree git built with this env needs no `git config user.*` calls.
- * `process.env` is spread so PATH/HOME and any GIT_* already set survive.
- */
-function authorEnv(): Record<string, string | undefined> {
-  const name = process.env['CONTENTRAIN_AUTHOR_NAME'] ?? 'Contentrain'
-  const email = process.env['CONTENTRAIN_AUTHOR_EMAIL'] ?? 'ai@contentrain.io'
-  return {
-    ...process.env,
-    GIT_AUTHOR_NAME: name,
-    GIT_AUTHOR_EMAIL: email,
-    GIT_COMMITTER_NAME: name,
-    GIT_COMMITTER_EMAIL: email,
   }
 }
 
@@ -241,9 +223,10 @@ export async function createTransaction(
   // Create worktree on contentrain branch
   await git.raw(['worktree', 'add', worktreePath, CONTENTRAIN_BRANCH])
 
-  // Commit identity comes from the environment (see authorEnv) — no
-  // `git config user.*` spawns.
-  const wtGit = simpleGit(worktreePath).env(authorEnv())
+  // Commit identity comes from `-c user.*` config (see authorConfig) — passed
+  // as args, never via `.env()`, so simple-git's block-unsafe guard is never
+  // triggered by an inherited EDITOR/GIT_ASKPASS/etc.
+  const wtGit = simpleGit(worktreePath, { config: authorConfig() })
 
   // Sync contentrain with base branch (bring main changes into contentrain)
   try {
@@ -454,8 +437,9 @@ export async function mergeBranch(
   const worktreePath = join(tmpdir(), `cr-merge-${randomUUID()}`)
   await git.raw(['worktree', 'add', worktreePath, CONTENTRAIN_BRANCH])
 
-  // Commit identity from the environment (see authorEnv) — no config spawns.
-  const wtGit = simpleGit(worktreePath).env(authorEnv())
+  // Commit identity from `-c user.*` config (see authorConfig) — guard-safe,
+  // no `.env()` spread.
+  const wtGit = simpleGit(worktreePath, { config: authorConfig() })
 
   try {
     // Merge the feature branch into contentrain
