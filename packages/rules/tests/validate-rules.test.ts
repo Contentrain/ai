@@ -25,7 +25,7 @@ describe('essential rules', () => {
 describe('constants', () => {
   it('FIELD_TYPES has 27 entries', () => { expect(FIELD_TYPES).toHaveLength(27) })
   it('MODEL_KINDS has 4 entries', () => { expect(MODEL_KINDS).toHaveLength(4) })
-  it('MCP_TOOLS has 19 entries', () => { expect(MCP_TOOLS).toHaveLength(19) })
+  it('MCP_TOOLS has 24 entries (19 core + 5 media)', () => { expect(MCP_TOOLS).toHaveLength(24) })
   it('all MCP tools match pattern', () => {
     for (const t of MCP_TOOLS) expect(t).toMatch(/^contentrain_/)
   })

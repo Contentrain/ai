@@ -63,11 +63,28 @@ const REMOTE_SAFE_TOOLS = [
   'contentrain_validate',
 ]
 
+const MEDIA_TOOLS = TOOL_NAMES.filter(name => name.startsWith('contentrain_media_'))
+const NON_MEDIA_TOOLS = TOOL_NAMES.filter(name => !name.startsWith('contentrain_media_'))
+
 describe('capability-aware tool registration', () => {
-  it('registers all 19 tools for a local project root', async () => {
+  it('registers all 19 core tools for a local project root (media facet absent)', async () => {
     const client = await connectedClient(join(tmpdir(), 'cr-availability-local'))
     const names = await listedNames(client)
-    expect(names.toSorted()).toEqual([...TOOL_NAMES].toSorted())
+    expect(names.toSorted()).toEqual([...NON_MEDIA_TOOLS].toSorted())
+    await client.close()
+  })
+
+  it('adds the media tools when the provider exposes a media facet', async () => {
+    const provider = { ...makeProvider(), media: {
+      list: async () => ({ assets: [] }),
+      get: async () => null,
+      ingest: async () => ({ id: 'x', path: 'media/x' }),
+      update: async () => ({ id: 'x', path: 'media/x' }),
+      delete: async () => {},
+    } }
+    const client = await connectedClient({ provider })
+    const names = await listedNames(client)
+    expect(names.toSorted()).toEqual([...REMOTE_SAFE_TOOLS, ...MEDIA_TOOLS].toSorted())
     await client.close()
   })
 
@@ -145,9 +162,10 @@ describe('server instructions', () => {
 })
 
 describe('tool annotations', () => {
-  it('every tool declares openWorldHint: false', () => {
+  it('every tool declares openWorldHint — false everywhere except media ingest', () => {
     for (const [name, annotation] of Object.entries(TOOL_ANNOTATIONS)) {
-      expect(annotation.openWorldHint, `${name} openWorldHint`).toBe(false)
+      const expected = name === 'contentrain_media_ingest'
+      expect(annotation.openWorldHint, `${name} openWorldHint`).toBe(expected)
     }
   })
 
@@ -155,7 +173,8 @@ describe('tool annotations', () => {
     const client = await connectedClient({ provider: makeProvider() })
     const tools = await client.listTools()
     for (const tool of tools.tools) {
-      expect(tool.annotations?.openWorldHint, `${tool.name} openWorldHint`).toBe(false)
+      const expected = tool.name === 'contentrain_media_ingest'
+      expect(tool.annotations?.openWorldHint, `${tool.name} openWorldHint`).toBe(expected)
     }
     await client.close()
   })

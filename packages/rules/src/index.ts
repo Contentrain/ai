@@ -23,7 +23,7 @@ export type FieldType = (typeof FIELD_TYPES)[number]
 export const MODEL_KINDS = ['singleton', 'collection', 'document', 'dictionary'] as const
 export type ModelKind = (typeof MODEL_KINDS)[number]
 
-// ─── MCP Tools (19 tools) ───
+// ─── MCP Tools (24 tools: 19 core + 5 media) ───
 
 export const MCP_TOOLS = [
   'contentrain_status', 'contentrain_describe', 'contentrain_describe_format',
@@ -36,6 +36,10 @@ export const MCP_TOOLS = [
   'contentrain_branch_list', 'contentrain_branch_delete',
   'contentrain_bulk',
   'contentrain_doctor',
+  // Media tools — registered only when the provider exposes a media stack
+  // (Studio MCP Cloud); absent from local stdio servers.
+  'contentrain_media_list', 'contentrain_media_get', 'contentrain_media_ingest',
+  'contentrain_media_update', 'contentrain_media_delete',
 ] as const
 
 export type McpTool = (typeof MCP_TOOLS)[number]

@@ -1,6 +1,6 @@
 ---
 title: MCP Tools
-description: Complete reference for @contentrain/mcp — the provider-agnostic MCP engine powering AI content governance with 19 deterministic tools over stdio or HTTP
+description: Complete reference for @contentrain/mcp — the provider-agnostic MCP engine powering AI content governance with 24 deterministic tools over stdio or HTTP
 order: 1
 slug: mcp
 ---
@@ -55,10 +55,10 @@ Use the local stdio server when the agent should work against a checkout on your
 
 ## Tool Catalog
 
-The MCP server exposes **19 tools** organized by function. Each tool includes [MCP annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` — every tool operates on the configured repository only) so clients can distinguish safe reads from writes and destructive operations.
+The MCP server exposes **24 tools** — 19 core + 5 media — organized by function. Each tool includes [MCP annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) so clients can distinguish safe reads from writes and destructive operations.
 
 ::: info Capability-aware listing
-`tools/list` is filtered per session: tools whose requirements (local project root, provider capabilities) cannot be met are not registered at all. A local stdio server lists all 19 tools; a remote-provider session (e.g. Studio MCP Cloud) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. See `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`.
+`tools/list` is filtered per session: tools whose requirements (local project root, provider capabilities) cannot be met are not registered at all. A local stdio server lists the 19 core tools; a remote-provider session lists the remote-safe subset plus — on media-capable providers like Studio MCP Cloud — the 5 `contentrain_media_*` tools. Core remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. See `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`.
 :::
 
 | Tool | Title | Read-only | Destructive |
@@ -82,6 +82,11 @@ The MCP server exposes **19 tools** organized by function. Each tool includes [M
 | `contentrain_scan` | Scan Source Code | Yes | — |
 | `contentrain_apply` | Apply Normalize | — | — |
 | `contentrain_bulk` | Bulk Operations | — | — |
+| `contentrain_media_list` | List Media Assets | Yes | — |
+| `contentrain_media_get` | Get Media Asset | Yes | — |
+| `contentrain_media_ingest` | Ingest Media From URL | — | — |
+| `contentrain_media_update` | Update Media Metadata | — | — |
+| `contentrain_media_delete` | Delete Media Asset | — | **Yes** |
 
 ### Detailed Reference
 
@@ -118,6 +123,18 @@ The MCP server exposes **19 tools** organized by function. Each tool includes [M
 | `contentrain_scan` | Find hardcoded strings | Graph-based component scan with candidate detection |
 | `contentrain_apply` | Extract or reuse | Two-phase normalize: extract content or patch source files |
 | `contentrain_bulk` | Batch operations | Bulk locale copy, status updates, and deletes |
+
+### Media Tools (Provider Media Facet)
+
+A deterministic passthrough to the provider's optional media stack (`RepoProvider.media`) — registered **only when the provider exposes one** (e.g. Studio MCP Cloud). The flow: list assets → pick a `media/...` path → reference it via `contentrain_content_save` (normalized to absolute delivery URLs when `mediaBaseUrl` is set).
+
+| Tool | Purpose | Description |
+|------|---------|-------------|
+| `contentrain_media_list` | Discover assets | Search, tag filter, cursor pagination — returns storage paths + delivery URLs |
+| `contentrain_media_get` | Inspect one asset | Path, URL, mime, size, alt, tags, provider metadata |
+| `contentrain_media_ingest` | Add from URL | Provider fetches the URL server-side under its own SSRF/MIME/size policy (MCP never fetches; the only `openWorldHint: true` tool) |
+| `contentrain_media_update` | Edit metadata | Alt text, tags, filename — never touches the binary |
+| `contentrain_media_delete` | Remove asset | Destructive; content references are NOT rewritten |
 
 ## Key Principles
 
@@ -185,7 +202,7 @@ Agent drivers treat `capability_required` as a retry signal. See [Providers & Tr
 - **stdio** — `contentrain serve --stdio` or `npx contentrain-mcp`. IDE agents (Claude Code, Cursor, Windsurf) connect over stdin/stdout.
 - **HTTP** — `contentrain serve --mcpHttp --authToken $TOKEN` or the programmatic `startHttpMcpServer({...})` / `startHttpMcpServerWith({ provider })` exports. Streamable HTTP at `POST /mcp` with secure-by-default Bearer auth. See the [HTTP Transport guide](/guides/http-transport).
 
-Both transports serve the same 19 tools and the same JSON response shapes.
+Both transports serve the same tool surface and the same JSON response shapes.
 
 ## Providers
 
@@ -317,7 +334,7 @@ This auto-creates the correct MCP config file and installs AI rules/skills.
 
 </details>
 
-Once connected, the agent has access to all 19 MCP tools and can manage your content through natural language.
+Once connected, the agent has access to the full MCP tool surface and can manage your content through natural language.
 
 ### OpenAI Codex
 

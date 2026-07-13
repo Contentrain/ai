@@ -188,6 +188,79 @@ export interface MergeResult {
   }
 }
 
+// ─── Media (optional provider facet) ───
+
+/**
+ * One media asset as the provider's media stack reports it. `path` is the
+ * repo-relative storage path content fields reference (`media/...`); `url`
+ * is the absolute delivery URL when the provider can resolve one (see
+ * `RepoProvider.mediaBaseUrl`). `meta` carries provider-defined extras
+ * (dimensions, blurhash, variants) without widening this contract.
+ */
+export interface MediaAsset {
+  id: string
+  path: string
+  url?: string
+  mime?: string
+  size?: number
+  alt?: string
+  tags?: string[]
+  createdAt?: string
+  meta?: Record<string, unknown>
+}
+
+export interface MediaListOptions {
+  /** Substring match on filename/path/alt. */
+  search?: string
+  /** Filter to assets carrying this tag. */
+  tag?: string
+  /** Page size — implementations may clamp. */
+  limit?: number
+  /** Opaque cursor from a previous `MediaListResult.nextCursor`. */
+  cursor?: string
+}
+
+export interface MediaListResult {
+  assets: MediaAsset[]
+  nextCursor?: string
+  total?: number
+}
+
+/**
+ * URL-based ingest — MCP has no binary channel, so the source is always a
+ * URL the provider fetches server-side. Implementations MUST enforce their
+ * own SSRF, MIME, and size policies before fetching; MCP passes the input
+ * through verbatim and never fetches the URL itself.
+ */
+export interface MediaIngestInput {
+  url: string
+  filename?: string
+  alt?: string
+  tags?: string[]
+}
+
+export interface MediaUpdateInput {
+  alt?: string
+  tags?: string[]
+  filename?: string
+}
+
+/**
+ * Optional media facet of a provider. When present on `RepoProvider.media`,
+ * the MCP server registers the `contentrain_media_*` tools; when absent
+ * (LocalProvider, plain GitHub/GitLab providers), those tools are not
+ * listed at all. Hosted providers (Studio MCP Cloud) implement this by
+ * delegating to their media stack — deterministic passthrough, no content
+ * decisions in MCP.
+ */
+export interface MediaProvider {
+  list(opts?: MediaListOptions): Promise<MediaListResult>
+  get(id: string): Promise<MediaAsset | null>
+  ingest(input: MediaIngestInput): Promise<MediaAsset>
+  update(id: string, patch: MediaUpdateInput): Promise<MediaAsset>
+  delete(id: string): Promise<void>
+}
+
 // ─── Provider (full surface) ───
 
 /**
@@ -218,6 +291,13 @@ export interface RepoProvider extends RepoReader, RepoWriter {
    * media stays a relative path (the OSS file model). Never affects reads.
    */
   readonly mediaBaseUrl?: string
+
+  /**
+   * Optional media facet. Present only on providers whose backend exposes a
+   * media stack (Studio MCP Cloud); drives the `contentrain_media_*` MCP
+   * tools, which are not registered when this is absent.
+   */
+  readonly media?: MediaProvider
 
   listBranches(prefix?: string): Promise<Branch[]>
   createBranch(name: string, fromRef?: string): Promise<void>

@@ -19,6 +19,7 @@ import { registerWorkflowTools } from './tools/workflow.js'
 import { registerNormalizeTools } from './tools/normalize.js'
 import { registerBulkTools } from './tools/bulk.js'
 import { registerDoctorTools } from './tools/doctor.js'
+import { registerMediaTools } from './tools/media.js'
 import packageJson from '../package.json' with { type: 'json' }
 
 /**
@@ -134,6 +135,7 @@ export function createServer(input: string | CreateServerOptions): McpServer {
   registerNormalizeTools(server, provider, projectRoot)
   registerBulkTools(server, provider, projectRoot)
   registerDoctorTools(server, provider, projectRoot)
+  registerMediaTools(server, provider, projectRoot)
 
   return server
 }
