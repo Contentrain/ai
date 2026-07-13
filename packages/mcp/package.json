@@ -163,7 +163,7 @@
   "dependencies": {
     "@contentrain/types": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.12.0",
-    "simple-git": "^3.27.0",
+    "simple-git": "^3.36.0",
     "typescript": "^5.7.0",
     "zod": "^3.24.0"
   },
