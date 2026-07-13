@@ -71,7 +71,9 @@ All write operations are designed around git-backed safety:
 
 ## Tool Surface
 
-19 MCP tools with [annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`) for client safety hints:
+19 MCP tools with [annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` — every tool operates on the configured repository only) for client safety hints.
+
+**Tool listing is capability-aware.** `tools/list` only advertises tools the resolved provider + `projectRoot` pair can actually satisfy. A local stdio server lists all 19; a session driven by a remote provider (GitHub/GitLab, no local checkout) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. The requirement map lives in `TOOL_REQUIREMENTS` (`@contentrain/mcp/tools/availability`).
 
 | Tool | Purpose | Read-only | Destructive |
 | --- | --- | --- | --- |
@@ -124,6 +126,8 @@ const transport = new StdioServerTransport()
 
 await server.connect(transport)
 ```
+
+`createServer` also accepts an options object: `{ provider, projectRoot?, instructions? }`. `instructions` sets the MCP `instructions` string clients receive at `initialize` (defaults to a built-in `DEFAULT_INSTRUCTIONS`, kept under 512 characters; pass `''` to omit).
 
 ## Example MCP Flow
 

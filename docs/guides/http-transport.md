@@ -73,6 +73,10 @@ const handle = await startHttpMcpServerWith({
 
 The same pattern works for `createGitLabProvider` with a `GitLabProvider`. Both require their respective optional peers (`@octokit/rest`, `@gitbeaker/rest`).
 
+Multi-tenant deployments (`{ resolveProvider }`) should also set `sessionFingerprint` to bind each MCP session to the tenant it was created for — follow-up requests whose fingerprint doesn't match the session's get `404` and the client re-initializes. See the [embedding guide](/guides/embedding-mcp#3a-http--per-request-provider-resolver-multi-tenant) for the full pattern.
+
+Note that the tool list is capability-aware: a session backed by a remote provider only advertises the tools it can actually run (no `init`/`scaffold`/`doctor`/`bulk`/`submit`/`merge`/branch lifecycle/normalize tools without a local worktree).
+
 ## Deployment patterns
 
 ### Studio MCP Cloud

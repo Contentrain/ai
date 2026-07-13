@@ -630,7 +630,7 @@ describe('startHttpMcpServer', () => {
     }
   })
 
-  it('returns capability error for local-only tools on a remote provider (submit requires localWorktree)', async () => {
+  it('does not advertise local-only tools on a remote provider (submit requires localWorktree)', async () => {
     const readOnlyProvider = {
       capabilities: {
         localWorktree: false,
@@ -654,15 +654,19 @@ describe('startHttpMcpServer', () => {
 
       try {
         // contentrain_submit ships feature branches to remote via simple-git
-        // — it truly needs a local worktree and rejects uniformly when the
-        // session's provider can't offer one.
+        // — it truly needs a local worktree. Capability-aware registration
+        // keeps it out of tools/list entirely, and calling it anyway is an
+        // unknown-tool error.
+        const tools = await client.listTools()
+        const names = tools.tools.map(t => t.name)
+        expect(names).not.toContain('contentrain_submit')
         const result = await client.callTool({
           name: 'contentrain_submit',
           arguments: {},
         })
-        const parsed = parseResult(result)
-        expect(parsed['capability_required']).toBe('localWorktree')
         expect(result.isError).toBe(true)
+        const text = (result.content as Array<{ text: string }>)[0]!.text
+        expect(text).toMatch(/not found/i)
       } finally {
         await client.close()
       }
@@ -788,6 +792,65 @@ describe('startHttpMcpServer', () => {
       } finally {
         await clientAlpha.close()
         await clientBravo.close()
+      }
+    } finally {
+      await handle.close()
+    }
+  })
+
+  it('rejects cross-tenant session-id replay when sessionFingerprint is configured', async () => {
+    const alpha = makeReadOnlyTenantProvider('alpha')
+    const bravo = makeReadOnlyTenantProvider('bravo')
+    const handle = await startHttpMcpServerWith({
+      resolveProvider: (req) => {
+        const header = req.headers['x-project-id']
+        return header === 'bravo' ? bravo : alpha
+      },
+      sessionFingerprint: (req) => {
+        const header = req.headers['x-project-id']
+        return Array.isArray(header) ? header[0] : header
+      },
+      port: 0,
+    })
+    try {
+      const clientAlpha = new Client({ name: 'alpha-client', version: '1.0.0' })
+      const transportAlpha = new StreamableHTTPClientTransport(new URL(handle.url), {
+        requestInit: { headers: { 'x-project-id': 'alpha' } },
+      })
+      await clientAlpha.connect(transportAlpha)
+
+      try {
+        const sessionId = transportAlpha.sessionId
+        expect(sessionId).toBeDefined()
+
+        const listToolsBody = JSON.stringify({ jsonrpc: '2.0', id: 99, method: 'tools/list', params: {} })
+        const baseHeaders = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json, text/event-stream',
+          'mcp-session-id': sessionId!,
+        }
+
+        // Same tenant replaying its own session id → served.
+        const sameTenant = await fetch(handle.url, {
+          method: 'POST',
+          headers: { ...baseHeaders, 'x-project-id': 'alpha' },
+          body: listToolsBody,
+        })
+        expect(sameTenant.status).toBe(200)
+        await sameTenant.body?.cancel()
+
+        // Another tenant presenting alpha's session id → 404, so the
+        // client re-initializes and gets a session bound to its own provider.
+        const crossTenant = await fetch(handle.url, {
+          method: 'POST',
+          headers: { ...baseHeaders, 'x-project-id': 'bravo' },
+          body: listToolsBody,
+        })
+        expect(crossTenant.status).toBe(404)
+        const body = await crossTenant.json() as { error: string }
+        expect(body.error).toBe('Session not found')
+      } finally {
+        await clientAlpha.close()
       }
     } finally {
       await handle.close()

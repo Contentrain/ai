@@ -57,6 +57,16 @@ export interface HttpMcpServerResolverOptions {
    * Defaults to 15 minutes.
    */
   sessionTtlMs?: number
+  /**
+   * Optional tenant binding. When set, the fingerprint computed on the
+   * session-creating request is stored with the session, and every
+   * follow-up request carrying that `Mcp-Session-Id` must produce the
+   * same fingerprint (e.g. derive it from the tenant headers the proxy
+   * injects). A mismatch answers 404 — per the Streamable HTTP spec the
+   * client then re-initializes and gets a session bound to its own
+   * provider. This closes session-id replay across tenants.
+   */
+  sessionFingerprint?: (req: http.IncomingMessage) => string | undefined
 }
 
 export interface HttpMcpServerHandle {
@@ -148,6 +158,8 @@ interface MultiTenantSession {
   mcp: McpServer
   transport: StreamableHTTPServerTransport
   lastUsed: number
+  /** Tenant fingerprint captured on the session-creating request (when `sessionFingerprint` is configured). */
+  fingerprint: string | undefined
 }
 
 async function startMultiTenantHttpMcpServer(
@@ -179,6 +191,7 @@ async function startMultiTenantHttpMcpServer(
       authToken: opts.authToken,
       resolveProvider: opts.resolveProvider,
       projectRoot: opts.projectRoot,
+      sessionFingerprint: opts.sessionFingerprint,
       sessions,
     })
   })
@@ -217,6 +230,7 @@ async function handleMultiTenantRequest(
     authToken?: string
     resolveProvider: (req: http.IncomingMessage) => ToolProvider | Promise<ToolProvider>
     projectRoot?: string
+    sessionFingerprint?: (req: http.IncomingMessage) => string | undefined
     sessions: Map<string, MultiTenantSession>
   },
 ): Promise<void> {
@@ -225,6 +239,13 @@ async function handleMultiTenantRequest(
   const existingSessionId = pickSessionId(req.headers[MCP_SESSION_HEADER])
   if (existingSessionId && ctx.sessions.has(existingSessionId)) {
     const session = ctx.sessions.get(existingSessionId)!
+    // Tenant binding: a session id minted for one tenant must not be
+    // honored for another. Answer 404 (not 403) so a legitimate client
+    // that landed on a foreign session re-initializes its own.
+    if (ctx.sessionFingerprint && ctx.sessionFingerprint(req) !== session.fingerprint) {
+      writeJson(res, 404, { error: 'Session not found' })
+      return
+    }
     session.lastUsed = Date.now()
     try {
       await session.transport.handleRequest(req, res)
@@ -236,11 +257,12 @@ async function handleMultiTenantRequest(
 
   try {
     const provider = await ctx.resolveProvider(req)
+    const fingerprint = ctx.sessionFingerprint?.(req)
     const mcp = createMcpServer({ provider, projectRoot: ctx.projectRoot })
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
       onsessioninitialized: (sessionId: string) => {
-        ctx.sessions.set(sessionId, { mcp, transport, lastUsed: Date.now() })
+        ctx.sessions.set(sessionId, { mcp, transport, lastUsed: Date.now(), fingerprint })
       },
     })
     await mcp.connect(transport)

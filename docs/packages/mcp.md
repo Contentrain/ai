@@ -55,7 +55,11 @@ Use the local stdio server when the agent should work against a checkout on your
 
 ## Tool Catalog
 
-The MCP server exposes **19 tools** organized by function. Each tool includes [MCP annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`) so clients can distinguish safe reads from writes and destructive operations.
+The MCP server exposes **19 tools** organized by function. Each tool includes [MCP annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` — every tool operates on the configured repository only) so clients can distinguish safe reads from writes and destructive operations.
+
+::: info Capability-aware listing
+`tools/list` is filtered per session: tools whose requirements (local project root, provider capabilities) cannot be met are not registered at all. A local stdio server lists all 19 tools; a remote-provider session (e.g. Studio MCP Cloud) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. See `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`.
+:::
 
 | Tool | Title | Read-only | Destructive |
 |------|-------|-----------|-------------|

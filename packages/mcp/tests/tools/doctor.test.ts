@@ -72,7 +72,7 @@ describe('contentrain_doctor tool', () => {
     expect(report.usage).toHaveProperty('missingLocaleKeys')
   })
 
-  it('returns a capability error when driven by a remote provider (no projectRoot)', async () => {
+  it('is not advertised when driven by a remote provider (no projectRoot)', async () => {
     const fakeClient = {} as unknown as GitHubClient
     const provider = new GitHubProvider(fakeClient, { owner: 'acme', name: 'site' })
     const server = createServer({ provider })
@@ -83,11 +83,15 @@ describe('contentrain_doctor tool', () => {
       server.connect(serverTransport),
     ])
 
+    // Capability-aware registration: doctor needs a local projectRoot, so a
+    // remote session never sees it in tools/list and a forced call is an
+    // unknown-tool error rather than a capability payload.
+    const tools = await client.listTools()
+    expect(tools.tools.map(t => t.name)).not.toContain('contentrain_doctor')
     const result = await client.callTool({ name: 'contentrain_doctor', arguments: {} })
     expect(result.isError).toBe(true)
     const content = result.content as Array<{ type: string, text: string }>
-    const data = JSON.parse(content[0]!.text)
-    expect(data.capability_required).toBe('localWorktree')
+    expect(content[0]!.text).toMatch(/not found/i)
   })
 
   it('is advertised in the tools list', async () => {

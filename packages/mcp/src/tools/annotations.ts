@@ -3,6 +3,9 @@ import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js'
 /**
  * Centralized tool annotations registry.
  * MCP clients use these hints to distinguish read-only vs. write vs. destructive tools.
+ * `openWorldHint` is `false` across the board: every tool operates on the
+ * configured content repository only — none reaches out to arbitrary
+ * external systems.
  *
  * Also serves as the **single source of truth for the tool name list**. Consumers
  * that need to enumerate every registered tool (e.g. parity tests in
@@ -16,24 +19,28 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
+    openWorldHint: false,
   },
   contentrain_describe: {
     title: 'Describe Model',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
+    openWorldHint: false,
   },
   contentrain_describe_format: {
     title: 'Describe Format',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
+    openWorldHint: false,
   },
   contentrain_doctor: {
     title: 'Project Health Report',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
+    openWorldHint: false,
   },
 
   // ─── Setup (write + git) ───
@@ -42,12 +49,14 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
     readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: false,
+    openWorldHint: false,
   },
   contentrain_scaffold: {
     title: 'Scaffold Template',
     readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: false,
+    openWorldHint: false,
   },
 
   // ─── Model (write + git) ───
@@ -56,12 +65,14 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
     readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: true,
+    openWorldHint: false,
   },
   contentrain_model_delete: {
     title: 'Delete Model',
     readOnlyHint: false,
     destructiveHint: true,
     idempotentHint: false,
+    openWorldHint: false,
   },
 
   // ─── Content (mixed) ───
@@ -70,18 +81,21 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
     readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: true,
+    openWorldHint: false,
   },
   contentrain_content_delete: {
     title: 'Delete Content',
     readOnlyHint: false,
     destructiveHint: true,
     idempotentHint: false,
+    openWorldHint: false,
   },
   contentrain_content_list: {
     title: 'List Content',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
+    openWorldHint: false,
   },
 
   // ─── Workflow (mixed) ───
@@ -90,30 +104,35 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
     readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: true,
+    openWorldHint: false,
   },
   contentrain_submit: {
     title: 'Submit Branches',
     readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: true,
+    openWorldHint: false,
   },
   contentrain_merge: {
     title: 'Merge Branch',
     readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: false,
+    openWorldHint: false,
   },
   contentrain_branch_list: {
     title: 'List Branches',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
+    openWorldHint: false,
   },
   contentrain_branch_delete: {
     title: 'Delete Branch',
     readOnlyHint: false,
     destructiveHint: true,
     idempotentHint: false,
+    openWorldHint: false,
   },
 
   // ─── Normalize (mixed) ───
@@ -122,12 +141,14 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
+    openWorldHint: false,
   },
   contentrain_apply: {
     title: 'Apply Normalize',
     readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: false,
+    openWorldHint: false,
   },
 
   // ─── Bulk (write + git) ───
@@ -136,6 +157,7 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
     readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: false,
+    openWorldHint: false,
   },
 }
 
