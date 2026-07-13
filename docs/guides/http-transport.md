@@ -14,7 +14,7 @@ Typical drivers:
 - **CI runners** — deterministic content operations as part of a pipeline (scaffold, validate, submit).
 - **Remote agents** — any MCP client that wants to operate a Contentrain project without a local checkout.
 
-All three tunnel the same 19 tools through the same `RepoProvider` contract. Which backend answers depends on how the server is wired — see [Providers & Transports](/guides/providers) for the capability matrix.
+All three tunnel the same tool surface (19 core + 5 media on media-capable providers) through the same `RepoProvider` contract. Which backend answers depends on how the server is wired — see [Providers & Transports](/guides/providers) for the capability matrix.
 
 ## Starting the HTTP server
 

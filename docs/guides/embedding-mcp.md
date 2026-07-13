@@ -15,7 +15,7 @@ Studio (`contentrain.io`) is the canonical consumer; the patterns below describe
 `@contentrain/mcp` ships three pieces you plug together:
 
 1. **A `RepoProvider`** — Local / GitHub / GitLab (or your own). Wraps whatever git backend you're targeting.
-2. **An `McpServer`** — the MCP JSON-RPC surface with all 17 Contentrain tools registered.
+2. **An `McpServer`** — the MCP JSON-RPC surface with every Contentrain tool the provider can satisfy registered (19 core + 5 media on media-capable providers).
 3. **A transport** — stdio (for IDE agents) or HTTP (for hosted / remote drivers).
 
 The three are orthogonal. Mix them freely.
@@ -277,6 +277,8 @@ Each provider advertises a `ProviderCapabilities` manifest. `createServer` consu
 
 `init`, `scaffold`, `doctor`, and `bulk` additionally require a local `projectRoot` on disk. Input-dependent checks (`validate --fix`, `apply` reuse) stay as call-time guards and return the structured `capability_required` error above.
 
+The five `contentrain_media_*` tools gate on the provider's optional **media facet** (`RepoProvider.media` — an object implementing `MediaProvider` from `@contentrain/types`, not a boolean flag). Implement it on a custom provider to get the media tools registered; leave it absent and they never appear.
+
 Read-only tools (`status`, `describe`, `describe_format`, `content_list`, `validate` without `--fix`) work on every provider — they use only the reader surface.
 
 ## Extension: custom providers
@@ -339,7 +341,7 @@ A GitHub Actions job:
 4. Drive it with an MCP client
 5. Let `contentrain_submit` push the `cr/*` branch
 
-All 19 tools are available because the runner has `LocalProvider`.
+All 19 core tools are available because the runner has `LocalProvider` (media tools need a media-capable provider).
 
 ### Scripted automation
 

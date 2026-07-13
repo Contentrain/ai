@@ -3,9 +3,9 @@ import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js'
 /**
  * Centralized tool annotations registry.
  * MCP clients use these hints to distinguish read-only vs. write vs. destructive tools.
- * `openWorldHint` is `false` across the board: every tool operates on the
- * configured content repository only — none reaches out to arbitrary
- * external systems.
+ * `openWorldHint` is `false` everywhere except `contentrain_media_ingest`,
+ * which fetches a caller-supplied external URL server-side; every other
+ * tool operates on the configured content repository only.
  *
  * Also serves as the **single source of truth for the tool name list**. Consumers
  * that need to enumerate every registered tool (e.g. parity tests in
@@ -156,6 +156,43 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
     title: 'Bulk Operations',
     readOnlyHint: false,
     destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+
+  // ─── Media (provider media facet — registered only when RepoProvider.media is present) ───
+  contentrain_media_list: {
+    title: 'List Media Assets',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  contentrain_media_get: {
+    title: 'Get Media Asset',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  contentrain_media_ingest: {
+    title: 'Ingest Media From URL',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
+  contentrain_media_update: {
+    title: 'Update Media Metadata',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  contentrain_media_delete: {
+    title: 'Delete Media Asset',
+    readOnlyHint: false,
+    destructiveHint: true,
     idempotentHint: false,
     openWorldHint: false,
   },

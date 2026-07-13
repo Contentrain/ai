@@ -75,7 +75,7 @@ The package root exports constants for tooling:
 
 - `FIELD_TYPES` — 27 flat field types
 - `MODEL_KINDS` — `singleton`, `collection`, `document`, `dictionary`
-- `MCP_TOOLS` — 19 MCP tool names (includes `contentrain_merge`, branch lifecycle tools, and `contentrain_doctor`)
+- `MCP_TOOLS` — 24 MCP tool names: 19 core + 5 media (`contentrain_media_*`, registered only on media-capable providers)
 - `ESSENTIAL_RULES_FILE` — path to essential guardrails markdown
 - `STACKS` — supported framework stacks
 
@@ -84,7 +84,7 @@ The package root exports constants for tooling:
 ```ts
 import { MCP_TOOLS, ESSENTIAL_RULES_FILE, FIELD_TYPES } from '@contentrain/rules'
 
-console.log(MCP_TOOLS.length)                            // 19
+console.log(MCP_TOOLS.length)                            // 24
 console.log(MCP_TOOLS.includes('contentrain_merge'))     // true
 console.log(MCP_TOOLS.includes('contentrain_doctor'))    // true
 console.log(ESSENTIAL_RULES_FILE)                        // 'essential/contentrain-essentials.md'

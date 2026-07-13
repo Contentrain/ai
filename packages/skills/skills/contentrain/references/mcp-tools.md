@@ -357,3 +357,67 @@ Run git-backed batch operations on existing content entries.
 - `copy_locale` MUST NOT be used on non-i18n models
 - Bulk operations create branches and commits like other write tools
 - Validate afterward when content shape may have changed
+
+## Media Tools
+
+Media tools are a deterministic passthrough to the provider's media stack. They are **registered only when the provider exposes one** (e.g. Studio MCP Cloud) — local stdio servers and plain GitHub/GitLab providers never list them. The flow: list assets → pick a `media/...` path → reference it in media/image/file fields via `contentrain_content_save` (paths are normalized to absolute delivery URLs when the provider sets `mediaBaseUrl`).
+
+### contentrain_media_list
+
+List media assets with optional filtering and cursor pagination. Read-only.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `search` | string | No | Substring match on filename/path/alt |
+| `tag` | string | No | Only assets carrying this tag |
+| `limit` | number | No | Page size (1–100, provider may clamp) |
+| `cursor` | string | No | Opaque cursor from a previous response |
+
+Returns `{ assets[], next_cursor?, total? }`. Each asset carries `id`, `path` (`media/...`), optional `url`, `mime`, `size`, `alt`, `tags`, `createdAt`, `meta`.
+
+### contentrain_media_get
+
+Get a single media asset by id. Read-only.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Asset id from `contentrain_media_list` |
+
+Returns `{ asset }` or an error with a discovery hint for unknown ids.
+
+### contentrain_media_ingest
+
+Ingest an asset from a source URL. The provider fetches the URL server-side under its own SSRF/MIME/size policy — MCP never fetches it. The only open-world tool (`openWorldHint: true`).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `url` | string | Yes | Source URL to fetch server-side |
+| `filename` | string | No | Target filename override |
+| `alt` | string | No | Alt text |
+| `tags` | string[] | No | Tags to attach (max 20) |
+
+Returns `{ status: "ingested", asset }` — use `asset.path` in content fields afterward.
+
+### contentrain_media_update
+
+Update asset metadata. Never touches the binary.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Asset id to update |
+| `alt` | string | No | New alt text |
+| `tags` | string[] | No | Replacement tag list (max 20) |
+| `filename` | string | No | New filename |
+
+Returns `{ status: "updated", asset }`.
+
+### contentrain_media_delete
+
+Delete an asset from the media stack. Destructive — content entries referencing its path are NOT rewritten; check references first with `contentrain_content_list`.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Asset id to delete |
+| `confirm` | boolean | Yes | Must be `true` to confirm |
+
+Returns `{ status: "deleted", id }`.

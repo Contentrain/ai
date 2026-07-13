@@ -57,6 +57,13 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 | `contentrain_branch_delete` | Delete a stale/failed `cr/*` branch (the contentrain branch is protected) |
 | `contentrain_bulk` | Batch operations (copy_locale/update_status/delete_entries) |
 | `contentrain_doctor` | Project health report (env + structure + orphan content + branch pressure + SDK freshness) |
+| `contentrain_media_list` | List media assets (media-capable providers only, e.g. Studio MCP Cloud) |
+| `contentrain_media_get` | Get one media asset by id |
+| `contentrain_media_ingest` | Ingest an asset from a source URL (provider fetches server-side) |
+| `contentrain_media_update` | Update asset metadata (alt/tags/filename) |
+| `contentrain_media_delete` | Delete an asset (references in content are NOT rewritten) |
+
+Media tools appear only when the provider exposes a media stack; discover paths with `contentrain_media_list`, then reference them in media/image/file fields via `contentrain_content_save`.
 
 ## Mandatory Protocols
 

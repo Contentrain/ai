@@ -71,9 +71,9 @@ All write operations are designed around git-backed safety:
 
 ## Tool Surface
 
-19 MCP tools with [annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` — every tool operates on the configured repository only) for client safety hints.
+24 MCP tools — 19 core + 5 media — with [annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) for client safety hints.
 
-**Tool listing is capability-aware.** `tools/list` only advertises tools the resolved provider + `projectRoot` pair can actually satisfy. A local stdio server lists all 19; a session driven by a remote provider (GitHub/GitLab, no local checkout) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. The requirement map lives in `TOOL_REQUIREMENTS` (`@contentrain/mcp/tools/availability`).
+**Tool listing is capability-aware.** `tools/list` only advertises tools the resolved provider + `projectRoot` pair can actually satisfy. A local stdio server lists the 19 core tools; a session driven by a remote provider (GitHub/GitLab, no local checkout) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. The requirement map lives in `TOOL_REQUIREMENTS` (`@contentrain/mcp/tools/availability`).
 
 | Tool | Purpose | Read-only | Destructive |
 | --- | --- | --- | --- |
@@ -96,6 +96,13 @@ All write operations are designed around git-backed safety:
 | `contentrain_scan` | Graph- and candidate-based hardcoded string scan | Yes | — |
 | `contentrain_apply` | Normalize extract/reuse execution with dry-run support | — | — |
 | `contentrain_bulk` | Bulk locale copy, status updates, and deletes | — | — |
+| `contentrain_media_list` | List media assets (search, tag filter, cursor pagination) | Yes | — |
+| `contentrain_media_get` | Get one media asset by id | Yes | — |
+| `contentrain_media_ingest` | Ingest an asset from a source URL (provider fetches server-side) | — | — |
+| `contentrain_media_update` | Update asset metadata (alt, tags, filename) | — | — |
+| `contentrain_media_delete` | Delete an asset from the media stack | — | **Yes** |
+
+The five `contentrain_media_*` tools are a deterministic passthrough to the provider's optional media facet (`RepoProvider.media`) and are registered **only when the provider exposes one** (e.g. Studio MCP Cloud). Local stdio servers and plain GitHub/GitLab providers never list them. Ingest is URL-based (MCP has no binary channel); the provider implementation owns SSRF/MIME/size policy for the fetch.
 
 ## Quick Start
 
@@ -257,7 +264,7 @@ These are intended for Contentrain tooling and advanced integrations, not for di
 Key design decisions in this package:
 
 - local-first **by default** — stdio transport + LocalProvider works without any network dependency
-- provider-agnostic engine — the same 19 tools run over LocalProvider, GitHubProvider, or GitLabProvider behind a single `RepoProvider` contract
+- provider-agnostic engine — the same core tools run over LocalProvider, GitHubProvider, or GitLabProvider behind a single `RepoProvider` contract; media tools ride the provider's optional media facet
 - remote provider SDKs (`@octokit/rest`, `@gitbeaker/rest`) are optional peer dependencies — pulled in only when their provider is used
 - JSON-only content storage
 - git-backed write workflow (worktree transaction locally, single atomic commit over the Git Data / REST APIs remotely)

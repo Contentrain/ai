@@ -19,6 +19,8 @@ export interface ToolRequirements {
   projectRoot?: boolean
   /** Provider capability flags that must all be `true`. */
   capabilities?: readonly (keyof ProviderCapabilities)[]
+  /** Tool needs the provider's optional media facet (`RepoProvider.media`). */
+  media?: boolean
 }
 
 export const TOOL_REQUIREMENTS: Readonly<Record<string, ToolRequirements>> = {
@@ -35,6 +37,13 @@ export const TOOL_REQUIREMENTS: Readonly<Record<string, ToolRequirements>> = {
   // additionally needs sourceWrite, which stays a call-time check because
   // it depends on the `mode` input.
   contentrain_apply: { projectRoot: true, capabilities: ['sourceRead'] },
+  // Media tools exist only where the provider exposes a media stack
+  // (Studio MCP Cloud). Local and plain remote providers never list them.
+  contentrain_media_list: { media: true },
+  contentrain_media_get: { media: true },
+  contentrain_media_ingest: { media: true },
+  contentrain_media_update: { media: true },
+  contentrain_media_delete: { media: true },
 }
 
 /**
@@ -45,11 +54,12 @@ export const TOOL_REQUIREMENTS: Readonly<Record<string, ToolRequirements>> = {
  */
 export function isToolAvailable(
   name: string,
-  provider: { capabilities: ProviderCapabilities },
+  provider: { capabilities: ProviderCapabilities, media?: unknown },
   projectRoot: string | undefined,
 ): boolean {
   const req = TOOL_REQUIREMENTS[name]
   if (!req) return true
   if (req.projectRoot && !projectRoot) return false
+  if (req.media && !provider.media) return false
   return (req.capabilities ?? []).every(cap => provider.capabilities[cap])
 }
