@@ -14,7 +14,7 @@ Contentrain AI is an open-source, repo-native content governance stack. Your AI 
 
 - Node.js 22+
 - Git
-- An MCP-compatible AI agent (Claude Code, Cursor, Windsurf, or similar)
+- An MCP-compatible AI agent (OpenAI Codex, Claude Desktop, Claude Code, Cursor, Windsurf, or similar)
 
 ## Choose Your Path
 
@@ -78,6 +78,23 @@ npx contentrain setup windsurf      # → creates .windsurf/mcp.json
 npx contentrain setup --all         # → configures all detected IDEs
 ```
 
+OpenAI Codex and Claude Desktop can be connected manually:
+
+```bash
+codex mcp add contentrain -- npx -y contentrain serve --stdio
+```
+
+```json
+{
+  "mcpServers": {
+    "contentrain": {
+      "command": "npx",
+      "args": ["-y", "contentrain", "serve", "--stdio"]
+    }
+  }
+}
+```
+
 ::: tip Auto-configured during init
 If your IDE is detected during `contentrain init`, the MCP config is created automatically — you may already be set up.
 :::
@@ -98,6 +115,8 @@ If your IDE is detected during `contentrain init`, the MCP config is created aut
 
 | IDE | Config file |
 |-----|-------------|
+| OpenAI Codex | `.codex/config.toml` or `~/.codex/config.toml` |
+| Claude Desktop | `claude_desktop_config.json` |
 | Claude Code | `.mcp.json` (project root) |
 | Cursor | `.cursor/mcp.json` |
 | VS Code | `.vscode/mcp.json` |
@@ -113,6 +132,10 @@ npx contentrain serve --mcpHttp --authToken $(openssl rand -hex 32)
 ```
 
 See the [HTTP Transport guide](/guides/http-transport) for auth, deployment patterns, and programmatic embedding.
+:::
+
+::: tip Studio MCP Cloud
+When the project is connected to Studio, Workspace Settings → MCP Cloud creates a hosted Streamable HTTP endpoint and project-scoped API key. Use that endpoint for Codex, Claude Desktop, Claude Code, Cursor, or any MCP client that should operate the Studio project without a local checkout.
 :::
 
 ### 3. Create a content model

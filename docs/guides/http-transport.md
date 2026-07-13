@@ -75,6 +75,22 @@ The same pattern works for `createGitLabProvider` with a `GitLabProvider`. Both 
 
 ## Deployment patterns
 
+### Studio MCP Cloud
+
+Studio MCP Cloud is the hosted version of the HTTP transport for connected Studio projects. It exposes:
+
+```text
+https://studio.contentrain.io/api/mcp/v1/{projectId}/mcp
+```
+
+Authentication uses a project-scoped MCP Cloud API key:
+
+```http
+Authorization: Bearer <mcp-cloud-key>
+```
+
+Studio handles the gates around that endpoint: project matching, plan access, per-key rate limits, optional tool allowlists, monthly call quotas, usage metering, and branch reconciliation. External clients such as OpenAI Codex, Claude Desktop, Claude Code, Cursor, and custom MCP drivers connect to the same Streamable HTTP shape as a self-hosted `contentrain serve --mcpHttp` server.
+
 ### Studio (hosted agent)
 
 Studio's agent builds a GitHubProvider or GitLabProvider per tenant, points it at the tenant's content repo, and talks to an embedded MCP server over HTTP+LocalProvider-style wiring but with a remote provider. Each session is ephemeral.

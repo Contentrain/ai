@@ -1,20 +1,44 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.Contentrain/contentrain",
-  "description": "Local-first MCP server for AI content governance — models, content, validation, i18n",
+  "title": "Contentrain",
+  "description": "Git-native content governance for AI agents — 19 deterministic tools for models, content, validation, normalize, i18n, and review branches.",
+  "websiteUrl": "https://ai.contentrain.io/packages/mcp",
   "repository": {
     "url": "https://github.com/Contentrain/ai",
-    "source": "github"
+    "source": "github",
+    "subfolder": "packages/mcp"
   },
-  "version": "1.0.6",
+  "version": "1.8.1",
   "packages": [
     {
       "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@contentrain/mcp",
-      "version": "1.0.6",
+      "version": "1.8.1",
       "transport": {
         "type": "stdio"
       }
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://studio.contentrain.io/api/mcp/v1/{project_id}/mcp",
+      "variables": {
+        "project_id": {
+          "description": "Contentrain Studio project ID for the MCP Cloud endpoint.",
+          "isRequired": true
+        }
+      },
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer token using a Contentrain Studio MCP Cloud API key.",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
     }
   ]
 }
