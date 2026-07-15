@@ -51,6 +51,9 @@ export function validateContent(
   }
 }
 
+/** Bounds `items`-inside-`items` nesting; far above any real schema. */
+const MAX_FIELD_DEPTH = 10
+
 function validateField(
   value: unknown,
   def: FieldDef,
@@ -59,9 +62,14 @@ function validateField(
   entryId: string | undefined,
   fieldId: string,
   ctx?: ValidationContext,
+  depth = 0,
 ): ValidationError[] {
   const errors: ValidationError[] = []
   const errCtx = { model: modelId, locale, entry: entryId, field: fieldId }
+
+  if (depth > MAX_FIELD_DEPTH) {
+    return [{ severity: 'error', ...errCtx, message: `${fieldId} exceeds the maximum nesting depth of ${MAX_FIELD_DEPTH}` }]
+  }
 
   if (value !== null && value !== undefined && value !== '') {
     const secretErrors = detectSecrets(value)
@@ -100,13 +108,6 @@ function validateField(
         break
       }
     }
-  }
-
-  if (def.type === 'email' && typeof value === 'string' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-    errors.push({ severity: 'warning', ...errCtx, message: `${fieldId} may not be a valid email` })
-  }
-  if (def.type === 'url' && typeof value === 'string' && !/^https?:\/\/.+/.test(value) && !value.startsWith('/')) {
-    errors.push({ severity: 'warning', ...errCtx, message: `${fieldId} may not be a valid URL` })
   }
 
   if (def.type === 'relation' && def.model) {
@@ -168,66 +169,33 @@ function validateField(
     }
   }
 
-  if (def.type === 'array' && Array.isArray(value) && def.items && typeof def.items === 'string') {
+  // Array items run through `validateField` itself rather than a parallel type
+  // switch. The old switch knew 10 of the 27 field types and checked only
+  // `typeof`, so `min`/`max`/`pattern`/`options` never reached an item and an
+  // `items` given as a FieldDef with a non-object type matched no branch at all —
+  // silently unvalidated, while the type emitter rendered it as a real constraint.
+  // Recursing keeps one rule set for a type wherever it appears.
+  if (def.type === 'array' && Array.isArray(value) && def.items) {
+    const itemDef: FieldDef = typeof def.items === 'string'
+      ? { type: def.items as FieldDef['type'] }
+      : def.items
     for (let i = 0; i < value.length; i++) {
-      errors.push(...validateArrayItemType(value[i], def.items, errCtx, `${fieldId}[${i}]`))
+      // `ctx` is deliberately dropped: `unique` compares an entry against its
+      // siblings, which has no meaning for positions inside one array.
+      errors.push(...validateField(
+        value[i], itemDef, modelId, locale, entryId, `${fieldId}[${i}]`, undefined, depth + 1,
+      ))
     }
   }
 
   if (def.type === 'object' && def.fields && typeof value === 'object' && value !== null && !Array.isArray(value)) {
-    const nested = validateContent(value as Record<string, unknown>, def.fields, modelId, locale, entryId)
-    errors.push(...nested.errors)
-  }
-
-  if (
-    def.type === 'array'
-    && Array.isArray(value)
-    && def.items
-    && typeof def.items === 'object'
-    && def.items.type === 'object'
-    && def.items.fields
-  ) {
-    for (let i = 0; i < value.length; i++) {
-      if (typeof value[i] === 'object' && value[i] !== null) {
-        const nested = validateContent(value[i] as Record<string, unknown>, def.items.fields, modelId, locale, entryId)
-        for (const e of nested.errors) {
-          errors.push({ ...e, field: `${fieldId}[${i}].${e.field}` })
-        }
-      }
+    const nested = validateContent(value as Record<string, unknown>, def.fields, modelId, locale, entryId, ctx)
+    // Qualify the nested path with the parent so an error names where it lives —
+    // `meta.title`, or `blocks[0].title` when this object is an array item.
+    for (const e of nested.errors) {
+      errors.push({ ...e, field: e.field ? `${fieldId}.${e.field}` : fieldId })
     }
   }
 
   return errors
-}
-
-function validateArrayItemType(
-  value: unknown,
-  itemType: string,
-  errCtx: { model: string, locale: string, entry: string | undefined, field: string },
-  fieldPath: string,
-): ValidationError[] {
-  const ctx = { ...errCtx, field: fieldPath }
-  switch (itemType) {
-    case 'string':
-    case 'email':
-    case 'url':
-    case 'slug':
-    case 'image':
-    case 'video':
-    case 'file':
-      if (typeof value !== 'string') return [{ severity: 'error', ...ctx, message: `${fieldPath} must be a string` }]
-      break
-    case 'number':
-    case 'integer':
-    case 'decimal':
-      if (typeof value !== 'number') return [{ severity: 'error', ...ctx, message: `${fieldPath} must be a number` }]
-      if (itemType === 'integer' && !Number.isInteger(value)) {
-        return [{ severity: 'error', ...ctx, message: `${fieldPath} must be an integer` }]
-      }
-      break
-    case 'boolean':
-      if (typeof value !== 'boolean') return [{ severity: 'error', ...ctx, message: `${fieldPath} must be a boolean` }]
-      break
-  }
-  return []
 }
