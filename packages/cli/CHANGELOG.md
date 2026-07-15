@@ -1,5 +1,16 @@
 # contentrain
 
+## 0.7.8
+
+### Patch Changes
+
+- Updated dependencies [d617dab]
+- Updated dependencies [d617dab]
+  - @contentrain/query@7.0.0
+  - @contentrain/mcp@1.11.0
+  - @contentrain/rules@0.6.0
+  - @contentrain/skills@0.6.0
+
 ## 0.7.7
 
 ### Patch Changes
