@@ -39,13 +39,15 @@ Confirm:
 ### 2. Pick the Correct Bulk Operation
 
 - `copy_locale`: clone one locale to another for i18n-enabled `collection`, `singleton`, or `dictionary` models
-- `update_status`: update metadata state for many collection entries
+- `update_status`: update metadata state — many entries at once for `collection`, or the single record of a `singleton`/`dictionary`
 - `delete_entries`: remove many collection entries at once
 
 ### 3. Apply Safety Rules
 
 - never use `copy_locale` on non-i18n models
-- `update_status` and `delete_entries` are collection-only
+- `update_status` takes `entry_ids` for `collection` models and **rejects them** for `singleton`/`dictionary` — those have one meta record per locale, so omit `entry_ids` entirely. Document models are not supported (their meta is keyed by slug).
+- `delete_entries` is collection-only
+- `update_status` rewrites every supported locale unless you pass `locale`. Pass it when restoring one locale's status, or you will change the other's too.
 - confirm entry IDs before delete operations
 - batch only related entries together
 
@@ -68,6 +70,28 @@ Examples:
   "model": "blog-post",
   "entry_ids": ["post_001", "post_002"],
   "status": "in_review"
+}
+```
+
+Scoped to one locale — leaves every other locale's status untouched:
+
+```json
+{
+  "operation": "update_status",
+  "model": "blog-post",
+  "entry_ids": ["post_001"],
+  "status": "published",
+  "locale": "tr"
+}
+```
+
+A singleton or dictionary — one meta record, so no `entry_ids`:
+
+```json
+{
+  "operation": "update_status",
+  "model": "site-settings",
+  "status": "published"
 }
 ```
 

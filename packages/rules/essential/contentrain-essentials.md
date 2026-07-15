@@ -33,6 +33,7 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 - **NEVER** edit `.contentrain/context.json` — MCP writes, agents read
 - **NEVER** include system fields in content data: `id`, `status`, `source`, `updated_by`, `updated_at`, `createdAt`, `updatedAt`
 - **ALWAYS** use MCP tools — do not write `.contentrain/` JSON files directly
+- **Publishing is yours, not MCP's.** `contentrain_content_save` preserves an existing entry's `status`; only a brand-new entry starts at `draft`. To change publish state, call `contentrain_bulk update_status` deliberately — and note that on the CDN a collection entry is delivered only when its status is `published`.
 
 ## MCP Tools
 
