@@ -106,7 +106,7 @@ When working with Contentrain content operations (models, content, normalize, va
 npx oxlint packages/<package>/src/ packages/<package>/tests/
 ```
 - `sort()` → `toSorted()` (immutable)
-- `no-await-in-loop` → use `Promise.all()` for parallel I/O
+- `no-await-in-loop` → use `Promise.all()` for parallel I/O — **but only for reads, or for writes to distinct paths.** Never parallelize a read-modify-write over shared state: each call reads the same snapshot and rewrites the whole file, so all but the last-settling write are silently lost. A sequential `await` loop is correct there; accumulate in memory and write once (see `writeMetaEntries`). This rule applied blindly to `.contentrain/meta/{locale}.json` is what made `contentrain_bulk update_status` persist 1 of N entries while reporting success.
 - No unused imports/variables
 - Fix ALL warnings, not just errors
 
