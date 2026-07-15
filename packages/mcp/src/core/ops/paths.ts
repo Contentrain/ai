@@ -60,14 +60,26 @@ export function documentFilePath(
   }
 }
 
+/**
+ * Content-root-relative meta path.
+ *
+ * `i18n` is in the Pick and `defaultLocale` is required on purpose. A non-i18n
+ * model keeps all its content in one `data.json`, so it has exactly one meta
+ * record — pinned to the default locale. Passing the caller's locale straight
+ * through used to fan meta out across locales for that single content file
+ * (`meta/{id}/tr.json` *and* `meta/{id}/en.json` for one `data.json`), leaving
+ * every reader to guess which file was authoritative.
+ */
 export function metaFilePath(
-  model: Pick<ModelDefinition, 'id' | 'kind'>,
+  model: Pick<ModelDefinition, 'id' | 'kind' | 'i18n'>,
   locale: string,
+  defaultLocale: string,
   slug?: string,
 ): string {
   const base = `.contentrain/meta/${model.id}`
+  const effective = model.i18n ? locale : defaultLocale
   if (model.kind === 'document' && slug) {
-    return `${base}/${slug}/${locale}.json`
+    return `${base}/${slug}/${effective}.json`
   }
-  return `${base}/${locale}.json`
+  return `${base}/${effective}.json`
 }

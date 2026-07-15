@@ -1,5 +1,6 @@
 import { join } from 'node:path'
-import { stat } from 'node:fs/promises'
+import { readdir, stat } from 'node:fs/promises'
+import type { Dirent } from 'node:fs'
 import { simpleGit } from 'simple-git'
 import type { ContentrainConfig, ModelDefinition } from '@contentrain/types'
 import { readConfig } from './config.js'
@@ -240,14 +241,21 @@ export async function runDoctor(
   const modelsDir = join(crDir, 'models')
   if (await pathExists(clientDir) && await pathExists(modelsDir)) {
     try {
-      const [clientStat, modelsStat] = await Promise.all([stat(clientDir), stat(modelsDir)])
-      const fresh = clientStat.mtimeMs >= modelsStat.mtimeMs
-      checks.push({
-        name: 'SDK client',
-        pass: fresh,
-        detail: fresh ? 'Up to date' : 'Stale — run `contentrain generate`',
-        severity: fresh ? undefined : 'warning',
-      })
+      const [clientMtime, modelsMtime] = await Promise.all([
+        newestFileMtime(clientDir),
+        newestFileMtime(modelsDir),
+      ])
+      if (clientMtime === null || modelsMtime === null) {
+        checks.push({ name: 'SDK client', pass: true, detail: 'Could not check' })
+      } else {
+        const fresh = clientMtime >= modelsMtime
+        checks.push({
+          name: 'SDK client',
+          pass: fresh,
+          detail: fresh ? 'Up to date' : 'Stale — run `contentrain generate`',
+          severity: fresh ? undefined : 'warning',
+        })
+      }
     } catch {
       checks.push({ name: 'SDK client', pass: true, detail: 'Could not check' })
     }
@@ -301,6 +309,27 @@ export async function runDoctor(
   }
   if (usage) report.usage = usage
   return report
+}
+
+/**
+ * Newest mtime among the files under `dir`, recursively — null if it holds none.
+ *
+ * Stat the files, never the directory. A directory's mtime only moves when an
+ * entry is added, removed, or renamed inside it: `generate` rewrites the client
+ * files in place, so `.contentrain/client` never moves after the first run,
+ * while a selective sync recreates model files via `git checkout`, which does
+ * move `.contentrain/models`. Comparing the two directories therefore reported
+ * "stale" permanently after any model save.
+ */
+async function newestFileMtime(dir: string): Promise<number | null> {
+  const entries: Dirent[] = await readdir(dir, { withFileTypes: true }).catch(() => [])
+  const mtimes = await Promise.all(entries.map(async (entry) => {
+    const full = join(dir, entry.name)
+    if (entry.isDirectory()) return newestFileMtime(full)
+    return stat(full).then(s => s.mtimeMs, () => null)
+  }))
+  const known = mtimes.filter((m): m is number => m !== null)
+  return known.length > 0 ? Math.max(...known) : null
 }
 
 async function findOrphanContent(projectRoot: string): Promise<string[]> {

@@ -266,7 +266,7 @@ async function validateCollectionModel(
 
   // Orphan meta check
   for (const locale of locales) {
-    const metaRelPath = metaFilePath(model, locale)
+    const metaRelPath = metaFilePath(model, locale, config.locales.default)
     const metaData = await readJsonViaReader<Record<string, EntryMeta>>(reader, metaRelPath)
     const contentData = await readJsonViaReader<Record<string, unknown>>(
       reader,
@@ -312,7 +312,7 @@ async function validateCollectionModel(
           message: `Orphan content: entry "${entryId}" has no metadata`,
         })
         if (fix && projectRoot) {
-          await writeMeta(projectRoot, model, { locale, entryId }, {
+          await writeMeta(projectRoot, model, { locale, entryId, defaultLocale: config.locales.default }, {
             status: 'draft',
             source: 'import',
             updated_by: 'contentrain-mcp',
@@ -321,9 +321,74 @@ async function validateCollectionModel(
         }
       }
     }
+
+    // Publish-state drift. Drafts sitting alongside published entries in the
+    // same collection is the fingerprint of writes that reset status — the
+    // shape that silently emptied collections on the CDN. Advisory only: a
+    // genuine work-in-progress entry is indistinguishable, so this is a call
+    // for the agent to make, not an error. Never auto-fixed — publishing is a
+    // content decision, and MCP does not make those.
+    if (metaData) {
+      const entries = Object.entries(metaData)
+      const draftIds = entries.filter(([, m]) => m.status === 'draft').map(([id]) => id)
+      const publishedCount = entries.filter(([, m]) => m.status === 'published').length
+      if (publishedCount > 0 && draftIds.length > 0) {
+        issues.push({
+          severity: 'notice',
+          model: model.id,
+          locale,
+          message:
+            `Publish-state drift: ${draftIds.length} draft entr${draftIds.length === 1 ? 'y' : 'ies'} `
+            + `alongside ${publishedCount} published in the same collection — [${draftIds.join(', ')}]. `
+            + 'If these were published before, restore them with contentrain_bulk update_status.',
+        })
+      }
+    }
   }
 
+  await checkStrayNonI18nMeta(reader, model, config, issues)
+
   return { entries: entriesChecked, fixed }
+}
+
+/**
+ * Flag meta files a non-i18n model should not have.
+ *
+ * Such a model keeps all content in one `data.json` and therefore exactly one
+ * meta record, at the default locale. Earlier writes derived the meta path from
+ * the caller's locale, so saving under a non-default locale left a second meta
+ * file — and readers disagreed about which was authoritative. Reported rather
+ * than auto-removed: the stray may hold the only `published` status in the
+ * project, so deleting it silently could unpublish content.
+ */
+async function checkStrayNonI18nMeta(
+  reader: RepoReader,
+  model: ModelDefinition,
+  config: ContentrainConfig,
+  issues: ValidationError[],
+): Promise<void> {
+  if (model.i18n) return
+
+  const expected = `${config.locales.default}.json`
+  let files: string[]
+  try {
+    files = await reader.listDirectory(`.contentrain/meta/${model.id}`)
+  } catch {
+    return
+  }
+
+  const strays = files.filter(f => f.endsWith('.json') && f !== expected)
+  if (strays.length === 0) return
+
+  issues.push({
+    severity: 'warning',
+    model: model.id,
+    message:
+      `Meta layout mismatch: "${model.id}" has i18n disabled, so its content lives in a single data.json `
+      + `and its meta belongs at ${expected} alone — but [${strays.join(', ')}] also exist. `
+      + 'Readers may disagree about which file is authoritative. Merge any status you want to keep into '
+      + `${expected}, then remove the extras.`,
+  })
 }
 
 async function validateSingletonModel(
@@ -399,7 +464,7 @@ async function validateSingletonModel(
     }
 
     // Validate schedule fields in singleton meta
-    const singletonMetaData = await readJsonViaReader<EntryMeta>(reader, metaFilePath(model, locale))
+    const singletonMetaData = await readJsonViaReader<EntryMeta>(reader, metaFilePath(model, locale, config.locales.default))
     if (singletonMetaData) {
       validateScheduleFields(singletonMetaData, { model: model.id, locale }, issues)
     }

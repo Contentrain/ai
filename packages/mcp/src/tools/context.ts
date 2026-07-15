@@ -289,9 +289,13 @@ export function registerContextTools(
           },
         },
         i18n_disabled: {
-          description: 'When a model has i18n:false, locale is ignored in file paths.',
+          description:
+            'When a model has i18n:false, locale is ignored in CONTENT paths — but not in meta paths. '
+            + 'The model holds one content file, so it has exactly one meta record, and that record lives '
+            + 'at the default locale. Saving under a non-default locale does not move it.',
           json_pattern: '{content-dir}/data.json (always "data.json", no locale suffix)',
           md_pattern: '{content-dir}/{slug}.md (no locale in path)',
+          meta_pattern: '.contentrain/meta/{model-id}/{default-locale}.json (always the default locale, never "data.json")',
         },
         canonical_serialization: {
           description: 'All JSON files use deterministic serialization for clean git diffs.',

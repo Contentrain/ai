@@ -6,6 +6,7 @@ import { canonicalStringify, serializeMarkdownFrontmatter } from '../serializati
 import { rewriteEntryMedia, rewriteMarkdownMedia } from '../media/media-rewrite.js'
 import type { ContentSaveEntryResult, ContentSavePlan } from './types.js'
 import { contentFilePath, documentFilePath, metaFilePath } from './paths.js'
+import { mergeEntryMeta } from '../meta-manager.js'
 
 interface PlanInput {
   model: ModelDefinition
@@ -54,6 +55,21 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
     }
   }
 
+  /** Absent file and absent entry both mean "no prior meta" — hence undefined, not `{}`. */
+  async function readJsonOrUndefined<T>(path: string): Promise<T | undefined> {
+    try {
+      return JSON.parse(await reader.readFile(path)) as T
+    } catch {
+      return undefined
+    }
+  }
+
+  /** Prior meta for a whole-file (non-collection) meta path, honouring the accumulator. */
+  async function priorMeta(mPath: string): Promise<EntryMeta | undefined> {
+    return (metaByPath.get(mPath) as EntryMeta | undefined)
+      ?? await readJsonOrUndefined<EntryMeta>(mPath)
+  }
+
   const defaultLocale = config.locales.default
 
   for (const entry of entries) {
@@ -73,9 +89,9 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
     switch (model.kind) {
       case 'singleton': {
         const cPath = contentFilePath(model, locale)
-        const mPath = metaFilePath(model, locale)
+        const mPath = metaFilePath(model, locale, defaultLocale)
         contentByPath.set(cPath, normalizeMedia(entry.data))
-        metaByPath.set(mPath, defaultMeta(entry.data))
+        metaByPath.set(mPath, mergeEntryMeta(await priorMeta(mPath), entry.data))
         result.push({ action: 'updated', locale })
         break
       }
@@ -84,7 +100,7 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
         const isNew = !entry.id
         const id = entry.id ?? generateEntryId()
         const cPath = contentFilePath(model, locale)
-        const mPath = metaFilePath(model, locale)
+        const mPath = metaFilePath(model, locale, defaultLocale)
 
         const existing = (contentByPath.get(cPath) as Record<string, unknown> | undefined)
           ?? await readJsonOrEmpty<Record<string, unknown>>(cPath)
@@ -100,7 +116,7 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
 
         const existingMeta = (metaByPath.get(mPath) as Record<string, EntryMeta> | undefined)
           ?? await readJsonOrEmpty<Record<string, EntryMeta>>(mPath)
-        existingMeta[id] = defaultMeta(entry.data)
+        existingMeta[id] = mergeEntryMeta(existingMeta[id], entry.data)
         metaByPath.set(mPath, existingMeta)
 
         result.push({ action, id, locale })
@@ -109,7 +125,7 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
 
       case 'dictionary': {
         const cPath = contentFilePath(model, locale)
-        const mPath = metaFilePath(model, locale)
+        const mPath = metaFilePath(model, locale, defaultLocale)
 
         const existing = (contentByPath.get(cPath) as Record<string, string> | undefined)
           ?? await readJsonOrEmpty<Record<string, string>>(cPath)
@@ -156,7 +172,7 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
         advisories.push(...entryAdvisories)
 
         contentByPath.set(cPath, { ...existing, ...newData })
-        metaByPath.set(mPath, defaultMeta(entry.data))
+        metaByPath.set(mPath, mergeEntryMeta(await priorMeta(mPath), entry.data))
 
         result.push({
           action: 'updated',
@@ -178,7 +194,7 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
         if (!fmData['slug']) fmData['slug'] = slug
 
         const dPath = documentFilePath(model, locale, slug)
-        const mPath = metaFilePath(model, locale, slug)
+        const mPath = metaFilePath(model, locale, defaultLocale, slug)
 
         let existingRaw: string | null = null
         try { existingRaw = await reader.readFile(dPath) }
@@ -189,7 +205,7 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
         // markdown body has its `media/...` image/link targets rewritten too.
         const normalizedBody = mediaBaseUrl ? rewriteMarkdownMedia(bodyContent, mediaBaseUrl) : bodyContent
         markdownChanges.set(dPath, serializeMarkdownFrontmatter(normalizeMedia(fmData), normalizedBody))
-        metaByPath.set(mPath, defaultMeta(entry.data))
+        metaByPath.set(mPath, mergeEntryMeta(await priorMeta(mPath), entry.data))
 
         result.push({ action, slug, locale })
         break
@@ -210,15 +226,4 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
   changes.sort((a, b) => a.path.localeCompare(b.path))
 
   return { changes, result, advisories }
-}
-
-function defaultMeta(data?: Record<string, unknown>): EntryMeta {
-  const meta: EntryMeta = {
-    status: 'draft',
-    source: 'agent',
-    updated_by: 'contentrain-mcp',
-  }
-  if (data?.['publish_at'] !== undefined) meta.publish_at = data['publish_at'] as string
-  if (data?.['expire_at'] !== undefined) meta.expire_at = data['expire_at'] as string
-  return meta
 }

@@ -232,6 +232,35 @@ const t     = await client.dictionary('ui').locale('en').get()
 const doc   = await client.document('docs').locale('en').bySlug('intro')
 ```
 
+### ⚠️ `document()` on the CDN: `all()` has no bodies
+
+`all()` and `bySlug()` return different things, because the CDN stores documents
+in two places:
+
+| Call | Reads | Returns |
+|---|---|---|
+| `all()` / `first()` | `documents/{model}/_index/{locale}.json` | `DocumentIndexEntry<T>` — frontmatter only, **no `body`** |
+| `bySlug(slug)` | `documents/{model}/{slug}/{locale}.json` | `{ frontmatter: T, body, html }` |
+
+Reading `.body` off an `all()` result is a compile error. Fetch bodies explicitly:
+
+```ts
+const q = client.document<GuideSection>('guide-sections').locale('tr')
+
+// Listing: frontmatter is all you need — one request.
+const index = await q.sort('order', 'asc').all()
+index.map(s => s.title)
+
+// Need the prose? One request per document.
+const full = await Promise.all(index.map(s => q.bySlug(s.slug)))
+full.map(d => renderMarkdown(d!.body))
+```
+
+Note the **bundled** client's `document(...).all()` *does* include bodies — it
+reads the content files directly. The two delivery modes genuinely differ here,
+so they no longer share a return type. Code written against bundled delivery
+will not silently render empty on CDN; it will fail to compile instead.
+
 CDN collection queries support extended operators:
 
 ```ts

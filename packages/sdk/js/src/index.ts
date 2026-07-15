@@ -49,6 +49,7 @@ export async function createContentrainClient(
 // CDN client factory — async, HTTP-based
 export { createContentrain } from './cdn/index.js'
 export type { ContentrainCDNConfig, ContentrainCDNClient } from './cdn/index.js'
+export type { DocumentIndexEntry } from './cdn/data-source.js'
 export { ContentrainError } from './cdn/errors.js'
 
 // CDN module re-exports — media, forms, metadata

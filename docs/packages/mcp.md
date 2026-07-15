@@ -124,6 +124,29 @@ The MCP server exposes **24 tools** — 19 core + 5 media — organized by funct
 | `contentrain_apply` | Extract or reuse | Two-phase normalize: extract content or patch source files |
 | `contentrain_bulk` | Batch operations | Bulk locale copy, status updates, and deletes |
 
+### Publish status
+
+Entry status lives in `.contentrain/meta/`, not in content, and it decides CDN
+delivery: a collection entry is served only when its status is `published`.
+
+- **`contentrain_content_save` never changes status.** Editing a field is not a
+  publish decision — an existing entry keeps its `status`, `approved_by`, and
+  `version`. Only a brand-new entry starts at `draft`.
+- **`contentrain_bulk update_status` is the only way to publish.** Pass
+  `entry_ids` for collections; omit them for singletons and dictionaries, which
+  have one meta record per locale. Pass `locale` to scope the change, or every
+  supported locale is rewritten.
+- **`contentrain_validate` flags publish-state drift** — drafts sitting beside
+  published entries in one collection — as a notice. It never auto-fixes it:
+  publishing is a content decision, and MCP does not make those.
+
+::: tip Non-i18n models
+A model with `i18n: false` keeps all content in one `data.json`, so it has
+exactly one meta record — at the **default locale**, never `data.json`. Saving
+under a different locale does not move it. `contentrain_validate` warns when
+stray per-locale meta files exist from older versions.
+:::
+
 ### Media Tools (Provider Media Facet)
 
 A deterministic passthrough to the provider's optional media stack (`RepoProvider.media`) — registered **only when the provider exposes one** (e.g. Studio MCP Cloud). The flow: list assets → pick a `media/...` path → reference it via `contentrain_content_save` (normalized to absolute delivery URLs when `mediaBaseUrl` is set).

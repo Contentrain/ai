@@ -3,7 +3,7 @@ import { validateSlug, validateEntryId, validateLocale, generateEntryId, parseMa
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { contentrainDir, readDir, readJson, readText, writeJson, writeText } from '../util/fs.js'
-import { writeMeta, deleteMeta } from './meta-manager.js'
+import { readMeta, writeMeta, deleteMeta, mergeEntryMeta } from './meta-manager.js'
 import { readModel } from './model-manager.js'
 import type { RepoReader } from './contracts/index.js'
 import { contentDirPath, contentFilePath, documentFilePath } from './ops/paths.js'
@@ -75,6 +75,8 @@ export interface DeleteOpts {
   slug?: string
   locale?: string
   keys?: string[]
+  /** `config.locales.default` — places a non-i18n model's single meta record. */
+  defaultLocale: string
 }
 
 export interface ListOpts {
@@ -83,23 +85,6 @@ export interface ListOpts {
   resolve?: boolean
   limit?: number
   offset?: number
-}
-
-// ─── Default meta ───
-
-function defaultMeta(data?: Record<string, unknown>): EntryMeta {
-  const meta: EntryMeta = {
-    status: 'draft',
-    source: 'agent',
-    updated_by: 'contentrain-mcp',
-  }
-  if (data?.['publish_at'] !== undefined) {
-    meta.publish_at = data['publish_at'] as string
-  }
-  if (data?.['expire_at'] !== undefined) {
-    meta.expire_at = data['expire_at'] as string
-  }
-  return meta
 }
 
 // ─── writeContent ───
@@ -137,7 +122,8 @@ export async function writeContent(
       case 'singleton': {
         const filePath = resolveJsonFilePath(resolveContentDir(projectRoot, model), model, locale)
         await writeJson(filePath, entry.data)
-        await writeMeta(projectRoot, model, { locale }, defaultMeta(entry.data))
+        const prevMeta = await readMeta(projectRoot, model, { locale, defaultLocale }) as EntryMeta | null
+        await writeMeta(projectRoot, model, { locale, defaultLocale }, mergeEntryMeta(prevMeta ?? undefined, entry.data))
         results.push({ action: 'updated', locale })
         break
       }
@@ -158,7 +144,8 @@ export async function writeContent(
         }
 
         await writeJson(filePath, sorted)
-        await writeMeta(projectRoot, model, { locale, entryId: id }, defaultMeta(entry.data))
+        const prevMetaMap = await readMeta(projectRoot, model, { locale, defaultLocale }) as Record<string, EntryMeta> | null
+        await writeMeta(projectRoot, model, { locale, entryId: id, defaultLocale }, mergeEntryMeta(prevMetaMap?.[id], entry.data))
         results.push({ action, id, locale })
         break
       }
@@ -181,7 +168,8 @@ export async function writeContent(
 
         const mdContent = serializeMarkdownFrontmatter(fmData, bodyContent)
         await writeText(docPath, mdContent)
-        await writeMeta(projectRoot, model, { locale, slug }, defaultMeta(entry.data))
+        const prevMeta = await readMeta(projectRoot, model, { locale, slug, defaultLocale }) as EntryMeta | null
+        await writeMeta(projectRoot, model, { locale, slug, defaultLocale }, mergeEntryMeta(prevMeta ?? undefined, entry.data))
         results.push({ action, slug, locale })
         break
       }
@@ -235,7 +223,8 @@ export async function writeContent(
 
         const merged = { ...existing, ...entry.data as Record<string, string> }
         await writeJson(filePath, merged)
-        await writeMeta(projectRoot, model, { locale }, defaultMeta(entry.data))
+        const prevMeta = await readMeta(projectRoot, model, { locale, defaultLocale }) as EntryMeta | null
+        await writeMeta(projectRoot, model, { locale, defaultLocale }, mergeEntryMeta(prevMeta ?? undefined, entry.data))
         results.push({ action: 'updated', locale, ...(advisories.length > 0 ? { advisories } : {}) })
         break
       }
@@ -273,7 +262,7 @@ export async function deleteContent(
       }
 
       for (const loc of locales) {
-        await deleteMeta(projectRoot, model, { locale: loc, entryId: opts.id })
+        await deleteMeta(projectRoot, model, { locale: loc, entryId: opts.id, defaultLocale: opts.defaultLocale })
       }
       break
     }
@@ -310,7 +299,7 @@ export async function deleteContent(
       }
       removed.push(`${model.content_path ?? `content/${model.domain}/${model.id}`}/${opts.slug}`)
 
-      await deleteMeta(projectRoot, model, { slug: opts.slug, locale: opts.locale })
+      await deleteMeta(projectRoot, model, { slug: opts.slug, locale: opts.locale, defaultLocale: opts.defaultLocale })
       break
     }
 
@@ -322,7 +311,7 @@ export async function deleteContent(
       removed.push(model.i18n
         ? `content/${model.domain}/${model.id}/${locale}.json`
         : `content/${model.domain}/${model.id}/data.json`)
-      await deleteMeta(projectRoot, model, { locale: model.i18n ? locale : undefined })
+      await deleteMeta(projectRoot, model, { locale: model.i18n ? locale : undefined, defaultLocale: opts.defaultLocale })
       break
     }
 
@@ -353,7 +342,7 @@ export async function deleteContent(
         removed.push(model.i18n
           ? `content/${model.domain}/${model.id}/${locale}.json`
           : `content/${model.domain}/${model.id}/data.json`)
-        await deleteMeta(projectRoot, model, { locale: model.i18n ? locale : undefined })
+        await deleteMeta(projectRoot, model, { locale: model.i18n ? locale : undefined, defaultLocale: opts.defaultLocale })
       }
       break
     }

@@ -4,7 +4,7 @@ import { mkdtemp, rm, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import type { ModelDefinition, ContentrainConfig } from '@contentrain/types'
 import { writeContent, deleteContent, listContent, parseFrontmatter, serializeFrontmatter } from '../../src/core/content-manager.js'
-import { readJson, readText, contentrainDir } from '../../src/util/fs.js'
+import { readJson, readText, writeJson, contentrainDir } from '../../src/util/fs.js'
 
 let testDir: string
 
@@ -378,6 +378,123 @@ describe('writeContent', () => {
     expect(meta!['status']).toBe('draft')
     expect(meta!['source']).toBe('agent')
     expect(meta!['updated_by']).toBe('contentrain-mcp')
+  })
+
+  // Editing a field is not a publish decision — MCP must never silently
+  // unpublish an entry by rewriting its meta from scratch.
+  describe('meta status preservation', () => {
+    const metaFile = (...segments: string[]) =>
+      join(contentrainDir(testDir), 'meta', ...segments)
+
+    it('keeps a published singleton published across an edit', async () => {
+      await writeContent(testDir, singletonModel, [
+        { locale: 'en', data: { title: 'First' } },
+      ], config)
+      await writeJson(metaFile('hero', 'en.json'), {
+        status: 'published',
+        source: 'human',
+        updated_by: 'someone@example.com',
+        approved_by: 'editor@example.com',
+        version: '3',
+      })
+
+      await writeContent(testDir, singletonModel, [
+        { locale: 'en', data: { title: 'Edited' } },
+      ], config)
+
+      const meta = await readJson<Record<string, unknown>>(metaFile('hero', 'en.json'))
+      expect(meta!['status']).toBe('published')
+      expect(meta!['approved_by']).toBe('editor@example.com')
+      expect(meta!['version']).toBe('3')
+      // Provenance describes *this* write, so it is restamped.
+      expect(meta!['source']).toBe('agent')
+      expect(meta!['updated_by']).toBe('contentrain-mcp')
+    })
+
+    it('keeps a published collection entry published and leaves siblings alone', async () => {
+      await writeContent(testDir, collectionModel, [
+        { id: 'aaa111bbb222', locale: 'en', data: { name: 'Ada' } },
+        { id: 'ccc333ddd444', locale: 'en', data: { name: 'Grace' } },
+      ], config)
+      await writeJson(metaFile('authors', 'en.json'), {
+        aaa111bbb222: { status: 'published', source: 'human', updated_by: 'a@example.com' },
+        ccc333ddd444: { status: 'archived', source: 'human', updated_by: 'b@example.com' },
+      })
+
+      await writeContent(testDir, collectionModel, [
+        { id: 'aaa111bbb222', locale: 'en', data: { name: 'Ada Lovelace' } },
+      ], config)
+
+      const meta = await readJson<Record<string, Record<string, unknown>>>(metaFile('authors', 'en.json'))
+      expect(meta!['aaa111bbb222']!['status']).toBe('published')
+      // Untouched sibling keeps its own status verbatim.
+      expect(meta!['ccc333ddd444']!['status']).toBe('archived')
+      expect(meta!['ccc333ddd444']!['updated_by']).toBe('b@example.com')
+    })
+
+    it('starts a brand-new collection entry as draft', async () => {
+      await writeContent(testDir, collectionModel, [
+        { id: 'eee555fff666', locale: 'en', data: { name: 'Alan' } },
+      ], config)
+
+      const meta = await readJson<Record<string, Record<string, unknown>>>(metaFile('authors', 'en.json'))
+      expect(meta!['eee555fff666']!['status']).toBe('draft')
+    })
+
+    it('keeps a published document published across an edit', async () => {
+      await writeContent(testDir, documentModel, [
+        { slug: 'hello', locale: 'en', data: { title: 'Hello', slug: 'hello', body: 'v1' } },
+      ], config)
+      await writeJson(metaFile('blog-post', 'hello', 'en.json'), {
+        status: 'published',
+        source: 'human',
+        updated_by: 'a@example.com',
+      })
+
+      await writeContent(testDir, documentModel, [
+        { slug: 'hello', locale: 'en', data: { title: 'Hello', slug: 'hello', body: 'v2' } },
+      ], config)
+
+      const meta = await readJson<Record<string, unknown>>(metaFile('blog-post', 'hello', 'en.json'))
+      expect(meta!['status']).toBe('published')
+    })
+
+    it('keeps a published dictionary published across an edit', async () => {
+      await writeContent(testDir, dictionaryModel, [
+        { locale: 'en', data: { 'error.404': 'Not found' } },
+      ], config)
+      await writeJson(metaFile('error-messages', 'en.json'), {
+        status: 'published',
+        source: 'human',
+        updated_by: 'a@example.com',
+      })
+
+      await writeContent(testDir, dictionaryModel, [
+        { locale: 'en', data: { 'error.500': 'Server error' } },
+      ], config)
+
+      const meta = await readJson<Record<string, unknown>>(metaFile('error-messages', 'en.json'))
+      expect(meta!['status']).toBe('published')
+    })
+
+    it('still applies publish_at/expire_at from the incoming write', async () => {
+      await writeContent(testDir, singletonModel, [
+        { locale: 'en', data: { title: 'First' } },
+      ], config)
+      await writeJson(metaFile('hero', 'en.json'), {
+        status: 'published',
+        source: 'human',
+        updated_by: 'a@example.com',
+      })
+
+      await writeContent(testDir, singletonModel, [
+        { locale: 'en', data: { title: 'Edited', publish_at: '2026-01-01T00:00:00Z' } },
+      ], config)
+
+      const meta = await readJson<Record<string, unknown>>(metaFile('hero', 'en.json'))
+      expect(meta!['status']).toBe('published')
+      expect(meta!['publish_at']).toBe('2026-01-01T00:00:00Z')
+    })
   })
 })
 

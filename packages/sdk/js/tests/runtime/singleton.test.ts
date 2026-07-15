@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { SingletonAccessor } from '../../src/runtime/singleton.js'
 
-interface Hero {
+// SingletonAccessor is generic over Record<string, unknown>, so the fixture
+// type needs an index signature — an interface does not have one implicitly.
+type Hero = {
   title: string
   subtitle: string
   cta_text: string

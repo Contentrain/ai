@@ -140,7 +140,7 @@ describe('HttpTransport bundle preload', () => {
     expect(urls).toHaveLength(2)
     expect(urls.every(url => url.includes('_bundle/en.json'))).toBe(true)
     // Second bundle request was conditional
-    expect(mock.mock.calls[1][1]).toMatchObject({
+    expect(mock.mock.calls[1]![1]).toMatchObject({
       headers: expect.objectContaining({ 'If-None-Match': '"b1"' }),
     })
   })

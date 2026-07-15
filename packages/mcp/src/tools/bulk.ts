@@ -5,7 +5,7 @@ import type { ToolProvider } from '../server.js'
 import { readConfig } from '../core/config.js'
 import { readModel } from '../core/model-manager.js'
 import { resolveContentDir, resolveJsonFilePath, deleteContent } from '../core/content-manager.js'
-import { readMeta, writeMeta } from '../core/meta-manager.js'
+import { readMeta, writeMeta, writeMetaEntries } from '../core/meta-manager.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { normalizeOperationError } from '../git/errors.js'
@@ -26,7 +26,8 @@ export function registerBulkTools(
       model: z.string().describe('Model ID'),
       source_locale: z.string().optional().describe('Source locale for copy_locale operation'),
       target_locale: z.string().optional().describe('Target locale for copy_locale operation'),
-      entry_ids: z.array(z.string()).optional().describe('Entry IDs for update_status or delete_entries'),
+      entry_ids: z.array(z.string()).optional().describe('Entry IDs for update_status (collection models) or delete_entries'),
+      locale: z.string().optional().describe('Scope update_status to a single locale (i18n models only; defaults to every supported locale)'),
       status: z.enum(['draft', 'in_review', 'published', 'rejected', 'archived']).optional().describe('New status for update_status'),
       confirm: z.boolean().optional().describe('Must be true for delete_entries'),
     },
@@ -124,18 +125,19 @@ export function registerBulkTools(
 
               if (model.kind === 'collection') {
                 const entries = sourceData as Record<string, Record<string, unknown>>
-                const entryIds = Object.keys(entries)
-                const metaOps = entryIds.map(entryId =>
-                  writeMeta(wt, model, { locale: input.target_locale!, entryId }, {
+                const updates: Record<string, EntryMeta> = {}
+                for (const entryId of Object.keys(entries)) {
+                  updates[entryId] = {
                     status: 'draft',
                     source: 'agent',
                     updated_by: 'contentrain-mcp',
-                  }),
-                )
-                await Promise.all(metaOps)
-                copiedCount = entryIds.length
+                  }
+                }
+                // One read-modify-write for the whole locale file — see writeMetaEntries.
+                const written = await writeMetaEntries(wt, model, { locale: input.target_locale!, defaultLocale: config.locales.default }, updates)
+                copiedCount = written.length
               } else {
-                await writeMeta(wt, model, { locale: input.target_locale! }, {
+                await writeMeta(wt, model, { locale: input.target_locale!, defaultLocale: config.locales.default }, {
                   status: 'draft',
                   source: 'agent',
                   updated_by: 'contentrain-mcp',
@@ -176,12 +178,6 @@ export function registerBulkTools(
         }
 
         case 'update_status': {
-          if (!input.entry_ids || input.entry_ids.length === 0) {
-            return {
-              content: [{ type: 'text' as const, text: JSON.stringify({ error: 'update_status requires entry_ids' }) }],
-              isError: true,
-            }
-          }
           if (!input.status) {
             return {
               content: [{ type: 'text' as const, text: JSON.stringify({ error: 'update_status requires status' }) }],
@@ -189,47 +185,110 @@ export function registerBulkTools(
             }
           }
 
-          if (model.kind !== 'collection') {
+          // Documents keep meta per slug (meta/{model}/{slug}/{locale}.json), so
+          // they need a slug list rather than entry_ids. Rejected until that lands.
+          if (model.kind === 'document') {
             return {
-              content: [{ type: 'text' as const, text: JSON.stringify({ error: 'update_status with entry_ids is only supported for collection models' }) }],
+              content: [{ type: 'text' as const, text: JSON.stringify({
+                error: `Model "${input.model}" is a document model. update_status does not support documents yet — their meta is keyed by slug, not entry ID.`,
+              }) }],
               isError: true,
             }
           }
+
+          // Only collections key meta by entry ID; singletons and dictionaries
+          // have exactly one meta record per locale. Checked before entry_ids so
+          // a singleton gets a usable error instead of a dead end.
+          const keyedByEntry = model.kind === 'collection'
+          if (keyedByEntry && (!input.entry_ids || input.entry_ids.length === 0)) {
+            return {
+              content: [{ type: 'text' as const, text: JSON.stringify({ error: `update_status requires entry_ids for collection model "${input.model}".` }) }],
+              isError: true,
+            }
+          }
+          if (!keyedByEntry && input.entry_ids && input.entry_ids.length > 0) {
+            return {
+              content: [{ type: 'text' as const, text: JSON.stringify({
+                error: `Model "${input.model}" is a ${model.kind} model — it has one meta record per locale, so entry_ids do not apply. Omit entry_ids.`,
+              }) }],
+              isError: true,
+            }
+          }
+
+          if (input.locale && !config.locales.supported.includes(input.locale)) {
+            return {
+              content: [{ type: 'text' as const, text: JSON.stringify({
+                error: `Locale "${input.locale}" is not supported. Supported: [${config.locales.supported.join(', ')}]`,
+              }) }],
+              isError: true,
+            }
+          }
+
+          // A non-i18n model stores one meta record at the default locale, so
+          // fanning out over supported locales would rewrite the same file.
+          const targetLocales = model.i18n
+            ? (input.locale ? [input.locale] : config.locales.supported)
+            : [config.locales.default]
 
           const branch = buildBranchName('bulk', input.model)
           const tx = await createTransaction(projectRoot, branch)
 
           try {
-            let updatedCount = 0
-            const notFound: string[] = []
+            // Counted from what is actually persisted, never from the input.
+            const updatedPerLocale: Record<string, string[]> = {}
+            const foundIds = new Set<string>()
 
             await tx.write(async (wt) => {
-              for (const locale of config.locales.supported) {
-                const metaData = await readMeta(wt, model, { locale }) as Record<string, EntryMeta> | null
+              for (const locale of targetLocales) {
+                if (keyedByEntry) {
+                  const metaData = await readMeta(wt, model, { locale, defaultLocale: config.locales.default }) as Record<string, EntryMeta> | null
 
-                const updateOps: Array<Promise<void>> = []
-                for (const entryId of input.entry_ids!) {
-                  const existing = metaData?.[entryId]
-                  if (existing) {
-                    updateOps.push(writeMeta(wt, model, { locale, entryId }, {
-                      ...existing,
-                      status: input.status!,
-                      updated_by: 'contentrain-mcp',
-                    }))
-                    updatedCount++
-                  } else if (locale === config.locales.default) {
-                    notFound.push(entryId)
+                  const updates: Record<string, EntryMeta> = {}
+                  for (const entryId of input.entry_ids!) {
+                    const existing = metaData?.[entryId]
+                    if (!existing) continue
+                    updates[entryId] = { ...existing, status: input.status!, updated_by: 'contentrain-mcp' }
+                    foundIds.add(entryId)
                   }
-                }
-                await Promise.all(updateOps)
-              }
 
+                  // One read-modify-write for the whole locale file — see writeMetaEntries.
+                  const written = await writeMetaEntries(wt, model, { locale, defaultLocale: config.locales.default }, updates)
+                  if (written.length > 0) updatedPerLocale[locale] = written
+                } else {
+                  const existing = await readMeta(wt, model, { locale, defaultLocale: config.locales.default }) as EntryMeta | null
+                  if (!existing) continue
+                  await writeMeta(wt, model, { locale, defaultLocale: config.locales.default }, {
+                    ...existing,
+                    status: input.status!,
+                    updated_by: 'contentrain-mcp',
+                  })
+                  updatedPerLocale[locale] = [model.id]
+                }
+              }
             })
+
+            const updatedCount = Object.values(updatedPerLocale).reduce((n, ids) => n + ids.length, 0)
+            const notFound = keyedByEntry
+              ? input.entry_ids!.filter(id => !foundIds.has(id))
+              : []
+
+            if (updatedCount === 0) {
+              await tx.cleanup()
+              return {
+                content: [{ type: 'text' as const, text: JSON.stringify({
+                  error: keyedByEntry
+                    ? `No meta records found for the given entry_ids in model "${input.model}" across locales [${targetLocales.join(', ')}]. Nothing was changed.`
+                    : `No meta record found for model "${input.model}" across locales [${targetLocales.join(', ')}]. Nothing was changed.`,
+                  not_found: notFound.length > 0 ? notFound : undefined,
+                }, null, 2) }],
+                isError: true,
+              }
+            }
 
             await tx.commit(`[contentrain] bulk: update status → ${input.status} for ${input.model}`, {
               tool: 'contentrain_bulk',
               model: input.model,
-              entries: input.entry_ids!,
+              ...(keyedByEntry ? { entries: input.entry_ids! } : {}),
             })
             const gitResult = await tx.complete()
 
@@ -237,8 +296,9 @@ export function registerBulkTools(
               content: [{ type: 'text' as const, text: JSON.stringify({
                 status: 'committed',
                 operation: 'update_status',
-                message: `Updated ${updatedCount} meta entries to status "${input.status}".`,
+                message: `Updated ${updatedCount} meta record(s) to status "${input.status}" across locales [${Object.keys(updatedPerLocale).join(', ')}].`,
                 updated: updatedCount,
+                updated_by_locale: updatedPerLocale,
                 not_found: notFound.length > 0 ? notFound : undefined,
                 git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
                 context_updated: true,
@@ -286,7 +346,7 @@ export function registerBulkTools(
 
             await tx.write(async (wt) => {
               for (const entryId of input.entry_ids!) {
-                const removed = await deleteContent(wt, model, { id: entryId })
+                const removed = await deleteContent(wt, model, { id: entryId, defaultLocale: config.locales.default })
                 allRemoved.push(...removed)
               }
 

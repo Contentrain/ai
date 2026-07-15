@@ -11,6 +11,11 @@ export interface ContentDeleteInput {
   slug?: string
   locale?: string
   keys?: string[]
+  /**
+   * `config.locales.default` — where a non-i18n model's single meta record
+   * lives. Required to resolve meta paths; see `metaFilePath`.
+   */
+  defaultLocale: string
 }
 
 export type ContentDeletePlan = OpPlan<string[]>
@@ -83,7 +88,9 @@ export async function planContentDelete(
       }
 
       for (const loc of locales) {
-        const mPath = metaFilePath(model, loc)
+        // For a non-i18n model `loc` is the pseudo-locale "data" (discovered from
+        // data.json); metaFilePath maps it onto the default locale regardless.
+        const mPath = metaFilePath(model, loc, input.defaultLocale)
         const meta = await tryReadJson<Record<string, EntryMeta>>(reader, mPath)
         if (!meta || !(input.id in meta)) continue
         delete meta[input.id]
@@ -108,8 +115,10 @@ export async function planContentDelete(
         : `content/${model.domain}/${model.id}/data.json`)
 
       if (model.i18n) {
-        changes.push({ path: metaFilePath(model, locale), content: null })
+        changes.push({ path: metaFilePath(model, locale, input.defaultLocale), content: null })
       } else {
+        // Removing data.json leaves a non-i18n model with no content at all, so
+        // every meta file under it goes — including strays left by older writes.
         await pushAllMetaForModel(reader, model.id, changes)
       }
       break
@@ -140,7 +149,7 @@ export async function planContentDelete(
           ? `content/${model.domain}/${model.id}/${locale}.json`
           : `content/${model.domain}/${model.id}/data.json`)
         if (model.i18n) {
-          changes.push({ path: metaFilePath(model, locale), content: null })
+          changes.push({ path: metaFilePath(model, locale, input.defaultLocale), content: null })
         } else {
           await pushAllMetaForModel(reader, model.id, changes)
         }

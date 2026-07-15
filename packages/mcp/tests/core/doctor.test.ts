@@ -148,6 +148,49 @@ describe('runDoctor', () => {
     expect(sdk?.pass).toBe(false)
     expect(sdk?.severity).toBe('warning')
   })
+
+  // `generate` rewrites the client files in place, which never moves the client
+  // directory's own mtime — so a directory-vs-directory comparison stayed stale
+  // forever once a model save had bumped .contentrain/models.
+  it('clears the stale warning after an in-place regenerate', async () => {
+    await seedMinimalProject(testDir)
+    const clientDir = join(testDir, '.contentrain', 'client')
+    await mkdir(join(clientDir, 'data'), { recursive: true })
+    await writeFileSafe(join(clientDir, 'index.mjs'), '// generated\n')
+    await writeFileSafe(join(clientDir, 'data', 'posts.mjs'), 'export default {}\n')
+
+    await new Promise(r => setTimeout(r, 20))
+    await writeFileSafe(join(testDir, '.contentrain', 'models', 'new-model.json'), JSON.stringify({
+      id: 'new-model', name: 'New', kind: 'singleton', domain: 'marketing', fields: {},
+    }))
+    expect((await runDoctor(testDir)).checks.find(c => c.name === 'SDK client')?.pass).toBe(false)
+
+    // Re-run generate: same files, new contents. The directory mtime does not move.
+    await new Promise(r => setTimeout(r, 20))
+    await writeFileSafe(join(clientDir, 'index.mjs'), '// regenerated\n')
+
+    const sdk = (await runDoctor(testDir)).checks.find(c => c.name === 'SDK client')
+    expect(sdk?.pass).toBe(true)
+    expect(sdk?.detail).toBe('Up to date')
+  })
+
+  it('treats a nested data file as evidence of a fresh client', async () => {
+    await seedMinimalProject(testDir)
+    const clientDir = join(testDir, '.contentrain', 'client')
+    await mkdir(join(clientDir, 'data'), { recursive: true })
+    await writeFileSafe(join(clientDir, 'index.mjs'), '// generated\n')
+
+    await new Promise(r => setTimeout(r, 20))
+    await writeFileSafe(join(testDir, '.contentrain', 'models', 'new-model.json'), JSON.stringify({
+      id: 'new-model', name: 'New', kind: 'singleton', domain: 'marketing', fields: {},
+    }))
+
+    // Only a nested emitted file is newer — the check must still see it.
+    await new Promise(r => setTimeout(r, 20))
+    await writeFileSafe(join(clientDir, 'data', 'new-model.mjs'), 'export default {}\n')
+
+    expect((await runDoctor(testDir)).checks.find(c => c.name === 'SDK client')?.pass).toBe(true)
+  })
 })
 
 describe('runDoctor — Remote branches check', () => {
