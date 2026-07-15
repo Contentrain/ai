@@ -564,10 +564,138 @@ function checkMinMax(value: unknown, fieldDef: FieldDef): string | null {
   return null
 }
 
+// ─── Semantic type validation ───
+
+/** Hex (#rgb/#rrggbb/#rrggbbaa), rgb()/rgba(), hsl()/hsla(), or a bare CSS keyword. */
+const COLOR_PATTERN = /^(#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})|(?:rgb|hsl)a?\([^)]*\)|[a-zA-Z]+)$/
+/** Deliberately loose: digits, spaces, and the usual separators, 4-20 digits total. */
+const PHONE_PATTERN = /^\+?[\d\s().-]{4,}$/
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+
+function isParsableDate(value: string): boolean {
+  return !Number.isNaN(new Date(value).getTime())
+}
+
+/**
+ * Rules a field type implies beyond its runtime `typeof`.
+ *
+ * Severity follows one rule: a check that is *definitional* is an error — a `slug`
+ * that does not match `SLUG_PATTERN` is not a slug. A check that is a *heuristic* is
+ * a warning, because the pattern is an approximation and a legitimate value may sit
+ * outside it (international phone formats, CSS colour keywords).
+ *
+ * `rating` is deliberately absent: its scale is never declared, so any range here
+ * would be invented. Declare `min`/`max` on the field instead.
+ *
+ * Returns `[]` for types whose only contract is their `typeof` (`string`, `text`,
+ * `code`, `icon`, `markdown`, `richtext`, `number`, `decimal`, `boolean`, media).
+ */
+export function validateSemanticType(value: unknown, type: FieldType): ValidationError[] {
+  if (typeof value === 'number') {
+    if (type === 'integer' && !Number.isInteger(value)) {
+      return [{ severity: 'error', message: `Value ${value} is not an integer` }]
+    }
+    if (type === 'percent' && (value < 0 || value > 100)) {
+      return [{ severity: 'error', message: `Percent ${value} is outside 0-100` }]
+    }
+    return []
+  }
+
+  if (typeof value !== 'string' || value === '') return []
+
+  switch (type) {
+    case 'slug': {
+      const err = validateSlug(value)
+      return err ? [{ severity: 'error', message: err }] : []
+    }
+    case 'date':
+      return DATE_PATTERN.test(value) && isParsableDate(value)
+        ? []
+        : [{ severity: 'error', message: `Invalid date "${value}": must be YYYY-MM-DD` }]
+    case 'datetime':
+      return isParsableDate(value)
+        ? []
+        : [{ severity: 'error', message: `Invalid datetime "${value}": must be an ISO 8601 date-time` }]
+    case 'email':
+      return EMAIL_PATTERN.test(value)
+        ? []
+        : [{ severity: 'warning', message: `"${value}" may not be a valid email` }]
+    case 'url':
+      return /^https?:\/\/.+/.test(value) || value.startsWith('/')
+        ? []
+        : [{ severity: 'warning', message: `"${value}" may not be a valid URL` }]
+    case 'color':
+      return COLOR_PATTERN.test(value)
+        ? []
+        : [{ severity: 'warning', message: `"${value}" may not be a valid color (expected hex, rgb(), hsl() or a keyword)` }]
+    case 'phone':
+      return PHONE_PATTERN.test(value) && (value.match(/\d/g)?.length ?? 0) >= 4
+        ? []
+        : [{ severity: 'warning', message: `"${value}" may not be a valid phone number` }]
+    default:
+      return []
+  }
+}
+
+/** Media field types — the ones whose value is a path/URL to an asset. */
+const MEDIA_TYPES = new Set<FieldType>(['image', 'video', 'file'])
+
+export function isMediaType(type: FieldType): boolean {
+  return MEDIA_TYPES.has(type)
+}
+
+/** Extensions we can name a MIME type for. Deliberately small — this is a sniff. */
+const EXTENSION_MIME: Record<string, string> = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
+  webp: 'image/webp', avif: 'image/avif', svg: 'image/svg+xml', ico: 'image/x-icon',
+  mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime',
+  pdf: 'application/pdf', zip: 'application/zip', json: 'application/json',
+  csv: 'text/csv', txt: 'text/plain',
+}
+
+/**
+ * Check a media value's file extension against an `accept` list.
+ *
+ * This is an approximation and says so: the value is a path or URL, so the real
+ * MIME type is only knowable where the bytes are — the provider, at ingest
+ * (`provider.ts:MediaProvider.ingest` owns that policy). An extension can lie, and
+ * an unknown extension is not evidence of a violation. Hence: warning, never error,
+ * and silence when we cannot tell.
+ *
+ * `accept` follows the HTML input syntax: `image/jpeg`, `image/*`, `.jpg`, comma-separated.
+ */
+export function validateAccept(value: string, accept: string): ValidationError[] {
+  const path = value.split('?')[0]?.split('#')[0] ?? value
+  const ext = path.split('.').pop()?.toLowerCase()
+  if (!ext || ext === path.toLowerCase()) return []
+
+  const mime = EXTENSION_MIME[ext]
+  const patterns = accept.split(',').map(a => a.trim().toLowerCase()).filter(Boolean)
+  if (patterns.length === 0) return []
+
+  const matches = patterns.some((p) => {
+    if (p.startsWith('.')) return p.slice(1) === ext
+    if (p.endsWith('/*')) return mime ? mime.startsWith(p.slice(0, -1)) : false
+    return mime === p
+  })
+  if (matches) return []
+
+  // An extension we have no MIME for is not evidence of a violation.
+  if (!mime && !patterns.some(p => p.startsWith('.'))) return []
+
+  return [{
+    severity: 'warning',
+    message: `File extension ".${ext}" does not match accept "${accept}" (extension check — the provider enforces the real MIME type at ingest)`,
+  }]
+}
+
 /**
  * Validate a field value against its FieldDef schema.
- * Checks: required, type match, min/max, pattern, select options.
- * Does NOT check: secrets (use detectSecrets), uniqueness (stateful), relations (I/O).
+ * Checks: required, type match, semantic type rules, min/max, pattern, select
+ * options, and `accept` on media fields (by extension).
+ * Does NOT check: secrets (use detectSecrets), uniqueness (stateful), relations (I/O),
+ * or `maxSize` — byte length is not knowable from a stored path.
  */
 export function validateFieldValue(value: unknown, fieldDef: FieldDef): ValidationError[] {
   const issues: ValidationError[] = []
@@ -582,6 +710,12 @@ export function validateFieldValue(value: unknown, fieldDef: FieldDef): Validati
   if (!fieldTypeMatches(value, fieldDef)) {
     issues.push({ severity: 'error', message: `Type mismatch: expected ${fieldDef.type}, got ${typeof value}` })
     return issues
+  }
+
+  issues.push(...validateSemanticType(value, fieldDef.type))
+
+  if (fieldDef.accept && isMediaType(fieldDef.type) && typeof value === 'string') {
+    issues.push(...validateAccept(value, fieldDef.accept))
   }
 
   const minMaxErr = checkMinMax(value, fieldDef)
