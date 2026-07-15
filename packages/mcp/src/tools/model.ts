@@ -47,7 +47,7 @@ export function registerModelTools(
         }
       }
 
-      const errors = validateModel(input)
+      const { errors, warnings: schemaWarnings } = validateModel(input)
       if (errors.length > 0) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Validation failed', details: errors }) }],
@@ -148,12 +148,18 @@ export function registerModelTools(
           action,
           model: input.id,
           validation: { valid: true, errors: [] },
+          // Constraints the schema accepts but MCP does not enforce, said out loud
+          // rather than left for the author to discover in production.
+          ...(schemaWarnings.length > 0 ? { schema_warnings: schemaWarnings } : {}),
           git: { branch, action: workflowAction, commit: commitSha, ...(sync ? { sync } : {}) },
           context_updated: true,
           content_path: contentPath + '/',
           ...(displayPath ? { example_file: displayPath } : {}),
           ...(importSnippet ? { import_snippet: importSnippet } : {}),
-          next_steps: ['Add content with contentrain_content_save'],
+          next_steps: [
+            ...(schemaWarnings.length > 0 ? ['REVIEW: see schema_warnings — some declared constraints are not enforced by MCP'] : []),
+            'Add content with contentrain_content_save',
+          ],
         }, null, 2) }],
       }
     },
