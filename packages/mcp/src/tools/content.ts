@@ -266,6 +266,7 @@ export function registerContentTools(
           slug: input.slug,
           locale: input.locale,
           keys: input.keys,
+          defaultLocale: config.locales.default,
         })
       } catch (error) {
         return {
