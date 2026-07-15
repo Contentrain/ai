@@ -114,6 +114,22 @@ const t = await client.dictionary('ui').locale('en').get()
 const doc = await client.document('docs').locale('en').bySlug('intro')
 ```
 
+### CDN `document()` — `all()` returns no bodies
+
+The CDN splits documents in two: `all()`/`first()` read the model's `_index`
+(frontmatter only), `bySlug()` reads the per-slug document (`{ frontmatter, body,
+html }`). Reading `.body` off an `all()` result is a compile error — fetch it
+with `bySlug()`.
+
+```ts
+const q = client.document<GuideSection>('guide-sections').locale('tr')
+const index = await q.sort('order', 'asc').all()   // titles, slugs, order — no body
+const full = await Promise.all(index.map(s => q.bySlug(s.slug)))  // bodies
+```
+
+The bundled runtime's `all()` *does* include bodies. Do not assume code that
+works bundled behaves the same on CDN.
+
 ### CDN Collection Query Operators
 
 | Operator | Example | Description |

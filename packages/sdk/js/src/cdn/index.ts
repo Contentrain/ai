@@ -65,7 +65,7 @@ export function createContentrain(config: ContentrainCDNConfig) {
 
 // Re-exports
 export { ContentrainError } from './errors.js'
-export type { CollectionDataSource, SingletonDataSource, DictionaryDataSource, DocumentDataSource } from './data-source.js'
+export type { CollectionDataSource, SingletonDataSource, DictionaryDataSource, DocumentDataSource, DocumentIndexEntry } from './data-source.js'
 export { HttpTransport } from './http-transport.js'
 export type { TransportConfig } from './http-transport.js'
 export { CdnCollectionQuery } from './collection-query.js'

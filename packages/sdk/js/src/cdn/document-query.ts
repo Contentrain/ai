@@ -1,4 +1,4 @@
-import type { DocumentDataSource } from './data-source.js'
+import type { DocumentDataSource, DocumentIndexEntry } from './data-source.js'
 import type { WhereOp, WhereClause } from '../shared/where.js'
 import { applyWhere } from '../shared/where.js'
 
@@ -30,7 +30,13 @@ export class CdnDocumentQuery<T extends object> {
     return this
   }
 
-  async all(): Promise<T[]> {
+  /**
+   * Every entry's frontmatter, from the model's `_index`.
+   *
+   * Bodies are not included — fetch one with {@link bySlug}. See
+   * {@link DocumentIndexEntry}.
+   */
+  async all(): Promise<DocumentIndexEntry<T>[]> {
     let items = await this._source.getIndex(this._locale)
 
     for (const clause of this._filters) {
@@ -58,11 +64,12 @@ export class CdnDocumentQuery<T extends object> {
     return items.length
   }
 
-  async first(): Promise<T | undefined> {
+  async first(): Promise<DocumentIndexEntry<T> | undefined> {
     const items = await this.all()
     return items[0]
   }
 
+  /** The full document: frontmatter plus its rendered body. */
   async bySlug(slug: string): Promise<{ frontmatter: T; body: string; html: string } | null> {
     return this._source.getBySlug(slug, this._locale)
   }

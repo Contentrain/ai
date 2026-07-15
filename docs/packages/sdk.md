@@ -425,6 +425,34 @@ const t     = await client.dictionary('ui').locale('en').get()
 const doc   = await client.document('docs').locale('en').bySlug('intro')
 ```
 
+### CDN Documents — `all()` has no bodies
+
+The CDN stores documents in two places, so `all()` and `bySlug()` return
+different things:
+
+| Call | Reads | Returns |
+|---|---|---|
+| `all()` / `first()` | `documents/{model}/_index/{locale}.json` | `DocumentIndexEntry<T>` — frontmatter only, **no `body`** |
+| `bySlug(slug)` | `documents/{model}/{slug}/{locale}.json` | `{ frontmatter: T, body, html }` |
+
+```ts
+const q = client.document<GuideSection>('guide-sections').locale('tr')
+
+// Listing: frontmatter only — one request.
+const index = await q.sort('order', 'asc').all()
+
+// Need the prose? One request per document.
+const full = await Promise.all(index.map(s => q.bySlug(s.slug)))
+full.map(d => renderMarkdown(d!.body))
+```
+
+::: warning The bundled client differs
+The local `#contentrain` client's `document(...).all()` **does** include bodies —
+it reads the content files directly. Reading `.body` off a CDN `all()` result is
+a compile error, so code written against bundled delivery fails to build rather
+than silently rendering empty pages after a CDN switch.
+:::
+
 ### CDN Collection Operators
 
 ```ts

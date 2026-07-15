@@ -1,5 +1,5 @@
 import { ContentrainError } from './errors.js'
-import type { CollectionDataSource, SingletonDataSource, DictionaryDataSource, DocumentDataSource } from './data-source.js'
+import type { CollectionDataSource, SingletonDataSource, DictionaryDataSource, DocumentDataSource, DocumentIndexEntry } from './data-source.js'
 
 interface CacheEntry {
   data: unknown
@@ -166,7 +166,8 @@ export class HttpTransport {
 
   document<T>(modelId: string): DocumentDataSource<T> {
     return {
-      getIndex: (locale) => this.fetch<T[]>(`documents/${modelId}/_index/${locale}.json`),
+      // `_index` carries frontmatter only — the body is in the per-slug document.
+      getIndex: (locale) => this.fetch<DocumentIndexEntry<T>[]>(`documents/${modelId}/_index/${locale}.json`),
       getBySlug: (slug, locale) => this.fetch(`documents/${modelId}/${slug}/${locale}.json`),
     }
   }
