@@ -1,10 +1,12 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
+import type { ValidationError } from '@contentrain/types'
 import type { ToolProvider } from '../server.js'
 import { readConfig, readVocabulary } from '../core/config.js'
 import { readModel } from '../core/model-manager.js'
 import { listContent } from '../core/content-manager.js'
 import { planContentDelete, planContentSave } from '../core/ops/index.js'
+import type { ContentSaveEntryResult } from '../core/ops/types.js'
 import { LocalProvider } from '../providers/local/index.js'
 import { buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
@@ -141,6 +143,35 @@ export function registerContentTools(
         .map(r => r.id ?? r.slug ?? r.locale)
         .filter((v): v is string => Boolean(v))
 
+      // Validate BEFORE committing. This used to run after the commit and only
+      // report, so an invalid value landed in git — and was auto-merged — while
+      // the response still said `status: "committed"` and buried the problem in a
+      // next_steps string. The OverlayReader layers the pending changes over the
+      // provider, so it needs nothing from the commit.
+      const validationResult = await validateProject(
+        new OverlayReader(provider, plan.changes),
+        { model: input.model },
+      )
+
+      // Only this save's own entries are fatal. validateProject checks the whole
+      // model, so an unrelated pre-existing error elsewhere in it must not block
+      // a caller who is writing something valid — they may not even be able to
+      // fix it. Everything else stays in the response as context.
+      const blocking = validationResult.issues.filter(
+        i => i.severity === 'error' && touchesSavedEntries(i, plan.result),
+      )
+
+      if (blocking.length > 0) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: 'Validation failed — nothing was written.',
+            issues: blocking.map(describeIssue),
+            hint: 'Fix the values and call contentrain_content_save again. Nothing was committed, so there is no branch to clean up.',
+          }, null, 2) }],
+          isError: true,
+        }
+      }
+
       const branch = buildBranchName('content', input.model)
       const message = `[contentrain] content: ${input.model}`
       const contextPayload = {
@@ -173,19 +204,14 @@ export function registerContentTools(
         }
       }
 
-      // Post-save validation — runs against an OverlayReader that layers the
-      // just-saved changes on top of the provider's base view. This validates
-      // the committed state for BOTH providers and BOTH workflow modes. The
-      // old local path validated `projectRoot` (the developer working tree),
-      // which in review mode (or before selectiveSync) had not yet received the
-      // feature-branch files — producing false "locale file missing" errors for
-      // content that was just created. #7
-      const validationResult = await validateProject(
-        new OverlayReader(provider, plan.changes),
-        { model: input.model },
-      )
-
       const allAdvisories = plan.result.flatMap(r => r.advisories ?? [])
+
+      // Warnings do not block — they are heuristics (a colour that may not parse,
+      // an extension that may contradict `accept`), and a legitimate value can sit
+      // outside an approximate pattern. They ride along in the response instead.
+      const warnings = validationResult.issues
+        .filter(i => i.severity === 'warning' && touchesSavedEntries(i, plan.result))
+        .map(i => `${i.field ?? i.locale}: ${i.message}`)
 
       return {
         content: [{ type: 'text' as const, text: JSON.stringify({
@@ -197,14 +223,12 @@ export function registerContentTools(
             advisories: allAdvisories,
             advisory_note: 'Save succeeded. Review these warnings and consider consolidating duplicate values.',
           } : {}),
-          validation: {
-            valid: validationResult.valid,
-            errors: validationResult.issues.filter(i => i.severity === 'error').map(i => i.message),
-          },
+          ...(warnings.length > 0 ? { warnings } : {}),
+          validation: { valid: true, errors: [] },
           context_updated: true,
           next_steps: [
             ...(allAdvisories.length > 0 ? ['ADVISORY: Duplicate values detected — review advisories above'] : []),
-            ...(!validationResult.valid ? ['WARNING: Content has validation errors — run contentrain_validate for details'] : []),
+            ...(warnings.length > 0 ? ['REVIEW: see warnings above — the save was not blocked by them'] : []),
             ...(model.kind === 'collection'
               ? ['Use contentrain_content_list to verify', 'Add more entries or publish']
               : ['Use contentrain_content_list to verify']),
@@ -380,4 +404,40 @@ export function registerContentTools(
       }
     },
   )
+}
+
+/** Trim a validation issue to the fields that locate it, dropping empty ones. */
+function describeIssue(issue: ValidationError): Record<string, string> {
+  const out: Record<string, string> = {}
+  if (issue.entry) out['entry'] = issue.entry
+  if (issue.slug) out['slug'] = issue.slug
+  if (issue.locale) out['locale'] = issue.locale
+  if (issue.field) out['field'] = issue.field
+  out['message'] = issue.message
+  return out
+}
+
+/**
+ * Does a validation issue belong to one of the entries this save is writing?
+ *
+ * The write gate blocks on errors, but `validateProject` inspects the whole model.
+ * Without this filter, a pre-existing bad entry somewhere else in the model would
+ * block an unrelated — and perfectly valid — save, leaving the caller stuck behind
+ * a problem they did not create and may not be able to fix.
+ *
+ * Matching is by identity: entry ID for collections, slug for documents, and
+ * locale alone for singletons and dictionaries, which have one record per locale.
+ */
+function touchesSavedEntries(
+  issue: { entry?: string, slug?: string, locale?: string },
+  results: ContentSaveEntryResult[],
+): boolean {
+  return results.some((r) => {
+    if (issue.locale && r.locale && issue.locale !== r.locale) return false
+    if (r.id) return issue.entry === r.id
+    if (r.slug) return issue.slug === r.slug
+    // Singleton / dictionary: the locale is the whole identity, and an issue with
+    // no entry or slug is about the record itself.
+    return !issue.entry && !issue.slug
+  })
 }

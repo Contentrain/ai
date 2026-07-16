@@ -672,12 +672,30 @@ async function validateDocumentModel(
   // per-locale orphan/parity warnings. Iterate just the default locale. #8/Y3
   const locales = model.i18n ? config.locales.supported : [config.locales.default]
 
+  // Read every document once up front and keep its frontmatter per locale.
+  // `unique` compares an entry against its siblings, so it needs the whole set —
+  // validating one file at a time is why `unique` was silently a no-op for
+  // documents, which is exactly where every shipped template declares it.
+  const rawByKey = new Map<string, string>()
+  const frontmatterByLocale: Record<string, Record<string, Record<string, unknown>>> = {}
+  for (const slug of slugs) {
+    if (slug.startsWith('.')) continue
+    for (const locale of locales) {
+      const raw = await readTextViaReader(reader, documentFilePath(model, locale, slug))
+      if (!raw) continue
+      rawByKey.set(`${slug} ${locale}`, raw)
+      const { frontmatter } = parseFrontmatter(raw)
+      frontmatterByLocale[locale] ??= {}
+      frontmatterByLocale[locale][slug] = frontmatter
+    }
+  }
+
   for (const slug of slugs) {
     if (slug.startsWith('.')) continue
 
     for (const locale of locales) {
       const filePath = documentFilePath(model, locale, slug)
-      const raw = await readTextViaReader(reader, filePath)
+      const raw = rawByKey.get(`${slug} ${locale}`) ?? null
 
       if (!raw) {
         if (model.i18n) {
@@ -731,6 +749,10 @@ async function validateDocumentModel(
           fieldsWithoutBody,
           model.id,
           locale,
+          undefined,
+          // Siblings in the same locale, so `unique` has something to compare
+          // against. Keyed by slug — a document's identity is its slug.
+          { allEntries: frontmatterByLocale[locale] ?? {}, currentEntryId: slug },
         )
         for (const err of entryResult.errors) {
           issues.push({ ...err, slug })

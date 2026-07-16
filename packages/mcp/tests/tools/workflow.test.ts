@@ -89,19 +89,34 @@ describe('contentrain_validate', () => {
     expect(branches.all).toContain('contentrain')
   })
 
+  /**
+   * Write content straight to the working tree, bypassing content_save.
+   *
+   * content_save now refuses to commit content with validation errors, so the
+   * only way an invalid entry exists is if it predates the gate or was
+   * hand-edited. These fixtures reproduce exactly that: the gate stops *new*
+   * problems, it does not retroactively clean a repository, so
+   * `contentrain_validate` must still report the old ones.
+   */
+  async function plantContent(
+    domain: string,
+    model: string,
+    perLocale: Record<string, Record<string, unknown>>,
+  ): Promise<void> {
+    for (const [locale, data] of Object.entries(perLocale)) {
+      await writeJson(join(testDir, '.contentrain', 'content', domain, model, `${locale}.json`), data)
+    }
+  }
+
   it('detects required field missing', async () => {
     client = await createModel(client, 'authors', 'collection', 'blog', {
       name: { type: 'string', required: true },
       bio: { type: 'text' },
     })
 
-    // Save content with missing required field
-    await client.callTool({
-      name: 'contentrain_content_save',
-      arguments: {
-        model: 'authors',
-        entries: [{ id: 'author-001', locale: 'en', data: { bio: 'A developer' } }],
-      },
+    await plantContent('blog', 'authors', {
+      en: { 'author-001': { bio: 'A developer' } },
+      tr: { 'author-001': { bio: 'A developer' } },
     })
 
     client = await createClient(testDir)
@@ -134,13 +149,9 @@ describe('contentrain_validate', () => {
       category: { type: 'relation', model: 'categories' },
     })
 
-    // Save post with nonexistent category reference
-    await client.callTool({
-      name: 'contentrain_content_save',
-      arguments: {
-        model: 'posts',
-        entries: [{ id: 'post-001', locale: 'en', data: { title: 'My Post', category: 'nonexistent-cat' } }],
-      },
+    await plantContent('blog', 'posts', {
+      en: { 'post-001': { title: 'My Post', category: 'nonexistent-cat' } },
+      tr: { 'post-001': { title: 'My Post', category: 'nonexistent-cat' } },
     })
 
     client = await createClient(testDir)
@@ -197,15 +208,10 @@ describe('contentrain_validate', () => {
       token: { type: 'string' },
     })
 
-    await client.callTool({
-      name: 'contentrain_content_save',
-      arguments: {
-        model: 'settings',
-        entries: [
-          { locale: 'en', data: { api_endpoint: 'https://api.example.com', token: 'sk_live_abc123secret' } },
-          { locale: 'tr', data: { api_endpoint: 'https://api.example.com', token: 'sk_live_abc123secret' } },
-        ],
-      },
+    // A singleton stores one flat object per locale — no entry-id keying.
+    await plantContent('system', 'settings', {
+      en: { api_endpoint: 'https://api.example.com', token: 'sk_live_abc123secret' },
+      tr: { api_endpoint: 'https://api.example.com', token: 'sk_live_abc123secret' },
     })
 
     client = await createClient(testDir)
@@ -230,15 +236,9 @@ describe('contentrain_validate', () => {
       email: { type: 'string', required: true, pattern: '^[^@]+@example\\\\.com$' },
     })
 
-    await client.callTool({
-      name: 'contentrain_content_save',
-      arguments: {
-        model: 'authors',
-        entries: [
-          { id: 'author-001', locale: 'en', data: { email: 'alice@outside.com' } },
-          { id: 'author-001', locale: 'tr', data: { email: 'alice@outside.com' } },
-        ],
-      },
+    await plantContent('blog', 'authors', {
+      en: { 'author-001': { email: 'alice@outside.com' } },
+      tr: { 'author-001': { email: 'alice@outside.com' } },
     })
 
     client = await createClient(testDir)
@@ -505,16 +505,24 @@ describe('contentrain_validate', () => {
       },
     })
 
+    // content_save now refuses to write an entry with a missing required nested
+    // field, so the invalid state has to be planted the way a legacy project or a
+    // hand-edit would produce it: valid save first, then corrupt the file.
     await client.callTool({
       name: 'contentrain_content_save',
       arguments: {
         model: 'pages',
         entries: [
-          { id: 'page-a', locale: 'en', data: { seo: {} } },
-          { id: 'page-a', locale: 'tr', data: { seo: {} } },
+          { id: 'page-a', locale: 'en', data: { seo: { title: 'Fine' } } },
+          { id: 'page-a', locale: 'tr', data: { seo: { title: 'Fine' } } },
         ],
       },
     })
+
+    for (const locale of ['en', 'tr']) {
+      const path = join(testDir, '.contentrain', 'content', 'marketing', 'pages', `${locale}.json`)
+      await writeJson(path, { 'page-a': { seo: {} } })
+    }
 
     client = await createClient(testDir)
 
@@ -525,8 +533,10 @@ describe('contentrain_validate', () => {
 
     const data = parseResult(result)
     const issues = data['issues'] as Array<Record<string, unknown>>
+    // The path is qualified by its parent — a bare `title` would be ambiguous
+    // with a top-level field of the same name.
     const nestedError = issues.find(i =>
-      i['severity'] === 'error' && i['field'] === 'title',
+      i['severity'] === 'error' && i['field'] === 'seo.title',
     )
     expect(nestedError).toBeDefined()
   })

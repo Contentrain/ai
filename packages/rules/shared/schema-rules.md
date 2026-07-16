@@ -92,22 +92,25 @@ A field definition describes one field in a model. Include only the properties t
 
 ### 3.1 Field Properties
 
-| Property | Applicable Types | Description |
-|----------|-----------------|-------------|
-| `type` | ALL | **Required.** One of the 27 types. |
-| `required` | ALL | Mark field as mandatory. Default: `false`. Omit if `false`. |
-| `unique` | `string`, `email`, `slug`, `integer` | Enforce uniqueness within model. Default: `false`. Omit if `false`. |
-| `default` | ALL | Default value. Omit if `null`. |
-| `min` | string/text: char count; numbers: value; array: element count | Minimum constraint. |
-| `max` | Same as `min` | Maximum constraint. |
-| `pattern` | `string`, `text`, `code` | Regex validation pattern. |
-| `options` | `select` ONLY | Fixed choices: `["draft", "published", "archived"]` |
-| `model` | `relation`, `relations` ONLY | Target model ID. String or string array for polymorphic. |
-| `items` | `array` ONLY | Element type: `"string"` or `{ "type": "object", "fields": {...} }` |
-| `fields` | `object` ONLY | Nested field definitions. |
-| `accept` | `image`, `video`, `file` | Allowed MIME types: `"image/png,image/jpeg"` |
-| `maxSize` | `image`, `video`, `file` | Maximum file size in bytes. |
-| `description` | ALL | Human-readable hint (shown in Studio UI tooltip, used as agent context). |
+A property declared where it does not apply is **rejected by `model_save`** — it is
+not silently ignored. The "Enforced by" column says who actually checks each one.
+
+| Property | Applicable Types | Enforced by | Description |
+|----------|-----------------|-------------|-------------|
+| `type` | ALL | content_save (blocks) | **Required.** One of the 27 types. |
+| `required` | ALL | content_save (blocks) | Mark field as mandatory. Default: `false`. Omit if `false`. |
+| `unique` | Any type, on `collection` and `document` models. **Not `singleton`** — it holds one record per locale, so there is nothing to be unique against. | content_save (blocks) | Enforce uniqueness within the model, per locale. Default: `false`. Omit if `false`. |
+| `default` | ALL | model_save (coherence only) | Default value. Checked against its own `type` and `options`; **not** written into content — the agent supplies values. Omit if `null`. |
+| `min` | string/text: char count; numbers: value; array: element count | content_save (blocks) | Minimum constraint. Must not exceed `max`. |
+| `max` | Same as `min` | content_save (blocks) | Maximum constraint. On a media field this limits the **path string length**, not the file — use `maxSize` for bytes (model_save warns). |
+| `pattern` | Any string-shaped type | content_save (blocks) | Regex validation pattern. Compiled at model_save, so a broken regex is rejected rather than silently disabling the rule. |
+| `options` | `select` ONLY | content_save (blocks) | Fixed choices: `["draft", "published", "archived"]` |
+| `model` | `relation`, `relations` ONLY | content_save (blocks) | Target model ID. String or string array for polymorphic. |
+| `items` | `array` ONLY | content_save (blocks) | Element type: `"string"`, or a full FieldDef — `{ "type": "string", "max": 50 }`. Items are validated by the same rules as a scalar of that type. |
+| `fields` | `object` ONLY | content_save (blocks) | Nested field definitions. Validated recursively, at model_save and at content_save. |
+| `accept` | `image`, `video`, `file` | content_save (**warns**) | Allowed MIME types: `"image/png,image/jpeg"`, `"image/*"`, `".pdf"`. MCP checks the value's **file extension** — an approximation, since it holds a path, not the bytes. Your provider enforces the real MIME type at ingest. |
+| `maxSize` | `image`, `video`, `file` | **Provider, at ingest — not MCP** | Maximum file size in bytes. MCP never sees the file, so it cannot check this; model_save says so. |
+| `description` | ALL | — | Human-readable hint (shown in Studio UI tooltip, used as agent context). |
 
 ### 3.2 Omission Rules
 

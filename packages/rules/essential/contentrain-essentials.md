@@ -34,6 +34,8 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 - **NEVER** include system fields in content data: `id`, `status`, `source`, `updated_by`, `updated_at`, `createdAt`, `updatedAt`
 - **ALWAYS** use MCP tools — do not write `.contentrain/` JSON files directly
 - **Publishing is yours, not MCP's.** `contentrain_content_save` preserves an existing entry's `status`; only a brand-new entry starts at `draft`. To change publish state, call `contentrain_bulk update_status` deliberately — and note that on the CDN a collection entry is delivered only when its status is `published`.
+- **Schema validity is MCP's.** `contentrain_content_save` validates before it writes and **refuses** the save on any error — nothing is committed, so there is no branch to clean up. Fix the values and call it again. Warnings (email/url/colour/phone heuristics, `accept` extension checks) do not block; they come back in the response.
+- **A declared constraint is a real constraint.** `model_save` rejects a property declared where it cannot apply (`options` on a non-select, `accept` on a non-media field, `unique` on a singleton) rather than accepting it and doing nothing. The one exception is `maxSize`, which MCP cannot enforce — your media provider does, at ingest, and `model_save` says so.
 
 ## MCP Tools
 

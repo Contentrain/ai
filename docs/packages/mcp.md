@@ -124,6 +124,38 @@ The MCP server exposes **24 tools** — 19 core + 5 media — organized by funct
 | `contentrain_apply` | Extract or reuse | Two-phase normalize: extract content or patch source files |
 | `contentrain_bulk` | Batch operations | Bulk locale copy, status updates, and deletes |
 
+### Field constraints
+
+`contentrain_content_save` **validates before it writes**. A `severity: error` issue
+on any entry in the call means nothing is committed — no branch, nothing to clean up.
+Fix the values and call again. Warnings pass and come back in the response.
+
+The split is deliberate:
+
+- **Errors** are definitional. A `slug` that does not match `SLUG_PATTERN` is not a
+  slug; an unparseable `date` is not a date; `3.7` is not an `integer`.
+- **Warnings** are heuristics. `email`, `url`, `color` and `phone` patterns are
+  approximations, and a legitimate value can sit outside one.
+
+Only the entries in the call are fatal. A pre-existing bad entry elsewhere in the
+model is reported but does not block your save.
+
+Array items are validated by the same rules as a scalar of that type, so
+`items: { type: 'string', max: 50 }` means what it looks like it means.
+
+::: warning What MCP does not enforce
+`maxSize` is the one constraint MCP accepts but cannot check — it stores a path and
+never sees the file. Your media provider enforces it at ingest, and `model_save`
+returns a `schema_warnings` entry saying so. `accept` **is** checked, but against the
+file extension only, which is why it warns rather than errors.
+:::
+
+`model_save` rejects a constraint declared where it cannot apply — `options` on a
+non-select, `items` on a non-array, `accept` on a non-media field, `unique` on a
+singleton, `min > max`, an uncompilable `pattern` — instead of storing it and doing
+nothing. Unknown keys are rejected too, so a typo'd `requird: true` is an error
+rather than a silent no-op.
+
 ### Publish status
 
 Entry status lives in `.contentrain/meta/`, not in content, and it decides CDN

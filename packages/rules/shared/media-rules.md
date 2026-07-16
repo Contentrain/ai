@@ -73,6 +73,12 @@ Never hand-build delivery URLs or guess the CDN base. Save the path or URL the m
 
 3. If an image exceeds the size limit, instruct the user to compress or resize it before storing. Do not silently accept oversized files.
 
+   **This one is on you.** A `maxSize` on the field does not enforce it: MCP stores a
+   path and never sees the bytes, so it cannot check the size — your media provider
+   does, when the asset is ingested. `model_save` says as much when you declare
+   `maxSize`. A field's `accept` is checked, but only against the file **extension**,
+   which can lie.
+
 4. SVG files SHOULD be optimized (e.g., with SVGO) to remove editor metadata, comments, and unnecessary attributes.
 
 ---

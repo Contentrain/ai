@@ -395,8 +395,8 @@ export async function applyExtract(
       kind: ext.kind,
       fields: ext.fields as Record<string, unknown> | undefined,
     })
-    if (modelErrors.length > 0) {
-      validationErrors.push(...modelErrors.map(e => `[${ext.model}] ${e}`))
+    if (modelErrors.errors.length > 0) {
+      validationErrors.push(...modelErrors.errors.map(e => `[${ext.model}] ${e}`))
     }
 
     for (const entry of ext.entries) {

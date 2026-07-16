@@ -450,6 +450,10 @@ export const FIELD_TYPE_ENUM = [
 /**
  * Shared Zod schema for field definitions.
  * Used by both model_save and normalize extract for full parity.
+ *
+ * `.strict()` is load-bearing: the default `z.object` *strips* unknown keys, so a
+ * typo'd constraint (`requird: true`) used to vanish without a word and the field
+ * silently lost the rule its author thought they had declared.
  */
 export const fieldDefZodSchema: z.ZodType<Record<string, unknown>> = z.record(z.string(), z.object({
   type: z.enum(FIELD_TYPE_ENUM).describe('Field type from the 27-type catalog'),
@@ -466,7 +470,7 @@ export const fieldDefZodSchema: z.ZodType<Record<string, unknown>> = z.record(z.
   accept: z.string().optional(),
   maxSize: z.number().optional(),
   description: z.string().optional(),
-}).refine(
+}).strict().refine(
   (f) => {
     if ((f.type === 'relation' || f.type === 'relations') && !f.model) return false
     if (f.type === 'select' && (!f.options || f.options.length === 0)) return false
@@ -479,13 +483,182 @@ export const fieldDefZodSchema: z.ZodType<Record<string, unknown>> = z.record(z.
 
 const VALID_FIELD_TYPES = new Set<string>(FIELD_TYPE_ENUM)
 
+/** Field types whose value is a path/URL to a media asset. */
+const MEDIA_FIELD_TYPES = new Set<string>(['image', 'video', 'file'])
+/** Bounds `items`/`fields` nesting; far above any real schema. */
+const MAX_SCHEMA_DEPTH = 10
+
+export interface ModelDefinitionIssues {
+  /** Block the write. */
+  errors: string[]
+  /** Surface to the caller; the write proceeds. */
+  warnings: string[]
+}
+
+interface RawFieldDef {
+  type?: string
+  required?: unknown
+  unique?: unknown
+  default?: unknown
+  min?: unknown
+  max?: unknown
+  pattern?: unknown
+  options?: unknown
+  model?: unknown
+  items?: unknown
+  fields?: unknown
+  accept?: unknown
+  maxSize?: unknown
+}
+
+/**
+ * Check one field definition, recursing into `fields` and `items`.
+ *
+ * The governing rule: **do not accept a constraint that will not be enforced.**
+ * A constraint that silently does nothing is worse than no constraint, because
+ * the author stops looking. So a property declared where it cannot apply is an
+ * error, and a property we genuinely cannot enforce says so out loud.
+ */
+function checkFieldDef(
+  raw: unknown,
+  path: string,
+  modelKind: string,
+  errors: string[],
+  warnings: string[],
+  depth: number,
+): void {
+  if (typeof raw !== 'object' || raw === null) {
+    errors.push(`Field "${path}": must be an object`)
+    return
+  }
+  if (depth > MAX_SCHEMA_DEPTH) {
+    errors.push(`Field "${path}": exceeds the maximum nesting depth of ${MAX_SCHEMA_DEPTH}`)
+    return
+  }
+
+  const def = raw as RawFieldDef
+  const type = def.type
+
+  if (!type || !VALID_FIELD_TYPES.has(type)) {
+    errors.push(`Field "${path}": invalid type "${type}"`)
+    return
+  }
+
+  if ((type === 'relation' || type === 'relations') && !def.model) {
+    errors.push(`Field "${path}": ${type} type requires "model" property`)
+  }
+  if (type === 'select' && (!Array.isArray(def.options) || def.options.length === 0)) {
+    errors.push(`Field "${path}": select type requires non-empty "options" array`)
+  }
+  // The reverse direction was never checked, so `options` on a string field was
+  // accepted and then silently ignored at validation time.
+  if (def.options !== undefined && type !== 'select') {
+    errors.push(`Field "${path}": "options" only applies to select fields — it is ignored on "${type}"`)
+  }
+  if (def.items !== undefined && type !== 'array') {
+    errors.push(`Field "${path}": "items" only applies to array fields — it is ignored on "${type}"`)
+  }
+  if (def.fields !== undefined && type !== 'object') {
+    errors.push(`Field "${path}": "fields" only applies to object fields — it is ignored on "${type}"`)
+  }
+  if (def.accept !== undefined && !MEDIA_FIELD_TYPES.has(type)) {
+    errors.push(`Field "${path}": "accept" only applies to image/video/file fields — it is ignored on "${type}"`)
+  }
+  if (def.maxSize !== undefined && !MEDIA_FIELD_TYPES.has(type)) {
+    errors.push(`Field "${path}": "maxSize" only applies to image/video/file fields — it is ignored on "${type}"`)
+  }
+
+  // A singleton holds one record per locale, so there is nothing for a value to
+  // be unique against.
+  if (def.unique === true && modelKind === 'singleton') {
+    errors.push(`Field "${path}": "unique" has no meaning on a singleton — the model holds a single record per locale`)
+  }
+
+  if (typeof def.min === 'number' && typeof def.max === 'number' && def.min > def.max) {
+    errors.push(`Field "${path}": min (${def.min}) is greater than max (${def.max})`)
+  }
+
+  // Compile the regex here rather than let it fail once per entry at validation
+  // time, where it degrades to a warning and silently disables the constraint.
+  if (typeof def.pattern === 'string') {
+    try {
+      // eslint-disable-next-line no-new
+      new RegExp(def.pattern)
+    } catch {
+      errors.push(`Field "${path}": "pattern" is not a valid regular expression — /${def.pattern}/`)
+    }
+  }
+
+  if (def.default !== undefined) {
+    checkDefaultCoherence(def, type, path, errors)
+  }
+
+  // `max` on a media field measures the length of the stored path string, not
+  // the file — almost certainly not what the author meant.
+  if (typeof def.max === 'number' && MEDIA_FIELD_TYPES.has(type)) {
+    warnings.push(
+      `Field "${path}": "max" on a ${type} field limits the length of the stored path string, not the file size. Use "maxSize" for bytes.`,
+    )
+  }
+
+  // Said plainly rather than accepted in silence: MCP holds a path, never the
+  // bytes, so it cannot check this. The provider owns the policy at ingest.
+  if (def.maxSize !== undefined && MEDIA_FIELD_TYPES.has(type)) {
+    warnings.push(
+      `Field "${path}": "maxSize" is not enforced by MCP — it has no access to the file. Your media provider enforces it when the asset is ingested.`,
+    )
+  }
+
+  if (def.fields !== undefined && typeof def.fields === 'object' && def.fields !== null) {
+    for (const [nested, nestedDef] of Object.entries(def.fields as Record<string, unknown>)) {
+      if (!/^[a-z][a-z0-9_]*$/.test(nested)) {
+        errors.push(`Field "${path}.${nested}": invalid name — must be snake_case starting with letter`)
+      }
+      checkFieldDef(nestedDef, `${path}.${nested}`, modelKind, errors, warnings, depth + 1)
+    }
+  }
+
+  if (typeof def.items === 'string') {
+    if (!VALID_FIELD_TYPES.has(def.items)) {
+      errors.push(`Field "${path}.items": invalid type "${def.items}"`)
+    }
+  } else if (def.items !== undefined) {
+    checkFieldDef(def.items, `${path}.items`, modelKind, errors, warnings, depth + 1)
+  }
+}
+
+/** A default that its own field would reject is a schema bug, not a content one. */
+function checkDefaultCoherence(def: RawFieldDef, type: string, path: string, errors: string[]): void {
+  const value = def.default
+  const isString = typeof value === 'string'
+  const isNumber = typeof value === 'number'
+
+  if (type === 'select' && Array.isArray(def.options) && isString && !def.options.includes(value)) {
+    errors.push(`Field "${path}": default "${value}" is not one of its own options [${(def.options as string[]).join(', ')}]`)
+    return
+  }
+  const wantsNumber = ['number', 'integer', 'decimal', 'percent', 'rating'].includes(type)
+  const wantsBoolean = type === 'boolean'
+  const wantsArray = type === 'array'
+
+  if (wantsNumber && !isNumber) {
+    errors.push(`Field "${path}": default must be a number for type "${type}"`)
+  } else if (wantsBoolean && typeof value !== 'boolean') {
+    errors.push(`Field "${path}": default must be a boolean for type "${type}"`)
+  } else if (wantsArray && !Array.isArray(value)) {
+    errors.push(`Field "${path}": default must be an array for type "${type}"`)
+  }
+}
+
 /**
  * Validate a model definition before writing.
- * Returns array of error messages (empty = valid).
- * Used by both model_save tool and normalize extract.
+ * Used by both the model_save tool and normalize extract.
  */
-export function validateModelDefinition(input: { id: string; kind: string; fields?: Record<string, unknown> }): string[] {
+export function validateModelDefinition(
+  input: { id: string; kind: string; fields?: Record<string, unknown> },
+): ModelDefinitionIssues {
   const errors: string[] = []
+  const warnings: string[] = []
 
   // ID format: kebab-case
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.id)) {
@@ -497,32 +670,14 @@ export function validateModelDefinition(input: { id: string; kind: string; field
     errors.push('Dictionary models cannot have fields. Dictionaries store flat key-value pairs.')
   }
 
-  // Fields validation
   if (input.fields) {
     for (const [fieldName, fieldDef] of Object.entries(input.fields)) {
-      const def = fieldDef as { type?: string; model?: unknown; options?: unknown }
-
-      // Field name format
       if (!/^[a-z][a-z0-9_]*$/.test(fieldName)) {
         errors.push(`Field "${fieldName}": invalid name — must be snake_case starting with letter`)
       }
-
-      // Type check
-      if (!def.type || !VALID_FIELD_TYPES.has(def.type)) {
-        errors.push(`Field "${fieldName}": invalid type "${def.type}"`)
-      }
-
-      // Relation requires model
-      if ((def.type === 'relation' || def.type === 'relations') && !def.model) {
-        errors.push(`Field "${fieldName}": ${def.type} type requires "model" property`)
-      }
-
-      // Select requires options
-      if (def.type === 'select' && (!def.options || !Array.isArray(def.options) || def.options.length === 0)) {
-        errors.push(`Field "${fieldName}": select type requires non-empty "options" array`)
-      }
+      checkFieldDef(fieldDef, fieldName, input.kind, errors, warnings, 0)
     }
   }
 
-  return errors
+  return { errors, warnings }
 }
