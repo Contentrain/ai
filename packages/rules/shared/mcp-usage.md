@@ -83,6 +83,7 @@ Each entry in the `entries` array has this shape:
 - For **collection**: use `id` to identify the entry.
 - For **document**: use `slug` to identify the entry.
 - For **singleton/dictionary**: use `locale` to identify which locale file to delete.
+- On an **`i18n: false` model**, do NOT pass `locale` — content is locale-agnostic (`data.json`), so a locale-scoped delete is rejected. Omit `locale` to delete the entry; use `contentrain_validate` with `fix: true` to remove stray per-locale meta.
 
 ### 2.5 Normalize Tools
 
@@ -181,7 +182,7 @@ Each entry in the `entries` array has this shape:
 #### contentrain_validate parameters
 
 - `model`: validate a specific model only (omit for all models).
-- `fix`: auto-fix structural issues like canonical sort, orphan meta, missing locale files (default: false).
+- `fix`: auto-fix structural issues like canonical sort, orphan meta, missing locale files, and stray non-i18n meta layout (default: false). Stray-meta cleanup is deterministic: it prunes extras when the default-locale meta is authoritative, or migrates a lone stray to the default path — it never merges or downgrades a status.
 
 #### contentrain_submit parameters
 

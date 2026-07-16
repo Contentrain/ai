@@ -64,10 +64,10 @@ export function registerWorkflowTools(
   // ─── contentrain_validate ───
   server.tool(
     'contentrain_validate',
-    'Validate project content against model schemas. Detects required field violations, type mismatches, broken relations, secret leaks, i18n parity issues, and more. If fix:true, auto-fixes structural issues (canonical sort, orphan meta, missing locale files) — do NOT manually edit .contentrain/ files.',
+    'Validate project content against model schemas. Detects required field violations, type mismatches, broken relations, secret leaks, i18n parity issues, and more. If fix:true, auto-fixes structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout) — do NOT manually edit .contentrain/ files.',
     {
       model: z.string().optional().describe('Model ID to validate (omit for all models)'),
-      fix: z.boolean().optional().describe('Auto-fix structural issues (canonical sort, orphan meta, missing locale files). Default: false'),
+      fix: z.boolean().optional().describe('Auto-fix structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout). Default: false'),
     },
     TOOL_ANNOTATIONS['contentrain_validate']!,
     async (input) => {

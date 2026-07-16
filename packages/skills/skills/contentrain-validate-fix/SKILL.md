@@ -42,6 +42,9 @@ Auto-fix candidates:
 
 - canonical formatting
 - orphan metadata cleanup
+- stray non-i18n meta layout (an `i18n: false` model with per-locale meta files
+  left by older versions) — pruned or migrated deterministically, never merging
+  or downgrading a status
 - structural housekeeping reported by the validator
 
 Manual fix candidates:
@@ -50,6 +53,8 @@ Manual fix candidates:
 - wrong field values
 - broken relations
 - incorrect slugs/IDs
+- a non-i18n "Meta layout mismatch" with several strays and no default-locale
+  meta (ambiguous — `fix: true` leaves it; pick the authoritative file yourself)
 
 ### 3. Use Auto-fix Carefully
 
