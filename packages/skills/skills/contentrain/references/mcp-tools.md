@@ -156,6 +156,11 @@ Delete a content entry.
 | `locale` | string | Conditional | Locale (for singleton/dictionary) |
 | `confirm` | boolean | Yes | Must be `true` |
 
+> **`i18n: false` models reject `locale`.** Content is locale-agnostic
+> (`data.json`), so a locale-scoped delete is refused rather than silently
+> mapped onto `data.json` + the default-locale meta. Omit `locale`; use
+> `contentrain_validate` `fix: true` to clean up stray per-locale meta.
+
 ### contentrain_content_list
 
 List content entries for a model (read-only).
@@ -265,7 +270,7 @@ Validate project content against model schemas.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `model` | string | No | Validate specific model only (omit for all) |
-| `fix` | boolean | No | Auto-fix structural issues (canonical sort, orphan meta, missing locale files). Default: `false` |
+| `fix` | boolean | No | Auto-fix structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout). Default: `false` |
 
 ### contentrain_submit
 

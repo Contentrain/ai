@@ -34,6 +34,8 @@ Auto-fix candidates:
 
 - canonical formatting
 - orphan metadata cleanup
+- stray non-i18n meta layout (per-locale meta on an `i18n: false` model) —
+  pruned or migrated deterministically, never merging or downgrading a status
 - structural housekeeping reported by the validator
 
 Manual fix candidates:

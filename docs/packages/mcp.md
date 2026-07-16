@@ -174,9 +174,19 @@ delivery: a collection entry is served only when its status is `published`.
 
 ::: tip Non-i18n models
 A model with `i18n: false` keeps all content in one `data.json`, so it has
-exactly one meta record — at the **default locale**, never `data.json`. Saving
-under a different locale does not move it. `contentrain_validate` warns when
-stray per-locale meta files exist from older versions.
+exactly one meta record — at the **default locale**, never `data.json`.
+
+- **A locale is meaningless here, so it is rejected, not guessed.**
+  `contentrain_content_delete` refuses a `locale`-scoped delete on an
+  `i18n: false` model: the locale would otherwise map onto `data.json` and the
+  default-locale meta, deleting the shared content and the wrong meta while a
+  stray per-locale meta stayed behind. Omit `locale` to delete the entry.
+- **`contentrain_validate` warns about stray per-locale meta** left by older
+  versions, and **`fix: true` cleans it up deterministically**: when the
+  default-locale meta is authoritative it prunes the extras (no status is
+  merged, so a `published` record is never downgraded); when only a stray
+  exists it is migrated to the default path so the record is preserved. Several
+  strays with no default is ambiguous — it is left for you to resolve by hand.
 :::
 
 ### Media Tools (Provider Media Facet)

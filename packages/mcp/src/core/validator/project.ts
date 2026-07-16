@@ -264,6 +264,15 @@ async function validateCollectionModel(
     }
   }
 
+  // Consolidate a non-i18n model's meta layout BEFORE the orphan checks below.
+  // The reverse orphan-content check fabricates a draft default-locale meta for
+  // any content entry lacking meta at the default locale. If a stray holds the
+  // real (e.g. published) record under a non-default locale, running that check
+  // first would mint a draft default and let this pass then delete the real
+  // record. Consolidating first preserves the authoritative record.
+  const strayResult = await checkStrayNonI18nMeta(reader, projectRoot, model, config, issues, fix)
+  fixed += strayResult.fixed
+
   // Orphan meta check
   for (const locale of locales) {
     const metaRelPath = metaFilePath(model, locale, config.locales.default)
@@ -311,7 +320,12 @@ async function validateCollectionModel(
           entry: entryId,
           message: `Orphan content: entry "${entryId}" has no metadata`,
         })
-        if (fix && projectRoot) {
+        // Skip fabrication while a non-i18n model's meta is stuck in an
+        // unresolved stray: the content already has meta (misplaced), so minting
+        // a draft default here would let the stray-consolidation pass then delete
+        // the real record on a subsequent run. The mismatch warning already asks
+        // the agent to resolve the layout by hand.
+        if (fix && projectRoot && !strayResult.unresolved) {
           await writeMeta(projectRoot, model, { locale, entryId, defaultLocale: config.locales.default }, {
             status: 'draft',
             source: 'import',
@@ -346,39 +360,53 @@ async function validateCollectionModel(
     }
   }
 
-  await checkStrayNonI18nMeta(reader, model, config, issues)
-
   return { entries: entriesChecked, fixed }
 }
 
 /**
- * Flag meta files a non-i18n model should not have.
+ * Flag — and, with `fix`, remediate — meta files a non-i18n model should not have.
  *
  * Such a model keeps all content in one `data.json` and therefore exactly one
  * meta record, at the default locale. Earlier writes derived the meta path from
  * the caller's locale, so saving under a non-default locale left a second meta
- * file — and readers disagreed about which was authoritative. Reported rather
- * than auto-removed: the stray may hold the only `published` status in the
- * project, so deleting it silently could unpublish content.
+ * file, and readers disagreed about which was authoritative.
+ *
+ * The `fix` remediation is deterministic and never decides a status:
+ *   - default-locale meta present  → the strays are redundant, so delete them
+ *     (the default-locale record stays authoritative — no status is merged).
+ *   - default-locale meta absent, exactly one stray → that stray holds the only
+ *     record, so migrate it to the default path (move) rather than orphan the
+ *     content.
+ *   - default-locale meta absent, several strays → which is authoritative is
+ *     ambiguous, so leave the warning for the agent to resolve by hand.
+ *
+ * Returns the count of files remediated and whether strays remain unresolved.
+ * `unresolved` gates the caller's orphan-content fabrication: while a non-i18n
+ * model's meta still lives in a stray, the content is not truly orphaned, so
+ * minting a draft default-locale record would both be wrong and set up a trap
+ * (a later fix pass would then treat the real stray as redundant and delete it).
  */
 async function checkStrayNonI18nMeta(
   reader: RepoReader,
+  projectRoot: string | undefined,
   model: ModelDefinition,
   config: ContentrainConfig,
   issues: ValidationError[],
-): Promise<void> {
-  if (model.i18n) return
+  fix: boolean,
+): Promise<{ fixed: number, unresolved: boolean }> {
+  if (model.i18n) return { fixed: 0, unresolved: false }
 
+  const metaDir = `.contentrain/meta/${model.id}`
   const expected = `${config.locales.default}.json`
   let files: string[]
   try {
-    files = await reader.listDirectory(`.contentrain/meta/${model.id}`)
+    files = await reader.listDirectory(metaDir)
   } catch {
-    return
+    return { fixed: 0, unresolved: false }
   }
 
   const strays = files.filter(f => f.endsWith('.json') && f !== expected)
-  if (strays.length === 0) return
+  if (strays.length === 0) return { fixed: 0, unresolved: false }
 
   issues.push({
     severity: 'warning',
@@ -386,9 +414,31 @@ async function checkStrayNonI18nMeta(
     message:
       `Meta layout mismatch: "${model.id}" has i18n disabled, so its content lives in a single data.json `
       + `and its meta belongs at ${expected} alone — but [${strays.join(', ')}] also exist. `
-      + 'Readers may disagree about which file is authoritative. Merge any status you want to keep into '
-      + `${expected}, then remove the extras.`,
+      + 'Readers may disagree about which file is authoritative. Run contentrain_validate fix:true to prune '
+      + `the extras (the default-locale meta stays authoritative).`,
   })
+
+  if (!fix || !projectRoot) return { fixed: 0, unresolved: true }
+
+  const defaultMeta = await readJsonViaReader<Record<string, unknown>>(reader, `${metaDir}/${expected}`)
+
+  if (defaultMeta === null) {
+    // No authoritative default. A single stray holds the only record — keep it
+    // by moving it to the default path. Several strays with no default is
+    // ambiguous, so do not guess: leave the warning standing (unresolved).
+    if (strays.length !== 1) return { fixed: 0, unresolved: true }
+    const stray = strays[0]!
+    const content = await readJsonViaReader<Record<string, unknown>>(reader, `${metaDir}/${stray}`)
+    if (content === null) return { fixed: 0, unresolved: true }
+    await writeJson(join(projectRoot, metaDir, expected), content)
+    await rm(join(projectRoot, metaDir, stray), { force: true })
+    return { fixed: 1, unresolved: false }
+  }
+
+  // Default-locale meta is authoritative → the strays are redundant. Each is a
+  // distinct file, so removing them in parallel is safe.
+  await Promise.all(strays.map(stray => rm(join(projectRoot, metaDir, stray), { force: true })))
+  return { fixed: strays.length, unresolved: false }
 }
 
 async function validateSingletonModel(
@@ -676,6 +726,10 @@ async function validateDocumentModel(
   // `unique` compares an entry against its siblings, so it needs the whole set —
   // validating one file at a time is why `unique` was silently a no-op for
   // documents, which is exactly where every shipped template declares it.
+  // Keyed by `${slug}\u0000${locale}`. The NUL separator can appear in neither
+  // a slug nor a locale, so composite keys never collide. Written as the escape
+  // `\u0000` (not a raw NUL byte) so the source stays plain text — a literal NUL
+  // makes tools classify this file as binary and breaks grep/diff.
   const rawByKey = new Map<string, string>()
   const frontmatterByLocale: Record<string, Record<string, Record<string, unknown>>> = {}
   for (const slug of slugs) {
@@ -683,7 +737,7 @@ async function validateDocumentModel(
     for (const locale of locales) {
       const raw = await readTextViaReader(reader, documentFilePath(model, locale, slug))
       if (!raw) continue
-      rawByKey.set(`${slug} ${locale}`, raw)
+      rawByKey.set(`${slug}\u0000${locale}`, raw)
       const { frontmatter } = parseFrontmatter(raw)
       frontmatterByLocale[locale] ??= {}
       frontmatterByLocale[locale][slug] = frontmatter
@@ -695,7 +749,7 @@ async function validateDocumentModel(
 
     for (const locale of locales) {
       const filePath = documentFilePath(model, locale, slug)
-      const raw = rawByKey.get(`${slug} ${locale}`) ?? null
+      const raw = rawByKey.get(`${slug}\u0000${locale}`) ?? null
 
       if (!raw) {
         if (model.i18n) {

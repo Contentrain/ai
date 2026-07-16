@@ -507,7 +507,9 @@ describe('deleteContent', () => {
       { id: 'delete-me', locale: 'en', data: { name: 'Goner' } },
     ], config)
 
-    const removed = await deleteContent(testDir, collectionModel, { id: 'delete-me', locale: 'en' })
+    // collectionModel is i18n:false — content is locale-agnostic, so the delete
+    // is NOT locale-scoped (a locale-scoped delete is now rejected; see below).
+    const removed = await deleteContent(testDir, collectionModel, { id: 'delete-me', defaultLocale: 'en' })
     expect(removed).toHaveLength(1)
     expect(removed[0]).toContain('delete-me')
 
@@ -517,6 +519,25 @@ describe('deleteContent', () => {
     )
     expect(content!['keep-me']).toBeDefined()
     expect(content!['delete-me']).toBeUndefined()
+  })
+
+  it('rejects a locale-scoped delete on a non-i18n collection', async () => {
+    await writeContent(testDir, collectionModel, [
+      { id: 'keep-me', locale: 'en', data: { name: 'Keeper' } },
+    ], config)
+
+    // Passing a locale on an i18n:false model used to empty data.json and delete
+    // the default-locale meta while leaving the named locale's stray meta intact.
+    // It is now rejected outright.
+    await expect(
+      deleteContent(testDir, collectionModel, { id: 'keep-me', locale: 'tr', defaultLocale: 'en' }),
+    ).rejects.toThrow(/i18n disabled/)
+
+    // The rejected call must touch nothing — the entry survives in data.json.
+    const content = await readJson<Record<string, unknown>>(
+      join(contentrainDir(testDir), 'content', 'blog', 'authors', 'data.json'),
+    )
+    expect(content!['keep-me']).toBeDefined()
   })
 
   it('removes document slug directory', async () => {

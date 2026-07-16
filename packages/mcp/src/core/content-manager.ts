@@ -241,6 +241,19 @@ export async function deleteContent(
   model: ModelDefinition,
   opts: DeleteOpts,
 ): Promise<string[]> {
+  // A non-i18n model stores content locale-agnostically in data.json with a
+  // single meta record at the default locale, so a locale-scoped delete is
+  // meaningless and destructive (the locale maps onto data.json + the default
+  // meta, deleting the shared content and the wrong meta). Reject it; mirrors
+  // the same guard in the plan API (`planContentDelete`).
+  if (!model.i18n && opts.locale) {
+    throw new Error(
+      `Model "${model.id}" has i18n disabled — its content is locale-agnostic (stored in data.json), `
+      + 'so a locale-scoped delete is invalid. Omit "locale" to delete the entry, '
+      + 'or run contentrain_validate fix:true to remove stray per-locale meta files.',
+    )
+  }
+
   const removed: string[] = []
   const cDir = resolveContentDir(projectRoot, model)
 
