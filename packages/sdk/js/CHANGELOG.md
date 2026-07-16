@@ -1,5 +1,12 @@
 # @contentrain/query
 
+## 7.0.1
+
+### Patch Changes
+
+- Updated dependencies [173326c]
+  - @contentrain/types@0.9.0
+
 ## 7.0.0
 
 ### Major Changes
