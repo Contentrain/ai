@@ -1,0 +1,48 @@
+# Contentrain AI Documentation
+
+> Contentrain AI is the MIT-licensed open-source toolkit for AI-generated content governance: a 24-tool MCP server (@contentrain/mcp), a CLI (contentrain), shared TypeScript types (@contentrain/types), agent rules and skills (@contentrain/rules, @contentrain/skills), and a generated typed query SDK (@contentrain/query). Content lives as canonical JSON/Markdown in your Git repo under .contentrain/ — agents write through deterministic MCP tools, humans review through git branches.
+
+Full documentation as a single file (for LLMs): https://ai.contentrain.io/llms-full.txt
+Contentrain Studio (team web surface) documentation: https://docs.contentrain.io/llms.txt
+
+## Packages (npm)
+
+- @contentrain/mcp — MCP server: 24 deterministic tools (19 core + 5 media), stdio + HTTP transports, Local / GitHub / GitLab providers
+- contentrain — CLI: init, serve (review UI + MCP transports), validate, generate, diff, merge, prune, studio commands
+- @contentrain/query — universal query SDK; `contentrain generate` emits a typed client into .contentrain/client/ (#contentrain imports); optional CDN transport
+- @contentrain/types — shared contract: model/field/config/provider types plus pure, browser-safe validate/serialize functions
+- @contentrain/rules — always-loaded agent guardrails plus shared quality rules
+- @contentrain/skills — 15 on-demand Agent Skills (Agent Skills standard)
+
+## Key Facts
+
+- 4 model kinds: collection (object-map by entry id), singleton, dictionary (flat string map), document (markdown + frontmatter)
+- 27 field types; content is validated before every write — an error on any entry in a contentrain_content_save call means nothing is committed
+- Every write lands on an isolated cr/* git branch; workflow is auto-merge or review (config.json)
+- dry_run preview belongs to contentrain_apply (the normalize tool that can patch source); destructive tools require confirm: true
+- Locale strategies: file / suffix / directory / none; entry status and scheduling live in .contentrain/meta/, not in content
+- MIT licensed, local-first (no cloud dependency); GitHub/GitLab remote providers are optional peer dependencies
+
+## Key Pages
+
+- Getting Started: /getting-started
+- 2-Minute Demo: /demo
+- Ecosystem Map: /ecosystem
+- Core Concepts: /concepts
+- Contentrain Studio: /studio
+- MCP Tools: /packages/mcp
+- CLI: /packages/cli
+- Query SDK: /packages/sdk
+- Rules & Skills: /packages/rules
+- Types: /packages/types
+- Providers & Transports: /guides/providers
+- HTTP Transport: /guides/http-transport
+- Embedding MCP: /guides/embedding-mcp
+- Normalize Flow: /guides/normalize
+- Framework Integration: /guides/frameworks
+- i18n Workflow: /guides/i18n
+- Serve UI: /guides/serve-ui
+- Model Kinds: /reference/model-kinds
+- Field Types: /reference/field-types
+- Configuration: /reference/config
+- RepoProvider Reference: /reference/providers
