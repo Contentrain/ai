@@ -245,7 +245,7 @@ The package also exposes low-level modules for embedding and advanced use:
 - `@contentrain/mcp/core/scan-config`
 - `@contentrain/mcp/core/doctor`
 - `@contentrain/mcp/core/contracts`
-- `@contentrain/mcp/core/ops`
+- `@contentrain/mcp/core/ops` — plan APIs plus content-root-relative path helpers: `contentDirPath`, `contentFilePath`, `documentFilePath`, `metaFilePath`
 - `@contentrain/mcp/core/overlay-reader`
 - `@contentrain/mcp/util/detect`
 - `@contentrain/mcp/util/fs`
