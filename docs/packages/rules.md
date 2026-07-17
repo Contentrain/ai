@@ -187,7 +187,7 @@ Works with Claude Code, Cursor, Windsurf, GitHub Copilot, OpenAI Codex, Gemini C
 
 ## IDE Integration
 
-`contentrain init` installs a compact essential guardrails file (~86 lines, always-loaded) plus Agent Skills directories (on-demand) for detected IDEs:
+`contentrain init` installs a compact essential guardrails file (always-loaded) plus Agent Skills directories (on-demand) for detected IDEs:
 
 | IDE | Rules Dir | Skills Dir | Format |
 |-----|-----------|------------|--------|
@@ -206,7 +206,7 @@ Here is a real example of the agent workflow when a user says "Extract the hardc
 
 ### 1. Essential Rules Load First
 
-The agent's essential guardrails (~86 lines) are always loaded from `.claude/rules/contentrain-essentials.md` (or equivalent IDE path). These cover MCP tool catalog, mandatory protocols, and security basics.
+The agent's essential guardrails are always loaded from `.claude/rules/contentrain-essentials.md` (or equivalent IDE path). These cover MCP tool catalog, mandatory protocols, and security basics.
 
 ### 2. Skill Guides the Workflow
 

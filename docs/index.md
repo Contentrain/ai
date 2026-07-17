@@ -194,5 +194,5 @@ Agent decides what to extract → MCP validates and writes → Human reviews →
 No AI markup in your code. No proprietary syntax. No vendor lock-in. If you stop using Contentrain, your content files are still plain JSON in your Git repo.
 
 ::: info Contentrain Studio
-[Contentrain Studio](/studio) is the open-core team web layer for Contentrain: chat-first operations, role-based collaboration, branch review, media management, and CDN delivery on top of the same Git-native content model. Teams can self-host the AGPL core or use a managed Pro/Enterprise offering.
+[Contentrain Studio](/studio) is the open-core team web layer for Contentrain: chat-first operations, role-based collaboration, branch review, media management, and CDN delivery on top of the same Git-native content model. Teams can self-host the AGPL core or use the managed plans (Starter/Pro/Enterprise).
 :::

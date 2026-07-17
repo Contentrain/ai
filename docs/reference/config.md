@@ -119,7 +119,7 @@ interface ContentrainConfig {
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `version` | `number` | Yes | Config schema version. Currently `1`. |
-| `platform` | `Platform` | No | Target platform: `web`, `mobile`, `api`, `desktop`, `static`, `other` |
+| `platform` | `Platform` | No | Target platform: `web`, `mobile`, `api`, `desktop`, `static`, `other`. Informational — MCP's config reader strips it; only the raw file (read by `generate` and tooling) retains it. |
 | `stack` | `StackType` | Yes | Framework identifier. See [Supported Stacks](#supported-stacks) below. |
 | `workflow` | `WorkflowMode` | Yes | `auto-merge` or `review`. See [Workflow Modes](#workflow-modes). |
 | `repository` | `object` | No | GitHub repository connection details. |
@@ -127,7 +127,7 @@ interface ContentrainConfig {
 | `locales.supported` | `string[]` | Yes | All supported locale codes. Must include `default`. |
 | `domains` | `string[]` | Yes | Content domain names for organizing models. |
 | `assets_path` | `string` | No | Directory for media assets relative to project root. |
-| `cdn.url` | `string` | No | Public media delivery base. When set, `contentrain generate` bakes a `media()` resolver into the client that turns relative `media/...` paths into absolute `{cdn.url}/{path}` URLs. |
+| `cdn.url` | `string` | No | Public media delivery base. When set, `contentrain generate` bakes a `media()` resolver into the client that turns relative `media/...` paths into absolute `{cdn.url}/{path}` URLs. Like `platform`, it is not surfaced through MCP's config reader — only `generate` and tooling read it from the raw file. |
 | `branchRetention` | `number` | No | Days a merged `cr/*` branch is kept locally before lazy cleanup. Default: `30`. |
 | `branchWarnLimit` | `number` | No | Unmerged `cr/*` branch count that triggers a warning. Default: `50`. |
 | `branchBlockLimit` | `number` | No | Unmerged `cr/*` branch count that blocks new writes. Default: `80`. |
@@ -312,13 +312,17 @@ interface EntryMeta {
 
 ### Content Status Lifecycle
 
-| Status | Description | Transitions To |
+| Status | Description | Typically Moves To |
 |---|---|---|
 | `draft` | Initial state, work in progress | `in_review`, `published` |
 | `in_review` | Submitted for review | `published`, `rejected` |
 | `published` | Live and active | `archived`, `draft` |
 | `rejected` | Review rejected | `draft` |
 | `archived` | No longer active | `draft` |
+
+::: info Conventions, not a state machine
+The transitions above are the intended editorial flow — MCP does not enforce them. `contentrain_bulk update_status` can set any status directly; the lifecycle discipline lives in your workflow (and Studio's review UI), not in a validator gate.
+:::
 
 ### Content Sources
 
@@ -440,6 +444,8 @@ All content files follow predictable path conventions. These are exported as `PA
 
 ::: warning
 Document meta files include the `{slug}` segment in the path, unlike other kinds. This is because each document is a separate entity with its own lifecycle.
+
+On `i18n: false` models the `{locale}` in the meta path is pinned to the **default locale** — one `data.json` (or `{slug}.md`) means exactly one meta record, at `.contentrain/meta/{modelId}/{default-locale}.json`.
 :::
 
 ### Other Paths
@@ -472,14 +478,13 @@ All JSON files written by Contentrain follow strict serialization rules for dete
 | **Encoding** | UTF-8 | Universal character support |
 | **Trailing newline** | Yes (single `\n`) | POSIX compliance, clean git diffs |
 | **Null values** | Omitted entirely | Token efficiency — don't write what doesn't exist |
-| **Default values** | Omitted entirely | Token efficiency — don't write what's implied |
 | **No trailing commas** | Standard JSON | Compatibility |
 
 ### Why Canonical Serialization Matters
 
 - **Collection entries** are sorted by entry ID → adding entries in parallel produces conflict-free merges
-- **Entry fields** follow the schema definition order → consistent, predictable diffs
-- **Omitting null/default** saves tokens when AI agents read content → lower cost, faster processing
+- **Entry fields** are sorted alphabetically; only the model definition file keeps a curated key order (`id`, `name`, `kind`, `domain`, `i18n`, `description`, `content_path`, `locale_strategy`, `fields`) → consistent, predictable diffs
+- **Omitting null/undefined** saves tokens when AI agents read content → lower cost, faster processing (values equal to a field's declared `default` are still written — the serializer does not compare against schema defaults)
 - **Deterministic output** means running the same operation twice produces identical files — no noise in git history
 
 All MCP tools, the CLI, and the SDK follow these rules. The `contentrain_validate` tool can detect and auto-fix serialization violations with `fix: true`.

@@ -71,7 +71,7 @@ const handle = await startHttpMcpServerWith({
 // handle.close() stops the server
 ```
 
-The same pattern works for `createGitLabProvider` with a `GitLabProvider`. Both require their respective optional peers (`@octokit/rest`, `@gitbeaker/rest`).
+The same pattern works for `createGitLabProvider({ auth, project })` — `project.projectId` (numeric ID or `group/name` path) is required, and self-hosted instances pass `project.host`. Both providers require their respective optional peers (`@octokit/rest`, `@gitbeaker/rest`).
 
 Multi-tenant deployments (`{ resolveProvider }`) should also set `sessionFingerprint` to bind each MCP session to the tenant it was created for — follow-up requests whose fingerprint doesn't match the session's get `404` and the client re-initializes. See the [embedding guide](/guides/embedding-mcp#3a-http--per-request-provider-resolver-multi-tenant) for the full pattern.
 
@@ -117,13 +117,13 @@ An agent running on a laptop can drive a Contentrain project that lives on a ser
 
 ## Capability gates over HTTP
 
-Not every tool works on every provider. A tool driven by an HTTP client against a remote provider returns a structured capability error when the required capability is missing:
+Not every tool works on every provider. Most gating happens at registration time: tools whose requirements a remote provider cannot meet (e.g. `contentrain_scan`, which needs `astScan` + a local project root) are filtered out of `tools/list` entirely. Two cases depend on the *input*, so they surface as structured call-time errors instead — `contentrain_validate` with `fix: true` and `contentrain_apply` in reuse mode:
 
 ```json
 {
-  "error": "contentrain_scan requires local filesystem access.",
-  "capability_required": "astScan",
-  "hint": "This tool is unavailable when MCP is driven by a remote provider. Use a LocalProvider or the stdio transport."
+  "error": "contentrain_validate requires local filesystem access.",
+  "capability_required": "localWorktree",
+  "hint": "This tool is unavailable when MCP is driven by a remote provider (e.g. GitHubProvider). Use a LocalProvider or the stdio transport."
 }
 ```
 

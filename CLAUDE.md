@@ -36,7 +36,7 @@ Use these references instead:
 
 When working with Contentrain content operations (models, content, normalize, validate), you MUST follow the rules and skills in this repo:
 
-### Essential Rules (always-loaded, ~86 lines)
+### Essential Rules (always-loaded)
 - `packages/rules/essential/contentrain-essentials.md` — compact guardrails for every conversation
 
 ### Skills (Agent Skills standard, on-demand)

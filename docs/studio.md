@@ -1,7 +1,7 @@
 ---
 title: Contentrain Studio
 description: "Open-core team operations and delivery for the same Git-native content contract used by Contentrain AI"
-order: 3
+order: 5
 category: getting-started
 slug: studio
 ---
@@ -14,7 +14,7 @@ In short:
 
 > Contentrain AI gives developers local-first packages and agent workflows. Studio gives teams an authenticated web surface for review, collaboration, media, APIs, and CDN delivery on top of the same `.contentrain/` contract.
 
-Teams can self-host the AGPL core or use a managed Pro/Enterprise offering, depending on how much infrastructure and operations they want to own.
+Teams can self-host the AGPL core or use the managed plans (Starter/Pro/Enterprise), depending on how much infrastructure and operations they want to own.
 
 It is not a separate content format and it is not a different storage engine. Studio sits on top of the same Contentrain model:
 

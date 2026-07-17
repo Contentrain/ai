@@ -51,6 +51,8 @@ const transport = new StdioServerTransport()
 await server.connect(transport)
 ```
 
+`createServer` also accepts an options object — `createServer({ provider, projectRoot?, instructions? })` — where `instructions` overrides the MCP server instructions string advertised to clients.
+
 This is what `contentrain serve --stdio` does internally. Every IDE that speaks MCP (Claude Code, Cursor, Windsurf) talks to this shape.
 
 ### 2. HTTP + LocalProvider (local CI, Studio-like hosting pointed at a working tree)
@@ -63,6 +65,7 @@ const handle = await startHttpMcpServer({
   port: 3333,
   host: '0.0.0.0',
   authToken: process.env.MCP_BEARER_TOKEN,
+  // path: '/mcp' — custom mount path, default '/mcp'
 })
 
 // handle.url — "http://0.0.0.0:3333/mcp"
@@ -153,7 +156,7 @@ const handle = await startHttpMcpServerWith({
 
 For **multi-tenant** deployments where each request targets a different project, see the **per-request resolver** section below.
 
-Swap in `createGitLabProvider({ auth, project })` for GitLab. Self-hosted GitLab instances pass `project.host`.
+Swap in `createGitLabProvider({ auth, project })` for GitLab — `project.projectId` (numeric ID or `group/name` path) is required; self-hosted GitLab instances also pass `project.host`. Both remote providers accept an optional `contentRoot` on the repo/project ref for monorepos whose `.contentrain/` lives under a prefix.
 
 ### 3a. HTTP + per-request provider resolver (multi-tenant)
 
@@ -193,8 +196,9 @@ import { buildContextChange } from '@contentrain/mcp/core/context'
 import { validateProject } from '@contentrain/mcp/core/validator'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 
+// Throws on invalid input; soft signals come back as per-entry advisories
 const plan = await planContentSave(provider, { model, entries, config, vocabulary })
-if (plan.result.some(r => r.error)) throw new Error('plan invalid')
+const advisories = plan.result.flatMap(r => r.advisories ?? [])
 
 const overlay = new OverlayReader(provider, plan.changes)
 const contextChange = await buildContextChange(overlay, {
@@ -245,7 +249,7 @@ Tools whose requirements can never be met by the session's provider are not regi
 {
   "error": "contentrain_validate requires local filesystem access.",
   "capability_required": "localWorktree",
-  "hint": "This tool is unavailable when MCP is driven by a remote provider. Use a LocalProvider or the stdio transport."
+  "hint": "This tool is unavailable when MCP is driven by a remote provider (e.g. GitHubProvider). Use a LocalProvider or the stdio transport."
 }
 ```
 
@@ -366,7 +370,7 @@ No HTTP, no MCP JSON-RPC — just the core primitives.
 
 ## Troubleshooting
 
-**`ERR_PACKAGE_PATH_NOT_EXPORTED`** — you're reaching into a subpath that isn't in `package.json#exports`. Known good subpaths: `/server`, `/server/http`, `/core/config`, `/core/context`, `/core/contracts`, `/core/model-manager`, `/core/content-manager`, `/core/validator`, `/core/ops`, `/core/overlay-reader`, `/core/scanner`, `/core/graph-builder`, `/core/apply-manager`, `/core/scan-config`, `/providers/local`, `/providers/github`, `/providers/gitlab`, `/util/detect`, `/util/fs`, `/git/transaction`, `/git/branch-lifecycle`, `/templates`.
+**`ERR_PACKAGE_PATH_NOT_EXPORTED`** — you're reaching into a subpath that isn't in `package.json#exports`. Known good subpaths: `/server`, `/server/http`, `/core/config`, `/core/context`, `/core/contracts`, `/core/model-manager`, `/core/content-manager`, `/core/validator`, `/core/doctor`, `/core/ops`, `/core/overlay-reader`, `/core/scanner`, `/core/graph-builder`, `/core/apply-manager`, `/core/scan-config`, `/providers/local`, `/providers/github`, `/providers/gitlab`, `/tools/annotations`, `/tools/availability`, `/testing/conformance`, `/util/detect`, `/util/fs`, `/git/transaction`, `/git/branch-lifecycle`, `/templates`.
 
 **Stale context.json stats after a remote commit** — you forgot `OverlayReader`. `buildContextChange(provider, op)` reads the pre-change branch; wrap with `new OverlayReader(provider, plan.changes)`.
 

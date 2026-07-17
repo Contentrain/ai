@@ -222,7 +222,7 @@ npx contentrain studio connect # connect repo to Studio project
 - **[Getting Started](https://ai.contentrain.io/getting-started)** — install, connect an agent, and run the first workflow
 - **[Normalize Guide](https://ai.contentrain.io/guides/normalize)** — the main hardcoded-string rescue flow
 - **[Ecosystem Map](https://ai.contentrain.io/ecosystem)** — package-to-product bridges across AI and Studio
-- **[Contentrain Studio](https://ai.contentrain.io/studio)** — open-core team operations for Git-native structured content, self-hostable or available as a managed Pro/Enterprise offering
+- **[Contentrain Studio](https://ai.contentrain.io/studio)** — open-core team operations for Git-native structured content, self-hostable or available as managed plans (Starter/Pro/Enterprise)
 - **[Full Docs](https://ai.contentrain.io)** — guides, package reference, and framework integration
 
 ## Development

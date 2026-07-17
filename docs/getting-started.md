@@ -282,5 +282,5 @@ Want to skip setup? Start from a production-ready template with content models, 
 - [Framework Integration](/guides/frameworks) — Platform-specific setup patterns
 
 ::: info Contentrain Studio
-[Contentrain Studio](/studio) is the open-core team operations surface for Git-native structured content. Teams can self-host the AGPL core or use a managed Pro/Enterprise offering when they want web-based collaboration, review, media, and CDN delivery on top of the same content model.
+[Contentrain Studio](/studio) is the open-core team operations surface for Git-native structured content. Teams can self-host the AGPL core or use the managed plans (Starter/Pro/Enterprise) when they want web-based collaboration, review, media, and CDN delivery on top of the same content model.
 :::

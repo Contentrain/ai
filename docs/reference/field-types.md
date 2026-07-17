@@ -58,7 +58,7 @@ Field types for textual content of varying lengths and formats.
 | `url` | Web URL | Auto-validated format | `string` |
 | `slug` | URL-friendly identifier | Lowercase, hyphens, no spaces | `string` |
 | `code` | Source code or preformatted text | `min`, `max` (length) | `string` |
-| `icon` | Icon identifier (e.g., icon library name) | `pattern`, `options` | `string` |
+| `icon` | Icon identifier (e.g., icon library name) | `pattern` | `string` |
 
 #### Examples
 
@@ -92,7 +92,7 @@ Field types for textual content of varying lengths and formats.
   },
   "category_icon": {
     "type": "icon",
-    "options": ["home", "settings", "user", "star"]
+    "pattern": "^[a-z0-9-]+$"
   }
 }
 ```
@@ -386,7 +386,7 @@ Field types for structured and compound data.
 ```
 
 ::: info
-The `array` type can hold simple values (`items: "string"`) or complex objects (`items: { type: "object", fields: {...} }`). The `object` type always requires a `fields` definition.
+The `array` type can hold simple values (`items: "string"`) or complex objects (`items: { type: "object", fields: {...} }`). Declare `fields` on an `object` to type its sub-fields — `fields` on any other type is rejected by `model_save`. Nesting is capped at 10 levels.
 :::
 
 ## Complete Type Summary Table
@@ -394,51 +394,66 @@ The `array` type can hold simple values (`items: "string"`) or complex objects (
 | # | Type | Group | JS Storage | Supports `min`/`max` | Supports `pattern` | Supports `options` | Supports `model` | Supports `items`/`fields` |
 |---|---|---|---|---|---|---|---|---|
 | 1 | `string` | Text | `string` | Length | Yes | No | No | No |
-| 2 | `text` | Text | `string` | Length | No | No | No | No |
-| 3 | `email` | Text | `string` | No | Auto | No | No | No |
-| 4 | `url` | Text | `string` | No | Auto | No | No | No |
+| 2 | `text` | Text | `string` | Length | Yes | No | No | No |
+| 3 | `email` | Text | `string` | Length | Auto | No | No | No |
+| 4 | `url` | Text | `string` | Length | Auto | No | No | No |
 | 5 | `slug` | Text | `string` | Length | Auto | No | No | No |
-| 6 | `code` | Text | `string` | Length | No | No | No | No |
-| 7 | `icon` | Text | `string` | No | Yes | Yes | No | No |
-| 8 | `markdown` | Rich Content | `string` | Length | No | No | No | No |
-| 9 | `richtext` | Rich Content | `string` | Length | No | No | No | No |
+| 6 | `code` | Text | `string` | Length | Yes | No | No | No |
+| 7 | `icon` | Text | `string` | Length | Yes | No | No | No |
+| 8 | `markdown` | Rich Content | `string` | Length | Yes | No | No | No |
+| 9 | `richtext` | Rich Content | `string` | Length | Yes | No | No | No |
 | 10 | `number` | Numeric | `number` | Value | No | No | No | No |
 | 11 | `integer` | Numeric | `number` | Value | No | No | No | No |
 | 12 | `decimal` | Numeric | `number` | Value | No | No | No | No |
 | 13 | `percent` | Numeric | `number` | Value | No | No | No | No |
 | 14 | `rating` | Numeric | `number` | Value | No | No | No | No |
 | 15 | `boolean` | Boolean | `boolean` | No | No | No | No | No |
-| 16 | `date` | Date/Time | `string` | Date range | No | No | No | No |
-| 17 | `datetime` | Date/Time | `string` | Datetime range | No | No | No | No |
+| 16 | `date` | Date/Time | `string` | Length | Yes | No | No | No |
+| 17 | `datetime` | Date/Time | `string` | Length | Yes | No | No | No |
 | 18 | `image` | Media | `string` | No | No | No | No | No |
 | 19 | `video` | Media | `string` | No | No | No | No | No |
 | 20 | `file` | Media | `string` | No | No | No | No | No |
-| 21 | `color` | Color | `string` | No | Yes | No | No | No |
-| 22 | `phone` | Phone | `string` | No | Yes | No | No | No |
+| 21 | `color` | Color | `string` | Length | Yes | No | No | No |
+| 22 | `phone` | Phone | `string` | Length | Yes | No | No | No |
 | 23 | `relation` | Relation | `string` | No | No | No | Yes | No |
-| 24 | `relations` | Relation | `string[]` | No | No | No | Yes | No |
+| 24 | `relations` | Relation | `string[]` | Count | No | No | Yes | No |
 | 25 | `select` | Complex | `string` | No | No | Yes (required) | No | No |
 | 26 | `array` | Complex | `array` | Count | No | No | No | `items` |
 | 27 | `object` | Complex | `object` | No | No | No | No | `fields` |
+
+::: info How to read `min`/`max` and `pattern`
+Both are enforced generically at validation time: `min`/`max` compare **string length**, **numeric value**, or **array count** depending on the stored value, and `pattern` runs against any string value. The table marks the types where they are meaningful — a `pattern` on an `image` path is technically enforced too, it is just rarely what you want. There is no date-range semantics: on `date`/`datetime` fields `min`/`max` compare string length, not chronology.
+:::
 
 ## Constraint Properties Reference
 
 | Property | Applicable Types | Description |
 |---|---|---|
 | `required` | All | Field must have a non-null value |
-| `unique` | All (collection only) | Value must be unique across all entries |
-| `default` | All | Default value when field is not provided |
-| `min` | string, text, code, slug, markdown, richtext, number, integer, decimal, percent, rating, array | Minimum length (strings) or value (numbers) or count (arrays) |
-| `max` | string, text, code, slug, markdown, richtext, number, integer, decimal, percent, rating, array | Maximum length (strings) or value (numbers) or count (arrays) |
-| `pattern` | string, icon, color, phone | Regular expression for validation |
-| `options` | select, icon | Array of allowed string values |
-| `model` | relation, relations | Target model ID(s) for the relation |
-| `items` | array | Item type: a type name string or a nested `FieldDef` |
+| `unique` | All (collection and document) | Value must be unique across all entries — rejected on singleton models (`model_save` errors), N/A for dictionary (no fields) |
+| `default` | All | Default value declared on the schema (must be coherent with the type/options) |
+| `min` | All string types, numeric types, `array`, `relations` | Minimum length (strings), value (numbers), or count (arrays/relations) |
+| `max` | All string types, numeric types, `array`, `relations` | Maximum length (strings), value (numbers), or count (arrays/relations) |
+| `pattern` | All string types (primary use: string, icon, color, phone) | Regular expression, enforced on every string value; must compile or `model_save` rejects it |
+| `options` | select only | Array of allowed string values — declaring it on any other type is a `model_save` error |
+| `model` | relation, relations | Target model ID(s) for the relation — required for these types |
+| `items` | array | Item type: a type name string or a nested `FieldDef` — items are validated by the same rules as a scalar of that type |
+| `accept` | image, video, file | Allowed formats — checked against the **file extension only**, as a warning that never blocks; unknown extensions stay silent |
+| `maxSize` | image, video, file | Maximum file size in bytes — **accepted but never enforced by MCP** (it stores a path, not the file); your media provider enforces it at ingest, and `model_save` returns a `schema_warnings` entry saying so |
 | `fields` | object | Sub-field definitions as `Record<string, FieldDef>` |
-| `accept` | image, video, file | Comma-separated MIME types |
-| `maxSize` | image, video, file | Maximum file size in bytes |
 | `description` | All | Human-readable description of the field |
 
+## How Constraints Are Enforced
+
+Two distinct gates apply, at different moments:
+
+**At `model_save` (authoring time).** The schema itself is validated and a misplaced constraint is a blocking error, not a silent no-op: `options` on a non-select, `items` on a non-array, `fields` on a non-object, `accept`/`maxSize` on a non-media field, `unique` on a singleton, `min > max`, an uncompilable `pattern`, a `select` without non-empty `options`, a `relation`/`relations` without `model`, a `default` incoherent with the type. Model IDs must be kebab-case, field names snake_case (`^[a-z][a-z0-9_]*$`), and unknown keys are rejected — a typo'd `requird: true` is an error.
+
+**At `contentrain_content_save` (write time).** Values are validated *before* anything is committed — a `severity: error` on any entry in the call means nothing is written. Severities split by intent:
+
+- **Errors** (block the write): wrong type, `required` missing, `min`/`max` violations, `pattern` mismatch, `options` membership, and definitional semantic checks — an invalid `slug`, an unparseable `date`/`datetime`, a non-integer `integer`, an out-of-range `percent`.
+- **Warnings** (pass through, reported in the response): heuristic semantic checks — `email`, `url`, `color`, `phone` formats — and the extension-based `accept` check. `rating` has no range enforcement by design.
+
 ::: info Shared Across Contentrain AI and Studio
-These 27 field types define content schemas used identically in both local workflows (`@contentrain/mcp`, CLI) and [Contentrain Studio](/studio). Content modeled locally works seamlessly in team workflows without changes.
+These 27 field types define content schemas used identically in both local workflows (`@contentrain/mcp`, CLI) and [Contentrain Studio](/studio). The pure validators live in `@contentrain/types` (`validateFieldValue`, `validateSemanticType`), so Studio forms and MCP enforce the same contract. Content modeled locally works seamlessly in team workflows without changes.
 :::
