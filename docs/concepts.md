@@ -1,7 +1,7 @@
 ---
 title: Core Concepts
 description: "Understand the architecture: models, content kinds, domains, locales, and the agent-driven workflow"
-order: 2
+order: 4
 category: getting-started
 slug: concepts
 ---
@@ -49,7 +49,7 @@ Contentrain AI inverts the traditional CMS workflow:
 - **Project setup:** `contentrain_init`, `contentrain_scaffold`
 - **Content and schema writes:** `contentrain_model_save`, `contentrain_model_delete`, `contentrain_content_save`, `contentrain_content_delete`
 - **Normalize:** `contentrain_scan`, `contentrain_apply`
-- **Workflow and operations:** `contentrain_validate`, `contentrain_submit`, `contentrain_merge`, `contentrain_bulk`
+- **Workflow and operations:** `contentrain_validate`, `contentrain_submit`, `contentrain_merge`, `contentrain_branch_list`, `contentrain_branch_delete`, `contentrain_bulk`
 
 MCP is **deterministic infrastructure** — it doesn't make content decisions. The agent decides what to create; MCP executes it.
 
@@ -207,7 +207,7 @@ Contentrain stores everything as plain JSON and Markdown files in your Git repo.
 
 Web projects deploy content with `git push` — no extra infrastructure needed. But non-web platforms (iOS, Android, React Native, Flutter, desktop apps, game engines, IoT) can't read from a git repo at runtime.
 
-For these use cases, Contentrain publishes merged content to a CDN (`cdn.contentrain.io`), delivering the same structured JSON your SDK queries — just over HTTP instead of the filesystem.
+For these use cases, [Contentrain Studio](/studio)'s managed CDN publishes merged content over HTTP (`GET /api/cdn/v1/{projectId}/{path}` on the Studio host), delivering the same structured JSON your SDK queries — just over HTTP instead of the filesystem. The CDN is a Studio delivery feature (Cloudflare R2-backed), not part of the MIT core; the SDK's CDN client points at it via `cdn.url` in `config.json`.
 
 ```
 Git repo → merge → CDN publish → iOS/Android/Flutter fetch → typed response
@@ -217,7 +217,7 @@ This means one content source powers your website, mobile app, and any other pla
 
 ## Contentrain Studio
 
-[Contentrain Studio](/studio) is the open-core team operations panel for Git-native structured content. Teams can self-host the AGPL core or use a managed Pro/Enterprise offering on top of the same model.
+[Contentrain Studio](/studio) is the open-core team operations panel for Git-native structured content. Teams can self-host the AGPL core or use the managed plans (Starter/Pro/Enterprise) on top of the same model.
 
 The local open-source stack gives you:
 

@@ -52,7 +52,7 @@ Collections store **multiple typed entries** as a JSON object-map keyed by auto-
 ### Key Characteristics
 
 - **Object-map storage** — entries keyed by ID, not an array
-- **Auto-generated hex IDs** — alphanumeric, 1-40 characters, hyphens/underscores allowed
+- **Auto-generated hex IDs** — 12 lowercase hex characters when generated; hand-written IDs may be any 1-40 alphanumeric characters with hyphens/underscores
 - **Typed fields** — each field has a defined `FieldType` with validation
 - **Sorted keys** — canonical serialization sorts entry IDs alphabetically
 - **Per-locale files** — each locale gets its own JSON file
@@ -369,10 +369,10 @@ The `frontmatter` object contains all fields defined in the model schema. The `b
 | i18n: true | `.contentrain/content/{domain}/{slug}/{locale}.md` |
 | i18n: false | `.contentrain/content/{domain}/{slug}.md` |
 | Meta (i18n: true) | `.contentrain/meta/{model-id}/{slug}/{locale}.json` |
-| Meta (i18n: false) | `.contentrain/meta/{model-id}/{slug}.json` |
+| Meta (i18n: false) | `.contentrain/meta/{model-id}/{slug}/{default-locale}.json` |
 
 ::: warning
-Document meta files have a **different path structure** than other kinds. They include the `{slug}` segment: `.contentrain/meta/{model-id}/{slug}/{locale}.json`. Other kinds use `.contentrain/meta/{model-id}/{locale}.json` directly.
+Document meta files have a **different path structure** than other kinds. They include the `{slug}` segment: `.contentrain/meta/{model-id}/{slug}/{locale}.json`. Other kinds use `.contentrain/meta/{model-id}/{locale}.json` directly. On `i18n: false` models (any kind) the single meta record is pinned to the **default locale** — the filename is still `{default-locale}.json`, never `data.json` or a flat `{slug}.json`.
 :::
 
 ### MCP content_save Call
@@ -480,7 +480,6 @@ Every model has corresponding meta files in `.contentrain/meta/{model-id}/` that
   "status": "published",
   "source": "agent",
   "updated_by": "contentrain-mcp",
-  "approved_by": null,
   "version": "1.0.0",
   "publish_at": "2026-01-15T00:00:00Z",
   "expire_at": "2026-12-31T23:59:59Z"
@@ -583,7 +582,7 @@ A model can reference itself for tree structures:
 |---|---|
 | **Referential integrity** | Referenced ID/slug must exist in the target model |
 | **Locale-agnostic** | IDs and slugs are the same across all locales |
-| **Cascade warning** | Deleting a referenced entry triggers a validation warning |
+| **No delete-time guard** | Deleting a referenced *entry* is not blocked and emits nothing at delete time; the broken reference surfaces as an **error** on the next `contentrain_validate`. (Deleting a whole *model* that others reference is blocked.) |
 | **Array ordering** | `relations` array order is preserved |
 | **Min/max** | `relations` supports `min` and `max` element count |
 

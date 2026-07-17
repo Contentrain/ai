@@ -56,7 +56,9 @@ This writes:
   index.cjs          — CJS entry (NestJS, Express, legacy tooling)
   index.d.ts         — Generated TypeScript types from model schemas
   data/
-    {model}.{locale}.mjs   — Static data modules per model/locale
+    {model}.{locale}.mjs          — Static data modules per model/locale
+    {model}--{slug}.{locale}.mjs  — Document entries (one module per slug)
+    {model}.mjs                   — Non-i18n models (no locale suffix)
 ```
 
 It also updates your `package.json` with subpath imports:
@@ -69,6 +71,12 @@ It also updates your `package.json` with subpath imports:
       "import": "./.contentrain/client/index.mjs",
       "require": "./.contentrain/client/index.cjs",
       "default": "./.contentrain/client/index.mjs"
+    },
+    "#contentrain/*": {
+      "types": "./.contentrain/client/*.d.ts",
+      "import": "./.contentrain/client/*.mjs",
+      "require": "./.contentrain/client/*.cjs",
+      "default": "./.contentrain/client/*.mjs"
     }
   }
 }
@@ -234,6 +242,7 @@ const latest = document('blog-article')
 | `locale` | `locale(lang: string)` | `this` | Set the content locale |
 | `where` | `where(field, value)` | `this` | Equality filter (shorthand) |
 | `where` | `where(field, op, value)` | `this` | Operator filter (same operators as QueryBuilder) |
+| `sort` | `sort(field, order?)` | `this` | Sort by frontmatter field (`asc` default) |
 | `include` | `include(...fields)` | `this` | Resolve relation fields |
 | `bySlug` | `bySlug(slug)` | `T \| undefined` | Find document by slug |
 | `count` | `count()` | `number` | Return count of matching documents |
@@ -349,7 +358,8 @@ For all bundler setups, also add a `paths` entry to `tsconfig.json` so the TypeS
 {
   "compilerOptions": {
     "paths": {
-      "#contentrain": ["./.contentrain/client/index.d.ts"]
+      "#contentrain": ["./.contentrain/client/index.d.ts"],
+      "#contentrain/*": ["./.contentrain/client/*.d.ts"]
     }
   }
 }

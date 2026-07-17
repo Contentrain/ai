@@ -37,11 +37,11 @@ The server starts on `http://localhost:3333` by default.
 |---|---|---|
 | `--port` | `3333` | Port number |
 | `--host` | `localhost` | Host address |
-| `--open=false` | `true` | Prevent auto-opening browser |
+| `--open=false` | `true` | Prevent auto-opening browser (or set `CONTENTRAIN_NO_OPEN=true`) |
 | `--demo` | disabled | Temporary demo project (no setup required) |
 | `--stdio` | disabled | MCP stdio transport for IDE integration (no web UI) |
-| `--mcpHttp` | disabled | MCP HTTP transport at `POST /mcp` (secure-by-default Bearer auth) |
-| `--authToken` | — | Bearer token required on non-localhost HTTP binds |
+| `--mcpHttp` | disabled | MCP HTTP transport at `POST /mcp` (Bearer auth enforced when a token is set) |
+| `--authToken` | — | Bearer token; the web UI refuses to start on non-localhost binds without it |
 
 ### Check if already running
 
@@ -213,7 +213,8 @@ The serve backend exposes REST endpoints at `http://localhost:3333/api/*`. Key r
 | `/api/preview/merge?branch=cr/...` | GET | Side-effect-free merge preview (FF / conflicts / already-merged) |
 | `/api/history` | GET | Recent contentrain-related commits |
 | `/api/context` | GET | `.contentrain/context.json` |
-| `/api/normalize/*` | various | Scan / plan / approve / reject / apply / approve-branch |
+| `/api/normalize/*` | various | Scan / results / plan / approve / reject / apply / approve-branch / sources / file-context |
+| `/api/tree` | GET | Project source-file tree (`?ext=` filter) |
 
 Every write route validates its body through Zod schemas (`parseOrThrow`) before reaching the MCP tool layer.
 
@@ -267,7 +268,9 @@ For Studio, CI, or remote agents, serve can expose MCP over Streamable HTTP:
 npx contentrain serve --mcpHttp --authToken $(openssl rand -hex 32)
 ```
 
-**Secure-by-default:** binding to a non-localhost address (`0.0.0.0` / specific IPs) without `--authToken` (or `CONTENTRAIN_AUTH_TOKEN` env var) is a hard error — the HTTP MCP endpoint exposes full project write access.
+When a token is supplied, every request must send `Authorization: Bearer <token>`. Binding to `0.0.0.0` without a token logs a warning but the server still starts — the endpoint exposes full project write access, so always pass a token on non-localhost binds.
+
+**The web UI is stricter:** the default (non-MCP) serve mode **hard-errors** on any non-localhost bind without `--authToken` / `CONTENTRAIN_AUTH_TOKEN` and refuses to start (OWASP Secure-by-Default). The UI has no per-request auth today; the token requirement is a start-up gate for exposing it beyond localhost.
 
 See the [HTTP Transport guide](/guides/http-transport) for deployment patterns.
 

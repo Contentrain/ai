@@ -92,7 +92,7 @@ const result: ValidationResult = {
 | `ContentStatus` | `draft`, `in_review`, `published`, `rejected`, `archived` | |
 | `ContentSource` | `agent`, `human`, `import` | |
 | `WorkflowMode` | `auto-merge`, `review` | [Configuration](/reference/config) |
-| `StackType` | `nuxt`, `next`, `astro`, `sveltekit`, `remix`, + 20 more | [Configuration](/reference/config) |
+| `StackType` | `nuxt`, `next`, `astro`, `sveltekit`, `remix`, + 25 more | [Configuration](/reference/config) |
 | `Platform` | `web`, `mobile`, `api`, `desktop`, `static`, `other` | |
 | `ContextSource` | `mcp-local`, `mcp-studio`, `studio-ui` | |
 | `CollectionRuntimeFormat` | `map`, `array` | |
@@ -109,7 +109,7 @@ const result: ValidationResult = {
 | `Vocabulary` | Shared terms for content consistency |
 | `EntryMeta` | Per-entry metadata (status, source, timestamps) |
 | `AssetEntry` | Asset registry entry (path, type, size, alt) |
-| `ValidationError` | Structured validation error with severity and context |
+| `ValidationError` | Structured validation issue — `severity` is `error`, `warning`, or `notice` (notices flag drift like drafts beside published entries) |
 | `ValidationResult` | Validation outcome (valid flag + error list) |
 | `ContextJson` | Last operation context written by MCP |
 | `ModelSummary` | Lightweight model info for listing operations |
@@ -146,7 +146,7 @@ Media facet types (implemented by providers exposing a media stack — drives th
 
 Pre-built capability set:
 
-- `LOCAL_CAPABILITIES` — Full capability set for LocalProvider (all seven capabilities enabled). Exported from `@contentrain/types` for custom providers that back onto the local filesystem.
+- `LOCAL_CAPABILITIES` — Capability set for LocalProvider: `localWorktree`, `sourceRead`, `sourceWrite`, `pushRemote`, and `astScan` enabled; `branchProtection` and `pullRequestFallback` are `false` (a local worktree has no remote protection or PR flow). Exported from `@contentrain/types` for custom providers that back onto the local filesystem.
 
 See [RepoProvider Reference](/reference/providers) for the complete interface definitions and a minimum-viable provider recipe.
 
@@ -195,10 +195,14 @@ Used by the normalize flow (scan, extract, reuse):
 | `ScanSummaryResult` | High-level scan summary (directory breakdown, top repeated) |
 | `StringContext` | Where a string appears (`jsx_text`, `template_attribute`, ...) |
 | `FileCategory` | File classification (`page`, `component`, `layout`, `other`) |
+| `NormalizePlan` | Normalize plan exchanged between scan and apply |
+| `NormalizePlanModel` | Model proposal inside a normalize plan |
+| `NormalizePlanExtraction` | One extraction target (content entry to create) |
+| `NormalizePlanPatch` | One source patch inside a normalize plan |
 
 ### Runtime Constants
 
-These are the only non-type exports — used at runtime for path resolution and validation:
+Beyond types, the package ships a small runtime surface: constants plus pure, dependency-free validate/serialize functions (browser-compatible — Studio shares the same validation contract through them). Constants first:
 
 ```ts
 import {
@@ -221,6 +225,34 @@ import {
 | `ENTRY_ID_PATTERN` | RegExp | Validates entry IDs |
 | `LOCALE_PATTERN` | RegExp | Validates ISO locale codes |
 | `CANONICAL_JSON` | Object | Deterministic serialization rules |
+| `SECRET_PATTERNS` | `ReadonlyArray<RegExp>` | Patterns behind `detectSecrets` — extend for custom secret detection |
+
+### Runtime Functions
+
+Validate functions (pure, dependency-free):
+
+| Function | Purpose |
+|----------|---------|
+| `validateSlug(slug)` | Kebab-case slug validation |
+| `validateEntryId(id)` | Entry ID format validation |
+| `validateLocale(locale, config)` | Locale format + config support check |
+| `detectSecrets(value)` | Detect potential secrets in field values |
+| `validateFieldValue(value, fieldDef)` | Full field schema validation (type, required, min/max, pattern, select) |
+| `validateSemanticType(value, type)` | Semantic checks for typed values (integer, date, email, url, ...) |
+| `validateAccept(value, accept)` | Extension-based `accept` constraint check for media paths |
+| `isMediaType(type)` | Whether a field type is media-backed |
+
+Serialize functions (pure, dependency-free):
+
+| Function | Purpose |
+|----------|---------|
+| `sortKeys(obj, fieldOrder?)` | Recursive key sorting for canonical output |
+| `canonicalStringify(data, fieldOrder?)` | Deterministic JSON serialization |
+| `generateEntryId()` | 12-char hex entry ID generation |
+| `parseMarkdownFrontmatter(content)` | Parse YAML frontmatter + body from markdown |
+| `serializeMarkdownFrontmatter(data, body)` | Serialize data + body into markdown frontmatter |
+
+Unique constraints and relation references need external state (all entries / target existence), so they stay in MCP's validator — `validateFieldValue` covers everything schema-level.
 
 ### Git Transaction Types
 

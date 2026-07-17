@@ -98,14 +98,14 @@ The MCP server exposes **24 tools** — 19 core + 5 media — organized by funct
 | `contentrain_describe` | Model deep-dive | Full schema, sample data, field types for any model |
 | `contentrain_describe_format` | Format reference | File structure, JSON formats, markdown conventions, locale strategies |
 | `contentrain_doctor` | Health diagnostics | Setup validation, SDK freshness, orphan content, local branch limits, remote `cr/*` count, unused keys, missing translations |
-| `contentrain_content_list` | Read content | List and filter content entries with optional relation resolution |
+| `contentrain_content_list` | Read content | List entries with `filter`, optional relation resolution (`resolve`), and `limit`/`offset` pagination |
 
 ### Write Tools (Git-Backed, Branch-Isolated)
 
 | Tool | Purpose | Description |
 |------|---------|-------------|
 | `contentrain_init` | Bootstrap project | Creates `.contentrain/` structure, config, and git setup |
-| `contentrain_scaffold` | Apply templates | Blog, docs, landing page, or SaaS starter templates |
+| `contentrain_scaffold` | Apply templates | Starter templates: `blog`, `landing`, `docs`, `ecommerce`, `saas`, `i18n`, `mobile` |
 | `contentrain_model_save` | Define schemas | Create or update model definitions with field types and constraints |
 | `contentrain_model_delete` | Remove models | Delete a model definition and its content |
 | `contentrain_content_save` | Write content | Save entries for any model kind (collection, singleton, dictionary, document) |
@@ -125,6 +125,9 @@ The MCP server exposes **24 tools** — 19 core + 5 media — organized by funct
 | `contentrain_bulk` | Batch operations | Bulk locale copy, status updates, and deletes |
 
 ### Field constraints
+
+Fields draw from a **27-type catalog** — see [Field Types](/reference/field-types)
+for the full list and per-type constraint enforcement.
 
 `contentrain_content_save` **validates before it writes**. A `severity: error` issue
 on any entry in the call means nothing is committed — no branch, nothing to clean up.
@@ -171,6 +174,9 @@ delivery: a collection entry is served only when its status is `published`.
 - **`contentrain_validate` flags publish-state drift** — drafts sitting beside
   published entries in one collection — as a notice. It never auto-fixes it:
   publishing is a content decision, and MCP does not make those.
+- **Scheduled publishing lives in meta too.** `contentrain_content_save` accepts
+  optional `publish_at` / `expire_at` (ISO 8601) per entry; `expire_at` must be
+  after `publish_at`.
 
 ::: tip Non-i18n models
 A model with `i18n: false` keeps all content in one `data.json`, so it has
@@ -212,16 +218,18 @@ MCP is infrastructure, not intelligence. It does not decide what content to writ
 - **Atomic git transactions** — every write is committed to a branch
 - **Schema enforcement** — content is validated against model definitions
 
-### 2. Dry-Run First
+### 2. Preview Where It Counts
 
-Every write operation supports `dry_run: true`. The pattern is always:
+`dry_run` belongs to `contentrain_apply` — the one tool that can modify your source files. The normalize pattern is always:
 
-1. Run with `dry_run: true` to preview changes
+1. Run `contentrain_apply` with `dry_run: true` (the default) to preview the plan
 2. Review the output
 3. Run with `dry_run: false` to commit
 
-::: warning Never Skip Preview
-Always call write tools with `dry_run: true` first. This is not optional — it prevents accidental schema changes, content overwrites, and branch pollution.
+The other write tools do not take a `dry_run` parameter. They are made safe by different guarantees: every write lands on an isolated `cr/*` branch, `contentrain_content_save` validates before committing (an error means nothing is written), and destructive tools (`content_delete`, `model_delete`, `branch_delete`, `merge`, `bulk delete_entries`) require an explicit `confirm: true`.
+
+::: warning Never Skip the Apply Preview
+Always call `contentrain_apply` with `dry_run: true` first and review the plan. It is the only tool that can touch source code — skipping the preview risks unreviewed source patches.
 :::
 
 ### 3. Git-Native Workflow
@@ -308,7 +316,7 @@ Ask your agent: *"Is my Contentrain setup healthy?"* — triggers `contentrain_d
 ### Create a Model
 
 ```ts
-// Agent calls contentrain_model_save with dry_run: true first
+// Agent calls contentrain_model_save
 {
   "id": "blog-post",
   "name": "Blog Posts",
@@ -318,7 +326,7 @@ Ask your agent: *"Is my Contentrain setup healthy?"* — triggers `contentrain_d
   "fields": {
     "title": { "type": "string", "required": true },
     "excerpt": { "type": "text" },
-    "author": { "type": "relation", "relation": "team-members" },
+    "author": { "type": "relation", "model": "team-members" },
     "published": { "type": "boolean" }
   }
 }
@@ -470,10 +478,11 @@ claude mcp add --transport http contentrain \
 
 | Trust Level | Tools | Risk | Notes |
 |-------------|-------|------|-------|
-| **HIGH** (read-only) | `status`, `describe`, `describe_format`, `doctor`, `content_list` | None | Safe to call anytime, no side effects |
-| **MEDIUM** (git-isolated writes) | `model_save`, `content_save`, `content_delete`, `model_delete`, `validate`, `scaffold`, `bulk` | Low | Changes isolated to `cr/*` branches, reviewable |
-| **LOW** (source modification) | `scan`, `apply` | Medium | Normalize touches source files — always use dry_run first |
-| **MEDIUM** (remote push) | `submit`, `merge` | Medium | Pushes branches to remote or merges — requires network access and review |
+| **HIGH** (read-only) | `status`, `describe`, `describe_format`, `doctor`, `content_list`, `branch_list`, `scan`, `media_list`, `media_get` | None | Safe to call anytime, no side effects — `scan` reads source but never writes |
+| **MEDIUM** (git-isolated writes) | `init`, `scaffold`, `model_save`, `model_delete`, `content_save`, `content_delete`, `validate`, `bulk` | Low | Writes go through git transactions on isolated `cr/*` branches; destructive tools require `confirm: true` |
+| **MEDIUM** (branch lifecycle) | `submit`, `merge`, `branch_delete` | Medium | `submit` pushes to the remote (requires network); `merge` and `branch_delete` are local git operations — network is used only for best-effort remote-copy cleanup |
+| **MEDIUM** (provider media) | `media_ingest`, `media_update`, `media_delete` | Medium | Provider-side media stack; `media_delete` is destructive and does not rewrite content references |
+| **LOW** (source modification) | `apply` | Medium | `mode: "reuse"` patches source files — always run `dry_run: true` first |
 
 ::: danger Source Modifications
 The `contentrain_apply` tool with `mode: "reuse"` modifies your source code files. Always run with `dry_run: true` first, review the patches carefully, and use the review workflow before merging.
@@ -507,6 +516,7 @@ await server.connect(transport)
 
 Available subpath exports:
 
+- `@contentrain/mcp` (root) — stdio server entrypoint (what the `contentrain-mcp` bin runs)
 - `@contentrain/mcp/server` — MCP server factory and stdio setup
 - `@contentrain/mcp/server/http` — HTTP transport server factory
 - `@contentrain/mcp/core/config` — Config manager
@@ -526,6 +536,8 @@ Available subpath exports:
 - `@contentrain/mcp/git/branch-lifecycle` — Branch health tracking
 - `@contentrain/mcp/templates` — Scaffold templates
 - `@contentrain/mcp/tools/annotations` — Tool metadata (TOOL_NAMES, TOOL_ANNOTATIONS)
+- `@contentrain/mcp/tools/availability` — Per-tool capability requirements (TOOL_REQUIREMENTS)
+- `@contentrain/mcp/testing/conformance` — Provider conformance test harness
 - `@contentrain/mcp/util/detect` — Framework detection
 - `@contentrain/mcp/util/fs` — File system utilities
 - `@contentrain/mcp/providers/local` — LocalProvider implementation

@@ -15,7 +15,7 @@ The `contentrain` CLI is the human-facing companion to `@contentrain/mcp`. While
 
 You might wonder: if the AI agent handles everything through MCP, why do you need a CLI?
 
-- **Bootstrapping** — `contentrain init` sets up `.contentrain/`, git hooks, and IDE rules before the agent is even connected
+- **Bootstrapping** — `contentrain init` sets up `.contentrain/`, runs `git init` with an initial commit, and installs IDE rules and MCP config before the agent is even connected
 - **Visibility** — `contentrain status` and `contentrain doctor` give you instant project health without asking an agent
 - **SDK generation** — `contentrain generate` creates the typed client your application code imports
 - **Review workflow** — `contentrain diff` and `contentrain serve` let you review agent-created content in a proper UI
@@ -102,7 +102,7 @@ contentrain init --root /path # Different project root
 | `--yes` | Skip prompts, use defaults |
 | `--root <path>` | Project root path |
 
-Creates `.contentrain/config.json`, `.contentrain/models/`, `.contentrain/content/`, plus IDE rules and Agent Skills. Runs `git init` if not already a repo.
+Creates `.contentrain/config.json`, the `models/`, `content/`, and `meta/` directories, `vocabulary.json`, and `context.json`, appends `.contentrain/.cache/` and `.contentrain/client/` to `.gitignore`, installs IDE rules, Agent Skills, and the MCP config (`.mcp.json` or IDE equivalent). Runs `git init` plus an initial commit if not already a repo.
 
 ---
 
@@ -153,7 +153,7 @@ contentrain validate --json             # CI-friendly JSON
 |------|-------------|
 | `--fix` | Auto-fix and create a `cr/fix/*` review branch |
 | `--interactive` | Choose which issues to fix interactively |
-| `--watch` | Re-run when `.contentrain/` changes (read-only polling mode) |
+| `--watch` | Re-run when `.contentrain/` content, models, or `config.json` change (read-only) |
 | `--model <id>` | Validate one model instead of all |
 | `--json` | CI-friendly JSON |
 
@@ -291,7 +291,7 @@ contentrain serve --port 8080 --host 0.0.0.0
 contentrain serve --demo  # Temporary demo project, no setup required
 ```
 
-Serves REST endpoints (`/api/status`, `/api/content`, `/api/branches`, `/api/doctor`, `/api/describe-format`, `/api/preview/merge`, `/api/normalize/*`, `/api/capabilities`, `/api/branches/:name/sync-status`), a WebSocket stream (`meta:changed`, `file-watch:error`, `sync:warning`, `branch:*` events), and the bundled Vue UI.
+Serves REST endpoints (`/api/status`, `/api/content`, `/api/branches`, `/api/doctor`, `/api/describe-format`, `/api/preview/merge`, `/api/normalize/*`, `/api/capabilities`, `/api/branches/:name/sync-status`, `/api/tree`), a WebSocket stream (`meta:changed`, `file-watch:error`, `sync:warning`, `branch:*` events), and the bundled Vue UI.
 
 #### MCP stdio
 
@@ -313,9 +313,11 @@ contentrain serve --mcpHttp --port 3334 --host 0.0.0.0 --authToken $TOKEN
 | `--mcpHttp` | `CONTENTRAIN_MCP_HTTP=true` | Enable HTTP MCP at `POST /mcp` |
 | `--port <n>` | `CONTENTRAIN_PORT` | Port (default 3333) |
 | `--host <bind>` | `CONTENTRAIN_HOST` | Bind address (default `localhost`) |
-| `--authToken <token>` | `CONTENTRAIN_AUTH_TOKEN` | Required Bearer token |
+| `--authToken <token>` | `CONTENTRAIN_AUTH_TOKEN` | Bearer token, enforced per-request when set |
 
-**Secure-by-default:** non-localhost binds (`0.0.0.0` or specific IPs) **hard-error** without `--authToken` / `CONTENTRAIN_AUTH_TOKEN`. This is deliberate (OWASP Secure-by-Default) — the HTTP MCP endpoint exposes full project write access.
+**Auth:** when a token is supplied, every request must send `Authorization: Bearer <token>`. Binding MCP HTTP to `0.0.0.0` without a token logs a warning but the server still starts — the endpoint exposes full project write access, so always pass a token on non-localhost binds.
+
+**Web UI is stricter:** the default serve UI **hard-errors** on any non-localhost bind without `--authToken` / `CONTENTRAIN_AUTH_TOKEN` (OWASP Secure-by-Default) — it refuses to start. Note the UI has no per-request auth today; the token requirement is a start-up gate for exposing it beyond localhost.
 
 ## Studio Integration
 
@@ -374,7 +376,7 @@ contentrain studio submissions --form contact-form
 contentrain studio submissions --form contact-form --status pending
 ```
 
-Each Studio command accepts `--workspace <id>`, `--project <id>`, and `--json` for scripting.
+The monitoring and management commands (`status`, `activity`, `usage`, `branches`, `webhooks`, `submissions`, `cdn-build`, `cdn-init`) accept `--workspace <id>`, `--project <id>`, and `--json` for scripting. The auth commands differ: `login` takes `--url`/`--provider`, `whoami` only `--json`, `logout` none, and `connect` takes `--workspace`/`--json`.
 
 ---
 

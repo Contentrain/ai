@@ -1,7 +1,7 @@
 ---
 title: Ecosystem Map
 description: "How Contentrain AI packages and Contentrain Studio fit together across discovery, governance, collaboration, and delivery."
-order: 2
+order: 3
 category: getting-started
 slug: ecosystem
 ---

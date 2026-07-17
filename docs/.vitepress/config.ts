@@ -70,6 +70,7 @@ export default defineConfig({
           text: 'Introduction',
           items: [
             { text: 'What is Contentrain AI?', link: '/getting-started' },
+            { text: '2-Minute Demo', link: '/demo' },
             { text: 'Ecosystem Map', link: '/ecosystem' },
             { text: 'Core Concepts', link: '/concepts' },
             { text: 'Contentrain Studio', link: '/studio' },

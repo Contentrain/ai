@@ -51,7 +51,7 @@ Read-only tools (`status`, `describe`, `describe_format`, `content_list`, `valid
 
 - **`LocalProvider`** — Day-to-day development from an IDE. Offline-capable, zero API keys, full source-tree access for normalize.
 - **`GitHubProvider`** — CI-driven content operations, Studio's hosted agent, or any automation that should push directly to a GitHub repository without a clone. Requires `@octokit/rest` (optional peer dependency) and a personal access token or GitHub App installation.
-- **`GitLabProvider`** — Same as above for GitLab (SaaS or self-hosted). Requires `@gitbeaker/rest` (optional peer dependency) and a PAT / OAuth / job token.
+- **`GitLabProvider`** — Same as above for GitLab (SaaS or self-hosted). Requires `@gitbeaker/rest` (optional peer dependency) and an auth token: `{ type: 'pat', token }`, `{ type: 'oauth', oauthToken }`, or `{ type: 'job', jobToken }` (CI job token). The project ref needs `projectId` (numeric ID or `group/name` path); self-hosted instances add `host`.
 
 The choice is operational, not commercial. All three providers live in MIT; enterprise features are on top of Contentrain Studio, not behind provider gates. See [Ecosystem Map](/ecosystem) for the full package-to-product relationship.
 
