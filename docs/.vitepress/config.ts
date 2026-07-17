@@ -19,6 +19,7 @@ const LLMS_PAGE_ORDER = [
   'packages/sdk',
   'packages/rules',
   'packages/types',
+  'guides/first-model',
   'guides/providers',
   'guides/http-transport',
   'guides/embedding-mcp',
@@ -121,6 +122,7 @@ export default defineConfig({
         { text: 'Types', link: '/packages/types' },
       ]},
       { text: 'Guides', items: [
+        { text: 'Your First Model', link: '/guides/first-model' },
         { text: 'Providers & Transports', link: '/guides/providers' },
         { text: 'HTTP Transport', link: '/guides/http-transport' },
         { text: 'Embedding MCP', link: '/guides/embedding-mcp' },
@@ -163,6 +165,7 @@ export default defineConfig({
         {
           text: 'Guides',
           items: [
+            { text: 'Your First Model', link: '/guides/first-model' },
             { text: 'Providers & Transports', link: '/guides/providers' },
             { text: 'HTTP Transport', link: '/guides/http-transport' },
             { text: 'Embedding MCP', link: '/guides/embedding-mcp' },
