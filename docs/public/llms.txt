@@ -35,6 +35,7 @@ Contentrain Studio (team web surface) documentation: https://docs.contentrain.io
 - Query SDK: /packages/sdk
 - Rules & Skills: /packages/rules
 - Types: /packages/types
+- Your First Model (guided walkthrough): /guides/first-model
 - Providers & Transports: /guides/providers
 - HTTP Transport: /guides/http-transport
 - Embedding MCP: /guides/embedding-mcp
