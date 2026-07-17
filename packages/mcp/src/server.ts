@@ -29,12 +29,12 @@ import packageJson from '../package.json' with { type: 'json' }
  */
 export const DEFAULT_INSTRUCTIONS
   = 'Contentrain is git-native content governance: models define structure; '
-    + 'content is canonical JSON/Markdown on a dedicated branch. Call '
-    + 'contentrain_describe_format before creating models or content. Preview '
-    + 'writes with dry_run:true, review the plan, then re-run with '
-    + 'dry_run:false. Start with contentrain_status for models, locales, and '
-    + 'workflow; inspect a model with contentrain_describe before editing its '
-    + 'entries. Tools are deterministic infrastructure — content decisions '
+    + 'content is canonical JSON/Markdown on a dedicated branch. Start with '
+    + 'contentrain_status; call contentrain_describe_format before creating '
+    + 'models or content, and contentrain_describe before editing a model\'s '
+    + 'entries. Every write lands on an isolated cr/* branch and content_save '
+    + 'validates before committing. Destructive tools require confirm:true; '
+    + 'preview contentrain_apply with dry_run:true first. Content decisions '
     + 'stay with the agent.'
 
 export interface CreateServerOptions {
