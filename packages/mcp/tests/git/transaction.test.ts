@@ -338,3 +338,79 @@ describe('mergeBranch (remote cleanup)', () => {
     expect(result.remote).toBeUndefined()
   })
 })
+
+/**
+ * Regression: a review-mode transaction used to push inside complete() and
+ * treat a push failure as a failed transaction. `pendingReview` was set after
+ * the push, so a rejected push (no write access, offline, stale credentials)
+ * threw first and cleanup() then deleted the branch — discarding a commit that
+ * was reachable from nowhere else, while the caller still reported success.
+ */
+describe('review workflow: a failed push must not discard committed work', () => {
+  async function commitOnReviewBranch(): Promise<{ branch: string, hash: string, tx: Awaited<ReturnType<typeof createTransaction>> }> {
+    await ensureContentBranch(testDir)
+    const branch = buildBranchName('normalize', 'extract')
+    const tx = await createTransaction(testDir, branch, { workflowOverride: 'review' })
+    await tx.write(async (wt) => {
+      await mkdir(join(wt, '.contentrain', 'content', 'marketing'), { recursive: true })
+      await writeFile(join(wt, '.contentrain', 'content', 'marketing', 'en.json'), '{"headline":"hi"}\n')
+    })
+    const hash = await tx.commit('[contentrain] normalize: extract 1 entries to 1 models')
+    return { branch, hash, tx }
+  }
+
+  it('keeps the branch and warns when the remote rejects the push', async () => {
+    await simpleGit(testDir).addRemote('origin', join(testDir, 'no-such-remote'))
+    const { branch, hash, tx } = await commitOnReviewBranch()
+
+    const result = await tx.complete()
+    await tx.cleanup()
+
+    expect(result.action).toBe('pending-review')
+    // Regression guard: this was '' because complete() threw before returning.
+    expect(result.commit).toBe(hash)
+    expect(result.warning).toMatch(/push/i)
+
+    const git = simpleGit(testDir)
+    expect((await git.branchLocal()).all).toContain(branch)
+    // The commit must still be reachable from the branch, not dangling.
+    expect(await git.show([`${branch}:.contentrain/content/marketing/en.json`])).toContain('headline')
+  })
+
+  it('reports no warning and keeps the branch when the push succeeds', async () => {
+    const remoteDir = await addBareRemote(testDir)
+    try {
+      const { branch, hash, tx } = await commitOnReviewBranch()
+
+      const result = await tx.complete()
+      await tx.cleanup()
+
+      expect(result.action).toBe('pending-review')
+      expect(result.commit).toBe(hash)
+      expect(result.warning).toBeUndefined()
+      expect((await simpleGit(testDir).branchLocal()).all).toContain(branch)
+      expect(await remoteHeads(remoteDir)).toContain(branch)
+    } finally {
+      await rm(remoteDir, { recursive: true, force: true })
+    }
+  })
+
+  it('keeps a committed branch when complete() is never called', async () => {
+    const { branch, tx } = await commitOnReviewBranch()
+
+    // Simulate a caller that throws between commit() and complete().
+    await tx.cleanup()
+
+    expect((await simpleGit(testDir).branchLocal()).all).toContain(branch)
+  })
+
+  it('still prunes a branch that was never committed to', async () => {
+    await ensureContentBranch(testDir)
+    const branch = buildBranchName('normalize', 'extract')
+    const tx = await createTransaction(testDir, branch, { workflowOverride: 'review' })
+
+    await tx.cleanup()
+
+    expect((await simpleGit(testDir).branchLocal()).all).not.toContain(branch)
+  })
+})
