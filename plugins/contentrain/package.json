@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/claude-plugin",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "Claude Code plugin payload — versioned by changesets, published through the marketplace rather than npm",
   "license": "MIT",
