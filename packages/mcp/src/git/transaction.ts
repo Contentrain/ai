@@ -256,6 +256,10 @@ export async function createTransaction(
 
   let commitHash = ''
   let pendingReview = false
+  // Set once the feature branch has been merged into the contentrain branch,
+  // which is what makes deleting it in cleanup() safe — the work is reachable
+  // from contentrain at that point.
+  let mergedIntoContentrain = false
   let savedContextUpdate: ContextUpdate | undefined
 
   return {
@@ -282,12 +286,26 @@ export async function createTransaction(
 
     async complete() {
       if (workflow === 'review') {
-        if (hasRemote) {
-          await git.push(remoteName, branch)
-        }
-        // Pending-review branches must survive for a later contentrain_merge.
+        // Mark the branch as surviving BEFORE attempting the push. The commit
+        // already exists at this point, so a push failure (no write access,
+        // offline, expired credentials) must not make cleanup() treat this as
+        // a failed transaction and delete the branch — that silently discards
+        // committed work. Pushing is a convenience here; contentrain_submit is
+        // the documented way to publish a review branch.
         pendingReview = true
-        return { action: 'pending-review', commit: commitHash }
+
+        let warning: string | undefined
+        if (hasRemote) {
+          try {
+            await git.push(remoteName, branch)
+          } catch (error) {
+            const detail = error instanceof Error ? error.message : String(error)
+            warning = `Changes are committed locally on "${branch}", but pushing to "${remoteName}" failed: ${detail.trim()}. `
+              + `The branch is intact — run contentrain_submit once you have push access, or merge it locally with contentrain_merge.`
+          }
+        }
+
+        return { action: 'pending-review', commit: commitHash, warning }
       }
 
       // auto-merge: merge feature branch into contentrain, then advance base
@@ -312,6 +330,10 @@ export async function createTransaction(
           developer_action: `git checkout ${CONTENTRAIN_BRANCH} && git merge ${branch}`,
         })
       }
+      // The commit is now reachable from contentrain, so cleanup() may prune
+      // the feature branch. Anything that fails after this point still leaves
+      // the work safe.
+      mergedIntoContentrain = true
 
       // Regenerate context.json on the contentrain branch (post-merge,
       // single-threaded) and fold it into the tip before advancing the base.
@@ -397,11 +419,16 @@ export async function createTransaction(
       } catch {
         // worktree may already be cleaned up
       }
-      // Prune the feature branch unless it is a pending-review branch that must
-      // survive for a later contentrain_merge. Auto-merged branches (already in
-      // contentrain) and failed/empty branches are both safe to delete, so
-      // failed saves and merged saves no longer leak dangling cr/* refs.
-      if (!pendingReview) {
+      // Prune the feature branch only when doing so cannot lose work:
+      //   - pendingReview: must survive for a later contentrain_submit/merge
+      //   - commitHash === '': nothing was ever committed, safe to drop
+      //   - mergedIntoContentrain: the work is reachable from contentrain
+      // Anything else means the branch holds a commit that is reachable from
+      // nowhere else, and deleting it would silently discard the user's work
+      // while the caller reports success. Keeping it may leave a stray cr/*
+      // ref after a failure — that is recoverable; a deleted commit is not.
+      const holdsUnreachableWork = commitHash !== '' && !mergedIntoContentrain
+      if (!pendingReview && !holdsUnreachableWork) {
         await safeDeleteBranch(git, branch)
       }
     },

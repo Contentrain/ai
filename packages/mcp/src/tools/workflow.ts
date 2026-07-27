@@ -11,6 +11,7 @@ import { isMerged } from '../providers/local/branch-ops.js'
 import { normalizeOperationError } from '../git/errors.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 import { capabilityError } from './guards.js'
+import { isToolAvailable } from './availability.js'
 
 /**
  * Resolve a merge target from either an exact branch name or a
@@ -163,7 +164,13 @@ export function registerWorkflowTools(
         const nextSteps: string[] = []
         if (result.summary.errors > 0) nextSteps.push('Fix errors in content using contentrain_content_save')
         if (result.summary.warnings > 0) nextSteps.push('Review warnings')
-        if (result.valid) nextSteps.push('Run contentrain_submit to push changes')
+        // Only suggest submit where it can actually run. validate itself works
+        // over any provider, but contentrain_submit needs a local worktree and
+        // a pushable remote — on a remote provider it is not even registered,
+        // so recommending it sends the agent at a tool that cannot exist.
+        if (result.valid && isToolAvailable('contentrain_submit', provider, projectRoot)) {
+          nextSteps.push('Run contentrain_submit to push changes')
+        }
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({

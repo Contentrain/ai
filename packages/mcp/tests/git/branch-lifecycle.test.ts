@@ -53,7 +53,11 @@ async function createMergedBranch(git: SimpleGit, root: string, name: string, fi
   await git.merge([name, '--no-edit'])
 }
 
-vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 })
+// Matches tests/git/transaction.test.ts. These cases drive real git across
+// many branches; in isolation they finish in seconds, but under the full
+// parallel suite the serial git churn pushed them past a 30s budget and they
+// failed on timeout alone.
+vi.setConfig({ testTimeout: 120_000, hookTimeout: 120_000 })
 
 let testDir: string
 

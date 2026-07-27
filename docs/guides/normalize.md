@@ -159,6 +159,15 @@ The agent calls `contentrain_apply(mode: "extract", dry_run: true)` first to pre
 
 This creates model definitions and content files in `.contentrain/` on a dedicated branch. **Source files are NOT modified.**
 
+Apply tries a convenience push when a remote is configured. If that push is
+rejected — you do not have write access, you are offline, or your credentials
+have expired — the extraction still succeeded: the branch and its commit stay
+on disk and the response carries a `git.warning` explaining what happened.
+Publish it later with `contentrain_submit`, or land it locally with
+`contentrain_merge`. A response with `git.action: "incomplete"` means the
+transaction itself could not be finished; the branch is still preserved, so
+inspect it with `contentrain_branch_list` before retrying.
+
 ### Step 8. Validate and submit
 
 > "Validate the extracted content and submit for review"

@@ -48,7 +48,7 @@ export interface ExtractionResult {
     entries_written: number
     source_map: Array<{ model: string; locale: string; value: string; file: string; line: number }>
   }
-  git?: { branch: string; action: string; commit: string }
+  git?: { branch: string; action: string; commit: string; warning?: string }
   context_updated?: boolean
   next_steps: string[]
 }
@@ -89,7 +89,7 @@ export interface ReuseResult {
     framework_warnings?: Array<{ file: string; warning: string }>
     syntax_errors?: SyntaxError[]
   }
-  git?: { branch: string; action: string; commit: string }
+  git?: { branch: string; action: string; commit: string; warning?: string }
   next_steps: string[]
 }
 
@@ -609,13 +609,24 @@ export async function applyExtract(
     const commitMsg = `[contentrain] normalize: extract ${entriesWritten} entries to ${extractions.length} models`
     await tx.commit(commitMsg)
 
-    const gitResult = { branch: branchName, action: 'pending-review', commit: '' }
+    const gitResult: { branch: string; action: string; commit: string; warning?: string } = {
+      branch: branchName,
+      action: 'pending-review',
+      commit: '',
+    }
     try {
       const completed = await tx.complete()
       gitResult.action = completed.action
       gitResult.commit = completed.commit
-    } catch {
-      gitResult.action = 'pending-review'
+      if (completed.warning !== undefined) gitResult.warning = completed.warning
+    } catch (error) {
+      // Never fall through to a value that mimics success. The commit landed
+      // but publishing it did not, and 'pending-review' with an empty commit
+      // hash is indistinguishable from a healthy review branch.
+      gitResult.action = 'incomplete'
+      gitResult.warning = `Content was committed to "${branchName}" but the transaction could not be completed: `
+        + `${error instanceof Error ? error.message : String(error)}. `
+        + `The branch is preserved — inspect it with contentrain_branch_list before retrying.`
     } finally {
       await tx.cleanup()
     }
@@ -956,13 +967,24 @@ export async function applyReuse(
     const commitMsg = `[contentrain] normalize: reuse ${scopeTarget} — patch ${filesModified.length} files (${patchesApplied} replacements)`
     await tx.commit(commitMsg)
 
-    const gitResult = { branch: branchName, action: 'pending-review', commit: '' }
+    const gitResult: { branch: string; action: string; commit: string; warning?: string } = {
+      branch: branchName,
+      action: 'pending-review',
+      commit: '',
+    }
     try {
       const completed = await tx.complete()
       gitResult.action = completed.action
       gitResult.commit = completed.commit
-    } catch {
-      gitResult.action = 'pending-review'
+      if (completed.warning !== undefined) gitResult.warning = completed.warning
+    } catch (error) {
+      // Never fall through to a value that mimics success. The commit landed
+      // but publishing it did not, and 'pending-review' with an empty commit
+      // hash is indistinguishable from a healthy review branch.
+      gitResult.action = 'incomplete'
+      gitResult.warning = `Content was committed to "${branchName}" but the transaction could not be completed: `
+        + `${error instanceof Error ? error.message : String(error)}. `
+        + `The branch is preserved — inspect it with contentrain_branch_list before retrying.`
     } finally {
       await tx.cleanup()
     }
