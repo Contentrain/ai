@@ -1,0 +1,113 @@
+<!doctype html>
+<!--
+  Source template for docs/public/og-image.png (1200x630).
+  Kept visually consistent with the landing OG template in the iterum repo.
+  Regenerate with:
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu \
+    --screenshot=docs/public/og-image.png --window-size=1200,630 --hide-scrollbars \
+    --virtual-time-budget=8000 "file://$PWD/scripts/og-image.html"
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: "Inter", sans-serif;
+    color: #0f172a;
+    background:
+      linear-gradient(115deg, rgba(3, 49, 252, 0.13), transparent 35%),
+      linear-gradient(245deg, rgba(15, 118, 110, 0.12), transparent 38%),
+      radial-gradient(circle at 56% 44%, rgba(124, 58, 237, 0.1), transparent 28rem),
+      linear-gradient(180deg, #eaf3ff 0%, #f8fafc 54%, #ffffff 100%);
+    position: relative;
+  }
+  .graph { position: absolute; inset: 0; }
+  .frame {
+    position: relative;
+    height: 100%;
+    padding: 64px 76px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .logo { height: 44px; width: auto; display: block; }
+  h1 {
+    font-family: "Syne", sans-serif;
+    font-weight: 800;
+    font-size: 50px;
+    line-height: 1.14;
+    letter-spacing: -0.01em;
+    max-width: 1048px;
+    white-space: nowrap;
+  }
+  h1 .accent {
+    background: linear-gradient(135deg, #0331fc, #0f766e 62%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .sub {
+    margin-top: 22px;
+    font-size: 25px;
+    line-height: 1.45;
+    color: #475569;
+    max-width: 880px;
+  }
+  .foot { display: flex; align-items: center; justify-content: space-between; }
+  .chips { display: flex; gap: 12px; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    padding: 12px 20px;
+    color: #475569;
+    font-size: 19px;
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  }
+  .chip i { width: 9px; height: 9px; border-radius: 999px; background: #0331fc; }
+  .chip:nth-child(2) i { background: #0f766e; }
+  .chip:nth-child(3) i { background: #f59e0b; }
+  .url { font-size: 22px; font-weight: 600; color: #0331fc; }
+</style>
+</head>
+<body>
+  <svg class="graph" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g stroke-width="2" stroke-linecap="round">
+      <path d="M-40 540 H 340 C 420 540 440 500 440 450 V 250 C 440 200 460 160 540 160 H 1240" stroke="rgba(3,49,252,0.16)"/>
+      <path d="M-40 580 H 560 C 640 580 660 540 660 490 V 330 C 660 280 680 240 760 240 H 1240" stroke="rgba(15,118,110,0.15)"/>
+      <path d="M-40 500 H 180 C 260 500 280 460 280 410 V 130 C 280 80 300 40 380 40 H 1240" stroke="rgba(245,158,11,0.14)"/>
+    </g>
+    <g fill="#ffffff">
+      <circle cx="440" cy="350" r="7" stroke="rgba(3,49,252,0.55)" stroke-width="2"/>
+      <circle cx="660" cy="420" r="7" stroke="rgba(15,118,110,0.55)" stroke-width="2"/>
+      <circle cx="280" cy="270" r="7" stroke="rgba(245,158,11,0.54)" stroke-width="2"/>
+      <circle cx="900" cy="160" r="7" stroke="rgba(3,49,252,0.55)" stroke-width="2"/>
+      <circle cx="1060" cy="240" r="7" stroke="rgba(15,118,110,0.55)" stroke-width="2"/>
+    </g>
+  </svg>
+  <div class="frame">
+    <img class="logo" src="../docs/public/logo/color-icon-black-text.svg" alt="Contentrain AI">
+    <div>
+      <h1>Extract, govern, and ship<br>structured content<br><span class="accent" style="white-space: nowrap;">from your codebase</span></h1>
+      <p class="sub">Open-source MCP, CLI, and SDK packages for Git-native content. Agents do the work — Contentrain enforces schema and review.</p>
+    </div>
+    <div class="foot">
+      <div class="chips">
+        <span class="chip"><i></i>24 MCP tools</span>
+        <span class="chip"><i></i>15 agent skills</span>
+        <span class="chip"><i></i>27 field types</span>
+      </div>
+      <span class="url">ai.contentrain.io</span>
+    </div>
+  </div>
+</body>
+</html>

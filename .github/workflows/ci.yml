@@ -51,5 +51,13 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Plugin payload in sync
+        run: |
+          pnpm plugin:build
+          git diff --exit-code -- plugins/contentrain || {
+            echo "::error::plugins/contentrain is stale. Run 'pnpm plugin:build' and commit the result."
+            exit 1
+          }
+
       - name: Release checks
         run: pnpm release:check
