@@ -11,6 +11,8 @@
  * hook rejections so the agent gets an actionable, structured envelope.
  */
 
+import { mapProviderError } from '../providers/shared/errors.js'
+
 // Build the ANSI matcher without a literal control char so oxlint's
 // no-control-regex rule stays happy.
 const ANSI_RE = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g')
@@ -42,6 +44,23 @@ export function normalizeOperationError(err: unknown, stage?: string): Normalize
   if (e?.code) out.code = e.code
   if (e?.agent_hint) out.agent_hint = e.agent_hint
   if (e?.developer_action) out.developer_action = e.developer_action
+
+  // Provider SDK rejections (Octokit, Gitbeaker) carry an HTTP status but no
+  // structured fields, so without this they reached the client as a bare
+  // vendor string — a documentation URL and no indication of whether the
+  // operation is retryable. Mapping here rather than at each `throw` inside
+  // the providers means every provider error is covered, including ones added
+  // later. An error that already carries a Contentrain code keeps it.
+  if (!out.code) {
+    const mapped = mapProviderError(err)
+    if (mapped) {
+      out.error = mapped.error
+      out.code = mapped.code
+      out.agent_hint = mapped.agent_hint
+      if (mapped.developer_action) out.developer_action = mapped.developer_action
+      return out
+    }
+  }
 
   // Detect a git hook rejection (only when the error isn't already a
   // structured Contentrain error with its own code).
