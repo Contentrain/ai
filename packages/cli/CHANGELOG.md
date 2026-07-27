@@ -1,5 +1,14 @@
 # contentrain
 
+## 0.7.13
+
+### Patch Changes
+
+- Updated dependencies [cf6f6a8]
+  - @contentrain/mcp@2.2.0
+  - @contentrain/rules@0.6.0
+  - @contentrain/skills@0.6.0
+
 ## 0.7.12
 
 ### Patch Changes
