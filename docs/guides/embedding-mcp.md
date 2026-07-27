@@ -257,6 +257,37 @@ Treat `capability_required` as a retry signal at the client. Typical fallback: p
 
 See [Providers & Transports](/guides/providers) for the full capability matrix.
 
+### Provider failures are structured too
+
+When the upstream git host rejects a request, the SDK error is mapped onto the
+same envelope rather than passed through as a vendor string. Both Octokit and
+Gitbeaker rejections are covered, and the vendor text is kept as a
+parenthetical detail with documentation URLs stripped:
+
+```json
+{
+  "error": "The git provider denied access to this resource. (Resource not accessible by integration)",
+  "stage": "content_save",
+  "code": "PROVIDER_FORBIDDEN",
+  "agent_hint": "The credentials are valid but lack permission for this operation. Not retryable — report which operation was refused.",
+  "developer_action": "Grant the token write access to the repository, or check whether branch protection or SSO authorisation is blocking it."
+}
+```
+
+| Code | HTTP | Retryable |
+|---|---|---|
+| `PROVIDER_UNAUTHORIZED` | 401 | No — credentials are missing or expired |
+| `PROVIDER_FORBIDDEN` | 403 | No — token lacks permission |
+| `PROVIDER_RATE_LIMITED` | 403 with exhausted quota, 429 | Not immediately — the limit is time-based |
+| `PROVIDER_NOT_FOUND` | 404 | No — verify the target first; a token that cannot see a private repo also gets 404 |
+| `PROVIDER_CONFLICT` | 409 | Once, after re-reading the branch |
+| `PROVIDER_VALIDATION_FAILED` | 422 | Not unchanged — usually a stale ref from an earlier run |
+| `PROVIDER_UNAVAILABLE` | 5xx | Once, after a pause |
+| `PROVIDER_REQUEST_FAILED` | anything else | Report rather than retry |
+
+Errors that already carry a Contentrain code (`CONTENT_BRANCH_MERGE_CONFLICT`,
+`BASE_UPDATE_FAILED`, …) keep it; local git errors are untouched.
+
 ## Authentication
 
 - **Stdio** — no authentication. Transport is localhost pipes; security boundary is the OS.
