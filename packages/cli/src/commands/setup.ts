@@ -31,6 +31,7 @@ export default defineCommand({
       log.message(`  ${pc.cyan('contentrain setup vscode')}`)
       log.message(`  ${pc.cyan('contentrain setup windsurf')}`)
       log.message(`  ${pc.cyan('contentrain setup copilot')}`)
+      log.message(`  ${pc.cyan('contentrain setup codex')}`)
       log.message(`  ${pc.cyan('contentrain setup --all')}`)
       outro('')
       return

@@ -47,7 +47,7 @@ Use **Contentrain Studio** when you need:
 | Surface | What users see | Best fit |
 |---|---|---|
 | MCP Registry | `io.github.Contentrain/contentrain` | Discover and install the local `@contentrain/mcp` server from MCP-compatible clients |
-| OpenAI Codex | `codex mcp add`, `.codex/config.toml`, and future plugin packaging | Developers who want Contentrain tools inside Codex CLI, desktop, or IDE workflows |
+| OpenAI Codex | `contentrain setup codex` writes `.codex/config.toml`; `codex mcp add` by hand | Developers who want Contentrain tools inside Codex CLI, desktop, or IDE workflows |
 | Claude Desktop | `claude_desktop_config.json` | Local desktop users who want a checkout-scoped Contentrain server |
 | Claude Code plugin | `/plugin marketplace add Contentrain/ai` | One-command install that bundles the MCP server plus the normalize skills — the shortest path for Claude Code users |
 | Claude Code (manual) | `claude mcp add`, `.mcp.json` | Coding-agent workflows that want project-scoped MCP approval without the plugin |

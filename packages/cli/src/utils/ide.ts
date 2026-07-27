@@ -41,7 +41,17 @@ export interface IdeConfig {
   skillsDir: string
   guardrailsFileName: string
   guardrailsFrontmatter?: string
+  /**
+   * The guardrails file is shared with the project rather than owned by us
+   * (`AGENTS.md`, `copilot-instructions.md`). It usually already carries the
+   * team's own instructions, so we append our block instead of writing the
+   * file — overwriting would delete content we did not put there.
+   */
+  sharedInstructionsFile?: boolean
 }
+
+/** First heading of the essentials rule file — marks our block in a shared file. */
+const GUARDRAILS_MARKER = '# Contentrain — Essential Rules'
 
 export const IDE_CONFIGS: Record<string, IdeConfig> = {
   'claude-code': {
@@ -69,6 +79,17 @@ export const IDE_CONFIGS: Record<string, IdeConfig> = {
     rulesDir: '.github',
     skillsDir: '.agents/skills',
     guardrailsFileName: 'copilot-instructions.md',
+    sharedInstructionsFile: true,
+  },
+  codex: {
+    name: 'OpenAI Codex',
+    // Codex reads AGENTS.md from the project root, not a rules directory.
+    rulesDir: '.',
+    // Codex has no skills directory of its own; .agents/skills is the
+    // vendor-neutral location, shared with Copilot.
+    skillsDir: '.agents/skills',
+    guardrailsFileName: 'AGENTS.md',
+    sharedInstructionsFile: true,
   },
 }
 
@@ -80,6 +101,7 @@ export const MCP_CONFIGS: Record<string, string> = {
   windsurf: '.windsurf/mcp.json',
   vscode: '.vscode/mcp.json',
   copilot: '.vscode/mcp.json',
+  codex: '.codex/config.toml',
 }
 
 const STANDARD_MCP_CONFIG = {
@@ -91,6 +113,13 @@ const STANDARD_MCP_CONFIG = {
   },
 }
 
+/** Codex configures MCP servers in TOML, not JSON. */
+const CODEX_MCP_BLOCK = [
+  '[mcp_servers.contentrain]',
+  'command = "npx"',
+  'args = ["contentrain", "serve", "--stdio"]',
+].join('\n')
+
 // ─── IDE detection ───
 
 export async function detectIdes(projectRoot: string): Promise<string[]> {
@@ -99,6 +128,10 @@ export async function detectIdes(projectRoot: string): Promise<string[]> {
   if (await pathExists(join(projectRoot, '.cursor'))) ides.push('cursor')
   if (await pathExists(join(projectRoot, '.windsurf'))) ides.push('windsurf')
   if (await pathExists(join(projectRoot, '.github'))) ides.push('copilot')
+  // `.codex/` is the only Codex-specific marker. AGENTS.md is deliberately not
+  // used as a signal — many agents read it, so it would configure Codex for
+  // projects that never use it.
+  if (await pathExists(join(projectRoot, '.codex'))) ides.push('codex')
   return ides
 }
 
@@ -110,11 +143,36 @@ export interface WriteMcpConfigResult {
   skipped?: string
 }
 
+/**
+ * Codex keeps unrelated user settings (model, approval policy, sandbox) in the
+ * same file, so we append a table rather than parse and rewrite: appending is
+ * valid TOML, needs no parser dependency, and leaves the rest of the file
+ * byte-for-byte intact.
+ */
+async function writeCodexMcpConfig(projectRoot: string, relativePath: string): Promise<WriteMcpConfigResult> {
+  const configPath = join(projectRoot, relativePath)
+
+  if (await pathExists(configPath)) {
+    const existing = await readFile(configPath, 'utf-8')
+    if (/^\s*\[mcp_servers\.contentrain\]/m.test(existing)) {
+      return { written: false, path: relativePath, skipped: 'Already configured' }
+    }
+    await appendFile(configPath, `${existing.endsWith('\n') ? '\n' : '\n\n'}${CODEX_MCP_BLOCK}\n`)
+    return { written: true, path: relativePath }
+  }
+
+  await ensureDir(join(configPath, '..'))
+  await writeFile(configPath, `${CODEX_MCP_BLOCK}\n`, 'utf-8')
+  return { written: true, path: relativePath }
+}
+
 export async function writeMcpConfig(projectRoot: string, agent: string): Promise<WriteMcpConfigResult> {
   const relativePath = MCP_CONFIGS[agent]
   if (!relativePath) {
     return { written: false, path: '', skipped: `Unknown agent: "${agent}"` }
   }
+
+  if (agent === 'codex') return writeCodexMcpConfig(projectRoot, relativePath)
 
   const configPath = join(projectRoot, relativePath)
 
@@ -204,17 +262,21 @@ export async function installIdeRulesAndSkills(
       if (ide.guardrailsFrontmatter) content = ide.guardrailsFrontmatter + content
 
       if (await pathExists(guardrailsDest)) {
-        if (forceUpdate) { await writeFile(guardrailsDest, content, 'utf-8'); updated++ }
-      } else {
-        // Copilot: append to existing copilot-instructions.md
-        if (ide.name === 'GitHub Copilot' && await pathExists(guardrailsDest)) {
+        if (ide.sharedInstructionsFile) {
+          // The file belongs to the project, not to us. Append our block once;
+          // never overwrite, even with forceUpdate, because that would delete
+          // the team's own instructions.
           const existing = await readFile(guardrailsDest, 'utf-8')
-          if (!existing.includes('# Contentrain')) {
+          if (!existing.includes(GUARDRAILS_MARKER)) {
             await appendFile(guardrailsDest, `\n\n${content}`)
+            installed++
           }
-        } else {
+        } else if (forceUpdate) {
           await writeFile(guardrailsDest, content, 'utf-8')
+          updated++
         }
+      } else {
+        await writeFile(guardrailsDest, content, 'utf-8')
         installed++
       }
       filesToAdd.push(guardrailsDest)
