@@ -3,3 +3,7 @@ packages:
   - "packages/sdk/*"
   - "packages/cli/src/serve-ui"
   - "docs"
+  # Not an npm package. It joins the workspace so changesets can version it
+  # alongside the packages it ships, which is what makes the marketplace
+  # version bump part of the release flow instead of a manual step.
+  - "plugins/*"

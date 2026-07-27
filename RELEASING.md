@@ -59,6 +59,36 @@ Examples:
 
 This is the standard Changesets model for independently versioned monorepos.
 
+## 🔌 Claude Code Plugin
+
+`plugins/contentrain` is not an npm package, but it is versioned by Changesets
+like everything else. It joins the workspace as `@contentrain/claude-plugin`
+(`private: true`), and `privatePackages` in `.changeset/config.json` is set to
+`{ "version": true, "tag": false }` — versioned, but no git tag, because there
+is no npm release to tag.
+
+Why it is wired in at all: Claude Code pins installed users to the `version`
+in `plugin.json` and only offers an update when that string changes. A skills
+edit or an MCP-pin bump that forgets it reaches nobody, which is exactly what
+happened when the plugin shipped `@contentrain/mcp@2.1.1` after 2.2.0 fixed a
+data-loss bug.
+
+The version lives in **one** place, `plugins/contentrain/package.json`, which
+is the file Changesets bumps. `pnpm plugin:build` propagates it into
+`plugins/contentrain/.claude-plugin/plugin.json` and the `metadata.version` of
+`.claude-plugin/marketplace.json`. Never edit either manifest's version by
+hand — CI regenerates the payload and fails on a dirty diff.
+
+So a plugin-affecting change is an ordinary changeset:
+
+```bash
+pnpm changeset          # pick @contentrain/claude-plugin
+pnpm plugin:build       # propagate the new version into the manifests
+```
+
+The community marketplace advances its pinned commit SHA on its own; the
+version bump is what actually delivers the change to existing installs.
+
 ## ✅ Release Commands
 
 | Command | Purpose |
