@@ -88,14 +88,20 @@ npx contentrain setup claude-code   # → creates .mcp.json
 npx contentrain setup cursor        # → creates .cursor/mcp.json
 npx contentrain setup vscode        # → creates .vscode/mcp.json
 npx contentrain setup windsurf      # → creates .windsurf/mcp.json
+npx contentrain setup copilot       # → creates .vscode/mcp.json
+npx contentrain setup codex         # → creates .codex/config.toml
 npx contentrain setup --all         # → configures all detected IDEs
 ```
 
-OpenAI Codex and Claude Desktop can be connected manually:
+Codex configures MCP servers in TOML rather than JSON, so `setup codex` writes
+a `[mcp_servers.contentrain]` table. If the file already exists the table is
+appended, leaving your other Codex settings untouched. The equivalent by hand:
 
 ```bash
 codex mcp add contentrain -- npx -y contentrain serve --stdio
 ```
+
+Claude Desktop is still configured manually:
 
 ```json
 {

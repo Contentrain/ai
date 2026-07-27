@@ -414,6 +414,14 @@ Once connected, the agent has access to the full MCP tool surface and can manage
 Codex uses `~/.codex/config.toml` or a trusted project-scoped `.codex/config.toml`.
 
 ```bash
+npx contentrain setup codex
+```
+
+This writes the project-scoped `.codex/config.toml`, appending the
+`[mcp_servers.contentrain]` table if the file already holds other Codex
+settings. To do it by hand instead:
+
+```bash
 codex mcp add contentrain -- npx -y contentrain serve --stdio
 ```
 
