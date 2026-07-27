@@ -8,7 +8,12 @@ on:
 
 concurrency:
   group: release-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel a release run. Publishing is not a step that can be safely
+  # interrupted: merging the release PR and then merging anything else shortly
+  # after would kill the run that was about to publish, leaving the bumped
+  # versions committed but absent from npm — with no failure anywhere to show
+  # it. That happened to @contentrain/mcp 2.3.0. Queue instead.
+  cancel-in-progress: false
 
 permissions:
   contents: write
