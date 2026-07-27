@@ -37,7 +37,7 @@
     "typecheck": "pnpm -r run typecheck",
     "clean": "pnpm -r run clean",
     "changeset": "changeset",
-    "version-packages": "changeset version && pnpm install --lockfile-only",
+    "version-packages": "changeset version && pnpm install --lockfile-only && pnpm plugin:build",
     "release": "pnpm build && changeset publish",
     "release:status": "changeset status --verbose",
       "plugin:build": "node scripts/build-plugin.mjs",

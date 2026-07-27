@@ -83,8 +83,13 @@ So a plugin-affecting change is an ordinary changeset:
 
 ```bash
 pnpm changeset          # pick @contentrain/claude-plugin
-pnpm plugin:build       # propagate the new version into the manifests
+pnpm plugin:build       # rebuild the payload if you touched skills
 ```
+
+You do not run `plugin:build` for the version itself — `pnpm version-packages`
+ends with it, so the release PR already carries the propagated manifests.
+Run it locally only when you have changed what the plugin ships, which is the
+same reason CI checks the payload on every PR.
 
 The community marketplace advances its pinned commit SHA on its own; the
 version bump is what actually delivers the change to existing installs.
