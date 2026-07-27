@@ -2,7 +2,7 @@
   "mcpServers": {
     "contentrain": {
       "command": "npx",
-      "args": ["-y", "@contentrain/mcp@2.1.1"]
+      "args": ["-y", "@contentrain/mcp@2.2.0"]
     }
   }
 }
