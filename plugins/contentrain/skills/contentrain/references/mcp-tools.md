@@ -1,0 +1,428 @@
+---
+name: mcp-tools
+description: "Complete MCP tool parameter tables, entry formats, scan modes, apply parameters, bulk operations, and workflow tools."
+---
+
+# MCP Tools Reference
+
+## Context Tools (read-only)
+
+### contentrain_status
+
+Get full project state in one call. No parameters.
+
+Returns:
+- `initialized`: whether `.contentrain/` exists with config.json
+- `config`: project configuration (stack, workflow, locales, domains)
+- `models[]`: summary of all models (id, kind, domain, i18n, field count)
+- `context`: last operation and project stats from `context.json`
+- `vocabulary_size`: number of terms in vocabulary.json
+- `branches`: branch health (total, merged, unmerged counts)
+- `branch_warning`: warning message if too many active branches
+- `next_steps`: suggested next actions
+
+If not initialized, returns `detected_stack` and a suggestion to run `contentrain_init`.
+
+### contentrain_describe
+
+Get full schema + optional sample for one model.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model` | string | Yes | Model ID |
+| `include_sample` | boolean | No | Include a sample entry |
+| `locale` | string | No | Locale for sample data |
+
+Returns full schema, all field definitions, entry stats, and stack-aware import snippets.
+
+### contentrain_describe_format
+
+Get the storage and file-format contract for Contentrain content. No parameters.
+
+Returns the complete format specification for all four model kinds, canonical serialization rules, and file path patterns.
+
+## Setup Tools
+
+### contentrain_init
+
+Initialize `.contentrain/` directory structure.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `stack` | string | No | Framework: `"nuxt"`, `"next"`, `"astro"`, `"sveltekit"`, `"react"`, `"node"` |
+| `locales` | string[] | No | Supported locales |
+| `domains` | string[] | No | Content domains |
+
+### contentrain_scaffold
+
+Generate models from a built-in template.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `template` | string | Yes | Template name (see below) |
+| `locales` | string[] | No | Override default locales |
+| `with_sample_content` | boolean | No | Generate example content (default: true) |
+
+Available templates:
+
+| Template | Models Created | Use Case |
+|----------|---------------|----------|
+| `blog` | blog-post (document), categories (collection), authors (collection) | Blog/magazine |
+| `landing` | hero (singleton), features (singleton), pricing (collection), faq (collection), testimonials (collection) | Landing page |
+| `docs` | doc-page (document), doc-categories (collection) | Documentation |
+| `ecommerce` | products (collection), categories (collection), brands (collection) | E-commerce |
+| `saas` | hero (singleton), features (singleton), pricing (collection), changelog (document), faq (collection) | SaaS site |
+| `i18n` | navigation (singleton), form-labels (singleton), error-messages (dictionary), app-strings (dictionary) | Localization |
+| `mobile` | app-strings (dictionary), error-messages (dictionary), onboarding (collection) | Mobile app |
+
+## Model Tools
+
+### contentrain_model_save
+
+Create or update a model definition (upsert).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Kebab-case model ID |
+| `name` | string | Yes | Human-readable display name |
+| `kind` | string | Yes | `singleton`, `collection`, `document`, `dictionary` |
+| `domain` | string | Yes | Organizational group |
+| `i18n` | boolean | Yes | Whether model supports localization |
+| `fields` | object | No | Field definitions (not for dictionary) |
+| `description` | string | No | Model description |
+| `content_path` | string | No | Framework-relative path for content files |
+| `locale_strategy` | string | No | `"file"` (default), `"suffix"`, `"directory"`, `"none"` |
+
+Notes:
+- Upserts by model ID: existing model is updated, new model is created
+- `locale_strategy: "none"` requires `i18n: false`
+- `content_path` overrides default `.contentrain/content/` location
+
+### contentrain_model_delete
+
+Delete a model and its content.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model` | string | Yes | Model ID to delete |
+| `confirm` | boolean | Yes | Must be `true` |
+
+Performs referential integrity check before deletion. If other models reference the target model via `relation` or `relations` fields, deletion is **BLOCKED**. Remove the referencing fields first.
+
+## Content Tools
+
+### contentrain_content_save
+
+Create or update content entries (upsert).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model` | string | Yes | Target model ID |
+| `entries` | array | Yes | Array of entry objects |
+
+#### Entry Format
+
+Each entry in the `entries` array:
+
+```json
+{
+  "id": "optional-entry-id",
+  "slug": "optional-slug",
+  "locale": "en",
+  "data": { "field_name": "field_value" }
+}
+```
+
+**Per kind:**
+
+| Kind | Required Fields | Notes |
+|------|----------------|-------|
+| **Collection** | `locale`, `data` | Provide `id` to update, omit for new (auto-generated) |
+| **Document** | `slug`, `locale`, `data` | `slug` is required. Include `"body"` in `data` for markdown content |
+| **Singleton** | `locale`, `data` | No `id` or `slug` needed |
+| **Dictionary** | `locale`, `data` | `data` is flat key-value: `{ "auth.login": "Log In" }` |
+
+**NEVER include system fields** (`status`, `source`, `updated_by`, `updated_at`, `createdAt`, `updatedAt`) in `data`.
+
+### contentrain_content_delete
+
+Delete a content entry.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model` | string | Yes | Model ID |
+| `id` | string | Conditional | Entry ID (for collections) |
+| `slug` | string | Conditional | Document slug (for documents) |
+| `locale` | string | Conditional | Locale (for singleton/dictionary) |
+| `confirm` | boolean | Yes | Must be `true` |
+
+> **`i18n: false` models reject `locale`.** Content is locale-agnostic
+> (`data.json`), so a locale-scoped delete is refused rather than silently
+> mapped onto `data.json` + the default-locale meta. Omit `locale`; use
+> `contentrain_validate` `fix: true` to clean up stray per-locale meta.
+
+### contentrain_content_list
+
+List content entries for a model (read-only).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model` | string | Yes | Model ID |
+| `locale` | string | No | Locale filter |
+| `filter` | object | No | Field-based filter |
+| `resolve` | boolean | No | Resolve relations |
+| `limit` | number | No | Max entries to return |
+| `offset` | number | No | Pagination offset |
+
+## Normalize Tools
+
+### contentrain_scan
+
+Scan project for structure or content candidates.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `mode` | string | No | `"candidates"` (default), `"graph"`, `"summary"` |
+| `paths` | string[] | No | Directories to scan (auto-detected if omitted) |
+| `include` | string[] | No | File extensions (default: .tsx, .jsx, .vue, .ts, .js, .mjs, .astro, .svelte) |
+| `exclude` | string[] | No | Additional directories to exclude |
+| `limit` | number | No | Batch size for candidates mode (default: 50) |
+| `offset` | number | No | Pagination offset for candidates mode |
+| `min_length` | number | No | Min string length filter |
+| `max_length` | number | No | Max string length filter |
+
+#### Scan Modes
+
+| Mode | Output | Purpose |
+|------|--------|---------|
+| `graph` | Import/component dependency graph with string counts | Understand project structure, prioritize files |
+| `candidates` | Hardcoded string candidates with file locations, context | Find content to extract (paginated) |
+| `summary` | High-level stats by directory, top repeated strings | Quick project overview |
+
+Candidates mode supports pagination via `offset` and `limit`. Response includes `stats.has_more`.
+
+### contentrain_apply
+
+Apply normalize operation (extract or reuse).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `mode` | string | Yes | `"extract"` or `"reuse"` |
+| `dry_run` | boolean | No | Preview without executing (default: `true`) |
+| `extractions` | array | Conditional | For extract mode |
+| `scope` | object | Conditional | For reuse mode (requires `model` or `domain`) |
+| `patches` | array | Conditional | For reuse mode (max 100 per call) |
+
+#### Extract Mode
+
+```json
+{
+  "mode": "extract",
+  "dry_run": true,
+  "extractions": [
+    {
+      "model": "ui-texts",
+      "kind": "dictionary",
+      "domain": "system",
+      "i18n": true,
+      "fields": {},
+      "entries": [
+        {
+          "locale": "en",
+          "data": { "nav.home": "Home" },
+          "source": { "file": "src/Nav.vue", "line": 5, "value": "Home" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Reuse Mode
+
+```json
+{
+  "mode": "reuse",
+  "dry_run": true,
+  "scope": { "model": "ui-texts" },
+  "patches": [
+    {
+      "file": "src/Nav.vue",
+      "line": 5,
+      "old_value": "Home",
+      "new_expression": "{{ $t('nav.home') }}",
+      "import_statement": ""
+    }
+  ]
+}
+```
+
+- `dry_run` defaults to `true`. ALWAYS preview first, then `dry_run: false` to execute
+- `scope` requires at least one of `model` or `domain`
+- `patches` max: 100 per call
+
+## Workflow Tools
+
+### contentrain_validate
+
+Validate project content against model schemas.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `model` | string | No | Validate specific model only (omit for all) |
+| `fix` | boolean | No | Auto-fix structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout). Default: `false` |
+
+### contentrain_submit
+
+Push `cr/*` feature branches to remote.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `branches` | string[] | No | Specific branches to push (omit for all `cr/*` branches) |
+| `message` | string | No | Optional message for the push operation |
+
+### contentrain_merge
+
+Merge a single review-mode `cr/*` branch into the content-tracking `contentrain` branch and advance the base branch via `update-ref`. Runs the worktree transaction with selective sync — dirty files in the developer's working tree are preserved rather than overwritten. The merged feature branch is pruned afterward.
+
+Target the branch by exact name, or resolve it by model:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `branch` | string | No* | Exact feature branch name (must start with `cr/`) |
+| `model` | string | No* | Resolve the branch by model id (e.g. `blog-post`) |
+| `locale` | string | No | Narrow model resolution to a locale |
+| `latest` | boolean | No | When multiple branches match the model, merge the most recently committed one |
+| `confirm` | `true` | Yes | Must be `true` to confirm |
+
+\* Provide either `branch` or `model`. Ambiguous model matches return the candidate branches so you can pick one (or pass `latest: true`).
+
+Returns `{ branch, action, commit, sync }` — `sync.skipped[]` lists files the selective sync skipped because the developer has uncommitted changes. The CLI surfaces this as a warning.
+
+### contentrain_branch_list
+
+List pending `cr/*` branches with their merge status against the `contentrain` branch. Use it to discover branch names for `contentrain_merge` / `contentrain_branch_delete` and to monitor branch-health pressure (warning at 50, blocked at 80 unmerged). Read-only. Local-filesystem only (`localWorktree`).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `unmerged_only` | boolean | No | Only list branches not yet merged into `contentrain`. Default `false` |
+
+Returns `{ total, unmerged, branches: [{ name, sha, merged, lastCommit }], health }`.
+
+### contentrain_branch_delete
+
+Delete a pending `cr/*` branch that will not be merged — e.g. one left by a failed operation, or a superseded draft. Only `cr/*` branches can be deleted; the `contentrain` branch is protected. Destructive: the branch and its unmerged commits are removed.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `branch` | string | Yes | The `cr/*` branch to delete |
+| `confirm` | `true` | Yes | Must be `true` to confirm deletion |
+
+Returns `{ status: 'deleted', branch, was_merged }`. Note: in normal operation Contentrain prunes feature branches automatically after auto-merge / `contentrain_merge`, so this tool is for cleanup of leftover branches only.
+
+## Doctor Tools
+
+### contentrain_doctor
+
+Structured project health report: git install, Node version, `.contentrain/` structure, model parse, orphan content, pending branch pressure, SDK client freshness. Read-only. Local-filesystem only (`localWorktree` capability — unavailable over remote providers).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `usage` | boolean | No | Run the heavier usage-analysis branch (unused content keys, duplicate dictionary values, locale coverage). Default `false` |
+
+Returns `{ checks[], summary: { total, passed, failed, warnings }, usage? }`. Each check carries `name`, `pass`, `detail`, optional `severity: 'error' | 'warning' | 'info'`.
+
+## Bulk Tools
+
+### contentrain_bulk
+
+Run git-backed batch operations on existing content entries.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `operation` | string | Yes | `"copy_locale"`, `"update_status"`, `"delete_entries"` |
+| `model` | string | Yes | Target model ID |
+| `source_locale` | string | Conditional | For `copy_locale` |
+| `target_locale` | string | Conditional | For `copy_locale` |
+| `entry_ids` | string[] | Conditional | For `update_status` and `delete_entries` |
+| `status` | string | Conditional | For `update_status` |
+| `confirm` | boolean | Conditional | For `delete_entries` (must be `true`) |
+
+#### Operations
+
+| Operation | Applicable Kinds | Required Params |
+|-----------|-----------------|-----------------|
+| `copy_locale` | collection, singleton, dictionary (i18n only) | `source_locale`, `target_locale` |
+| `update_status` | collection only | `entry_ids`, `status` |
+| `delete_entries` | collection only | `entry_ids`, `confirm: true` |
+
+#### Rules
+
+- ALWAYS verify the target model with `contentrain_describe` or `contentrain_status` before running bulk
+- `copy_locale` MUST NOT be used on non-i18n models
+- Bulk operations create branches and commits like other write tools
+- Validate afterward when content shape may have changed
+
+## Media Tools
+
+Media tools are a deterministic passthrough to the provider's media stack. They are **registered only when the provider exposes one** (e.g. Studio MCP Cloud) — local stdio servers and plain GitHub/GitLab providers never list them. The flow: list assets → pick a `media/...` path → reference it in media/image/file fields via `contentrain_content_save` (paths are normalized to absolute delivery URLs when the provider sets `mediaBaseUrl`).
+
+### contentrain_media_list
+
+List media assets with optional filtering and cursor pagination. Read-only.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `search` | string | No | Substring match on filename/path/alt |
+| `tag` | string | No | Only assets carrying this tag |
+| `limit` | number | No | Page size (1–100, provider may clamp) |
+| `cursor` | string | No | Opaque cursor from a previous response |
+
+Returns `{ assets[], next_cursor?, total? }`. Each asset carries `id`, `path` (`media/...`), optional `url`, `mime`, `size`, `alt`, `tags`, `createdAt`, `meta`.
+
+### contentrain_media_get
+
+Get a single media asset by id. Read-only.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Asset id from `contentrain_media_list` |
+
+Returns `{ asset }` or an error with a discovery hint for unknown ids.
+
+### contentrain_media_ingest
+
+Ingest an asset from a source URL. The provider fetches the URL server-side under its own SSRF/MIME/size policy — MCP never fetches it. The only open-world tool (`openWorldHint: true`).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `url` | string | Yes | Source URL to fetch server-side |
+| `filename` | string | No | Target filename override |
+| `alt` | string | No | Alt text |
+| `tags` | string[] | No | Tags to attach (max 20) |
+
+Returns `{ status: "ingested", asset }` — use `asset.path` in content fields afterward.
+
+### contentrain_media_update
+
+Update asset metadata. Never touches the binary.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Asset id to update |
+| `alt` | string | No | New alt text |
+| `tags` | string[] | No | Replacement tag list (max 20) |
+| `filename` | string | No | New filename |
+
+Returns `{ status: "updated", asset }`.
+
+### contentrain_media_delete
+
+Delete an asset from the media stack. Destructive — content entries referencing its path are NOT rewritten; check references first with `contentrain_content_list`.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Asset id to delete |
+| `confirm` | boolean | Yes | Must be `true` to confirm |
+
+Returns `{ status: "deleted", id }`.

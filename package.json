@@ -40,6 +40,7 @@
     "version-packages": "changeset version && pnpm install --lockfile-only",
     "release": "pnpm build && changeset publish",
     "release:status": "changeset status --verbose",
+      "plugin:build": "node scripts/build-plugin.mjs",
     "release:check": "node scripts/release-check.mjs",
     "release:pack": "node scripts/release-pack.mjs",
     "docs:dev": "pnpm --dir docs dev",

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "contentrain",
+  "displayName": "Contentrain",
+  "version": "1.0.0",
+  "description": "Turn hardcoded strings into governed content",
+  "author": {
+    "name": "Contentrain",
+    "url": "https://contentrain.io"
+  },
+  "homepage": "https://ai.contentrain.io",
+  "repository": "https://github.com/Contentrain/ai",
+  "license": "MIT",
+  "keywords": [
+    "content",
+    "i18n",
+    "localization",
+    "hardcoded-strings",
+    "cms",
+    "git",
+    "vue",
+    "nuxt",
+    "nextjs",
+    "react",
+    "astro",
+    "sveltekit"
+  ]
+}

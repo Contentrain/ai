@@ -68,7 +68,20 @@ This creates `.contentrain/` in your project root with configuration, model defi
 
 ### 2. Connect your AI agent
 
-The `setup` command auto-configures the MCP server for your IDE:
+**Claude Code — one command.** The plugin bundles the MCP server and the
+skills that teach Claude the normalize workflow, so there is nothing else to
+configure:
+
+```
+/plugin marketplace add Contentrain/ai
+/plugin install contentrain@contentrain
+```
+
+Then run `/reload-plugins`. See the [plugin
+README](https://github.com/Contentrain/ai/tree/main/plugins/contentrain) for
+what it includes.
+
+For every other client, the `setup` command auto-configures the MCP server:
 
 ```bash
 npx contentrain setup claude-code   # → creates .mcp.json
