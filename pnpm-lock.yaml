@@ -266,6 +266,8 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
+  plugins/contentrain: {}
+
 packages:
 
   '@algolia/abtesting@1.15.2':

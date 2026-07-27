@@ -16,7 +16,7 @@
  *   plugins/contentrain/skills/<skill>/ -> ../../frameworks/ = plugins/contentrain/frameworks/
  * so the framework links inside SKILL.md resolve in both layouts unchanged.
  */
-import { cpSync, mkdirSync, readdirSync, rmSync } from 'node:fs'
+import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -24,6 +24,9 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const SKILLS_SRC = join(ROOT, 'packages/skills/skills')
 const FRAMEWORKS_SRC = join(ROOT, 'packages/skills/frameworks')
 const PLUGIN_DIR = join(ROOT, 'plugins/contentrain')
+const PLUGIN_PKG = join(PLUGIN_DIR, 'package.json')
+const PLUGIN_MANIFEST = join(PLUGIN_DIR, '.claude-plugin/plugin.json')
+const MARKETPLACE_MANIFEST = join(ROOT, '.claude-plugin/marketplace.json')
 
 /**
  * The normalize wedge, end to end: init -> scan/extract -> model -> validate
@@ -41,6 +44,41 @@ const CURATED_SKILLS = [
   'contentrain-review',
   'contentrain-serve',
 ]
+
+function readJson(path) {
+  return JSON.parse(readFileSync(path, 'utf-8'))
+}
+
+/** Canonical write: 2-space indent, trailing newline — matches the repo. */
+function writeJson(path, value) {
+  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, 'utf-8')
+}
+
+/**
+ * plugins/contentrain/package.json is the single source of truth for the
+ * plugin version, because that is the file changesets bumps. Claude Code
+ * pins installed users to the `version` in plugin.json and only offers an
+ * update when it changes, so a skills or MCP-pin change that forgets the
+ * bump reaches nobody. Deriving both manifests from the package version
+ * puts that bump in the release flow instead of a human's memory.
+ */
+function syncVersion() {
+  const { version } = readJson(PLUGIN_PKG)
+  if (typeof version !== 'string' || version.length === 0) {
+    console.error(`✘ No version in ${PLUGIN_PKG}`)
+    process.exit(1)
+  }
+
+  const manifest = readJson(PLUGIN_MANIFEST)
+  manifest.version = version
+  writeJson(PLUGIN_MANIFEST, manifest)
+
+  const marketplace = readJson(MARKETPLACE_MANIFEST)
+  marketplace.metadata = { ...marketplace.metadata, version }
+  writeJson(MARKETPLACE_MANIFEST, marketplace)
+
+  return version
+}
 
 function build() {
   const skillsOut = join(PLUGIN_DIR, 'skills')
@@ -61,8 +99,9 @@ function build() {
   }
   cpSync(FRAMEWORKS_SRC, frameworksOut, { recursive: true })
 
+  const version = syncVersion()
   const frameworkCount = readdirSync(frameworksOut).filter(f => f.endsWith('.md')).length
-  console.log(`✔ plugins/contentrain — ${CURATED_SKILLS.length} skills, ${frameworkCount} framework guides`)
+  console.log(`✔ plugins/contentrain@${version} — ${CURATED_SKILLS.length} skills, ${frameworkCount} framework guides`)
 }
 
 build()

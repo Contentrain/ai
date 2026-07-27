@@ -1,0 +1,12 @@
+{
+  "name": "@contentrain/claude-plugin",
+  "version": "1.0.1",
+  "private": true,
+  "description": "Claude Code plugin payload \u2014 versioned by changesets, published through the marketplace rather than npm",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Contentrain/ai.git",
+    "directory": "plugins/contentrain"
+  }
+}
