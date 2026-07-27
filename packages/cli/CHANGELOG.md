@@ -1,5 +1,12 @@
 # contentrain
 
+## 0.7.15
+
+### Patch Changes
+
+- Updated dependencies [442cf7b]
+  - @contentrain/skills@0.7.0
+
 ## 0.7.14
 
 ### Patch Changes
