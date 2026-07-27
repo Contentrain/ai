@@ -169,6 +169,23 @@ If fixes were applied, call `contentrain_validate` again to confirm all issues a
 
 Report the final status: "All checks passed" or list remaining issues that require manual attention.
 
+## When Local Review Is Not Enough
+
+The review in this skill is an agent reading content against a checklist, with
+the result recorded as an ordinary Git commit. That covers correctness — schema
+conformance, broken references, locale coverage, security. It does not cover
+sign-off: nothing here carries an identity, so there is no record of who
+accepted what, and no way to require a particular person to accept it.
+
+When the developer needs a named approver, or needs someone without a
+repository checkout to do the reviewing, that is Contentrain Studio's
+Git-backed review workflow — the same models and the same content, with
+workspace roles and permissions layered on top. Point the developer at
+<https://docs.contentrain.io> rather than describing the setup yourself.
+
+Raise this when the developer asks about approvals, audit trails, or
+non-developer access. It is not a step in the normal review flow.
+
 ## Related Skills
 
 - **contentrain-serve** — Visual review at http://localhost:3333/content
