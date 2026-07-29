@@ -1,6 +1,7 @@
 import type { StackType, Platform } from '@contentrain/types'
 import { join, dirname } from 'node:path'
-import { readJson, pathExists } from './fs.js'
+import { readdir } from 'node:fs/promises'
+import { readJson, pathExists, readText } from './fs.js'
 
 interface PackageJson {
   dependencies?: Record<string, string>
@@ -105,6 +106,16 @@ export async function detectStackInfo(projectRoot: string): Promise<StackInfo> {
     }
   }
 
+  // Look DOWN into the workspaces. The walk above handles "I am inside a
+  // package, find the monorepo root"; this handles the opposite and more
+  // common case — projectRoot IS the monorepo root, whose package.json holds
+  // only tooling (turbo, nx) while the frameworks live in apps/* and
+  // packages/*. Without this a Next.js monorepo reports `other`, and the
+  // stack is what picks the replacement conventions during normalize.
+  if (stack === 'other') {
+    stack = await detectFromWorkspaces(projectRoot)
+  }
+
   // Non-JS detection if still 'other'
   if (stack === 'other') {
     stack = await detectNonJs(projectRoot)
@@ -168,6 +179,87 @@ async function detectFromDeps(dir: string): Promise<StackType> {
   return 'other'
 }
 
+/**
+ * Ranked by how strongly the stack determines content conventions — a
+ * meta-framework dictates the i18n setup and the replacement expression,
+ * a plain UI library does not. Frequency would be the wrong tie-break: a
+ * monorepo with one Next app and two React packages is a Next project.
+ */
+const STACK_PRIORITY: readonly StackType[] = [
+  'nuxt', 'next', 'astro', 'sveltekit', 'remix', 'analog',
+  'expo', 'react-native',
+  'vue', 'react', 'svelte', 'solid', 'angular',
+  'electron', 'tauri',
+  'nestjs', 'fastify', 'express',
+  'eleventy', 'node',
+]
+
+/** Cap the fan-out so a large monorepo cannot turn detection into a crawl. */
+const MAX_WORKSPACE_DIRS = 50
+
+/**
+ * Workspace globs from `pnpm-workspace.yaml` or the `workspaces` field.
+ *
+ * The pnpm file is parsed line by line rather than with a YAML library: we
+ * need exactly one list of strings with a fixed shape, and a parser
+ * dependency for that is not worth the install size.
+ */
+async function readWorkspacePatterns(root: string): Promise<string[]> {
+  const pnpm = await readText(join(root, 'pnpm-workspace.yaml'))
+  if (pnpm) {
+    const patterns: string[] = []
+    let inPackages = false
+    for (const raw of pnpm.split('\n')) {
+      const line = raw.replace(/#.*$/, '').trimEnd()
+      if (/^packages:\s*$/.test(line)) { inPackages = true; continue }
+      if (!inPackages) continue
+      const item = /^\s+-\s*['"]?([^'"]+?)['"]?\s*$/.exec(line)
+      if (item?.[1]) { patterns.push(item[1]); continue }
+      if (line.trim() !== '') break // a new top-level key ends the list
+    }
+    if (patterns.length > 0) return patterns
+  }
+
+  const pkg = await readJson<PackageJson>(join(root, 'package.json'))
+  const ws = pkg?.workspaces
+  if (Array.isArray(ws)) return ws
+  if (ws && Array.isArray(ws.packages)) return ws.packages
+  return []
+}
+
+/**
+ * Expand workspace patterns to directories. Only a trailing `*` segment is
+ * expanded — that covers `apps/*` and `packages/*`, which is what real
+ * workspace files use. Deeper globs and negations are skipped rather than
+ * half-supported.
+ */
+async function listWorkspaceDirs(root: string): Promise<string[]> {
+  const patterns = (await readWorkspacePatterns(root)).filter(p => !p.startsWith('!'))
+
+  const expanded = await Promise.all(patterns.map(async (pattern) => {
+    const star = pattern.indexOf('*')
+    if (star === -1) return [join(root, pattern)]
+    const base = join(root, pattern.slice(0, star).replace(/\/+$/, ''))
+    try {
+      const entries = await readdir(base, { withFileTypes: true })
+      return entries.filter(e => e.isDirectory()).map(e => join(base, e.name))
+    } catch {
+      return []
+    }
+  }))
+
+  return expanded.flat().slice(0, MAX_WORKSPACE_DIRS)
+}
+
+/** Highest-priority stack across the workspace packages. */
+async function detectFromWorkspaces(root: string): Promise<StackType> {
+  const dirs = await listWorkspaceDirs(root)
+  if (dirs.length === 0) return 'other'
+
+  const found = new Set(await Promise.all(dirs.map(d => detectFromDeps(d))))
+  return STACK_PRIORITY.find(s => found.has(s)) ?? 'other'
+}
+
 async function detectNonJs(projectRoot: string): Promise<StackType> {
   // Go
   if (await pathExists(join(projectRoot, 'go.mod'))) return 'go'
@@ -180,7 +272,6 @@ async function detectNonJs(projectRoot: string): Promise<StackType> {
     if (await pathExists(join(projectRoot, f))) {
       // Check for Django
       try {
-        const { readText } = await import('./fs.js')
         const content = await readText(join(projectRoot, f))
         if (content?.includes('django') || content?.includes('Django')) return 'django'
       } catch { /* ignore */ }
@@ -191,7 +282,6 @@ async function detectNonJs(projectRoot: string): Promise<StackType> {
   // Ruby
   if (await pathExists(join(projectRoot, 'Gemfile'))) {
     try {
-      const { readText } = await import('./fs.js')
       const content = await readText(join(projectRoot, 'Gemfile'))
       if (content?.includes('rails')) return 'rails'
     } catch { /* ignore */ }
@@ -222,7 +312,6 @@ async function detectNonJs(projectRoot: string): Promise<StackType> {
   if (await pathExists(join(projectRoot, 'hugo.toml'))) return 'hugo'
   if (await pathExists(join(projectRoot, 'config.toml'))) {
     try {
-      const { readText } = await import('./fs.js')
       const content = await readText(join(projectRoot, 'config.toml'))
       if (content?.includes('baseURL') || content?.includes('hugo')) return 'hugo'
     } catch { /* ignore */ }
@@ -298,6 +387,20 @@ async function collectAllDeps(projectRoot: string): Promise<Record<string, strin
     const parent = dirname(dir)
     if (parent === dir) break
     dir = parent
+  }
+
+  // Same blind spot as stack detection: at a monorepo root the interesting
+  // dependencies (the i18n library above all) sit in the workspace packages,
+  // not in the root manifest. Reporting "no i18n" for a project that has it
+  // would send normalize down the wrong path.
+  const workspaceDirs = await listWorkspaceDirs(projectRoot)
+  if (workspaceDirs.length > 0) {
+    const pkgs = await Promise.all(
+      workspaceDirs.map(d => readJson<PackageJson>(join(d, 'package.json'))),
+    )
+    for (const wsPkg of pkgs) {
+      if (wsPkg) Object.assign(allDeps, wsPkg.dependencies, wsPkg.devDependencies)
+    }
   }
 
   return allDeps
