@@ -146,9 +146,15 @@ Note `packages/mcp` and `packages/cli` tests import `@contentrain/mcp` from
 
 **Every agent MUST pass ALL gates before considering work complete.** No exceptions.
 
+**Run the package scripts, not a hand-rolled equivalent.** `pnpm lint` is
+`oxlint --deny-warnings .` — the whole repo, warnings treated as errors.
+`npx oxlint packages/mcp/src` is neither, and a change that passes it can still
+fail CI. Same for tests: run `pnpm test` once, over every package, before
+pushing. Both mistakes below were made in one session and both reached CI.
+
 ### 1. oxlint (zero errors, zero warnings)
 ```bash
-npx oxlint packages/<package>/src/ packages/<package>/tests/
+pnpm lint          # oxlint --deny-warnings .  — what CI runs
 ```
 - `sort()` → `toSorted()` (immutable)
 - `no-await-in-loop` → use `Promise.all()` for parallel I/O — **but only for reads, or for writes to distinct paths.** Never parallelize a read-modify-write over shared state: each call reads the same snapshot and rewrites the whole file, so all but the last-settling write are silently lost. A sequential `await` loop is correct there; accumulate in memory and write once (see `writeMetaEntries`). This rule applied blindly to `.contentrain/meta/{locale}.json` is what made `contentrain_bulk update_status` persist 1 of N entries while reporting success.
@@ -164,8 +170,17 @@ cd packages/<package> && npx tsc --noEmit
 
 ### 3. Tests (all pass, meaningful coverage)
 ```bash
-cd packages/<package> && npx vitest run
+pnpm build && pnpm test   # every package, in one run
 ```
+- **Build first, and run the whole suite in one go.** `packages/rules`,
+  `packages/skills` and `packages/cli` import `@contentrain/mcp` from `dist/`,
+  so a stale build tests the previous version. And running one package at a
+  time hides load-dependent flakes: a test that takes 2s alone took over 30s
+  with all six packages competing for the machine, failed as a timeout, and
+  passed two rounds of PR CI before the full local run caught it.
+- **Do not drop a file's `vi.setConfig` when editing its header.** The files
+  doing real git work declare their own 120s timeout for a reason. Removing one
+  while restructuring a file is how the flake above was introduced.
 - Every public module MUST have tests
 - Runtime classes: test all methods + edge cases (empty data, unknown locale, etc.)
 - Generator modules: test output correctness + canonical format
@@ -189,7 +204,9 @@ After changing public behavior:
 pnpm install
 pnpm dev              # All packages in watch mode (pnpm -r --parallel)
 pnpm build            # Build all packages (pnpm -r run build)
-pnpm test             # Vitest all packages
-pnpm lint             # oxlint
+pnpm test             # Vitest all packages (build first — cli/rules/skills read dist/)
+pnpm lint             # oxlint --deny-warnings . (whole repo; what CI runs)
+pnpm plugin:build     # Regenerate plugins/contentrain — CI fails on a stale diff
+pnpm release:check    # Release manifest / changeset pre-flight
 lefthook install      # Git hooks
 ```
