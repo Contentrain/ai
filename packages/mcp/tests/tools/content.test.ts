@@ -1,4 +1,7 @@
 import { describe, expect, it, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest'
+
+// Real git writes; the surrounding suites make these contend for the machine.
+vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
 import { rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createGit } from '../../src/git/identity.js'

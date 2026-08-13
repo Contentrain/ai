@@ -24,12 +24,18 @@ export default defineConfig({
     setupFiles: ['./tests/setup/trim-path.ts'],
 
     // Default 5s is not enough for anything that touches git — a single
-    // `contentrain_init` is 33 subprocesses. Files that need more still set
-    // their own; this is the floor that stops a slow machine from reporting
-    // a timeout as a test failure.
-    testTimeout: 30_000,
+    // `contentrain_init` is 33 subprocesses.
+    //
+    // 60s rather than 30s because 30s was not enough, and the way it failed is
+    // the argument: a test that runs in 2.1s alone took over 30s with all six
+    // packages competing for the machine, and reported as a test failure
+    // rather than as contention. Files doing heavy git work still declare
+    // their own 120s; this is the floor for the ones that do not, so a file
+    // that forgets is not silently at risk. A genuine hang costs 60s instead
+    // of 30s once, which is a cheaper mistake than a false red.
+    testTimeout: 60_000,
     // Fixture setup (template build, clone) lives in hooks and is the slowest
     // single step in the suite.
-    hookTimeout: 30_000,
+    hookTimeout: 60_000,
   },
 })
