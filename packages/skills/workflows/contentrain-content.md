@@ -100,6 +100,7 @@ contentrain_content_save({
 - **collection:** `{ "id": "optional-id", "locale": "en", "data": { "name": "John", "role": "CEO" } }` -- omit `id` to auto-generate, provide `id` to update.
 - **document:** `{ "slug": "getting-started", "locale": "en", "data": { "title": "Getting Started", "body": "# Welcome\n..." } }` -- `slug` is required, use `"body"` key for markdown content.
 - **dictionary:** `{ "locale": "en", "data": { "auth.login": "Log In", "auth.logout": "Log Out" } }` -- flat key-value pairs, no `id` or `slug`.
+  Saves merge: keys you omit are kept, and replacing an existing key's value is allowed. The response reports what was replaced, so read `advisories` rather than assuming a save was purely additive.
 
 **Critical rules:**
 - NEVER include system fields (`status`, `source`, `updated_by`, `approved_by`) in `data`. These are managed in meta files, not content. Temporal data (created/updated timestamps) comes from git history.

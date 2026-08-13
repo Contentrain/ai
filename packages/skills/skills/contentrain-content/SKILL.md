@@ -63,7 +63,7 @@ If the user's request does not match an existing model, offer to create one firs
 
 - Check `.contentrain/vocabulary.json` for canonical terms. All content must use these terms consistently across locales. Do not use alternative spellings or synonyms for vocabulary-defined terms.
 - Check `.contentrain/context.json` for tone conventions (professional, casual, technical).
-- **For dictionaries:** Before creating any new key, call `contentrain_content_list` on the target model and scan existing values. If the value you intend to write already exists under a different key, REUSE the existing key instead of creating a new one. MCP will also warn you via `advisories` in the save response if duplicates are detected.
+- **For dictionaries:** Before creating any new key, call `contentrain_content_list` on the target model and scan existing values. If the value you intend to write already exists under a different key, REUSE the existing key instead of creating a new one. MCP will also warn you via `advisories` in the save response if duplicates are detected. Replacing an existing key's value is allowed — the response reports what was replaced, so read the advisories rather than assuming a save was purely additive.
 
 ### 5. Generate Content
 

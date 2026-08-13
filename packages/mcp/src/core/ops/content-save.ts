@@ -8,6 +8,9 @@ import type { ContentSaveEntryResult, ContentSavePlan } from './types.js'
 import { contentFilePath, documentFilePath, metaFilePath } from './paths.js'
 import { mergeEntryMeta } from '../meta-manager.js'
 
+/** Keys named individually in a replacement advisory before it collapses to a count. */
+const MAX_REPORTED_KEYS = 5
+
 interface PlanInput {
   model: ModelDefinition
   entries: ContentEntry[]
@@ -131,17 +134,30 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
           ?? await readJsonOrEmpty<Record<string, string>>(cPath)
 
         const newData = entry.data as Record<string, string>
-        const collisions = Object.keys(newData).filter(
+        const entryAdvisories: string[] = []
+
+        // Overwriting a key used to be refused outright, which made the most
+        // ordinary dictionary operation — correcting a translation — impossible:
+        // the workaround was delete, merge, save, merge. Four operations and two
+        // branches to fix one string. The refusal also advised "include all keys
+        // in a single save call", which cannot work, because the check compares
+        // values per key rather than counting them.
+        //
+        // Choosing a translation is a content decision, and MCP does not make
+        // those. It reports them — the same way the duplicate-value case two
+        // blocks below already does — and the branch diff shows the rest.
+        const replaced = Object.keys(newData).filter(
           k => k in existing && existing[k] !== newData[k],
         )
-        if (collisions.length > 0) {
-          throw new Error(
-            `Dictionary "${model.id}" (${locale}): ${collisions.length} key collision(s) — [${collisions.join(', ')}] already exist with different values. `
-            + 'Read existing keys with contentrain_content_list first, or include all keys in a single save call.',
+        if (replaced.length > 0) {
+          const shown = replaced.slice(0, MAX_REPORTED_KEYS)
+          const detail = shown.map(k => `"${k}": "${existing[k]}" → "${newData[k]}"`).join(', ')
+          const more = replaced.length > shown.length ? `, and ${replaced.length - shown.length} more` : ''
+          entryAdvisories.push(
+            `Dictionary "${model.id}" (${locale}): replaced ${replaced.length} existing value(s) — ${detail}${more}.`,
           )
         }
 
-        const entryAdvisories: string[] = []
         const reverseMap = new Map<string, string>()
         for (const [k, v] of Object.entries(existing)) reverseMap.set(v, k)
         for (const [newKey, newValue] of Object.entries(newData)) {

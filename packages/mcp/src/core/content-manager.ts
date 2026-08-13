@@ -12,6 +12,9 @@ import { contentDirPath, contentFilePath, documentFilePath } from './ops/paths.j
 export { validateSlug, validateEntryId, validateLocale }
 export { parseMarkdownFrontmatter as parseFrontmatter, serializeMarkdownFrontmatter as serializeFrontmatter } from '@contentrain/types'
 
+/** Keys named individually in a replacement advisory before it collapses to a count. */
+const MAX_REPORTED_KEYS = 5
+
 // ─── Content paths ───
 //
 // These take the narrowest `Pick<ModelDefinition, …>` each one actually reads,
@@ -195,21 +198,23 @@ export async function writeContent(
       case 'dictionary': {
         const filePath = resolveJsonFilePath(resolveContentDir(projectRoot, model), model, locale)
         const existing = await readJson<Record<string, string>>(filePath) ?? {}
-        const collisions: string[] = []
-        for (const key of Object.keys(entry.data as Record<string, string>)) {
-          if (key in existing && existing[key] !== (entry.data as Record<string, string>)[key]) {
-            collisions.push(key)
-          }
-        }
-        if (collisions.length > 0) {
-          throw new Error(
-            `Dictionary "${model.id}" (${locale}): ${collisions.length} key collision(s) — [${collisions.join(', ')}] already exist with different values. ` +
-            `Read existing keys with contentrain_content_list first, or include all keys in a single save call.`,
-          )
-        }
-
         // Duplicate value advisory: warn when a new key maps to a value that already exists
         const advisories: string[] = []
+
+        // Replacing a value is reported, not refused — see the same block in
+        // `planContentSave`. Correcting a translation is a content decision.
+        const incoming = entry.data as Record<string, string>
+        const replaced = Object.keys(incoming).filter(
+          k => k in existing && existing[k] !== incoming[k],
+        )
+        if (replaced.length > 0) {
+          const shown = replaced.slice(0, MAX_REPORTED_KEYS)
+          const detail = shown.map(k => `"${k}": "${existing[k]}" → "${incoming[k]}"`).join(', ')
+          const more = replaced.length > shown.length ? `, and ${replaced.length - shown.length} more` : ''
+          advisories.push(
+            `Dictionary "${model.id}" (${locale}): replaced ${replaced.length} existing value(s) — ${detail}${more}.`,
+          )
+        }
         const reverseMap = new Map<string, string>()
         for (const [k, v] of Object.entries(existing)) {
           reverseMap.set(v, k)
