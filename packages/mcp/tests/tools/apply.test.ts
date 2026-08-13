@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
+import { describe, expect, it, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest'
 
 vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
 import { join } from 'node:path'
@@ -8,7 +8,9 @@ import { simpleGit } from 'simple-git'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { createServer } from '../../src/server.js'
+import { cloneTemplate, makeInitedTemplate } from '../support/project.js'
 
+let template: string
 let testDir: string
 let client: Client
 
@@ -17,15 +19,6 @@ async function expectGitClean(dir: string): Promise<void> {
   expect(status.files).toHaveLength(0)
 }
 
-async function initGitRepo(dir: string): Promise<void> {
-  const git = simpleGit(dir)
-  await git.init()
-  await git.addConfig('user.name', 'Test')
-  await git.addConfig('user.email', 'test@test.com')
-  await writeFile(join(dir, '.gitkeep'), '')
-  await git.add('.')
-  await git.commit('initial')
-}
 
 async function createTestClient(projectRoot: string): Promise<Client> {
   const server = createServer(projectRoot)
@@ -76,19 +69,21 @@ export function Hero({ title }: { title: string }) {
 `)
 }
 
+// Source files + init once per file, cloned per test. `makeInitedTemplate`
+// commits the prepared sources before running init, so a clone is a project
+// that has already been through the same setup — for 15 git subprocess-heavy
+// tests, that is 14 inits (~460 spawns) that no longer happen.
+beforeAll(async () => {
+  template = await makeInitedTemplate({ prepare: createSourceFiles })
+  await expectGitClean(template)
+})
+
+afterAll(async () => {
+  await rm(template, { recursive: true, force: true })
+})
+
 beforeEach(async () => {
-  testDir = await mkdtemp(join(tmpdir(), 'cr-apply-test-'))
-  await initGitRepo(testDir)
-  await createSourceFiles(testDir)
-
-  const git = simpleGit(testDir)
-  await git.add('.')
-  await git.commit('add source files')
-
-  client = await createTestClient(testDir)
-  await client.callTool({ name: 'contentrain_init', arguments: {} })
-  await expectGitClean(testDir)
-
+  testDir = await cloneTemplate(template)
   client = await createTestClient(testDir)
 })
 

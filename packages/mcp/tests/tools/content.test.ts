@@ -1,45 +1,17 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
-
-vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
+import { describe, expect, it, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest'
+import { rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { simpleGit } from 'simple-git'
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { createServer } from '../../src/server.js'
+import { createGit } from '../../src/git/identity.js'
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { readJson, readText } from '../../src/util/fs.js'
+import { cloneTemplate, createClient as createTestClient, makeInitedTemplate, parseResult } from '../support/project.js'
 
+// One inited project per file, cloned per test. Each `contentrain_init` is 33
+// git subprocesses; running it 17 times to test content writes was paying for
+// project setup, not for anything these tests assert.
+let template: string
 let testDir: string
 let client: Client
-
-async function initProject(dir: string): Promise<void> {
-  const git = simpleGit(dir)
-  await git.init()
-  await git.addConfig('user.name', 'Test')
-  await git.addConfig('user.email', 'test@test.com')
-  await writeFile(join(dir, '.gitkeep'), '')
-  await git.add('.')
-  await git.commit('initial')
-}
-
-async function createTestClient(projectRoot: string): Promise<Client> {
-  const server = createServer(projectRoot)
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
-
-  const c = new Client({ name: 'test-client', version: '1.0.0' })
-  await Promise.all([
-    c.connect(clientTransport),
-    server.connect(serverTransport),
-  ])
-
-  return c
-}
-
-function parseResult(result: unknown): Record<string, unknown> {
-  const content = (result as { content: Array<{ text: string }> }).content
-  return JSON.parse(content[0]!.text) as Record<string, unknown>
-}
 
 async function createModel(
   c: Client,
@@ -62,13 +34,16 @@ async function createModel(
   return createTestClient(testDir)
 }
 
-beforeEach(async () => {
-  testDir = await mkdtemp(join(tmpdir(), 'cr-content-tool-test-'))
-  await initProject(testDir)
-  client = await createTestClient(testDir)
+beforeAll(async () => {
+  template = await makeInitedTemplate({ locales: ['en', 'tr'] })
+})
 
-  // Initialize project with en + tr locales for i18n tests
-  await client.callTool({ name: 'contentrain_init', arguments: { locales: ['en', 'tr'] } })
+afterAll(async () => {
+  await rm(template, { recursive: true, force: true })
+})
+
+beforeEach(async () => {
+  testDir = await cloneTemplate(template)
   client = await createTestClient(testDir)
 })
 
@@ -118,7 +93,7 @@ describe('contentrain_content_save', () => {
     expect(meta!['source']).toBe('agent')
 
     // Verify contentrain branch exists after content save
-    const branches = await simpleGit(testDir).branchLocal()
+    const branches = await createGit(testDir).branchLocal()
     expect(branches.all).toContain('contentrain')
   })
 
@@ -282,7 +257,7 @@ describe('contentrain_content_save', () => {
     // Create 3 unmerged cr/* branches cheaply: one divergent commit object
     // (commit-tree touches neither the index nor the working tree), then point
     // each branch ref at it — no checkouts, no per-branch commits.
-    const git = simpleGit(testDir)
+    const git = createGit(testDir)
     const head = (await git.raw(['rev-parse', 'HEAD'])).trim()
     const tree = (await git.raw(['rev-parse', 'HEAD^{tree}'])).trim()
     const divergent = (await git.raw(['commit-tree', tree, '-p', head, '-m', 'divergent'])).trim()

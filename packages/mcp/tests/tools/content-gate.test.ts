@@ -1,13 +1,13 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
+import { describe, expect, it, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest'
 
 vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
 import { join } from 'node:path'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { rm } from 'node:fs/promises'
 import { simpleGit } from 'simple-git'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { createServer } from '../../src/server.js'
+import { cloneTemplate, makeInitedTemplate } from '../support/project.js'
 import { readJson } from '../../src/util/fs.js'
 
 /**
@@ -19,18 +19,10 @@ import { readJson } from '../../src/util/fs.js'
  * to have blocked is the bug we are fixing.
  */
 
+let template: string
 let testDir: string
 let client: Client
 
-async function initProject(dir: string): Promise<void> {
-  const git = simpleGit(dir)
-  await git.init()
-  await git.addConfig('user.name', 'Test')
-  await git.addConfig('user.email', 'test@test.com')
-  await writeFile(join(dir, '.gitkeep'), '')
-  await git.add('.')
-  await git.commit('initial')
-}
 
 async function createTestClient(projectRoot: string): Promise<Client> {
   const server = createServer(projectRoot)
@@ -61,11 +53,18 @@ async function branches(): Promise<string[]> {
   return (await simpleGit(testDir).branchLocal()).all
 }
 
+// One inited project per file, cloned per test — `contentrain_init` is 33 git
+// subprocesses, and none of these tests are about project setup.
+beforeAll(async () => {
+  template = await makeInitedTemplate({ locales: ['en'] })
+})
+
+afterAll(async () => {
+  await rm(template, { recursive: true, force: true })
+})
+
 beforeEach(async () => {
-  testDir = await mkdtemp(join(tmpdir(), 'cr-gate-test-'))
-  await initProject(testDir)
-  client = await createTestClient(testDir)
-  await client.callTool({ name: 'contentrain_init', arguments: { locales: ['en'] } })
+  testDir = await cloneTemplate(template)
   client = await createTestClient(testDir)
 })
 
