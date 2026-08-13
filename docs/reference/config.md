@@ -332,6 +332,7 @@ interface EntryMeta {
   status: ContentStatus    // 'draft' | 'in_review' | 'published' | 'rejected' | 'archived'
   source: ContentSource    // 'agent' | 'human' | 'import'
   updated_by: string       // Author identifier
+  updated_at?: string      // ISO 8601 UTC, stamped on every write (optional)
   approved_by?: string     // Approver identifier (optional)
   version?: string         // Version string (optional)
   publish_at?: string      // ISO 8601 scheduled publish (optional)
@@ -370,6 +371,7 @@ Use `publish_at` and `expire_at` for time-based content lifecycle:
   "status": "draft",
   "source": "agent",
   "updated_by": "contentrain-mcp",
+  "updated_at": "2026-01-15T09:30:00.000Z",
   "publish_at": "2026-04-01T00:00:00Z",
   "expire_at": "2026-06-30T23:59:59Z"
 }

@@ -182,7 +182,7 @@ Do NOT define these in the schema. The platform manages them automatically:
 | `id` | Collection | 12-char hex, used as object-map key |
 | `slug` | Document | Directory name in content path |
 | `createdAt` / `updatedAt` | All | Derived from Git commit history (not stored) |
-| `status`, `source`, `updated_by`, `approved_by` | All | Stored in `.contentrain/meta/` |
+| `status`, `source`, `updated_by`, `updated_at`, `approved_by` | All | Stored in `.contentrain/meta/` |
 
 ---
 

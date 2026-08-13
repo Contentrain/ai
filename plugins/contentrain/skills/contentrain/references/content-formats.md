@@ -183,6 +183,7 @@ Several fields are managed by the platform. Agents MUST NOT set or modify them.
 | `status` | `.contentrain/meta/` | Platform workflow engine |
 | `source` | `.contentrain/meta/` | Set by MCP: `"agent"`, `"human"`, or `"import"` |
 | `updated_by` | `.contentrain/meta/` | Set by MCP: agent name or user email |
+| `updated_at` | `.contentrain/meta/` | Set by MCP on every write, ISO 8601 UTC. Absent on entries written before the field existed — absent means unknown, never backfilled |
 | `approved_by` | `.contentrain/meta/` | Set by Studio on review approval |
 
 **Rule:** When creating content via `contentrain_content_save`, provide only the content fields defined in the model. Do not include `id`, `createdAt`, `updatedAt`, `status`, or any metadata fields.
