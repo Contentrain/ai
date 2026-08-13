@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { onMounted, computed, ref, watch } from 'vue'
+import type { FieldDef } from '@contentrain/types'
+import { orderedFieldNames, resolveFieldLabel } from '@contentrain/types'
 import { useRoute } from 'vue-router'
 import { marked } from 'marked'
 import { useContentStore } from '@/stores/content'
@@ -126,12 +128,18 @@ const paginatedEntries = computed(() => {
   return filteredEntries.value.slice(start, start + pageSize.value)
 })
 
-// Compute field columns from MODEL SCHEMA ORDER (not entry data keys)
+// Column order comes from what the model declares.
+//
+// The previous comment here claimed `Object.keys(desc.fields)` preserved
+// definition order. It does not: model JSON is written with canonically sorted
+// keys, so this was alphabetical — on a sixteen-field article model that put
+// `author` first and `title` fifteenth. `orderedFieldNames` honours each
+// field's `order` and falls back to alphabetical for the fields without one,
+// so a model that declares none looks exactly as it did.
 const allFieldNames = computed(() => {
   const desc = store.modelDescription
-  // Use schema field order if available (preserves definition order, not alphabetic)
   if (desc?.fields) {
-    return Object.keys(desc.fields)
+    return orderedFieldNames(desc.fields as Record<string, FieldDef>)
   }
   // Fallback to entry data keys
   if (rawEntries.value.length === 0) return []
@@ -146,10 +154,17 @@ const pinnedColumns = ref<Set<string>>(new Set())
 const columnOrder = ref<string[]>([])
 const draggedColumn = ref<string | null>(null)
 
-// Default visible columns — prioritize required + simple types
+// Default visible columns.
+//
+// `title_field` leads when the model declares one — it is the field the author
+// nominated as the entry's identity, which is exactly the question the
+// type-priority heuristic below was guessing at. The heuristic stays for the
+// remaining slots and for models that predate the property.
 const defaultVisibleNames = computed(() => {
   const desc = store.modelDescription
   if (!desc?.fields) return allFieldNames.value.slice(0, 6)
+
+  const titleField = desc.title_field && desc.title_field in desc.fields ? desc.title_field : null
 
   const priorityOrder: Record<string, number> = {
     string: 1, text: 2, email: 3, url: 3, slug: 3, select: 4,
@@ -162,15 +177,24 @@ const defaultVisibleNames = computed(() => {
     array: 13, object: 14,
   }
 
-  return Object.entries(desc.fields)
+  const ranked = Object.entries(desc.fields)
+    .filter(([name]) => name !== titleField)
     .map(([name, def]) => ({
       name,
       priority: (def.required ? 0 : 100) + (priorityOrder[def.type] ?? 50),
     }))
     .toSorted((a, b) => a.priority - b.priority)
-    .slice(0, 6)
     .map(f => f.name)
+
+  return (titleField ? [titleField, ...ranked] : ranked).slice(0, 6)
 })
+
+/** Column header: the declared label for the active locale, else the field name. */
+function columnLabel(field: string): string {
+  const def = store.modelDescription?.fields?.[field]
+  if (!def) return field
+  return resolveFieldLabel(field, def as FieldDef, selectedLocale.value, project.status?.config?.locales.default)
+}
 
 // Initialize column state
 watch(allFieldNames, (names) => {
@@ -536,8 +560,9 @@ useWatch((event) => {
 
                 <!-- Field name -->
                 <span
-                  :class="cn('flex-1 truncate', hiddenColumns.has(field) && 'text-muted-foreground/50 line-through')">
-                  {{ field }}
+                  :class="cn('flex-1 truncate', hiddenColumns.has(field) && 'text-muted-foreground/50 line-through')"
+                  :title="field">
+                  {{ columnLabel(field) }}
                 </span>
 
                 <!-- Type badge -->
@@ -612,7 +637,7 @@ useWatch((event) => {
                 )">
                   <div class="flex items-center gap-1">
                     <Pin v-if="pinnedColumns.has(field)" class="size-2.5 text-primary/50" />
-                    {{ field }}
+                    <span :title="field">{{ columnLabel(field) }}</span>
                   </div>
                 </TableHead>
                 <TableHead class="w-10" />

@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@contentrain/types": "workspace:*",
     "@tanstack/vue-table": "^8.21.3",
     "@vueuse/core": "^12.8.2",
     "class-variance-authority": "^0.7.1",

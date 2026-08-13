@@ -96,6 +96,9 @@ importers:
 
   packages/cli/src/serve-ui:
     dependencies:
+      '@contentrain/types':
+        specifier: workspace:*
+        version: link:../../../types
       '@tanstack/vue-table':
         specifier: ^8.21.3
         version: 8.21.3(vue@3.5.30(typescript@5.9.3))
