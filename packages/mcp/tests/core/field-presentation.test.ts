@@ -16,9 +16,10 @@ import { validateModelDefinition } from '../../src/core/model-manager.js'
 const model = (fields: Record<string, unknown>) =>
   validateModelDefinition({ id: 'posts', kind: 'collection', title_field: 'title', fields: { title: { type: 'string', required: true }, ...fields } })
 
-describe('orderedFieldNames', () => {
-  const f = (order?: number): FieldDef => order === undefined ? { type: 'string' } : { type: 'string', order }
+/** A string field, optionally with a display order. */
+const f = (order?: number): FieldDef => order === undefined ? { type: 'string' } : { type: 'string', order }
 
+describe('orderedFieldNames', () => {
   it('sorts by order, ascending', () => {
     expect(orderedFieldNames({ zebra: f(1), apple: f(2), mango: f(3) }))
       .toEqual(['zebra', 'apple', 'mango'])
