@@ -18,7 +18,7 @@ import { watch } from 'chokidar'
 import { join } from 'node:path'
 import { existsSync, readFileSync } from 'node:fs'
 import { readFile, unlink, writeFile } from 'node:fs/promises'
-import { simpleGit } from 'simple-git'
+import { createGit } from '@contentrain/mcp/git/identity'
 import { CONTENTRAIN_BRANCH, LOCAL_CAPABILITIES } from '@contentrain/types'
 import { mergeBranch } from '@contentrain/mcp/git/transaction'
 import { branchDiff, checkBranchHealth, deleteRemoteBranch } from '@contentrain/mcp/git/branch-lifecycle'
@@ -351,7 +351,7 @@ export async function createServeApp(options: ServeOptions) {
 
   // Branches
   router.add('/api/branches', defineEventHandler(async () => {
-    const git = simpleGit(projectRoot)
+    const git = createGit(projectRoot)
     const branches = await git.branchLocal()
     const crBranches = branches.all
       .filter(b => b.startsWith('cr/'))
@@ -410,7 +410,7 @@ export async function createServeApp(options: ServeOptions) {
       throw createError({ statusCode: 400, message: 'Missing or invalid `branch` query (must start with "cr/")' })
     }
 
-    const git = simpleGit(projectRoot)
+    const git = createGit(projectRoot)
 
     // Confirm the branch exists locally.
     const local = await git.branchLocal()
@@ -526,7 +526,7 @@ export async function createServeApp(options: ServeOptions) {
     if (event.method !== 'POST') throw createError({ statusCode: 405, message: 'Method not allowed' })
     const raw = await readBody(event)
     const { branch: branchName } = parseOrThrow(BranchActionBodySchema, raw)
-    const git = simpleGit(projectRoot)
+    const git = createGit(projectRoot)
     await git.deleteLocalBranch(branchName, true)
     // A rejected draft may have been pushed (review workflow) — remove the
     // remote copy too so it doesn't linger as a phantom pending review.
@@ -540,7 +540,7 @@ export async function createServeApp(options: ServeOptions) {
   router.add('/api/history', defineEventHandler(async (event) => {
     const query = getQuery(event)
     const limit = Number(query['limit']) || 50
-    const git = simpleGit(projectRoot)
+    const git = createGit(projectRoot)
     const log = await git.log({
       maxCount: limit * 2, // fetch more, filter after
       format: { hash: '%h', fullHash: '%H', message: '%s', author: '%an', email: '%ae', date: '%aI', relativeDate: '%ar' },
@@ -677,7 +677,7 @@ export async function createServeApp(options: ServeOptions) {
       }
     } catch { /* no context */ }
 
-    const git = simpleGit(projectRoot)
+    const git = createGit(projectRoot)
     const branches = (await git.branchLocal()).all
       .filter(b => b.startsWith('cr/normalize/'))
       .map(b => ({ name: b }))

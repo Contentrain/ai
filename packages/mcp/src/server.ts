@@ -151,8 +151,11 @@ function resolveServerContext(input: string | CreateServerOptions): {
   const instructions = input.instructions ?? DEFAULT_INSTRUCTIONS
   if (input.provider) {
     let projectRoot = input.projectRoot
-    if (!projectRoot && input.provider instanceof LocalProvider) {
-      projectRoot = input.provider.projectRoot
+    // Structural, not nominal: any worktree-backed provider exposes a
+    // projectRoot, and a test double should be able to as well.
+    if (!projectRoot) {
+      const maybeRoot = (input.provider as { projectRoot?: unknown }).projectRoot
+      if (typeof maybeRoot === 'string') projectRoot = maybeRoot
     }
     return { provider: input.provider, projectRoot, instructions }
   }

@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { readFile, writeFile, appendFile } from 'node:fs/promises'
-import { simpleGit } from 'simple-git'
+import { createGit } from '@contentrain/mcp/git/identity'
 import { ensureDir, pathExists } from '@contentrain/mcp/util/fs'
 
 // ─── Skill list (single source of truth) ───
@@ -250,7 +250,7 @@ export async function installIdeRulesAndSkills(
   let updated = 0
 
   const rulesDir = join(projectRoot, ide.rulesDir)
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   const filesToAdd: string[] = []
 
   // 1. Essential guardrails
@@ -353,7 +353,7 @@ export async function addClaudeMdReference(projectRoot: string): Promise<void> {
     '- **Docs:** https://ai.contentrain.io',
   ].join('\n')
 
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   if (await pathExists(claudeMdPath)) {
     const existing = await readFile(claudeMdPath, 'utf-8')
     if (!existing.includes(marker)) {

@@ -25,7 +25,7 @@ function parseResult(result: unknown): Record<string, unknown> {
 }
 
 // Init the project ONCE; each test gets an isolated copy via a file-copy
-// (zero git spawns) instead of re-running the ~28-spawn init transaction.
+// (zero git spawns) instead of re-running the 33-spawn init transaction.
 beforeAll(async () => {
   template = await makeInitedTemplate()
 })

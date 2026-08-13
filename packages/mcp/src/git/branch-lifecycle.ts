@@ -1,4 +1,5 @@
-import { simpleGit, type SimpleGit } from 'simple-git'
+import { type SimpleGit } from 'simple-git'
+import { createGit } from '../git/identity.js'
 import { CONTENTRAIN_BRANCH, type ContentrainConfig } from '@contentrain/types'
 import { readConfig } from '../core/config.js'
 import { NETWORK_UNSAFE } from './identity.js'
@@ -23,7 +24,7 @@ export interface BranchHealthCheck {
  * into the base branch, and returns the count of remaining unmerged ones.
  */
 export async function cleanupMergedBranches(projectRoot: string): Promise<CleanupResult> {
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   const config = await readConfig(projectRoot)
 
   // Determine base branch
@@ -91,7 +92,7 @@ export async function cleanupMergedBranches(projectRoot: string): Promise<Cleanu
  * - 80+ branches: blocked
  */
 export async function checkBranchHealth(projectRoot: string): Promise<BranchHealthCheck> {
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   const config = await readConfig(projectRoot)
 
   const baseBranch = config?.repository?.default_branch
@@ -170,7 +171,7 @@ export async function branchDiff(
   projectRoot: string,
   opts: { branch: string, base?: string },
 ): Promise<BranchDiffResult> {
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   const base = opts.base ?? CONTENTRAIN_BRANCH
   const range = `${base}...${opts.branch}`
 
@@ -298,7 +299,7 @@ export async function classifyMergedBranches(
   into: string = CONTENTRAIN_BRANCH,
   opts?: { fallbackThreshold?: number },
 ): Promise<Set<string>> {
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   if (branches.length === 0) {
     // Preserve the "throws when into is missing" contract even for empty input.
     await git.raw(['branch', '--merged', into])
@@ -334,7 +335,7 @@ export async function classifyMergedBranches(
     const verdicts = await Promise.all(chunk.map((branch, j) => {
       const tip = tips[i + j + 1]
       return tip
-        ? isTipMerged(simpleGit(projectRoot), tip, intoTip, DEFAULT_MAX_CHERRY_COMMITS, into)
+        ? isTipMerged(createGit(projectRoot), tip, intoTip, DEFAULT_MAX_CHERRY_COMMITS, into)
         : Promise.resolve(false)
     }))
     for (const [j, verdict] of verdicts.entries()) {
@@ -365,7 +366,7 @@ function contentrainRemoteName(): string {
  * NETWORK_UNSAFE. Arg-injection protections stay intact.
  */
 function networkGit(projectRoot: string, timeoutMs: number): SimpleGit {
-  return simpleGit({ baseDir: projectRoot, timeout: { block: timeoutMs }, unsafe: NETWORK_UNSAFE })
+  return createGit(undefined, { baseDir: projectRoot, timeout: { block: timeoutMs }, unsafe: NETWORK_UNSAFE })
     .env({ ...process.env, GIT_TERMINAL_PROMPT: '0' })
 }
 

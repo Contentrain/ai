@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
 import { intro, outro, log, select, confirm, isCancel } from '@clack/prompts'
-import { simpleGit } from 'simple-git'
+import { createGit } from '@contentrain/mcp/git/identity'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { mergeBranch } from '@contentrain/mcp/git/transaction'
 import { branchDiff, deleteRemoteBranch } from '@contentrain/mcp/git/branch-lifecycle'
@@ -18,7 +18,7 @@ export default defineCommand({
   },
   async run({ args }) {
     const projectRoot = await resolveProjectRoot(args.root)
-    const git = simpleGit(projectRoot)
+    const git = createGit(projectRoot)
     const useJson = Boolean(args.json)
 
     if (!useJson) intro(pc.bold('contentrain diff'))

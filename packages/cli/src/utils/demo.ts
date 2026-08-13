@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { simpleGit } from 'simple-git'
+import { createGit } from '@contentrain/mcp/git/identity'
 import { ensureDir, writeJson } from '@contentrain/mcp/util/fs'
 import { writeFile } from 'node:fs/promises'
 import { writeModel } from '@contentrain/mcp/core/model-manager'
@@ -16,7 +16,7 @@ export async function createDemoProject(): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), 'contentrain-demo-'))
 
   // Git init
-  const git = simpleGit(dir)
+  const git = createGit(dir)
   await git.init()
   await git.addConfig('user.email', 'ai@contentrain.io')
   await git.addConfig('user.name', 'Contentrain Demo')

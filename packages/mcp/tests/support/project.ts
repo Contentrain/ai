@@ -9,18 +9,31 @@ import { createServer } from '../../src/server.js'
 /**
  * Shared test-support for the MCP write-path suites.
  *
- * Why this exists: on macOS every `git` subprocess spawned from inside a
- * loaded vitest worker costs ~150ms (≈14× the standalone cost) because the
- * fork/posix_spawn work scales with the worker's address space — not with
- * git itself, whose own runtime per command is ~1–20ms. A single
- * `contentrain_init` transaction spawns ~28 git processes, so re-running it
- * in every `beforeEach` dominates suite wall-clock.
+ * Why this exists: a `contentrain_init` transaction spawns 33 git processes,
+ * so re-running it in every `beforeEach` dominated suite wall-clock — the mcp
+ * suite took over twenty minutes and timed out tests at random.
  *
  * The fix is to spawn git as few times as possible:
  *   - read-only suites build ONE fixture in `beforeAll` and share it;
  *   - mutating suites build ONE inited template in `beforeAll` and give each
  *     test an isolated copy via {@link cloneTemplate} — a recursive file copy
- *     spawns zero git processes, versus ~28 for a fresh init.
+ *     spawns zero git processes, versus 33 for a fresh init.
+ *
+ * A correction, because the wrong explanation stood here for a long time and
+ * sent several people looking in the wrong place: this comment used to claim
+ * the cost was `fork`/`posix_spawn` work scaling with the worker's address
+ * space. It does not. Measured with 1.5GB of live V8 heap, spawn cost is
+ * unchanged (27.8ms against 27.9ms at 0MB), and libuv has used `posix_spawn`
+ * on macOS since 1.44 — there is no page-table copy to scale with.
+ *
+ * The real cost was resolving `git` through PATH. Inside a vitest worker that
+ * measured 198.8ms per spawn by name against 22.0ms by absolute path on a
+ * 41-entry PATH; in a bare Node process the same probe is nearly free, which
+ * is why it never showed up in isolation. `createGit` in
+ * `src/git/identity.ts` now resolves the binary once, and
+ * `tests/setup/trim-path.ts` prunes PATH entries that are not directories.
+ *
+ * Both fixes together took the suite from >20 minutes to ~3.
  */
 
 /** Build an MCP client wired to a fresh in-memory server over the given root. */

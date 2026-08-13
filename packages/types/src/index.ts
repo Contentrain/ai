@@ -1007,5 +1007,6 @@ export type {
   RepoProvider,
   RepoReader,
   RepoWriter,
+  WriteReadiness,
 } from './provider.js'
 export { LOCAL_CAPABILITIES } from './provider.js'

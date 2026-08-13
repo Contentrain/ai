@@ -105,6 +105,42 @@ When working with Contentrain content operations (models, content, normalize, va
 | packages/skills | @contentrain/skills | AI agent workflow procedures & guides |
 | packages/sdk/js | @contentrain/query | Universal query SDK (generated client) |
 
+## Test Performance (read before adding a git-touching test)
+
+The suite was over twenty minutes and flaked at random for a long stretch. It
+is now ~3 minutes. Two things keep it there; both are easy to give back.
+
+1. **Never construct `simple-git` directly.** Use `createGit()` from
+   `@contentrain/mcp/git/identity`. It resolves the git binary to an absolute
+   path once per process. Spawning by bare name makes the OS re-walk `PATH`
+   per spawn — measured inside a vitest worker, 198.8ms by name against
+   22.0ms by absolute path on a 41-entry PATH. This is a *product* fix as
+   much as a test fix: an MCP server launched from an editor inherits that
+   editor's PATH.
+
+2. **Never run `contentrain_init` in `beforeEach`.** One init is 33 git
+   subprocesses. Build the project once with `makeInitedTemplate()` in
+   `beforeAll` and hand each test an isolated copy via `cloneTemplate()` — a
+   file copy, zero subprocesses. Both live in
+   `packages/mcp/tests/support/project.ts`. The only legitimate exception is
+   a test whose subject *is* `contentrain_init`.
+
+Better still, do not use git at all. Most write-path tests are about what the
+tool decides, not about what git does with the result:
+
+- `MemoryProvider` (`@contentrain/mcp/testing/memory`) is a full
+  `RepoProvider` over `Map`s, with real branch snapshots and the project's own
+  workflow. `createServer({ provider })` accepts it, so the whole tool layer
+  runs with no subprocesses.
+- The `plan*` functions in `src/core/ops/` take only a `RepoReader` and return
+  `FileChange[]`. Assert on the plan.
+
+Keep the real-git tier for what is genuinely a property of git — merges,
+conflicts, worktrees, selective sync.
+
+Note `packages/mcp` and `packages/cli` tests import `@contentrain/mcp` from
+`dist/`, so run `pnpm build` before `pnpm test` when mcp's exports change.
+
 ## Mandatory Quality Gates
 
 **Every agent MUST pass ALL gates before considering work complete.** No exceptions.

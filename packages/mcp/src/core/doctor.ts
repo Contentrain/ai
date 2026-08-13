@@ -1,7 +1,7 @@
 import { join } from 'node:path'
+import { createGit } from '../git/identity.js'
 import { readdir, stat } from 'node:fs/promises'
 import type { Dirent } from 'node:fs'
-import { simpleGit } from 'simple-git'
 import type { ContentrainConfig, ModelDefinition } from '@contentrain/types'
 import { readConfig } from './config.js'
 import { listModels, readModel } from './model-manager.js'
@@ -98,7 +98,7 @@ export async function runDoctor(
 
   // ─── 1. Git installed ───
   try {
-    const git = simpleGit(projectRoot)
+    const git = createGit(projectRoot)
     const version = await git.version()
     checks.push({
       name: 'Git',

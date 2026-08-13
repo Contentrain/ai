@@ -1,28 +1,19 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
+import { describe, expect, it, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest'
 
 vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
 import { join } from 'node:path'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { simpleGit } from 'simple-git'
+import { rm } from 'node:fs/promises'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import type { EntryMeta } from '@contentrain/types'
 import { createServer } from '../../src/server.js'
+import { cloneTemplate, makeInitedTemplate } from '../support/project.js'
 import { readJson } from '../../src/util/fs.js'
 
+let template: string
 let testDir: string
 let client: Client
 
-async function initProject(dir: string): Promise<void> {
-  const git = simpleGit(dir)
-  await git.init()
-  await git.addConfig('user.name', 'Test')
-  await git.addConfig('user.email', 'test@test.com')
-  await writeFile(join(dir, '.gitkeep'), '')
-  await git.add('.')
-  await git.commit('initial')
-}
 
 async function createTestClient(projectRoot: string): Promise<Client> {
   const server = createServer(projectRoot)
@@ -59,11 +50,18 @@ function recordMeta(model: string, locale: string): Promise<EntryMeta | null> {
   return readJson<EntryMeta>(join(testDir, '.contentrain', 'meta', model, `${locale}.json`))
 }
 
+// One inited project per file, cloned per test — `contentrain_init` is 33 git
+// subprocesses, and none of these tests are about project setup.
+beforeAll(async () => {
+  template = await makeInitedTemplate({ locales: ['en', 'tr'] })
+})
+
+afterAll(async () => {
+  await rm(template, { recursive: true, force: true })
+})
+
 beforeEach(async () => {
-  testDir = await mkdtemp(join(tmpdir(), 'cr-bulk-tool-test-'))
-  await initProject(testDir)
-  client = await createTestClient(testDir)
-  await client.callTool({ name: 'contentrain_init', arguments: { locales: ['en', 'tr'] } })
+  testDir = await cloneTemplate(template)
   client = await createTestClient(testDir)
 })
 

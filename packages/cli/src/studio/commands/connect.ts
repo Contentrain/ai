@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
 import { intro, outro, log, spinner, select, text, confirm, isCancel } from '@clack/prompts'
-import { simpleGit } from 'simple-git'
+import { createGit } from '@contentrain/mcp/git/identity'
 import { pc } from '../../utils/ui.js'
 import { openBrowser } from '../../utils/browser.js'
 import { resolveStudioClient } from '../client.js'
@@ -157,7 +157,7 @@ export default defineCommand({
       let detectedRepoFullName: string | null = null
 
       try {
-        const git = simpleGit(process.cwd())
+        const git = createGit(process.cwd())
         const remotes = await git.getRemotes(true)
         const origin = remotes.find(r => r.name === 'origin')
 

@@ -7,9 +7,7 @@ import { readConfig } from '../core/config.js'
 import { resolveContentDir, resolveJsonFilePath, resolveMdFilePath } from '../core/content-manager.js'
 import { checkReferences, readModel, validateModelDefinition, fieldDefZodSchema } from '../core/model-manager.js'
 import { planModelDelete, planModelSave } from '../core/ops/index.js'
-import { LocalProvider } from '../providers/local/index.js'
 import { buildBranchName } from '../git/transaction.js'
-import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { normalizeOperationError } from '../git/errors.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 import { commitThroughProvider } from './commit-plan.js'
@@ -64,17 +62,15 @@ export function registerModelTools(
         }
       }
 
-      if (provider instanceof LocalProvider) {
-        const health = await checkBranchHealth(provider.projectRoot)
-        if (health.blocked) {
-          return {
-            content: [{ type: 'text' as const, text: JSON.stringify({
-              error: health.message,
-              action: 'blocked',
-              hint: 'Merge or delete old contentrain/* branches before creating new ones.',
-            }, null, 2) }],
-            isError: true,
-          }
+      const readiness = await provider.checkWriteReadiness?.()
+      if (readiness?.blocked) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: readiness.message,
+            action: 'blocked',
+            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+          }, null, 2) }],
+          isError: true,
         }
       }
 
@@ -191,17 +187,15 @@ export function registerModelTools(
         }
       }
 
-      if (provider instanceof LocalProvider) {
-        const deleteHealth = await checkBranchHealth(provider.projectRoot)
-        if (deleteHealth.blocked) {
-          return {
-            content: [{ type: 'text' as const, text: JSON.stringify({
-              error: deleteHealth.message,
-              action: 'blocked',
-              hint: 'Merge or delete old contentrain/* branches before creating new ones.',
-            }, null, 2) }],
-            isError: true,
-          }
+      const deleteReadiness = await provider.checkWriteReadiness?.()
+      if (deleteReadiness?.blocked) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: deleteReadiness.message,
+            action: 'blocked',
+            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+          }, null, 2) }],
+          isError: true,
         }
       }
 

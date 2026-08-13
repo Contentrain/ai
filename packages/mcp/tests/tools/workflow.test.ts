@@ -35,7 +35,7 @@ async function createModel(
 }
 
 // Init the en+tr project ONCE; each mutating test gets an isolated copy via a
-// file-copy (zero git spawns) instead of re-running the ~28-spawn init.
+// file-copy (zero git spawns) instead of re-running the 33-spawn init.
 beforeAll(async () => {
   template = await makeInitedTemplate({ locales: ['en', 'tr'] })
 })

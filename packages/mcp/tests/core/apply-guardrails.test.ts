@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
+import { describe, expect, it, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest'
 
 vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
 import { join } from 'node:path'
@@ -8,6 +8,7 @@ import { simpleGit } from 'simple-git'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { createServer } from '../../src/server.js'
+import { cloneTemplate, makeInitedTemplate } from '../support/project.js'
 import {
   validatePatchPath,
   detectFileFramework,
@@ -17,6 +18,7 @@ import {
   PATCHABLE_EXTENSIONS,
 } from '../../src/core/apply-manager.js'
 
+let template: string
 let testDir: string
 let client: Client
 
@@ -445,20 +447,21 @@ describe('PATCHABLE_EXTENSIONS constant', () => {
 
 // ─── Integration Tests: Through MCP Client ───
 
+// The two MCP-driven guardrail suites share one inited project with source
+// files; each test clones it. They assert on scope and preview/execute parity,
+// not on project setup, and setup was 33 git subprocesses per test.
+beforeAll(async () => {
+  template = await makeInitedTemplate({ prepare: createSourceFiles })
+  await expectGitClean(template)
+})
+
+afterAll(async () => {
+  await rm(template, { recursive: true, force: true })
+})
+
 describe('Guardrail #1: Scope enforcement via MCP', () => {
   beforeEach(async () => {
-    testDir = await mkdtemp(join(tmpdir(), 'cr-guardrail-test-'))
-    await initGitRepo(testDir)
-    await createSourceFiles(testDir)
-
-    const git = simpleGit(testDir)
-    await git.add('.')
-    await git.commit('add source files')
-
-    client = await createTestClient(testDir)
-    await client.callTool({ name: 'contentrain_init', arguments: {} })
-    await expectGitClean(testDir)
-
+    testDir = await cloneTemplate(template)
     client = await createTestClient(testDir)
 
     // Create a model so scope validation passes
@@ -575,17 +578,7 @@ describe('Guardrail #1: Scope enforcement via MCP', () => {
 
 describe('Guardrail #3: Preview-Execute Parity', () => {
   beforeEach(async () => {
-    testDir = await mkdtemp(join(tmpdir(), 'cr-preview-parity-test-'))
-    await initGitRepo(testDir)
-    await createSourceFiles(testDir)
-
-    const git = simpleGit(testDir)
-    await git.add('.')
-    await git.commit('add source files')
-
-    client = await createTestClient(testDir)
-    await client.callTool({ name: 'contentrain_init', arguments: {} })
-    await expectGitClean(testDir)
+    testDir = await cloneTemplate(template)
     client = await createTestClient(testDir)
   })
 

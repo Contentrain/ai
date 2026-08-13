@@ -1,9 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { createGit } from '../git/identity.js'
 import type { ContentrainConfig, Vocabulary } from '@contentrain/types'
 import { z } from 'zod'
 import { join } from 'node:path'
 import { readFile, writeFile, appendFile } from 'node:fs/promises'
-import { simpleGit } from 'simple-git'
 import type { ToolProvider } from '../server.js'
 import { detectStack } from '../util/detect.js'
 import { contentrainDir, ensureDir, pathExists, writeJson } from '../util/fs.js'
@@ -63,7 +63,7 @@ export function registerSetupTools(
       // `--allow-empty` initial commit so the branch operation has a
       // ref to anchor on.
       const hasGit = await pathExists(join(projectRoot, '.git'))
-      const git = simpleGit(projectRoot)
+      const git = createGit(projectRoot)
       if (!hasGit) {
         await git.init()
       }

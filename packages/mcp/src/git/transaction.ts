@@ -1,4 +1,5 @@
-import { simpleGit, type SimpleGit } from 'simple-git'
+import { type SimpleGit } from 'simple-git'
+import { createGit } from '../git/identity.js'
 import { join } from 'node:path'
 import { rm as removeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -29,7 +30,7 @@ export interface GitTransaction {
 }
 
 export async function ensureContentBranch(projectRoot: string): Promise<void> {
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   const config = await readConfig(projectRoot)
 
   // Check if contentrain branch exists locally
@@ -68,7 +69,7 @@ async function selectiveSync(
   _previousBaseRef?: string,
   dirtyFilesBeforeUpdate?: Set<string>,
 ): Promise<SyncResult> {
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   const synced: string[] = []
   const skipped: string[] = []
 
@@ -173,7 +174,7 @@ export async function createTransaction(
   branchName: string,
   options?: { workflowOverride?: WorkflowMode },
 ): Promise<GitTransaction> {
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   const config = await readConfig(projectRoot)
   const workflow = options?.workflowOverride ?? config?.workflow ?? 'auto-merge'
 
@@ -226,7 +227,7 @@ export async function createTransaction(
   // Commit identity comes from `-c user.*` config (see authorConfig) — passed
   // as args, never via `.env()`, so simple-git's block-unsafe guard is never
   // triggered by an inherited EDITOR/GIT_ASKPASS/etc.
-  const wtGit = simpleGit(worktreePath, { config: authorConfig() })
+  const wtGit = createGit(worktreePath, { config: authorConfig() })
 
   // Sync contentrain with base branch (bring main changes into contentrain)
   try {
@@ -439,7 +440,7 @@ export async function mergeBranch(
   projectRoot: string,
   branchName: string,
 ): Promise<{ action: 'merged'; commit: string; sync: SyncResult; remote?: RemoteDeleteResult }> {
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   const config = await readConfig(projectRoot)
   const remoteName = process.env['CONTENTRAIN_REMOTE'] ?? 'origin'
 
@@ -466,7 +467,7 @@ export async function mergeBranch(
 
   // Commit identity from `-c user.*` config (see authorConfig) — guard-safe,
   // no `.env()` spread.
-  const wtGit = simpleGit(worktreePath, { config: authorConfig() })
+  const wtGit = createGit(worktreePath, { config: authorConfig() })
 
   try {
     // Merge the feature branch into contentrain
