@@ -18,8 +18,18 @@ export interface ModelDescription {
   kind: string
   domain: string
   i18n: boolean
+  /** Field whose value titles an entry. `"key"` on dictionaries — the entry key is the title. */
+  title_field?: string
   description?: string
-  fields?: Record<string, { type: string; required?: boolean; default?: unknown }>
+  fields?: Record<string, {
+    type: string
+    required?: boolean
+    default?: unknown
+    /** Editor label: one string, or one per locale. Absent means show the field name. */
+    label?: string | Record<string, string>
+    /** Display position, ascending. Absent sorts last, alphabetically. */
+    order?: number
+  }>
   stats: { total_entries: number; locales: Record<string, number> }
   sample?: unknown
 }

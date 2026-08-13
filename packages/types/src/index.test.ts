@@ -556,7 +556,11 @@ describe('@contentrain/types', () => {
   describe('detectSecrets', () => {
     it('detects API keys', () => {
       expect(detectSecrets('sk_live_abc123')).toHaveLength(1)
-      expect(detectSecrets('my_api_key_value')).toHaveLength(1)
+      expect(detectSecrets('api_key=8f14e45fceea167a5a36dedd4bea2543')).toHaveLength(1)
+      // `my_api_key_value` was asserted here as a secret. It is a string that
+      // contains the words, which is what made the check flag prose describing
+      // an api_key parameter. The rule is now "a key being assigned a value".
+      expect(detectSecrets('my_api_key_value')).toHaveLength(0)
     })
 
     it('detects GitHub tokens', () => {
@@ -565,7 +569,9 @@ describe('@contentrain/types', () => {
 
     it('detects database URLs', () => {
       expect(detectSecrets('postgres://user:pass@host/db')).toHaveLength(1)
-      expect(detectSecrets('mongodb://localhost/test')).toHaveLength(1)
+      // A connection string carries a secret when it carries credentials.
+      // `mongodb://localhost/test` is what a getting-started guide prints.
+      expect(detectSecrets('mongodb://localhost/test')).toHaveLength(0)
     })
 
     it('detects AWS credentials', () => {
@@ -845,5 +851,51 @@ describe('@contentrain/types', () => {
       expect(parsed.frontmatter['slug']).toBe('hello-world')
       expect(parsed.body).toBe('Some markdown content')
     })
+  })
+})
+
+/**
+ * The detector has to separate a credential from prose about credentials.
+ *
+ * The earlier patterns matched bare prefixes, so `task_id` and `risk_level`
+ * tripped `sk_`, and every page documenting `Authorization: Bearer <token>`
+ * tripped `Bearer `. On the repository that stores its own docs as content
+ * that was 7 of 12 validation errors — and a check that fires on the wrong
+ * thing is not a strict check, it is one people learn to scroll past.
+ */
+describe('detectSecrets', () => {
+  const flags = (value: string): boolean => detectSecrets(value).length > 0
+
+  it.each([
+    ['an ordinary snake_case field name', 'task_id'],
+    ['another one', 'risk_level'],
+    ['prose naming a parameter', 'The api_key parameter is required'],
+    ['a documented bearer placeholder', 'Authorization: Bearer <token>'],
+    ['a shell example', '-H "Authorization: Bearer $TOKEN"'],
+    ['a templated token', 'Authorization: Bearer {{token}}'],
+    ['an instruction', 'Send Bearer YOUR_TOKEN in the header'],
+    ['a local connection string', 'postgres://localhost:5432/mydb'],
+    ['a certificate header', '-----BEGIN CERTIFICATE-----'],
+    ['a word containing a prefix', 'backpack_url'],
+  ])('does not flag %s', (_case, value) => {
+    expect(flags(value)).toBe(false)
+  })
+
+  it.each([
+    ['a Stripe secret key', 'sk_live_51H8xY2abcdefghij'],
+    ['a Stripe test key', 'pk_test_51H8xY2abcdefghij'],
+    ['a GitHub token', 'ghp_16C7e42F292c6912E7710c838347Ae178B4a'],
+    ['an AWS access key id', 'AKIAIOSFODNN7EXAMPLE'],
+    ['a connection string with credentials', 'postgres://admin:hunter2@db.example.com/app'],
+    ['an assigned api key', 'api_key: 8f14e45fceea167a5a36dedd4bea2543'],
+    ['a private key block', '-----BEGIN RSA PRIVATE KEY-----'],
+    ['a real bearer token', 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'],
+  ])('flags %s', (_case, value) => {
+    expect(flags(value)).toBe(true)
+  })
+
+  it('ignores non-strings', () => {
+    expect(detectSecrets(42)).toEqual([])
+    expect(detectSecrets(null)).toEqual([])
   })
 })

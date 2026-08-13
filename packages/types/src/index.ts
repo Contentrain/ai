@@ -518,12 +518,40 @@ export interface ContentrainError {
 
 // ─── Validate: Pure Functions ───
 
-/** Common patterns for detecting potential secrets in content values */
+/**
+ * Patterns for detecting a credential that has been pasted into content.
+ *
+ * Each one matches a credential-shaped *value*, not prose that mentions
+ * credentials. That distinction is the whole design: the earlier set matched
+ * bare prefixes, so `task_id` and `risk_level` tripped `sk_`, every page
+ * documenting `Authorization: Bearer <token>` tripped `Bearer `, and
+ * `postgres://localhost:5432/mydb` in a getting-started guide tripped the
+ * connection-string rule. On this repository — which stores its own
+ * documentation as content — that was 7 of 12 validation errors, and the real
+ * findings were buried under them.
+ *
+ * A check that fires on the wrong thing is not a strict check; it is a check
+ * people learn to scroll past.
+ */
 export const SECRET_PATTERNS: ReadonlyArray<RegExp> = [
-  /sk_/, /pk_/, /api_key/i, /apikey/i,
-  /ghp_/, /gho_/, /Bearer /,
-  /postgres:\/\//, /mysql:\/\//, /mongodb:\/\//,
-  /-----BEGIN/, /AKIA/, /aws_secret/i,
+  // Stripe-style keys: the prefix must start a word and carry a long body,
+  // so `task_id` and `risk_level` no longer match.
+  /\b[sp]k_(?:live|test)_[A-Za-z0-9]{6,}/,
+  // GitHub tokens are a fixed prefix plus a long body.
+  /\bgh[pousr]_[A-Za-z0-9]{10,}/,
+  // A bearer token, not the word. Placeholders — <token>, $TOKEN, {{token}},
+  // YOUR_TOKEN — are how documentation writes it, and are not secrets.
+  /\bBearer\s+(?![<${{]|YOUR[_-]|your[_-]|xxx|XXX|\.{3})[A-Za-z0-9._~+/-]{20,}/,
+  // An API key being assigned a value, not the word in a sentence.
+  /\bapi[_-]?key\s*[:=]\s*['"`]?[A-Za-z0-9_-]{16,}/i,
+  /\baws_secret[_a-z]*\s*[:=]\s*['"`]?[A-Za-z0-9/+=]{20,}/i,
+  // AWS access key IDs have a fixed shape.
+  /\bAKIA[0-9A-Z]{16}\b/,
+  // A connection string only carries a secret when it carries credentials;
+  // `postgres://localhost:5432/mydb` in a guide does not.
+  /\b(?:postgres(?:ql)?|mysql|mongodb)(?:\+srv)?:\/\/[^\s:@/]+:[^\s@/]+@/,
+  // A pasted private key is unambiguous.
+  /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
 ]
 
 /** Validate a slug — returns error message or null if valid */
