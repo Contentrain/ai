@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
 import { intro, outro, log } from '@clack/prompts'
-import { simpleGit } from 'simple-git'
+import { createGit } from '@contentrain/mcp/git/identity'
 import { readModel, countEntries } from '@contentrain/mcp/core/model-manager'
 import { validateProject } from '@contentrain/mcp/core/validator'
 import { checkBranchHealth } from '@contentrain/mcp/git/branch-lifecycle'
@@ -42,7 +42,7 @@ export default defineCommand({
 
         // Pending branches + health (shared thresholds with MCP)
         try {
-          const git = simpleGit(projectRoot)
+          const git = createGit(projectRoot)
           const branches = await git.branch(['--list', 'cr/*'])
           const allLocal = await git.branchLocal()
           const featureBranches = branches.all.filter(b => b !== CONTENTRAIN_BRANCH)
@@ -138,7 +138,7 @@ export default defineCommand({
 
     // Content branch status
     try {
-      const git = simpleGit(projectRoot)
+      const git = createGit(projectRoot)
       const allLocal = await git.branchLocal()
       const contentBranchExists = allLocal.all.includes(CONTENTRAIN_BRANCH)
 

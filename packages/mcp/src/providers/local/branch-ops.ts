@@ -1,5 +1,5 @@
-import { simpleGit } from 'simple-git'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
+import { createGit } from '../../git/identity.js'
 import type { Branch, FileDiff, MergeResult } from '../../core/contracts/index.js'
 import { readConfig } from '../../core/config.js'
 import { classifyMergedBranches, deleteRemoteBranch } from '../../git/branch-lifecycle.js'
@@ -18,7 +18,7 @@ export async function getDefaultBranch(projectRoot: string): Promise<string> {
   if (config?.repository?.default_branch) return config.repository.default_branch
   const envBranch = process.env['CONTENTRAIN_BRANCH']
   if (envBranch) return envBranch
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   const current = (await git.raw(['branch', '--show-current'])).trim()
   return current || 'main'
 }
@@ -27,7 +27,7 @@ export async function listBranches(
   projectRoot: string,
   prefix?: string,
 ): Promise<Branch[]> {
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   const summary = await git.branchLocal()
   const names = prefix
     ? summary.all.filter(n => n.startsWith(prefix))
@@ -45,7 +45,7 @@ export async function createBranch(
   name: string,
   fromRef: string,
 ): Promise<void> {
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   await git.raw(['branch', name, fromRef])
 }
 
@@ -53,7 +53,7 @@ export async function deleteBranch(
   projectRoot: string,
   name: string,
 ): Promise<void> {
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   await git.deleteLocalBranch(name, true)
   // Parity with the remote-API providers, whose deleteBranch removes the
   // remote ref: best-effort, config-gated inside the helper, never throws.
@@ -65,7 +65,7 @@ export async function getBranchDiff(
   branch: string,
   base: string,
 ): Promise<FileDiff[]> {
-  const git = simpleGit(projectRoot)
+  const git = createGit(projectRoot)
   const raw = await git.raw(['diff', '--name-status', `${base}...${branch}`])
   const diffs: FileDiff[] = []
   for (const line of raw.split('\n')) {

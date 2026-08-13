@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { intro, outro, log, spinner, select, multiselect, confirm, isCancel } from '@clack/prompts'
 import { join } from 'node:path'
-import { simpleGit } from 'simple-git'
+import { createGit } from '@contentrain/mcp/git/identity'
 import { detectStackInfo } from '@contentrain/mcp/util/detect'
 import { ensureDir, pathExists, writeJson } from '@contentrain/mcp/util/fs'
 import { writeModel } from '@contentrain/mcp/core/model-manager'
@@ -237,7 +237,7 @@ async function executeInit(projectRoot: string, opts: InitOptions): Promise<void
   // Ensure git
   const hasGit = await pathExists(join(projectRoot, '.git'))
   if (!hasGit) {
-    const git = simpleGit(projectRoot)
+    const git = createGit(projectRoot)
     await git.init()
     // Create initial commit so branches can be created from it
     await git.add('.')
@@ -345,7 +345,7 @@ async function installRules(projectRoot: string): Promise<void> {
       const essentials = await readFile(resolveRuleFile('essential/contentrain-essentials.md'), 'utf-8')
       const dest = join(projectRoot, 'CLAUDE.md')
       await writeFile(dest, essentials, 'utf-8')
-      const git = simpleGit(projectRoot)
+      const git = createGit(projectRoot)
       await git.add(dest)
       try { await git.commit('[contentrain] install AI rules') } catch { /* nothing to commit */ }
     } catch { /* essential file unavailable */ }
@@ -370,7 +370,7 @@ async function configureMcp(projectRoot: string): Promise<void> {
     }
 
     if (writtenPaths.length > 0) {
-      const git = simpleGit(projectRoot)
+      const git = createGit(projectRoot)
       await git.add(writtenPaths)
       try { await git.commit('[contentrain] configure MCP servers') } catch { /* nothing to commit */ }
     }

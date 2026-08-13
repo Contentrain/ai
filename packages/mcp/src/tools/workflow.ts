@@ -1,7 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { createGit } from '../git/identity.js'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { z } from 'zod'
-import { simpleGit, type SimpleGit } from 'simple-git'
+import { type SimpleGit } from 'simple-git'
 import type { ToolProvider } from '../server.js'
 import { validateProject } from '../core/validator/index.js'
 import { readConfig } from '../core/config.js'
@@ -218,7 +219,7 @@ export function registerWorkflowTools(
         }
       }
 
-      const git = simpleGit(projectRoot)
+      const git = createGit(projectRoot)
       const remoteName = process.env['CONTENTRAIN_REMOTE'] ?? 'origin'
 
       // Check remote exists
@@ -390,7 +391,7 @@ export function registerWorkflowTools(
 
       try {
         // Resolve the target branch from exact name or model/locale/latest selector
-        const git = simpleGit(projectRoot)
+        const git = createGit(projectRoot)
         const resolved = await resolveMergeBranch(git, input)
         if ('error' in resolved) {
           return {
@@ -452,7 +453,7 @@ export function registerWorkflowTools(
         return capabilityError('contentrain_branch_list', 'localWorktree')
       }
       try {
-        const git = simpleGit(projectRoot)
+        const git = createGit(projectRoot)
         const summary = await git.branchLocal()
         const crBranches = summary.all.filter(b => b.startsWith('cr/') && b !== CONTENTRAIN_BRANCH)
 
@@ -531,7 +532,7 @@ export function registerWorkflowTools(
         }
       }
       try {
-        const git = simpleGit(projectRoot)
+        const git = createGit(projectRoot)
         const summary = await git.branchLocal()
         if (!summary.all.includes(input.branch)) {
           // The local copy may already be pruned while the pushed copy

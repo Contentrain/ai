@@ -115,6 +115,22 @@ export interface Commit {
   message: string
   author: CommitAuthor
   timestamp: string
+  /**
+   * What the provider did with the branch. Providers that own the merge
+   * decision (a local worktree honouring the project's `workflow` setting)
+   * report it here; providers that hand the branch off to an external
+   * orchestrator leave it undefined, and the caller treats that as
+   * `pending-review`.
+   */
+  workflowAction?: 'auto-merged' | 'pending-review'
+  /**
+   * Selective-sync bookkeeping — which files were copied into the developer's
+   * working tree and which were skipped because of local edits. Only
+   * providers backed by a local worktree populate it.
+   */
+  sync?: SyncResult
+  /** Non-fatal problem encountered while completing the write. */
+  warning?: string
 }
 
 /**
@@ -138,6 +154,16 @@ export interface ApplyPlanInput {
    * `base` only when you know you want to bypass the invariant.
    */
   base?: string
+  /**
+   * Describes the operation that produced these changes. A provider that
+   * regenerates `.contentrain/context.json` itself (the local worktree flow
+   * does, after merge, single-threaded) uses it; others ignore it. It is
+   * never committed on the feature branch — context.json embeds timestamps,
+   * so two branches forked from the same commit would always conflict on it.
+   */
+  context?: { tool: string; model: string; locale?: string; entries?: string[] }
+  /** Override the project's configured workflow for this write. */
+  workflowOverride?: 'auto-merge' | 'review'
 }
 
 /**
@@ -275,6 +301,13 @@ export interface MediaProvider {
  *
  * Providers are commodity and all live in MIT.
  */
+/** Result of {@link RepoProvider.checkWriteReadiness}. */
+export interface WriteReadiness {
+  blocked: boolean
+  /** Human-readable reason, present when `blocked`. */
+  message?: string
+}
+
 export interface RepoProvider extends RepoReader, RepoWriter {
   readonly capabilities: ProviderCapabilities
 
@@ -298,6 +331,19 @@ export interface RepoProvider extends RepoReader, RepoWriter {
    * tools, which are not registered when this is absent.
    */
   readonly media?: MediaProvider
+
+  /**
+   * Whether the provider will accept a write right now.
+   *
+   * A local worktree accumulates unmerged `cr/*` branches and eventually has
+   * to refuse new ones; a hosted provider manages that server-side. Asking the
+   * provider keeps the tool layer out of the business of counting git branches
+   * — it previously reached through an `instanceof` check to a `projectRoot`
+   * only one implementation has.
+   *
+   * Optional: a provider that omits it is always ready.
+   */
+  checkWriteReadiness?(): Promise<WriteReadiness>
 
   listBranches(prefix?: string): Promise<Branch[]>
   createBranch(name: string, fromRef?: string): Promise<void>

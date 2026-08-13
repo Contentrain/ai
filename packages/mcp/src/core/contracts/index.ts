@@ -23,5 +23,6 @@ export type {
   RepoProvider,
   RepoReader,
   RepoWriter,
+  WriteReadiness,
 } from '@contentrain/types'
 export { LOCAL_CAPABILITIES } from '@contentrain/types'

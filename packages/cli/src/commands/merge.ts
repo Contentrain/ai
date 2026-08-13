@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
 import { intro, outro, log, confirm, isCancel } from '@clack/prompts'
-import { simpleGit } from 'simple-git'
+import { createGit } from '@contentrain/mcp/git/identity'
 import { mergeBranch } from '@contentrain/mcp/git/transaction'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { resolveProjectRoot } from '../utils/context.js'
@@ -39,7 +39,7 @@ export default defineCommand({
       return
     }
 
-    const git = simpleGit(projectRoot)
+    const git = createGit(projectRoot)
     const localBranches = await git.branchLocal()
     if (!localBranches.all.includes(branch)) {
       log.error(`Branch "${branch}" does not exist locally.`)

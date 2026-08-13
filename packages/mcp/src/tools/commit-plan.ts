@@ -1,6 +1,5 @@
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import type { FileChange } from '../core/contracts/index.js'
-import { LocalProvider } from '../providers/local/index.js'
 import type { ToolProvider } from '../server.js'
 
 /**
@@ -11,6 +10,8 @@ import type { ToolProvider } from '../server.js'
  * the helper's signature. Remote providers ignore it — see
  * `commitThroughProvider` below.
  */
+const COMMIT_AUTHOR = { name: 'Contentrain', email: 'ai@contentrain.io' } as const
+
 export interface CommitContextPayload {
   tool: string
   model: string
@@ -37,7 +38,7 @@ export interface CommitThroughProviderResult {
  * dispatch that every write-side tool (content_save, content_delete,
  * model_save, model_delete) used to inline:
  *
- * - **LocalProvider** — goes through the worktree-backed transaction.
+ * - **localWorktree providers** — go through the worktree-backed transaction.
  *   `context` payload is threaded as an extra write-through and the
  *   transaction layer decides `auto-merged` vs `pending-review` based on
  *   the project's configured workflow. Selective-sync result is surfaced
@@ -64,16 +65,22 @@ export async function commitThroughProvider(
 ): Promise<CommitThroughProviderResult> {
   const { branch, changes, message, contextPayload } = input
 
-  if (provider instanceof LocalProvider) {
+  // Capability, not class identity: "backs onto a local worktree" is exactly
+  // what decides which applyPlan shape comes back, and it is a property any
+  // implementation can declare — including a test double.
+  if (provider.capabilities.localWorktree) {
     const result = await provider.applyPlan({
       branch,
       changes,
       message,
+      author: COMMIT_AUTHOR,
       context: contextPayload,
     })
     return {
       commitSha: result.sha,
-      workflowAction: result.workflowAction,
+      // A provider that owns the merge decision reports it; one that hands the
+      // branch off to an orchestrator does not, and that means review.
+      workflowAction: result.workflowAction ?? 'pending-review',
       sync: result.sync,
     }
   }
@@ -90,7 +97,7 @@ export async function commitThroughProvider(
     branch,
     changes: allChanges,
     message,
-    author: { name: 'Contentrain', email: 'ai@contentrain.io' },
+    author: COMMIT_AUTHOR,
     base: CONTENTRAIN_BRANCH,
   })
   return {

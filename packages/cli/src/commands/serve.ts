@@ -1,4 +1,5 @@
 import { defineCommand } from 'citty'
+import { createGit } from '@contentrain/mcp/git/identity'
 import { createServer } from '@contentrain/mcp/server'
 import { resolveProjectRoot } from '../utils/context.js'
 import consola from 'consola'
@@ -38,8 +39,7 @@ export default defineCommand({
 
     // Propagate git author info
     try {
-      const { simpleGit } = await import('simple-git')
-      const git = simpleGit(projectRoot)
+      const git = createGit(projectRoot)
       const config = await git.listConfig()
       const name = config.all['user.name']
       const email = config.all['user.email']

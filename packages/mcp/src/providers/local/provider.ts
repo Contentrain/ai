@@ -5,9 +5,11 @@ import type {
   MergeResult,
   ProviderCapabilities,
   RepoProvider,
+  WriteReadiness,
 } from '../../core/contracts/index.js'
 import { LOCAL_CAPABILITIES } from '../../core/contracts/index.js'
 import { applyChangesToWorktree } from '../../core/ops/index.js'
+import { checkBranchHealth } from '../../git/branch-lifecycle.js'
 import { createTransaction } from '../../git/transaction.js'
 import {
   createBranch as createBranchOp,
@@ -59,6 +61,18 @@ export class LocalProvider implements RepoProvider {
     return this.reader.fileExists(path, ref)
   }
 
+  /**
+   * Branch pressure gate. Unmerged `cr/*` branches accumulate in a local repo
+   * and eventually have to stop new writes; hosted providers have no such
+   * limit, so they omit this method entirely.
+   */
+  async checkWriteReadiness(): Promise<WriteReadiness> {
+    const health = await checkBranchHealth(this.projectRoot)
+    return health.blocked
+      ? { blocked: true, message: health.message ?? 'Too many active contentrain branches.' }
+      : { blocked: false }
+  }
+
   async applyPlan(input: LocalApplyPlanInput): Promise<LocalApplyResult> {
     const tx = await createTransaction(this.projectRoot, input.branch, {
       workflowOverride: input.workflowOverride,
@@ -72,7 +86,7 @@ export class LocalProvider implements RepoProvider {
       return {
         sha: gitResult.commit,
         message: input.message,
-        author: {
+        author: input.author ?? {
           name: process.env['CONTENTRAIN_AUTHOR_NAME'] ?? DEFAULT_AUTHOR_NAME,
           email: process.env['CONTENTRAIN_AUTHOR_EMAIL'] ?? DEFAULT_AUTHOR_EMAIL,
         },

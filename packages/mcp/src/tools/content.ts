@@ -7,9 +7,7 @@ import { readModel } from '../core/model-manager.js'
 import { listContent } from '../core/content-manager.js'
 import { planContentDelete, planContentSave } from '../core/ops/index.js'
 import type { ContentSaveEntryResult } from '../core/ops/types.js'
-import { LocalProvider } from '../providers/local/index.js'
 import { buildBranchName } from '../git/transaction.js'
-import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { normalizeOperationError } from '../git/errors.js'
 import { validateProject } from '../core/validator/index.js'
 import { OverlayReader } from '../core/overlay-reader.js'
@@ -104,18 +102,17 @@ export function registerContentTools(
         if (entry.expire_at !== undefined) entry.data['expire_at'] = entry.expire_at
       }
 
-      // Branch health gate — LocalProvider only (git branch count check).
-      if (provider instanceof LocalProvider) {
-        const health = await checkBranchHealth(provider.projectRoot)
-        if (health.blocked) {
-          return {
-            content: [{ type: 'text' as const, text: JSON.stringify({
-              error: health.message,
-              action: 'blocked',
-              hint: 'Merge or delete old contentrain/* branches before creating new ones.',
-            }, null, 2) }],
-            isError: true,
-          }
+      // Write-readiness gate. The provider decides what blocks a write —
+      // a local worktree counts unmerged cr/* branches, a hosted one does not.
+      const readiness = await provider.checkWriteReadiness?.()
+      if (readiness?.blocked) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: readiness.message,
+            action: 'blocked',
+            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+          }, null, 2) }],
+          isError: true,
         }
       }
 
@@ -268,17 +265,15 @@ export function registerContentTools(
         }
       }
 
-      if (provider instanceof LocalProvider) {
-        const deleteHealth = await checkBranchHealth(provider.projectRoot)
-        if (deleteHealth.blocked) {
-          return {
-            content: [{ type: 'text' as const, text: JSON.stringify({
-              error: deleteHealth.message,
-              action: 'blocked',
-              hint: 'Merge or delete old contentrain/* branches before creating new ones.',
-            }, null, 2) }],
-            isError: true,
-          }
+      const deleteReadiness = await provider.checkWriteReadiness?.()
+      if (deleteReadiness?.blocked) {
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: deleteReadiness.message,
+            action: 'blocked',
+            hint: 'Merge or delete old contentrain/* branches before creating new ones.',
+          }, null, 2) }],
+          isError: true,
         }
       }
 
