@@ -166,15 +166,23 @@ export async function writeContent(
         const slugErr = validateSlug(slug)
         if (slugErr) throw new Error(slugErr)
 
-        const bodyContent = (entry.data['body'] as string) ?? ''
-        const fmData = { ...entry.data }
-        delete fmData['body']
-        if (!fmData['slug']) fmData['slug'] = slug
+        const incomingFm = { ...entry.data }
+        const bodySent = 'body' in incomingFm
+        const incomingBody = (incomingFm['body'] as string | undefined) ?? ''
+        delete incomingFm['body']
+        if (!incomingFm['slug']) incomingFm['slug'] = slug
 
         // Check if existing
         const docPath = resolveMdFilePath(resolveContentDir(projectRoot, model), model, locale, slug)
         const existingRaw = await readText(docPath)
         const action: 'created' | 'updated' = existingRaw ? 'updated' : 'created'
+
+        // Merge with what is there, matching `planContentSave`. This path is
+        // reached by scaffold and by normalize extract; extracting into a model
+        // that already has documents would otherwise replace them wholesale.
+        const existingDoc = existingRaw ? parseMarkdownFrontmatter(existingRaw) : null
+        const fmData = { ...existingDoc?.frontmatter, ...incomingFm }
+        const bodyContent = bodySent ? incomingBody : (existingDoc?.body ?? '')
 
         const mdContent = serializeMarkdownFrontmatter(fmData, bodyContent)
         await writeText(docPath, mdContent)
