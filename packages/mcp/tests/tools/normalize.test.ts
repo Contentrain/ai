@@ -97,7 +97,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 }
 
 // contentrain_scan is read-only (no disk/git writes), so all tests share ONE
-// inited fixture built once — instead of paying a ~28-git-spawn init per test.
+// inited fixture built once — instead of paying a 33-git-spawn init per test.
 beforeAll(async () => {
   testDir = await makeInitedTemplate({ prepare: createSourceFiles })
   client = await createClient(testDir)
