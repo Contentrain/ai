@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "contentrain",
   "displayName": "Contentrain",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Turn hardcoded strings into governed content",
   "author": {
     "name": "Contentrain",

@@ -1,5 +1,183 @@
 # @contentrain/types
 
+## 1.0.0
+
+### Major Changes
+
+- 18584a2: feat(types)!: every model declares the field that titles its entries
+
+  Consumers had to guess which field to show as an entry's title, and the guess
+  was wrong in ways that made listings unusable: an integration group titled
+  `i-lucide-bot` because its description exceeded a length threshold and the
+  icon was the next short string; an article titled by its slug; a hero slide
+  titled `f3a81c09d24e`, a relation ID.
+
+  Guessing cannot be fixed, only made wrong differently. `title_field` replaces
+  it with a declaration.
+
+  Validation, on write and on read:
+
+  - missing, empty or non-string — rejected
+  - names a field this model does not declare — rejected
+  - names a field whose type cannot render as text — rejected. The allowed set
+    is `string`, `text`, `slug`, `email`, `url`, `code`, `markdown`, `richtext`.
+    `icon`, `color`, `phone`, `select`, `date`, `image` and `relation` all store
+    strings, which is exactly why the rule is by meaning rather than by `typeof`
+  - dictionary models have no fields, so their only legal value is the reserved
+    `"key"` — the entry key is the title
+  - pointing at an optional field is a warning, not an error: the title may
+    render empty
+
+  Migration is one command. `contentrain validate --fix` backfills a missing
+  `title_field` and reports each choice as a notice naming the rule that made
+  it, so a wrong pick is visible and correctable. A `title_field` that is
+  present but names the wrong field is reported and never rewritten — filling a
+  gap is migration; changing an answer is a decision.
+
+  Verified against this repository's own eleven models: ten resolve by name
+  match, and `faq` resolves to `question` rather than `answer` because the
+  inference prefers a short scalar over a long-form body.
+
+  BREAKING CHANGE:
+
+  - `ModelDefinition.title_field` is required. TypeScript consumers that
+    construct a model will not compile until they add it.
+  - `contentrain_model_save` and `contentrain_apply` (extract mode) reject a
+    model without a valid `title_field`. Extract infers it from the extracted
+    fields when omitted and reports the choice in the dry run; it refuses to
+    extract into an existing model that has not been migrated.
+  - `contentrain_validate` reports a missing `title_field` as an error, so a
+    project that has not been migrated validates red until `--fix` runs.
+  - `contentrain validate` now exits 1 on an invalid project. It previously
+    printed the errors and exited 0, so a CI step running it passed regardless
+    of what it found. `contentrain doctor` has always exited 1.
+  - `validate --fix` writes the repaired model on `cr/fix/validate` and
+    auto-merges it even under the `review` workflow, as it already did for its
+    other structural repairs.
+  - `validateModelDefinition`'s input widened to accept `title_field`.
+  - `contentrain_doctor`'s `--usage` analysis no longer reports collection entry
+    IDs and document slugs as unused keys — they are fetched by query and were
+    never referenceable by name. The check covers dictionaries only and is
+    renamed 'Unused dictionary keys'. On a real project this removed ~120 of 134
+    warnings.
+  - Doctor's Models check now validates definitions rather than only parsing
+    them, and detects an unparseable model file — which it previously could not,
+    because it enumerated models through a helper that silently drops them.
+
+  `MODEL_FIELD_ORDER` moves to `@contentrain/types` as the single definition of
+  canonical key order, replacing two copies that had to be kept in step by hand.
+  It is exhaustive over `keyof ModelDefinition` by compile-time assertion, so a
+  future property cannot be added without placing it.
+
+### Minor Changes
+
+- b660624: feat: entry meta records when it was last written
+
+  `EntryMeta` gains `updated_at` (ISO 8601, UTC), stamped on every write.
+
+  Studio cannot offer "sort by recently edited" because the data does not exist:
+  entry meta carried `status`, `source` and `updated_by`, and nothing about when.
+  The doc comment on `mergeEntryMeta` already stated the principle — "`source`/
+  `updated_by` describe _this_ write, so they are stamped every time" — and
+  `updated_at` is squarely in that category.
+
+  Optional, and deliberately not backfilled. It is a fact about the past, and an
+  entry written before the field existed has no recoverable value. A fabricated
+  timestamp would be worse than an absent one, because it would sort. Absent
+  means unknown; the first write mints the real value.
+
+  Two functions now mint entry meta, and both stamp:
+
+  - `mergeEntryMeta` — a content write. It still refuses to touch `status`,
+    because editing a field must not unpublish an entry.
+  - `applyStatusChange` — new, and the one mint permitted to set `status`,
+    because changing it is the operation. A status-only write is a write and
+    gets the same stamp; Studio's status picker takes this path.
+
+  Six places built entry meta by hand before this — four in `contentrain_bulk`,
+  one in the validator's orphan-meta repair. A timestamp added to each would
+  have been forgotten by the fifth, so they now route through the two mints
+  instead. The validator keeps `source: 'import'`, which is deliberate: that
+  record is fabricated for content that arrived without one.
+
+  Conformance fixtures regenerated — one line per meta file, at the suite's
+  frozen clock.
+
+- b33e2ea: feat: fields can declare a label and a display order
+
+  A model carries a `name`; its fields carried nothing. Fields are stored in
+  canonical alphabetical order, so an editor listed them alphabetically — on a
+  sixteen-field article model `author` first and `title` fifteenth — and
+  labelled each with its raw key: `body_public`, `is_category_hero`.
+
+  `FieldDef` gains two optional properties:
+
+  - `label?: string | Record<string, string>` — one label for every locale, or a
+    translation per locale. The union is here now rather than later because
+    widening `string` to it afterwards breaks every consumer that treats the
+    value as a string, and that would cost another major.
+  - `order?: number` — ascending. Fractional values are allowed so a field can be
+    inserted between two others without renumbering.
+
+  Fields without an `order` sort after every field that has one, alphabetically
+  among themselves, so a model that declares neither behaves exactly as it does
+  today.
+
+  Two helpers ship with the types so every consumer resolves them identically
+  rather than each reimplementing the fallbacks: `orderedFieldNames(fields)` and
+  `resolveFieldLabel(name, field, locale?, defaultLocale?)`.
+
+  Validation: a `label` object's keys must be locale codes. That is the same
+  inversion the vocabulary is prone to, and a label keyed by anything else
+  resolves to nothing while looking fine.
+
+  Also: a field declared `{ "type": "object" }` with no `fields` now returns a
+  warning. Nothing validates it and no editor can render it — it shows as an
+  empty frame. A warning rather than an error, because it is a legitimate state
+  while a schema is being designed.
+
+  All 104 fields across the seven scaffold templates now carry a readable label
+  and an order numbered in tens.
+
+- 2274bac: Resolve the git binary once instead of re-walking PATH on every spawn
+
+  Every local write spawns git dozens of times — a `contentrain_init` is 33
+  subprocesses — and each one was spawned by bare name, which makes the OS walk
+  PATH looking for it. Measured inside a worker process on a 41-entry PATH:
+  198.8ms per spawn by name against 22.0ms by absolute path. A malformed entry
+  makes it worse: a PATH containing `/usr/bin/git` — the binary itself, added as
+  if it were a directory — turns every probe into an ENOTDIR.
+
+  This is not only a test concern. An MCP server launched from an editor
+  inherits that editor's PATH, so every real write operation was paying it.
+
+  - `gitBinary()` resolves the executable once per process; `CONTENTRAIN_GIT_BINARY`
+    overrides it
+  - `createGit()` is now the single constructor for simple-git across mcp and
+    cli, so no call site can silently opt back out
+
+  Resolution is conservative — the first PATH entry holding an executable git,
+  the same one the OS would have picked. No attempt is made to bypass the macOS
+  `xcode-select` shim, which exists to track the active toolchain.
+
+  Provider contract additions, so an implementation can replace git entirely:
+
+  - `RepoProvider.checkWriteReadiness?()` — the tool layer previously asked
+    whether a provider was a `LocalProvider`, then reached through to its
+    `projectRoot` to count git branches. It now asks the provider whether it
+    will accept a write. Optional; a provider that omits it is always ready.
+  - `Commit` gains optional `workflowAction` / `sync` / `warning`, and
+    `ApplyPlanInput` gains optional `context` / `workflowOverride`. These were
+    real concepts that existed only on a LocalProvider-specific type, which
+    forced the dispatch to be nominal rather than capability-based.
+  - New `@contentrain/mcp/testing/memory` export: `MemoryProvider`, a complete
+    `RepoProvider` over `Map`s with real branch snapshots that reads workflow
+    from the project's own config. Intended for suites that test what a tool
+    decides rather than what git does with the result.
+
+  No behaviour change for existing consumers: the new contract members are all
+  optional, and `LocalProvider` keeps its current semantics.
+
 ## 0.9.0
 
 ### Minor Changes
