@@ -303,3 +303,32 @@ describe('validateModelDefinition — title_field', () => {
     })
   })
 })
+
+/**
+ * `{ "type": "object", "fields": {} }` is neither validated nor editable — it
+ * renders as an empty frame. Worth saying, but not worth refusing: it is a
+ * legitimate state while a schema is being designed.
+ */
+describe('validateModelDefinition — an object with no shape', () => {
+  const withField = (field: Record<string, unknown>) =>
+    validateModelDefinition({
+      id: 'posts',
+      kind: 'collection',
+      title_field: 'title',
+      fields: { title: { type: 'string', required: true }, seo: field },
+    })
+
+  it.each([
+    ['no fields key', { type: 'object' }],
+    ['an empty fields object', { type: 'object', fields: {} }],
+  ])('warns about %s', (_case, field) => {
+    const { errors, warnings } = withField(field)
+    expect(errors).toEqual([])
+    expect(warnings.some(w => w.includes('no editor can render it'))).toBe(true)
+  })
+
+  it('says nothing when the shape is declared', () => {
+    const { warnings } = withField({ type: 'object', fields: { title: { type: 'string' } } })
+    expect(warnings).toEqual([])
+  })
+})

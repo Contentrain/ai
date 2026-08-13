@@ -11,14 +11,14 @@ export const i18nTemplate: ScaffoldTemplate = {
       i18n: true,
       title_field: 'brand',
       fields: {
-        brand: { type: 'string', required: true },
+        brand: { type: 'string', required: true, label: 'Brand', order: 10 },
         items: {
           type: 'array',
           items: {
             type: 'object',
             fields: {
-              label: { type: 'string', required: true },
-              url:   { type: 'url', required: true },
+              label: { type: 'string', required: true, label: 'Label', order: 10 },
+              url:   { type: 'url', required: true, label: 'URL', order: 20 },
             },
           },
         },
@@ -32,11 +32,11 @@ export const i18nTemplate: ScaffoldTemplate = {
       i18n: true,
       title_field: 'name',
       fields: {
-        name:     { type: 'string' },
-        email:    { type: 'string' },
-        password: { type: 'string' },
-        submit:   { type: 'string' },
-        cancel:   { type: 'string' },
+        name:     { type: 'string', label: 'Name', order: 10 },
+        email:    { type: 'string', label: 'Email', order: 20 },
+        password: { type: 'string', label: 'Password', order: 30 },
+        submit:   { type: 'string', label: 'Submit', order: 40 },
+        cancel:   { type: 'string', label: 'Cancel', order: 50 },
       },
     },
     {

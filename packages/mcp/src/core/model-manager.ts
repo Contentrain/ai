@@ -1,5 +1,5 @@
 import type { FieldType, ModelDefinition, ModelSummary } from '@contentrain/types'
-import { DICTIONARY_TITLE_FIELD, isTitleFieldType, MODEL_FIELD_ORDER, TITLE_FIELD_TYPES } from '@contentrain/types'
+import { DICTIONARY_TITLE_FIELD, isTitleFieldType, LOCALE_PATTERN, MODEL_FIELD_ORDER, TITLE_FIELD_TYPES } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { z } from 'zod'
@@ -473,6 +473,10 @@ export const fieldDefZodSchema: z.ZodType<Record<string, unknown>> = z.record(z.
   accept: z.string().optional(),
   maxSize: z.number().optional(),
   description: z.string().optional(),
+  label: z.union([z.string(), z.record(z.string(), z.string())]).optional()
+    .describe('Editor label. A string is one label for all locales; an object keyed by locale carries a translation each.'),
+  order: z.number().optional()
+    .describe('Display position, ascending. Fields without one sort last, alphabetically. Fractional values allowed.'),
 }).strict().refine(
   (f) => {
     if ((f.type === 'relation' || f.type === 'relations') && !f.model) return false
@@ -512,6 +516,8 @@ interface RawFieldDef {
   fields?: unknown
   accept?: unknown
   maxSize?: unknown
+  label?: unknown
+  order?: unknown
 }
 
 /**
@@ -547,11 +553,43 @@ function checkFieldDef(
     return
   }
 
+  // Presentation. Wrong here is not fatal to a write, but a locale-keyed label
+  // whose keys are not locales is the same inversion the vocabulary hits, and
+  // it silently resolves to nothing.
+  if (def.label !== undefined) {
+    if (typeof def.label === 'string') {
+      if (def.label.trim() === '') errors.push(`Field "${path}": "label" is empty`)
+    } else if (typeof def.label === 'object' && def.label !== null && !Array.isArray(def.label)) {
+      const entries = Object.entries(def.label as Record<string, unknown>)
+      if (entries.length === 0) errors.push(`Field "${path}": "label" has no translations`)
+      for (const [locale, value] of entries) {
+        if (!LOCALE_PATTERN.test(locale)) {
+          errors.push(`Field "${path}": "label" key "${locale}" is not a locale code. A per-locale label nests as { "en": "…", "tr": "…" }.`)
+        }
+        if (typeof value !== 'string' || value.trim() === '') {
+          errors.push(`Field "${path}": "label" for "${locale}" must be a non-empty string`)
+        }
+      }
+    } else {
+      errors.push(`Field "${path}": "label" must be a string, or an object keyed by locale`)
+    }
+  }
+  if (def.order !== undefined && (typeof def.order !== 'number' || !Number.isFinite(def.order))) {
+    errors.push(`Field "${path}": "order" must be a finite number`)
+  }
+
   if ((type === 'relation' || type === 'relations') && !def.model) {
     errors.push(`Field "${path}": ${type} type requires "model" property`)
   }
   if (type === 'select' && (!Array.isArray(def.options) || def.options.length === 0)) {
     errors.push(`Field "${path}": select type requires non-empty "options" array`)
+  }
+
+  // An object with no shape is a field nothing can validate and no editor can
+  // render — it shows as an empty frame. A warning, not an error: it is a
+  // legitimate intermediate state while a schema is being designed.
+  if (type === 'object' && (!def.fields || typeof def.fields !== 'object' || Object.keys(def.fields as Record<string, unknown>).length === 0)) {
+    warnings.push(`Field "${path}": "object" with no "fields" — nothing validates it and no editor can render it. Declare its shape, or use a plain type.`)
   }
   // The reverse direction was never checked, so `options` on a string field was
   // accepted and then silently ignored at validation time.

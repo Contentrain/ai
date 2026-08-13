@@ -51,6 +51,31 @@ export interface FieldDef {
   accept?: string
   maxSize?: number
   description?: string
+  /**
+   * Human-readable name for this field in an editing UI.
+   *
+   * A plain string is one label for every locale; an object keyed by locale
+   * carries a translation per locale. The union exists now rather than later
+   * because widening `string` to it afterwards would break every consumer
+   * that treats the value as a string.
+   *
+   * Absent means the field name itself is the label — which is why an editor
+   * shows `body_public` and `is_category_hero` today.
+   */
+  label?: string | Record<string, string>
+  /**
+   * Display position in an editing UI, ascending.
+   *
+   * Fields are stored in canonical alphabetical order, so without this an
+   * editor shows them alphabetically: on a 16-field article model `author`
+   * comes first and `title` fifteenth. Fractional values are allowed so a
+   * field can be inserted between two others without renumbering the rest.
+   *
+   * Fields without one sort after every field that has one, alphabetically
+   * among themselves — so a model that has not been given an order behaves
+   * exactly as it does today.
+   */
+  order?: number
 }
 
 // ─── Model Definition ───
@@ -686,6 +711,52 @@ const MEDIA_TYPES = new Set<FieldType>(['image', 'video', 'file'])
 
 export function isMediaType(type: FieldType): boolean {
   return MEDIA_TYPES.has(type)
+}
+
+// ─── Field presentation ───
+
+/**
+ * Resolve a field's label for a locale.
+ *
+ * Falls back in the order a reader would expect: the requested locale, the
+ * default locale, any locale present, then the field name. A field with no
+ * label resolves to its own name, which is what an editor shows today.
+ */
+export function resolveFieldLabel(
+  fieldName: string,
+  field: Pick<FieldDef, 'label'>,
+  locale?: string,
+  defaultLocale?: string,
+): string {
+  const { label } = field
+  if (typeof label === 'string') return label
+  if (label && typeof label === 'object') {
+    const byLocale = (locale && label[locale])
+      ?? (defaultLocale && label[defaultLocale])
+      ?? Object.values(label)[0]
+    if (byLocale) return byLocale
+  }
+  return fieldName
+}
+
+/**
+ * Field names in display order.
+ *
+ * Exported so every consumer orders identically instead of each reimplementing
+ * the fallback. Ascending `order`; fields without one come last, alphabetically
+ * among themselves, which is the behaviour a model that has no `order` already
+ * has.
+ */
+export function orderedFieldNames(fields: Record<string, FieldDef> | undefined): string[] {
+  if (!fields) return []
+  return Object.keys(fields).toSorted((a, b) => {
+    const oa = fields[a]?.order
+    const ob = fields[b]?.order
+    if (oa !== undefined && ob !== undefined && oa !== ob) return oa - ob
+    if (oa !== undefined && ob === undefined) return -1
+    if (oa === undefined && ob !== undefined) return 1
+    return a.localeCompare(b, 'en')
+  })
 }
 
 // ─── Title field ───

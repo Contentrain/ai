@@ -130,6 +130,15 @@ property exists.
 **When updating an existing model**, re-check `title_field` in the same call:
 renaming or removing the field it points at makes the model invalid.
 
+Give every field a `label` and an `order`. Fields are stored alphabetically, so
+without `order` an editor lists them alphabetically — on a sixteen-field article
+model that puts `author` first and `title` fifteenth. Without `label` it shows
+the raw key: `body_public`, `is_category_hero`.
+
+Number `order` in tens (10, 20, 30) so a field can be inserted later without
+renumbering. Use a per-locale `label` (`{ "en": "…", "tr": "…" }`) on a
+multilingual project; a plain string is one label for every locale.
+
 ### 8. Validate Downstream Impact
 
 After changing a model:

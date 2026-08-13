@@ -111,6 +111,8 @@ not silently ignored. The "Enforced by" column says who actually checks each one
 | `accept` | `image`, `video`, `file` | content_save (**warns**) | Allowed MIME types: `"image/png,image/jpeg"`, `"image/*"`, `".pdf"`. MCP checks the value's **file extension** — an approximation, since it holds a path, not the bytes. Your provider enforces the real MIME type at ingest. |
 | `maxSize` | `image`, `video`, `file` | **Provider, at ingest — not MCP** | Maximum file size in bytes. MCP never sees the file, so it cannot check this; model_save says so. |
 | `description` | ALL | — | Human-readable hint (shown in Studio UI tooltip, used as agent context). |
+| `label` | ALL | — | Editor label: a string, or an object keyed by locale. Absent means the raw field name is shown. |
+| `order` | ALL | — | Display position, ascending. Absent sorts last, alphabetically. Fractional values allowed. |
 
 ### 3.2 Omission Rules
 
