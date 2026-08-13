@@ -1,5 +1,36 @@
 # @contentrain/types
 
+## 1.0.2
+
+### Patch Changes
+
+- Republish as 1.0.2 — 1.0.0, 1.0.1 and 2.0.0 are all permanently unavailable
+
+  `@contentrain/types` reached 2.0.0 in January 2025, was unpublished, and
+  restarted at 0.1.0 in March 2026. npm reserves an unpublished version number
+  forever, so three numbers in the 1.x–2.x range can never be used again:
+
+  | version | published  | status |
+  | ------- | ---------- | ------ |
+  | 1.0.0   | 2025-01-04 | burned |
+  | 1.0.1   | 2025-01-05 | burned |
+  | 2.0.0   | 2025-01-05 | burned |
+
+  The first attempt at this release chose 1.0.0 and was refused; the second chose
+  1.0.1 and was refused for the same reason, because only 1.0.0 had been checked.
+  Both times the five packages that do not depend on types published fine while
+  types did not — and `workspace:*` resolves to an exact version at publish time,
+  so `@contentrain/mcp`, `@contentrain/query` and `contentrain` each shipped
+  pinned to a version that does not exist.
+
+  1.0.2 is verified free against the full `npm view @contentrain/types time`
+  history, as are the resulting 3.0.2 / 7.0.4 / 0.9.2 for the dependents.
+
+  Follow-up worth doing separately: `workspace:^` instead of `workspace:*` would
+  publish `^1.0.2` rather than `1.0.2`. A dependent pinned that way keeps
+  resolving when types ships a later patch, so a partial publish failure heals
+  itself instead of requiring every dependent to be republished.
+
 ## 1.0.1
 
 ### Patch Changes
