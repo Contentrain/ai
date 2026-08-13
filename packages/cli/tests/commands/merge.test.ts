@@ -8,8 +8,12 @@ vi.mock('@contentrain/mcp/git/transaction', () => ({
 
 const branchLocalMock = vi.fn()
 
-vi.mock('simple-git', () => ({
-  simpleGit: vi.fn(() => ({
+// The CLI no longer constructs simple-git itself — it calls `createGit` from
+// @contentrain/mcp, which resolves the git binary once instead of re-walking
+// PATH on every spawn. Stubbing `simple-git` here would no longer intercept
+// anything: that import now lives inside the mcp package.
+vi.mock('@contentrain/mcp/git/identity', () => ({
+  createGit: vi.fn(() => ({
     branchLocal: branchLocalMock,
   })),
 }))

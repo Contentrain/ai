@@ -46,8 +46,12 @@ vi.mock('../../../src/utils/browser.js', () => ({
   openBrowser: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('simple-git', () => ({
-  simpleGit: vi.fn().mockReturnValue({
+// The CLI no longer constructs simple-git itself — it calls `createGit` from
+// @contentrain/mcp, which resolves the git binary once instead of re-walking
+// PATH on every spawn. Stubbing `simple-git` here would no longer intercept
+// anything: that import now lives inside the mcp package.
+vi.mock('@contentrain/mcp/git/identity', () => ({
+  createGit: vi.fn().mockReturnValue({
     getRemotes: vi.fn().mockResolvedValue([
       { name: 'origin', refs: { fetch: 'https://github.com/acme/website.git', push: 'https://github.com/acme/website.git' } },
     ]),
