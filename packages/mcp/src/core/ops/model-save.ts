@@ -1,20 +1,8 @@
 import type { ModelDefinition } from '@contentrain/types'
+import { MODEL_FIELD_ORDER } from '@contentrain/types'
 import type { FileChange, RepoReader } from '../contracts/index.js'
 import { canonicalStringify } from '../serialization/index.js'
 import type { OpPlan } from './types.js'
-
-/** Field order for canonical model JSON — preserves reader ergonomics. */
-const MODEL_FIELD_ORDER = [
-  'id',
-  'name',
-  'kind',
-  'domain',
-  'i18n',
-  'description',
-  'content_path',
-  'locale_strategy',
-  'fields',
-]
 
 export interface ModelSaveInput {
   model: ModelDefinition

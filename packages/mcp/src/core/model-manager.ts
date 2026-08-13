@@ -1,4 +1,5 @@
 import type { ModelDefinition, ModelSummary } from '@contentrain/types'
+import { MODEL_FIELD_ORDER } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { z } from 'zod'
@@ -9,6 +10,10 @@ import { resolveContentDir, resolveLocaleStrategy } from './content-manager.js'
 import { contentDirPath } from './ops/paths.js'
 
 export type { ModelSummary } from '@contentrain/types'
+// Re-exported so `packages/rules` and `packages/skills` — which devDep
+// @contentrain/mcp but not @contentrain/types — can assert docs parity
+// against the canonical key list without taking a new dependency.
+export { MODEL_FIELD_ORDER } from '@contentrain/types'
 
 const MODELS_DIR_PATH = '.contentrain/models'
 
@@ -349,8 +354,6 @@ export async function countEntries(
     }
   }
 }
-
-const MODEL_FIELD_ORDER = ['id', 'name', 'kind', 'domain', 'i18n', 'description', 'content_path', 'locale_strategy', 'fields']
 
 export async function writeModel(projectRoot: string, model: ModelDefinition): Promise<void> {
   const filePath = join(contentrainDir(projectRoot), 'models', `${model.id}.json`)

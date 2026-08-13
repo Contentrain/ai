@@ -28,7 +28,7 @@ export async function readDir(dirPath: string): Promise<string[]> {
   }
 }
 
-export async function writeJson(filePath: string, data: unknown, fieldOrder?: string[]): Promise<void> {
+export async function writeJson(filePath: string, data: unknown, fieldOrder?: readonly string[]): Promise<void> {
   await mkdir(join(filePath, '..'), { recursive: true })
   await writeFile(filePath, canonicalStringify(data, fieldOrder), 'utf-8')
 }
