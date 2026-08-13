@@ -40,7 +40,11 @@ export const MODEL_PROPERTIES = [
   { name: 'description', required: false },
   { name: 'content_path', required: false },
   { name: 'locale_strategy', required: false },
-  { name: 'fields', required: false },
+  // `required` here means "documented as required", not the TS optionality.
+  // `fields` is `fields?` on the interface but every non-dictionary model needs
+  // it — a collection with no fields cannot even name a title_field. The
+  // per-kind nuance lives in the docs cell ("Yes (except dictionary)").
+  { name: 'fields', required: true },
 ] as const
 
 export type ModelProperty = (typeof MODEL_PROPERTIES)[number]['name']

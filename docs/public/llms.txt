@@ -17,6 +17,7 @@ Contentrain Studio (team web surface) documentation: https://docs.contentrain.io
 ## Key Facts
 
 - 4 model kinds: collection (object-map by entry id), singleton, dictionary (flat string map), document (markdown + frontmatter)
+- Every model declares title_field: the field shown as an entry's title. Must be a string/text/slug/email/url/code/markdown/richtext field on that model; dictionaries use the reserved "key". Required — `contentrain validate --fix` backfills it in older projects
 - 27 field types; content is validated before every write — an error on any entry in a contentrain_content_save call means nothing is committed
 - Every write lands on an isolated cr/* git branch; workflow is auto-merge or review (config.json)
 - dry_run preview belongs to contentrain_apply (the normalize tool that can patch source); destructive tools require confirm: true

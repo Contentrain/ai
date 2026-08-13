@@ -244,6 +244,9 @@ importers:
       '@contentrain/mcp':
         specifier: workspace:*
         version: link:../mcp
+      '@contentrain/rules':
+        specifier: workspace:*
+        version: link:../rules
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.15

@@ -88,6 +88,7 @@ Create or update a model definition (upsert).
 | `kind` | string | Yes | `singleton`, `collection`, `document`, `dictionary` |
 | `domain` | string | Yes | Organizational group |
 | `i18n` | boolean | Yes | Whether model supports localization |
+| `title_field` | string | Yes | Field shown as an entry's title. Must name a field on this model typed `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or `richtext`. Dictionaries have no fields — use `"key"` |
 | `fields` | object | No | Field definitions (not for dictionary) |
 | `description` | string | No | Model description |
 | `content_path` | string | No | Framework-relative path for content files |
@@ -95,6 +96,8 @@ Create or update a model definition (upsert).
 
 Notes:
 - Upserts by model ID: existing model is updated, new model is created
+- `title_field` is required on create AND must stay correct when you rename or drop a field
+- Pick what a reader uses to tell entries apart — the headline, the name, the question. Not the slug, not the icon, not a relation ID
 - `locale_strategy: "none"` requires `i18n: false`
 - `content_path` overrides default `.contentrain/content/` location
 

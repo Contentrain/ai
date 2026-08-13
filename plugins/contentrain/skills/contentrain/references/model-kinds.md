@@ -28,6 +28,7 @@ Contentrain has four model kinds, each with distinct storage format, ID manageme
   "kind": "singleton",
   "domain": "marketing",
   "i18n": true,
+  "title_field": "title",
   "fields": {
     "title": { "type": "string", "required": true, "max": 80 },
     "subtitle": { "type": "text", "max": 200 },
@@ -73,6 +74,7 @@ Contentrain has four model kinds, each with distinct storage format, ID manageme
   "kind": "collection",
   "domain": "marketing",
   "i18n": true,
+  "title_field": "name",
   "fields": {
     "name": { "type": "string", "required": true },
     "role": { "type": "string", "required": true },
@@ -148,6 +150,7 @@ MCP tools return collections as arrays with `id` injected:
   "kind": "document",
   "domain": "blog",
   "i18n": true,
+  "title_field": "title",
   "fields": {
     "title": { "type": "string", "required": true, "max": 120 },
     "slug": { "type": "slug", "required": true, "unique": true },
@@ -204,7 +207,8 @@ Your markdown body content here...
   "name": "Error Messages",
   "kind": "dictionary",
   "domain": "system",
-  "i18n": true
+  "i18n": true,
+  "title_field": "key"
 }
 ```
 

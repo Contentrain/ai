@@ -81,6 +81,7 @@ Model definitions live at `.contentrain/models/{model-id}.json`. One file per mo
   "kind": "document",
   "domain": "blog",
   "i18n": true,
+  "title_field": "title",
   "description": "Blog articles with markdown body",
   "fields": {
     "title": { "type": "string", "required": true, "max": 120 },
@@ -100,6 +101,7 @@ Model definitions live at `.contentrain/models/{model-id}.json`. One file per mo
 | `kind` | string | Yes | `singleton`, `collection`, `document`, `dictionary` |
 | `domain` | string | Yes | Organizational group (maps to content subdirectory) |
 | `i18n` | boolean | Yes | Whether model supports multiple locales |
+| `title_field` | string | Yes | Field shown as an entry's title. Must name a field on this model whose type can render as text; dictionaries use `"key"` |
 | `description` | string | No | Model description for docs and agent context |
 | `fields` | object | Yes (except dictionary) | Field definitions. Dictionary has NO fields |
 | `content_path` | string | No | Framework-relative path. When set, content writes here instead of `.contentrain/content/` |

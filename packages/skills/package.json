@@ -63,6 +63,7 @@
   },
   "devDependencies": {
     "@contentrain/mcp": "workspace:*",
+    "@contentrain/rules": "workspace:*",
     "@types/node": "^22.0.0",
     "tsdown": "^0.21.0",
     "typescript": "^5.7.0",

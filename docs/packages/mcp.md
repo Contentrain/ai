@@ -323,6 +323,7 @@ Ask your agent: *"Is my Contentrain setup healthy?"* — triggers `contentrain_d
   "kind": "collection",
   "domain": "content",
   "i18n": true,
+  "title_field": "title",
   "fields": {
     "title": { "type": "string", "required": true },
     "excerpt": { "type": "text" },

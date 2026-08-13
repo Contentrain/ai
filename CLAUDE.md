@@ -61,6 +61,7 @@ When working with Contentrain content operations (models, content, normalize, va
 1. **Always call `contentrain_describe_format` before creating models or content** — understand storage formats
 2. **Dictionary = flat key-value, all strings, no fields, no id/slug** — keys are semantic addresses
 3. **Collection = object-map by entry ID, typed fields** — IDs are auto-generated hex
+3b. **Every model declares `title_field`** — the field shown as an entry's title. Must name a field on that model typed string/text/slug/email/url/code/markdown/richtext; dictionaries use the reserved `"key"`. Set it on create AND keep it correct when renaming or dropping a field. Never the slug, the icon, or a relation ID
 4. **Always dry_run:true first, review, then dry_run:false** — never skip preview
 5. **MCP is deterministic infra, agent is intelligence** — MCP does NOT make content decisions
 6. **Normalize branches always use review workflow** — never auto-merge

@@ -67,6 +67,7 @@ After evaluation, write the plan as `.contentrain/normalize-plan.json`:
       "kind": "singleton",
       "domain": "marketing",
       "i18n": true,
+      "title_field": "title",
       "fields": {
         "title": { "type": "string", "required": true },
         "subtitle": { "type": "string" }

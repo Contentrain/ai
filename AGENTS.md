@@ -47,6 +47,7 @@ Load `packages/rules/essential/contentrain-essentials.md` (~120 lines) for compa
 
 - Architecture (MCP = deterministic infra, Agent = intelligence)
 - Four model kinds (singleton, collection, document, dictionary)
+- Every model declares `title_field` — the field shown as an entry's title; dictionaries use `"key"`
 - Content format rules (JSON only, canonical serialization)
 - 19 MCP tools with mandatory calling protocols
 - Git workflow (dedicated contentrain branch, worktree isolation)

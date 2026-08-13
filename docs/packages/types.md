@@ -64,6 +64,7 @@ const model: ModelDefinition = {
   kind: 'collection',
   domain: 'blog',
   i18n: true,
+  title_field: 'title',
   fields,
 }
 

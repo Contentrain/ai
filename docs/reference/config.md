@@ -283,12 +283,41 @@ interface ModelDefinition {
   kind: ModelKind                 // 'collection' | 'singleton' | 'document' | 'dictionary'
   domain: string                  // Organizational domain
   i18n: boolean                   // Whether content is localized
+  title_field: string             // Field shown as an entry's title (dictionary: "key")
   description?: string            // Optional description
   fields?: Record<string, FieldDef> // Field definitions (not used for dictionary)
   content_path?: string           // Framework-relative path override
   locale_strategy?: LocaleStrategy // How locale is encoded in file paths
 }
 ```
+
+### `title_field`
+
+Required. Names the field whose value is shown as an entry's title — in a
+listing, a picker, a relation reference.
+
+It must name a field declared on the model, and that field's type must be one
+that can render as text: `string`, `text`, `slug`, `email`, `url`, `code`,
+`markdown`, `richtext`. Pointing it at an `image`, `relation`, `number` or
+`icon` field is rejected.
+
+Dictionary models have no fields — their entries are keyed strings — so their
+only legal value is the reserved `"key"`, meaning the entry key is the title.
+
+Declare it when creating a model, and keep it correct when renaming or
+removing fields. It exists because consumers that inferred the title from
+field order or length picked the icon over the headline.
+
+Projects created before this became required can be migrated in place:
+
+```bash
+contentrain validate --fix
+```
+
+Each backfilled value is reported as a notice naming the rule that chose it,
+so a wrong pick is visible and correctable with `contentrain_model_save`. A
+`title_field` that is present but names the wrong field is reported and never
+rewritten — that is an authoring decision, not a gap to fill.
 
 See the [Model Kinds](/reference/model-kinds) page for detailed kind-specific documentation and the [Field Types](/reference/field-types) page for field definition details.
 
