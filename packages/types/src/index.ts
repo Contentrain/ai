@@ -146,6 +146,15 @@ export interface EntryMeta {
   status: ContentStatus
   source: ContentSource
   updated_by: string
+  /**
+   * When this entry was last written, ISO 8601 UTC.
+   *
+   * Optional, and deliberately not backfilled. It is a fact about the past,
+   * and an entry written before the field existed has no recoverable value —
+   * a fabricated timestamp would be worse than an absent one, because it
+   * would sort. Absent means unknown; the first write mints the real value.
+   */
+  updated_at?: string
   approved_by?: string | null
   version?: string
   publish_at?: string

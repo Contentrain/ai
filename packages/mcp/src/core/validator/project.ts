@@ -5,7 +5,7 @@ import { rm } from 'node:fs/promises'
 import { writeJson, writeText } from '../../util/fs.js'
 import { readConfig } from '../config.js'
 import { inferTitleField, listModels, readModel, titleFieldIssues } from '../model-manager.js'
-import { writeMeta } from '../meta-manager.js'
+import { mergeEntryMeta, writeMeta } from '../meta-manager.js'
 import { parseFrontmatter, resolveLocaleStrategy } from '../content-manager.js'
 import type { RepoReader } from '../contracts/index.js'
 import { LocalReader } from '../../providers/local/reader.js'
@@ -327,9 +327,10 @@ async function validateCollectionModel(
         // the agent to resolve the layout by hand.
         if (fix && projectRoot && !strayResult.unresolved) {
           await writeMeta(projectRoot, model, { locale, entryId, defaultLocale: config.locales.default }, {
-            status: 'draft',
+            // `source: 'import'` on purpose: this record is being fabricated
+            // for content that arrived without one, not written by an agent.
+            ...mergeEntryMeta(undefined),
             source: 'import',
-            updated_by: 'contentrain-mcp',
           })
           fixed++
         }

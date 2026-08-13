@@ -1,4 +1,4 @@
-import type { ModelDefinition, EntryMeta } from '@contentrain/types'
+import type { ContentStatus, ModelDefinition, EntryMeta } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { contentrainDir, readJson, writeJson } from '../util/fs.js'
@@ -44,11 +44,36 @@ export async function readMeta(
  *
  * `status` is a publish decision and belongs to whoever made it — editing a
  * field must not unpublish an entry. Only an entry with no meta yet starts at
- * `draft`. `source`/`updated_by` describe *this* write, so they are stamped
- * every time; `approved_by`/`version` survive via the spread.
+ * `draft`. `source`/`updated_by`/`updated_at` describe *this* write, so they
+ * are stamped every time; `approved_by`/`version` survive via the spread.
  *
  * Pass `existing: undefined` to mint meta for a genuinely new entry.
  */
+/**
+ * The write timestamp. One function so there is one answer to "when", and so
+ * a test can freeze it in one place.
+ */
+function nowIso(): string {
+  return new Date().toISOString()
+}
+
+/**
+ * Meta for a deliberate status change.
+ *
+ * Distinct from {@link mergeEntryMeta}, which preserves `status` on purpose —
+ * editing a field must not unpublish an entry. Changing the status IS the
+ * operation here, so it is the one place that may overwrite it. Everything
+ * else about the write is stamped identically.
+ */
+export function applyStatusChange(existing: EntryMeta, status: ContentStatus): EntryMeta {
+  return {
+    ...existing,
+    status,
+    updated_by: 'contentrain-mcp',
+    updated_at: nowIso(),
+  }
+}
+
 export function mergeEntryMeta(
   existing: EntryMeta | undefined,
   data?: Record<string, unknown>,
@@ -58,6 +83,7 @@ export function mergeEntryMeta(
     status: existing?.status ?? 'draft',
     source: 'agent',
     updated_by: 'contentrain-mcp',
+    updated_at: nowIso(),
   }
   if (data?.['publish_at'] !== undefined) meta.publish_at = data['publish_at'] as string
   if (data?.['expire_at'] !== undefined) meta.expire_at = data['expire_at'] as string
