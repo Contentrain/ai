@@ -18,9 +18,14 @@ let client: Client
  * everything else takes its first declared field — enough for a fixture, and
  * the validator rejects it loudly if a test ever declares something unshowable.
  */
+const TITLE_TYPES = new Set(['string', 'text', 'slug', 'email', 'url', 'code', 'markdown', 'richtext'])
+
 function testTitleField(kind: string, fields?: Record<string, unknown>): string {
   if (kind === 'dictionary') return 'key'
-  return Object.keys(fields ?? {})[0] ?? 'title'
+  const displayable = Object.entries(fields ?? {}).find(
+    ([, def]) => TITLE_TYPES.has(String((def as { type?: unknown }).type)),
+  )
+  return displayable?.[0] ?? 'title'
 }
 
 async function createModel(
@@ -508,6 +513,7 @@ describe('contentrain_validate', () => {
 
   it('flags nested object field errors via validateProject', async () => {
     client = await createModel(client, 'pages', 'collection', 'marketing', {
+      title: { type: 'string', required: true },
       seo: {
         type: 'object',
         fields: {

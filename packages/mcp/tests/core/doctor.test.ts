@@ -110,7 +110,7 @@ describe('runDoctor', () => {
     await seedMinimalProject(testDir)
     const report = await runDoctor(testDir)
     expect(report.usage).toBeUndefined()
-    expect(report.checks.find(c => c.name === 'Unused content keys')).toBeUndefined()
+    expect(report.checks.find(c => c.name === 'Unused dictionary keys')).toBeUndefined()
   })
 
   it('adds the usage block + 3 extra checks when { usage: true }', async () => {
@@ -122,10 +122,10 @@ describe('runDoctor', () => {
     expect(Array.isArray(report.usage?.missingLocaleKeys)).toBe(true)
 
     const usageCheckNames = report.checks.filter(c =>
-      ['Unused content keys', 'Duplicate dictionary values', 'Locale key coverage'].includes(c.name),
+      ['Unused dictionary keys', 'Duplicate dictionary values', 'Locale key coverage'].includes(c.name),
     ).map(c => c.name)
     expect(usageCheckNames).toEqual([
-      'Unused content keys',
+      'Unused dictionary keys',
       'Duplicate dictionary values',
       'Locale key coverage',
     ])
@@ -289,5 +289,48 @@ describe('runDoctor — Models check', () => {
     expect(models?.pass).toBe(true)
     expect(models?.detail).toContain('all valid')
     expect(models?.severity).toBeUndefined()
+  })
+})
+
+/**
+ * `--usage` reports keys that source code should have referenced but did not.
+ * That question only has an answer for dictionaries.
+ */
+describe('runDoctor --usage — unused keys', () => {
+  it('reports a dictionary key that no source file references', async () => {
+    await seedMinimalProject(testDir)
+    await writeFileSafe(join(testDir, '.contentrain', 'models', 'ui-strings.json'), JSON.stringify({
+      id: 'ui-strings', name: 'UI Strings', kind: 'dictionary', domain: 'marketing', i18n: true, title_field: 'key',
+    }, null, 2))
+    await writeFileSafe(
+      join(testDir, '.contentrain', 'content', 'marketing', 'ui-strings', 'en.json'),
+      JSON.stringify({ 'nav.home': 'Home', 'nav.gone': 'Nobody calls me' }, null, 2),
+    )
+    await writeFileSafe(join(testDir, 'src', 'App.tsx'), `export const A = () => t('nav.home')\n`)
+
+    const report = await runDoctor(testDir, { usage: true })
+
+    const keys = report.usage!.unusedKeys.map(k => k.key)
+    expect(keys).toContain('nav.gone')
+    expect(keys).not.toContain('nav.home')
+  })
+
+  // Entries are fetched by query — a hex entry id or a document slug will never
+  // appear in a source file, so flagging them buried the real findings.
+  it('does not flag collection entry ids or document slugs', async () => {
+    await seedMinimalProject(testDir)
+    await writeFileSafe(join(testDir, '.contentrain', 'models', 'articles.json'), JSON.stringify({
+      id: 'articles', name: 'Articles', kind: 'collection', domain: 'marketing', i18n: true,
+      title_field: 'title', fields: { title: { type: 'string', required: true } },
+    }, null, 2))
+    await writeFileSafe(
+      join(testDir, '.contentrain', 'content', 'marketing', 'articles', 'en.json'),
+      JSON.stringify({ '0a1b2c3d4e5f': { title: 'Never referenced by id' } }, null, 2),
+    )
+    await writeFileSafe(join(testDir, 'src', 'App.tsx'), `export const A = () => null\n`)
+
+    const report = await runDoctor(testDir, { usage: true })
+
+    expect(report.usage!.unusedKeys.map(k => k.model)).not.toContain('articles')
   })
 })

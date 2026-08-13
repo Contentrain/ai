@@ -37,10 +37,20 @@ function parseResult(result: unknown): Record<string, unknown> {
   return JSON.parse(content[0]!.text) as Record<string, unknown>
 }
 
+const TITLE_TYPES = new Set(['string', 'text', 'slug', 'email', 'url', 'code', 'markdown', 'richtext'])
+
+function testTitleField(kind: string, fields?: Record<string, unknown>): string {
+  if (kind === 'dictionary') return 'key'
+  const displayable = Object.entries(fields ?? {}).find(
+    ([, def]) => TITLE_TYPES.has(String((def as { type?: unknown }).type)),
+  )
+  return displayable?.[0] ?? 'title'
+}
+
 async function createModel(id: string, fields: Record<string, unknown>): Promise<void> {
   await client.callTool({
     name: 'contentrain_model_save',
-    arguments: { id, name: id, kind: 'collection', domain: 'blog', i18n: true, title_field: Object.keys(fields)[0]!, fields },
+    arguments: { id, name: id, kind: 'collection', domain: 'blog', i18n: true, title_field: testTitleField('collection', fields), fields },
   })
   client = await createTestClient(testDir)
 }

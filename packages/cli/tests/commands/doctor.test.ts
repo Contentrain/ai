@@ -88,7 +88,7 @@ describe('doctor command', () => {
   it('renders the usage detail blocks when runDoctor includes a usage report', async () => {
     runDoctorMock.mockResolvedValueOnce({
       checks: [
-        { name: 'Unused content keys', pass: false, detail: '3 key(s)', severity: 'warning' },
+        { name: 'Unused dictionary keys', pass: false, detail: '3 key(s)', severity: 'warning' },
         { name: 'Duplicate dictionary values', pass: false, detail: '1 value', severity: 'warning' },
         { name: 'Locale key coverage', pass: true, detail: 'All locales have matching keys' },
       ],

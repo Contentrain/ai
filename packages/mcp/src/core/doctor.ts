@@ -173,13 +173,21 @@ export async function runDoctor(
   // `contentrain validate --fix` is what repairs.
   if (hasCrDir) {
     try {
-      const models = await listModels(projectRoot)
-      const parseResults = await Promise.all(models.map(m => readModel(projectRoot, m.id)))
-      const unparseable = models.filter((_, i) => parseResults[i] === null).map(m => m.id)
-      const invalid = parseResults
-        .filter((m): m is NonNullable<typeof m> => m !== null)
+      // Enumerate the files, not `listModels`. `listModels` drops anything that
+      // fails to parse, so routing this check through it made the "failed to
+      // parse" branch unreachable — a corrupt model file was invisible to the
+      // check whose job is to find it.
+      const modelsDir = join(crDir, 'models')
+      const files = (await readDir(modelsDir)).filter(f => f.endsWith('.json'))
+      const parsed = await Promise.all(
+        files.map(f => readJson<ModelDefinition>(join(modelsDir, f))),
+      )
+      const unparseable = files.filter((_, i) => parsed[i] === null)
+      const invalid = parsed
+        .filter((m): m is ModelDefinition => m !== null)
         .filter(m => validateModelDefinition(m).errors.length > 0)
         .map(m => m.id)
+      const models = parsed.filter((m): m is ModelDefinition => m !== null)
 
       const problems = [
         ...(unparseable.length > 0 ? [`${unparseable.length} failed to parse (${unparseable.join(', ')})`] : []),
@@ -287,11 +295,11 @@ export async function runDoctor(
     usage = { unusedKeys, duplicateValues, missingLocaleKeys }
 
     checks.push({
-      name: 'Unused content keys',
+      name: 'Unused dictionary keys',
       pass: unusedKeys.length === 0,
       detail: unusedKeys.length === 0
-        ? 'All keys referenced in source'
-        : `${unusedKeys.length} key(s) not referenced in source code`,
+        ? 'All dictionary keys referenced in source'
+        : `${unusedKeys.length} dictionary key(s) not referenced in source code`,
       severity: unusedKeys.length === 0 ? undefined : 'warning',
     })
 
@@ -416,7 +424,16 @@ async function analyzeUnusedKeys(
   )
   const allSource = chunks.join('\n')
 
-  const models = await listModels(projectRoot)
+  // Dictionaries only.
+  //
+  // A dictionary key IS the reference — source code writes `t('nav.home')`, so
+  // a key absent from source is genuinely dead. Collection entry IDs and
+  // document slugs are not: entries are fetched by query, and a hex id like
+  // `0a1b2c3d4e5f` will never appear in a source file. Checking them produced
+  // a report that was mostly noise — of 134 warnings on a real project, ~120
+  // were collection and document rows, and the real findings were lost among
+  // them.
+  const models = (await listModels(projectRoot)).filter(m => m.kind === 'dictionary')
   const defaultLocale = config.locales.default
   const unused: UnusedKeyEntry[] = []
 
@@ -435,6 +452,14 @@ async function analyzeUnusedKeys(
   return unused
 }
 
+/**
+ * Keys of a model that source code could plausibly reference by name.
+ *
+ * Only dictionaries have any: their keys are semantic addresses that appear
+ * verbatim in source. Every other kind is queried, so its ids and slugs are
+ * data, not identifiers, and looking for them in source finds nothing and
+ * means nothing.
+ */
 async function extractContentKeys(
   projectRoot: string,
   model: ModelDefinition,
