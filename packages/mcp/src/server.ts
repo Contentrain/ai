@@ -15,6 +15,7 @@ import { registerContextTools } from './tools/context.js'
 import { registerSetupTools } from './tools/setup.js'
 import { registerModelTools } from './tools/model.js'
 import { registerContentTools } from './tools/content.js'
+import { registerVocabularyTools } from './tools/vocabulary.js'
 import { registerWorkflowTools } from './tools/workflow.js'
 import { registerNormalizeTools } from './tools/normalize.js'
 import { registerBulkTools } from './tools/bulk.js'
@@ -131,6 +132,7 @@ export function createServer(input: string | CreateServerOptions): McpServer {
   registerSetupTools(server, provider, projectRoot)
   registerModelTools(server, provider, projectRoot)
   registerContentTools(server, provider, projectRoot)
+  registerVocabularyTools(server, provider)
   registerWorkflowTools(server, provider, projectRoot)
   registerNormalizeTools(server, provider, projectRoot)
   registerBulkTools(server, provider, projectRoot)

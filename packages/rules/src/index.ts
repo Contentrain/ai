@@ -49,13 +49,14 @@ export const MODEL_PROPERTIES = [
 
 export type ModelProperty = (typeof MODEL_PROPERTIES)[number]['name']
 
-// ─── MCP Tools (24 tools: 19 core + 5 media) ───
+// ─── MCP Tools (26 tools: 21 core + 5 media) ───
 
 export const MCP_TOOLS = [
   'contentrain_status', 'contentrain_describe', 'contentrain_describe_format',
   'contentrain_init', 'contentrain_scaffold',
   'contentrain_model_save', 'contentrain_model_delete',
   'contentrain_content_save', 'contentrain_content_delete', 'contentrain_content_list',
+  'contentrain_vocabulary_save', 'contentrain_vocabulary_delete',
   'contentrain_scan', 'contentrain_apply',
   'contentrain_validate', 'contentrain_submit',
   'contentrain_merge',

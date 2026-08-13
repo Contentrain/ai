@@ -11,7 +11,7 @@ MIT-licensed monorepo for Contentrain's open-source packages: MCP tools, CLI, Ty
 ```
 contentrain-ai/
 ├── packages/
-│   ├── mcp/          — 19 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers (simple-git + zod + MCP SDK)
+│   ├── mcp/          — 21 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers (simple-git + zod + MCP SDK)
 │   ├── cli/          — citty + tsdown (init/serve/validate/normalize/connect)
 │   ├── types/        — Shared TypeScript types (@contentrain/types)
 │   ├── rules/        — AI agent quality rules & conventions
@@ -99,7 +99,7 @@ When working with Contentrain content operations (models, content, normalize, va
 
 | Package | Name | Description |
 |---|---|---|
-| packages/mcp | @contentrain/mcp | 19 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers |
+| packages/mcp | @contentrain/mcp | 21 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers |
 | packages/cli | contentrain | CLI (npx contentrain) |
 | packages/types | @contentrain/types | Shared TypeScript types |
 | packages/rules | @contentrain/rules | AI agent quality rules & conventions |

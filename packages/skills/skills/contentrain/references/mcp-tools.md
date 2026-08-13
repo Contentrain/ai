@@ -164,6 +164,46 @@ Delete a content entry.
 > mapped onto `data.json` + the default-locale meta. Omit `locale`; use
 > `contentrain_validate` `fix: true` to clean up stray per-locale meta.
 
+### contentrain_vocabulary_save
+
+Add or update canonical vocabulary terms. Merges — a term you omit is untouched.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `terms` | object | Yes | `{ "term-slug": { "en": "…", "tr": "…" } }` |
+
+The **outer** key is the term (kebab-case, locale-independent); the **inner**
+key is a locale code. Grouping by locale at the top level is the common
+mistake and produces a vocabulary that matches nothing — the tool rejects it.
+
+```json
+{
+  "terms": {
+    "sign-in": { "en": "Sign in", "tr": "Giriş yap" },
+    "add-to-cart": { "en": "Add to cart", "tr": "Sepete ekle" }
+  }
+}
+```
+
+Notes:
+- This is the only supported way to write `.contentrain/vocabulary.json` — do not edit it by hand
+- Replacing an existing translation is allowed and reported in `advisories`
+- Two terms sharing a translation is reported too; that is what a vocabulary exists to prevent
+
+### contentrain_vocabulary_delete
+
+Remove canonical terms by slug. Content already using a term is not touched —
+the vocabulary only advises.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `terms` | string[] | Yes | Term slugs to remove |
+| `confirm` | boolean | Yes | Must be `true` |
+
+A slug that is not in the vocabulary is reported in `missing`, not an error,
+and a call that matches nothing returns `status: "no-op"` without creating a
+branch.
+
 ### contentrain_content_list
 
 List content entries for a model (read-only).

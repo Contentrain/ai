@@ -15,7 +15,7 @@ Studio (`contentrain.io`) is the canonical consumer; the patterns below describe
 `@contentrain/mcp` ships three pieces you plug together:
 
 1. **A `RepoProvider`** — Local / GitHub / GitLab (or your own). Wraps whatever git backend you're targeting.
-2. **An `McpServer`** — the MCP JSON-RPC surface with every Contentrain tool the provider can satisfy registered (19 core + 5 media on media-capable providers).
+2. **An `McpServer`** — the MCP JSON-RPC surface with every Contentrain tool the provider can satisfy registered (21 core + 5 media on media-capable providers).
 3. **A transport** — stdio (for IDE agents) or HTTP (for hosted / remote drivers).
 
 The three are orthogonal. Mix them freely.

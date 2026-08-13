@@ -58,6 +58,8 @@ MCP is **deterministic infrastructure**. The agent is the **intelligence layer**
 | `contentrain_content_save` | Create or update content entries (upsert) | `model`, `entries` (array of entry objects) |
 | `contentrain_content_delete` | Delete a content entry | `model`, `id?`, `slug?`, `locale?`, `confirm: true` |
 | `contentrain_content_list` | List content entries for a model (read-only) | `model`, `locale?`, `filter?`, `resolve?`, `limit?`, `offset?` |
+| `contentrain_vocabulary_save` | Add or update canonical vocabulary terms (merges) | `terms` |
+| `contentrain_vocabulary_delete` | Remove canonical terms | `terms`, `confirm: true` |
 
 #### contentrain_content_save entry format
 

@@ -7,4 +7,11 @@ export type { ModelDeleteInput, ModelDeletePlan } from './model-delete.js'
 export { planModelSave } from './model-save.js'
 export type { ModelSaveInput, ModelSavePlan, ModelSaveResult } from './model-save.js'
 export { contentDirPath, contentFilePath, documentFilePath, metaFilePath } from './paths.js'
+export { planVocabularyDelete, planVocabularySave } from './vocabulary-save.js'
+export type {
+  VocabularyDeleteInput,
+  VocabularyDeletePlan,
+  VocabularySaveInput,
+  VocabularySavePlan,
+} from './vocabulary-save.js'
 export type { ContentSaveEntryResult, ContentSavePlan, OpPlan } from './types.js'

@@ -346,12 +346,24 @@ export function registerContextTools(
           file: '.contentrain/vocabulary.json',
           format: {
             version: 'number',
-            terms: 'Record<category, Record<slug, translation_value>>',
+            terms: 'Record<term-slug, Record<locale, translation>>',
           },
+          // The nesting reads the same either way round, and a field report
+          // built it locale-first — the reverse — because nothing here said
+          // which. An example is the only description that cannot be misread.
+          example: {
+            version: 1,
+            terms: {
+              'sign-in': { en: 'Sign in', tr: 'Giriş yap' },
+              'add-to-cart': { en: 'Add to cart', tr: 'Sepete ekle' },
+            },
+          },
+          note: 'OUTER key is the term (kebab-case, locale-independent); INNER key is a locale code. One term, one entry, all its translations inside. Grouping by locale at the top level is the common mistake and produces a vocabulary that matches nothing.',
           usage: [
             'Check vocabulary before creating dictionary entries — reuse canonical terms',
             'If a new term is needed, consider adding it to vocabulary first',
             'Vocabulary applies across ALL dictionary models and ALL locales',
+            'Write it with contentrain_vocabulary_save — never edit the file by hand',
           ],
         },
       }

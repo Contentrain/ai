@@ -50,6 +50,8 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 | `contentrain_model_save` | Create/update model definition (upsert) |
 | `contentrain_model_delete` | Delete model (checks referential integrity) |
 | `contentrain_content_save` | Create/update content entries (upsert) |
+| `contentrain_vocabulary_save` | Add/update canonical vocabulary terms — the only supported way to write `vocabulary.json` |
+| `contentrain_vocabulary_delete` | Remove canonical terms (`confirm: true`) |
 | `contentrain_content_delete` | Delete content entry |
 | `contentrain_content_list` | List entries for a model |
 | `contentrain_scan` | Scan project (graph/candidates/summary) |

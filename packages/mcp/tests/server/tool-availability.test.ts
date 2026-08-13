@@ -61,13 +61,17 @@ const REMOTE_SAFE_TOOLS = [
   'contentrain_content_delete',
   'contentrain_content_list',
   'contentrain_validate',
+  // Vocabulary writes go through commitThroughProvider like content and
+  // models, so they work over any provider and are not capability-gated.
+  'contentrain_vocabulary_save',
+  'contentrain_vocabulary_delete',
 ]
 
 const MEDIA_TOOLS = TOOL_NAMES.filter(name => name.startsWith('contentrain_media_'))
 const NON_MEDIA_TOOLS = TOOL_NAMES.filter(name => !name.startsWith('contentrain_media_'))
 
 describe('capability-aware tool registration', () => {
-  it('registers all 19 core tools for a local project root (media facet absent)', async () => {
+  it('registers all 21 core tools for a local project root (media facet absent)', async () => {
     const client = await connectedClient(join(tmpdir(), 'cr-availability-local'))
     const names = await listedNames(client)
     expect(names.toSorted()).toEqual([...NON_MEDIA_TOOLS].toSorted())

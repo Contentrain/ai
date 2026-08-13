@@ -7,7 +7,7 @@ Contentrain Studio (team web surface) documentation: https://docs.contentrain.io
 
 ## Packages (npm)
 
-- @contentrain/mcp — MCP server: 24 deterministic tools (19 core + 5 media), stdio + HTTP transports, Local / GitHub / GitLab providers
+- @contentrain/mcp — MCP server: 26 deterministic tools (21 core + 5 media), stdio + HTTP transports, Local / GitHub / GitLab providers
 - contentrain — CLI: init, serve (review UI + MCP transports), validate, generate, diff, merge, prune, studio commands
 - @contentrain/query — universal query SDK; `contentrain generate` emits a typed client into .contentrain/client/ (#contentrain imports); optional CDN transport
 - @contentrain/types — shared contract: model/field/config/provider types plus pure, browser-safe validate/serialize functions
