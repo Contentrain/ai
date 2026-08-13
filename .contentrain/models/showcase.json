@@ -4,6 +4,7 @@
   "kind": "collection",
   "domain": "system",
   "i18n": true,
+  "title_field": "title",
   "description": "Demonstrates all 27 field types for preview testing",
   "fields": {
     "attachment": {

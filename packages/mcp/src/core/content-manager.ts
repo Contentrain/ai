@@ -12,21 +12,34 @@ import { contentDirPath, contentFilePath, documentFilePath } from './ops/paths.j
 export { validateSlug, validateEntryId, validateLocale }
 export { parseMarkdownFrontmatter as parseFrontmatter, serializeMarkdownFrontmatter as serializeFrontmatter } from '@contentrain/types'
 
-// ─── Content paths ───
+/** Keys named individually in a replacement advisory before it collapses to a count. */
+const MAX_REPORTED_KEYS = 5
 
-export function resolveContentDir(projectRoot: string, model: ModelDefinition): string {
+// ─── Content paths ───
+//
+// These take the narrowest `Pick<ModelDefinition, …>` each one actually reads,
+// mirroring `ops/paths.ts`. Path resolution has nothing to do with a model's
+// title or schema, and demanding a whole `ModelDefinition` pushed callers that
+// only have a path-shaped fragment into `as ModelDefinition` casts — which then
+// hide a genuinely missing required property from the compiler.
+
+export type ContentPathModel = Pick<ModelDefinition, 'id' | 'domain' | 'content_path'>
+export type LocaleStrategyModel = Pick<ModelDefinition, 'locale_strategy'>
+export type ContentFileModel = Pick<ModelDefinition, 'id' | 'i18n' | 'locale_strategy'>
+
+export function resolveContentDir(projectRoot: string, model: ContentPathModel): string {
   if (model.content_path) {
     return join(projectRoot, model.content_path)
   }
   return join(contentrainDir(projectRoot), 'content', model.domain, model.id)
 }
 
-export function resolveLocaleStrategy(model: ModelDefinition): LocaleStrategy {
+export function resolveLocaleStrategy(model: LocaleStrategyModel): LocaleStrategy {
   return model.locale_strategy ?? 'file'
 }
 
 /** Build the file path for a JSON content file (singleton/collection/dictionary) */
-export function resolveJsonFilePath(dir: string, model: ModelDefinition, locale: string): string {
+export function resolveJsonFilePath(dir: string, model: ContentFileModel, locale: string): string {
   // When i18n is disabled, always use data.json (locale parameter is ignored)
   if (!model.i18n) return join(dir, 'data.json')
 
@@ -40,7 +53,7 @@ export function resolveJsonFilePath(dir: string, model: ModelDefinition, locale:
 }
 
 /** Build the file path for a markdown document */
-export function resolveMdFilePath(dir: string, model: ModelDefinition, locale: string, slug: string): string {
+export function resolveMdFilePath(dir: string, model: Pick<ModelDefinition, 'i18n' | 'locale_strategy'>, locale: string, slug: string): string {
   // When i18n is disabled, always use {slug}.md (locale parameter is ignored)
   if (!model.i18n) return join(dir, `${slug}.md`)
 
@@ -156,15 +169,23 @@ export async function writeContent(
         const slugErr = validateSlug(slug)
         if (slugErr) throw new Error(slugErr)
 
-        const bodyContent = (entry.data['body'] as string) ?? ''
-        const fmData = { ...entry.data }
-        delete fmData['body']
-        if (!fmData['slug']) fmData['slug'] = slug
+        const incomingFm = { ...entry.data }
+        const bodySent = 'body' in incomingFm
+        const incomingBody = (incomingFm['body'] as string | undefined) ?? ''
+        delete incomingFm['body']
+        if (!incomingFm['slug']) incomingFm['slug'] = slug
 
         // Check if existing
         const docPath = resolveMdFilePath(resolveContentDir(projectRoot, model), model, locale, slug)
         const existingRaw = await readText(docPath)
         const action: 'created' | 'updated' = existingRaw ? 'updated' : 'created'
+
+        // Merge with what is there, matching `planContentSave`. This path is
+        // reached by scaffold and by normalize extract; extracting into a model
+        // that already has documents would otherwise replace them wholesale.
+        const existingDoc = existingRaw ? parseMarkdownFrontmatter(existingRaw) : null
+        const fmData = { ...existingDoc?.frontmatter, ...incomingFm }
+        const bodyContent = bodySent ? incomingBody : (existingDoc?.body ?? '')
 
         const mdContent = serializeMarkdownFrontmatter(fmData, bodyContent)
         await writeText(docPath, mdContent)
@@ -177,21 +198,23 @@ export async function writeContent(
       case 'dictionary': {
         const filePath = resolveJsonFilePath(resolveContentDir(projectRoot, model), model, locale)
         const existing = await readJson<Record<string, string>>(filePath) ?? {}
-        const collisions: string[] = []
-        for (const key of Object.keys(entry.data as Record<string, string>)) {
-          if (key in existing && existing[key] !== (entry.data as Record<string, string>)[key]) {
-            collisions.push(key)
-          }
-        }
-        if (collisions.length > 0) {
-          throw new Error(
-            `Dictionary "${model.id}" (${locale}): ${collisions.length} key collision(s) — [${collisions.join(', ')}] already exist with different values. ` +
-            `Read existing keys with contentrain_content_list first, or include all keys in a single save call.`,
-          )
-        }
-
         // Duplicate value advisory: warn when a new key maps to a value that already exists
         const advisories: string[] = []
+
+        // Replacing a value is reported, not refused — see the same block in
+        // `planContentSave`. Correcting a translation is a content decision.
+        const incoming = entry.data as Record<string, string>
+        const replaced = Object.keys(incoming).filter(
+          k => k in existing && existing[k] !== incoming[k],
+        )
+        if (replaced.length > 0) {
+          const shown = replaced.slice(0, MAX_REPORTED_KEYS)
+          const detail = shown.map(k => `"${k}": "${existing[k]}" → "${incoming[k]}"`).join(', ')
+          const more = replaced.length > shown.length ? `, and ${replaced.length - shown.length} more` : ''
+          advisories.push(
+            `Dictionary "${model.id}" (${locale}): replaced ${replaced.length} existing value(s) — ${detail}${more}.`,
+          )
+        }
         const reverseMap = new Map<string, string>()
         for (const [k, v] of Object.entries(existing)) {
           reverseMap.set(v, k)

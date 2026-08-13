@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { TOOL_NAMES } from '@contentrain/mcp/tools/annotations'
 import { buildBranchName } from '@contentrain/mcp/git/transaction'
-import { MCP_TOOLS, ESSENTIAL_RULES_FILE } from '../src/index.js'
+import { MODEL_FIELD_ORDER } from '@contentrain/mcp/core/model-manager'
+import { MCP_TOOLS, ESSENTIAL_RULES_FILE, MODEL_PROPERTIES } from '../src/index.js'
 
 /**
  * Cross-package parity tests.
@@ -71,5 +72,78 @@ describe('MCP parity — branch naming', () => {
       const matches = [...content.matchAll(legacyPattern)]
       expect(matches.length, `legacy "contentrain/<op>/" branch prefix in ${rel}: ${matches.map(m => m[0]).join(', ')}`).toBe(0)
     }
+  })
+})
+
+/**
+ * Model-definition parity.
+ *
+ * The tool registry has had a parity test for a while; the model schema has
+ * not, and it drifted the same way. `title_field` could have landed in
+ * `@contentrain/types`, shipped, and never reached `schema-rules.md` — and no
+ * test in this repo would have said a word.
+ *
+ * `MODEL_FIELD_ORDER` is the runtime anchor: it is provably exhaustive over
+ * `keyof ModelDefinition` (asserted at compile time in @contentrain/types), so
+ * matching against it means matching the type.
+ */
+describe('MCP parity — ModelDefinition properties', () => {
+  const REQUIRED = MODEL_PROPERTIES.filter(p => p.required).map(p => p.name)
+
+  it('MODEL_PROPERTIES matches the canonical key order exactly', () => {
+    const rulesSet = new Set(MODEL_PROPERTIES.map(p => p.name))
+    const mcpSet = new Set<string>(MODEL_FIELD_ORDER)
+
+    const missingFromRules = [...mcpSet].filter(k => !rulesSet.has(k))
+    const missingFromMcp = [...rulesSet].filter(k => !mcpSet.has(k))
+
+    expect(missingFromRules, `in MODEL_FIELD_ORDER but not MODEL_PROPERTIES: ${missingFromRules.join(', ')}`).toEqual([])
+    expect(missingFromMcp, `in MODEL_PROPERTIES but not MODEL_FIELD_ORDER: ${missingFromMcp.join(', ')}`).toEqual([])
+  })
+
+  it('schema-rules.md §4.1 documents every property with the right requiredness', () => {
+    const doc = readFileSync(join(PKG_ROOT, 'shared', 'schema-rules.md'), 'utf-8')
+    const section = doc.split('### 4.1 Model Properties')[1]?.split(/^#{3,}/m)[0] ?? ''
+
+    const rows = new Map<string, string>()
+    for (const m of section.matchAll(/^\|\s*`([a-z0-9_]+)`\s*\|[^|]*\|\s*([^|]+?)\s*\|/gm)) {
+      rows.set(m[1]!, m[2]!)
+    }
+
+    for (const prop of MODEL_PROPERTIES) {
+      const required = rows.get(prop.name)
+      expect(required, `schema-rules.md §4.1 has no row for \`${prop.name}\``).toBeDefined()
+      // `startsWith` tolerates a qualified answer like "Yes (except dictionary)".
+      expect(required!.startsWith(prop.required ? 'Yes' : 'No'),
+        `\`${prop.name}\` is ${prop.required ? 'required' : 'optional'} but §4.1 says "${required}"`).toBe(true)
+    }
+    const undocumented = [...rows.keys()].filter(k => !MODEL_PROPERTIES.some(p => p.name === k))
+    expect(undocumented, `§4.1 documents unknown properties: ${undocumented.join(', ')}`).toEqual([])
+  })
+
+  it('the §4 example shows every required property', () => {
+    const doc = readFileSync(join(PKG_ROOT, 'shared', 'schema-rules.md'), 'utf-8')
+    const example = doc.split('## 4. Model Definition')[1]?.split('```')[1] ?? ''
+    for (const name of REQUIRED) {
+      expect(example.includes(`"${name}":`), `§4 example is missing "${name}"`).toBe(true)
+    }
+  })
+
+  it('mcp-usage.md lists every property in the model_save parameter row', () => {
+    const doc = readFileSync(join(PKG_ROOT, 'shared', 'mcp-usage.md'), 'utf-8')
+    const row = doc.split('\n').find(l => l.includes('`contentrain_model_save`') && l.includes('|')) ?? ''
+    for (const prop of MODEL_PROPERTIES) {
+      // Optional params are written `name?` in that row.
+      const listed = row.includes(`\`${prop.name}\``) || row.includes(`\`${prop.name}?\``)
+      expect(listed, `mcp-usage.md model_save row omits \`${prop.name}\``).toBe(true)
+    }
+  })
+
+  // Not every required property — essentials is a ~150-line guardrail file, and
+  // id/name/kind/domain/i18n are evident from any model example. `title_field`
+  // is the one an agent will omit, and omitting it fails the write.
+  it('the always-loaded essentials teach title_field', () => {
+    const essentials = readFileSync(join(PKG_ROOT, ESSENTIAL_RULES_FILE), 'utf-8')
+    expect(essentials.includes('title_field'), 'essentials never mentions title_field').toBe(true)
   })
 })

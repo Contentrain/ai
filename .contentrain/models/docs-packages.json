@@ -4,6 +4,7 @@
   "kind": "document",
   "domain": "docs",
   "i18n": false,
+  "title_field": "title",
   "content_path": "docs/packages",
   "fields": {
     "description": {

@@ -88,6 +88,7 @@ Create or update a model definition (upsert).
 | `kind` | string | Yes | `singleton`, `collection`, `document`, `dictionary` |
 | `domain` | string | Yes | Organizational group |
 | `i18n` | boolean | Yes | Whether model supports localization |
+| `title_field` | string | Yes | Field shown as an entry's title. Must name a field on this model typed `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or `richtext`. Dictionaries have no fields — use `"key"` |
 | `fields` | object | No | Field definitions (not for dictionary) |
 | `description` | string | No | Model description |
 | `content_path` | string | No | Framework-relative path for content files |
@@ -95,6 +96,8 @@ Create or update a model definition (upsert).
 
 Notes:
 - Upserts by model ID: existing model is updated, new model is created
+- `title_field` is required on create AND must stay correct when you rename or drop a field
+- Pick what a reader uses to tell entries apart — the headline, the name, the question. Not the slug, not the icon, not a relation ID
 - `locale_strategy: "none"` requires `i18n: false`
 - `content_path` overrides default `.contentrain/content/` location
 
@@ -160,6 +163,46 @@ Delete a content entry.
 > (`data.json`), so a locale-scoped delete is refused rather than silently
 > mapped onto `data.json` + the default-locale meta. Omit `locale`; use
 > `contentrain_validate` `fix: true` to clean up stray per-locale meta.
+
+### contentrain_vocabulary_save
+
+Add or update canonical vocabulary terms. Merges — a term you omit is untouched.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `terms` | object | Yes | `{ "term-slug": { "en": "…", "tr": "…" } }` |
+
+The **outer** key is the term (kebab-case, locale-independent); the **inner**
+key is a locale code. Grouping by locale at the top level is the common
+mistake and produces a vocabulary that matches nothing — the tool rejects it.
+
+```json
+{
+  "terms": {
+    "sign-in": { "en": "Sign in", "tr": "Giriş yap" },
+    "add-to-cart": { "en": "Add to cart", "tr": "Sepete ekle" }
+  }
+}
+```
+
+Notes:
+- This is the only supported way to write `.contentrain/vocabulary.json` — do not edit it by hand
+- Replacing an existing translation is allowed and reported in `advisories`
+- Two terms sharing a translation is reported too; that is what a vocabulary exists to prevent
+
+### contentrain_vocabulary_delete
+
+Remove canonical terms by slug. Content already using a term is not touched —
+the vocabulary only advises.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `terms` | string[] | Yes | Term slugs to remove |
+| `confirm` | boolean | Yes | Must be `true` |
+
+A slug that is not in the vocabulary is reported in `missing`, not an error,
+and a call that matches nothing returns `status: "no-op"` without creating a
+branch.
 
 ### contentrain_content_list
 

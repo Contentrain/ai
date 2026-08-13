@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { TOOL_NAMES } from '@contentrain/mcp/tools/annotations'
+import { MODEL_PROPERTIES } from '@contentrain/rules'
 
 /**
  * Cross-package parity tests.
@@ -55,5 +56,69 @@ describe('MCP parity — branch naming', () => {
       if (matches.length > 0) violations[rel] = matches
     }
     expect(violations, `legacy branch prefix found: ${JSON.stringify(violations, null, 2)}`).toEqual({})
+  })
+})
+
+/**
+ * Model-definition parity for the skill docs.
+ *
+ * Same gap as the rules package had: nothing failed when a `ModelDefinition`
+ * property never reached the skill an agent actually reads before writing a
+ * model. The `workflows/` copies are checked too — they are hand-maintained
+ * duplicates of the SKILL.md files with no script keeping them in sync, so a
+ * property added to one and not the other is exactly the drift to catch.
+ */
+describe('MCP parity — ModelDefinition properties', () => {
+  const REQUIRED = MODEL_PROPERTIES.filter(p => p.required).map(p => p.name)
+  const read = (...parts: string[]) => readFileSync(join(PKG_ROOT, ...parts), 'utf-8')
+
+  it('the model_save parameter table documents every property', () => {
+    const doc = read('skills', 'contentrain', 'references', 'mcp-tools.md')
+    const section = doc.split('### contentrain_model_save')[1]?.split(/^###\s/m)[0] ?? ''
+
+    const rows = new Map<string, string>()
+    for (const m of section.matchAll(/^\|\s*`([a-z0-9_]+)`\s*\|[^|]*\|\s*([^|]+?)\s*\|/gm)) {
+      rows.set(m[1]!, m[2]!)
+    }
+
+    for (const prop of MODEL_PROPERTIES) {
+      // `fields` is documented per-kind in this table, not as a flat Yes/No.
+      if (prop.name === 'fields') continue
+      const required = rows.get(prop.name)
+      expect(required, `mcp-tools.md model_save table has no row for \`${prop.name}\``).toBeDefined()
+      expect(required!.startsWith(prop.required ? 'Yes' : 'No'),
+        `\`${prop.name}\` is ${prop.required ? 'required' : 'optional'} but the table says "${required}"`).toBe(true)
+    }
+  })
+
+  it.each([
+    ['skills/contentrain-model/SKILL.md', ['skills', 'contentrain-model', 'SKILL.md']],
+    ['workflows/contentrain-model.md', ['workflows', 'contentrain-model.md']],
+    ['skills/contentrain/references/architecture.md', ['skills', 'contentrain', 'references', 'architecture.md']],
+    ['skills/contentrain/references/model-kinds.md', ['skills', 'contentrain', 'references', 'model-kinds.md']],
+  ])('%s teaches title_field', (_label, parts) => {
+    expect(read(...parts)).toContain('title_field')
+  })
+
+  // Every model example an agent might copy has to be a model that would save.
+  it.each([
+    ['skills/contentrain/references/model-kinds.md', ['skills', 'contentrain', 'references', 'model-kinds.md']],
+    ['skills/contentrain/references/architecture.md', ['skills', 'contentrain', 'references', 'architecture.md']],
+    ['skills/contentrain-model/SKILL.md', ['skills', 'contentrain-model', 'SKILL.md']],
+    ['workflows/contentrain-model.md', ['workflows', 'contentrain-model.md']],
+  ])('%s shows title_field in every model JSON example', (label, parts) => {
+    const doc = read(...parts)
+    const blocks = [...doc.matchAll(/```json\n([\s\S]*?)```/g)].map(m => m[1]!)
+    const modelBlocks = blocks.filter(b => /"kind":\s*"(singleton|collection|document|dictionary)"/.test(b))
+    expect(modelBlocks.length, `${label} has no model JSON examples`).toBeGreaterThan(0)
+    for (const block of modelBlocks) {
+      const kind = /"kind":\s*"(\w+)"/.exec(block)![1]
+      expect(block.includes('"title_field":'),
+        `${label}: a ${kind} example omits title_field:\n${block.slice(0, 200)}`).toBe(true)
+    }
+  })
+
+  it('the required set is what @contentrain/rules publishes', () => {
+    expect(REQUIRED).toContain('title_field')
   })
 })

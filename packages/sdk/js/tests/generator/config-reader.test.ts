@@ -81,6 +81,7 @@ describe('config-reader', () => {
         kind: 'singleton',
         domain: 'system',
         i18n: false,
+        title_field: 'site_name',
         fields: {
           site_name: { type: 'string', required: true },
         },

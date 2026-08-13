@@ -3,5 +3,6 @@
   "name": "Serve Ui Texts",
   "kind": "dictionary",
   "domain": "serve-ui",
-  "i18n": true
+  "i18n": true,
+  "title_field": "key"
 }

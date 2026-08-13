@@ -473,6 +473,7 @@ describe('Guardrail #1: Scope enforcement via MCP', () => {
         kind: 'collection',
         domain: 'app',
         i18n: true,
+        title_field: 'welcome_title',
         fields: { welcome_title: { type: 'string' } },
       },
     })
@@ -596,6 +597,7 @@ describe('Guardrail #3: Preview-Execute Parity', () => {
         kind: 'collection',
         domain: 'app',
         i18n: true,
+        title_field: 'welcome_title',
         fields: { welcome_title: { type: 'string' } },
       },
     })
@@ -666,6 +668,7 @@ export function Broken() {
         kind: 'collection',
         domain: 'app',
         i18n: true,
+        title_field: 'text',
         fields: { text: { type: 'string' } },
       },
     })

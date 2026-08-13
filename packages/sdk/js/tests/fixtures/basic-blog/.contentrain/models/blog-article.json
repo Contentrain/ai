@@ -4,8 +4,18 @@
   "kind": "document",
   "domain": "blog",
   "i18n": true,
+  "title_field": "title",
   "fields": {
-    "title": { "type": "string", "required": true },
-    "category": { "type": "select", "options": ["tech", "design"] }
+    "category": {
+      "options": [
+        "tech",
+        "design"
+      ],
+      "type": "select"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    }
   }
 }

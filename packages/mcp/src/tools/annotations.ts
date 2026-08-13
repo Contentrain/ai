@@ -75,6 +75,22 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
     openWorldHint: false,
   },
 
+  // ─── Vocabulary (mixed) ───
+  contentrain_vocabulary_save: {
+    title: 'Save Vocabulary Terms',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  contentrain_vocabulary_delete: {
+    title: 'Delete Vocabulary Terms',
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+
   // ─── Content (mixed) ───
   contentrain_content_save: {
     title: 'Save Content',

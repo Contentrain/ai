@@ -1,8 +1,8 @@
 import type { ModelDefinition, FieldDef, FileFramework } from '@contentrain/types'
 import { join, extname } from 'node:path'
 import { readText, writeText, pathExists } from '../util/fs.js'
-import { readModel, writeModel, listModels, validateModelDefinition } from './model-manager.js'
-import { writeContent, resolveContentDir, resolveJsonFilePath, resolveMdFilePath, type ContentEntry } from './content-manager.js'
+import { readModel, writeModel, listModels, validateModelDefinition, inferTitleField } from './model-manager.js'
+import { writeContent, resolveContentDir, resolveJsonFilePath, resolveMdFilePath, type ContentEntry, type ContentFileModel, type ContentPathModel } from './content-manager.js'
 import { readConfig } from './config.js'
 import { writeContext } from './context.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
@@ -15,6 +15,8 @@ export interface ExtractionEntry {
   kind: 'singleton' | 'collection' | 'dictionary' | 'document'
   domain: string
   i18n?: boolean
+  /** Optional — inferred from `fields` when omitted, and reported in the dry run. */
+  title_field?: string
   fields?: Record<string, FieldDef>
   entries: Array<{
     locale?: string
@@ -35,6 +37,12 @@ export interface ExtractionPreview {
   models_to_update: string[]
   total_entries: number
   content_files: string[]
+  /**
+   * Resolved `title_field` per model, keyed by model id. Surfaced in the dry run
+   * because the extract envelope may omit it — without this the agent would be
+   * approving a schema decision it never saw.
+   */
+  title_fields: Record<string, string>
 }
 
 export interface ExtractionResult {
@@ -387,16 +395,39 @@ export async function applyExtract(
   let totalEntries = 0
 
   const validationErrors: string[] = []
+  const titleFields: Record<string, string> = {}
 
   for (const ext of extractions) {
+    // `title_field` is optional on the extraction envelope for the same reason
+    // `name` is absent from it: the agent describes content, and the derived
+    // schema properties are resolved here and shown in the dry run.
+    const titlePick = ext.title_field
+      ? { field: ext.title_field, rule: 'explicit' as const }
+      : inferTitleField(ext.kind, ext.fields as Record<string, unknown> | undefined)
+    if (titlePick) titleFields[ext.model] = titlePick.field
+
     // Validate model definition with same rules as model_save
     const modelErrors = validateModelDefinition({
       id: ext.model,
       kind: ext.kind,
+      title_field: titlePick?.field,
       fields: ext.fields as Record<string, unknown> | undefined,
     })
     if (modelErrors.errors.length > 0) {
       validationErrors.push(...modelErrors.errors.map(e => `[${ext.model}] ${e}`))
+    }
+
+    // A model that predates the requirement would be rewritten still-invalid by
+    // the merge branch below. Refuse rather than backfill: `contentrain_validate
+    // fix:true` is the one migration path, and normalize should not quietly
+    // rewrite a schema it did not author.
+    if (existingIds.has(ext.model)) {
+      const existing = await readModel(projectRoot, ext.model)
+      if (existing && !existing.title_field) {
+        validationErrors.push(
+          `[${ext.model}] Model is missing "title_field". Run contentrain_validate with fix:true before extracting into it.`,
+        )
+      }
     }
 
     for (const entry of ext.entries) {
@@ -431,17 +462,17 @@ export async function applyExtract(
     }
     totalEntries += ext.entries.length
 
-    // Guardrail #3: Preview-Execute Parity — use real model metadata if it exists
-    let previewModel: ModelDefinition
+    // Guardrail #3: Preview-Execute Parity — use real model metadata if it exists.
+    // Typed as the path fields these resolvers actually read rather than a whole
+    // ModelDefinition: the fallback genuinely has no name, fields or title_field,
+    // and an `as ModelDefinition` cast here would assert otherwise — hiding a
+    // missing required property from the compiler instead of reporting it.
+    let previewModel: ContentPathModel & ContentFileModel
     if (existingIds.has(ext.model)) {
       const real = await readModel(projectRoot, ext.model)
-      if (real) {
-        previewModel = real
-      } else {
-        previewModel = { id: ext.model, kind: ext.kind, domain: ext.domain, i18n: ext.i18n ?? true } as ModelDefinition
-      }
+      previewModel = real ?? { id: ext.model, domain: ext.domain, i18n: ext.i18n ?? true }
     } else {
-      previewModel = { id: ext.model, kind: ext.kind, domain: ext.domain, i18n: ext.i18n ?? true } as ModelDefinition
+      previewModel = { id: ext.model, domain: ext.domain, i18n: ext.i18n ?? true }
     }
 
     const cDir = resolveContentDir(projectRoot, previewModel)
@@ -460,6 +491,7 @@ export async function applyExtract(
     models_to_update: modelsToUpdate,
     total_entries: totalEntries,
     content_files: [...new Set(contentFiles)],
+    title_fields: titleFields,
   }
 
   // Dry run — return preview only (include validation errors if any)
@@ -524,13 +556,25 @@ export async function applyExtract(
             }
           }
         } else {
-          // Create new model
+          // Create new model. Like `name`, `title_field` is derived rather than
+          // demanded of the extraction envelope — the dry run resolves and reports
+          // it, so by the time we get here the choice has already been shown.
+          const titlePick = ext.title_field
+            ? { field: ext.title_field }
+            : inferTitleField(ext.kind, ext.fields as Record<string, unknown> | undefined)
+          if (!titlePick) {
+            throw new Error(
+              `Cannot create model "${ext.model}": no extracted field can serve as title_field. `
+              + 'Add a string or text field to the extraction, or create the model with contentrain_model_save first.',
+            )
+          }
           const newModel: ModelDefinition = {
             id: ext.model,
             name: ext.model.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
             kind: ext.kind,
             domain: ext.domain,
             i18n: ext.i18n ?? true,
+            title_field: titlePick.field,
             fields: ext.fields,
           }
           await writeModel(wt, newModel)

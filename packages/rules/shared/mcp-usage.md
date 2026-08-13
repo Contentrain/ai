@@ -48,7 +48,7 @@ MCP is **deterministic infrastructure**. The agent is the **intelligence layer**
 
 | Tool | Purpose | Parameters |
 |------|---------|------------|
-| `contentrain_model_save` | Create or update a model definition (upsert) | `id`, `name`, `kind`, `domain`, `i18n`, `fields?`, `description?`, `content_path?`, `locale_strategy?` |
+| `contentrain_model_save` | Create or update a model definition (upsert) | `id`, `name`, `kind`, `domain`, `i18n`, `title_field`, `fields?`, `description?`, `content_path?`, `locale_strategy?` |
 | `contentrain_model_delete` | Delete a model and its content | `model`, `confirm: true` |
 
 ### 2.4 Content Tools
@@ -58,6 +58,8 @@ MCP is **deterministic infrastructure**. The agent is the **intelligence layer**
 | `contentrain_content_save` | Create or update content entries (upsert) | `model`, `entries` (array of entry objects) |
 | `contentrain_content_delete` | Delete a content entry | `model`, `id?`, `slug?`, `locale?`, `confirm: true` |
 | `contentrain_content_list` | List content entries for a model (read-only) | `model`, `locale?`, `filter?`, `resolve?`, `limit?`, `offset?` |
+| `contentrain_vocabulary_save` | Add or update canonical vocabulary terms (merges) | `terms` |
+| `contentrain_vocabulary_delete` | Remove canonical terms | `terms`, `confirm: true` |
 
 #### contentrain_content_save entry format
 
@@ -385,6 +387,7 @@ Creates or updates a model definition. Key parameters:
 - `id`: kebab-case model ID (e.g., `"blog-post"`).
 - `kind`: one of `singleton`, `collection`, `document`, `dictionary`.
 - `i18n`: whether the model supports localization.
+- `title_field`: **required** — the field shown as an entry's title. Must name a field declared on this model whose type is `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or `richtext`. Dictionary models use the reserved value `"key"`. Set it when creating a model, and keep it correct when renaming or removing fields.
 - `content_path`: optional framework-relative path (e.g., `"content/blog"`, `"locales"`). When set, content is written here instead of `.contentrain/content/`.
 - `locale_strategy`: how locale is encoded in filenames: `"file"` (default), `"suffix"`, `"directory"`, `"none"`.
 - `locale_strategy: "none"` requires `i18n: false`. All other strategies work with both `i18n: true` and `i18n: false`.

@@ -87,6 +87,7 @@ Before writing, show:
 - domain
 - `i18n` behavior
 - field list with types
+- `title_field` — which field titles an entry, and why that one
 - relation targets
 - any custom `content_path` / `locale_strategy`
 
@@ -105,6 +106,7 @@ Example:
   "kind": "singleton",
   "domain": "marketing",
   "i18n": true,
+  "title_field": "title",
   "fields": {
     "title": { "type": "string", "required": true },
     "subtitle": { "type": "text" },
@@ -113,6 +115,29 @@ Example:
   }
 }
 ```
+
+`title_field` is required. It names the field shown as an entry's title in
+listings, pickers and relation references, and must be a field on this model
+typed `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or
+`richtext`. Dictionary models have no fields, so they use the reserved value
+`"key"` — the entry key is the title.
+
+Choose what a reader uses to tell one entry from another: the headline, the
+name, the question. Not the slug, not the icon, not a relation ID. Consumers
+that had to infer this picked the icon over the headline, which is why the
+property exists.
+
+**When updating an existing model**, re-check `title_field` in the same call:
+renaming or removing the field it points at makes the model invalid.
+
+Give every field a `label` and an `order`. Fields are stored alphabetically, so
+without `order` an editor lists them alphabetically — on a sixteen-field article
+model that puts `author` first and `title` fifteenth. Without `label` it shows
+the raw key: `body_public`, `is_category_hero`.
+
+Number `order` in tens (10, 20, 30) so a field can be inserted later without
+renumbering. Use a per-locale `label` (`{ "en": "…", "tr": "…" }`) on a
+multilingual project; a plain string is one label for every locale.
 
 ### 8. Validate Downstream Impact
 

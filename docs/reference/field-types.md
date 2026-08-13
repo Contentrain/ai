@@ -442,6 +442,8 @@ Both are enforced generically at validation time: `min`/`max` compare **string l
 | `maxSize` | image, video, file | Maximum file size in bytes — **accepted but never enforced by MCP** (it stores a path, not the file); your media provider enforces it at ingest, and `model_save` returns a `schema_warnings` entry saying so |
 | `fields` | object | Sub-field definitions as `Record<string, FieldDef>` |
 | `description` | All | Human-readable description of the field |
+| `label` | All | Editor label. A string is one label for every locale; an object keyed by locale (`{ "en": "Body", "tr": "Gövde" }`) carries a translation each. Absent means the field name is the label. |
+| `order` | All | Display position, ascending. Fields without one sort last, alphabetically — so a model that declares none behaves as it always has. Fractional values allow inserting between two fields without renumbering. |
 
 ## How Constraints Are Enforced
 

@@ -40,6 +40,10 @@ import {
   ENTRY_ID_PATTERN,
   LOCALE_PATTERN,
   CANONICAL_JSON,
+  MODEL_FIELD_ORDER,
+  DICTIONARY_TITLE_FIELD,
+  TITLE_FIELD_TYPES,
+  isTitleFieldType,
   SECRET_PATTERNS,
   validateSlug,
   validateEntryId,
@@ -218,6 +222,58 @@ describe('@contentrain/types', () => {
 
     it('fields is optional Record<string, FieldDef>', () => {
       expectTypeOf<Record<string, FieldDef>>().toMatchTypeOf<NonNullable<ModelDefinition['fields']>>()
+    })
+
+    it('declares title_field', () => {
+      expectTypeOf<ModelDefinition>().toHaveProperty('title_field')
+    })
+  })
+
+  describe('MODEL_FIELD_ORDER', () => {
+    // `as const satisfies readonly (keyof ModelDefinition)[]` on the constant already
+    // rejects a key that is not on the interface. This is the other direction: a key
+    // added to ModelDefinition but never added to the order would serialize
+    // alphabetically instead of erroring, so make it fail `tsc` instead.
+    it('enumerates every ModelDefinition key', () => {
+      expectTypeOf<typeof MODEL_FIELD_ORDER[number]>().toEqualTypeOf<keyof ModelDefinition>()
+    })
+
+    it('is the exact canonical order', () => {
+      expect([...MODEL_FIELD_ORDER]).toEqual([
+        'id', 'name', 'kind', 'domain', 'i18n', 'title_field',
+        'description', 'content_path', 'locale_strategy', 'fields',
+      ])
+    })
+
+    it('places title_field among the leading identity keys, before fields', () => {
+      const order = [...MODEL_FIELD_ORDER]
+      expect(order.indexOf('title_field')).toBeGreaterThan(order.indexOf('i18n'))
+      expect(order.indexOf('title_field')).toBeLessThan(order.indexOf('fields'))
+    })
+  })
+
+  describe('title field vocabulary', () => {
+    it('reserves "key" for dictionary models', () => {
+      expect(DICTIONARY_TITLE_FIELD).toBe('key')
+    })
+
+    it('accepts the text-bearing types', () => {
+      for (const type of TITLE_FIELD_TYPES) {
+        expect(isTitleFieldType(type)).toBe(true)
+      }
+      expect([...TITLE_FIELD_TYPES]).toEqual([
+        'string', 'text', 'slug', 'email', 'url', 'code', 'markdown', 'richtext',
+      ])
+    })
+
+    it.each([
+      // string-typed, but a title rendered from one of these is the bug we are fixing
+      'icon', 'color', 'phone', 'select', 'date', 'datetime',
+      'image', 'video', 'file', 'relation',
+      // not string-typed at all
+      'number', 'integer', 'decimal', 'percent', 'rating', 'boolean', 'relations', 'array', 'object',
+    ] as const)('rejects %s', (type) => {
+      expect(isTitleFieldType(type)).toBe(false)
     })
   })
 

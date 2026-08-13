@@ -173,6 +173,7 @@ describe('startHttpMcpServer', () => {
         kind: 'collection',
         domain: 'marketing',
         i18n: true,
+        title_field: 'title',
         fields: { title: { type: 'string', required: true }, body: { type: 'text' } },
       },
     }
@@ -292,6 +293,7 @@ describe('startHttpMcpServer', () => {
         kind: 'collection',
         domain: 'marketing',
         i18n: true,
+        title_field: 'title',
         fields: { title: { type: 'string', required: true }, body: { type: 'text' } },
       },
     }
@@ -409,6 +411,7 @@ describe('startHttpMcpServer', () => {
       kind: 'collection',
       domain: 'marketing',
       i18n: true,
+      title_field: 'title',
       fields: { title: { type: 'string', required: true } },
     }
     const config = makeConfig()
@@ -496,6 +499,7 @@ describe('startHttpMcpServer', () => {
             kind: 'singleton',
             domain: 'marketing',
             i18n: true,
+            title_field: 'title',
             fields: { title: { type: 'string', required: true } },
           },
         })
@@ -528,6 +532,7 @@ describe('startHttpMcpServer', () => {
       kind: 'collection',
       domain: 'marketing',
       i18n: true,
+      title_field: 'title',
       fields: { title: { type: 'string', required: true } },
     }
     const filesOnHead: Record<string, string> = {
@@ -582,6 +587,7 @@ describe('startHttpMcpServer', () => {
       kind: 'collection',
       domain: 'marketing',
       i18n: true,
+      title_field: 'title',
       fields: { title: { type: 'string', required: true } },
     }
     const filesOnHead: Record<string, string> = {

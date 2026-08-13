@@ -197,6 +197,7 @@ describe('contentrain_apply mode:extract', () => {
         kind: 'singleton',
         domain: 'app',
         i18n: true,
+        title_field: 'welcome_title',
         fields: { welcome_title: { type: 'string' } },
       },
     })
@@ -288,6 +289,7 @@ describe('contentrain_apply mode:reuse', () => {
         kind: 'dictionary',
         domain: 'app',
         i18n: true,
+        title_field: 'key',
       },
     })
 

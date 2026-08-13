@@ -1,4 +1,5 @@
-import type { ModelDefinition, ModelSummary } from '@contentrain/types'
+import type { FieldType, ModelDefinition, ModelSummary } from '@contentrain/types'
+import { DICTIONARY_TITLE_FIELD, isTitleFieldType, LOCALE_PATTERN, MODEL_FIELD_ORDER, TITLE_FIELD_TYPES } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { z } from 'zod'
@@ -9,6 +10,10 @@ import { resolveContentDir, resolveLocaleStrategy } from './content-manager.js'
 import { contentDirPath } from './ops/paths.js'
 
 export type { ModelSummary } from '@contentrain/types'
+// Re-exported so `packages/rules` and `packages/skills` — which devDep
+// @contentrain/mcp but not @contentrain/types — can assert docs parity
+// against the canonical key list without taking a new dependency.
+export { MODEL_FIELD_ORDER } from '@contentrain/types'
 
 const MODELS_DIR_PATH = '.contentrain/models'
 
@@ -350,8 +355,6 @@ export async function countEntries(
   }
 }
 
-const MODEL_FIELD_ORDER = ['id', 'name', 'kind', 'domain', 'i18n', 'description', 'content_path', 'locale_strategy', 'fields']
-
 export async function writeModel(projectRoot: string, model: ModelDefinition): Promise<void> {
   const filePath = join(contentrainDir(projectRoot), 'models', `${model.id}.json`)
   await writeJson(filePath, model, MODEL_FIELD_ORDER)
@@ -470,6 +473,10 @@ export const fieldDefZodSchema: z.ZodType<Record<string, unknown>> = z.record(z.
   accept: z.string().optional(),
   maxSize: z.number().optional(),
   description: z.string().optional(),
+  label: z.union([z.string(), z.record(z.string(), z.string())]).optional()
+    .describe('Editor label. A string is one label for all locales; an object keyed by locale carries a translation each.'),
+  order: z.number().optional()
+    .describe('Display position, ascending. Fields without one sort last, alphabetically. Fractional values allowed.'),
 }).strict().refine(
   (f) => {
     if ((f.type === 'relation' || f.type === 'relations') && !f.model) return false
@@ -509,6 +516,8 @@ interface RawFieldDef {
   fields?: unknown
   accept?: unknown
   maxSize?: unknown
+  label?: unknown
+  order?: unknown
 }
 
 /**
@@ -544,11 +553,43 @@ function checkFieldDef(
     return
   }
 
+  // Presentation. Wrong here is not fatal to a write, but a locale-keyed label
+  // whose keys are not locales is the same inversion the vocabulary hits, and
+  // it silently resolves to nothing.
+  if (def.label !== undefined) {
+    if (typeof def.label === 'string') {
+      if (def.label.trim() === '') errors.push(`Field "${path}": "label" is empty`)
+    } else if (typeof def.label === 'object' && def.label !== null && !Array.isArray(def.label)) {
+      const entries = Object.entries(def.label as Record<string, unknown>)
+      if (entries.length === 0) errors.push(`Field "${path}": "label" has no translations`)
+      for (const [locale, value] of entries) {
+        if (!LOCALE_PATTERN.test(locale)) {
+          errors.push(`Field "${path}": "label" key "${locale}" is not a locale code. A per-locale label nests as { "en": "…", "tr": "…" }.`)
+        }
+        if (typeof value !== 'string' || value.trim() === '') {
+          errors.push(`Field "${path}": "label" for "${locale}" must be a non-empty string`)
+        }
+      }
+    } else {
+      errors.push(`Field "${path}": "label" must be a string, or an object keyed by locale`)
+    }
+  }
+  if (def.order !== undefined && (typeof def.order !== 'number' || !Number.isFinite(def.order))) {
+    errors.push(`Field "${path}": "order" must be a finite number`)
+  }
+
   if ((type === 'relation' || type === 'relations') && !def.model) {
     errors.push(`Field "${path}": ${type} type requires "model" property`)
   }
   if (type === 'select' && (!Array.isArray(def.options) || def.options.length === 0)) {
     errors.push(`Field "${path}": select type requires non-empty "options" array`)
+  }
+
+  // An object with no shape is a field nothing can validate and no editor can
+  // render — it shows as an empty frame. A warning, not an error: it is a
+  // legitimate intermediate state while a schema is being designed.
+  if (type === 'object' && (!def.fields || typeof def.fields !== 'object' || Object.keys(def.fields as Record<string, unknown>).length === 0)) {
+    warnings.push(`Field "${path}": "object" with no "fields" — nothing validates it and no editor can render it. Declare its shape, or use a plain type.`)
   }
   // The reverse direction was never checked, so `options` on a string field was
   // accepted and then silently ignored at validation time.
@@ -650,12 +691,161 @@ function checkDefaultCoherence(def: RawFieldDef, type: string, path: string, err
   }
 }
 
+// ─── title_field ───
+
+/** Field names that announce themselves as a title, most explicit first. */
+const TITLE_NAME_HINTS = ['title', 'name', 'label', 'heading'] as const
+
+/**
+ * Preference among displayable types, short scalars first. A title is a label,
+ * not a body: given both `question: string` and `answer: text`, the string wins.
+ * Without this, "first required text field" resolves alphabetically and a FAQ
+ * model gets titled by its answers.
+ */
+const TITLE_TYPE_PRIORITY: readonly FieldType[] = [
+  'string', 'slug', 'email', 'url', 'code', 'text', 'markdown', 'richtext',
+]
+
+export interface TitleFieldPick {
+  field: string
+  /** Which rule chose it — surfaced to the user so an inferred title can be overruled. */
+  rule: 'dictionary' | 'name-match' | 'required-displayable' | 'displayable'
+}
+
+interface TitleCandidate {
+  field: string
+  type: FieldType
+  required: boolean
+}
+
+/** Fields that could carry a title at all. Everything else is out of the running. */
+function titleCandidates(fields?: Record<string, unknown>): TitleCandidate[] {
+  if (!fields) return []
+  const out: TitleCandidate[] = []
+  for (const [field, raw] of Object.entries(fields)) {
+    const def = raw as { type?: unknown; required?: unknown } | null
+    const type = def?.type
+    if (typeof type !== 'string' || !isTitleFieldType(type as FieldType)) continue
+    out.push({ field, type: type as FieldType, required: def?.required === true })
+  }
+  return out
+}
+
+function byTypeThenName(a: TitleCandidate, b: TitleCandidate): number {
+  const byType = TITLE_TYPE_PRIORITY.indexOf(a.type) - TITLE_TYPE_PRIORITY.indexOf(b.type)
+  return byType !== 0 ? byType : a.field.localeCompare(b.field, 'en')
+}
+
+/**
+ * How strongly a field name reads as a title. Exact matches outrank snake_case
+ * token matches, so `name` beats `brand_name`, and `filename` matches nothing —
+ * it tokenizes to `["filename"]`, not `["file", "name"]`.
+ */
+function titleNameRank(field: string): number {
+  const exact = (TITLE_NAME_HINTS as readonly string[]).indexOf(field)
+  if (exact !== -1) return exact
+
+  const tokens = field.split('_')
+  const token = TITLE_NAME_HINTS.findIndex(hint => tokens.includes(hint))
+  return token === -1 ? Number.POSITIVE_INFINITY : TITLE_NAME_HINTS.length + token
+}
+
+/**
+ * Pick the field a model should title its entries by.
+ *
+ * Migration aid only — it exists to backfill models authored before `title_field`
+ * was required, and `contentrain validate --fix` is its one caller. New models
+ * declare the field; nothing here runs on the write path.
+ *
+ * Every rung filters by `isTitleFieldType` first. That filter is the whole point:
+ * an unfiltered name match hands the title to a field called `name` that happens
+ * to be typed `icon`, which is the exact bug this contract replaces.
+ *
+ * Returns `null` when no field can render as a title. That is a real answer, not a
+ * failure — guessing `image` or `relation` here would re-create the bug, so the
+ * validation error stands and a human picks.
+ */
+export function inferTitleField(kind: string, fields?: Record<string, unknown>): TitleFieldPick | null {
+  // A dictionary has no fields to point at — its key is the title.
+  if (kind === 'dictionary') return { field: DICTIONARY_TITLE_FIELD, rule: 'dictionary' }
+
+  const candidates = titleCandidates(fields)
+  if (candidates.length === 0) return null
+
+  const named = candidates.filter(c => Number.isFinite(titleNameRank(c.field)))
+  if (named.length > 0) {
+    const best = named.toSorted((a, b) => {
+      const byName = titleNameRank(a.field) - titleNameRank(b.field)
+      return byName !== 0 ? byName : byTypeThenName(a, b)
+    })[0]!
+    return { field: best.field, rule: 'name-match' }
+  }
+
+  const required = candidates.filter(c => c.required)
+  if (required.length > 0) {
+    return { field: required.toSorted(byTypeThenName)[0]!.field, rule: 'required-displayable' }
+  }
+
+  return { field: candidates.toSorted(byTypeThenName)[0]!.field, rule: 'displayable' }
+}
+
+/**
+ * The `title_field` rule table.
+ *
+ * Extracted so `validateModelDefinition` (write path) and the project validator
+ * (read path) report the same wording from one place, rather than one of them
+ * sniffing the other's strings.
+ *
+ * Chained so a model gets one title_field error, not a cascade of five.
+ */
+export function titleFieldIssues(
+  input: { kind: string; title_field?: unknown; fields?: Record<string, unknown> },
+): ModelDefinitionIssues {
+  const errors: string[] = []
+  const warnings: string[] = []
+  const titleField = input.title_field
+
+  if (titleField === undefined || titleField === null || titleField === '') {
+    errors.push('Missing "title_field". Every model must name the field shown as its title. Dictionary models use "key".')
+  } else if (typeof titleField !== 'string') {
+    errors.push(`Invalid "title_field": must be a string, got ${typeof titleField}.`)
+  } else if (input.kind === 'dictionary') {
+    if (titleField !== DICTIONARY_TITLE_FIELD) {
+      errors.push(`Dictionary models must use title_field: "${DICTIONARY_TITLE_FIELD}". Dictionaries have no fields — the key is the title. Got "${titleField}".`)
+    }
+  } else if (!input.fields || Object.keys(input.fields).length === 0) {
+    errors.push(`Invalid "title_field": "${titleField}" cannot resolve — the model declares no fields.`)
+  } else if (!(titleField in input.fields)) {
+    // A non-dictionary model may legitimately own a field named "key" — the
+    // sentinel only collides where there are no fields at all.
+    errors.push(
+      `Invalid "title_field": field "${titleField}" is not defined in fields.`
+      + (titleField === DICTIONARY_TITLE_FIELD ? ` "${DICTIONARY_TITLE_FIELD}" is reserved for dictionary models.` : ''),
+    )
+  } else {
+    const def = input.fields[titleField] as { type?: unknown; required?: unknown } | undefined
+    const type = def?.type
+    if (typeof type === 'string' && !isTitleFieldType(type as FieldType)) {
+      errors.push(`Invalid "title_field": field "${titleField}" has type "${type}" — a title must be one of: ${TITLE_FIELD_TYPES.join(', ')}.`)
+    } else if (def?.required !== true) {
+      warnings.push(`"title_field" points at optional field "${titleField}" — entries may render with an empty title. Consider required: true.`)
+    }
+    // A non-string `type` falls through: the per-field loop already reports it,
+    // and repeating it here would double-count one mistake.
+  }
+
+  return { errors, warnings }
+}
+
 /**
  * Validate a model definition before writing.
  * Used by both the model_save tool and normalize extract.
  */
 export function validateModelDefinition(
-  input: { id: string; kind: string; fields?: Record<string, unknown> },
+  // `title_field` is `unknown`, not `string?`: a model read back off disk is an
+  // unvalidated cast, so the runtime check has to see a value the type system
+  // already believes is a string.
+  input: { id: string; kind: string; title_field?: unknown; fields?: Record<string, unknown> },
 ): ModelDefinitionIssues {
   const errors: string[] = []
   const warnings: string[] = []
@@ -669,6 +859,12 @@ export function validateModelDefinition(
   if (input.kind === 'dictionary' && input.fields && Object.keys(input.fields).length > 0) {
     errors.push('Dictionary models cannot have fields. Dictionaries store flat key-value pairs.')
   }
+
+  // Reported above the per-field loop: a broken title_field explains the model,
+  // the field errors only explain one field.
+  const titleIssues = titleFieldIssues(input)
+  errors.push(...titleIssues.errors)
+  warnings.push(...titleIssues.warnings)
 
   if (input.fields) {
     for (const [fieldName, fieldDef] of Object.entries(input.fields)) {

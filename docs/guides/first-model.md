@@ -65,6 +65,7 @@ The agent calls `contentrain_model_save` with:
   "kind": "collection",
   "domain": "marketing",
   "i18n": true,
+  "title_field": "title",
   "fields": {
     "question": { "type": "string", "required": true, "min": 1, "max": 200 },
     "answer": { "type": "markdown", "required": true },

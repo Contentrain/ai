@@ -63,6 +63,7 @@ async function seedProject(dir: string): Promise<void> {
     kind: 'collection',
     domain: 'marketing',
     i18n: true,
+    title_field: 'title',
     fields: {
       title: { type: 'string', required: true },
     },

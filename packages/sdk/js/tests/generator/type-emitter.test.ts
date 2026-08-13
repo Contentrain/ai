@@ -15,6 +15,7 @@ describe('type-emitter', () => {
       kind: 'collection',
       domain: 'blog',
       i18n: true,
+      title_field: 'title',
       fields: {
         title: { type: 'string', required: true },
         views: { type: 'integer' },
@@ -34,6 +35,7 @@ describe('type-emitter', () => {
       kind: 'singleton',
       domain: 'marketing',
       i18n: true,
+      title_field: 'title',
       fields: {
         title: { type: 'string', required: true },
         cta_url: { type: 'url' },
@@ -53,6 +55,7 @@ describe('type-emitter', () => {
       kind: 'dictionary',
       domain: 'system',
       i18n: true,
+      title_field: 'key',
     }]
     const result = emitTypes(models)
     expect(result).toContain('export type ErrorMessages = Record<string, string>')
@@ -65,7 +68,9 @@ describe('type-emitter', () => {
       kind: 'collection',
       domain: 'blog',
       i18n: true,
+      title_field: 'title',
       fields: {
+        title: { type: 'string', required: true },
         status: { type: 'select', options: ['draft', 'published', 'archived'] },
       },
     }]
@@ -80,6 +85,7 @@ describe('type-emitter', () => {
       kind: 'collection',
       domain: 'blog',
       i18n: true,
+      title_field: 'title',
     }]
     const result = emitTypes(models)
     expect(result).toContain("export declare function query(model: 'blog-post'): QueryBuilder<BlogPost>")
@@ -92,6 +98,7 @@ describe('type-emitter', () => {
       kind: 'singleton',
       domain: 'marketing',
       i18n: true,
+      title_field: 'title',
     }]
     const result = emitTypes(models)
     expect(result).toContain("export declare function singleton(model: 'hero'): SingletonAccessor<Hero>")
@@ -109,6 +116,7 @@ describe('type-emitter', () => {
       kind: 'dictionary',
       domain: 'system',
       i18n: true,
+      title_field: 'key',
     }]
     const result = emitTypes(models)
     expect(result).toContain("export declare function dictionary(model: 'error-messages'): DictionaryAccessor")
@@ -132,6 +140,7 @@ describe('type-emitter', () => {
       kind: 'collection',
       domain: 'blog',
       i18n: true,
+      title_field: 'title',
     }]
     const result = emitTypes(models)
     expect(result).toContain("export declare function query(model: 'blog-post'): QueryBuilder<BlogPost>")
@@ -145,6 +154,7 @@ describe('type-emitter', () => {
       kind: 'singleton',
       domain: 'marketing',
       i18n: true,
+      title_field: 'title',
     }]
     const result = emitTypes(models)
     expect(result).toContain("export declare function singleton(model: 'hero'): SingletonAccessor<Hero>")
@@ -158,6 +168,7 @@ describe('type-emitter', () => {
       kind: 'dictionary',
       domain: 'system',
       i18n: true,
+      title_field: 'key',
     }]
     const result = emitTypes(models)
     expect(result).toContain("export declare function dictionary(model: 'error-messages'): DictionaryAccessor")
@@ -171,6 +182,7 @@ describe('type-emitter', () => {
       kind: 'document',
       domain: 'blog',
       i18n: true,
+      title_field: 'title',
     }]
     const result = emitTypes(models)
     expect(result).toContain("export declare function document(model: 'blog-article'): DocumentQuery<BlogArticle>")
@@ -179,11 +191,11 @@ describe('type-emitter', () => {
 
   it('generates overloads for all model kinds together', () => {
     const models: ModelDefinition[] = [
-      { id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true },
-      { id: 'author', name: 'Author', kind: 'collection', domain: 'blog', i18n: false },
-      { id: 'hero-section', name: 'Hero Section', kind: 'singleton', domain: 'marketing', i18n: true },
-      { id: 'ui-texts', name: 'UI Texts', kind: 'dictionary', domain: 'system', i18n: true },
-      { id: 'blog-article', name: 'Blog Article', kind: 'document', domain: 'blog', i18n: true },
+      { id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true, title_field: 'title' },
+      { id: 'author', name: 'Author', kind: 'collection', domain: 'blog', i18n: false, title_field: 'title' },
+      { id: 'hero-section', name: 'Hero Section', kind: 'singleton', domain: 'marketing', i18n: true, title_field: 'title' },
+      { id: 'ui-texts', name: 'UI Texts', kind: 'dictionary', domain: 'system', i18n: true, title_field: 'key' },
+      { id: 'blog-article', name: 'Blog Article', kind: 'document', domain: 'blog', i18n: true, title_field: 'title' },
     ]
     const result = emitTypes(models)
     // Collection overloads
@@ -203,10 +215,10 @@ describe('type-emitter', () => {
 
   it('generates ContentrainClient interface with typed overloads', () => {
     const models: ModelDefinition[] = [
-      { id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true },
-      { id: 'hero', name: 'Hero', kind: 'singleton', domain: 'marketing', i18n: true },
-      { id: 'translations', name: 'Translations', kind: 'dictionary', domain: 'system', i18n: true },
-      { id: 'blog-article', name: 'Blog Article', kind: 'document', domain: 'blog', i18n: true },
+      { id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true, title_field: 'title' },
+      { id: 'hero', name: 'Hero', kind: 'singleton', domain: 'marketing', i18n: true, title_field: 'title' },
+      { id: 'translations', name: 'Translations', kind: 'dictionary', domain: 'system', i18n: true, title_field: 'key' },
+      { id: 'blog-article', name: 'Blog Article', kind: 'document', domain: 'blog', i18n: true, title_field: 'title' },
     ]
     const result = emitTypes(models)
     expect(result).toContain('export interface ContentrainClient {')
@@ -239,6 +251,7 @@ describe('type-emitter', () => {
       kind: 'collection',
       domain: 'test',
       i18n: false,
+      title_field: 'f_string',
       fields: {
         f_string: { type: 'string' },
         f_email: { type: 'email' },
@@ -271,7 +284,9 @@ describe('type-emitter', () => {
       kind: 'collection',
       domain: 'home',
       i18n: true,
+      title_field: 'title',
       fields: {
+        title: { type: 'string', required: true },
         target: { type: 'relation', model: ['blog-post', 'page'] },
       },
     }]
@@ -286,6 +301,7 @@ describe('type-emitter', () => {
       kind: 'document',
       domain: 'blog',
       i18n: true,
+      title_field: 'title',
       fields: {
         // A model that explicitly declares slug/body must NOT produce duplicate
         // interface members — the base field wins.

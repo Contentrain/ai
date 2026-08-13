@@ -188,6 +188,7 @@ describe('contentrain_describe', () => {
       kind: 'document',
       domain: 'blog',
       i18n: true,
+      title_field: 'title',
       locale_strategy: 'suffix',
       fields: {
         title: { type: 'string', required: true },

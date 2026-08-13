@@ -4,6 +4,7 @@
   "kind": "singleton",
   "domain": "system",
   "i18n": true,
+  "title_field": "brand_name",
   "fields": {
     "brand_name": {
       "required": true,

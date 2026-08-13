@@ -47,7 +47,7 @@ function fixtureReader(): MemoryReader {
     domains: ['blog'],
   }))
   files.set('.contentrain/models/hero.json', JSON.stringify({
-    id: 'hero', name: 'Hero', kind: 'singleton', domain: 'blog', i18n: true,
+    id: 'hero', name: 'Hero', kind: 'singleton', domain: 'blog', i18n: true, title_field: 'title',
     fields: { title: { type: 'string', required: true } },
   }))
   return new MemoryReader(files)

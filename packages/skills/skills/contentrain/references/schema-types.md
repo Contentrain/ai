@@ -165,6 +165,8 @@ In v1, media fields store URL/path strings only. Upload and processing are out o
 | `accept` | `image`, `video`, `file` | Allowed MIME types: `"image/png,image/jpeg"` |
 | `maxSize` | `image`, `video`, `file` | Maximum file size in bytes |
 | `description` | ALL | Human-readable hint (shown in Studio UI tooltip, used as agent context) |
+| `label` | ALL | Editor label: a string, or an object keyed by locale (`{ "en": "Body", "tr": "Gövde" }`). Absent shows the raw field name |
+| `order` | ALL | Display position, ascending. Absent sorts last, alphabetically. Fractional values allowed |
 
 ## Omission Rules
 

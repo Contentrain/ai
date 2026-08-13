@@ -11,7 +11,7 @@ MIT-licensed monorepo for Contentrain's open-source packages: MCP tools, CLI, Ty
 ```
 contentrain-ai/
 ├── packages/
-│   ├── mcp/          — 19 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers (simple-git + zod + MCP SDK)
+│   ├── mcp/          — 21 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers (simple-git + zod + MCP SDK)
 │   ├── cli/          — citty + tsdown (init/serve/validate/normalize/connect)
 │   ├── types/        — Shared TypeScript types (@contentrain/types)
 │   ├── rules/        — AI agent quality rules & conventions
@@ -61,6 +61,7 @@ When working with Contentrain content operations (models, content, normalize, va
 1. **Always call `contentrain_describe_format` before creating models or content** — understand storage formats
 2. **Dictionary = flat key-value, all strings, no fields, no id/slug** — keys are semantic addresses
 3. **Collection = object-map by entry ID, typed fields** — IDs are auto-generated hex
+3b. **Every model declares `title_field`** — the field shown as an entry's title. Must name a field on that model typed string/text/slug/email/url/code/markdown/richtext; dictionaries use the reserved `"key"`. Set it on create AND keep it correct when renaming or dropping a field. Never the slug, the icon, or a relation ID
 4. **Always dry_run:true first, review, then dry_run:false** — never skip preview
 5. **MCP is deterministic infra, agent is intelligence** — MCP does NOT make content decisions
 6. **Normalize branches always use review workflow** — never auto-merge
@@ -98,7 +99,7 @@ When working with Contentrain content operations (models, content, normalize, va
 
 | Package | Name | Description |
 |---|---|---|
-| packages/mcp | @contentrain/mcp | 19 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers |
+| packages/mcp | @contentrain/mcp | 21 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers |
 | packages/cli | contentrain | CLI (npx contentrain) |
 | packages/types | @contentrain/types | Shared TypeScript types |
 | packages/rules | @contentrain/rules | AI agent quality rules & conventions |

@@ -97,6 +97,8 @@ export default defineCommand({
     // JSON output
     if (args.json) {
       process.stdout.write(JSON.stringify(result, null, 2))
+      // Exit non-zero on an invalid project so CI and `&&` chains see the failure.
+      if (!result.valid) process.exitCode = 1
       return
     }
 
@@ -180,6 +182,10 @@ export default defineCommand({
       if (!args.fix && !args.interactive) {
         log.message(`Run ${pc.cyan('contentrain validate --fix')} to auto-fix.`)
       }
+      // An invalid project is a failed command. `doctor` has always exited 1 on
+      // failure; `validate` reported the errors and exited 0, so a CI step that
+      // ran it passed regardless of what it found.
+      process.exitCode = 1
     }
   },
 })

@@ -30,6 +30,7 @@ function createDocumentModel(localeStrategy: NonNullable<ModelDefinition['locale
     kind: 'document',
     domain: 'blog',
     i18n: true,
+    title_field: 'title',
     locale_strategy: localeStrategy,
     fields: {
       title: { type: 'string', required: true },
@@ -45,6 +46,7 @@ function createCollectionModel(localeStrategy: NonNullable<ModelDefinition['loca
     kind: 'collection',
     domain: 'blog',
     i18n: true,
+    title_field: 'name',
     locale_strategy: localeStrategy,
     fields: {
       name: { type: 'string', required: true },
@@ -59,6 +61,7 @@ function createSingletonModel(localeStrategy: NonNullable<ModelDefinition['local
     kind: 'singleton',
     domain: 'blog',
     i18n: true,
+    title_field: 'title',
     locale_strategy: localeStrategy,
     fields: {
       title: { type: 'string', required: true },
@@ -144,6 +147,7 @@ describe('countEntries', () => {
       kind: 'collection',
       domain: 'blog',
       i18n: false,
+      title_field: 'name',
       locale_strategy: 'none',
       fields: { name: { type: 'string', required: true } },
     }
@@ -165,6 +169,7 @@ describe('countEntries', () => {
       kind: 'singleton',
       domain: 'blog',
       i18n: false,
+      title_field: 'title',
       locale_strategy: 'none',
       fields: { title: { type: 'string', required: true } },
     }

@@ -75,7 +75,7 @@ The package root exports constants for tooling:
 
 - `FIELD_TYPES` — 27 flat field types
 - `MODEL_KINDS` — `singleton`, `collection`, `document`, `dictionary`
-- `MCP_TOOLS` — 24 MCP tool names: 19 core + 5 media (`contentrain_media_*`, registered only on media-capable providers)
+- `MCP_TOOLS` — 26 MCP tool names: 21 core + 5 media (`contentrain_media_*`, registered only on media-capable providers)
 - `ESSENTIAL_RULES_FILE` — path to essential guardrails markdown
 - `STACKS` — supported framework stacks
 

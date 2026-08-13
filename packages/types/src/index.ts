@@ -51,6 +51,31 @@ export interface FieldDef {
   accept?: string
   maxSize?: number
   description?: string
+  /**
+   * Human-readable name for this field in an editing UI.
+   *
+   * A plain string is one label for every locale; an object keyed by locale
+   * carries a translation per locale. The union exists now rather than later
+   * because widening `string` to it afterwards would break every consumer
+   * that treats the value as a string.
+   *
+   * Absent means the field name itself is the label — which is why an editor
+   * shows `body_public` and `is_category_hero` today.
+   */
+  label?: string | Record<string, string>
+  /**
+   * Display position in an editing UI, ascending.
+   *
+   * Fields are stored in canonical alphabetical order, so without this an
+   * editor shows them alphabetically: on a 16-field article model `author`
+   * comes first and `title` fifteenth. Fractional values are allowed so a
+   * field can be inserted between two others without renumbering the rest.
+   *
+   * Fields without one sort after every field that has one, alphabetically
+   * among themselves — so a model that has not been given an order behaves
+   * exactly as it does today.
+   */
+  order?: number
 }
 
 // ─── Model Definition ───
@@ -63,6 +88,16 @@ export interface ModelDefinition {
   kind: ModelKind
   domain: string
   i18n: boolean
+  /**
+   * Name of the field whose value is shown as an entry's title — in a Studio row,
+   * a picker, a relation reference. Declared, never guessed: a consumer that infers
+   * the title from field order or length picks the icon over the headline.
+   *
+   * Must name a field that exists on this model and whose type can render as text
+   * (see `isTitleFieldType`). Dictionary models have no fields, so their only legal
+   * value is `DICTIONARY_TITLE_FIELD` — the entry key is the title.
+   */
+  title_field: string
   description?: string
   fields?: Record<string, FieldDef>
   /** Framework-relative path for content files (e.g. "content/blog", "locales"). When set, content is written here instead of .contentrain/content/ */
@@ -136,6 +171,15 @@ export interface EntryMeta {
   status: ContentStatus
   source: ContentSource
   updated_by: string
+  /**
+   * When this entry was last written, ISO 8601 UTC.
+   *
+   * Optional, and deliberately not backfilled. It is a fact about the past,
+   * and an entry written before the field existed has no recoverable value —
+   * a fabricated timestamp would be worse than an absent one, because it
+   * would sort. Absent means unknown; the first write mints the real value.
+   */
+  updated_at?: string
   approved_by?: string | null
   version?: string
   publish_at?: string
@@ -270,6 +314,30 @@ export const CANONICAL_JSON = {
   omitDefaults: true,
   sortKeys: true,
 } as const
+
+/**
+ * Key order for canonical model JSON — the required keys first, then the optional
+ * ones, then `fields` last so a reader sees the model's identity before scrolling
+ * past its schema.
+ *
+ * This lives here, and only here, because `canonicalStringify` falls back to
+ * alphabetical for any key absent from the order: a forgotten entry does not error,
+ * it silently relocates. `satisfies` catches a key that is not on `ModelDefinition`;
+ * the `keyof` assertion in index.test.ts catches a `ModelDefinition` key missing
+ * from this array. Between them, drift fails `tsc`, which runs on every commit.
+ */
+export const MODEL_FIELD_ORDER = [
+  'id',
+  'name',
+  'kind',
+  'domain',
+  'i18n',
+  'title_field',
+  'description',
+  'content_path',
+  'locale_strategy',
+  'fields',
+] as const satisfies readonly (keyof ModelDefinition)[]
 
 // ─── Scaffold ───
 
@@ -645,6 +713,81 @@ export function isMediaType(type: FieldType): boolean {
   return MEDIA_TYPES.has(type)
 }
 
+// ─── Field presentation ───
+
+/**
+ * Resolve a field's label for a locale.
+ *
+ * Falls back in the order a reader would expect: the requested locale, the
+ * default locale, any locale present, then the field name. A field with no
+ * label resolves to its own name, which is what an editor shows today.
+ */
+export function resolveFieldLabel(
+  fieldName: string,
+  field: Pick<FieldDef, 'label'>,
+  locale?: string,
+  defaultLocale?: string,
+): string {
+  const { label } = field
+  if (typeof label === 'string') return label
+  if (label && typeof label === 'object') {
+    const byLocale = (locale && label[locale])
+      ?? (defaultLocale && label[defaultLocale])
+      ?? Object.values(label)[0]
+    if (byLocale) return byLocale
+  }
+  return fieldName
+}
+
+/**
+ * Field names in display order.
+ *
+ * Exported so every consumer orders identically instead of each reimplementing
+ * the fallback. Ascending `order`; fields without one come last, alphabetically
+ * among themselves, which is the behaviour a model that has no `order` already
+ * has.
+ */
+export function orderedFieldNames(fields: Record<string, FieldDef> | undefined): string[] {
+  if (!fields) return []
+  return Object.keys(fields).toSorted((a, b) => {
+    const oa = fields[a]?.order
+    const ob = fields[b]?.order
+    if (oa !== undefined && ob !== undefined && oa !== ob) return oa - ob
+    if (oa !== undefined && ob === undefined) return -1
+    if (oa === undefined && ob !== undefined) return 1
+    return a.localeCompare(b, 'en')
+  })
+}
+
+// ─── Title field ───
+
+/**
+ * The reserved `title_field` value for dictionary models. A dictionary has no
+ * fields — it is a flat key→string map — so there is nothing to point at. Its key
+ * *is* the title, and this names that fact rather than leaving the property blank.
+ * Only dictionaries may use it; on any other kind `title_field` must name a real field.
+ */
+export const DICTIONARY_TITLE_FIELD = 'key'
+
+/**
+ * Field types whose value can stand in as a human-readable title.
+ *
+ * Narrower than "types that hold a string": `color`, `phone`, `icon`, `select`,
+ * `date`, `datetime`, `relation` and the media types all store strings, but a row
+ * labelled `#ff0000` or `f3a81c09d24e` is exactly the failure this contract exists
+ * to prevent.
+ */
+export const TITLE_FIELD_TYPES = [
+  'string', 'text', 'slug', 'email', 'url', 'code', 'markdown', 'richtext',
+] as const satisfies readonly FieldType[]
+
+const TITLE_FIELD_TYPE_SET = new Set<FieldType>(TITLE_FIELD_TYPES)
+
+/** Whether a field of this type may be named as a model's `title_field`. */
+export function isTitleFieldType(type: FieldType): boolean {
+  return TITLE_FIELD_TYPE_SET.has(type)
+}
+
 /** Extensions we can name a MIME type for. Deliberately small — this is a sniff. */
 const EXTENSION_MIME: Record<string, string> = {
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
@@ -746,7 +889,7 @@ export function validateFieldValue(value: unknown, fieldDef: FieldDef): Validati
 // ─── Serialize: Pure Functions ───
 
 /** Recursively sort object keys — respects optional fieldOrder for top-level keys */
-export function sortKeys(obj: unknown, fieldOrder?: string[]): unknown {
+export function sortKeys(obj: unknown, fieldOrder?: readonly string[]): unknown {
   if (obj === null || obj === undefined) return undefined
   if (Array.isArray(obj)) return obj.map(item => sortKeys(item, fieldOrder))
   if (typeof obj !== 'object') return obj
@@ -769,7 +912,7 @@ export function sortKeys(obj: unknown, fieldOrder?: string[]): unknown {
 }
 
 /** Canonical JSON serialization — deterministic output for stable git diffs */
-export function canonicalStringify(data: unknown, fieldOrder?: string[]): string {
+export function canonicalStringify(data: unknown, fieldOrder?: readonly string[]): string {
   const sorted = sortKeys(data, fieldOrder)
   return `${JSON.stringify(sorted, null, 2)}\n`
 }

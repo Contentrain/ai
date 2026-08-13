@@ -2,11 +2,14 @@ import type { ContentrainConfig, EntryMeta, ModelDefinition, Vocabulary } from '
 import { generateEntryId, validateEntryId, validateLocale, validateSlug } from '@contentrain/types'
 import type { FileChange, RepoReader } from '../contracts/index.js'
 import type { ContentEntry } from '../content-manager.js'
-import { canonicalStringify, serializeMarkdownFrontmatter } from '../serialization/index.js'
+import { canonicalStringify, parseMarkdownFrontmatter, serializeMarkdownFrontmatter } from '../serialization/index.js'
 import { rewriteEntryMedia, rewriteMarkdownMedia } from '../media/media-rewrite.js'
 import type { ContentSaveEntryResult, ContentSavePlan } from './types.js'
 import { contentFilePath, documentFilePath, metaFilePath } from './paths.js'
 import { mergeEntryMeta } from '../meta-manager.js'
+
+/** Keys named individually in a replacement advisory before it collapses to a count. */
+const MAX_REPORTED_KEYS = 5
 
 interface PlanInput {
   model: ModelDefinition
@@ -131,17 +134,30 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
           ?? await readJsonOrEmpty<Record<string, string>>(cPath)
 
         const newData = entry.data as Record<string, string>
-        const collisions = Object.keys(newData).filter(
+        const entryAdvisories: string[] = []
+
+        // Overwriting a key used to be refused outright, which made the most
+        // ordinary dictionary operation — correcting a translation — impossible:
+        // the workaround was delete, merge, save, merge. Four operations and two
+        // branches to fix one string. The refusal also advised "include all keys
+        // in a single save call", which cannot work, because the check compares
+        // values per key rather than counting them.
+        //
+        // Choosing a translation is a content decision, and MCP does not make
+        // those. It reports them — the same way the duplicate-value case two
+        // blocks below already does — and the branch diff shows the rest.
+        const replaced = Object.keys(newData).filter(
           k => k in existing && existing[k] !== newData[k],
         )
-        if (collisions.length > 0) {
-          throw new Error(
-            `Dictionary "${model.id}" (${locale}): ${collisions.length} key collision(s) — [${collisions.join(', ')}] already exist with different values. `
-            + 'Read existing keys with contentrain_content_list first, or include all keys in a single save call.',
+        if (replaced.length > 0) {
+          const shown = replaced.slice(0, MAX_REPORTED_KEYS)
+          const detail = shown.map(k => `"${k}": "${existing[k]}" → "${newData[k]}"`).join(', ')
+          const more = replaced.length > shown.length ? `, and ${replaced.length - shown.length} more` : ''
+          entryAdvisories.push(
+            `Dictionary "${model.id}" (${locale}): replaced ${replaced.length} existing value(s) — ${detail}${more}.`,
           )
         }
 
-        const entryAdvisories: string[] = []
         const reverseMap = new Map<string, string>()
         for (const [k, v] of Object.entries(existing)) reverseMap.set(v, k)
         for (const [newKey, newValue] of Object.entries(newData)) {
@@ -183,23 +199,52 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
       }
 
       case 'document': {
+        const entryAdvisories: string[] = []
         const slug = entry.slug ?? (entry.data['slug'] as string | undefined)
         if (!slug) throw new Error('Document entries require a slug')
         const slugErr = validateSlug(slug)
         if (slugErr) throw new Error(slugErr)
 
-        const fmData = { ...entry.data }
-        const bodyContent = (fmData['body'] as string | undefined) ?? ''
-        delete fmData['body']
-        if (!fmData['slug']) fmData['slug'] = slug
+        const incomingFm = { ...entry.data }
+        const bodySent = 'body' in incomingFm
+        const incomingBody = (incomingFm['body'] as string | undefined) ?? ''
+        delete incomingFm['body']
+        if (!incomingFm['slug']) incomingFm['slug'] = slug
 
         const dPath = documentFilePath(model, locale, slug)
         const mPath = metaFilePath(model, locale, defaultLocale, slug)
 
-        let existingRaw: string | null = null
-        try { existingRaw = await reader.readFile(dPath) }
-        catch { /* not yet */ }
+        // Accumulator before disk, as the collection branch does: two entries
+        // touching one document in a single call must compose, not race.
+        let existingRaw: string | null = markdownChanges.get(dPath) ?? null
+        if (existingRaw === null) {
+          try { existingRaw = await reader.readFile(dPath) }
+          catch { /* not yet */ }
+        }
+        // Same rule the collection branch uses: anything already present —
+        // on disk or produced earlier in this plan — makes this an update.
         const action: 'created' | 'updated' = existingRaw ? 'updated' : 'created'
+
+        // Merge with what is on disk, the way collections and singletons above
+        // already do. Documents were the only kind that replaced instead of
+        // merging, so a save that touched one frontmatter field wrote a file
+        // containing only that field — and an entirely empty body. Nothing
+        // reported it: the response said `valid: true`, because validation runs
+        // over the plan's own output, which was internally consistent and
+        // wrong. Under auto-merge that reaches the default branch directly.
+        const existing = existingRaw ? parseMarkdownFrontmatter(existingRaw) : null
+        const fmData = { ...existing?.frontmatter, ...incomingFm }
+
+        // Absent `body` means "I am not editing the body" — keep what is there.
+        // A `body` that is present, even empty, is an instruction, and is
+        // honoured; clearing real content that way is announced rather than
+        // silent, because it is indistinguishable from a templating mistake.
+        const bodyContent = bodySent ? incomingBody : (existing?.body ?? '')
+        if (bodySent && !incomingBody.trim() && existing?.body.trim()) {
+          const notice = `Document "${slug}" (${locale}): body cleared — an explicit empty "body" replaced ${existing.body.length} characters. Omit "body" to leave it untouched.`
+          entryAdvisories.push(notice)
+          advisories.push(notice)
+        }
 
         // Frontmatter media fields go through the schema-guided rewrite; the
         // markdown body has its `media/...` image/link targets rewritten too.
@@ -207,7 +252,12 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
         markdownChanges.set(dPath, serializeMarkdownFrontmatter(normalizeMedia(fmData), normalizedBody))
         metaByPath.set(mPath, mergeEntryMeta(await priorMeta(mPath), entry.data))
 
-        result.push({ action, slug, locale })
+        result.push({
+          action,
+          slug,
+          locale,
+          ...(entryAdvisories.length > 0 ? { advisories: entryAdvisories } : {}),
+        })
         break
       }
     }

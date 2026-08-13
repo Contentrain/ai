@@ -5,7 +5,7 @@ import type { ToolProvider } from '../server.js'
 import { readConfig } from '../core/config.js'
 import { readModel } from '../core/model-manager.js'
 import { resolveContentDir, resolveJsonFilePath, deleteContent } from '../core/content-manager.js'
-import { readMeta, writeMeta, writeMetaEntries } from '../core/meta-manager.js'
+import { applyStatusChange, mergeEntryMeta, readMeta, writeMeta, writeMetaEntries } from '../core/meta-manager.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { normalizeOperationError } from '../git/errors.js'
@@ -127,21 +127,14 @@ export function registerBulkTools(
                 const entries = sourceData as Record<string, Record<string, unknown>>
                 const updates: Record<string, EntryMeta> = {}
                 for (const entryId of Object.keys(entries)) {
-                  updates[entryId] = {
-                    status: 'draft',
-                    source: 'agent',
-                    updated_by: 'contentrain-mcp',
-                  }
+                  // A copied entry is a new entry in the target locale.
+                  updates[entryId] = mergeEntryMeta(undefined)
                 }
                 // One read-modify-write for the whole locale file — see writeMetaEntries.
                 const written = await writeMetaEntries(wt, model, { locale: input.target_locale!, defaultLocale: config.locales.default }, updates)
                 copiedCount = written.length
               } else {
-                await writeMeta(wt, model, { locale: input.target_locale!, defaultLocale: config.locales.default }, {
-                  status: 'draft',
-                  source: 'agent',
-                  updated_by: 'contentrain-mcp',
-                })
+                await writeMeta(wt, model, { locale: input.target_locale!, defaultLocale: config.locales.default }, mergeEntryMeta(undefined))
                 copiedCount = 1
               }
 
@@ -247,7 +240,7 @@ export function registerBulkTools(
                   for (const entryId of input.entry_ids!) {
                     const existing = metaData?.[entryId]
                     if (!existing) continue
-                    updates[entryId] = { ...existing, status: input.status!, updated_by: 'contentrain-mcp' }
+                    updates[entryId] = applyStatusChange(existing, input.status!)
                     foundIds.add(entryId)
                   }
 
@@ -257,11 +250,7 @@ export function registerBulkTools(
                 } else {
                   const existing = await readMeta(wt, model, { locale, defaultLocale: config.locales.default }) as EntryMeta | null
                   if (!existing) continue
-                  await writeMeta(wt, model, { locale, defaultLocale: config.locales.default }, {
-                    ...existing,
-                    status: input.status!,
-                    updated_by: 'contentrain-mcp',
-                  })
+                  await writeMeta(wt, model, { locale, defaultLocale: config.locales.default }, applyStatusChange(existing, input.status!))
                   updatedPerLocale[locale] = [model.id]
                 }
               }

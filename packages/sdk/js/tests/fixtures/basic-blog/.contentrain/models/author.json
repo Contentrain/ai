@@ -4,9 +4,18 @@
   "kind": "collection",
   "domain": "blog",
   "i18n": false,
+  "title_field": "name",
   "fields": {
-    "name": { "type": "string", "required": true },
-    "email": { "type": "email", "required": false },
-    "bio": { "type": "text" }
+    "bio": {
+      "type": "text"
+    },
+    "email": {
+      "required": false,
+      "type": "email"
+    },
+    "name": {
+      "required": true,
+      "type": "string"
+    }
   }
 }

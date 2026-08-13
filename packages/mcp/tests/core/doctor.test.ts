@@ -37,6 +37,7 @@ async function seedMinimalProject(root: string) {
     name: 'Hero',
     kind: 'singleton',
     domain: 'marketing',
+    title_field: 'title',
     fields: { title: { type: 'string', required: true } },
   }, null, 2))
 
@@ -109,7 +110,7 @@ describe('runDoctor', () => {
     await seedMinimalProject(testDir)
     const report = await runDoctor(testDir)
     expect(report.usage).toBeUndefined()
-    expect(report.checks.find(c => c.name === 'Unused content keys')).toBeUndefined()
+    expect(report.checks.find(c => c.name === 'Unused dictionary keys')).toBeUndefined()
   })
 
   it('adds the usage block + 3 extra checks when { usage: true }', async () => {
@@ -121,10 +122,10 @@ describe('runDoctor', () => {
     expect(Array.isArray(report.usage?.missingLocaleKeys)).toBe(true)
 
     const usageCheckNames = report.checks.filter(c =>
-      ['Unused content keys', 'Duplicate dictionary values', 'Locale key coverage'].includes(c.name),
+      ['Unused dictionary keys', 'Duplicate dictionary values', 'Locale key coverage'].includes(c.name),
     ).map(c => c.name)
     expect(usageCheckNames).toEqual([
-      'Unused content keys',
+      'Unused dictionary keys',
       'Duplicate dictionary values',
       'Locale key coverage',
     ])
@@ -234,5 +235,102 @@ describe('runDoctor — Remote branches check', () => {
     expect(check?.pass).toBe(true)
     expect(check?.severity).toBe('info')
     expect(check?.detail).toContain('Could not check')
+  })
+})
+
+/**
+ * The Models check used to report "all valid" on the strength of JSON.parse.
+ * Model reads are unvalidated casts, so a definition can be structurally wrong
+ * and still load — which is precisely the state every project is in the moment
+ * title_field becomes required.
+ */
+describe('runDoctor — Models check', () => {
+  const writeModelJson = (id: string, model: Record<string, unknown>) =>
+    writeFileSafe(join(testDir, '.contentrain', 'models', `${id}.json`), JSON.stringify(model, null, 2))
+
+  it('fails on a model missing title_field and names it', async () => {
+    await seedMinimalProject(testDir)
+    await writeModelJson('legacy', {
+      id: 'legacy',
+      name: 'Legacy',
+      kind: 'collection',
+      domain: 'marketing',
+      i18n: false,
+      fields: { title: { type: 'string', required: true } },
+    })
+
+    const report = await runDoctor(testDir)
+    const models = report.checks.find(c => c.name === 'Models')
+
+    expect(models?.pass).toBe(false)
+    expect(models?.severity).toBe('error')
+    expect(models?.detail).toContain('legacy')
+    // A health check that reports a problem without its remedy just worries you.
+    expect(models?.detail).toContain('contentrain validate --fix')
+  })
+
+  it('distinguishes an unparseable model from an invalid one', async () => {
+    await seedMinimalProject(testDir)
+    await writeFileSafe(join(testDir, '.contentrain', 'models', 'broken.json'), '{ not json')
+
+    const report = await runDoctor(testDir)
+    const models = report.checks.find(c => c.name === 'Models')
+
+    expect(models?.pass).toBe(false)
+    expect(models?.detail).toContain('failed to parse')
+  })
+
+  it('omits severity when every model is valid', async () => {
+    await seedMinimalProject(testDir)
+
+    const report = await runDoctor(testDir)
+    const models = report.checks.find(c => c.name === 'Models')
+
+    expect(models?.pass).toBe(true)
+    expect(models?.detail).toContain('all valid')
+    expect(models?.severity).toBeUndefined()
+  })
+})
+
+/**
+ * `--usage` reports keys that source code should have referenced but did not.
+ * That question only has an answer for dictionaries.
+ */
+describe('runDoctor --usage — unused keys', () => {
+  it('reports a dictionary key that no source file references', async () => {
+    await seedMinimalProject(testDir)
+    await writeFileSafe(join(testDir, '.contentrain', 'models', 'ui-strings.json'), JSON.stringify({
+      id: 'ui-strings', name: 'UI Strings', kind: 'dictionary', domain: 'marketing', i18n: true, title_field: 'key',
+    }, null, 2))
+    await writeFileSafe(
+      join(testDir, '.contentrain', 'content', 'marketing', 'ui-strings', 'en.json'),
+      JSON.stringify({ 'nav.home': 'Home', 'nav.gone': 'Nobody calls me' }, null, 2),
+    )
+    await writeFileSafe(join(testDir, 'src', 'App.tsx'), `export const A = () => t('nav.home')\n`)
+
+    const report = await runDoctor(testDir, { usage: true })
+
+    const keys = report.usage!.unusedKeys.map(k => k.key)
+    expect(keys).toContain('nav.gone')
+    expect(keys).not.toContain('nav.home')
+  })
+
+  // Entries are fetched by query — a hex entry id or a document slug will never
+  // appear in a source file, so flagging them buried the real findings.
+  it('does not flag collection entry ids or document slugs', async () => {
+    await seedMinimalProject(testDir)
+    await writeFileSafe(join(testDir, '.contentrain', 'models', 'articles.json'), JSON.stringify({
+      id: 'articles', name: 'Articles', kind: 'collection', domain: 'marketing', i18n: true,
+      title_field: 'title', fields: { title: { type: 'string', required: true } },
+    }, null, 2))
+    await writeFileSafe(
+      join(testDir, '.contentrain', 'content', 'marketing', 'articles', 'en.json'),
+      JSON.stringify({ '0a1b2c3d4e5f': { title: 'Never referenced by id' } }, null, 2),
+    )
+    await writeFileSafe(join(testDir, 'src', 'App.tsx'), `export const A = () => null\n`)
+
+    const report = await runDoctor(testDir, { usage: true })
+
+    expect(report.usage!.unusedKeys.map(k => k.model)).not.toContain('articles')
   })
 })

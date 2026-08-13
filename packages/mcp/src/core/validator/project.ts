@@ -1,11 +1,11 @@
 import type { ValidationError, ModelDefinition, ContentrainConfig, EntryMeta } from '@contentrain/types'
-import { detectSecrets } from '@contentrain/types'
+import { detectSecrets, MODEL_FIELD_ORDER } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { writeJson, writeText } from '../../util/fs.js'
 import { readConfig } from '../config.js'
-import { listModels, readModel } from '../model-manager.js'
-import { writeMeta } from '../meta-manager.js'
+import { inferTitleField, listModels, readModel, titleFieldIssues } from '../model-manager.js'
+import { mergeEntryMeta, writeMeta } from '../meta-manager.js'
 import { parseFrontmatter, resolveLocaleStrategy } from '../content-manager.js'
 import type { RepoReader } from '../contracts/index.js'
 import { LocalReader } from '../../providers/local/reader.js'
@@ -327,9 +327,10 @@ async function validateCollectionModel(
         // the agent to resolve the layout by hand.
         if (fix && projectRoot && !strayResult.unresolved) {
           await writeMeta(projectRoot, model, { locale, entryId, defaultLocale: config.locales.default }, {
-            status: 'draft',
+            // `source: 'import'` on purpose: this record is being fabricated
+            // for content that arrived without one, not written by an agent.
+            ...mergeEntryMeta(undefined),
             source: 'import',
-            updated_by: 'contentrain-mcp',
           })
           fixed++
         }
@@ -361,6 +362,68 @@ async function validateCollectionModel(
   }
 
   return { entries: entriesChecked, fixed }
+}
+
+/**
+ * Flag — and, with `fix`, backfill — a model definition's `title_field`.
+ *
+ * This is the migration path for models authored before the property existed.
+ * Reads are an unvalidated cast, so such a model loads happily with `title_field`
+ * undefined in a slot the type system calls a string; nothing would ever say so.
+ *
+ * Only the *missing* case is repaired. A `title_field` that names an absent field
+ * or an undisplayable type is an authoring mistake, not a legacy gap — filling in
+ * a different answer there would be overruling a decision someone made, which is
+ * the line `project.ts` draws everywhere else.
+ *
+ * Every repair emits a notice naming the field and the rule that chose it. The
+ * doctrine that governs the rest of this file is that MCP does not make content
+ * decisions; a schema backfill is not a content decision, but the principle
+ * underneath — never exercise judgement invisibly — still binds. The notice and
+ * the diff on `cr/fix/validate` are the two ways a human can overrule it.
+ */
+async function checkModelDefinition(
+  projectRoot: string | undefined,
+  model: ModelDefinition,
+  issues: ValidationError[],
+  fix: boolean,
+): Promise<number> {
+  const { errors, warnings } = titleFieldIssues(model)
+  if (errors.length === 0 && warnings.length === 0) return 0
+
+  const repairable = !model.title_field
+  if (fix && projectRoot && repairable) {
+    const pick = inferTitleField(model.kind, model.fields)
+    if (pick) {
+      model.title_field = pick.field
+      // writeJson, not writeModel: writeModel also ensures the content and meta
+      // directories, which for a model with `content_path` means creating
+      // directories in the user's source tree. A validator does not do that.
+      await writeJson(join(projectRoot, `.contentrain/models/${model.id}.json`), model, MODEL_FIELD_ORDER)
+      issues.push({
+        severity: 'notice',
+        model: model.id,
+        field: 'title_field',
+        message: `title_field set to "${pick.field}" (rule: ${pick.rule}). If that is the wrong field, correct it with contentrain_model_save.`,
+      })
+      return 1
+    }
+    issues.push({
+      severity: 'error',
+      model: model.id,
+      field: 'title_field',
+      message: `Missing "title_field" and no field can serve as one — add a string or text field, then re-run. A title cannot be an image, relation or number.`,
+    })
+    return 0
+  }
+
+  for (const message of errors) {
+    issues.push({ severity: 'error', model: model.id, field: 'title_field', message })
+  }
+  for (const message of warnings) {
+    issues.push({ severity: 'warning', model: model.id, field: 'title_field', message })
+  }
+  return 0
 }
 
 /**
@@ -919,6 +982,11 @@ export async function validateProject(
     if (!model) continue
 
     modelsChecked++
+    // Ahead of the content checks: a broken model definition explains the content
+    // errors below it, and the repair mutates `model` in place so the content
+    // validators downstream see the fixed object.
+    totalFixed += await checkModelDefinition(projectRoot, model, issues, fix)
+
     let result: { entries: number; fixed: number }
 
     switch (model.kind) {

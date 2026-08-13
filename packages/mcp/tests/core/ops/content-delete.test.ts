@@ -18,6 +18,7 @@ const nonI18nCollection: ModelDefinition = {
   kind: 'collection',
   domain: 'blog',
   i18n: false,
+  title_field: 'name',
   fields: { name: { type: 'string', required: true } },
 }
 

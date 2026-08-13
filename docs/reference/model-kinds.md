@@ -66,6 +66,7 @@ Collections store **multiple typed entries** as a JSON object-map keyed by auto-
   "kind": "collection",
   "domain": "blog",
   "i18n": true,
+  "title_field": "name",
   "fields": {
     "title": { "type": "string", "required": true },
     "slug": { "type": "slug", "required": true, "unique": true },
@@ -165,6 +166,7 @@ Singletons store a **single entry** per locale — ideal for one-off content lik
   "kind": "singleton",
   "domain": "system",
   "i18n": true,
+  "title_field": "title",
   "fields": {
     "site_name": { "type": "string", "required": true },
     "tagline": { "type": "string" },
@@ -243,6 +245,7 @@ Dictionary models must NOT have `fields` defined. The keys in the data object ar
   "kind": "dictionary",
   "domain": "system",
   "i18n": true,
+  "title_field": "key",
   "content_path": "locales"
 }
 ```
@@ -323,6 +326,7 @@ Welcome to Contentrain. This guide walks you through...
   "kind": "document",
   "domain": "docs",
   "i18n": false,
+  "title_field": "title",
   "content_path": "docs/guides",
   "fields": {
     "title": { "type": "string", "required": true },
@@ -432,6 +436,7 @@ By default, content files are stored inside `.contentrain/content/{domain}/{mode
   "kind": "collection",
   "domain": "blog",
   "i18n": true,
+  "title_field": "title",
   "content_path": "content/blog"
 }
 ```
@@ -569,6 +574,7 @@ A model can reference itself for tree structures:
 {
   "id": "categories",
   "kind": "collection",
+  "title_field": "name",
   "fields": {
     "name": { "type": "string", "required": true },
     "parent": { "type": "relation", "model": "categories" }

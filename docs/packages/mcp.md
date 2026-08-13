@@ -55,10 +55,10 @@ Use the local stdio server when the agent should work against a checkout on your
 
 ## Tool Catalog
 
-The MCP server exposes **24 tools** — 19 core + 5 media — organized by function. Each tool includes [MCP annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) so clients can distinguish safe reads from writes and destructive operations.
+The MCP server exposes **26 tools** — 21 core + 5 media — organized by function. Each tool includes [MCP annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) so clients can distinguish safe reads from writes and destructive operations.
 
 ::: info Capability-aware listing
-`tools/list` is filtered per session: tools whose requirements (local project root, provider capabilities) cannot be met are not registered at all. A local stdio server lists the 19 core tools; a remote-provider session lists the remote-safe subset plus — on media-capable providers like Studio MCP Cloud — the 5 `contentrain_media_*` tools. Core remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. See `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`.
+`tools/list` is filtered per session: tools whose requirements (local project root, provider capabilities) cannot be met are not registered at all. A local stdio server lists the 21 core tools; a remote-provider session lists the remote-safe subset plus — on media-capable providers like Studio MCP Cloud — the 5 `contentrain_media_*` tools. Core remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. See `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`.
 :::
 
 | Tool | Title | Read-only | Destructive |
@@ -74,6 +74,8 @@ The MCP server exposes **24 tools** — 19 core + 5 media — organized by funct
 | `contentrain_content_save` | Save Content | — | — |
 | `contentrain_content_delete` | Delete Content | — | **Yes** |
 | `contentrain_content_list` | List Content | Yes | — |
+| `contentrain_vocabulary_save` | Save Vocabulary Terms | No | — |
+| `contentrain_vocabulary_delete` | Delete Vocabulary Terms | No | Yes |
 | `contentrain_validate` | Validate Project | — | — |
 | `contentrain_submit` | Submit Branches | — | — |
 | `contentrain_merge` | Merge Branch | — | — |
@@ -99,6 +101,8 @@ The MCP server exposes **24 tools** — 19 core + 5 media — organized by funct
 | `contentrain_describe_format` | Format reference | File structure, JSON formats, markdown conventions, locale strategies |
 | `contentrain_doctor` | Health diagnostics | Setup validation, SDK freshness, orphan content, local branch limits, remote `cr/*` count, unused keys, missing translations |
 | `contentrain_content_list` | Read content | List entries with `filter`, optional relation resolution (`resolve`), and `limit`/`offset` pagination |
+| `contentrain_vocabulary_save` | Write vocabulary | Add or update canonical terms — `{ "term-slug": { "en": "…" } }`, merges with what exists |
+| `contentrain_vocabulary_delete` | Write vocabulary | Remove canonical terms by slug (`confirm: true`) |
 
 ### Write Tools (Git-Backed, Branch-Isolated)
 
@@ -323,6 +327,7 @@ Ask your agent: *"Is my Contentrain setup healthy?"* — triggers `contentrain_d
   "kind": "collection",
   "domain": "content",
   "i18n": true,
+  "title_field": "title",
   "fields": {
     "title": { "type": "string", "required": true },
     "excerpt": { "type": "text" },

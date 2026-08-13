@@ -111,6 +111,8 @@ not silently ignored. The "Enforced by" column says who actually checks each one
 | `accept` | `image`, `video`, `file` | content_save (**warns**) | Allowed MIME types: `"image/png,image/jpeg"`, `"image/*"`, `".pdf"`. MCP checks the value's **file extension** — an approximation, since it holds a path, not the bytes. Your provider enforces the real MIME type at ingest. |
 | `maxSize` | `image`, `video`, `file` | **Provider, at ingest — not MCP** | Maximum file size in bytes. MCP never sees the file, so it cannot check this; model_save says so. |
 | `description` | ALL | — | Human-readable hint (shown in Studio UI tooltip, used as agent context). |
+| `label` | ALL | — | Editor label: a string, or an object keyed by locale. Absent means the raw field name is shown. |
+| `order` | ALL | — | Display position, ascending. Absent sorts last, alphabetically. Fractional values allowed. |
 
 ### 3.2 Omission Rules
 
@@ -134,6 +136,7 @@ Model definitions live at `.contentrain/models/{model-id}.json`. One file per mo
   "kind": "document",
   "domain": "blog",
   "i18n": true,
+  "title_field": "title",
   "description": "Blog articles with markdown body",
   "fields": {
     "title": { "type": "string", "required": true, "max": 120 },
@@ -153,10 +156,22 @@ Model definitions live at `.contentrain/models/{model-id}.json`. One file per mo
 | `kind` | `string` | Yes | One of: `singleton`, `collection`, `document`, `dictionary`. |
 | `domain` | `string` | Yes | Organizational group (maps to content subdirectory). |
 | `i18n` | `boolean` | Yes | Whether the model supports multiple locales. |
+| `title_field` | `string` | Yes | Field shown as an entry's title in listings, pickers and relation references. Must name a field declared on this model whose type is `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or `richtext`. Dictionary models have no fields — they use the reserved value `"key"`, meaning the entry key is the title. |
 | `description` | `string` | No | Model description for documentation and agent context. |
 | `fields` | `object` | Yes (except dictionary) | Field definitions. Dictionary kind has NO fields. |
 | `content_path` | `string` | No | Framework-relative path for content files (e.g., `"content/blog"`, `"locales"`). When set, content is written here instead of `.contentrain/content/`. |
 | `locale_strategy` | `string` | No | How locale is encoded in file names: `"file"` (default), `"suffix"`, `"directory"`, `"none"`. |
+
+#### Choosing `title_field`
+
+Declare it on create AND keep it correct when renaming or removing fields — a
+`title_field` pointing at a field that no longer exists fails validation.
+
+Pick the field a human would read to tell one entry from another: the headline,
+the name, the question. Not the slug, not the icon, not a relation ID — those are
+identifiers, and a list titled `instagram-launch-post` or `i-lucide-bot` tells the
+reader nothing. That is exactly what consumers produced when they had to guess,
+which is why the property exists.
 
 ### 4.2 System Fields
 
@@ -167,7 +182,7 @@ Do NOT define these in the schema. The platform manages them automatically:
 | `id` | Collection | 12-char hex, used as object-map key |
 | `slug` | Document | Directory name in content path |
 | `createdAt` / `updatedAt` | All | Derived from Git commit history (not stored) |
-| `status`, `source`, `updated_by`, `approved_by` | All | Stored in `.contentrain/meta/` |
+| `status`, `source`, `updated_by`, `updated_at`, `approved_by` | All | Stored in `.contentrain/meta/` |
 
 ---
 

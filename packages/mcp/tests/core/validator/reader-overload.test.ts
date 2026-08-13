@@ -53,6 +53,7 @@ describe('validateProject reader overload', () => {
         kind: 'singleton',
         domain: 'marketing',
         i18n: false,
+        title_field: 'title',
         fields: { title: { type: 'string', required: true } },
       }),
       '.contentrain/content/marketing/hero/data.json': JSON.stringify({ title: 'Welcome' }),
@@ -82,6 +83,7 @@ describe('validateProject reader overload', () => {
         kind: 'singleton',
         domain: 'marketing',
         i18n: false,
+        title_field: 'title',
         fields: { title: { type: 'string', required: true } },
       }),
       '.contentrain/content/marketing/hero/data.json': JSON.stringify({}),
@@ -112,6 +114,7 @@ describe('validateProject reader overload', () => {
         kind: 'singleton',
         domain: 'marketing',
         i18n: false,
+        title_field: 'title',
         fields: { title: { type: 'string', required: true } },
       }),
     })

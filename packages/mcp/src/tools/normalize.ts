@@ -148,6 +148,7 @@ export function registerNormalizeTools(
         kind: z.enum(['singleton', 'collection', 'dictionary', 'document']).describe('Model kind'),
         domain: z.string().describe('Content domain (e.g. "marketing", "app")'),
         i18n: z.boolean().optional().describe('Enable i18n. Default: true'),
+        title_field: z.string().optional().describe('Field shown as an entry title. Inferred from the extracted fields when omitted; the dry run reports what was chosen. Dictionary models: "key".'),
         fields: fieldDefZodSchema.optional().describe('Field definitions — shared schema with model_save for full parity'),
         entries: z.array(z.object({
           locale: z.string().optional().describe('Locale. Default: project default'),

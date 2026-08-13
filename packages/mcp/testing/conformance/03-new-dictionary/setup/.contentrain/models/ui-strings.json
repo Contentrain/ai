@@ -1,7 +1,8 @@
 {
+  "id": "ui-strings",
+  "name": "UI Strings",
+  "kind": "dictionary",
   "domain": "marketing",
   "i18n": true,
-  "id": "ui-strings",
-  "kind": "dictionary",
-  "name": "UI Strings"
+  "title_field": "key"
 }

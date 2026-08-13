@@ -30,6 +30,7 @@ describe('describe command', () => {
       kind: 'collection',
       domain: 'content',
       i18n: true,
+      title_field: 'title',
       fields: { title: { type: 'string', required: true } },
       stats: { total_entries: 3, locales: { en: 3 } },
       import_snippet: "import { useBlogPost } from '#contentrain'",
