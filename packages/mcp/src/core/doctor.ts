@@ -4,7 +4,7 @@ import { readdir, stat } from 'node:fs/promises'
 import type { Dirent } from 'node:fs'
 import type { ContentrainConfig, ModelDefinition } from '@contentrain/types'
 import { readConfig } from './config.js'
-import { listModels, readModel } from './model-manager.js'
+import { listModels, readModel, validateModelDefinition } from './model-manager.js'
 import { resolveContentDir, resolveJsonFilePath, resolveLocaleStrategy } from './content-manager.js'
 import { autoDetectSourceDirs, discoverFiles } from './scan-config.js'
 import { checkBranchHealth, listRemoteCrBranches } from '../git/branch-lifecycle.js'
@@ -164,17 +164,32 @@ export async function runDoctor(
     })
   }
 
-  // ─── 6. Models all parseable ───
+  // ─── 6. Models parse AND satisfy the schema contract ───
+  //
+  // This check used to report "all valid" on the strength of JSON.parse alone,
+  // which was a claim it had not earned. Model reads are unvalidated casts, so a
+  // definition can be structurally wrong — a missing title_field, a field
+  // constraint that cannot hold — and still load without a word. Doctor reports;
+  // `contentrain validate --fix` is what repairs.
   if (hasCrDir) {
     try {
       const models = await listModels(projectRoot)
       const parseResults = await Promise.all(models.map(m => readModel(projectRoot, m.id)))
-      const allParseable = parseResults.every(r => r !== null)
+      const unparseable = models.filter((_, i) => parseResults[i] === null).map(m => m.id)
+      const invalid = parseResults
+        .filter((m): m is NonNullable<typeof m> => m !== null)
+        .filter(m => validateModelDefinition(m).errors.length > 0)
+        .map(m => m.id)
+
+      const problems = [
+        ...(unparseable.length > 0 ? [`${unparseable.length} failed to parse (${unparseable.join(', ')})`] : []),
+        ...(invalid.length > 0 ? [`${invalid.length} invalid (${invalid.join(', ')}) — run: contentrain validate --fix`] : []),
+      ]
       checks.push({
         name: 'Models',
-        pass: allParseable,
-        detail: `${models.length} model(s)${allParseable ? ', all valid' : ', some failed to parse'}`,
-        severity: allParseable ? undefined : 'error',
+        pass: problems.length === 0,
+        detail: `${models.length} model(s)${problems.length === 0 ? ', all valid' : `, ${problems.join('; ')}`}`,
+        severity: problems.length === 0 ? undefined : 'error',
       })
     } catch {
       checks.push({ name: 'Models', pass: false, detail: 'Failed to read models', severity: 'error' })

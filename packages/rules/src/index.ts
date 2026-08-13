@@ -23,6 +23,28 @@ export type FieldType = (typeof FIELD_TYPES)[number]
 export const MODEL_KINDS = ['singleton', 'collection', 'document', 'dictionary'] as const
 export type ModelKind = (typeof MODEL_KINDS)[number]
 
+// ─── Model Definition Properties ───
+//
+// The parity anchor for the model schema. Docs describing `ModelDefinition` drift
+// silently: nothing failed when a property landed in @contentrain/types and never
+// reached schema-rules.md. The tests in tests/mcp-parity.test.ts assert this list
+// against MODEL_FIELD_ORDER in @contentrain/mcp and against the prose tables.
+
+export const MODEL_PROPERTIES = [
+  { name: 'id', required: true },
+  { name: 'name', required: true },
+  { name: 'kind', required: true },
+  { name: 'domain', required: true },
+  { name: 'i18n', required: true },
+  { name: 'title_field', required: true },
+  { name: 'description', required: false },
+  { name: 'content_path', required: false },
+  { name: 'locale_strategy', required: false },
+  { name: 'fields', required: false },
+] as const
+
+export type ModelProperty = (typeof MODEL_PROPERTIES)[number]['name']
+
 // ─── MCP Tools (24 tools: 19 core + 5 media) ───
 
 export const MCP_TOOLS = [

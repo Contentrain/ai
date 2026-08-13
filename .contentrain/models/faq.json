@@ -4,6 +4,7 @@
   "kind": "collection",
   "domain": "marketing",
   "i18n": true,
+  "title_field": "question",
   "fields": {
     "answer": {
       "required": true,

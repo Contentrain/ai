@@ -9,6 +9,7 @@ export const i18nTemplate: ScaffoldTemplate = {
       kind: 'singleton',
       domain: 'ui',
       i18n: true,
+      title_field: 'brand',
       fields: {
         brand: { type: 'string', required: true },
         items: {
@@ -29,6 +30,7 @@ export const i18nTemplate: ScaffoldTemplate = {
       kind: 'singleton',
       domain: 'ui',
       i18n: true,
+      title_field: 'name',
       fields: {
         name:     { type: 'string' },
         email:    { type: 'string' },
@@ -43,6 +45,7 @@ export const i18nTemplate: ScaffoldTemplate = {
       kind: 'dictionary',
       domain: 'system',
       i18n: true,
+      title_field: 'key',
     },
     {
       id: 'app-strings',
@@ -50,6 +53,7 @@ export const i18nTemplate: ScaffoldTemplate = {
       kind: 'dictionary',
       domain: 'system',
       i18n: true,
+      title_field: 'key',
     },
   ],
   sample_content: {

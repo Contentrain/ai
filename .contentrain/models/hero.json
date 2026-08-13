@@ -4,6 +4,7 @@
   "kind": "collection",
   "domain": "marketing",
   "i18n": true,
+  "title_field": "title",
   "description": "Homepage hero content",
   "fields": {
     "cta_link": {

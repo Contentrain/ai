@@ -9,6 +9,7 @@ export const mobileTemplate: ScaffoldTemplate = {
       kind: 'dictionary',
       domain: 'system',
       i18n: true,
+      title_field: 'key',
     },
     {
       id: 'error-messages',
@@ -16,6 +17,7 @@ export const mobileTemplate: ScaffoldTemplate = {
       kind: 'dictionary',
       domain: 'system',
       i18n: true,
+      title_field: 'key',
     },
     {
       id: 'onboarding',
@@ -23,6 +25,7 @@ export const mobileTemplate: ScaffoldTemplate = {
       kind: 'collection',
       domain: 'app',
       i18n: true,
+      title_field: 'title',
       fields: {
         title:       { type: 'string', required: true },
         description: { type: 'text' },

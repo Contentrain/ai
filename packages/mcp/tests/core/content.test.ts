@@ -22,6 +22,7 @@ const singletonModel: ModelDefinition = {
   kind: 'singleton',
   domain: 'marketing',
   i18n: true,
+  title_field: 'title',
   fields: {
     title: { type: 'string', required: true },
     subtitle: { type: 'text' },
@@ -34,6 +35,7 @@ const collectionModel: ModelDefinition = {
   kind: 'collection',
   domain: 'blog',
   i18n: false,
+  title_field: 'name',
   fields: {
     name: { type: 'string', required: true },
     bio: { type: 'text' },
@@ -46,6 +48,7 @@ const documentModel: ModelDefinition = {
   kind: 'document',
   domain: 'blog',
   i18n: true,
+  title_field: 'title',
   fields: {
     title: { type: 'string', required: true },
     slug: { type: 'slug', required: true },
@@ -59,6 +62,7 @@ const dictionaryModel: ModelDefinition = {
   kind: 'dictionary',
   domain: 'system',
   i18n: true,
+  title_field: 'key',
 }
 
 const nonI18nSingletonModel: ModelDefinition = {
@@ -67,6 +71,7 @@ const nonI18nSingletonModel: ModelDefinition = {
   kind: 'singleton',
   domain: 'system',
   i18n: false,
+  title_field: 'title',
   fields: {
     title: { type: 'string', required: true },
   },

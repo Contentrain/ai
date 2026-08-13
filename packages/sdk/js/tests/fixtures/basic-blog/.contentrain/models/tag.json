@@ -4,8 +4,15 @@
   "kind": "collection",
   "domain": "blog",
   "i18n": false,
+  "title_field": "label",
   "fields": {
-    "label": { "type": "string", "required": true },
-    "color": { "type": "color", "required": false }
+    "color": {
+      "required": false,
+      "type": "color"
+    },
+    "label": {
+      "required": true,
+      "type": "string"
+    }
   }
 }

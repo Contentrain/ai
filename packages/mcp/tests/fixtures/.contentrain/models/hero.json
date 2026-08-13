@@ -4,11 +4,24 @@
   "kind": "singleton",
   "domain": "marketing",
   "i18n": true,
+  "title_field": "title",
   "fields": {
-    "title": { "type": "string", "required": true, "max": 120 },
-    "subtitle": { "type": "text" },
-    "cta_text": { "type": "string" },
-    "cta_url": { "type": "url" },
-    "background": { "type": "image" }
+    "background": {
+      "type": "image"
+    },
+    "cta_text": {
+      "type": "string"
+    },
+    "cta_url": {
+      "type": "url"
+    },
+    "subtitle": {
+      "type": "text"
+    },
+    "title": {
+      "max": 120,
+      "required": true,
+      "type": "string"
+    }
   }
 }

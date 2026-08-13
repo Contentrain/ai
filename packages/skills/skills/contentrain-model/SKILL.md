@@ -95,6 +95,7 @@ Before writing, show:
 - domain
 - `i18n` behavior
 - field list with types
+- `title_field` — which field titles an entry, and why that one
 - relation targets
 - any custom `content_path` / `locale_strategy`
 
@@ -113,6 +114,7 @@ Example:
   "kind": "singleton",
   "domain": "marketing",
   "i18n": true,
+  "title_field": "title",
   "fields": {
     "title": { "type": "string", "required": true },
     "subtitle": { "type": "text" },
@@ -121,6 +123,20 @@ Example:
   }
 }
 ```
+
+`title_field` is required. It names the field shown as an entry's title in
+listings, pickers and relation references, and must be a field on this model
+typed `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or
+`richtext`. Dictionary models have no fields, so they use the reserved value
+`"key"` — the entry key is the title.
+
+Choose what a reader uses to tell one entry from another: the headline, the
+name, the question. Not the slug, not the icon, not a relation ID. Consumers
+that had to infer this picked the icon over the headline, which is why the
+property exists.
+
+**When updating an existing model**, re-check `title_field` in the same call:
+renaming or removing the field it points at makes the model invalid.
 
 ### 8. Validate Downstream Impact
 

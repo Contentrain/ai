@@ -13,20 +13,30 @@ export { validateSlug, validateEntryId, validateLocale }
 export { parseMarkdownFrontmatter as parseFrontmatter, serializeMarkdownFrontmatter as serializeFrontmatter } from '@contentrain/types'
 
 // ─── Content paths ───
+//
+// These take the narrowest `Pick<ModelDefinition, …>` each one actually reads,
+// mirroring `ops/paths.ts`. Path resolution has nothing to do with a model's
+// title or schema, and demanding a whole `ModelDefinition` pushed callers that
+// only have a path-shaped fragment into `as ModelDefinition` casts — which then
+// hide a genuinely missing required property from the compiler.
 
-export function resolveContentDir(projectRoot: string, model: ModelDefinition): string {
+export type ContentPathModel = Pick<ModelDefinition, 'id' | 'domain' | 'content_path'>
+export type LocaleStrategyModel = Pick<ModelDefinition, 'locale_strategy'>
+export type ContentFileModel = Pick<ModelDefinition, 'id' | 'i18n' | 'locale_strategy'>
+
+export function resolveContentDir(projectRoot: string, model: ContentPathModel): string {
   if (model.content_path) {
     return join(projectRoot, model.content_path)
   }
   return join(contentrainDir(projectRoot), 'content', model.domain, model.id)
 }
 
-export function resolveLocaleStrategy(model: ModelDefinition): LocaleStrategy {
+export function resolveLocaleStrategy(model: LocaleStrategyModel): LocaleStrategy {
   return model.locale_strategy ?? 'file'
 }
 
 /** Build the file path for a JSON content file (singleton/collection/dictionary) */
-export function resolveJsonFilePath(dir: string, model: ModelDefinition, locale: string): string {
+export function resolveJsonFilePath(dir: string, model: ContentFileModel, locale: string): string {
   // When i18n is disabled, always use data.json (locale parameter is ignored)
   if (!model.i18n) return join(dir, 'data.json')
 
@@ -40,7 +50,7 @@ export function resolveJsonFilePath(dir: string, model: ModelDefinition, locale:
 }
 
 /** Build the file path for a markdown document */
-export function resolveMdFilePath(dir: string, model: ModelDefinition, locale: string, slug: string): string {
+export function resolveMdFilePath(dir: string, model: Pick<ModelDefinition, 'i18n' | 'locale_strategy'>, locale: string, slug: string): string {
   // When i18n is disabled, always use {slug}.md (locale parameter is ignored)
   if (!model.i18n) return join(dir, `${slug}.md`)
 

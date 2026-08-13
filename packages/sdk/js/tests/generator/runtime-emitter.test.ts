@@ -4,19 +4,19 @@ import type { ModelDefinition } from '@contentrain/types'
 import type { DataModule } from '../../src/generator/data-emitter.js'
 
 const COLLECTION_MODEL: ModelDefinition = {
-  id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true,
+  id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true, title_field: 'title',
 }
 
 const SINGLETON_MODEL: ModelDefinition = {
-  id: 'hero', name: 'Hero', kind: 'singleton', domain: 'marketing', i18n: true,
+  id: 'hero', name: 'Hero', kind: 'singleton', domain: 'marketing', i18n: true, title_field: 'title',
 }
 
 const DICTIONARY_MODEL: ModelDefinition = {
-  id: 'errors', name: 'Errors', kind: 'dictionary', domain: 'system', i18n: true,
+  id: 'errors', name: 'Errors', kind: 'dictionary', domain: 'system', i18n: true, title_field: 'key',
 }
 
 const DOCUMENT_MODEL: ModelDefinition = {
-  id: 'blog-article', name: 'Blog Article', kind: 'document', domain: 'blog', i18n: true,
+  id: 'blog-article', name: 'Blog Article', kind: 'document', domain: 'blog', i18n: true, title_field: 'title',
 }
 
 describe('emitRuntimeModule', () => {
@@ -122,7 +122,7 @@ describe('emitRuntimeModule', () => {
 describe('emitRuntimeModule — relation metadata', () => {
   it('generates _relationMeta for models with relation fields', () => {
     const modelWithRels: ModelDefinition = {
-      id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true,
+      id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true, title_field: 'title',
       fields: {
         title: { type: 'string', required: true },
         author: { type: 'relation', model: 'author', required: true },
@@ -140,7 +140,7 @@ describe('emitRuntimeModule — relation metadata', () => {
 
   it('generates _resolveEntry function when relations exist', () => {
     const modelWithRels: ModelDefinition = {
-      id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true,
+      id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true, title_field: 'title',
       fields: {
         author: { type: 'relation', model: 'author', required: true },
       },
@@ -160,7 +160,9 @@ describe('emitRuntimeModule — relation metadata', () => {
         kind: 'collection',
         domain: 'blog',
         i18n: true,
+        title_field: 'title',
         fields: {
+          title: { type: 'string', required: true },
           related: { type: 'relation', model: 'blog-article', required: true },
         },
       },
@@ -170,6 +172,7 @@ describe('emitRuntimeModule — relation metadata', () => {
         kind: 'document',
         domain: 'blog',
         i18n: true,
+        title_field: 'title',
       },
     ]
     const output = emitRuntimeModule(models, [
@@ -181,7 +184,7 @@ describe('emitRuntimeModule — relation metadata', () => {
 
   it('passes relation meta and resolver to QueryBuilder constructor', () => {
     const modelWithRels: ModelDefinition = {
-      id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true,
+      id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true, title_field: 'title',
       fields: {
         author: { type: 'relation', model: 'author', required: true },
       },
@@ -203,7 +206,7 @@ describe('emitRuntimeModule — relation metadata', () => {
 
   it('handles polymorphic relations (model: string[])', () => {
     const polyModel: ModelDefinition = {
-      id: 'post', name: 'Post', kind: 'collection', domain: 'blog', i18n: false,
+      id: 'post', name: 'Post', kind: 'collection', domain: 'blog', i18n: false, title_field: 'title',
       fields: {
         ref: { type: 'relation', model: ['author', 'tag'] },
       },

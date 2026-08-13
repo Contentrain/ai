@@ -35,12 +35,12 @@ const CONFIG = JSON.stringify({
 })
 
 const I18N_MODEL = JSON.stringify({
-  id: 'guides', name: 'Guides', kind: 'collection', domain: 'blog', i18n: true,
+  id: 'guides', name: 'Guides', kind: 'collection', domain: 'blog', i18n: true, title_field: 'title',
   fields: { title: { type: 'string' } },
 })
 
 const NON_I18N_MODEL = JSON.stringify({
-  id: 'sponsors', name: 'Sponsors', kind: 'collection', domain: 'blog', i18n: false,
+  id: 'sponsors', name: 'Sponsors', kind: 'collection', domain: 'blog', i18n: false, title_field: 'title',
   fields: { name: { type: 'string' } },
 })
 

@@ -804,7 +804,10 @@ export function titleFieldIssues(
  * Used by both the model_save tool and normalize extract.
  */
 export function validateModelDefinition(
-  input: { id: string; kind: string; fields?: Record<string, unknown> },
+  // `title_field` is `unknown`, not `string?`: a model read back off disk is an
+  // unvalidated cast, so the runtime check has to see a value the type system
+  // already believes is a string.
+  input: { id: string; kind: string; title_field?: unknown; fields?: Record<string, unknown> },
 ): ModelDefinitionIssues {
   const errors: string[] = []
   const warnings: string[] = []
@@ -818,6 +821,12 @@ export function validateModelDefinition(
   if (input.kind === 'dictionary' && input.fields && Object.keys(input.fields).length > 0) {
     errors.push('Dictionary models cannot have fields. Dictionaries store flat key-value pairs.')
   }
+
+  // Reported above the per-field loop: a broken title_field explains the model,
+  // the field errors only explain one field.
+  const titleIssues = titleFieldIssues(input)
+  errors.push(...titleIssues.errors)
+  warnings.push(...titleIssues.warnings)
 
   if (input.fields) {
     for (const [fieldName, fieldDef] of Object.entries(input.fields)) {

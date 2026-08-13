@@ -96,6 +96,7 @@ describe('createTransaction', () => {
         kind: 'collection',
         domain: 'test',
         i18n: false,
+        title_field: 'title',
       })
     })
 
@@ -114,6 +115,7 @@ describe('createTransaction', () => {
         kind: 'singleton',
         domain: 'test',
         i18n: false,
+        title_field: 'title',
       })
     })
 

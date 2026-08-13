@@ -9,6 +9,7 @@ export const landingTemplate: ScaffoldTemplate = {
       kind: 'singleton',
       domain: 'marketing',
       i18n: true,
+      title_field: 'title',
       fields: {
         title:       { type: 'string', required: true, max: 120 },
         subtitle:    { type: 'text', max: 280 },
@@ -23,6 +24,7 @@ export const landingTemplate: ScaffoldTemplate = {
       kind: 'singleton',
       domain: 'marketing',
       i18n: true,
+      title_field: 'title',
       fields: {
         title:    { type: 'string', required: true },
         subtitle: { type: 'text' },
@@ -45,6 +47,7 @@ export const landingTemplate: ScaffoldTemplate = {
       kind: 'collection',
       domain: 'marketing',
       i18n: true,
+      title_field: 'name',
       fields: {
         name:        { type: 'string', required: true },
         price:       { type: 'number', required: true },
@@ -60,6 +63,7 @@ export const landingTemplate: ScaffoldTemplate = {
       kind: 'collection',
       domain: 'marketing',
       i18n: true,
+      title_field: 'question',
       fields: {
         question: { type: 'string', required: true },
         answer:   { type: 'text', required: true },
@@ -72,6 +76,7 @@ export const landingTemplate: ScaffoldTemplate = {
       kind: 'collection',
       domain: 'marketing',
       i18n: true,
+      title_field: 'name',
       fields: {
         name:    { type: 'string', required: true },
         role:    { type: 'string' },

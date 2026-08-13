@@ -40,7 +40,7 @@ function parseResult(result: unknown): Record<string, unknown> {
 async function createModel(id: string, fields: Record<string, unknown>): Promise<void> {
   await client.callTool({
     name: 'contentrain_model_save',
-    arguments: { id, name: id, kind: 'collection', domain: 'blog', i18n: true, fields },
+    arguments: { id, name: id, kind: 'collection', domain: 'blog', i18n: true, title_field: Object.keys(fields)[0]!, fields },
   })
   client = await createTestClient(testDir)
 }

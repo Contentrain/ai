@@ -11,7 +11,7 @@ const FIXTURE = join(import.meta.dirname, '../fixtures/basic-blog')
 describe('data-emitter', () => {
   it('transforms collection object-map to array', async () => {
     const models: ModelDefinition[] = [{
-      id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true,
+      id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true, title_field: 'title',
     }]
     const contentFiles: ContentFileRef[] = [{
       modelId: 'blog-post',
@@ -39,7 +39,7 @@ describe('data-emitter', () => {
 
   it('passes through singleton data', async () => {
     const models: ModelDefinition[] = [{
-      id: 'hero', name: 'Hero', kind: 'singleton', domain: 'marketing', i18n: true,
+      id: 'hero', name: 'Hero', kind: 'singleton', domain: 'marketing', i18n: true, title_field: 'title',
     }]
     const contentFiles: ContentFileRef[] = [{
       modelId: 'hero',
@@ -56,7 +56,7 @@ describe('data-emitter', () => {
 
   it('parses document markdown with frontmatter and slug from ref', async () => {
     const models: ModelDefinition[] = [{
-      id: 'blog-article', name: 'Blog Article', kind: 'document', domain: 'blog', i18n: true,
+      id: 'blog-article', name: 'Blog Article', kind: 'document', domain: 'blog', i18n: true, title_field: 'title',
     }]
     const contentFiles: ContentFileRef[] = [{
       modelId: 'blog-article',
@@ -86,7 +86,7 @@ describe('data-emitter', () => {
 
   it('passes through dictionary data', async () => {
     const models: ModelDefinition[] = [{
-      id: 'error-messages', name: 'Errors', kind: 'dictionary', domain: 'system', i18n: true,
+      id: 'error-messages', name: 'Errors', kind: 'dictionary', domain: 'system', i18n: true, title_field: 'key',
     }]
     const contentFiles: ContentFileRef[] = [{
       modelId: 'error-messages',
@@ -123,6 +123,7 @@ Body.`, 'utf-8')
         kind: 'document',
         domain: 'site',
         i18n: false,
+        title_field: 'title',
         fields: {
           title: { type: 'string', required: true },
           seo: {
@@ -171,6 +172,7 @@ views: 42
         kind: 'document',
         domain: 'shop',
         i18n: false,
+        title_field: 'title',
         fields: {
           title: { type: 'string', required: true },
           sku: { type: 'string' },      // declared string → must stay "007"

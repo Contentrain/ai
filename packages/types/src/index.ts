@@ -72,7 +72,7 @@ export interface ModelDefinition {
    * (see `isTitleFieldType`). Dictionary models have no fields, so their only legal
    * value is `DICTIONARY_TITLE_FIELD` — the entry key is the title.
    */
-  title_field?: string
+  title_field: string
   description?: string
   fields?: Record<string, FieldDef>
   /** Framework-relative path for content files (e.g. "content/blog", "locales"). When set, content is written here instead of .contentrain/content/ */

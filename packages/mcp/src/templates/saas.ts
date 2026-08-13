@@ -9,6 +9,7 @@ export const saasTemplate: ScaffoldTemplate = {
       kind: 'singleton',
       domain: 'marketing',
       i18n: true,
+      title_field: 'title',
       fields: {
         title:      { type: 'string', required: true, max: 120 },
         subtitle:   { type: 'text', max: 280 },
@@ -23,6 +24,7 @@ export const saasTemplate: ScaffoldTemplate = {
       kind: 'singleton',
       domain: 'marketing',
       i18n: true,
+      title_field: 'title',
       fields: {
         title:    { type: 'string', required: true },
         subtitle: { type: 'text' },
@@ -45,6 +47,7 @@ export const saasTemplate: ScaffoldTemplate = {
       kind: 'collection',
       domain: 'marketing',
       i18n: true,
+      title_field: 'name',
       fields: {
         name:        { type: 'string', required: true },
         price:       { type: 'number', required: true },
@@ -60,6 +63,7 @@ export const saasTemplate: ScaffoldTemplate = {
       kind: 'document',
       domain: 'product',
       i18n: true,
+      title_field: 'title',
       fields: {
         title:        { type: 'string', required: true },
         slug:         { type: 'slug', required: true, unique: true },
@@ -74,6 +78,7 @@ export const saasTemplate: ScaffoldTemplate = {
       kind: 'collection',
       domain: 'marketing',
       i18n: true,
+      title_field: 'question',
       fields: {
         question: { type: 'string', required: true },
         answer:   { type: 'text', required: true },

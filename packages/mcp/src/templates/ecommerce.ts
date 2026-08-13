@@ -9,6 +9,7 @@ export const ecommerceTemplate: ScaffoldTemplate = {
       kind: 'collection',
       domain: 'shop',
       i18n: true,
+      title_field: 'name',
       fields: {
         name:        { type: 'string', required: true },
         slug:        { type: 'slug', required: true, unique: true },
@@ -27,6 +28,7 @@ export const ecommerceTemplate: ScaffoldTemplate = {
       kind: 'collection',
       domain: 'shop',
       i18n: true,
+      title_field: 'name',
       fields: {
         name:        { type: 'string', required: true },
         slug:        { type: 'slug', required: true, unique: true },
@@ -40,6 +42,7 @@ export const ecommerceTemplate: ScaffoldTemplate = {
       kind: 'collection',
       domain: 'shop',
       i18n: false,
+      title_field: 'name',
       fields: {
         name:    { type: 'string', required: true },
         slug:    { type: 'slug', required: true, unique: true },

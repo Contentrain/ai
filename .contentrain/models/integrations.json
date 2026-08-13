@@ -4,6 +4,7 @@
   "kind": "collection",
   "domain": "marketing",
   "i18n": true,
+  "title_field": "name",
   "description": "Framework and platform integrations with logos, descriptions, and feature highlights",
   "fields": {
     "category": {

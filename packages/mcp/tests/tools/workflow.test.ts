@@ -13,6 +13,16 @@ let template: string
 let testDir: string
 let client: Client
 
+/**
+ * Title field for a test model: dictionaries use the reserved key sentinel,
+ * everything else takes its first declared field — enough for a fixture, and
+ * the validator rejects it loudly if a test ever declares something unshowable.
+ */
+function testTitleField(kind: string, fields?: Record<string, unknown>): string {
+  if (kind === 'dictionary') return 'key'
+  return Object.keys(fields ?? {})[0] ?? 'title'
+}
+
 async function createModel(
   c: Client,
   id: string,
@@ -28,6 +38,7 @@ async function createModel(
       kind,
       domain,
       i18n: true,
+      title_field: testTitleField(kind, fields),
       fields,
     },
   })

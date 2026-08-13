@@ -3,5 +3,6 @@
   "name": "Error Messages",
   "kind": "dictionary",
   "domain": "system",
-  "i18n": true
+  "i18n": true,
+  "title_field": "key"
 }

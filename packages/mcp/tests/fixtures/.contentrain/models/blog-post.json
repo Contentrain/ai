@@ -4,11 +4,28 @@
   "kind": "document",
   "domain": "blog",
   "i18n": true,
+  "title_field": "title",
   "fields": {
-    "title": { "type": "string", "required": true, "max": 120 },
-    "slug": { "type": "slug", "required": true, "unique": true },
-    "excerpt": { "type": "text", "max": 280 },
-    "cover": { "type": "image" },
-    "tags": { "type": "array", "items": "string" }
+    "cover": {
+      "type": "image"
+    },
+    "excerpt": {
+      "max": 280,
+      "type": "text"
+    },
+    "slug": {
+      "required": true,
+      "type": "slug",
+      "unique": true
+    },
+    "tags": {
+      "items": "string",
+      "type": "array"
+    },
+    "title": {
+      "max": 120,
+      "required": true,
+      "type": "string"
+    }
   }
 }

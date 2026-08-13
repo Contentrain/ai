@@ -9,6 +9,7 @@ export const blogTemplate: ScaffoldTemplate = {
       kind: 'document',
       domain: 'blog',
       i18n: true,
+      title_field: 'title',
       fields: {
         title:        { type: 'string', required: true, max: 120 },
         slug:         { type: 'slug', required: true, unique: true },
@@ -26,6 +27,7 @@ export const blogTemplate: ScaffoldTemplate = {
       kind: 'collection',
       domain: 'blog',
       i18n: true,
+      title_field: 'name',
       fields: {
         name:        { type: 'string', required: true },
         slug:        { type: 'slug', required: true, unique: true },
@@ -38,6 +40,7 @@ export const blogTemplate: ScaffoldTemplate = {
       kind: 'collection',
       domain: 'blog',
       i18n: false,
+      title_field: 'name',
       fields: {
         name:   { type: 'string', required: true },
         email:  { type: 'email' },

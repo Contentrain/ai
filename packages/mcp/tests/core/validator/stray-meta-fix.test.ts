@@ -25,6 +25,7 @@ const MODEL = {
   kind: 'collection',
   domain: 'blog',
   i18n: false,
+  title_field: 'name',
   fields: { name: { type: 'string' } },
 }
 
@@ -120,7 +121,7 @@ describe('validate fix:true — non-i18n stray meta', () => {
     const cr = contentrainDir(testDir)
     await writeJson(join(cr, 'config.json'), CONFIG)
     await writeJson(join(cr, 'models', 'guides.json'), {
-      id: 'guides', name: 'Guides', kind: 'collection', domain: 'blog', i18n: true,
+      id: 'guides', name: 'Guides', kind: 'collection', domain: 'blog', i18n: true, title_field: 'title',
       fields: { title: { type: 'string' } },
     })
     await writeJson(join(cr, 'content', 'blog', 'guides', 'tr.json'), { [ENTRY]: { title: 'x' } })

@@ -31,6 +31,7 @@ describe('planContentSave media normalization', () => {
     kind: 'collection',
     domain: 'blog',
     i18n: false,
+    title_field: 'title',
     fields: {
       title: { type: 'string' },
       cover: { type: 'image' },
@@ -78,7 +79,8 @@ describe('planContentSave media normalization', () => {
       kind: 'document',
       domain: 'blog',
       i18n: false,
-      fields: { cover: { type: 'image' } },
+      title_field: 'title',
+      fields: { title: { type: 'string' }, cover: { type: 'image' } },
     }
 
     const plan = await planContentSave(emptyReader, {

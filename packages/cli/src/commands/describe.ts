@@ -47,6 +47,7 @@ export default defineCommand({
       log.message(`  Kind:    ${pc.cyan(String(result['kind'] ?? '—'))}`)
       log.message(`  Domain:  ${String(result['domain'] ?? '—')}`)
       log.message(`  i18n:    ${result['i18n'] ? pc.green('yes') : pc.dim('no')}`)
+      log.message(`  Title:   ${String(result['title_field'] ?? pc.red('— missing, run: contentrain validate --fix'))}`)
       if (result['description']) log.message(`  About:   ${String(result['description'])}`)
 
       const stats = result['stats'] as { total_entries?: number, locales?: Record<string, number> } | undefined

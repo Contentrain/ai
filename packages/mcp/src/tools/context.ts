@@ -169,6 +169,7 @@ export function registerContextTools(
         kind: modelDef.kind,
         domain: modelDef.domain,
         i18n: modelDef.i18n,
+        title_field: modelDef.title_field,
         description: modelDef.description,
         fields: modelDef.fields,
         stats: { total_entries: stats.total, locales: stats.locales },
@@ -219,6 +220,24 @@ export function registerContextTools(
             '.contentrain/content/{domain}/{model-id}/': 'Content files per model',
             '.contentrain/meta/{model-id}/': 'Metadata files per model (status, source, timestamps)',
           },
+        },
+        model_definition: {
+          description: 'Shape of .contentrain/models/{model-id}.json. Keys are written in this order.',
+          required: {
+            id: 'Kebab-case model ID, matching the file name.',
+            name: 'Human-readable display name.',
+            kind: 'One of: singleton, collection, document, dictionary.',
+            domain: 'Organizational group; maps to the content subdirectory.',
+            i18n: 'Whether the model stores content per locale.',
+            title_field: 'Name of the field shown as an entry title in listings, pickers and relation references. Must name a field declared on this model whose type is one of: string, text, slug, email, url, code, markdown, richtext. Dictionary models have no fields — they use the reserved value "key", meaning the entry key is the title.',
+          },
+          optional: {
+            description: 'Model description for documentation and agent context.',
+            fields: 'Field definitions. Dictionary models must NOT declare fields.',
+            content_path: 'Framework-relative path for content files, replacing .contentrain/content/.',
+            locale_strategy: 'How locale is encoded in file names: file (default), suffix, directory, none.',
+          },
+          note: 'title_field is declared, never inferred. A consumer that guesses the title from field order or length picks the icon over the headline — set it explicitly on create AND keep it correct when renaming or removing fields.',
         },
         model_kinds: {
           collection: {

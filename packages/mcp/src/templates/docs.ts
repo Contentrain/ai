@@ -9,6 +9,7 @@ export const docsTemplate: ScaffoldTemplate = {
       kind: 'document',
       domain: 'docs',
       i18n: true,
+      title_field: 'title',
       fields: {
         title:    { type: 'string', required: true, max: 120 },
         slug:     { type: 'slug', required: true, unique: true },
@@ -23,6 +24,7 @@ export const docsTemplate: ScaffoldTemplate = {
       kind: 'collection',
       domain: 'docs',
       i18n: true,
+      title_field: 'name',
       fields: {
         name:  { type: 'string', required: true },
         slug:  { type: 'slug', required: true, unique: true },

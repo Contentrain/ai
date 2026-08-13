@@ -44,7 +44,7 @@ const CONFIG = JSON.stringify({
 })
 
 const DOC_MODEL = JSON.stringify({
-  id: 'posts', name: 'Posts', kind: 'document', domain: 'blog', i18n: true,
+  id: 'posts', name: 'Posts', kind: 'document', domain: 'blog', i18n: true, title_field: 'title',
   fields: {
     title: { type: 'string', required: true },
     sku: { type: 'string', unique: true },

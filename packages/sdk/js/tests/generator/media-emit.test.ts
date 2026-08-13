@@ -4,7 +4,7 @@ import { emitRuntimeModule, emitCjsWrapper } from '../../src/generator/runtime-e
 import { emitTypes } from '../../src/generator/type-emitter.js'
 
 const COLLECTION: ModelDefinition = {
-  id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true,
+  id: 'blog-post', name: 'Blog Post', kind: 'collection', domain: 'blog', i18n: true, title_field: 'title',
 }
 const DATA = [{ fileName: 'blog-post.en.mjs', content: 'export default []' }]
 

@@ -4,15 +4,51 @@
   "kind": "collection",
   "domain": "blog",
   "i18n": true,
+  "title_field": "title",
   "fields": {
-    "title": { "type": "string", "required": true },
-    "slug": { "type": "slug", "required": true, "unique": true },
-    "excerpt": { "type": "text" },
-    "status": { "type": "select", "required": true, "options": ["draft", "published", "archived"] },
-    "featured": { "type": "boolean" },
-    "views": { "type": "integer" },
-    "category": { "type": "select", "options": ["tech", "design", "business"] },
-    "author": { "type": "relation", "required": true, "model": "author" },
-    "tags": { "type": "relations", "model": "tag" }
+    "author": {
+      "model": "author",
+      "required": true,
+      "type": "relation"
+    },
+    "category": {
+      "options": [
+        "tech",
+        "design",
+        "business"
+      ],
+      "type": "select"
+    },
+    "excerpt": {
+      "type": "text"
+    },
+    "featured": {
+      "type": "boolean"
+    },
+    "slug": {
+      "required": true,
+      "type": "slug",
+      "unique": true
+    },
+    "status": {
+      "options": [
+        "draft",
+        "published",
+        "archived"
+      ],
+      "required": true,
+      "type": "select"
+    },
+    "tags": {
+      "model": "tag",
+      "type": "relations"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    },
+    "views": {
+      "type": "integer"
+    }
   }
 }

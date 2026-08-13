@@ -36,18 +36,18 @@ const published: EntryMeta = {
 
 describe('planContentSave meta status preservation', () => {
   const singleton: ModelDefinition = {
-    id: 'hero', name: 'Hero', kind: 'singleton', domain: 'blog', i18n: true,
+    id: 'hero', name: 'Hero', kind: 'singleton', domain: 'blog', i18n: true, title_field: 'title',
     fields: { title: { type: 'string' } },
   }
   const collection: ModelDefinition = {
-    id: 'posts', name: 'Posts', kind: 'collection', domain: 'blog', i18n: true,
+    id: 'posts', name: 'Posts', kind: 'collection', domain: 'blog', i18n: true, title_field: 'title',
     fields: { title: { type: 'string' } },
   }
   const dictionary: ModelDefinition = {
-    id: 'strings', name: 'Strings', kind: 'dictionary', domain: 'blog', i18n: true,
+    id: 'strings', name: 'Strings', kind: 'dictionary', domain: 'blog', i18n: true, title_field: 'key',
   }
   const document: ModelDefinition = {
-    id: 'guides', name: 'Guides', kind: 'document', domain: 'blog', i18n: true,
+    id: 'guides', name: 'Guides', kind: 'document', domain: 'blog', i18n: true, title_field: 'title',
     fields: { title: { type: 'string' }, slug: { type: 'slug' } },
   }
 
@@ -139,7 +139,7 @@ describe('planContentSave meta status preservation', () => {
       locales: { default: 'tr', supported: ['en', 'tr'] },
     }
     const nonI18nCollection: ModelDefinition = {
-      id: 'sponsors', name: 'Sponsors', kind: 'collection', domain: 'blog', i18n: false,
+      id: 'sponsors', name: 'Sponsors', kind: 'collection', domain: 'blog', i18n: false, title_field: 'title',
       fields: { name: { type: 'string' } },
     }
 

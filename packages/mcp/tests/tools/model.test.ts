@@ -53,6 +53,7 @@ describe('contentrain_model_save', () => {
         kind: 'collection',
         domain: 'test',
         i18n: true,
+        title_field: 'title',
         fields: {
           title: { type: 'string', required: true },
           slug: { type: 'slug', required: true, unique: true },
@@ -91,6 +92,7 @@ describe('contentrain_model_save', () => {
         kind: 'singleton',
         domain: 'test',
         i18n: false,
+        title_field: 'title',
         fields: { title: { type: 'string' } },
       },
     })
@@ -106,6 +108,7 @@ describe('contentrain_model_save', () => {
         kind: 'singleton',
         domain: 'test',
         i18n: true,
+        title_field: 'title',
         fields: { title: { type: 'string' }, subtitle: { type: 'text' } },
       },
     })
@@ -123,6 +126,7 @@ describe('contentrain_model_save', () => {
         kind: 'collection',
         domain: 'test',
         i18n: false,
+        title_field: 'broken',
         fields: { broken: { type: 'nonexistent-type' } },
       },
     })
@@ -140,7 +144,8 @@ describe('contentrain_model_save', () => {
         kind: 'collection',
         domain: 'test',
         i18n: false,
-        fields: { author: { type: 'relation' } },
+        title_field: 'title',
+        fields: { title: { type: 'string' }, author: { type: 'relation' } },
       },
     })
 
@@ -161,6 +166,7 @@ describe('contentrain_model_save', () => {
         kind: 'collection',
         domain: 'test',
         i18n: false,
+        title_field: 'title',
       },
     })
 
@@ -182,6 +188,7 @@ describe('contentrain_model_delete', () => {
         kind: 'singleton',
         domain: 'test',
         i18n: false,
+        title_field: 'title',
         fields: { title: { type: 'string' } },
       },
     })
@@ -213,6 +220,7 @@ describe('contentrain_model_delete', () => {
         kind: 'collection',
         domain: 'blog',
         i18n: false,
+        title_field: 'name',
         fields: { name: { type: 'string' } },
       },
     })
@@ -228,6 +236,7 @@ describe('contentrain_model_delete', () => {
         kind: 'document',
         domain: 'blog',
         i18n: true,
+        title_field: 'title',
         fields: {
           title: { type: 'string' },
           author: { type: 'relation', model: 'authors' },

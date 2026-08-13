@@ -1,5 +1,10 @@
 {
+  "id": "hero",
+  "name": "Hero",
+  "kind": "singleton",
   "domain": "marketing",
+  "i18n": true,
+  "title_field": "title",
   "fields": {
     "subtitle": {
       "type": "text"
@@ -8,9 +13,5 @@
       "required": true,
       "type": "string"
     }
-  },
-  "i18n": true,
-  "id": "hero",
-  "kind": "singleton",
-  "name": "Hero"
+  }
 }

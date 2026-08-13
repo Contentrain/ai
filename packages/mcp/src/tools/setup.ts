@@ -8,7 +8,7 @@ import type { ToolProvider } from '../server.js'
 import { detectStack } from '../util/detect.js'
 import { contentrainDir, ensureDir, pathExists, writeJson } from '../util/fs.js'
 import { readConfig, readVocabulary } from '../core/config.js'
-import { writeModel } from '../core/model-manager.js'
+import { validateModelDefinition, writeModel } from '../core/model-manager.js'
 import { writeContent, type ContentEntry } from '../core/content-manager.js'
 import { getTemplate, listTemplates } from '../templates/index.js'
 import { createTransaction, buildBranchName, ensureContentBranch } from '../git/transaction.js'
@@ -238,6 +238,22 @@ export function registerSetupTools(
         const modelsCreated: Array<{ id: string; kind: string; fields: number }> = []
         let contentCreated = 0
         let vocabAdded = 0
+
+        // Templates are ours, but they are still model definitions: scaffolding an
+        // invalid one would hand the user a project that fails its first validate.
+        const templateErrors = tmpl.models.flatMap(m =>
+          validateModelDefinition(m).errors.map(e => `[${m.id}] ${e}`),
+        )
+        if (templateErrors.length > 0) {
+          await tx.cleanup()
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify({
+              error: `Scaffold template "${templateId}" is invalid`,
+              details: templateErrors,
+            }, null, 2) }],
+            isError: true,
+          }
+        }
 
         await tx.write(async (wt) => {
           // Write models

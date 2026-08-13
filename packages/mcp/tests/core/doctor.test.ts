@@ -37,6 +37,7 @@ async function seedMinimalProject(root: string) {
     name: 'Hero',
     kind: 'singleton',
     domain: 'marketing',
+    title_field: 'title',
     fields: { title: { type: 'string', required: true } },
   }, null, 2))
 
@@ -234,5 +235,59 @@ describe('runDoctor — Remote branches check', () => {
     expect(check?.pass).toBe(true)
     expect(check?.severity).toBe('info')
     expect(check?.detail).toContain('Could not check')
+  })
+})
+
+/**
+ * The Models check used to report "all valid" on the strength of JSON.parse.
+ * Model reads are unvalidated casts, so a definition can be structurally wrong
+ * and still load — which is precisely the state every project is in the moment
+ * title_field becomes required.
+ */
+describe('runDoctor — Models check', () => {
+  const writeModelJson = (id: string, model: Record<string, unknown>) =>
+    writeFileSafe(join(testDir, '.contentrain', 'models', `${id}.json`), JSON.stringify(model, null, 2))
+
+  it('fails on a model missing title_field and names it', async () => {
+    await seedMinimalProject(testDir)
+    await writeModelJson('legacy', {
+      id: 'legacy',
+      name: 'Legacy',
+      kind: 'collection',
+      domain: 'marketing',
+      i18n: false,
+      fields: { title: { type: 'string', required: true } },
+    })
+
+    const report = await runDoctor(testDir)
+    const models = report.checks.find(c => c.name === 'Models')
+
+    expect(models?.pass).toBe(false)
+    expect(models?.severity).toBe('error')
+    expect(models?.detail).toContain('legacy')
+    // A health check that reports a problem without its remedy just worries you.
+    expect(models?.detail).toContain('contentrain validate --fix')
+  })
+
+  it('distinguishes an unparseable model from an invalid one', async () => {
+    await seedMinimalProject(testDir)
+    await writeFileSafe(join(testDir, '.contentrain', 'models', 'broken.json'), '{ not json')
+
+    const report = await runDoctor(testDir)
+    const models = report.checks.find(c => c.name === 'Models')
+
+    expect(models?.pass).toBe(false)
+    expect(models?.detail).toContain('failed to parse')
+  })
+
+  it('omits severity when every model is valid', async () => {
+    await seedMinimalProject(testDir)
+
+    const report = await runDoctor(testDir)
+    const models = report.checks.find(c => c.name === 'Models')
+
+    expect(models?.pass).toBe(true)
+    expect(models?.detail).toContain('all valid')
+    expect(models?.severity).toBeUndefined()
   })
 })

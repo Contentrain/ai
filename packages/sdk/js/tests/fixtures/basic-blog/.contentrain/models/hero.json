@@ -4,10 +4,20 @@
   "kind": "singleton",
   "domain": "marketing",
   "i18n": true,
+  "title_field": "title",
   "fields": {
-    "title": { "type": "string", "required": true },
-    "subtitle": { "type": "text" },
-    "cta_text": { "type": "string" },
-    "cta_url": { "type": "url" }
+    "cta_text": {
+      "type": "string"
+    },
+    "cta_url": {
+      "type": "url"
+    },
+    "subtitle": {
+      "type": "text"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    }
   }
 }
