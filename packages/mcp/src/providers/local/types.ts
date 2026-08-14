@@ -1,4 +1,4 @@
-import type { SyncResult, WorkflowMode } from '@contentrain/types'
+import type { BaseAdvance, RemotePush, SyncResult, WorkflowMode } from '@contentrain/types'
 import type { Commit, CommitAuthor, FileChange } from '../../core/contracts/index.js'
 
 /** Optional payload written to `.contentrain/context.json` after changes apply. */
@@ -47,4 +47,12 @@ export interface LocalApplyResult extends Commit {
   sync?: SyncResult
   /** Non-fatal warning bubbled up from the transaction layer (e.g. partial sync). */
   warning?: string
+  /**
+   * Present on `auto-merged`: whether the base branch advanced to the
+   * contentrain tip. `blocked_diverged` is a partial success — the content is
+   * on the contentrain branch; only the base fast-forward is pending.
+   */
+  base_advance?: BaseAdvance
+  /** Present on `auto-merged`: outcome of pushing the contentrain branch. */
+  remote_push?: RemotePush
 }

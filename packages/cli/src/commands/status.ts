@@ -3,7 +3,7 @@ import { intro, outro, log } from '@clack/prompts'
 import { createGit } from '@contentrain/mcp/git/identity'
 import { readModel, countEntries } from '@contentrain/mcp/core/model-manager'
 import { validateProject } from '@contentrain/mcp/core/validator'
-import { checkBranchHealth } from '@contentrain/mcp/git/branch-lifecycle'
+import { checkBranchHealth, contentBranchRelation } from '@contentrain/mcp/git/branch-lifecycle'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { resolveProjectRoot, loadProjectContext, requireInitialized } from '../utils/context.js'
 import { pc, formatTable, formatPercent, formatCount } from '../utils/ui.js'
@@ -60,14 +60,19 @@ export default defineCommand({
             }
           } catch { /* best effort */ }
 
-          // Content branch info
+          // Content branch info — both directions. `ahead` alone lies: a base
+          // branch with commits contentrain lacks (diverged) blocks every
+          // auto-merge advance, and one-directional counting reported that
+          // state as "in sync".
           const contentBranchExists = allLocal.all.includes(CONTENTRAIN_BRANCH)
           const contentBranchInfo: Record<string, unknown> = { exists: contentBranchExists }
           if (contentBranchExists) {
             try {
               const baseBranch = ctx.config?.repository?.default_branch ?? 'main'
-              const aheadRaw = await git.raw(['rev-list', '--count', `${baseBranch}..${CONTENTRAIN_BRANCH}`])
-              contentBranchInfo['ahead'] = Number.parseInt(aheadRaw.trim(), 10)
+              const relation = await contentBranchRelation(git, baseBranch)
+              contentBranchInfo['ahead'] = relation.ahead
+              contentBranchInfo['behind'] = relation.behind
+              contentBranchInfo['relation'] = relation.relation
             } catch { /* best effort */ }
           }
           jsonResult['content_branch'] = contentBranchInfo
@@ -145,11 +150,17 @@ export default defineCommand({
       if (contentBranchExists) {
         try {
           const baseBranch = ctx.config?.repository?.default_branch ?? 'main'
-          const aheadRaw = await git.raw(['rev-list', '--count', `${baseBranch}..${CONTENTRAIN_BRANCH}`])
-          const ahead = Number.parseInt(aheadRaw.trim(), 10)
-          if (ahead > 0) {
+          const { ahead, behind, relation } = await contentBranchRelation(git, baseBranch)
+          if (relation === 'diverged') {
+            log.warning(pc.bold(`\nContent branch`))
+            log.message(`  ${pc.cyan(CONTENTRAIN_BRANCH)} and ${baseBranch} have diverged — ${pc.yellow(String(ahead))} content commit(s) ahead, ${pc.red(String(behind))} base commit(s) behind`)
+            log.message(`  Writes still land on ${pc.cyan(CONTENTRAIN_BRANCH)}, but ${baseBranch} cannot fast-forward until the branches are reconciled.`)
+          } else if (relation === 'content_ahead') {
             log.info(pc.bold(`\nContent branch`))
             log.message(`  ${pc.cyan(CONTENTRAIN_BRANCH)} is ${pc.yellow(String(ahead))} commit(s) ahead of ${baseBranch}`)
+          } else if (relation === 'base_ahead') {
+            log.info(pc.bold(`\nContent branch`))
+            log.message(`  ${pc.cyan(CONTENTRAIN_BRANCH)} is ${pc.yellow(String(behind))} commit(s) behind ${baseBranch} — the next write fast-forwards it`)
           } else {
             log.info(pc.bold(`\nContent branch`))
             log.message(`  ${pc.cyan(CONTENTRAIN_BRANCH)} is in sync with ${baseBranch}`)

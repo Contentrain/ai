@@ -141,13 +141,24 @@ async function approve() {
   actionResult.value = null
   confirmApproveOpen.value = false
   try {
-    await store.approveBranch(branchName.value)
-    actionResult.value = { type: 'success', message: t['branch-detail.branch-merged-successfully'] }
-    toast.success(t['branch-detail.branch-merged-successfully'])
+    const result = await store.approveBranch(branchName.value)
+    if (result.base_advance === 'blocked_diverged' && result.warning) {
+      // Partial success: the content is on the contentrain branch, only the
+      // base advance is pending. The server's warning names the branches.
+      actionResult.value = { type: 'success', message: result.warning }
+      toast.success(t['branch-detail.branch-merged-successfully'])
+      toast.warning(result.warning, { duration: 10000 })
+    } else {
+      actionResult.value = { type: 'success', message: t['branch-detail.branch-merged-successfully'] }
+      toast.success(t['branch-detail.branch-merged-successfully'])
+    }
     setTimeout(() => router.push('/branches'), 1500)
-  } catch {
-    actionResult.value = { type: 'error', message: t['branch-detail.failed-to-merge-branch'] }
-    toast.error(t['branch-detail.failed-to-merge-branch'])
+  } catch (error) {
+    const detail = error instanceof Error && error.message
+      ? error.message
+      : t['branch-detail.failed-to-merge-branch']
+    actionResult.value = { type: 'error', message: detail }
+    toast.error(detail)
   } finally {
     acting.value = false
   }

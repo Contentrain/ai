@@ -12,7 +12,7 @@ import { normalizeOperationError } from '../git/errors.js'
 import { validateProject } from '../core/validator/index.js'
 import { OverlayReader } from '../core/overlay-reader.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
-import { commitThroughProvider } from './commit-plan.js'
+import { commitThroughProvider, divergenceNextSteps, gitReport, type CommitThroughProviderResult } from './commit-plan.js'
 
 export function registerContentTools(
   server: McpServer,
@@ -178,20 +178,15 @@ export function registerContentTools(
         entries: entryIds,
       }
 
-      let commitSha: string
-      let workflowAction: 'auto-merged' | 'pending-review'
-      let sync: unknown
+      let commit: CommitThroughProviderResult
 
       try {
-        const result = await commitThroughProvider(provider, {
+        commit = await commitThroughProvider(provider, {
           branch,
           changes: plan.changes,
           message,
           contextPayload,
         })
-        commitSha = result.commitSha
-        workflowAction = result.workflowAction
-        sync = result.sync
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
@@ -215,7 +210,8 @@ export function registerContentTools(
           status: 'committed',
           message: 'Content saved and committed to git. Do NOT manually edit .contentrain/ files.',
           results: plan.result,
-          git: { branch, action: workflowAction, commit: commitSha, ...(sync ? { sync } : {}) },
+          git: gitReport({ branch, action: commit.workflowAction, commit: commit.commitSha, sync: commit.sync, base_advance: commit.base_advance, remote_push: commit.remote_push }),
+          ...(commit.warning ? { warning: commit.warning } : {}),
           ...(allAdvisories.length > 0 ? {
             advisories: allAdvisories,
             advisory_note: 'Save succeeded. Review these warnings and consider consolidating duplicate values.',
@@ -224,6 +220,7 @@ export function registerContentTools(
           validation: { valid: true, errors: [] },
           context_updated: true,
           next_steps: [
+            ...divergenceNextSteps(commit),
             ...(allAdvisories.length > 0 ? ['ADVISORY: Duplicate values detected — review advisories above'] : []),
             ...(warnings.length > 0 ? ['REVIEW: see warnings above — the save was not blocked by them'] : []),
             ...(model.kind === 'collection'
@@ -304,29 +301,25 @@ export function registerContentTools(
         locale: input.locale,
       }
 
-      let commitSha: string
-      let workflowAction: 'auto-merged' | 'pending-review'
-      let sync: unknown
-
       try {
-        const result = await commitThroughProvider(provider, {
+        const commit = await commitThroughProvider(provider, {
           branch,
           changes: deletePlan.changes,
           message,
           contextPayload,
         })
-        commitSha = result.commitSha
-        workflowAction = result.workflowAction
-        sync = result.sync
 
+        const nextSteps = divergenceNextSteps(commit)
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             status: 'committed',
             message: 'Content deleted and committed to git. Do NOT manually edit .contentrain/ files.',
             deleted: true,
             files_removed: deletePlan.result,
-            git: { branch, action: workflowAction, commit: commitSha, ...(sync ? { sync } : {}) },
+            git: gitReport({ branch, action: commit.workflowAction, commit: commit.commitSha, sync: commit.sync, base_advance: commit.base_advance, remote_push: commit.remote_push }),
+            ...(commit.warning ? { warning: commit.warning } : {}),
             context_updated: true,
+            ...(nextSteps.length > 0 ? { next_steps: nextSteps } : {}),
           }, null, 2) }],
         }
       } catch (error) {

@@ -16,6 +16,7 @@ import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { normalizeOperationError } from '../git/errors.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 import { capabilityError } from './guards.js'
+import { gitReport } from './commit-plan.js'
 
 export function registerSetupTools(
   server: McpServer,
@@ -162,7 +163,8 @@ export function registerSetupTools(
               '.contentrain/meta/',
             ],
             gitignore_updated: true,
-            git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
+            git: gitReport({ branch, action: gitResult.action, commit: gitResult.commit, sync: gitResult.sync, base_advance: gitResult.base_advance, remote_push: gitResult.remote_push }),
+            ...(gitResult.warning ? { warning: gitResult.warning } : {}),
             next_steps: [
               'Create models with contentrain_model_save or contentrain_scaffold',
               'Use contentrain_scan to find hardcoded strings',
@@ -292,7 +294,8 @@ export function registerSetupTools(
             models_created: modelsCreated,
             content_created: contentCreated,
             vocabulary_terms_added: vocabAdded,
-            git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
+            git: gitReport({ branch, action: gitResult.action, commit: gitResult.commit, sync: gitResult.sync, base_advance: gitResult.base_advance, remote_push: gitResult.remote_push }),
+            ...(gitResult.warning ? { warning: gitResult.warning } : {}),
             context_updated: true,
             next_steps: [
               'Customize models with contentrain_model_save',

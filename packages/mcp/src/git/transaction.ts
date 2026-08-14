@@ -6,12 +6,19 @@ import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { readConfig } from '../core/config.js'
 import { writeContext } from '../core/context.js'
-import { deleteRemoteBranch, type RemoteDeleteResult } from './branch-lifecycle.js'
+import { deleteRemoteBranch, networkGit, type RemoteDeleteResult } from './branch-lifecycle.js'
 import { authorConfig } from './identity.js'
 import { branchTimestamp } from '../util/id.js'
 import { migrateLegacyBranches } from '../providers/local/migration.js'
-import type { SyncResult, WorkflowMode } from '@contentrain/types'
+import type { BaseAdvance, RemotePush, SyncResult, WorkflowMode } from '@contentrain/types'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
+
+/**
+ * Block-timeout for fetch/push inside transactions. These calls inherit the
+ * host's credential setup (see networkGit); without a timeout a hung SSH
+ * passphrase prompt would hang the MCP call with it.
+ */
+const NETWORK_TIMEOUT_MS = 10_000
 
 export interface ContextUpdate {
   tool: string
@@ -20,12 +27,42 @@ export interface ContextUpdate {
   entries?: string[]
 }
 
+/**
+ * Result of completing a write transaction.
+ *
+ * A diverged base branch is NOT an error: the content is committed and merged
+ * into the contentrain branch either way — only the base fast-forward is
+ * pending. `base_advance: 'blocked_diverged'` reports that truthfully instead
+ * of failing a write that in fact landed.
+ */
+export interface CompleteResult {
+  action: 'auto-merged' | 'pending-review'
+  commit: string
+  sync?: SyncResult
+  warning?: string
+  /** Present on `auto-merged`: did the base branch advance to the contentrain tip? */
+  base_advance?: BaseAdvance
+  /** Present on `auto-merged`: outcome of pushing the contentrain branch. */
+  remote_push?: RemotePush
+}
+
+/** Result of landing a feature branch via {@link mergeBranch}. */
+export interface MergeBranchResult {
+  action: 'merged'
+  commit: string
+  sync: SyncResult
+  base_advance: BaseAdvance
+  remote_push: RemotePush
+  warning?: string
+  remote?: RemoteDeleteResult
+}
+
 export interface GitTransaction {
   worktree: string
   branch: string
   write(callback: (worktreePath: string) => Promise<void>): Promise<void>
   commit(message: string, contextUpdate?: ContextUpdate): Promise<string>
-  complete(): Promise<{ action: 'auto-merged' | 'pending-review'; commit: string; sync?: SyncResult; warning?: string }>
+  complete(): Promise<CompleteResult>
   cleanup(): Promise<void>
 }
 
@@ -210,11 +247,13 @@ export async function createTransaction(
   // Ensure contentrain branch exists (with migration for old contentrain/* branches)
   await ensureContentBranch(projectRoot)
 
-  // Fetch latest from remote (parallel fetch for both branches)
+  // Fetch latest from remote (parallel fetch for both branches). Hardened:
+  // no interactive credential prompt, block-timeout on hangs.
   if (hasRemote) {
+    const net = networkGit(projectRoot, NETWORK_TIMEOUT_MS)
     await Promise.all([
-      git.fetch(remoteName, baseBranch).catch(() => {}),
-      git.fetch(remoteName, CONTENTRAIN_BRANCH).catch(() => {}),
+      net.fetch(remoteName, baseBranch).catch(() => {}),
+      net.fetch(remoteName, CONTENTRAIN_BRANCH).catch(() => {}),
     ])
   }
 
@@ -298,7 +337,7 @@ export async function createTransaction(
         let warning: string | undefined
         if (hasRemote) {
           try {
-            await git.push(remoteName, branch)
+            await networkGit(projectRoot, NETWORK_TIMEOUT_MS).push(remoteName, branch)
           } catch (error) {
             const detail = error instanceof Error ? error.message : String(error)
             warning = `Changes are committed locally on "${branch}", but pushing to "${remoteName}" failed: ${detail.trim()}. `
@@ -350,67 +389,59 @@ export async function createTransaction(
       ])
       const dirtyFilesBeforeUpdate = new Set(statusBeforeUpdate.files.map(f => f.path))
 
-      // Verify fast-forward: baseBranch must be an ancestor of contentrainTip
-      // (guaranteed by the merge above, but verify for safety).
+      // Fast-forward check: baseBranch must be an ancestor of contentrainTip.
       // `rev-list --count` instead of `merge-base --is-ancestor`: the latter
       // signals via exit code with empty stderr, which simple-git reports as
-      // success — the guard would silently pass on divergence.
-      if (!(await isAncestor(git, previousBaseRef, contentrainTip))) {
-        throw Object.assign(new Error(
-          `Cannot fast-forward "${baseBranch}" to contentrain tip. `
-          + `The base branch has diverged. Merge "${baseBranch}" into "${CONTENTRAIN_BRANCH}" first.`,
-        ), {
-          code: 'BASE_UPDATE_FAILED',
-          agent_hint: `The base branch has commits not in contentrain. Merge ${baseBranch} into ${CONTENTRAIN_BRANCH} first.`,
-          developer_action: `git checkout ${CONTENTRAIN_BRANCH} && git merge ${baseBranch} && git checkout ${baseBranch}`,
-        })
+      // success — the check would silently pass on divergence.
+      //
+      // Divergence is NOT an error here. The content is already committed and
+      // merged into contentrain (the CDN's source of truth) — only the base
+      // fast-forward is impossible. Throwing at this point used to report a
+      // failure for a write that had in fact landed, while cleanup() deleted
+      // the cr/* branch. Report the truth instead.
+      let sync: SyncResult = { synced: [], skipped: [] }
+      let baseAdvance: BaseAdvance
+      let divergedWarning: string | undefined
+      if (await isAncestor(git, previousBaseRef, contentrainTip)) {
+        baseAdvance = 'advanced'
+
+        // Advance base branch to contentrain tip via update-ref
+        await git.raw(['update-ref', `refs/heads/${baseBranch}`, contentrainTip])
+
+        // Refresh index to match new HEAD.
+        // update-ref moves the branch pointer but leaves the index stale.
+        // read-tree updates the index to match HEAD without touching the working tree.
+        try {
+          await git.raw(['read-tree', 'HEAD'])
+        } catch {
+          // fallback: try reset for older git versions
+          try { await git.raw(['reset', 'HEAD']) } catch { /* ignore */ }
+        }
+
+        // Selective sync: copy .contentrain/ files to developer's working tree.
+        // Only after an advance — when the base did not move, the developer's
+        // HEAD did not change, and syncing files from the contentrain tip
+        // would desync their working tree from their own HEAD.
+        sync = await selectiveSync(projectRoot, worktreePath, contentrainTip, previousBaseRef, dirtyFilesBeforeUpdate)
+      } else {
+        baseAdvance = 'blocked_diverged'
+        divergedWarning = `Content is committed and merged into "${CONTENTRAIN_BRANCH}", but "${baseBranch}" has commits that are not in "${CONTENTRAIN_BRANCH}" — the branches have diverged, so "${baseBranch}" was not advanced. Reconcile the branches to bring "${baseBranch}" up to date.`
       }
 
-      // Advance base branch to contentrain tip via update-ref
-      await git.raw(['update-ref', `refs/heads/${baseBranch}`, contentrainTip])
-
-      // Refresh index to match new HEAD.
-      // update-ref moves the branch pointer but leaves the index stale.
-      // read-tree updates the index to match HEAD without touching the working tree.
-      try {
-        await git.raw(['read-tree', 'HEAD'])
-      } catch {
-        // fallback: try reset for older git versions
-        try { await git.raw(['reset', 'HEAD']) } catch { /* ignore */ }
-      }
-
-      // Selective sync: copy .contentrain/ files to developer's working tree
-      const sync = await selectiveSync(projectRoot, worktreePath, contentrainTip, previousBaseRef, dirtyFilesBeforeUpdate)
-
-      // Push to remote (best-effort with retry)
+      // Push contentrain (with retry) and, when advanced, the base branch.
+      let remotePush: RemotePush = 'no-remote'
       if (hasRemote) {
-        // Push contentrain branch
-        try {
-          await git.push(remoteName, CONTENTRAIN_BRANCH)
-        } catch {
-          // Retry: fetch, merge, push
-          try {
-            await wtGit.fetch(remoteName, CONTENTRAIN_BRANCH)
-            await wtGit.merge([`${remoteName}/${CONTENTRAIN_BRANCH}`, '--no-edit'])
-            await git.push(remoteName, CONTENTRAIN_BRANCH)
-          } catch {
-            // Push failed after retry — continue, local state is fine
-          }
-        }
-
-        // Push base branch
-        try {
-          await git.push(remoteName, baseBranch)
-        } catch {
-          // push may fail, local merge succeeded
-        }
+        remotePush = await pushContentBranches(projectRoot, worktreePath, wtGit, remoteName, baseBranch, baseAdvance === 'advanced')
       }
 
+      const warnings = [divergedWarning, sync.warning].filter(Boolean)
       return {
         action: 'auto-merged' as const,
         commit: commitHash,
         sync,
-        ...(sync.warning ? { warning: sync.warning } : {}),
+        base_advance: baseAdvance,
+        remote_push: remotePush,
+        ...(warnings.length > 0 ? { warning: warnings.join(' ') } : {}),
       }
     },
 
@@ -439,7 +470,7 @@ export async function createTransaction(
 export async function mergeBranch(
   projectRoot: string,
   branchName: string,
-): Promise<{ action: 'merged'; commit: string; sync: SyncResult; remote?: RemoteDeleteResult }> {
+): Promise<MergeBranchResult> {
   const git = createGit(projectRoot)
   const config = await readConfig(projectRoot)
   const remoteName = process.env['CONTENTRAIN_REMOTE'] ?? 'origin'
@@ -461,6 +492,17 @@ export async function mergeBranch(
     hasRemote = false
   }
 
+  // Fetch latest from remote before merging — an approve against stale
+  // remote-tracking refs is how an already-reconciled divergence keeps
+  // reporting itself. Hardened: no credential prompt, block-timeout.
+  if (hasRemote) {
+    const net = networkGit(projectRoot, NETWORK_TIMEOUT_MS)
+    await Promise.all([
+      net.fetch(remoteName, baseBranch).catch(() => {}),
+      net.fetch(remoteName, CONTENTRAIN_BRANCH).catch(() => {}),
+    ])
+  }
+
   // Create temp worktree on contentrain branch
   const worktreePath = join(tmpdir(), `cr-merge-${randomUUID()}`)
   await git.raw(['worktree', 'add', worktreePath, CONTENTRAIN_BRANCH])
@@ -470,6 +512,32 @@ export async function mergeBranch(
   const wtGit = createGit(worktreePath, { config: authorConfig() })
 
   try {
+    // Sync contentrain with the base branch (and remotes) BEFORE landing the
+    // feature branch — the counterpart of the pre-fork sync in
+    // createTransaction. Without it, one base commit that is not in
+    // contentrain makes every merge report a diverged base forever. A
+    // conflicting sync is aborted silently; the fast-forward check below then
+    // reports the divergence truthfully instead of this call guessing at it.
+    try {
+      await wtGit.merge([baseBranch, '--no-edit'])
+    } catch {
+      try { await wtGit.merge(['--abort']) } catch { /* not in merge state */ }
+      if (hasRemote) {
+        try {
+          await wtGit.merge([`${remoteName}/${baseBranch}`, '--no-edit'])
+        } catch {
+          try { await wtGit.merge(['--abort']) } catch { /* ignore */ }
+        }
+      }
+    }
+    if (hasRemote) {
+      try {
+        await wtGit.merge([`${remoteName}/${CONTENTRAIN_BRANCH}`, '--no-edit'])
+      } catch {
+        try { await wtGit.merge(['--abort']) } catch { /* ignore */ }
+      }
+    }
+
     // Merge the feature branch into contentrain
     try {
       await wtGit.merge([branchName, '--no-edit'])
@@ -499,51 +567,40 @@ export async function mergeBranch(
     ])
     const dirtyFilesBeforeUpdate = new Set(statusBeforeUpdate.files.map(f => f.path))
 
-    // Verify fast-forward: baseBranch must be an ancestor of contentrainTip.
+    // Fast-forward check: baseBranch must be an ancestor of contentrainTip.
     // (See complete() — merge-base --is-ancestor is unusable via simple-git.)
-    if (!(await isAncestor(git, previousBaseRef, contentrainTip))) {
-      throw Object.assign(new Error(
-        `Cannot fast-forward "${baseBranch}" to contentrain tip. `
-        + `The base branch has diverged. Merge "${baseBranch}" into "${CONTENTRAIN_BRANCH}" first.`,
-      ), {
-        code: 'BASE_UPDATE_FAILED',
-        agent_hint: `The base branch has commits not in contentrain. Merge ${baseBranch} into ${CONTENTRAIN_BRANCH} first.`,
-        developer_action: `git checkout ${CONTENTRAIN_BRANCH} && git merge ${baseBranch} && git checkout ${baseBranch}`,
-      })
+    // Divergence is NOT an error: the feature branch is already merged into
+    // contentrain; only the base advance is pending until the branches are
+    // reconciled. Throwing here used to strand the cr/* branch as a phantom
+    // "pending review" while its content was already on contentrain.
+    let sync: SyncResult = { synced: [], skipped: [] }
+    let baseAdvance: BaseAdvance
+    let divergedWarning: string | undefined
+    if (await isAncestor(git, previousBaseRef, contentrainTip)) {
+      baseAdvance = 'advanced'
+
+      // Advance base branch to contentrain tip via update-ref
+      await git.raw(['update-ref', `refs/heads/${baseBranch}`, contentrainTip])
+
+      // Refresh index to match new HEAD
+      try {
+        await git.raw(['read-tree', 'HEAD'])
+      } catch {
+        try { await git.raw(['reset', 'HEAD']) } catch { /* ignore */ }
+      }
+
+      // Selective sync: copy .contentrain/ files to developer's working tree.
+      // Only after an advance — see complete() for why.
+      sync = await selectiveSync(projectRoot, worktreePath, contentrainTip, previousBaseRef, dirtyFilesBeforeUpdate)
+    } else {
+      baseAdvance = 'blocked_diverged'
+      divergedWarning = `Branch "${branchName}" is merged into "${CONTENTRAIN_BRANCH}", but "${baseBranch}" has commits that are not in "${CONTENTRAIN_BRANCH}" — the branches have diverged, so "${baseBranch}" was not advanced. Reconcile the branches to bring "${baseBranch}" up to date.`
     }
 
-    // Advance base branch to contentrain tip via update-ref
-    await git.raw(['update-ref', `refs/heads/${baseBranch}`, contentrainTip])
-
-    // Refresh index to match new HEAD
-    try {
-      await git.raw(['read-tree', 'HEAD'])
-    } catch {
-      try { await git.raw(['reset', 'HEAD']) } catch { /* ignore */ }
-    }
-
-    // Selective sync: copy .contentrain/ files to developer's working tree
-    const sync = await selectiveSync(projectRoot, worktreePath, contentrainTip, previousBaseRef, dirtyFilesBeforeUpdate)
-
-    // Push to remote (best-effort)
+    // Push contentrain (with retry) and, when advanced, the base branch.
+    let remotePush: RemotePush = 'no-remote'
     if (hasRemote) {
-      try {
-        await git.push(remoteName, CONTENTRAIN_BRANCH)
-      } catch {
-        try {
-          await wtGit.fetch(remoteName, CONTENTRAIN_BRANCH)
-          await wtGit.merge([`${remoteName}/${CONTENTRAIN_BRANCH}`, '--no-edit'])
-          await git.push(remoteName, CONTENTRAIN_BRANCH)
-        } catch {
-          // Push failed after retry — continue, local state is fine
-        }
-      }
-
-      try {
-        await git.push(remoteName, baseBranch)
-      } catch {
-        // push may fail, local merge succeeded
-      }
+      remotePush = await pushContentBranches(projectRoot, worktreePath, wtGit, remoteName, baseBranch, baseAdvance === 'advanced')
     }
 
     // Prune the now-merged feature branch so merged cr/* refs don't accumulate.
@@ -557,10 +614,14 @@ export async function mergeBranch(
       remote = await deleteRemoteBranch(projectRoot, branchName, { config })
     }
 
+    const warnings = [divergedWarning, sync.warning].filter(Boolean)
     return {
       action: 'merged' as const,
       commit: contentrainTip,
       sync,
+      base_advance: baseAdvance,
+      remote_push: remotePush,
+      ...(warnings.length > 0 ? { warning: warnings.join(' ') } : {}),
       ...(remote ? { remote } : {}),
     }
   } finally {
@@ -594,6 +655,49 @@ async function isAncestor(git: SimpleGit, ancestor: string, descendant: string):
   } catch {
     return false
   }
+}
+
+/**
+ * Push the contentrain branch (with one fetch-merge-retry) and, when the base
+ * advanced, the base branch. Returns the push outcome for contentrain; the
+ * base push is best-effort and never demotes the outcome, because the
+ * contentrain branch is the content SSOT — it is what the CDN reads.
+ *
+ * The retry absorbs a concurrent remote advance (another writer pushed
+ * contentrain first): fetch, merge the remote tip into the local worktree's
+ * contentrain, push again. A conflicting retry-merge is aborted and reported
+ * as `rejected` — that is a real divergence, not a race.
+ */
+async function pushContentBranches(
+  projectRoot: string,
+  worktreePath: string,
+  wtGit: SimpleGit,
+  remoteName: string,
+  baseBranch: string,
+  baseAdvanced: boolean,
+): Promise<RemotePush> {
+  const net = networkGit(projectRoot, NETWORK_TIMEOUT_MS)
+  let outcome: RemotePush = 'pushed'
+  try {
+    await net.push(remoteName, CONTENTRAIN_BRANCH)
+  } catch {
+    try {
+      await networkGit(worktreePath, NETWORK_TIMEOUT_MS).fetch(remoteName, CONTENTRAIN_BRANCH)
+      await wtGit.merge([`${remoteName}/${CONTENTRAIN_BRANCH}`, '--no-edit'])
+      await net.push(remoteName, CONTENTRAIN_BRANCH)
+    } catch {
+      try { await wtGit.merge(['--abort']) } catch { /* not in merge state */ }
+      outcome = 'rejected'
+    }
+  }
+  if (baseAdvanced) {
+    try {
+      await net.push(remoteName, baseBranch)
+    } catch {
+      // Best-effort: a failed base push alone does not demote the outcome.
+    }
+  }
+  return outcome
 }
 
 /**

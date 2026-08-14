@@ -45,6 +45,15 @@ export interface BranchInfo {
   current: boolean
 }
 
+export interface ApproveBranchResult {
+  status: string
+  /** Did the base branch advance? `blocked_diverged` = content landed on contentrain, advance pending. */
+  base_advance?: 'advanced' | 'blocked_diverged'
+  remote_push?: 'pushed' | 'rejected' | 'no-remote'
+  /** Human-readable detail for a partial success — shown as-is. */
+  warning?: string
+}
+
 export interface HistoryEntry {
   hash: string
   message: string
@@ -202,7 +211,7 @@ export const useContentStore = defineStore('content', () => {
   }
 
   async function approveBranch(branchName: string) {
-    return api.post<{ status: string }>('/branches/approve', { branch: branchName })
+    return api.post<ApproveBranchResult>('/branches/approve', { branch: branchName })
   }
 
   async function rejectBranch(branchName: string) {

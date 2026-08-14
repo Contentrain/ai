@@ -94,6 +94,8 @@ export class LocalProvider implements RepoProvider {
         workflowAction: gitResult.action,
         sync: gitResult.sync,
         warning: gitResult.warning,
+        base_advance: gitResult.base_advance,
+        remote_push: gitResult.remote_push,
       }
     } finally {
       await tx.cleanup()
