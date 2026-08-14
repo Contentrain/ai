@@ -3,6 +3,7 @@ import type {
   ApplyPlanInput,
   Branch,
   Commit,
+  CommitAuthor,
   FileChange,
   FileDiff,
   MergeResult,
@@ -51,6 +52,7 @@ const MEMORY_CAPABILITIES: ProviderCapabilities = {
   branchProtection: false,
   pullRequestFallback: false,
   astScan: false,
+  mergeCommit: true,
 }
 
 export interface MemoryProviderOptions {
@@ -66,6 +68,8 @@ export interface MemoryProviderOptions {
 export interface RecordedCommit extends Commit {
   branch: string
   changes: FileChange[]
+  /** Present only on merge commits written by `createMergeCommit`: [ours, theirs]. */
+  parents?: [string, string]
 }
 
 type Tree = Map<string, string>
@@ -77,6 +81,13 @@ export class MemoryProvider implements RepoProvider {
   readonly commits: RecordedCommit[] = []
 
   private readonly refs = new Map<string, Tree>()
+  /**
+   * Snapshot of the source tree at the moment each branch forked — what a
+   * commit DAG would encode as the fork commit. This is exactly the
+   * information `getMergeBase` needs, recorded eagerly because trees carry
+   * no parent pointers here.
+   */
+  private readonly forkPoints = new Map<string, { from: string, tree: Tree }>()
   private writeReadiness: WriteReadiness
   private sequence = 0
 
@@ -155,6 +166,9 @@ export class MemoryProvider implements RepoProvider {
     const base = input.base ?? CONTENTRAIN_BRANCH
     // Fork at write time, like a real branch: the feature branch sees base as
     // it is now, and later base commits do not leak into it.
+    if (!this.refs.has(input.branch)) {
+      this.forkPoints.set(input.branch, { from: base, tree: new Map(this.tree(base)) })
+    }
     const tree = new Map(this.refs.get(input.branch) ?? this.tree(base))
     for (const change of input.changes) {
       if (change.content === null) tree.delete(normalize(change.path))
@@ -194,12 +208,15 @@ export class MemoryProvider implements RepoProvider {
   }
 
   createBranch(name: string, fromRef?: string): Promise<void> {
-    this.refs.set(name, new Map(this.tree(fromRef ?? CONTENTRAIN_BRANCH)))
+    const from = fromRef ?? CONTENTRAIN_BRANCH
+    this.forkPoints.set(name, { from, tree: new Map(this.tree(from)) })
+    this.refs.set(name, new Map(this.tree(from)))
     return Promise.resolve()
   }
 
   deleteBranch(name: string): Promise<void> {
     this.refs.delete(name)
+    this.forkPoints.delete(name)
     return Promise.resolve()
   }
 
@@ -244,7 +261,65 @@ export class MemoryProvider implements RepoProvider {
     return Promise.resolve('main')
   }
 
+  // ─── Reconcile (optional RepoProvider members) ───
+
+  /**
+   * The fork snapshot as a readable ref. When `b` forked from `a` (or the
+   * reverse), the recorded fork tree IS the merge base; it is registered
+   * under a synthetic `membase/<branch>` ref so the three-way readers can
+   * bind to it like any other ref. Unrelated refs → null, like git.
+   */
+  getMergeBase(refA: string, refB: string): Promise<string | null> {
+    if (refA === refB) return Promise.resolve(refA)
+    const viaB = this.forkPoints.get(refB)
+    if (viaB && viaB.from === refA) return Promise.resolve(this.registerBase(refB, viaB.tree))
+    const viaA = this.forkPoints.get(refA)
+    if (viaA && viaA.from === refB) return Promise.resolve(this.registerBase(refA, viaA.tree))
+    // Siblings forked from the same source: their common ancestor is the
+    // earlier of the two snapshots; either is correct only when equal.
+    if (viaA && viaB && viaA.from === viaB.from && treesEqual(viaA.tree, viaB.tree)) {
+      return Promise.resolve(this.registerBase(refA, viaA.tree))
+    }
+    return Promise.resolve(null)
+  }
+
+  createMergeCommit(input: {
+    branch: string
+    ours: string
+    theirs: string
+    changes: FileChange[]
+    message: string
+    author: CommitAuthor
+  }): Promise<Commit> {
+    // Changes apply on top of ours' tree — the planner's output is
+    // authoritative for content paths, exactly as the contract states.
+    const tree = new Map(this.tree(input.branch))
+    for (const change of input.changes) {
+      if (change.content === null) tree.delete(normalize(change.path))
+      else tree.set(normalize(change.path), change.content)
+    }
+    this.refs.set(input.branch, tree)
+
+    const commit: RecordedCommit = {
+      sha: `mem${(++this.sequence).toString().padStart(9, '0')}`,
+      message: input.message,
+      author: input.author,
+      timestamp: new Date(Date.UTC(2026, 0, 1, 0, 0, this.sequence)).toISOString(),
+      branch: input.branch,
+      changes: input.changes,
+      parents: [input.ours, input.theirs],
+    }
+    this.commits.push(commit)
+    return Promise.resolve(commit)
+  }
+
   // ─── Internals ───
+
+  private registerBase(branch: string, tree: Tree): string {
+    const ref = `membase/${branch}`
+    this.refs.set(ref, new Map(tree))
+    return ref
+  }
 
   private tree(ref: string): Tree {
     let tree = this.refs.get(ref)
@@ -269,4 +344,12 @@ export class MemoryProvider implements RepoProvider {
 /** Repo-relative, forward-slash, no leading `./` — the contract's path shape. */
 function normalize(path: string): string {
   return path.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '').replace(/\/+$/, '')
+}
+
+function treesEqual(a: Tree, b: Tree): boolean {
+  if (a.size !== b.size) return false
+  for (const [path, content] of a) {
+    if (b.get(path) !== content) return false
+  }
+  return true
 }
