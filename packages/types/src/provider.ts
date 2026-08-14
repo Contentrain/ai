@@ -56,6 +56,13 @@ export interface ProviderCapabilities {
   pullRequestFallback: boolean
   /** Provider can execute AST scanners against source files. Implies local disk access. */
   astScan: boolean
+  /**
+   * Provider can write a two-parent merge commit (see
+   * `RepoProvider.createMergeCommit`). Absent = false. Optional so that
+   * existing external `implements` code keeps compiling: a required member
+   * here would be a breaking change for every custom provider.
+   */
+  mergeCommit?: boolean
 }
 
 /** Capability set for the LocalProvider (simple-git + worktree). */
@@ -67,6 +74,7 @@ export const LOCAL_CAPABILITIES: ProviderCapabilities = {
   branchProtection: false,
   pullRequestFallback: false,
   astScan: true,
+  mergeCommit: true,
 }
 
 // ─── Reader ───
@@ -131,6 +139,15 @@ export interface Commit {
   sync?: SyncResult
   /** Non-fatal problem encountered while completing the write. */
   warning?: string
+  /**
+   * Whether the base branch advanced to the contentrain tip after an
+   * auto-merge. Only providers that own the base advance (a local worktree)
+   * report it. `blocked_diverged` is a partial success: the content is on
+   * the contentrain branch; only the fast-forward is pending.
+   */
+  base_advance?: BaseAdvance
+  /** Outcome of pushing the contentrain branch, when the provider pushes. */
+  remote_push?: RemotePush
 }
 
 /**
@@ -213,6 +230,101 @@ export interface MergeResult {
     warning?: string
   }
 }
+
+// ─── Base-branch advance / remote push outcomes ───
+
+/**
+ * What happened to the base branch after content landed on the
+ * content-tracking branch.
+ *
+ * `advanced` — the base branch fast-forwarded to the contentrain tip.
+ * `blocked_diverged` — the base branch holds commits that are not in
+ * contentrain, so fast-forwarding was impossible. The content itself is
+ * safe on the contentrain branch; only the advance is pending until the
+ * branches are reconciled.
+ *
+ * These two values are shared vocabulary across the ecosystem — Studio
+ * reports the same enum for its main-advance state. A pull request is an
+ * attachment (`pullRequestUrl`), never a third state: "PR opened" is
+ * `blocked_diverged` with a non-null URL.
+ */
+export type BaseAdvance = 'advanced' | 'blocked_diverged'
+
+/**
+ * Outcome of pushing the content-tracking branch to the configured remote.
+ *
+ * `pushed` — the remote accepted the push (possibly after one
+ * fetch-merge-retry). `rejected` — the push failed even after the retry;
+ * local and remote have diverged and need reconciling. `no-remote` — the
+ * repository has no configured remote, so nothing was attempted.
+ */
+export type RemotePush = 'pushed' | 'rejected' | 'no-remote'
+
+// ─── Reconcile / conflicts ───
+
+/**
+ * Machine-readable conflict kinds produced by the content-aware three-way
+ * reconcile planner. CLOSED SET: consumers (Studio) key their localized
+ * editor questions on these values, so a free string would drift. Adding a
+ * value here is a minor version bump and MUST carry a changelog entry;
+ * renaming or removing one is breaking.
+ */
+export type ConflictCode =
+  | 'field_value_conflict' // collection/singleton: same field changed differently on both sides
+  | 'dictionary_value_conflict' // same dictionary key, two different values
+  | 'vocabulary_value_conflict' // same term + locale, two different translations
+  | 'model_key_conflict' // same model schema key changed differently
+  | 'meta_status_conflict' // both sides moved an entry's publish status differently
+  | 'document_body_conflict' // both sides edited a document body (never text-merged)
+  | 'frontmatter_value_conflict' // same frontmatter key, two different values
+  | 'delete_edit_conflict' // one side deleted what the other edited
+  | 'file_conflict' // unrecognized file changed on both sides — resolved by choosing a side
+
+/**
+ * One surviving conflict from a three-way reconcile: base (merge-base),
+ * ours (content branch), theirs (base branch) disagree in a way the policy
+ * table cannot resolve mechanically. Everything mechanical has already been
+ * merged; only these items need a decision from an editor or agent.
+ *
+ * `id` is derived from the position AND the three values (see
+ * `conflictId`), so a resolution made against a stale dry-run no longer
+ * matches once any side changes — compare-and-set for free.
+ */
+export interface ConflictItem {
+  id: string
+  /** Content-root-relative path of the file the conflict lives in. */
+  path: string
+  model?: string
+  kind: 'collection' | 'singleton' | 'document' | 'dictionary'
+    | 'vocabulary' | 'model' | 'meta' | 'file'
+  /** Entry ID, dictionary key, vocabulary term, or model schema key. */
+  key?: string
+  /** Field inside the entry / frontmatter key, when the conflict is field-level. */
+  field?: string
+  locale?: string
+  /** The three values in question — for display; omitted for `kind: 'file'`. */
+  base?: unknown
+  ours?: unknown
+  theirs?: unknown
+  code: ConflictCode
+  /** Ready-to-display English sentence naming the conflict. */
+  message: string
+  /**
+   * Policy-table suggestion, never auto-applied. Present only where the
+   * approved policy names a preferred side (model schema keys → `theirs`).
+   */
+  suggested?: 'ours' | 'theirs'
+}
+
+/**
+ * A decision for one conflict, keyed by `ConflictItem.id`. `choose` picks a
+ * side (absence of the item on that side means deletion); `value` supplies
+ * a hand-authored replacement. A resolution whose `id` no longer matches a
+ * live conflict is dropped and the conflict re-reported with a fresh id.
+ */
+export type ConflictResolution =
+  | { id: string; choose: 'ours' | 'theirs' }
+  | { id: string; value: unknown }
 
 // ─── Media (optional provider facet) ───
 
@@ -362,4 +474,43 @@ export interface RepoProvider extends RepoReader, RepoWriter {
   mergeBranch(branch: string, into: string, opts?: { removeSourceBranch?: boolean }): Promise<MergeResult>
   isMerged(branch: string, into?: string): Promise<boolean>
   getDefaultBranch(): Promise<string>
+
+  /**
+   * The merge-base commit of two refs — the `base` input of a three-way
+   * reconcile.
+   *
+   * Reconciling a diverged content branch needs the last common ancestor,
+   * and every backend can name it (git `merge-base`, GitHub's compare API,
+   * GitLab's merge_base endpoint) — but not every existing implementation
+   * does yet, and demanding it would break external `implements` code.
+   *
+   * Optional: a provider that omits it cannot drive a reconcile; the caller
+   * falls back to a pull-request flow. Returns `null` when the refs share
+   * no history.
+   */
+  getMergeBase?(refA: string, refB: string): Promise<string | null>
+
+  /**
+   * Write a set of resolved changes as a TWO-PARENT merge commit on
+   * `branch`, joining `ours` and `theirs` so that git history records the
+   * reconcile — after it, `theirs` is an ancestor of `branch` and a plain
+   * fast-forward advance works again. `changes` are applied on top of the
+   * `ours` tree; for content-owned paths the planner's output is
+   * authoritative, never a textual auto-merge.
+   *
+   * Optional, mirrored by `capabilities.mergeCommit`: a backend whose
+   * commits API cannot express two parents (GitLab) omits it and the
+   * caller falls back to a merge-request flow.
+   */
+  createMergeCommit?(input: {
+    /** Branch whose tip becomes the merge commit (the content branch). */
+    branch: string
+    /** First parent — the current tip of `branch`. */
+    ours: string
+    /** Second parent — the ref being reconciled in. */
+    theirs: string
+    changes: FileChange[]
+    message: string
+    author: CommitAuthor
+  }): Promise<Commit>
 }
