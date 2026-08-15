@@ -16,7 +16,7 @@ Contentrain consists of 6 packages that work together:
 
 | Package | Role | How agent uses it |
 |---|---|---|
-| @contentrain/mcp | 21 MCP tools (scan, apply, validate, merge, doctor...) | MCP tool calls |
+| @contentrain/mcp | 22 MCP tools (scan, apply, validate, merge, reconcile, doctor...) | MCP tool calls |
 | contentrain (CLI) | init, serve, generate, doctor, diff, status | Shell commands |
 | @contentrain/types | Shared TypeScript contracts | Type safety |
 | @contentrain/query | Generated SDK client (Prisma-pattern) | `import from '#contentrain'` |
@@ -123,6 +123,7 @@ slug: getting-started
 | `contentrain_validate` | Validate content against model schemas |
 | `contentrain_submit` | Push contentrain/* branches to remote |
 | `contentrain_merge` | Merge a review-mode branch into contentrain locally |
+| `contentrain_reconcile` | Content-aware three-way merge of a diverged contentrain ↔ base pair |
 | `contentrain_bulk` | Run batch operations on existing content |
 
 ## Calling Sequences

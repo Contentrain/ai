@@ -425,7 +425,7 @@ export async function createTransaction(
         sync = await selectiveSync(projectRoot, worktreePath, contentrainTip, previousBaseRef, dirtyFilesBeforeUpdate)
       } else {
         baseAdvance = 'blocked_diverged'
-        divergedWarning = `Content is committed and merged into "${CONTENTRAIN_BRANCH}", but "${baseBranch}" has commits that are not in "${CONTENTRAIN_BRANCH}" — the branches have diverged, so "${baseBranch}" was not advanced. Reconcile the branches to bring "${baseBranch}" up to date.`
+        divergedWarning = `Content is committed and merged into "${CONTENTRAIN_BRANCH}", but "${baseBranch}" has commits that are not in "${CONTENTRAIN_BRANCH}" — the branches have diverged, so "${baseBranch}" was not advanced. Run contentrain_reconcile (CLI: npx contentrain reconcile) to merge them and restore the fast-forward advance.`
       }
 
       // Push contentrain (with retry) and, when advanced, the base branch.
@@ -594,7 +594,7 @@ export async function mergeBranch(
       sync = await selectiveSync(projectRoot, worktreePath, contentrainTip, previousBaseRef, dirtyFilesBeforeUpdate)
     } else {
       baseAdvance = 'blocked_diverged'
-      divergedWarning = `Branch "${branchName}" is merged into "${CONTENTRAIN_BRANCH}", but "${baseBranch}" has commits that are not in "${CONTENTRAIN_BRANCH}" — the branches have diverged, so "${baseBranch}" was not advanced. Reconcile the branches to bring "${baseBranch}" up to date.`
+      divergedWarning = `Branch "${branchName}" is merged into "${CONTENTRAIN_BRANCH}", but "${baseBranch}" has commits that are not in "${CONTENTRAIN_BRANCH}" — the branches have diverged, so "${baseBranch}" was not advanced. Run contentrain_reconcile (CLI: npx contentrain reconcile) to merge them and restore the fast-forward advance.`
     }
 
     // Push contentrain (with retry) and, when advanced, the base branch.

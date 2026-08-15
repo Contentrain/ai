@@ -65,8 +65,7 @@ export function gitReport(input: {
 
 /**
  * Next-step guidance for a partial success — empty when the base advanced
- * and the push landed. The wording names the manual reconcile path; once a
- * dedicated reconcile tool exists it should be named here instead.
+ * and the push landed.
  */
 export function divergenceNextSteps(input: {
   base_advance?: BaseAdvance
@@ -74,10 +73,10 @@ export function divergenceNextSteps(input: {
 }): string[] {
   const steps: string[] = []
   if (input.base_advance === 'blocked_diverged') {
-    steps.push('DIVERGED: the content is safe on the contentrain branch, but the base branch has commits contentrain does not — reconcile the branches to advance the base branch')
+    steps.push('DIVERGED: the content is safe on the contentrain branch, but the base branch has commits contentrain does not — run contentrain_reconcile (dry_run first) to merge them and restore the fast-forward advance')
   }
   if (input.remote_push === 'rejected') {
-    steps.push('PUSH REJECTED: the remote refused the contentrain push even after a retry — the local and remote contentrain branches have diverged and need reconciling')
+    steps.push('PUSH REJECTED: the remote refused the contentrain push even after a retry — the local and remote contentrain branches have diverged; fetch and run contentrain_reconcile')
   }
   return steps
 }
