@@ -121,10 +121,10 @@ Third-party developers can implement custom providers by implementing these inte
 
 | Interface / Type | Purpose |
 |-----------|---------|
-| `RepoProvider` | Full provider contract: read, write, branch, merge, diff operations, plus an optional `media?: MediaProvider` facet |
+| `RepoProvider` | Full provider contract: read, write, branch, merge, diff operations, plus optional `media?: MediaProvider`, `getMergeBase?` and `createMergeCommit?` (reconcile) members |
 | `RepoReader` | Read-only interface (readFile, listDirectory, fileExists) |
 | `RepoWriter` | Write interface (applyPlan for atomic commits) |
-| `ProviderCapabilities` | Capability flags (localWorktree, sourceRead, sourceWrite, pushRemote, branchProtection, pullRequestFallback, astScan) |
+| `ProviderCapabilities` | Capability flags (localWorktree, sourceRead, sourceWrite, pushRemote, branchProtection, pullRequestFallback, astScan, optional mergeCommit) |
 | `FileChange` | A single file addition, modification, or deletion (`{ path, content: string \| null }`) |
 | `ApplyPlanInput` | Input for a single atomic commit (branch, changes, message, author, optional base) |
 | `Commit` | Result of a commit operation (sha, message, author, timestamp) |
@@ -132,6 +132,11 @@ Third-party developers can implement custom providers by implementing these inte
 | `FileDiff` | File change within a plan (path, status, before, after) |
 | `MergeResult` | Merge outcome (merged flag, sha, pullRequestUrl, optional `sync?: SyncResult` for LocalProvider, optional `remote?` source-branch cleanup outcome) |
 | `SyncResult` | Selective file sync result (synced, skipped, optional warning) |
+| `BaseAdvance` | `'advanced' \| 'blocked_diverged'` — what happened to the base branch after a write (shared vocabulary with Studio; a PR is an attachment, never a third state) |
+| `RemotePush` | `'pushed' \| 'rejected' \| 'no-remote'` — outcome of pushing the contentrain branch |
+| `ConflictItem` | One surviving reconcile conflict — position (`path`, `key`, `field`, `locale`), the three values, a CLOSED `code` union (Studio keys localized editor questions on it), and a value-derived `id` |
+| `ConflictCode` | Closed union of conflict kinds — adding a value is a minor + changelog entry; renaming or removing one is breaking |
+| `ConflictResolution` | A decision keyed by conflict id: `{ id, choose: 'ours'\|'theirs' }` or `{ id, value }` — stale ids (values changed since the dry-run) are dropped and re-reported |
 | `CommitAuthor` | Commit author metadata (name, email) |
 
 Media facet types (implemented by providers exposing a media stack — drives the `contentrain_media_*` tools):
@@ -147,7 +152,7 @@ Media facet types (implemented by providers exposing a media stack — drives th
 
 Pre-built capability set:
 
-- `LOCAL_CAPABILITIES` — Capability set for LocalProvider: `localWorktree`, `sourceRead`, `sourceWrite`, `pushRemote`, and `astScan` enabled; `branchProtection` and `pullRequestFallback` are `false` (a local worktree has no remote protection or PR flow). Exported from `@contentrain/types` for custom providers that back onto the local filesystem.
+- `LOCAL_CAPABILITIES` — Capability set for LocalProvider: `localWorktree`, `sourceRead`, `sourceWrite`, `pushRemote`, `astScan` and `mergeCommit` enabled; `branchProtection` and `pullRequestFallback` are `false` (a local worktree has no remote protection or PR flow). Exported from `@contentrain/types` for custom providers that back onto the local filesystem.
 
 See [RepoProvider Reference](/reference/providers) for the complete interface definitions and a minimum-viable provider recipe.
 

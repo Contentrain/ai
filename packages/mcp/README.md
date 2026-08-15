@@ -71,9 +71,9 @@ All write operations are designed around git-backed safety:
 
 ## Tool Surface
 
-26 MCP tools — 21 core + 5 media — with [annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) for client safety hints.
+27 MCP tools — 22 core + 5 media — with [annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) for client safety hints.
 
-**Tool listing is capability-aware.** `tools/list` only advertises tools the resolved provider + `projectRoot` pair can actually satisfy. A local stdio server lists the 19 core tools; a session driven by a remote provider (GitHub/GitLab, no local checkout) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. The requirement map lives in `TOOL_REQUIREMENTS` (`@contentrain/mcp/tools/availability`).
+**Tool listing is capability-aware.** `tools/list` only advertises tools the resolved provider + `projectRoot` pair can actually satisfy. A local stdio server lists the 22 core tools; a session driven by a remote provider (GitHub/GitLab, no local checkout) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. The requirement map lives in `TOOL_REQUIREMENTS` (`@contentrain/mcp/tools/availability`).
 
 | Tool | Purpose | Read-only | Destructive |
 | --- | --- | --- | --- |
@@ -91,6 +91,7 @@ All write operations are designed around git-backed safety:
 | `contentrain_validate` | Validate project content, optionally auto-fix structural issues | — | — |
 | `contentrain_submit` | Push `cr/*` branches to remote, then lazily prune merged local + remote leftovers | — | — |
 | `contentrain_merge` | Merge a review-mode branch into contentrain locally (by exact branch or model); deletes its remote copy | — | — |
+| `contentrain_reconcile` | Content-aware three-way merge of a diverged contentrain ↔ base pair (dry_run first, resolutions second) | — | — |
 | `contentrain_branch_list` | List pending `cr/*` branches with merge status (`remote: true` adds remote view) | Yes | — |
 | `contentrain_branch_delete` | Delete a stale/failed `cr/*` branch locally and on the remote (contentrain branch protected) | — | **Yes** |
 | `contentrain_scan` | Graph- and candidate-based hardcoded string scan | Yes | — |
@@ -245,12 +246,14 @@ The package also exposes low-level modules for embedding and advanced use:
 - `@contentrain/mcp/core/scan-config`
 - `@contentrain/mcp/core/doctor`
 - `@contentrain/mcp/core/contracts`
-- `@contentrain/mcp/core/ops` — plan APIs plus content-root-relative path helpers: `contentDirPath`, `contentFilePath`, `documentFilePath`, `metaFilePath`
+- `@contentrain/mcp/core/ops` — plan APIs (including `planReconcile` and its `bindRef` reader adapter) plus content-root-relative path helpers: `contentDirPath`, `contentFilePath`, `documentFilePath`, `metaFilePath`
 - `@contentrain/mcp/core/overlay-reader`
 - `@contentrain/mcp/util/detect`
 - `@contentrain/mcp/util/fs`
 - `@contentrain/mcp/git/transaction`
 - `@contentrain/mcp/git/branch-lifecycle` — branch health/cleanup plus the remote cr/* lifecycle: `deleteRemoteBranch`, `listRemoteCrBranches`, `pruneMergedRemoteBranches`, `isRefMerged`, `classifyMergedBranches`
+- `@contentrain/mcp/git/errors`
+- `@contentrain/mcp/git/reconcile` — `reconcileBranches`, the local reconcile executor
 - `@contentrain/mcp/tools/annotations`
 - `@contentrain/mcp/templates`
 - `@contentrain/mcp/providers/local`

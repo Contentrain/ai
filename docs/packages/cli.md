@@ -68,6 +68,7 @@ Example: `contentrain --debug status` or `CONTENTRAIN_DEBUG=1 contentrain status
 | `contentrain scaffold` | Apply starter templates (blog, landing, docs, SaaS, ...) |
 | `contentrain diff` | Review and merge or reject pending `cr/*` branches interactively (deletes the remote copy on merge/reject) |
 | `contentrain merge <branch>` | Merge one pending `cr/*` branch non-interactively (deletes the remote copy) |
+| `contentrain reconcile` | Content-aware three-way merge of a diverged contentrain ↔ base pair (dry-run plan, interactive conflict decisions) |
 | `contentrain prune` | Delete merged `cr/*` branches locally and on the remote (drain the backlog) |
 | `contentrain setup` | Configure MCP server and AI rules for your IDE |
 | `contentrain skills` | Install, update, or list AI skills and rules for your IDE |
@@ -239,7 +240,19 @@ contentrain merge cr/content/faq/1234-abcd
 contentrain merge cr/content/faq/1234-abcd --yes  # Skip confirm (CI)
 ```
 
-Non-interactive single-branch sibling of `contentrain diff`. Delegates to MCP's `mergeBranch` so dirty-file protections + selective sync warnings behave identically. After a successful merge it also deletes the branch's copy on the remote — best-effort, so an offline or permission failure only prints a warning. Opt out with `remoteBranchCleanup: false` in `config.json`.
+Non-interactive single-branch sibling of `contentrain diff`. Delegates to MCP's `mergeBranch` so dirty-file protections + selective sync warnings behave identically. After a successful merge it also deletes the branch's copy on the remote — best-effort, so an offline or permission failure only prints a warning. Opt out with `remoteBranchCleanup: false` in `config.json`. When the base branch has diverged, the merge still lands on `contentrain` and the command says so (`base_advance: blocked_diverged`) — run `contentrain reconcile` to restore the advance.
+
+---
+
+### `contentrain reconcile`
+
+```bash
+contentrain reconcile              # dry-run plan + interactive decisions
+contentrain reconcile --yes       # execute a CLEAN plan without prompting
+contentrain reconcile --json      # emit the dry-run plan for scripts
+```
+
+Content-aware three-way merge of a diverged `contentrain` ↔ base pair (the state a dual-domain migration PR leaves behind). Shows the plan — what merges mechanically from each side — then asks one ours/theirs question per surviving conflict, and executes as a two-parent merge commit that fast-forwards the base branch. `--yes` never defaults a conflict: a plan with open questions always stops. Conflict decisions are compare-and-set — if content moved between the preview and the decisions, the stale decision is dropped and asked again.
 
 ---
 

@@ -121,7 +121,7 @@ slug: getting-started
 | `contentrain_scan` | Scan project for structure or content candidates |
 | `contentrain_apply` | Apply normalize operation (extract or reuse) |
 | `contentrain_validate` | Validate content against model schemas |
-| `contentrain_submit` | Push contentrain/* branches to remote |
+| `contentrain_submit` | Push cr/* branches to remote |
 | `contentrain_merge` | Merge a review-mode branch into contentrain locally |
 | `contentrain_reconcile` | Content-aware three-way merge of a diverged contentrain ↔ base pair |
 | `contentrain_bulk` | Run batch operations on existing content |

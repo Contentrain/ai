@@ -66,6 +66,7 @@ Example: `contentrain --debug status` or `CONTENTRAIN_DEBUG=1 contentrain valida
 | `contentrain generate` | Generate `.contentrain/client/` and `#contentrain` package imports |
 | `contentrain diff` | Review and merge or reject pending `cr/*` branches interactively |
 | `contentrain merge <branch>` | Merge one pending `cr/*` branch non-interactively (CI/agents); deletes its remote copy |
+| `contentrain reconcile` | Content-aware three-way merge of a diverged contentrain ↔ base pair (dry-run plan, interactive decisions) |
 | `contentrain prune` | Delete merged `cr/*` branches locally and on the remote (backlog drain) |
 | `contentrain describe <model>` | Inspect a model's schema, stats, and import snippet |
 | `contentrain describe-format` | Print the Contentrain content-format specification |
@@ -98,6 +99,7 @@ Every read command supports `--json` for CI use; write commands surface `--watch
 | `generate` | `--json`, `--watch` |
 | `diff` | `--json` |
 | `merge` | `--yes` (skip confirm) |
+| `reconcile` | `--yes` (execute a clean plan without prompting), `--json` (dry-run plan) |
 | `prune` | `--dry-run`, `--yes`, `--json` (mutates only with `--yes`) |
 | `describe` | `--sample`, `--locale`, `--json` |
 | `scaffold` | `--template <id>`, `--locales <csv>`, `--no-sample`, `--json` |
@@ -241,6 +243,8 @@ This installs:
 ## Review Workflow
 
 Most write operations create feature branches from the dedicated `contentrain` branch. In review mode, these branches are pushed to remote for team review. In auto-merge mode, they are merged into the `contentrain` branch and baseBranch is advanced via update-ref.
+
+When baseBranch has diverged (commits `contentrain` lacks — the state a dual-domain migration PR leaves behind), a write is a **partial success**: it lands on `contentrain` and reports `base_advance: "blocked_diverged"` instead of failing. `contentrain status` shows the relation in both directions; `contentrain reconcile` merges the branches content-aware (a two-parent merge commit) so the fast-forward advance works again.
 
 Merging a review branch (via `contentrain merge`, `contentrain diff`, the Serve UI, or the MCP tools) also deletes its remote copy, so merged branches never pile up as phantom pending reviews. The same applies to rejected/deleted drafts. This is best-effort — an offline or permission failure only produces a warning — and can be disabled with `remoteBranchCleanup: false` in `config.json`. Note that deleting a pushed branch closes any open PR/MR on it.
 

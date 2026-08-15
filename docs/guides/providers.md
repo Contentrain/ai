@@ -6,7 +6,7 @@ slug: providers
 
 # Providers & Transports
 
-Contentrain MCP runs the same tool surface (21 core + 5 media on media-capable providers) over three backends:
+Contentrain MCP runs the same tool surface (22 core + 5 media on media-capable providers) over three backends:
 
 - **LocalProvider** — simple-git + a temporary worktree on your disk. Default for `npx contentrain serve --stdio` and the HTTP transport when driven by the CLI.
 - **GitHubProvider** — Octokit over the GitHub Git Data + Repos APIs. No clone, no worktree.
@@ -31,13 +31,14 @@ Some tools need more than a git provider can offer — normalize has to walk you
 
 | Capability | LocalProvider | GitHubProvider | GitLabProvider | Tools that require it |
 |---|---|---|---|---|
-| `localWorktree` | ✓ | — | — | `validate --fix`, `submit`, `merge`, `branch_list`, `branch_delete` |
+| `localWorktree` | ✓ | — | — | `validate --fix`, `submit`, `merge`, `reconcile`, `branch_list`, `branch_delete` |
 | `sourceRead` | ✓ | — | — | `apply` (extract mode) |
 | `sourceWrite` | ✓ | — | — | `apply` (reuse mode) |
 | `astScan` | ✓ | — | — | `scan` |
 | `pushRemote` | ✓ | ✓ | ✓ | `submit` |
 | `branchProtection` | — | ✓ | ✓ | merge fallback detection |
 | `pullRequestFallback` | — | ✓ | ✓ | merge fallback creation |
+| `mergeCommit` | ✓ | ✓ | — | reconcile executor (two-parent merge commit; GitLab falls back to an MR flow) |
 
 A separate requirement — a local `projectRoot` on disk, not a capability flag — gates `init`, `scaffold`, `doctor`, and `bulk`. Tool listing is capability-aware: `tools/list` only advertises tools the resolved provider + `projectRoot` pair can satisfy, so a remote-provider session simply doesn't show the tools it couldn't run (see [MCP Tools](/packages/mcp) and `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`).
 

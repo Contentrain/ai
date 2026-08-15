@@ -167,7 +167,7 @@ For large content operations (10+ entries), also recommend running `contentrain 
 Call `contentrain_submit` to push branches to remote:
 
 - Write operations already create branches and commit changes automatically.
-- `contentrain_submit` pushes unmerged `contentrain/*` branches to the remote.
+- `contentrain_submit` pushes unmerged `cr/*` branches to the remote.
 - In `auto-merge` mode, branches are already merged to the base branch during the write operation.
 - In `review` mode, branches are pushed for team review.
 

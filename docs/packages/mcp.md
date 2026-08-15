@@ -55,10 +55,10 @@ Use the local stdio server when the agent should work against a checkout on your
 
 ## Tool Catalog
 
-The MCP server exposes **26 tools** — 21 core + 5 media — organized by function. Each tool includes [MCP annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) so clients can distinguish safe reads from writes and destructive operations.
+The MCP server exposes **27 tools** — 22 core + 5 media — organized by function. Each tool includes [MCP annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) so clients can distinguish safe reads from writes and destructive operations.
 
 ::: info Capability-aware listing
-`tools/list` is filtered per session: tools whose requirements (local project root, provider capabilities) cannot be met are not registered at all. A local stdio server lists the 21 core tools; a remote-provider session lists the remote-safe subset plus — on media-capable providers like Studio MCP Cloud — the 5 `contentrain_media_*` tools. Core remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. See `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`.
+`tools/list` is filtered per session: tools whose requirements (local project root, provider capabilities) cannot be met are not registered at all. A local stdio server lists the 22 core tools; a remote-provider session lists the remote-safe subset plus — on media-capable providers like Studio MCP Cloud — the 5 `contentrain_media_*` tools. Core remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. See `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`.
 :::
 
 | Tool | Title | Read-only | Destructive |
@@ -79,6 +79,7 @@ The MCP server exposes **26 tools** — 21 core + 5 media — organized by funct
 | `contentrain_validate` | Validate Project | — | — |
 | `contentrain_submit` | Submit Branches | — | — |
 | `contentrain_merge` | Merge Branch | — | — |
+| `contentrain_reconcile` | Reconcile Diverged Branches | — | — |
 | `contentrain_branch_list` | List Branches | Yes | — |
 | `contentrain_branch_delete` | Delete Branch | — | **Yes** |
 | `contentrain_scan` | Scan Source Code | Yes | — |
@@ -117,6 +118,7 @@ The MCP server exposes **26 tools** — 21 core + 5 media — organized by funct
 | `contentrain_validate` | Check & fix | Validate content against schemas, optionally auto-fix structural issues |
 | `contentrain_submit` | Push branches | Push `cr/*` review branches to remote, then lazily prune merged local + remote leftovers |
 | `contentrain_merge` | Merge branches | Merge a review-mode branch into contentrain locally (by exact branch or model; no external platform needed); deletes the branch's remote copy |
+| `contentrain_reconcile` | Reconcile branches | Content-aware three-way merge of a diverged contentrain ↔ base pair — dry_run previews, resolutions answer conflicts, execute lands a two-parent merge commit and restores the fast-forward advance |
 | `contentrain_branch_list` | Inspect branches | List pending `cr/*` branches with merge status and branch-health pressure (`remote: true` adds a remote view + remote-only leftovers) |
 | `contentrain_branch_delete` | Clean up branches | Delete a stale/failed `cr/*` branch locally and on the remote (the contentrain branch is protected; supports remote-only deletion) |
 
@@ -243,6 +245,7 @@ All write operations create or update `cr/*` branches:
 - Content changes go to isolated branches (`cr/{scope}/{target}[/{locale}]/{timestamp}-{suffix}`)
 - Humans review via `contentrain diff` or the serve UI
 - Approved changes merge into the `contentrain` branch, baseBranch is advanced via update-ref
+- A diverged baseBranch (commits `contentrain` lacks — typically a dual-domain migration PR) is a **partial success**, not an error: the write lands on `contentrain`, the response reports `base_advance: "blocked_diverged"`, and `contentrain_reconcile` merges the branches content-aware so the fast-forward works again. `contentrain_status` reports the relation (`in_sync` / `content_ahead` / `base_ahead` / `diverged`) in both directions
 - Merging (or deleting) a branch also removes its copy on the remote, so merged branches don't pile up as phantom pending reviews — best-effort, opt out with `remoteBranchCleanup: false` in `config.json`. Drain an existing backlog with `contentrain prune`
 - Merged-branch detection survives base-history rewrites (ancestry check with a patch-id fallback)
 - Branch health is tracked and surfaced via `contentrain_status` (warning at 50, blocked at 80 active branches); `contentrain_doctor` adds a remote `cr/*` count
@@ -542,11 +545,13 @@ Available subpath exports:
 - `@contentrain/mcp/core/apply-manager` — Normalize apply
 - `@contentrain/mcp/core/doctor` — Health check engine
 - `@contentrain/mcp/core/contracts` — RepoProvider interface types
-- `@contentrain/mcp/core/ops` — Git operation utilities
+- `@contentrain/mcp/core/ops` — Plan APIs (`planContentSave`, `planReconcile`, `bindRef`, …) and path helpers
 - `@contentrain/mcp/core/overlay-reader` — Overlay file reading
 - `@contentrain/mcp/core/scan-config` — Scan configuration
 - `@contentrain/mcp/git/transaction` — Git transaction flow
 - `@contentrain/mcp/git/branch-lifecycle` — Branch health tracking
+- `@contentrain/mcp/git/errors` — Structured operation-error normalizer
+- `@contentrain/mcp/git/reconcile` — Local reconcile executor (`reconcileBranches`)
 - `@contentrain/mcp/templates` — Scaffold templates
 - `@contentrain/mcp/tools/annotations` — Tool metadata (TOOL_NAMES, TOOL_ANNOTATIONS)
 - `@contentrain/mcp/tools/availability` — Per-tool capability requirements (TOOL_REQUIREMENTS)
