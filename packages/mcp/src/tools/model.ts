@@ -10,7 +10,7 @@ import { planModelDelete, planModelSave } from '../core/ops/index.js'
 import { buildBranchName } from '../git/transaction.js'
 import { normalizeOperationError } from '../git/errors.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
-import { commitThroughProvider } from './commit-plan.js'
+import { commitThroughProvider, divergenceNextSteps, gitReport, type CommitThroughProviderResult } from './commit-plan.js'
 
 // Shared field definition schema — single source of truth with normalize extract
 const fieldDefSchema = fieldDefZodSchema
@@ -94,20 +94,15 @@ export function registerModelTools(
       const message = `[contentrain] ${action}: ${input.id}`
       const contextPayload = { tool: 'contentrain_model_save', model: input.id }
 
-      let commitSha: string
-      let workflowAction: 'auto-merged' | 'pending-review'
-      let sync: unknown
+      let commit: CommitThroughProviderResult
 
       try {
-        const result = await commitThroughProvider(provider, {
+        commit = await commitThroughProvider(provider, {
           branch,
           changes: savePlan.changes,
           message,
           contextPayload,
         })
-        commitSha = result.commitSha
-        workflowAction = result.workflowAction
-        sync = result.sync
       } catch (error) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
@@ -149,12 +144,14 @@ export function registerModelTools(
           // Constraints the schema accepts but MCP does not enforce, said out loud
           // rather than left for the author to discover in production.
           ...(schemaWarnings.length > 0 ? { schema_warnings: schemaWarnings } : {}),
-          git: { branch, action: workflowAction, commit: commitSha, ...(sync ? { sync } : {}) },
+          git: gitReport({ branch, action: commit.workflowAction, commit: commit.commitSha, sync: commit.sync, base_advance: commit.base_advance, remote_push: commit.remote_push }),
+          ...(commit.warning ? { warning: commit.warning } : {}),
           context_updated: true,
           content_path: contentPath + '/',
           ...(displayPath ? { example_file: displayPath } : {}),
           ...(importSnippet ? { import_snippet: importSnippet } : {}),
           next_steps: [
+            ...divergenceNextSteps(commit),
             ...(schemaWarnings.length > 0 ? ['REVIEW: see schema_warnings — some declared constraints are not enforced by MCP'] : []),
             'Add content with contentrain_content_save',
           ],
@@ -221,29 +218,25 @@ export function registerModelTools(
       const message = `[contentrain] delete: ${modelId}`
       const contextPayload = { tool: 'contentrain_model_delete', model: modelId }
 
-      let commitSha: string
-      let workflowAction: 'auto-merged' | 'pending-review'
-      let sync: unknown
-
       try {
-        const result = await commitThroughProvider(provider, {
+        const commit = await commitThroughProvider(provider, {
           branch,
           changes: deletePlan.changes,
           message,
           contextPayload,
         })
-        commitSha = result.commitSha
-        workflowAction = result.workflowAction
-        sync = result.sync
 
+        const nextSteps = divergenceNextSteps(commit)
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({
             status: 'committed',
             message: 'Model deleted and committed to git. Do NOT manually edit .contentrain/ files.',
             deleted: true,
-            git: { branch, action: workflowAction, commit: commitSha, ...(sync ? { sync } : {}) },
+            git: gitReport({ branch, action: commit.workflowAction, commit: commit.commitSha, sync: commit.sync, base_advance: commit.base_advance, remote_push: commit.remote_push }),
+            ...(commit.warning ? { warning: commit.warning } : {}),
             files_removed: deletePlan.result,
             context_updated: true,
+            ...(nextSteps.length > 0 ? { next_steps: nextSteps } : {}),
           }, null, 2) }],
         }
       } catch (error) {

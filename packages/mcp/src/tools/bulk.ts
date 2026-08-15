@@ -12,6 +12,7 @@ import { normalizeOperationError } from '../git/errors.js'
 import { readJson, writeJson } from '../util/fs.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 import { capabilityError } from './guards.js'
+import { divergenceNextSteps, gitReport } from './commit-plan.js'
 
 export function registerBulkTools(
   server: McpServer,
@@ -153,7 +154,9 @@ export function registerBulkTools(
                 operation: 'copy_locale',
                 message: `Copied ${copiedCount} entries from ${input.source_locale} to ${input.target_locale}.`,
                 copied: copiedCount,
-                git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
+                git: gitReport({ branch, action: gitResult.action, commit: gitResult.commit, sync: gitResult.sync, base_advance: gitResult.base_advance, remote_push: gitResult.remote_push }),
+                ...(gitResult.warning ? { warning: gitResult.warning } : {}),
+                ...(divergenceNextSteps(gitResult).length > 0 ? { next_steps: divergenceNextSteps(gitResult) } : {}),
                 context_updated: true,
               }, null, 2) }],
             }
@@ -289,7 +292,9 @@ export function registerBulkTools(
                 updated: updatedCount,
                 updated_by_locale: updatedPerLocale,
                 not_found: notFound.length > 0 ? notFound : undefined,
-                git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
+                git: gitReport({ branch, action: gitResult.action, commit: gitResult.commit, sync: gitResult.sync, base_advance: gitResult.base_advance, remote_push: gitResult.remote_push }),
+                ...(gitResult.warning ? { warning: gitResult.warning } : {}),
+                ...(divergenceNextSteps(gitResult).length > 0 ? { next_steps: divergenceNextSteps(gitResult) } : {}),
                 context_updated: true,
               }, null, 2) }],
             }
@@ -355,7 +360,9 @@ export function registerBulkTools(
                 message: `Deleted ${input.entry_ids.length} entries.`,
                 deleted: input.entry_ids.length,
                 files_removed: allRemoved,
-                git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
+                git: gitReport({ branch, action: gitResult.action, commit: gitResult.commit, sync: gitResult.sync, base_advance: gitResult.base_advance, remote_push: gitResult.remote_push }),
+                ...(gitResult.warning ? { warning: gitResult.warning } : {}),
+                ...(divergenceNextSteps(gitResult).length > 0 ? { next_steps: divergenceNextSteps(gitResult) } : {}),
                 context_updated: true,
               }, null, 2) }],
             }

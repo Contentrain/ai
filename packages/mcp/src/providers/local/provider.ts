@@ -1,6 +1,12 @@
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { randomUUID } from 'node:crypto'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import type {
   Branch,
+  Commit,
+  CommitAuthor,
+  FileChange,
   FileDiff,
   MergeResult,
   ProviderCapabilities,
@@ -10,6 +16,7 @@ import type {
 import { LOCAL_CAPABILITIES } from '../../core/contracts/index.js'
 import { applyChangesToWorktree } from '../../core/ops/index.js'
 import { checkBranchHealth } from '../../git/branch-lifecycle.js'
+import { createGit } from '../../git/identity.js'
 import { createTransaction } from '../../git/transaction.js'
 import {
   createBranch as createBranchOp,
@@ -94,6 +101,8 @@ export class LocalProvider implements RepoProvider {
         workflowAction: gitResult.action,
         sync: gitResult.sync,
         warning: gitResult.warning,
+        base_advance: gitResult.base_advance,
+        remote_push: gitResult.remote_push,
       }
     } finally {
       await tx.cleanup()
@@ -129,5 +138,81 @@ export class LocalProvider implements RepoProvider {
 
   getDefaultBranch(): Promise<string> {
     return getDefaultBranchOp(this.projectRoot)
+  }
+
+  async getMergeBase(refA: string, refB: string): Promise<string | null> {
+    const git = createGit(this.projectRoot)
+    try {
+      return (await git.raw(['merge-base', refA, refB])).trim() || null
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Two-parent merge commit in a temp worktree. The real `git merge`
+   * resolves everything outside the plan; the plan's changes then
+   * overwrite every content-owned path (planner output is authoritative,
+   * never git's textual auto-merge). Leftover unmerged paths abort — they
+   * are outside the content planner's scope by construction.
+   */
+  async createMergeCommit(input: {
+    branch: string
+    ours: string
+    theirs: string
+    changes: FileChange[]
+    message: string
+    author: CommitAuthor
+  }): Promise<Commit> {
+    const git = createGit(this.projectRoot)
+    const tip = (await git.raw(['rev-parse', input.branch])).trim()
+    if (tip !== input.ours) {
+      throw Object.assign(new Error(
+        `createMergeCommit: "${input.branch}" is at ${tip.slice(0, 8)}, not the expected ${input.ours.slice(0, 8)} — the branch moved since planning.`,
+      ), {
+        code: 'RECONCILE_STALE_OURS',
+        agent_hint: 'Re-run the reconcile plan against the current tip.',
+      })
+    }
+
+    const worktreePath = join(tmpdir(), `cr-merge-commit-${randomUUID()}`)
+    await git.raw(['worktree', 'add', worktreePath, input.branch])
+    const wtGit = createGit(worktreePath, {
+      config: [
+        `user.name=${input.author.name}`,
+        `user.email=${input.author.email}`,
+      ],
+    })
+    try {
+      try {
+        await wtGit.merge([input.theirs, '--no-commit', '--no-ff'])
+      } catch {
+        // Conflicts are expected — the plan overwrites content paths next.
+      }
+      await applyChangesToWorktree(worktreePath, input.changes)
+      await wtGit.raw(['add', '-A'])
+      const unmerged = (await wtGit.raw(['ls-files', '-u'])).trim()
+      if (unmerged) {
+        const paths = [...new Set(unmerged.split('\n').map(l => l.split('\t')[1]).filter(Boolean))]
+        try { await wtGit.merge(['--abort']) } catch { /* not in merge state */ }
+        throw Object.assign(new Error(
+          `createMergeCommit: ${paths.length} non-content file(s) conflict: ${paths.join(', ')}.`,
+        ), { code: 'RECONCILE_SOURCE_CONFLICT' })
+      }
+      await wtGit.commit(input.message, { '--no-verify': null })
+      const sha = (await wtGit.raw(['rev-parse', 'HEAD'])).trim()
+      return {
+        sha,
+        message: input.message,
+        author: input.author,
+        timestamp: new Date().toISOString(),
+      }
+    } finally {
+      try {
+        await git.raw(['worktree', 'remove', worktreePath, '--force'])
+      } catch {
+        // worktree may already be cleaned up
+      }
+    }
   }
 }

@@ -76,6 +76,17 @@ interface RepoProvider extends RepoReader, RepoWriter {
   mergeBranch(branch: string, into: string, opts?: { removeSourceBranch?: boolean }): Promise<MergeResult>
   isMerged(branch: string, into?: string): Promise<boolean>
   getDefaultBranch(): Promise<string>
+
+  // Optional reconcile pair. getMergeBase names the common ancestor of two
+  // refs (git merge-base / compare APIs); createMergeCommit writes resolved
+  // changes as a TWO-PARENT merge commit so the reconciled ref contains both
+  // histories and fast-forward advances work again. A provider that omits
+  // them cannot drive a reconcile — callers fall back to a PR/MR flow.
+  getMergeBase?(refA: string, refB: string): Promise<string | null>
+  createMergeCommit?(input: {
+    branch: string; ours: string; theirs: string
+    changes: FileChange[]; message: string; author: CommitAuthor
+  }): Promise<Commit>
 }
 ```
 
@@ -94,6 +105,8 @@ interface ProviderCapabilities {
   branchProtection: boolean
   pullRequestFallback: boolean
   astScan: boolean
+  // Optional (absent = false): provider can write a two-parent merge commit
+  mergeCommit?: boolean
 }
 ```
 
@@ -108,6 +121,7 @@ Capability meanings:
 | `branchProtection` | Provider detects branch protection rules on the remote |
 | `pullRequestFallback` | Provider can open a pull request as a fallback when direct merge is blocked |
 | `astScan` | Provider can execute AST scanners against source files (implies local disk access) |
+| `mergeCommit` | Provider can write a two-parent merge commit via `createMergeCommit` (absent = false; GitLab omits it — its Commits API cannot express two parents) |
 
 Built-in capability sets:
 
@@ -120,6 +134,7 @@ Built-in capability sets:
 | `branchProtection` | — | ✓ | ✓ |
 | `pullRequestFallback` | — | ✓ | ✓ |
 | `astScan` | ✓ | — | — |
+| `mergeCommit` | ✓ | ✓ | — |
 
 `LOCAL_CAPABILITIES` is exported from `@contentrain/types` for ergonomic use in custom providers that back onto the local filesystem:
 
@@ -132,6 +147,7 @@ export const LOCAL_CAPABILITIES: ProviderCapabilities = {
   branchProtection: false,
   pullRequestFallback: false,
   astScan: true,
+  mergeCommit: true,
 }
 ```
 

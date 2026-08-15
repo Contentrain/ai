@@ -295,7 +295,7 @@ Want to skip setup? Start from a production-ready template with content models, 
 
 - [Core Concepts](/concepts) — Models, content kinds, domains, and the governance architecture
 - [Ecosystem Map](/ecosystem) — How AI packages and Studio fit together
-- [MCP Tools](/packages/mcp) — All 24 tools available to your agent
+- [MCP Tools](/packages/mcp) — All 27 tools available to your agent
 - [Normalize Flow](/guides/normalize) — Extract hardcoded strings from existing code
 - [i18n Workflow](/guides/i18n) — Add languages to your content
 - [Framework Integration](/guides/frameworks) — Platform-specific setup patterns

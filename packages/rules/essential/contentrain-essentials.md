@@ -59,6 +59,7 @@ MCP is **deterministic infrastructure**. The agent (you) is the **intelligence l
 | `contentrain_validate` | Validate content against schemas |
 | `contentrain_submit` | Push branches to remote |
 | `contentrain_merge` | Merge a review-mode branch into contentrain locally (by exact branch or model) |
+| `contentrain_reconcile` | Content-aware three-way merge of a diverged contentrain ↔ base pair (dry_run first) |
 | `contentrain_branch_list` | List pending `cr/*` branches + merge status |
 | `contentrain_branch_delete` | Delete a stale/failed `cr/*` branch (the contentrain branch is protected) |
 | `contentrain_bulk` | Batch operations (copy_locale/update_status/delete_entries) |
@@ -92,6 +93,8 @@ Media tools appear only when the provider exposes a media stack; discover paths 
 - The `contentrain` branch is protected from deletion
 - context.json is never committed on feature branches — it is regenerated on the `contentrain` branch after merge
 - Never create branches manually, never commit directly to main or the `contentrain` branch
+- The one legitimate exception: a dual-domain migration (package bump + `.contentrain/` schema change) lands on the base branch via PR — afterwards `contentrain` and the base have diverged, and writes report `base_advance: "blocked_diverged"` (the content is safe on `contentrain`; only the fast-forward is pending)
+- Divergence is reconciled with `contentrain_reconcile`: dry_run first, review the plan and conflicts, collect resolutions from the editor for anything two-sided, then execute — it lands as a two-parent merge commit and the fast-forward advance works again
 - 50+ active `cr/*` branches = warning, 80+ = blocked
 
 ## CLI Serve — Review & Approval

@@ -365,7 +365,7 @@ function contentrainRemoteName(): string {
  * that inherited variables (EDITOR, GIT_ASKPASS, …) would otherwise trip; see
  * NETWORK_UNSAFE. Arg-injection protections stay intact.
  */
-function networkGit(projectRoot: string, timeoutMs: number): SimpleGit {
+export function networkGit(projectRoot: string, timeoutMs: number): SimpleGit {
   return createGit(undefined, { baseDir: projectRoot, timeout: { block: timeoutMs }, unsafe: NETWORK_UNSAFE })
     .env({ ...process.env, GIT_TERMINAL_PROMPT: '0' })
 }
@@ -546,4 +546,42 @@ export async function pruneMergedRemoteBranches(
     }
   }
   return { deleted, kept, errors }
+}
+
+export interface ContentBranchRelation {
+  /** Commits on the content branch that the base branch lacks. */
+  ahead: number
+  /** Commits on the base branch that the content branch lacks. */
+  behind: number
+  relation: 'in_sync' | 'content_ahead' | 'base_ahead' | 'diverged'
+}
+
+/**
+ * How the content-tracking branch relates to the base branch, counted in
+ * BOTH directions. One-directional "ahead" counting reported a diverged base
+ * as "in sync" — the state that blocks every auto-merge advance is exactly
+ * the one it could not see. Shared by CLI `status` and `contentrain_status`.
+ *
+ * `base_ahead` self-heals on the next write (the pre-fork sync fast-forwards
+ * contentrain); `diverged` blocks the base advance until the branches are
+ * reconciled.
+ */
+export async function contentBranchRelation(
+  git: SimpleGit,
+  baseBranch: string,
+): Promise<ContentBranchRelation> {
+  const [aheadRaw, behindRaw] = await Promise.all([
+    git.raw(['rev-list', '--count', `${baseBranch}..${CONTENTRAIN_BRANCH}`]),
+    git.raw(['rev-list', '--count', `${CONTENTRAIN_BRANCH}..${baseBranch}`]),
+  ])
+  const ahead = Number.parseInt(aheadRaw.trim(), 10) || 0
+  const behind = Number.parseInt(behindRaw.trim(), 10) || 0
+  const relation = ahead > 0 && behind > 0
+    ? 'diverged' as const
+    : ahead > 0
+      ? 'content_ahead' as const
+      : behind > 0
+        ? 'base_ahead' as const
+        : 'in_sync' as const
+  return { ahead, behind, relation }
 }

@@ -416,3 +416,201 @@ describe('review workflow: a failed push must not discard committed work', () =>
     expect((await simpleGit(testDir).branchLocal()).all).not.toContain(branch)
   })
 })
+
+// ─── R0: diverged base is a partial success, not an error ───
+
+/** Commit a file on the contentrain branch through a throwaway worktree. */
+async function commitOnContentrain(repoDir: string, relPath: string, content: string): Promise<void> {
+  const git = simpleGit(repoDir)
+  const wt = join(tmpdir(), `cr-test-wt-${Date.now()}-${Math.floor(Math.random() * 1e6)}`)
+  await git.raw(['worktree', 'add', wt, CONTENTRAIN_BRANCH])
+  const wtGit = simpleGit(wt)
+  await wtGit.addConfig('user.name', 'Test')
+  await wtGit.addConfig('user.email', 'test@test.com')
+  await ensureDir(join(wt, relPath, '..'))
+  await writeFile(join(wt, relPath), content)
+  await wtGit.add('.')
+  await wtGit.commit(`test: contentrain-side ${relPath}`)
+  await git.raw(['worktree', 'remove', wt, '--force'])
+}
+
+/**
+ * Force a genuine divergence: contentrain and the base branch both add the
+ * SAME file with different content, so the silent pre-fork/pre-merge sync
+ * (base → contentrain) hits an add/add conflict and aborts.
+ */
+async function divergeBranches(repoDir: string): Promise<void> {
+  await ensureContentBranch(repoDir)
+  await commitOnContentrain(repoDir, join('.contentrain', 'models', 'divergence.json'), '{"side":"contentrain"}\n')
+  const git = simpleGit(repoDir)
+  await ensureDir(join(repoDir, '.contentrain', 'models'))
+  await writeFile(join(repoDir, '.contentrain', 'models', 'divergence.json'), '{"side":"base"}\n')
+  await git.add('.')
+  await git.commit('test: base-side divergence')
+}
+
+describe('diverged base: complete() reports partial success', () => {
+  it('lands the content on contentrain, skips the advance, and prunes the branch', async () => {
+    await divergeBranches(testDir)
+    const git = simpleGit(testDir)
+    const baseTipBefore = (await git.raw(['rev-parse', defaultBranch])).trim()
+
+    const tx = await createTransaction(testDir, 'cr/model/test/div-1')
+    await tx.write(async (wt) => {
+      await writeJson(join(wt, '.contentrain', 'models', 'unrelated.json'), { id: 'unrelated' })
+    })
+    await tx.commit('[contentrain] create: unrelated', { tool: 'test', model: 'unrelated' })
+
+    const result = await tx.complete()
+    await tx.cleanup()
+
+    // Not a throw: partial success with the truth attached.
+    expect(result.action).toBe('auto-merged')
+    expect(result.base_advance).toBe('blocked_diverged')
+    expect(result.warning).toContain('diverged')
+
+    // The content really is on contentrain…
+    const onContentrain = await git.show(['contentrain:.contentrain/models/unrelated.json'])
+    expect(onContentrain).toContain('unrelated')
+
+    // …the base branch did not move…
+    expect((await git.raw(['rev-parse', defaultBranch])).trim()).toBe(baseTipBefore)
+
+    // …no selective sync ran (base HEAD unchanged, nothing to mirror)…
+    expect(result.sync!.synced).toEqual([])
+
+    // …and the cr/* branch was pruned (its work is reachable from contentrain).
+    expect((await git.branchLocal()).all).not.toContain('cr/model/test/div-1')
+  })
+})
+
+describe('diverged base: mergeBranch reports partial success', () => {
+  it('merges into contentrain, skips the advance, and deletes the branch', async () => {
+    // A review-mode save leaves a cr/* branch behind to merge later.
+    const branch = 'cr/model/test/div-2'
+    const tx = await createTransaction(testDir, branch, { workflowOverride: 'review' })
+    await tx.write(async (wt) => {
+      await writeJson(join(wt, '.contentrain', 'models', 'pending.json'), { id: 'pending' })
+    })
+    await tx.commit('[contentrain] create: pending', { tool: 'test', model: 'pending' })
+    await tx.complete()
+    await tx.cleanup()
+
+    await divergeBranches(testDir)
+    const git = simpleGit(testDir)
+    const baseTipBefore = (await git.raw(['rev-parse', defaultBranch])).trim()
+
+    const result = await mergeBranch(testDir, branch)
+
+    expect(result.action).toBe('merged')
+    expect(result.base_advance).toBe('blocked_diverged')
+    expect(result.warning).toContain('diverged')
+
+    const onContentrain = await git.show(['contentrain:.contentrain/models/pending.json'])
+    expect(onContentrain).toContain('pending')
+    expect((await git.raw(['rev-parse', defaultBranch])).trim()).toBe(baseTipBefore)
+
+    // No phantom pending review: the branch is gone even though the base
+    // could not advance.
+    expect((await git.branchLocal()).all).not.toContain(branch)
+  })
+})
+
+describe('mergeBranch base-sync: a clean base advance self-heals', () => {
+  it('absorbs a non-conflicting base commit instead of failing the approve', async () => {
+    const branch = 'cr/model/test/heal-1'
+    const tx = await createTransaction(testDir, branch, { workflowOverride: 'review' })
+    await tx.write(async (wt) => {
+      await writeJson(join(wt, '.contentrain', 'models', 'healing.json'), { id: 'healing' })
+    })
+    await tx.commit('[contentrain] create: healing', { tool: 'test', model: 'healing' })
+    await tx.complete()
+    await tx.cleanup()
+
+    // The base moves ahead with an unrelated, non-conflicting commit
+    // (a dependency bump, a README edit). Before the pre-merge sync this
+    // made every approve die with BASE_UPDATE_FAILED.
+    const git = simpleGit(testDir)
+    await writeFile(join(testDir, 'README-heal.md'), 'unrelated base work\n')
+    await git.add('.')
+    await git.commit('test: unrelated base commit')
+
+    const result = await mergeBranch(testDir, branch)
+
+    expect(result.base_advance).toBe('advanced')
+    // The base branch now holds BOTH the base commit and the content.
+    const baseTip = (await git.raw(['rev-parse', defaultBranch])).trim()
+    const contentrainTip = (await git.raw(['rev-parse', CONTENTRAIN_BRANCH])).trim()
+    expect(baseTip).toBe(contentrainTip)
+    const onBase = await git.show([`${defaultBranch}:.contentrain/models/healing.json`])
+    expect(onBase).toContain('healing')
+    expect(await git.show([`${defaultBranch}:README-heal.md`])).toContain('unrelated')
+  })
+})
+
+describe('remote push outcome reporting', () => {
+  it('reports pushed when the remote accepts', async () => {
+    const remoteDir = await addBareRemote(testDir)
+    try {
+      const tx = await createTransaction(testDir, 'cr/model/test/push-1')
+      await tx.write(async (wt) => {
+        await writeJson(join(wt, '.contentrain', 'models', 'pushed.json'), { id: 'pushed' })
+      })
+      await tx.commit('[contentrain] create: pushed', { tool: 'test', model: 'pushed' })
+      const result = await tx.complete()
+      await tx.cleanup()
+
+      expect(result.remote_push).toBe('pushed')
+      expect(await remoteHeads(remoteDir)).toContain(CONTENTRAIN_BRANCH)
+    } finally {
+      await rm(remoteDir, { recursive: true, force: true })
+    }
+  })
+
+  it('reports no-remote when the repository has none', async () => {
+    const tx = await createTransaction(testDir, 'cr/model/test/push-2')
+    await tx.write(async (wt) => {
+      await writeJson(join(wt, '.contentrain', 'models', 'offline.json'), { id: 'offline' })
+    })
+    await tx.commit('[contentrain] create: offline', { tool: 'test', model: 'offline' })
+    const result = await tx.complete()
+    await tx.cleanup()
+
+    expect(result.remote_push).toBe('no-remote')
+  })
+
+  it('reports rejected when the remote refuses even after the retry', async () => {
+    // Seed the bare remote's contentrain with an UNRELATED history, so the
+    // push is non-fast-forward and the retry's fetch+merge cannot resolve it.
+    const remoteDir = await addBareRemote(testDir)
+    const foreignDir = await mkdtemp(join(tmpdir(), 'cr-foreign-'))
+    try {
+      const foreign = simpleGit(foreignDir)
+      await foreign.init()
+      await foreign.addConfig('user.name', 'Foreign')
+      await foreign.addConfig('user.email', 'foreign@test.com')
+      await writeFile(join(foreignDir, 'foreign.txt'), 'unrelated history\n')
+      await foreign.add('.')
+      await foreign.commit('foreign root')
+      await foreign.addRemote('origin', remoteDir)
+      const foreignBranch = (await foreign.raw(['branch', '--show-current'])).trim()
+      await foreign.push(['origin', `${foreignBranch}:${CONTENTRAIN_BRANCH}`])
+
+      const tx = await createTransaction(testDir, 'cr/model/test/push-3')
+      await tx.write(async (wt) => {
+        await writeJson(join(wt, '.contentrain', 'models', 'rejected.json'), { id: 'rejected' })
+      })
+      await tx.commit('[contentrain] create: rejected', { tool: 'test', model: 'rejected' })
+      const result = await tx.complete()
+      await tx.cleanup()
+
+      expect(result.remote_push).toBe('rejected')
+      // Local state is intact regardless.
+      const onContentrain = await simpleGit(testDir).show(['contentrain:.contentrain/models/rejected.json'])
+      expect(onContentrain).toContain('rejected')
+    } finally {
+      await rm(remoteDir, { recursive: true, force: true })
+      await rm(foreignDir, { recursive: true, force: true })
+    }
+  })
+})

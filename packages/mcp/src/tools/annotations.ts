@@ -136,6 +136,13 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
     idempotentHint: false,
     openWorldHint: false,
   },
+  contentrain_reconcile: {
+    title: 'Reconcile Diverged Branches',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
   contentrain_branch_list: {
     title: 'List Branches',
     readOnlyHint: true,

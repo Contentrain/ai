@@ -1,4 +1,5 @@
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
+import type { BaseAdvance, RemotePush } from '@contentrain/types'
 import type { FileChange } from '../core/contracts/index.js'
 import type { ToolProvider } from '../server.js'
 
@@ -30,6 +31,54 @@ export interface CommitThroughProviderResult {
   commitSha: string
   workflowAction: 'auto-merged' | 'pending-review'
   sync?: unknown
+  /** Non-fatal problem from the provider (push failure, partial sync, diverged base). */
+  warning?: string
+  /** Present when a local provider auto-merged: did the base branch advance? */
+  base_advance?: BaseAdvance
+  /** Present when a local provider pushed: outcome for the contentrain branch. */
+  remote_push?: RemotePush
+}
+
+/**
+ * The `git` object every write tool reports. One producer instead of nine
+ * hand-rolled literals, so `base_advance`/`remote_push` cannot drift between
+ * tools. Both fields appear only when the provider reported them (local
+ * auto-merge) — remote/review responses keep their previous shape.
+ */
+export function gitReport(input: {
+  branch: string
+  action: string
+  commit: string
+  sync?: unknown
+  base_advance?: BaseAdvance
+  remote_push?: RemotePush
+}): Record<string, unknown> {
+  return {
+    branch: input.branch,
+    action: input.action,
+    commit: input.commit,
+    ...(input.sync ? { sync: input.sync } : {}),
+    ...(input.base_advance ? { base_advance: input.base_advance } : {}),
+    ...(input.remote_push ? { remote_push: input.remote_push } : {}),
+  }
+}
+
+/**
+ * Next-step guidance for a partial success — empty when the base advanced
+ * and the push landed.
+ */
+export function divergenceNextSteps(input: {
+  base_advance?: BaseAdvance
+  remote_push?: RemotePush
+}): string[] {
+  const steps: string[] = []
+  if (input.base_advance === 'blocked_diverged') {
+    steps.push('DIVERGED: the content is safe on the contentrain branch, but the base branch has commits contentrain does not — run contentrain_reconcile (dry_run first) to merge them and restore the fast-forward advance')
+  }
+  if (input.remote_push === 'rejected') {
+    steps.push('PUSH REJECTED: the remote refused the contentrain push even after a retry — the local and remote contentrain branches have diverged; fetch and run contentrain_reconcile')
+  }
+  return steps
 }
 
 /**
@@ -82,6 +131,9 @@ export async function commitThroughProvider(
       // branch off to an orchestrator does not, and that means review.
       workflowAction: result.workflowAction ?? 'pending-review',
       sync: result.sync,
+      warning: result.warning,
+      base_advance: result.base_advance,
+      remote_push: result.remote_push,
     }
   }
 

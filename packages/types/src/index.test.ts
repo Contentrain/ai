@@ -53,6 +53,8 @@ import {
   sortKeys,
   canonicalStringify,
   generateEntryId,
+  stableHash,
+  conflictId,
   parseMarkdownFrontmatter,
   serializeMarkdownFrontmatter,
 } from './index'
@@ -748,6 +750,50 @@ describe('@contentrain/types', () => {
     it('generates unique IDs', () => {
       const ids = new Set(Array.from({ length: 100 }, () => generateEntryId()))
       expect(ids.size).toBe(100)
+    })
+  })
+
+  describe('stableHash', () => {
+    it('is deterministic and 16 hex chars', () => {
+      const a = stableHash('contentrain')
+      expect(a).toBe(stableHash('contentrain'))
+      expect(/^[0-9a-f]{16}$/.test(a)).toBe(true)
+    })
+
+    it('differs for different inputs, including unicode', () => {
+      expect(stableHash('a')).not.toBe(stableHash('b'))
+      expect(stableHash('kayıt')).not.toBe(stableHash('kayit'))
+      expect(stableHash('')).toHaveLength(16)
+    })
+  })
+
+  describe('conflictId', () => {
+    const base = { path: '.contentrain/content/site/faq/en.json', key: 'faq-1', field: 'answer' }
+
+    it('is stable across runs for the same position and values', () => {
+      const a = conflictId({ ...base, base: 'old', ours: 'ours', theirs: 'theirs' })
+      const b = conflictId({ ...base, base: 'old', ours: 'ours', theirs: 'theirs' })
+      expect(a).toBe(b)
+    })
+
+    it('changes when any side value changes — the compare-and-set property', () => {
+      const original = conflictId({ ...base, base: 'old', ours: 'ours', theirs: 'theirs' })
+      expect(conflictId({ ...base, base: 'old', ours: 'edited later', theirs: 'theirs' })).not.toBe(original)
+      expect(conflictId({ ...base, base: 'old', ours: 'ours', theirs: 'edited later' })).not.toBe(original)
+    })
+
+    it('normalizes object key order but keeps absent distinct from null-bearing objects', () => {
+      const a = conflictId({ ...base, ours: { b: 2, a: 1 }, theirs: 'x' })
+      const b = conflictId({ ...base, ours: { a: 1, b: 2 }, theirs: 'x' })
+      expect(a).toBe(b)
+      const absent = conflictId({ ...base, theirs: 'x' })
+      expect(absent).not.toBe(a)
+    })
+
+    it('distinguishes positions: same values, different field', () => {
+      const a = conflictId({ ...base, ours: 'v', theirs: 'w' })
+      const b = conflictId({ ...base, field: 'question', ours: 'v', theirs: 'w' })
+      expect(a).not.toBe(b)
     })
   })
 

@@ -21,4 +21,9 @@ export const GITHUB_CAPABILITIES: ProviderCapabilities = {
   branchProtection: true,
   pullRequestFallback: true,
   astScan: false,
+  // Git Data API commits accept multiple parents, so a reconcile can land
+  // as a true two-parent merge commit. GitLab's Commits API cannot express
+  // that — its provider leaves the flag absent and callers fall back to a
+  // merge-request flow.
+  mergeCommit: true,
 }

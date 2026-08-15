@@ -13,6 +13,7 @@ import { normalizeOperationError } from '../git/errors.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 import { capabilityError } from './guards.js'
 import { isToolAvailable } from './availability.js'
+import { divergenceNextSteps, gitReport } from './commit-plan.js'
 
 /**
  * Resolve a merge target from either an exact branch name or a
@@ -125,7 +126,7 @@ export function registerWorkflowTools(
               })
               const gitResult = await tx.complete()
 
-              const nextSteps: string[] = []
+              const nextSteps: string[] = [...divergenceNextSteps(gitResult)]
               if (result!.summary.errors > 0) nextSteps.push('Fix remaining errors manually')
               if (result!.summary.warnings > 0) nextSteps.push('Review warnings')
               nextSteps.push('Run contentrain_validate again to verify')
@@ -135,7 +136,8 @@ export function registerWorkflowTools(
                   status: 'committed',
                   message: `Validation complete. ${result!.fixed} issue(s) auto-fixed and committed to git. Do NOT manually edit .contentrain/ files.`,
                   ...result!,
-                  git: { branch, action: gitResult.action, commit: gitResult.commit, ...(gitResult.sync ? { sync: gitResult.sync } : {}) },
+                  git: gitReport({ branch, action: gitResult.action, commit: gitResult.commit, sync: gitResult.sync, base_advance: gitResult.base_advance, remote_push: gitResult.remote_push }),
+                  ...(gitResult.warning ? { warning: gitResult.warning } : {}),
                   context_updated: true,
                   next_steps: nextSteps,
                 }, null, 2) }],
@@ -417,8 +419,12 @@ export function registerWorkflowTools(
             action: result.action,
             commit: result.commit,
             sync: result.sync,
+            base_advance: result.base_advance,
+            remote_push: result.remote_push,
+            ...(result.warning ? { warning: result.warning } : {}),
             ...(result.remote ? { remote: result.remote } : {}),
             next_steps: [
+              ...divergenceNextSteps(result),
               'Run `contentrain generate` (or `npx contentrain-query generate`) to update the SDK client',
               'Run contentrain_validate to verify content integrity',
               result.sync.skipped.length > 0

@@ -8,13 +8,18 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   if (!res.ok) {
     const text = await res.text()
     let message = `API ${res.status}`
+    let data: unknown
     try {
       const body = JSON.parse(text)
-      if (body?.error) message = body.error
+      // h3's createError serializes as { statusCode, message, data }; plain
+      // handlers use { error }. Prefer the specific message either way.
+      if (body?.message) message = body.message
+      else if (body?.error) message = body.error
+      data = body?.data
     } catch {
       if (text) message = text
     }
-    throw new Error(message)
+    throw Object.assign(new Error(message), data !== undefined ? { data } : {})
   }
   return res.json() as Promise<T>
 }

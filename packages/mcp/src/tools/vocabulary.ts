@@ -85,6 +85,9 @@ export function registerVocabularyTools(
             total_terms: plan.result.total,
             commit: commit.commitSha,
             workflow_action: commit.workflowAction,
+            ...(commit.base_advance ? { base_advance: commit.base_advance } : {}),
+            ...(commit.remote_push ? { remote_push: commit.remote_push } : {}),
+            ...(commit.warning ? { warning: commit.warning } : {}),
             ...(plan.advisories.length > 0 ? { advisories: plan.advisories } : {}),
           }, null, 2) }],
         }
@@ -168,6 +171,9 @@ export function registerVocabularyTools(
             total_terms: plan.result.total,
             commit: commit.commitSha,
             workflow_action: commit.workflowAction,
+            ...(commit.base_advance ? { base_advance: commit.base_advance } : {}),
+            ...(commit.remote_push ? { remote_push: commit.remote_push } : {}),
+            ...(commit.warning ? { warning: commit.warning } : {}),
             ...(plan.advisories.length > 0 ? { advisories: plan.advisories } : {}),
           }, null, 2) }],
         }

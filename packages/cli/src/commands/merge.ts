@@ -2,6 +2,7 @@ import { defineCommand } from 'citty'
 import { intro, outro, log, confirm, isCancel } from '@clack/prompts'
 import { createGit } from '@contentrain/mcp/git/identity'
 import { mergeBranch } from '@contentrain/mcp/git/transaction'
+import { normalizeOperationError } from '@contentrain/mcp/git/errors'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { resolveProjectRoot } from '../utils/context.js'
 import { pc } from '../utils/ui.js'
@@ -59,6 +60,12 @@ export default defineCommand({
     try {
       const result = await mergeBranch(projectRoot, branch)
       log.success(`Merged ${branch} (commit ${result.commit.slice(0, 8)})`)
+      if (result.base_advance === 'blocked_diverged') {
+        log.warning(result.warning ?? 'The base branch has diverged and was not advanced — run `contentrain reconcile`.')
+      }
+      if (result.remote_push === 'rejected') {
+        log.warning('The remote refused the contentrain push — local and remote have diverged; fetch and run `contentrain reconcile`.')
+      }
       if (result.remote?.deleted) {
         log.message(pc.dim('  Deleted remote copy.'))
       }
@@ -78,7 +85,12 @@ export default defineCommand({
         }
       }
     } catch (error) {
-      log.error(`Merge failed: ${error instanceof Error ? error.message : String(error)}`)
+      // Preserve the structured fields — `code`/`agent_hint`/`developer_action`
+      // used to be dropped here, leaving only the bare message.
+      const normalized = normalizeOperationError(error, 'merge')
+      log.error(`Merge failed: ${normalized.error}`)
+      if (normalized.developer_action) log.message(pc.dim(`  Try: ${normalized.developer_action}`))
+      else if (normalized.agent_hint) log.message(pc.dim(`  ${normalized.agent_hint}`))
       process.exitCode = 1
       return
     }

@@ -43,13 +43,13 @@ Contentrain AI inverts the traditional CMS workflow:
 
 ### 1. MCP (Infrastructure)
 
-26 tools (21 core + 5 media) that AI agents call to manage content:
+27 tools (22 core + 5 media) that AI agents call to manage content:
 
 - **Read:** `contentrain_status`, `contentrain_describe`, `contentrain_describe_format`, `contentrain_doctor`, `contentrain_content_list`
 - **Project setup:** `contentrain_init`, `contentrain_scaffold`
 - **Content and schema writes:** `contentrain_model_save`, `contentrain_model_delete`, `contentrain_content_save`, `contentrain_content_delete`
 - **Normalize:** `contentrain_scan`, `contentrain_apply`
-- **Workflow and operations:** `contentrain_validate`, `contentrain_submit`, `contentrain_merge`, `contentrain_branch_list`, `contentrain_branch_delete`, `contentrain_bulk`
+- **Workflow and operations:** `contentrain_validate`, `contentrain_submit`, `contentrain_merge`, `contentrain_reconcile`, `contentrain_branch_list`, `contentrain_branch_delete`, `contentrain_bulk`
 
 MCP is **deterministic infrastructure** — it doesn't make content decisions. The agent decides what to create; MCP executes it.
 
@@ -185,6 +185,12 @@ cr/normalize/reuse/...       ← source patching
 ```
 
 Branches are auto-merged or held for review depending on your workflow config. When a review branch is merged or rejected, its remote copy is deleted too, so merged branches don't linger as phantom pending reviews — run `contentrain prune` to drain any existing backlog, or set `remoteBranchCleanup: false` to opt out.
+
+### Divergence
+
+The `contentrain` branch normally contains the base branch, so advancing the base is always a fast-forward. The invariant breaks when a change lands on the base branch directly — legitimately so for a **dual-domain migration** (a package bump and a `.contentrain/` schema change that must ship as one atomic PR). From then on the branches have **diverged**: writes still land safely on `contentrain`, but they report `base_advance: "blocked_diverged"` instead of advancing the base, and `contentrain status` shows the relation in both directions instead of a one-sided "in sync".
+
+Divergence is reconciled with a content-aware three-way merge — `contentrain_reconcile` (MCP) or `contentrain reconcile` (CLI). Everything one side changed merges mechanically at entry/key/term+locale granularity; only the same item changed differently on both sides becomes a conflict for the editor to decide. The result is a two-parent merge commit on `contentrain`, after which the fast-forward advance works again.
 
 ## How It Compares
 

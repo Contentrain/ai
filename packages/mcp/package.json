@@ -3,7 +3,7 @@
   "version": "3.0.3",
   "mcpName": "io.github.Contentrain/contentrain",
   "license": "MIT",
-  "description": "Local-first MCP server for AI-generated content governance — 26 deterministic tools (21 core + 5 media), stdio + HTTP transports, Local / GitHub / GitLab providers",
+  "description": "Local-first MCP server for AI-generated content governance — 27 deterministic tools (22 core + 5 media), stdio + HTTP transports, Local / GitHub / GitLab providers",
   "type": "module",
   "repository": {
     "type": "git",
@@ -122,6 +122,14 @@
       "types": "./dist/git/branch-lifecycle.d.mts",
       "import": "./dist/git/branch-lifecycle.mjs"
     },
+    "./git/errors": {
+      "types": "./dist/git/errors.d.mts",
+      "import": "./dist/git/errors.mjs"
+    },
+    "./git/reconcile": {
+      "types": "./dist/git/reconcile.d.mts",
+      "import": "./dist/git/reconcile.mjs"
+    },
     "./tools/annotations": {
       "types": "./dist/tools/annotations.d.mts",
       "import": "./dist/tools/annotations.mjs"
@@ -162,8 +170,8 @@
     "testing"
   ],
   "scripts": {
-    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/doctor.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/git/identity.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/tools/annotations.ts src/tools/availability.ts src/testing/conformance.ts src/testing/memory-provider.ts src/templates/index.ts src/core/contracts/index.ts src/core/ops/index.ts src/core/overlay-reader.ts src/providers/local/index.ts src/providers/github/index.ts src/providers/gitlab/index.ts src/server/http/index.ts --format esm --dts --external typescript",
-    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/doctor.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/git/identity.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/tools/annotations.ts src/tools/availability.ts src/testing/conformance.ts src/testing/memory-provider.ts src/templates/index.ts src/core/contracts/index.ts src/core/ops/index.ts src/core/overlay-reader.ts src/providers/local/index.ts src/providers/github/index.ts src/providers/gitlab/index.ts src/server/http/index.ts --format esm --dts --external typescript --watch",
+    "build": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/doctor.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/git/identity.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/git/errors.ts src/git/reconcile.ts src/tools/annotations.ts src/tools/availability.ts src/testing/conformance.ts src/testing/memory-provider.ts src/templates/index.ts src/core/contracts/index.ts src/core/ops/index.ts src/core/overlay-reader.ts src/providers/local/index.ts src/providers/github/index.ts src/providers/gitlab/index.ts src/server/http/index.ts --format esm --dts --external typescript",
+    "dev": "tsdown src/index.ts src/server.ts src/core/config.ts src/core/context.ts src/core/model-manager.ts src/core/content-manager.ts src/core/meta-manager.ts src/core/validator/index.ts src/core/scanner.ts src/core/scan-config.ts src/core/doctor.ts src/core/graph-builder.ts src/core/apply-manager.ts src/util/detect.ts src/util/fs.ts src/util/id.ts src/git/identity.ts src/git/transaction.ts src/git/branch-lifecycle.ts src/git/errors.ts src/git/reconcile.ts src/tools/annotations.ts src/tools/availability.ts src/testing/conformance.ts src/testing/memory-provider.ts src/templates/index.ts src/core/contracts/index.ts src/core/ops/index.ts src/core/overlay-reader.ts src/providers/local/index.ts src/providers/github/index.ts src/providers/gitlab/index.ts src/server/http/index.ts --format esm --dts --external typescript --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"

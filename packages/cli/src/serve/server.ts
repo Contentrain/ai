@@ -21,6 +21,7 @@ import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { createGit } from '@contentrain/mcp/git/identity'
 import { CONTENTRAIN_BRANCH, LOCAL_CAPABILITIES } from '@contentrain/types'
 import { mergeBranch } from '@contentrain/mcp/git/transaction'
+import { normalizeOperationError } from '@contentrain/mcp/git/errors'
 import { branchDiff, checkBranchHealth, deleteRemoteBranch } from '@contentrain/mcp/git/branch-lifecycle'
 import { readConfig } from '@contentrain/mcp/core/config'
 import {
@@ -512,12 +513,19 @@ export async function createServeApp(options: ServeOptions) {
         commit: result.commit,
         action: result.action,
         sync: result.sync,
+        base_advance: result.base_advance,
+        remote_push: result.remote_push,
+        ...(result.warning ? { warning: result.warning } : {}),
         remote: result.remote,
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      broadcast({ type: 'branch:merge-conflict', branch: branchName, message })
-      throw createError({ statusCode: 409, message: `Merge failed: ${message}` })
+      const normalized = normalizeOperationError(error, 'approve')
+      broadcast({ type: 'branch:merge-conflict', branch: branchName, message: normalized.error })
+      throw createError({
+        statusCode: 409,
+        message: `Merge failed: ${normalized.error}`,
+        data: normalized,
+      })
     }
   }))
 
@@ -834,12 +842,19 @@ export async function createServeApp(options: ServeOptions) {
         commit: result.commit,
         action: result.action,
         sync: result.sync,
+        base_advance: result.base_advance,
+        remote_push: result.remote_push,
+        ...(result.warning ? { warning: result.warning } : {}),
         remote: result.remote,
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      broadcast({ type: 'branch:merge-conflict', branch: branchName, message })
-      throw createError({ statusCode: 409, message: `Merge failed: ${message}` })
+      const normalized = normalizeOperationError(error, 'approve')
+      broadcast({ type: 'branch:merge-conflict', branch: branchName, message: normalized.error })
+      throw createError({
+        statusCode: 409,
+        message: `Merge failed: ${normalized.error}`,
+        data: normalized,
+      })
     }
   }))
 

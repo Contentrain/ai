@@ -94,7 +94,7 @@ This is the strongest entry point into the product:
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌──────────────┐
-│  AI Agent    │────▶│  MCP (24 tools)  │────▶│ .contentrain/│
+│  AI Agent    │────▶│  MCP (27 tools)  │────▶│ .contentrain/│
 │  (decides)   │     │  (enforces)      │     │ (stores)     │
 └─────────────┘     └──────────────────┘     └──────┬───────┘
                                                      │
@@ -145,7 +145,7 @@ Works with Nuxt, Next.js, Astro, SvelteKit, Vue, React, Node, Go, Python, Swift,
 
 - **Git-native** — every write goes through worktree isolation + review branches
 - **Normalize flow** — scan codebase for hardcoded strings → extract → create i18n-ready content → patch source files
-- **MCP engine** — 26 tools (21 core + 5 media) over stdio or HTTP transport, works with Claude Code, Cursor, Windsurf, or any MCP client
+- **MCP engine** — 27 tools (22 core + 5 media) over stdio or HTTP transport, works with Claude Code, Cursor, Windsurf, or any MCP client
 - **Provider-agnostic engine** — the same tool surface runs over a local worktree, GitHub, or GitLab (self-hosted included) with zero tool-code changes. HTTP transport available for remote drivers such as Studio.
 - **Canonical serialization** — sorted keys, deterministic output, clean git diffs, conflict-free parallel edits
 - **Agent rules & skills** — behavioral policies and step-by-step workflows ship as npm packages
@@ -212,6 +212,7 @@ npx contentrain validate     # check content health
 npx contentrain generate     # generate typed SDK client
 npx contentrain status       # project overview
 npx contentrain doctor       # setup health check
+npx contentrain reconcile    # merge a diverged base branch, content-aware
 npx contentrain studio login   # authenticate with Studio
 npx contentrain studio connect # connect repo to Studio project
 ```

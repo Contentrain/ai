@@ -9,7 +9,9 @@ import { contentDirPath, contentFilePath } from '../core/ops/paths.js'
 import { detectStack } from '../util/detect.js'
 import { join } from 'node:path'
 import { pathExists } from '../util/fs.js'
-import { checkBranchHealth, cleanupMergedBranches } from '../git/branch-lifecycle.js'
+import { checkBranchHealth, cleanupMergedBranches, contentBranchRelation } from '../git/branch-lifecycle.js'
+import { createGit } from '../git/identity.js'
+import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 
 export function registerContextTools(
@@ -120,6 +122,31 @@ export function registerContextTools(
             }
           } catch {
             // Branch health check is best-effort — don't fail status
+          }
+
+          // contentrain ↔ base relation, both directions. A diverged base is
+          // the state that blocks every auto-merge advance — status must not
+          // read "in sync" while that is true.
+          try {
+            const git = createGit(projectRoot)
+            const branches = await git.branchLocal()
+            if (branches.all.includes(CONTENTRAIN_BRANCH)) {
+              const baseBranch = config?.repository?.default_branch
+                ?? (branches.current !== CONTENTRAIN_BRANCH ? branches.current : 'main')
+              const relation = await contentBranchRelation(git, baseBranch)
+              result['content_branch'] = {
+                base: baseBranch,
+                ahead: relation.ahead,
+                behind: relation.behind,
+                relation: relation.relation,
+              }
+              if (relation.relation === 'diverged') {
+                result['content_branch_warning']
+                  = `"${CONTENTRAIN_BRANCH}" and "${baseBranch}" have diverged (${relation.ahead} ahead / ${relation.behind} behind). Writes still land on "${CONTENTRAIN_BRANCH}", but "${baseBranch}" cannot fast-forward until the branches are reconciled.`
+              }
+            }
+          } catch {
+            // Relation check is best-effort — don't fail status
           }
         }
       }

@@ -30,6 +30,7 @@ export const TOOL_REQUIREMENTS: Readonly<Record<string, ToolRequirements>> = {
   contentrain_bulk: { projectRoot: true },
   contentrain_submit: { projectRoot: true, capabilities: ['localWorktree', 'pushRemote'] },
   contentrain_merge: { projectRoot: true, capabilities: ['localWorktree'] },
+  contentrain_reconcile: { projectRoot: true, capabilities: ['localWorktree'] },
   contentrain_branch_list: { projectRoot: true, capabilities: ['localWorktree'] },
   contentrain_branch_delete: { projectRoot: true, capabilities: ['localWorktree'] },
   contentrain_scan: { projectRoot: true, capabilities: ['astScan'] },

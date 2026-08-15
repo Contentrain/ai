@@ -81,9 +81,12 @@ const mergeSuccess = ref(false)
 async function mergeBranch(branchName: string) {
   mergingBranch.value = branchName
   try {
-    await store.approveBranch(branchName)
+    const result = await store.approveBranch(branchName)
     await store.fetchNormalizeResults()
     toast.success('Branch merged — tell your agent to continue with Phase 2', { duration: 6000 })
+    if (result.base_advance === 'blocked_diverged' && result.warning) {
+      toast.warning(result.warning, { duration: 10000 })
+    }
     if (!store.normalizeResults?.pendingBranches?.length) {
       mergeSuccess.value = true
     }

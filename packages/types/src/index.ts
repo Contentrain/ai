@@ -955,6 +955,56 @@ export function generateEntryId(): string {
   return id
 }
 
+// ─── Reconcile: conflict id derivation ───
+
+/**
+ * FNV-1a 64-bit over the input's UTF-8 code points, returned as 16 hex
+ * chars. Deliberately dependency-free (no `node:crypto` — this package has
+ * zero runtime imports and runs anywhere). Not cryptographic; the use case
+ * is change detection, not tamper resistance.
+ */
+export function stableHash(input: string): string {
+  const PRIME = 0x100000001B3n
+  const MASK = 0xFFFFFFFFFFFFFFFFn
+  let hash = 0xCBF29CE484222325n
+  const bytes = new TextEncoder().encode(input)
+  for (const byte of bytes) {
+    hash ^= BigInt(byte)
+    hash = (hash * PRIME) & MASK
+  }
+  return hash.toString(16).padStart(16, '0')
+}
+
+/**
+ * Identity of a reconcile conflict: position AND values. Hashing the three
+ * values into the id makes every resolution a compare-and-set — if any side
+ * changes between the dry-run that produced the conflict and the apply that
+ * carries the decision, the id no longer matches, the stale resolution is
+ * dropped, and the conflict is re-reported with a fresh id. Values are
+ * normalized through `sortKeys` first so semantically equal objects hash
+ * equal regardless of key order; the positional array keeps absent and
+ * null distinguishable per slot.
+ */
+export function conflictId(conflict: {
+  path: string
+  key?: string
+  field?: string
+  locale?: string
+  base?: unknown
+  ours?: unknown
+  theirs?: unknown
+}): string {
+  return stableHash(JSON.stringify([
+    conflict.path,
+    conflict.key ?? null,
+    conflict.field ?? null,
+    conflict.locale ?? null,
+    sortKeys(conflict.base) ?? null,
+    sortKeys(conflict.ours) ?? null,
+    sortKeys(conflict.theirs) ?? null,
+  ]))
+}
+
 // ─── Markdown Frontmatter ───
 
 function parseYamlValue(raw: string): unknown {
@@ -1162,9 +1212,13 @@ export function serializeMarkdownFrontmatter(data: Record<string, unknown>, body
 // RepoProvider without taking a dependency on @contentrain/mcp.
 export type {
   ApplyPlanInput,
+  BaseAdvance,
   Branch,
   Commit,
   CommitAuthor,
+  ConflictCode,
+  ConflictItem,
+  ConflictResolution,
   FileChange,
   FileDiff,
   MediaAsset,
@@ -1175,6 +1229,7 @@ export type {
   MediaUpdateInput,
   MergeResult,
   ProviderCapabilities,
+  RemotePush,
   RepoProvider,
   RepoReader,
   RepoWriter,

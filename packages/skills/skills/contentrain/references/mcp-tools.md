@@ -340,7 +340,28 @@ Target the branch by exact name, or resolve it by model:
 
 \* Provide either `branch` or `model`. Ambiguous model matches return the candidate branches so you can pick one (or pass `latest: true`).
 
-Returns `{ branch, action, commit, sync }` — `sync.skipped[]` lists files the selective sync skipped because the developer has uncommitted changes. The CLI surfaces this as a warning.
+Returns `{ branch, action, commit, sync, base_advance, remote_push }` — `sync.skipped[]` lists files the selective sync skipped because the developer has uncommitted changes; `base_advance: "blocked_diverged"` means the merge landed on `contentrain` but the base branch has diverged and was not advanced (run `contentrain_reconcile`). The CLI surfaces these as warnings.
+
+### contentrain_reconcile
+
+Content-aware three-way merge of a diverged `contentrain` ↔ base-branch pair. The divergence exists when the base branch holds commits `contentrain` does not (typically a dual-domain migration PR); until it is reconciled, every auto-merge write reports `base_advance: "blocked_diverged"`. Everything one side changed merges mechanically (entry-, key-, and term+locale-level); only the same item changed differently on both sides becomes a conflict. Local-filesystem only (`localWorktree`).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `dry_run` | boolean | No | Default `true` — preview the plan and conflicts, touch nothing. Set `false` to execute |
+| `resolutions` | array | No | Decisions for conflicts from a previous dry-run: `{ id, choose: "ours"\|"theirs" }` or `{ id, value }` |
+
+```json
+{ "dry_run": true }
+```
+
+Returns `{ status: "in_sync" | "preview" | "conflicts" | "reconciled", summary, changes, conflicts, ... }`. On execute it lands as a two-parent merge commit on `contentrain` and fast-forwards the base branch.
+
+Notes:
+- Always dry-run first. Conflicts are content decisions — ask the editor/user which side wins; never guess.
+- Conflict ids hash position AND values: a resolution made against a stale preview is dropped and the conflict re-reported with a fresh id.
+- Document bodies are never text-merged; two-sided body edits always conflict.
+- Non-content files that conflict (source code committed to both branches) abort with `RECONCILE_SOURCE_CONFLICT` — those need a manual git merge.
 
 ### contentrain_branch_list
 
