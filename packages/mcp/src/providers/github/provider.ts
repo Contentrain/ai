@@ -2,12 +2,15 @@ import type {
   ApplyPlanInput,
   Branch,
   Commit,
+  CommitAuthor,
+  FileChange,
   FileDiff,
   MergeResult,
   ProviderCapabilities,
   RepoProvider,
 } from '../../core/contracts/index.js'
 import { applyPlanToGitHub } from './apply-plan.js'
+import { createMergeCommit as createMergeCommitOp, getMergeBase as getMergeBaseOp } from './merge-commit.js'
 import {
   createBranch as createBranchOp,
   deleteBranch as deleteBranchOp,
@@ -79,5 +82,20 @@ export class GitHubProvider implements RepoProvider {
   }
   getDefaultBranch(): Promise<string> {
     return getDefaultBranchOp(this.client, this.repo)
+  }
+
+  getMergeBase(refA: string, refB: string): Promise<string | null> {
+    return getMergeBaseOp(this.client, this.repo, refA, refB)
+  }
+
+  createMergeCommit(input: {
+    branch: string
+    ours: string
+    theirs: string
+    changes: FileChange[]
+    message: string
+    author: CommitAuthor
+  }): Promise<Commit> {
+    return createMergeCommitOp(this.client, this.repo, input)
   }
 }

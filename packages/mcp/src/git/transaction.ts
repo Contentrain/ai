@@ -18,7 +18,7 @@ import { CONTENTRAIN_BRANCH } from '@contentrain/types'
  * host's credential setup (see networkGit); without a timeout a hung SSH
  * passphrase prompt would hang the MCP call with it.
  */
-const NETWORK_TIMEOUT_MS = 10_000
+export const NETWORK_TIMEOUT_MS = 10_000
 
 export interface ContextUpdate {
   tool: string
@@ -99,7 +99,7 @@ export async function ensureContentBranch(projectRoot: string): Promise<void> {
   }
 }
 
-async function selectiveSync(
+export async function selectiveSync(
   projectRoot: string,
   _worktreePath: string,
   contentrainTip: string,
@@ -648,7 +648,7 @@ export function buildBranchName(scope: string, target: string, locale?: string):
  * signals via exit code with empty stderr — simple-git reports that as
  * success, so it cannot express a negative verdict.
  */
-async function isAncestor(git: SimpleGit, ancestor: string, descendant: string): Promise<boolean> {
+export async function isAncestor(git: SimpleGit, ancestor: string, descendant: string): Promise<boolean> {
   try {
     const count = Number((await git.raw(['rev-list', '--count', ancestor, `^${descendant}`])).trim())
     return count === 0
@@ -668,7 +668,7 @@ async function isAncestor(git: SimpleGit, ancestor: string, descendant: string):
  * contentrain, push again. A conflicting retry-merge is aborted and reported
  * as `rejected` — that is a real divergence, not a race.
  */
-async function pushContentBranches(
+export async function pushContentBranches(
   projectRoot: string,
   worktreePath: string,
   wtGit: SimpleGit,

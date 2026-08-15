@@ -84,4 +84,19 @@ export class GitLabProvider implements RepoProvider {
   getDefaultBranch(): Promise<string> {
     return getDefaultBranchOp(this.client, this.project)
   }
+
+  /**
+   * Merge-base via GitLab's dedicated endpoint. `createMergeCommit` is
+   * deliberately ABSENT (and `capabilities.mergeCommit` unset): the GitLab
+   * Commits API cannot express a two-parent commit, so a reconcile against
+   * GitLab falls back to a merge-request flow driven by the caller.
+   */
+  async getMergeBase(refA: string, refB: string): Promise<string | null> {
+    try {
+      const commit = await this.client.Repositories.mergeBase(this.project.projectId, [refA, refB])
+      return commit.id ?? null
+    } catch {
+      return null
+    }
+  }
 }
