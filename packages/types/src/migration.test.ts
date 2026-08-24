@@ -253,3 +253,61 @@ describe('migration contracts', () => {
     expect(offer.cost_comparison!.self_host!.monthly).toBeGreaterThan(0)
   })
 })
+
+// ─── Comments export ───
+
+import type { CommentsExport, EntrySourceMap, HandoffComments } from './index'
+import { COMMENTS_EXPORT_FORMAT } from './index'
+
+describe('comments export contract', () => {
+  const entries: EntrySourceMap = {
+    '10': { model_id: 'posts', entry_id: 'a1b2c3d4', locale: 'en' },
+  }
+  const commentsExport: CommentsExport = {
+    version: MIGRATION_CONTRACT_VERSION,
+    format: COMMENTS_EXPORT_FORMAT,
+    source: { kind: 'wxr', fetched_at: '2026-08-24T12:00:00Z', tool: 'wxr2raw/1.0' },
+    site_url: 'https://example.com',
+    generated_at: '2026-08-24T12:00:00Z',
+    entries,
+    threads_closed: [11],
+    comments: rawIr.comments!,
+  }
+  const handoffComments: HandoffComments = {
+    total: 412,
+    by_status: { '1': 400, '0': 10, spam: 2 },
+    types: { comment: 410, pingback: 2 },
+    export: { format: COMMENTS_EXPORT_FORMAT, url: 'https://example.com/export/comments.json' },
+    threads_closed: [11],
+    unresolved: [{ comment_id: 999, post: 12, reason: 'parent missing in source' }],
+  }
+
+  it('format tag is versioned and stable', () => {
+    expect(COMMENTS_EXPORT_FORMAT).toBe('contentrain-comments@1')
+  })
+
+  it('source map addresses entries, not WordPress ids', () => {
+    const ref = commentsExport.entries['10']!
+    expect(ref.model_id).toBe('posts')
+    expect(ref.entry_id).toMatch(/^[a-z0-9]+$/)
+  })
+
+  it('comments ride verbatim and survive a JSON round-trip', () => {
+    expect(JSON.parse(JSON.stringify(commentsExport))).toEqual(commentsExport)
+    expect(commentsExport.comments[0]!.approved).toBe('1')
+  })
+
+  it('approved accepts the fixed vocabulary and passes unknown values through', () => {
+    const known: CommentsExport['comments'][number]['approved'][] = ['1', '0', 'spam', 'trash']
+    expect(known).toHaveLength(4)
+    const forward: CommentsExport['comments'][number]['approved'] = 'post-trashed'
+    expect(typeof forward).toBe('string')
+  })
+
+  it('handoff carries the comments payload pointer, not just counts', () => {
+    const h: MigrationHandoff = { ...handoff, comments: handoffComments }
+    expect(h.comments!.export!.url).toContain('comments.json')
+    expect(h.comments!.threads_closed).toContain(11)
+    expect(JSON.parse(JSON.stringify(h))).toEqual(h)
+  })
+})

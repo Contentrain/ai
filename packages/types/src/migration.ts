@@ -204,10 +204,21 @@ export interface RawComment {
   author: string
   email?: string | null
   url?: string | null
+  /**
+   * ISO 8601 UTC. Producers MUST normalize to UTC — comment import fidelity
+   * ("zero record and parent loss") includes `created_at`, and a site-local
+   * date silently corrupts it. When normalization is impossible, ship the
+   * source's GMT column in `date_gmt` and leave `date` null.
+   */
   date: string | null
+  date_gmt?: string | null
   content: string
-  /** WordPress approval flag verbatim ("1", "0", "spam", …). */
-  approved?: string
+  /**
+   * WordPress approval flag. Fixed vocabulary: `'1'` (approved), `'0'`
+   * (pending), `'spam'`, `'trash'` — consumers map these; unknown strings
+   * pass through for forward compatibility, never dropped.
+   */
+  approved?: '1' | '0' | 'spam' | 'trash' | (string & {})
   type?: string
   user_id?: number | null
   meta?: Record<string, unknown>
@@ -566,6 +577,59 @@ export interface ProjectIR {
   content_models?: string[]
 }
 
+// ─── Comments export ───
+//
+// Comments cross one more boundary than the rest of RawIR: they leave the
+// generated static site entirely and land in a live service's database,
+// addressed by content entry — not by WordPress post id. This export is that
+// bridge: the source map translates WP ids to entry addresses, and the
+// comments ride along unmodified.
+
+export const COMMENTS_EXPORT_FORMAT = 'contentrain-comments@1'
+
+/** Where one WordPress post's content ended up. */
+export interface EntrySourceRef {
+  model_id: string
+  entry_id: string
+  locale?: string
+}
+
+/**
+ * WordPress post id (stringified) → content entry address. Only the tool that
+ * wrote the content store can produce this; nothing downstream can recover it.
+ */
+export type EntrySourceMap = Record<string, EntrySourceRef>
+
+export interface CommentsExport {
+  version: number
+  format: typeof COMMENTS_EXPORT_FORMAT
+  source: RawProvenance
+  site_url?: string
+  /** ISO 8601 UTC. */
+  generated_at: string
+  entries: EntrySourceMap
+  /** WP post ids whose comment form was closed — the receiving side opens those threads closed. */
+  threads_closed?: number[]
+  /** Verbatim `RawComment`s; parents are re-linked via `RawComment.parent` in a second pass. */
+  comments: RawComment[]
+}
+
+/** Comments summary + payload pointer on the handoff (capability counts are not enough for intake). */
+export interface HandoffComments {
+  total: number
+  by_status?: Record<string, number>
+  types?: Record<string, number>
+  export?: {
+    format: typeof COMMENTS_EXPORT_FORMAT
+    /** Where the full export can be fetched… */
+    url?: string
+    /** …or the export itself, inline, for small sites. */
+    inline?: CommentsExport
+  }
+  threads_closed?: number[]
+  unresolved?: Array<{ comment_id: number; post: number; reason: string }>
+}
+
 // ─── MigrationHandoff ───
 //
 // What the migration hands the user: where the generated project lives, what
@@ -636,6 +700,8 @@ export interface MigrationHandoff {
     locales?: string[]
   }
   capabilities: HandoffCapability[]
+  /** Present whenever the source had comments — see `HandoffComments`. */
+  comments?: HandoffComments
   offers?: HandoffOffer[]
   notes?: string[]
 }
