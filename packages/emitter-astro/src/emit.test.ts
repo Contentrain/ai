@@ -4,6 +4,11 @@ import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import type { EmitInput } from './index'
 import { emitAstroProject, wrapLegacyCss, patternToPagePath, pascalCase } from './index'
 
+// Tiny replicas of the emitted fill helpers — used by the ordering-regression test.
+const REPLICA_SLOT = '<!--@@body@@-->'
+const replicaFill = (h: string, m: Record<string, string>) =>
+  h.replace(/@@([a-z0-9_]+)@@/gi, (_a, k: string) => m[k] ?? '')
+
 const ir: ProjectIR = {
   version: MIGRATION_CONTRACT_VERSION,
   site: { url: 'https://example.com', locales: ['en'] },
@@ -138,7 +143,7 @@ describe('emitAstroProject', () => {
     expect(layout).toContain('set:html')
     expect(layout).not.toContain('<header>')
     expect(layout).not.toContain('<slot />')
-    expect(layout).toContain('split(BODY_SLOT)')
+    expect(layout).toContain('composeBody(')
     expect(layout).toContain(`Astro.slots.render('default')`)
     const chrome = JSON.parse(result.files['src/data/chrome/f-article.json']!)
     // legacy before/after pair composes into a single body with the slot between
@@ -152,6 +157,24 @@ describe('emitAstroProject', () => {
     const chrome = JSON.parse(result.files['src/data/chrome/f-nested.json']!)
     expect(chrome.body).toContain('<div class="entry-content"><!--@@body@@--></div>')
     expect(chrome.body.startsWith('<div class="site">')).toBe(true)
+  })
+
+  it('the layout composes via composeBody — never fill-then-split', () => {
+    const layout = result.files['src/layouts/FArticle.astro']!
+    expect(layout).toContain('composeBody(chrome.body, marks, content)')
+    expect(layout).not.toContain('fillMarks(chrome.body')
+    const fill = result.files['src/lib/fill.ts']!
+    // composeBody must split at the marker before any filling
+    expect(fill).toMatch(/composeBody[\s\S]*?\.split\(BODY_SLOT\)[\s\S]*?fillMarks\(part, marks\)/)
+  })
+
+  it('regression: filling before splitting eats the marker and drops the body', () => {
+    const chromeBody = `<article><h1>@@title@@</h1><div class="entry-content">${REPLICA_SLOT}</div></article>`
+    const naive = replicaFill(chromeBody, { title: 'T' }).split(REPLICA_SLOT).join('BODY')
+    expect(naive).not.toContain('BODY') // the bug: marker consumed → content silently dropped
+    expect(naive).toContain('<!---->')
+    const correct = chromeBody.split(REPLICA_SLOT).map((p) => replicaFill(p, { title: 'T' })).join('BODY')
+    expect(correct).toContain('<div class="entry-content">BODY</div>')
   })
 
   it('a body chunk without the marker gets it appended, with a warning', () => {

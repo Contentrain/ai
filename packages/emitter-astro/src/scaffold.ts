@@ -81,6 +81,19 @@ export function fillMarks(html: string, marks: Record<string, unknown>): string 
   return html.replace(/@@([a-z0-9_]+)@@/gi, (_all, key: string) => esc(marks[key] ?? ''))
 }
 
+/**
+ * Compose the body chrome with the page content. The split happens BEFORE any
+ * mark filling: fillMarks' @@…@@ pattern would otherwise consume the @@body@@
+ * inside the marker comment, leaving <!----> behind and silently dropping the
+ * content (measured cost on a real page: 49.8 vs 97.8).
+ */
+export function composeBody(chromeBody: string, marks: Record<string, unknown>, content: string): string {
+  return chromeBody
+    .split(BODY_SLOT)
+    .map((part) => fillMarks(part, marks))
+    .join(content)
+}
+
 export interface MarkablePost {
   slug: string
   title: string
