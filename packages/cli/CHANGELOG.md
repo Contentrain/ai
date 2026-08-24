@@ -1,5 +1,16 @@
 # contentrain
 
+## 0.11.1
+
+### Patch Changes
+
+- Updated dependencies [7aa4424]
+  - @contentrain/types@1.3.0
+  - @contentrain/mcp@3.1.1
+  - @contentrain/query@7.0.7
+  - @contentrain/rules@0.7.0
+  - @contentrain/skills@0.8.0
+
 ## 0.11.0
 
 ### Minor Changes
