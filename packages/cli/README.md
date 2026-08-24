@@ -322,3 +322,15 @@ pnpm --filter contentrain build
 ## License
 
 MIT
+
+## `contentrain import`
+
+Import a WordPress site into a `.contentrain` content store:
+
+```bash
+contentrain import export.xml            # WXR export file (highest offline fidelity)
+contentrain import https://site.example  # public REST
+contentrain import https://site.example --auth user:app-password  # authenticated REST
+```
+
+Writes the canonical store plus `import-report.json`, `entry-source-map.json` (WP id → entry address), and — when the source has comments — `comments-export.json` (`contentrain-comments@1`, ready for a comments-service intake). An existing `.contentrain` is only overwritten with `--force`. Powered by `@contentrain/wp-import`.
