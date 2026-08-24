@@ -32,7 +32,11 @@ export function emitAstroProject(input: EmitInput): EmitResult {
 
   const familiesById = new Map(ir.families.map((f) => [f.id, f]))
   const lang = ir.site.locales?.[0] ?? 'en'
-  for (const family of ir.families) add(familyFiles(family, lang))
+  for (const family of ir.families) {
+    const fam = familyFiles(family, lang)
+    add(fam.files)
+    warnings.push(...fam.warnings)
+  }
 
   for (const css of input.css ?? []) {
     const wrapped = wrapLegacyCss(css.path, css.content)

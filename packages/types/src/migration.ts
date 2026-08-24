@@ -435,10 +435,26 @@ export interface SlotBinding {
   date_format?: string
 }
 
-/** A rendered, asset-rewritten chunk of site chrome the emitter injects verbatim. */
+/**
+ * Marker a `body`-position chrome chunk carries where the page content goes.
+ * A comment survives serialization, renders as nothing if ever left behind,
+ * and — critically — can sit at ANY nesting depth: real themes put the content
+ * container deep inside the chrome (`article > div.entry-content`), so the
+ * chrome cannot be split into balanced before/after fragments. The emitter
+ * splices content in at this marker and injects the result as ONE fragment.
+ */
+export const CHROME_BODY_SLOT = '<!--@@body@@-->'
+
+/**
+ * A rendered, asset-rewritten chunk of site chrome the emitter injects verbatim.
+ * Positions: `head` lands in `<head>`; `body` is the whole body chrome carrying
+ * `CHROME_BODY_SLOT` where content goes (preferred — nesting-safe); the legacy
+ * `before_body`/`after_body` pair is composed into a single body with the slot
+ * between them (only correct when the content container is top-level).
+ */
 export interface ChromeChunk {
   id: string
-  position: 'head' | 'before_body' | 'after_body'
+  position: 'head' | 'body' | 'before_body' | 'after_body'
   html: string
 }
 

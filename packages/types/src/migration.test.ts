@@ -17,6 +17,7 @@ import type {
   HandoffOffer,
 } from './index'
 import {
+  CHROME_BODY_SLOT,
   MIGRATION_CONTRACT_VERSION,
   SOURCE_ACCESS_LADDER,
   CAPABILITY_KEYS,
@@ -225,6 +226,16 @@ describe('migration contracts', () => {
     expect(route.params!.some((p) => p.source === 'page_number')).toBe(true)
     // The paginated pattern maps to the same family as page 1 would.
     expect(route.family).toBe('f-archive')
+  })
+
+  it('the body slot marker is a stable comment that survives at any depth', () => {
+    expect(CHROME_BODY_SLOT).toBe('<!--@@body@@-->')
+    const nested: LayoutFamily = {
+      id: 'f-n',
+      chrome: [{ id: 'b', position: 'body', html: `<article><div class="entry-content">${CHROME_BODY_SLOT}</div></article>` }],
+      css: { strategy: 'localcss' },
+    }
+    expect(nested.chrome![0]!.position).toBe('body')
   })
 
   it('families carry css strategy and the legacy layer name is stable', () => {
