@@ -1205,6 +1205,10 @@ export function serializeMarkdownFrontmatter(data: Record<string, unknown>, body
   return lines.join('\n')
 }
 
+// ─── Migration contracts ───
+
+export * from './migration.js'
+
 // ─── Repository provider contracts ───
 //
 // Provider-agnostic engine contracts used by @contentrain/mcp. Exposed from
