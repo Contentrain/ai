@@ -47,6 +47,9 @@ importers:
       '@contentrain/types':
         specifier: workspace:*
         version: link:../types
+      '@contentrain/wp-import':
+        specifier: workspace:*
+        version: link:../wp-import
       '@modelcontextprotocol/sdk':
         specifier: ^1.12.0
         version: 1.27.1(zod@3.25.76)
