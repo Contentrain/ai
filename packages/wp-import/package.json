@@ -1,0 +1,56 @@
+{
+  "name": "@contentrain/wp-import",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "WordPress importers for Contentrain — WXR and REST to RawIR, RawIR to a .contentrain content store",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Contentrain/ai.git",
+    "directory": "packages/wp-import"
+  },
+  "homepage": "https://ai.contentrain.io",
+  "bugs": {
+    "url": "https://github.com/Contentrain/ai/issues"
+  },
+  "keywords": [
+    "contentrain",
+    "wordpress",
+    "wxr",
+    "import",
+    "migration",
+    "rest"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts",
+    "dev": "tsdown src/index.ts --format esm --dts --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@contentrain/types": "workspace:*",
+    "sax": "^1.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/sax": "^1.2.7",
+    "tsdown": "^0.21.0",
+    "typescript": "^5.7.0"
+  }
+}

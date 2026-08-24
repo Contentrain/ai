@@ -6,6 +6,7 @@
     "moduleResolution": "bundler",
     "paths": {
       "@contentrain/types": ["packages/types/src/index.ts"],
+      "@contentrain/wp-import": ["packages/wp-import/src/index.ts"],
       "@contentrain/mcp": ["packages/mcp/src/index.ts"],
       "@contentrain/mcp/server": ["packages/mcp/src/server.ts"],
       "@contentrain/mcp/server/http": ["packages/mcp/src/server/http/index.ts"],
