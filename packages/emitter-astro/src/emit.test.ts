@@ -41,6 +41,18 @@ const ir: ProjectIR = {
       css: { strategy: 'purge_set', files: ['article.css'] },
     },
     {
+      id: 'f-nested',
+      kind: 'single',
+      chrome: [
+        {
+          id: 'shell',
+          position: 'body',
+          html: '<div class="site"><header>H</header><main><article class="post"><h1>@@title@@</h1><div class="entry-content"><!--@@body@@--></div></article></main><footer>F</footer></div>',
+        },
+      ],
+      css: { strategy: 'purge_set', files: [] },
+    },
+    {
       id: 'f-archive',
       kind: 'term',
       chrome: [{ id: 'header', position: 'before_body', html: '<h1>@@term@@</h1>' }],
@@ -48,6 +60,8 @@ const ir: ProjectIR = {
       columns: { desktop: 4, mobile: 1 },
     },
   ],
+  // gerçek tema deseni: gövde kabı chrome'un DERİNİNDE — before/after'a bölünemez
+  // (bkz. f-nested ailesi ve 'nested body chrome' testi)
   components: [
     { id: 'c-comments', type: 'comments', source: 'runtime' },
     { id: 'c-card', type: 'card', source: 'rest', variants: [{ key: 'compact' }, { key: 'featured' }] },
@@ -119,14 +133,38 @@ describe('emitAstroProject', () => {
     }
   })
 
-  it('chrome travels as data and is injected with set:html, never compiled', () => {
+  it('chrome travels as data and is injected as ONE fragment, never compiled', () => {
     const layout = result.files['src/layouts/FArticle.astro']!
     expect(layout).toContain('set:html')
     expect(layout).not.toContain('<header>')
+    expect(layout).not.toContain('<slot />')
+    expect(layout).toContain('split(BODY_SLOT)')
+    expect(layout).toContain(`Astro.slots.render('default')`)
     const chrome = JSON.parse(result.files['src/data/chrome/f-article.json']!)
-    expect(chrome.before).toContain('@@title@@')
+    // legacy before/after pair composes into a single body with the slot between
+    expect(chrome.body).toContain('@@title@@')
+    expect(chrome.body).toContain('<!--@@body@@-->')
+    expect(chrome.body.indexOf('@@author@@')).toBeGreaterThan(chrome.body.indexOf('<!--@@body@@-->'))
     expect(chrome.head).toContain('og:title')
-    expect(chrome.after).toContain('@@author@@')
+  })
+
+  it('nested body chrome keeps its structure — the slot lives at depth', () => {
+    const chrome = JSON.parse(result.files['src/data/chrome/f-nested.json']!)
+    expect(chrome.body).toContain('<div class="entry-content"><!--@@body@@--></div>')
+    expect(chrome.body.startsWith('<div class="site">')).toBe(true)
+  })
+
+  it('a body chunk without the marker gets it appended, with a warning', () => {
+    const bad = emitAstroProject({
+      ir: {
+        ...ir,
+        families: [{ id: 'f-x', chrome: [{ id: 'b', position: 'body', html: '<main>no marker</main>' }], css: { strategy: 'localcss' } }],
+        routes: [],
+      },
+    })
+    const chrome = JSON.parse(bad.files['src/data/chrome/f-x.json']!)
+    expect(chrome.body.endsWith('<!--@@body@@-->')).toBe(true)
+    expect(bad.warnings.some((w) => w.includes('f-x') && w.includes('marker'))).toBe(true)
   })
 
   it('legacy css is quarantined in the legacy layer with hoisted imports', () => {
@@ -143,10 +181,11 @@ describe('emitAstroProject', () => {
     expect(result.warnings.some((w) => w.includes('archive.css') && w.includes('@import after'))).toBe(true)
   })
 
-  it('single pages inject the body and pass marks to the layout', () => {
+  it('single pages pass the body as a prop for the single-injection splice', () => {
     const page = result.files['src/pages/[slug].astro']!
     expect(page).toContain('getStaticPaths')
-    expect(page).toContain('set:html={post.body}')
+    expect(page).toContain('body={post.body}')
+    expect(page).not.toContain('set:html={post.body}')
     expect(page).toContain('postMarks(post)')
   })
 

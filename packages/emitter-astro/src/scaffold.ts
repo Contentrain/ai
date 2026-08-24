@@ -71,6 +71,9 @@ function modernCss(tokens: DesignTokens | undefined): string {
 const FILL_TS = `// Emitted by @contentrain/emitter-astro — shared mark-filling helpers.
 // Chrome and item templates carry @@mark@@ placeholders; pages fill them from content.
 
+/** Where page content splices into the body chrome — must match @contentrain/types CHROME_BODY_SLOT. */
+export const BODY_SLOT = '<!--@@body@@-->'
+
 export const esc = (value: unknown): string =>
   String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 

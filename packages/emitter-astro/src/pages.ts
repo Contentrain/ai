@@ -74,9 +74,7 @@ export function getStaticPaths() {
 type Props = { post: (typeof posts)[number] }
 const { post } = Astro.props as Props
 ---
-<Layout title={post.title} marks={postMarks(post)}>
-  <Fragment set:html={post.body} />
-</Layout>
+<Layout title={post.title} marks={postMarks(post)} body={post.body} />
 `
 }
 
@@ -92,25 +90,20 @@ const { page } = Astro.props as Props`
 // Route: ${route.id} (${route.pattern}) — emitted by @contentrain/emitter-astro
 import Layout from '${up}layouts/${layout}.astro'
 import pages from '${up}data/queries/${route.query}.json'
-import { fillMarks, postMarks } from '${up}lib/fill'
+import { esc, fillMarks, postMarks } from '${up}lib/fill'
 
 ${paths}
 const items = page.items.map((item) =>
   page.item_template ? fillMarks(page.item_template, postMarks(item)) : undefined,
 )
 const fallback = items.some((h) => h === undefined)
+const content = fallback
+  ? '<ul class="cr-post-list">' +
+    page.items.map((item) => '<li><a href="/' + item.slug + '/">' + esc(item.title) + '</a></li>').join('') +
+    '</ul>'
+  : items.join('')
 ---
-<Layout title={page.params.term ?? ''} marks={page.params}>
-  {fallback ? (
-    <ul class="cr-post-list">
-      {page.items.map((item) => (
-        <li><a href={'/' + item.slug + '/'}>{item.title}</a></li>
-      ))}
-    </ul>
-  ) : (
-    <Fragment set:html={items.join('')} />
-  )}
-</Layout>
+<Layout title={page.params.term ?? ''} marks={page.params} body={content} />
 `
 }
 
