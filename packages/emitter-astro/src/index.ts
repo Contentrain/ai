@@ -31,7 +31,8 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   add(scaffoldFiles(ir, input.options ?? {}))
 
   const familiesById = new Map(ir.families.map((f) => [f.id, f]))
-  for (const family of ir.families) add(familyFiles(family))
+  const lang = ir.site.locales?.[0] ?? 'en'
+  for (const family of ir.families) add(familyFiles(family, lang))
 
   for (const css of input.css ?? []) {
     const wrapped = wrapLegacyCss(css.path, css.content)

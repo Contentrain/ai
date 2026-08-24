@@ -158,6 +158,28 @@ describe('emitAstroProject', () => {
     expect(data[0].item_template).toContain('@@title@@')
   })
 
+  it('the html lang comes from the site locales, never hardcoded', () => {
+    expect(result.files['src/layouts/FArticle.astro']).toContain('<html lang="en">')
+    const tr = emitAstroProject({ ...input, ir: { ...ir, site: { ...ir.site, locales: ['tr'] } } })
+    expect(tr.files['src/layouts/FArticle.astro']).toContain('<html lang="tr">')
+  })
+
+  it('astro.config carries the site URL for canonical/sitemap continuity', () => {
+    expect(result.files['astro.config.mjs']).toContain(`site: "https://example.com"`)
+  })
+
+  it('a tsconfig extending astro/tsconfigs/base is emitted', () => {
+    const ts = JSON.parse(result.files['tsconfig.json']!)
+    expect(ts.extends).toBe('astro/tsconfigs/base')
+  })
+
+  it('generated frontmatter types its props', () => {
+    expect(result.files['src/layouts/FArticle.astro']).toContain('interface Props')
+    expect(result.files['src/pages/[slug].astro']).toContain('type Props = { post: (typeof posts)[number] }')
+    expect(result.files['src/pages/category/[term]/page/[page].astro']).toContain('type Props = { page: (typeof pages)[number] }')
+    expect(result.files['src/components/CComments.astro']).toContain('interface Props')
+  })
+
   it('tailwind evolution layer carries the extracted tokens', () => {
     const modern = result.files['src/styles/modern.css']!
     expect(modern).toContain(`@import 'tailwindcss';`)

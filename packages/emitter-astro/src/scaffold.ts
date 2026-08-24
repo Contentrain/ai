@@ -33,11 +33,18 @@ export function scaffoldFiles(ir: ProjectIR, options: EmitOptions): Record<strin
     ...(tailwind ? [`import tailwindcss from '@tailwindcss/vite'`] : []),
     ``,
     `export default defineConfig({`,
+    // Canonical URLs and sitemaps hang off \`site\` — for a migration, SEO
+    // continuity is the point, so the source site's URL always lands here.
+    `  site: ${JSON.stringify(ir.site.url)},`,
     `  build: { format: 'directory' },`,
     ...(tailwind ? [`  vite: { plugins: [tailwindcss()] },`] : []),
     `})`,
     ``,
   ].join('\n')
+
+  // Astro wants a tsconfig in every project — editors and the compiler read
+  // it even in JS-only projects, and the emitted src/lib/fill.ts is TS.
+  files['tsconfig.json'] = `${JSON.stringify({ extends: 'astro/tsconfigs/base', include: ['.astro/types.d.ts', '**/*'], exclude: ['dist'] }, null, 2)}\n`
 
   if (tailwind) files['src/styles/modern.css'] = modernCss(ir.tokens)
 

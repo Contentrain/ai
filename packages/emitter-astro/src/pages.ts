@@ -71,7 +71,8 @@ import { postMarks } from '${up}lib/fill'
 export function getStaticPaths() {
   return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }))
 }
-const { post } = Astro.props
+type Props = { post: (typeof posts)[number] }
+const { post } = Astro.props as Props
 ---
 <Layout title={post.title} marks={postMarks(post)}>
   <Fragment set:html={post.body} />
@@ -84,7 +85,8 @@ function listPage(route: RouteModel, layout: string, up: string, hasParams: bool
     ? `export function getStaticPaths() {
   return pages.map((page) => ({ params: page.params, props: { page } }))
 }
-const { page } = Astro.props`
+type Props = { page: (typeof pages)[number] }
+const { page } = Astro.props as Props`
     : `const page = pages[0] ?? { params: {}, items: [] }`
   return `---
 // Route: ${route.id} (${route.pattern}) — emitted by @contentrain/emitter-astro

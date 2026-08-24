@@ -9,7 +9,7 @@
 import type { LayoutFamily } from '@contentrain/types'
 import { pascalCase, stableJson } from './util.js'
 
-export function familyFiles(family: LayoutFamily): Record<string, string> {
+export function familyFiles(family: LayoutFamily, lang: string): Record<string, string> {
   const name = pascalCase(family.id)
   const chunks = family.chrome ?? []
   const joined = (position: 'head' | 'before_body' | 'after_body') =>
@@ -30,13 +30,18 @@ export function familyFiles(family: LayoutFamily): Record<string, string> {
 // Family: ${family.id}${family.name ? ` (${family.name})` : ''} — emitted by @contentrain/emitter-astro
 import chrome from '../data/chrome/${family.id}.json'
 import { fillMarks } from '../lib/fill'
+
+interface Props {
+  title?: string
+  marks?: Record<string, string>
+}
 const { title = '', marks = {} } = Astro.props
 const head = fillMarks(chrome.head, marks)
 const before = fillMarks(chrome.before, marks)
 const after = fillMarks(chrome.after, marks)
 ---
 <!doctype html>
-<html lang="en">
+<html lang=${JSON.stringify(lang)}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
