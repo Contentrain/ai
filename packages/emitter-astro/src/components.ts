@@ -21,6 +21,9 @@ export function componentFiles(components: ComponentDef[]): Record<string, strin
    c.source === 'runtime' ? '\n * Needs a live provider — see the migration handoff offers.' : ''
  }${variants.length ? `\n * Variants: ${variants.join(', ')}` : ''}
  */
+interface Props {
+  variant?: string
+}
 const { variant = ${JSON.stringify(variants[0] ?? 'default')} } = Astro.props
 ---
 <cr-component data-type=${JSON.stringify(c.type)} data-variant={variant}></cr-component>
