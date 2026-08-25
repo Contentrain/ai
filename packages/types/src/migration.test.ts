@@ -238,6 +238,16 @@ describe('migration contracts', () => {
     expect(nested.chrome![0]!.position).toBe('body')
   })
 
+  it('root attributes ride on the family, values may carry marks', () => {
+    const fam: LayoutFamily = {
+      id: 'f-r',
+      root_attrs: { html: { class: 'js' }, body: { class: 'single postid-@@wp_id@@' } },
+      css: { strategy: 'localcss' },
+    }
+    expect(fam.root_attrs!.body!.class).toContain('@@wp_id@@')
+    expect(JSON.parse(JSON.stringify(fam))).toEqual(fam)
+  })
+
   it('families carry css strategy and the legacy layer name is stable', () => {
     const family: LayoutFamily = projectIr.families[1]!
     expectTypeOf(family.css.strategy).toEqualTypeOf<CssStrategy>()

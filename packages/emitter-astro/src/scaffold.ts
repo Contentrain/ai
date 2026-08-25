@@ -81,6 +81,16 @@ export function fillMarks(html: string, marks: Record<string, unknown>): string 
   return html.replace(/@@([a-z0-9_]+)@@/gi, (_all, key: string) => esc(marks[key] ?? ''))
 }
 
+/** Fill @@marks@@ inside attribute values (per-page classes like postid-123). */
+export function fillAttrs(
+  attrs: Record<string, string> | undefined,
+  marks: Record<string, unknown>,
+): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [name, value] of Object.entries(attrs ?? {})) out[name] = fillMarks(value, marks)
+  return out
+}
+
 /**
  * Compose the body chrome with the page content. The split happens BEFORE any
  * mark filling: fillMarks' @@…@@ pattern would otherwise consume the @@body@@

@@ -470,11 +470,32 @@ export interface FamilyVariant {
   description?: string
 }
 
+/**
+ * Attributes on the document's root elements, carried verbatim from the source
+ * page. Themes hang layout on them — WordPress writes `<body class="wp-singular
+ * post-template-default single …">` and scripts add `<html class="js wf-…">`,
+ * and the stylesheet's container rules key off exactly those classes. Dropping
+ * them costs a correct-content page its entire layout (measured: 36.4 vs 100).
+ *
+ * Values may carry `@@mark@@` placeholders, so per-page classes (`postid-123`)
+ * survive the same filling as chrome.
+ *
+ * Whether a site needs them is not knowable from one page: the same test that
+ * moved 10up 36.4 → 100 moved wptavern 36 → 36, because that theme does not key
+ * off body classes. Carry them always.
+ */
+export interface RootAttrs {
+  html?: Record<string, string>
+  body?: Record<string, string>
+}
+
 export interface LayoutFamily {
   id: string
   name?: string
   kind?: RouteKind
   chrome?: ChromeChunk[]
+  /** `<html>` / `<body>` attributes from the source page — see `RootAttrs`. */
+  root_attrs?: RootAttrs
   slots?: SlotBinding[]
   components?: ComponentPlacement[]
   css: {
