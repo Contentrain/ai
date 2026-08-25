@@ -49,7 +49,7 @@ export function familyFiles(family: LayoutFamily, lang: string): FamilyGenResult
   files[`src/layouts/${name}.astro`] = `---
 // Family: ${family.id}${family.name ? ` (${family.name})` : ''} — emitted by @contentrain/emitter-astro
 import chrome from '../data/chrome/${family.id}.json'
-import { fillMarks, BODY_SLOT } from '../lib/fill'
+import { fillMarks, composeBody } from '../lib/fill'
 
 interface Props {
   title?: string
@@ -60,8 +60,9 @@ interface Props {
 const { title = '', marks = {}, body } = Astro.props
 const head = fillMarks(chrome.head, marks)
 const content = body ?? (Astro.slots.has('default') ? await Astro.slots.render('default') : '')
-// Marks fill the CHROME only; content splices in untouched, then ONE injection.
-const html = fillMarks(chrome.body, marks).split(BODY_SLOT).join(content)
+// Split at the marker FIRST, then fill marks per side — filling first would
+// eat the @@body@@ inside the marker and silently drop the content.
+const html = composeBody(chrome.body, marks, content)
 ---
 <!doctype html>
 <html lang=${JSON.stringify(lang)}>
