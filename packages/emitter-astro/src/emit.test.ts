@@ -47,6 +47,10 @@ const ir: ProjectIR = {
     },
     {
       id: 'f-nested',
+      root_attrs: {
+        html: { class: 'js wf-proximanova' },
+        body: { class: 'wp-singular single postid-@@wp_id@@', 'data-theme': 'light' },
+      },
       kind: 'single',
       chrome: [
         {
@@ -220,10 +224,30 @@ describe('emitAstroProject', () => {
     expect(data[0].item_template).toContain('@@title@@')
   })
 
+  it('root attributes travel to the emitted page — themes key layout off them', () => {
+    const chrome = JSON.parse(result.files['src/data/chrome/f-nested.json']!)
+    expect(chrome.html_attrs).toEqual({ class: 'js wf-proximanova' })
+    expect(chrome.body_attrs.class).toBe('wp-singular single postid-@@wp_id@@')
+    const layout = result.files['src/layouts/FNested.astro']!
+    expect(layout).toContain('<html {...htmlAttrs}>')
+    expect(layout).toContain('<body {...bodyAttrs}>')
+    // marks fill attribute values too (per-page classes like postid-123)
+    expect(layout).toContain('fillAttrs(chrome.body_attrs, marks)')
+    expect(result.files['src/lib/fill.ts']).toContain('export function fillAttrs')
+  })
+
+  it('a family without root attributes emits empty maps, not undefined', () => {
+    const chrome = JSON.parse(result.files['src/data/chrome/f-article.json']!)
+    expect(chrome.html_attrs).toEqual({})
+    expect(chrome.body_attrs).toEqual({})
+  })
+
   it('the html lang comes from the site locales, never hardcoded', () => {
-    expect(result.files['src/layouts/FArticle.astro']).toContain('<html lang="en">')
+    expect(result.files['src/layouts/FArticle.astro']).toContain('lang: "en"')
     const tr = emitAstroProject({ ...input, ir: { ...ir, site: { ...ir.site, locales: ['tr'] } } })
-    expect(tr.files['src/layouts/FArticle.astro']).toContain('<html lang="tr">')
+    expect(tr.files['src/layouts/FArticle.astro']).toContain('lang: "tr"')
+    // an explicit source lang overrides the project default (spread order)
+    expect(tr.files['src/layouts/FArticle.astro']).toMatch(/lang: "tr", \.\.\.fillAttrs\(chrome\.html_attrs/)
   })
 
   it('astro.config carries the site URL for canonical/sitemap continuity', () => {

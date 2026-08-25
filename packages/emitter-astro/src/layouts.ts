@@ -6,6 +6,11 @@
 // chrome, so splitting it into before/after halves produces unbalanced
 // fragments that the parser silently "repairs" (measured cost: 36 vs 100).
 // Content splices in at CHROME_BODY_SLOT before the single injection.
+//
+// Root attributes travel with the chrome for the same reason: themes key their
+// container rules off `<body class="wp-singular single …">` and `<html class="js
+// wf-…">`, so a page with perfect content and empty root attributes loses its
+// whole layout (measured: 36.4 vs 100).
 
 import type { LayoutFamily } from '@contentrain/types'
 import { CHROME_BODY_SLOT } from '@contentrain/types'
@@ -40,6 +45,8 @@ export function familyFiles(family: LayoutFamily, lang: string): FamilyGenResult
   files[`src/data/chrome/${family.id}.json`] = stableJson({
     head: joined('head'),
     body,
+    html_attrs: family.root_attrs?.html ?? {},
+    body_attrs: family.root_attrs?.body ?? {},
   })
 
   const cssLinks = (family.css.files ?? [])
@@ -49,7 +56,7 @@ export function familyFiles(family: LayoutFamily, lang: string): FamilyGenResult
   files[`src/layouts/${name}.astro`] = `---
 // Family: ${family.id}${family.name ? ` (${family.name})` : ''} — emitted by @contentrain/emitter-astro
 import chrome from '../data/chrome/${family.id}.json'
-import { fillMarks, composeBody } from '../lib/fill'
+import { fillAttrs, fillMarks, composeBody } from '../lib/fill'
 
 interface Props {
   title?: string
@@ -59,13 +66,17 @@ interface Props {
 }
 const { title = '', marks = {}, body } = Astro.props
 const head = fillMarks(chrome.head, marks)
+// Root attributes carry the theme's layout hooks; values may hold @@marks@@.
+// An explicit lang from the source wins over the project default.
+const htmlAttrs = { lang: ${JSON.stringify(lang)}, ...fillAttrs(chrome.html_attrs, marks) }
+const bodyAttrs = fillAttrs(chrome.body_attrs, marks)
 const content = body ?? (Astro.slots.has('default') ? await Astro.slots.render('default') : '')
 // Split at the marker FIRST, then fill marks per side — filling first would
 // eat the @@body@@ inside the marker and silently drop the content.
 const html = composeBody(chrome.body, marks, content)
 ---
 <!doctype html>
-<html lang=${JSON.stringify(lang)}>
+<html {...htmlAttrs}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -77,7 +88,7 @@ ${cssLinks
     <Fragment set:html={head} />
     <title>{title}</title>
   </head>
-  <body>
+  <body {...bodyAttrs}>
     <Fragment set:html={html} />
   </body>
 </html>
