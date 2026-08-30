@@ -14,7 +14,18 @@ const ir: ProjectIR = {
   site: { url: 'https://example.com', locales: ['en'] },
   routes: [
     { id: 'r-front', pattern: '/', kind: 'front', family: 'f-front' },
-    { id: 'r-single', pattern: '/:slug', kind: 'single', family: 'f-article' },
+    {
+      id: 'r-single',
+      pattern: '/:year/:month/:day/:slug',
+      kind: 'single',
+      family: 'f-article',
+      params: [
+        { name: 'year', source: 'post_year' },
+        { name: 'month', source: 'post_month' },
+        { name: 'day', source: 'post_day' },
+        { name: 'slug', source: 'post_slug' },
+      ],
+    },
     {
       id: 'r-term',
       pattern: '/category/:term/page/:page',
@@ -94,12 +105,22 @@ const input: EmitInput = {
   ir,
   content: {
     posts: [
-      { slug: 'hello', title: 'Hello', body: '<p>Body</p>', dates: ['January 1, 2026'], author: 'Ada Lovelace' },
+      {
+        slug: 'hello',
+        title: 'Hello',
+        body: '<p>Body</p>',
+        dates: ['January 1, 2026'],
+        author: 'Ada Lovelace',
+        params: { year: '2026', month: '01', day: '01' },
+        css: ['post-11368.css'],
+      },
     ],
     queries: {
       'q-term': [
         {
           params: { term: 'news', page: '1' },
+          marks: { term_name: 'News' },
+          css: ['archive-2.css'],
           items: [{ slug: 'hello', title: 'Hello', body: '', excerpt: 'Ex' }],
           item_template: '<article><a href="/@@slug@@/">@@title@@</a><p>@@excerpt@@</p></article>',
         },
@@ -107,6 +128,8 @@ const input: EmitInput = {
     },
   },
   css: [
+    { path: 'post-11368.css', content: '.post-11368{color:blue}' },
+    { path: 'archive-2.css', content: '.archive-2{color:green}' },
     { path: 'front.css', content: 'body{margin:0}' },
     { path: 'article.css', content: '@import url("fonts.css");\n.post{color:red}' },
     { path: 'archive.css', content: '.a{}\n@import url("late.css");' },
@@ -130,7 +153,7 @@ describe('emitAstroProject', () => {
       'src/layouts/FArchive.astro',
       'src/data/chrome/f-article.json',
       'src/pages/index.astro',
-      'src/pages/[slug].astro',
+      'src/pages/[year]/[month]/[day]/[slug].astro',
       'src/pages/category/[term]/page/[page].astro',
       'src/data/posts.json',
       'src/data/queries/q-term.json',
@@ -169,7 +192,7 @@ describe('emitAstroProject', () => {
     expect(layout).not.toContain('fillMarks(chrome.body')
     const fill = result.files['src/lib/fill.ts']!
     // composeBody must split at the marker before any filling
-    expect(fill).toMatch(/composeBody[\s\S]*?\.split\(BODY_SLOT\)[\s\S]*?fillMarks\(part, marks\)/)
+    expect(fill).toMatch(/composeBody[\s\S]*?\.split\(BODY_SLOT\)[\s\S]*?renderTemplate\(part, values\)/)
   })
 
   it('regression: filling before splitting eats the marker and drops the body', () => {
@@ -209,7 +232,7 @@ describe('emitAstroProject', () => {
   })
 
   it('single pages pass the body as a prop for the single-injection splice', () => {
-    const page = result.files['src/pages/[slug].astro']!
+    const page = result.files['src/pages/[year]/[month]/[day]/[slug].astro']!
     expect(page).toContain('getStaticPaths')
     expect(page).toContain('body={post.body}')
     expect(page).not.toContain('set:html={post.body}')
@@ -219,7 +242,7 @@ describe('emitAstroProject', () => {
   it('list pages render through the item template', () => {
     const page = result.files['src/pages/category/[term]/page/[page].astro']!
     expect(page).toContain(`data/queries/q-term.json`)
-    expect(page).toContain('fillMarks(page.item_template')
+    expect(page).toContain('renderTemplate(page.item_template')
     const data = JSON.parse(result.files['src/data/queries/q-term.json']!)
     expect(data[0].item_template).toContain('@@title@@')
   })
@@ -261,9 +284,47 @@ describe('emitAstroProject', () => {
 
   it('generated frontmatter types its props', () => {
     expect(result.files['src/layouts/FArticle.astro']).toContain('interface Props')
-    expect(result.files['src/pages/[slug].astro']).toContain('type Props = { post: (typeof posts)[number] }')
+    expect(result.files['src/pages/[year]/[month]/[day]/[slug].astro']).toContain('type Props = { post: (typeof posts)[number] }')
     expect(result.files['src/pages/category/[term]/page/[page].astro']).toContain('type Props = { page: (typeof pages)[number] }')
     expect(result.files['src/components/CComments.astro']).toContain('interface Props')
+  })
+
+  it('dated permalinks get their parameters from each post, not the template', () => {
+    const page = result.files['src/pages/[year]/[month]/[day]/[slug].astro']!
+    expect(page).toContain('params: { ...(post.params ?? {}), slug: post.slug }')
+    const posts = JSON.parse(result.files['src/data/posts.json']!)
+    expect(posts[0].params).toEqual({ year: '2026', month: '01', day: '01' })
+  })
+
+  it('per-page stylesheets reach the page, family stylesheets stay on the family', () => {
+    expect(result.files['src/pages/[year]/[month]/[day]/[slug].astro']).toContain('css={post.css ?? []}')
+    expect(result.files['src/pages/category/[term]/page/[page].astro']).toContain('css={page.css ?? []}')
+    expect(result.files['src/layouts/FArticle.astro']).toContain('cssHref(file)')
+    expect(result.files['public/styles/legacy/post-11368.css']).toContain('@layer legacy')
+    expect(result.files['public/styles/legacy/archive-2.css']).toContain('@layer legacy')
+  })
+
+  it('missing per-page stylesheets are warned about by owner', () => {
+    const missing = emitAstroProject({
+      ir,
+      content: { posts: [{ slug: 's', title: 'T', body: '', css: ['ghost.css'] }] },
+    })
+    expect(missing.warnings.some((w) => w.includes('post s') && w.includes('ghost.css'))).toBe(true)
+  })
+
+  it('list pages get display marks, not just route parameter slugs', () => {
+    const page = result.files['src/pages/category/[term]/page/[page].astro']!
+    expect(page).toContain('const marks = { ...page.params, ...(page.marks ?? {}) }')
+    expect(page).toContain('renderTemplate(page.item_template, postMarks(item))')
+    const data = JSON.parse(result.files['src/data/queries/q-term.json']!)
+    expect(data[0].marks).toEqual({ term_name: 'News' })
+  })
+
+  it('the build script type-checks before building', () => {
+    const pkg = JSON.parse(result.files['package.json']!)
+    expect(pkg.scripts.build).toBe('astro check && astro build')
+    expect(pkg.devDependencies['@astrojs/check']).toBeDefined()
+    expect(pkg.devDependencies.typescript).toBeDefined()
   })
 
   it('tailwind evolution layer carries the extracted tokens', () => {

@@ -56,16 +56,18 @@ export function familyFiles(family: LayoutFamily, lang: string): FamilyGenResult
   files[`src/layouts/${name}.astro`] = `---
 // Family: ${family.id}${family.name ? ` (${family.name})` : ''} — emitted by @contentrain/emitter-astro
 import chrome from '../data/chrome/${family.id}.json'
-import { fillAttrs, fillMarks, composeBody } from '../lib/fill'
+import { cssHref, fillAttrs, renderTemplate, composeBody } from '../lib/fill'
 
 interface Props {
   title?: string
-  marks?: Record<string, string>
+  marks?: Record<string, unknown>
   /** Page content as an HTML string; slot children are used when absent. */
   body?: string
+  /** Stylesheets only this page loads (page-builder sites emit CSS per page). */
+  css?: string[]
 }
-const { title = '', marks = {}, body } = Astro.props
-const head = fillMarks(chrome.head, marks)
+const { title = '', marks = {}, body, css = [] } = Astro.props
+const head = renderTemplate(chrome.head, marks)
 // Root attributes carry the theme's layout hooks; values may hold @@marks@@.
 // An explicit lang from the source wins over the project default.
 const htmlAttrs = { lang: ${JSON.stringify(lang)}, ...fillAttrs(chrome.html_attrs, marks) }
@@ -85,6 +87,9 @@ ${cssLinks
   .filter(Boolean)
   .map((l) => `    ${l}`)
   .join('\n')}
+    {css.map((file) => (
+      <link rel="stylesheet" href={cssHref(file)} />
+    ))}
     <Fragment set:html={head} />
     <title>{title}</title>
   </head>
