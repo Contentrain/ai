@@ -100,8 +100,34 @@ jobs:
           MCP_VERSION=$(node -p "require('./package.json').version")
           jq --arg v "$MCP_VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
 
+          # Wait for npm propagation. The registry validates that the version
+          # exists on npm before accepting it, and a just-published version can
+          # take a couple of minutes to become visible — that race is what made
+          # this step fail with "version '3.1.5' was not found (status: 404)"
+          # while the package was already published.
+          for i in $(seq 1 30); do
+            if npm view "@contentrain/mcp@$MCP_VERSION" version >/dev/null 2>&1; then
+              echo "npm has @contentrain/mcp@$MCP_VERSION"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "::error::@contentrain/mcp@$MCP_VERSION did not appear on npm within 5 minutes"
+              exit 1
+            fi
+            echo "waiting for npm to serve @contentrain/mcp@$MCP_VERSION ($i/30)"
+            sleep 10
+          done
+
           # Authenticate via GitHub OIDC (no secrets needed)
           ./mcp-publisher login github-oidc
 
-          # Publish
-          ./mcp-publisher publish
+          # Publish, retrying while the registry's own view of npm catches up.
+          for attempt in 1 2 3; do
+            if ./mcp-publisher publish; then
+              exit 0
+            fi
+            echo "mcp-publisher attempt $attempt failed; retrying in 30s"
+            sleep 30
+          done
+          echo "::error::mcp-publisher failed after 3 attempts"
+          exit 1
