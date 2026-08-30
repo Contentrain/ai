@@ -384,7 +384,23 @@ export type RouteKind =
 
 export interface RouteParamDef {
   name: string
-  source: 'post_slug' | 'term_slug' | 'author_slug' | 'page_number' | 'custom'
+  /**
+   * Where the value comes from. The date parts exist because
+   * `/%year%/%monthnum%/%day%/%postname%/` is a common WordPress permalink
+   * structure: treating the template post's date as a fixed prefix sends every
+   * other post to a wrong address, and SEO continuity is the point of a
+   * migration. Posts carry their own values (`EmitPost.params`).
+   */
+  source:
+    | 'post_slug'
+    | 'post_id'
+    | 'post_year'
+    | 'post_month'
+    | 'post_day'
+    | 'term_slug'
+    | 'author_slug'
+    | 'page_number'
+    | 'custom'
 }
 
 /** Selects a family/component variant when a route parameter matches. */
@@ -427,6 +443,10 @@ export type SlotKind =
 /** Where a content field lands in a family's markup. */
 export interface SlotBinding {
   kind: SlotKind
+  /** The region is printed only on posts that have this slot filled — see `CHROME_IF_OPEN`. */
+  optional?: boolean
+  /** The region repeats per list item (terms, authors) — see `CHROME_REPEAT_OPEN`. */
+  repeat?: boolean
   /** CSS selector of the slot's container, when one could be determined. */
   selector?: string
   /** Content-model field backing a `custom` slot. */
@@ -434,6 +454,42 @@ export interface SlotBinding {
   /** Date rendering format for `date` slots, as observed on the source site. */
   date_format?: string
 }
+
+/**
+ * Marks whose name ends in this suffix are inserted as raw HTML instead of
+ * being escaped. Escaping stays the default — content-derived text must never
+ * be able to break the page — but some themes render a post's full content or
+ * a link-bearing excerpt inside a list card, and escaping those prints markup
+ * as text (measured on one theme's category page: 48.6).
+ */
+export const RAW_MARK_SUFFIX = '_html'
+
+/**
+ * Repeat block: `<!--@@repeat:NAME@@-->…<!--@@/repeat@@-->`, optionally with a
+ * separator — `<!--@@repeat:NAME|, @@-->`. The inner fragment renders once per
+ * item of the list named NAME, with per-item marks `item` / `item_index` (and
+ * `item_<key>` for object items).
+ *
+ * Fixed marks (`term0…termN`) cannot express a list whose length varies per
+ * post: a template built from a 3-term post leaves stray separators on a
+ * 6-term one (measured symptoms: `"Business,"`, `"Releases, Events,"`,
+ * `"Automattic, ,"`), and the same class shows up with multiple authors.
+ */
+export const CHROME_REPEAT_OPEN = '<!--@@repeat:'
+export const CHROME_REPEAT_CLOSE = '<!--@@/repeat@@-->'
+
+/**
+ * Conditional block: `<!--@@if:NAME@@-->…<!--@@/if@@-->`, negated with
+ * `<!--@@if:!NAME@@-->`. The fragment survives only when NAME has a value
+ * (non-empty string, non-empty list).
+ *
+ * Route-parameter variants (`RouteVariantRule`) cannot express this: two posts
+ * on the SAME route differ by whether the theme printed a region at all
+ * (measured: five posts of one family scored 3.5–84.5, the only difference
+ * being a featured block that some posts render and others do not).
+ */
+export const CHROME_IF_OPEN = '<!--@@if:'
+export const CHROME_IF_CLOSE = '<!--@@/if@@-->'
 
 /**
  * Marker a `body`-position chrome chunk carries where the page content goes.
@@ -500,7 +556,15 @@ export interface LayoutFamily {
   components?: ComponentPlacement[]
   css: {
     strategy: CssStrategy
-    /** Emitted stylesheet paths, relative to the generated project. */
+    /**
+     * Stylesheets every page of the family loads.
+     *
+     * Page-builder sites emit CSS per page (`post-11368.css`,
+     * `local/global-11368-frontend-*`), so one member's stylesheet set is not
+     * the family's: building from a single template page scored 35.6, while
+     * the UNION of the members' stylesheets scored 100. Producers put the
+     * union here and the per-page remainder on the page itself.
+     */
     files?: string[]
   }
   /** Observed column counts per viewport class (e.g. desktop 4 → mobile 1). */

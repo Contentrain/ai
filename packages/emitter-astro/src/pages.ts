@@ -69,12 +69,15 @@ import posts from '${up}data/posts.json'
 import { postMarks } from '${up}lib/fill'
 
 export function getStaticPaths() {
-  return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }))
+  // A post carries its own route parameters (date parts of a dated permalink,
+  // a post id) — using the template post's would send every other post to the
+  // wrong address.
+  return posts.map((post) => ({ params: { ...(post.params ?? {}), slug: post.slug }, props: { post } }))
 }
 type Props = { post: (typeof posts)[number] }
 const { post } = Astro.props as Props
 ---
-<Layout title={post.title} marks={postMarks(post)} body={post.body} />
+<Layout title={post.title} marks={postMarks(post)} body={post.body} css={post.css ?? []} />
 `
 }
 
@@ -90,11 +93,11 @@ const { page } = Astro.props as Props`
 // Route: ${route.id} (${route.pattern}) — emitted by @contentrain/emitter-astro
 import Layout from '${up}layouts/${layout}.astro'
 import pages from '${up}data/queries/${route.query}.json'
-import { esc, fillMarks, postMarks } from '${up}lib/fill'
+import { esc, postMarks, renderTemplate } from '${up}lib/fill'
 
 ${paths}
 const items = page.items.map((item) =>
-  page.item_template ? fillMarks(page.item_template, postMarks(item)) : undefined,
+  page.item_template ? renderTemplate(page.item_template, postMarks(item)) : undefined,
 )
 const fallback = items.some((h) => h === undefined)
 const content = fallback
@@ -102,8 +105,11 @@ const content = fallback
     page.items.map((item) => '<li><a href="/' + item.slug + '/">' + esc(item.title) + '</a></li>').join('') +
     '</ul>'
   : items.join('')
+// Route params carry slugs; page marks carry what the chrome needs to SHOW
+// (a term's display name, description, count).
+const marks = { ...page.params, ...(page.marks ?? {}) }
 ---
-<Layout title={page.params.term ?? ''} marks={page.params} body={content} />
+<Layout title={String(marks.term_name ?? page.params.term ?? '')} marks={marks} body={content} css={page.css ?? []} />
 `
 }
 

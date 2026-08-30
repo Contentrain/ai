@@ -44,13 +44,18 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     const base = css.path.split('/').pop() ?? css.path
     add({ [`public/styles/legacy/${base}`]: wrapped.content })
   }
-  for (const family of ir.families) {
-    for (const ref of family.css.files ?? []) {
-      const base = ref.split('/').pop()
-      if (!(input.css ?? []).some((c) => (c.path.split('/').pop() ?? c.path) === base)) {
-        warnings.push(`family ${family.id}: css file "${ref}" not provided in input.css`)
+  const providedCss = new Set((input.css ?? []).map((c) => c.path.split('/').pop() ?? c.path))
+  const missingCss = (refs: string[] | undefined, owner: string) => {
+    for (const ref of refs ?? []) {
+      if (!providedCss.has(ref.split('/').pop() ?? ref)) {
+        warnings.push(`${owner}: css file "${ref}" not provided in input.css`)
       }
     }
+  }
+  for (const family of ir.families) missingCss(family.css.files, `family ${family.id}`)
+  for (const post of input.content?.posts ?? []) missingCss(post.css, `post ${post.slug}`)
+  for (const [queryId, queryPages] of Object.entries(input.content?.queries ?? {})) {
+    for (const qp of queryPages) missingCss(qp.css, `query ${queryId}`)
   }
 
   for (const route of ir.routes) {
