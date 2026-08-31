@@ -11,8 +11,9 @@
 // family — the generated paths simply include the page number in params.
 
 import type { RouteModel, LayoutFamily } from '@contentrain/types'
-import type { EmitContent, QueryPage } from './types.js'
-import { pascalCase, patternToPagePath, stableJson } from './util.js'
+import type { EmitContent, EmitPost, QueryPage } from './types.js'
+import { DEFAULT_COLLECTION } from './types.js'
+import { pascalCase, patternToPagePath, restParamIndex, stableJson } from './util.js'
 
 export interface PageGenResult {
   files: Record<string, string>
@@ -38,11 +39,25 @@ export function routeFiles(
   const up = '../'.repeat(depth + 1) || '../'
   const hasParams = pagePath.includes('[')
 
-  if (route.kind === 'single') {
-    const posts = content.posts ?? []
-    if (!posts.length) warnings.push(`route ${route.id}: single route with no posts — page emitted, data file empty`)
-    files['src/data/posts.json'] = stableJson(posts)
-    files[`src/pages/${pagePath}`] = singlePage(route, layout, up)
+  // Astro matches a rest parameter greedily, so anything after it is ambiguous.
+  const restAt = restParamIndex(pagePath)
+  if (restAt !== -1 && restAt !== pagePath.split('/').length - 1) {
+    warnings.push(
+      `route ${route.id}: rest parameter is not the final segment of "${route.pattern}" — Astro matches rest parameters greedily; verify this route resolves`,
+    )
+  }
+
+  // Collection-driven: `single` always, and any route that names a collection —
+  // a site's pages and custom post types are per-entry routes too, they just are
+  // not called "single".
+  if (route.kind === 'single' || route.collection !== undefined) {
+    const collection = route.collection ?? DEFAULT_COLLECTION
+    const posts = collectionItems(content, collection)
+    if (!posts.length) {
+      warnings.push(`route ${route.id}: collection "${collection}" has no items — page emitted, data file empty`)
+    }
+    files[`src/data/${collection}.json`] = stableJson(posts)
+    files[`src/pages/${pagePath}`] = singlePage(route, layout, up, collection)
     return { files, warnings }
   }
 
@@ -61,11 +76,18 @@ export function routeFiles(
   return { files, warnings }
 }
 
-function singlePage(route: RouteModel, layout: string, up: string): string {
+/** Items of a named collection; `posts` also accepts the `content.posts` shorthand. */
+function collectionItems(content: EmitContent, collection: string): EmitPost[] {
+  const named = content.collections?.[collection]
+  if (named) return named
+  return collection === DEFAULT_COLLECTION ? (content.posts ?? []) : []
+}
+
+function singlePage(route: RouteModel, layout: string, up: string, collection: string): string {
   return `---
-// Route: ${route.id} (${route.pattern}) — emitted by @contentrain/emitter-astro
+// Route: ${route.id} (${route.pattern}) — collection: ${collection} — emitted by @contentrain/emitter-astro
 import Layout from '${up}layouts/${layout}.astro'
-import posts from '${up}data/posts.json'
+import posts from '${up}data/${collection}.json'
 import { postMarks } from '${up}lib/fill'
 
 export function getStaticPaths() {

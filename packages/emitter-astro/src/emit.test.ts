@@ -37,6 +37,21 @@ const ir: ProjectIR = {
       ],
       query: 'q-term',
     },
+    {
+      id: 'r-nested-term',
+      pattern: '/category/:term*',
+      kind: 'term',
+      family: 'f-archive',
+      params: [{ name: 'term', source: 'term_slug' }],
+      query: 'q-nested',
+    },
+    {
+      id: 'r-page',
+      pattern: '/:slug*',
+      kind: 'page',
+      family: 'f-nested',
+      collection: 'pages',
+    },
   ],
   families: [
     {
@@ -115,7 +130,17 @@ const input: EmitInput = {
         css: ['post-11368.css'],
       },
     ],
+    collections: {
+      pages: [{ slug: 'hizmetler/danismanlik', title: 'Danışmanlık', body: '<p>Sayfa</p>' }],
+    },
     queries: {
+      'q-nested': [
+        {
+          params: { term: 'about-cc/events' },
+          items: [{ slug: 'e1', title: 'Etkinlik', body: '' }],
+          item_template: '<article>@@title@@</article>',
+        },
+      ],
       'q-term': [
         {
           params: { term: 'news', page: '1' },
@@ -155,6 +180,9 @@ describe('emitAstroProject', () => {
       'src/pages/index.astro',
       'src/pages/[year]/[month]/[day]/[slug].astro',
       'src/pages/category/[term]/page/[page].astro',
+      'src/pages/category/[...term].astro',
+      'src/pages/[...slug].astro',
+      'src/data/pages.json',
       'src/data/posts.json',
       'src/data/queries/q-term.json',
       'src/components/CComments.astro',
@@ -327,6 +355,47 @@ describe('emitAstroProject', () => {
     expect(pkg.devDependencies.typescript).toBeDefined()
   })
 
+  it('nested taxonomy addresses survive as rest parameters', () => {
+    // `/category/:term*` → `[...term].astro`; without it `/category/about-cc/events/`
+    // collapses to `/category/events/` and every nested link breaks.
+    const page = result.files['src/pages/category/[...term].astro']!
+    expect(page).toContain(`data/queries/q-nested.json`)
+    const data = JSON.parse(result.files['src/data/queries/q-nested.json']!)
+    expect(data[0].params.term).toBe('about-cc/events')
+    expect(patternToPagePath('/category/:term*')).toBe('category/[...term].astro')
+    expect(patternToPagePath('/:slug*')).toBe('[...slug].astro')
+  })
+
+  it('a rest parameter before other segments is warned about', () => {
+    const paged = emitAstroProject({
+      ir: {
+        ...ir,
+        routes: [{ id: 'r-x', pattern: '/category/:term*/page/:page', kind: 'term', family: 'f-archive', query: 'q-term' }],
+      },
+      content: input.content,
+    })
+    expect(paged.files['src/pages/category/[...term]/page/[page].astro']).toBeDefined()
+    expect(paged.warnings.some((w) => w.includes('r-x') && w.includes('rest parameter'))).toBe(true)
+  })
+
+  it('each single route reads its own collection, never a shared posts.json', () => {
+    const pagesData = JSON.parse(result.files['src/data/pages.json']!)
+    expect(pagesData[0].slug).toBe('hizmetler/danismanlik')
+    const postsData = JSON.parse(result.files['src/data/posts.json']!)
+    expect(postsData[0].slug).toBe('hello')
+    expect(result.files['src/pages/[...slug].astro']).toContain(`data/pages.json`)
+    expect(result.files['src/pages/[year]/[month]/[day]/[slug].astro']).toContain(`data/posts.json`)
+    // no duplicate-file warning: the two single routes no longer collide
+    expect(result.warnings.some((w) => w.includes('duplicate file'))).toBe(false)
+  })
+
+  it('an empty collection warns by name', () => {
+    const empty = emitAstroProject({
+      ir: { ...ir, routes: [{ id: 'r-cpt', pattern: '/recipes/:slug', kind: 'single', family: 'f-article', collection: 'recipes' }] },
+    })
+    expect(empty.warnings.some((w) => w.includes('r-cpt') && w.includes('"recipes"'))).toBe(true)
+  })
+
   it('tailwind evolution layer carries the extracted tokens', () => {
     const modern = result.files['src/styles/modern.css']!
     expect(modern).toContain(`@import 'tailwindcss';`)
@@ -372,6 +441,7 @@ describe('helpers', () => {
     expect(patternToPagePath('/')).toBe('index.astro')
     expect(patternToPagePath('/blog')).toBe('blog.astro')
     expect(patternToPagePath('/category/:term/page/:page')).toBe('category/[term]/page/[page].astro')
+    expect(patternToPagePath('/category/:term*')).toBe('category/[...term].astro')
     expect(patternToPagePath('/a/*')).toBeNull()
   })
 
