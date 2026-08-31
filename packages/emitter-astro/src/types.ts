@@ -65,9 +65,18 @@ export interface QueryPage {
   item_template?: string
 }
 
+/** Default collection name when a `single` route does not name one. */
+export const DEFAULT_COLLECTION = 'posts'
+
 export interface EmitContent {
-  /** Content for `single` routes, keyed by nothing — slug lives on the post. */
+  /** The default (`posts`) collection — shorthand for `collections.posts`. */
   posts?: EmitPost[]
+  /**
+   * Content per collection, for sites with more than one kind of single page
+   * (posts, pages, custom post types). A `single` route reads the collection
+   * named by `RouteModel.collection`.
+   */
+  collections?: Record<string, EmitPost[]>
   /** QueryBinding id → the static paths (and items) that query produces. */
   queries?: Record<string, QueryPage[]>
 }

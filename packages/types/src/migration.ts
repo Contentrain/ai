@@ -417,12 +417,30 @@ export interface RouteVariantRule {
  */
 export interface RouteModel {
   id: string
-  /** URL pattern with `:param` placeholders, e.g. "/category/:term", "/news/page/:page". */
+  /**
+   * URL pattern with `:param` placeholders — `/category/:term`, `/news/page/:page`.
+   *
+   * A trailing `*` marks a **multi-segment (rest) parameter**: `/category/:term*`
+   * matches `/category/about-cc/events/` with `term = "about-cc/events"`.
+   * Hierarchical taxonomies and nested pages need this — a single-segment
+   * parameter silently flattens `/category/about-cc/events/` to
+   * `/category/events/`, breaking link continuity for every nested address.
+   */
   pattern: string
   kind: RouteKind
   /** LayoutFamily id. */
   family: string
   params?: RouteParamDef[]
+  /**
+   * Content collection this route generates one page per entry from. `single`
+   * routes default to `posts`; naming a collection makes any route
+   * collection-driven — a site's pages and custom post types are per-entry
+   * routes too, they just are not called "single".
+   *
+   * Without a name per route they would all write to (and overwrite) the same
+   * collection.
+   */
+  collection?: string
   /** QueryBinding id feeding this route's list, when it renders one. */
   query?: string
   variant_rules?: RouteVariantRule[]

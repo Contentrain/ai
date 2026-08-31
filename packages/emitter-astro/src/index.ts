@@ -53,7 +53,11 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     }
   }
   for (const family of ir.families) missingCss(family.css.files, `family ${family.id}`)
-  for (const post of input.content?.posts ?? []) missingCss(post.css, `post ${post.slug}`)
+  const allPosts = [
+    ...(input.content?.posts ?? []),
+    ...Object.values(input.content?.collections ?? {}).flat(),
+  ]
+  for (const post of allPosts) missingCss(post.css, `post ${post.slug}`)
   for (const [queryId, queryPages] of Object.entries(input.content?.queries ?? {})) {
     for (const qp of queryPages) missingCss(qp.css, `query ${queryId}`)
   }
