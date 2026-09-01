@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/wp-import",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "license": "MIT",
   "description": "WordPress importers for Contentrain — WXR and REST to RawIR, RawIR to a .contentrain content store",
   "type": "module",
