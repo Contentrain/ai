@@ -443,6 +443,17 @@ export interface RouteModel {
   collection?: string
   /** QueryBinding id feeding this route's list, when it renders one. */
   query?: string
+  /**
+   * Document title for routes whose pages have no per-page title of their own
+   * (a static page, an archive without `QueryPage.title`).
+   */
+  title?: string
+  /**
+   * Locale this route serves. A multilingual site has a route per language
+   * (`/:slug`, `/en/:slug`) with its own family and query; the emitted page's
+   * `lang` comes from here rather than from the project default.
+   */
+  locale?: string
   variant_rules?: RouteVariantRule[]
 }
 
@@ -508,6 +519,12 @@ export const CHROME_REPEAT_CLOSE = '<!--@@/repeat@@-->'
  */
 export const CHROME_IF_OPEN = '<!--@@if:'
 export const CHROME_IF_CLOSE = '<!--@@/if@@-->'
+
+/**
+ * Marker a list section's wrapper carries where its items go —
+ * `<div class="grid"><!--@@items@@--></div>`.
+ */
+export const LIST_ITEMS_SLOT = '<!--@@items@@-->'
 
 /**
  * Marker a `body`-position chrome chunk carries where the page content goes.
@@ -668,6 +685,8 @@ export interface QueryBinding {
   excerpt_source?: ExcerptSource
   /** WordPress image size name the list renders (e.g. "medium_large"). */
   image_size?: string
+  /** Locale this query is filtered to, on a multilingual site. */
+  locale?: string
 }
 
 /**

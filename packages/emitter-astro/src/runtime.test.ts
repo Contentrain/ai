@@ -29,6 +29,11 @@ interface Runtime {
   expandRepeats: (html: string, values: Values) => string
   applyConditions: (html: string, values: Values) => string
   composeBody: (chromeBody: string, values: Values, content: string) => string
+  renderSections: (
+    sections: Array<{ template: string; wrapper?: string; count?: number }>,
+    items: Array<Record<string, unknown>>,
+    values: (item: Record<string, unknown>) => Values,
+  ) => string
   postMarks: (post: Record<string, unknown>) => Values
   cssHref: (file: string) => string
   esc: (value: unknown) => string
@@ -116,6 +121,27 @@ describe('emitted template runtime', () => {
 
   it('an array used as a plain mark joins instead of leaving stray separators', () => {
     expect(rt.fillMarks('<p>@@terms@@</p>', { terms: ['a', 'b'] })).toBe('<p>a, b</p>')
+  })
+
+  it('renderSections gives the first items their own template and wrapper', () => {
+    // The measured class: newest post as a big card, the rest in a grid.
+    const sections = [
+      { template: '<article class="hero">@@title@@</article>', wrapper: '<div class="hero-wrap"><!--@@items@@--></div>', count: 1 },
+      { template: '<article class="card">@@title@@</article>', wrapper: '<div class="grid"><!--@@items@@--></div>' },
+    ]
+    const items = [{ slug: 'a', title: 'A' }, { slug: 'b', title: 'B' }, { slug: 'c', title: 'C' }]
+    expect(rt.renderSections(sections, items, rt.postMarks)).toBe(
+      '<div class="hero-wrap"><article class="hero">A</article></div>' +
+        '<div class="grid"><article class="card">B</article><article class="card">C</article></div>',
+    )
+  })
+
+  it('a section with no items left is skipped, wrapper and all', () => {
+    const sections = [
+      { template: '<b>@@title@@</b>', count: 1 },
+      { template: '<i>@@title@@</i>', wrapper: '<div class="grid"><!--@@items@@--></div>' },
+    ]
+    expect(rt.renderSections(sections, [{ slug: 'a', title: 'A' }], rt.postMarks)).toBe('<b>A</b>')
   })
 
   it('cssHref points at the emitted legacy stylesheet directory', () => {

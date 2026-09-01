@@ -52,6 +52,15 @@ const ir: ProjectIR = {
       family: 'f-nested',
       collection: 'pages',
     },
+    {
+      id: 'r-single-en',
+      pattern: '/en/:slug',
+      kind: 'single',
+      family: 'f-article',
+      collection: 'posts_en',
+      locale: 'en-GB',
+      title: 'English posts',
+    },
   ],
   families: [
     {
@@ -132,6 +141,7 @@ const input: EmitInput = {
     ],
     collections: {
       pages: [{ slug: 'hizmetler/danismanlik', title: 'Danışmanlık', body: '<p>Sayfa</p>' }],
+      posts_en: [{ slug: 'hello-en', title: 'Hello', body: '<p>EN</p>' }],
     },
     queries: {
       'q-nested': [
@@ -144,7 +154,12 @@ const input: EmitInput = {
       'q-term': [
         {
           params: { term: 'news', page: '1' },
+          title: 'Category: News – Example',
           marks: { term_name: 'News' },
+          sections: [
+            { template: '<article class="hero">@@title@@</article>', wrapper: '<div class="hero-wrap"><!--@@items@@--></div>', count: 1 },
+            { template: '<article class="card">@@title@@</article>', wrapper: '<div class="grid"><!--@@items@@--></div>' },
+          ],
           css: ['archive-2.css'],
           items: [{ slug: 'hello', title: 'Hello', body: '', excerpt: 'Ex' }],
           item_template: '<article><a href="/@@slug@@/">@@title@@</a><p>@@excerpt@@</p></article>',
@@ -183,6 +198,8 @@ describe('emitAstroProject', () => {
       'src/pages/category/[...term].astro',
       'src/pages/[...slug].astro',
       'src/data/pages.json',
+      'src/data/posts_en.json',
+      'src/pages/en/[slug].astro',
       'src/data/posts.json',
       'src/data/queries/q-term.json',
       'src/components/CComments.astro',
@@ -270,7 +287,7 @@ describe('emitAstroProject', () => {
   it('list pages render through the item template', () => {
     const page = result.files['src/pages/category/[term]/page/[page].astro']!
     expect(page).toContain(`data/queries/q-term.json`)
-    expect(page).toContain('renderTemplate(page.item_template')
+    expect(page).toContain('page.item_template ? [{ template: page.item_template }]')
     const data = JSON.parse(result.files['src/data/queries/q-term.json']!)
     expect(data[0].item_template).toContain('@@title@@')
   })
@@ -294,11 +311,11 @@ describe('emitAstroProject', () => {
   })
 
   it('the html lang comes from the site locales, never hardcoded', () => {
-    expect(result.files['src/layouts/FArticle.astro']).toContain('lang: "en"')
+    expect(result.files['src/layouts/FArticle.astro']).toContain('lang = "en"')
     const tr = emitAstroProject({ ...input, ir: { ...ir, site: { ...ir.site, locales: ['tr'] } } })
-    expect(tr.files['src/layouts/FArticle.astro']).toContain('lang: "tr"')
-    // an explicit source lang overrides the project default (spread order)
-    expect(tr.files['src/layouts/FArticle.astro']).toMatch(/lang: "tr", \.\.\.fillAttrs\(chrome\.html_attrs/)
+    expect(tr.files['src/layouts/FArticle.astro']).toContain('lang = "tr"')
+    // an explicit source lang overrides the page's (spread order)
+    expect(tr.files['src/layouts/FArticle.astro']).toMatch(/lang, \.\.\.fillAttrs\(chrome\.html_attrs/)
   })
 
   it('astro.config carries the site URL for canonical/sitemap continuity', () => {
@@ -343,7 +360,7 @@ describe('emitAstroProject', () => {
   it('list pages get display marks, not just route parameter slugs', () => {
     const page = result.files['src/pages/category/[term]/page/[page].astro']!
     expect(page).toContain('const marks = { ...page.params, ...(page.marks ?? {}) }')
-    expect(page).toContain('renderTemplate(page.item_template, postMarks(item))')
+    expect(page).toContain('renderSections(sections, page.items, postMarks)')
     const data = JSON.parse(result.files['src/data/queries/q-term.json']!)
     expect(data[0].marks).toEqual({ term_name: 'News' })
   })
@@ -394,6 +411,49 @@ describe('emitAstroProject', () => {
       ir: { ...ir, routes: [{ id: 'r-cpt', pattern: '/recipes/:slug', kind: 'single', family: 'f-article', collection: 'recipes' }] },
     })
     expect(empty.warnings.some((w) => w.includes('r-cpt') && w.includes('"recipes"'))).toBe(true)
+  })
+
+  it('list pages carry their own document title', () => {
+    const page = result.files['src/pages/category/[term]/page/[page].astro']!
+    expect(page).toContain('const title = page.title ??')
+    expect(page).toContain('title={title || String(marks.term_name ?? page.params.term ?? \'\')}')
+    const data = JSON.parse(result.files['src/data/queries/q-term.json']!)
+    expect(data[0].title).toBe('Category: News – Example')
+  })
+
+  it('a route title covers pages that have none of their own', () => {
+    const withTitle = emitAstroProject({
+      ir: { ...ir, routes: [{ id: 'r-about', pattern: '/about', kind: 'page', family: 'f-front', title: 'About us' }] },
+    })
+    expect(withTitle.files['src/pages/about.astro']).toContain('title="About us"')
+  })
+
+  it('lists render in sections — a big card then a grid', () => {
+    const page = result.files['src/pages/category/[term]/page/[page].astro']!
+    expect(page).toContain('renderSections(sections, page.items, postMarks)')
+    expect(page).toContain('page.sections ?? (page.item_template ? [{ template: page.item_template }] : [])')
+    const data = JSON.parse(result.files['src/data/queries/q-term.json']!)
+    expect(data[0].sections).toHaveLength(2)
+    expect(data[0].sections[0].count).toBe(1)
+  })
+
+  it('sections satisfy the item-template requirement — no false fallback warning', () => {
+    const sectioned = emitAstroProject({
+      ir: { ...ir, routes: [{ id: 'r-l', pattern: '/l', kind: 'archive', family: 'f-front', query: 'q' }] },
+      content: { queries: { q: [{ params: {}, items: [], sections: [{ template: '<b>@@title@@</b>' }] }] } },
+    })
+    expect(sectioned.warnings.some((w) => w.includes('item template missing'))).toBe(false)
+  })
+
+  it('each route carries its own language on a multilingual site', () => {
+    const en = result.files['src/pages/en/[slug].astro']!
+    expect(en).toContain('lang={post.locale ?? "en-GB"}')
+    expect(en).toContain(`data/posts_en.json`)
+    const tr = result.files['src/pages/[year]/[month]/[day]/[slug].astro']!
+    expect(tr).toContain('lang={post.locale ?? "en"}') // project default
+    const layout = result.files['src/layouts/FArticle.astro']!
+    expect(layout).toContain('lang = "en"') // default when a page passes none
+    expect(layout).toContain('const htmlAttrs = { lang,')
   })
 
   it('tailwind evolution layer carries the extracted tokens', () => {

@@ -162,6 +162,38 @@ export function composeBody(chromeBody: string, values: Values, content: string)
     .join(content)
 }
 
+/** Where a list section's wrapper takes its items — must match @contentrain/types LIST_ITEMS_SLOT. */
+export const ITEMS_SLOT = '<!--@@items@@-->'
+
+export interface ListSection {
+  template: string
+  wrapper?: string
+  count?: number
+}
+
+/**
+ * Render a list in sections. Themes often render the newest post as a big card
+ * and the rest as a grid — two templates in two containers — so a list is a
+ * sequence of sections, each taking a count of items (or the remainder).
+ */
+export function renderSections<T>(
+  sections: ListSection[],
+  items: T[],
+  values: (item: T) => Values,
+): string {
+  let index = 0
+  const out: string[] = []
+  for (const section of sections) {
+    const take = section.count ?? items.length - index
+    const slice = items.slice(index, index + take)
+    index += slice.length
+    if (slice.length === 0) continue
+    const rendered = slice.map((item) => renderTemplate(section.template, values(item))).join('')
+    out.push(section.wrapper ? section.wrapper.split(ITEMS_SLOT).join(rendered) : rendered)
+  }
+  return out.join('')
+}
+
 /** Emitted stylesheets live under /styles/legacy/ — pages reference them by file name. */
 export const cssHref = (file: string): string => '/styles/legacy/' + (file.split('/').pop() ?? file)
 

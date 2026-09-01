@@ -24,6 +24,7 @@ export function routeFiles(
   route: RouteModel,
   family: LayoutFamily | undefined,
   content: EmitContent,
+  siteLocale: string,
 ): PageGenResult {
   const warnings: string[] = []
   const files: Record<string, string> = {}
@@ -57,22 +58,22 @@ export function routeFiles(
       warnings.push(`route ${route.id}: collection "${collection}" has no items — page emitted, data file empty`)
     }
     files[`src/data/${collection}.json`] = stableJson(posts)
-    files[`src/pages/${pagePath}`] = singlePage(route, layout, up, collection)
+    files[`src/pages/${pagePath}`] = singlePage(route, layout, up, collection, siteLocale)
     return { files, warnings }
   }
 
   const queryPages: QueryPage[] = route.query ? (content.queries?.[route.query] ?? []) : []
   if (route.query) {
     if (!queryPages.length) warnings.push(`route ${route.id}: query "${route.query}" has no data — page emitted, data file empty`)
-    if (queryPages.some((p) => !p.item_template)) {
+    if (queryPages.some((p) => !p.item_template && !p.sections?.length)) {
       warnings.push(`route ${route.id}: item template missing on some pages — plain fallback list rendered (not fidelity)`)
     }
     files[`src/data/queries/${route.query}.json`] = stableJson(queryPages)
-    files[`src/pages/${pagePath}`] = listPage(route, layout, up, hasParams)
+    files[`src/pages/${pagePath}`] = listPage(route, layout, up, hasParams, siteLocale)
     return { files, warnings }
   }
 
-  files[`src/pages/${pagePath}`] = staticPage(route, layout, up, hasParams, warnings)
+  files[`src/pages/${pagePath}`] = staticPage(route, layout, up, hasParams, warnings, siteLocale)
   return { files, warnings }
 }
 
@@ -83,7 +84,8 @@ function collectionItems(content: EmitContent, collection: string): EmitPost[] {
   return collection === DEFAULT_COLLECTION ? (content.posts ?? []) : []
 }
 
-function singlePage(route: RouteModel, layout: string, up: string, collection: string): string {
+function singlePage(route: RouteModel, layout: string, up: string, collection: string, siteLocale: string): string {
+  const locale = JSON.stringify(route.locale ?? siteLocale)
   return `---
 // Route: ${route.id} (${route.pattern}) — collection: ${collection} — emitted by @contentrain/emitter-astro
 import Layout from '${up}layouts/${layout}.astro'
@@ -99,11 +101,19 @@ export function getStaticPaths() {
 type Props = { post: (typeof posts)[number] }
 const { post } = Astro.props as Props
 ---
-<Layout title={post.title} marks={postMarks(post)} body={post.body} css={post.css ?? []} />
+<Layout
+  title={post.title}
+  marks={postMarks(post)}
+  body={post.body}
+  css={post.css ?? []}
+  lang={post.locale ?? ${locale}}
+/>
 `
 }
 
-function listPage(route: RouteModel, layout: string, up: string, hasParams: boolean): string {
+function listPage(route: RouteModel, layout: string, up: string, hasParams: boolean, siteLocale: string): string {
+  const locale = JSON.stringify(route.locale ?? siteLocale)
+  const routeTitle = JSON.stringify(route.title ?? '')
   const paths = hasParams
     ? `export function getStaticPaths() {
   return pages.map((page) => ({ params: page.params, props: { page } }))
@@ -115,27 +125,34 @@ const { page } = Astro.props as Props`
 // Route: ${route.id} (${route.pattern}) — emitted by @contentrain/emitter-astro
 import Layout from '${up}layouts/${layout}.astro'
 import pages from '${up}data/queries/${route.query}.json'
-import { esc, postMarks, renderTemplate } from '${up}lib/fill'
+import { esc, postMarks, renderSections, renderTemplate } from '${up}lib/fill'
 
 ${paths}
-const items = page.items.map((item) =>
-  page.item_template ? renderTemplate(page.item_template, postMarks(item)) : undefined,
-)
-const fallback = items.some((h) => h === undefined)
-const content = fallback
-  ? '<ul class="cr-post-list">' +
+// A list renders in sections (a big card then a grid) — one template is the
+// single-section case. Without a template at all we fall back to a plain list
+// and the emitter has already warned: silence would read as fidelity.
+const sections = page.sections ?? (page.item_template ? [{ template: page.item_template }] : [])
+const content = sections.length
+  ? renderSections(sections, page.items, postMarks)
+  : '<ul class="cr-post-list">' +
     page.items.map((item) => '<li><a href="/' + item.slug + '/">' + esc(item.title) + '</a></li>').join('') +
     '</ul>'
-  : items.join('')
 // Route params carry slugs; page marks carry what the chrome needs to SHOW
 // (a term's display name, description, count).
 const marks = { ...page.params, ...(page.marks ?? {}) }
+const title = page.title ?? ${routeTitle} ?? ''
 ---
-<Layout title={String(marks.term_name ?? page.params.term ?? '')} marks={marks} body={content} css={page.css ?? []} />
+<Layout
+  title={title || String(marks.term_name ?? page.params.term ?? '')}
+  marks={marks}
+  body={content}
+  css={page.css ?? []}
+  lang={${locale}}
+/>
 `
 }
 
-function staticPage(route: RouteModel, layout: string, up: string, hasParams: boolean, warnings: string[]): string {
+function staticPage(route: RouteModel, layout: string, up: string, hasParams: boolean, warnings: string[], siteLocale: string): string {
   if (hasParams) warnings.push(`route ${route.id}: parameterized route without a query — emitted with empty paths`)
   const paths = hasParams
     ? `export function getStaticPaths() {
@@ -147,6 +164,6 @@ function staticPage(route: RouteModel, layout: string, up: string, hasParams: bo
 // Route: ${route.id} (${route.pattern}) — emitted by @contentrain/emitter-astro
 import Layout from '${up}layouts/${layout}.astro'
 ${paths}---
-<Layout title="" marks={{}} />
+<Layout title=${JSON.stringify(route.title ?? '')} marks={{}} lang={${JSON.stringify(route.locale ?? siteLocale)}} />
 `
 }
