@@ -65,12 +65,14 @@ interface Props {
   body?: string
   /** Stylesheets only this page loads (page-builder sites emit CSS per page). */
   css?: string[]
+  /** Document language — a multilingual site's routes each pass their own. */
+  lang?: string
 }
-const { title = '', marks = {}, body, css = [] } = Astro.props
+const { title = '', marks = {}, body, css = [], lang = ${JSON.stringify(lang)} } = Astro.props
 const head = renderTemplate(chrome.head, marks)
 // Root attributes carry the theme's layout hooks; values may hold @@marks@@.
 // An explicit lang from the source wins over the project default.
-const htmlAttrs = { lang: ${JSON.stringify(lang)}, ...fillAttrs(chrome.html_attrs, marks) }
+const htmlAttrs = { lang, ...fillAttrs(chrome.html_attrs, marks) }
 const bodyAttrs = fillAttrs(chrome.body_attrs, marks)
 const content = body ?? (Astro.slots.has('default') ? await Astro.slots.render('default') : '')
 // Split at the marker FIRST, then fill marks per side — filling first would

@@ -41,6 +41,25 @@ export interface EmitPost {
   authors?: string[]
   /** Producer-supplied extra marks, merged last. */
   marks?: Record<string, unknown>
+  /** Locale of this entry, on a multilingual site — overrides the route's. */
+  locale?: string
+}
+
+/**
+ * One block of a list: a template, optional wrapper, and how many items it takes.
+ *
+ * Themes commonly render the newest post as a big card and the rest as a grid —
+ * two different templates in two different containers. One template per list
+ * cannot express that: either everything becomes a big card, or the big card is
+ * baked into the chrome and page 2 shows the wrong post.
+ */
+export interface ListSection {
+  /** Item markup with `@@marks@@`. */
+  template: string
+  /** Markup around this section's items; `<!--@@items@@-->` marks where they go. */
+  wrapper?: string
+  /** Items this section takes, in order. Omitted = the remaining items. */
+  count?: number
 }
 
 /** One static path of a list route: its params and the items its list renders. */
@@ -61,8 +80,14 @@ export interface QueryPage {
    * render each item by filling the template; when absent, a plain fallback
    * list is emitted and a warning recorded — a silent fallback would read as
    * fidelity when it is not.
+   *
+   * Shorthand for a single-section list; `sections` takes precedence.
    */
   item_template?: string
+  /** Lists whose items are not all rendered alike — a big card then a grid. */
+  sections?: ListSection[]
+  /** Document title for this page (`<title>`), e.g. "Category: News – Site". */
+  title?: string
 }
 
 /** Default collection name when a `single` route does not name one. */

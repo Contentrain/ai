@@ -63,7 +63,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   }
 
   for (const route of ir.routes) {
-    const result = routeFiles(route, familiesById.get(route.family), input.content ?? {})
+    const result = routeFiles(route, familiesById.get(route.family), input.content ?? {}, lang)
     add(result.files)
     warnings.push(...result.warnings)
   }
