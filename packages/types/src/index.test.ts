@@ -559,7 +559,11 @@ describe('@contentrain/types', () => {
     it('detects API keys', () => {
       expect(detectSecrets('sk_live_abc123')).toHaveLength(1)
       expect(detectSecrets('api_key=8f14e45fceea167a5a36dedd4bea2543')).toHaveLength(1)
-      expect(detectSecrets('API-KEY: "AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY"')).toHaveLength(1)
+      // No real vendor prefix on purpose: Netlify's build-time secret scanner
+      // fails a deploy on a high-entropy token behind a known prefix (`AIza`,
+      // `ghp_`, `sk_`…), and GitHub push protection blocks vendor-shaped values —
+      // synthetic or not. The fixture only needs a mixed alphanumeric tail.
+      expect(detectSecrets('API-KEY: "q7x2m9v4k1p8z3w6h5j0"')).toHaveLength(1)
       // A second assignment further into the value is still found.
       expect(detectSecrets('set api_key = your_key_here first, e.g. api_key = 8f14e45fceea167a5a36dedd4bea2543')).toHaveLength(1)
       // `my_api_key_value` was asserted here as a secret. It is a string that

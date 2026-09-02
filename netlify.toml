@@ -5,6 +5,15 @@
 [build.environment]
   NODE_VERSION = "22"
   COREPACK_ENABLE_STRICT = "0"
+  # Netlify's enhanced secrets detection scans the whole checkout, not just the
+  # published docs. This repo ships a secret detector (@contentrain/types
+  # detectSecrets), so its tests necessarily carry vendor-shaped fixtures —
+  # `sk_live_…`, `ghp_…`, `AKIA…`. They pass today only because their entropy
+  # sits under Netlify's 4.5 threshold; one realistic-looking fixture (PR #147)
+  # failed every deploy preview and the production deploy. Tests are not part
+  # of the docs site, so they are left out of the scan. Source and docs are
+  # still scanned.
+  SECRETS_SCAN_OMIT_PATHS = "packages/*/tests/**,packages/sdk/js/tests/**,packages/*/src/**/*.test.ts,packages/*/src/**/*.spec.ts"
 
 [[headers]]
   for = "/sitemap.xml"
