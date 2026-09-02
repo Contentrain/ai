@@ -603,7 +603,7 @@ const API_KEY_ASSIGNMENT = /\bapi[_-]?key\s*[:=]\s*['"`]?(?![<${{]|YOUR[_-]|your
  * `_`/`-` separated tokens are each purely letters or purely digits
  * (`my_api_key_2024`, `REPLACE-WITH-KEY-1`) — words with a version number. An
  * issued key mixes letters and digits inside one token (`8f14e45fceea167a`,
- * `AIzaSyD-9tSrke72PouQMnMX`), which no sentence does by accident.
+ * `k1p8-q7x2m9v4z3w6`), which no sentence does by accident.
  */
 export function looksLikeCredential(tail: string): boolean {
   if (!/\d/.test(tail)) return false
