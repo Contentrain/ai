@@ -30,8 +30,8 @@ export function registerContentTools(
         slug: z.string().optional().describe('Slug (document only)'),
         locale: z.string().optional().describe('Locale code (defaults to config default)'),
         data: z.record(z.string(), z.unknown()).describe('Content data. For documents, include "body" key for markdown content.'),
-        publish_at: z.string().optional().describe('ISO 8601 date for scheduled publishing (stored in meta)'),
-        expire_at: z.string().optional().describe('ISO 8601 date for scheduled expiry (stored in meta, must be after publish_at)'),
+        publish_at: z.string().nullable().optional().describe('Scheduled publish date, ISO 8601. Stored in meta only — never in the content file — and it does NOT change status: a draft stays a draft, and a published entry is delivered only once this date has passed. Publish with contentrain_bulk update_status. Pass null to clear a previously set date; omit to leave it unchanged.'),
+        expire_at: z.string().nullable().optional().describe('Scheduled expiry, ISO 8601, must be after publish_at. Same rules as publish_at: meta only, never changes status, null clears, omit leaves unchanged.'),
       })).describe('Content entries to save'),
     },
     TOOL_ANNOTATIONS['contentrain_content_save']!,
@@ -63,8 +63,11 @@ export function registerContentTools(
           }
         }
 
-        // Validate publish_at / expire_at
-        if (entry.publish_at !== undefined) {
+        // Validate publish_at / expire_at. `null` is a clear, not a date, so it
+        // is skipped here and honoured by mergeEntryMeta. The dates are carried
+        // on the entry itself, never merged into `data`: that merge is what wrote
+        // `publish_at` into document frontmatter and collection JSON (#125).
+        if (typeof entry.publish_at === 'string') {
           const d = new Date(entry.publish_at)
           if (Number.isNaN(d.getTime())) {
             return {
@@ -75,7 +78,7 @@ export function registerContentTools(
             }
           }
         }
-        if (entry.expire_at !== undefined) {
+        if (typeof entry.expire_at === 'string') {
           const d = new Date(entry.expire_at)
           if (Number.isNaN(d.getTime())) {
             return {
@@ -86,7 +89,7 @@ export function registerContentTools(
             }
           }
         }
-        if (entry.publish_at !== undefined && entry.expire_at !== undefined) {
+        if (typeof entry.publish_at === 'string' && typeof entry.expire_at === 'string') {
           if (new Date(entry.expire_at) <= new Date(entry.publish_at)) {
             return {
               content: [{ type: 'text' as const, text: JSON.stringify({
@@ -96,11 +99,12 @@ export function registerContentTools(
             }
           }
         }
-
-        // Merge scheduling fields into data so meta-manager picks them up
-        if (entry.publish_at !== undefined) entry.data['publish_at'] = entry.publish_at
-        if (entry.expire_at !== undefined) entry.data['expire_at'] = entry.expire_at
       }
+
+      // Scheduling was mentioned — set or cleared. Said out loud in the response,
+      // because the one thing an agent expects a past publish_at to do is the one
+      // thing it does not: status is untouched, and a draft stays a draft.
+      const schedulingTouched = input.entries.some(e => e.publish_at !== undefined || e.expire_at !== undefined)
 
       // Write-readiness gate. The provider decides what blocks a write —
       // a local worktree counts unmerged cr/* branches, a hosted one does not.
@@ -217,12 +221,16 @@ export function registerContentTools(
             advisory_note: 'Save succeeded. Review these warnings and consider consolidating duplicate values.',
           } : {}),
           ...(warnings.length > 0 ? { warnings } : {}),
+          ...(schedulingTouched ? {
+            scheduling_note: 'publish_at/expire_at were written to meta only — not to the content file — and status is unchanged: a draft is still a draft. They gate delivery of a *published* entry (served once publish_at has passed, until expire_at). To publish, call contentrain_bulk update_status.',
+          } : {}),
           validation: { valid: true, errors: [] },
           context_updated: true,
           next_steps: [
             ...divergenceNextSteps(commit),
             ...(allAdvisories.length > 0 ? ['ADVISORY: Duplicate values detected — review advisories above'] : []),
             ...(warnings.length > 0 ? ['REVIEW: see warnings above — the save was not blocked by them'] : []),
+            ...(schedulingTouched ? ['PUBLISH: publish_at did not change status — use contentrain_bulk update_status if this entry should go live'] : []),
             ...(model.kind === 'collection'
               ? ['Use contentrain_content_list to verify', 'Add more entries or publish']
               : ['Use contentrain_content_list to verify']),

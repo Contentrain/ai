@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { validateModelDefinition } from '../../src/core/model-manager.js'
+import { collectFieldPaths, legacyFieldNames, validateModelDefinition } from '../../src/core/model-manager.js'
 
 /**
  * Schema-shape rules for model_save.
@@ -330,5 +330,79 @@ describe('validateModelDefinition — an object with no shape', () => {
   it('says nothing when the shape is declared', () => {
     const { warnings } = withField({ type: 'object', fields: { title: { type: 'string' } } })
     expect(warnings).toEqual([])
+  })
+})
+
+/**
+ * Field names must be snake_case — for fields that are *new*. A model authored
+ * before the rule may carry `creativeWork`, and refusing every later save of it
+ * made the model read-only through MCP: a one-line `title_field` correction
+ * needed a full rename migration first (#116). Existing names are grandfathered
+ * and reported; new ones are still refused.
+ */
+describe('validateModelDefinition — legacy field names', () => {
+  const base = { id: 'testimonials', kind: 'collection', title_field: 'name' }
+  const legacyFields = {
+    name: { type: 'string', required: true },
+    creativeWork: { type: 'relation', model: 'workitems' },
+  }
+  const CREATIVE_WORK_ERROR = 'Field "creativeWork": invalid name — must be snake_case starting with letter'
+
+  it('rejects a camelCase field on a new model', () => {
+    const { errors } = validateModelDefinition({ ...base, fields: legacyFields })
+    expect(errors).toContain(CREATIVE_WORK_ERROR)
+  })
+
+  it('keeps a camelCase field the model already has, and says so', () => {
+    const { errors, warnings } = validateModelDefinition(
+      { ...base, fields: legacyFields },
+      { existingFieldPaths: collectFieldPaths(legacyFields) },
+    )
+    expect(errors).toEqual([])
+    expect(warnings.some(w => w.startsWith('Field "creativeWork": legacy name is not snake_case'))).toBe(true)
+  })
+
+  it('still rejects a camelCase field that is new to an existing model', () => {
+    const { errors } = validateModelDefinition(
+      { ...base, fields: { ...legacyFields, heroImage: { type: 'image' } } },
+      { existingFieldPaths: collectFieldPaths(legacyFields) },
+    )
+    expect(errors).toEqual(['Field "heroImage": invalid name — must be snake_case starting with letter'])
+  })
+
+  it('grandfathers by path — a nested legacy name is kept, a nested new one is not', () => {
+    const existing = { seo: { type: 'object', fields: { metaTitle: { type: 'string' } } } }
+    const { errors, warnings } = validateModelDefinition(
+      {
+        ...base,
+        fields: {
+          name: { type: 'string', required: true },
+          seo: { type: 'object', fields: { metaTitle: { type: 'string' }, ogImage: { type: 'image' } } },
+        },
+      },
+      { existingFieldPaths: collectFieldPaths(existing) },
+    )
+    expect(errors).toEqual(['Field "seo.ogImage": invalid name — must be snake_case starting with letter'])
+    expect(warnings.some(w => w.includes('"seo.metaTitle"') && w.includes('legacy name'))).toBe(true)
+  })
+})
+
+describe('collectFieldPaths / legacyFieldNames', () => {
+  it('walks object members and array item objects, dotted the way errors spell them', () => {
+    const fields = {
+      title: { type: 'string' },
+      seo: { type: 'object', fields: { metaTitle: { type: 'string' } } },
+      links: { type: 'array', items: { type: 'object', fields: { label: { type: 'string' }, targetUrl: { type: 'url' } } } },
+      tags: { type: 'array', items: 'string' },
+    }
+    expect([...collectFieldPaths(fields)]).toEqual([
+      'title', 'seo', 'seo.metaTitle', 'links', 'links.items.label', 'links.items.targetUrl', 'tags',
+    ])
+    expect(legacyFieldNames(fields)).toEqual(['seo.metaTitle', 'links.items.targetUrl'])
+  })
+
+  it('is empty for a field-less model', () => {
+    expect(collectFieldPaths(undefined).size).toBe(0)
+    expect(legacyFieldNames(undefined)).toEqual([])
   })
 })

@@ -4,9 +4,9 @@ import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { writeJson, writeText } from '../../util/fs.js'
 import { readConfig } from '../config.js'
-import { inferTitleField, listModels, readModel, titleFieldIssues } from '../model-manager.js'
+import { inferTitleField, legacyFieldNames, listModels, readModel, titleFieldIssues, titleFieldOptions } from '../model-manager.js'
 import { mergeEntryMeta, writeMeta } from '../meta-manager.js'
-import { parseFrontmatter, resolveLocaleStrategy } from '../content-manager.js'
+import { parseFrontmatter, resolveLocaleStrategy, serializeFrontmatter } from '../content-manager.js'
 import type { RepoReader } from '../contracts/index.js'
 import { LocalReader } from '../../providers/local/reader.js'
 import { contentDirPath, contentFilePath, documentFilePath, metaFilePath } from '../ops/paths.js'
@@ -388,6 +388,20 @@ async function checkModelDefinition(
   issues: ValidationError[],
   fix: boolean,
 ): Promise<number> {
+  // Field names that predate the snake_case rule. `contentrain_model_save`
+  // keeps them (#116) — this is how an agent learns a model carries one before
+  // it edits the model, not mid-write. A notice, not a warning: renaming means
+  // renaming content keys in every locale and every consumer, so it is a
+  // migration to plan, not a defect to clear.
+  for (const path of legacyFieldNames(model.fields)) {
+    issues.push({
+      severity: 'notice',
+      model: model.id,
+      field: path,
+      message: `Field "${path}" predates the snake_case rule. contentrain_model_save keeps it as-is; new fields must be snake_case. Renaming it also means renaming its content keys in every locale.`,
+    })
+  }
+
   const { errors, warnings } = titleFieldIssues(model)
   if (errors.length === 0 && warnings.length === 0) return 0
 
@@ -408,11 +422,17 @@ async function checkModelDefinition(
       })
       return 1
     }
+    // Inference declined. Two different situations, said differently: a model
+    // whose only displayable fields are slug/url/code has legal choices that a
+    // human must make (#120); a model with none needs a field added.
+    const legal = titleFieldOptions(model.kind, model.fields)
     issues.push({
       severity: 'error',
       model: model.id,
       field: 'title_field',
-      message: `Missing "title_field" and no field can serve as one — add a string or text field, then re-run. A title cannot be an image, relation or number.`,
+      message: legal.length > 0
+        ? `Missing "title_field" and no field reads as a title — only ${legal.map(f => `"${f}"`).join(', ')} could legally hold one, and a slug, URL or code field is not inferred. Set title_field explicitly with contentrain_model_save, or add a string field.`
+        : `Missing "title_field" and no field can serve as one — add a string or text field, then re-run. A title cannot be an image, relation or number.`,
     })
     return 0
   }
@@ -765,6 +785,34 @@ async function discoverDocumentSlugs(
   return entries.filter(f => f.endsWith('.md')).map(f => f.replace(/\.md$/, ''))
 }
 
+/** Meta-owned scheduling keys; see `EntrySchedule` in meta-manager. */
+const SCHEDULE_KEYS = ['publish_at', 'expire_at'] as const
+
+/**
+ * Scheduling keys a document's frontmatter carries that belong to its meta.
+ *
+ * Before #125, `contentrain_content_save` merged `publish_at`/`expire_at` into
+ * the entry's data before planning the write, so the same value landed in the
+ * frontmatter and in meta. A key counts as leaked only when three things hold:
+ * it is in the frontmatter, the model does not declare a field by that name,
+ * and the meta record holds the key too. The third condition is what separates
+ * the tool's leftover from an author's own frontmatter field.
+ */
+async function leakedScheduleKeys(
+  reader: RepoReader,
+  model: ModelDefinition,
+  locale: string,
+  slug: string,
+  frontmatter: Record<string, unknown>,
+  defaultLocale: string,
+): Promise<string[]> {
+  const present = SCHEDULE_KEYS.filter(k => k in frontmatter && !(model.fields && k in model.fields))
+  if (present.length === 0) return []
+  const meta = await readJsonViaReader<EntryMeta>(reader, metaFilePath(model, locale, defaultLocale, slug))
+  if (!meta) return []
+  return present.filter(k => meta[k] !== undefined)
+}
+
 async function validateDocumentModel(
   reader: RepoReader,
   projectRoot: string | undefined,
@@ -855,6 +903,29 @@ async function validateDocumentModel(
           field: 'body',
           message: 'Potential secret detected in document body',
         })
+      }
+
+      // Scheduling keys an older content_save copied into the frontmatter as
+      // well as into meta (#125). They are meta's, not the author's — and since
+      // documents merge frontmatter on save, no later save could remove them.
+      // Recognised only when meta holds the same key: an undeclared `publish_at`
+      // with no meta counterpart is the author's own field and is left alone.
+      const leaked = await leakedScheduleKeys(reader, model, locale, slug, frontmatter, config.locales.default)
+      if (leaked.length > 0) {
+        const keys = leaked.map(k => `"${k}"`).join(', ')
+        issues.push({
+          severity: 'warning',
+          model: model.id,
+          locale,
+          slug,
+          field: leaked[0],
+          message: `Frontmatter carries scheduling key(s) ${keys} that belong in meta — copied there by an older content_save. The meta record already holds the value; run validate with fix:true to strip the frontmatter copy.`,
+        })
+        if (fix && projectRoot) {
+          const cleaned = Object.fromEntries(Object.entries(frontmatter).filter(([k]) => !leaked.includes(k)))
+          await writeText(join(projectRoot, filePath), serializeFrontmatter(cleaned, body))
+          fixed++
+        }
       }
 
       if (model.fields) {

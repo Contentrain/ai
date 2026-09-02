@@ -94,7 +94,7 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
         const cPath = contentFilePath(model, locale)
         const mPath = metaFilePath(model, locale, defaultLocale)
         contentByPath.set(cPath, normalizeMedia(entry.data))
-        metaByPath.set(mPath, mergeEntryMeta(await priorMeta(mPath), entry.data))
+        metaByPath.set(mPath, mergeEntryMeta(await priorMeta(mPath), entry))
         result.push({ action: 'updated', locale })
         break
       }
@@ -119,7 +119,7 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
 
         const existingMeta = (metaByPath.get(mPath) as Record<string, EntryMeta> | undefined)
           ?? await readJsonOrEmpty<Record<string, EntryMeta>>(mPath)
-        existingMeta[id] = mergeEntryMeta(existingMeta[id], entry.data)
+        existingMeta[id] = mergeEntryMeta(existingMeta[id], entry)
         metaByPath.set(mPath, existingMeta)
 
         result.push({ action, id, locale })
@@ -188,7 +188,7 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
         advisories.push(...entryAdvisories)
 
         contentByPath.set(cPath, { ...existing, ...newData })
-        metaByPath.set(mPath, mergeEntryMeta(await priorMeta(mPath), entry.data))
+        metaByPath.set(mPath, mergeEntryMeta(await priorMeta(mPath), entry))
 
         result.push({
           action: 'updated',
@@ -250,7 +250,7 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
         // markdown body has its `media/...` image/link targets rewritten too.
         const normalizedBody = mediaBaseUrl ? rewriteMarkdownMedia(bodyContent, mediaBaseUrl) : bodyContent
         markdownChanges.set(dPath, serializeMarkdownFrontmatter(normalizeMedia(fmData), normalizedBody))
-        metaByPath.set(mPath, mergeEntryMeta(await priorMeta(mPath), entry.data))
+        metaByPath.set(mPath, mergeEntryMeta(await priorMeta(mPath), entry))
 
         result.push({
           action,

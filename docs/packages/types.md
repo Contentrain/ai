@@ -231,7 +231,7 @@ import {
 | `ENTRY_ID_PATTERN` | RegExp | Validates entry IDs |
 | `LOCALE_PATTERN` | RegExp | Validates ISO locale codes |
 | `CANONICAL_JSON` | Object | Deterministic serialization rules |
-| `SECRET_PATTERNS` | `ReadonlyArray<RegExp>` | Patterns behind `detectSecrets` — extend for custom secret detection |
+| `SECRET_PATTERNS` | `ReadonlyArray<RegExp>` | Provider-shaped patterns behind `detectSecrets` — extend for custom secret detection. The generic `api_key = …` rule is not in this list: it fires only when `looksLikeCredential` accepts the captured tail |
 
 ### Runtime Functions
 
@@ -243,6 +243,7 @@ Validate functions (pure, dependency-free):
 | `validateEntryId(id)` | Entry ID format validation |
 | `validateLocale(locale, config)` | Locale format + config support check |
 | `detectSecrets(value)` | Detect potential secrets in field values |
+| `looksLikeCredential(tail)` | Whether a value assigned to an API-key setting reads as a credential (has a digit, mixes letters and digits in a token) rather than a placeholder or setting name |
 | `validateFieldValue(value, fieldDef)` | Full field schema validation (type, required, min/max, pattern, select) |
 | `validateSemanticType(value, type)` | Semantic checks for typed values (integer, date, email, url, ...) |
 | `validateAccept(value, accept)` | Extension-based `accept` constraint check for media paths |

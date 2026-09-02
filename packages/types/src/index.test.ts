@@ -559,10 +559,37 @@ describe('@contentrain/types', () => {
     it('detects API keys', () => {
       expect(detectSecrets('sk_live_abc123')).toHaveLength(1)
       expect(detectSecrets('api_key=8f14e45fceea167a5a36dedd4bea2543')).toHaveLength(1)
+      expect(detectSecrets('API-KEY: "AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY"')).toHaveLength(1)
+      // A second assignment further into the value is still found.
+      expect(detectSecrets('set api_key = your_key_here first, e.g. api_key = 8f14e45fceea167a5a36dedd4bea2543')).toHaveLength(1)
       // `my_api_key_value` was asserted here as a secret. It is a string that
       // contains the words, which is what made the check flag prose describing
       // an api_key parameter. The rule is now "a key being assigned a value".
       expect(detectSecrets('my_api_key_value')).toHaveLength(0)
+    })
+
+    // The generic `api_key = …` rule has no provider shape behind it, so the
+    // captured tail has to look like a credential. Documentation-shaped values —
+    // a placeholder, a setting name, words with a version — are content a CMS
+    // stores every day, and once `contentrain validate` exited non-zero, one
+    // of them in a setup guide was a permanent CI failure (#121).
+    it('does not flag documentation-shaped api_key values', () => {
+      expect(detectSecrets('api_key = your_project_api_key_here')).toHaveLength(0)
+      expect(detectSecrets('api_key=xxxxxxxxxxxxxxxxxxxxxxxx')).toHaveLength(0)
+      expect(detectSecrets('api_key: <your-api-key-goes-here>')).toHaveLength(0)
+      expect(detectSecrets('API_KEY=${CONTENTRAIN_API_KEY}')).toHaveLength(0)
+      expect(detectSecrets('api_key = YOUR_API_KEY_HERE_2024')).toHaveLength(0)
+      expect(detectSecrets('api_key = my_project_api_key_2024')).toHaveLength(0)
+      expect(detectSecrets('api-key: REPLACE-WITH-YOUR-KEY-1')).toHaveLength(0)
+      expect(detectSecrets('Set the cdn.api_keys feature flag to enable API key rotation')).toHaveLength(0)
+    })
+
+    it('still flags a credential with a word-like prefix', () => {
+      // A prefix the vendor chose does not make the rest of the key prose. The
+      // fixtures deliberately avoid any real vendor's exact key shape — GitHub
+      // push protection blocks a commit that carries one, synthetic or not.
+      expect(detectSecrets('api_key=key-7g3kq9zt2mxv4pwb8ncy5hrd')).toHaveLength(1)
+      expect(detectSecrets('api_key=live_4eC39HqLyjWDarjtT1zdp7dc')).toHaveLength(1)
     })
 
     it('detects GitHub tokens', () => {

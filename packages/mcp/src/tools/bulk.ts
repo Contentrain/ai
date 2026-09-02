@@ -28,6 +28,7 @@ export function registerBulkTools(
       source_locale: z.string().optional().describe('Source locale for copy_locale operation'),
       target_locale: z.string().optional().describe('Target locale for copy_locale operation'),
       entry_ids: z.array(z.string()).optional().describe('Entry IDs for update_status (collection models) or delete_entries'),
+      slugs: z.array(z.string()).optional().describe('Document slugs for update_status (document models) — a document is addressed by slug, the same identity contentrain_content_save uses, not by entry ID'),
       locale: z.string().optional().describe('Scope update_status to a single locale (i18n models only; defaults to every supported locale)'),
       status: z.enum(['draft', 'in_review', 'published', 'rejected', 'archived']).optional().describe('New status for update_status'),
       confirm: z.boolean().optional().describe('Must be true for delete_entries'),
@@ -181,28 +182,47 @@ export function registerBulkTools(
             }
           }
 
-          // Documents keep meta per slug (meta/{model}/{slug}/{locale}.json), so
-          // they need a slug list rather than entry_ids. Rejected until that lands.
-          if (model.kind === 'document') {
+          // Three meta layouts, three ways to address a record. Collections key
+          // meta by entry ID in one file per locale; documents keep one file per
+          // slug (meta/{model}/{slug}/{locale}.json) and are addressed by slug,
+          // as content_save already does (#124); singletons and dictionaries have
+          // exactly one record per locale and take no list at all. Each guard is
+          // checked before any git work so the caller gets a usable error, not a
+          // dead end.
+          const keyedByEntry = model.kind === 'collection'
+          const keyedBySlug = model.kind === 'document'
+          const hasEntryIds = Boolean(input.entry_ids && input.entry_ids.length > 0)
+          const hasSlugs = Boolean(input.slugs && input.slugs.length > 0)
+
+          if (keyedBySlug && hasEntryIds) {
             return {
               content: [{ type: 'text' as const, text: JSON.stringify({
-                error: `Model "${input.model}" is a document model. update_status does not support documents yet — their meta is keyed by slug, not entry ID.`,
+                error: `Model "${input.model}" is a document model — documents are keyed by slug, not entry ID. Pass slugs instead of entry_ids.`,
               }) }],
               isError: true,
             }
           }
-
-          // Only collections key meta by entry ID; singletons and dictionaries
-          // have exactly one meta record per locale. Checked before entry_ids so
-          // a singleton gets a usable error instead of a dead end.
-          const keyedByEntry = model.kind === 'collection'
-          if (keyedByEntry && (!input.entry_ids || input.entry_ids.length === 0)) {
+          if (keyedBySlug && !hasSlugs) {
+            return {
+              content: [{ type: 'text' as const, text: JSON.stringify({ error: `update_status requires slugs for document model "${input.model}".` }) }],
+              isError: true,
+            }
+          }
+          if (!keyedBySlug && hasSlugs) {
+            return {
+              content: [{ type: 'text' as const, text: JSON.stringify({
+                error: `slugs only apply to document models — "${input.model}" is a ${model.kind} model. ${keyedByEntry ? 'Pass entry_ids.' : 'Omit both entry_ids and slugs.'}`,
+              }) }],
+              isError: true,
+            }
+          }
+          if (keyedByEntry && !hasEntryIds) {
             return {
               content: [{ type: 'text' as const, text: JSON.stringify({ error: `update_status requires entry_ids for collection model "${input.model}".` }) }],
               isError: true,
             }
           }
-          if (!keyedByEntry && input.entry_ids && input.entry_ids.length > 0) {
+          if (!keyedByEntry && !keyedBySlug && hasEntryIds) {
             return {
               content: [{ type: 'text' as const, text: JSON.stringify({
                 error: `Model "${input.model}" is a ${model.kind} model — it has one meta record per locale, so entry_ids do not apply. Omit entry_ids.`,
@@ -250,6 +270,18 @@ export function registerBulkTools(
                   // One read-modify-write for the whole locale file — see writeMetaEntries.
                   const written = await writeMetaEntries(wt, model, { locale, defaultLocale: config.locales.default }, updates)
                   if (written.length > 0) updatedPerLocale[locale] = written
+                } else if (keyedBySlug) {
+                  // One meta file per slug, so each write lands on its own path —
+                  // the shared-file race writeMetaEntries exists for cannot occur.
+                  const written: string[] = []
+                  for (const slug of input.slugs!) {
+                    const existing = await readMeta(wt, model, { locale, slug, defaultLocale: config.locales.default }) as EntryMeta | null
+                    if (!existing) continue
+                    await writeMeta(wt, model, { locale, slug, defaultLocale: config.locales.default }, applyStatusChange(existing, input.status!))
+                    written.push(slug)
+                    foundIds.add(slug)
+                  }
+                  if (written.length > 0) updatedPerLocale[locale] = written
                 } else {
                   const existing = await readMeta(wt, model, { locale, defaultLocale: config.locales.default }) as EntryMeta | null
                   if (!existing) continue
@@ -260,9 +292,8 @@ export function registerBulkTools(
             })
 
             const updatedCount = Object.values(updatedPerLocale).reduce((n, ids) => n + ids.length, 0)
-            const notFound = keyedByEntry
-              ? input.entry_ids!.filter(id => !foundIds.has(id))
-              : []
+            const requested = keyedByEntry ? input.entry_ids! : keyedBySlug ? input.slugs! : []
+            const notFound = requested.filter(key => !foundIds.has(key))
 
             if (updatedCount === 0) {
               await tx.cleanup()
@@ -270,7 +301,9 @@ export function registerBulkTools(
                 content: [{ type: 'text' as const, text: JSON.stringify({
                   error: keyedByEntry
                     ? `No meta records found for the given entry_ids in model "${input.model}" across locales [${targetLocales.join(', ')}]. Nothing was changed.`
-                    : `No meta record found for model "${input.model}" across locales [${targetLocales.join(', ')}]. Nothing was changed.`,
+                    : keyedBySlug
+                      ? `No meta records found for the given slugs in model "${input.model}" across locales [${targetLocales.join(', ')}]. Nothing was changed. Check the slugs with contentrain_content_list.`
+                      : `No meta record found for model "${input.model}" across locales [${targetLocales.join(', ')}]. Nothing was changed.`,
                   not_found: notFound.length > 0 ? notFound : undefined,
                 }, null, 2) }],
                 isError: true,
@@ -280,7 +313,7 @@ export function registerBulkTools(
             await tx.commit(`[contentrain] bulk: update status → ${input.status} for ${input.model}`, {
               tool: 'contentrain_bulk',
               model: input.model,
-              ...(keyedByEntry ? { entries: input.entry_ids! } : {}),
+              ...(requested.length > 0 ? { entries: requested } : {}),
             })
             const gitResult = await tx.complete()
 

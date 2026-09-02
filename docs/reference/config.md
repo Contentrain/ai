@@ -314,6 +314,20 @@ Projects created before this became required can be migrated in place:
 contentrain validate --fix
 ```
 
+The backfill walks the same chain Studio's own title resolver does, with
+requiredness as the tiebreak on every rung — a required field always renders,
+an optional one may be empty:
+
+1. a required name-like field (`title`, `name`, `label`, `heading`)
+2. an optional name-like field
+3. a required prose field (`string`, `email`, `text`, `markdown`, `richtext`)
+4. any prose field
+
+A `slug`, `url` or `code` field is never chosen by inference. Each is a legal
+`title_field` when you name it, but guessed it is the failure this property
+exists to prevent — a settings singleton titled by its WhatsApp URL. When only
+such fields exist, `--fix` reports them and asks for an explicit choice.
+
 Each backfilled value is reported as a notice naming the rule that chose it,
 so a wrong pick is visible and correctable with `contentrain_model_save`. A
 `title_field` that is present but names the wrong field is reported and never
@@ -376,6 +390,17 @@ Use `publish_at` and `expire_at` for time-based content lifecycle:
   "expire_at": "2026-06-30T23:59:59Z"
 }
 ```
+
+The dates are a **delivery gate on top of `status`**, not a replacement for it.
+The CDN serves an entry when its status is `published` *and* `publish_at` has
+passed *and* `expire_at` has not. The record above is therefore still a draft:
+a `publish_at` in the past never flips `status`. Publishing stays a deliberate
+`contentrain_bulk update_status` call.
+
+Set the dates with `contentrain_content_save` — as `publish_at` / `expire_at`
+on the entry, next to `data`, never inside it. They live in meta only and are
+never written to the content file. Pass `null` to clear a date; omit the key to
+leave it unchanged.
 
 ::: warning
 `expire_at` must be after `publish_at`. The MCP validation tool will flag invalid date ranges.

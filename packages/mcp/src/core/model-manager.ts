@@ -494,12 +494,89 @@ const VALID_FIELD_TYPES = new Set<string>(FIELD_TYPE_ENUM)
 const MEDIA_FIELD_TYPES = new Set<string>(['image', 'video', 'file'])
 /** Bounds `items`/`fields` nesting; far above any real schema. */
 const MAX_SCHEMA_DEPTH = 10
+/** Field names are snake_case: a letter, then letters, digits and underscores. */
+const FIELD_NAME_PATTERN = /^[a-z][a-z0-9_]*$/
 
 export interface ModelDefinitionIssues {
   /** Block the write. */
   errors: string[]
   /** Surface to the caller; the write proceeds. */
   warnings: string[]
+}
+
+export interface ModelDefinitionOptions {
+  /**
+   * Field paths already declared by the model being updated — `title`,
+   * `seo.title`, `tags.items.label` — as {@link collectFieldPaths} spells them.
+   *
+   * A name in this set that is not snake_case is grandfathered. It was accepted
+   * before the rule existed, and refusing it now would make the whole model
+   * read-only through MCP: no edit could be saved, not even one that never
+   * touches the field. A one-line `title_field` correction on a model with one
+   * legacy `creativeWork` relation should not require renaming the field, its
+   * content keys in every locale, and every consuming component first.
+   *
+   * Only *new* fields must be snake_case. The legacy name is reported as a
+   * warning so the caller knows what was tolerated.
+   */
+  existingFieldPaths?: ReadonlySet<string>
+}
+
+/**
+ * Every field path a schema declares, nested paths dotted the way
+ * `validateModelDefinition` reports them: `seo.title` for an object's member,
+ * `tags.items.label` for a member of an array's item object.
+ */
+export function collectFieldPaths(fields: Record<string, unknown> | undefined, prefix = ''): Set<string> {
+  const out = new Set<string>()
+  if (!fields) return out
+  for (const [name, raw] of Object.entries(fields)) {
+    const path = `${prefix}${name}`
+    out.add(path)
+    const def = raw as RawFieldDef | null
+    if (typeof def !== 'object' || def === null) continue
+    if (typeof def.fields === 'object' && def.fields !== null) {
+      for (const nested of collectFieldPaths(def.fields as Record<string, unknown>, `${path}.`)) out.add(nested)
+    }
+    const items = def.items as RawFieldDef | string | undefined
+    if (typeof items === 'object' && items !== null && typeof items.fields === 'object' && items.fields !== null) {
+      for (const nested of collectFieldPaths(items.fields as Record<string, unknown>, `${path}.items.`)) out.add(nested)
+    }
+  }
+  return out
+}
+
+/**
+ * Declared field paths whose name predates the snake_case rule.
+ *
+ * The project validator reports these so an agent learns a model carries
+ * legacy names *before* it edits the model, rather than discovering them
+ * mid-operation. `model_save` tolerates them; see {@link ModelDefinitionOptions}.
+ */
+export function legacyFieldNames(fields: Record<string, unknown> | undefined): string[] {
+  return [...collectFieldPaths(fields)].filter(path => !FIELD_NAME_PATTERN.test(path.slice(path.lastIndexOf('.') + 1)))
+}
+
+/**
+ * A field's name is snake_case, or it is a legacy name the model already has.
+ * Anything else is an error. See {@link ModelDefinitionOptions.existingFieldPaths}.
+ */
+function checkFieldName(
+  path: string,
+  opts: ModelDefinitionOptions,
+  errors: string[],
+  warnings: string[],
+): void {
+  const name = path.slice(path.lastIndexOf('.') + 1)
+  if (FIELD_NAME_PATTERN.test(name)) return
+  if (opts.existingFieldPaths?.has(path)) {
+    warnings.push(
+      `Field "${path}": legacy name is not snake_case — kept because the model already has it. `
+      + 'New fields must be snake_case. Renaming it also means renaming its content keys in every locale.',
+    )
+    return
+  }
+  errors.push(`Field "${path}": invalid name — must be snake_case starting with letter`)
 }
 
 interface RawFieldDef {
@@ -535,6 +612,7 @@ function checkFieldDef(
   errors: string[],
   warnings: string[],
   depth: number,
+  opts: ModelDefinitionOptions,
 ): void {
   if (typeof raw !== 'object' || raw === null) {
     errors.push(`Field "${path}": must be an object`)
@@ -652,10 +730,8 @@ function checkFieldDef(
 
   if (def.fields !== undefined && typeof def.fields === 'object' && def.fields !== null) {
     for (const [nested, nestedDef] of Object.entries(def.fields as Record<string, unknown>)) {
-      if (!/^[a-z][a-z0-9_]*$/.test(nested)) {
-        errors.push(`Field "${path}.${nested}": invalid name — must be snake_case starting with letter`)
-      }
-      checkFieldDef(nestedDef, `${path}.${nested}`, modelKind, errors, warnings, depth + 1)
+      checkFieldName(`${path}.${nested}`, opts, errors, warnings)
+      checkFieldDef(nestedDef, `${path}.${nested}`, modelKind, errors, warnings, depth + 1, opts)
     }
   }
 
@@ -664,7 +740,7 @@ function checkFieldDef(
       errors.push(`Field "${path}.items": invalid type "${def.items}"`)
     }
   } else if (def.items !== undefined) {
-    checkFieldDef(def.items, `${path}.items`, modelKind, errors, warnings, depth + 1)
+    checkFieldDef(def.items, `${path}.items`, modelKind, errors, warnings, depth + 1, opts)
   }
 }
 
@@ -700,11 +776,26 @@ const TITLE_NAME_HINTS = ['title', 'name', 'label', 'heading'] as const
  * Preference among displayable types, short scalars first. A title is a label,
  * not a body: given both `question: string` and `answer: text`, the string wins.
  * Without this, "first required text field" resolves alphabetically and a FAQ
- * model gets titled by its answers.
+ * model gets titled by its answers. The three at the end only ever break a tie
+ * on the name-match rung — see {@link NOT_INFERRED_AS_TITLE}.
  */
 const TITLE_TYPE_PRIORITY: readonly FieldType[] = [
-  'string', 'slug', 'email', 'url', 'code', 'text', 'markdown', 'richtext',
+  'string', 'email', 'text', 'markdown', 'richtext', 'slug', 'url', 'code',
 ]
+
+/**
+ * Legal `title_field` types that inference never falls back to.
+ *
+ * An author may deliberately title a model by its slug, URL or code snippet, and
+ * `title_field` accepts that. *Guessed*, the same choice is the failure this
+ * contract exists to prevent: a settings singleton whose only displayable field
+ * is `whatsapp_url` was backfilled with it, and every Studio row read as a
+ * WhatsApp link. Studio's runtime resolver (`entry-title.ts`) skips the same
+ * three types on its fallback rung, so the writer here and the reader there
+ * agree on what a fallback title is — before, the CLI wrote exactly what Studio
+ * is written to avoid.
+ */
+const NOT_INFERRED_AS_TITLE: ReadonlySet<FieldType> = new Set<FieldType>(['slug', 'url', 'code'])
 
 export interface TitleFieldPick {
   field: string
@@ -737,6 +828,27 @@ function byTypeThenName(a: TitleCandidate, b: TitleCandidate): number {
 }
 
 /**
+ * Required first. A required field always renders; an optional one may be empty,
+ * and an entry titled by an empty field has no title. `authors` with an optional
+ * `title` (the job title) and a required `name` is titled by `name`.
+ */
+function byRequired(a: TitleCandidate, b: TitleCandidate): number {
+  return Number(b.required) - Number(a.required)
+}
+
+/**
+ * Fields a model may legally declare as its `title_field`.
+ *
+ * The picker's list, and the hint when {@link inferTitleField} declines to
+ * guess: "no field reads as a title" is more useful with the legal choices
+ * spelled out next to it.
+ */
+export function titleFieldOptions(kind: string, fields?: Record<string, unknown>): string[] {
+  if (kind === 'dictionary') return [DICTIONARY_TITLE_FIELD]
+  return titleCandidates(fields).map(c => c.field)
+}
+
+/**
  * How strongly a field name reads as a title. Exact matches outrank snake_case
  * token matches, so `name` beats `brand_name`, and `filename` matches nothing —
  * it tokenizes to `["filename"]`, not `["file", "name"]`.
@@ -761,9 +873,21 @@ function titleNameRank(field: string): number {
  * an unfiltered name match hands the title to a field called `name` that happens
  * to be typed `icon`, which is the exact bug this contract replaces.
  *
- * Returns `null` when no field can render as a title. That is a real answer, not a
- * failure — guessing `image` or `relation` here would re-create the bug, so the
- * validation error stands and a human picks.
+ * The rungs, in order — the same chain Studio's `resolveTitleFieldId` walks, with
+ * requiredness as the tiebreak on each:
+ *
+ *   1. a required name-like field (`title`, `name`, `label`, `heading`)
+ *   2. an optional name-like field
+ *   3. a required prose field (string, email, text, markdown, richtext)
+ *   4. any prose field
+ *
+ * A slug, URL or code field is never reached by inference — see
+ * {@link NOT_INFERRED_AS_TITLE} — except as a tiebreak among name-like fields,
+ * where the name has already made the case.
+ *
+ * Returns `null` when nothing qualifies. That is a real answer, not a failure —
+ * guessing `image`, `relation` or `whatsapp_url` here would re-create the bug,
+ * so the validation error stands and a human picks.
  */
 export function inferTitleField(kind: string, fields?: Record<string, unknown>): TitleFieldPick | null {
   // A dictionary has no fields to point at — its key is the title.
@@ -774,19 +898,26 @@ export function inferTitleField(kind: string, fields?: Record<string, unknown>):
 
   const named = candidates.filter(c => Number.isFinite(titleNameRank(c.field)))
   if (named.length > 0) {
-    const best = named.toSorted((a, b) => {
-      const byName = titleNameRank(a.field) - titleNameRank(b.field)
-      return byName !== 0 ? byName : byTypeThenName(a, b)
-    })[0]!
+    const best = named.toSorted((a, b) =>
+      byRequired(a, b)
+      || titleNameRank(a.field) - titleNameRank(b.field)
+      || byTypeThenName(a, b),
+    )[0]!
     return { field: best.field, rule: 'name-match' }
   }
 
-  const required = candidates.filter(c => c.required)
+  const prose = candidates.filter(c => !NOT_INFERRED_AS_TITLE.has(c.type))
+  const required = prose.filter(c => c.required)
   if (required.length > 0) {
     return { field: required.toSorted(byTypeThenName)[0]!.field, rule: 'required-displayable' }
   }
+  if (prose.length > 0) {
+    return { field: prose.toSorted(byTypeThenName)[0]!.field, rule: 'displayable' }
+  }
 
-  return { field: candidates.toSorted(byTypeThenName)[0]!.field, rule: 'displayable' }
+  // Only slug/url/code fields are left. Each is a legal title_field, but naming
+  // one is the author's decision — the caller reports the options instead.
+  return null
 }
 
 /**
@@ -846,6 +977,7 @@ export function validateModelDefinition(
   // unvalidated cast, so the runtime check has to see a value the type system
   // already believes is a string.
   input: { id: string; kind: string; title_field?: unknown; fields?: Record<string, unknown> },
+  opts: ModelDefinitionOptions = {},
 ): ModelDefinitionIssues {
   const errors: string[] = []
   const warnings: string[] = []
@@ -868,10 +1000,8 @@ export function validateModelDefinition(
 
   if (input.fields) {
     for (const [fieldName, fieldDef] of Object.entries(input.fields)) {
-      if (!/^[a-z][a-z0-9_]*$/.test(fieldName)) {
-        errors.push(`Field "${fieldName}": invalid name — must be snake_case starting with letter`)
-      }
-      checkFieldDef(fieldDef, fieldName, input.kind, errors, warnings, 0)
+      checkFieldName(fieldName, opts, errors, warnings)
+      checkFieldDef(fieldDef, fieldName, input.kind, errors, warnings, 0, opts)
     }
   }
 

@@ -132,7 +132,9 @@ Each entry in the `entries` array:
   "id": "optional-entry-id",
   "slug": "optional-slug",
   "locale": "en",
-  "data": { "field_name": "field_value" }
+  "data": { "field_name": "field_value" },
+  "publish_at": "2026-04-01T00:00:00Z",
+  "expire_at": "2026-06-30T23:59:59Z"
 }
 ```
 
@@ -144,6 +146,8 @@ Each entry in the `entries` array:
 | **Document** | `slug`, `locale`, `data` | `slug` is required. Include `"body"` in `data` for markdown content |
 | **Singleton** | `locale`, `data` | No `id` or `slug` needed |
 | **Dictionary** | `locale`, `data` | `data` is flat key-value: `{ "auth.login": "Log In" }` |
+
+**Scheduling** (`publish_at`, `expire_at`, optional, ISO 8601) sits next to `data`, never inside it. It is stored in meta only and **never changes `status`** — a past `publish_at` does not publish a draft; the dates gate delivery of an entry that is already `published`. Pass `null` to clear a date; omit the key to leave it unchanged. To publish, use `contentrain_bulk update_status`.
 
 **NEVER include system fields** (`status`, `source`, `updated_by`, `updated_at`, `createdAt`, `updatedAt`) in `data`.
 
@@ -313,7 +317,7 @@ Validate project content against model schemas.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `model` | string | No | Validate specific model only (omit for all) |
-| `fix` | boolean | No | Auto-fix structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout). Default: `false` |
+| `fix` | boolean | No | Auto-fix structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout, `publish_at`/`expire_at` copies an older `content_save` left in document frontmatter) and backfill a missing model `title_field`. Default: `false` |
 
 ### contentrain_submit
 
@@ -408,7 +412,9 @@ Run git-backed batch operations on existing content entries.
 | `model` | string | Yes | Target model ID |
 | `source_locale` | string | Conditional | For `copy_locale` |
 | `target_locale` | string | Conditional | For `copy_locale` |
-| `entry_ids` | string[] | Conditional | For `update_status` and `delete_entries` |
+| `entry_ids` | string[] | Conditional | For `update_status` on collections, and for `delete_entries` |
+| `slugs` | string[] | Conditional | For `update_status` on documents — documents are keyed by slug, not entry ID |
+| `locale` | string | No | Scope `update_status` to one locale (i18n models); default is every supported locale |
 | `status` | string | Conditional | For `update_status` |
 | `confirm` | boolean | Conditional | For `delete_entries` (must be `true`) |
 
@@ -417,7 +423,7 @@ Run git-backed batch operations on existing content entries.
 | Operation | Applicable Kinds | Required Params |
 |-----------|-----------------|-----------------|
 | `copy_locale` | collection, singleton, dictionary (i18n only) | `source_locale`, `target_locale` |
-| `update_status` | collection only | `entry_ids`, `status` |
+| `update_status` | collection (`entry_ids`), document (`slugs`), singleton and dictionary (neither) | `status`, plus the list that matches the kind |
 | `delete_entries` | collection only | `entry_ids`, `confirm: true` |
 
 #### Rules

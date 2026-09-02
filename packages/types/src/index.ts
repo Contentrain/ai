@@ -532,6 +532,11 @@ export interface ContentrainError {
  *
  * A check that fires on the wrong thing is not a strict check; it is a check
  * people learn to scroll past.
+ *
+ * Every pattern here carries a provider-specific shape — a fixed prefix, a
+ * credential-only URL form, a PEM header — and is trusted on its own. The one
+ * generic rule, `api_key = …`, has no such shape and lives in
+ * {@link API_KEY_ASSIGNMENT}, where what it captures is checked before it fires.
  */
 export const SECRET_PATTERNS: ReadonlyArray<RegExp> = [
   // Stripe-style keys: the prefix must start a word and carry a long body,
@@ -542,8 +547,6 @@ export const SECRET_PATTERNS: ReadonlyArray<RegExp> = [
   // A bearer token, not the word. Placeholders — <token>, $TOKEN, {{token}},
   // YOUR_TOKEN — are how documentation writes it, and are not secrets.
   /\bBearer\s+(?![<${{]|YOUR[_-]|your[_-]|xxx|XXX|\.{3})[A-Za-z0-9._~+/-]{20,}/,
-  // An API key being assigned a value, not the word in a sentence.
-  /\bapi[_-]?key\s*[:=]\s*['"`]?[A-Za-z0-9_-]{16,}/i,
   /\baws_secret[_a-z]*\s*[:=]\s*['"`]?[A-Za-z0-9/+=]{20,}/i,
   // AWS access key IDs have a fixed shape.
   /\bAKIA[0-9A-Z]{16}\b/,
@@ -577,10 +580,44 @@ export function validateLocale(locale: string, config: ContentrainConfig): strin
   return null
 }
 
+/**
+ * An API key being assigned a value: `api_key = <tail>`.
+ *
+ * Generic by nature — there is no provider prefix, so the word plus a separator
+ * is the only structural signal — and therefore the one rule that also has to
+ * look at what it captured before it fires; see {@link looksLikeCredential}.
+ * Without that, `api_key = your_project_api_key_here` in a setup guide was a
+ * blocking error, and once `contentrain validate` exited non-zero, a permanent
+ * CI failure for any project whose content discusses API keys — which, for a
+ * CMS, is ordinary content. Placeholders documentation uses (`<key>`, `$KEY`,
+ * `{{key}}`, `YOUR_KEY`, `xxx`, `…`) are excluded up front, as for `Bearer`.
+ */
+const API_KEY_ASSIGNMENT = /\bapi[_-]?key\s*[:=]\s*['"`]?(?![<${{]|YOUR[_-]|your[_-]|xxx|XXX|\.{3})([A-Za-z0-9_-]{16,})/gi
+
+/**
+ * Does a value assigned to an API-key setting look like a credential rather
+ * than prose about one?
+ *
+ * Two shapes are documentation, not secrets: a tail with no digit at all
+ * (`your_project_api_key_here`, `xxxxxxxxxxxxxxxxxxxx`), and a tail whose
+ * `_`/`-` separated tokens are each purely letters or purely digits
+ * (`my_api_key_2024`, `REPLACE-WITH-KEY-1`) — words with a version number. An
+ * issued key mixes letters and digits inside one token (`8f14e45fceea167a`,
+ * `AIzaSyD-9tSrke72PouQMnMX`), which no sentence does by accident.
+ */
+export function looksLikeCredential(tail: string): boolean {
+  if (!/\d/.test(tail)) return false
+  const tokens = tail.split(/[_-]+/).filter(Boolean)
+  if (tokens.length > 1 && tokens.every(t => /^[A-Za-z]+$/.test(t) || /^\d+$/.test(t))) return false
+  return true
+}
+
 /** Detect potential secrets in a value — returns validation errors if found */
 export function detectSecrets(value: unknown): ValidationError[] {
   if (typeof value !== 'string') return []
-  if (SECRET_PATTERNS.some(p => p.test(value))) {
+  const found = SECRET_PATTERNS.some(p => p.test(value))
+    || [...value.matchAll(API_KEY_ASSIGNMENT)].some(m => looksLikeCredential(m[1]!))
+  if (found) {
     return [{ severity: 'error', message: 'Potential secret detected in value' }]
   }
   return []

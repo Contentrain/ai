@@ -74,9 +74,26 @@ export function applyStatusChange(existing: EntryMeta, status: ContentStatus): E
   }
 }
 
+/**
+ * Scheduling a write may carry. Three states per key, and the difference is
+ * the whole contract: a string sets the date, `null` clears it, and an absent
+ * key leaves whatever is in meta alone — the same "omitted means not editing"
+ * rule a document's `body` follows.
+ *
+ * Scheduling is meta and only meta. It never reaches the content file, and it
+ * never changes `status`: a `publish_at` in the past does not publish a draft.
+ * Delivery treats the date as a gate on top of `status: published` — the CDN
+ * serves a published entry once `publish_at` has passed and until `expire_at`.
+ * Publishing stays a deliberate `contentrain_bulk update_status` call (#125).
+ */
+export interface EntrySchedule {
+  publish_at?: string | null
+  expire_at?: string | null
+}
+
 export function mergeEntryMeta(
   existing: EntryMeta | undefined,
-  data?: Record<string, unknown>,
+  schedule?: EntrySchedule,
 ): EntryMeta {
   const meta: EntryMeta = {
     ...existing,
@@ -85,9 +102,18 @@ export function mergeEntryMeta(
     updated_by: 'contentrain-mcp',
     updated_at: nowIso(),
   }
-  if (data?.['publish_at'] !== undefined) meta.publish_at = data['publish_at'] as string
-  if (data?.['expire_at'] !== undefined) meta.expire_at = data['expire_at'] as string
+  applySchedule(meta, 'publish_at', schedule?.publish_at)
+  applySchedule(meta, 'expire_at', schedule?.expire_at)
   return meta
+}
+
+function applySchedule(meta: EntryMeta, key: keyof EntrySchedule, value: string | null | undefined): void {
+  if (value === undefined) return
+  if (value === null) {
+    delete meta[key]
+    return
+  }
+  meta[key] = value
 }
 
 export async function writeMeta(

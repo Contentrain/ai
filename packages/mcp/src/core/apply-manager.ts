@@ -1,7 +1,7 @@
 import type { ModelDefinition, FieldDef, FileFramework } from '@contentrain/types'
 import { join, extname } from 'node:path'
 import { readText, writeText, pathExists } from '../util/fs.js'
-import { readModel, writeModel, listModels, validateModelDefinition, inferTitleField } from './model-manager.js'
+import { collectFieldPaths, readModel, writeModel, listModels, validateModelDefinition, inferTitleField } from './model-manager.js'
 import { writeContent, resolveContentDir, resolveJsonFilePath, resolveMdFilePath, type ContentEntry, type ContentFileModel, type ContentPathModel } from './content-manager.js'
 import { readConfig } from './config.js'
 import { writeContext } from './context.js'
@@ -406,13 +406,16 @@ export async function applyExtract(
       : inferTitleField(ext.kind, ext.fields as Record<string, unknown> | undefined)
     if (titlePick) titleFields[ext.model] = titlePick.field
 
-    // Validate model definition with same rules as model_save
+    const existing = existingIds.has(ext.model) ? await readModel(projectRoot, ext.model) : null
+
+    // Validate model definition with same rules as model_save — including the
+    // grandfathering of field names the existing model already carries.
     const modelErrors = validateModelDefinition({
       id: ext.model,
       kind: ext.kind,
       title_field: titlePick?.field,
       fields: ext.fields as Record<string, unknown> | undefined,
-    })
+    }, { existingFieldPaths: collectFieldPaths(existing?.fields) })
     if (modelErrors.errors.length > 0) {
       validationErrors.push(...modelErrors.errors.map(e => `[${ext.model}] ${e}`))
     }
@@ -421,13 +424,10 @@ export async function applyExtract(
     // the merge branch below. Refuse rather than backfill: `contentrain_validate
     // fix:true` is the one migration path, and normalize should not quietly
     // rewrite a schema it did not author.
-    if (existingIds.has(ext.model)) {
-      const existing = await readModel(projectRoot, ext.model)
-      if (existing && !existing.title_field) {
-        validationErrors.push(
-          `[${ext.model}] Model is missing "title_field". Run contentrain_validate with fix:true before extracting into it.`,
-        )
-      }
+    if (existing && !existing.title_field) {
+      validationErrors.push(
+        `[${ext.model}] Model is missing "title_field". Run contentrain_validate with fix:true before extracting into it.`,
+      )
     }
 
     for (const entry of ext.entries) {

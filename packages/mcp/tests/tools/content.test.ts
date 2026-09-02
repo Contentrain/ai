@@ -578,6 +578,76 @@ describe('contentrain_content_list', () => {
   })
 })
 
+/**
+ * #125 — `publish_at` on a document: it did not publish (by design — it gates
+ * delivery of a *published* entry), but it also leaked into the frontmatter and
+ * could never be removed, because documents merge frontmatter on save. The tool
+ * now keeps it in meta, says what it did and did not do, and clears on `null`.
+ */
+describe('contentrain_content_save scheduling on a document', () => {
+  const FIELDS = { title: { type: 'string', required: true }, slug: { type: 'slug', required: true } }
+  const docPath = () => join(testDir, '.contentrain', 'content', 'blog', 'guide-sections', 'instagram-9', 'tr.md')
+  const metaPath = () => join(testDir, '.contentrain', 'meta', 'guide-sections', 'instagram-9', 'tr.json')
+
+  async function save(entry: Record<string, unknown>): Promise<Record<string, unknown>> {
+    client = await createTestClient(testDir)
+    const result = await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: { model: 'guide-sections', entries: [{ slug: 'instagram-9', locale: 'tr', ...entry }] },
+    })
+    return parseResult(result)
+  }
+
+  it('records a past publish_at in meta only, leaves the draft a draft, and says so', async () => {
+    client = await createModel(client, 'guide-sections', 'document', 'blog', FIELDS)
+
+    const data = await save({
+      data: { title: 'Instagram 9', slug: 'instagram-9', body: '# Instagram' },
+      publish_at: '2026-08-01T00:00:00.000Z',
+    })
+
+    expect(data['status']).toBe('committed')
+    expect(String(data['scheduling_note'])).toContain('status is unchanged')
+    expect((data['next_steps'] as string[]).some(s => s.includes('contentrain_bulk update_status'))).toBe(true)
+
+    const raw = await readText(docPath())
+    expect(raw).not.toContain('publish_at')
+    expect(raw).toContain('title: Instagram 9')
+    const meta = await readJson<Record<string, unknown>>(metaPath())
+    expect(meta!['publish_at']).toBe('2026-08-01T00:00:00.000Z')
+    expect(meta!['status']).toBe('draft')
+  })
+
+  it('keeps the date when a later save omits it, and clears it on null', async () => {
+    client = await createModel(client, 'guide-sections', 'document', 'blog', FIELDS)
+    await save({ data: { title: 'Instagram 9', slug: 'instagram-9', body: '# Instagram' }, publish_at: '2026-08-01T00:00:00.000Z' })
+
+    const untouched = await save({ data: { title: 'Instagram 9 (edited)' } })
+    expect(untouched['scheduling_note']).toBeUndefined()
+    expect((await readJson<Record<string, unknown>>(metaPath()))!['publish_at']).toBe('2026-08-01T00:00:00.000Z')
+
+    const cleared = await save({ data: { title: 'Instagram 9 (edited)' }, publish_at: null })
+    expect(cleared['status']).toBe('committed')
+    expect(await readJson<Record<string, unknown>>(metaPath())).not.toHaveProperty('publish_at')
+    // The body survived both edits — neither mentioned it.
+    expect(await readText(docPath())).toContain('# Instagram')
+  })
+
+  it('still rejects an unparseable date and an expiry before the publish date', async () => {
+    client = await createModel(client, 'guide-sections', 'document', 'blog', FIELDS)
+
+    const bad = await save({ data: { title: 'x', slug: 'instagram-9', body: 'b' }, publish_at: 'next tuesday' })
+    expect(bad['error']).toContain('Invalid publish_at date')
+
+    const inverted = await save({
+      data: { title: 'x', slug: 'instagram-9', body: 'b' },
+      publish_at: '2026-09-01T00:00:00.000Z',
+      expire_at: '2026-08-01T00:00:00.000Z',
+    })
+    expect(inverted['error']).toContain('must be after publish_at')
+  })
+})
+
 describe('contentrain_content_save advisories', () => {
   it('returns advisory when dictionary value already exists under different key', async () => {
     client = await createModel(client, 'ui-strings', 'dictionary', 'system')
