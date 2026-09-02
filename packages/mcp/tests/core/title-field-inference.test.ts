@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { inferTitleField } from '../../src/core/model-manager.js'
+import { inferTitleField, titleFieldOptions } from '../../src/core/model-manager.js'
 
 type Fields = Record<string, Record<string, unknown>>
 
@@ -73,13 +73,23 @@ describe('inferTitleField', () => {
       expect(inferTitleField('collection', faq)).toEqual({ field: 'question', rule: 'required-displayable' })
     })
 
-    it('orders string > slug > text > markdown > richtext', () => {
+    it('orders string > text > markdown > richtext', () => {
       expect(inferTitleField('collection', { a: f('richtext'), b: f('string') } as Fields))
         .toEqual({ field: 'b', rule: 'displayable' })
-      expect(inferTitleField('collection', { a: f('markdown'), b: f('slug') } as Fields))
+      expect(inferTitleField('collection', { a: f('markdown'), b: f('text') } as Fields))
         .toEqual({ field: 'b', rule: 'displayable' })
+    })
+
+    // A slug is an identifier and a URL is an address; neither is a label. Studio's
+    // own fallback skips both, and the writer here has to agree with the reader
+    // there — before, the CLI backfilled exactly what Studio is written to avoid.
+    it('never falls back to a slug, url or code field', () => {
       expect(inferTitleField('collection', { a: f('text'), b: f('slug') } as Fields))
-        .toEqual({ field: 'b', rule: 'displayable' })
+        .toEqual({ field: 'a', rule: 'displayable' })
+      expect(inferTitleField('collection', { a: f('markdown'), b: f('url') } as Fields))
+        .toEqual({ field: 'a', rule: 'displayable' })
+      expect(inferTitleField('collection', { a: f('richtext'), b: f('code', true) } as Fields))
+        .toEqual({ field: 'a', rule: 'displayable' })
     })
 
     it('falls back to name order for equal types', () => {
@@ -92,6 +102,71 @@ describe('inferTitleField', () => {
     it('prefers a required field even when an optional one has a better type', () => {
       const fields: Fields = { slug_ref: f('slug'), summary: f('text', true) }
       expect(inferTitleField('collection', fields)).toEqual({ field: 'summary', rule: 'required-displayable' })
+    })
+
+    // #120: name-likeness used to outrank requiredness. `authors` has an optional
+    // `title` (the job title, "CEO, Popile") and a required `name` (the person);
+    // `title` won because it comes first in the hint list, and an author with an
+    // empty job title rendered with no title even though `name` was populated.
+    it('prefers a required name-like field over an optional one', () => {
+      const authors: Fields = {
+        title: f('string'),
+        name: f('string', true),
+        slug: f('slug', true),
+      }
+      expect(inferTitleField('collection', authors)).toEqual({ field: 'name', rule: 'name-match' })
+    })
+
+    it('falls back to hint order when every name-like field is equally required', () => {
+      expect(inferTitleField('collection', { name: f('string', true), title: f('string', true) } as Fields))
+        .toEqual({ field: 'title', rule: 'name-match' })
+      expect(inferTitleField('collection', { name: f('string'), title: f('string') } as Fields))
+        .toEqual({ field: 'title', rule: 'name-match' })
+    })
+
+    it('does not let an optional name-like field lose to a required prose field', () => {
+      // Name-likeness still outranks a non-name field: the hint list is rung 1–2,
+      // the required prose rung is 3. Requiredness only breaks ties within a rung.
+      expect(inferTitleField('collection', { title: f('string'), summary: f('text', true) } as Fields))
+        .toEqual({ field: 'title', rule: 'name-match' })
+    })
+  })
+
+  // #120: `site-settings` had no name-like field and its only displayable one was
+  // `whatsapp_url`. The backfill took it, and every Studio row read as a WhatsApp
+  // link. A URL is a legal title_field when an author names it — never when guessed.
+  describe('slug, url and code are never inferred', () => {
+    it('declines a model whose only displayable fields are slug/url/code', () => {
+      const siteSettings: Fields = {
+        header_categories: f('relations'),
+        footer_columns: f('array'),
+        whatsapp_url: f('url'),
+      }
+      expect(inferTitleField('singleton', siteSettings)).toBeNull()
+      expect(inferTitleField('collection', { permalink: f('slug', true), snippet: f('code') } as Fields)).toBeNull()
+    })
+
+    it('still lets a name-like slug or url win on its name', () => {
+      // `page_title: url` is odd, but the author called it a title; the name has
+      // made the case, and the type only breaks ties on that rung.
+      expect(inferTitleField('collection', { page_title: f('url'), body: f('text') } as Fields))
+        .toEqual({ field: 'page_title', rule: 'name-match' })
+    })
+  })
+
+  describe('titleFieldOptions', () => {
+    it('lists every field a model may legally declare, including the ones inference skips', () => {
+      const fields: Fields = { cover: f('image'), whatsapp_url: f('url'), title: f('string'), rank: f('number') }
+      expect(titleFieldOptions('singleton', fields)).toEqual(['whatsapp_url', 'title'])
+    })
+
+    it('resolves a dictionary to the reserved key sentinel', () => {
+      expect(titleFieldOptions('dictionary')).toEqual(['key'])
+    })
+
+    it('is empty when nothing could be a title', () => {
+      expect(titleFieldOptions('collection', { cover: f('image') } as Fields)).toEqual([])
+      expect(titleFieldOptions('collection')).toEqual([])
     })
   })
 

@@ -45,6 +45,13 @@ Auto-fix candidates:
 - stray non-i18n meta layout (an `i18n: false` model with per-locale meta files
   left by older versions) — pruned or migrated deterministically, never merging
   or downgrading a status
+- `publish_at`/`expire_at` copies an older `content_save` left in document
+  frontmatter — stripped only when the meta record holds the same key, so the
+  value is never lost and an author's own frontmatter field is never touched
+- a missing model `title_field` — backfilled by the same ranking Studio's title
+  resolver uses (required name-like field first; slug/url/code never inferred),
+  reported as a notice naming the rule. Read it: if the pick is wrong, correct it
+  with `contentrain_model_save`
 - structural housekeeping reported by the validator
 
 Manual fix candidates:

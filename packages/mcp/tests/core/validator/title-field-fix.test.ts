@@ -145,6 +145,60 @@ describe('validateProject — title_field', () => {
       expect(titleIssues(result.issues)[0]!.message).toContain('is not defined in fields')
     })
 
+    // #120: name-likeness used to outrank requiredness, so `authors` — optional
+    // `title` holding the job title, required `name` holding the person — was
+    // backfilled with `title`, and the very next `validate` warned about the
+    // optional pick it had just made.
+    it('prefers a required name-like field over an optional one', async () => {
+      await seed({
+        id: 'authors',
+        name: 'Authors',
+        kind: 'collection',
+        domain: 'blog',
+        i18n: false,
+        fields: {
+          title: { type: 'string' },
+          name: { type: 'string', required: true, max: 80 },
+          slug: { type: 'slug', required: true, unique: true },
+        },
+      })
+
+      const result = await validateProject(testDir, { fix: true })
+
+      expect(result.fixed).toBe(1)
+      expect((await readModelRaw('authors'))['title_field']).toBe('name')
+      // What --fix writes must not be what validate then warns about.
+      const after = await validateProject(testDir, {})
+      expect(titleIssues(after.issues)).toEqual([])
+    })
+
+    // #120: a singleton whose only displayable field was `whatsapp_url` was
+    // backfilled with it, so every Studio row read as a WhatsApp link. A URL is
+    // a legal title_field when an author names it — never when guessed.
+    it('does not backfill a url field, and names the legal choices instead', async () => {
+      await seed({
+        id: 'site-settings',
+        name: 'Site Settings',
+        kind: 'singleton',
+        domain: 'blog',
+        i18n: false,
+        fields: {
+          header_categories: { type: 'relations', model: 'categories' },
+          footer_columns: { type: 'array' },
+          whatsapp_url: { type: 'url' },
+        },
+      })
+
+      const result = await validateProject(testDir, { fix: true })
+
+      expect(result.fixed).toBe(0)
+      const issues = titleIssues(result.issues)
+      expect(issues[0]!.severity).toBe('error')
+      expect(issues[0]!.message).toContain('"whatsapp_url"')
+      expect(issues[0]!.message).toContain('contentrain_model_save')
+      expect(await readModelRaw('site-settings')).not.toHaveProperty('title_field')
+    })
+
     // Guessing `cover` here would re-create the bug the property exists to fix.
     it('reports rather than guesses when no field can be a title', async () => {
       await seed({

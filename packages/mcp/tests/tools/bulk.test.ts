@@ -212,6 +212,104 @@ describe('contentrain_bulk update_status', () => {
   })
 })
 
+/**
+ * #124 — documents keep one meta file per slug, so update_status refused them
+ * outright, and there was no other MCP or CLI path to publish a document. The
+ * report: three `tr` drafts vanished from a live guide page the moment a
+ * publish gate went in, with hand-editing `.contentrain/meta/` the only way back.
+ */
+describe('contentrain_bulk update_status on document models', () => {
+  const FIELDS = { title: { type: 'string', required: true }, slug: { type: 'slug', required: true } }
+  const SLUGS = ['instagram-9', 'instagram-10', 'instagram-11']
+
+  async function seedDocuments(slugs: string[]): Promise<void> {
+    client = await createModel(client, 'guide-sections', 'document', 'marketing', { fields: FIELDS })
+    await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'guide-sections',
+        entries: slugs.flatMap(slug => [
+          { slug, locale: 'en', data: { title: slug, slug, body: `# ${slug}` } },
+          { slug, locale: 'tr', data: { title: slug, slug, body: `# ${slug}` } },
+        ]),
+      },
+    })
+  }
+
+  function documentMeta(slug: string, locale: string): Promise<EntryMeta | null> {
+    return readJson<EntryMeta>(join(testDir, '.contentrain', 'meta', 'guide-sections', slug, `${locale}.json`))
+  }
+
+  it('publishes the named slugs in one locale and leaves the other locale alone', async () => {
+    await seedDocuments(SLUGS)
+
+    const result = await client.callTool({
+      name: 'contentrain_bulk',
+      arguments: { operation: 'update_status', model: 'guide-sections', slugs: SLUGS, locale: 'tr', status: 'published' },
+    })
+
+    const data = parseResult(result)
+    expect(data['status']).toBe('committed')
+    expect(data['updated']).toBe(3)
+    expect(data['updated_by_locale']).toEqual({ tr: SLUGS })
+    expect(data['not_found']).toBeUndefined()
+    for (const slug of SLUGS) {
+      expect((await documentMeta(slug, 'tr'))!.status, `${slug} tr`).toBe('published')
+      expect((await documentMeta(slug, 'en'))!.status, `${slug} en`).toBe('draft')
+    }
+  })
+
+  it('reports slugs without meta instead of counting them as updated', async () => {
+    await seedDocuments(['instagram-9'])
+
+    const result = await client.callTool({
+      name: 'contentrain_bulk',
+      arguments: { operation: 'update_status', model: 'guide-sections', slugs: ['instagram-9', 'missing-slug'], status: 'published' },
+    })
+
+    const data = parseResult(result)
+    expect(data['status']).toBe('committed')
+    // Both locales of the one real slug — the count comes from disk, not input.
+    expect(data['updated']).toBe(2)
+    expect(data['not_found']).toEqual(['missing-slug'])
+  })
+
+  describe('argument guards', () => {
+    it('rejects entry_ids for a document and points at slugs', async () => {
+      client = await createModel(client, 'guide-sections', 'document', 'marketing', { fields: FIELDS })
+
+      const result = await client.callTool({
+        name: 'contentrain_bulk',
+        arguments: { operation: 'update_status', model: 'guide-sections', entry_ids: ['instagram-9'], status: 'published' },
+      })
+
+      expect(parseResult(result)['error']).toContain('Pass slugs instead of entry_ids')
+    })
+
+    it('requires slugs for a document', async () => {
+      client = await createModel(client, 'guide-sections', 'document', 'marketing', { fields: FIELDS })
+
+      const result = await client.callTool({
+        name: 'contentrain_bulk',
+        arguments: { operation: 'update_status', model: 'guide-sections', status: 'published' },
+      })
+
+      expect(parseResult(result)['error']).toContain('requires slugs')
+    })
+
+    it('rejects slugs for a collection', async () => {
+      client = await createModel(client, 'guides', 'collection', 'marketing', { fields: { title: { type: 'string', required: true } } })
+
+      const result = await client.callTool({
+        name: 'contentrain_bulk',
+        arguments: { operation: 'update_status', model: 'guides', slugs: ['a-slug'], status: 'published' },
+      })
+
+      expect(parseResult(result)['error']).toContain('slugs only apply to document models')
+    })
+  })
+})
+
 describe('contentrain_bulk copy_locale', () => {
   // Twin of the update_status race: the meta for every copied entry went through
   // its own concurrent read-modify-write of one shared file.

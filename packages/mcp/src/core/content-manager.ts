@@ -73,6 +73,14 @@ export interface ContentEntry {
   slug?: string
   locale?: string
   data: Record<string, unknown>
+  /**
+   * Scheduled publish date, ISO 8601. Meta only — never written to the content
+   * file — and it never changes `status`. A string sets it, `null` clears it,
+   * an absent key leaves it untouched. See `EntrySchedule` in meta-manager.
+   */
+  publish_at?: string | null
+  /** Scheduled expiry, ISO 8601, with the same set/clear/leave semantics. */
+  expire_at?: string | null
 }
 
 export interface WriteResult {
@@ -136,7 +144,7 @@ export async function writeContent(
         const filePath = resolveJsonFilePath(resolveContentDir(projectRoot, model), model, locale)
         await writeJson(filePath, entry.data)
         const prevMeta = await readMeta(projectRoot, model, { locale, defaultLocale }) as EntryMeta | null
-        await writeMeta(projectRoot, model, { locale, defaultLocale }, mergeEntryMeta(prevMeta ?? undefined, entry.data))
+        await writeMeta(projectRoot, model, { locale, defaultLocale }, mergeEntryMeta(prevMeta ?? undefined, entry))
         results.push({ action: 'updated', locale })
         break
       }
@@ -158,7 +166,7 @@ export async function writeContent(
 
         await writeJson(filePath, sorted)
         const prevMetaMap = await readMeta(projectRoot, model, { locale, defaultLocale }) as Record<string, EntryMeta> | null
-        await writeMeta(projectRoot, model, { locale, entryId: id, defaultLocale }, mergeEntryMeta(prevMetaMap?.[id], entry.data))
+        await writeMeta(projectRoot, model, { locale, entryId: id, defaultLocale }, mergeEntryMeta(prevMetaMap?.[id], entry))
         results.push({ action, id, locale })
         break
       }
@@ -190,7 +198,7 @@ export async function writeContent(
         const mdContent = serializeMarkdownFrontmatter(fmData, bodyContent)
         await writeText(docPath, mdContent)
         const prevMeta = await readMeta(projectRoot, model, { locale, slug, defaultLocale }) as EntryMeta | null
-        await writeMeta(projectRoot, model, { locale, slug, defaultLocale }, mergeEntryMeta(prevMeta ?? undefined, entry.data))
+        await writeMeta(projectRoot, model, { locale, slug, defaultLocale }, mergeEntryMeta(prevMeta ?? undefined, entry))
         results.push({ action, slug, locale })
         break
       }
@@ -247,7 +255,7 @@ export async function writeContent(
         const merged = { ...existing, ...entry.data as Record<string, string> }
         await writeJson(filePath, merged)
         const prevMeta = await readMeta(projectRoot, model, { locale, defaultLocale }) as EntryMeta | null
-        await writeMeta(projectRoot, model, { locale, defaultLocale }, mergeEntryMeta(prevMeta ?? undefined, entry.data))
+        await writeMeta(projectRoot, model, { locale, defaultLocale }, mergeEntryMeta(prevMeta ?? undefined, entry))
         results.push({ action: 'updated', locale, ...(advisories.length > 0 ? { advisories } : {}) })
         break
       }

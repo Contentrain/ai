@@ -173,16 +173,29 @@ delivery: a collection entry is served only when its status is `published`.
 - **`contentrain_content_save` never changes status.** Editing a field is not a
   publish decision — an existing entry keeps its `status`, `approved_by`, and
   `version`. Only a brand-new entry starts at `draft`.
-- **`contentrain_bulk update_status` is the only way to publish.** Pass
-  `entry_ids` for collections; omit them for singletons and dictionaries, which
-  have one meta record per locale. Pass `locale` to scope the change, or every
-  supported locale is rewritten.
+- **`contentrain_bulk update_status` is the only way to publish.** Each meta
+  layout has its own address: pass `entry_ids` for collections, `slugs` for
+  documents (their meta is one file per slug, the same identity
+  `contentrain_content_save` uses), and neither for singletons and dictionaries,
+  which have one meta record per locale. Pass `locale` to scope the change, or
+  every supported locale is rewritten.
 - **`contentrain_validate` flags publish-state drift** — drafts sitting beside
   published entries in one collection — as a notice. It never auto-fixes it:
   publishing is a content decision, and MCP does not make those.
-- **Scheduled publishing lives in meta too.** `contentrain_content_save` accepts
-  optional `publish_at` / `expire_at` (ISO 8601) per entry; `expire_at` must be
-  after `publish_at`.
+- **Scheduled publishing lives in meta too — and only there.**
+  `contentrain_content_save` accepts optional `publish_at` / `expire_at`
+  (ISO 8601) per entry, alongside `data`, never inside it; `expire_at` must be
+  after `publish_at`. Three things to know:
+  - They **never change `status`**. A `publish_at` in the past does not publish
+    a draft. The dates gate *delivery* of a published entry: the CDN serves it
+    once `publish_at` has passed and until `expire_at`. The save response says
+    so whenever a date was set.
+  - They are **never written to the content file** — not into document
+    frontmatter, not into collection JSON. Earlier versions did both; `validate`
+    warns about such leftover frontmatter keys when meta holds the same value,
+    and `fix: true` strips them.
+  - **`null` clears** a date; omitting the key leaves it unchanged — the same
+    rule a document's `body` follows.
 
 ::: tip Non-i18n models
 A model with `i18n: false` keeps all content in one `data.json`, so it has

@@ -67,10 +67,10 @@ export function registerWorkflowTools(
   // ─── contentrain_validate ───
   server.tool(
     'contentrain_validate',
-    'Validate project content against model schemas. Detects required field violations, type mismatches, broken relations, secret leaks, i18n parity issues, and more. If fix:true, auto-fixes structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout) and backfills a missing model title_field — do NOT manually edit .contentrain/ files.',
+    'Validate project content against model schemas. Detects required field violations, type mismatches, broken relations, secret leaks, i18n parity issues, and more. If fix:true, auto-fixes structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout, scheduling keys an older content_save leaked into document frontmatter) and backfills a missing model title_field — do NOT manually edit .contentrain/ files.',
     {
       model: z.string().optional().describe('Model ID to validate (omit for all models)'),
-      fix: z.boolean().optional().describe('Auto-fix structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout) and backfill a missing model title_field. Each backfilled title_field is reported as a notice naming the rule that chose it. Default: false'),
+      fix: z.boolean().optional().describe('Auto-fix structural issues (canonical sort, orphan meta, missing locale files, stray non-i18n meta layout, publish_at/expire_at copies an older content_save left in document frontmatter when meta holds the same key) and backfill a missing model title_field. Each backfilled title_field is reported as a notice naming the rule that chose it. Default: false'),
     },
     TOOL_ANNOTATIONS['contentrain_validate']!,
     async (input) => {

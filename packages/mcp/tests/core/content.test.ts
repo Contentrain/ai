@@ -492,8 +492,9 @@ describe('writeContent', () => {
         updated_by: 'a@example.com',
       })
 
+      // On the entry, not inside data — data is the content file (#125).
       await writeContent(testDir, singletonModel, [
-        { locale: 'en', data: { title: 'Edited', publish_at: '2026-01-01T00:00:00Z' } },
+        { locale: 'en', data: { title: 'Edited' }, publish_at: '2026-01-01T00:00:00Z' },
       ], config)
 
       const meta = await readJson<Record<string, unknown>>(metaFile('hero', 'en.json'))

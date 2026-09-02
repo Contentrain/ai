@@ -5,7 +5,7 @@ import type { ToolProvider } from '../server.js'
 import { readConfig } from '../core/config.js'
 
 import { resolveContentDir, resolveJsonFilePath, resolveMdFilePath } from '../core/content-manager.js'
-import { checkReferences, readModel, validateModelDefinition, fieldDefZodSchema } from '../core/model-manager.js'
+import { checkReferences, collectFieldPaths, readModel, validateModelDefinition, fieldDefZodSchema } from '../core/model-manager.js'
 import { planModelDelete, planModelSave } from '../core/ops/index.js'
 import { buildBranchName } from '../git/transaction.js'
 import { normalizeOperationError } from '../git/errors.js'
@@ -46,7 +46,13 @@ export function registerModelTools(
         }
       }
 
-      const { errors, warnings: schemaWarnings } = validateModel(input)
+      // Read the existing model first: a field name the model already has is
+      // grandfathered past the snake_case rule, so a legacy `creativeWork` does
+      // not make every later edit to its model impossible (#116).
+      const existing = await readModel(provider, input.id)
+      const { errors, warnings: schemaWarnings } = validateModel(input, {
+        existingFieldPaths: collectFieldPaths(existing?.fields),
+      })
       if (errors.length > 0) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Validation failed', details: errors }) }],

@@ -305,8 +305,8 @@ export function registerContextTools(
             updated_by: 'Author identifier string',
             approved_by: 'Optional: approver identifier',
             version: 'Optional: version string',
-            publish_at: 'Optional: ISO 8601 date for scheduled publishing',
-            expire_at: 'Optional: ISO 8601 date for scheduled expiry (must be after publish_at)',
+            publish_at: 'Optional: ISO 8601 date for scheduled publishing. A delivery gate on top of status "published" — it never changes status, so a draft with a past publish_at stays a draft. Meta only; never written to the content file.',
+            expire_at: 'Optional: ISO 8601 date for scheduled expiry (must be after publish_at). Same gate semantics as publish_at.',
           },
         },
         locale_strategies: {

@@ -166,25 +166,26 @@ Each entry in the `entries` array has this shape:
 
 | Tool | Purpose | Parameters |
 |------|---------|------------|
-| `contentrain_bulk` | Run git-backed batch operations on existing content entries | `operation`, `model`, `source_locale?`, `target_locale?`, `entry_ids?`, `status?`, `confirm?` |
+| `contentrain_bulk` | Run git-backed batch operations on existing content entries | `operation`, `model`, `source_locale?`, `target_locale?`, `entry_ids?`, `slugs?`, `locale?`, `status?`, `confirm?` |
 
 #### contentrain_bulk operations
 
 - `copy_locale`: copy one locale to another for an i18n-enabled `collection`, `singleton`, or `dictionary` model. Requires `source_locale` and `target_locale`.
-- `update_status`: update entry metadata status for a `collection` model. Requires `entry_ids` and `status`.
+- `update_status`: update entry metadata status. Requires `status`, plus the list that matches the model's meta layout: `entry_ids` for a `collection`, `slugs` for a `document`, and neither for a `singleton` or `dictionary` (one meta record per locale). Pass `locale` to scope the change; otherwise every supported locale is rewritten.
 - `delete_entries`: delete multiple entries from a `collection` model. Requires `entry_ids` and `confirm: true`.
 
 #### contentrain_bulk rules
 
 - ALWAYS verify the target model with `contentrain_describe` or `contentrain_status` before running a bulk operation.
 - `copy_locale` MUST NOT be used on non-i18n models.
-- `update_status` and `delete_entries` are collection-only operations.
+- `update_status` is the only way to change publish state. `publish_at` on `contentrain_content_save` does not publish — it gates delivery of an entry that is already `published`.
+- `delete_entries` is a collection-only operation.
 - Bulk operations create branches and commits like other write tools; validate afterward when content shape may have changed.
 
 #### contentrain_validate parameters
 
 - `model`: validate a specific model only (omit for all models).
-- `fix`: auto-fix structural issues like canonical sort, orphan meta, missing locale files, and stray non-i18n meta layout (default: false). Stray-meta cleanup is deterministic: it prunes extras when the default-locale meta is authoritative, or migrates a lone stray to the default path — it never merges or downgrades a status.
+- `fix`: auto-fix structural issues like canonical sort, orphan meta, missing locale files, stray non-i18n meta layout, and `publish_at`/`expire_at` copies an older `content_save` left in document frontmatter (stripped only when meta holds the same key), and backfill a missing model `title_field` (default: false). Stray-meta cleanup is deterministic: it prunes extras when the default-locale meta is authoritative, or migrates a lone stray to the default path — it never merges or downgrades a status.
 
 #### contentrain_submit parameters
 

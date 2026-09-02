@@ -65,7 +65,7 @@ Default rules:
 Follow these rules:
 
 - model IDs must be kebab-case
-- field names must be snake_case
+- field names must be snake_case — for *new* fields. A field an existing model already has under a legacy name (`creativeWork`) is kept by `contentrain_model_save` and reported in `schema_warnings`; never rename it just to satisfy the rule, since the rename must reach its content keys in every locale and every consumer too
 - relation fields must define a target `model`
 - prefer small, explicit schemas over large generic `object` blobs
 - only mark fields as `required` when the content truly cannot function without them

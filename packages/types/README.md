@@ -117,7 +117,7 @@ Validate functions (pure, dependency-free):
 - `validateSlug(slug)` — kebab-case slug validation
 - `validateEntryId(id)` — entry ID format validation
 - `validateLocale(locale, config)` — locale format + config support check
-- `detectSecrets(value)` — detect potential secrets in field values
+- `detectSecrets(value)` — detect potential secrets in field values (provider-shaped patterns, plus an `api_key = …` assignment whose tail passes `looksLikeCredential`)
 - `validateFieldValue(value, fieldDef)` — full field schema validation (type, required, min/max, pattern, select)
 
 Serialize functions (pure, dependency-free):
@@ -137,7 +137,7 @@ Constants:
 - `ENTRY_ID_PATTERN` — regex for valid entry IDs
 - `LOCALE_PATTERN` — regex for valid locale codes
 - `CANONICAL_JSON` — serialization rules (indent, encoding, trailing newline, key sort)
-- `SECRET_PATTERNS` — regex patterns for secret detection
+- `SECRET_PATTERNS` — provider-shaped regex patterns for secret detection (the generic `api_key` rule lives in `detectSecrets`, gated by `looksLikeCredential`)
 
 ## Stability
 
@@ -246,6 +246,7 @@ Studio (Nuxt 4, web) cannot import `@contentrain/mcp` directly because MCP depen
 | `serializeMarkdownFrontmatter(data, body)` | Document editor serialization |
 | `generateEntryId()` | Client-side entry ID generation |
 | `SECRET_PATTERNS` | Extend or customize secret detection |
+| `looksLikeCredential(tail)` | Decide whether a value assigned to an API-key setting is a credential or documentation |
 
 ### What stays in MCP (not available to Studio directly)
 
