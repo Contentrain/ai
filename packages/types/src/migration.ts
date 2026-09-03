@@ -542,11 +542,37 @@ export const CHROME_BODY_SLOT = '<!--@@body@@-->'
  * `CHROME_BODY_SLOT` where content goes (preferred — nesting-safe); the legacy
  * `before_body`/`after_body` pair is composed into a single body with the slot
  * between them (only correct when the content container is top-level).
+ *
+ * `header` and `footer` lift a region OUT of the body chrome into its own Astro
+ * component, rendered as a sibling of the body fragment. They are for the two
+ * regions a site actually shares — the masthead and the colophon — and they buy
+ * two things one blob cannot: families that carry the same header emit ONE
+ * component instead of N copies of the markup, and the nav lives at a single
+ * address, which is where a jQuery-free menu replaces the theme's.
+ *
+ * The producer emits them ONLY after verifying both properties:
+ *
+ * 1. **Balanced.** The fragment closes every element it opens. Splitting chrome
+ *    at an arbitrary point produces halves the parser silently repairs — the
+ *    failure that cost a page 36 against 100 and the reason `body` exists.
+ * 2. **Outside the content path.** The region sits wholly before (header) or
+ *    after (footer) `CHROME_BODY_SLOT` and is not an ancestor of it. A region
+ *    that wraps the content cannot be lifted; it belongs in `body`.
+ *
+ * When either is in doubt, keep everything in one `body` chunk: a single blob
+ * is always correct, and this split is an optimisation on top of it.
  */
 export interface ChromeChunk {
   id: string
-  position: 'head' | 'body' | 'before_body' | 'after_body'
+  position: 'head' | 'body' | 'before_body' | 'after_body' | 'header' | 'footer'
   html: string
+  /**
+   * Shared component name for a `header`/`footer` chunk — `SiteHeader`,
+   * `BlogFooter`. Chunks that carry the same name AND the same html collapse
+   * into one emitted component; same name with different html gets a suffixed
+   * name and a warning, never a silent swap. Default: `SiteHeader`/`SiteFooter`.
+   */
+  component?: string
 }
 
 export interface ComponentPlacement {

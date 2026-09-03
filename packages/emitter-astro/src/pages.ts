@@ -89,16 +89,22 @@ function singlePage(route: RouteModel, layout: string, up: string, collection: s
   return `---
 // Route: ${route.id} (${route.pattern}) — collection: ${collection} — emitted by @contentrain/emitter-astro
 import Layout from '${up}layouts/${layout}.astro'
-import posts from '${up}data/${collection}.json'
-import { postMarks } from '${up}lib/fill'
+import data from '${up}data/${collection}.json'
+import { postMarks, type EmittedPost } from '${up}lib/fill'
 
 export function getStaticPaths() {
+  // The JSON is data; its contract is EmittedPost. Inferring the type from the
+  // file would type only the fields this site happens to carry, and "astro
+  // check" (which the build runs first) would then reject post.params on a site
+  // whose permalinks need none. The cast lives INSIDE getStaticPaths because
+  // Astro hoists this function: it sees imports, not the component scope.
+  const posts = data as EmittedPost[]
   // A post carries its own route parameters (date parts of a dated permalink,
   // a post id) — using the template post's would send every other post to the
   // wrong address.
   return posts.map((post) => ({ params: { ...(post.params ?? {}), slug: post.slug }, props: { post } }))
 }
-type Props = { post: (typeof posts)[number] }
+type Props = { post: EmittedPost }
 const { post } = Astro.props as Props
 ---
 <Layout
@@ -113,19 +119,25 @@ const { post } = Astro.props as Props
 
 function listPage(route: RouteModel, layout: string, up: string, hasParams: boolean, siteLocale: string): string {
   const locale = JSON.stringify(route.locale ?? siteLocale)
-  const routeTitle = JSON.stringify(route.title ?? '')
+  // Chain the fallbacks HERE, not in the emitted source: a route without a title
+  // used to emit `page.title ?? "" ?? ''`, which "astro check" rejects as never
+  // nullish — and the build runs check first, so the whole site failed to build.
+  const routeTitle = route.title === undefined ? `''` : JSON.stringify(route.title)
+  // The cast lives inside getStaticPaths: Astro hoists it above the component
+  // scope, so it can read imports and nothing else.
   const paths = hasParams
     ? `export function getStaticPaths() {
+  const pages = data as EmittedQueryPage[]
   return pages.map((page) => ({ params: page.params, props: { page } }))
 }
-type Props = { page: (typeof pages)[number] }
+type Props = { page: EmittedQueryPage }
 const { page } = Astro.props as Props`
-    : `const page = pages[0] ?? { params: {}, items: [] }`
+    : `const page = (data as EmittedQueryPage[])[0] ?? { params: {}, items: [], title: undefined }`
   return `---
 // Route: ${route.id} (${route.pattern}) — emitted by @contentrain/emitter-astro
 import Layout from '${up}layouts/${layout}.astro'
-import pages from '${up}data/queries/${route.query}.json'
-import { esc, postMarks, renderSections, renderTemplate } from '${up}lib/fill'
+import data from '${up}data/queries/${route.query}.json'
+import { esc, postMarks, renderSections, type EmittedQueryPage } from '${up}lib/fill'
 
 ${paths}
 // A list renders in sections (a big card then a grid) — one template is the
@@ -140,7 +152,7 @@ const content = sections.length
 // Route params carry slugs; page marks carry what the chrome needs to SHOW
 // (a term's display name, description, count).
 const marks = { ...page.params, ...(page.marks ?? {}) }
-const title = page.title ?? ${routeTitle} ?? ''
+const title = page.title ?? ${routeTitle}
 ---
 <Layout
   title={title || String(marks.term_name ?? page.params.term ?? '')}

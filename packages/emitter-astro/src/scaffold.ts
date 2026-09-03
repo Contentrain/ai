@@ -237,4 +237,32 @@ export function postMarks(post: MarkablePost): Values {
   for (const [i, f] of (post.featured ?? []).entries()) values['feat' + i] = f
   return { ...values, ...(post.marks ?? {}) }
 }
+
+/**
+ * The shapes of the emitted data files. Pages import JSON and assert these
+ * rather than letting TypeScript infer the shape from the file's contents:
+ * inference reads only the fields the data HAPPENS to carry, so a site whose
+ * posts need no extra route parameters produced a type without \`params\` and
+ * \`astro check\` — which the build runs first — failed on the page that reads
+ * it. The contract is what the emitter may write, not what one site wrote.
+ */
+export interface EmittedPost extends MarkablePost {
+  body: string
+  /** Route parameters beyond slug — the date parts of a dated permalink, a post id. */
+  params?: Record<string, string>
+  /** Stylesheets only this page loads. */
+  css?: string[]
+  locale?: string
+}
+
+/** One static path of a list route, as it appears in the emitted query data. */
+export interface EmittedQueryPage {
+  params: Record<string, string>
+  items: EmittedPost[]
+  marks?: Record<string, unknown>
+  css?: string[]
+  item_template?: string
+  sections?: ListSection[]
+  title?: string
+}
 `
