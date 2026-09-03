@@ -51,10 +51,16 @@ describe('planReconcile — unclaimed files', () => {
     expect(contentChanges(plan).find(c => c.path === STRAY)).toBeUndefined()
   })
 
-  it('config.json falls into the unclaimed policy (approved gap)', async () => {
+  // config.json used to land here — an opaque file, so two sides touching two
+  // different settings could only be resolved by discarding one of them. It is
+  // claimed and merged by top-level key now; see the config.json suite.
+  it('config.json is no longer an opaque file: different keys merge', async () => {
     const ours: Files = { ...BASE, '.contentrain/config.json': BASE['.contentrain/config.json']!.replace('"auto-merge"', '"review"') }
     const theirs: Files = { ...BASE, '.contentrain/config.json': BASE['.contentrain/config.json']!.replace('other', 'nuxt') }
     const plan = await reconcile({ base: BASE, ours, theirs })
-    expect(plan.conflicts.some(c => c.path === '.contentrain/config.json' && c.code === 'file_conflict')).toBe(true)
+    expect(plan.conflicts.some(c => c.path === '.contentrain/config.json')).toBe(false)
+    const merged = JSON.parse(contentChanges(plan).find(c => c.path === '.contentrain/config.json')!.content!)
+    expect(merged.workflow).toBe('review')
+    expect(merged.stack).toBe('nuxt')
   })
 })

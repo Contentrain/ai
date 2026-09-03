@@ -34,6 +34,7 @@ import type { MergeStats } from './types.js'
 const CONTEXT_PATH = '.contentrain/context.json'
 const VOCABULARY_PATH = '.contentrain/vocabulary.json'
 const SOURCES_PATH = '.contentrain/normalize-sources.json'
+const CONFIG_PATH = '.contentrain/config.json'
 const MAX_VALIDATION_ADVISORIES = 15
 
 type RawModel = Record<string, unknown>
@@ -233,6 +234,7 @@ export async function planReconcile(input: ReconcileInput): Promise<ReconcilePla
 
   claimed.add(VOCABULARY_PATH)
   claimed.add(SOURCES_PATH)
+  claimed.add(CONFIG_PATH)
   {
     const [base, ours, theirs] = await Promise.all(SIDES.map(side => readJsonOrNull<Vocabulary>(readers[side], VOCABULARY_PATH)))
     if (base !== null || ours !== null || theirs !== null) {
@@ -255,6 +257,24 @@ export async function planReconcile(input: ReconcileInput): Promise<ReconcilePla
       conflicts.push(...merge.conflicts)
       stats = addStats(stats, merge.stats)
       outputs.push({ path: SOURCES_PATH, format: 'json', value: merge.merged ?? null })
+    }
+  }
+  {
+    // Project settings are a keyed record, and the two sides change different
+    // keys: a branch renames the content root while main flips the workflow.
+    // Treating the whole file as opaque made every such pair a `file_conflict`
+    // that stopped reconcile until someone picked a side — and picking a side
+    // discards the other change. Same rule as normalize-sources: merge by
+    // top-level key, and only a key BOTH sides moved differently is a question.
+    const [base, ours, theirs] = await Promise.all(SIDES.map(side => readJsonOrNull<RawModel>(readers[side], CONFIG_PATH)))
+    if (base !== null || ours !== null || theirs !== null) {
+      const merge = mergeKeyedJson(
+        { base: base ?? undefined, ours: ours ?? undefined, theirs: theirs ?? undefined },
+        { outPath: CONFIG_PATH, kind: 'file', resolutions },
+      )
+      conflicts.push(...merge.conflicts)
+      stats = addStats(stats, merge.stats)
+      outputs.push({ path: CONFIG_PATH, format: 'json', value: merge.merged ?? null })
     }
   }
 
