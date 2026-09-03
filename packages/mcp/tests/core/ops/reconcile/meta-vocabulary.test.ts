@@ -125,3 +125,58 @@ describe('planReconcile — normalize-sources', () => {
     expect(Object.keys(merged).toSorted()).toEqual(['faq.q1', 'faq.q2', 'faq.q3'])
   })
 })
+
+describe('planReconcile — config.json', () => {
+  const CONFIG_PATH = '.contentrain/config.json'
+  const config = (extra: Record<string, unknown>) =>
+    JSON.stringify({ ...(JSON.parse(CONFIG) as Record<string, unknown>), ...extra })
+
+  it('merges the keys each side moved instead of stopping on the file', async () => {
+    // A branch renames the content root while main flips the workflow: two
+    // different keys, one file. Whole-file treatment made this a file_conflict
+    // that could only be resolved by discarding one of the two changes.
+    const base = project({})
+    const ours = project({ [CONFIG_PATH]: config({ content_path: 'cms' }) })
+    const theirs = project({ [CONFIG_PATH]: config({ workflow: 'review' }) })
+    const plan = await reconcile({ base, ours, theirs })
+    expect(plan.conflicts).toEqual([])
+    const merged = JSON.parse(contentChanges(plan).find(c => c.path === CONFIG_PATH)!.content!)
+    expect(merged.content_path).toBe('cms')
+    expect(merged.workflow).toBe('review')
+    expect(merged.locales).toEqual({ default: 'en', supported: ['en', 'tr'] })
+  })
+
+  it('asks only about the key both sides moved differently', async () => {
+    const base = project({})
+    const ours = project({ [CONFIG_PATH]: config({ workflow: 'review' }) })
+    const theirs = project({ [CONFIG_PATH]: config({ workflow: 'manual', stack: 'nuxt' }) })
+    const plan = await reconcile({ base, ours, theirs })
+    expect(plan.conflicts).toHaveLength(1)
+    const conflict = plan.conflicts[0]!
+    expect(conflict.path).toBe(CONFIG_PATH)
+    expect(conflict.key).toBe('workflow')
+    expect(conflict.code).toBe('file_conflict')
+    expect(conflict.ours).toBe('review')
+    expect(conflict.theirs).toBe('manual')
+    // The keys nobody disputed still merge — a conflict on one key must not
+    // hold the rest of the file hostage.
+    const merged = JSON.parse(contentChanges(plan).find(c => c.path === CONFIG_PATH)!.content!)
+    expect(merged.stack).toBe('nuxt')
+  })
+
+  it('takes a one-sided change without asking', async () => {
+    const base = project({})
+    const theirs = project({ [CONFIG_PATH]: config({ workflow: 'review' }) })
+    const plan = await reconcile({ base, ours: project({}), theirs })
+    expect(plan.conflicts).toEqual([])
+    const merged = JSON.parse(contentChanges(plan).find(c => c.path === CONFIG_PATH)!.content!)
+    expect(merged.workflow).toBe('review')
+  })
+
+  it('leaves an untouched config alone', async () => {
+    const plan = await reconcile({ base: project({}), ours: project({}), theirs: project({}) })
+    expect(plan.conflicts).toEqual([])
+    expect(contentChanges(plan).some(c => c.path === CONFIG_PATH)).toBe(false)
+  })
+})
+
