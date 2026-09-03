@@ -1,5 +1,45 @@
 # @contentrain/emitter-astro
 
+## 0.7.0
+
+### Minor Changes
+
+- b4724a1: Header and footer chrome as shared Astro components
+
+  `ChromeChunk.position` gains `header` and `footer`, which lift a region out of
+  the body blob into `src/components/*.astro` rendered as siblings of the body
+  fragment. Families carrying the same region share one component, so the nav
+  lives at a single address — where a jQuery-free menu replaces the theme's —
+  instead of being copied into every family's chrome. Identity is by content:
+  two different headers claiming the same name get separate files and a warning,
+  never a silent swap. `ChromeChunk.component` names the shared component.
+
+  The producer must lift only balanced regions that sit outside the content path;
+  when either is in doubt one `body` chunk is always correct. The emitter now
+  checks balance on header, footer and body chrome and names the dangling tags,
+  because an unbalanced fragment does not fail the build — the browser repairs it
+  and the page loses its layout (measured: 36 against 100).
+
+### Patch Changes
+
+- b4724a1: Emitted projects pass `astro check`, which their own build runs first
+
+  Two deterministic failures, both found by building an emitted project rather
+  than reading it:
+
+  - Pages inferred their data type from the JSON file, so a site whose posts
+    need no extra route parameters produced a type without `params` and
+    `astro check` rejected the page that reads it. The emitted runtime now
+    declares `EmittedPost` / `EmittedQueryPage` and pages assert the contract.
+    The cast sits inside `getStaticPaths`, which Astro hoists above the
+    component scope.
+  - A list route without a title emitted `page.title ?? "" ?? ''`, which
+    `astro check` rejects as never nullish. The fallback chain is built in the
+    emitter now.
+
+- Updated dependencies [b4724a1]
+  - @contentrain/types@1.10.0
+
 ## 0.6.1
 
 ### Patch Changes
