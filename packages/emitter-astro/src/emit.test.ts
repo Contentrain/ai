@@ -329,9 +329,32 @@ describe('emitAstroProject', () => {
 
   it('generated frontmatter types its props', () => {
     expect(result.files['src/layouts/FArticle.astro']).toContain('interface Props')
-    expect(result.files['src/pages/[year]/[month]/[day]/[slug].astro']).toContain('type Props = { post: (typeof posts)[number] }')
-    expect(result.files['src/pages/category/[term]/page/[page].astro']).toContain('type Props = { page: (typeof pages)[number] }')
+    expect(result.files['src/pages/[year]/[month]/[day]/[slug].astro']).toContain('type Props = { post: EmittedPost }')
+    expect(result.files['src/pages/category/[term]/page/[page].astro']).toContain('type Props = { page: EmittedQueryPage }')
     expect(result.files['src/components/CComments.astro']).toContain('interface Props')
+  })
+
+  it('asserts the emitted data contract instead of inferring it from one site’s JSON', () => {
+    // Inference types only the fields the data happens to carry, so a site whose
+    // permalinks need no extra parameters produced a type without `params` and
+    // `astro check` — which the build runs first — rejected the page reading it.
+    const single = result.files['src/pages/[year]/[month]/[day]/[slug].astro']!
+    expect(single).toContain("import { postMarks, type EmittedPost } from '../../../../lib/fill'")
+    expect(single).toContain('const posts = data as EmittedPost[]')
+    const list = result.files['src/pages/category/[term]/page/[page].astro']!
+    expect(list).toContain('const pages = data as EmittedQueryPage[]')
+    const fill = result.files['src/lib/fill.ts']!
+    expect(fill).toContain('export interface EmittedPost extends MarkablePost')
+    expect(fill).toContain('export interface EmittedQueryPage')
+  })
+
+  it('emits a title fallback chain "astro check" accepts', () => {
+    // `page.title ?? "" ?? ''` is never-nullish (ts2881) and the build runs
+    // check first, so a list route without a route title failed the whole build.
+    const list = result.files['src/pages/category/[term]/page/[page].astro']!
+    expect(list).toContain("const title = page.title ?? ''")
+    expect(list).not.toContain(`?? "" ?? ''`)
+    expect(list).not.toContain(`?? '' ?? ''`)
   })
 
   it('dated permalinks get their parameters from each post, not the template', () => {

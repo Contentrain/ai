@@ -12,6 +12,7 @@ import { scaffoldFiles } from './scaffold.js'
 import { familyFiles } from './layouts.js'
 import { routeFiles } from './pages.js'
 import { componentFiles } from './components.js'
+import { chromeComponents } from './chrome.js'
 import { wrapLegacyCss } from './css.js'
 
 export function emitAstroProject(input: EmitInput): EmitResult {
@@ -32,8 +33,12 @@ export function emitAstroProject(input: EmitInput): EmitResult {
 
   const familiesById = new Map(ir.families.map((f) => [f.id, f]))
   const lang = ir.site.locales?.[0] ?? 'en'
+  // Header/footer regions first: families that share one share the component.
+  const chrome = chromeComponents(ir.families)
+  add(chrome.files)
+  warnings.push(...chrome.warnings)
   for (const family of ir.families) {
-    const fam = familyFiles(family, lang)
+    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id))
     add(fam.files)
     warnings.push(...fam.warnings)
   }
@@ -95,3 +100,5 @@ export type {
 } from './types.js'
 export { wrapLegacyCss } from './css.js'
 export { pascalCase, patternToPagePath, stableJson } from './util.js'
+export { checkBalance, balanceWarning } from './balance.js'
+export type { BalanceReport } from './balance.js'

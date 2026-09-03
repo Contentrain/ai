@@ -14,6 +14,8 @@
 
 import type { LayoutFamily } from '@contentrain/types'
 import { CHROME_BODY_SLOT } from '@contentrain/types'
+import type { ChromeComponentRef } from './chrome.js'
+import { balanceWarning } from './balance.js'
 import { pascalCase, stableJson } from './util.js'
 
 export interface FamilyGenResult {
@@ -21,9 +23,15 @@ export interface FamilyGenResult {
   warnings: string[]
 }
 
-export function familyFiles(family: LayoutFamily, lang: string): FamilyGenResult {
+export function familyFiles(
+  family: LayoutFamily,
+  lang: string,
+  components: ChromeComponentRef[] = [],
+): FamilyGenResult {
   const name = pascalCase(family.id)
-  const chunks = family.chrome ?? []
+  // Header/footer regions are emitted as shared components (see chrome.ts) and
+  // rendered as siblings of the body fragment; the layout injects the rest.
+  const chunks = (family.chrome ?? []).filter((c) => c.position !== 'header' && c.position !== 'footer')
   const warnings: string[] = []
   const joined = (position: string) =>
     chunks.filter((c) => c.position === position).map((c) => c.html).join('\n')
@@ -40,6 +48,10 @@ export function familyFiles(family: LayoutFamily, lang: string): FamilyGenResult
     // Legacy pair: compose into one string with the slot between the halves.
     body = `${joined('before_body')}${CHROME_BODY_SLOT}${joined('after_body')}`
   }
+  const unbalanced = balanceWarning(body)
+  if (unbalanced) {
+    warnings.push(`family ${family.id}: body chrome is not balanced (${unbalanced}) — the browser will repair it and the page loses its layout`)
+  }
 
   const files: Record<string, string> = {}
   files[`src/data/chrome/${family.id}.json`] = stableJson({
@@ -53,11 +65,21 @@ export function familyFiles(family: LayoutFamily, lang: string): FamilyGenResult
     .map((f) => `<link rel="stylesheet" href="/styles/legacy/${f.split('/').pop()}" />`)
     .join('\n')
 
+  const imported = [...new Set(components.map((c) => c.name))]
+  const componentImports = imported
+    .map((n) => `import ${n} from '../components/${n}.astro'`)
+    .join('\n')
+  const renderRefs = (position: 'header' | 'footer') =>
+    components
+      .filter((c) => c.position === position)
+      .map((c) => `    <${c.name} marks={marks} />`)
+      .join('\n')
+
   files[`src/layouts/${name}.astro`] = `---
 // Family: ${family.id}${family.name ? ` (${family.name})` : ''} — emitted by @contentrain/emitter-astro
 import chrome from '../data/chrome/${family.id}.json'
 import { cssHref, fillAttrs, renderTemplate, composeBody } from '../lib/fill'
-
+${componentImports ? `${componentImports}\n` : ''}
 interface Props {
   title?: string
   marks?: Record<string, unknown>
@@ -96,8 +118,8 @@ ${cssLinks
     <title>{title}</title>
   </head>
   <body {...bodyAttrs}>
-    <Fragment set:html={html} />
-  </body>
+${renderRefs('header') ? `${renderRefs('header')}\n` : ''}    <Fragment set:html={html} />
+${renderRefs('footer') ? `${renderRefs('footer')}\n` : ''}  </body>
 </html>
 `
   return { files, warnings }
