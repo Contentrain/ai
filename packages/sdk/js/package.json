@@ -39,34 +39,58 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
-      "default": "./dist/index.mjs"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./generate": {
-      "types": "./dist/generator/generate.d.ts",
-      "import": "./dist/generator/generate.mjs",
-      "require": "./dist/generator/generate.cjs"
+      "import": {
+        "types": "./dist/generator/generate.d.mts",
+        "default": "./dist/generator/generate.mjs"
+      },
+      "require": {
+        "types": "./dist/generator/generate.d.cts",
+        "default": "./dist/generator/generate.cjs"
+      }
     },
     "./cdn": {
-      "types": "./dist/cdn/index.d.ts",
-      "import": "./dist/cdn/index.mjs",
-      "require": "./dist/cdn/index.cjs"
+      "import": {
+        "types": "./dist/cdn/index.d.mts",
+        "default": "./dist/cdn/index.mjs"
+      },
+      "require": {
+        "types": "./dist/cdn/index.d.cts",
+        "default": "./dist/cdn/index.cjs"
+      }
+    },
+    "./astro": {
+      "import": {
+        "types": "./dist/astro/index.d.mts",
+        "default": "./dist/astro/index.mjs"
+      },
+      "require": {
+        "types": "./dist/astro/index.d.cts",
+        "default": "./dist/astro/index.cjs"
+      }
     },
     "./skills/*": "./skills/*"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.cts",
   "sideEffects": false,
   "files": [
     "dist",
     "skills"
   ],
   "scripts": {
-    "build": "tsdown src/index.ts src/cdn/index.ts src/generator/generate.ts src/cli.ts --format esm,cjs --dts",
-    "dev": "tsdown src/index.ts src/cdn/index.ts src/generator/generate.ts src/cli.ts --format esm,cjs --dts --watch",
+    "build": "tsdown src/index.ts src/cdn/index.ts src/astro/index.ts src/generator/generate.ts src/cli.ts --format esm,cjs --dts",
+    "dev": "tsdown src/index.ts src/cdn/index.ts src/astro/index.ts src/generator/generate.ts src/cli.ts --format esm,cjs --dts --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
