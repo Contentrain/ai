@@ -398,6 +398,55 @@ Behavior:
 | Caching | In-memory (embedded) | ETag-based HTTP cache + optional bundle preload |
 | Use case | SSG, build-time | SSR, client-side, serverless |
 
+## 🚀 Astro Content Layer
+
+`contentrain generate` gives application code a typed client. Astro would
+rather own the content itself, so pages can use `getCollection()`, `getEntry()`,
+`reference()` and render documents with `<Content />`. `@contentrain/query/astro`
+reads the same `.contentrain` files the generator reads — one project, one
+answer about what its content is.
+
+```ts
+// src/content.config.ts
+import { defineCollection, z } from 'astro:content'
+import { contentrainLoader } from '@contentrain/query/astro'
+
+export const collections = {
+  posts: defineCollection({
+    loader: contentrainLoader({ model: 'blog-post', locale: 'en' }),
+    schema: z.object({ title: z.string(), publishedAt: z.string() }).passthrough(),
+  }),
+  articles: defineCollection({ loader: contentrainLoader({ model: 'blog-article' }) }),
+}
+```
+
+```astro
+---
+import { getCollection, getEntry, render } from 'astro:content'
+const posts = await getCollection('posts')
+const article = await getEntry('articles', 'en/welcome-post')
+const { Content } = await render(article)
+---
+<ul>{posts.map((p) => <li>{p.data.title}</li>)}</ul>
+<Content />
+```
+
+| Model kind | Becomes |
+|---|---|
+| `collection` | One entry per record; `data.id` is the entry id |
+| `document` | One entry per file — frontmatter in `data`, markdown in `body`, rendered so `<Content />` works |
+| `dictionary` | One entry per key (`{ key, value }`) — a key is a semantic address, and a single blob would make `getEntry()` useless on it |
+| `singleton` | One entry, id `<model>` (or the locale) |
+
+`locale` picks one language; omit it on an i18n model and every supported locale
+loads with ids prefixed (`en/my-post`) — Astro ids are unique per collection, so
+without the prefix one language would overwrite the other. `root` points at the
+project holding `.contentrain` (default: `process.cwd()`).
+
+Astro is not a dependency, not even a peer: the loader is structurally what
+`defineCollection` accepts, so any Astro 5 version works and non-Astro consumers
+of this package carry nothing extra.
+
 ## CommonJS Usage
 
 Generated clients support CommonJS through `init()`:
@@ -449,6 +498,10 @@ Generator entry:
 CDN transport:
 
 - `@contentrain/query/cdn` — CDN client with `HttpTransport`, async query classes, `MediaAccessor`, `FormsClient`, `ConversationClient`
+
+Astro content layer:
+
+- `@contentrain/query/astro` — `contentrainLoader()` for `defineCollection({ loader })`
 
 ## 🧠 Design Constraints
 
