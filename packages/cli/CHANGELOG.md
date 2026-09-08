@@ -1,5 +1,13 @@
 # contentrain
 
+## 0.12.8
+
+### Patch Changes
+
+- Updated dependencies [1373070]
+- Updated dependencies [1373070]
+  - @contentrain/query@7.1.0
+
 ## 0.12.7
 
 ### Patch Changes
