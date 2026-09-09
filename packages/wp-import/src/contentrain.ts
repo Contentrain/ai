@@ -108,6 +108,8 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
   const slugOf = new Map<number, string>()
   const postEntry = new Map<number, { model: string; ref: string }>()
   for (const p of raw.posts) {
+    // Only exported entries may be relation targets or appear in the source map.
+    if (SKIP_TYPES.test(p.type)) continue
     const s = postSlug(p)
     slugOf.set(p.id, s)
     postEntry.set(p.id, { model: typeModelId(p.type), ref: hexId(`${typeModelId(p.type)}:${s}`) })
@@ -261,7 +263,15 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     fields.wp_id = { type: 'integer', required: true, unique: true, label: 'WP post ID', order: (o += 10) }
     fields.modified_at = { type: 'datetime', label: 'Modified at', order: (o += 10) }
     fields.link = { type: 'url', label: 'Original permalink', order: (o += 10) }
-    if (typeItems.some((p) => p.parent)) fields.parent = { type: 'relation', model: mid, label: 'Parent', order: (o += 10) }
+    const parentModels = [...new Set(typeItems.flatMap((p) => {
+      const parent = p.parent ? postEntry.get(p.parent) : undefined
+      return parent ? [parent.model] : []
+    }))].toSorted()
+    if (typeItems.some((p) => p.parent)) fields.parent = {
+      type: 'relation',
+      model: parentModels.length > 1 ? parentModels : (parentModels[0] ?? mid),
+      label: 'Parent', order: (o += 10),
+    }
     if (typeItems.some((p) => p.menu_order)) fields.menu_order = { type: 'integer', label: 'Menu order', order: (o += 10) }
     if (typeItems.some((p) => p.sticky)) fields.sticky = { type: 'boolean', label: 'Sticky', order: (o += 10) }
     if (typeItems.some((p) => typeof p.meta._wp_page_template === 'string' && p.meta._wp_page_template !== 'default'))
@@ -324,7 +334,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       }
       if (fields.parent && p.parent) {
         const pe = postEntry.get(p.parent)
-        if (pe && pe.model === mid) e.parent = pe.ref
+        if (pe) e.parent = parentModels.length > 1 ? pe : pe.ref
         else report.dropped_relations++
       }
       if (fields.menu_order && p.menu_order) e.menu_order = p.menu_order

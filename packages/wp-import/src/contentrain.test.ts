@@ -86,6 +86,59 @@ describe('rawToContentrain', () => {
     const b = rawToContentrain(raw, { updatedBy: 'test' })
     expect(a.files).toEqual(b.files)
   })
+
+  it('preserves ACF field → field-group and nested field parents with polymorphic references', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const base = raw.posts[0]!
+    raw.posts.push(
+      { ...base, id: 100, type: 'acf-field-group', slug: 'group-example', parent: 0 },
+      { ...base, id: 101, type: 'acf-field', slug: 'field-section', parent: 100 },
+      { ...base, id: 102, type: 'acf-field', slug: 'field-title', parent: 101 },
+    )
+    const result = rawToContentrain(raw)
+    const model = JSON.parse(result.files['.contentrain/models/acf-field.json']!)
+    const entries = JSON.parse(result.files['.contentrain/content/custom/acf-field/data.json']!)
+    expect(model.fields.parent.model).toEqual(['acf-field', 'acf-field-group'])
+    expect(entries[result.entry_source_map['101']!.entry_id].parent).toEqual({
+      model: 'acf-field-group', ref: result.entry_source_map['100']!.entry_id,
+    })
+    expect(entries[result.entry_source_map['102']!.entry_id].parent).toEqual({
+      model: 'acf-field', ref: result.entry_source_map['101']!.entry_id,
+    })
+    expect(result.report.dropped_relations).toBe(0)
+    const reversed = rawToContentrain({ ...raw, posts: raw.posts.toReversed() })
+    expect(reversed.files['.contentrain/models/acf-field.json']).toBe(result.files['.contentrain/models/acf-field.json'])
+    expect(reversed.files['.contentrain/content/custom/acf-field/data.json']).toBe(result.files['.contentrain/content/custom/acf-field/data.json'])
+  })
+
+  it.each(['page', 'acf-field-group'])('keeps a single %s parent target as an ID string', async (parentType) => {
+    const { raw } = await parseWxr(FIXTURE)
+    raw.posts.push(
+      { ...raw.posts[1]!, id: 100, type: parentType, slug: 'parent', parent: 0 },
+      { ...raw.posts[1]!, id: 101, slug: 'child', parent: 100 },
+    )
+    const result = rawToContentrain(raw)
+    const model = JSON.parse(result.files['.contentrain/models/pages.json']!)
+    const entries = JSON.parse(result.files['.contentrain/content/site/pages/data.json']!)
+    expect(model.fields.parent.model).toBe(parentType === 'page' ? 'pages' : parentType)
+    expect(entries[result.entry_source_map['101']!.entry_id].parent).toBe(result.entry_source_map['100']!.entry_id)
+    expect(result.report.dropped_relations).toBe(0)
+  })
+
+  it('reports missing and excluded parents without emitting dangling source-map addresses', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    raw.posts.push(
+      { ...raw.posts[1]!, id: 100, type: 'revision', slug: 'ignored', parent: 0 },
+      { ...raw.posts[1]!, id: 101, slug: 'child', parent: 100 },
+      { ...raw.posts[1]!, id: 102, slug: 'orphan', parent: 999 },
+    )
+    const result = rawToContentrain(raw)
+    const entries = JSON.parse(result.files['.contentrain/content/site/pages/data.json']!)
+    expect(result.entry_source_map['100']).toBeUndefined()
+    expect(result.report.skipped_types).toContain('revision')
+    expect(result.report.dropped_relations).toBe(2)
+    for (const id of ['101', '102']) expect(entries[result.entry_source_map[id]!.entry_id].parent).toBeUndefined()
+  })
 })
 
 describe('comments export', () => {
