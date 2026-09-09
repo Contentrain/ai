@@ -307,22 +307,55 @@ asset.meta.alt        // 'Hero image'
 
 ### Forms
 
-Fetch form schema and submit data from external sites:
+The browser side of Studio's public `/api/forms/v1` — no API key travels with
+these requests (the endpoints are unauthenticated by design, and a page cannot
+keep a secret; Studio's CORS for them allows only `Content-Type`):
 
 ```ts
 const form = client.form()
 
-// Get form field configuration
+// Public form config: exposed fields keyed by id, captcha, honeypot
 const config = await form.config('contact')
-// config.fields → [{ id: 'name', type: 'string', required: true }, ...]
+// config.locale          → 'en'  (what the submission is validated against)
+// config.fields          → { name: { type: 'string', required: true }, email: { type: 'email', … } }
+// config.captcha         → 'turnstile' | null   (mount the widget with config.captchaSiteKey)
+// config.honeypotField   → '_hp' | null         (render a hidden input with that name, leave it empty)
 
-// Submit form data
+// Submit: values under `data`; captcha token and honeypot value beside it
 const result = await form.submit('contact', {
   name: 'Alice',
   email: 'alice@example.com',
   message: 'Hello!',
-}, { captchaToken: 'tok_xxx' })
-// result → { success: true, message: 'Thank you!' }
+}, { captchaToken: 'tok_xxx', honeypot: '' })
+// → { success: true, message: 'Thank you!' }
+// → { success: false, errors: [{ field: 'email', message }] }   (a verdict, not an exception)
+// 403 / 404 / 429 reject with ContentrainError { status, message }
+```
+
+### Comments
+
+The browser side of Studio's public `/api/comments/v1`. Only approved comments
+come back, nested under their roots; email, IP, user agent and referrer never
+leave the server. `body` is plain text — render it escaped.
+
+```ts
+const comments = client.comments()
+
+const thread = await comments.thread('posts', entryId, { locale: 'en', page: 1, limit: 20, sort: 'oldest' })
+// thread.config   → { closed, requireApproval, requireEmail, maxDepth, maxBodyLength, captcha, captchaSiteKey, honeypotField }
+// thread.comments → [{ id, parentId, depth, author: { name, url, isModerator }, body, type, createdAt, replies: [...] }]
+// thread.total    → root comments in total (pagination is over roots)
+
+const result = await comments.submit('posts', entryId, {
+  author: { name: 'Ada', email: 'ada@example.com', url: 'https://ada.dev' },
+  body: 'Great post',
+  parentId: thread.comments[0]?.id,   // reply; omit for a root comment
+  captchaToken: 'tok_xxx',
+  honeypot: '',
+}, { locale: 'en' })
+// → { success: true, status: 'pending' | 'approved', comment }   (pending is only echoed to its author)
+// → { success: false, errors: [{ field: 'author.name' | 'author.email' | 'author.url' | 'body' | 'parentId' | 'captcha', message }] }
+// 403 (thread closed) / 404 / 429 reject with ContentrainError
 ```
 
 ### Conversation API

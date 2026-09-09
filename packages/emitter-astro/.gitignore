@@ -1,1 +1,3 @@
 .vitest-tmp/
+.vitest-tmp-embed/
+.vitest-tmp-tsc/

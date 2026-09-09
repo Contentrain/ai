@@ -113,6 +113,7 @@ const { post } = Astro.props as Props
   body={post.body}
   css={post.css ?? []}
   lang={post.locale ?? ${locale}}
+  entry={post.entry}
 />
 `
 }

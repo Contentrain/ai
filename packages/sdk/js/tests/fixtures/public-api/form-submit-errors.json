@@ -1,0 +1,7 @@
+{
+  "success": false,
+  "errors": [
+    { "field": "email", "message": "validation.invalid_email" },
+    { "field": "name", "message": "validation.required" }
+  ]
+}

@@ -506,14 +506,40 @@ asset.meta.alt        // 'Hero image'
 
 ### CDN Forms
 
-Fetch form schema and submit data from external sites:
+The browser side of Studio's public `/api/forms/v1`. No API key travels with these requests — the endpoints are unauthenticated by design and the public CORS allows only `Content-Type`.
 
 ```ts
 const form = client.form()
+
 const config = await form.config('contact')
+// config.fields        → { name: { type: 'string', required: true }, email: { type: 'email', … } }  (exposed fields, keyed by id)
+// config.captcha       → 'turnstile' | null — mount the widget with config.captchaSiteKey
+// config.honeypotField → '_hp' | null — render a hidden input with that name, leave it empty
+
 const result = await form.submit('contact', {
   name: 'Alice', email: 'alice@example.com',
-}, { captchaToken: 'tok_xxx' })
+}, { captchaToken: 'tok_xxx', honeypot: '' })
+// { success: true, message } · { success: false, errors: [{ field, message }] }
+// 403 / 404 / 429 reject with ContentrainError { status, message }
+```
+
+### CDN Comments
+
+The browser side of Studio's public `/api/comments/v1`. Only approved comments are returned, nested under their roots; no email, IP, user agent or referrer ever leaves the server. `body` is plain text — render it escaped.
+
+```ts
+const comments = client.comments()
+
+const thread = await comments.thread('posts', entryId, { locale: 'en', page: 1, limit: 20, sort: 'oldest' })
+// thread.config   → { closed, requireApproval, requireEmail, maxDepth, maxBodyLength, captcha, captchaSiteKey, honeypotField }
+// thread.comments → [{ id, parentId, depth, author: { name, url, isModerator }, body, type, createdAt, replies }]
+
+const result = await comments.submit('posts', entryId, {
+  author: { name: 'Ada', email: 'ada@example.com' },
+  body: 'Great post',
+  parentId: thread.comments[0]?.id, // reply — omit for a root comment
+}, { locale: 'en' })
+// { success: true, status: 'pending' | 'approved', comment } · { success: false, errors: [{ field, message }] }
 ```
 
 ### CDN Conversation API

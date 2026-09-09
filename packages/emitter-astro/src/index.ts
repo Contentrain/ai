@@ -7,11 +7,12 @@
 // boring — which is exactly why it can be open, portable, and replaceable
 // by community emitters for other frameworks.
 
-import type { EmitInput, EmitResult } from './types.js'
+import type { EmitInput, EmitPost, EmitResult } from './types.js'
+import { DEFAULT_COLLECTION } from './types.js'
 import { scaffoldFiles } from './scaffold.js'
 import { familyFiles } from './layouts.js'
 import { routeFiles } from './pages.js'
-import { componentFiles } from './components.js'
+import { componentFiles, isRuntimeImplemented } from './components.js'
 import { chromeComponents } from './chrome.js'
 import { wrapLegacyCss } from './css.js'
 
@@ -37,8 +38,9 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   const chrome = chromeComponents(ir.families)
   add(chrome.files)
   warnings.push(...chrome.warnings)
+  const definitions = new Map((ir.components ?? []).map((c) => [c.id, c]))
   for (const family of ir.families) {
-    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id))
+    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id), definitions)
     add(fam.files)
     warnings.push(...fam.warnings)
   }
@@ -73,7 +75,21 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     warnings.push(...result.warnings)
   }
 
-  add(componentFiles(ir.components ?? []))
+  const components = componentFiles(ir.components ?? [], input.runtime)
+  add(components.files)
+  warnings.push(...components.warnings)
+
+  // A mounted comments thread is keyed by the post's entry address; a post
+  // without one renders no thread. Say so once per collection, not per page.
+  const commentsMounted = (ir.components ?? []).some((c) => isRuntimeImplemented(c, input.runtime) && c.type === 'comments')
+  if (commentsMounted) {
+    const collections: Record<string, EmitPost[]> = { ...input.content?.collections }
+    if (input.content?.posts && !collections[DEFAULT_COLLECTION]) collections[DEFAULT_COLLECTION] = input.content.posts
+    for (const [name, posts] of Object.entries(collections)) {
+      const unbound = posts.filter((p) => !p.entry).length
+      if (unbound) warnings.push(`collection ${name}: ${unbound} of ${posts.length} posts carry no entry address — the comments component renders nothing on those pages`)
+    }
+  }
 
   return { files, warnings }
 }
@@ -97,8 +113,14 @@ export type {
   QueryPage,
   EmitCssFile,
   EmitOptions,
+  RuntimeBinding,
+  EntrySourceRef,
 } from './types.js'
 export { wrapLegacyCss } from './css.js'
 export { pascalCase, patternToPagePath, stableJson } from './util.js'
+export { componentMarkers } from './layouts.js'
+export type { MountRef } from './layouts.js'
+export { isRuntimeImplemented, RUNTIME_IMPLEMENTED } from './components.js'
+export { EMBED_TS } from './embed.js'
 export { checkBalance, balanceWarning } from './balance.js'
 export type { BalanceReport } from './balance.js'

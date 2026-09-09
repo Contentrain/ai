@@ -5,6 +5,7 @@ import { CdnDictionaryAccessor } from './dictionary-accessor.js'
 import { CdnDocumentQuery } from './document-query.js'
 import { MediaAccessor } from './media-accessor.js'
 import { FormsClient } from './forms-client.js'
+import { CommentsClient } from './comments-client.js'
 import { ConversationClient } from './conversation-client.js'
 
 export interface ContentrainCDNConfig {
@@ -43,10 +44,16 @@ export function createContentrain(config: ContentrainCDNConfig) {
 
     media: () => new MediaAccessor(transport),
 
+    // Public embed surfaces: no API key travels with them — a visitor's
+    // browser cannot keep a secret, and the endpoints are unauthenticated by design.
     form: () => new FormsClient({
       baseUrl: (config.baseUrl ?? 'https://studio.contentrain.io/api/cdn/v1').replace('/cdn/v1', '/forms/v1'),
       projectId: config.projectId,
-      apiKey: config.apiKey,
+    }),
+
+    comments: () => new CommentsClient({
+      baseUrl: (config.baseUrl ?? 'https://studio.contentrain.io/api/cdn/v1').replace('/cdn/v1', '/comments/v1'),
+      projectId: config.projectId,
     }),
 
     conversation: () => new ConversationClient({
@@ -75,7 +82,27 @@ export { CdnDocumentQuery } from './document-query.js'
 export { MediaAccessor } from './media-accessor.js'
 export type { MediaAsset, MediaAssetMeta, MediaManifest } from './media-accessor.js'
 export { FormsClient } from './forms-client.js'
-export type { FormConfig, FormFieldConfig, FormSubmitResult, FormsClientConfig } from './forms-client.js'
+export type {
+  FormConfig,
+  FormFieldConfig,
+  FormFieldError,
+  FormSubmitOptions,
+  FormSubmitResult,
+  FormsClientConfig,
+} from './forms-client.js'
+export { CommentsClient } from './comments-client.js'
+export type {
+  CommentAuthor,
+  CommentFieldError,
+  CommentSubmission,
+  CommentSubmitResult,
+  CommentThread,
+  CommentThreadConfig,
+  CommentThreadQuery,
+  CommentType,
+  CommentsClientConfig,
+  PublicComment,
+} from './comments-client.js'
 export { ConversationClient } from './conversation-client.js'
 export type {
   ConversationClientConfig,

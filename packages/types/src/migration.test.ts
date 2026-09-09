@@ -15,9 +15,13 @@ import type {
   CssStrategy,
   MigrationHandoff,
   HandoffOffer,
+  RuntimeBinding,
 } from './index'
 import {
   CHROME_BODY_SLOT,
+  CHROME_COMPONENT_OPEN,
+  CHROME_COMPONENT_CLOSE,
+  componentSlot,
   MIGRATION_CONTRACT_VERSION,
   SOURCE_ACCESS_LADDER,
   CAPABILITY_KEYS,
@@ -196,10 +200,39 @@ describe('migration contracts', () => {
   })
 
   it('component vocabulary covers the measured region classes', () => {
-    for (const t of ['nav', 'related', 'comments', 'ads', 'author', 'taxonomy', 'card'] as const) {
+    for (const t of ['nav', 'related', 'comments', 'form', 'ads', 'author', 'taxonomy', 'card'] as const) {
       expect(COMPONENT_TYPES).toContain(t)
     }
     expectTypeOf<(typeof COMPONENT_TYPES)[number]>().toEqualTypeOf<ComponentType>()
+  })
+
+  it('a form component names the model it submits to; comments take the entry from the page', () => {
+    const form: ComponentDef = { id: 'c-contact', type: 'form', source: 'runtime', model: 'contact' }
+    const comments: ComponentDef = { id: 'c-comments', type: 'comments', source: 'runtime' }
+    expect(form.model).toBe('contact')
+    expect(comments.model).toBeUndefined()
+  })
+
+  it('the component mount marker is a comment in the same family as the body slot', () => {
+    expect(componentSlot('c-comments')).toBe('<!--@@component:c-comments@@-->')
+    expect(componentSlot('c-comments').startsWith(CHROME_COMPONENT_OPEN)).toBe(true)
+    expect(componentSlot('c-comments').endsWith(CHROME_COMPONENT_CLOSE)).toBe(true)
+    // It must not be mistaken for a value mark by the @@name@@ filler.
+    expect(componentSlot('c-comments')).not.toMatch(/^<!--@@[a-z0-9_]+@@-->$/)
+    const family: LayoutFamily = {
+      id: 'f-single',
+      chrome: [{ id: 'b', position: 'body', html: `<article>${CHROME_BODY_SLOT}</article><section>${componentSlot('c-comments')}</section>` }],
+      components: [{ component: 'c-comments' }],
+      css: { strategy: 'localcss' },
+    }
+    expect(family.components![0]!.component).toBe('c-comments')
+  })
+
+  it('a runtime binding is an origin and a project id, never a credential', () => {
+    const runtime: RuntimeBinding = { base_url: 'https://studio.contentrain.io', project_id: 'proj_1' }
+    expectTypeOf(runtime).toEqualTypeOf<{ base_url: string; project_id: string }>()
+    const bound: MigrationHandoff = { ...handoff, runtime }
+    expect(bound.runtime!.project_id).toBe('proj_1')
   })
 
   it('menu targets narrow by kind', () => {
