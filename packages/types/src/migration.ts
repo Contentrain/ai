@@ -139,6 +139,13 @@ export interface RawPost {
   serialized_keys?: string[]
   /** ACF fields recovered by pairing `foo` with `_foo = "field_…"`. */
   acf?: Record<string, RawAcfValue>
+  /**
+   * Language of this post as the multilingual plugin reports it — Polylang's
+   * `lang` slug (`tr`), WPML's `wpml_current_locale` (`tr_TR`), or the WXR
+   * `language` taxonomy term. Absent on monolingual sites. Which posts are
+   * translations of each other is `RawIR.language_pairs`, not this field.
+   */
+  lang?: string | null
 }
 
 export interface RawAttachment {
@@ -233,7 +240,12 @@ export interface RawRedirect {
   source?: string
 }
 
-/** Translation grouping for multilingual sites (Polylang/WPML — bridge rung). */
+/**
+ * Translation grouping for multilingual sites. The REST rungs read it from
+ * Polylang's `translations` / WPML's `wpml_translations` post fields, WXR from
+ * the `post_translations` taxonomy; the bridge rung from the plugin tables.
+ * One pair per group; `translations` includes the post itself.
+ */
 export interface RawLanguagePair {
   post: number
   /** locale → post id of the translation. */

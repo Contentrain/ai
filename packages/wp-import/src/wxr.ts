@@ -10,6 +10,7 @@ import type { Readable } from 'node:stream'
 import type {
   RawIR,
   RawPost,
+  RawLanguagePair,
   RawAttachment,
   RawAuthor,
   RawComment,
@@ -325,6 +326,8 @@ export async function parseWxr(input: string | Readable, opts?: { tool?: string 
       meta: m,
       serialized_keys: serializedKeys,
       acf,
+      // Polylang exports a post's language as a `language` taxonomy term.
+      lang: termRefs.find((t) => t.taxonomy === 'language')?.slug || null,
       attachment_url: (it.attachment_url as string) || null,
       _comments: comments,
     }
@@ -337,6 +340,20 @@ export async function parseWxr(input: string | Readable, opts?: { tool?: string 
   const posts: RawPost[] = records
     .filter((r) => r.type !== 'attachment' && r.type !== 'nav_menu_item')
     .map(({ attachment_url: _a, _comments: _c, ...p }) => p)
+  // Polylang groups translations under a shared `post_translations` term
+  // (`pll_…`); every post in a group is a translation of the others.
+  const groups = new Map<string, RawPost[]>()
+  for (const p of posts) {
+    const group = p.terms.find((t) => t.taxonomy === 'post_translations')?.slug
+    if (!group) continue
+    groups.set(group, [...(groups.get(group) ?? []), p])
+  }
+  const languagePairs: RawLanguagePair[] = []
+  for (const members of groups.values()) {
+    const translations: Record<string, number> = {}
+    for (const m of members) if (m.lang) translations[m.lang] = m.id
+    if (Object.keys(translations).length > 1) languagePairs.push({ post: members[0]!.id, translations })
+  }
   const attachments: RawAttachment[] = records
     .filter((r) => r.type === 'attachment')
     .map((r) => ({
@@ -460,6 +477,7 @@ export async function parseWxr(input: string | Readable, opts?: { tool?: string 
     attachments,
     menus,
     comments,
+    ...(languagePairs.length ? { language_pairs: languagePairs } : {}),
   }
   return { raw, stats }
 }

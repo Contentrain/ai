@@ -247,6 +247,13 @@ describe('migration contracts', () => {
     expect(url.resolved).toBe(true)
   })
 
+  it('a post carries its language verbatim; grouping lives in language_pairs', () => {
+    const post: RawPost = { ...rawIr.posts[0]!, lang: 'tr_TR' }
+    expect(post.lang).toBe('tr_TR')
+    const multilingual: RawIR = { ...rawIr, language_pairs: [{ post: post.id, translations: { en: post.id, tr: 99 } }] }
+    expect(multilingual.language_pairs![0]!.translations.tr).toBe(99)
+  })
+
   it('raw posts keep unresolved references marked, not dropped', () => {
     const post: RawPost = rawIr.posts[0]!
     expect(post.terms[0]!.resolved).toBe(true)

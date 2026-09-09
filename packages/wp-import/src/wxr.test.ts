@@ -91,6 +91,18 @@ export const FIXTURE = `<?xml version="1.0" encoding="UTF-8"?>
 </channel>
 </rss>`
 
+/** A Polylang-tagged post item: language term + translation-group term. */
+const polylangItem = (id: number, slug: string, lang: string, group: string) => `
+  <item>
+    <title>${slug}</title>
+    <wp:post_id>${id}</wp:post_id>
+    <wp:post_name>${slug}</wp:post_name>
+    <wp:status>publish</wp:status>
+    <wp:post_type>post</wp:post_type>
+    <category domain="language" nicename="${lang}"><![CDATA[${lang}]]></category>
+    <category domain="post_translations" nicename="${group}"><![CDATA[${group}]]></category>
+  </item>`
+
 describe('parseWxr', () => {
   it('parses site, authors, terms, and entities with counts', async () => {
     const { raw, stats } = await parseWxr(FIXTURE)
@@ -148,5 +160,14 @@ describe('parseWxr', () => {
     const reply = raw.comments!.find((c) => c.id === 501)!
     expect(reply).toMatchObject({ post: 10, parent: 500, parent_resolved: true, approved: '0' })
     expect(reply.date).toBe('2026-01-03T10:00:00Z')
+  })
+
+  it('Polylang WXR: the language term becomes RawPost.lang, post_translations groups become language_pairs', async () => {
+    const xml = FIXTURE.replace('</channel>', `${polylangItem(100, 'hello', 'en', 'pll_1')}${polylangItem(101, 'merhaba', 'tr', 'pll_1')}${polylangItem(102, 'alone', 'en', 'pll_2')}</channel>`)
+    const { raw } = await parseWxr(xml)
+    expect(raw.posts.find((p) => p.id === 100)!.lang).toBe('en')
+    expect(raw.posts.find((p) => p.id === 101)!.lang).toBe('tr')
+    expect(raw.posts.find((p) => p.id === 10)!.lang).toBeNull()
+    expect(raw.language_pairs).toEqual([{ post: 100, translations: { en: 100, tr: 101 } }])
   })
 })

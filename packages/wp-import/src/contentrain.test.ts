@@ -155,4 +155,51 @@ describe('comments export', () => {
     expect(summary.by_status).toEqual({ '1': 1, '0': 1 })
     expect(summary.unresolved).toBeUndefined()
   })
+
+  it('a multilingual site becomes an i18n store: content per locale, one entry id per translation group', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const hello = raw.posts.find((p) => p.id === 10)!
+    const merhaba = { ...hello, id: 20, slug: 'merhaba-dunya', title: 'Merhaba Dünya', content: '<p>İlk yazı</p>', lang: 'tr', terms: hello.terms.filter((t) => t.taxonomy !== 'post_tag') }
+    const lonely = { ...hello, id: 21, slug: 'sadece-turkce', title: 'Sadece Türkçe', lang: 'tr_TR', terms: [] }
+    const multilingual = {
+      ...raw,
+      posts: [...raw.posts.map((p) => (p.id === 10 ? { ...p, lang: 'en' } : p)), merhaba, lonely],
+      terms: [...raw.terms, { id: 900, taxonomy: 'language', slug: 'tr', name: 'Türkçe', parent: null, parent_resolved: true, description: '' }],
+      language_pairs: [{ post: 10, translations: { en: 10, tr: 20 } }],
+    }
+    const result = rawToContentrain(multilingual, { updatedBy: 'test' })
+
+    const posts = JSON.parse(result.files['.contentrain/models/posts.json']!)
+    expect(posts.i18n).toBe(true)
+    expect(JSON.parse(result.files['.contentrain/models/pages.json']!).i18n).toBe(true)
+    // language bookkeeping is not a taxonomy model
+    expect(result.files['.contentrain/models/language.json']).toBeUndefined()
+    expect(result.files['.contentrain/content/blog/posts/data.json']).toBeUndefined()
+
+    const en = JSON.parse(result.files['.contentrain/content/blog/posts/en.json']!)
+    const tr = JSON.parse(result.files['.contentrain/content/blog/posts/tr.json']!)
+    const shared = hexId('posts:hello-world')
+    expect(en[shared]).toMatchObject({ title: 'Hello World', slug: 'hello-world', wp_id: 10 })
+    expect(tr[shared]).toMatchObject({ title: 'Merhaba Dünya', slug: 'merhaba-dunya', wp_id: 20 })
+    expect(tr[hexId('posts:sadece-turkce')]).toMatchObject({ wp_id: 21 })
+    expect(en[hexId('posts:sadece-turkce')]).toBeUndefined()
+
+    expect(JSON.parse(result.files['.contentrain/meta/posts/tr.json']!)[shared].status).toBe('published')
+    expect(JSON.parse(result.files['.contentrain/config.json']!).locales).toEqual({ default: 'en', supported: ['en', 'tr'] })
+
+    expect(result.entry_source_map['10']).toEqual({ model_id: 'posts', entry_id: shared, locale: 'en' })
+    expect(result.entry_source_map['20']).toEqual({ model_id: 'posts', entry_id: shared, locale: 'tr' })
+    expect(result.entry_source_map['21']).toEqual({ model_id: 'posts', entry_id: hexId('posts:sadece-turkce'), locale: 'tr' })
+    expect(result.report.locales).toEqual(['en', 'tr'])
+    expect(result.report.translation_groups).toBe(1)
+    expect(result.report.models.posts!.entries).toBe(2)
+  })
+
+  it('a monolingual site is unchanged: i18n false, data.json, one supported locale', async () => {
+    const { result } = await load()
+    expect(JSON.parse(result.files['.contentrain/models/posts.json']!).i18n).toBe(false)
+    expect(result.files['.contentrain/content/blog/posts/data.json']).toBeDefined()
+    expect(result.report.locales).toEqual(['en'])
+    expect(result.report.translation_groups).toBe(0)
+  })
 })

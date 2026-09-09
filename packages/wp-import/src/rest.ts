@@ -5,7 +5,7 @@
 // absence at a low rung is information, not an error, and the manifest layer
 // decides what to recommend about it.
 
-import type { RawIR, RawAttachment, RawComment, RawPost, RawTerm, RawTermRef, SourceAccessKind } from '@contentrain/types'
+import type { RawIR, RawAttachment, RawComment, RawLanguagePair, RawPost, RawTerm, RawTermRef, SourceAccessKind } from '@contentrain/types'
 import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import { strip, SKIP_TYPES } from './core.js'
 
@@ -60,6 +60,12 @@ interface RestPost {
   categories?: number[]
   tags?: number[]
   meta?: Record<string, unknown>
+  /** Polylang: language slug of the post and its translation group (`{ en: 12, tr: 34 }`, self included). */
+  lang?: string
+  translations?: Record<string, number>
+  /** WPML: locale of the post and its other translations. */
+  wpml_current_locale?: string
+  wpml_translations?: Array<{ locale?: string; id?: number }>
 }
 
 const positiveInteger = (name: string, value: number): number => {
@@ -199,6 +205,25 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
   const userById = new Map(users.map((u) => [u.id, u]))
 
   const posts: RawPost[] = []
+  // Translation groups, one pair per group. Polylang's `translations` already
+  // includes the post itself; WPML lists the OTHER translations, so add self.
+  const languagePairs: RawLanguagePair[] = []
+  const seenGroups = new Set<string>()
+  const recordGroup = (self: RestPost, lang: string | null) => {
+    const translations: Record<string, number> = {}
+    if (self.translations && typeof self.translations === 'object') {
+      for (const [code, id] of Object.entries(self.translations)) if (typeof id === 'number') translations[code] = id
+    } else if (Array.isArray(self.wpml_translations)) {
+      for (const t of self.wpml_translations) if (t.locale && typeof t.id === 'number') translations[t.locale] = t.id
+      if (lang) translations[lang] = self.id
+    }
+    const ids = Object.values(translations)
+    if (ids.length < 2) return
+    const key = [...ids].toSorted((a, b) => a - b).join(',')
+    if (seenGroups.has(key)) return
+    seenGroups.add(key)
+    languagePairs.push({ post: self.id, translations })
+  }
   for (const [i, base] of bases.entries()) {
     for (const p of postLists[i] ?? []) {
       const termRefs: RawTermRef[] = [...(p.categories ?? []), ...(p.tags ?? [])].map((id) => {
@@ -210,7 +235,10 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
       const author = p.author ? (userById.get(p.author)?.slug ?? null) : null
       const meta: Record<string, unknown> = { ...(p.meta && typeof p.meta === 'object' ? p.meta : {}) }
       if (p.featured_media) meta._thumbnail_id = String(p.featured_media)
+      const lang = (typeof p.lang === 'string' && p.lang) || (typeof p.wpml_current_locale === 'string' && p.wpml_current_locale) || null
+      recordGroup(p, lang)
       posts.push({
+        ...(lang ? { lang } : {}),
         id: p.id,
         type: base.slug,
         status: p.status ?? 'publish',
@@ -280,6 +308,7 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     posts,
     attachments,
     comments,
+    ...(languagePairs.length ? { language_pairs: languagePairs } : {}),
   }
   return { raw, warnings }
 }
