@@ -96,7 +96,7 @@ All write operations are designed around git-backed safety:
 | `contentrain_branch_delete` | Delete a stale/failed `cr/*` branch locally and on the remote (contentrain branch protected) | — | **Yes** |
 | `contentrain_scan` | Graph- and candidate-based hardcoded string scan | Yes | — |
 | `contentrain_apply` | Normalize extract/reuse execution with dry-run support | — | — |
-| `contentrain_bulk` | Bulk locale copy, status updates, and deletes | — | — |
+| `contentrain_bulk` | Bulk locale copy, status updates, and deletes (`dry_run` previews) | — | — |
 | `contentrain_media_list` | List media assets (search, tag filter, cursor pagination) | Yes | — |
 | `contentrain_media_get` | Get one media asset by id | Yes | — |
 | `contentrain_media_ingest` | Ingest an asset from a source URL (provider fetches server-side) | — | — |

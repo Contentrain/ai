@@ -21,7 +21,9 @@ export function registerBulkTools(
 ): void {
   server.tool(
     'contentrain_bulk',
-    'Batch operations on content entries. All operations are auto-committed to git.',
+    'Batch operations on content entries. All operations are auto-committed to git. '
+    + 'DRY RUN (dry_run:true): runs the whole operation in a throwaway worktree and reports exactly what would change — nothing is committed and no branch survives. '
+    + 'Recommended workflow: preview with dry_run:true, review the counts, then call again to execute.',
     {
       operation: z.enum(['copy_locale', 'update_status', 'delete_entries']),
       model: z.string().describe('Model ID'),
@@ -31,7 +33,8 @@ export function registerBulkTools(
       slugs: z.array(z.string()).optional().describe('Document slugs for update_status (document models) — a document is addressed by slug, the same identity contentrain_content_save uses, not by entry ID'),
       locale: z.string().optional().describe('Scope update_status to a single locale (i18n models only; defaults to every supported locale)'),
       status: z.enum(['draft', 'in_review', 'published', 'rejected', 'archived']).optional().describe('New status for update_status'),
-      confirm: z.boolean().optional().describe('Must be true for delete_entries'),
+      confirm: z.boolean().optional().describe('Must be true for delete_entries (not needed while dry_run:true — a preview deletes nothing)'),
+      dry_run: z.boolean().optional().describe('Preview mode: perform the operation in a throwaway worktree and report what would change, committing nothing. Defaults to false so existing callers keep executing.'),
     },
     TOOL_ANNOTATIONS['contentrain_bulk']!,
     async (input) => {
@@ -112,6 +115,10 @@ export function registerBulkTools(
 
           try {
             let copiedCount = 0
+            // Copying REPLACES the target locale file. A preview that does not
+            // say how many records are already there hides the only thing worth
+            // previewing about this operation.
+            let replacedCount = 0
 
             await tx.write(async (wt) => {
               const cDir = resolveContentDir(wt, model)
@@ -122,6 +129,8 @@ export function registerBulkTools(
               if (!sourceData) {
                 throw new Error(`No content found for locale "${input.source_locale}" in model "${input.model}"`)
               }
+              const targetData = await readJson<Record<string, unknown>>(targetFile)
+              if (targetData) replacedCount = model.kind === 'collection' ? Object.keys(targetData).length : 1
 
               await writeJson(targetFile, sourceData)
 
@@ -141,6 +150,26 @@ export function registerBulkTools(
               }
 
             })
+
+            if (input.dry_run) {
+              await tx.cleanup()
+              return {
+                content: [{ type: 'text' as const, text: JSON.stringify({
+                  status: 'preview',
+                  dry_run: true,
+                  operation: 'copy_locale',
+                  message: `Would copy ${copiedCount} entries from ${input.source_locale} to ${input.target_locale}.`,
+                  would_copy: copiedCount,
+                  would_replace: replacedCount,
+                  next_steps: replacedCount > 0
+                    ? [
+                        `${replacedCount} record(s) already exist in "${input.target_locale}" and would be REPLACED — confirm that is intended`,
+                        'Call contentrain_bulk again without dry_run to execute',
+                      ]
+                    : ['Call contentrain_bulk again without dry_run to execute'],
+                }, null, 2) }],
+              }
+            }
 
             await tx.commit(`[contentrain] bulk: copy ${input.source_locale} → ${input.target_locale} for ${input.model}`, {
               tool: 'contentrain_bulk',
@@ -310,6 +339,22 @@ export function registerBulkTools(
               }
             }
 
+            if (input.dry_run) {
+              await tx.cleanup()
+              return {
+                content: [{ type: 'text' as const, text: JSON.stringify({
+                  status: 'preview',
+                  dry_run: true,
+                  operation: 'update_status',
+                  message: `Would update ${updatedCount} meta record(s) to status "${input.status}" across locales [${Object.keys(updatedPerLocale).join(', ')}].`,
+                  would_update: updatedCount,
+                  would_update_by_locale: updatedPerLocale,
+                  not_found: notFound.length > 0 ? notFound : undefined,
+                  next_steps: ['Call contentrain_bulk again without dry_run to execute'],
+                }, null, 2) }],
+              }
+            }
+
             await tx.commit(`[contentrain] bulk: update status → ${input.status} for ${input.model}`, {
               tool: 'contentrain_bulk',
               model: input.model,
@@ -351,9 +396,14 @@ export function registerBulkTools(
               isError: true,
             }
           }
-          if (input.confirm !== true) {
+          // A preview deletes nothing, so demanding confirmation for it would
+          // make the safe path the harder one.
+          if (!input.dry_run && input.confirm !== true) {
             return {
-              content: [{ type: 'text' as const, text: JSON.stringify({ error: 'delete_entries requires confirm:true' }) }],
+              content: [{ type: 'text' as const, text: JSON.stringify({
+                error: 'delete_entries requires confirm:true',
+                hint: 'Run with dry_run:true first to see which files would be removed — no confirmation needed for a preview.',
+              }) }],
               isError: true,
             }
           }
@@ -378,6 +428,21 @@ export function registerBulkTools(
               }
 
             })
+
+            if (input.dry_run) {
+              await tx.cleanup()
+              return {
+                content: [{ type: 'text' as const, text: JSON.stringify({
+                  status: 'preview',
+                  dry_run: true,
+                  operation: 'delete_entries',
+                  message: `Would delete ${input.entry_ids!.length} entries, removing ${allRemoved.length} file(s).`,
+                  would_delete: input.entry_ids!.length,
+                  files_to_remove: allRemoved,
+                  next_steps: ['Call contentrain_bulk again with dry_run:false and confirm:true to execute'],
+                }, null, 2) }],
+              }
+            }
 
             await tx.commit(`[contentrain] bulk: delete ${input.entry_ids.length} entries from ${input.model}`, {
               tool: 'contentrain_bulk',
