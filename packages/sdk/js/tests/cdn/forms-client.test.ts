@@ -1,15 +1,19 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { FormsClient } from '../../src/cdn/forms-client.js'
 import { ContentrainError } from '../../src/cdn/errors.js'
-import formConfig from '../fixtures/public-api/form-config.json'
-import submitRequest from '../fixtures/public-api/form-submit-request.json'
-import submitSuccess from '../fixtures/public-api/form-submit-success.json'
-import submitErrors from '../fixtures/public-api/form-submit-errors.json'
-import h3Error from '../fixtures/public-api/h3-error.json'
+import formConfig from '../fixtures/public-api/forms.config.response.json'
+import submitRequest from '../fixtures/public-api/forms.submit.request.json'
+import submitSuccess from '../fixtures/public-api/forms.submit.success.response.json'
+import invalidRequest from '../fixtures/public-api/forms.submit.invalid.request.json'
+import submitErrors from '../fixtures/public-api/forms.submit.validation-error.response.json'
+import captchaError from '../fixtures/public-api/forms.submit.captcha-error.response.json'
+import errors from '../fixtures/public-api/errors.json'
 
-// The fixtures are the request/response examples of Studio's docs/FORMS.md —
-// the server contract this client consumes. A change on either side must
-// change these files, never the client alone.
+// The fixtures are byte-for-byte copies of Studio's public-API wire fixtures
+// (tests/fixtures/public-api, produced by the real route handlers) — the
+// server contract this client consumes. See ../fixtures/public-api/README.md.
+
+const rateLimited = errors.forms.find((e) => e.key === 'forms.rate_limited')!
 
 function mockFetch(body: unknown, status = 200) {
   return vi.fn().mockResolvedValue({
@@ -39,9 +43,9 @@ describe('FormsClient', () => {
     expect(config.fields.email!.type).toBe('email')
     expect(config.fields.email!.required).toBe(true)
     expect(config.captcha).toBe('turnstile')
-    expect(config.captchaSiteKey).toBe('0x4AAAAAAAExampleSiteKey')
+    expect(config.captchaSiteKey).toBe('0x4AAAAAAA-fixture-site-key')
     expect(config.honeypotField).toBe('_hp')
-    expect(config.successMessage).toBe('Thank you!')
+    expect(config.successMessage).toBe('Thanks! We will get back to you.')
 
     const [url] = fetchMock.mock.calls[0] as [string]
     expect(url).toBe('https://studio.test/api/forms/v1/proj1/contact/config')
@@ -59,11 +63,12 @@ describe('FormsClient', () => {
   })
 
   it('config() throws ContentrainError with the h3 message on failure', async () => {
-    vi.stubGlobal('fetch', mockFetch({ statusCode: 404, message: 'forms.form_disabled' }, 404))
+    const disabled = errors.forms.find((e) => e.key === 'forms.form_disabled')!
+    vi.stubGlobal('fetch', mockFetch({ url: '/api/forms/v1/proj1/contact/config', statusCode: 404, statusMessage: 'Server Error', message: disabled.message }, 404))
     await expect(createClient().config('contact')).rejects.toMatchObject({
       name: 'ContentrainError',
       status: 404,
-      message: 'forms.form_disabled',
+      message: 'This form is not currently accepting submissions.',
     })
   })
 
@@ -72,10 +77,10 @@ describe('FormsClient', () => {
     vi.stubGlobal('fetch', fetchMock)
     const result = await createClient().submit(
       'contact',
-      { name: 'Ada', email: 'ada@example.com', message: 'Hello' },
-      { captchaToken: 'turnstile-token', honeypot: '' },
+      { name: 'Ada Lovelace', email: 'ada@example.com', message: 'Hello from the migrated site.' },
+      { captchaToken: '0.turnstile-token-from-the-widget', honeypot: '' },
     )
-    expect(result).toEqual({ success: true, message: 'Thank you!' })
+    expect(result).toEqual({ success: true, message: 'Thanks! We will get back to you.' })
 
     const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit]
     expect(url).toBe('https://studio.test/api/forms/v1/proj1/contact/submit')
@@ -97,21 +102,30 @@ describe('FormsClient', () => {
   })
 
   it('submit() resolves with validation errors — a 200 with success:false is a verdict, not a failure', async () => {
-    vi.stubGlobal('fetch', mockFetch(submitErrors))
-    const result = await createClient().submit('contact', { email: 'invalid' })
+    const fetchMock = mockFetch(submitErrors)
+    vi.stubGlobal('fetch', fetchMock)
+    const result = await createClient().submit('contact', invalidRequest.data, { captchaToken: invalidRequest.captchaToken, honeypot: invalidRequest._hp })
+    expect(JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string)).toEqual(invalidRequest)
     expect(result.success).toBe(false)
-    expect(result.errors).toEqual([
-      { field: 'email', message: 'validation.invalid_email' },
-      { field: 'name', message: 'validation.required' },
-    ])
+    // Messages are the validator's free text — branch on `field`, never on `message`.
+    expect(result.errors!.map((e) => e.field)).toEqual(['name', 'email'])
+    expect(result.errors).toEqual(submitErrors.errors)
   })
 
-  it('submit() rejects with the HTTP status and message on 429 / 403 / 404', async () => {
-    vi.stubGlobal('fetch', mockFetch(h3Error, 429))
+  it('a missing or rejected captcha is a 200 verdict on the `captcha` field, not a 4xx', async () => {
+    vi.stubGlobal('fetch', mockFetch(captchaError))
+    const result = await createClient().submit('contact', { name: 'Ada Lovelace' })
+    expect(result.success).toBe(false)
+    expect(result.errors![0]!.field).toBe('captcha')
+  })
+
+  it('submit() rejects with the HTTP status and the dictionary message on 429 / 403 / 404', async () => {
+    // Nitro's production error body: statusMessage is a generic "Server Error"; the dictionary text is in `message`.
+    vi.stubGlobal('fetch', mockFetch({ url: '/api/forms/v1/proj1/contact/submit', statusCode: 429, statusMessage: 'Server Error', message: rateLimited.message }, 429))
     const err = await createClient().submit('contact', { name: 'Ada' }).catch((e: unknown) => e)
     expect(err).toBeInstanceOf(ContentrainError)
     expect((err as ContentrainError).status).toBe(429)
-    expect((err as ContentrainError).message).toBe('forms.rate_limited')
+    expect((err as ContentrainError).message).toBe('Too many submissions. Please try again later.')
   })
 
   it('submit() keeps a non-JSON error body as the message', async () => {

@@ -1,0 +1,7 @@
+{
+  "success": false,
+  "errors": [
+    { "field": "name", "message": "Required field is missing or empty" },
+    { "field": "email", "message": "\"not-an-email\" may not be a valid email" }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "modelId": "contact",
+  "fields": {
+    "name": { "type": "string", "label": "Name", "required": true },
+    "email": { "type": "email", "label": "Email", "required": true },
+    "message": { "type": "text", "label": "Message", "required": false }
+  },
+  "locale": "en",
+  "captcha": "turnstile",
+  "captchaSiteKey": "0x4AAAAAAA-fixture-site-key",
+  "successMessage": "Thanks! We will get back to you.",
+  "honeypotField": "_hp"
+}

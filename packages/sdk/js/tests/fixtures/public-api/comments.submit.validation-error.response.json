@@ -1,0 +1,6 @@
+{
+  "success": false,
+  "errors": [
+    { "field": "author.email", "message": "An email address is required" }
+  ]
+}
