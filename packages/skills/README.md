@@ -26,7 +26,7 @@ pnpm add @contentrain/skills
 ### Via skills CLI (install skills into your AI agent)
 
 ```bash
-# Install all 15 skills
+# Install all 16 skills
 npx skills add Contentrain/ai/packages/skills
 
 # Install a specific skill
@@ -64,6 +64,7 @@ Published under `skills/` — 15 production skills:
 | `contentrain-serve` | Start the local review and normalize UI |
 | `contentrain-diff` | View content diffs between branches |
 | `contentrain-doctor` | Diagnose project health issues |
+| `contentrain-migrate-wordpress` | Import a WordPress site and wire it to a framework |
 
 Each skill directory contains:
 

@@ -122,3 +122,61 @@ describe('MCP parity — ModelDefinition properties', () => {
     expect(REQUIRED).toContain('title_field')
   })
 })
+
+// ─── WordPress import parity ───
+
+/** Literal alternatives of an exclusion regex, stripped of pattern syntax. */
+function alternatives(re: RegExp): string[] {
+  return re.source
+    .replace(/^\^?\(/, '')
+    .replace(/\)[$]?$/, '')
+    .split('|')
+    .map(part => part.replace(/[\\^$.*+?()[\]{}]/g, '').replace(/_$/, ''))
+    .filter(part => part.length > 2)
+}
+
+const WP_SKILL_DIR = join(PKG_ROOT, 'skills', 'contentrain-migrate-wordpress')
+
+/**
+ * The migrate skill tells an agent which post types are skipped and which meta
+ * keys are dropped. Those lists live in `@contentrain/wp-import` as regexes; a
+ * new exclusion added there without a line here means the agent confidently
+ * tells a user their content was imported when it was not.
+ */
+describe('WordPress import parity — documented exclusions', () => {
+  it('the mapping reference names every skipped post type', async () => {
+    const { SKIP_TYPES } = await import('@contentrain/wp-import')
+    const doc = readFileSync(join(WP_SKILL_DIR, 'references', 'wordpress-mapping.md'), 'utf-8')
+    const parts = alternatives(SKIP_TYPES)
+    expect(parts.length, 'the regex shape changed — this test would pass vacuously').toBeGreaterThan(5)
+    const missing = parts.filter(part => !doc.includes(part))
+    expect(missing, `wordpress-mapping.md does not mention skipped types: ${missing.join(', ')}`).toEqual([])
+  })
+
+  it('the mapping reference names every dropped plugin meta prefix', async () => {
+    const { PLUGIN_META } = await import('@contentrain/wp-import')
+    const doc = readFileSync(join(WP_SKILL_DIR, 'references', 'wordpress-mapping.md'), 'utf-8')
+    const parts = alternatives(PLUGIN_META)
+    expect(parts.length, 'the regex shape changed — this test would pass vacuously').toBeGreaterThan(5)
+    const missing = parts.filter(part => !doc.includes(part))
+    expect(missing, `wordpress-mapping.md does not mention plugin meta: ${missing.join(', ')}`).toEqual([])
+  })
+
+  it('the mapping reference names every model the importer always creates', () => {
+    // Fixed models — the ones that do not depend on what the source contains.
+    const doc = readFileSync(join(WP_SKILL_DIR, 'references', 'wordpress-mapping.md'), 'utf-8')
+    const always = ['authors', 'media', 'menus', 'menu-items', 'comments', 'site', 'categories', 'tags', 'posts', 'pages']
+    const missing = always.filter(model => !doc.includes(`\`${model}\``))
+    expect(missing, `wordpress-mapping.md does not document models: ${missing.join(', ')}`).toEqual([])
+  })
+
+  it('the skill documents the report fields an agent must read before declaring success', () => {
+    const skill = readFileSync(join(WP_SKILL_DIR, 'SKILL.md'), 'utf-8')
+    for (const field of ['skipped_types', 'dropped_relations', 'slug_rewritten', 'acf_fields', 'meta_fields']) {
+      expect(skill, `SKILL.md never mentions report field ${field}`).toContain(field)
+    }
+    // The two artefacts nothing else records.
+    expect(skill).toContain('entry-source-map.json')
+    expect(skill).toContain('comments-export.json')
+  })
+})

@@ -269,6 +269,9 @@ importers:
       '@contentrain/rules':
         specifier: workspace:*
         version: link:../rules
+      '@contentrain/wp-import':
+        specifier: workspace:*
+        version: link:../wp-import
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.15
