@@ -348,7 +348,8 @@ export interface CommentThread {
 export interface CommentSubmitBody {
   author: { name: string; email?: string; url?: string }
   body: string
-  parentId?: string
+  /** null for a root comment — sent explicitly, as the provider's own fixture does. */
+  parentId: string | null
   captchaToken?: string
   _hp?: string
 }
@@ -384,7 +385,7 @@ export function submitComment(rt: Runtime, entry: EntryRef, body: CommentSubmitB
 /** Comment-form entries → the documented request body (inputs: author_name, author_email, author_url, body, parent_id). */
 export function commentPayload(entries: Iterable<[string, unknown]>, honeypotField: string | null): CommentSubmitBody {
   const values: Record<string, string> = {}
-  const payload: CommentSubmitBody = { author: { name: '' }, body: '' }
+  const payload: CommentSubmitBody = { author: { name: '' }, body: '', parentId: null }
   for (const [name, raw] of entries) {
     if (typeof raw !== 'string') continue
     if (name === CAPTCHA_FIELD) {
@@ -401,7 +402,7 @@ export function commentPayload(entries: Iterable<[string, unknown]>, honeypotFie
   if (values.author_email?.trim()) payload.author.email = values.author_email.trim()
   if (values.author_url?.trim()) payload.author.url = values.author_url.trim()
   payload.body = (values.body ?? '').trim()
-  if (values.parent_id?.trim()) payload.parentId = values.parent_id.trim()
+  payload.parentId = values.parent_id?.trim() || null
   return payload
 }
 

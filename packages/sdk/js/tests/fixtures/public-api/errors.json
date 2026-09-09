@@ -1,0 +1,23 @@
+{
+  "$comment": "Non-200 responses of the public surfaces. Studio's Nitro error handler serialises a thrown error as { statusCode, message, ... }; clients branch on statusCode. Messages are the en dictionary entries (error-messages model) and are verified against it by tests/integration/public-api-fixtures.integration.test.ts.",
+  "forms": [
+    { "statusCode": 400, "key": "forms.data_required", "message": "Form submission data is required.", "when": "Body has no `data` object (flat legacy bodies included)" },
+    { "statusCode": 403, "key": "forms.upgrade", "message": "Forms require a plan upgrade.", "when": "Plan lacks forms.enabled, or the model is beyond the forms.models cap" },
+    { "statusCode": 404, "key": "forms.not_found", "message": "Form not found.", "when": "Unknown project, or the workspace has no repository installation" },
+    { "statusCode": 404, "key": "forms.model_not_found", "message": "Form model not found.", "when": "Unknown model id" },
+    { "statusCode": 404, "key": "forms.form_disabled", "message": "This form is not currently accepting submissions.", "when": "form.enabled or form.public is false" },
+    { "statusCode": 429, "key": "forms.rate_limited", "message": "Too many submissions. Please try again later.", "when": "Per-IP sliding window (config: 30/min; submit: form.limits.rateLimitPerIp, default 10/min)" },
+    { "statusCode": 429, "key": "forms.model_monthly_limit", "message": "This form has reached its monthly submission limit", "when": "form.limits.maxPerMonth reached" },
+    { "statusCode": 429, "key": "forms.monthly_limit", "message": "Monthly submission limit reached. Please try again next month.", "when": "Workspace forms.submissions_per_month quota reached" }
+  ],
+  "comments": [
+    { "statusCode": 400, "key": "comments.body_required", "message": "A comment body is required", "when": "Body is not a JSON object" },
+    { "statusCode": 403, "key": "comments.upgrade", "message": "Comments are not included in your plan", "when": "Plan lacks comments.enabled, or the model is beyond the comments.models cap" },
+    { "statusCode": 403, "key": "comments.thread_closed", "message": "Comments are closed for this entry", "when": "Submit on a closed thread (read still works; config.closed is true)" },
+    { "statusCode": 404, "key": "comments.not_found", "message": "Comments are not available for this project", "when": "Unknown project, or the workspace has no repository installation" },
+    { "statusCode": 404, "key": "comments.model_not_found", "message": "Model not found", "when": "Unknown model id" },
+    { "statusCode": 404, "key": "comments.disabled", "message": "Comments are not enabled for this model", "when": "comments.enabled is false, or the model kind cannot carry a thread" },
+    { "statusCode": 429, "key": "comments.rate_limited", "message": "Too many requests, please try again later", "when": "Per-IP sliding window (read: 120/min; submit: comments.rateLimitPerIp per entry, default 5/min)" },
+    { "statusCode": 429, "key": "comments.monthly_limit", "message": "This site has reached its monthly comment limit", "when": "Workspace comments.per_month quota reached" }
+  ]
+}

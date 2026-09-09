@@ -1,0 +1,6 @@
+{
+  "success": false,
+  "errors": [
+    { "field": "captcha", "message": "Captcha verification failed. Please try again." }
+  ]
+}

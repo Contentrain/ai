@@ -7,8 +7,8 @@ import { EMBED_TS } from './index'
 // The embed runtime ships as source text; this suite writes it to disk and
 // imports it, so the functions under test are the ones the generated site
 // runs. Requests and responses are checked against the SAME fixtures the SDK's
-// FormsClient/CommentsClient tests use (Studio's docs/FORMS.md and
-// docs/COMMENTS.md examples): one server contract, two clients, one truth.
+// FormsClient/CommentsClient tests use — byte-for-byte copies of Studio's
+// public-API wire fixtures: one server contract, two clients, one truth.
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const TMP = join(HERE, '..', '.vitest-tmp-embed')
@@ -20,7 +20,7 @@ const fixture = async (name: string): Promise<any> => JSON.parse(await readFile(
 type Embed = Record<string, any>
 let em: Embed
 const rt = { base_url: 'https://studio.test/', project_id: 'proj1' }
-const entry = { model_id: 'posts', entry_id: 'a1b2c3d4e5f6', locale: 'en' }
+const entry = { model_id: 'posts', entry_id: 'hello-world', locale: 'en' }
 
 function mockFetch(body: unknown, status = 200) {
   return vi.fn().mockResolvedValue({
@@ -55,12 +55,14 @@ describe('emitted embed runtime — transport', () => {
   })
 
   it('sends no credential and turns h3 errors into EmbedError with the status', async () => {
-    const fetchMock = mockFetch(await fixture('h3-error'), 429)
+    const rateLimited = (await fixture('errors')).forms.find((e: { key: string }) => e.key === 'forms.rate_limited')
+    // Nitro's production error body: generic statusMessage, dictionary text in `message`.
+    const fetchMock = mockFetch({ url: '/api/forms/v1/proj1/contact/submit', statusCode: 429, statusMessage: 'Server Error', message: rateLimited.message }, 429)
     vi.stubGlobal('fetch', fetchMock)
     const err = await em.submitForm(rt, 'contact', { data: {} }).catch((e: unknown) => e)
     expect(err).toBeInstanceOf(em.EmbedError)
     expect(err.status).toBe(429)
-    expect(err.message).toBe('forms.rate_limited')
+    expect(err.message).toBe('Too many submissions. Please try again later.')
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
     expect(JSON.stringify(init.headers)).not.toContain('Authorization')
   })
@@ -68,7 +70,7 @@ describe('emitted embed runtime — transport', () => {
 
 describe('emitted embed runtime — forms', () => {
   it('fetches the config from the documented URL', async () => {
-    const config = await fixture('form-config')
+    const config = await fixture('forms.config.response')
     const fetchMock = mockFetch(config)
     vi.stubGlobal('fetch', fetchMock)
     expect(await em.fetchFormConfig(rt, 'contact')).toEqual(config)
@@ -76,17 +78,17 @@ describe('emitted embed runtime — forms', () => {
   })
 
   it('formPayload builds the documented request body from form entries', async () => {
-    const config = await fixture('form-config')
+    const config = await fixture('forms.config.response')
     const entries: Array<[string, unknown]> = [
-      ['name', 'Ada'],
+      ['name', 'Ada Lovelace'],
       ['email', 'ada@example.com'],
-      ['message', 'Hello'],
+      ['message', 'Hello from the migrated site.'],
       ['_hp', ''],
-      ['cf-turnstile-response', 'turnstile-token'],
+      ['cf-turnstile-response', '0.turnstile-token-from-the-widget'],
       ['not_exposed', 'dropped'],
       ['upload', new Blob(['x'])],
     ]
-    expect(em.formPayload(entries, config)).toEqual(await fixture('form-submit-request'))
+    expect(em.formPayload(entries, config)).toEqual(await fixture('forms.submit.request'))
   })
 
   it('formPayload coerces by field type and omits control fields it did not see', () => {
@@ -96,11 +98,12 @@ describe('emitted embed runtime — forms', () => {
   })
 
   it('submitForm posts JSON to the documented URL and returns the verdict as-is', async () => {
-    const request = await fixture('form-submit-request')
-    const errors = await fixture('form-submit-errors')
+    const request = await fixture('forms.submit.invalid.request')
+    const errors = await fixture('forms.submit.validation-error.response')
     const fetchMock = mockFetch(errors)
     vi.stubGlobal('fetch', fetchMock)
     expect(await em.submitForm(rt, 'contact', request)).toEqual(errors)
+    expect(errors.errors.map((e: { field: string }) => e.field)).toEqual(['name', 'email'])
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
     expect(url).toBe('https://studio.test/api/forms/v1/proj1/contact/submit')
     expect(init.method).toBe('POST')
@@ -109,14 +112,15 @@ describe('emitted embed runtime — forms', () => {
   })
 
   it('formHtml renders one control per exposed field by type, the honeypot, the captcha and a submit', async () => {
-    const html: string = em.formHtml(await fixture('form-config'))
+    const html: string = em.formHtml(await fixture('forms.config.response'))
     expect(html).toContain('<form class="cr-form" method="post" data-model="contact">')
     expect(html).toContain('<input type="text" id="cr-field-name" name="name" required />')
     expect(html).toContain('<input type="email" id="cr-field-email" name="email" required />')
     expect(html).toContain('<textarea id="cr-field-message" name="message" rows="5"></textarea>')
     expect(html).toContain('<label for="cr-field-name">Name <span aria-hidden="true">*</span></label>')
+    expect(html).toContain('<label for="cr-field-message">Message</label>')
     expect(html).toContain('name="_hp" tabindex="-1" autocomplete="off"')
-    expect(html).toContain('<div class="cf-turnstile" data-sitekey="0x4AAAAAAAExampleSiteKey"></div>')
+    expect(html).toContain('<div class="cf-turnstile" data-sitekey="0x4AAAAAAA-fixture-site-key"></div>')
     expect(html).toContain('<button type="submit">Send</button>')
     expect(html).toContain('<div class="cr-status" aria-live="polite"></div>')
   })
@@ -151,57 +155,60 @@ describe('emitted embed runtime — forms', () => {
 
 describe('emitted embed runtime — comments', () => {
   it('fetchThread reads the documented URL with the entry locale', async () => {
-    const thread = await fixture('comment-thread')
+    const thread = await fixture('comments.read.response')
     const fetchMock = mockFetch(thread)
     vi.stubGlobal('fetch', fetchMock)
     expect(await em.fetchThread(rt, entry, { page: 2, sort: 'newest' })).toEqual(thread)
-    expect((fetchMock.mock.calls[0] as [string])[0]).toBe('https://studio.test/api/comments/v1/proj1/posts/a1b2c3d4e5f6?locale=en&page=2&sort=newest')
+    expect((fetchMock.mock.calls[0] as [string])[0]).toBe('https://studio.test/api/comments/v1/proj1/posts/hello-world?locale=en&page=2&sort=newest')
   })
 
   it('commentPayload builds the documented request body from the comment form', async () => {
     const entries: Array<[string, unknown]> = [
-      ['parent_id', '11111111-1111-4111-8111-111111111111'],
-      ['body', ' Great post '],
-      ['author_name', 'Ada'],
-      ['author_email', 'ada@example.com'],
-      ['author_url', 'https://ada.dev'],
+      ['parent_id', ''],
+      ['body', ' Great post! '],
+      ['author_name', 'Grace'],
+      ['author_email', 'grace@example.com'],
+      ['author_url', 'https://grace.dev'],
       ['_hp', ''],
-      ['cf-turnstile-response', 'turnstile-token'],
+      ['cf-turnstile-response', '0.turnstile-token-from-the-widget'],
     ]
-    expect(em.commentPayload(entries, '_hp')).toEqual(await fixture('comment-submit-request'))
-    expect(em.commentPayload([['author_name', 'A'], ['body', 'b'], ['parent_id', ''], ['author_email', ' ']], null)).toEqual({
+    expect(em.commentPayload(entries, '_hp')).toEqual(await fixture('comments.submit.request'))
+    expect(em.commentPayload([['author_name', 'A'], ['body', 'b'], ['parent_id', '1111'], ['author_email', ' ']], null)).toEqual({
       author: { name: 'A' },
       body: 'b',
+      parentId: '1111',
     })
   })
 
   it('submitComment posts to the documented URL and returns the verdict', async () => {
-    const request = await fixture('comment-submit-request')
-    const pending = await fixture('comment-submit-pending')
+    const request = await fixture('comments.submit.request')
+    const pending = await fixture('comments.submit.pending.response')
     const fetchMock = mockFetch(pending)
     vi.stubGlobal('fetch', fetchMock)
     expect(await em.submitComment(rt, entry, request)).toEqual(pending)
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
-    expect(url).toBe('https://studio.test/api/comments/v1/proj1/posts/a1b2c3d4e5f6?locale=en')
+    expect(url).toBe('https://studio.test/api/comments/v1/proj1/posts/hello-world?locale=en')
     expect(JSON.parse(init.body as string)).toEqual(request)
   })
 
   it('threadHtml renders roots with nested replies, escaped bodies, moderator badge and reply buttons within depth', async () => {
-    const thread = await fixture('comment-thread')
+    const thread = await fixture('comments.read.response')
     const html: string = em.threadHtml(thread)
     expect(html).toContain('<ol class="cr-comment-list">')
     expect(html).toContain('id="cr-comment-11111111-1111-4111-8111-111111111111"')
-    expect(html).toContain('<p>First &lt;b&gt;comment&lt;/b&gt; &amp; more</p>')
-    expect(html).not.toContain('<b>comment</b>')
+    expect(html).toContain('<div class="cr-comment-body"><p>First!</p></div>')
     expect(html).toContain('<a href="https://ada.dev/" rel="nofollow ugc noopener" target="_blank">Ada</a>')
     expect(html).toContain('<ol class="cr-replies"><li class="cr-comment cr-comment--comment" id="cr-comment-22222222-2222-4222-8222-222222222222" data-depth="1">')
-    expect(html).toContain('<span class="cr-moderator">Moderator</span>')
-    expect(html).toContain('<time datetime="2020-05-01T10:00:00.000Z">2020-05-01</time>')
+    expect(html).toContain('<span class="cr-comment-author">Site editor</span> <span class="cr-moderator">Moderator</span>')
+    expect(html).toContain('<time datetime="2026-09-01T10:00:00.000Z">2026-09-01</time>')
     expect(html).toContain('class="cr-reply" data-parent="11111111-1111-4111-8111-111111111111" data-author="Ada"')
+    // body is plain text on the wire, and is still rendered escaped — defence in depth
+    const hostile = { ...thread.comments[0], body: 'x <b>y</b> & "z"', replies: [] }
+    expect(em.commentHtml(hostile, thread.config)).toContain('<p>x &lt;b&gt;y&lt;/b&gt; &amp; &quot;z&quot;</p>')
   })
 
   it('reply buttons disappear on a closed thread and at the depth cap', async () => {
-    const thread = await fixture('comment-thread')
+    const thread = await fixture('comments.read.response')
     expect(em.threadHtml({ ...thread, config: { ...thread.config, closed: true } })).not.toContain('cr-reply')
     expect(em.threadHtml({ ...thread, config: { ...thread.config, maxDepth: 1 } })).toContain('data-parent="11111111-1111-4111-8111-111111111111"')
     expect(em.threadHtml({ ...thread, config: { ...thread.config, maxDepth: 1 } })).not.toContain('data-parent="22222222-2222-4222-8222-222222222222"')
@@ -211,17 +218,17 @@ describe('emitted embed runtime — comments', () => {
   })
 
   it('commentFormHtml follows the thread config: required email, body cap, honeypot, captcha', async () => {
-    const thread = await fixture('comment-thread')
+    const thread = await fixture('comments.read.response')
     const html: string = em.commentFormHtml(thread.config)
     expect(html).toContain('<input type="hidden" name="parent_id" value="" />')
     expect(html).toContain('name="body" required maxlength="5000"')
     expect(html).toContain('name="author_name" required maxlength="120"')
     expect(html).toContain('name="author_email" required maxlength="254"')
     expect(html).toContain('name="_hp"')
-    expect(html).not.toContain('cf-turnstile')
-    const optionalEmail: string = em.commentFormHtml({ ...thread.config, requireEmail: false, captcha: 'turnstile', captchaSiteKey: 'k', honeypotField: null })
+    expect(html).toContain('<div class="cf-turnstile" data-sitekey="0x4AAAAAAA-fixture-site-key"></div>')
+    const optionalEmail: string = em.commentFormHtml({ ...thread.config, requireEmail: false, captcha: null, captchaSiteKey: null, honeypotField: null })
     expect(optionalEmail).toContain('name="author_email" maxlength="254"')
-    expect(optionalEmail).toContain('data-sitekey="k"')
+    expect(optionalEmail).not.toContain('cf-turnstile')
     expect(optionalEmail).not.toContain('name="_hp"')
   })
 

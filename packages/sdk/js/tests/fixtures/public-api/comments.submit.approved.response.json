@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "status": "approved",
+  "comment": {
+    "id": "33333333-3333-4333-8333-333333333333",
+    "parentId": null,
+    "depth": 0,
+    "author": { "name": "Grace", "url": "https://grace.dev/", "isModerator": false },
+    "body": "Great post!",
+    "type": "comment",
+    "createdAt": "2026-09-09T12:00:00.000Z",
+    "replies": []
+  }
+}

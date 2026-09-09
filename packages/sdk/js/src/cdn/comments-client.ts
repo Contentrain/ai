@@ -67,8 +67,8 @@ export interface CommentThreadQuery {
 export interface CommentSubmission {
   author: { name: string; email?: string; url?: string }
   body: string
-  /** Reply target — an approved comment's id. */
-  parentId?: string
+  /** Reply target — an approved comment's id; omitted or null for a root comment. */
+  parentId?: string | null
   captchaToken?: string
   /** Value of the honeypot input (`config.honeypotField`); a human leaves it empty. */
   honeypot?: string
@@ -126,8 +126,8 @@ export class CommentsClient {
     options?: { locale?: string },
   ): Promise<CommentSubmitResult> {
     const url = publicUrl(this._baseUrl, [this._projectId, modelId, entryId], { locale: options?.locale })
-    const body: Record<string, unknown> = { author: submission.author, body: submission.body }
-    if (submission.parentId) body.parentId = submission.parentId
+    // `parentId: null` is a root comment — sent explicitly, as Studio's own fixture does.
+    const body: Record<string, unknown> = { author: submission.author, body: submission.body, parentId: submission.parentId ?? null }
     if (submission.captchaToken) body.captchaToken = submission.captchaToken
     if (submission.honeypot !== undefined) body._hp = submission.honeypot
     return publicPost<CommentSubmitResult>(url, body)

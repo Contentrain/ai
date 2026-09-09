@@ -1,1 +1,0 @@
-{ "success": false, "errors": [{ "field": "author.name", "message": "comments.author_required" }] }

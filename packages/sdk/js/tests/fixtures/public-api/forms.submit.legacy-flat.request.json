@@ -1,0 +1,6 @@
+{
+  "name": "Ada Lovelace",
+  "email": "ada@example.com",
+  "message": "Flat body as sent by @contentrain/sdk FormsClient before 2026-09; rejected with 400.",
+  "cf-turnstile-response": "0.turnstile-token-from-the-widget"
+}

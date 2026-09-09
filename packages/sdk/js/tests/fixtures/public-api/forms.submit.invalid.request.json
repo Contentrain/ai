@@ -1,0 +1,8 @@
+{
+  "data": {
+    "email": "not-an-email",
+    "message": "Missing name, malformed email."
+  },
+  "captchaToken": "0.turnstile-token-from-the-widget",
+  "_hp": ""
+}
