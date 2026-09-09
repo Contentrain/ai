@@ -537,6 +537,22 @@ export const LIST_ITEMS_SLOT = '<!--@@items@@-->'
 export const CHROME_BODY_SLOT = '<!--@@body@@-->'
 
 /**
+ * Mount point of a component inside chrome: `<!--@@component:ID@@-->`, where
+ * ID is a `ComponentDef.id`. The producer replaces the source region (the
+ * theme's comment list and form, a contact form) with this marker; the emitter
+ * renders the real component there and imports it into the layout, so a
+ * runtime component is MOUNTED, not merely emitted as an unused file.
+ *
+ * Same shape as `CHROME_BODY_SLOT` for the same reasons: a comment survives
+ * serialization, renders as nothing if left behind, and can sit at any depth.
+ */
+export const CHROME_COMPONENT_OPEN = '<!--@@component:'
+export const CHROME_COMPONENT_CLOSE = '@@-->'
+
+/** The marker for one component id — `componentSlot('c-comments')`. */
+export const componentSlot = (id: string): string => `${CHROME_COMPONENT_OPEN}${id}${CHROME_COMPONENT_CLOSE}`
+
+/**
  * A rendered, asset-rewritten chunk of site chrome the emitter injects verbatim.
  * Positions: `head` lands in `<head>`; `body` is the whole body chrome carrying
  * `CHROME_BODY_SLOT` where content goes (preferred — nesting-safe); the legacy
@@ -648,6 +664,7 @@ export const COMPONENT_TYPES = [
   'nav',
   'related',
   'comments',
+  'form',
   'ads',
   'chrome',
   'taxonomy',
@@ -676,6 +693,12 @@ export interface ComponentDef {
   source: ComponentSource
   name?: string
   selector?: string
+  /**
+   * Content model a runtime component talks to — the collection a `form`
+   * submits to. A `comments` component needs none: its thread is addressed by
+   * the entry of the page it is mounted on.
+   */
+  model?: string
   /** e.g. a card component with `news`, `compact`, `featured` variants. */
   variants?: ComponentVariantDef[]
 }
@@ -794,6 +817,25 @@ export interface HandoffComments {
   unresolved?: Array<{ comment_id: number; post: number; reason: string }>
 }
 
+// ─── Runtime binding ───
+//
+// A runtime component (comments, forms) talks to a live service. The static
+// site only needs two facts to do that: where the public API lives and which
+// project it belongs to. Everything else — the model, the entry, the locale —
+// is already on the page that mounts the component.
+
+/**
+ * Public API root of the runtime provider plus the project id. `base_url` is
+ * the origin (`https://studio.contentrain.io`); components append their own
+ * `/api/{forms,comments}/v1/{project_id}/…` paths. No credential travels with
+ * it: the public endpoints are unauthenticated by design, and a browser page
+ * cannot keep a secret.
+ */
+export interface RuntimeBinding {
+  base_url: string
+  project_id: string
+}
+
 // ─── MigrationHandoff ───
 //
 // What the migration hands the user: where the generated project lives, what
@@ -867,5 +909,7 @@ export interface MigrationHandoff {
   /** Present whenever the source had comments — see `HandoffComments`. */
   comments?: HandoffComments
   offers?: HandoffOffer[]
+  /** Where the generated site's runtime components were bound, when an offer was fulfilled. */
+  runtime?: RuntimeBinding
   notes?: string[]
 }

@@ -143,7 +143,7 @@ works bundled behaves the same on CDN.
 | `in` | `.where('category', 'in', ['a','b'])` | In array |
 | `contains` | `.where('tags', 'contains', 'vue')` | String/array contains |
 
-### CDN Entry Metadata, Media & Forms
+### CDN Entry Metadata, Media, Forms & Comments
 
 ```typescript
 // Entry metadata (status, publish_at, expire_at)
@@ -154,10 +154,16 @@ const media = client.media()
 const asset = await media.asset('hero.jpg')
 const url = media.url(asset, 'thumb')
 
-// Forms (config fetch + submit)
+// Forms — public /api/forms/v1, no API key (values go under `data`; captcha + honeypot beside it)
 const form = client.form()
-const config = await form.config('contact')
-const result = await form.submit('contact', { name: 'Alice' })
+const config = await form.config('contact')   // fields keyed by id, captcha, captchaSiteKey, honeypotField
+const result = await form.submit('contact', { name: 'Alice' }, { captchaToken, honeypot: '' })
+// { success, message } | { success: false, errors: [{ field, message }] }; 403/404/429 throw ContentrainError
+
+// Comments — public /api/comments/v1, approved comments only, body is plain text (render escaped)
+const comments = client.comments()
+const thread = await comments.thread('posts', entryId, { locale: 'en' })
+await comments.submit('posts', entryId, { author: { name: 'Ada', email }, body: 'Great post', parentId }, { locale: 'en' })
 
 // Conversation API (external AI content operations)
 const conv = client.conversation()

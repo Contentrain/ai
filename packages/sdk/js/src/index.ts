@@ -52,11 +52,23 @@ export type { ContentrainCDNConfig, ContentrainCDNClient } from './cdn/index.js'
 export type { DocumentIndexEntry } from './cdn/data-source.js'
 export { ContentrainError } from './cdn/errors.js'
 
-// CDN module re-exports — media, forms, metadata
+// CDN module re-exports — media, forms, comments, metadata
 export { MediaAccessor } from './cdn/media-accessor.js'
 export type { MediaAsset, MediaAssetMeta, MediaManifest } from './cdn/media-accessor.js'
 export { FormsClient } from './cdn/forms-client.js'
-export type { FormConfig, FormFieldConfig, FormSubmitResult, FormsClientConfig } from './cdn/forms-client.js'
+export type { FormConfig, FormFieldConfig, FormFieldError, FormSubmitOptions, FormSubmitResult, FormsClientConfig } from './cdn/forms-client.js'
+export { CommentsClient } from './cdn/comments-client.js'
+export type {
+  CommentAuthor,
+  CommentFieldError,
+  CommentSubmission,
+  CommentSubmitResult,
+  CommentThread,
+  CommentThreadConfig,
+  CommentThreadQuery,
+  CommentsClientConfig,
+  PublicComment,
+} from './cdn/comments-client.js'
 export type { EntryMeta } from './cdn/collection-query.js'
 export { ConversationClient } from './cdn/conversation-client.js'
 export type {

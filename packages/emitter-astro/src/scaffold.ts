@@ -162,6 +162,36 @@ export function composeBody(chromeBody: string, values: Values, content: string)
     .join(content)
 }
 
+/** Component mount marker — must match @contentrain/types CHROME_COMPONENT_OPEN / CHROME_COMPONENT_CLOSE. */
+export const COMPONENT_OPEN = '<!--@@component:'
+export const COMPONENT_CLOSE = '@@-->'
+const COMPONENT_RE = /<!--@@component:([^@\\s]+)@@-->/g
+
+export interface BodyPart {
+  html: string
+  /** A mount point: the component id the marker named. */
+  component?: string
+}
+
+/**
+ * Split rendered chrome at component markers into html parts interleaved with
+ * mount points, so the layout can render a real component where the theme's
+ * comments form (or contact form) stood. The parts are output in order, so the
+ * page's HTML is exactly the chrome with the component's markup at the marker —
+ * no parser sees the pieces separately.
+ */
+export function splitComponents(html: string): BodyPart[] {
+  const parts: BodyPart[] = []
+  let last = 0
+  for (const match of html.matchAll(COMPONENT_RE)) {
+    parts.push({ html: html.slice(last, match.index) })
+    parts.push({ html: '', component: match[1] ?? '' })
+    last = match.index + match[0].length
+  }
+  parts.push({ html: html.slice(last) })
+  return parts
+}
+
 /** Where a list section's wrapper takes its items — must match @contentrain/types LIST_ITEMS_SLOT. */
 export const ITEMS_SLOT = '<!--@@items@@-->'
 
@@ -246,6 +276,13 @@ export function postMarks(post: MarkablePost): Values {
  * \`astro check\` — which the build runs first — failed on the page that reads
  * it. The contract is what the emitter may write, not what one site wrote.
  */
+/** Content-store address of an entry — what a mounted comments component keys its thread by. */
+export interface EntryRef {
+  model_id: string
+  entry_id: string
+  locale?: string
+}
+
 export interface EmittedPost extends MarkablePost {
   body: string
   /** Route parameters beyond slug — the date parts of a dated permalink, a post id. */
@@ -253,6 +290,8 @@ export interface EmittedPost extends MarkablePost {
   /** Stylesheets only this page loads. */
   css?: string[]
   locale?: string
+  /** Present when the producer bound this post to the content store. */
+  entry?: EntryRef
 }
 
 /** One static path of a list route, as it appears in the emitted query data. */

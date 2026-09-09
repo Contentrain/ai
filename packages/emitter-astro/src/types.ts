@@ -1,4 +1,4 @@
-import type { ProjectIR } from '@contentrain/types'
+import type { EntrySourceRef, ProjectIR, RuntimeBinding } from '@contentrain/types'
 
 // ─── Emit input ───
 
@@ -43,6 +43,13 @@ export interface EmitPost {
   marks?: Record<string, unknown>
   /** Locale of this entry, on a multilingual site — overrides the route's. */
   locale?: string
+  /**
+   * Content-store address of this post (model, entry id, locale) — what a
+   * mounted `comments` component addresses its thread by. Only the tool that
+   * wrote the content store knows it; without it the comments region mounts
+   * as a placeholder.
+   */
+  entry?: EntrySourceRef
 }
 
 /**
@@ -124,6 +131,12 @@ export interface EmitInput {
   content?: EmitContent
   css?: EmitCssFile[]
   options?: EmitOptions
+  /**
+   * Where runtime components (comments, forms) talk to. Without it they are
+   * emitted as placeholders and a warning names each one — a migration is
+   * complete without any runtime offer being accepted.
+   */
+  runtime?: RuntimeBinding
 }
 
 // ─── Emit output ───
@@ -138,4 +151,4 @@ export interface EmitResult {
   warnings: string[]
 }
 
-export type { ProjectIR }
+export type { ProjectIR, RuntimeBinding, EntrySourceRef }

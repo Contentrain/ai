@@ -317,6 +317,9 @@ Shared shapes for the WordPress → static-site migration pipeline. They exist h
 | `RawIR` | Source-faithful extraction of a WordPress site (posts, terms, menus, comments, media, redirects) with provenance: which access rung produced it (`rest_public` → `rest_auth` → `wxr` → `bridge`). Unresolved references are kept and marked, never dropped. |
 | `CapabilityManifest` | Evidence-based inventory of what the site uses (SEO, forms, comments, i18n, ACF, …) — the input for migration planning and the "what happens to X" conversation. |
 | `ProjectIR` | The reproducible model of the site: route model, layout families, component variants, query bindings, design tokens. Not "this page's HTML" — the design system that generates unseen pages correctly. |
-| `MigrationHandoff` | What the migration hands the user: repository, per-capability dispositions, and offers for runtime capabilities (with cost comparison) — offering is this document's job; fulfilling is the receiving product's. |
+| `MigrationHandoff` | What the migration hands the user: repository, per-capability dispositions, and offers for runtime capabilities (with cost comparison) — offering is this document's job; fulfilling is the receiving product's. `runtime` (`RuntimeBinding`) records where the generated site's runtime components were bound once an offer was fulfilled. |
+| `RuntimeBinding` | The provider's public API origin (`base_url`) and `project_id` — all a static site needs to mount comments and forms. Never a credential: the public endpoints are unauthenticated by design. |
 
-All four are plain JSON (snake_case keys), stamped with `MIGRATION_CONTRACT_VERSION`.
+All are plain JSON (snake_case keys), stamped with `MIGRATION_CONTRACT_VERSION`.
+
+Chrome markers the emitter honours: `CHROME_BODY_SLOT` (where page content goes), `CHROME_REPEAT_OPEN`/`CHROME_IF_OPEN` (per-item and conditional regions), `LIST_ITEMS_SLOT` (where a list section's items go) and `componentSlot(id)` (`<!--@@component:ID@@-->`, where a `ComponentDef` — a `comments` thread, a `form` — is mounted).

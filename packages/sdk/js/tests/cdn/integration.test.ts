@@ -166,19 +166,45 @@ describe('createContentrain (CDN client)', () => {
     expect(media.url(asset!, 'thumb')).toContain('media/hero-thumb.webp')
   })
 
-  it('form() client fetches config and submits', async () => {
-    vi.stubGlobal('fetch', mockFetch({
-      'config': { modelId: 'contact', fields: [{ id: 'name', type: 'string' }] },
+  it('form() client fetches config and submits without the API key', async () => {
+    const fetchMock = mockFetch({
+      'config': { modelId: 'contact', locale: 'en', fields: { name: { type: 'string' } }, captcha: null, captchaSiteKey: null, honeypotField: null },
       'submit': { success: true, message: 'OK' },
-    }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
 
     const client = createContentrain(config)
     const form = client.form()
     const formConfig = await form.config('contact')
     expect(formConfig.modelId).toBe('contact')
+    expect(formConfig.fields.name!.type).toBe('string')
 
     const result = await form.submit('contact', { name: 'Test' })
     expect(result.success).toBe(true)
+
+    for (const call of fetchMock.mock.calls as Array<[string, RequestInit | undefined]>) {
+      expect(call[0]).toContain('/api/forms/v1/')
+      expect(JSON.stringify(call[1]?.headers ?? {})).not.toContain('Authorization')
+    }
+  })
+
+  it('comments() client reads a thread and submits without the API key', async () => {
+    const fetchMock = mockFetch({
+      'entry-1': { entry: { modelId: 'posts', entryId: 'entry-1', locale: 'en' }, config: { closed: false }, comments: [], total: 0, page: 1, limit: 20 },
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const client = createContentrain(config)
+    const comments = client.comments()
+    const thread = await comments.thread('posts', 'entry-1')
+    expect(thread.total).toBe(0)
+    expect((fetchMock.mock.calls[0] as [string])[0]).toContain('/api/comments/v1/')
+
+    const result = await comments.submit('posts', 'entry-1', { author: { name: 'Ada' }, body: 'Hi' })
+    expect(result).toBeDefined() // the mock echoes the thread; the request shape is what matters here
+    const [, opts] = fetchMock.mock.calls[1] as [string, RequestInit]
+    expect(opts.method).toBe('POST')
+    expect(JSON.stringify(opts.headers)).not.toContain('Authorization')
   })
 
   it('conversation() client sends message and fetches history', async () => {

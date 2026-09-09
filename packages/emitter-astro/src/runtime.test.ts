@@ -37,6 +37,7 @@ interface Runtime {
   postMarks: (post: Record<string, unknown>) => Values
   cssHref: (file: string) => string
   esc: (value: unknown) => string
+  splitComponents: (html: string) => Array<{ html: string; component?: string }>
 }
 let rt: Runtime
 
@@ -147,5 +148,20 @@ describe('emitted template runtime', () => {
   it('cssHref points at the emitted legacy stylesheet directory', () => {
     expect(rt.cssHref('post-11368.css')).toBe('/styles/legacy/post-11368.css')
     expect(rt.cssHref('local/global-11368-frontend.css')).toBe('/styles/legacy/global-11368-frontend.css')
+  })
+
+  it('splitComponents interleaves html with mount points and survives a full render', () => {
+    const chrome = '<main><article>@@title@@</article><section><!--@@component:c-comments@@--></section></main>'
+    const rendered = rt.composeBody(chrome, { title: 'T' }, 'BODY')
+    expect(rendered).toContain('<!--@@component:c-comments@@-->') // the filler leaves it alone
+    expect(rt.splitComponents(rendered)).toEqual([
+      { html: '<main><article>T</article><section>' },
+      { html: '', component: 'c-comments' },
+      { html: '</section></main>' },
+    ])
+    expect(rt.splitComponents('<p>none</p>')).toEqual([{ html: '<p>none</p>' }])
+    // reassembling the parts is the identity — no markup is lost at the seams
+    const parts = rt.splitComponents(rendered)
+    expect(parts.map((p) => p.component ? '<!--@@component:' + p.component + '@@-->' : p.html).join('')).toBe(rendered)
   })
 })
