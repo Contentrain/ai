@@ -38,6 +38,8 @@ Confirm:
 
 - never use `copy_locale` on non-i18n models
 - `update_status` and `delete_entries` are collection-only
+- **preview first**: `dry_run: true` runs the operation in a throwaway worktree and reports what would change (`would_copy`/`would_replace`, `would_update` + `not_found`, `would_delete` + `files_to_remove`) without committing anything. A preview needs no `confirm`
+- `copy_locale` REPLACES the target locale — the preview's `would_replace` is how many records that costs
 - confirm entry IDs before delete operations
 - batch only related entries together
 

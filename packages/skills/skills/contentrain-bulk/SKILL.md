@@ -49,6 +49,8 @@ Confirm:
 - `publish_at` on `contentrain_content_save` does **not** publish — it gates delivery of an already-published entry. `update_status` is the only way to change status.
 - `delete_entries` is collection-only
 - `update_status` rewrites every supported locale unless you pass `locale`. Pass it when restoring one locale's status, or you will change the other's too.
+- **preview first**: `dry_run: true` runs the operation in a throwaway worktree and reports what would change (`would_copy`/`would_replace`, `would_update` + `not_found`, `would_delete` + `files_to_remove`) without committing anything. A preview needs no `confirm`
+- `copy_locale` REPLACES the target locale — the preview's `would_replace` is how many records that costs
 - confirm entry IDs before delete operations
 - batch only related entries together
 

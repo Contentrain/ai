@@ -416,7 +416,8 @@ Run git-backed batch operations on existing content entries.
 | `slugs` | string[] | Conditional | For `update_status` on documents — documents are keyed by slug, not entry ID |
 | `locale` | string | No | Scope `update_status` to one locale (i18n models); default is every supported locale |
 | `status` | string | Conditional | For `update_status` |
-| `confirm` | boolean | Conditional | For `delete_entries` (must be `true`) |
+| `confirm` | boolean | Conditional | For `delete_entries` (must be `true`; not needed while `dry_run: true`) |
+| `dry_run` | boolean | No | Preview: runs the operation in a throwaway worktree and reports what would change, committing nothing. Default `false` |
 
 #### Operations
 
@@ -428,8 +429,9 @@ Run git-backed batch operations on existing content entries.
 
 #### Rules
 
+- ALWAYS preview with `dry_run: true` first — the response carries `would_copy` / `would_replace`, `would_update` + `not_found`, or `would_delete` + `files_to_remove`, and nothing survives the run
 - ALWAYS verify the target model with `contentrain_describe` or `contentrain_status` before running bulk
-- `copy_locale` MUST NOT be used on non-i18n models
+- `copy_locale` MUST NOT be used on non-i18n models, and it REPLACES the target locale — `would_replace` in the preview is how many records that costs
 - Bulk operations create branches and commits like other write tools
 - Validate afterward when content shape may have changed
 

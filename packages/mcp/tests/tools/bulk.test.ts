@@ -7,6 +7,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import type { EntryMeta } from '@contentrain/types'
 import { createServer } from '../../src/server.js'
+import { createGit } from '../../src/git/identity.js'
 import { cloneTemplate, makeInitedTemplate } from '../support/project.js'
 import { readJson } from '../../src/util/fs.js'
 
@@ -344,3 +345,125 @@ describe('contentrain_bulk copy_locale', () => {
     }
   })
 })
+
+/**
+ * A dry run must be free: the operation runs in a throwaway worktree so the
+ * report is exactly what would happen, and then nothing survives it — no commit,
+ * no content on disk, and no `cr/*` branch left behind for the next caller to
+ * trip over.
+ */
+describe('contentrain_bulk dry_run', () => {
+  const FIELDS = { title: { type: 'string', required: true } }
+
+  async function seed(count: number): Promise<string[]> {
+    client = await createModel(client, 'guides', 'collection', 'marketing', { fields: FIELDS })
+    const saved = await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: {
+        model: 'guides',
+        entries: Array.from({ length: count }, (_, i) => ({ locale: 'en', data: { title: `G${i}` } })),
+      },
+    })
+    return (parseResult(saved)['results'] as Array<Record<string, unknown>>).map(r => r['id'] as string)
+  }
+
+  const branches = async (): Promise<string[]> =>
+    (await createGit(testDir).branchLocal()).all.filter(b => b.startsWith('cr/'))
+
+  it('previews update_status without touching meta or leaving a branch', async () => {
+    const ids = await seed(3)
+    const before = await collectionMeta('guides', 'en')
+
+    const result = await client.callTool({
+      name: 'contentrain_bulk',
+      arguments: { operation: 'update_status', model: 'guides', entry_ids: ids, status: 'published', dry_run: true },
+    })
+
+    const data = parseResult(result)
+    expect(data['status']).toBe('preview')
+    expect(data['dry_run']).toBe(true)
+    expect(data['would_update']).toBe(3)
+    expect((data['would_update_by_locale'] as Record<string, string[]>)['en']).toHaveLength(3)
+    expect(data['git']).toBeUndefined()
+
+    expect(await collectionMeta('guides', 'en')).toEqual(before)
+    expect(await branches()).toEqual([])
+  })
+
+  it('reports the ids it could not find, same as the real run', async () => {
+    const ids = await seed(2)
+    const result = await client.callTool({
+      name: 'contentrain_bulk',
+      arguments: {
+        operation: 'update_status',
+        model: 'guides',
+        entry_ids: [...ids, 'deadbeefdeadbeef'],
+        status: 'published',
+        dry_run: true,
+      },
+    })
+    const data = parseResult(result)
+    expect(data['would_update']).toBe(2)
+    expect(data['not_found']).toEqual(['deadbeefdeadbeef'])
+  })
+
+  it('says how many records copy_locale would REPLACE, not just copy', async () => {
+    // The whole risk of copy_locale is that it overwrites the target locale;
+    // a preview that only counted the source would hide it.
+    await seed(4)
+    await client.callTool({
+      name: 'contentrain_bulk',
+      arguments: { operation: 'copy_locale', model: 'guides', source_locale: 'en', target_locale: 'tr' },
+    })
+
+    const result = await client.callTool({
+      name: 'contentrain_bulk',
+      arguments: { operation: 'copy_locale', model: 'guides', source_locale: 'en', target_locale: 'tr', dry_run: true },
+    })
+    const data = parseResult(result)
+    expect(data['status']).toBe('preview')
+    expect(data['would_copy']).toBe(4)
+    expect(data['would_replace']).toBe(4)
+    expect((data['next_steps'] as string[])[0]).toContain('REPLACED')
+  })
+
+  it('does not write the target locale while previewing a copy', async () => {
+    await seed(2)
+    const result = await client.callTool({
+      name: 'contentrain_bulk',
+      arguments: { operation: 'copy_locale', model: 'guides', source_locale: 'en', target_locale: 'tr', dry_run: true },
+    })
+    expect(parseResult(result)['would_replace']).toBe(0)
+    expect(await collectionMeta('guides', 'tr')).toBeNull()
+    expect(await branches()).toEqual([])
+  })
+
+  it('previews a delete without confirm, and deletes nothing', async () => {
+    const ids = await seed(3)
+    const result = await client.callTool({
+      name: 'contentrain_bulk',
+      arguments: { operation: 'delete_entries', model: 'guides', entry_ids: ids.slice(0, 2), dry_run: true },
+    })
+
+    const data = parseResult(result)
+    expect(data['status']).toBe('preview')
+    expect(data['would_delete']).toBe(2)
+    expect((data['files_to_remove'] as string[]).length).toBeGreaterThan(0)
+
+    const meta = await collectionMeta('guides', 'en')
+    expect(Object.keys(meta!)).toHaveLength(3)
+    expect(await branches()).toEqual([])
+  })
+
+  it('still refuses a real delete without confirm, and points at the preview', async () => {
+    const ids = await seed(1)
+    const result = await client.callTool({
+      name: 'contentrain_bulk',
+      arguments: { operation: 'delete_entries', model: 'guides', entry_ids: ids },
+    })
+    const data = parseResult(result)
+    expect(data['error']).toContain('confirm:true')
+    expect(data['hint']).toContain('dry_run:true')
+  })
+})
+
