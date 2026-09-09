@@ -1,5 +1,12 @@
 # contentrain
 
+## 0.12.12
+
+### Patch Changes
+
+- Updated dependencies [ceff6a2]
+  - @contentrain/query@7.2.1
+
 ## 0.12.11
 
 ### Patch Changes
