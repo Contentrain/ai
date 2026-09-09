@@ -175,7 +175,7 @@ describe('component mounting', () => {
     const chrome = JSON.parse(ghost.files['src/data/chrome/f-ghost.json']!)
     expect(chrome.body).not.toContain('c-nope')
     expect(ghost.warnings.some((w) => w.includes('c-nope') && w.includes('no component definition'))).toBe(true)
-    expect(ghost.warnings.some((w) => w.includes('c-comments') && w.includes('no marker'))).toBe(true)
+    expect(ghost.warnings.some((w) => w.includes('c-comments') && w.includes('no marker in the body chrome or in any content body'))).toBe(true)
     expect(ghost.files['src/layouts/FGhost.astro']).toContain('<Fragment set:html={html} />')
   })
 
@@ -203,6 +203,34 @@ describe('component mounting', () => {
   it('posts without an entry address are counted once per collection when comments are mounted', () => {
     expect(bound.warnings.some((w) => w.includes('collection posts: 1 of 2 posts carry no entry address'))).toBe(true)
     expect(unbound.warnings.some((w) => w.includes('carry no entry address'))).toBe(false)
+  })
+
+  it('a marker inside a post body (a form in page content) mounts through the page family', () => {
+    const inBody = emitAstroProject({
+      ...input,
+      ir: {
+        ...ir,
+        routes: [{ id: 'r-page', pattern: '/:slug', kind: 'page', family: 'f-page', collection: 'pages' }],
+        families: [{ id: 'f-page', kind: 'page', chrome: [{ id: 'b', position: 'body', html: `<main>${CHROME_BODY_SLOT}</main>` }], css: { strategy: 'localcss' } }],
+      },
+      content: {
+        collections: {
+          pages: [
+            { slug: 'contact', title: 'Contact', body: `<h2>Write to us</h2>${componentSlot('c-contact')}` },
+            { slug: 'about', title: 'About', body: `<p>Plain</p>${componentSlot('c-ghost')}` },
+          ],
+        },
+      },
+    })
+    const layout = inBody.files['src/layouts/FPage.astro']!
+    expect(layout).toContain(`import CContact from '../components/CContact.astro'`)
+    expect(layout).toContain(`"c-contact": { Mount: CContact, variant: "default" }`)
+    expect(layout).toContain('splitComponents')
+    // the marker stays in the data — the split happens on the composed html at render time
+    const pages = JSON.parse(inBody.files['src/data/pages.json']!)
+    expect(pages[0].body).toContain(componentSlot('c-contact'))
+    expect(inBody.warnings.some((w) => w.includes('f-page') && w.includes('c-ghost') && w.includes('no component definition'))).toBe(true)
+    expect(inBody.warnings.some((w) => w.includes('c-contact') && w.includes('no component definition'))).toBe(false)
   })
 
   it('is deterministic', () => {

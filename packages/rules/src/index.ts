@@ -45,6 +45,8 @@ export const MODEL_PROPERTIES = [
   // it — a collection with no fields cannot even name a title_field. The
   // per-kind nuance lives in the docs cell ("Yes (except dictionary)").
   { name: 'fields', required: true },
+  { name: 'form', required: false, runtimeOwned: true },
+  { name: 'comments', required: false, runtimeOwned: true },
 ] as const
 
 export type ModelProperty = (typeof MODEL_PROPERTIES)[number]['name']

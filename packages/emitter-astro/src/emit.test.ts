@@ -526,6 +526,12 @@ describe('helpers', () => {
     expect(patternToPagePath('/category/:term/page/:page')).toBe('category/[term]/page/[page].astro')
     expect(patternToPagePath('/category/:term*')).toBe('category/[...term].astro')
     expect(patternToPagePath('/a/*')).toBeNull()
+    expect(patternToPagePath('/νέα/κατηγορία/:term')).toBe('νέα/κατηγορία/[term].astro')
+    expect(patternToPagePath('/yazılar/İstanbul/:slug')).toBe('yazılar/İstanbul/[slug].astro')
+    expect(patternToPagePath('/cafe\u0301/:slug')).toBe('cafe\u0301/[slug].astro')
+    for (const invalid of ['/../escape', '/./escape', '/a//b', '/a/[slug]', '/a/:', '/a/:bad-name', '/a/%2f']) {
+      expect(patternToPagePath(invalid)).toBeNull()
+    }
   })
 
   it('pascalCase produces Astro-safe component names', () => {

@@ -108,7 +108,7 @@ const isFilled = (value: unknown): boolean =>
 export function fillMarks(html: string, values: Values): string {
   return html.replace(MARK_RE, (_all, key: string) => {
     const value = values[key]
-    if (Array.isArray(value)) return value.map((v) => esc(v)).join(', ')
+    if (Array.isArray(value)) return value.map((v) => esc(v && typeof v === 'object' && 'name' in v ? (v as { name: unknown }).name : v)).join(', ')
     return key.toLowerCase().endsWith('_html') ? String(value ?? '') : esc(value ?? '')
   })
 }
@@ -120,9 +120,13 @@ export function expandRepeats(html: string, values: Values): string {
     if (!Array.isArray(list) || list.length === 0) return ''
     return list
       .map((item, index) => {
-        const itemValues: Values = { ...values, item, item_index: String(index) }
-        if (item && typeof item === 'object') {
-          for (const [k, v] of Object.entries(item as Record<string, unknown>)) itemValues['item_' + k] = v
+        // An object item prints its name at @@item@@ and exposes item_<key> for
+        // the rest, so a template written for string terms keeps working when
+        // the producer starts sending { name, link }.
+        const record = item && typeof item === 'object' ? (item as Record<string, unknown>) : undefined
+        const itemValues: Values = { ...values, item: record && 'name' in record ? record.name : item, item_index: String(index) }
+        if (record) {
+          for (const [k, v] of Object.entries(record)) itemValues['item_' + k] = v
         }
         return renderTemplate(inner, itemValues)
       })
@@ -227,6 +231,15 @@ export function renderSections<T>(
 /** Emitted stylesheets live under /styles/legacy/ — pages reference them by file name. */
 export const cssHref = (file: string): string => '/styles/legacy/' + (file.split('/').pop() ?? file)
 
+/** A term as a list card prints it: name, and the archive it links to. */
+export interface TermRef {
+  name: string
+  link?: string
+}
+
+/** The display name of a term given as a string or a TermRef. */
+export const termName = (term: string | TermRef): string => (typeof term === 'string' ? term : term.name)
+
 export interface MarkablePost {
   slug: string
   title: string
@@ -236,7 +249,12 @@ export interface MarkablePost {
   author_first?: string
   author_last?: string
   authors?: string[]
-  terms?: string[]
+  /**
+   * Strings, or objects for themes whose term lists link each term
+   * (\`<!--@@repeat:terms@@-->\` with \`item_name\` / \`item_link\`). The
+   * \`term{n}\` and \`terms\` marks print the name either way.
+   */
+  terms?: Array<string | TermRef>
   featured?: string[]
   excerpt?: string
   excerpt_html?: string
@@ -259,11 +277,14 @@ export function postMarks(post: MarkablePost): Values {
     body_html: post.body ?? '',
     slug: post.slug,
     feat: post.featured?.[0] ?? '',
-    terms: post.terms ?? [],
+    // Objects stay objects for repeat blocks (item_name / item_link); the joined
+    // \`terms\` mark prints names, so fillMarks never sees [object Object].
+    terms: (post.terms ?? []).map((t) => (typeof t === 'string' ? { name: t, link: '' } : { name: t.name, link: t.link ?? '' })),
+    terms_names: (post.terms ?? []).map(termName),
     authors: post.authors ?? (post.author ? [post.author] : []),
   }
   for (const [i, d] of (post.dates ?? []).entries()) values['date' + i] = d
-  for (const [i, t] of (post.terms ?? []).entries()) values['term' + i] = t
+  for (const [i, t] of (post.terms ?? []).entries()) values['term' + i] = termName(t)
   for (const [i, f] of (post.featured ?? []).entries()) values['feat' + i] = f
   return { ...values, ...(post.marks ?? {}) }
 }

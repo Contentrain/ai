@@ -20,6 +20,17 @@ export interface RestImportOptions {
   /** WordPress Application Password credentials — lifts the rung to rest_auth. */
   auth?: { user: string; appPassword: string }
   perPage?: number
+  /**
+   * Requests in flight at once, across every collection. Default 4. A site
+   * with 74 pages of posts, 40 of media and 37 of comments used to receive
+   * ~150 simultaneous requests — enough to trip a host's rate limit or WAF.
+   */
+  concurrency?: number
+  /**
+   * Pages fetched per collection at most. Unset = all. A truncated collection
+   * is named in `warnings` (with what was skipped), never silently shortened.
+   */
+  maxPages?: number
   tool?: string
 }
 
@@ -51,11 +62,38 @@ interface RestPost {
   meta?: Record<string, unknown>
 }
 
+const positiveInteger = (name: string, value: number): number => {
+  if (!Number.isSafeInteger(value) || value < 1) throw new RangeError(`${name} must be a positive safe integer`)
+  return value
+}
+
 export async function fetchRestRawIR(options: RestImportOptions): Promise<RestImportResult> {
   const origin = options.origin.replace(/\/$/, '')
   const doFetch = options.fetchImpl ?? fetch
-  const perPage = options.perPage ?? 100
+  const perPage = positiveInteger('perPage', options.perPage ?? 100)
+  if (perPage > 100) throw new RangeError('perPage must be at most 100')
+  const concurrency = positiveInteger('concurrency', options.concurrency ?? 4)
+  const maxPages = options.maxPages !== undefined ? positiveInteger('maxPages', options.maxPages) : undefined
   const warnings: string[] = []
+  // One pool for the whole import: page fetches of every collection queue here,
+  // so the cap holds even though collections are requested "in parallel".
+  const queue: Array<() => Promise<void>> = []
+  let running = 0
+  const schedule = <T>(task: () => Promise<T>): Promise<T> =>
+    new Promise<T>((resolve, reject) => {
+      queue.push(() => task().then(resolve, reject))
+      pump()
+    })
+  const pump = (): void => {
+    while (running < concurrency && queue.length) {
+      const task = queue.shift()!
+      running++
+      void task().finally(() => {
+        running--
+        pump()
+      })
+    }
+  }
   const headers: Record<string, string> = { accept: 'application/json' }
   if (options.auth) {
     headers.authorization = `Basic ${Buffer.from(`${options.auth.user}:${options.auth.appPassword}`).toString('base64')}`
@@ -63,17 +101,31 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
 
   const getAll = async <T>(path: string): Promise<T[]> => {
     const url = (page: number) => `${origin}/wp-json/wp/v2/${path}${path.includes('?') ? '&' : '?'}per_page=${perPage}&page=${page}`
-    const first = await doFetch(url(1), { headers })
-    if (!first.ok) {
-      warnings.push(`${path}: HTTP ${first.status} — skipped`)
-      return []
+    // Hold the slot until the body is consumed, not merely until headers arrive.
+    const pageData = (page: number) => schedule(async () => {
+      const response = await doFetch(url(page), { headers })
+      if (!response.ok) {
+        warnings.push(`${path}: page ${page} HTTP ${response.status} — skipped`)
+        await response.body?.cancel()
+        return { items: [] as T[], pages: 1 }
+      }
+      const pages = Number(response.headers.get('x-wp-totalpages') ?? '1')
+      if (!Number.isSafeInteger(pages) || pages < 0) throw new Error(`${path}: invalid x-wp-totalpages`)
+      const items = await response.json() as T[]
+      if (!Array.isArray(items)) throw new Error(`${path}: page ${page} is not a collection`)
+      return { items, pages: Math.max(1, pages) }
+    })
+    const first = await pageData(1)
+    const totalPages = first.pages
+    const firstPage = first.items
+    const wanted = maxPages !== undefined ? Math.min(totalPages, maxPages) : totalPages
+    if (wanted < totalPages) {
+      warnings.push(`${path}: ${totalPages} pages, fetched ${wanted} (maxPages) — ${totalPages - wanted} pages skipped`)
     }
-    const totalPages = Number(first.headers.get('x-wp-totalpages') ?? '1') || 1
-    const firstPage = (await first.json()) as T[]
-    if (totalPages <= 1) return firstPage
+    if (wanted <= 1) return firstPage
     const rest = await Promise.all(
-      Array.from({ length: totalPages - 1 }, (_v, i) =>
-        doFetch(url(i + 2), { headers }).then(async (r) => (r.ok ? ((await r.json()) as T[]) : [])),
+      Array.from({ length: wanted - 1 }, (_v, i) =>
+        pageData(i + 2).then((r) => r.items),
       ),
     )
     return firstPage.concat(...rest)

@@ -129,10 +129,15 @@ describe('MCP parity — ModelDefinition properties', () => {
     }
   })
 
-  it('mcp-usage.md lists every property in the model_save parameter row', () => {
+  it('mcp-usage.md lists structural inputs and documents preserved runtime blocks separately', () => {
     const doc = readFileSync(join(PKG_ROOT, 'shared', 'mcp-usage.md'), 'utf-8')
     const row = doc.split('\n').find(l => l.includes('`contentrain_model_save`') && l.includes('|')) ?? ''
     for (const prop of MODEL_PROPERTIES) {
+      if ('runtimeOwned' in prop && prop.runtimeOwned) {
+        expect(row.includes(`\`${prop.name}?\``), 'runtime settings are not structural tool inputs').toBe(false)
+        expect(doc.includes(`preserves existing \`${prop.name}\``)).toBe(true)
+        continue
+      }
       // Optional params are written `name?` in that row.
       const listed = row.includes(`\`${prop.name}\``) || row.includes(`\`${prop.name}?\``)
       expect(listed, `mcp-usage.md model_save row omits \`${prop.name}\``).toBe(true)

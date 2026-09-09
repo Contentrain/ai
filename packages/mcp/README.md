@@ -301,3 +301,10 @@ Full documentation at **[ai.contentrain.io/packages/mcp](https://ai.contentrain.
 ## License
 
 MIT
+
+### Runtime model configuration
+
+Structural `contentrain_model_save` edits preserve existing top-level `form` and
+`comments` blocks. These blocks belong to the runtime provider; the structural
+tool does not enable or change them. Its response lists `preserved_blocks` when
+configuration was carried forward.

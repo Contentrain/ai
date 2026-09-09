@@ -18,13 +18,18 @@ export function pascalCase(id: string): string {
 export function patternToPagePath(pattern: string): string | null {
   if (pattern === '/' || pattern === '') return 'index.astro'
   const segments = pattern.replace(/^\/+|\/+$/g, '').split('/')
+  // Literal Unicode segments preserve the source permalink. Validate literals
+  // separately from parameters so widening the alphabet cannot admit traversal
+  // or turn a source filename containing brackets into an Astro parameter.
+  if (segments.some((seg) => seg.startsWith(':')
+    ? !/^:[a-zA-Z0-9_]+\*?$/.test(seg)
+    : seg === '.' || seg === '..' || !/^[\p{L}\p{M}\p{N}._-]+$/u.test(seg))) return null
   const mapped = segments.map((seg) => {
     if (!seg.startsWith(':')) return seg
     const rest = seg.endsWith('*')
     const name = seg.slice(1, rest ? -1 : undefined)
     return rest ? `[...${name}]` : `[${name}]`
   })
-  if (mapped.some((seg) => !/^(\[\.\.\.[a-zA-Z0-9_]+\]|[[\]a-zA-Z0-9._-]+)$/.test(seg))) return null
   const last = mapped.pop()
   return [...mapped, `${last}.astro`].join('/')
 }

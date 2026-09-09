@@ -104,7 +104,20 @@ export interface ModelDefinition {
   content_path?: string
   /** How locale is encoded in file names. Default: "file" ({dir}/{locale}.json or {dir}/{slug}/{locale}.md) */
   locale_strategy?: LocaleStrategy
+  /**
+   * Public form configuration for this model — which fields a visitor-facing
+   * form exposes, honeypot, captcha, auto-approve. Owned and interpreted by the
+   * runtime provider (Studio writes it through its model PATCH); the content
+   * engine carries it verbatim and never reads it. A model edit that rebuilds
+   * the definition must keep it, or the site's form silently stops working.
+   */
+  form?: Record<string, unknown>
+  /** Public comments configuration for this model — same ownership and handling as `form`. */
+  comments?: Record<string, unknown>
 }
+
+/** Model keys the content engine carries verbatim for the runtime provider — see `ModelDefinition.form`. */
+export const MODEL_EXTENSION_KEYS = ['form', 'comments'] as const satisfies readonly (keyof ModelDefinition)[]
 
 // ─── Config ───
 
@@ -337,6 +350,8 @@ export const MODEL_FIELD_ORDER = [
   'content_path',
   'locale_strategy',
   'fields',
+  'form',
+  'comments',
 ] as const satisfies readonly (keyof ModelDefinition)[]
 
 // ─── Scaffold ───

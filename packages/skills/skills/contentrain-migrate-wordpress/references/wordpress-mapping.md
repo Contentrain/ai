@@ -68,7 +68,7 @@ Inferred types are a guess from one value. Check `meta_fields` and `acf_fields` 
 
 ## What is not imported
 
-Post types matching `attachment|nav_menu_item|wp_*|jp_*|pattern|revision|oembed_cache|customize_changeset|user_request|custom_css` are skipped and listed in `report.skipped_types`. Attachments are not skipped content — they arrive as the `media` collection.
+Post types matching `attachment|nav_menu_item|wp_*|jp_*|pattern|revision|oembed_cache|customize_changeset|user_request|custom_css` are skipped and listed in `report.skipped_types`, and so are theme / page-builder internals that store design rather than content: GeneratePress elements (`gp_elements`, `gp-elements`), GenerateBlocks styles (`gblocks_*`, `gblocks-*`), Elementor templates (`elementor_library`, `e-landing-page`) and form definitions (`wpcf7_contact_form`, `wpforms*`). Membership and other content-bearing CPTs stay; ACF field records stay too, since their cross-model parents are part of the lossless import. Attachments are not skipped content — they arrive as the `media` collection.
 
 Also outside the import: themes, widgets, plugin settings, users' passwords and roles, and the media **files** themselves (only their metadata and URLs come across).
 

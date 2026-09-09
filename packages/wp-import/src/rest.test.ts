@@ -39,6 +39,25 @@ function stubFetch(calls: string[]): typeof fetch {
 }
 
 describe('fetchRestRawIR', () => {
+  it('reports a later failed page instead of silently presenting a complete import', async () => {
+    const base = stubFetch([])
+    const fetchImpl = (async (url, init) => String(url).includes('/posts?') && String(url).endsWith('&page=2')
+      ? new Response('unavailable', { status: 503 }) : base(url, init)) as typeof fetch
+    const result = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl })
+    expect(result.raw.posts.map((p) => p.id).toSorted()).toEqual([10, 11])
+    expect(result.warnings).toContain('posts: page 2 HTTP 503 — skipped')
+  })
+
+  it('rejects invalid limits before fetching, including values that would stall the queue', async () => {
+    const calls: string[] = []
+    for (const concurrency of [0, -1, 1.5, NaN, Infinity]) {
+      await expect(fetchRestRawIR({ origin: 'https://s.example', fetchImpl: stubFetch(calls), concurrency })).rejects.toThrow('concurrency')
+    }
+    await expect(fetchRestRawIR({ origin: 'https://s.example', fetchImpl: stubFetch(calls), maxPages: NaN })).rejects.toThrow('maxPages')
+    await expect(fetchRestRawIR({ origin: 'https://s.example', fetchImpl: stubFetch(calls), perPage: 101 })).rejects.toThrow('perPage')
+    expect(calls).toEqual([])
+  })
+
   it('merges paginated results and maps entities into RawIR', async () => {
     const calls: string[] = []
     const { raw, warnings } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: stubFetch(calls) })
@@ -77,5 +96,79 @@ describe('fetchRestRawIR', () => {
     expect(warnings.some((w) => w.startsWith('types:'))).toBe(true)
     expect(warnings.some((w) => w.startsWith('users:'))).toBe(true)
     expect(raw.posts).toHaveLength(1)
+  })
+
+  it('caps requests in flight across every collection (default 4) and honours a higher/lower concurrency', async () => {
+    const run = async (concurrency?: number) => {
+      let inFlight = 0
+      let peak = 0
+      const slow = (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+        inFlight++
+        peak = Math.max(peak, inFlight)
+        await new Promise((r) => setTimeout(r, 5))
+        inFlight--
+        const u = String(url)
+        if (u.includes('/types')) return json({ post: { slug: 'post', rest_base: 'posts' } })
+        if (u.includes('/posts?')) return json([post(Number(u.match(/page=(\d+)/)![1]) + 100, `p${u.match(/page=(\d+)/)![1]}`)], { 'x-wp-totalpages': '12' })
+        if (u.includes('/media?') || u.includes('/comments?')) return json([], { 'x-wp-totalpages': '8' })
+        if (u.includes('/categories?') || u.includes('/tags?') || u.includes('/users?')) return json([])
+        return stubFetch([])(url, init)
+      }) as typeof fetch
+      const { raw, warnings } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: slow, concurrency })
+      return { peak, posts: raw.posts.length, warnings }
+    }
+    const dflt = await run()
+    expect(dflt.peak).toBeLessThanOrEqual(4)
+    expect(dflt.posts).toBe(12)
+    expect(dflt.warnings).toEqual([])
+    const wide = await run(10)
+    expect(wide.peak).toBeGreaterThan(4)
+    expect(wide.peak).toBeLessThanOrEqual(10)
+    const one = await run(1)
+    expect(one.peak).toBe(1)
+  })
+
+  it('maxPages truncates each collection and names what was skipped', async () => {
+    const paged = (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+      const u = String(url)
+      if (u.includes('/types')) return json({ post: { slug: 'post', rest_base: 'posts' } })
+      const page = Number(u.match(/page=(\d+)/)?.[1] ?? '1')
+      if (u.includes('/posts?')) return json([post(page + 100, `p${page}`)], { 'x-wp-totalpages': '74' })
+      if (u.includes('/comments?')) return json([], { 'x-wp-totalpages': '37' })
+      if (u.includes('/media?') || u.includes('/categories?') || u.includes('/tags?') || u.includes('/users?')) return json([], { 'x-wp-totalpages': '1' })
+      return stubFetch([])(url, init)
+    }) as typeof fetch
+    const { raw, warnings } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: paged, maxPages: 3 })
+    expect(raw.posts).toHaveLength(3)
+    expect(warnings).toEqual([
+      'comments: 37 pages, fetched 3 (maxPages) — 34 pages skipped',
+      'posts: 74 pages, fetched 3 (maxPages) — 71 pages skipped',
+    ])
+  })
+
+  it('theme and page-builder internals are not post types: GeneratePress, GenerateBlocks, Elementor, ACF, form definitions', async () => {
+    const calls: string[] = []
+    const typed = (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+      const u = String(url)
+      if (u.includes('/types')) return json({
+        post: { slug: 'post', rest_base: 'posts' },
+        'gblocks_global_style': { slug: 'gblocks_global_style', rest_base: 'gblocks-global-style' },
+        'gblocks_styles': { slug: 'gblocks_styles', rest_base: 'gblocks-styles' },
+        'gp_elements': { slug: 'gp_elements', rest_base: 'gp-elements' },
+        'elementor_library': { slug: 'elementor_library', rest_base: 'elementor-library' },
+        'wp_navigation': { slug: 'wp_navigation', rest_base: 'navigation' },
+        'wpcf7_contact_form': { slug: 'wpcf7_contact_form', rest_base: 'wpcf7' },
+        'ps_member': { slug: 'ps_member', rest_base: 'members' },
+      })
+      if (u.includes('/members?')) return json([post(900, 'ada', { type: 'ps_member' })])
+      return stubFetch(calls)(url, init)
+    }) as typeof fetch
+    const { raw } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: typed })
+    const fetched = calls.filter((c) => c.includes('/wp-json/wp/v2/')).map((c) => c.split('/wp/v2/')[1]!.split('?')[0])
+    for (const base of ['gblocks-global-style', 'gblocks-styles', 'gp-elements', 'elementor-library', 'navigation', 'wpcf7']) {
+      expect(fetched, base).not.toContain(base)
+    }
+    // a membership CPT carries content and stays
+    expect(raw.posts.some((p) => p.type === 'ps_member')).toBe(true)
   })
 })

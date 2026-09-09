@@ -39,9 +39,26 @@ await writeEmit(result, './out/site')
 | Root attributes | `LayoutFamily.root_attrs` lands on `<html>`/`<body>` verbatim — themes key their container rules off `wp-singular`, `single`, `js`, `wf-…`; dropping them costs a correct-content page its whole layout. Values may carry `@@marks@@` (per-page classes like `postid-123`). |
 | Legacy CSS (`public/styles/legacy/`) | Quarantined in `@layer legacy { … }` with leading `@import`s hoisted and layered; a mid-file `@import` is left as-is with a warning. |
 | Evolution layer (`src/styles/modern.css`) | Tailwind 4, CSS-first: extracted design tokens land in `@theme`. Migrated layouts never load it; new pages build on it. |
-| Component mount points | `<!--@@component:ID@@-->` in the body chrome (`componentSlot(id)` from `@contentrain/types`) is where a `ComponentDef` renders: the layout imports the component and mounts it at the marker, with the placement's variant (`LayoutFamily.components`). A marker nobody defined is dropped with a warning; a placement without a marker is warned; header/footer regions are not mount points. Emitting a component file alone is not integration — the marker is what puts it on the page. |
+| Component mount points | `<!--@@component:ID@@-->` in the body chrome or an entry’s content body (`componentSlot(id)` from `@contentrain/types`) is where a `ComponentDef` renders: the layout imports the component and mounts it at the marker, with the placement's variant (`LayoutFamily.components`). A marker nobody defined is dropped with a warning; a placement without a marker is warned; header/footer regions are not mount points. Emitting a component file alone is not integration — the marker is what puts it on the page. |
 | Runtime components (`comments`, `form`) | With `input.runtime` (`RuntimeBinding`: the provider's origin + project id) these get real implementations: a custom element (`<cr-comments>`, `<cr-form>`) carrying the binding, and a zero-dependency client (`src/lib/embed.ts`) that fetches, renders and submits against the provider's public API — the same contract as `@contentrain/query/cdn`'s `CommentsClient`/`FormsClient`, inlined so the site depends on nothing but Astro. Comments key on the page's entry address (`EmitPost.entry`: model, entry id, locale) and show approved comments only; pending ones live on the provider. A form names its model (`ComponentDef.model`). Honeypot and Turnstile follow the config. No credential is ever emitted. Without a binding, or without a model for a form, the component stays a placeholder and a warning says so. |
 | Other components (`src/components/*.astro`) | `<cr-component>` placeholders carrying type/source/variants — the emitter cannot invent an ad slot or a related-posts box; the marker keeps the spot. |
 | Split viewports | With `viewport_strategy: 'split'`, `build:desktop` / `build:mobile` scripts scaffold per-device production. |
 
 Everything content-shaped flows through JSON data files, never through generated template source — determinism and safe escaping fall out of that one rule.
+
+## Binding the runtime later
+
+`src/data/runtime.json` is the only place the binding lives; the components
+read `base_url` and `project_id` from it at build time. When the project id is
+not known at emit time (a Studio project created after the migration), write
+that one file and rebuild — no re-emit is needed, and the component files do
+not change.
+
+## Linked terms and Unicode routes
+
+`EmitPost.terms` accepts strings and `{ name, link? }` objects. Joined term marks
+print names; repeat blocks expose `item_name` and `item_link`, while `item` keeps
+printing the name. The generated TypeScript uses the same union, so the customer
+`npm run build` (`astro check && astro build`) accepts linked terms. Literal
+Unicode route segments are preserved; traversal segments and malformed
+parameters are rejected and reported as skipped routes.
