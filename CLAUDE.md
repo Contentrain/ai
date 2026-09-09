@@ -55,7 +55,8 @@ When working with Contentrain content operations (models, content, normalize, va
 - `packages/skills/skills/contentrain-content/` — content CRUD operations
 - `packages/skills/skills/contentrain-model/` — model creation/update
 - `packages/skills/skills/contentrain-generate/` — SDK client generation
-- See `packages/skills/skills/` for all 15 skills
+- `packages/skills/skills/contentrain-migrate-wordpress/` — WordPress import → validate → framework
+- See `packages/skills/skills/` for all 16 skills
 
 ### Critical rules to always follow:
 1. **Always call `contentrain_describe_format` before creating models or content** — understand storage formats

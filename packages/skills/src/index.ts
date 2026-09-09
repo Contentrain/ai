@@ -23,6 +23,7 @@ export const AGENT_SKILLS = [
   { name: 'contentrain-serve', description: 'Start the local review and normalize UI' },
   { name: 'contentrain-diff', description: 'View content diffs between branches' },
   { name: 'contentrain-doctor', description: 'Diagnose project health issues' },
+  { name: 'contentrain-migrate-wordpress', description: 'Import a WordPress site into a .contentrain store and wire it to a framework' },
 ] as const
 
 export type AgentSkillName = (typeof AGENT_SKILLS)[number]['name']
