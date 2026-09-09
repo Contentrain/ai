@@ -1,5 +1,11 @@
 # @contentrain/skills
 
+## 0.9.1
+
+### Patch Changes
+
+- adf26c1: contentrain-sdk skill: forms example follows the public contract (values under `data`, no API key) and shows the comments client.
+
 ## 0.9.0
 
 ### Minor Changes
