@@ -37,6 +37,24 @@ const commentsExport = buildCommentsExport(raw, entry_source_map)
 
 Streaming WXR parse (sax): a 100 MB export holds only its records in memory.
 
+## Multilingual sites
+
+A post's language is read from the plugin — Polylang's `lang` (REST) or its
+`language` taxonomy term (WXR), WPML's `wpml_current_locale` — and lands on
+`RawPost.lang` verbatim. Translation groups become `RawIR.language_pairs`
+(Polylang `translations` / `post_translations`, WPML `wpml_translations`), one
+pair per group.
+
+`rawToContentrain` turns more than one locale into an i18n store: post-type
+models get `i18n: true`, content and meta are written per locale
+(`content/{domain}/{model}/{locale}.json`), and every translation in a group
+shares one entry id — the canonical member is the default-locale post (else
+the lowest id), so `entry_source_map[wp_id]` addresses each post by that id
+and its own locale. Locales are primary subtags (`tr_TR` → `tr`). Taxonomies
+stay per-store; the `language` / `post_translations` bookkeeping taxonomies
+never become models. `report.locales` and `report.translation_groups` say
+what happened. A monolingual site is unchanged (`i18n: false`, `data.json`).
+
 ## REST limits and completeness
 
 `fetchRestRawIR` accepts `concurrency` (default 4), `maxPages` (optional cap per

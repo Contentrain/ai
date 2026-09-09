@@ -171,4 +171,26 @@ describe('fetchRestRawIR', () => {
     // a membership CPT carries content and stays
     expect(raw.posts.some((p) => p.type === 'ps_member')).toBe(true)
   })
+
+  it('reads Polylang and WPML language fields into RawPost.lang and one language_pair per group', async () => {
+    const multilingual = (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+      const u = String(url)
+      if (u.includes('/types')) return json({ post: { slug: 'post', rest_base: 'posts' } })
+      if (u.includes('/posts?')) return json([
+        post(10, 'hello', { lang: 'en', translations: { en: 10, tr: 20 } }),
+        post(20, 'merhaba', { lang: 'tr', translations: { en: 10, tr: 20 } }),
+        post(30, 'alone', { lang: 'en', translations: { en: 30 } }),
+        post(40, 'hallo', { wpml_current_locale: 'de_DE', wpml_translations: [{ locale: 'en_US', id: 41, href: 'x' }] }),
+        post(41, 'hi', { wpml_current_locale: 'en_US', wpml_translations: [{ locale: 'de_DE', id: 40 }] }),
+        post(50, 'plain'),
+      ])
+      return stubFetch([])(url, init)
+    }) as typeof fetch
+    const { raw } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: multilingual })
+    expect(raw.posts.map((p) => [p.id, p.lang ?? null])).toEqual([[10, 'en'], [20, 'tr'], [30, 'en'], [40, 'de_DE'], [41, 'en_US'], [50, null]])
+    expect(raw.language_pairs).toEqual([
+      { post: 10, translations: { en: 10, tr: 20 } },
+      { post: 40, translations: { en_US: 41, de_DE: 40 } },
+    ])
+  })
 })

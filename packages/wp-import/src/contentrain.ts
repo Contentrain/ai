@@ -34,6 +34,10 @@ export interface ImportReport {
   skipped_types: string[]
   dropped_relations: number
   models: Record<string, { kind: string; domain: string; fields: number; entries: number }>
+  /** Default first, then every other language seen on a post. One entry on a monolingual site. */
+  locales: string[]
+  /** Translation groups that were folded into one entry id across locales. */
+  translation_groups: number
 }
 
 export interface ContentrainResult {
@@ -50,12 +54,45 @@ const pick = (o: Record<string, unknown>, keys: Set<string>): Entry =>
 const typeModelId = (t: string): string => (t === 'post' ? 'posts' : t === 'page' ? 'pages' : t.replace(/_/g, '-'))
 const domainOf = (t: string): string => (t === 'post' ? 'blog' : t === 'page' ? 'site' : 'custom')
 
+/** `en_US` / `tr-TR` / `en` → `en`: the store's locale is the primary subtag. */
+const normLocale = (code: string | null | undefined): string => (code ?? '').split(/[-_]/)[0]?.toLowerCase() ?? ''
+
+/** Multilingual-plugin taxonomies that carry language bookkeeping, not content. */
+const LANGUAGE_TAXONOMIES = new Set(['language', 'post_translations', 'term_language', 'term_translations'])
+
 export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): ContentrainResult {
   const updatedBy = opts?.updatedBy ?? '@contentrain/wp-import'
-  const locale = (raw.site.language ?? 'en').split(/[-_]/)[0]?.toLowerCase() || 'en'
+  const locale = normLocale(raw.site.language) || 'en'
   const models: Record<string, ModelDefinition> = {}
   const contents: Record<string, Record<string, Entry>> = {}
   const metas: Record<string, Record<string, Meta>> = {}
+  // Per-locale buckets for i18n models (post types on a multilingual site).
+  const localeContents: Record<string, Record<string, Record<string, Entry>>> = {}
+  const localeMetas: Record<string, Record<string, Record<string, Meta>>> = {}
+
+  // ── languages ──
+  // A post's language comes from the plugin (`lang`) or, in WXR, from the
+  // `language` taxonomy term Polylang attaches. Posts without one belong to the
+  // site's default locale. More than one locale seen → post-type models are
+  // i18n and content is written per locale.
+  const postLocale = (p: RawPost): string =>
+    normLocale(p.lang ?? p.terms.find((t) => t.taxonomy === 'language')?.slug) || locale
+  const locales = [locale, ...[...new Set(raw.posts.filter((p) => !SKIP_TYPES.test(p.type)).map(postLocale))].filter((l) => l !== locale).toSorted()]
+  const multilingual = locales.length > 1
+  // Translation groups → one canonical post per group. Its entry id is shared
+  // by every translation, which is how an i18n collection addresses one entry
+  // in several locales. The canonical member is the default-locale post when
+  // there is one, else the lowest id — deterministic either way.
+  const postById = new Map(raw.posts.map((p) => [p.id, p]))
+  const canonicalOf = new Map<number, number>()
+  let translationGroups = 0
+  for (const pair of raw.language_pairs ?? []) {
+    const members = [...new Set(Object.values(pair.translations))].filter((id) => postById.has(id) && !SKIP_TYPES.test(postById.get(id)!.type))
+    if (members.length < 2) continue
+    const canonical = members.find((id) => postLocale(postById.get(id)!) === locale) ?? Math.min(...members)
+    for (const id of members) canonicalOf.set(id, canonical)
+    translationGroups++
+  }
   let siteEntry: Entry = {}
   let siteMeta: Meta | null = null
   const report: ImportReport = {
@@ -67,6 +104,8 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     skipped_types: [],
     dropped_relations: 0,
     models: {},
+    locales,
+    translation_groups: translationGroups,
   }
   const importMeta = (status: string, extra: Partial<Meta> = {}): Meta => ({
     status,
@@ -100,7 +139,9 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       s = `${p.type}-${p.id}`
       report.slug_fallback++
     } else if (s !== p.slug) report.slug_rewritten++
-    const key = `${p.type}:${s}`
+    // Slugs are unique per type — and per locale on a multilingual site, where
+    // `/about/` and `/tr/about/` are different entries with the same slug.
+    const key = multilingual ? `${p.type}:${postLocale(p)}:${s}` : `${p.type}:${s}`
     const n = usedSlugs.get(key) ?? 0
     usedSlugs.set(key, n + 1)
     return n ? `${s}-${p.id}` : s
@@ -110,9 +151,14 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
   for (const p of raw.posts) {
     // Only exported entries may be relation targets or appear in the source map.
     if (SKIP_TYPES.test(p.type)) continue
-    const s = postSlug(p)
-    slugOf.set(p.id, s)
-    postEntry.set(p.id, { model: typeModelId(p.type), ref: hexId(`${typeModelId(p.type)}:${s}`) })
+    slugOf.set(p.id, postSlug(p))
+  }
+  for (const p of raw.posts) {
+    if (SKIP_TYPES.test(p.type)) continue
+    // A translation takes its group's canonical entry id; its own slug stays on the entry.
+    const canonical = canonicalOf.get(p.id) ?? p.id
+    const mid = typeModelId(p.type)
+    postEntry.set(p.id, { model: mid, ref: hexId(`${mid}:${slugOf.get(canonical) ?? slugOf.get(p.id)!}`) })
   }
   const mediaRef = (id: number): string | null => (raw.attachments.some((a) => a.id === id) ? hexId(`media:${id}`) : null)
   const titleOf = (p: RawPost): string => {
@@ -148,7 +194,9 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
   }
 
   // ── taxonomies (nav_menu and post_format excluded; post_format → select field) ──
-  const taxonomies = [...new Set(raw.terms.map((t) => t.taxonomy))].filter((t) => t !== 'nav_menu' && t !== 'post_format')
+  const taxonomies = [...new Set(raw.terms.map((t) => t.taxonomy))].filter(
+    (t) => t !== 'nav_menu' && t !== 'post_format' && !LANGUAGE_TAXONOMIES.has(t),
+  )
   for (const tax of taxonomies) {
     const mid = taxModelId(tax)
     addModel({
@@ -309,12 +357,15 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       name: type === 'post' ? 'Posts' : type === 'page' ? 'Pages' : mid,
       kind: 'collection',
       domain: domainOf(type),
-      i18n: false,
+      i18n: multilingual,
       title_field: 'title',
       fields,
     })
     for (const p of typeItems) {
       const id = postEntry.get(p.id)!.ref
+      const loc = postLocale(p)
+      const contentBucket = multilingual ? ((localeContents[mid] ??= {})[loc] ??= {}) : contents[mid]!
+      const metaBucket = multilingual ? ((localeMetas[mid] ??= {})[loc] ??= {}) : metas[mid]!
       const e: Entry = { title: titleOf(p), slug: slugOf.get(p.id), wp_id: p.id }
       if (fields.excerpt) e.excerpt = strip(p.excerpt)
       if (fields.body) e.body = p.content // Gutenberg comments and shortcodes verbatim (known gap)
@@ -349,8 +400,8 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       if (fields.comments_open) e.comments_open = p.comment_status === 'open'
       for (const k of Object.keys(fields)) if (k in p.meta && !(k in e) && !k.startsWith('_')) e[k] = p.meta[k]
       for (const [k, acf] of Object.entries(p.acf ?? {})) if (fields[k] && !(k in e)) e[k] = acf.value
-      contents[mid]![id] = e
-      metas[mid]![id] = mapStatus(p)
+      contentBucket[id] = e
+      metaBucket[id] = mapStatus(p)
     }
   }
 
@@ -493,6 +544,19 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
   const domains = [...new Set(Object.values(models).map((m) => m.domain))].toSorted()
   for (const m of Object.values(models)) {
     files[`.contentrain/models/${m.id}.json`] = canon(m)
+    if (m.i18n) {
+      // One content + meta file per locale; an entry id recurs across the
+      // locales it has a translation in.
+      const perLocale = localeContents[m.id] ?? {}
+      const ids = new Set<string>()
+      for (const loc of Object.keys(perLocale).toSorted()) {
+        files[`.contentrain/content/${m.domain}/${m.id}/${loc}.json`] = canon(perLocale[loc])
+        files[`.contentrain/meta/${m.id}/${loc}.json`] = canon(localeMetas[m.id]?.[loc] ?? {})
+        for (const id of Object.keys(perLocale[loc]!)) ids.add(id)
+      }
+      report.models[m.id] = { kind: m.kind, domain: m.domain, fields: Object.keys(m.fields ?? {}).length, entries: ids.size }
+      continue
+    }
     const content = m.kind === 'singleton' ? siteEntry : contents[m.id]!
     const meta = m.kind === 'singleton' ? siteMeta : metas[m.id]!
     files[`.contentrain/content/${m.domain}/${m.id}/data.json`] = canon(content)
@@ -509,13 +573,15 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     stack: 'astro',
     platform: 'web',
     workflow: 'review',
-    locales: { default: locale, supported: [locale] },
+    locales: { default: locale, supported: locales },
     domains,
   })
   files['.contentrain/vocabulary.json'] = canon({ version: 1, terms: vocabTerms })
 
   const entrySourceMap: EntrySourceMap = {}
-  for (const [wpId, ref] of postEntry) entrySourceMap[String(wpId)] = { model_id: ref.model, entry_id: ref.ref, locale }
+  for (const [wpId, ref] of postEntry) {
+    entrySourceMap[String(wpId)] = { model_id: ref.model, entry_id: ref.ref, locale: postLocale(postById.get(wpId)!) }
+  }
 
   files['import-report.json'] = canon(report)
   return { files, entry_source_map: entrySourceMap, report }
