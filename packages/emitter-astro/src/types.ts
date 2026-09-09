@@ -9,6 +9,12 @@ import type { EntrySourceRef, ProjectIR, RuntimeBinding } from '@contentrain/typ
  * those are producer concerns, and keeping them out is what makes this
  * package portable.
  */
+/** A term as a list card prints it: its name and the archive it links to. */
+export interface EmitTermRef {
+  name: string
+  link?: string
+}
+
 export interface EmitPost {
   slug: string
   title: string
@@ -31,7 +37,12 @@ export interface EmitPost {
   author?: string
   author_first?: string
   author_last?: string
-  terms?: string[]
+  /**
+   * Term names, or `{ name, link }` objects for themes whose term lists link
+   * each term — a repeat block then reads `item_name` / `item_link`. The
+   * `term{n}` and `terms` marks print the name either way.
+   */
+  terms?: Array<string | EmitTermRef>
   /** Local featured-image file names (largest first). */
   featured?: string[]
   excerpt?: string

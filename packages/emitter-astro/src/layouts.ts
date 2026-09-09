@@ -43,6 +43,8 @@ export function familyFiles(
   lang: string,
   components: ChromeComponentRef[] = [],
   definitions: Map<string, ComponentDef> = new Map(),
+  /** Component ids found in the CONTENT bodies rendered through this family (a form inside a page's post_content). */
+  bodyMarkers: Iterable<string> = [],
 ): FamilyGenResult {
   const name = pascalCase(family.id)
   // Header/footer regions are emitted as shared components (see chrome.ts) and
@@ -77,8 +79,17 @@ export function familyFiles(
   // Component mount points. A marker names a ComponentDef; the layout imports
   // that component and renders it there. A marker nobody defined is dropped
   // with a warning rather than left as a mystery comment in every page.
+  // Markers live in the chrome (the theme's comments region) or in the content
+  // body itself (a contact form inside a page's post_content); the layout splits
+  // the COMPOSED html, so both mount the same way. The mount table just has to
+  // know every id that can appear.
   const placements = new Map((family.components ?? []).map((p) => [p.component, p]))
   const mounts: MountRef[] = []
+  const mount = (id: string, def: ComponentDef) => {
+    if (mounts.some((m) => m.id === id)) return
+    const variant = placements.get(id)?.variant ?? def.variants?.[0]?.key ?? 'default'
+    mounts.push({ id, name: pascalCase(id), variant })
+  }
   for (const id of componentMarkers(body)) {
     const def = definitions.get(id)
     if (!def) {
@@ -86,12 +97,19 @@ export function familyFiles(
       body = body.split(`${CHROME_COMPONENT_OPEN}${id}${CHROME_COMPONENT_CLOSE}`).join('')
       continue
     }
-    const variant = placements.get(id)?.variant ?? def.variants?.[0]?.key ?? 'default'
-    mounts.push({ id, name: pascalCase(id), variant })
+    mount(id, def)
+  }
+  for (const id of new Set(bodyMarkers)) {
+    const def = definitions.get(id)
+    if (!def) {
+      warnings.push(`family ${family.id}: content bodies carry component marker "${id}" with no component definition — rendered as a comment`)
+      continue
+    }
+    mount(id, def)
   }
   for (const placement of family.components ?? []) {
     if (!mounts.some((m) => m.id === placement.component)) {
-      warnings.push(`family ${family.id}: component placement "${placement.component}" has no marker in the body chrome — not mounted`)
+      warnings.push(`family ${family.id}: component placement "${placement.component}" has no marker in the body chrome or in any content body — not mounted`)
     }
   }
 

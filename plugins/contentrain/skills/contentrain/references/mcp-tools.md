@@ -93,6 +93,8 @@ Create or update a model definition (upsert).
 | `description` | string | No | Model description |
 | `content_path` | string | No | Framework-relative path for content files |
 | `locale_strategy` | string | No | `"file"` (default), `"suffix"`, `"directory"`, `"none"` |
+| `form` | object | No | Runtime-owned public form settings (Studio). Not a tool input — an existing block is preserved across structural edits and named in `preserved_blocks` |
+| `comments` | object | No | Runtime-owned public comments settings (Studio). Preserved the same way |
 
 Notes:
 - Upserts by model ID: existing model is updated, new model is created

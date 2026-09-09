@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ModelDefinition } from '@contentrain/types'
+import { MODEL_EXTENSION_KEYS } from '@contentrain/types'
 import { z } from 'zod'
 import type { ToolProvider } from '../server.js'
 import { readConfig } from '../core/config.js'
@@ -93,6 +94,18 @@ export function registerModelTools(
         content_path: input.content_path,
         locale_strategy: input.locale_strategy,
       }
+      // The runtime provider's blocks (`form`, `comments`) are not part of this
+      // tool's input — the agent edits structure, Studio owns the public form
+      // and comments settings. Rebuilding the definition from the input alone
+      // used to drop them, so adding one field turned a live contact form off.
+      const preserved: string[] = []
+      for (const key of MODEL_EXTENSION_KEYS) {
+        const block = existing?.[key]
+        if (block !== undefined) {
+          model[key] = block
+          preserved.push(key)
+        }
+      }
 
       const savePlan = await planModelSave(provider, { model })
       const action = savePlan.result.action
@@ -150,6 +163,7 @@ export function registerModelTools(
           // Constraints the schema accepts but MCP does not enforce, said out loud
           // rather than left for the author to discover in production.
           ...(schemaWarnings.length > 0 ? { schema_warnings: schemaWarnings } : {}),
+          ...(preserved.length > 0 ? { preserved_blocks: preserved } : {}),
           git: gitReport({ branch, action: commit.workflowAction, commit: commit.commitSha, sync: commit.sync, base_advance: commit.base_advance, remote_push: commit.remote_push }),
           ...(commit.warning ? { warning: commit.warning } : {}),
           context_updated: true,

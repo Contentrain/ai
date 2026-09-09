@@ -391,6 +391,7 @@ Creates or updates a model definition. Key parameters:
 - `title_field`: **required** — the field shown as an entry's title. Must name a field declared on this model whose type is `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or `richtext`. Dictionary models use the reserved value `"key"`. Set it when creating a model, and keep it correct when renaming or removing fields.
 - `content_path`: optional framework-relative path (e.g., `"content/blog"`, `"locales"`). When set, content is written here instead of `.contentrain/content/`.
 - `locale_strategy`: how locale is encoded in filenames: `"file"` (default), `"suffix"`, `"directory"`, `"none"`.
+- `contentrain_model_save` preserves existing `form` configuration and preserves existing `comments` configuration. These runtime-owned blocks are not structural tool inputs; use the runtime provider's settings surface to change them.
 - `locale_strategy: "none"` requires `i18n: false`. All other strategies work with both `i18n: true` and `i18n: false`.
 
 ### 5.5 contentrain_model_delete

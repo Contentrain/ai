@@ -50,9 +50,17 @@ export const byValue = (v: unknown): string | null => {
   return s.length > 200 ? 'text' : 'string'
 }
 
-/** WP post types that never become content models. */
+/**
+ * WP post types that never become content models: core plumbing (`wp_*`
+ * covers `wp_global_styles`, `wp_navigation`, `wp_block`, `wp_template*`),
+ * Jetpack, and theme/page-builder internals that store design, not content —
+ * GeneratePress elements, GenerateBlocks styles, Elementor templates and
+ * Contact Form 7 / WPForms definitions. ACF field/group records stay in:
+ * their cross-model parent links are part of the lossless import contract.
+ * Whether a stored record gets a public route is the route producer's decision.
+ */
 export const SKIP_TYPES =
-  /^(attachment|nav_menu_item|wp_|jp_|pattern|revision|oembed_cache|customize_changeset|user_request|custom_css)/
+  /^(attachment|nav_menu_item|wp_|jp_|pattern|revision|oembed_cache|customize_changeset|user_request|custom_css|gblocks_|gblocks-|gp_elements|gp-elements|elementor_library|e-landing-page|wpcf7_contact_form|wpforms)/
 
 /** Open meta keys that are plugin plumbing, not editorial fields. */
 export const PLUGIN_META = /^(jetpack|wpdc|discourse|footnotes|inline_featured|spay_|advanced_seo|rank_math|yoast)/i

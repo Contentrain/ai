@@ -243,7 +243,7 @@ describe('@contentrain/types', () => {
     it('is the exact canonical order', () => {
       expect([...MODEL_FIELD_ORDER]).toEqual([
         'id', 'name', 'kind', 'domain', 'i18n', 'title_field',
-        'description', 'content_path', 'locale_strategy', 'fields',
+        'description', 'content_path', 'locale_strategy', 'fields', 'form', 'comments',
       ])
     })
 

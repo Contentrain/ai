@@ -112,7 +112,9 @@ describe('emitted template runtime', () => {
       excerpt: 'plain',
       marks: { term_name: 'News' },
     })
-    expect(marks.terms).toEqual(['news', 'events'])
+    // terms are normalized to { name, link } so repeat blocks can always read item_name / item_link
+    expect(marks.terms).toEqual([{ name: 'news', link: '' }, { name: 'events', link: '' }])
+    expect(marks.terms_names).toEqual(['news', 'events'])
     expect(marks.authors).toEqual(['Ada'])
     expect(marks.body_html).toBe('<p>B</p>')
     expect(marks.excerpt_html).toBe('plain')
@@ -163,5 +165,18 @@ describe('emitted template runtime', () => {
     // reassembling the parts is the identity — no markup is lost at the seams
     const parts = rt.splitComponents(rendered)
     expect(parts.map((p) => p.component ? '<!--@@component:' + p.component + '@@-->' : p.html).join('')).toBe(rendered)
+  })
+
+  it('terms may be { name, link } objects: repeat blocks link them, term{n}/terms marks print names', () => {
+    const post = { slug: 's', title: 'T', terms: [{ name: 'News', link: '/category/news/' }, 'Events'] }
+    const values = rt.postMarks(post)
+    expect(values.term0).toBe('News')
+    expect(values.term1).toBe('Events')
+    expect(rt.fillMarks('<p>@@terms@@</p>', values)).toBe('<p>News, Events</p>')
+    expect(rt.fillMarks('<p>@@terms_names@@</p>', values)).toBe('<p>News, Events</p>')
+    const repeat = '<!--@@repeat:terms|, @@--><a href="@@item_link@@">@@item_name@@</a><!--@@/repeat@@-->'
+    expect(rt.renderTemplate(repeat, values)).toBe('<a href="/category/news/">News</a>, <a href="">Events</a>')
+    // a plain string term still renders as before
+    expect(rt.renderTemplate('<!--@@repeat:terms@@--><b>@@item@@</b><!--@@/repeat@@-->', rt.postMarks({ slug: 's', title: 'T', terms: ['A'] }))).toBe('<b>A</b>')
   })
 })

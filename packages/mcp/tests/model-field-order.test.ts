@@ -26,6 +26,8 @@ const FULL_MODEL: ModelDefinition = {
     title: { type: 'string', required: true },
     body: { type: 'text' },
   },
+  form: { enabled: false },
+  comments: { enabled: true },
 }
 
 /** Reader that reports every path as absent, so planModelSave takes the 'created' branch. */

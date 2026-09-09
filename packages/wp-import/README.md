@@ -36,3 +36,13 @@ const commentsExport = buildCommentsExport(raw, entry_source_map)
 - **EntrySourceMap produced at the only place that can know it** — the WP-id → entry-address mapping the comments intake requires.
 
 Streaming WXR parse (sax): a 100 MB export holds only its records in memory.
+
+## REST limits and completeness
+
+`fetchRestRawIR` accepts `concurrency` (default 4), `maxPages` (optional cap per
+collection), and `perPage` (1–100, default 100). Limits must be positive safe
+integers. The concurrency slot includes response body consumption. Truncated
+collections and failed pages are named in `warnings`; callers must inspect
+these before claiming a complete migration. ACF field/group records and their
+cross-model parents remain in the content store; route discovery decides which
+records become public pages. Importing configuration does not execute a plugin.

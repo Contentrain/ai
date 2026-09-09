@@ -161,6 +161,8 @@ Model definitions live at `.contentrain/models/{model-id}.json`. One file per mo
 | `fields` | `object` | Yes (except dictionary) | Field definitions. Dictionary kind has NO fields. |
 | `content_path` | `string` | No | Framework-relative path for content files (e.g., `"content/blog"`, `"locales"`). When set, content is written here instead of `.contentrain/content/`. |
 | `locale_strategy` | `string` | No | How locale is encoded in file names: `"file"` (default), `"suffix"`, `"directory"`, `"none"`. |
+| `form` | `object` | No | Runtime-owned public form settings. Structural model edits preserve the existing block; configure through the runtime provider. |
+| `comments` | `object` | No | Runtime-owned public comments settings, preserved across structural model edits. |
 
 #### Choosing `title_field`
 

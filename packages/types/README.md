@@ -323,3 +323,8 @@ Shared shapes for the WordPress → static-site migration pipeline. They exist h
 All are plain JSON (snake_case keys), stamped with `MIGRATION_CONTRACT_VERSION`.
 
 Chrome markers the emitter honours: `CHROME_BODY_SLOT` (where page content goes), `CHROME_REPEAT_OPEN`/`CHROME_IF_OPEN` (per-item and conditional regions), `LIST_ITEMS_SLOT` (where a list section's items go) and `componentSlot(id)` (`<!--@@component:ID@@-->`, where a `ComponentDef` — a `comments` thread, a `form` — is mounted).
+
+`ModelDefinition` can carry runtime-owned `form` and `comments` configuration.
+`MODEL_EXTENSION_KEYS` identifies these preserved blocks; canonical model
+serialization places them after `fields`. The content engine does not interpret
+the runtime settings.

@@ -78,7 +78,7 @@ export function routeFiles(
 }
 
 /** Items of a named collection; `posts` also accepts the `content.posts` shorthand. */
-function collectionItems(content: EmitContent, collection: string): EmitPost[] {
+export function collectionItems(content: EmitContent, collection: string): EmitPost[] {
   const named = content.collections?.[collection]
   if (named) return named
   return collection === DEFAULT_COLLECTION ? (content.posts ?? []) : []

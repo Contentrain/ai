@@ -288,6 +288,8 @@ interface ModelDefinition {
   fields?: Record<string, FieldDef> // Field definitions (not used for dictionary)
   content_path?: string           // Framework-relative path override
   locale_strategy?: LocaleStrategy // How locale is encoded in file paths
+  form?: Record<string, unknown>  // Runtime-owned public form configuration; preserved by structural edits
+  comments?: Record<string, unknown> // Runtime-owned comments configuration; preserved by structural edits
 }
 ```
 

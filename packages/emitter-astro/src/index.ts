@@ -10,8 +10,8 @@
 import type { EmitInput, EmitPost, EmitResult } from './types.js'
 import { DEFAULT_COLLECTION } from './types.js'
 import { scaffoldFiles } from './scaffold.js'
-import { familyFiles } from './layouts.js'
-import { routeFiles } from './pages.js'
+import { componentMarkers, familyFiles } from './layouts.js'
+import { collectionItems, routeFiles } from './pages.js'
 import { componentFiles, isRuntimeImplemented } from './components.js'
 import { chromeComponents } from './chrome.js'
 import { wrapLegacyCss } from './css.js'
@@ -39,8 +39,19 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   add(chrome.files)
   warnings.push(...chrome.warnings)
   const definitions = new Map((ir.components ?? []).map((c) => [c.id, c]))
+  // A component marker can sit inside a post's own body (a form in a page's
+  // content). The layout that renders that body must mount it, so collect the
+  // ids per family from the collections its routes render.
+  const bodyMarkersByFamily = new Map<string, Set<string>>()
+  for (const route of ir.routes) {
+    if (route.kind !== 'single' && route.collection === undefined) continue
+    const posts = collectionItems(input.content ?? {}, route.collection ?? DEFAULT_COLLECTION)
+    const ids = bodyMarkersByFamily.get(route.family) ?? new Set<string>()
+    for (const post of posts) for (const id of componentMarkers(post.body)) ids.add(id)
+    if (ids.size) bodyMarkersByFamily.set(route.family, ids)
+  }
   for (const family of ir.families) {
-    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id), definitions)
+    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id), definitions, bodyMarkersByFamily.get(family.id) ?? [])
     add(fam.files)
     warnings.push(...fam.warnings)
   }
@@ -113,6 +124,7 @@ export type {
   QueryPage,
   EmitCssFile,
   EmitOptions,
+  EmitTermRef,
   RuntimeBinding,
   EntrySourceRef,
 } from './types.js'
