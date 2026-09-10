@@ -25,6 +25,7 @@ export function routeFiles(
   family: LayoutFamily | undefined,
   content: EmitContent,
   siteLocale: string,
+  seo = true,
 ): PageGenResult {
   const warnings: string[] = []
   const files: Record<string, string> = {}
@@ -58,7 +59,7 @@ export function routeFiles(
       warnings.push(`route ${route.id}: collection "${collection}" has no items — page emitted, data file empty`)
     }
     files[`src/data/${collection}.json`] = stableJson(posts)
-    files[`src/pages/${pagePath}`] = singlePage(route, layout, up, collection, siteLocale, hasParams)
+    files[`src/pages/${pagePath}`] = singlePage(route, layout, up, collection, siteLocale, hasParams, seo)
     return { files, warnings }
   }
 
@@ -69,11 +70,11 @@ export function routeFiles(
       warnings.push(`route ${route.id}: item template missing on some pages — plain fallback list rendered (not fidelity)`)
     }
     files[`src/data/queries/${route.query}.json`] = stableJson(queryPages)
-    files[`src/pages/${pagePath}`] = listPage(route, layout, up, hasParams, siteLocale)
+    files[`src/pages/${pagePath}`] = listPage(route, layout, up, hasParams, siteLocale, seo)
     return { files, warnings }
   }
 
-  files[`src/pages/${pagePath}`] = staticPage(route, layout, up, hasParams, warnings, siteLocale)
+  files[`src/pages/${pagePath}`] = staticPage(route, layout, up, hasParams, warnings, siteLocale, seo)
   return { files, warnings }
 }
 
@@ -84,13 +85,13 @@ export function collectionItems(content: EmitContent, collection: string): EmitP
   return collection === DEFAULT_COLLECTION ? (content.posts ?? []) : []
 }
 
-function singlePage(route: RouteModel, layout: string, up: string, collection: string, siteLocale: string, hasParams: boolean): string {
+function singlePage(route: RouteModel, layout: string, up: string, collection: string, siteLocale: string, hasParams: boolean, seo: boolean): string {
   const locale = JSON.stringify(route.locale ?? siteLocale)
   return `---
 // Route: ${route.id} (${route.pattern}) — collection: ${collection} — emitted by @contentrain/emitter-astro
 import Layout from '${up}layouts/${layout}.astro'
 import data from '${up}data/${collection}.json'
-import { postMarks, type EmittedPost } from '${up}lib/fill'
+import { postMarks${seo ? ', postSeo' : ''}, type EmittedPost } from '${up}lib/fill'
 
 ${hasParams ? `export function getStaticPaths() {
   // The JSON is data; its contract is EmittedPost. Inferring the type from the
@@ -115,12 +116,13 @@ const post = posts[0]!`}
   body={post.body}
   css={post.css ?? []}
   lang={post.locale ?? ${locale}}
-  entry={post.entry}
+  entry={post.entry}${seo ? `
+  seo={postSeo(post)}` : ''}
 />
 `
 }
 
-function listPage(route: RouteModel, layout: string, up: string, hasParams: boolean, siteLocale: string): string {
+function listPage(route: RouteModel, layout: string, up: string, hasParams: boolean, siteLocale: string, seo: boolean): string {
   const locale = JSON.stringify(route.locale ?? siteLocale)
   // Chain the fallbacks HERE, not in the emitted source: a route without a title
   // used to emit `page.title ?? "" ?? ''`, which "astro check" rejects as never
@@ -162,12 +164,13 @@ const title = page.title ?? ${routeTitle}
   marks={marks}
   body={content}
   css={page.css ?? []}
-  lang={${locale}}
+  lang={${locale}}${seo ? `
+  seo={{ description: page.description, image: page.image, canonical: page.canonical, type: 'website' }}` : ''}
 />
 `
 }
 
-function staticPage(route: RouteModel, layout: string, up: string, hasParams: boolean, warnings: string[], siteLocale: string): string {
+function staticPage(route: RouteModel, layout: string, up: string, hasParams: boolean, warnings: string[], siteLocale: string, seo: boolean): string {
   if (hasParams) warnings.push(`route ${route.id}: parameterized route without a query — emitted with empty paths`)
   const paths = hasParams
     ? `export function getStaticPaths() {
@@ -179,6 +182,6 @@ function staticPage(route: RouteModel, layout: string, up: string, hasParams: bo
 // Route: ${route.id} (${route.pattern}) — emitted by @contentrain/emitter-astro
 import Layout from '${up}layouts/${layout}.astro'
 ${paths}---
-<Layout title=${JSON.stringify(route.title ?? '')} marks={{}} lang={${JSON.stringify(route.locale ?? siteLocale)}} />
+<Layout title=${JSON.stringify(route.title ?? '')} marks={{}} lang={${JSON.stringify(route.locale ?? siteLocale)}}${seo ? ` seo={{ type: 'website' }}` : ''} />
 `
 }

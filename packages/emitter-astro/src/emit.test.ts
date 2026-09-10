@@ -222,7 +222,10 @@ describe('emitAstroProject', () => {
     expect(chrome.body).toContain('@@title@@')
     expect(chrome.body).toContain('<!--@@body@@-->')
     expect(chrome.body.indexOf('@@author@@')).toBeGreaterThan(chrome.body.indexOf('<!--@@body@@-->'))
-    expect(chrome.head).toContain('og:title')
+    // The template page's og:title is gone from the head — Seo.astro renders one
+    // per page instead of repeating the template's on every URL.
+    expect(chrome.head).not.toContain('og:title')
+    expect(result.warnings.some((w) => w.includes('f-article') && w.includes('og:*'))).toBe(true)
   })
 
   it('nested body chrome keeps its structure — the slot lives at depth', () => {
@@ -340,7 +343,7 @@ describe('emitAstroProject', () => {
     // permalinks need no extra parameters produced a type without `params` and
     // `astro check` — which the build runs first — rejected the page reading it.
     const single = result.files['src/pages/[year]/[month]/[day]/[slug].astro']!
-    expect(single).toContain("import { postMarks, type EmittedPost } from '../../../../lib/fill'")
+    expect(single).toContain("import { postMarks, postSeo, type EmittedPost } from '../../../../lib/fill'")
     expect(single).toContain('const posts = data as EmittedPost[]')
     const list = result.files['src/pages/category/[term]/page/[page].astro']!
     expect(list).toContain('const pages = data as EmittedQueryPage[]')

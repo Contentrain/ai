@@ -14,6 +14,7 @@ import { componentMarkers, familyFiles } from './layouts.js'
 import { collectionItems, routeFiles } from './pages.js'
 import { componentFiles, isRuntimeImplemented } from './components.js'
 import { chromeComponents } from './chrome.js'
+import { SEO_COMPONENT } from './seo.js'
 import { wrapLegacyCss } from './css.js'
 
 export function emitAstroProject(input: EmitInput): EmitResult {
@@ -31,6 +32,15 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   }
 
   add(scaffoldFiles(ir, input.options ?? {}))
+
+  // Per-page SEO is on unless the producer owns those tags itself.
+  const seo = input.options?.seo !== false
+  if (seo) {
+    add({ 'src/components/Seo.astro': SEO_COMPONENT })
+    if (!ir.site.url) {
+      warnings.push('site.url is empty — canonical links and absolute og:url/og:image are omitted; set it so search engines and share cards resolve')
+    }
+  }
 
   const familiesById = new Map(ir.families.map((f) => [f.id, f]))
   const lang = ir.site.locales?.[0] ?? 'en'
@@ -51,7 +61,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     if (ids.size) bodyMarkersByFamily.set(route.family, ids)
   }
   for (const family of ir.families) {
-    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id), definitions, bodyMarkersByFamily.get(family.id) ?? [])
+    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id), definitions, bodyMarkersByFamily.get(family.id) ?? [], { seo, siteName: ir.site.title })
     add(fam.files)
     warnings.push(...fam.warnings)
   }
@@ -81,7 +91,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   }
 
   for (const route of ir.routes) {
-    const result = routeFiles(route, familiesById.get(route.family), input.content ?? {}, lang)
+    const result = routeFiles(route, familiesById.get(route.family), input.content ?? {}, lang, seo)
     add(result.files)
     warnings.push(...result.warnings)
   }
@@ -133,6 +143,8 @@ export { pascalCase, patternToPagePath, stableJson } from './util.js'
 export { componentMarkers } from './layouts.js'
 export type { MountRef } from './layouts.js'
 export { isRuntimeImplemented, RUNTIME_IMPLEMENTED } from './components.js'
+export { stripSeoTags, SEO_COMPONENT } from './seo.js'
+export type { StripResult } from './seo.js'
 export { EMBED_TS } from './embed.js'
 export { checkBalance, balanceWarning } from './balance.js'
 export type { BalanceReport } from './balance.js'

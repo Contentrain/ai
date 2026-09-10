@@ -48,6 +48,22 @@ export interface EmitPost {
   excerpt?: string
   /** Excerpt as source HTML, for themes whose cards keep links and formatting. */
   excerpt_html?: string
+  /**
+   * Meta description. Falls back to `excerpt` with markup stripped — a card
+   * and a description tag want the same sentence, so most producers set neither.
+   */
+  description?: string
+  /**
+   * Social image, absolute or site-root-relative. `featured` holds bare file
+   * names whose serving path only the producer knows, so a crawler-usable
+   * `og:image` needs this; a `featured` entry that is already a path is used.
+   */
+  image?: string
+  /** Canonical override — for a page that should point somewhere else. Default: this page's own address. */
+  canonical?: string
+  /** ISO 8601, for Article structured data. `dates` holds display strings, which schema.org cannot read. */
+  published_at?: string
+  modified_at?: string
   /** Every author, for repeat blocks — `author` stays the first one. */
   authors?: string[]
   /** Producer-supplied extra marks, merged last. */
@@ -106,6 +122,12 @@ export interface QueryPage {
   sections?: ListSection[]
   /** Document title for this page (`<title>`), e.g. "Category: News – Site". */
   title?: string
+  /** Meta description for this list page. */
+  description?: string
+  /** Social image, absolute or site-root-relative. */
+  image?: string
+  /** Canonical override; default is this page's own address. */
+  canonical?: string
 }
 
 /** Default collection name when a `single` route does not name one. */
@@ -135,6 +157,14 @@ export interface EmitOptions {
   projectName?: string
   /** Include Tailwind 4 as the evolution layer (default true). */
   tailwind?: boolean
+  /**
+   * Emit per-page SEO — title, description, canonical, Open Graph, Twitter card
+   * and Article structured data — and remove the template page's copies of those
+   * tags from the head chrome. Default true: inheriting one page's canonical and
+   * og:title on every page is worse than having neither. Set false to keep the
+   * source head verbatim and own these tags in the producer.
+   */
+  seo?: boolean
 }
 
 export interface EmitInput {

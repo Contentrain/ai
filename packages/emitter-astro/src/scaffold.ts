@@ -228,6 +228,49 @@ export function renderSections<T>(
   return out.join('')
 }
 
+// ─── SEO helpers ───
+
+/**
+ * A meta description from free text: markup stripped, whitespace collapsed,
+ * cut at a word boundary. The cap is a rendering limit, not an editorial
+ * choice — an excerpt is a paragraph and a description tag is a line.
+ */
+export function seoDescription(text: string | undefined, max = 300): string | undefined {
+  if (!text) return undefined
+  const flat = text.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim()
+  if (!flat) return undefined
+  if (flat.length <= max) return flat
+  const cut = flat.slice(0, max)
+  const space = cut.lastIndexOf(' ')
+  // Concatenation, not a template literal: this file is emitted from one, and
+  // an unescaped interpolation would be evaluated at emit time.
+  return (space > max * 0.6 ? cut.slice(0, space) : cut).trimEnd() + '…'
+}
+
+/**
+ * Absolute URL for a social tag or a canonical link. Crawlers do not resolve
+ * relative og:image or og:url, so a value that cannot be made absolute is
+ * dropped rather than emitted half-formed. Needs \`site\` in astro.config.mjs.
+ */
+export function absoluteUrl(value: string | undefined, site: URL | undefined): string | undefined {
+  if (!value) return undefined
+  if (/^https?:\\/\\//i.test(value)) return value
+  if (!site) return undefined
+  try {
+    return new URL(value, site).toString()
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * JSON-LD payload for a \`<script type="application/ld+json">\`. \`<\` is escaped
+ * so a value containing \`</script>\` cannot close the block and inject markup.
+ */
+export function jsonLd(value: unknown): string {
+  return JSON.stringify(value).replace(/</g, '\\\\u003c')
+}
+
 /** Emitted stylesheets live under /styles/legacy/ — pages reference them by file name. */
 export const cssHref = (file: string): string => '/styles/legacy/' + (file.split('/').pop() ?? file)
 
@@ -304,8 +347,48 @@ export interface EntryRef {
   locale?: string
 }
 
+export interface SeoInput {
+  title?: string
+  description?: string
+  canonical?: string
+  image?: string
+  type?: 'article' | 'website'
+  publishedAt?: string
+  modifiedAt?: string
+  author?: string
+}
+
+/**
+ * The SEO of one entry page. \`featured\` holds bare file names — only the
+ * producer knows where media is served from — so an image is taken from it
+ * only when it already reads as a path; otherwise \`image\` supplies it and
+ * the tag is omitted rather than pointing at a URL that does not resolve.
+ */
+export function postSeo(post: EmittedPost): SeoInput {
+  const featured = (post.featured ?? []).find((f) => f.startsWith('/') || /^https?:/i.test(f))
+  return {
+    title: post.title,
+    description: post.description ?? post.excerpt,
+    canonical: post.canonical,
+    image: post.image ?? featured,
+    type: 'article',
+    publishedAt: post.published_at,
+    modifiedAt: post.modified_at,
+    author: post.author,
+  }
+}
+
 export interface EmittedPost extends MarkablePost {
   body: string
+  /** Meta description; falls back to the excerpt. */
+  description?: string
+  /** Social image, absolute or site-root-relative. */
+  image?: string
+  /** Canonical override; default is the page's own address. */
+  canonical?: string
+  /** ISO 8601, for Article structured data. */
+  published_at?: string
+  modified_at?: string
   /** Route parameters beyond slug — the date parts of a dated permalink, a post id. */
   params?: Record<string, string>
   /** Stylesheets only this page loads. */
@@ -324,5 +407,8 @@ export interface EmittedQueryPage {
   item_template?: string
   sections?: ListSection[]
   title?: string
+  description?: string
+  image?: string
+  canonical?: string
 }
 `

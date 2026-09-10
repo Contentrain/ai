@@ -38,6 +38,10 @@ interface Runtime {
   cssHref: (file: string) => string
   esc: (value: unknown) => string
   splitComponents: (html: string) => Array<{ html: string; component?: string }>
+  seoDescription: (text: string | undefined, max?: number) => string | undefined
+  absoluteUrl: (value: string | undefined, site: URL | undefined) => string | undefined
+  jsonLd: (value: unknown) => string
+  postSeo: (post: Record<string, unknown>) => Record<string, unknown>
 }
 let rt: Runtime
 
@@ -178,5 +182,50 @@ describe('emitted template runtime', () => {
     expect(rt.renderTemplate(repeat, values)).toBe('<a href="/category/news/">News</a>, <a href="">Events</a>')
     // a plain string term still renders as before
     expect(rt.renderTemplate('<!--@@repeat:terms@@--><b>@@item@@</b><!--@@/repeat@@-->', rt.postMarks({ slug: 's', title: 'T', terms: ['A'] }))).toBe('<b>A</b>')
+  })
+
+  it('seoDescription flattens markup and cuts at a word boundary', () => {
+    expect(rt.seoDescription('  <p>An <b>excerpt</b>\n  with markup.</p> ')).toBe('An excerpt with markup.')
+    expect(rt.seoDescription(undefined)).toBeUndefined()
+    expect(rt.seoDescription('<p></p>')).toBeUndefined()
+    const long = `${'word '.repeat(40)}tail`
+    const cut = rt.seoDescription(long, 40)!
+    expect(cut.length).toBeLessThanOrEqual(41)
+    expect(cut.endsWith('…')).toBe(true)
+    expect(cut).not.toContain('  ')
+    // a single unbroken token still gets cut, rather than being emitted whole
+    expect(rt.seoDescription('x'.repeat(60), 10)).toBe(`${'x'.repeat(10)}…`)
+  })
+
+  it('absoluteUrl only produces URLs a crawler can follow', () => {
+    const site = new URL('https://example.com/')
+    expect(rt.absoluteUrl('https://cdn.example/a.jpg', undefined)).toBe('https://cdn.example/a.jpg')
+    expect(rt.absoluteUrl('/media/a.jpg', site)).toBe('https://example.com/media/a.jpg')
+    expect(rt.absoluteUrl('/hello/', site)).toBe('https://example.com/hello/')
+    // no configured site → no canonical at all, rather than one pointing at the build host
+    expect(rt.absoluteUrl('/hello/', undefined)).toBeUndefined()
+    expect(rt.absoluteUrl(undefined, site)).toBeUndefined()
+    expect(rt.absoluteUrl('', site)).toBeUndefined()
+  })
+
+  it('jsonLd escapes < so a value cannot close the script block', () => {
+    // The escape travels through a template literal on its way into fill.ts;
+    // an eaten backslash would make this a no-op and reopen the injection.
+    const out = rt.jsonLd({ headline: '</script><img src=x onerror=alert(1)>' })
+    expect(out).not.toContain('</script>')
+    expect(out).not.toContain('<img')
+    expect(out).toContain('\\u003c/script')
+    expect(JSON.parse(out)).toEqual({ headline: '</script><img src=x onerror=alert(1)>' })
+  })
+
+  it('postSeo takes an image only when it is a path a crawler can resolve', () => {
+    const seo = rt.postSeo({ slug: 's', title: 'T', excerpt: 'Ex', featured: ['hero.jpg', '/media/hero.jpg'], author: 'Ada', published_at: '2026-01-01T00:00:00.000Z' })
+    expect(seo).toMatchObject({ title: 'T', description: 'Ex', type: 'article', author: 'Ada', publishedAt: '2026-01-01T00:00:00.000Z' })
+    // "hero.jpg" is a bare file name — only the producer knows where it is served
+    expect(seo.image).toBe('/media/hero.jpg')
+    expect(rt.postSeo({ slug: 's', title: 'T', featured: ['hero.jpg'] }).image).toBeUndefined()
+    expect(rt.postSeo({ slug: 's', title: 'T', featured: ['hero.jpg'], image: 'https://cdn.example/x.jpg' }).image).toBe('https://cdn.example/x.jpg')
+    // an explicit description wins over the excerpt
+    expect(rt.postSeo({ slug: 's', title: 'T', excerpt: 'Ex', description: 'D' }).description).toBe('D')
   })
 })
