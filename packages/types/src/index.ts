@@ -286,6 +286,19 @@ export const CONTENTRAIN_DIR = '.contentrain' as const
  * `{projectRoot}/{content_path}/` instead — but meta files always
  * remain under `.contentrain/meta/`.
  */
+/**
+ * Where each kind of file lives. These are the paths a reader can rely on and
+ * a writer must produce; `@contentrain/mcp` resolves exactly these, and a
+ * parity test there holds the two together.
+ *
+ * They show the default `locale_strategy: 'file'`. The `suffix`, `directory`
+ * and `none` strategies move the locale within the same directory — see
+ * `LocaleStrategy` — and `content_path` replaces the
+ * `.contentrain/content/{domain}/{modelId}` prefix entirely.
+ *
+ * Meta always carries a locale in its file name: a non-i18n model keeps one
+ * meta record, pinned to the project's default locale.
+ */
 export const PATH_PATTERNS = {
   config: '.contentrain/config.json',
   context: '.contentrain/context.json',
@@ -294,10 +307,12 @@ export const PATH_PATTERNS = {
   content: {
     singleton: '.contentrain/content/{domain}/{modelId}/{locale}.json',
     collection: '.contentrain/content/{domain}/{modelId}/{locale}.json',
-    document: '.contentrain/content/{domain}/{slug}/{locale}.md',
+    document: '.contentrain/content/{domain}/{modelId}/{slug}/{locale}.md',
     dictionary: '.contentrain/content/{domain}/{modelId}/{locale}.json',
-    /** Non-i18n content (i18n: false) */
+    /** Non-i18n JSON content (i18n: false) */
     noLocale: '.contentrain/content/{domain}/{modelId}/data.json',
+    /** Non-i18n document (i18n: false) */
+    noLocaleDocument: '.contentrain/content/{domain}/{modelId}/{slug}.md',
   },
   meta: {
     singleton: '.contentrain/meta/{modelId}/{locale}.json',
