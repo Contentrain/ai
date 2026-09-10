@@ -581,3 +581,30 @@ Full documentation at **[ai.contentrain.io/packages/sdk](https://ai.contentrain.
 ## 📄 License
 
 MIT
+
+
+### Public builds and scheduled publication
+
+Editorial generation keeps all content by default. For a deployed static site,
+use `contentrain-query generate --published` (or `contentrain generate --published`).
+Only published entries inside their `publish_at`/`expire_at` window are included.
+Legacy entries without metadata remain visible, matching Studio CDN behavior.
+Invalid schedule values are excluded; malformed metadata stops the build.
+
+`--at 2026-10-01T12:00:00Z` fixes the clock for a reproducible public build and
+implies `--published`. The programmatic equivalents are
+`generate({ projectRoot, publishedOnly: true })` and
+`generate({ projectRoot, at: '2026-10-01T12:00:00Z' })`.
+
+Astro content collections use the same filter:
+
+```ts
+contentrainLoader({ model: 'posts', locale: 'en', publishedOnly: true })
+```
+
+Publication begins exactly at `publish_at` and ends exactly at `expire_at`.
+All four model kinds read canonical `.contentrain/meta` files, including content
+stored at custom paths. Metadata is not copied into public content fields.
+Watch mode reacts to metadata edits. Time passing alone does not redeploy a
+static site: schedule a build and deployment at each deadline, with retries.
+Use a fixed `at` for testing/reproduction, not a permanent deployment clock.

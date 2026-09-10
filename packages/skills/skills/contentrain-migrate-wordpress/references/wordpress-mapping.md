@@ -50,10 +50,18 @@ WordPress status becomes Contentrain meta, not a field:
 | WP | Contentrain |
 |---|---|
 | `publish`, `inherit` | `published` |
-| `future` | `draft` + `publish_at` (the scheduled date survives) |
+| `future` | `published` + `publish_at` (a `future` post with no valid date fails the import) |
 | `pending` | `in_review` |
 | `trash` | `archived` |
 | everything else (`draft`, `private`, …) | `draft` |
+
+A scheduled post arrives as `published`, not as a draft, because `publish_at` is a
+delivery gate on top of status and never changes it: a past `publish_at` does not
+publish a draft, so `draft` + `publish_at` would keep a scheduled post invisible
+forever. Tell the user that whatever renders the site must honour the publication
+window — status alone is not enough, or an embargoed post ships early. The query
+generator and the Astro loader do this in public-build mode
+(`contentrain generate --published [--at <ISO>]`).
 
 Comments map by approval: `1` → published · `spam`/`trash` → archived · anything else → `in_review`.
 

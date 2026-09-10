@@ -11,6 +11,7 @@
 // typed by the small surface this loader actually uses. That keeps
 // @contentrain/query dependency-free and usable from any Astro 5 version.
 
+import { publicationContext, publicationMeta, isPublishedAt, type PublicationOptions, type PublicationContext } from '../generator/publication.js'
 import type { ModelDefinition } from '@contentrain/types'
 import { isAbsolute, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -47,7 +48,7 @@ export interface ContentrainLoader {
   load: (context: ContentrainLoaderContext) => Promise<void>
 }
 
-export interface ContentrainLoaderOptions {
+export interface ContentrainLoaderOptions extends PublicationOptions {
   /** Model id — the `id` in `.contentrain/models/<id>.json`. */
   model: string
   /** Project root holding `.contentrain`. Default: `process.cwd()`. */
@@ -115,7 +116,8 @@ export function contentrainLoader(options: ContentrainLoaderOptions): Contentrai
       // a single-locale load keeps the natural id so routes stay clean.
       const prefixLocale = model.i18n === true && options.locale === undefined
 
-      const perFile = await Promise.all(refs.map(ref => entriesOf(ref, model, prefixLocale)))
+      const publication = publicationContext(root, manifest.config.locales.default, options)
+      const perFile = await Promise.all(refs.map(ref => entriesOf(ref, model, prefixLocale, publication)))
       const entries = perFile.flat()
       // Astro rejects an absolute filePath ("must be relative to the site
       // root"), and a `.contentrain` outside the Astro root has no relative
@@ -148,9 +150,11 @@ export function contentrainLoader(options: ContentrainLoaderOptions): Contentrai
         watching = true
         const paths = new Set(refs.map(ref => ref.filePath))
         for (const path of paths) context.watcher.add(path)
+        const metaDir = join(root, '.contentrain', 'meta', model.id)
+        context.watcher.add(metaDir)
         context.watcher.add(join(root, '.contentrain', 'models', `${model.id}.json`))
         const reload = (path: string) => {
-          if (!paths.has(path) && !path.endsWith(`${model.id}.json`)) return
+          if (!paths.has(path) && !path.startsWith(metaDir + '/') && !path.endsWith(`${model.id}.json`)) return
           void this.load(context)
         }
         context.watcher.on('change', reload)
@@ -168,7 +172,10 @@ function toPath(root: URL | string | undefined): string | undefined {
   return root.startsWith('file:') ? fileURLToPath(root) : root
 }
 
-async function entriesOf(ref: ContentFileRef, model: ModelDefinition, prefixLocale: boolean): Promise<Entry[]> {
+async function entriesOf(ref: ContentFileRef, model: ModelDefinition, prefixLocale: boolean, publication?: PublicationContext): Promise<Entry[]> {
+  const meta = publication ? await publicationMeta(ref, model, publication) : undefined
+  const visible = (id?: string) => !publication || isPublishedAt(id === undefined ? meta : meta?.[id], publication.at)
+  if ((model.kind === 'singleton' || model.kind === 'document') && !visible()) return []
   const prefix = prefixLocale && ref.locale ? `${ref.locale}/` : ''
   const withLocale = (data: Record<string, unknown>): Record<string, unknown> =>
     ref.locale === null ? data : { ...data, locale: ref.locale }
@@ -178,6 +185,7 @@ async function entriesOf(ref: ContentFileRef, model: ModelDefinition, prefixLoca
       const raw = await readJson<Record<string, Record<string, unknown>>>(ref.filePath)
       if (!raw) return []
       return Object.entries(raw)
+        .filter(([id]) => visible(id))
         .toSorted(([a], [b]) => a.localeCompare(b, 'en'))
         .map(([id, fields]) => ({
           id: `${prefix}${id}`,
@@ -202,6 +210,7 @@ async function entriesOf(ref: ContentFileRef, model: ModelDefinition, prefixLoca
       const raw = await readJson<Record<string, string>>(ref.filePath)
       if (!raw) return []
       return Object.entries(raw)
+        .filter(([id]) => visible(id))
         .toSorted(([a], [b]) => a.localeCompare(b, 'en'))
         .map(([key, value]) => ({
           id: `${prefix}${key}`,

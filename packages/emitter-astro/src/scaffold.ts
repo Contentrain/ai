@@ -50,7 +50,7 @@ export function scaffoldFiles(ir: ProjectIR, options: EmitOptions): Record<strin
 
   // Astro wants a tsconfig in every project — editors and the compiler read
   // it even in JS-only projects, and the emitted src/lib/fill.ts is TS.
-  files['tsconfig.json'] = `${JSON.stringify({ extends: 'astro/tsconfigs/base', include: ['.astro/types.d.ts', '**/*'], exclude: ['dist'] }, null, 2)}\n`
+  files['tsconfig.json'] = `${JSON.stringify({ extends: 'astro/tsconfigs/base', include: ['.astro/types.d.ts', '**/*'], exclude: ['dist', 'public', 'node_modules'] }, null, 2)}\n`
 
   if (tailwind) files['src/styles/modern.css'] = modernCss(ir.tokens)
 

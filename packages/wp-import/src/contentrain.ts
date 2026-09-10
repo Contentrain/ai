@@ -89,6 +89,9 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
   for (const pair of raw.language_pairs ?? []) {
     const members = [...new Set(Object.values(pair.translations))].filter((id) => postById.has(id) && !SKIP_TYPES.test(postById.get(id)!.type))
     if (members.length < 2) continue
+    const memberLocales = members.map((id) => postLocale(postById.get(id)!))
+    if (new Set(memberLocales).size !== members.length)
+      throw new Error(`Translation group ${pair.post} has multiple posts in the same normalized locale; refusing to overwrite a translation`)
     const canonical = members.find((id) => postLocale(postById.get(id)!) === locale) ?? Math.min(...members)
     for (const id of members) canonicalOf.set(id, canonical)
     translationGroups++
@@ -113,16 +116,19 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     updated_by: updatedBy,
     ...extra,
   })
-  const mapStatus = (p: RawPost): Meta =>
-    p.status === 'publish' || p.status === 'inherit'
+  const mapStatus = (p: RawPost): Meta => {
+    if (p.status === 'future' && (!p.date || !Number.isFinite(Date.parse(p.date))))
+      throw new Error(`Scheduled WordPress post ${p.id} has no valid publication date`)
+    return p.status === 'publish' || p.status === 'inherit'
       ? importMeta('published')
       : p.status === 'future'
-        ? importMeta('draft', p.date ? { publish_at: p.date } : {})
+        ? importMeta('published', { publish_at: p.date! })
         : p.status === 'pending'
           ? importMeta('in_review')
           : p.status === 'trash'
             ? importMeta('archived')
             : importMeta('draft')
+  }
   const addModel = (m: ModelDefinition): void => {
     models[m.id] = m
     contents[m.id] ??= {}
@@ -148,17 +154,27 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
   }
   const slugOf = new Map<number, string>()
   const postEntry = new Map<number, { model: string; ref: string }>()
-  for (const p of raw.posts) {
+  for (const p of raw.posts.toSorted((a, b) => a.id - b.id)) {
     // Only exported entries may be relation targets or appear in the source map.
     if (SKIP_TYPES.test(p.type)) continue
     slugOf.set(p.id, postSlug(p))
   }
-  for (const p of raw.posts) {
-    if (SKIP_TYPES.test(p.type)) continue
-    // A translation takes its group's canonical entry id; its own slug stays on the entry.
+  // Keep established slug identities unless distinct translation groups collide.
+  // Prefer the default-locale group, then the lowest WP id, independently of
+  // REST pagination/WXR order. A colliding group gets a WP-id namespace.
+  const identityOwner = new Map<string, number>()
+  const exported = raw.posts.filter((p) => !SKIP_TYPES.test(p.type))
+  const canonicalPosts = exported.filter((p) => (canonicalOf.get(p.id) ?? p.id) === p.id)
+    .toSorted((a, b) => Number(postLocale(b) === locale) - Number(postLocale(a) === locale) || a.id - b.id)
+  for (const p of canonicalPosts) {
+    const key = `${typeModelId(p.type)}:${slugOf.get(p.id)!}`
+    if (!identityOwner.has(key)) identityOwner.set(key, p.id)
+  }
+  for (const p of exported) {
     const canonical = canonicalOf.get(p.id) ?? p.id
     const mid = typeModelId(p.type)
-    postEntry.set(p.id, { model: mid, ref: hexId(`${mid}:${slugOf.get(canonical) ?? slugOf.get(p.id)!}`) })
+    const key = `${mid}:${slugOf.get(canonical) ?? slugOf.get(p.id)!}`
+    postEntry.set(p.id, { model: mid, ref: hexId(identityOwner.get(key) === canonical ? key : `${mid}:wp:${canonical}`) })
   }
   const mediaRef = (id: number): string | null => (raw.attachments.some((a) => a.id === id) ? hexId(`media:${id}`) : null)
   const titleOf = (p: RawPost): string => {

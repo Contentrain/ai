@@ -1,3 +1,4 @@
+import { publicationMeta, isPublishedAt, type PublicationContext } from './publication.js'
 import type { ModelDefinition } from '@contentrain/types'
 import type { ContentFileRef } from './config-reader.js'
 import { parseFrontmatter, stringLikeFieldKeys } from '../shared/frontmatter.js'
@@ -24,9 +25,10 @@ export interface DataModule {
 export async function emitDataModules(
   models: ModelDefinition[],
   contentFiles: ContentFileRef[],
+  publication?: PublicationContext,
 ): Promise<DataModule[]> {
   const results = await Promise.all(
-    contentFiles.map(ref => emitSingleModule(ref, models)),
+    contentFiles.map(ref => emitSingleModule(ref, models, publication)),
   )
   return results.filter((r): r is DataModule => r !== null)
 }
@@ -34,9 +36,14 @@ export async function emitDataModules(
 async function emitSingleModule(
   ref: ContentFileRef,
   models: ModelDefinition[],
+  publication?: PublicationContext,
 ): Promise<DataModule | null> {
   const model = models.find(m => m.id === ref.modelId)
   if (!model) return null
+
+  const meta = publication ? await publicationMeta(ref, model, publication) : undefined
+  const visible = (id?: string) => !publication || isPublishedAt(id === undefined ? meta : meta?.[id], publication.at)
+  if ((model.kind === 'singleton' || model.kind === 'document') && !visible()) return null
 
   const localeSuffix = ref.locale ? `.${ref.locale}` : ''
 
@@ -45,6 +52,7 @@ async function emitSingleModule(
       const raw = await readJson<Record<string, Record<string, unknown>>>(ref.filePath)
       if (!raw) return null
       const entries = Object.entries(raw)
+        .filter(([id]) => visible(id))
         .toSorted(([a], [b]) => a.localeCompare(b, 'en'))
         .map(([id, fields]) => Object.assign({ id }, fields))
       return { fileName: `${model.id}${localeSuffix}.mjs`, content: `export default ${canonicalStringify(entries)}\n` }
@@ -59,7 +67,8 @@ async function emitSingleModule(
     case 'dictionary': {
       const raw = await readJson<Record<string, string>>(ref.filePath)
       if (!raw) return null
-      return { fileName: `${model.id}${localeSuffix}.mjs`, content: `export default ${canonicalStringify(raw)}\n` }
+      const entries = Object.fromEntries(Object.entries(raw).filter(([id]) => visible(id)))
+      return { fileName: `${model.id}${localeSuffix}.mjs`, content: `export default ${canonicalStringify(entries)}\n` }
     }
 
     case 'document': {

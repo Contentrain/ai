@@ -162,6 +162,67 @@ describe('WordPress import parity — documented exclusions', () => {
     expect(missing, `wordpress-mapping.md does not mention plugin meta: ${missing.join(', ')}`).toEqual([])
   })
 
+  it('the mapping reference states the status the importer actually writes', async () => {
+    // The status table is the one part of the mapping an agent quotes back to a
+    // user ("your scheduled posts came over as drafts"). It drifted once already:
+    // `future` moved from `draft` to `published` + `publish_at` and the table
+    // kept the old answer. So assert against the importer's real output, not
+    // against a restatement of it.
+    const { rawToContentrain } = await import('@contentrain/wp-import')
+    const doc = readFileSync(join(WP_SKILL_DIR, 'references', 'wordpress-mapping.md'), 'utf-8')
+    const expected: Array<[wp: string, contentrain: string]> = [
+      ['publish', 'published'],
+      ['inherit', 'published'],
+      ['future', 'published'],
+      ['pending', 'in_review'],
+      ['trash', 'archived'],
+      ['draft', 'draft'],
+      ['private', 'draft'],
+    ]
+    const raw = {
+      version: 1,
+      provenance: { kind: 'wxr' as const, tool: 'parity-test' },
+      site: { url: 'https://parity.example', language: 'en' },
+      authors: [],
+      terms: [],
+      attachments: [],
+      posts: expected.map(([status], i) => ({
+        id: i + 1,
+        type: 'post',
+        status,
+        slug: `parity-${i + 1}`,
+        title: `Parity ${i + 1}`,
+        author: null,
+        // `future` needs a real date — an undated schedule is a hard failure.
+        date: '2027-01-01T12:00:00.000Z',
+        modified: null,
+        content: '',
+        excerpt: '',
+        terms: [],
+        meta: {},
+      })),
+    }
+    const result = rawToContentrain(raw)
+    const meta = JSON.parse(result.files['.contentrain/meta/posts/en.json']!) as Record<string, { status: string }>
+
+    // Split the doc's status table into one row per WordPress status.
+    const rowFor = (wp: string): string | undefined =>
+      doc.split('\n').find(line => line.startsWith('|') && line.includes(`\`${wp}\``))
+
+    for (const [i, [wp, contentrain]] of expected.entries()) {
+      const entry = result.entry_source_map[String(i + 1)]!
+      expect(meta[entry.entry_id]!.status, `importer maps "${wp}" to`).toBe(contentrain)
+      const row = rowFor(wp)
+      expect(row, `wordpress-mapping.md has no status row naming \`${wp}\``).toBeDefined()
+      expect(row, `wordpress-mapping.md says "${wp}" becomes something other than "${contentrain}"`).toContain(`\`${contentrain}\``)
+    }
+
+    // The scheduled date rides along, and the doc has to say so.
+    const scheduled = result.entry_source_map[String(expected.findIndex(([wp]) => wp === 'future') + 1)]!
+    expect((meta[scheduled.entry_id] as unknown as { publish_at?: string }).publish_at).toBe('2027-01-01T12:00:00.000Z')
+    expect(rowFor('future')).toContain('publish_at')
+  })
+
   it('the mapping reference names every model the importer always creates', () => {
     // Fixed models — the ones that do not depend on what the source contains.
     const doc = readFileSync(join(WP_SKILL_DIR, 'references', 'wordpress-mapping.md'), 'utf-8')

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import type { RawIR } from '@contentrain/types'
 import { parseWxr, rawToContentrain, buildCommentsExport, summarizeComments, hexId } from './index'
 import { FIXTURE } from './wxr.test'
 
@@ -193,6 +194,51 @@ describe('comments export', () => {
     expect(result.report.locales).toEqual(['en', 'tr'])
     expect(result.report.translation_groups).toBe(1)
     expect(result.report.models.posts!.entries).toBe(2)
+  })
+
+  it('preserves separate translation groups with the same canonical slug, including their shared locale', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const base = raw.posts[0]!
+    const posts = [
+      { ...base, id: 101, lang: 'en', slug: 'shared' },
+      { ...base, id: 102, lang: 'tr', slug: 'bir' },
+      { ...base, id: 201, lang: 'fr', slug: 'shared' },
+      { ...base, id: 202, lang: 'tr', slug: 'iki' },
+    ]
+    const input: RawIR = { ...raw, posts, comments: [], language_pairs: [
+      { post: 101, translations: { en: 101, tr: 102 } },
+      { post: 201, translations: { fr: 201, tr: 202 } },
+    ] }
+    const result = rawToContentrain(input)
+    const tr = JSON.parse(result.files['.contentrain/content/blog/posts/tr.json']!)
+    const first = result.entry_source_map['102']!.entry_id
+    const second = result.entry_source_map['202']!.entry_id
+    expect(first).not.toBe(second)
+    expect(first).toBe(hexId('posts:shared'))
+    expect(tr[first].wp_id).toBe(102)
+    expect(tr[second].wp_id).toBe(202)
+    expect(Object.keys(tr)).toHaveLength(2)
+    expect(result.entry_source_map['201']!.entry_id).toBe(second)
+    expect(rawToContentrain({ ...input, posts: posts.toReversed() }).files).toEqual(result.files)
+  })
+
+  it('refuses translation groups that collapse regional variants into one locale instead of losing content', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const base = raw.posts[0]!
+    expect(() => rawToContentrain({ ...raw, posts: [
+      { ...base, id: 101, lang: 'en-US' },
+      { ...base, id: 102, lang: 'en-GB' },
+    ], language_pairs: [{ post: 101, translations: { 'en-US': 101, 'en-GB': 102 } }] }))
+      .toThrow('same normalized locale')
+  })
+
+  it('preserves WordPress scheduled publication intent without publishing undated future posts', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const post = { ...raw.posts[0]!, status: 'future', date: '2027-01-01T12:00:00Z' }
+    const result = rawToContentrain({ ...raw, posts: [post] })
+    const meta = JSON.parse(result.files['.contentrain/meta/posts/en.json']!)
+    expect(meta[result.entry_source_map[String(post.id)]!.entry_id]).toMatchObject({ status: 'published', publish_at: post.date })
+    expect(() => rawToContentrain({ ...raw, posts: [{ ...post, date: null }] })).toThrow('no valid publication date')
   })
 
   it('a monolingual site is unchanged: i18n false, data.json, one supported locale', async () => {

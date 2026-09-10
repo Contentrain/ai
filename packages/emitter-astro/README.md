@@ -62,3 +62,10 @@ printing the name. The generated TypeScript uses the same union, so the customer
 `npm run build` (`astro check && astro build`) accepts linked terms. Literal
 Unicode route segments are preserved; traversal segments and malformed
 parameters are rejected and reported as skipped routes.
+
+
+Parameterless collection routes (for example `/about`) must receive exactly one
+entry in their named collection. They read that entry directly, retaining the
+body and runtime entry address. Missing or ambiguous data fails the Astro build.
+Dynamic routes continue to use `getStaticPaths`. Generated tsconfig files exclude
+`public`, `dist`, and `node_modules`, so copied WordPress assets are not typechecked.
