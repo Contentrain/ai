@@ -13,6 +13,8 @@ export default defineCommand({
   },
   args: {
     root: { type: 'string', description: 'Project root path', required: false },
+    published: { type: 'boolean', description: 'Include only published content within its publication window', required: false },
+    at: { type: 'string', description: 'ISO publication timestamp for a reproducible public build (implies --published)', required: false },
     watch: { type: 'boolean', description: 'Watch for changes and regenerate', required: false },
     json: { type: 'boolean', description: 'Emit the generate result as JSON (silences pretty output)', required: false },
     cdnBaseUrl: { type: 'string', description: 'Public media delivery base baked into the generated client\'s media() resolver (overrides config.cdn.url)', required: false },
@@ -33,7 +35,7 @@ export default defineCommand({
     try {
       const { generate } = await import('@contentrain/query/generate')
       const cdnBaseUrl = args.cdnBaseUrl || undefined
-      const result = await generate({ projectRoot, cdnBaseUrl })
+      const result = await generate({ projectRoot, cdnBaseUrl, publishedOnly: args.published, at: args.at })
 
       s?.stop('SDK client generated')
 
@@ -62,7 +64,7 @@ export default defineCommand({
         log.info('Watching for changes... (Ctrl+C to stop)')
 
         const crDir = contentrainDir(projectRoot)
-        const dirsToWatch = [join(crDir, 'models'), join(crDir, 'content'), join(crDir, 'config.json')]
+        const dirsToWatch = [join(crDir, 'models'), join(crDir, 'content'), join(crDir, 'meta'), join(crDir, 'config.json')]
 
         let debounce: ReturnType<typeof setTimeout> | null = null
 
@@ -72,7 +74,7 @@ export default defineCommand({
             debounce = setTimeout(async () => {
               log.info('Changes detected, regenerating...')
               try {
-                const r = await generate({ projectRoot, cdnBaseUrl })
+                const r = await generate({ projectRoot, cdnBaseUrl, publishedOnly: args.published, at: args.at })
                 log.success(`Regenerated: ${r.generatedFiles.length} files`)
               } catch (err) {
                 log.error(`Regeneration failed: ${err instanceof Error ? err.message : String(err)}`)

@@ -64,3 +64,19 @@ collections and failed pages are named in `warnings`; callers must inspect
 these before claiming a complete migration. ACF field/group records and their
 cross-model parents remain in the content store; route discovery decides which
 records become public pages. Importing configuration does not execute a plugin.
+
+
+### Publication and translation identity
+
+WordPress `future` posts become `status: published` metadata with `publish_at`,
+preserving scheduled publication intent. A scheduled post without a valid date
+fails import. Public consumers must filter the publication window, not status
+alone; use the query generator/loader's public-build mode before deployment.
+Previously imported future posts need re-importing or an explicit metadata update.
+
+Translation groups share one entry identity across locales. Distinct groups
+with the same canonical slug receive distinct deterministic identities; existing
+non-colliding identities are unchanged. Rebuild the entry map and comments export
+from the same corrected import. Locale normalization currently uses primary
+language codes: a group whose regional translations collapse to the same locale
+is rejected rather than silently overwritten.

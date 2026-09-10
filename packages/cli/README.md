@@ -96,7 +96,7 @@ Every read command supports `--json` for CI use; write commands surface `--watch
 | `status` | `--json` |
 | `doctor` | `--json`, `--usage` — non-zero exit on failure; includes a remote `cr/*` branch check |
 | `validate` | `--json`, `--fix`, `--interactive`, `--watch`, `--model <id>` |
-| `generate` | `--json`, `--watch` |
+| `generate` | `--json`, `--watch`, `--published`, `--at <ISO timestamp>` |
 | `diff` | `--json` |
 | `merge` | `--yes` (skip confirm) |
 | `reconcile` | `--yes` (execute a clean plan without prompting), `--json` (dry-run plan) |
@@ -334,3 +334,11 @@ contentrain import https://site.example --auth user:app-password  # authenticate
 ```
 
 Writes the canonical store plus `import-report.json`, `entry-source-map.json` (WP id → entry address), and — when the source has comments — `comments-export.json` (`contentrain-comments@1`, ready for a comments-service intake). An existing `.contentrain` is only overwritten with `--force`. Powered by `@contentrain/wp-import`.
+
+### Public static builds
+
+`contentrain generate --published` excludes drafts and content outside its
+`publish_at`/`expire_at` window. `--at 2026-10-01T12:00:00Z` fixes the public build
+clock for reproducible tests and implies `--published`. Without these flags,
+editorial generation keeps its existing behavior. Watch mode observes metadata
+edits; a scheduled static publication still needs a build/deploy trigger.

@@ -325,6 +325,7 @@ describe('emitAstroProject', () => {
   it('a tsconfig extending astro/tsconfigs/base is emitted', () => {
     const ts = JSON.parse(result.files['tsconfig.json']!)
     expect(ts.extends).toBe('astro/tsconfigs/base')
+    expect(ts.exclude).toEqual(expect.arrayContaining(['dist', 'public', 'node_modules']))
   })
 
   it('generated frontmatter types its props', () => {
@@ -427,6 +428,20 @@ describe('emitAstroProject', () => {
     expect(result.files['src/pages/[year]/[month]/[day]/[slug].astro']).toContain(`data/posts.json`)
     // no duplicate-file warning: the two single routes no longer collide
     expect(result.warnings.some((w) => w.includes('duplicate file'))).toBe(false)
+  })
+
+  it('static collection routes read their single entry without Astro.props or getStaticPaths', () => {
+    const emitted = emitAstroProject({
+      ...input,
+      ir: { ...ir, routes: [{ id: 'r-about', pattern: '/hakkimizda', kind: 'page', family: 'f-article', collection: 'pages' }] },
+    })
+    const page = emitted.files['src/pages/hakkimizda.astro']!
+    expect(page).not.toContain('getStaticPaths')
+    expect(page).not.toContain('Astro.props')
+    expect(page).toContain('const post = posts[0]!')
+    expect(page).toContain('posts.length !== 1')
+    expect(page).toContain('body={post.body}')
+    expect(page).toContain('entry={post.entry}')
   })
 
   it('an empty collection warns by name', () => {

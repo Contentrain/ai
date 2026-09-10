@@ -58,7 +58,7 @@ export function routeFiles(
       warnings.push(`route ${route.id}: collection "${collection}" has no items — page emitted, data file empty`)
     }
     files[`src/data/${collection}.json`] = stableJson(posts)
-    files[`src/pages/${pagePath}`] = singlePage(route, layout, up, collection, siteLocale)
+    files[`src/pages/${pagePath}`] = singlePage(route, layout, up, collection, siteLocale, hasParams)
     return { files, warnings }
   }
 
@@ -84,7 +84,7 @@ export function collectionItems(content: EmitContent, collection: string): EmitP
   return collection === DEFAULT_COLLECTION ? (content.posts ?? []) : []
 }
 
-function singlePage(route: RouteModel, layout: string, up: string, collection: string, siteLocale: string): string {
+function singlePage(route: RouteModel, layout: string, up: string, collection: string, siteLocale: string, hasParams: boolean): string {
   const locale = JSON.stringify(route.locale ?? siteLocale)
   return `---
 // Route: ${route.id} (${route.pattern}) — collection: ${collection} — emitted by @contentrain/emitter-astro
@@ -92,7 +92,7 @@ import Layout from '${up}layouts/${layout}.astro'
 import data from '${up}data/${collection}.json'
 import { postMarks, type EmittedPost } from '${up}lib/fill'
 
-export function getStaticPaths() {
+${hasParams ? `export function getStaticPaths() {
   // The JSON is data; its contract is EmittedPost. Inferring the type from the
   // file would type only the fields this site happens to carry, and "astro
   // check" (which the build runs first) would then reject post.params on a site
@@ -105,7 +105,9 @@ export function getStaticPaths() {
   return posts.map((post) => ({ params: { ...(post.params ?? {}), slug: post.slug }, props: { post } }))
 }
 type Props = { post: EmittedPost }
-const { post } = Astro.props as Props
+const { post } = Astro.props as Props` : `const posts = data as EmittedPost[]
+if (posts.length !== 1) throw new Error(${JSON.stringify(`Static content route requires exactly one entry: ${route.id}`)})
+const post = posts[0]!`}
 ---
 <Layout
   title={post.title}

@@ -1,3 +1,4 @@
+import { publicationContext, type PublicationOptions } from './publication.js'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { readProjectManifest } from './config-reader.js'
@@ -7,7 +8,7 @@ import { emitRuntimeModule, emitCjsWrapper } from './runtime-emitter.js'
 import { injectImports } from './package-json.js'
 import { readDir, writeText } from './utils.js'
 
-export interface GenerateOptions {
+export interface GenerateOptions extends PublicationOptions {
   projectRoot: string
   /**
    * Public media delivery base for resolving relative `media/...` references to
@@ -40,7 +41,7 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
   const hasMedia = Boolean(cdnBaseUrl)
 
   // 2. Generate data modules (async — reads content files)
-  const dataModules = await emitDataModules(manifest.models, manifest.contentFiles)
+  const dataModules = await emitDataModules(manifest.models, manifest.contentFiles, publicationContext(projectRoot, manifest.config.locales.default, options))
 
   // 3. Generate all output content (sync — pure string transforms)
   const typesContent = emitTypes(manifest.models, hasMedia)
