@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { ProjectIR } from '@contentrain/types'
 import { CHROME_BODY_SLOT, MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import type { EmitInput } from './index'
-import { emitAstroProject, stripSeoTags } from './index'
+import { bodySeoLeaks, emitAstroProject, stripSeoTags } from './index'
 
 // A migrated page used to inherit the template page's head verbatim: every post
 // carried one canonical, one og:title and one Article JSON-LD naming a different
@@ -185,5 +185,32 @@ describe('emitted SEO', () => {
 
   it('is deterministic', () => {
     expect(emitAstroProject(input).files).toEqual(result.files)
+  })
+
+  it('reports head-only tags that a faithful clone left in the body, without cutting into content', () => {
+    // Measurement rule 33: a browser that closed <head> early leaves the
+    // template's canonical in the body; the clone carries it there and no
+    // fidelity score sees it.
+    expect(bodySeoLeaks('<div><link rel="canonical" href="/x/"><meta property="og:title" content="T"></div>'))
+      .toEqual(['canonical', 'og:*'])
+    // <title> inside <svg> is legal markup — never treated as a leak
+    expect(bodySeoLeaks('<svg><title>Chart</title></svg>')).toEqual([])
+    expect(bodySeoLeaks('<main>plain</main>')).toEqual([])
+
+    const leaky = emitAstroProject({
+      ...input,
+      ir: {
+        ...ir,
+        families: [{
+          id: 'f-leak',
+          chrome: [{ id: 'body', position: 'body', html: `<div><link rel="canonical" href="/template/">${CHROME_BODY_SLOT}</div>` }],
+          css: { strategy: 'localcss' },
+        }],
+        routes: [],
+      },
+    })
+    expect(leaky.warnings.some((w) => w.includes('f-leak') && w.includes('head-only canonical'))).toBe(true)
+    // reported, not removed — the body chrome is untouched
+    expect(JSON.parse(leaky.files['src/data/chrome/f-leak.json']!).body).toContain('rel="canonical"')
   })
 })

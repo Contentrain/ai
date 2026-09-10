@@ -27,6 +27,11 @@ URLs are omitted with a warning instead of pointing at a build host; a `featured
 entry that is a bare file name is not used as `og:image`, because only the
 producer knows where media is served.
 
+Head-only tags a clone left in the body chrome (the template's canonical, when
+the source browser closed `<head>` early) are reported rather than removed:
+`<title>` is legal inside `<svg>`, so cutting into page content to fix an
+invisible tag would break real markup.
+
 `options.seo: false` restores the previous behaviour exactly.
 
 Verified on a generated project with a Yoast-style theme head:

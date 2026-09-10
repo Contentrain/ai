@@ -77,6 +77,24 @@ export function stripSeoTags(html: string): StripResult {
 }
 
 /**
+ * Head-only tags found in BODY chrome. A browser that closed `<head>` early
+ * leaves the template's canonical and og tags in the body, and a faithful clone
+ * carries them there — so the page ends up with the emitter's correct tags AND
+ * the template's stale ones, which no fidelity score can see.
+ *
+ * They are reported, not removed: the body is page content, and `<title>` is
+ * legal inside `<svg>`, so cutting tags out of it would break real markup to
+ * fix an invisible one. Only unambiguous head tags are looked for.
+ */
+export function bodySeoLeaks(html: string): string[] {
+  const found: string[] = []
+  if (/<link\b[^>]*\brel\s*=\s*["'][^"']*\bcanonical\b/i.test(html)) found.push('canonical')
+  if (/<meta\b[^>]*\bproperty\s*=\s*["']og:/i.test(html)) found.push('og:*')
+  if (/<meta\b[^>]*\bname\s*=\s*["']description["']/i.test(html)) found.push('description')
+  return found
+}
+
+/**
  * `src/components/Seo.astro`. The canonical address comes from `Astro.url` and
  * `Astro.site` rather than from data: it is then, by construction, the address
  * Astro actually generated, and no producer has to recompute a permalink.

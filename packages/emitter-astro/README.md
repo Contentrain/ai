@@ -76,6 +76,12 @@ Absolute URLs need `site` in `astro.config.mjs`, which the emitter fills from
 `ProjectIR.site.url`. Without it the canonical link and the absolute social URLs
 are omitted, with a warning, rather than pointing at a build host.
 
+Head-only tags that a faithful clone left in the **body** (a browser that closed
+`<head>` early puts the template's canonical there) are reported, not removed:
+the body is page content and `<title>` is legal inside `<svg>`, so cutting into
+it to fix an invisible tag would break real markup. Lift them into the head
+chunk, or drop them at capture.
+
 `options.seo: false` turns all of this off: the source head travels verbatim and
 the layout prints its own `<title>`, exactly as before.
 

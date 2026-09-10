@@ -16,7 +16,7 @@ import type { ComponentDef, LayoutFamily } from '@contentrain/types'
 import { CHROME_BODY_SLOT, CHROME_COMPONENT_CLOSE, CHROME_COMPONENT_OPEN } from '@contentrain/types'
 import type { ChromeComponentRef } from './chrome.js'
 import { balanceWarning } from './balance.js'
-import { stripSeoTags } from './seo.js'
+import { bodySeoLeaks, stripSeoTags } from './seo.js'
 import { pascalCase, stableJson } from './util.js'
 
 export interface FamilyGenResult {
@@ -60,6 +60,10 @@ export function familyFiles(
   // rendered as siblings of the body fragment; the layout injects the rest.
   const chunks = (family.chrome ?? []).filter((c) => c.position !== 'header' && c.position !== 'footer')
   const warnings: string[] = []
+  // The template page's title, description, canonical, og/twitter tags and
+  // per-page JSON-LD are the emitter's to render per entry; two of each is
+  // worse than none.
+  const seoOn = options.seo !== false
   for (const chunk of family.chrome ?? []) {
     if ((chunk.position === 'header' || chunk.position === 'footer') && componentMarkers(chunk.html).length) {
       warnings.push(`family ${family.id}: ${chunk.position} chrome carries a component marker — components mount in body chrome only; the marker renders as a comment`)
@@ -80,6 +84,13 @@ export function familyFiles(
     // Legacy pair: compose into one string with the slot between the halves.
     body = `${joined('before_body')}${CHROME_BODY_SLOT}${joined('after_body')}`
   }
+  if (seoOn) {
+    const leaked = bodySeoLeaks(body)
+    if (leaked.length) {
+      warnings.push(`family ${family.id}: body chrome carries head-only ${leaked.join(', ')} — a page then serves the template's copy alongside the emitter's; lift them into the head chunk or drop them at capture`)
+    }
+  }
+
   const unbalanced = balanceWarning(body)
   if (unbalanced) {
     warnings.push(`family ${family.id}: body chrome is not balanced (${unbalanced}) — the browser will repair it and the page loses its layout`)
@@ -122,10 +133,6 @@ export function familyFiles(
     }
   }
 
-  // The template page's title, description, canonical, og/twitter tags and
-  // per-page JSON-LD come out of the head: the emitter renders those per page
-  // from the entry, and two of each is worse than none.
-  const seoOn = options.seo !== false
   let head = joined('head')
   if (seoOn) {
     const stripped = stripSeoTags(head)
