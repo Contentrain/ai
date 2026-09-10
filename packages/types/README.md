@@ -132,7 +132,7 @@ Constants:
 
 - `CONTENTRAIN_DIR` — default `.contentrain` folder name
 - `CONTENTRAIN_BRANCH` — default `contentrain` branch name for content tracking
-- `PATH_PATTERNS` — file path conventions for models, content, meta
+- `PATH_PATTERNS` — file path conventions for models, content, meta. Content and meta paths both name the model: a document is `content/{domain}/{modelId}/{slug}/{locale}.md`. The patterns show the default `locale_strategy: 'file'`; a parity test in `@contentrain/mcp` holds them to what the resolvers actually produce
 - `SLUG_PATTERN` — regex for valid slugs
 - `ENTRY_ID_PATTERN` — regex for valid entry IDs
 - `LOCALE_PATTERN` — regex for valid locale codes
