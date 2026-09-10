@@ -16,6 +16,7 @@ import type { ComponentDef, LayoutFamily } from '@contentrain/types'
 import { CHROME_BODY_SLOT, CHROME_COMPONENT_CLOSE, CHROME_COMPONENT_OPEN } from '@contentrain/types'
 import type { ChromeComponentRef } from './chrome.js'
 import { balanceWarning } from './balance.js'
+import { bodySeoLeaks, stripSeoTags } from './seo.js'
 import { pascalCase, stableJson } from './util.js'
 
 export interface FamilyGenResult {
@@ -38,6 +39,13 @@ export function componentMarkers(html: string): string[] {
   return [...new Set([...html.matchAll(MARKER_RE)].map((m) => m[1] ?? ''))]
 }
 
+export interface FamilyOptions {
+  /** Emit `<Seo>` and take the template page's SEO tags out of the head chrome. */
+  seo?: boolean
+  /** `og:site_name`, from `ProjectIR.site.title`. */
+  siteName?: string
+}
+
 export function familyFiles(
   family: LayoutFamily,
   lang: string,
@@ -45,12 +53,17 @@ export function familyFiles(
   definitions: Map<string, ComponentDef> = new Map(),
   /** Component ids found in the CONTENT bodies rendered through this family (a form inside a page's post_content). */
   bodyMarkers: Iterable<string> = [],
+  options: FamilyOptions = {},
 ): FamilyGenResult {
   const name = pascalCase(family.id)
   // Header/footer regions are emitted as shared components (see chrome.ts) and
   // rendered as siblings of the body fragment; the layout injects the rest.
   const chunks = (family.chrome ?? []).filter((c) => c.position !== 'header' && c.position !== 'footer')
   const warnings: string[] = []
+  // The template page's title, description, canonical, og/twitter tags and
+  // per-page JSON-LD are the emitter's to render per entry; two of each is
+  // worse than none.
+  const seoOn = options.seo !== false
   for (const chunk of family.chrome ?? []) {
     if ((chunk.position === 'header' || chunk.position === 'footer') && componentMarkers(chunk.html).length) {
       warnings.push(`family ${family.id}: ${chunk.position} chrome carries a component marker — components mount in body chrome only; the marker renders as a comment`)
@@ -71,6 +84,13 @@ export function familyFiles(
     // Legacy pair: compose into one string with the slot between the halves.
     body = `${joined('before_body')}${CHROME_BODY_SLOT}${joined('after_body')}`
   }
+  if (seoOn) {
+    const leaked = bodySeoLeaks(body)
+    if (leaked.length) {
+      warnings.push(`family ${family.id}: body chrome carries head-only ${leaked.join(', ')} — a page then serves the template's copy alongside the emitter's; lift them into the head chunk or drop them at capture`)
+    }
+  }
+
   const unbalanced = balanceWarning(body)
   if (unbalanced) {
     warnings.push(`family ${family.id}: body chrome is not balanced (${unbalanced}) — the browser will repair it and the page loses its layout`)
@@ -113,9 +133,18 @@ export function familyFiles(
     }
   }
 
+  let head = joined('head')
+  if (seoOn) {
+    const stripped = stripSeoTags(head)
+    head = stripped.html
+    if (stripped.removed.length) {
+      warnings.push(`family ${family.id}: removed the template page's ${stripped.removed.join(', ')} from head chrome — the emitter renders these per page`)
+    }
+  }
+
   const files: Record<string, string> = {}
   files[`src/data/chrome/${family.id}.json`] = stableJson({
-    head: joined('head'),
+    head,
     body,
     html_attrs: family.root_attrs?.html ?? {},
     body_attrs: family.root_attrs?.body ?? {},
@@ -125,10 +154,12 @@ export function familyFiles(
     .map((f) => `<link rel="stylesheet" href="/styles/legacy/${f.split('/').pop()}" />`)
     .join('\n')
 
+  const siteNameProp = options.siteName ? ` siteName={${JSON.stringify(options.siteName)}}` : ''
   const imported = [...new Set([...components.map((c) => c.name), ...mounts.map((m) => m.name)])]
-  const componentImports = imported
-    .map((n) => `import ${n} from '../components/${n}.astro'`)
-    .join('\n')
+  const componentImports = [
+    ...(seoOn ? [`import Seo from '../components/Seo.astro'`] : []),
+    ...imported.map((n) => `import ${n} from '../components/${n}.astro'`),
+  ].join('\n')
   const mountType = [...new Set(mounts.map((m) => `typeof ${m.name}`))].join(' | ')
   const mountTable = mounts.length
     ? `// Components the chrome mounts at <!--@@component:ID@@--> markers; the page's
@@ -155,7 +186,7 @@ const parts = splitComponents(html).map((part) => ({
   files[`src/layouts/${name}.astro`] = `---
 // Family: ${family.id}${family.name ? ` (${family.name})` : ''} — emitted by @contentrain/emitter-astro
 import chrome from '../data/chrome/${family.id}.json'
-import { cssHref, fillAttrs, renderTemplate, composeBody${mounts.length ? ', splitComponents' : ''} } from '../lib/fill'
+import { cssHref, fillAttrs, renderTemplate, composeBody${mounts.length ? ', splitComponents' : ''}${seoOn ? ', type SeoInput' : ''} } from '../lib/fill'
 ${componentImports ? `${componentImports}\n` : ''}
 interface Props {
   title?: string
@@ -167,9 +198,11 @@ interface Props {
   /** Document language — a multilingual site's routes each pass their own. */
   lang?: string
   /** Content-store address of the page's entry — mounted components (comments) key on it. */
-  entry?: { model_id: string; entry_id: string; locale?: string }
+  entry?: { model_id: string; entry_id: string; locale?: string }${seoOn ? `
+  /** Per-page SEO — see src/components/Seo.astro. */
+  seo?: SeoInput` : ''}
 }
-const { title = '', marks = {}, body, css = [], lang = ${JSON.stringify(lang)}${mounts.length ? ', entry' : ''} } = Astro.props
+const { title = '', marks = {}, body, css = [], lang = ${JSON.stringify(lang)}${mounts.length ? ', entry' : ''}${seoOn ? ', seo' : ''} } = Astro.props
 const head = renderTemplate(chrome.head, marks)
 // Root attributes carry the theme's layout hooks; values may hold @@marks@@.
 // An explicit lang from the source wins over the project default.
@@ -194,7 +227,9 @@ ${cssLinks
       <link rel="stylesheet" href={cssHref(file)} />
     ))}
     <Fragment set:html={head} />
-    <title>{title}</title>
+${seoOn
+  ? `    <Seo title={title} locale={lang}${siteNameProp} {...(seo ?? {})} />`
+  : `    <title>{title}</title>`}
   </head>
   <body {...bodyAttrs}>
 ${renderRefs('header') ? `${renderRefs('header')}\n` : ''}${bodyRender}

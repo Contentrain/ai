@@ -93,8 +93,8 @@ describe('component mounting', () => {
     expect(layout).not.toContain('splitComponents')
     expect(layout).not.toContain('mounts')
     // astro check hints on an unused destructured prop — only mounting layouts read `entry`
-    expect(layout).toMatch(/lang = "en" } = Astro\.props/)
-    expect(bound.files['src/layouts/FSingle.astro']).toMatch(/lang = "en", entry } = Astro\.props/)
+    expect(layout).toMatch(/lang = "en", seo } = Astro\.props/)
+    expect(bound.files['src/layouts/FSingle.astro']).toMatch(/lang = "en", entry, seo } = Astro\.props/)
   })
 
   it('single pages hand the entry address to the layout; the data file carries it', () => {

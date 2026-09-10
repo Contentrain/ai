@@ -109,7 +109,8 @@ describe('header/footer chrome components', () => {
       ]),
     })
 
-    const components = Object.keys(files).filter((p) => p.startsWith('src/components/'))
+    // Seo.astro is emitted for every project; the chrome regions are what this asserts.
+    const components = Object.keys(files).filter((p) => p.startsWith('src/components/') && p !== 'src/components/Seo.astro')
     expect(components).toEqual(['src/components/SiteHeader.astro'])
     expect(files['src/layouts/FA.astro']).toContain("import SiteHeader from '../components/SiteHeader.astro'")
     expect(files['src/layouts/FB.astro']).toContain("import SiteHeader from '../components/SiteHeader.astro'")
@@ -192,7 +193,8 @@ describe('header/footer chrome components', () => {
       ir: ir([family('f-a', [{ id: 'b', position: 'body', html: SHELL }])]),
     })
     const layout = files['src/layouts/FA.astro']!
-    expect(layout).not.toContain('../components/')
+    // Only Seo — no chrome region was lifted out of the body.
+    expect(layout.match(/from '\.\.\/components\/[^']+'/g)).toEqual([`from '../components/Seo.astro'`])
     expect(layout).toContain('<Fragment set:html={html} />')
     expect(Object.keys(files).some((p) => p.startsWith('src/data/components/'))).toBe(false)
     expect(warnings).toEqual([])
