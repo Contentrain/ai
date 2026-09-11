@@ -248,6 +248,7 @@ The package also exposes low-level modules for embedding and advanced use:
 - `@contentrain/mcp/core/contracts`
 - `@contentrain/mcp/core/ops` — plan APIs (including `planReconcile` and its `bindRef` reader adapter) plus content-root-relative path helpers: `contentDirPath`, `contentFilePath`, `documentFilePath`, `metaFilePath`
 - `@contentrain/mcp/core/overlay-reader`
+- `@contentrain/mcp/core/migration` — the allowlisted migration write path: `createMigrationWriter`, `scopeHash`, `decide`. See **Migration writes** below
 - `@contentrain/mcp/util/detect`
 - `@contentrain/mcp/util/fs`
 - `@contentrain/mcp/git/transaction`
@@ -261,6 +262,60 @@ The package also exposes low-level modules for embedding and advanced use:
 - `@contentrain/mcp/providers/gitlab`
 
 These are intended for Contentrain tooling and advanced integrations, not for direct manual editing of `.contentrain/` files.
+
+## Migration Writes
+
+A migration does not deliver content, it delivers a codebase: `src/`, `public/`,
+`package.json`, a lockfile, deploy configuration. The content write path was
+never built for any of that, and widening it would quietly move a security
+boundary the whole product rests on — "Contentrain only writes `.contentrain/`"
+is a promise, not an implementation detail.
+
+`@contentrain/mcp/core/migration` is the gate instead. It wraps a provider whose
+`applyPlan` can already write any path, and puts consent in front of it.
+
+```ts
+import { createMigrationWriter, scopeHash } from '@contentrain/mcp/core/migration'
+
+const scope = {
+  allow: ['src/**', 'public/**', 'package.json', 'astro.config.mjs'],
+  branch: 'migration/acme',
+  base: 'main',
+}
+
+// Show the user `scope`, not the hash. Then bind their consent to it:
+const approval = {
+  scope_hash: await scopeHash(scope),
+  approver: { kind: 'human', id: userId, role: 'owner' },
+  approved_at: new Date().toISOString(),
+}
+
+const writer = createMigrationWriter(provider, scope, approval)
+await writer.applyPlan({ ...plan, step: 'emit', actor })
+writer.audit  // which file, in which step, by which actor, in which commit
+```
+
+What it guarantees:
+
+| | |
+|---|---|
+| **Scope** | Only paths an allowlist pattern covers. `.contentrain/**` is not implicit — a migration that wants the store asks for it, and the person approving sees that it does |
+| **Consent** | One approval, bound to the exact scope by `scope_hash`. An approval of `src/**` cannot be replayed against a scope that also has `.github/workflows/**` |
+| **Branch** | A `migration/*` ref. The `contentrain` branch is never a target and never a base — including through `ApplyPlanInput`'s default, which a migration must not inherit |
+| **Trail** | One `MigrationAuditEntry` per file: step, path, action, the pattern that allowed it, actor, timestamp, commit |
+| **Undo** | One branch, delivered as one PR, revertable with one `git revert` |
+
+Every refusal happens before the provider is called, and a plan is refused
+whole: a plan with one path outside the scope writes nothing at all, not even
+its allowed part. A half-applied migration is harder to recover from than one
+that never started.
+
+The path matcher is a security control and is written to fail closed. Traversal,
+absolute paths, backslash separators, percent-encoding, empty segments and
+control characters are refused before any pattern is consulted; patterns are
+anchored at both ends, so `src/*` does not cover `src/a/b` and nothing matches
+by being a prefix; and regex metacharacters in a pattern are literal, so an
+allowlist entry cannot silently cover more than it reads.
 
 ## Design Constraints
 
