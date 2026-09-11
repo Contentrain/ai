@@ -75,6 +75,7 @@ Execution/approval unions (see [Execution and approval contracts](#execution-and
 
 - `RiskClass`
 - `ApprovalGate`
+- `GrantRejection`
 - `ApprovalMode`
 - `RunStatus`
 - `ScheduleKind`
@@ -360,6 +361,63 @@ approval guarding it would be theatre.
 | `DeploymentTarget` | Where a build is published. Carries a `secret_ref`, never a secret — this document is written to git. |
 | `AutomationDefinition` | Reserved shape for `.contentrain/automations.json`. Nothing reads it yet; it exists so the first writer does not invent a fourth vocabulary for schedules. |
 | `SourceDeltaPlan` | The WordPress→repo delta — *not* `contentrain_reconcile`, which merges two git branches and knows nothing about WordPress. Carries explicit deletion tombstones, because `modified_after` is a filter on changed records and never reports a deletion, plus slug moves (which generate redirects) and semantic conflicts. `deletions_detectable: false` must not be read as "nothing was deleted". |
+
+### The evaluator
+
+`approval.ts` is the decision procedure over these shapes: given a plan, a
+policy and the decisions collected so far, may this proceed?
+
+```ts
+import { evaluateApproval, requiredApprovals } from '@contentrain/types'
+
+// For the plan card, before anyone has decided:
+requiredApprovals(plan, policy)
+// → [{ gate: 'release', mode: 'quorum', min_approvals: 2, because: 'deployment' }]
+
+// At the gate:
+const decision = evaluateApproval({ plan, policy, grants, commit_sha, now })
+decision.allowed          // every requirement met and the plan has not expired
+decision.outstanding      // what is still missing, with who has signed so far
+decision.rejected_grants  // decisions that did not count, each with a reason
+decision.reasons          // one line per blocker, written for a person
+```
+
+It replaces a role check. `shouldAutoMerge` asks "is this person an owner?",
+which cannot express "a bulk publish needs a second pair of eyes even from the
+owner" and cannot tell a typo fix from a domain cutover. This asks about the
+action: its risk, its scope, and what the project's policy says about that
+combination.
+
+Rules that matter:
+
+- **A plan cannot understate itself.** `effectiveRisk()` takes the worst of the
+  plan's declared class and its steps', so a plan labelled `read_only` that
+  carries a deploy step is evaluated as a deploy.
+- **Each matching rule is its own requirement and all must be met.** Merging two
+  rules would need a way to combine their modes, roles and counts, and every
+  such rule has a case where the result is *looser* than one of its inputs.
+- **`auto` does not climb the ladder.** Every other mode covers its class and
+  everything above it. If `auto` did too, one `auto` rule on a low rung would
+  exempt every heavier operation above it — the one mode that demands nothing
+  would become the only mode that can loosen a policy.
+- **An agent never approves.** Not its own work, not anyone's. The author of a
+  plan cannot approve it either unless the project sets `allow_self_approval`,
+  and that setting does not extend to agents.
+- **A `change` decision is a decision about a diff.** Presented with a different
+  branch tip than the one reviewed, it does not count.
+- **`now` is an input.** Nothing reads the clock, so a blocked run can be
+  explained months later by replaying the same arguments.
+
+Every rejected decision carries a machine-readable reason
+(`plan_hash_mismatch`, `commit_mismatch`, `expired`, `agent_approver`,
+`self_approval`, `role_not_permitted`, `duplicate_approver`,
+`no_matching_requirement`), because the useful question is never "is it
+blocked" but "I approved this, why is it still blocked".
+
+With no `.contentrain/approval-policies.json`, `DEFAULT_APPROVAL_POLICY`
+applies: read-only work proceeds, everything else wants one reviewer on the
+diff. Whether a project consults the evaluator at all is still governed by its
+`workflow` setting.
 
 ### `plan_hash`
 

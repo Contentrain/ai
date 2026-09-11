@@ -1300,6 +1300,14 @@ export * from './migration.js'
 
 export * from './execution.js'
 
+// ─── Approval evaluator ───
+//
+// The decision procedure over the contracts above: risk + scope + policy →
+// what must be approved, and whether it has been. Pure and dependency-free, so
+// Studio, a CLI and a test all reach the same answer.
+
+export * from './approval.js'
+
 // ─── Repository provider contracts ───
 //
 // Provider-agnostic engine contracts used by @contentrain/mcp. Exposed from

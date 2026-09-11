@@ -49,6 +49,35 @@ guarding it would be theatre.
   first writer of `.contentrain/automations.json` does not invent a fourth
   vocabulary for schedules.
 
+The evaluator (`approval.ts`) is the decision procedure over these shapes:
+`requiredApprovals(plan, policy)` for the plan card, `evaluateApproval(...)` at
+the gate. It replaces a role check — `shouldAutoMerge` asks "is this person an
+owner?", which cannot express "a bulk publish needs a second pair of eyes even
+from the owner" and cannot tell a typo fix from a domain cutover.
+
+- A plan cannot understate itself: `effectiveRisk()` takes the worst of the
+  declared class and the steps', so a plan labelled `read_only` carrying a
+  deploy step is evaluated as a deploy.
+- Each matching rule is its own requirement and all must be met. Merging two
+  rules needs a way to combine modes, roles and counts, and every such rule has
+  a case where the result is looser than one of its inputs.
+- `auto` does not climb the ladder, though every other mode does. If it did,
+  one `auto` rule on a low rung would exempt every heavier operation above it —
+  the one mode that demands nothing would become the only mode that can loosen
+  a policy.
+- An agent never approves; a plan's author cannot approve it unless the project
+  sets `allow_self_approval`, and that setting does not extend to agents.
+- A `change` decision is a decision about a diff: presented with a different
+  branch tip than the one reviewed, it does not count.
+- `now` is an input, never the clock, so a blocked run can be explained months
+  later by replaying the same arguments.
+
+Every decision that did not count comes back with a machine-readable reason
+(`GrantRejection`), because the useful question is never "is it blocked" but
+"I approved this, why is it still blocked". `DEFAULT_APPROVAL_POLICY` covers a
+project with no `.contentrain/approval-policies.json`: read-only work proceeds,
+everything else wants one reviewer on the diff.
+
 Also reserves four names in `PATH_PATTERNS` (`capabilities.json`,
 `automations.json`, `approval-policies.json`, `redirects.json`) and exports them
 as `RESERVED_PATHS` / `isReservedPath()`. `.contentrain/` is a shared namespace,

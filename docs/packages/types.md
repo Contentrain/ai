@@ -271,6 +271,9 @@ Execution/approval functions (pure; `computePlanHash` uses Web Crypto):
 | `approversFor(receipt, gate)` | Approvers recorded on a receipt for one gate |
 | `planHashPayload(plan)` | The exact canonical-JSON bytes `plan_hash` covers |
 | `computePlanHash(plan)` | `Promise<string>` — SHA-256 of that payload, lowercase hex |
+| `effectiveRisk(plan)` | The class a plan is judged at — its own, or its worst step's |
+| `requiredApprovals(plan, policy?)` | What a policy demands of a plan, before any decision |
+| `evaluateApproval(input)` | May this proceed? Requirements, who met them, and why a decision did not count |
 
 Unique constraints and relation references need external state (all entries / target existence), so they stay in MCP's validator — `validateFieldValue` covers everything schema-level.
 
@@ -328,6 +331,48 @@ produced, and neither is permission to publish it.
 | `RunStatus` | `draft → planned → awaiting_approval → approved → scheduled → queued → running → verifying → completed`, plus the interrupted states |
 | `DeploymentTarget` | Where a build is published. Carries a `secret_ref`, never a secret — this document is written to git |
 | `AutomationDefinition` | Reserved shape for `.contentrain/automations.json`; nothing reads it yet |
+
+### The evaluator
+
+```ts
+import { evaluateApproval, requiredApprovals } from '@contentrain/types'
+
+// For the plan card, before anyone has decided:
+requiredApprovals(plan, policy)
+// → [{ gate: 'release', mode: 'quorum', min_approvals: 2, because: 'deployment' }]
+
+// At the gate:
+const decision = evaluateApproval({ plan, policy, grants, commit_sha, now })
+decision.allowed          // every requirement met and the plan has not expired
+decision.outstanding      // what is still missing, with who has signed so far
+decision.rejected_grants  // decisions that did not count, each with a reason
+decision.reasons          // one line per blocker, written for a person
+```
+
+It replaces a role check. Asking "is this person an owner?" cannot express "a
+bulk publish needs a second pair of eyes even from the owner", and cannot tell a
+typo fix from a domain cutover. The evaluator asks about the action instead: its
+risk, its scope, and what the project's policy says about that combination.
+
+| Rule | Why |
+|------|-----|
+| A plan cannot understate itself | `effectiveRisk()` takes the worst of the plan's declared class and its steps', so a plan labelled `read_only` carrying a deploy step is evaluated as a deploy |
+| Each matching rule is its own requirement, all must be met | Merging two rules needs a way to combine modes, roles and counts — and every such rule has a case where the result is *looser* than one of its inputs |
+| `auto` does not climb the ladder | Every other mode covers its class and everything above it. If `auto` did too, one `auto` rule on a low rung would exempt every heavier operation above it |
+| An agent never approves | Not its own work, not anyone's. A plan's author cannot approve it either unless the project sets `allow_self_approval` — which does not extend to agents |
+| A `change` decision is about a diff | Presented with a different branch tip than the one reviewed, it does not count |
+| `now` is an input | Nothing reads the clock, so a blocked run can be explained months later by replaying the same arguments |
+
+Every rejected decision carries a machine-readable `GrantRejection` reason —
+`plan_hash_mismatch`, `commit_mismatch`, `expired`, `agent_approver`,
+`self_approval`, `role_not_permitted`, `duplicate_approver`,
+`no_matching_requirement` — because the useful question is never "is it blocked"
+but "I approved this, why is it still blocked".
+
+With no `.contentrain/approval-policies.json`, `DEFAULT_APPROVAL_POLICY`
+applies: read-only work proceeds, everything else wants one reviewer on the
+diff. Whether a project consults the evaluator at all is still governed by its
+`workflow` setting.
 
 ### `plan_hash`
 

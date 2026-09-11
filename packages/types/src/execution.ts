@@ -159,9 +159,10 @@ export interface ApprovalRule {
 export interface ApprovalPolicyFile {
   version: number
   /**
-   * Applied when no rule matches. Absent means `auto` for `read_only` and
-   * `single`/`change` for everything else — stated explicitly rather than
-   * left to each consumer's idea of a sensible default.
+   * Applied at the `change` gate when no rule matches at all. Absent means no
+   * rule matched and therefore nothing is required — the policy's silence is
+   * taken literally rather than filled in with each consumer's idea of a
+   * sensible default.
    */
   default_mode?: ApprovalMode
   rules: ApprovalRule[]
