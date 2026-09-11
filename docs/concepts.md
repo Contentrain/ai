@@ -190,7 +190,7 @@ Branches are auto-merged or held for review depending on your workflow config. W
 
 The `contentrain` branch normally contains the base branch, so advancing the base is always a fast-forward. The invariant breaks when a change lands on the base branch directly — legitimately so for a **dual-domain migration** (a package bump and a `.contentrain/` schema change that must ship as one atomic PR). From then on the branches have **diverged**: writes still land safely on `contentrain`, but they report `base_advance: "blocked_diverged"` instead of advancing the base, and `contentrain status` shows the relation in both directions instead of a one-sided "in sync".
 
-Divergence is reconciled with a content-aware three-way merge — `contentrain_reconcile` (MCP) or `contentrain reconcile` (CLI). Everything one side changed merges mechanically at entry/key/term+locale granularity; only the same item changed differently on both sides becomes a conflict for the editor to decide. The result is a two-parent merge commit on `contentrain`, after which the fast-forward advance works again.
+Divergence is reconciled with a content-aware three-way merge — `contentrain_reconcile` (MCP) or `contentrain reconcile` (CLI). Everything one side changed merges mechanically at entry/key/term+locale granularity; only the same item changed differently on both sides becomes a conflict for the editor to decide. The result is a two-parent merge commit on `contentrain`, after which the fast-forward advance works again. See [Reconcile & Divergence](/reference/reconcile) for the merge policy, the conflict set, and how decisions are answered.
 
 ## How It Compares
 

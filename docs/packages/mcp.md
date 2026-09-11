@@ -1,6 +1,6 @@
 ---
 title: MCP Tools
-description: Complete reference for @contentrain/mcp — the provider-agnostic MCP engine powering AI content governance with 24 deterministic tools over stdio or HTTP
+description: Complete reference for @contentrain/mcp — the provider-agnostic MCP engine powering AI content governance with 27 deterministic tools over stdio or HTTP
 order: 1
 slug: mcp
 ---
@@ -58,7 +58,7 @@ Use the local stdio server when the agent should work against a checkout on your
 The MCP server exposes **27 tools** — 22 core + 5 media — organized by function. Each tool includes [MCP annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) so clients can distinguish safe reads from writes and destructive operations.
 
 ::: info Capability-aware listing
-`tools/list` is filtered per session: tools whose requirements (local project root, provider capabilities) cannot be met are not registered at all. A local stdio server lists the 22 core tools; a remote-provider session lists the remote-safe subset plus — on media-capable providers like Studio MCP Cloud — the 5 `contentrain_media_*` tools. Core remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. See `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`.
+`tools/list` is filtered per session: tools whose requirements (local project root, provider capabilities) cannot be met are not registered at all. A local stdio server lists the 22 core tools; a remote-provider session lists the remote-safe subset plus — on media-capable providers like Studio MCP Cloud — the 5 `contentrain_media_*` tools. Core remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `vocabulary_save`, `vocabulary_delete`, `validate`. See `TOOL_REQUIREMENTS` in `@contentrain/mcp/tools/availability`.
 :::
 
 | Tool | Title | Read-only | Destructive |
@@ -579,5 +579,7 @@ Available subpath exports:
 
 - [CLI](/packages/cli) — Human-facing companion for local operations
 - [Query SDK](/packages/sdk) — Generated runtime client for consuming content
-- [Rules & Skills](/packages/rules) — Agent behavior policies and workflow playbooks
+- [Rules](/packages/rules) — Agent behavior policies
+- [Skills](/packages/skills) — Workflow playbooks that drive these tools
+- [Reconcile & Divergence](/reference/reconcile) — what `contentrain_reconcile` actually merges
 - [Contentrain Studio](/studio) — Hosted workspace, review, chat-first operations, and content CDN

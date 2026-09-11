@@ -1,7 +1,7 @@
 ---
 title: Types
 description: Complete reference for @contentrain/types — the shared TypeScript type vocabulary used by every package in the Contentrain ecosystem
-order: 5
+order: 6
 slug: types
 ---
 
@@ -532,7 +532,8 @@ pnpm --filter @contentrain/types typecheck
 - [MCP Tools](/packages/mcp) — Validates and writes models using these types
 - [CLI](/packages/cli) — Reads config and context using these types
 - [Query SDK](/packages/sdk) — Codegen consumes model definitions and field types
-- [Rules & Skills](/packages/rules) — Aligns with the same vocabulary
+- [Rules](/packages/rules) — Aligns with the same vocabulary
+- [Skills](/packages/skills) — Workflow procedures built on these contracts
 - [Model Kinds](/reference/model-kinds) — Detailed specification of the four model kinds
 - [Field Types](/reference/field-types) — Comprehensive field type reference
 - [Configuration](/reference/config) — Config file schemas and directory layout

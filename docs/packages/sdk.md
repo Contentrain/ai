@@ -395,14 +395,27 @@ export interface BlogPost {
 
 ## CommonJS Usage
 
-For legacy environments (NestJS, Express, older tooling):
+The generated client is ESM (`.contentrain/client/index.mjs`). From a CommonJS
+file, reach it with a dynamic `import()` inside an async function:
 
 ```js
-const clientModule = require('#contentrain')
-const client = await clientModule.init()
-
-const hero = client.singleton('hero').get()
+// service.cjs — NestJS, Express, or any older tooling
+async function loadContent() {
+  const { init } = await import('#contentrain')
+  const client = await init()
+  return client.singleton('hero').get()
+}
 ```
+
+::: warning Not `require()`, and never a top-level `await`
+`await` at the top level of a CommonJS file is a **syntax error** — the file
+does not load at all.
+
+`require('#contentrain')` happens to work on Node 22.12 and newer, where
+`require(esm)` is unflagged, but it is flagged on earlier 22.x releases and it
+throws outright if the client module ever uses top-level await. `await import()`
+is correct on every version.
+:::
 
 ## DOES NOT EXIST
 
@@ -667,7 +680,8 @@ Every starter template comes with a pre-configured SDK client and content models
 
 - [CLI](/packages/cli) — `contentrain generate` command that runs the SDK generator
 - [MCP Tools](/packages/mcp) — The tool layer that creates models and content the SDK consumes
-- [Rules & Skills](/packages/rules) — Agent guidance for content operations
+- [Rules](/packages/rules) — Agent guidance for content operations
+- [Skills](/packages/skills) — The `contentrain-sdk` skill, and the embedded one this package ships
 - [Contentrain Studio](/studio) — Hosted team workflows and CDN delivery for non-web platforms
 
 ## Embedded Agent Skill

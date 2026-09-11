@@ -66,6 +66,7 @@ Example: `contentrain --debug status` or `CONTENTRAIN_DEBUG=1 contentrain status
 | `contentrain describe` | Display full model schema and sample data |
 | `contentrain describe-format` | Show file format specification and storage conventions |
 | `contentrain scaffold` | Apply starter templates (blog, landing, docs, SaaS, ...) |
+| `contentrain import <source>` | Import a WordPress site (WXR export file or REST URL) into a `.contentrain` store |
 | `contentrain diff` | Review and merge or reject pending `cr/*` branches interactively (deletes the remote copy on merge/reject) |
 | `contentrain merge <branch>` | Merge one pending `cr/*` branch non-interactively (deletes the remote copy) |
 | `contentrain reconcile` | Content-aware three-way merge of a diverged contentrain ↔ base pair (dry-run plan, interactive conflict decisions) |
@@ -219,6 +220,33 @@ contentrain scaffold --template blog --json
 ```
 
 Templates: `blog`, `landing`, `docs`, `ecommerce`, `saas`, `i18n`, `mobile`.
+
+---
+
+### `contentrain import <source>`
+
+```bash
+contentrain import export.xml                             # a WXR export file
+contentrain import export.xml --out ./my-site
+contentrain import https://site.example                   # public REST
+contentrain import https://site.example --auth user:pass  # lifts access to rest_auth
+contentrain import export.xml --force --json
+```
+
+| Flag | Effect |
+|---|---|
+| `--out <dir>` | Target directory (default: current directory) |
+| `--auth <user:password>` | REST Application Password — lifts the access rung from `rest_public` to `rest_auth` |
+| `--force` | Overwrite an existing `.contentrain/` |
+| `--json` | Machine-readable report for scripting |
+
+Wraps [`@contentrain/wp-import`](/packages/wp-import): the conversion itself is a pure function in the library, so this command only detects the source kind, guards the target, writes files, and narrates. What lands on disk is the canonical `.contentrain/` store, `entry-source-map.json`, `comments-export.json` when the source had comments, and an import report.
+
+It refuses to write over an existing `.contentrain/` without `--force`, because a re-import replaces models and content wholesale.
+
+::: warning Warnings are not decoration
+A REST import that hit a page cap, or whose pages partly failed, produces a store that looks exactly like a smaller site. Truncated collections, failed pages, and comments referencing posts outside the import are named in the warnings and nowhere else. See [WordPress Migration](/guides/migration).
+:::
 
 ---
 
@@ -429,5 +457,6 @@ The CLI covers single-developer workflows. When you need workspace/project manag
 
 - [MCP Tools](/packages/mcp) — The deterministic tool layer the CLI wraps
 - [Query SDK](/packages/sdk) — The generated client that `contentrain generate` produces
-- [Rules & Skills](/packages/rules) — Agent behavior policies installed by `contentrain init`
+- [Rules](/packages/rules) — Agent behavior policies installed by `contentrain init`
+- [Skills](/packages/skills) — Workflow playbooks installed alongside them
 - [Contentrain Studio](/studio) — Team workspace, review, media, and CDN operations
