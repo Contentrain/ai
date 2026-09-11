@@ -253,7 +253,15 @@ export interface ExecutionStep {
   input?: Record<string, unknown>
 }
 
-/** Predicted cost. Currency is ISO 4217; absent means the cost is not monetary. */
+/**
+ * Predicted cost. Currency is ISO 4217; absent means the cost is not monetary.
+ *
+ * The non-monetary fields exist because cost is metered before it is priced:
+ * a run's bill is assembled from tokens, compute time, bytes stored and bytes
+ * transferred, and those are what a runner can actually measure at the moment
+ * it finishes a step. `cost` is the conversion, and it is often computed later
+ * from these.
+ */
 export interface ExecutionEstimate {
   currency?: string
   /** Money, in major units. */
@@ -261,8 +269,25 @@ export interface ExecutionEstimate {
   /** Model tokens, when the step runs an agent. */
   tokens?: number
   duration_ms?: number
-  /** Items the operation expects to write — entries, files, assets. */
+  /**
+   * Items the operation expects to write — entries, files, assets. A count,
+   * not a size: use `bytes_stored` for how much was written.
+   */
   items?: number
+  /**
+   * Bytes the operation leaves at rest — a built artefact, an uploaded asset.
+   * Object storage bills for this per unit time, so it is the field a storage
+   * line on an invoice traces back to.
+   */
+  bytes_stored?: number
+  /**
+   * Bytes the operation moves across the network — egress, and fetches made on
+   * the way. Billed separately from storage and by a different rate, which is
+   * why it is a separate field rather than one `bytes`: a run that stores 40 MB
+   * once and serves it a thousand times has one storage figure and a very
+   * different transfer figure.
+   */
+  bytes_out?: number
 }
 
 /** Cost as measured. Same shape as the estimate so the two can be subtracted. */

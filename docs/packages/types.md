@@ -376,6 +376,7 @@ produced, and neither is permission to publish it.
 | `ExecutionPlan` | An operation fully described before it runs: steps, union scope, risk, estimate, rollback, assumed repository state |
 | `ExecutionStep` | One tool invocation, with its own risk and scope |
 | `ExecutionScope` | What is touched — models, locales, entries, routes, files, assets, providers, external domains. An absent field means "none", not "unknown" |
+| `ExecutionEstimate` / `ExecutionCost` | Cost metered before it is priced: `tokens`, `duration_ms`, `items` (a count), `bytes_stored` (at rest), `bytes_out` (moved). Storage and egress are separate fields because they are billed by different rates |
 | `ExecutionReceipt` | What happened: status, approvals, checkpoints, verification, measured cost, and the scope actually touched — the same `ExecutionScope` shape, so prediction and outcome can be subtracted |
 | `RollbackPlan` | The undo as a command, not a promise. `available: false` tells the approver *before* deciding |
 | `RunStatus` | `draft → planned → awaiting_approval → approved → scheduled → queued → running → verifying → completed`, plus the interrupted states |
