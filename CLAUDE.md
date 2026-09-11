@@ -16,6 +16,9 @@ contentrain-ai/
 │   ├── types/        — Shared TypeScript types (@contentrain/types)
 │   ├── rules/        — AI agent quality rules & conventions
 │   ├── skills/       — AI agent workflow procedures & framework guides
+│   ├── wp-import/    — WordPress WXR/REST → RawIR → .contentrain store
+│   ├── emitter-astro/— ProjectIR → a complete Astro project
+│   ├── verify/       — Offline SEO/indexing/link/asset gates for a built site
 │   └── sdk/
 │       └── js/       — Universal query SDK (@contentrain/query)
 ├── plugins/
@@ -106,6 +109,9 @@ When working with Contentrain content operations (models, content, normalize, va
 | packages/rules | @contentrain/rules | AI agent quality rules & conventions |
 | packages/skills | @contentrain/skills | AI agent workflow procedures & guides |
 | packages/sdk/js | @contentrain/query | Universal query SDK (generated client) |
+| packages/wp-import | @contentrain/wp-import | WordPress WXR/REST importers → RawIR → .contentrain |
+| packages/emitter-astro | @contentrain/emitter-astro | ProjectIR → Astro project emitter |
+| packages/verify | @contentrain/verify | Portable SEO/indexing/link/asset gates (offline, zero-dep) |
 
 ## Test Performance (read before adding a git-touching test)
 

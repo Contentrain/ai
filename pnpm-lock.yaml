@@ -294,6 +294,18 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
+  packages/verify:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.19.15
+      tsdown:
+        specifier: ^0.21.0
+        version: 0.21.2(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
   packages/wp-import:
     dependencies:
       '@contentrain/types':

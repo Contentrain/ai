@@ -182,6 +182,9 @@ See [`AGENTS.md`](AGENTS.md) for the full skill catalog and agent guidance.
 | [`@contentrain/types`](packages/types) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Ftypes)](https://www.npmjs.com/package/@contentrain/types) | Shared type definitions + constants |
 | [`@contentrain/rules`](packages/rules) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Frules)](https://www.npmjs.com/package/@contentrain/rules) | Agent quality rules for IDE integration |
 | [`@contentrain/skills`](packages/skills) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fskills)](https://www.npmjs.com/package/@contentrain/skills) | Workflow procedures + framework guides |
+| [`@contentrain/wp-import`](packages/wp-import) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fwp-import)](https://www.npmjs.com/package/@contentrain/wp-import) | WordPress WXR / REST → `RawIR` → `.contentrain` store |
+| [`@contentrain/emitter-astro`](packages/emitter-astro) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Femitter-astro)](https://www.npmjs.com/package/@contentrain/emitter-astro) | `ProjectIR` → a complete Astro project |
+| [`@contentrain/verify`](packages/verify) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fverify)](https://www.npmjs.com/package/@contentrain/verify) | SEO, indexing, link and asset gates for a built site |
 
 ## Starter Templates
 

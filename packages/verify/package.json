@@ -1,0 +1,55 @@
+{
+  "name": "@contentrain/verify",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "Portable SEO, indexing, link and asset gates for a migrated site \u2014 offline, zero-dependency",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Contentrain/ai.git",
+    "directory": "packages/verify"
+  },
+  "homepage": "https://ai.contentrain.io",
+  "bugs": {
+    "url": "https://github.com/Contentrain/ai/issues"
+  },
+  "keywords": [
+    "contentrain",
+    "seo",
+    "verify",
+    "migration",
+    "parity",
+    "hreflang",
+    "sitemap"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "bin": {
+    "contentrain-verify": "./dist/bin.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown src/index.ts src/cli.ts src/bin.ts --format esm --dts",
+    "dev": "tsdown src/index.ts src/cli.ts src/bin.ts --format esm --dts --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsdown": "^0.21.0",
+    "typescript": "^5.7.0"
+  }
+}

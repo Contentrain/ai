@@ -19,6 +19,7 @@ const LLMS_PAGE_ORDER = [
   'packages/sdk',
   'packages/rules',
   'packages/types',
+  'packages/verify',
   'guides/first-model',
   'guides/providers',
   'guides/http-transport',
@@ -120,6 +121,7 @@ export default defineConfig({
         { text: 'Query SDK', link: '/packages/sdk' },
         { text: 'Rules & Skills', link: '/packages/rules' },
         { text: 'Types', link: '/packages/types' },
+        { text: 'Verify', link: '/packages/verify' },
       ]},
       { text: 'Guides', items: [
         { text: 'Your First Model', link: '/guides/first-model' },
@@ -160,6 +162,7 @@ export default defineConfig({
             { text: 'Query SDK', link: '/packages/sdk' },
             { text: 'Rules & Skills', link: '/packages/rules' },
             { text: 'Types', link: '/packages/types' },
+            { text: 'Verify', link: '/packages/verify' },
           ],
         },
         {
