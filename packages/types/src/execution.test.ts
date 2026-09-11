@@ -65,7 +65,7 @@ const plan: ExecutionPlan = {
     providers: ['netlify'],
     external_domains: ['api.netlify.com'],
   },
-  estimate: { items: 12, duration_ms: 90_000, currency: 'USD', cost: 0.4 },
+  estimate: { items: 12, duration_ms: 90_000, currency: 'USD', cost: 0.4, bytes_stored: 4_194_304, bytes_out: 1_048_576 },
   rollback: { available: true, command: 'contentrain_bulk --operation update_status --status in_review', revert_to: 'abc1234' },
   project: { branch: 'main', commit_sha: 'abc1234', content_commit_sha: 'def5678' },
   created_at: '2026-09-11T09:00:00Z',
@@ -105,7 +105,7 @@ const receipt: ExecutionReceipt = {
     { id: 'build', name: 'astro build', passed: true },
     { id: 'links', name: 'internal links resolve', passed: true, value: 0, expected: 0 },
   ],
-  cost: { items: 12, duration_ms: 90_000, currency: 'USD', cost: 0.37 },
+  cost: { items: 12, duration_ms: 90_000, currency: 'USD', cost: 0.37, bytes_stored: 4_050_000, bytes_out: 990_000 },
   project: { branch: 'main', commit_sha: 'aaa1111' },
 }
 
@@ -245,7 +245,7 @@ describe('plan hash', () => {
   // Python produces this same digest. That is the contract — any consumer,
   // in any language, must be able to recompute a plan's hash and get this.
   it('pins the payload composition — a golden hash for the fixture plan', async () => {
-    expect(await computePlanHash(plan)).toBe('44504f58f61ba951df7912e8a12b2c0bffbee96c2e2656bd7ab11a8529dc9779')
+    expect(await computePlanHash(plan)).toBe('a45b5e5db97c502436aa2eb6195da6cf11590bbfe5d93092efd5a10178dbc0b1')
   })
 
   it.each([
@@ -258,6 +258,15 @@ describe('plan hash', () => {
     ['a changed tool input', { ...plan, steps: [{ ...plan.steps[0]!, input: { operation: 'delete' } }, plan.steps[1]!] }],
   ])('changes when the plan does: %s', async (_label, changed) => {
     expect(await computePlanHash(changed)).not.toBe(await computePlanHash(plan))
+  })
+
+  it('covers the metered cost fields, so a changed bill invalidates approval', async () => {
+    // Cost is metered before it is priced: tokens, time, bytes stored, bytes
+    // moved. A plan approved at one of those figures must not run at another.
+    for (const field of ['tokens', 'bytes_stored', 'bytes_out', 'duration_ms', 'items'] as const) {
+      const changed = { ...plan, estimate: { ...plan.estimate, [field]: 999_999_999 } }
+      expect(await computePlanHash(changed), field).not.toBe(await computePlanHash(plan))
+    }
   })
 
   it('does not depend on key order', async () => {

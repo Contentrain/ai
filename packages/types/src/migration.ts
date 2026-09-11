@@ -323,8 +323,29 @@ export interface CapabilityManifest {
   access: {
     html_status?: number | null
     rest_status?: number | null
-    /** Highest source-access rung actually achieved for this site. */
-    achieved: SourceAccessKind
+    /**
+     * Highest source-access rung actually achieved for this site, or `null`
+     * when none was — the site answered nothing a rung describes.
+     *
+     * Nullable rather than optional, and rather than a `'none'` rung. Optional
+     * would let a producer omit the field and call that "not measured", which
+     * is the failure this field exists to prevent: a manifest that reports
+     * `rest_public` for every site makes the access ladder unreadable, and the
+     * ladder is what the coverage figures are computed from. Required-and-
+     * nullable makes "I reached nothing" a thing the producer has to say.
+     *
+     * A `'none'` rung was the other candidate and is worse: `SourceAccessKind`
+     * is also `RawProvenance.kind`, where it answers "how was this data
+     * obtained". A RawIR stamped `kind: 'none'` is a document that exists
+     * without having been obtained — an impossible state made representable in
+     * an unrelated contract. `SOURCE_ACCESS_LADDER` would stop being a ladder
+     * too: it is an ordered array and coverage arithmetic indexes into it.
+     *
+     * `null` reads with `rest_status: null` beside it as its evidence. Coverage
+     * arithmetic should drop these sites from the numerator, not score them
+     * zero — a site behind an access wall was not measured, it did not fail.
+     */
+    achieved: SourceAccessKind | null
   }
   generator?: string | null
   theme?: string | null

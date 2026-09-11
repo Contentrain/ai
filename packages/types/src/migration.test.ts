@@ -372,3 +372,42 @@ describe('comments export contract', () => {
     expect(JSON.parse(JSON.stringify(h))).toEqual(h)
   })
 })
+
+describe('the access ladder', () => {
+  /**
+   * `achieved` is nullable because a site can answer nothing a rung describes,
+   * and the alternative — a `'none'` rung — would reach into `RawProvenance`,
+   * where it would mean a RawIR that exists without having been obtained.
+   */
+  it('lets a manifest say no rung was reached', () => {
+    const blocked: CapabilityManifest = {
+      version: MIGRATION_CONTRACT_VERSION,
+      site_url: 'https://walled.example',
+      access: { html_status: 403, rest_status: null, achieved: null },
+      comments: { active: false },
+      capabilities: {},
+    }
+    expect(blocked.access.achieved).toBeNull()
+    expect(blocked.access.rest_status).toBeNull()
+  })
+
+  it('still requires the field, so "not measured" cannot be spelled as absence', () => {
+    const omitted: CapabilityManifest = {
+      version: MIGRATION_CONTRACT_VERSION,
+      site_url: 'https://x.example',
+      // @ts-expect-error `achieved` is required; omitting it is the failure
+      // this contract exists to prevent. A nullable-but-required field makes
+      // "I reached nothing" something the producer has to say out loud.
+      access: { rest_status: null },
+      comments: { active: false },
+      capabilities: {},
+    }
+    expect(omitted).toBeDefined()
+  })
+
+  it('keeps null out of the ladder, which coverage arithmetic indexes into', () => {
+    expect(SOURCE_ACCESS_LADDER).toEqual(['rest_public', 'rest_auth', 'wxr', 'bridge'])
+    expect(SOURCE_ACCESS_LADDER).not.toContain(null)
+    expectTypeOf<SourceAccessKind>().not.toEqualTypeOf<SourceAccessKind | null>()
+  })
+})
