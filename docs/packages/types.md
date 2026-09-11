@@ -259,6 +259,9 @@ Serialize functions (pure, dependency-free):
 | `generateEntryId()` | 12-char hex entry ID generation |
 | `parseMarkdownFrontmatter(content)` | Parse YAML frontmatter + body from markdown |
 | `serializeMarkdownFrontmatter(data, body)` | Serialize data + body into markdown frontmatter |
+| `parseFrontmatterScalar(raw)` | One frontmatter scalar: booleans, null, numbers, quoted strings with escapes decoded |
+| `parseFrontmatterScalarString(raw)` | The same, always as a string — a SKU of `"007"` must not become `7` |
+| `splitFrontmatterList(inner)` | Split an inline array on commas outside quotes |
 
 Execution/approval functions (pure; `computePlanHash` uses Web Crypto):
 
@@ -284,6 +287,53 @@ Unique constraints and relation references need external state (all entries / ta
 | `SyncResult` | Result of selective file sync (synced files, skipped files, warning) |
 | `ContentrainError` | Structured error with code, message, agent hint, and developer action |
 | `ScaffoldTemplate` | Template definition for project scaffolding |
+
+## Frontmatter Round Trip
+
+A document's fields live in YAML frontmatter, and **two readers** open them: the
+content engine through `parseMarkdownFrontmatter` (re-exported by
+`@contentrain/mcp`), and `@contentrain/query`'s client generator and Astro
+loader. The property both depend on is that a value written and read back is the
+same value.
+
+::: danger It did not hold
+| Value | Came back as |
+|---|---|
+| `He said "Hi"` | `He said \"Hi\"` — quotes stripped without decoding the escapes |
+| `C:\path\to` | `C:\\path\\to`, doubling again on every further save |
+| `line one`⏎`line two` | `line one` — the rest was written as lines the reader skipped |
+| `  padded  ` | `padded` |
+| `'42'` (a string) | `42` (a number) |
+| `true` (a boolean) | `'true'` (a string) |
+:::
+
+The guarantee is now explicit: for every value `serializeMarkdownFrontmatter`
+can write, `parseMarkdownFrontmatter` returns it unchanged, and a second round
+trip produces identical bytes. The second trip is part of the test on purpose —
+backslash doubling only diverges on the trip *after* the one that introduced it,
+so a single-trip test passes on content that corrupts a little more with every
+export.
+
+- A quoted scalar's escapes are decoded (`\\`, `\"`, `\n`, `\r`, `\t`,
+  `\uXXXX`). An unrecognised escape keeps its backslash rather than erroring:
+  hand-written frontmatter says `"C:\Users"`. Text that merely starts and ends
+  with a quote (`"a" and "b"`) is not treated as one scalar.
+- A value carrying a newline, tab, backslash or edge whitespace is quoted and
+  escaped, so it occupies one line and no part of it is silently dropped.
+- A **string** that would read back as another type is quoted; a real boolean,
+  number or null is not, so each reads back as itself.
+- An empty array is written `key: []`. A bare `key:` is genuinely ambiguous —
+  empty array, empty object, or null — and the two readers guessed differently.
+
+The scalar grammar is exported and **imported by the SDK reader rather than
+replicated**. That is the actual fix: when each side had its own copy,
+correcting one would have turned a shared bug into a silent disagreement between
+the generated client and the content engine. A parity suite in
+`@contentrain/query` asserts both readers return the same values for the same
+bytes.
+
+Body text keeps its internal blank lines; only leading and trailing whitespace
+is normalised, which is markdown behaviour rather than loss.
 
 ## Execution & Approval Contracts
 

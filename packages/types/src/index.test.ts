@@ -900,6 +900,133 @@ describe('@contentrain/types', () => {
       const { frontmatter } = parseMarkdownFrontmatter(md)
       expect(frontmatter['title']).toBe('Hello: World')
     })
+
+    it('decodes escapes inside a quoted scalar', () => {
+      const md = '---\ntitle: "He said \\"Hi\\""\npath: "C:\\\\Users\\\\ada"\nnote: "one\\ntwo"\n---\n'
+      const { frontmatter } = parseMarkdownFrontmatter(md)
+      expect(frontmatter['title']).toBe('He said "Hi"')
+      expect(frontmatter['path']).toBe('C:\\Users\\ada')
+      expect(frontmatter['note']).toBe('one\ntwo')
+    })
+
+    it('does not treat text that merely starts and ends with a quote as one scalar', () => {
+      // Slicing the ends off `"a" and "b"` would silently corrupt the value.
+      const md = '---\ntitle: "a" and "b"\n---\n'
+      expect(parseMarkdownFrontmatter(md).frontmatter['title']).toBe('"a" and "b"')
+    })
+
+    it('leaves a malformed quoted scalar exactly as written', () => {
+      const md = '---\ntitle: "a\\"\n---\n'
+      expect(parseMarkdownFrontmatter(md).frontmatter['title']).toBe('"a\\"')
+    })
+
+    it('keeps the backslash of an escape it does not know', () => {
+      // Hand-written frontmatter says `"C:\Users"`; losing that to strictness
+      // would be a worse trade than keeping the bytes.
+      const md = '---\npath: "C:\\Users"\n---\n'
+      expect(parseMarkdownFrontmatter(md).frontmatter['path']).toBe('C:\\Users')
+    })
+
+    it('decodes a unicode escape', () => {
+      const md = '---\ncity: "\\u0130stanbul"\n---\n'
+      expect(parseMarkdownFrontmatter(md).frontmatter['city']).toBe('\u0130stanbul')
+    })
+
+    it('reads a single-quoted scalar, where a quote is doubled', () => {
+      const md = "---\ntitle: 'it''s here'\n---\n"
+      expect(parseMarkdownFrontmatter(md).frontmatter['title']).toBe("it's here")
+    })
+
+    it('splits an inline array on commas outside quotes', () => {
+      const md = '---\ntags: ["a, b", c, "d"]\n---\n'
+      expect(parseMarkdownFrontmatter(md).frontmatter['tags']).toEqual(['a, b', 'c', 'd'])
+    })
+
+    it('reads an empty inline array as empty, not as one empty item', () => {
+      expect(parseMarkdownFrontmatter('---\ntags: []\n---\n').frontmatter['tags']).toEqual([])
+    })
+
+    it('decodes quoted items in a block array', () => {
+      const md = '---\ntags:\n  - "a, b"\n  - "He said \\"Hi\\""\n---\n'
+      expect(parseMarkdownFrontmatter(md).frontmatter['tags']).toEqual(['a, b', 'He said "Hi"'])
+    })
+  })
+
+  /**
+   * The property Bridge's document export depends on: a value written and read
+   * back is the same value. It did not hold — a quote or a backslash came back
+   * with its escapes intact, and a value with a newline in it came back
+   * truncated at the first one, because the serializer wrote the rest of it
+   * into the frontmatter as lines the reader then skipped.
+   *
+   * The second round trip is not redundant. Backslash doubling only diverges on
+   * the trip after the one that introduced it, so a single-trip test reports a
+   * pass on content that corrupts a little more with every export.
+   */
+  describe('markdown frontmatter round trip', () => {
+    const values: Record<string, unknown> = {
+      plain: 'Hello world',
+      quoted: 'He said "Hi"',
+      singleQuoted: "it's here",
+      backslash: 'C:\\path\\to',
+      escapeLike: 'not\\nan escape',
+      multiline: 'line one\nline two\n\nline four',
+      carriage: 'a\rb',
+      tabbed: 'col1\tcol2',
+      empty: '',
+      onlySpace: ' ',
+      edgeSpace: '  padded  ',
+      unicode: '\u0130stanbul — café ✅ 日本語',
+      colon: 'Title: subtitle',
+      hash: 'a # not a comment',
+      dashLead: '- leading dash',
+      looksBoolean: 'true',
+      looksNumeric: '42',
+      bracketed: '[not, an, array]',
+      list: ['a, b', 'c "quoted"', '', 'çok satır\nvar'],
+      emptyList: [],
+      numeric: 42,
+      float: 9.99,
+      boolean: true,
+    }
+
+    it('returns every value unchanged', () => {
+      const parsed = parseMarkdownFrontmatter(serializeMarkdownFrontmatter(values, 'body')).frontmatter
+      for (const key of Object.keys(values)) {
+        expect(parsed[key], key).toEqual(values[key])
+      }
+    })
+
+    it('is stable across a second trip, where doubling would show', () => {
+      const once = serializeMarkdownFrontmatter(values, 'body')
+      const twice = serializeMarkdownFrontmatter(parseMarkdownFrontmatter(once).frontmatter, 'body')
+      expect(twice).toBe(once)
+    })
+
+    it('keeps the body, including its internal blank lines', () => {
+      const body = '# Heading\n\nParagraph one.\n\n- item\n- item'
+      const { body: back } = parseMarkdownFrontmatter(serializeMarkdownFrontmatter({ title: 'x' }, body))
+      expect(back).toBe(body)
+    })
+
+    it('normalises only the body edges, which is markdown behaviour and not loss', () => {
+      const { body } = parseMarkdownFrontmatter(serializeMarkdownFrontmatter({ title: 'x' }, '\n\n  text  \n\n'))
+      expect(body).toBe('text')
+    })
+
+    it('quotes what a bare scalar cannot carry, and nothing else', () => {
+      const md = serializeMarkdownFrontmatter({ plain: 'Hello world', nl: 'a\nb', pad: ' x ', slash: 'a\\b' }, '')
+      expect(md).toContain('plain: Hello world')
+      expect(md).toContain('nl: "a\\nb"')
+      expect(md).toContain('pad: " x "')
+      expect(md).toContain('slash: "a\\\\b"')
+    })
+
+    it('writes a multi-line value on one line, so no line is silently dropped', () => {
+      const md = serializeMarkdownFrontmatter({ note: 'one\ntwo' }, '')
+      const frontmatterLines = md.split('---')[1]!.trim().split('\n')
+      expect(frontmatterLines).toHaveLength(1)
+    })
   })
 
   describe('serializeMarkdownFrontmatter', () => {
