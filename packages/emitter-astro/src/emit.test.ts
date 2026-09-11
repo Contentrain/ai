@@ -563,3 +563,108 @@ describe('helpers', () => {
     expect(content).not.toContain('layer(theme) layer(legacy)')
   })
 })
+
+/**
+ * WordPress serves posts and pages from the same root and tells them apart in
+ * the database. A static generator cannot, so a posts route at `/:slug*` and a
+ * pages family at `/:slug*` resolve to one file. The emitter used to keep the
+ * first and warn about a duplicated *file* — so the producer learned a path was
+ * written twice, not that an entire section of the site had disappeared. On one
+ * measured site the pages were being rendered with the post template and
+ * scoring below zero, and the warning did not match the run gate's "route …
+ * skipped" pattern, so nothing caught it.
+ */
+describe('two routes claiming one Astro page', () => {
+  // Reuses the suite's real families so the only thing under test is the
+  // collision, not a hand-built ProjectIR that drifts from the contract.
+  const base: ProjectIR = {
+    ...ir,
+    routes: [
+      { id: 'r-posts', pattern: '/:slug*', kind: 'single', family: 'f-article', params: [{ name: 'slug', source: 'post_slug' }] },
+      { id: 'r-pages', pattern: '/:slug*', kind: 'page', family: 'f-nested', collection: 'pages' },
+    ],
+  }
+
+  const content = {
+    posts: [{ slug: 'hello', title: 'Hello', body: '<p>post</p>' }],
+    collections: { pages: [{ slug: 'about', title: 'About', body: '<p>page</p>' }] },
+  }
+
+  const emitted = emitAstroProject({ ir: base, content })
+
+  it('names both routes and what would be lost, not just the file', () => {
+    const warning = emitted.warnings.find((w) => w.includes('r-pages'))
+    expect(warning).toBeDefined()
+    expect(warning).toContain('route r-pages:')
+    expect(warning).toContain('r-posts')
+    expect(warning).toContain('/:slug*')
+    expect(warning).toContain('src/pages/[...slug].astro')
+    expect(warning).toContain('would be dropped')
+  })
+
+  it('fails the build instead of shipping a site missing a section', () => {
+    const page = emitted.files['src/pages/[...slug].astro']!
+    expect(page).toContain('throw new Error(')
+    expect(page).toContain('Route collision')
+    expect(page).toContain('r-posts')
+    expect(page).toContain('r-pages')
+    // The guard is the whole page: no half-rendered layout behind it.
+    expect(page).not.toContain('import Layout')
+  })
+
+  it('throws from getStaticPaths on a dynamic path, so the message is ours', () => {
+    // Astro collects paths before rendering. A throw in the frontmatter never
+    // runs on a dynamic route — the build fails on the missing getStaticPaths
+    // with Astro's generic message instead of the one naming the two routes.
+    expect(emitted.files['src/pages/[...slug].astro']).toContain('export function getStaticPaths()')
+  })
+
+  it('throws from the frontmatter on a static path, where getStaticPaths is itself an error', () => {
+    const staticClash: ProjectIR = {
+      ...base,
+      routes: [
+        { id: 'r-a', pattern: '/hakkimizda', kind: 'page', family: 'f-nested', collection: 'pages' },
+        { id: 'r-b', pattern: '/hakkimizda', kind: 'page', family: 'f-article', collection: 'pages' },
+      ],
+    }
+    const page = emitAstroProject({ ir: staticClash, content }).files['src/pages/hakkimizda.astro']!
+    expect(page).toContain('throw new Error(')
+    expect(page).not.toContain('getStaticPaths')
+  })
+
+  it('leaves a single route untouched', () => {
+    const alone = emitAstroProject({ ir: { ...base, routes: [base.routes[0]!] }, content })
+    expect(alone.warnings.some((w) => w.includes('Route collision') || w.includes('would be dropped'))).toBe(false)
+    expect(alone.files['src/pages/[...slug].astro']).toContain('import Layout')
+  })
+
+  it('fires even when the two routes would render the same thing', () => {
+    // Same family, same collection, same pattern. Astro still serves one file
+    // per path, so one of these two routes does not exist in the built site —
+    // and which one survived is an accident of ordering.
+    const twins: ProjectIR = {
+      ...base,
+      routes: [
+        { id: 'r-a', pattern: '/:slug*', kind: 'page', family: 'f-nested', collection: 'pages' },
+        { id: 'r-b', pattern: '/:slug*', kind: 'page', family: 'f-nested', collection: 'pages' },
+      ],
+    }
+    const result = emitAstroProject({ ir: twins, content })
+    expect(result.files['src/pages/[...slug].astro']).toContain('Route collision')
+    expect(result.warnings.some((w) => w.includes('r-b') && w.includes('would be dropped'))).toBe(true)
+  })
+
+  it('does not fire on distinct patterns', () => {
+    const distinct: ProjectIR = {
+      ...base,
+      routes: [
+        base.routes[0]!,
+        { id: 'r-pages', pattern: '/pages/:slug', kind: 'page', family: 'f-nested', collection: 'pages' },
+      ],
+    }
+    const result = emitAstroProject({ ir: distinct, content })
+    expect(result.warnings.some((w) => w.includes('would be dropped'))).toBe(false)
+    expect(result.files['src/pages/[...slug].astro']).toContain('import Layout')
+    expect(result.files['src/pages/pages/[slug].astro']).toContain('import Layout')
+  })
+})

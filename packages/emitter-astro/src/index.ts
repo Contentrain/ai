@@ -7,6 +7,7 @@
 // boring — which is exactly why it can be open, portable, and replaceable
 // by community emitters for other frameworks.
 
+import type { RouteModel } from '@contentrain/types'
 import type { EmitInput, EmitPost, EmitResult } from './types.js'
 import { DEFAULT_COLLECTION } from './types.js'
 import { scaffoldFiles } from './scaffold.js'
@@ -24,7 +25,12 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   const add = (batch: Record<string, string>) => {
     for (const [path, content] of Object.entries(batch)) {
       if (files[path] !== undefined && files[path] !== content) {
-        warnings.push(`duplicate file with different content: ${path} — keeping the first`)
+        // Pages are reported by the route loop below, which knows *which two
+        // routes* collided and what is lost. Saying "duplicate file" here as
+        // well would bury that under the vaguer message.
+        if (!path.startsWith('src/pages/')) {
+          warnings.push(`duplicate file with different content: ${path} — keeping the first`)
+        }
         continue
       }
       files[path] = content
@@ -90,10 +96,47 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     for (const qp of queryPages) missingCss(qp.css, `query ${queryId}`)
   }
 
+  // Two routes can want the same Astro page. WordPress serves posts and pages
+  // from the same root and tells them apart in the database; a static
+  // generator cannot, so `/:slug` for posts and `/:slug` for pages resolve to
+  // one file. Left to `add`, the second route's pages simply vanish — every
+  // page of it, with a warning that names a file rather than a route, so the
+  // producer learns a file was duplicated and not that a section of the site
+  // is missing.
+  //
+  // The pages are unrecoverable at this point either way: the emitter cannot
+  // know which route should own the path. What it can do is refuse to produce
+  // a site that is quietly wrong.
+  const pageOwner = new Map<string, RouteModel>()
+  const collisions: { path: string, first: RouteModel, second: RouteModel }[] = []
   for (const route of ir.routes) {
     const result = routeFiles(route, familiesById.get(route.family), input.content ?? {}, lang, seo)
+    for (const path of Object.keys(result.files)) {
+      if (!path.startsWith('src/pages/')) continue
+      const owner = pageOwner.get(path)
+      if (owner === undefined) {
+        pageOwner.set(path, route)
+        continue
+      }
+      // Any second claim on a page path is a collision, even when the two
+      // routes would render the same thing: Astro serves one file per path, so
+      // one of the two routes does not exist in the built site. Comparing the
+      // emitted bytes instead would be a weaker test that happens to agree —
+      // the page carries its route id in a comment, so two routes never
+      // produce identical output anyway.
+      collisions.push({ path, first: owner, second: route })
+    }
     add(result.files)
     warnings.push(...result.warnings)
+  }
+
+  for (const { path, first, second } of collisions) {
+    warnings.push(
+      `route ${second.id}: pattern "${second.pattern}" emits the same Astro page as route ${first.id} `
+      + `("${first.pattern}") — ${path}. Every page of "${second.id}" would be dropped, so the page now `
+      + `fails the build instead. Give one route a distinct pattern, or expand the narrower one into literal routes.`,
+    )
+    files[path] = collisionPage(path, first, second)
   }
 
   const components = componentFiles(ir.components ?? [], input.runtime)
@@ -113,6 +156,28 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   }
 
   return { files, warnings }
+}
+
+/**
+ * Replaces a page two routes both claim. The emitter cannot choose between
+ * them, so the page states the conflict and throws — `astro build` stops with
+ * the two route ids in the message, instead of shipping a site that is missing
+ * a section nobody was told about.
+ */
+function collisionPage(path: string, first: RouteModel, second: RouteModel): string {
+  const message = `Route collision: "${first.id}" (${first.pattern}) and "${second.id}" (${second.pattern}) `
+    + `both resolve to ${path}. A static build cannot serve both from one file — give one route a distinct `
+    + `pattern, or expand the narrower one into literal routes.`
+  const thrown = `throw new Error(${JSON.stringify(message)})`
+  // On a dynamic path the throw has to live in `getStaticPaths`. Astro collects
+  // paths before it renders anything, so a throw in the frontmatter would never
+  // run — the build would fail on the missing `getStaticPaths` instead, with
+  // Astro's generic message in place of the one that names the two routes.
+  // On a static path the opposite holds: exporting `getStaticPaths` at all is
+  // itself an error ("only supported in dynamic routes").
+  return path.includes('[')
+    ? `---\nexport function getStaticPaths() {\n  ${thrown}\n}\n---\n`
+    : `---\n${thrown}\n---\n`
 }
 
 /** Write an EmitResult to disk. Separate from emit so the core stays pure. */

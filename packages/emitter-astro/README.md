@@ -108,3 +108,30 @@ entry in their named collection. They read that entry directly, retaining the
 body and runtime entry address. Missing or ambiguous data fails the Astro build.
 Dynamic routes continue to use `getStaticPaths`. Generated tsconfig files exclude
 `public`, `dist`, and `node_modules`, so copied WordPress assets are not typechecked.
+
+## Route collisions
+
+WordPress serves posts and pages from the same root and tells them apart in the
+database. A static generator cannot, so a posts route at `/:slug*` and a pages
+family at `/:slug*` resolve to the same Astro file.
+
+When two routes claim one page path the emitter reports it as a route problem —
+naming both route ids, both patterns, the file, and which route's pages would be
+lost — and replaces that page with a guard that fails `astro build` with the
+same message. On a dynamic path the guard throws from `getStaticPaths`, because
+Astro collects paths before it renders and a frontmatter throw would never run;
+on a static path it throws from the frontmatter, because exporting
+`getStaticPaths` there is itself an error.
+
+This is deliberately not a warning that keeps going. The pages are unrecoverable
+at that point — the emitter cannot know which route should own the path — and
+the previous behaviour kept the first file and reported a duplicated *file*, so
+the producer learned a path had been written twice rather than that a section of
+the site was missing. A build that stops is recoverable; a site that quietly
+lost its pages is not.
+
+A second claim counts even when both routes would render the same family and
+collection: Astro serves one file per path, so one of the two routes does not
+exist in the built site, and which one survived is an accident of ordering. Fix
+it by giving one route a distinct pattern, or by expanding the narrower one into
+literal routes.
