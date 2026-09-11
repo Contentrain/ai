@@ -7,9 +7,10 @@
 
 import { readFile, readdir } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
-import type { VerifyDocument, VerifyInput } from './types.js'
+import type { VerifyDocument, VerifyFile, VerifyInput } from './types.js'
 
 const DOCUMENT_EXT = /\.html?$/i
+const TEXT_EXT = /\.(css|m?js|cjs|json|xml|txt|svg)$/i
 
 async function walk(dir: string, root: string, files: string[] = []): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true })
@@ -32,10 +33,11 @@ async function walk(dir: string, root: string, files: string[] = []): Promise<st
  * reduces to `/about` — the same address a link to `/about/` or
  * `/about/index.html` resolves to.
  */
-export async function loadSiteDirectory(dir: string, site?: string): Promise<Pick<VerifyInput, 'documents' | 'assets' | 'sitemap' | 'site'>> {
+export async function loadSiteDirectory(dir: string, site?: string): Promise<Pick<VerifyInput, 'documents' | 'assets' | 'files' | 'sitemap' | 'site' | 'build'>> {
   const files = await walk(dir, dir)
   const documents: VerifyDocument[] = []
   const assets: string[] = []
+  const texts: VerifyFile[] = []
   let sitemap: string | undefined
 
   for (const file of files.toSorted()) {
@@ -45,8 +47,15 @@ export async function loadSiteDirectory(dir: string, site?: string): Promise<Pic
       continue
     }
     if (/^\/sitemap[^/]*\.xml$/i.test(served)) sitemap = await readFile(join(dir, file), 'utf8')
+    // Stylesheets and scripts are read as text so the content scans can see
+    // them. A `url()` pointing at the old host is exactly as fatal as one in
+    // the HTML, and a scan that skips CSS reports a number smaller than the
+    // truth — which is worse than not counting when two tools compare figures.
+    if (TEXT_EXT.test(file)) {
+      texts.push({ path: served, content: await readFile(join(dir, file), 'utf8') })
+    }
     assets.push(served)
   }
 
-  return { documents, assets, sitemap, site }
+  return { documents, assets, files: texts, sitemap, site, build: true }
 }

@@ -67,6 +67,7 @@ a page must not fail its own gate.
 | | `identity.description-missing` | warning | No meta description |
 | | `identity.open-graph-incomplete` | warning | Missing `og:title` / `og:type` / `og:url` — shares render without a card |
 | | `identity.twitter-card-missing` | info | No `twitter:card` |
+| identity | `identity.lang-missing` | warning | No `lang` on `<html>` — what a screen reader picks a voice from |
 | indexing | `indexing.noindex` | error | **The staging leak.** A `noindex` in the meta or `X-Robots-Tag` survives deploy and the site disappears from search over the following weeks |
 | | `indexing.sitemap-missing-entry` | warning | An indexable page is not in the sitemap (a `noindex` page is not asked to be) |
 | | `indexing.sitemap-stale-entry` | warning | The sitemap lists a page the build does not serve |
@@ -75,6 +76,7 @@ a page must not fail its own gate.
 | | `status.redirect-chain` | warning | More hops than `maxRedirectHops` (default 1) |
 | | `status.redirect-loop` | error | A chain that returns to itself |
 | | `status.redirect-target-missing` | error | An internal redirect pointing at a page the build does not serve |
+| | `status.not-found-page-missing` | error | The build has no `404.html`. Only checked for a build (`input.build`); migrated navigation is root-relative, so a wrong path is not rare, and without one the visitor lands on the host's page with none of the site's chrome |
 | international | `international.hreflang-not-reciprocal` | error | A names B but B does not name A. Search engines ignore one-sided alternates entirely, so half the work is worth nothing |
 | | `international.hreflang-no-self` | warning | A page with alternates that does not list itself |
 | | `international.hreflang-unknown-target` | warning | An alternate pointing at a page that does not exist |
@@ -86,6 +88,19 @@ a page must not fail its own gate.
 | assets | `assets.broken-image` | error | An internal image that resolves to nothing the build serves. `data:` URIs and third-party hosts are skipped |
 | | `assets.missing-alt` | warning | An `<img>` with no `alt` attribute. `alt=""` is a decision (decorative) and is not reported |
 | | `assets.alt-lost` | warning | Alt text the old page had for the same image is gone |
+| | `assets.source-origin-reference` | error | A reference to `options.sourceOrigin` — the host the content was migrated away from. The new site then works only while the old one stays up. Scans documents, and stylesheets and scripts when `input.files` carries their contents; `options.allowHosts` exempts a CDN the customer kept |
+
+## The 404 page
+
+A static host hands `404.html` to a visitor who asked for something else, so it
+is not served at its own address and the checks that assume otherwise do not
+apply to it: canonical, sitemap membership, and — the one that matters —
+soft-404. A correct 404 page says "not found" and is short, which is exactly the
+shape the soft-404 check looks for, so without this exemption every site that
+did the right thing would fail on it.
+
+Recognised at either spelling a build produces: `404.html` at the root, or
+`404/index.html`.
 
 ## Address identity
 
@@ -117,6 +132,8 @@ contentrain-verify <dist-dir> [options]
   --site <url>          Canonical origin
   --baseline <dir>      The old site, as a directory of captured pages
   --redirects <file>    JSON: [{ "from": "/a", "to": "/b", "status": 301 }]
+  --source-origin <host>  The old host content was migrated away from
+  --allow-host <host>     A host that may still be referenced (repeatable)
   --groups <list>       identity,indexing,status,international,structured,navigation,assets
   --max-redirect-hops <n>
   --json
