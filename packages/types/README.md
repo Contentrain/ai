@@ -137,6 +137,7 @@ Serialize functions (pure, dependency-free):
 - `generateEntryId()` — 12-char hex ID generation
 - `parseMarkdownFrontmatter(content)` — parse YAML frontmatter + body from markdown
 - `serializeMarkdownFrontmatter(data, body)` — serialize data + body into markdown frontmatter
+- `parseFrontmatterScalar(raw)` / `parseFrontmatterScalarString(raw)` / `splitFrontmatterList(inner)` — the scalar grammar those two are built on, exported because a second reader needs it (see [Frontmatter round trip](#frontmatter-round-trip))
 
 Constants:
 
@@ -254,6 +255,9 @@ Studio (Nuxt 4, web) cannot import `@contentrain/mcp` directly because MCP depen
 | `canonicalStringify(data, fieldOrder?)` | Preview canonical JSON output |
 | `parseMarkdownFrontmatter(content)` | Document editor frontmatter parsing |
 | `serializeMarkdownFrontmatter(data, body)` | Document editor serialization |
+| `parseFrontmatterScalar(raw)` | One frontmatter scalar: booleans, null, numbers, quoted strings with escapes decoded |
+| `parseFrontmatterScalarString(raw)` | The same, always as a string — a SKU of `"007"` must not become `7` |
+| `splitFrontmatterList(inner)` | Split an inline array on commas outside quotes |
 | `generateEntryId()` | Client-side entry ID generation |
 | `SECRET_PATTERNS` | Extend or customize secret detection |
 | `looksLikeCredential(tail)` | Decide whether a value assigned to an API-key setting is a credential or documentation |
@@ -460,3 +464,54 @@ Until a tool owns one, the contract is narrow and pinned by tests in
   changed it, and reports `file_conflict` when both sides did. It never merges
   their interiors, because it does not know their interiors — a field-level
   union on an approval policy would produce a policy nobody wrote.
+
+## Frontmatter round trip
+
+A document's fields live in YAML frontmatter, and two readers open them: the
+content engine, through `parseMarkdownFrontmatter` (which `@contentrain/mcp`
+re-exports), and `@contentrain/query`'s client generator and Astro loader. The
+property both depend on is that a value written and read back is the same
+value — and for four shapes it did not hold.
+
+| Value | Came back as |
+|---|---|
+| `He said "Hi"` | `He said \"Hi\"` — the quotes were stripped without decoding the escapes |
+| `C:\path\to` | `C:\\path\\to` — and doubling again on every further save |
+| `line one`⏎`line two` | `line one` — the rest was written as frontmatter lines the reader then skipped |
+| `  padded  ` | `padded` |
+| `'42'` (a string) | `42` (a number) |
+| `true` (a boolean) | `'true'` (a string) |
+
+All six are fixed, and the guarantee is now explicit: **for every value
+`serializeMarkdownFrontmatter` can write, `parseMarkdownFrontmatter` returns it
+unchanged, and a second round trip produces identical bytes.** The second trip
+is part of the test on purpose — backslash doubling only diverges on the trip
+after the one that introduced it, so a single-trip test passes on content that
+corrupts a little more with every export.
+
+What that required:
+
+- A quoted scalar's escapes are decoded (`\\`, `\"`, `\n`, `\r`, `\t`, `\uXXXX`).
+  An unrecognised escape keeps its backslash rather than erroring — hand-written
+  frontmatter says `"C:\Users"`, and losing that to strictness is a worse trade
+  than keeping the bytes. Text that merely starts and ends with a quote
+  (`"a" and "b"`) is not treated as one scalar, because slicing its ends off
+  would corrupt it.
+- A value carrying a newline, tab, backslash or edge whitespace is quoted and
+  escaped, so it occupies one line and no part of it is silently dropped.
+- A **string** that would read back as another type is quoted; a real boolean,
+  number or null is not, so each reads back as itself.
+- An empty array is written `key: []`. A bare `key:` is genuinely ambiguous —
+  empty array, empty object, or null — and the two readers were guessing it
+  differently.
+
+The scalar grammar is exported (`parseFrontmatterScalar`,
+`parseFrontmatterScalarString`, `splitFrontmatterList`) and imported by the SDK
+reader rather than replicated. That is the actual fix: when each side had its
+own copy, correcting one of them would have turned a shared bug into a silent
+disagreement between the generated client and the content engine. A parity suite
+in `@contentrain/query` asserts both readers return the same values for the same
+bytes.
+
+Body text keeps its internal blank lines; only its leading and trailing
+whitespace is normalised, which is markdown behaviour rather than loss.

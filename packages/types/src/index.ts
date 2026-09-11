@@ -1094,28 +1094,169 @@ export function conflictId(conflict: {
 
 // ─── Markdown Frontmatter ───
 
-function parseYamlValue(raw: string): unknown {
+/**
+ * Decode the interior of a double-quoted scalar, or `undefined` when the text
+ * is not one scalar after all — an unescaped `"` inside it, or a backslash with
+ * nothing after it.
+ *
+ * Returning `undefined` rather than guessing matters: `"a" and "b"` starts and
+ * ends with a quote without being a quoted scalar, and slicing the ends off it
+ * would silently corrupt the value.
+ *
+ * An unrecognised escape keeps its backslash instead of erroring. Our own
+ * serializer only ever emits `\\`, `\"`, `\n`, `\r` and `\t`, so round-tripping is
+ * unaffected either way — but hand-written frontmatter says `"C:\Users"` and
+ * losing that to strictness would be a worse trade than keeping the bytes.
+ */
+function decodeDoubleQuoted(inner: string): string | undefined {
+  let out = ''
+  for (let i = 0; i < inner.length; i += 1) {
+    const char = inner[i]!
+    if (char === '"') return undefined
+    if (char !== '\\') {
+      out += char
+      continue
+    }
+    const next = inner[i + 1]
+    if (next === undefined) return undefined
+    i += 1
+    if (next === 'n') out += '\n'
+    else if (next === 'r') out += '\r'
+    else if (next === 't') out += '\t'
+    else if (next === '\\' || next === '"' || next === '/') out += next
+    else if (next === 'u' && /^[0-9a-fA-F]{4}$/.test(inner.slice(i + 1, i + 5))) {
+      out += String.fromCharCode(parseInt(inner.slice(i + 1, i + 5), 16))
+      i += 4
+    } else out += `\\${next}`
+  }
+  return out
+}
+
+/** Decode a single-quoted scalar, where YAML escapes a quote by doubling it. */
+function decodeSingleQuoted(inner: string): string | undefined {
+  let out = ''
+  for (let i = 0; i < inner.length; i += 1) {
+    const char = inner[i]!
+    if (char !== "'") {
+      out += char
+      continue
+    }
+    if (inner[i + 1] !== "'") return undefined
+    out += "'"
+    i += 1
+  }
+  return out
+}
+
+/**
+ * Read one frontmatter scalar: booleans, null, numbers, quoted strings with
+ * their escapes decoded, or the text as written.
+ *
+ * Exported because it is a **contract**, not a utility. Two readers open these
+ * documents — this package (through `parseMarkdownFrontmatter`, which
+ * `@contentrain/mcp` re-exports) and `@contentrain/query`'s generator and Astro
+ * loader. When each had its own copy they disagreed about what `"He said
+ * \"Hi\""` says, which means the generated client and the content engine
+ * disagreed about the same file. One implementation, imported by both.
+ */
+export function parseFrontmatterScalar(raw: string): unknown {
   if (raw === 'true') return true
   if (raw === 'false') return false
   if (raw === 'null') return null
   if (/^-?\d+$/.test(raw)) return parseInt(raw, 10)
   if (/^-?\d+\.\d+$/.test(raw)) return parseFloat(raw)
-  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
-    return raw.slice(1, -1)
+  // Quoted scalars carry escapes. Stripping the quotes without decoding them is
+  // how `He said \"Hi\"` came back with its backslashes, and how a value with a
+  // backslash in it doubled them on every export.
+  if (raw.length >= 2 && raw.startsWith('"') && raw.endsWith('"')) {
+    return decodeDoubleQuoted(raw.slice(1, -1)) ?? raw
+  }
+  if (raw.length >= 2 && raw.startsWith("'") && raw.endsWith("'")) {
+    return decodeSingleQuoted(raw.slice(1, -1)) ?? raw
   }
   return raw
 }
 
+/**
+ * A scalar read as a string: quoting and escapes are resolved, but a value that
+ * merely looks like a number or a boolean stays the text it was. Array items
+ * use this, and so does any reader that knows from the model that a field is
+ * string-typed — a SKU of `"007"` must not become the number 7.
+ */
+export function parseFrontmatterScalarString(raw: string): string {
+  const value = parseFrontmatterScalar(raw)
+  return typeof value === 'string' ? value : raw
+}
+
+/**
+ * Split an inline array's interior on commas that are not inside a quoted
+ * item — `["a, b", c]` is two items, not three. Exported for the same reason
+ * as {@link parseFrontmatterScalar}: both readers must split it the same way.
+ */
+export function splitFrontmatterList(inner: string): string[] {
+  const items: string[] = []
+  let current = ''
+  let quote: '"' | "'" | undefined
+  for (let i = 0; i < inner.length; i += 1) {
+    const char = inner[i]!
+    if (quote) {
+      if (char === '\\' && quote === '"' && i + 1 < inner.length) {
+        current += char + inner[i + 1]!
+        i += 1
+        continue
+      }
+      current += char
+      if (char === quote) quote = undefined
+      continue
+    }
+    if (char === '"' || char === "'") {
+      quote = char
+      current += char
+      continue
+    }
+    if (char === ',') {
+      items.push(current)
+      current = ''
+      continue
+    }
+    current += char
+  }
+  items.push(current)
+  return items
+}
+
 function yamlScalar(value: unknown): string {
   const str = String(value)
+  // A newline, a tab or edge whitespace cannot survive a bare scalar: the
+  // second line of a multi-line value was being written straight into the
+  // frontmatter, where the reader saw a line that is not `key: value` and
+  // skipped it — the value was silently truncated at its first newline. Edge
+  // whitespace was lost to the reader's `trim()` for the same reason.
   if (str.includes(':') || str.includes('#') || str.includes('{') || str.includes('}')
     || str.includes('[') || str.includes(']') || str.includes('*') || str.includes('&')
     || str.includes('!') || str.includes('|') || str.includes('>') || str.includes("'")
     || str.includes('"') || str.includes('%') || str.includes('@') || str.includes('`')
-    || str.startsWith('-') || str.startsWith('?')
-    || str === 'true' || str === 'false' || str === 'null' || str === 'yes' || str === 'no'
-    || str === '') {
-    return `"${str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+    || str.includes('\\') || str.includes('\n') || str.includes('\r') || str.includes('\t')
+    || str.startsWith('-') || str.startsWith('?') || str !== str.trim()
+    || str === ''
+    // A string whose bare form would read back as something else. `'42'` was
+    // written bare and returned as the number 42 — a slug, a version or a title
+    // that happens to be digits changed type on every save. Asking the reader
+    // is exact where a list of shapes drifts away from it.
+    //
+    // The type check is the other half. The old rule quoted anything spelled
+    // `true`, so a real boolean was written as `"true"` and came back a string.
+    // Only a *string* that would be misread needs the quotes; a boolean, a
+    // number or a null is written bare precisely so it reads back as itself.
+    // `yes`/`no` are not keywords to this reader but are to others, so a string
+    // spelled that way is quoted for the benefit of whoever else opens the file.
+    || (typeof value === 'string' && (parseFrontmatterScalar(str) !== str || str === 'yes' || str === 'no'))) {
+    return `"${str
+      .replace(/\\/g, '\\\\')
+      .replace(/"/g, '\\"')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/\t/g, '\\t')}"`
   }
   return str
 }
@@ -1176,6 +1317,13 @@ function serializeYamlFields(data: Record<string, unknown>): string[] {
       lines.push(`${key}:`)
       lines.push(...serializeYamlValue(value, 1))
     } else if (Array.isArray(value)) {
+      // A bare `key:` is genuinely ambiguous — empty array, empty object, or
+      // null — and two readers guessed it differently. Writing `[]` says which
+      // one it is instead of asking anyone to infer it from the next line.
+      if (value.length === 0) {
+        lines.push(`${key}: []`)
+        continue
+      }
       lines.push(`${key}:`)
       for (const item of value) {
         if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
@@ -1210,7 +1358,7 @@ export function parseMarkdownFrontmatter(content: string): { frontmatter: Record
 
   for (const line of frontmatterStr.split('\n')) {
     if (/^\s+-\s+/.test(line) && currentKey) {
-      const value = line.replace(/^\s+-\s+/, '').trim()
+      const value = parseFrontmatterScalarString(line.replace(/^\s+-\s+/, '').trim())
       if (!currentArray) currentArray = []
       currentArray.push(value)
       continue
@@ -1235,12 +1383,12 @@ export function parseMarkdownFrontmatter(content: string): { frontmatter: Record
     }
 
     if (rawValue.startsWith('[') && rawValue.endsWith(']')) {
-      const items = rawValue.slice(1, -1).split(',').map(s => s.trim()).filter(Boolean)
-      frontmatter[key] = items
+      const inner = rawValue.slice(1, -1).trim()
+      frontmatter[key] = inner === '' ? [] : splitFrontmatterList(inner).map(item => parseFrontmatterScalarString(item.trim()))
       continue
     }
 
-    frontmatter[key] = parseYamlValue(rawValue)
+    frontmatter[key] = parseFrontmatterScalar(rawValue)
   }
 
   if (currentKey && currentArray) {

@@ -3,8 +3,21 @@
 // Both read the same `.contentrain` documents, so the parser lives here rather
 // than being replicated: a divergence would mean the generated client and the
 // Astro collection disagree about the same file's fields.
+//
+// The same argument reaches one level further out. The content engine reads
+// these documents too, through `@contentrain/types`, and for a while this file
+// carried its own copy of the scalar rules — so the two disagreed about what a
+// quoted string with escapes in it says. The *structure* below (nesting,
+// indentation, the model-aware string coercion) is this package's; the scalar
+// grammar is imported, because how a value is spelled on disk is a contract
+// rather than an implementation detail.
 
 import type { ModelDefinition } from '@contentrain/types'
+import {
+  parseFrontmatterScalar,
+  parseFrontmatterScalarString,
+  splitFrontmatterList,
+} from '@contentrain/types'
 
 // Field types that map to `string` in the generated types — their frontmatter
 // values must NOT be numerically coerced (e.g. a string SKU "007").
@@ -38,7 +51,7 @@ export function parseFrontmatter(text: string, stringKeys: Set<string> = new Set
   const lines = fmStr.split('\n')
   const stack: Array<{ obj: Record<string, unknown>; indent: number }> = [{ obj: frontmatter, indent: -1 }]
 
-  for (const line of lines) {
+  for (const [lineIndex, line] of lines.entries()) {
     // Skip empty lines
     if (line.trim() === '') continue
 
@@ -74,21 +87,41 @@ export function parseFrontmatter(text: string, stringKeys: Set<string> = new Set
     const current = stack[stack.length - 1]!.obj
 
     if (rawValue === '') {
-      // Could be nested object or array — peek next line
-      const nextLineIdx = lines.indexOf(line) + 1
-      const nextLine = nextLineIdx < lines.length ? lines[nextLineIdx]! : ''
+      // A bare `key:` is ambiguous: empty array, empty object, or null. It is
+      // resolved by what follows — a list item opens an array, a more-indented
+      // key opens an object, and anything else (including end of frontmatter)
+      // is an empty array, which is what the canonical reader in
+      // `@contentrain/types` returns. Documents written today say `key: []`
+      // outright; this path is for the ones written before that.
+      //
+      // The peek used `lines.indexOf(line)`, which finds the FIRST line with
+      // this text rather than this one — two identically spelled lines in one
+      // document made the second read the first one's successor.
+      let nextLine = ''
+      for (let i = lineIndex + 1; i < lines.length; i += 1) {
+        if (lines[i]!.trim() !== '') {
+          nextLine = lines[i]!
+          break
+        }
+      }
+      const nextIndent = nextLine.length - nextLine.trimStart().length
       if (nextLine.trim().startsWith('-')) {
         current[key] = []
-      } else {
+      } else if (nextLine !== '' && nextIndent > kvIndent) {
         const nested: Record<string, unknown> = {}
         current[key] = nested
         stack.push({ obj: nested, indent: kvIndent })
+      } else {
+        current[key] = []
       }
       continue
     }
 
     if (rawValue.startsWith('[') && rawValue.endsWith(']')) {
-      current[key] = rawValue.slice(1, -1).split(',').map(s => s.trim()).filter(Boolean)
+      const inner = rawValue.slice(1, -1).trim()
+      current[key] = inner === ''
+        ? []
+        : splitFrontmatterList(inner).map(item => parseFrontmatterScalarString(item.trim()))
       continue
     }
 
@@ -101,14 +134,5 @@ export function parseFrontmatter(text: string, stringKeys: Set<string> = new Set
 }
 
 function parseValue(raw: string, forceString = false): unknown {
-  const isQuoted = (raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))
-  const unquoted = isQuoted ? raw.slice(1, -1) : raw
-  if (forceString) return unquoted
-  if (isQuoted) return unquoted
-  if (raw === 'true') return true
-  if (raw === 'false') return false
-  if (raw === 'null') return null
-  if (/^-?\d+$/.test(raw)) return parseInt(raw, 10)
-  if (/^-?\d+\.\d+$/.test(raw)) return parseFloat(raw)
-  return raw
+  return forceString ? parseFrontmatterScalarString(raw) : parseFrontmatterScalar(raw)
 }
