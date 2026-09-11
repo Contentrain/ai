@@ -3,11 +3,17 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { simpleGit } from 'simple-git'
+import { RESERVED_PATHS } from '@contentrain/types'
 import { runDoctor } from '../../src/core/doctor.js'
 
 async function writeFileSafe(path: string, content: string): Promise<void> {
   await mkdir(dirname(path), { recursive: true })
   await writeFile(path, content)
+}
+
+/** Everything a doctor report asserts, so two runs can be compared whole. */
+function reportShape(report: Awaited<ReturnType<typeof runDoctor>>) {
+  return report.checks.map(c => ({ name: c.name, pass: c.pass, severity: c.severity, detail: c.detail }))
 }
 
 vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 })
@@ -88,6 +94,31 @@ describe('runDoctor', () => {
 
     expect(report.summary.total).toBe(report.checks.length)
     expect(report.summary.passed + report.summary.failed).toBe(report.summary.total)
+  })
+
+  /**
+   * `.contentrain/` is a shared namespace: Studio, the migration engine and a
+   * customer's own tooling all write into it. Four names are reserved for
+   * files no tool in this repository owns yet (`RESERVED_PATHS`), and until
+   * one does, doctor's job is to leave them completely alone — they are not
+   * orphans, not broken content, and not evidence of a stale client.
+   *
+   * Seeding once and running doctor either side of writing them makes the
+   * reserved files the only variable: any new check that starts noticing them
+   * shows up as a changed report.
+   */
+  it('ignores the reserved .contentrain files entirely', async () => {
+    await seedMinimalProject(testDir)
+    const before = await runDoctor(testDir)
+
+    for (const path of RESERVED_PATHS) {
+      await writeFileSafe(join(testDir, path), '{"version":1}\n')
+    }
+    const after = await runDoctor(testDir)
+
+    expect(reportShape(after)).toEqual(reportShape(before))
+    expect(after.summary).toEqual(before.summary)
+    expect(after.checks.find(c => c.name === 'Orphan content')?.pass).toBe(true)
   })
 
   it('flags orphan content directories with warning severity', async () => {

@@ -1,3 +1,5 @@
+import { sortKeys } from './canonical.js'
+
 // ─── Type System ───
 
 export type FieldType =
@@ -304,6 +306,14 @@ export const PATH_PATTERNS = {
   context: '.contentrain/context.json',
   vocabulary: '.contentrain/vocabulary.json',
   model: '.contentrain/models/{modelId}.json',
+  /** Detected source capabilities and the provider chosen for each — `CapabilityManifest`. */
+  capabilities: '.contentrain/capabilities.json',
+  /** Scheduled and event-driven agent work — `AutomationDefinition[]`. */
+  automations: '.contentrain/automations.json',
+  /** Which operations need whose approval — `ApprovalPolicyFile`. */
+  approvalPolicies: '.contentrain/approval-policies.json',
+  /** Source→destination URL map, the output of a migration's `moved` entries. */
+  redirects: '.contentrain/redirects.json',
   content: {
     singleton: '.contentrain/content/{domain}/{modelId}/{locale}.json',
     collection: '.contentrain/content/{domain}/{modelId}/{locale}.json',
@@ -321,6 +331,39 @@ export const PATH_PATTERNS = {
     dictionary: '.contentrain/meta/{modelId}/{locale}.json',
   },
 } as const
+
+/**
+ * Paths this repository reserves but does not yet write.
+ *
+ * Reserving them is the point. `.contentrain/` is a shared namespace: the
+ * migration engine, Studio and a customer's own tooling all write into it. A
+ * name claimed here cannot later be taken for something else, and — more
+ * usefully — the tools that walk the directory know these four are *expected*
+ * rather than stray.
+ *
+ * The contract for them is deliberately narrow and must stay that way until a
+ * tool actually owns one:
+ *
+ * - `contentrain_doctor` and `contentrain_validate` ignore them. They are not
+ *   orphans, not broken content, and not the validator's business.
+ * - `contentrain_reconcile` treats each as one opaque file: it takes the side
+ *   that changed, and reports `file_conflict` when both sides did. It never
+ *   merges their interiors, because it does not know their interiors.
+ *
+ * Both behaviours are pinned by tests in `@contentrain/mcp`, so a future
+ * change to directory walking cannot quietly start flagging or auto-merging
+ * these files.
+ */
+export const RESERVED_PATHS = [
+  PATH_PATTERNS.capabilities,
+  PATH_PATTERNS.automations,
+  PATH_PATTERNS.approvalPolicies,
+  PATH_PATTERNS.redirects,
+] as const
+
+export function isReservedPath(path: string): boolean {
+  return (RESERVED_PATHS as readonly string[]).includes(path)
+}
 
 // ─── Validation Patterns ───
 
@@ -982,35 +1025,12 @@ export function validateFieldValue(value: unknown, fieldDef: FieldDef): Validati
 }
 
 // ─── Serialize: Pure Functions ───
+//
+// Implemented in `canonical.ts` and re-exported here: `execution.ts` hashes
+// plans with `canonicalStringify`, and this module re-exports `execution.ts`,
+// so the implementation has to sit outside the cycle.
 
-/** Recursively sort object keys — respects optional fieldOrder for top-level keys */
-export function sortKeys(obj: unknown, fieldOrder?: readonly string[]): unknown {
-  if (obj === null || obj === undefined) return undefined
-  if (Array.isArray(obj)) return obj.map(item => sortKeys(item, fieldOrder))
-  if (typeof obj !== 'object') return obj
-
-  const record = obj as Record<string, unknown>
-  const sorted: Record<string, unknown> = {}
-
-  const keys = fieldOrder
-    ? [...new Set([...fieldOrder, ...Object.keys(record).toSorted()])]
-    : Object.keys(record).toSorted()
-
-  for (const key of keys) {
-    if (!(key in record)) continue
-    const val = record[key]
-    if (val === null || val === undefined) continue
-    sorted[key] = sortKeys(val)
-  }
-
-  return sorted
-}
-
-/** Canonical JSON serialization — deterministic output for stable git diffs */
-export function canonicalStringify(data: unknown, fieldOrder?: readonly string[]): string {
-  const sorted = sortKeys(data, fieldOrder)
-  return `${JSON.stringify(sorted, null, 2)}\n`
-}
+export { canonicalStringify, sortKeys } from './canonical.js'
 
 /** Generate a 12-character hex entry ID */
 export function generateEntryId(): string {
@@ -1275,6 +1295,18 @@ export function serializeMarkdownFrontmatter(data: Record<string, unknown>, body
 // ─── Migration contracts ───
 
 export * from './migration.js'
+
+// ─── Execution, approval and source-delta contracts ───
+
+export * from './execution.js'
+
+// ─── Approval evaluator ───
+//
+// The decision procedure over the contracts above: risk + scope + policy →
+// what must be approved, and whether it has been. Pure and dependency-free, so
+// Studio, a CLI and a test all reach the same answer.
+
+export * from './approval.js'
 
 // ─── Repository provider contracts ───
 //

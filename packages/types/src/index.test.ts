@@ -36,6 +36,8 @@ import type {
 import {
   CONTENTRAIN_DIR,
   PATH_PATTERNS,
+  RESERVED_PATHS,
+  isReservedPath,
   SLUG_PATTERN,
   ENTRY_ID_PATTERN,
   LOCALE_PATTERN,
@@ -455,6 +457,27 @@ describe('@contentrain/types', () => {
       expect(PATH_PATTERNS.content.dictionary).toContain('{locale}')
       expect(PATH_PATTERNS.content.noLocale).toContain('data.json')
       expect(PATH_PATTERNS.meta.document).toContain('{slug}')
+    })
+
+    it('reserves the four names no tool writes yet', () => {
+      expect(RESERVED_PATHS).toEqual([
+        '.contentrain/capabilities.json',
+        '.contentrain/automations.json',
+        '.contentrain/approval-policies.json',
+        '.contentrain/redirects.json',
+      ])
+      // Reserved paths are literal files, not patterns — nothing substitutes into them.
+      for (const path of RESERVED_PATHS) {
+        expect(path).not.toContain('{')
+        expect(isReservedPath(path)).toBe(true)
+      }
+    })
+
+    it('does not reserve ordinary content paths', () => {
+      expect(isReservedPath('.contentrain/config.json')).toBe(false)
+      expect(isReservedPath('.contentrain/models/blog-post.json')).toBe(false)
+      expect(isReservedPath('.contentrain/content/site/blog-post/en.json')).toBe(false)
+      expect(isReservedPath('capabilities.json')).toBe(false)
     })
 
     it('validation patterns match expected formats', () => {

@@ -231,6 +231,7 @@ import {
 | `ENTRY_ID_PATTERN` | RegExp | Validates entry IDs |
 | `LOCALE_PATTERN` | RegExp | Validates ISO locale codes |
 | `CANONICAL_JSON` | Object | Deterministic serialization rules |
+| `RESERVED_PATHS` | `readonly string[]` | Four `.contentrain/` files this repository claims but does not yet write — see [Reserved paths](#reserved-paths) |
 | `SECRET_PATTERNS` | `ReadonlyArray<RegExp>` | Provider-shaped patterns behind `detectSecrets` — extend for custom secret detection. The generic `api_key = …` rule is not in this list: it fires only when `looksLikeCredential` accepts the captured tail |
 
 ### Runtime Functions
@@ -259,6 +260,21 @@ Serialize functions (pure, dependency-free):
 | `parseMarkdownFrontmatter(content)` | Parse YAML frontmatter + body from markdown |
 | `serializeMarkdownFrontmatter(data, body)` | Serialize data + body into markdown frontmatter |
 
+Execution/approval functions (pure; `computePlanHash` uses Web Crypto):
+
+| Function | Purpose |
+|----------|---------|
+| `riskRank(risk)` | Position on the risk ladder; higher is more severe |
+| `highestRisk(risks)` | The worst class in a list — how a multi-step plan is rated |
+| `isTerminalRunStatus(status)` | Whether a run will move on its own |
+| `isReservedPath(path)` | Whether a path is one of `RESERVED_PATHS` |
+| `approversFor(receipt, gate)` | Approvers recorded on a receipt for one gate |
+| `planHashPayload(plan)` | The exact canonical-JSON bytes `plan_hash` covers |
+| `computePlanHash(plan)` | `Promise<string>` — SHA-256 of that payload, lowercase hex |
+| `effectiveRisk(plan)` | The class a plan is judged at — its own, or its worst step's |
+| `requiredApprovals(plan, policy?)` | What a policy demands of a plan, before any decision |
+| `evaluateApproval(input)` | May this proceed? Requirements, who met them, and why a decision did not count |
+
 Unique constraints and relation references need external state (all entries / target existence), so they stay in MCP's validator — `validateFieldValue` covers everything schema-level.
 
 ### Git Transaction Types
@@ -268,6 +284,165 @@ Unique constraints and relation references need external state (all entries / ta
 | `SyncResult` | Result of selective file sync (synced files, skipped files, warning) |
 | `ContentrainError` | Structured error with code, message, agent hint, and developer action |
 | `ScaffoldTemplate` | Template definition for project scaffolding |
+
+## Execution & Approval Contracts
+
+`@contentrain/types` is the contract layer for operations, not just for content
+shapes. The migration engine produces plans and receipts, Studio renders the
+plan card and collects approvals, and MCP is where a plan's steps run. If each
+defined its own `RiskClass`, "destructive" would mean three different things and
+the approval guarding it would be theatre.
+
+### Risk and approval
+
+```ts
+import { RISK_CLASSES, highestRisk } from '@contentrain/types'
+
+// A survey that ends in a deploy is a deploy.
+highestRisk(['read_only', 'bulk_content', 'deployment'])  // 'deployment'
+```
+
+`RiskClass` is an ordered ladder — `read_only` → `low_risk_content` →
+`bulk_content` → `destructive_schema` → `external_effect` →
+`financially_material` → `deployment` — and a policy written for one rung is
+expected to cover everything above it.
+
+`ApprovalGate` keeps three questions separate: `plan` (before the work starts,
+on scope and cost), `change` (on the diff the agent produced), and `release`
+(on production effect). Approving what will be done is not approving what was
+produced, and neither is permission to publish it.
+
+| Type | Purpose |
+|------|---------|
+| `ApprovalRule`, `ApprovalPolicyFile` | `.contentrain/approval-policies.json` — which risk needs whose approval, in which mode (`auto` / `single` / `quorum`). Lives in git beside the content it governs, so the policy in force is the policy on the branch. Rules are additive: a policy file can only make a project stricter |
+| `ApprovalRequirement` | An outstanding demand, carrying `because` — the risk class of the rule that produced it — so a UI can say why a gate appeared |
+| `ApprovalGrant` | A decision actually given, bound to an exact `plan_hash`. Change the plan and its grants stop applying |
+| `ActorRef` | Who is acting. `kind` (`human` / `agent` / `system`) is load-bearing: an agent may never approve its own work |
+
+### Plans and receipts
+
+| Type | Purpose |
+|------|---------|
+| `ExecutionPlan` | An operation fully described before it runs: steps, union scope, risk, estimate, rollback, assumed repository state |
+| `ExecutionStep` | One tool invocation, with its own risk and scope |
+| `ExecutionScope` | What is touched — models, locales, entries, routes, files, assets, providers, external domains. An absent field means "none", not "unknown" |
+| `ExecutionReceipt` | What happened: status, approvals, checkpoints, verification, measured cost, and the scope actually touched — the same `ExecutionScope` shape, so prediction and outcome can be subtracted |
+| `RollbackPlan` | The undo as a command, not a promise. `available: false` tells the approver *before* deciding |
+| `RunStatus` | `draft → planned → awaiting_approval → approved → scheduled → queued → running → verifying → completed`, plus the interrupted states |
+| `DeploymentTarget` | Where a build is published. Carries a `secret_ref`, never a secret — this document is written to git |
+| `AutomationDefinition` | Reserved shape for `.contentrain/automations.json`; nothing reads it yet |
+
+### The evaluator
+
+```ts
+import { evaluateApproval, requiredApprovals } from '@contentrain/types'
+
+// For the plan card, before anyone has decided:
+requiredApprovals(plan, policy)
+// → [{ gate: 'release', mode: 'quorum', min_approvals: 2, because: 'deployment' }]
+
+// At the gate:
+const decision = evaluateApproval({ plan, policy, grants, commit_sha, now })
+decision.allowed          // every requirement met and the plan has not expired
+decision.outstanding      // what is still missing, with who has signed so far
+decision.rejected_grants  // decisions that did not count, each with a reason
+decision.reasons          // one line per blocker, written for a person
+```
+
+It replaces a role check. Asking "is this person an owner?" cannot express "a
+bulk publish needs a second pair of eyes even from the owner", and cannot tell a
+typo fix from a domain cutover. The evaluator asks about the action instead: its
+risk, its scope, and what the project's policy says about that combination.
+
+| Rule | Why |
+|------|-----|
+| A plan cannot understate itself | `effectiveRisk()` takes the worst of the plan's declared class and its steps', so a plan labelled `read_only` carrying a deploy step is evaluated as a deploy |
+| Each matching rule is its own requirement, all must be met | Merging two rules needs a way to combine modes, roles and counts — and every such rule has a case where the result is *looser* than one of its inputs |
+| `auto` does not climb the ladder | Every other mode covers its class and everything above it. If `auto` did too, one `auto` rule on a low rung would exempt every heavier operation above it |
+| An agent never approves | Not its own work, not anyone's. A plan's author cannot approve it either unless the project sets `allow_self_approval` — which does not extend to agents |
+| A `change` decision is about a diff | Presented with a different branch tip than the one reviewed, it does not count |
+| `now` is an input | Nothing reads the clock, so a blocked run can be explained months later by replaying the same arguments |
+
+Every rejected decision carries a machine-readable `GrantRejection` reason —
+`plan_hash_mismatch`, `commit_mismatch`, `expired`, `agent_approver`,
+`self_approval`, `role_not_permitted`, `duplicate_approver`,
+`no_matching_requirement` — because the useful question is never "is it blocked"
+but "I approved this, why is it still blocked".
+
+With no `.contentrain/approval-policies.json`, `DEFAULT_APPROVAL_POLICY`
+applies: read-only work proceeds, everything else wants one reviewer on the
+diff. Whether a project consults the evaluator at all is still governed by its
+`workflow` setting.
+
+### `plan_hash`
+
+```ts
+import { computePlanHash } from '@contentrain/types'
+
+const plan_hash = await computePlanHash(plan)
+```
+
+SHA-256 over canonical JSON (sorted keys, 2-space indent, trailing newline) of
+the plan's semantic fields. Excluded: `plan_hash` itself, `id`, `created_at`,
+`created_by`, `idempotency_key` — who built a plan, when, under which run id and
+with which deduplication key do not change what the plan will do, and
+regenerating the same operation must produce the same hash or idempotency and
+approval binding both break.
+
+Everything else is covered, so a widened scope, an added step, a raised estimate
+or a withdrawn rollback each invalidate every approval the plan had collected.
+
+Async because it uses Web Crypto, which works in Node 18+, Deno, Bun, workers
+and browsers alike — this package is consumed in all of them and must not reach
+for `node:crypto`. A non-cryptographic hash was rejected: approvals are pinned
+to this value, so a collision is an approval bypass.
+
+### `SourceDeltaPlan`
+
+The WordPress→repository delta — **not** `contentrain_reconcile`, which merges
+two git branches through their common ancestor and knows nothing about
+WordPress. A source delta must be written to the repository *before* reconcile
+runs on the git side.
+
+It carries explicit deletion tombstones, because `modified_after` is a filter on
+changed records and never reports a deletion: a post deleted in WordPress simply
+stops appearing. `deletions_detectable: false` must not be read as "nothing was
+deleted" — it means this cursor could not tell. It also carries slug moves
+(which generate redirects) and semantic conflicts, where the same record changed
+at the origin *and* in the repository.
+
+### Reserved paths
+
+`RESERVED_PATHS` names four files under `.contentrain/` that this repository has
+claimed but does not yet write:
+
+| Path | Will hold |
+|------|-----------|
+| `.contentrain/capabilities.json` | `CapabilityManifest` |
+| `.contentrain/automations.json` | `AutomationDefinition[]` |
+| `.contentrain/approval-policies.json` | `ApprovalPolicyFile` |
+| `.contentrain/redirects.json` | Source→destination URL map |
+
+`.contentrain/` is a shared namespace — Studio, the migration engine and a
+customer's own tooling all write into it — so a name claimed here cannot later
+be taken for something else, and the tools that walk the directory know these
+four are expected rather than stray.
+
+Until a tool owns one, the behaviour is narrow and pinned by tests in
+`@contentrain/mcp`:
+
+- `contentrain_doctor` and `contentrain_validate` ignore them completely. They
+  are not orphans, not broken content, and not the validator's business.
+- `contentrain_reconcile` treats each as one opaque file: it takes the side that
+  changed it, and reports `file_conflict` when both sides did. It never merges
+  their interiors — a field-level union on an approval policy would produce a
+  policy nobody wrote.
+
+::: tip Migration contracts
+The sibling family (`RawIR`, `ProjectIR`, `CapabilityManifest`,
+`MigrationHandoff`) is documented in the
+[package README](https://github.com/Contentrain/ai/tree/main/packages/types#migration-contracts).
+:::
 
 ## Import Style
 

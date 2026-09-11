@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { RESERVED_PATHS } from '@contentrain/types'
 import type { Files } from './helpers.js'
 import { FAQ_EN, FAQ_TR, contentChanges, entries, project, reconcile } from './helpers.js'
 
@@ -62,5 +63,56 @@ describe('planReconcile — unclaimed files', () => {
     const merged = JSON.parse(contentChanges(plan).find(c => c.path === '.contentrain/config.json')!.content!)
     expect(merged.workflow).toBe('review')
     expect(merged.stack).toBe('nuxt')
+  })
+})
+
+/**
+ * The four reserved names (`RESERVED_PATHS`) are files this repository has
+ * claimed but does not yet write. The reconcile contract for them is
+ * deliberately the *unclaimed* one above: whole-file, take-the-changed-side,
+ * conflict when both changed.
+ *
+ * That is not an accident of the walker, it is the guarantee — the planner
+ * must never merge the interior of a document whose meaning it does not know.
+ * A capability manifest and an approval policy are not entry maps; field-level
+ * union on one would produce a policy nobody wrote. These tests pin the
+ * behaviour per reserved path so a future "we know this file now" change has
+ * to be deliberate.
+ */
+describe('planReconcile — reserved paths stay opaque', () => {
+  const BASE = project({
+    [FAQ_EN]: entries({ 'faq-1': { question: 'Q?', answer: 'A.' } }),
+    ...Object.fromEntries(RESERVED_PATHS.map(path => [path, '{"version":1}'])),
+  })
+
+  it.each(RESERVED_PATHS)('%s: the side that changed it wins', async (path) => {
+    const theirs: Files = { ...BASE, [path]: '{"version":2}' }
+    const plan = await reconcile({ base: BASE, ours: BASE, theirs })
+    expect(plan.conflicts).toEqual([])
+    expect(contentChanges(plan).find(c => c.path === path)!.content).toBe('{"version":2}')
+  })
+
+  it.each(RESERVED_PATHS)('%s: both sides changed is a file_conflict, not a merge', async (path) => {
+    const ours: Files = { ...BASE, [path]: '{"version":2,"from":"ours"}' }
+    const theirs: Files = { ...BASE, [path]: '{"version":3,"from":"theirs"}' }
+    const plan = await reconcile({ base: BASE, ours, theirs })
+
+    expect(plan.conflicts).toHaveLength(1)
+    const conflict = plan.conflicts[0]!
+    expect(conflict.path).toBe(path)
+    expect(conflict.kind).toBe('file')
+    expect(conflict.code).toBe('file_conflict')
+    // No merged output: a plan with conflicts is not applied, and nothing
+    // may be written for the file that caused one.
+    expect(contentChanges(plan).some(c => c.path === path)).toBe(false)
+  })
+
+  it('a reserved file deleted on one side is deleted, not resurrected', async () => {
+    const path = RESERVED_PATHS[0]
+    const theirs: Files = { ...BASE }
+    delete theirs[path]
+    const plan = await reconcile({ base: BASE, ours: BASE, theirs })
+    expect(plan.conflicts).toEqual([])
+    expect(contentChanges(plan).find(c => c.path === path)!.content).toBeNull()
   })
 })
