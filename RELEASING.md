@@ -120,11 +120,69 @@ If GitHub Actions is unavailable and you need to release manually:
 
 ## 🔐 Required Secrets
 
-The GitHub `Release` workflow expects:
-
-- `NPM_TOKEN`
+None for npm. The `Release` workflow authenticates to the registry with **OIDC
+trusted publishing** (`id-token: write`, and the npm upgrade step above it —
+trusted publishing needs npm >= 11.5.1). There is no `NPM_TOKEN`, and adding one
+back would quietly replace a keyless, per-repository trust relationship with a
+long-lived credential.
 
 `GITHUB_TOKEN` is provided automatically by GitHub Actions.
+
+## 🆕 A Package's First Publish
+
+**Trusted publishing cannot create a package.** The registry accepts an OIDC
+publish only for a package that already exists and has a trusted publisher
+pointing at this repository and workflow. A brand-new package has nowhere to
+attach that to yet, so the first publish must be done once, by hand, with a
+logged-in account.
+
+This is not hypothetical: `@contentrain/verify@0.1.0` failed exactly this way on
+2026-09-11. The workflow published the other eight packages and then died on the
+ninth with
+
+```
+npm error 404 Not Found - PUT https://registry.npmjs.org/@contentrain%2fverify
+```
+
+The 404 is misleading — the registry answers a create it will not authorise with
+"not found" rather than 401/403, so that it does not leak whether a package
+exists. Read it as "you may not create this", not as "something is missing".
+
+So, for a new package:
+
+1. Merge the release PR as usual. The workflow bumps every version, writes the
+   changelogs, publishes everything it can, and fails on the new one. That
+   failure is expected and harmless **provided nothing depends on the new
+   package** — check that first, because a partial publish of a package others
+   depend on is a different and much worse problem (`workspace:*` resolves to an
+   exact version; a dependent published against a version that never reached the
+   registry is broken on install).
+2. From `main`, at the release commit — not from the feature branch, whose
+   version is the pre-bump one:
+   ```bash
+   npm login
+   git checkout main && git pull
+   cd packages/<new> && npm publish --access public
+   ```
+   Publishing the wrong version here is unrecoverable: npm burns a version
+   number permanently, and unpublishing does not free it.
+3. On npmjs.com, add the trusted publisher for the new package: repository
+   `Contentrain/ai`, workflow `release.yml`. Every later release then goes
+   through the workflow like the others.
+4. Create the tag the workflow did not get to, on the release commit:
+   ```bash
+   git tag -a "@contentrain/<new>@<version>" <release-sha> -m "@contentrain/<new>@<version>"
+   git push origin "refs/tags/@contentrain/<new>@<version>"
+   ```
+
+### The MCP Registry step does not catch up on its own
+
+`Publish to MCP Registry` runs only when the same workflow run published
+`@contentrain/mcp`. If a run publishes mcp and then fails on a later package,
+the registry step is skipped and stays behind — and re-running does not fix it,
+because `changeset publish` will not republish a version already on npm, so mcp
+is absent from `publishedPackages` the second time. Either run `mcp-publisher`
+by hand or accept that the registry catches up at the next mcp release.
 
 ## 📦 Notes
 
