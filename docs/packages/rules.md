@@ -1,20 +1,17 @@
 ---
-title: Rules & Skills
-description: Complete reference for @contentrain/rules and @contentrain/skills — the policy and procedural layers that govern how AI agents interact with Contentrain
+title: Rules
+description: "@contentrain/rules — the always-loaded policy layer: the constraints an AI agent must hold to whatever workflow it is running"
 order: 4
 slug: rules
 ---
 
-# Rules & Skills
+# Rules
 
-[![rules npm](https://img.shields.io/npm/v/@contentrain/rules?label=rules)](https://www.npmjs.com/package/@contentrain/rules) [![skills npm](https://img.shields.io/npm/v/@contentrain/skills?label=skills)](https://www.npmjs.com/package/@contentrain/skills)
+[![npm version](https://img.shields.io/npm/v/@contentrain/rules)](https://www.npmjs.com/package/@contentrain/rules)
 
-Contentrain splits agent guidance into two complementary packages:
+`@contentrain/rules` is the **policy** layer: what is allowed and what is not, loaded for every conversation regardless of the task. Its counterpart, [`@contentrain/skills`](/packages/skills), is the procedural layer — the step-by-step workflows an agent loads on demand.
 
-- **`@contentrain/rules`** — the policy layer (what is allowed, what is not)
-- **`@contentrain/skills`** — the procedural layer (step-by-step workflows)
-
-Together, they ensure that any AI agent — whether Claude, GPT, or a custom model — follows the same quality standards and operational patterns when working with Contentrain content.
+Together they mean any agent — Claude, GPT, or a custom model — holds the same quality standards and operational patterns when it touches Contentrain content.
 
 ## Why Separate Rules and Skills?
 
@@ -47,9 +44,7 @@ See [Ecosystem Map](/ecosystem) for the full package map, then compare the Studi
 - [Studio Ecosystem Map](https://docs.contentrain.io/guide/ecosystem)
 - [Studio Architecture](https://docs.contentrain.io/developer/architecture)
 
-## Rules (`@contentrain/rules`)
-
-### What Rules Govern
+## What Rules Govern
 
 Rules define non-negotiable constraints across several domains:
 
@@ -67,7 +62,7 @@ Rules define non-negotiable constraints across several domains:
 | Workflow Rules | `workflow-rules.md` | Branch management, review process, merge criteria |
 | Normalize Rules | `normalize-rules.md` | Extraction patterns, reuse expressions, scope safety |
 
-### Prompt Layers
+## Prompt Layers
 
 Rules include mode-specific prompt layers that agents load based on their current task:
 
@@ -78,11 +73,11 @@ Rules include mode-specific prompt layers that agents load based on their curren
 | `normalize-mode.md` | Additional context for normalize (scan/extract/reuse) |
 | `review-mode.md` | Additional context for content review and approval |
 
-### Context Bridge
+## Context Bridge
 
 The `context-bridge.md` file defines how agents should read and interpret `.contentrain/context.json` — the metadata file that MCP updates after every write operation. This ensures agents understand project state without making redundant tool calls.
 
-### Programmatic Access
+## Programmatic Access
 
 ```ts
 import {
@@ -93,10 +88,10 @@ import {
   STACKS,
 } from '@contentrain/rules'
 
-// Check if a tool exists
-console.log(MCP_TOOLS.length)                           // 24
+// The full registry — not the subset any one session lists
+console.log(MCP_TOOLS.length)                           // 27
 console.log(MCP_TOOLS.includes('contentrain_validate')) // true
-console.log(MCP_TOOLS.includes('contentrain_merge'))    // true
+console.log(MCP_TOOLS.includes('contentrain_reconcile')) // true
 console.log(MCP_TOOLS.includes('contentrain_doctor'))   // true
 
 // Path to essential guardrails markdown
@@ -106,84 +101,11 @@ console.log(ESSENTIAL_RULES_FILE) // 'essential/contentrain-essentials.md'
 console.log(FIELD_TYPES.length) // 27
 ```
 
-## Skills (`@contentrain/skills`)
+## Skills live in their own package
 
-### Agent Skills (Standard Format)
+The procedural half — 16 Agent Skills, 9 framework guides, and the progressive-disclosure model that keeps them cheap — moved to its own page: **[Skills](/packages/skills)**.
 
-Skills follow the [Agent Skills standard](https://agentskills.io) with progressive disclosure: each skill has a `SKILL.md` (loaded on activation, < 500 lines) and optional `references/` (loaded on demand).
-
-| Skill | Directory | When to Use |
-|-------|-----------|------------|
-| Contentrain | `skills/contentrain/` | Core architecture, MCP tools, content formats |
-| Normalize | `skills/contentrain-normalize/` | Extract hardcoded strings, patch source files |
-| Quality | `skills/contentrain-quality/` | Content quality, SEO, accessibility, media |
-| SDK | `skills/contentrain-sdk/` | @contentrain/query usage (local + CDN) |
-| Content | `skills/contentrain-content/` | Add/update content entries |
-| Model | `skills/contentrain-model/` | Create/modify model definitions |
-| Init | `skills/contentrain-init/` | Initialize Contentrain project |
-| Bulk | `skills/contentrain-bulk/` | Batch operations |
-| Validate | `skills/contentrain-validate-fix/` | Validate and auto-fix |
-| Review | `skills/contentrain-review/` | Review content changes |
-| Translate | `skills/contentrain-translate/` | Multi-locale translation |
-| Generate | `skills/contentrain-generate/` | Generate SDK client |
-| Serve | `skills/contentrain-serve/` | Local review/normalize UI |
-| Diff | `skills/contentrain-diff/` | Branch content diffs |
-| Doctor | `skills/contentrain-doctor/` | Project health check |
-
-Each skill directory contains:
-```
-skills/{name}/
-├── SKILL.md           # Instructions (< 500 lines, < 5000 tokens)
-└── references/        # Detailed reference docs (loaded on demand)
-    └── *.md
-```
-
-### Framework Guides
-
-Skills include framework-specific guides that teach agents how Contentrain integrates with popular stacks:
-
-| Framework | File | Key Topics |
-|-----------|------|------------|
-| Vue | `vue.md` | Composition API, `<script setup>`, reactive content |
-| Nuxt | `nuxt.md` | `useAsyncData`, server routes, Nuxt Content integration |
-| Next.js | `next.md` | RSC, App Router, `getStaticProps`, ISR patterns |
-| Astro | `astro.md` | Frontmatter queries, content collections, islands |
-| SvelteKit | `sveltekit.md` | `+page.server.ts` loaders, `$lib` patterns |
-| React | `react.md` | Hooks, context providers, client-side queries |
-| Expo | `expo.md` | Metro config, native module resolution |
-| React Native | `react-native.md` | Platform-specific content, Metro resolver |
-| Node.js | `node.md` | Server-side usage, Express/Fastify integration |
-
-### Programmatic Access
-
-```ts
-import { AGENT_SKILLS, WORKFLOW_SKILLS, FRAMEWORK_GUIDES } from '@contentrain/skills'
-
-// Agent Skills catalog (name + description)
-console.log(AGENT_SKILLS)
-
-// Backward compat
-console.log(WORKFLOW_SKILLS)
-console.log(FRAMEWORK_GUIDES.includes('next'))
-```
-
-You can also install skills directly via the [Agent Skills CLI](https://agentskills.io):
-
-```bash
-# Install all 15 skills
-npx skills add Contentrain/ai/packages/skills
-
-# Install a specific skill
-npx skills add Contentrain/ai/packages/skills --skill contentrain-normalize
-
-# Install to a specific agent
-npx skills add Contentrain/ai/packages/skills --agent claude-code
-
-# List available skills
-npx skills add Contentrain/ai/packages/skills --list
-```
-
-Works with Claude Code, Cursor, Windsurf, GitHub Copilot, OpenAI Codex, Gemini CLI, and 40+ other agents.
+The two packages ship and version separately, and an agent can load either without the other. What follows applies to both, because `contentrain init` distributes both.
 
 ## IDE Integration
 
@@ -234,23 +156,6 @@ At every step, rules constrain the agent:
 The most important rule across all Contentrain operations: **always call write tools with `dry_run: true` first**, review the output, then call with `dry_run: false`. This applies to content_save, model_save, apply, and all other write operations.
 :::
 
-## Agent Prompt Examples
-
-Here are natural-language prompts that trigger different skill workflows:
-
-| Prompt | Skill Triggered |
-|--------|----------------|
-| "Set up Contentrain in this project" | `contentrain-init` |
-| "Create a FAQ model with question and answer fields" | `contentrain-model` |
-| "Add 5 blog posts about TypeScript" | `contentrain-content` |
-| "Extract the hardcoded strings from my landing page" | `contentrain-normalize` |
-| "Translate all content to French" | `contentrain-translate` |
-| "Check my content for errors and fix them" | `contentrain-validate-fix` |
-| "Generate the SDK client" | `contentrain-generate` |
-| "Start the review UI" | `contentrain-serve` |
-| "Review the pending content branches" | `contentrain-review` |
-| "Copy all English content to Turkish" | `contentrain-bulk` |
-
 ## Install
 
 ```bash
@@ -279,13 +184,10 @@ contentrain skills --list
 
 The repo root includes an [`AGENTS.md`](https://github.com/Contentrain/ai/blob/main/AGENTS.md) file following the [AGENTS.md standard](https://agents.md). This file provides project-level guidance for any AI agent (Codex, Copilot, Gemini CLI, etc.) working with the repo — skill catalog, essential rules reference, key constraints, and framework guides.
 
-## Embedded SDK Skill
-
-`@contentrain/query` ships an embedded Agent Skill at `skills/contentrain-query/SKILL.md` inside the npm package. AI coding agents can discover and load it for type-safe SDK usage guidance, bundler configuration, and framework integration patterns.
-
 ## Related Pages
 
-- [MCP Tools](/packages/mcp) — The deterministic execution layer that rules and skills govern
+- [Skills](/packages/skills) — the procedural layer these constraints hold around
+- [MCP Tools](/packages/mcp) — the deterministic execution layer that rules govern
 - [CLI](/packages/cli) — `contentrain init` installs IDE rules automatically
-- [Query SDK](/packages/sdk) — The generated client for consuming content (ships embedded skill)
-- [Contentrain Studio](/studio) — Chat-first team UI where agents use the same rules and skills through a web interface
+- [Query SDK](/packages/sdk) — the generated client for consuming content (ships an embedded skill)
+- [Contentrain Studio](/studio) — chat-first team UI where agents use the same rules through a web interface

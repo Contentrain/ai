@@ -257,11 +257,14 @@ All packages are published on npm:
 | Package | Description | Install |
 |---|---|---|
 | [`contentrain`](https://www.npmjs.com/package/contentrain) | CLI (init, serve, generate, validate) | `npx contentrain init` |
-| [`@contentrain/mcp`](https://www.npmjs.com/package/@contentrain/mcp) | 26 MCP tools for AI agents | `pnpm add @contentrain/mcp` |
+| [`@contentrain/mcp`](https://www.npmjs.com/package/@contentrain/mcp) | 27 MCP tools for AI agents | `pnpm add @contentrain/mcp` |
 | [`@contentrain/query`](https://www.npmjs.com/package/@contentrain/query) | TypeScript query SDK (optional) | `pnpm add @contentrain/query` |
 | [`@contentrain/types`](https://www.npmjs.com/package/@contentrain/types) | Shared TypeScript types | `pnpm add @contentrain/types` |
 | [`@contentrain/rules`](https://www.npmjs.com/package/@contentrain/rules) | AI agent quality rules | `pnpm add @contentrain/rules` |
-| [`@contentrain/skills`](https://www.npmjs.com/package/@contentrain/skills) | AI agent workflow procedures | `pnpm add @contentrain/skills` |
+| [`@contentrain/skills`](https://www.npmjs.com/package/@contentrain/skills) | 16 AI agent workflow skills | `pnpm add @contentrain/skills` |
+| [`@contentrain/wp-import`](https://www.npmjs.com/package/@contentrain/wp-import) | WordPress WXR/REST → `.contentrain` | `npx contentrain import export.xml` |
+| [`@contentrain/emitter-astro`](https://www.npmjs.com/package/@contentrain/emitter-astro) | ProjectIR → an Astro project | `pnpm add @contentrain/emitter-astro` |
+| [`@contentrain/verify`](https://www.npmjs.com/package/@contentrain/verify) | Offline gates for a built site | `npx @contentrain/verify dist` |
 
 ::: tip Updating Skills & Rules
 After upgrading packages, run `contentrain skills --update` to refresh IDE skills and rules. Use `contentrain skills --list` to check installation status.
@@ -299,6 +302,7 @@ Want to skip setup? Start from a production-ready template with content models, 
 - [Normalize Flow](/guides/normalize) — Extract hardcoded strings from existing code
 - [i18n Workflow](/guides/i18n) — Add languages to your content
 - [Framework Integration](/guides/frameworks) — Platform-specific setup patterns
+- [WordPress Migration](/guides/migration) — Import a WordPress site, and what the open packages do and do not do
 
 ::: info Contentrain Studio
 [Contentrain Studio](/studio) is the open-core team operations surface for Git-native structured content. Teams can self-host the AGPL core or use the managed plans (Starter/Pro/Enterprise) when they want web-based collaboration, review, media, and CDN delivery on top of the same content model.

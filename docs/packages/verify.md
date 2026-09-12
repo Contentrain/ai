@@ -1,4 +1,11 @@
-# @contentrain/verify
+---
+title: Verify
+description: "@contentrain/verify — portable, offline gates for a migrated site: identity, indexing, status, hreflang, structured data, navigation and assets, checked over documents you already have"
+order: 9
+slug: verify
+---
+
+# Verify
 
 Portable gates for a migrated site: identity, indexing, status, hreflang,
 structured data, navigation and assets — checked over documents you already
@@ -212,6 +219,9 @@ written.
 
 ## Related Pages
 
+- [WordPress Migration](/guides/migration) — the chain this package gates
+- [Astro Emitter](/packages/emitter-astro) — what usually produces the documents checked here
+- [WordPress Import](/packages/wp-import) — the other open end of the pipeline
 - [Types](/packages/types) — the shared contracts
 - [Query SDK](/packages/sdk)
 - [MCP Tools](/packages/mcp)
