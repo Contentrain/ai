@@ -191,10 +191,20 @@ const MATCHERS = [
     },
   },
   { re: /\b(\d+)-tool\b/gi, fact: () => 'mcp-tools' },
+  {
+    // "MCP tools (17 operations)" — the registry under another noun. Guarded to
+    // the same line mentioning MCP or tools, because "operations" on its own is
+    // ordinary English and a check that fires on prose gets switched off.
+    re: /\b(\d+)\s+operations\b/gi,
+    guard: /MCP|\btools?\b/i,
+    fact: () => 'mcp-tools',
+  },
   { re: /\b(\d+)\s+`?contentrain_media_\*`?\s+tools?\b/gi, fact: () => 'mcp-tools-media' },
   {
-    // "(22 core + 5 media)" — two facts on one line
-    re: /\((\d+)\s+core\s*\+\s*(\d+)\s+media\)/gi,
+    // "22 core + 5 media" — two facts on one line, with or without the
+    // surrounding parentheses. Requiring them missed the rules README, which
+    // writes the same split as "26 MCP tool names: 21 core + 5 media".
+    re: /\b(\d+)\s+core\s*\+\s*(\d+)\s+media\b/gi,
     fact: () => 'mcp-tools-core',
     second: { group: 2, fact: 'mcp-tools-media' },
   },
@@ -224,6 +234,7 @@ function findClaims(text) {
     for (const matcher of MATCHERS) {
       matcher.re.lastIndex = 0
       let m
+      if (matcher.guard && !matcher.guard.test(line)) continue
       while ((m = matcher.re.exec(line)) !== null) {
         claims.push({ fact: matcher.fact(m), found: Number(m[1]), line: i + 1, text: m[0].trim() })
         if (matcher.second) {
@@ -254,6 +265,29 @@ function findClaims(text) {
  */
 const EXTRA_FILES = ['README.md', 'AGENTS.md']
 
+/**
+ * Every package's own README. These are what npm renders, so they are read
+ * more than anything else the repo ships — and until now nothing checked them.
+ *
+ * CHANGELOGs are deliberately excluded everywhere: "19-tool" in a changelog is
+ * a true statement about the release it describes, and checking it would
+ * manufacture permanent false positives out of correct history.
+ */
+function packageReadmes() {
+  const out = []
+  const walk = (dir, depth) => {
+    if (depth > 2) return
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.name === 'node_modules' || e.name.startsWith('.')) continue
+      const full = join(dir, e.name)
+      if (e.isDirectory()) walk(full, depth + 1)
+      else if (e.name === 'README.md') out.push(full)
+    }
+  }
+  walk(join(ROOT, 'packages'), 0)
+  return out.toSorted()
+}
+
 function docsFiles() {
   const out = []
   const walk = (dir) => {
@@ -267,6 +301,7 @@ function docsFiles() {
   }
   walk(DOCS)
   for (const name of EXTRA_FILES) out.push(join(ROOT, name))
+  out.push(...packageReadmes())
   return out
 }
 
@@ -290,6 +325,10 @@ const HISTORICAL_DRIFT = [
   { fact: 'agent-skills', wrong: 15, line: 'Installs 15 Agent Skills + essential rules across detected IDEs' },
   { fact: 'agent-skills', wrong: 15, line: 'Published under `skills/` — 15 production skills:' },
   { fact: 'capability-keys', wrong: 24, line: 'It is evidence-based detection across 24 capability keys — `seo`, `forms`, ...' },
+  { fact: 'mcp-tools', wrong: 17, line: '- Contentrain MCP tools (17 operations)' },
+  { fact: 'mcp-tools', wrong: 26, line: '- `MCP_TOOLS` — 26 MCP tool names: 21 core + 5 media (`contentrain_media_*`)' },
+  { fact: 'mcp-tools-core', wrong: 21, line: '- `MCP_TOOLS` — 26 MCP tool names: 21 core + 5 media (`contentrain_media_*`)' },
+  { fact: 'mcp-tools', wrong: 22, line: '| @contentrain/mcp | 22 MCP tools (scan, apply, validate, merge, reconcile, doctor...) |' },
 ]
 
 function selfTest(facts) {
