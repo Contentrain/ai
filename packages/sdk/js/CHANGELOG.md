@@ -1,5 +1,12 @@
 # @contentrain/query
 
+## 7.3.3
+
+### Patch Changes
+
+- Updated dependencies [897834b]
+  - @contentrain/types@1.15.0
+
 ## 7.3.2
 
 ### Patch Changes
@@ -17,7 +24,7 @@
   | `He said "Hi"`          | `He said \"Hi\"` — quotes stripped without decoding the escapes                |
   | `C:\path\to`            | `C:\\path\\to`, doubling again on every further save                           |
   | `line one` ⏎ `line two` | `line one` — the rest was written as frontmatter lines the reader then skipped |
-  | ` padded `              | `padded`                                                                       |
+  | `padded`                | `padded`                                                                       |
   | `'42'` (a string)       | `42` (a number)                                                                |
   | `true` (a boolean)      | `'true'` (a string)                                                            |
 
