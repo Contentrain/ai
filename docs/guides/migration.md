@@ -151,6 +151,56 @@ If the project id does not exist yet, emit without it and write `src/data/runtim
 
 It is MIT and lives in `@contentrain/types`, so the closed engine, Studio, and any third-party tool agree on what a finished migration looks like.
 
+## How the closed step is held to account
+
+The open packages can be read. The analysis in the middle cannot, so it is worth
+saying plainly what it is measured against — not because you have to run any of
+this, but because "the engine handles it" is a claim, and a claim needs a
+method behind it.
+
+::: info This is not a checklist for your migration
+It describes how Contentrain decides the migration engine is ready, not
+something you are expected to do. Your own gate is
+[`@contentrain/verify`](/packages/verify).
+:::
+
+**An unseen cohort.** A host counts as unseen when it appears in no previous
+acceptance manifest, is absent from the development corpus, and has never been
+carried in any run. The runner checks for contamination before it starts, and
+refuses to start if it finds any. Measuring an engine on a site it has already
+been taught is not measurement.
+
+**A frozen engine.** For the whole run, the source commit, the working tree, and
+a sha256 table of every package's built output are bit-identical before and
+after — and nobody changes code or `dist` while a run is open. Freezing is a
+digest, not a date: a date says when, a digest says *what*, and only the second
+one survives someone rebuilding mid-run.
+
+**A stated denominator.** A site is eligible when discovery finds REST reachable
+and standard post data behind it. Sites dominated by custom types, page-only
+sites, and access-blocked sites are counted separately rather than folded in —
+they are a different problem, and burying them in the denominator would flatter
+the result. A site that could not be measured because the network failed leaves
+the denominator; it is not recorded as a failure.
+
+Two rates come out of that:
+
+| Rate | Numerator | Denominator |
+|---|---|---|
+| **Build** | sites that built | eligible sites run |
+| **Self-serve** | sites that needed no human intervention at all | eligible sites run |
+
+Self-serve is the one that matters, and it is deliberately unforgiving: the
+decision must be ACCEPT with an empty punch list — every target over both the
+desktop and the mobile visual-fidelity threshold, content coming from data
+rather than baked into a template, the layout family proven general rather than
+fitted to one page, zero runtime references left pointing at the old server,
+menu behaviour preserved, and the result editable afterwards. One item
+outstanding and the site is not self-serve, however good it looks.
+
+Building a site is easy to claim. Building it so that nobody had to touch it
+afterwards is the thing being measured.
+
 ## Doing this with an agent
 
 The `contentrain-migrate-wordpress` skill drives the open parts of this chain — import, wire the content to a framework, validate. Install it with the rest:
