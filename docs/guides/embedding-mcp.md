@@ -376,7 +376,7 @@ A GitHub Actions job:
 4. Drive it with an MCP client
 5. Let `contentrain_submit` push the `cr/*` branch
 
-All 19 core tools are available because the runner has `LocalProvider` (media tools need a media-capable provider).
+All 22 core tools are available because the runner has `LocalProvider` (media tools need a media-capable provider).
 
 ### Scripted automation
 

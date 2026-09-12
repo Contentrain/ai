@@ -316,7 +316,7 @@ contentrain skills --update  # Force update
 contentrain skills --list    # Show installed status per IDE
 ```
 
-Installs 15 Agent Skills + essential rules across detected IDEs (Claude Code, Cursor, Windsurf, GitHub Copilot).
+Installs 16 Agent Skills + essential rules across detected IDEs (Claude Code, Cursor, Windsurf, GitHub Copilot).
 
 ---
 
@@ -340,7 +340,7 @@ Serves REST endpoints (`/api/status`, `/api/content`, `/api/branches`, `/api/doc
 contentrain serve --stdio
 ```
 
-For IDE agents. Uses `LocalProvider`, so it serves the 19 core tools over stdio (the `contentrain_media_*` tools need a media-capable provider such as Studio MCP Cloud).
+For IDE agents. Uses `LocalProvider`, so it serves the 22 core tools over stdio (the `contentrain_media_*` tools need a media-capable provider such as Studio MCP Cloud).
 
 #### MCP HTTP
 
