@@ -237,11 +237,17 @@ pnpm lint          # oxlint, warnings treated as errors
 pnpm docs:check    # the docs must not state a number the code disagrees with
 ```
 
-`pnpm docs:check` resolves counts — MCP tools, skills, field types, capability
-keys — from the packages that own them and compares every place the docs,
-this README and `AGENTS.md` state one. It needs `pnpm build` first, and it
-self-tests against real drift from this repo's history before it runs, so a
-matcher that stops matching fails loudly instead of passing silently.
+`pnpm docs:check` runs two guards, both needing `pnpm build` first:
+
+- **facts** — resolves counts (MCP tools, skills, field types, capability keys)
+  from the packages that own them and compares every place the docs, this
+  README and `AGENTS.md` state one.
+- **examples** — every `@contentrain/*` import in a documented example must
+  name a real export, and no example may mix CommonJS with a top-level `await`
+  (a shape that runs in no module system at all).
+
+Both self-test against real defects from this repo's history before they run,
+so a check that stops catching fails loudly instead of passing silently.
 
 See [`RELEASING.md`](RELEASING.md) for the versioning and publish workflow.
 

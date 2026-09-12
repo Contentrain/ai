@@ -51,7 +51,7 @@ jobs:
       - name: Docs facts in sync
         run: |
           pnpm docs:check || {
-            echo "::error::The docs layer states a number that no longer matches the code. Run 'pnpm docs:check' for the list."
+            echo "::error::The docs disagree with the code — a stale number, or an example whose imports no longer resolve. Run 'pnpm docs:check' for the list."
             exit 1
           }
 
