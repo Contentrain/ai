@@ -43,7 +43,7 @@
       "plugin:build": "node scripts/build-plugin.mjs",
     "release:check": "node scripts/release-check.mjs",
     "release:pack": "node scripts/release-pack.mjs",
-    "docs:check": "node scripts/check-docs-facts.mjs",
+    "docs:check": "node scripts/check-docs-facts.mjs && node scripts/check-docs-examples.mjs",
   "docs:dev": "pnpm --dir docs dev",
     "docs:build": "pnpm --dir docs build",
     "docs:preview": "pnpm --dir docs preview"
