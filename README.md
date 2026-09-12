@@ -176,7 +176,7 @@ See [`AGENTS.md`](AGENTS.md) for the full skill catalog and agent guidance.
 
 | Package | npm | Role |
 |---|---|---|
-| [`@contentrain/mcp`](packages/mcp) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp) | 26 MCP tools + stdio / HTTP transport + Local / GitHub / GitLab providers |
+| [`@contentrain/mcp`](packages/mcp) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp) | 27 MCP tools + stdio / HTTP transport + Local / GitHub / GitLab providers |
 | [`contentrain`](packages/cli) | [![npm](https://img.shields.io/npm/v/contentrain)](https://www.npmjs.com/package/contentrain) | CLI + Serve UI + MCP stdio entrypoint |
 | [`@contentrain/query`](packages/sdk/js) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query) | Generated TypeScript query SDK |
 | [`@contentrain/types`](packages/types) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Ftypes)](https://www.npmjs.com/package/@contentrain/types) | Shared type definitions + constants |
@@ -233,7 +233,15 @@ npx contentrain studio connect # connect repo to Studio project
 
 ```bash
 pnpm install && pnpm build && pnpm test
+pnpm lint          # oxlint, warnings treated as errors
+pnpm docs:check    # the docs must not state a number the code disagrees with
 ```
+
+`pnpm docs:check` resolves counts — MCP tools, skills, field types, capability
+keys — from the packages that own them and compares every place the docs,
+this README and `AGENTS.md` state one. It needs `pnpm build` first, and it
+self-tests against real drift from this repo's history before it runs, so a
+matcher that stops matching fails loudly instead of passing silently.
 
 See [`RELEASING.md`](RELEASING.md) for the versioning and publish workflow.
 

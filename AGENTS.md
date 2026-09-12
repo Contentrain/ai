@@ -9,7 +9,7 @@ MIT-licensed monorepo for Contentrain's open-source packages: MCP tools, CLI, Ty
 
 ## Agent Skills
 
-This repo ships 15 Agent Skills following the [Agent Skills standard](https://agentskills.io). Install them with:
+This repo ships 16 Agent Skills following the [Agent Skills standard](https://agentskills.io). Install them with:
 
 ```bash
 npx skills add contentrain/contentrain-ai --skill='*'
@@ -49,7 +49,7 @@ Load `packages/rules/essential/contentrain-essentials.md` (~120 lines) for compa
 - Four model kinds (singleton, collection, document, dictionary)
 - Every model declares `title_field` — the field shown as an entry's title; dictionaries use `"key"`
 - Content format rules (JSON only, canonical serialization)
-- 19 MCP tools with mandatory calling protocols
+- 27 MCP tools with mandatory calling protocols
 - Git workflow (dedicated contentrain branch, worktree isolation)
 - Security boundaries
 
@@ -57,7 +57,7 @@ Load `packages/rules/essential/contentrain-essentials.md` (~120 lines) for compa
 
 | Directory | npm | What it does |
 |-----------|-----|-------------|
-| `packages/mcp` | `@contentrain/mcp` | 19 MCP tools — content operations engine |
+| `packages/mcp` | `@contentrain/mcp` | 27 MCP tools — content operations engine |
 | `packages/cli` | `contentrain` | CLI + Serve UI + MCP stdio entrypoint |
 | `packages/sdk/js` | `@contentrain/query` | Generated TypeScript query SDK |
 | `packages/types` | `@contentrain/types` | Shared type definitions |
