@@ -1,7 +1,7 @@
 # `@contentrain/skills`
 
 [![npm version](https://img.shields.io/npm/v/%40contentrain%2Fskills?label=%40contentrain%2Fskills)](https://www.npmjs.com/package/@contentrain/skills)
-[![Agent Skills](https://img.shields.io/badge/Agent_Skills-15_skills-8B5CF6)](https://agentskills.io)
+[![Agent Skills](https://img.shields.io/badge/Agent_Skills-16_skills-8B5CF6)](https://agentskills.io)
 [![GitHub source](https://img.shields.io/badge/source-Contentrain%2Fai-181717?logo=github)](https://github.com/Contentrain/ai/tree/main/packages/skills)
 [![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io/packages/skills)
 
@@ -45,7 +45,7 @@ Works with Claude Code, Cursor, Windsurf, GitHub Copilot, OpenAI Codex, Gemini C
 
 ### Agent Skills (standard format)
 
-Published under `skills/` — 15 production skills:
+Published under `skills/` — 16 production skills:
 
 | Skill | Description |
 |-------|-------------|
@@ -128,7 +128,7 @@ This reduces always-loaded context from thousands of lines to just the essential
 
 `@contentrain/skills` is kept in lockstep with the MCP tool registry via cross-package parity tests (`tests/mcp-parity.test.ts`):
 
-- `skills/contentrain/references/mcp-tools.md` must have an `### <tool>` heading for every tool in the MCP `TOOL_NAMES` registry (currently 26: 21 core + 5 media).
+- `skills/contentrain/references/mcp-tools.md` must have an `### <tool>` heading for every tool in the MCP `TOOL_NAMES` registry (currently 27: 22 core + 5 media).
 - Key skills (normalize, translate) must not reference legacy `contentrain/{operation}/...` branch prefixes — MCP now emits `cr/*`.
 
 When MCP's surface changes, these tests fail until the skill docs catch up.
