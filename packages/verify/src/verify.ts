@@ -5,7 +5,8 @@ import { CHECK_GROUPS } from './types.js'
 import type { Context } from './checks.js'
 import {
   assetChecks, identityChecks, indexingChecks, internationalChecks, navigationChecks,
-  redirectChecks, sitemapStaleChecks, statusChecks, structuredChecks,
+  notFoundPageChecks, redirectChecks, sitemapStaleChecks, sourceOriginChecks,
+  statusChecks, structuredChecks,
 } from './checks.js'
 import { identity } from './url.js'
 
@@ -28,6 +29,14 @@ function absentInputs(input: VerifyInput, groups: readonly CheckGroup[]): { grou
   }
   if (!input.redirects?.length && groups.includes('status')) {
     skipped.push({ group: 'status', reason: 'no redirect rules — chain and target checks did not run' })
+  }
+  if (!input.build && groups.includes('status')) {
+    skipped.push({ group: 'status', reason: 'not a build directory — the 404 page check did not run' })
+  }
+  if (!input.options?.sourceOrigin && groups.includes('assets')) {
+    skipped.push({ group: 'assets', reason: 'no sourceOrigin — the old-host reference scan did not run' })
+  } else if (!input.files?.length && groups.includes('assets')) {
+    skipped.push({ group: 'assets', reason: 'no stylesheet or script contents — the old-host scan covered HTML only' })
   }
   return skipped
 }
@@ -75,7 +84,9 @@ export function verify(input: VerifyInput): VerifyReport {
   // Site-wide checks: these read the whole set, not one document.
   run('indexing', () => sitemapStaleChecks(ctx))
   run('status', () => redirectChecks(ctx))
+  run('status', () => notFoundPageChecks(ctx))
   run('international', () => internationalChecks(ctx))
+  run('assets', () => sourceOriginChecks(ctx))
 
   const counts: Record<Severity, number> = { error: 0, warning: 0, info: 0 }
   for (const item of findings) counts[item.severity] += 1

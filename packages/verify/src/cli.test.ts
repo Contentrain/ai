@@ -17,7 +17,7 @@ async function write(path: string, content: string): Promise<void> {
   await writeFile(full, content)
 }
 
-const clean = (url: string) => `<html><head>
+const clean = (url: string) => `<html lang="en"><head>
 <title>${url}</title>
 <meta name="description" content="d">
 <meta property="og:title" content="t"><meta property="og:type" content="website"><meta property="og:url" content="${SITE}${url}">
@@ -67,6 +67,7 @@ describe('loadSiteDirectory', () => {
 describe('main', () => {
   it('exits 0 on a clean build and 1 when something is an error', async () => {
     await write('index.html', clean('/'))
+    await write('404.html', clean('/404'))
     const ok = capture()
     expect(await main([dir, '--site', SITE], ok.io)).toBe(0)
     expect(ok.lines.join('\n')).toContain('PASS')
@@ -79,15 +80,18 @@ describe('main', () => {
 
   it('prints JSON a caller can parse', async () => {
     await write('index.html', clean('/'))
+    await write('404.html', clean('/404'))
     const io = capture()
     expect(await main([dir, '--site', SITE, '--json'], io.io)).toBe(0)
     const report = JSON.parse(io.lines[0]!) as { passed: boolean, documents: number }
     expect(report.passed).toBe(true)
-    expect(report.documents).toBe(1)
+    // The page and the 404 page a build must carry.
+    expect(report.documents).toBe(2)
   })
 
   it('reads redirect rules from a file', async () => {
     await write('index.html', clean('/'))
+    await write('404.html', clean('/404'))
     const rules = join(dir, 'redirects.json')
     await writeFile(rules, JSON.stringify([{ from: '/old', to: '/gone', status: 301 }]))
     const io = capture()

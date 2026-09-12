@@ -11,7 +11,7 @@ function page(url: string, over: { head?: string, body?: string, status?: number
     url,
     status: over.status ?? 200,
     headers: over.headers,
-    html: `<html><head>
+    html: `<html lang="en"><head>
 <title>${url}</title>
 <meta name="description" content="About ${url}">
 <meta property="og:title" content="${url}">
@@ -294,6 +294,129 @@ describe('assets', () => {
     const after = page('/a', { body: '<img src="/i.png" alt="">' })
     const input: VerifyInput = { site: SITE, documents: [after], baseline: { documents: [before] }, assets: ['/i.png'] }
     expect(one(input, 'assets.alt-lost').detail).toBe('/i.png')
+  })
+})
+
+describe('the 404 page', () => {
+  const notFound = (url: string) => ({
+    ...page(url),
+    html: page(url).html.replace('<p>content</p>', '<h1>404 \u2014 Page not found</h1>'),
+  })
+
+  /**
+   * A static host hands this document to a visitor who asked for something
+   * else. Every check that assumes "served at this URL" is wrong about it —
+   * and the soft-404 check would fail every site that has a correct 404 page,
+   * because saying "not found" briefly is exactly what one does.
+   */
+  it('is not a soft 404', () => {
+    const input: VerifyInput = { site: SITE, documents: [notFound('/404.html')] }
+    expect(findings(input, 'status.soft-404')).toEqual([])
+    // The same body at a real address still is one.
+    expect(findings({ site: SITE, documents: [notFound('/gone')] }, 'status.soft-404')).toHaveLength(1)
+  })
+
+  it('is not asked for a canonical or a sitemap entry', () => {
+    const doc = notFound('/404.html')
+    doc.html = doc.html.replace(/<link rel="canonical"[^>]*>/, '')
+    const input: VerifyInput = { site: SITE, documents: [doc], sitemap: '<urlset></urlset>' }
+    expect(findings(input, 'identity.canonical-missing')).toEqual([])
+    expect(findings(input, 'indexing.sitemap-missing-entry')).toEqual([])
+  })
+
+  it('is recognised at either spelling a build produces', () => {
+    for (const url of ['/404.html', '/404/index.html']) {
+      expect(findings({ site: SITE, documents: [notFound(url)] }, 'status.soft-404'), url).toEqual([])
+    }
+  })
+})
+
+describe('a build with no 404 page', () => {
+  it('is an error, because a wrong path then lands on the host page', () => {
+    const input: VerifyInput = { site: SITE, build: true, documents: [page('/')] }
+    expect(one(input, 'status.not-found-page-missing').severity).toBe('error')
+  })
+
+  it('passes once the build carries one', () => {
+    const input: VerifyInput = { site: SITE, build: true, documents: [page('/'), page('/404.html')] }
+    expect(findings(input, 'status.not-found-page-missing')).toEqual([])
+  })
+
+  /** A set of pages captured from a running site cannot show a 404.html. */
+  it('is not asserted against a capture', () => {
+    expect(findings({ site: SITE, documents: [page('/')] }, 'status.not-found-page-missing')).toEqual([])
+    expect(verify({ site: SITE, documents: [page('/')] }).skipped.some(s => s.reason.includes('404'))).toBe(true)
+  })
+})
+
+describe('references to the site the content came from', () => {
+  const body = '<img src="https://old.example/wp-content/a.png"><a href="https://old.example/about">x</a>'
+
+  it('is an error: the new site depends on the old one staying up', () => {
+    const input: VerifyInput = {
+      site: SITE,
+      documents: [page('/a', { body })],
+      options: { sourceOrigin: 'https://old.example' },
+    }
+    const found = one(input, 'assets.source-origin-reference')
+    expect(found.severity).toBe('error')
+    expect(found.message).toContain('2 references')
+  })
+
+  it('accepts the host as a bare name too', () => {
+    const input: VerifyInput = { site: SITE, documents: [page('/a', { body })], options: { sourceOrigin: 'old.example' } }
+    expect(findings(input, 'assets.source-origin-reference')).toHaveLength(1)
+  })
+
+  it('scans stylesheets and scripts when their contents are given', () => {
+    const input: VerifyInput = {
+      site: SITE,
+      documents: [page('/a')],
+      files: [{ path: '/a.css', content: '.h{background:url(https://old.example/bg.png)}' }],
+      options: { sourceOrigin: 'old.example' },
+    }
+    expect(one(input, 'assets.source-origin-reference').url).toBe('/a.css')
+  })
+
+  it('says so when it only saw the HTML', () => {
+    const report = verify({ site: SITE, documents: [page('/a')], options: { sourceOrigin: 'old.example' } })
+    expect(report.skipped.some(s => s.reason.includes('HTML only'))).toBe(true)
+  })
+
+  it('allows a host the project kept on purpose', () => {
+    const input: VerifyInput = {
+      site: SITE,
+      documents: [page('/a', { body })],
+      options: { sourceOrigin: 'old.example', allowHosts: ['old.example'] },
+    }
+    expect(findings(input, 'assets.source-origin-reference')).toEqual([])
+  })
+
+  it('does not run without a source origin, and says so', () => {
+    const report = verify({ site: SITE, documents: [page('/a', { body })] })
+    expect(report.findings.filter(f => f.check === 'assets.source-origin-reference')).toEqual([])
+    expect(report.skipped.some(s => s.reason.includes('no sourceOrigin'))).toBe(true)
+  })
+
+  it('reports rather than throws on an origin it cannot read', () => {
+    const report = verify({ site: SITE, documents: [page('/a')], options: { sourceOrigin: 'not a host' } })
+    expect(report.findings.some(f => f.check === 'assets.source-origin-invalid')).toBe(true)
+  })
+})
+
+describe('html lang', () => {
+  it('warns when the page does not declare one', () => {
+    const doc = page('/a')
+    doc.html = doc.html.replace('<html lang="en">', '<html>')
+    expect(one({ site: SITE, documents: [doc] }, 'identity.lang-missing').severity).toBe('warning')
+  })
+
+  it('accepts a region subtag and single quotes', () => {
+    for (const tag of ['lang="tr-TR"', "lang='de'"]) {
+      const doc = page('/a')
+      doc.html = doc.html.replace('<html lang="en">', `<html ${tag}>`)
+      expect(findings({ site: SITE, documents: [doc] }, 'identity.lang-missing'), tag).toEqual([])
+    }
   })
 })
 

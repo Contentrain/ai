@@ -17,6 +17,8 @@ export const USAGE = `contentrain-verify <dist-dir> [options]
   --site <url>          Canonical origin, e.g. https://example.com
   --baseline <dir>      The old site, as a directory of captured pages
   --redirects <file>    JSON: [{ "from": "/a", "to": "/b", "status": 301 }]
+  --source-origin <host>  The old host content was migrated away from
+  --allow-host <host>     A host that may still be referenced (repeatable)
   --groups <list>       Comma-separated: ${CHECK_GROUPS.join(',')}
   --max-redirect-hops <n>
   --json                Print the report as JSON instead of text
@@ -26,6 +28,8 @@ Exits 1 when any finding is an error, 2 on a usage error.`
 export interface Args {
   dir?: string
   site?: string
+  sourceOrigin?: string
+  allowHosts?: string[]
   baseline?: string
   redirects?: string
   groups?: CheckGroup[]
@@ -42,6 +46,8 @@ export function parseArgs(argv: readonly string[]): Args {
     if (arg === '--help' || arg === '-h') args.help = true
     else if (arg === '--json') args.json = true
     else if (arg === '--site') args.site = next()
+    else if (arg === '--source-origin') args.sourceOrigin = next()
+    else if (arg === '--allow-host') (args.allowHosts ??= []).push(next() ?? '')
     else if (arg === '--baseline') args.baseline = next()
     else if (arg === '--redirects') args.redirects = next()
     else if (arg === '--max-redirect-hops') {
@@ -80,10 +86,15 @@ export async function main(argv: readonly string[], io: Console2 = console): Pro
   }
 
   const loaded = await loadSiteDirectory(args.dir, args.site)
+  const options: VerifyInput['options'] = {}
+  if (args.maxRedirectHops !== undefined) options.maxRedirectHops = args.maxRedirectHops
+  if (args.sourceOrigin !== undefined) options.sourceOrigin = args.sourceOrigin
+  if (args.allowHosts?.length) options.allowHosts = args.allowHosts
+
   const input: VerifyInput = {
     ...loaded,
     groups: args.groups,
-    options: args.maxRedirectHops === undefined ? undefined : { maxRedirectHops: args.maxRedirectHops },
+    options: Object.keys(options).length ? options : undefined,
   }
 
   if (args.baseline) {

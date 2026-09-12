@@ -27,6 +27,21 @@ export interface Context {
 
 const NOT_FOUND_TEXT = /\b(404|not found|page not found|sayfa bulunamad[ıi]|nicht gefunden|introuvable|no se encontr)/i
 
+/**
+ * The build's 404 page, which is not served at its own address.
+ *
+ * A static host hands this document to a visitor who asked for something else,
+ * so every check that assumes "this document is served at this URL" is wrong
+ * about it: its canonical does not describe a page, it does not belong in the
+ * sitemap, and — the one that matters — it says "not found" and is short by
+ * design, which is precisely the shape of a soft-404. Without this exemption
+ * every correctly built site would fail on having done the right thing.
+ */
+function isNotFoundDocument(doc: VerifyDocument, ctx: Context): boolean {
+  const id = identity(doc.url, ctx.input.site)
+  return id === '/404' || id === '/404.html'
+}
+
 function finding(f: Finding): Finding {
   return f
 }
@@ -59,7 +74,9 @@ export function identityChecks(doc: VerifyDocument, ctx: Context): Finding[] {
   }
 
   const canonicals = linksRel(doc.html, 'canonical')
-  if (canonicals.length === 0) {
+  if (isNotFoundDocument(doc, ctx)) {
+    // No address of its own, so nothing to be canonical about.
+  } else if (canonicals.length === 0) {
     out.push(finding({ group, check: 'identity.canonical-missing', severity: 'warning', url, message: 'No canonical link.' }))
   } else if (canonicals.length > 1) {
     out.push(finding({
@@ -86,6 +103,13 @@ export function identityChecks(doc: VerifyDocument, ctx: Context): Finding[] {
         detail: `${canonicals[0]!.href} ≠ ${url}`,
       }))
     }
+  }
+
+  // `<html lang>` is what a screen reader picks a voice from and what a
+  // translation prompt keys on. A migrated page that lost it is not visibly
+  // broken, which is why it stays lost.
+  if (!/<html\b[^>]*\slang\s*=\s*["']?[a-zA-Z]/.test(doc.html)) {
+    out.push(finding({ group, check: 'identity.lang-missing', severity: 'warning', url, message: 'No lang attribute on <html>.' }))
   }
 
   const missingOg = ['og:title', 'og:type', 'og:url'].filter(key => !meta.get(key)?.[0])
@@ -130,7 +154,7 @@ export function indexingChecks(doc: VerifyDocument, ctx: Context): Finding[] {
 
   if (ctx.input.sitemap !== undefined) {
     const listed = new Set(sitemapLocations(ctx.input.sitemap).map(loc => identity(loc, ctx.input.site)))
-    if (!listed.has(identity(url, ctx.input.site)) && !reason) {
+    if (!listed.has(identity(url, ctx.input.site)) && !reason && !isNotFoundDocument(doc, ctx)) {
       out.push(finding({ group, check: 'indexing.sitemap-missing-entry', severity: 'warning', url, message: 'Indexable page is not in the sitemap.' }))
     }
   }
@@ -184,7 +208,7 @@ export function statusChecks(doc: VerifyDocument, ctx: Context): Finding[] {
     const bodyText = text(doc.html)
     const title = titles(doc.html)[0] ?? ''
     const saysNotFound = NOT_FOUND_TEXT.test(title) || NOT_FOUND_TEXT.test(bodyText.slice(0, 400))
-    if (saysNotFound && bodyText.length <= ctx.options.soft404MaxTextLength) {
+    if (saysNotFound && bodyText.length <= ctx.options.soft404MaxTextLength && !isNotFoundDocument(doc, ctx)) {
       out.push(finding({
         group,
         check: 'status.soft-404',
@@ -197,6 +221,34 @@ export function statusChecks(doc: VerifyDocument, ctx: Context): Finding[] {
   }
 
   return out
+}
+
+/**
+ * A build with no `404.html`.
+ *
+ * Only meaningful for a build: a set of pages captured from a running site
+ * cannot show one, so asserting it there would report a defect the input cannot
+ * express. Measured across a blind cohort every site lacked one — and because
+ * migrated navigation is root-relative, a wrong path is not a rare event: it
+ * lands the visitor on the host's generic page, with none of the site's chrome
+ * and no way back.
+ */
+export function notFoundPageChecks(ctx: Context): Finding[] {
+  if (!ctx.input.build) return []
+  // Both spellings a static build produces: Astro writes `404.html` at the
+  // root, and a directory-style build writes `404/index.html`, which the
+  // address rule reduces to `/404`.
+  const served = ctx.input.documents.some((doc) => {
+    const id = identity(doc.url, ctx.input.site)
+    return id === '/404' || id === '/404.html'
+  })
+  if (served) return []
+  return [finding({
+    group: 'status',
+    check: 'status.not-found-page-missing',
+    severity: 'error',
+    message: 'The build has no 404.html, so a wrong path lands on the host\u2019s page instead of the site\u2019s.',
+  })]
 }
 
 /** Redirect rules: chains, loops, and targets that do not exist. */
@@ -402,6 +454,76 @@ export function navigationChecks(doc: VerifyDocument, ctx: Context): Finding[] {
     const feedRel = (html: string) => linksRel(html, 'alternate').some(link => /rss|atom|feed/i.test(link.type ?? ''))
     if (feedRel(before.html) && !feedRel(doc.html)) {
       out.push(finding({ group, check: 'navigation.feed-lost', severity: 'warning', url, message: 'The old page advertised a feed; this one does not.' }))
+    }
+  }
+
+  return out
+}
+
+/**
+ * References to the origin the content was migrated away from.
+ *
+ * A generated page that still points at the old WordPress host has not been
+ * migrated, it has been mirrored: the new site works only while the old one
+ * stays up, and the day it goes away the images and stylesheets go with it.
+ * Across a blind cohort this was the single largest thing keeping sites from
+ * being deliverable, so it is an error rather than a warning.
+ *
+ * The scan is over raw text, not parsed attributes, because the references hide
+ * in every shape a reference can take — `src`, `srcset`, `href`, `url()` in a
+ * style attribute, a string inside inline script. That over-matches slightly:
+ * the origin written in a comment or in visible prose counts too. Reported that
+ * way on purpose — a literal old-host URL on the page is worth looking at even
+ * when it is not fetched.
+ *
+ * Stylesheets and scripts are scanned only when their contents are supplied
+ * (`input.files`). Without them the count is HTML-only, which is a smaller
+ * number than the truth rather than a wrong one — and the report says so.
+ */
+export function sourceOriginChecks(ctx: Context): Finding[] {
+  const origin = ctx.options.sourceOrigin
+  if (!origin) return []
+
+  let host: string
+  try {
+    host = new URL(origin.includes('://') ? origin : `https://${origin}`).host
+  } catch {
+    return [finding({
+      group: 'assets',
+      check: 'assets.source-origin-invalid',
+      severity: 'warning',
+      message: `sourceOrigin "${origin}" is not a host or a URL; the scan did not run.`,
+    })]
+  }
+  if ((ctx.options.allowHosts ?? []).includes(host)) return []
+
+  const out: Finding[] = []
+  const pattern = new RegExp(host.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`), 'gi')
+  const count = (source: string) => (source.match(pattern) ?? []).length
+
+  for (const doc of ctx.input.documents) {
+    const hits = count(doc.html)
+    if (hits) {
+      out.push(finding({
+        group: 'assets',
+        check: 'assets.source-origin-reference',
+        severity: 'error',
+        url: doc.url,
+        message: `${hits} reference${hits === 1 ? '' : 's'} to the source origin ${host} — this page still depends on the site it replaced.`,
+      }))
+    }
+  }
+
+  for (const file of ctx.input.files ?? []) {
+    const hits = count(file.content)
+    if (hits) {
+      out.push(finding({
+        group: 'assets',
+        check: 'assets.source-origin-reference',
+        severity: 'error',
+        url: file.path,
+        message: `${hits} reference${hits === 1 ? '' : 's'} to the source origin ${host}.`,
+      }))
     }
   }
 

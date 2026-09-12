@@ -77,6 +77,13 @@ export interface VerifyReport {
   skipped: { group: CheckGroup, reason: string }[]
 }
 
+/** A text file that is not a document — a stylesheet, a script. */
+export interface VerifyFile {
+  /** Path as served (`/assets/app.css`). */
+  path: string
+  content: string
+}
+
 export interface VerifyOptions {
   /**
    * A redirect chain longer than this is reported. One hop is normal; two is a
@@ -92,6 +99,21 @@ export interface VerifyOptions {
   soft404MaxTextLength?: number
   /** Hosts to treat as internal besides `site`'s own. */
   internalHosts?: string[]
+  /**
+   * The origin the content was migrated away from — the old WordPress host.
+   *
+   * A migrated page that still points at it is not finished: the new site
+   * depends on the old one staying up, and the moment it does not, images and
+   * stylesheets disappear. Measured across a blind cohort it was the single
+   * largest blocker, so this is checked as an error when the origin is known.
+   */
+  sourceOrigin?: string
+  /**
+   * Hosts that may legitimately still be referenced even though they are not
+   * the site's own — a CDN the customer keeps. Applies to
+   * `assets.source-origin-reference` only.
+   */
+  allowHosts?: string[]
 }
 
 export interface VerifyInput {
@@ -105,8 +127,27 @@ export interface VerifyInput {
   redirects?: VerifyRedirect[]
   /** Non-document files the build produced, as served (`/images/a.png`). */
   assets?: string[]
+  /**
+   * Contents of non-document text files — stylesheets, scripts. Only the checks
+   * that scan content read these; everything else works from `documents` and
+   * the `assets` path list.
+   *
+   * Supplying them matters for `assets.source-origin-reference`: a `url()` in a
+   * stylesheet pointing at the old host is exactly as fatal as one in the HTML,
+   * and a scan that silently skips CSS reports a smaller number than a scan
+   * that does not — which is worse than not counting at all when two tools
+   * compare figures.
+   */
+  files?: VerifyFile[]
   /** The old site, for parity checks. Absent means only self-checks run. */
   baseline?: { documents: VerifyDocument[] }
+  /**
+   * Whether `documents` are a static build directory rather than pages captured
+   * from a running site. Build-level expectations — a `404.html` exists — are
+   * only meaningful for a build, and asserting them against a capture would
+   * report a defect the capture simply cannot show. `loadSiteDirectory` sets it.
+   */
+  build?: boolean
   /** Defaults to every group. */
   groups?: readonly CheckGroup[]
   options?: VerifyOptions
