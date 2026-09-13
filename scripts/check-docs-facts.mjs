@@ -212,6 +212,18 @@ const MATCHERS = [
   { re: /\bFIELD_TYPES\.length\b[^\n]*?\/\/\s*(\d+)/g, fact: () => 'field-types' },
   { re: /\bWORKFLOW_SKILLS\.length\b[^\n]*?\/\/\s*(\d+)/g, fact: () => 'workflow-skills' },
   { re: /\b(\d+)\s+field types\b/gi, fact: () => 'field-types' },
+  {
+    // "Complete Type Reference (27 Types)" — the same total under a heading
+    // that never says "field".
+    re: /Type Reference\s*\((\d+)\s+types?\)/gi,
+    fact: () => 'field-types',
+  },
+  {
+    // "(4 kinds)" — the model kinds in parenthetical shorthand.
+    re: /\b(\d+)\s+kinds\b/gi,
+    guard: /\bmodels?\b/i,
+    fact: () => 'model-kinds',
+  },
   { re: /\b(\d+)\s+model kinds\b/gi, fact: () => 'model-kinds' },
   { re: /\b(\d+)\s+capability keys\b/gi, fact: () => 'capability-keys' },
   { re: /\b(\d+)\s+framework guides\b/gi, fact: () => 'framework-guides' },
@@ -251,6 +263,30 @@ function findClaims(text) {
   return claims
 }
 
+/**
+ * A documented breakdown must add up to the total it breaks down.
+ *
+ * `schema-rules.md` and `schema-types.md` split the field types into families
+ * — 11 string, 5 number, 3 primitive, 3 media, 2 relation, 3 structural. Each
+ * subtotal is correct on its own, so no per-number check can see the problem
+ * when a 28th type is added and every family still reads true. Only the sum
+ * knows.
+ *
+ * Three or more family counts in one file is the signal that the file is
+ * enumerating the whole set rather than mentioning part of it.
+ */
+function breakdownProblems(text, fieldTypeTotal) {
+  // Drop the total's own heading — "Type Reference (27 Types)" is checked by
+  // its own matcher, and counting it here would add the whole to its parts.
+  const families = text.replace(/Type Reference\s*\(\d+\s+types?\)/gi, '')
+  const counts = [...families.matchAll(/\((\d+)\s+types?\)/gi)]
+  if (counts.length < 3) return null
+  const sum = counts.reduce((n, m) => n + Number(m[1]), 0)
+  if (sum === fieldTypeTotal) return null
+  return `type families sum to ${sum}, but there are ${fieldTypeTotal} field types `
+    + `(${counts.map(m => m[1]).join(' + ')})`
+}
+
 // ─── The corpus ───
 
 /**
@@ -266,25 +302,32 @@ function findClaims(text) {
 const EXTRA_FILES = ['README.md', 'AGENTS.md']
 
 /**
- * Every package's own README. These are what npm renders, so they are read
- * more than anything else the repo ships — and until now nothing checked them.
+ * Every markdown file a package ships: READMEs, and the rule and skill
+ * documents that agents load as their working contract. A rule file telling an
+ * agent there are 19 MCP tools misinforms it on every call — that matters more
+ * than a stale line on a web page.
  *
- * CHANGELOGs are deliberately excluded everywhere: "19-tool" in a changelog is
- * a true statement about the release it describes, and checking it would
- * manufacture permanent false positives out of correct history.
+ * Two exclusions, both deliberate:
+ *
+ * - **CHANGELOGs.** "19-tool" in a changelog is a TRUE statement about the
+ *   release it describes. Checking them would manufacture permanent false
+ *   positives out of correct history.
+ * - **Generated copies** (`dist/`, `node_modules/`). `plugins/contentrain` is
+ *   outside this tree for the same reason: it is `pnpm plugin:build` output
+ *   carrying duplicates of these skills, CI already fails on a stale diff, and
+ *   the place to fix a number is always the source, never the copy.
  */
-function packageReadmes() {
+function packageDocs() {
   const out = []
-  const walk = (dir, depth) => {
-    if (depth > 2) return
+  const walk = (dir) => {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
-      if (e.name === 'node_modules' || e.name.startsWith('.')) continue
+      if (e.name === 'node_modules' || e.name === 'dist' || e.name.startsWith('.')) continue
       const full = join(dir, e.name)
-      if (e.isDirectory()) walk(full, depth + 1)
-      else if (e.name === 'README.md') out.push(full)
+      if (e.isDirectory()) walk(full)
+      else if (e.name.endsWith('.md') && e.name !== 'CHANGELOG.md') out.push(full)
     }
   }
-  walk(join(ROOT, 'packages'), 0)
+  walk(join(ROOT, 'packages'))
   return out.toSorted()
 }
 
@@ -301,7 +344,7 @@ function docsFiles() {
   }
   walk(DOCS)
   for (const name of EXTRA_FILES) out.push(join(ROOT, name))
-  out.push(...packageReadmes())
+  out.push(...packageDocs())
   return out
 }
 
@@ -329,6 +372,8 @@ const HISTORICAL_DRIFT = [
   { fact: 'mcp-tools', wrong: 26, line: '- `MCP_TOOLS` — 26 MCP tool names: 21 core + 5 media (`contentrain_media_*`)' },
   { fact: 'mcp-tools-core', wrong: 21, line: '- `MCP_TOOLS` — 26 MCP tool names: 21 core + 5 media (`contentrain_media_*`)' },
   { fact: 'mcp-tools', wrong: 22, line: '| @contentrain/mcp | 22 MCP tools (scan, apply, validate, merge, reconcile, doctor...) |' },
+  { fact: 'model-kinds', wrong: 5, line: '- Read/write/delete content and models (5 kinds).' },
+  { fact: 'field-types', wrong: 26, line: '## 2. Complete Type Reference (26 Types)' },
 ]
 
 function selfTest(facts) {
@@ -347,6 +392,19 @@ function selfTest(facts) {
       )
     }
   }
+  // The breakdown invariant needs its own shape: every family count can be
+  // individually plausible while the set no longer accounts for the whole.
+  const families = '### String Family (11 types)\n### Number Family (5 types)\n### Media (3 types)\n'
+  if (!breakdownProblems(families, 99)) {
+    failures.push('breakdown check did not notice families summing to 19 against a total of 99')
+  }
+  if (breakdownProblems(families, 19)) {
+    failures.push('breakdown check reported families that do sum correctly')
+  }
+  if (breakdownProblems('A single mention of (5 types) in prose.', 27)) {
+    failures.push('breakdown check fired on a file that only mentions one count')
+  }
+
   return failures
 }
 
@@ -378,8 +436,17 @@ async function main() {
   const files = docsFiles()
   let claimCount = 0
   for (const file of files) {
-    const claims = findClaims(readFileSync(file, 'utf8'))
+    const text = readFileSync(file, 'utf8')
+    const claims = findClaims(text)
     claimCount += claims.length
+    const breakdown = breakdownProblems(text, facts['field-types'].value)
+    if (breakdown) {
+      problems.push({
+        file: relative(ROOT, file), line: 1, text: 'type family breakdown',
+        expected: facts['field-types'].value, found: '—',
+        fact: { label: breakdown, source: facts['field-types'].source },
+      })
+    }
     for (const claim of claims) {
       const fact = facts[claim.fact]
       if (claim.found !== fact.value) {
