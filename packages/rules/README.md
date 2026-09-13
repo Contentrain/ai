@@ -14,7 +14,7 @@ Start here:
 
 This package is the **policy layer** of the Contentrain ecosystem. It defines how agents should behave when they work with:
 
-- Contentrain MCP tools (17 operations)
+- Contentrain MCP tools (27 operations)
 - schema and model design
 - content quality (SEO, accessibility, media, i18n)
 - normalize workflows (extraction + reuse)
@@ -75,7 +75,7 @@ The package root exports constants for tooling:
 
 - `FIELD_TYPES` — 27 flat field types
 - `MODEL_KINDS` — `singleton`, `collection`, `document`, `dictionary`
-- `MCP_TOOLS` — 26 MCP tool names: 21 core + 5 media (`contentrain_media_*`, registered only on media-capable providers)
+- `MCP_TOOLS` — 27 MCP tool names: 22 core + 5 media (`contentrain_media_*`, registered only on media-capable providers)
 - `ESSENTIAL_RULES_FILE` — path to essential guardrails markdown
 - `STACKS` — supported framework stacks
 
@@ -84,7 +84,7 @@ The package root exports constants for tooling:
 ```ts
 import { MCP_TOOLS, ESSENTIAL_RULES_FILE, FIELD_TYPES } from '@contentrain/rules'
 
-console.log(MCP_TOOLS.length)                            // 24
+console.log(MCP_TOOLS.length)                            // 27
 console.log(MCP_TOOLS.includes('contentrain_merge'))     // true
 console.log(MCP_TOOLS.includes('contentrain_doctor'))    // true
 console.log(ESSENTIAL_RULES_FILE)                        // 'essential/contentrain-essentials.md'
