@@ -12,16 +12,19 @@ Contentrain is a Git-based, AI-first content management system. Content lives in
 
 ## Ecosystem Overview
 
-Contentrain consists of 6 packages that work together:
+Contentrain consists of 9 packages that work together:
 
 | Package | Role | How agent uses it |
 |---|---|---|
-| @contentrain/mcp | 22 MCP tools (scan, apply, validate, merge, reconcile, doctor...) | MCP tool calls |
-| contentrain (CLI) | init, serve, generate, doctor, diff, status | Shell commands |
+| @contentrain/mcp | 27 MCP tools (scan, apply, validate, merge, reconcile, doctor...) | MCP tool calls |
+| contentrain (CLI) | init, serve, generate, doctor, diff, status, import | Shell commands |
 | @contentrain/types | Shared TypeScript contracts | Type safety |
 | @contentrain/query | Generated SDK client (Prisma-pattern) | `import from '#contentrain'` |
-| @contentrain/rules | Behavioral guardrails (~86 lines, always-loaded) | Auto-loaded by IDE |
+| @contentrain/rules | Behavioral guardrails (~145 lines, always-loaded) | Auto-loaded by IDE |
 | @contentrain/skills | Procedural workflows (this file) | On-demand by agent |
+| @contentrain/wp-import | WordPress WXR/REST → `RawIR` → a `.contentrain` store | `contentrain import wordpress` |
+| @contentrain/emitter-astro | `ProjectIR` → a complete Astro project | Called by the migration engine |
+| @contentrain/verify | Offline SEO, indexing, link and asset gates for a built site | `npx @contentrain/verify dist` |
 
 ### CLI Serve — Review & Approval Bridge
 
