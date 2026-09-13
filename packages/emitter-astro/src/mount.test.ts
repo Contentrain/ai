@@ -75,7 +75,7 @@ describe('component mounting', () => {
     expect(layout).toContain(`import CComments from '../components/CComments.astro'`)
     expect(layout).toContain('splitComponents')
     expect(layout).toContain(`"c-comments": { Mount: CComments, variant: "threaded" }`)
-    expect(layout).toContain('<Mount entry={entry} variant={variant} />')
+    expect(layout).toContain('<Mount entry={entry} variant={variant} html={listHtml} />')
     expect(layout).toContain('<Fragment set:html={part} />')
     expect(layout).not.toContain('<Fragment set:html={html} />')
     // the marker stays in the chrome data — it is the split point at render time
@@ -235,5 +235,105 @@ describe('component mounting', () => {
 
   it('is deterministic', () => {
     expect(emitAstroProject(input).files).toEqual(bound.files)
+  })
+})
+
+/**
+ * A theme's "recent posts" block sits in the chrome of every article. Cloned,
+ * it freezes on the day of the migration: it keeps listing the same posts
+ * forever and nobody notices, because it still looks right. A placement can
+ * bind that region to a query instead — the whole difference between a copy of
+ * a site and a site.
+ *
+ * The data is resolved by the LAYOUT, not by the component. A component file is
+ * shared by id across families while a placement belongs to one, so two
+ * families binding the same component to different queries could not both be
+ * served by a single file.
+ */
+describe('a placement bound to a query', () => {
+  const base: ProjectIR = {
+    version: MIGRATION_CONTRACT_VERSION,
+    site: { url: 'https://example.com', locales: ['en'] },
+    routes: [{ id: 'r-post', pattern: '/:slug', kind: 'single', family: 'f-article' }],
+    families: [{
+      id: 'f-article',
+      kind: 'single',
+      chrome: [{ id: 'shell', position: 'body', html: `<article>${CHROME_BODY_SLOT}<aside>${componentSlot('c-recent')}</aside></article>` }],
+      components: [{ component: 'c-recent', query: 'q-recent', variant: 'compact' }],
+      css: { strategy: 'purge_set', files: [] },
+    }],
+    components: [{ id: 'c-recent', type: 'related', source: 'chrome', variants: [{ key: 'compact' }] }],
+  } as unknown as ProjectIR
+
+  const content: EmitInput['content'] = {
+    posts: [{ slug: 'hello', title: 'Hello', body: '<p>x</p>' }],
+    queries: { 'q-recent': [{ params: {}, items: [{ slug: 'a', title: 'A' }], item_template: '<li>@@title@@</li>' }] },
+  }
+
+  const emitted = emitAstroProject({ ir: base, content })
+
+  it('emits no warning for a binding that checks out', () => {
+    expect(emitted.warnings).toEqual([])
+  })
+
+  it('resolves the query in the layout and hands the markup to the mount', () => {
+    const layout = emitted.files['src/layouts/FArticle.astro']!
+    expect(layout).toContain(`import q_q_recent from '../data/queries/q-recent.json'`)
+    expect(layout).toContain('renderQuery(q_q_recent as EmittedQueryPage[], "q-recent")')
+    expect(layout).toContain('html: q_q_recentHtml')
+    expect(layout).toContain('<Mount entry={entry} variant={variant} html={listHtml} />')
+  })
+
+  /**
+   * The bug this exists for: a route that renders the same query writes its
+   * data file, but a region is not a route. Bound without one, nothing else
+   * wrote it and the layout's import resolved to nothing — an emit that looked
+   * correct and a build that could not start.
+   */
+  it('writes the query data file even though no route renders it', () => {
+    expect(base.routes.some(r => 'query' in r)).toBe(false)
+    expect(emitted.files['src/data/queries/q-recent.json']).toBeDefined()
+    expect(JSON.parse(emitted.files['src/data/queries/q-recent.json']!)[0].items[0].title).toBe('A')
+  })
+
+  it('gives the component the markup and a placeholder to fall back to', () => {
+    const component = emitted.files['src/components/CRecent.astro']!
+    expect(component).toContain('html?: string')
+    expect(component).toContain('set:html={html}')
+    expect(component).toContain('<cr-component')
+  })
+
+  it('drops a binding whose query is not in the content, and says the region stays cloned', () => {
+    const missing = emitAstroProject({ ir: base, content: { posts: content!.posts } })
+    const warning = missing.warnings.find(w => w.includes('q-recent'))
+    expect(warning).toContain('binding dropped, region left as cloned markup')
+    // The layout must not import a file nobody wrote.
+    expect(missing.files['src/layouts/FArticle.astro']).not.toContain('data/queries/q-recent.json')
+    expect(missing.files['src/components/CRecent.astro']).toContain('<cr-component')
+  })
+
+  it('warns when a region binds a query that has more than one result set', () => {
+    const many: EmitInput['content'] = {
+      ...content,
+      queries: { 'q-recent': [
+        { params: { term: 'a' }, items: [], item_template: '<li>@@title@@</li>' },
+        { params: { term: 'b' }, items: [], item_template: '<li>@@title@@</li>' },
+      ] },
+    }
+    const result = emitAstroProject({ ir: base, content: many })
+    const warning = result.warnings.find(w => w.includes('2 result sets'))
+    expect(warning).toContain('no route parameter to choose between')
+  })
+
+  it('leaves a placement without a query exactly as it was', () => {
+    const plain: ProjectIR = {
+      ...base,
+      families: [{ ...base.families[0]!, components: [{ component: 'c-recent', variant: 'compact' }] }],
+    }
+    const result = emitAstroProject({ ir: plain, content })
+    const layout = result.files['src/layouts/FArticle.astro']!
+    expect(layout).not.toContain('renderQuery')
+    expect(layout).toContain('<Mount entry={entry} variant={variant} html={listHtml} />')
+    expect(result.files['src/data/queries/q-recent.json']).toBeUndefined()
   })
 })

@@ -228,6 +228,28 @@ export function renderSections<T>(
   return out.join('')
 }
 
+/**
+ * Render a query's results for a region inside a page — a "recent posts" block
+ * in an article's chrome, not a list page.
+ *
+ * A list PAGE maps each result set to a route, so several are expected. A
+ * region has no route to distinguish them, so exactly one is expected and
+ * anything else is a build error rather than a guess: picking the first would
+ * silently render one category's posts under every category.
+ */
+export function renderQuery(pages: EmittedQueryPage[], id: string): string {
+  if (pages.length !== 1) {
+    throw new Error(
+      'Query "' + id + '" fills a page region, so it must have exactly one result set; got '
+      + pages.length + '. A region has no route parameter to choose between them.',
+    )
+  }
+  const page = pages[0]!
+  const sections = page.sections ?? (page.item_template ? [{ template: page.item_template }] : [])
+  if (!sections.length) return ''
+  return renderSections(sections, page.items, postMarks)
+}
+
 // ─── SEO helpers ───
 
 /**

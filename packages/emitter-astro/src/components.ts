@@ -29,7 +29,7 @@ export function isRuntimeImplemented(c: ComponentDef, runtime: RuntimeBinding | 
   return c.type !== 'form' || Boolean(c.model)
 }
 
-export function componentFiles(components: ComponentDef[], runtime: RuntimeBinding | undefined): ComponentGenResult {
+export function componentFiles(components: ComponentDef[], runtime: RuntimeBinding | undefined, queryBound: ReadonlySet<string> = new Set()): ComponentGenResult {
   const files: Record<string, string> = {}
   const warnings: string[] = []
   let needsRuntime = false
@@ -48,7 +48,7 @@ export function componentFiles(components: ComponentDef[], runtime: RuntimeBindi
           : `component ${c.id} (form): no model named — a form must say which collection it submits to; emitted as a placeholder`,
       )
     }
-    files[`src/components/${name}.astro`] = placeholderSource(c)
+    files[`src/components/${name}.astro`] = placeholderSource(c, queryBound.has(c.id))
   }
 
   if (needsRuntime && runtime) {
@@ -65,12 +65,14 @@ function header(c: ComponentDef, extra = ''): string {
  */`
 }
 
-function placeholderSource(c: ComponentDef): string {
+function placeholderSource(c: ComponentDef, queryBound: boolean): string {
   const variants = (c.variants ?? []).map((v) => v.key)
   return `---
 ${header(
   c,
   `${c.source === 'runtime' ? '\n * Placeholder — needs a live provider; see the migration handoff offers.' : ' Placeholder.'}${
+    queryBound ? '\n * A placement binds this region to a query; the layout renders it and passes the html.' : ''
+  }${
     variants.length ? `\n * Variants: ${variants.join(', ')}` : ''
   }`,
 )}
@@ -78,10 +80,19 @@ interface Props {
   variant?: string
   /** Content-store address of the page's entry; unused by a placeholder. */
   entry?: { model_id: string; entry_id: string; locale?: string }
+  /**
+   * Rendered list markup when a placement binds this region to a query. The
+   * layout resolves the data — a component file is shared by id across
+   * families, a placement belongs to one — so the region is editable here
+   * while staying current there.
+   */
+  html?: string
 }
-const { variant = ${JSON.stringify(variants[0] ?? 'default')} } = Astro.props
+const { variant = ${JSON.stringify(variants[0] ?? 'default')}, html } = Astro.props
 ---
-<cr-component data-type=${JSON.stringify(c.type)} data-variant={variant}></cr-component>
+{html
+  ? <div class="cr-query" data-type=${JSON.stringify(c.type)} data-variant={variant} set:html={html} />
+  : <cr-component data-type=${JSON.stringify(c.type)} data-variant={variant}></cr-component>}
 `
 }
 
