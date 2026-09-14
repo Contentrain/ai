@@ -81,7 +81,7 @@ Rendering order is repeats → conditionals → marks.
 
 ### The balance check
 
-A lifted region must close what it opens. A split fragment is something a browser silently repairs, so it survives every visual check — and costs a page its layout anyway. Measured: **36 pages out of 100**. The emitter checks header, footer and body chrome and names the dangling tags in a warning rather than trusting the producer.
+A lifted region must close what it opens. A split fragment is something a browser silently repairs, so it survives every visual check — and costs a page its layout anyway. Measured on 2026-09-03 with emitter 0.6.1: a page whose chrome was split mid-element scored **36** on layout, against **100** for the same page kept whole. The emitter checks header, footer and body chrome and names the dangling tags in a warning rather than trusting the producer.
 
 ## SEO
 

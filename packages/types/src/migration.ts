@@ -21,9 +21,10 @@ export const MIGRATION_CONTRACT_VERSION = 1
 
 /**
  * How the WordPress site's data was reached, ordered from least to most
- * complete. Measured field coverage rises with each rung (roughly 34% for
- * public REST, 57% with an Application Password, 82% from a WXR export, 100%
- * via the Bridge plugin) — which is why provenance is recorded on every RawIR:
+ * complete. Field coverage rises with each rung — measured in August 2026 at
+ * roughly 34% for public REST, 57% with an Application Password and 82% from a
+ * WXR export; the Bridge plugin reads WordPress from inside and is meant to
+ * reach every field — which is why provenance is recorded on every RawIR:
  * two documents for the same site are only comparable if their rungs are.
  */
 export type SourceAccessKind = 'rest_public' | 'rest_auth' | 'wxr' | 'bridge'

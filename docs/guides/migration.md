@@ -51,12 +51,14 @@ Every migration document is plain JSON — snake_case keys, no class instances, 
 
 How much of a WordPress site you can read depends entirely on how you reach it, and the difference is not small:
 
-| Rung | Access | Measured field coverage |
+| Rung | Access | Field coverage |
 |---|---|---|
-| `rest_public` | Public REST API | ~34% |
-| `rest_auth` | REST + Application Password | ~57% |
-| `wxr` | A WXR export file | ~82% |
-| `bridge` | The Bridge plugin (GPL, separate repo) | 100% |
+| `rest_public` | Public REST API | ~34% (measured) |
+| `rest_auth` | REST + Application Password | ~57% (measured) |
+| `wxr` | A WXR export file | ~82% (measured) |
+| `bridge` | The Bridge plugin (GPL, separate repo) | All fields by design — it reads WordPress from inside; not a sampled figure |
+
+The measured figures date from August 2026, before migration contract version 1; a WordPress or plugin release can move them.
 
 Every `RawIR` records the rung that produced it. Two imports of the same site are only comparable if their rungs are — which is also why a `rest_public` import showing fewer fields is **not** evidence that the site is simpler.
 
