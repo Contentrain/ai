@@ -16,6 +16,11 @@
 const TITLE_RE = /<title\b[^>]*>[\s\S]*?<\/title>\s*/gi
 const META_RE = /<meta\b[^>]*\b(?:name|property)\s*=\s*["'](?:description|og:[^"']*|twitter:[^"']*)["'][^>]*>\s*/gi
 const CANONICAL_RE = /<link\b[^>]*\brel\s*=\s*["'][^"']*\bcanonical\b[^"']*["'][^>]*>\s*/gi
+/**
+ * A translation link names the template page's translations. An RSS
+ * `rel="alternate"` carries no hreflang and stays.
+ */
+const HREFLANG_RE = /<link\b(?=[^>]*\brel\s*=\s*["']?[^"'>]*\balternate\b)(?=[^>]*\bhreflang\s*=)[^>]*>\s*/gi
 const JSONLD_RE = /<script\b[^>]*\btype\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>\s*/gi
 
 /**
@@ -172,6 +177,10 @@ export function stripSeoTags(html: string): StripResult {
     note('canonical')
     return ''
   })
+  out = out.replace(HREFLANG_RE, () => {
+    note('hreflang')
+    return ''
+  })
   out = out.replace(JSONLD_RE, (tag: string, json: string) => {
     const decision = decideLd(json)
     if (decision.json === undefined) return tag
@@ -231,6 +240,8 @@ interface Props {
   image?: string
   /** Size and type of \`image\`, as the producer measured it. */
   imageMeta?: ImageMeta
+  /** This page's translations, itself included, plus x-default. */
+  alternates?: Array<{ lang: string; path: string }>
   /** \`article\` on entry pages, \`website\` on lists and static pages. */
   type?: 'article' | 'website'
   /** ISO 8601 — structured data only; the displayed date stays a mark. */
@@ -247,6 +258,7 @@ const {
   canonical,
   image,
   imageMeta,
+  alternates = [],
   type = 'website',
   publishedAt,
   modifiedAt,
@@ -259,6 +271,12 @@ const site = Astro.site
 const url = canonical ? absoluteUrl(canonical, site) : absoluteUrl(Astro.url.pathname, site)
 const imageUrl = absoluteUrl(image, site)
 const imageTags = imageUrl ? imageMetaTags(imageMeta) : {}
+// hreflang needs absolute URLs; without \`site\` there are none to give.
+const hreflang = alternates.flatMap((a) => {
+  const href = absoluteUrl(a.path, site)
+  return href ? [{ lang: a.lang, href }] : []
+})
+const localeAlternates = [...new Set(hreflang.map((a) => a.lang))].filter((l) => l !== 'x-default' && l !== locale)
 const desc = seoDescription(description)
 const article = type === 'article'
 const structured = article
@@ -279,6 +297,7 @@ const structured = article
 <title>{title}</title>
 {desc && <meta name="description" content={desc} />}
 {url && <link rel="canonical" href={url} />}
+{hreflang.map((a) => <link rel="alternate" hreflang={a.lang} href={a.href} />)}
 <meta property="og:type" content={type} />
 {title && <meta property="og:title" content={title} />}
 {desc && <meta property="og:description" content={desc} />}
@@ -289,6 +308,7 @@ const structured = article
 {imageTags.type && <meta property="og:image:type" content={imageTags.type} />}
 {siteName && <meta property="og:site_name" content={siteName} />}
 {locale && <meta property="og:locale" content={locale} />}
+{localeAlternates.map((l) => <meta property="og:locale:alternate" content={l} />)}
 {article && publishedAt && <meta property="article:published_time" content={publishedAt} />}
 {article && modifiedAt && <meta property="article:modified_time" content={modifiedAt} />}
 {article && author && <meta property="article:author" content={author} />}

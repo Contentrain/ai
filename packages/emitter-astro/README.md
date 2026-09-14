@@ -83,6 +83,7 @@ at.
 | `og:image`, `twitter:image` | `EmitPost.image`, else a `featured` entry that is already a path. A bare file name is skipped — only the producer knows where media is served |
 | `og:image:width` / `height` / `type` | `image_meta` on `EmitPost` or `QueryPage` — the producer measured the file; the emitter never sees it. Printed only beside `image` (a `featured` fallback is a different file), and only values that are true of an image: positive integer sizes, an `image/…` type |
 | `og:site_name` | `ProjectIR.site.title` |
+| `<link rel="alternate" hreflang>`, `og:locale:alternate` | Entry pages whose content-store entry (`EmitPost.entry`) exists in another locale on the site. The address is computed from each route's own pattern and the post's parameters — the values `getStaticPaths` uses — and the language is the page's `lang` (post locale, else route locale, else site default). Every page lists itself; `x-default` is the version in the site's default locale. A post two routes generate, or an entry where two pages claim one language, gets none, with a warning. The template page's own hreflang links are removed from the head chrome |
 | `og:locale` | The page's `lang` |
 | `article:published_time` / `modified_time`, Article JSON-LD dates | `EmitPost.published_at` / `modified_at` (ISO 8601 — `dates` holds display strings, which schema.org cannot read) |
 
