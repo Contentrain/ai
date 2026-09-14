@@ -1,5 +1,19 @@
 # @contentrain/types
 
+## 1.17.0
+
+### Minor Changes
+
+- bb8dbe1: `MigrationHandoff.content_summary.body_kinds` counts standalone pages by body kind, with the vocabulary exported as `PAGE_BODY_KINDS` / `PageBodyKind`: `html` (editor markup — carried as content and still editable), `builder_html` (rendered by a page builder — carried as rendered, no longer edited in that builder) and `none` (the theme renders the page). A single "pages migrated" number hid which of those promises was made. Every kind is present when the field is, so a zero is a count rather than an omission; the field itself is optional.
+
+### Patch Changes
+
+- 197a568: `validateFieldValue` accepts a polymorphic relation. A `relation` whose `model` lists several targets stores `{ model, ref }` — the schema documents it and the MCP validator enforces it — but the type check knew only the string form and rejected every such value, so an imported media library failed validation on every attachment with a `parent`. The pair is now required exactly when there are several targets (a one-element `model` array is a single target and stores the id), and a `model` outside the declared targets is an error.
+
+  `rawToContentrain` writes a relation over one target as the entry id. Media `parent`, comment `post` and menu-item `target` always wrote `{ model, ref }`, which is invalid when a site has a single content type (and, for menu targets, no taxonomies). The choice is now made in one place from the same list the model declares, and a test checks every field the importer writes against its own model.
+
+  The skills' schema reference and the field-types reference now show the polymorphic storage form.
+
 ## 1.16.0
 
 ### Minor Changes
