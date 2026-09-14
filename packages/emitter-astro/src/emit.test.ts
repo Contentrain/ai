@@ -290,7 +290,9 @@ describe('emitAstroProject', () => {
   it('list pages render through the item template', () => {
     const page = result.files['src/pages/category/[term]/page/[page].astro']!
     expect(page).toContain(`data/queries/q-term.json`)
-    expect(page).toContain('page.item_template ? [{ template: page.item_template }]')
+    // The page and a bound region render a result set through one function;
+    // runtime.test.ts exercises it on the emitted source.
+    expect(page).toContain('const content = renderQueryPage(page)')
     const data = JSON.parse(result.files['src/data/queries/q-term.json']!)
     expect(data[0].item_template).toContain('@@title@@')
   })
@@ -387,7 +389,6 @@ describe('emitAstroProject', () => {
   it('list pages get display marks, not just route parameter slugs', () => {
     const page = result.files['src/pages/category/[term]/page/[page].astro']!
     expect(page).toContain('const marks = { ...page.params, ...(page.marks ?? {}) }')
-    expect(page).toContain('renderSections(sections, page.items, postMarks)')
     const data = JSON.parse(result.files['src/data/queries/q-term.json']!)
     expect(data[0].marks).toEqual({ term_name: 'News' })
   })
@@ -471,8 +472,7 @@ describe('emitAstroProject', () => {
 
   it('lists render in sections — a big card then a grid', () => {
     const page = result.files['src/pages/category/[term]/page/[page].astro']!
-    expect(page).toContain('renderSections(sections, page.items, postMarks)')
-    expect(page).toContain('page.sections ?? (page.item_template ? [{ template: page.item_template }] : [])')
+    expect(page).toContain(`import { renderQueryPage, type EmittedQueryPage } from '../../../../lib/fill'`)
     const data = JSON.parse(result.files['src/data/queries/q-term.json']!)
     expect(data[0].sections).toHaveLength(2)
     expect(data[0].sections[0].count).toBe(1)

@@ -142,18 +142,13 @@ const { page } = Astro.props as Props`
 // Route: ${route.id} (${route.pattern}) — emitted by @contentrain/emitter-astro
 import Layout from '${up}layouts/${layout}.astro'
 import data from '${up}data/queries/${route.query}.json'
-import { esc, postMarks, renderSections, type EmittedQueryPage } from '${up}lib/fill'
+import { renderQueryPage, type EmittedQueryPage } from '${up}lib/fill'
 
 ${paths}
 // A list renders in sections (a big card then a grid) — one template is the
-// single-section case. Without a template at all we fall back to a plain list
+// single-section case. Without a template at all it falls back to a plain list
 // and the emitter has already warned: silence would read as fidelity.
-const sections = page.sections ?? (page.item_template ? [{ template: page.item_template }] : [])
-const content = sections.length
-  ? renderSections(sections, page.items, postMarks)
-  : '<ul class="cr-post-list">' +
-    page.items.map((item) => '<li><a href="/' + item.slug + '/">' + esc(item.title) + '</a></li>').join('') +
-    '</ul>'
+const content = renderQueryPage(page)
 // Route params carry slugs; page marks carry what the chrome needs to SHOW
 // (a term's display name, description, count).
 const marks = { ...page.params, ...(page.marks ?? {}) }

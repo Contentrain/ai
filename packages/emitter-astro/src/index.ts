@@ -94,6 +94,11 @@ export function emitAstroProject(input: EmitInput): EmitResult {
           + `which has ${pages.length} result sets — a page region has no route parameter to choose between `
           + 'them, so the build stops rather than rendering one of them everywhere',
         )
+      } else if (!pages[0]!.item_template && !pages[0]!.sections?.length) {
+        warnings.push(
+          `family ${family.id}: placement "${placement.component}" binds query "${placement.query}", `
+          + 'which has no item_template or sections — plain fallback list rendered (not fidelity)',
+        )
       }
       // The layout imports this file. A route that renders the same query also
       // writes it, but a region is not a route: bound without one, nothing else

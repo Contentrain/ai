@@ -35,6 +35,8 @@ interface Runtime {
     values: (item: Record<string, unknown>) => Values,
   ) => string
   postMarks: (post: Record<string, unknown>) => Values
+  renderQuery: (pages: Array<Record<string, unknown>>, id: string) => string
+  renderQueryPage: (page: Record<string, unknown>) => string
   cssHref: (file: string) => string
   esc: (value: unknown) => string
   splitComponents: (html: string) => Array<{ html: string; component?: string }>
@@ -227,5 +229,32 @@ describe('emitted template runtime', () => {
     expect(rt.postSeo({ slug: 's', title: 'T', featured: ['hero.jpg'], image: 'https://cdn.example/x.jpg' }).image).toBe('https://cdn.example/x.jpg')
     // an explicit description wins over the excerpt
     expect(rt.postSeo({ slug: 's', title: 'T', excerpt: 'Ex', description: 'D' }).description).toBe('D')
+  })
+
+  describe('a result set as markup', () => {
+    const items = [{ slug: 'a', title: 'A & co', body: '' }, { slug: 'b', title: 'B', body: '' }]
+
+    it('renders through the item template, and sections take precedence', () => {
+      expect(rt.renderQueryPage({ params: {}, items, item_template: '<li>@@title@@</li>' }))
+        .toBe('<li>A &amp; co</li><li>B</li>')
+      expect(rt.renderQueryPage({ params: {}, items, item_template: '<li>@@title@@</li>', sections: [{ template: '<p>@@title@@</p>', count: 1 }] }))
+        .toBe('<p>A &amp; co</p>')
+    })
+
+    it('falls back to a plain list without item markup — the same list for a page and a region', () => {
+      const plain = '<ul class="cr-post-list"><li><a href="/a/">A &amp; co</a></li><li><a href="/b/">B</a></li></ul>'
+      expect(rt.renderQueryPage({ params: {}, items })).toBe(plain)
+      // An empty sections array is no markup either; it does not hide a template.
+      expect(rt.renderQueryPage({ params: {}, items, sections: [] })).toBe(plain)
+      expect(rt.renderQueryPage({ params: {}, items, sections: [], item_template: '<li>@@title@@</li>' }))
+        .toBe('<li>A &amp; co</li><li>B</li>')
+      // A region used to get an empty string here: the block vanished from every
+      // page and nothing said so.
+      expect(rt.renderQuery([{ params: {}, items }], 'q-recent')).toBe(plain)
+    })
+
+    it('a region still refuses more than one result set', () => {
+      expect(() => rt.renderQuery([{ params: {}, items }, { params: {}, items }], 'q-recent')).toThrow(/exactly one result set/)
+    })
   })
 })

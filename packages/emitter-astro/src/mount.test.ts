@@ -312,6 +312,19 @@ describe('a placement bound to a query', () => {
     expect(missing.files['src/components/CRecent.astro']).toContain('<cr-component')
   })
 
+  it('warns when a bound query has no item markup, and the region renders the plain list', () => {
+    const bare: EmitInput['content'] = {
+      ...content,
+      queries: { 'q-recent': [{ params: {}, items: [{ slug: 'a', title: 'A', body: '<p>a</p>' }] }] },
+    }
+    const result = emitAstroProject({ ir: base, content: bare })
+    expect(result.warnings).toEqual([
+      'family f-article: placement "c-recent" binds query "q-recent", which has no item_template or sections — plain fallback list rendered (not fidelity)',
+    ])
+    // The binding stands: the region is live, just not styled like the source.
+    expect(result.files['src/layouts/FArticle.astro']).toContain('renderQuery(q_q_recent as EmittedQueryPage[], "q-recent")')
+  })
+
   it('warns when a region binds a query that has more than one result set', () => {
     const many: EmitInput['content'] = {
       ...content,
