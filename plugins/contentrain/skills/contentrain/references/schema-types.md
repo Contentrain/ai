@@ -97,8 +97,8 @@ In v1, media fields store URL/path strings only. Upload and processing are out o
 
 | Type | Cardinality | Storage |
 |------|-------------|---------|
-| `relation` | One-to-one | `"entry-id"` (string) |
-| `relations` | One-to-many | `["id-1", "id-2"]` (string array) |
+| `relation` | One-to-one | `"entry-id"` (string); `{ "model": "page", "ref": "entry-id" }` when `model` lists several targets |
+| `relations` | One-to-many | `["id-1", "id-2"]` (string array); `[{ "model", "ref" }, …]` when `model` lists several targets |
 
 ### Relation Examples
 

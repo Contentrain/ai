@@ -696,6 +696,28 @@ export function detectSecrets(value: unknown): ValidationError[] {
   return []
 }
 
+/** The models a relation field may point into. */
+function relationTargets(fieldDef: FieldDef): string[] {
+  if (Array.isArray(fieldDef.model)) return fieldDef.model
+  return fieldDef.model ? [fieldDef.model] : []
+}
+
+/**
+ * A reference into one of several models: `{ model, ref }`.
+ *
+ * A relation with more than one target model cannot store a bare id — the id
+ * alone does not say which model's entry it is — so it stores the pair. With a
+ * single target the id is enough and stays a string. A one-element `model`
+ * array is a single target. This is the storage rule the schema documents and
+ * the MCP entry validator enforces; a type check that knew only the string form
+ * rejected every correctly stored polymorphic reference.
+ */
+function isPolymorphicRef(value: unknown): value is { model: string, ref: string } {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    && typeof (value as { model?: unknown }).model === 'string'
+    && typeof (value as { ref?: unknown }).ref === 'string'
+}
+
 function fieldTypeMatches(value: unknown, fieldDef: FieldDef): boolean {
   if (value === null || value === undefined) return true
 
@@ -730,7 +752,7 @@ function fieldTypeMatches(value: unknown, fieldDef: FieldDef): boolean {
       return typeof value === 'boolean'
 
     case 'relation':
-      return typeof value === 'string'
+      return relationTargets(fieldDef).length > 1 ? isPolymorphicRef(value) : typeof value === 'string'
 
     case 'relations':
     case 'array':
@@ -994,6 +1016,13 @@ export function validateFieldValue(value: unknown, fieldDef: FieldDef): Validati
   }
 
   issues.push(...validateSemanticType(value, fieldDef.type))
+
+  if (fieldDef.type === 'relation' && isPolymorphicRef(value)) {
+    const targets = relationTargets(fieldDef)
+    if (!targets.includes(value.model)) {
+      issues.push({ severity: 'error', message: `Relation target model "${value.model}" is not one of: ${targets.join(', ')}` })
+    }
+  }
 
   if (fieldDef.accept && isMediaType(fieldDef.type) && typeof value === 'string') {
     issues.push(...validateAccept(value, fieldDef.accept))
