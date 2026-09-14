@@ -305,8 +305,8 @@ Field types for connecting entries across models.
 
 | Type | Description | Constraints | Storage |
 |---|---|---|---|
-| `relation` | Single relation to another entry | `model` (target model ID) | `string` (entry ID) |
-| `relations` | Multiple relations to other entries | `model` (target model ID or array) | `string[]` (entry IDs) |
+| `relation` | Single relation to another entry | `model` (target model ID or array) | `string` (entry ID); `{ model, ref }` when `model` names more than one target |
+| `relations` | Multiple relations to other entries | `model` (target model ID or array) | `string[]` (entry IDs); `{ model, ref }[]` when `model` names more than one target |
 
 #### Examples
 
@@ -330,6 +330,8 @@ Field types for connecting entries across models.
   }
 }
 ```
+
+A relation whose `model` lists several targets is **polymorphic**: an entry ID alone does not say which model it belongs to, so the reference stores both — `{ "model": "case-studies", "ref": "a1b2c3d4e5f6" }`. A one-element `model` array is a single target and stores the plain ID. `validateFieldValue` and `contentrain_validate` both apply this rule.
 
 ::: warning
 Relation fields store entry IDs as references. Use the `resolve` parameter in `contentrain_content_list` to expand relations to full entry data at query time.

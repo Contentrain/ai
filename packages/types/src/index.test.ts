@@ -688,6 +688,32 @@ describe('@contentrain/types', () => {
       expect(validateFieldValue(42, { type: 'relation', model: 'posts' })).toHaveLength(1)
     })
 
+    /**
+     * A relation with several target models stores `{ model, ref }` — the id
+     * alone cannot say which model it belongs to. This check knew only the
+     * string form and rejected every correctly stored polymorphic reference: an
+     * imported media library's `parent` ("attached to" a post or a page) failed
+     * on every entry that had one.
+     */
+    it('accepts { model, ref } for a relation with several target models', () => {
+      const parent: FieldDef = { type: 'relation', model: ['posts', 'pages'] }
+      expect(validateFieldValue({ model: 'pages', ref: 'a1b2c3d4e5f6' }, parent)).toEqual([])
+      // The id alone does not say which model — not a valid polymorphic value.
+      expect(validateFieldValue('a1b2c3d4e5f6', parent)).toHaveLength(1)
+      expect(validateFieldValue({ ref: 'a1b2c3d4e5f6' }, parent)).toHaveLength(1)
+      expect(validateFieldValue({ model: 'pages', ref: 7 }, parent)).toHaveLength(1)
+      expect(validateFieldValue([{ model: 'pages', ref: 'x' }], parent)).toHaveLength(1)
+      expect(validateFieldValue({ model: 'products', ref: 'a1b2c3d4e5f6' }, parent)).toEqual([
+        { severity: 'error', message: 'Relation target model "products" is not one of: posts, pages' },
+      ])
+    })
+
+    it('a one-element model list is a single target, stored as a string', () => {
+      const parent: FieldDef = { type: 'relation', model: ['posts'] }
+      expect(validateFieldValue('a1b2c3d4e5f6', parent)).toEqual([])
+      expect(validateFieldValue({ model: 'posts', ref: 'a1b2c3d4e5f6' }, parent)).toHaveLength(1)
+    })
+
     it('checks min/max for numbers', () => {
       expect(validateFieldValue(5, { type: 'number', min: 1, max: 10 })).toHaveLength(0)
       expect(validateFieldValue(0, { type: 'number', min: 1 })).toHaveLength(1)

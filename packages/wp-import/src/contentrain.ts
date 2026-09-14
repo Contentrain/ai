@@ -60,6 +60,25 @@ const normLocale = (code: string | null | undefined): string => (code ?? '').spl
 /** Multilingual-plugin taxonomies that carry language bookkeeping, not content. */
 const LANGUAGE_TAXONOMIES = new Set(['language', 'post_translations', 'term_language', 'term_translations'])
 
+/**
+ * A relation field over `targets`: its declared model, and how a reference into
+ * it is stored.
+ *
+ * With several targets the id alone does not say which model's entry it is, so
+ * the reference is the pair `{ model, ref }`. With one there is nothing to
+ * choose between: the field is single-target and stores the entry id. Writing
+ * the pair there fails the same validator that requires it when there are
+ * several — so the choice is made in one place, from the same list the model
+ * declares.
+ */
+function relationOver(targets: string[]): {
+  model: string | string[]
+  ref: (entry: { model: string; ref: string }) => string | { model: string; ref: string }
+} {
+  const single = targets.length === 1
+  return { model: single ? targets[0]! : targets, ref: (entry) => (single ? entry.ref : entry) }
+}
+
 export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): ContentrainResult {
   const updatedBy = opts?.updatedBy ?? '@contentrain/wp-import'
   const locale = normLocale(raw.site.language) || 'en'
@@ -252,6 +271,16 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     }
   }
 
+  const postTypes = [...new Set(raw.posts.map((p) => p.type))].filter((t) => {
+    if (SKIP_TYPES.test(t)) {
+      report.skipped_types.push(t)
+      return false
+    }
+    return true
+  })
+  const contentModelIds = postTypes.map(typeModelId)
+  const toContent = relationOver(contentModelIds)
+
   // ── media ──
   addModel({
     id: 'media', name: 'Media', kind: 'collection', domain: 'assets', i18n: false, title_field: 'title',
@@ -266,7 +295,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       width: { type: 'integer', label: 'Width', order: 80 },
       height: { type: 'integer', label: 'Height', order: 90 },
       file: { type: 'string', label: 'Upload path', order: 100 },
-      parent: { type: 'relation', model: [], label: 'Attached to', order: 110 },
+      parent: { type: 'relation', model: toContent.model, label: 'Attached to', order: 110 },
       wp_id: { type: 'integer', label: 'WP attachment ID', order: 120 },
       uploaded_at: { type: 'datetime', label: 'Uploaded at', order: 130 },
     },
@@ -277,8 +306,9 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     let slug = slugify(decodeSlug(a.slug)) || `media-${a.id}`
     if (mediaSlugs.has(slug)) slug = `${slug}-${a.id}`
     mediaSlugs.add(slug)
-    const parent = a.parent ? (postEntry.get(a.parent) ?? null) : null
-    if (a.parent && !parent) report.dropped_relations++
+    const target = a.parent ? postEntry.get(a.parent) : undefined
+    if (a.parent && !target) report.dropped_relations++
+    const parent = target ? toContent.ref(target) : null
     const im = (a.image_meta ?? null) as { width?: number; height?: number } | null
     contents.media![id] = pick(
       {
@@ -302,15 +332,6 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
   }
 
   // ── post types (post, page, CPTs) ──
-  const postTypes = [...new Set(raw.posts.map((p) => p.type))].filter((t) => {
-    if (SKIP_TYPES.test(t)) {
-      report.skipped_types.push(t)
-      return false
-    }
-    return true
-  })
-  const contentModelIds = postTypes.map(typeModelId)
-  ;(models.media!.fields!.parent as FieldDef).model = contentModelIds
   for (const type of postTypes) {
     const typeItems = raw.posts.filter((p) => p.type === type)
     const mid = typeModelId(type)
@@ -433,6 +454,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
         wp_id: { type: 'integer', label: 'WP term ID', order: 40 },
       },
     })
+    const toTarget = relationOver([...contentModelIds, ...taxonomies.map(taxModelId)])
     addModel({
       id: 'menu-items', name: 'Menu items', kind: 'collection', domain: 'site', i18n: false, title_field: 'title',
       fields: {
@@ -442,7 +464,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
         parent: { type: 'relation', model: 'menu-items', label: 'Parent item', order: 40 },
         type: { type: 'select', options: ['custom', 'post_type', 'taxonomy', 'post_type_archive'], label: 'Type', order: 50 },
         url: { type: 'url', label: 'URL', order: 60 },
-        target: { type: 'relation', model: [...contentModelIds, ...taxonomies.map(taxModelId)], label: 'Target', order: 70 },
+        target: { type: 'relation', model: toTarget.model, label: 'Target', order: 70 },
         open_in_new_tab: { type: 'boolean', label: 'Open in new tab', order: 80 },
         classes: { type: 'array', items: 'string', label: 'CSS classes', order: 90 },
         description: { type: 'text', label: 'Description', order: 100 },
@@ -472,11 +494,11 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
         if (i.target.kind === 'url' && i.url) e.url = i.url
         if (i.target.kind === 'post' && i.target.resolved && i.target.id != null) {
           const pe = postEntry.get(i.target.id)
-          if (pe) e.target = pe
+          if (pe) e.target = toTarget.ref(pe)
           else report.dropped_relations++
         }
         if (i.target.kind === 'term' && i.target.resolved && i.target.slug && models[taxModelId(i.target.taxonomy)])
-          e.target = { model: taxModelId(i.target.taxonomy), ref: termId(i.target.taxonomy, i.target.slug) }
+          e.target = toTarget.ref({ model: taxModelId(i.target.taxonomy), ref: termId(i.target.taxonomy, i.target.slug) })
         if (i.classes?.length) e.classes = i.classes
         if (i.description) e.description = strip(i.description)
         contents['menu-items']![itemRef(i.id)] = e
@@ -496,7 +518,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
         url: { type: 'url', label: 'Website', order: 30 },
         body: { type: 'richtext', label: 'Body', order: 40 },
         published_at: { type: 'datetime', label: 'Date', order: 50 },
-        post: { type: 'relation', model: contentModelIds, required: true, label: 'Post', order: 60 },
+        post: { type: 'relation', model: toContent.model, required: true, label: 'Post', order: 60 },
         parent: { type: 'relation', model: 'comments', label: 'In reply to', order: 70 },
         type: { type: 'string', label: 'Type', order: 80 },
         user: { type: 'relation', model: 'authors', label: 'User', order: 90 },
@@ -518,7 +540,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
           url: c.url,
           body: c.content,
           published_at: c.date,
-          post,
+          post: toContent.ref(post),
           parent: c.parent && c.parent_resolved ? cRef(c.parent) : null,
           type: c.type,
           user: c.user_id ? userById.get(c.user_id) : null,

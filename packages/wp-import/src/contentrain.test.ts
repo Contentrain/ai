@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import type { RawIR } from '@contentrain/types'
+import type { FieldDef, RawIR } from '@contentrain/types'
+import { validateFieldValue } from '@contentrain/types'
 import { parseWxr, rawToContentrain, buildCommentsExport, summarizeComments, hexId } from './index'
 import { FIXTURE } from './wxr.test'
 
@@ -139,6 +140,83 @@ describe('rawToContentrain', () => {
     expect(result.report.skipped_types).toContain('revision')
     expect(result.report.dropped_relations).toBe(2)
     for (const id of ['101', '102']) expect(entries[result.entry_source_map[id]!.entry_id].parent).toBeUndefined()
+  })
+})
+
+/**
+ * Every value the importer writes must pass the type check of the model it
+ * writes beside it. The importer and the validator are two readings of one
+ * schema, and when they disagree the store fails its own gate on every entry
+ * that carries the field — which is what happened with media `parent`: written
+ * as `{ model, ref }` for a polymorphic relation, rejected as "not a string".
+ */
+function storeViolations(files: Record<string, string>): { checked: Record<string, number>, violations: string[] } {
+  const checked: Record<string, number> = {}
+  const violations: string[] = []
+  for (const [path, text] of Object.entries(files)) {
+    if (!/^\.contentrain\/models\/.+\.json$/.test(path)) continue
+    const def = JSON.parse(text) as { id: string, kind: string, domain: string, fields?: Record<string, FieldDef> }
+    if (def.kind !== 'collection' || !def.fields) continue
+    const data = files[`.contentrain/content/${def.domain}/${def.id}/data.json`]
+    if (data === undefined) continue
+    for (const [entryId, entry] of Object.entries(JSON.parse(data) as Record<string, Record<string, unknown>>)) {
+      for (const [field, value] of Object.entries(entry)) {
+        const fieldDef = def.fields[field]
+        if (!fieldDef) continue
+        checked[`${def.id}.${field}`] = (checked[`${def.id}.${field}`] ?? 0) + 1
+        for (const issue of validateFieldValue(value, fieldDef)) {
+          if (issue.severity === 'error') violations.push(`${def.id}/${entryId}.${field}: ${issue.message} (${JSON.stringify(value)})`)
+        }
+      }
+    }
+  }
+  return { checked, violations }
+}
+
+const MEDIA = '.contentrain/content/assets/media/data.json'
+const targetModel = (files: Record<string, string>) => JSON.parse(files['.contentrain/models/menu-items.json']!).fields.target.model
+const attachedMedia = (files: Record<string, string>) =>
+  Object.values(JSON.parse(files[MEDIA]!) as Record<string, { parent?: unknown }>).filter((m) => m.parent !== undefined)
+
+describe('what the importer writes passes its own models', () => {
+  it('the fixture store has no field that fails its model', async () => {
+    const { result } = await load()
+    // The case that failed: an attachment attached to a post, on a site with
+    // posts and pages — a polymorphic parent stored as { model, ref }.
+    expect(JSON.parse(result.files['.contentrain/models/media.json']!).fields.parent.model).toEqual(['posts', 'pages'])
+    expect(attachedMedia(result.files).map((m) => typeof m.parent)).toContain('object')
+    const { checked, violations } = storeViolations(result.files)
+    expect(checked['media.parent']).toBeGreaterThan(0)
+    expect(checked['posts.title']).toBeGreaterThan(0)
+    expect(violations).toEqual([])
+  })
+
+  it('with a single content type, media parent is a single-target relation holding the id', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const result = rawToContentrain({ ...raw, posts: raw.posts.filter((p) => p.type === 'post') })
+    expect(JSON.parse(result.files['.contentrain/models/media.json']!).fields.parent.model).toBe('posts')
+    const attached = attachedMedia(result.files)
+    expect(attached.length).toBeGreaterThan(0)
+    for (const m of attached) expect(typeof m.parent).toBe('string')
+    const { checked, violations } = storeViolations(result.files)
+    expect(checked['media.parent']).toBeGreaterThan(0)
+    // Comments point at content too, and failed the same way.
+    expect(JSON.parse(result.files['.contentrain/models/comments.json']!).fields.post.model).toBe('posts')
+    expect(checked['comments.post']).toBeGreaterThan(0)
+    expect(violations).toEqual([])
+  })
+
+  it('a menu target over one model holds the id; over several, the pair', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const several = rawToContentrain(raw)
+    const one = rawToContentrain({ ...raw, posts: raw.posts.filter((p) => p.type === 'post'), terms: raw.terms.filter((t) => t.taxonomy === 'nav_menu') })
+    expect(Array.isArray(targetModel(several.files))).toBe(true)
+    expect(targetModel(one.files)).toBe('posts')
+    for (const result of [several, one]) {
+      const { checked, violations } = storeViolations(result.files)
+      expect(checked['menu-items.target']).toBeGreaterThan(0)
+      expect(violations).toEqual([])
+    }
   })
 })
 
