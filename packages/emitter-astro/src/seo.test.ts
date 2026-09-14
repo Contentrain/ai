@@ -109,15 +109,106 @@ describe('stripSeoTags', () => {
   })
 
   it('reads @graph and @type arrays', () => {
-    const graph = '<script type="application/ld+json">{"@graph":[{"@type":"WebSite"},{"@type":["Article","CreativeWork"]}]}</script>'
+    const graph = '<script type="application/ld+json">{"@graph":[{"@type":["Article","CreativeWork"]},{"@type":"ImageObject"}]}</script>'
     expect(stripSeoTags(graph).html).toBe('')
-    const siteOnly = '<script type="application/ld+json">{"@graph":[{"@type":"WebSite"},{"@type":"BreadcrumbList"}]}</script>'
-    expect(stripSeoTags(siteOnly).html).toBe(siteOnly)
+    const siteOnly = '<script type="application/ld+json">{"@graph":[{"@type":"WebSite"},{"@type":"Organization"}]}</script>'
+    expect(stripSeoTags(siteOnly)).toEqual({ html: siteOnly, removed: [], kept: [] })
+  })
+
+  it('treats every page and article subtype, and a breadcrumb trail, as page-scoped', () => {
+    // A breadcrumb names the template page's position; an archive template's
+    // CollectionPage names the template archive. Both are wrong everywhere else.
+    for (const type of ['CollectionPage', 'ProfilePage', 'FAQPage', 'NewsArticle', 'BlogPosting', 'BreadcrumbList']) {
+      const block = `<script type="application/ld+json">{"@type":"${type}","name":"x"}</script>`
+      expect(stripSeoTags(block).html, type).toBe('')
+    }
+    const person = '<script type="application/ld+json">{"@type":"Person","name":"Ada"}</script>'
+    expect(stripSeoTags(person).html).toBe(person)
   })
 
   it('is a no-op on a head with none of these tags', () => {
     const plain = '<meta charset="utf-8" /><link rel="icon" href="/favicon.ico" />'
-    expect(stripSeoTags(plain)).toEqual({ html: plain, removed: [] })
+    expect(stripSeoTags(plain)).toEqual({ html: plain, removed: [], kept: [] })
+  })
+})
+
+/**
+ * An SEO plugin writes the site's identity into the same @graph as the page's
+ * own nodes. Removing page-scoped blocks whole took WebSite and Organization
+ * with them, so a migrated site lost the structured data that says who it is.
+ */
+describe('a mixed @graph from an SEO plugin', () => {
+  // Shape of a Yoast SEO single-post head, trimmed.
+  const yoast = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@graph': [
+      { '@type': 'Article', '@id': 'https://example.com/template-post/#article', headline: 'Template Post', author: { '@id': 'https://example.com/#/schema/person/ada' }, publisher: { '@id': 'https://example.com/#organization' } },
+      { '@type': 'WebPage', '@id': 'https://example.com/template-post/', url: 'https://example.com/template-post/', breadcrumb: { '@id': 'https://example.com/template-post/#breadcrumb' }, primaryImageOfPage: { '@id': 'https://example.com/template-post/#primaryimage' } },
+      { '@type': 'ImageObject', '@id': 'https://example.com/template-post/#primaryimage', url: 'https://example.com/hero.jpg' },
+      { '@type': 'BreadcrumbList', '@id': 'https://example.com/template-post/#breadcrumb', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Home' }] },
+      { '@type': 'WebSite', '@id': 'https://example.com/#website', url: 'https://example.com/', name: 'Example </script> Site', publisher: { '@id': 'https://example.com/#organization' }, potentialAction: [{ '@type': 'SearchAction', target: { '@type': 'EntryPoint', urlTemplate: 'https://example.com/?s={search_term_string}' }, 'query-input': 'required name=search_term_string' }], inLanguage: 'en-US' },
+      { '@type': 'Organization', '@id': 'https://example.com/#organization', name: 'Example', url: 'https://example.com/', logo: { '@id': 'https://example.com/#/schema/logo/image/' }, sameAs: ['https://social.example/example'] },
+      { '@type': 'ImageObject', '@id': 'https://example.com/#/schema/logo/image/', url: 'https://example.com/logo.png' },
+      { '@type': 'Person', '@id': 'https://example.com/#/schema/person/ada', name: 'Ada' },
+    ],
+  // escaped as a real head carries it: a raw </script> would end the element
+  }).replace(/</g, '\\u003c')
+  const head = `<meta charset="utf-8" />\n<script type="application/ld+json" class="yoast-schema-graph">${yoast}</script>\n<link rel="icon" href="/favicon.ico" />`
+  const out = stripSeoTags(head)
+  const block = /<script type="application\/ld\+json" class="yoast-schema-graph">([\s\S]*?)<\/script>/.exec(out.html)
+  const graph = JSON.parse(block![1]!) as { '@context': string, '@graph': Array<Record<string, unknown>> }
+
+  it('keeps WebSite and Organization, and what they refer to, in the same script element', () => {
+    expect(graph['@context']).toBe('https://schema.org')
+    expect(graph['@graph'].map((n) => n['@type'])).toEqual(['WebSite', 'Organization', 'ImageObject'])
+    const org = graph['@graph'][1]!
+    expect(org.sameAs).toEqual(['https://social.example/example'])
+    // the logo the Organization points at comes along; the page's hero image does not
+    expect(graph['@graph'][2]!.url).toBe('https://example.com/logo.png')
+    expect(out.html).toContain('<meta charset="utf-8" />')
+    expect(out.html).toContain('<link rel="icon" href="/favicon.ico" />')
+  })
+
+  it('drops the page nodes, and a person only the article referred to', () => {
+    expect(out.html).not.toContain('Template Post')
+    expect(out.html).not.toContain('BreadcrumbList')
+    expect(out.html).not.toContain('hero.jpg')
+    expect(out.html).not.toContain('schema/person/ada"')
+  })
+
+  it('drops the SearchAction — a static site has no ?s= search — and says so', () => {
+    expect(graph['@graph'][0]!.potentialAction).toBeUndefined()
+    expect(graph['@graph'][0]!.inLanguage).toBe('en-US')
+    expect(out.removed).toEqual(['page-scoped JSON-LD', 'WebSite SearchAction'])
+    expect(out.kept).toEqual(['WebSite', 'Organization', 'ImageObject'])
+  })
+
+  it('cannot be closed early by a value that contains </script>', () => {
+    expect(block![1]).not.toContain('</script>')
+    expect(graph['@graph'][0]!.name).toBe('Example </script> Site')
+  })
+
+  it('a person the site is published by is site-wide and stays', () => {
+    const personal = JSON.stringify({ '@graph': [
+      { '@type': 'WebPage', '@id': '#page' },
+      { '@type': 'WebSite', '@id': '#website', publisher: { '@id': '#me' } },
+      { '@type': ['Person', 'Organization'], '@id': '#me', name: 'Ada' },
+    ] })
+    const kept = stripSeoTags(`<script type="application/ld+json">${personal}</script>`)
+    expect(JSON.parse(/>([\s\S]*)<\/script>/.exec(kept.html)![1]!)['@graph'].map((n: { '@id': string }) => n['@id'])).toEqual(['#website', '#me'])
+  })
+
+  it('a top-level array and a single page node are handled the same way', () => {
+    const array = stripSeoTags('<script type="application/ld+json">[{"@type":"Article"},{"@type":"Organization","name":"E"}]</script>')
+    expect(JSON.parse(/>([\s\S]*)<\/script>/.exec(array.html)![1]!)).toEqual([{ '@type': 'Organization', name: 'E' }])
+    expect(stripSeoTags('<script type="application/ld+json">{"@type":"WebPage"}</script>').html).toBe('')
+  })
+
+  it('the emit warning names what was kept', () => {
+    const result = emitAstroProject({ ...input, ir: { ...ir, families: [{ ...ir.families[0]!, chrome: [{ id: 'head', position: 'head', html: head }, ir.families[0]!.chrome![1]!] }] } })
+    const warning = result.warnings.find((w) => w.includes('f-single') && w.includes('page-scoped JSON-LD'))
+    expect(warning).toContain('kept the site-wide WebSite, Organization, ImageObject from its structured data')
+    expect(JSON.parse(result.files['src/data/chrome/f-single.json']!).head).toContain('"Organization"')
   })
 })
 
