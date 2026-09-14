@@ -59,9 +59,21 @@ It also **removes the template page's copies of those tags from the head
 chrome**, naming them in a warning. Inheriting them is worse than having none: a
 whole site canonicalised onto the template post's URL de-indexes itself, and
 every share card shows the same wrong story. Everything else the theme put in
-`<head>` stays — charset, preloads, feeds, icons, verification tokens, and any
-JSON-LD that is not page-scoped (`Organization`, `WebSite`, `BreadcrumbList`).
-JSON-LD that cannot be parsed is left alone rather than guessed at.
+`<head>` stays — charset, preloads, feeds, icons, verification tokens, and the
+structured data that describes the site rather than the page.
+
+Page-scoped structured data is every `…Page` and `…Article` type (WebPage,
+CollectionPage, ProfilePage, NewsArticle, …), `BlogPosting` and
+`BreadcrumbList` — a breadcrumb names the template page's trail. An SEO plugin
+writes the site's identity into the **same** `@graph` as those nodes (Yoast and
+Rank Math put WebSite, Organization, WebPage and BreadcrumbList in one block), so
+a mixed block is split rather than removed whole: `WebSite` and `Organization`
+(and its subtypes) stay, with the nodes they refer to by `@id` — the logo, the
+person a personal site is published by — and a page node is never pulled back
+in. A WebSite `SearchAction` is dropped, because it points at WordPress search
+(`/?s=`) and a static site has none. The warning names what was removed and
+what was kept. JSON-LD that cannot be parsed is left alone rather than guessed
+at.
 
 | Tag | Source |
 |---|---|

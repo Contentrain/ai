@@ -100,7 +100,9 @@ SEO continuity is the reason a migration keeps the source addresses at all, so t
 ::: danger Why the template's own tags are removed
 The emitter takes the template page's copies of those tags **out of the head chrome** and names them in a warning. Inheriting them is worse than having none: a whole site canonicalised onto one template post's URL de-indexes itself, and every share card tells the same wrong story.
 
-Everything else the theme put in `<head>` stays — charset, preloads, feeds, icons, verification tokens, and any JSON-LD that is not page-scoped (`Organization`, `WebSite`, `BreadcrumbList`). JSON-LD that cannot be parsed is left alone rather than guessed at.
+Everything else the theme put in `<head>` stays — charset, preloads, feeds, icons, verification tokens, and the structured data that describes the site rather than the page.
+
+Page-scoped structured data is every `…Page` and `…Article` type (WebPage, CollectionPage, ProfilePage, NewsArticle, …), `BlogPosting` and `BreadcrumbList`. An SEO plugin writes the site's identity into the **same** `@graph` as those nodes — Yoast and Rank Math put WebSite, Organization, WebPage and BreadcrumbList in one block — so a mixed block is split rather than removed whole: `WebSite` and `Organization` stay, with the nodes they refer to by `@id` (the logo, the person a personal site is published by). A WebSite `SearchAction` is dropped: it points at WordPress search, and a static site has none. JSON-LD that cannot be parsed is left alone rather than guessed at.
 :::
 
 Head-only tags that a faithful clone left in the **body** are reported, not removed: the body is page content, `<title>` is legal inside `<svg>`, and cutting into it to fix an invisible tag would break real markup.

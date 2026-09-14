@@ -9,8 +9,8 @@
 // template's copies rather than letting two of each fight.
 //
 // What stays: everything else the theme put in `<head>` — charset, preloads,
-// feeds, icons, verification tokens, and any JSON-LD that is not per-page
-// (Organization, WebSite, BreadcrumbList).
+// feeds, icons, verification tokens, and the structured data that describes
+// the site rather than the page (WebSite, Organization).
 
 /** Tags the emitter owns; a source copy of any of these is replaced, not duplicated. */
 const TITLE_RE = /<title\b[^>]*>[\s\S]*?<\/title>\s*/gi
@@ -19,39 +19,143 @@ const CANONICAL_RE = /<link\b[^>]*\brel\s*=\s*["'][^"']*\bcanonical\b[^"']*["'][
 const JSONLD_RE = /<script\b[^>]*\btype\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>\s*/gi
 
 /**
- * Structured-data types that describe THIS page. An Organization or WebSite
- * block is site-wide and true on every page; an Article block names one post
- * and is a lie on all the others.
+ * Structured data that describes THIS page. An Article names one post, a
+ * WebPage (and every subtype — CollectionPage for an archive, ProfilePage for an
+ * author) one address, a BreadcrumbList one page's trail: copied from the
+ * template, each is a lie on every other page. Matched by suffix because
+ * schema.org names its page and article subtypes that way.
  */
-const PAGE_LD_TYPES = new Set(['article', 'blogposting', 'newsarticle', 'webpage', 'blogposting', 'techarticle'])
+function isPageType(type: string): boolean {
+  const t = type.toLowerCase()
+  return t.endsWith('page') || t.endsWith('article') || PAGE_POSTINGS.has(t)
+}
+const PAGE_POSTINGS = new Set(['blogposting', 'liveblogposting', 'socialmediaposting', 'discussionforumposting', 'breadcrumblist'])
 
-function isPageScopedLd(json: string): boolean {
+/**
+ * Structured data that describes the SITE and is true on every page. An
+ * SEO plugin writes it into the same `@graph` as the page's own nodes — Yoast
+ * and Rank Math put WebSite, Organization, WebPage and BreadcrumbList in one
+ * block — so removing page-scoped blocks whole took the site's identity with
+ * them.
+ */
+const SITE_TYPES = new Set([
+  'website', 'organization', 'corporation', 'localbusiness', 'newsmediaorganization',
+  'educationalorganization', 'ngo', 'onlinebusiness', 'onlinestore', 'governmentorganization',
+])
+
+type LdNode = Record<string, unknown>
+
+const typesOf = (node: unknown): string[] => {
+  const type = (node as LdNode | null)?.['@type']
+  return (Array.isArray(type) ? type : [type]).filter((t): t is string => typeof t === 'string')
+}
+const isPageNode = (node: unknown) => typesOf(node).some(isPageType)
+const isSiteNode = (node: unknown) => typesOf(node).some((t) => SITE_TYPES.has(t.toLowerCase()))
+
+/** Every `{"@id": …}` reference anywhere inside a node. */
+function references(value: unknown, out = new Set<string>()): Set<string> {
+  if (Array.isArray(value)) {
+    for (const v of value) references(v, out)
+  } else if (value && typeof value === 'object') {
+    const node = value as LdNode
+    const keys = Object.keys(node)
+    if (keys.length === 1 && typeof node['@id'] === 'string') out.add(node['@id'])
+    for (const v of Object.values(node)) references(v, out)
+  }
+  return out
+}
+
+/**
+ * A WebSite's SearchAction points at WordPress search (`/?s=`). A static site
+ * has no search endpoint, so the claim would be false on the new site.
+ */
+function withoutSearchAction(node: LdNode): { node: LdNode; dropped: boolean } {
+  const action = node['potentialAction']
+  const actions = Array.isArray(action) ? action : action === undefined ? [] : [action]
+  const kept = actions.filter((a) => !typesOf(a).includes('SearchAction'))
+  if (kept.length === actions.length) return { node, dropped: false }
+  const { potentialAction: _, ...rest } = node
+  return { node: kept.length ? { ...rest, potentialAction: Array.isArray(action) ? kept : kept[0] } : rest, dropped: true }
+}
+
+interface LdDecision {
+  /** The block to keep, re-serialized; undefined to keep the original bytes; null to remove it. */
+  json: string | null | undefined
+  kept: string[]
+  droppedSearch: boolean
+}
+
+/**
+ * What to do with one JSON-LD block. A block with no page-scoped node stays as
+ * it was. A block with one loses its page-scoped nodes and keeps the site's —
+ * WebSite, Organization — together with the nodes those refer to by `@id` (a
+ * logo, the person a personal site is published by), never pulling a page node
+ * back in. Nothing site-scoped left means the block goes.
+ */
+function decideLd(json: string): LdDecision {
   let parsed: unknown
   try {
     parsed = JSON.parse(json)
   } catch {
     // Unparseable JSON-LD is left alone: removing markup we cannot read would
     // be guessing, and a broken block is the theme's problem, not ours.
-    return false
+    return { json: undefined, kept: [], droppedSearch: false }
   }
-  const graph = (parsed as { '@graph'?: unknown })?.['@graph']
-  const nodes = Array.isArray(parsed) ? parsed : Array.isArray(graph) ? graph : [parsed]
-  return nodes.some((node) => {
-    const type = (node as { '@type'?: unknown })?.['@type']
-    const types = Array.isArray(type) ? type : [type]
-    return types.some((t) => typeof t === 'string' && PAGE_LD_TYPES.has(t.toLowerCase()))
+  const graph = (parsed as { '@graph'?: unknown } | null)?.['@graph']
+  const nodes: unknown[] = Array.isArray(parsed) ? parsed : Array.isArray(graph) ? graph : [parsed]
+  if (!nodes.some(isPageNode)) return { json: undefined, kept: [], droppedSearch: false }
+
+  const byId = new Map<string, unknown>()
+  for (const node of nodes) {
+    const id = (node as LdNode | null)?.['@id']
+    if (typeof id === 'string') byId.set(id, node)
+  }
+  const keep = new Set<unknown>(nodes.filter((n) => isSiteNode(n) && !isPageNode(n)))
+  const queue = [...keep]
+  while (queue.length) {
+    for (const id of references(queue.shift())) {
+      const target = byId.get(id)
+      if (target && !keep.has(target) && !isPageNode(target)) {
+        keep.add(target)
+        queue.push(target)
+      }
+    }
+  }
+  if (!keep.size) return { json: null, kept: [], droppedSearch: false }
+
+  let droppedSearch = false
+  const kept = nodes.filter((n) => keep.has(n)).map((n) => {
+    if (!typesOf(n).some((t) => t.toLowerCase() === 'website')) return n
+    const result = withoutSearchAction(n as LdNode)
+    droppedSearch ||= result.dropped
+    return result.node
   })
+  const context = (parsed as LdNode | null)?.['@context']
+  const rebuilt = Array.isArray(parsed)
+    ? kept
+    : Array.isArray(graph)
+      ? { ...(context === undefined ? {} : { '@context': context }), '@graph': kept }
+      : kept[0]
+  return {
+    // `<` escaped so a string value can never close the script element.
+    json: JSON.stringify(rebuilt).replace(/</g, '\\u003c'),
+    kept: [...new Set(kept.flatMap(typesOf))],
+    droppedSearch,
+  }
 }
 
 export interface StripResult {
   html: string
   /** What was taken out, for the emit warning — never a silent removal. */
   removed: string[]
+  /** Site-wide structured-data types kept out of a block that was otherwise page-scoped. */
+  kept: string[]
 }
 
 /** Remove the source head's per-page SEO tags so the emitter's own are the only ones. */
 export function stripSeoTags(html: string): StripResult {
   const removed: string[] = []
+  const kept: string[] = []
   const note = (label: string) => {
     if (!removed.includes(label)) removed.push(label)
   }
@@ -68,12 +172,17 @@ export function stripSeoTags(html: string): StripResult {
     note('canonical')
     return ''
   })
-  out = out.replace(JSONLD_RE, (tag, json: string) => {
-    if (!isPageScopedLd(json)) return tag
+  out = out.replace(JSONLD_RE, (tag: string, json: string) => {
+    const decision = decideLd(json)
+    if (decision.json === undefined) return tag
     note('page-scoped JSON-LD')
-    return ''
+    if (decision.droppedSearch) note('WebSite SearchAction')
+    for (const type of decision.kept) if (!kept.includes(type)) kept.push(type)
+    if (decision.json === null) return ''
+    const open = tag.slice(0, tag.indexOf('>') + 1)
+    return `${open}${decision.json}</script>\n`
   })
-  return { html: out, removed }
+  return { html: out, removed, kept }
 }
 
 /**

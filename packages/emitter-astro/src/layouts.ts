@@ -153,7 +153,8 @@ export function familyFiles(
     const stripped = stripSeoTags(head)
     head = stripped.html
     if (stripped.removed.length) {
-      warnings.push(`family ${family.id}: removed the template page's ${stripped.removed.join(', ')} from head chrome — the emitter renders these per page`)
+      const kept = stripped.kept.length ? `; kept the site-wide ${stripped.kept.join(', ')} from its structured data` : ''
+      warnings.push(`family ${family.id}: removed the template page's ${stripped.removed.join(', ')} from head chrome — these describe one page, and the emitter renders title, description, canonical, social tags and Article data per page${kept}`)
     }
   }
 
