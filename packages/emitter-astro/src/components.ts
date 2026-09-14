@@ -109,6 +109,8 @@ interface Props {
   /** Content-store address of the page's entry — the thread's key. */
   entry?: { model_id: string; entry_id: string; locale?: string }
   variant?: string
+  /** Accepted for uniform mounting — the layout passes it to every mount; a thread renders its own markup. */
+  html?: string
 }
 const { entry, variant = 'default' } = Astro.props
 ---
@@ -153,6 +155,8 @@ interface Props {
   variant?: string
   /** Accepted for uniform mounting; a form is addressed by its model, not by the page's entry. */
   entry?: { model_id: string; entry_id: string; locale?: string }
+  /** Accepted for uniform mounting — the layout passes it to every mount; a form renders its own markup. */
+  html?: string
 }
 const { variant = 'default' } = Astro.props
 ---

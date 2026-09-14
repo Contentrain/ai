@@ -350,3 +350,48 @@ describe('a placement bound to a query', () => {
     expect(result.files['src/data/queries/q-recent.json']).toBeUndefined()
   })
 })
+
+/**
+ * The layout renders every mount through one expression, so every component it
+ * can mount must accept every prop that expression passes. When the query
+ * binding added `html`, the comments and form components did not declare it,
+ * and \`astro check\` — which the build runs first — rejected every site that
+ * mounted either: the emit looked right and the build could not start.
+ */
+describe('every mountable component accepts what the layout passes', () => {
+  const mountIr: ProjectIR = {
+    version: MIGRATION_CONTRACT_VERSION,
+    site: { url: 'https://example.com', locales: ['en'] },
+    routes: [{ id: 'r', pattern: '/:slug', kind: 'single', family: 'f' }],
+    families: [{
+      id: 'f',
+      kind: 'single',
+      chrome: [{ id: 'body', position: 'body', html: `<main>${CHROME_BODY_SLOT}${componentSlot('c-comments')}${componentSlot('c-form')}${componentSlot('c-recent')}${componentSlot('c-ad')}</main>` }],
+      components: [{ component: 'c-comments' }, { component: 'c-form' }, { component: 'c-recent', query: 'q' }, { component: 'c-ad' }],
+      css: { strategy: 'localcss' },
+    }],
+    components: [
+      { id: 'c-comments', type: 'comments', source: 'runtime' },
+      { id: 'c-form', type: 'form', source: 'runtime', model: 'contact' },
+      { id: 'c-recent', type: 'related', source: 'chrome' },
+      { id: 'c-ad', type: 'ad', source: 'chrome' },
+    ],
+    css_default: 'purge_set',
+  } as unknown as ProjectIR
+  const { files } = emitAstroProject({
+    ir: mountIr,
+    content: { posts: [{ slug: 'a', title: 'A', body: '<p>a</p>' }], queries: { q: [{ params: {}, items: [], item_template: '<li>@@title@@</li>' }] } },
+    runtime: { base_url: 'https://studio.test', project_id: 'p' },
+  })
+
+  it('declares each prop the mount expression passes, in every component file', () => {
+    const mount = /<Mount ([^>]*?)\/>/.exec(files['src/layouts/F.astro']!)
+    const passed = [...mount![1]!.matchAll(/(\w+)=\{/g)].map((m) => m[1]!)
+    expect(passed).toContain('html')
+    for (const name of ['CComments', 'CForm', 'CRecent', 'CAd']) {
+      const source = files[`src/components/${name}.astro`]!
+      const props = /interface Props \{([\s\S]*?)\n\}/.exec(source)![1]!
+      for (const prop of passed) expect(props, `${name} declares ${prop}`).toMatch(new RegExp(`^\\s*${prop}\\?:`, 'm'))
+    }
+  })
+})
