@@ -16,6 +16,7 @@ import { collectionItems, routeFiles } from './pages.js'
 import { componentFiles, isRuntimeImplemented } from './components.js'
 import { chromeComponents } from './chrome.js'
 import { SEO_COMPONENT } from './seo.js'
+import { withAlternates } from './alternates.js'
 import { wrapLegacyCss } from './css.js'
 import { stableJson } from './util.js'
 
@@ -150,10 +151,19 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   // The pages are unrecoverable at this point either way: the emitter cannot
   // know which route should own the path. What it can do is refuse to produce
   // a site that is quietly wrong.
+  // hreflang alternates ride on the entry data, so they are attached before the
+  // routes write it. The Seo component renders them; without it the producer
+  // owns the head, alternates included.
+  let routeContent = input.content ?? {}
+  if (seo) {
+    const alternates = withAlternates(ir.routes, routeContent, lang)
+    routeContent = alternates.content
+    warnings.push(...alternates.warnings)
+  }
   const pageOwner = new Map<string, RouteModel>()
   const collisions: { path: string, first: RouteModel, second: RouteModel }[] = []
   for (const route of ir.routes) {
-    const result = routeFiles(route, familiesById.get(route.family), input.content ?? {}, lang, seo)
+    const result = routeFiles(route, familiesById.get(route.family), routeContent, lang, seo)
     for (const path of Object.keys(result.files)) {
       if (!path.startsWith('src/pages/')) continue
       const owner = pageOwner.get(path)
@@ -253,6 +263,8 @@ export { componentMarkers } from './layouts.js'
 export type { MountRef } from './layouts.js'
 export { isRuntimeImplemented, RUNTIME_IMPLEMENTED } from './components.js'
 export { bodySeoLeaks, stripSeoTags, SEO_COMPONENT } from './seo.js'
+export { entryPath, withAlternates } from './alternates.js'
+export type { Alternate, AlternatesResult } from './alternates.js'
 export type { StripResult } from './seo.js'
 export { EMBED_TS } from './embed.js'
 export { checkBalance, balanceWarning } from './balance.js'

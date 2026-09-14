@@ -95,6 +95,7 @@ SEO continuity is the reason a migration keeps the source addresses at all, so t
 | `og:image`, `twitter:image` | `EmitPost.image`, else a `featured` entry that is already a path. A bare file name is skipped — only the producer knows where media is served |
 | `og:image:width` / `height` / `type` | `image_meta` on `EmitPost` or `QueryPage`, as the producer measured the file. Printed only beside `image` (a `featured` fallback is a different file), and only valid values — positive integer sizes, an `image/…` type |
 | `og:site_name` | `ProjectIR.site.title` |
+| `hreflang` alternates, `og:locale:alternate` | Entry pages whose content-store entry (`EmitPost.entry`) exists in another locale. Addresses come from each route's own pattern and the post's parameters — what `getStaticPaths` uses — and the language is the page's `lang`. Every page lists itself; `x-default` is the site-default-locale version. An ambiguous address gets none, with a warning. The template page's own hreflang links are removed from the head chrome |
 | `og:locale` | The page's `lang` |
 | `article:*` and Article JSON-LD dates | `EmitPost.published_at` / `modified_at` (ISO 8601 — `dates` holds display strings, which schema.org cannot read) |
 

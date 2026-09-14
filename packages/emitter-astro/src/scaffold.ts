@@ -443,6 +443,7 @@ export interface SeoInput {
   canonical?: string
   image?: string
   imageMeta?: ImageMeta
+  alternates?: Array<{ lang: string; path: string }>
   type?: 'article' | 'website'
   publishedAt?: string
   modifiedAt?: string
@@ -464,6 +465,7 @@ export function postSeo(post: EmittedPost): SeoInput {
     image: post.image ?? featured,
     // The measurements describe \`image\`; a \`featured\` fallback is another file.
     imageMeta: post.image ? post.image_meta : undefined,
+    alternates: post.alternates,
     type: 'article',
     publishedAt: post.published_at,
     modifiedAt: post.modified_at,
@@ -478,6 +480,8 @@ export interface EmittedPost extends MarkablePost {
   /** Social image, absolute or site-root-relative. */
   image?: string
   image_meta?: ImageMeta
+  /** Translations of this entry, itself included, and x-default. Computed by the emitter. */
+  alternates?: Array<{ lang: string; path: string }>
   /** Canonical override; default is the page's own address. */
   canonical?: string
   /** ISO 8601, for Article structured data. */
