@@ -17,6 +17,7 @@ import { componentFiles, isRuntimeImplemented } from './components.js'
 import { chromeComponents } from './chrome.js'
 import { SEO_COMPONENT } from './seo.js'
 import { withAlternates } from './alternates.js'
+import { UI_STRINGS_DIR, uiStringsDir } from './ui-strings.js'
 import { wrapLegacyCss } from './css.js'
 import { stableJson } from './util.js'
 
@@ -192,9 +193,28 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     files[path] = collisionPage(path, first, second)
   }
 
-  const components = componentFiles(ir.components ?? [], input.runtime, queryBound)
+  const stringsDir = uiStringsDir(input.options?.uiStrings?.dir)
+  if (stringsDir === undefined) {
+    warnings.push(`options.uiStrings.dir "${input.options?.uiStrings?.dir}" is not a project-relative directory — using ${UI_STRINGS_DIR}`)
+  }
+  const components = componentFiles(ir.components ?? [], input.runtime, queryBound, stringsDir ?? UI_STRINGS_DIR)
   add(components.files)
   warnings.push(...components.warnings)
+  // Comments and forms speak the page's language only if the dictionary has
+  // it. The build reports a missing file too; saying it here puts it in the
+  // same report as everything else the producer has to act on.
+  if (components.files['src/lib/ui-strings.ts']) {
+    const pageLangs = [...new Set([lang, ...ir.routes.map((r) => r.locale).filter((l): l is string => Boolean(l))])]
+      .filter((l) => !l.toLowerCase().startsWith('en'))
+    const declared = input.options?.uiStrings?.locales
+    const uncovered = declared ? pageLangs.filter((l) => !declared.includes(l) && !declared.includes(l.split('-')[0]!)) : pageLangs
+    if (uncovered.length) {
+      warnings.push(
+        `ui-strings: no dictionary ${declared ? 'declared' : 'declared in options.uiStrings.locales'} for ${uncovered.join(', ')} — `
+        + `comments and forms on those pages show English text unless ${stringsDir ?? UI_STRINGS_DIR}/{locale}.json exists at build`,
+      )
+    }
+  }
 
   // A mounted comments thread is keyed by the post's entry address; a post
   // without one renders no thread. Say so once per collection, not per page.
@@ -267,5 +287,7 @@ export { entryPath, withAlternates } from './alternates.js'
 export type { Alternate, AlternatesResult } from './alternates.js'
 export type { StripResult } from './seo.js'
 export { EMBED_TS } from './embed.js'
+export { UI_STRING_DEFAULTS, UI_STRINGS_DIR, UI_STRINGS_MODEL } from './ui-strings.js'
+export type { UiStringKey } from './ui-strings.js'
 export { checkBalance, balanceWarning } from './balance.js'
 export type { BalanceReport } from './balance.js'

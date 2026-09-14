@@ -150,6 +150,8 @@ A theme's "recent posts" block, cloned, freezes on the day of the migration. `Co
 
 **Runtime components** (`comments`, `form`) get real implementations when you supply `input.runtime`. They are covered in the [Forms & Comments guide](/guides/forms-comments).
 
+What those components say to a visitor comes from the site's `ui-strings` dictionary (`.contentrain/content/site/ui-strings/{locale}.json`), read at build time for the page's language — see [What the thread and the form say](/guides/forms-comments#what-the-thread-and-the-form-say). `UI_STRINGS_MODEL` and `UI_STRING_DEFAULTS` are exported so a producer creates the dictionary the site reads.
+
 ## Route collisions fail the build
 
 WordPress serves posts and pages from the same root and tells them apart in the database. A static generator cannot, so a posts route at `/:slug*` and a pages family at `/:slug*` resolve to the same Astro file.

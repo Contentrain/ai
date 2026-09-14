@@ -14,6 +14,7 @@
 
 import type { ComponentDef, RuntimeBinding } from '@contentrain/types'
 import { EMBED_TS } from './embed.js'
+import { uiStringsSource } from './ui-strings.js'
 import { pascalCase, stableJson } from './util.js'
 
 export interface ComponentGenResult {
@@ -29,7 +30,12 @@ export function isRuntimeImplemented(c: ComponentDef, runtime: RuntimeBinding | 
   return c.type !== 'form' || Boolean(c.model)
 }
 
-export function componentFiles(components: ComponentDef[], runtime: RuntimeBinding | undefined, queryBound: ReadonlySet<string> = new Set()): ComponentGenResult {
+export function componentFiles(
+  components: ComponentDef[],
+  runtime: RuntimeBinding | undefined,
+  queryBound: ReadonlySet<string> = new Set(),
+  uiStringsDir = '.contentrain/content/site/ui-strings',
+): ComponentGenResult {
   const files: Record<string, string> = {}
   const warnings: string[] = []
   let needsRuntime = false
@@ -54,6 +60,7 @@ export function componentFiles(components: ComponentDef[], runtime: RuntimeBindi
   if (needsRuntime && runtime) {
     files['src/data/runtime.json'] = stableJson({ base_url: runtime.base_url, project_id: runtime.project_id })
     files['src/lib/embed.ts'] = EMBED_TS
+    files['src/lib/ui-strings.ts'] = uiStringsSource(uiStringsDir)
   }
   return { files, warnings }
 }
@@ -87,6 +94,8 @@ interface Props {
    * while staying current there.
    */
   html?: string
+  /** The page's language; unused by a placeholder. */
+  lang?: string
 }
 const { variant = ${JSON.stringify(variants[0] ?? 'default')}, html } = Astro.props
 ---
@@ -104,6 +113,7 @@ ${header(c, `
  * moderation happens on the provider. Renders nothing on a page without an
  * entry address (a list, a static page).`)}
 import runtime from '../data/runtime.json'
+import { uiStrings } from '../lib/ui-strings'
 
 interface Props {
   /** Content-store address of the page's entry — the thread's key. */
@@ -111,8 +121,11 @@ interface Props {
   variant?: string
   /** Accepted for uniform mounting — the layout passes it to every mount; a thread renders its own markup. */
   html?: string
+  /** The page's language — which ui-strings dictionary the thread's text comes from. */
+  lang?: string
 }
-const { entry, variant = 'default' } = Astro.props
+const { entry, variant = 'default', lang } = Astro.props
+const text = uiStrings(lang)
 ---
 {entry && (
   <cr-comments
@@ -123,8 +136,9 @@ const { entry, variant = 'default' } = Astro.props
     data-entry={entry.entry_id}
     data-locale={entry.locale}
     data-variant={variant}
+    data-strings={JSON.stringify(text)}
   >
-    <noscript><p class="cr-noscript">Comments need JavaScript.</p></noscript>
+    <noscript><p class="cr-noscript">{text['comments.noscript']}</p></noscript>
   </cr-comments>
 )}
 
@@ -150,6 +164,7 @@ ${header(c, `
  * Submissions land on the provider for moderation; an approved one becomes a
  * content entry there.`)}
 import runtime from '../data/runtime.json'
+import { uiStrings } from '../lib/ui-strings'
 
 interface Props {
   variant?: string
@@ -157,8 +172,11 @@ interface Props {
   entry?: { model_id: string; entry_id: string; locale?: string }
   /** Accepted for uniform mounting — the layout passes it to every mount; a form renders its own markup. */
   html?: string
+  /** The page's language — which ui-strings dictionary the form's text comes from. */
+  lang?: string
 }
-const { variant = 'default' } = Astro.props
+const { variant = 'default', lang } = Astro.props
+const text = uiStrings(lang)
 ---
 <cr-form
   class={\`cr-form-mount cr-form-mount--\${variant}\`}
@@ -166,8 +184,9 @@ const { variant = 'default' } = Astro.props
   data-project={runtime.project_id}
   data-model=${JSON.stringify(c.model)}
   data-variant={variant}
+  data-strings={JSON.stringify(text)}
 >
-  <noscript><p class="cr-noscript">This form needs JavaScript.</p></noscript>
+  <noscript><p class="cr-noscript">{text['form.noscript']}</p></noscript>
 </cr-form>
 
 <script>

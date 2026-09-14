@@ -38,7 +38,11 @@ export class EmbedError extends Error {
   }
 }
 
-/** Visitor-facing strings — override from the site (\`strings.send = 'Gönder'\`). */
+/**
+ * Visitor-facing text. The component passes the page's text from the site's
+ * ui-strings dictionary (\`data-strings\`); these are the defaults it falls
+ * back to, key for key.
+ */
 export const strings = {
   loading: 'Loading…',
   send: 'Send',
@@ -524,6 +528,52 @@ export function resetCaptcha(root: ParentNode): void {
 
 // ─── Mounting (the only DOM code) ───
 
+/** ui-strings dictionary key → the \`strings\` entry it sets. */
+export const STRING_KEYS: ReadonlyArray<readonly [string, keyof typeof strings]> = [
+  ['common.loading', 'loading'],
+  ['common.failed', 'failed'],
+  ['form.send', 'send'],
+  ['form.sending', 'sending'],
+  ['form.honeypot', 'honeypot'],
+  ['comments.title', 'commentsTitle'],
+  ['comments.empty', 'noComments'],
+  ['comments.closed', 'closed'],
+  ['comments.post', 'postComment'],
+  ['comments.reply', 'reply'],
+  ['comments.replying_to', 'replyingTo'],
+  ['comments.cancel', 'cancel'],
+  ['comments.load_more', 'loadMore'],
+  ['comments.moderator', 'moderator'],
+  ['comments.pending', 'pending'],
+  ['comments.posted', 'posted'],
+  ['comments.field.name', 'name'],
+  ['comments.field.email', 'email'],
+  ['comments.field.email_note', 'emailNote'],
+  ['comments.field.website', 'website'],
+  ['comments.field.comment', 'comment'],
+]
+
+/**
+ * Take the page's interface text from the host element. A value that is not a
+ * non-empty string leaves the default; text that cannot be parsed changes
+ * nothing, because a mount that fails over a label is worse than an English one.
+ */
+export function applyStrings(host: HTMLElement): void {
+  const raw = host.dataset.strings
+  if (!raw) return
+  let text: unknown
+  try {
+    text = JSON.parse(raw)
+  } catch {
+    return
+  }
+  if (!text || typeof text !== 'object') return
+  for (const [key, name] of STRING_KEYS) {
+    const value = (text as Record<string, unknown>)[key]
+    if (typeof value === 'string' && value !== '') strings[name] = value
+  }
+}
+
 export function runtimeOf(host: HTMLElement): Runtime {
   return { base_url: host.dataset.baseUrl ?? '', project_id: host.dataset.project ?? '' }
 }
@@ -557,6 +607,7 @@ function entriesOf(form: HTMLFormElement): Array<[string, unknown]> {
 
 /** \`<cr-form data-base-url data-project data-model>\` → fetch the config, render, submit. */
 export async function mountForm(host: HTMLElement): Promise<void> {
+  applyStrings(host)
   const rt = runtimeOf(host)
   const model = host.dataset.model ?? ''
   host.innerHTML = '<p class="cr-loading">' + esc(strings.loading) + '</p>'
@@ -594,6 +645,7 @@ export async function mountForm(host: HTMLElement): Promise<void> {
 
 /** \`<cr-comments data-base-url data-project data-model data-entry data-locale>\` → thread + form. */
 export async function mountComments(host: HTMLElement): Promise<void> {
+  applyStrings(host)
   const rt = runtimeOf(host)
   const entry = entryOf(host)
   host.innerHTML = '<p class="cr-loading">' + esc(strings.loading) + '</p>'
