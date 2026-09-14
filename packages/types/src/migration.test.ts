@@ -15,6 +15,7 @@ import type {
   CssStrategy,
   MigrationHandoff,
   HandoffOffer,
+  PageBodyKind,
   RuntimeBinding,
 } from './index'
 import {
@@ -23,6 +24,7 @@ import {
   CHROME_COMPONENT_CLOSE,
   componentSlot,
   MIGRATION_CONTRACT_VERSION,
+  PAGE_BODY_KINDS,
   SOURCE_ACCESS_LADDER,
   CAPABILITY_KEYS,
   COMPONENT_TYPES,
@@ -233,6 +235,23 @@ describe('migration contracts', () => {
     expectTypeOf(runtime).toEqualTypeOf<{ base_url: string; project_id: string }>()
     const bound: MigrationHandoff = { ...handoff, runtime }
     expect(bound.runtime!.project_id).toBe('proj_1')
+  })
+
+  it('counts standalone pages by body kind, every kind present', () => {
+    expect(PAGE_BODY_KINDS).toEqual(['html', 'builder_html', 'none'])
+    expectTypeOf<PageBodyKind>().toEqualTypeOf<'html' | 'builder_html' | 'none'>()
+    const summary: NonNullable<MigrationHandoff['content_summary']> = {
+      models: 6,
+      entries: 240,
+      body_kinds: { html: 31, builder_html: 9, none: 0 },
+    }
+    expect(Object.keys(summary.body_kinds!).toSorted()).toEqual([...PAGE_BODY_KINDS].toSorted())
+    // A missing kind is a type error: a zero must be written, not implied.
+    // @ts-expect-error — `none` is required
+    const partial: NonNullable<MigrationHandoff['content_summary']>['body_kinds'] = { html: 1, builder_html: 0 }
+    expect(partial).toBeDefined()
+    // The field itself stays optional, so handoffs written before it still type-check.
+    expectTypeOf(handoff.content_summary!.body_kinds).toEqualTypeOf<Record<PageBodyKind, number> | undefined>()
   })
 
   it('menu targets narrow by kind', () => {

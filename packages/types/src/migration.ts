@@ -939,6 +939,23 @@ export interface HandoffOffer {
   warning?: string
 }
 
+/**
+ * What a standalone page's body is, as far as the migration can carry it.
+ *
+ * - `html` — markup written in the editor. It travels as content and stays
+ *   editable.
+ * - `builder_html` — markup a page builder rendered (the builder's own data
+ *   is not HTML). It travels as it was rendered: the page looks right, but its
+ *   layout is no longer edited in the builder that made it.
+ * - `none` — no body; the theme renders the page from other data. Nothing to
+ *   carry as content.
+ *
+ * Counted because they promise different things to the person receiving the
+ * site, and a single "pages migrated" number hides which promise was made.
+ */
+export const PAGE_BODY_KINDS = ['html', 'builder_html', 'none'] as const
+export type PageBodyKind = (typeof PAGE_BODY_KINDS)[number]
+
 export interface MigrationHandoff {
   version: number
   site_url: string
@@ -955,6 +972,11 @@ export interface MigrationHandoff {
     models: number
     entries: number
     locales?: string[]
+    /**
+     * Standalone pages by body kind — see `PageBodyKind`. Every kind is present
+     * when the field is, so a zero is a count, not an omission.
+     */
+    body_kinds?: Record<PageBodyKind, number>
   }
   capabilities: HandoffCapability[]
   /** Present whenever the source had comments — see `HandoffComments`. */
