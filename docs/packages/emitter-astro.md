@@ -119,6 +119,14 @@ A marker nobody defined is dropped with a warning; a placement with no marker is
 
 Components the emitter cannot invent — an ad slot, a related-posts box — become `<cr-component>` placeholders carrying type, source and variants. The marker keeps the spot.
 
+### Regions bound to a query
+
+A theme's "recent posts" block, cloned, freezes on the day of the migration. `ComponentPlacement.query` binds the region to a query instead: the layout reads that query's result set (`EmitContent.queries[id]`) and renders it at the marker, so the block stays current. The result set is rendered the same way a list page renders one — `sections`, else `item_template`.
+
+- **Query not in the content** — the binding is dropped with a warning and the region stays the cloned markup.
+- **More than one result set** — warned, and the build stops: a region has no route parameter to choose between them.
+- **No `item_template` or `sections`** — warned, and the region renders a plain list of links, as a list page does. Not fidelity, but the items are there; an empty region looks like a list with no posts.
+
 **Runtime components** (`comments`, `form`) get real implementations when you supply `input.runtime`. They are covered in the [Forms & Comments guide](/guides/forms-comments).
 
 ## Route collisions fail the build

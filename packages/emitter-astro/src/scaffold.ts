@@ -236,6 +236,10 @@ export function renderSections<T>(
  * region has no route to distinguish them, so exactly one is expected and
  * anything else is a build error rather than a guess: picking the first would
  * silently render one category's posts under every category.
+ *
+ * Without item markup the region gets the same plain list a list page does,
+ * and the emitter has warned. An empty string here was a region that vanished
+ * from every page with nothing anywhere saying so.
  */
 export function renderQuery(pages: EmittedQueryPage[], id: string): string {
   if (pages.length !== 1) {
@@ -244,10 +248,22 @@ export function renderQuery(pages: EmittedQueryPage[], id: string): string {
       + pages.length + '. A region has no route parameter to choose between them.',
     )
   }
-  const page = pages[0]!
-  const sections = page.sections ?? (page.item_template ? [{ template: page.item_template }] : [])
-  if (!sections.length) return ''
-  return renderSections(sections, page.items, postMarks)
+  return renderQueryPage(pages[0]!)
+}
+
+/**
+ * One result set as markup: its sections, its single item template, or — when
+ * the producer supplied neither — a plain list of links. The plain list is not
+ * fidelity and the emitter warns wherever it will be used; it exists so the
+ * items are still there, because a list that renders nothing looks like a list
+ * with no posts.
+ */
+export function renderQueryPage(page: EmittedQueryPage): string {
+  const sections = page.sections?.length ? page.sections : page.item_template ? [{ template: page.item_template }] : []
+  if (sections.length) return renderSections(sections, page.items, postMarks)
+  return '<ul class="cr-post-list">'
+    + page.items.map((item) => '<li><a href="/' + item.slug + '/">' + esc(item.title) + '</a></li>').join('')
+    + '</ul>'
 }
 
 // ─── SEO helpers ───
