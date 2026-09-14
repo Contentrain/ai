@@ -8,6 +8,9 @@ import { stableJson } from './util.js'
 export function scaffoldFiles(ir: ProjectIR, options: EmitOptions): Record<string, string> {
   const tailwind = options.tailwind !== false
   const split = ir.viewport_strategy === 'split'
+  // The sitemap integration needs an absolute site to build URLs from; without
+  // one it has nothing to write, so it is only wired when there is a site.
+  const sitemap = options.sitemap !== false && Boolean(ir.site.url)
   const files: Record<string, string> = {}
 
   const pkg: Record<string, unknown> = {
@@ -26,6 +29,7 @@ export function scaffoldFiles(ir: ProjectIR, options: EmitOptions): Record<strin
     dependencies: {
       astro: '^5.0.0',
       ...(tailwind ? { tailwindcss: '^4.0.0', '@tailwindcss/vite': '^4.0.0' } : {}),
+      ...(sitemap ? { '@astrojs/sitemap': '^3.7.0' } : {}),
     },
     devDependencies: {
       '@astrojs/check': '^0.9.0',
@@ -37,12 +41,16 @@ export function scaffoldFiles(ir: ProjectIR, options: EmitOptions): Record<strin
   files['astro.config.mjs'] = [
     `import { defineConfig } from 'astro/config'`,
     ...(tailwind ? [`import tailwindcss from '@tailwindcss/vite'`] : []),
+    ...(sitemap ? [`import sitemap from '@astrojs/sitemap'`] : []),
     ``,
     `export default defineConfig({`,
     // Canonical URLs and sitemaps hang off \`site\` — for a migration, SEO
     // continuity is the point, so the source site's URL always lands here.
-    `  site: ${JSON.stringify(ir.site.url)},`,
+    // Astro rejects an empty string as an invalid URL and refuses to build, so
+    // with no site the key is left out; the emitter warns about that instead.
+    ...(ir.site.url ? [`  site: ${JSON.stringify(ir.site.url)},`] : []),
     `  build: { format: 'directory' },`,
+    ...(sitemap ? [`  integrations: [sitemap()],`] : []),
     ...(tailwind ? [`  vite: { plugins: [tailwindcss()] },`] : []),
     `})`,
     ``,
@@ -54,8 +62,35 @@ export function scaffoldFiles(ir: ProjectIR, options: EmitOptions): Record<strin
 
   if (tailwind) files['src/styles/modern.css'] = modernCss(ir.tokens)
 
+  if (options.sitemap !== false) files['public/robots.txt'] = robotsTxt(ir.site.url)
+
   files['src/lib/fill.ts'] = FILL_TS
   return files
+}
+
+/**
+ * `robots.txt` allowing crawlers and naming the sitemap.
+ *
+ * The `Sitemap:` line must be an absolute URL — a relative one is invalid and
+ * crawlers ignore it. Without a site to make it absolute the line is left out
+ * rather than pointed at a build host; the emitter warns about the missing site
+ * separately.
+ *
+ * Nothing is disallowed. A WordPress robots.txt typically keeps crawlers out of
+ * `/wp-admin/`; the migrated site has no such path, so carrying the rule over
+ * would only restrict a site that no longer needs restricting.
+ *
+ * The sitemap is resolved under the site's own path, not the host root: a site
+ * at `https://example.com/blog` serves its build output, sitemap included, under
+ * `/blog/`.
+ */
+export function robotsTxt(siteUrl: string | undefined): string {
+  const lines = ['User-agent: *', 'Allow: /']
+  if (siteUrl) {
+    const base = siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`
+    lines.push('', `Sitemap: ${new URL('sitemap-index.xml', base).href}`)
+  }
+  return `${lines.join('\n')}\n`
 }
 
 /** Tailwind 4 evolution layer: CSS-first config with the site's extracted tokens. */

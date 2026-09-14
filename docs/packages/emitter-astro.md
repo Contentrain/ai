@@ -105,9 +105,26 @@ Everything else the theme put in `<head>` stays — charset, preloads, feeds, ic
 
 Head-only tags that a faithful clone left in the **body** are reported, not removed: the body is page content, `<title>` is legal inside `<svg>`, and cutting into it to fix an invisible tag would break real markup.
 
-Absolute URLs need `site` in `astro.config.mjs`, which the emitter fills from `ProjectIR.site.url`. Without it the canonical link and absolute social URLs are omitted with a warning, rather than pointing at a build host.
+Absolute URLs need `site` in `astro.config.mjs`, which the emitter fills from `ProjectIR.site.url`. Without it the canonical link and absolute social URLs are omitted with a warning, rather than pointing at a build host — and the `site` key is left out of the config altogether, because Astro refuses to build with an empty one.
 
 `options.seo: false` turns all of this off: the source head travels verbatim.
+
+### Sitemap and robots.txt
+
+The sitemap is written by [`@astrojs/sitemap`](https://docs.astro.build/en/guides/integrations-guide/sitemap/) at build time — `sitemap-index.xml` and the sitemaps it names — not computed by the emitter. Only the build knows every address `getStaticPaths` produced; a list worked out here would be a second answer that can disagree with the site. The 404 page is not listed.
+
+`public/robots.txt` allows every crawler and names the sitemap by absolute URL:
+
+```
+User-agent: *
+Allow: /
+
+Sitemap: https://example.com/sitemap-index.xml
+```
+
+Nothing is disallowed. A WordPress `robots.txt` typically keeps crawlers out of `/wp-admin/`; the migrated site has no such path. Without `site.url` there is no sitemap to name — the integration is not added, `robots.txt` carries no `Sitemap:` line (a relative one is invalid), and a warning says so.
+
+`options.sitemap: false` leaves out both. It is independent of `options.seo`: a producer that writes its own meta tags has not thereby said it writes its own sitemap.
 
 ## Components and mount points
 

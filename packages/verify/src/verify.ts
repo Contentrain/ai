@@ -8,6 +8,7 @@ import {
   notFoundPageChecks, redirectChecks, sitemapStaleChecks, sourceOriginChecks,
   statusChecks, structuredChecks,
 } from './checks.js'
+import { isSitemapIndex } from './html.js'
 import { identity } from './url.js'
 
 const DEFAULTS = { maxRedirectHops: 1, soft404MaxTextLength: 600 }
@@ -26,6 +27,9 @@ function absentInputs(input: VerifyInput, groups: readonly CheckGroup[]): { grou
   }
   if (input.sitemap === undefined && groups.includes('indexing')) {
     skipped.push({ group: 'indexing', reason: 'no sitemap — membership checks did not run' })
+  } else if (input.sitemap !== undefined && isSitemapIndex(input.sitemap) && groups.includes('indexing')) {
+    // An index lists sitemap files, not pages; its children are not here to read.
+    skipped.push({ group: 'indexing', reason: 'sitemap is an index without its child sitemaps — membership checks did not run' })
   }
   if (!input.redirects?.length && groups.includes('status')) {
     skipped.push({ group: 'status', reason: 'no redirect rules — chain and target checks did not run' })

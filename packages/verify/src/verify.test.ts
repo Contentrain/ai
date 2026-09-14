@@ -144,6 +144,19 @@ describe('indexing', () => {
     }
     expect(one(input, 'indexing.sitemap-stale-entry').url).toBe(`${SITE}/gone`)
   })
+
+  it('does not read a bare sitemap index as a list of pages, and says the check did not run', () => {
+    // Its <loc> entries are sitemap files. Taken as pages, every real page is
+    // "missing" and every child sitemap is "stale" — all of it false.
+    const input: VerifyInput = {
+      site: SITE,
+      documents: [page('/'), page('/about')],
+      sitemap: `<sitemapindex><sitemap><loc>${SITE}/sitemap-0.xml</loc></sitemap></sitemapindex>`,
+    }
+    const report = verify({ ...input, groups: ['indexing'] })
+    expect(report.findings).toEqual([])
+    expect(report.skipped.map(s => s.reason)).toEqual(['sitemap is an index without its child sitemaps — membership checks did not run'])
+  })
 })
 
 describe('status', () => {

@@ -10,7 +10,7 @@
 
 import type { Finding, VerifyDocument, VerifyInput, VerifyOptions } from './types.js'
 import {
-  anchors, images, jsonLd, jsonLdTypes, linksRel, metaMap, sitemapLocations, text, titles,
+  anchors, images, isSitemapIndex, jsonLd, jsonLdTypes, linksRel, metaMap, sitemapLocations, text, titles,
 } from './html.js'
 import { absolute, identity, isInternal, resolve } from './url.js'
 
@@ -152,7 +152,7 @@ export function indexingChecks(doc: VerifyDocument, ctx: Context): Finding[] {
     out.push(finding({ group, check: 'indexing.noindex', severity: 'error', url, message: 'Page is marked noindex.', detail: reason }))
   }
 
-  if (ctx.input.sitemap !== undefined) {
+  if (ctx.input.sitemap !== undefined && !isSitemapIndex(ctx.input.sitemap)) {
     const listed = new Set(sitemapLocations(ctx.input.sitemap).map(loc => identity(loc, ctx.input.site)))
     if (!listed.has(identity(url, ctx.input.site)) && !reason && !isNotFoundDocument(doc, ctx)) {
       out.push(finding({ group, check: 'indexing.sitemap-missing-entry', severity: 'warning', url, message: 'Indexable page is not in the sitemap.' }))
@@ -164,7 +164,7 @@ export function indexingChecks(doc: VerifyDocument, ctx: Context): Finding[] {
 
 /** Sitemap entries pointing at pages the build does not serve. */
 export function sitemapStaleChecks(ctx: Context): Finding[] {
-  if (ctx.input.sitemap === undefined) return []
+  if (ctx.input.sitemap === undefined || isSitemapIndex(ctx.input.sitemap)) return []
   const out: Finding[] = []
   for (const loc of sitemapLocations(ctx.input.sitemap)) {
     const id = identity(loc, ctx.input.site)
