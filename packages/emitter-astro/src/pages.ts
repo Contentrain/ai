@@ -160,7 +160,7 @@ const title = page.title ?? ${routeTitle}
   body={content}
   css={page.css ?? []}
   lang={${locale}}${seo ? `
-  seo={{ description: page.description, image: page.image, canonical: page.canonical, type: 'website' }}` : ''}
+  seo={{ description: page.description, image: page.image, imageMeta: page.image_meta, canonical: page.canonical, type: 'website' }}` : ''}
 />
 `
 }

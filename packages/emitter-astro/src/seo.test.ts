@@ -241,8 +241,16 @@ describe('emitted SEO', () => {
 
   it('entry pages carry the post SEO; lists and static pages declare themselves websites', () => {
     expect(result.files['src/pages/[slug].astro']).toContain('seo={postSeo(post)}')
-    expect(result.files['src/pages/news.astro']).toContain(`seo={{ description: page.description, image: page.image, canonical: page.canonical, type: 'website' }}`)
+    expect(result.files['src/pages/news.astro']).toContain(`seo={{ description: page.description, image: page.image, imageMeta: page.image_meta, canonical: page.canonical, type: 'website' }}`)
     expect(result.files['src/pages/about.astro']).toContain(`seo={{ type: 'website' }}`)
+  })
+
+  it('prints og:image size and type only beside an image', () => {
+    const seo = result.files['src/components/Seo.astro']!
+    expect(seo).toContain('const imageTags = imageUrl ? imageMetaTags(imageMeta) : {}')
+    expect(seo).toContain('<meta property="og:image:width" content={imageTags.width} />')
+    expect(seo).toContain('<meta property="og:image:height" content={imageTags.height} />')
+    expect(seo).toContain('<meta property="og:image:type" content={imageTags.type} />')
   })
 
   it('canonical comes from the generated address, not from data', () => {

@@ -59,6 +59,8 @@ export interface EmitPost {
    * `og:image` needs this; a `featured` entry that is already a path is used.
    */
   image?: string
+  /** What `image` is, for the `og:image:*` tags. Describes `image` only — ignored without it. */
+  image_meta?: ImageMeta
   /** Canonical override — for a page that should point somewhere else. Default: this page's own address. */
   canonical?: string
   /** ISO 8601, for Article structured data. `dates` holds display strings, which schema.org cannot read. */
@@ -126,8 +128,24 @@ export interface QueryPage {
   description?: string
   /** Social image, absolute or site-root-relative. */
   image?: string
+  /** What `image` is, for the `og:image:*` tags. Ignored without `image`. */
+  image_meta?: ImageMeta
   /** Canonical override; default is this page's own address. */
   canonical?: string
+}
+
+/**
+ * A social image's size and type. Share cards lay out before they fetch the
+ * image; with `og:image:width` / `height` the first share renders at the right
+ * aspect instead of as a placeholder. The producer measured the file — the
+ * emitter cannot, it never sees it.
+ */
+export interface ImageMeta {
+  /** Pixels. A value that is not a positive integer is left out. */
+  width?: number
+  height?: number
+  /** MIME type, `image/…`. Anything else is left out. */
+  type?: string
 }
 
 /** Default collection name when a `single` route does not name one. */

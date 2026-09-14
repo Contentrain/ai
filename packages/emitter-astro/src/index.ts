@@ -243,6 +243,7 @@ export type {
   EmitCssFile,
   EmitOptions,
   EmitTermRef,
+  ImageMeta,
   RuntimeBinding,
   EntrySourceRef,
 } from './types.js'

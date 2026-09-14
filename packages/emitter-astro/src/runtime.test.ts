@@ -44,6 +44,7 @@ interface Runtime {
   absoluteUrl: (value: string | undefined, site: URL | undefined) => string | undefined
   jsonLd: (value: unknown) => string
   postSeo: (post: Record<string, unknown>) => Record<string, unknown>
+  imageMetaTags: (meta: Record<string, unknown> | undefined) => Record<string, string | undefined>
 }
 let rt: Runtime
 
@@ -255,6 +256,25 @@ describe('emitted template runtime', () => {
 
     it('a region still refuses more than one result set', () => {
       expect(() => rt.renderQuery([{ params: {}, items }, { params: {}, items }], 'q-recent')).toThrow(/exactly one result set/)
+    })
+  })
+
+  describe('social image size and type', () => {
+    it('prints only values that are true of an image', () => {
+      expect(rt.imageMetaTags({ width: 1200, height: 630, type: 'image/JPEG' })).toEqual({ width: '1200', height: '630', type: 'image/jpeg' })
+      // a wrong tag is worse than a missing one
+      expect(rt.imageMetaTags({ width: 0, height: 630.5, type: 'text/html' })).toEqual({ width: undefined, height: undefined, type: undefined })
+      expect(rt.imageMetaTags({ width: '1200' as unknown as number, type: 'image/svg+xml' })).toEqual({ width: undefined, height: undefined, type: 'image/svg+xml' })
+      expect(rt.imageMetaTags(undefined)).toEqual({ width: undefined, height: undefined, type: undefined })
+    })
+
+    it('an entry passes its measurements only for the image they describe', () => {
+      const meta = { width: 1200, height: 630, type: 'image/png' }
+      expect(rt.postSeo({ slug: 'a', title: 'A', body: '', image: '/og.png', image_meta: meta })).toMatchObject({ image: '/og.png', imageMeta: meta })
+      // Without `image` the tag falls back to a featured path — a different file.
+      const fallback = rt.postSeo({ slug: 'a', title: 'A', body: '', featured: ['/media/hero.jpg'], image_meta: meta })
+      expect(fallback.image).toBe('/media/hero.jpg')
+      expect(fallback.imageMeta).toBeUndefined()
     })
   })
 })

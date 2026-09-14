@@ -219,7 +219,7 @@ export const SEO_COMPONENT = `---
  * Canonical and absolute URLs need \`site\` in astro.config.mjs; without it the
  * canonical link and og:url are omitted rather than pointing at a build host.
  */
-import { absoluteUrl, jsonLd, seoDescription } from '../lib/fill'
+import { absoluteUrl, imageMetaTags, jsonLd, seoDescription, type ImageMeta } from '../lib/fill'
 
 interface Props {
   title?: string
@@ -229,6 +229,8 @@ interface Props {
   canonical?: string
   /** Social image: absolute, or site-root-relative. */
   image?: string
+  /** Size and type of \`image\`, as the producer measured it. */
+  imageMeta?: ImageMeta
   /** \`article\` on entry pages, \`website\` on lists and static pages. */
   type?: 'article' | 'website'
   /** ISO 8601 — structured data only; the displayed date stays a mark. */
@@ -244,6 +246,7 @@ const {
   description,
   canonical,
   image,
+  imageMeta,
   type = 'website',
   publishedAt,
   modifiedAt,
@@ -255,6 +258,7 @@ const {
 const site = Astro.site
 const url = canonical ? absoluteUrl(canonical, site) : absoluteUrl(Astro.url.pathname, site)
 const imageUrl = absoluteUrl(image, site)
+const imageTags = imageUrl ? imageMetaTags(imageMeta) : {}
 const desc = seoDescription(description)
 const article = type === 'article'
 const structured = article
@@ -280,6 +284,9 @@ const structured = article
 {desc && <meta property="og:description" content={desc} />}
 {url && <meta property="og:url" content={url} />}
 {imageUrl && <meta property="og:image" content={imageUrl} />}
+{imageTags.width && <meta property="og:image:width" content={imageTags.width} />}
+{imageTags.height && <meta property="og:image:height" content={imageTags.height} />}
+{imageTags.type && <meta property="og:image:type" content={imageTags.type} />}
 {siteName && <meta property="og:site_name" content={siteName} />}
 {locale && <meta property="og:locale" content={locale} />}
 {article && publishedAt && <meta property="article:published_time" content={publishedAt} />}

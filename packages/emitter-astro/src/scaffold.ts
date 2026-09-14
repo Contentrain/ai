@@ -336,6 +336,23 @@ export function absoluteUrl(value: string | undefined, site: URL | undefined): s
   }
 }
 
+export interface ImageMeta {
+  width?: number
+  height?: number
+  type?: string
+}
+
+/**
+ * The \`og:image:*\` values worth printing. A width that is not a positive
+ * integer, or a type that is not an image MIME type, would be a wrong tag
+ * rather than a missing one, so it is dropped.
+ */
+export function imageMetaTags(meta: ImageMeta | undefined): { width?: string; height?: string; type?: string } {
+  const size = (n: unknown) => (typeof n === 'number' && Number.isInteger(n) && n > 0 ? String(n) : undefined)
+  const type = typeof meta?.type === 'string' && /^image\\/[a-z0-9.+-]+$/i.test(meta.type) ? meta.type.toLowerCase() : undefined
+  return { width: size(meta?.width), height: size(meta?.height), type }
+}
+
 /**
  * JSON-LD payload for a \`<script type="application/ld+json">\`. \`<\` is escaped
  * so a value containing \`</script>\` cannot close the block and inject markup.
@@ -425,6 +442,7 @@ export interface SeoInput {
   description?: string
   canonical?: string
   image?: string
+  imageMeta?: ImageMeta
   type?: 'article' | 'website'
   publishedAt?: string
   modifiedAt?: string
@@ -444,6 +462,8 @@ export function postSeo(post: EmittedPost): SeoInput {
     description: post.description ?? post.excerpt,
     canonical: post.canonical,
     image: post.image ?? featured,
+    // The measurements describe \`image\`; a \`featured\` fallback is another file.
+    imageMeta: post.image ? post.image_meta : undefined,
     type: 'article',
     publishedAt: post.published_at,
     modifiedAt: post.modified_at,
@@ -457,6 +477,7 @@ export interface EmittedPost extends MarkablePost {
   description?: string
   /** Social image, absolute or site-root-relative. */
   image?: string
+  image_meta?: ImageMeta
   /** Canonical override; default is the page's own address. */
   canonical?: string
   /** ISO 8601, for Article structured data. */
@@ -482,6 +503,7 @@ export interface EmittedQueryPage {
   title?: string
   description?: string
   image?: string
+  image_meta?: ImageMeta
   canonical?: string
 }
 `
