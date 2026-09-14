@@ -93,6 +93,7 @@ SEO continuity is the reason a migration keeps the source addresses at all, so t
 | `description`, `og:description`, `twitter:description` | `EmitPost.description`, else `excerpt` with markup stripped and cut at a word boundary |
 | `canonical`, `og:url` | The address Astro generated (`Astro.url` + `site`), so it cannot disagree with the emitted page. `EmitPost.canonical` overrides |
 | `og:image`, `twitter:image` | `EmitPost.image`, else a `featured` entry that is already a path. A bare file name is skipped — only the producer knows where media is served |
+| `og:image:width` / `height` / `type` | `image_meta` on `EmitPost` or `QueryPage`, as the producer measured the file. Printed only beside `image` (a `featured` fallback is a different file), and only valid values — positive integer sizes, an `image/…` type |
 | `og:site_name` | `ProjectIR.site.title` |
 | `og:locale` | The page's `lang` |
 | `article:*` and Article JSON-LD dates | `EmitPost.published_at` / `modified_at` (ISO 8601 — `dates` holds display strings, which schema.org cannot read) |
