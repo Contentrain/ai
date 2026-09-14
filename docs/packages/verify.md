@@ -106,6 +106,7 @@ on the page looks wrong.
 | Check | Severity | What it catches |
 |---|---|---|
 | `status.mismatch` | error | The status changed against the baseline |
+| `status.baseline-page-missing` | error | A page the baseline answered with 2xx that the build does not serve and no redirect covers. `status.mismatch` only compares pages present on both sides, so a page the migration never produced would otherwise go unreported. Build only (`input.build`); the old site's 404 page is not counted |
 | `status.soft-404` | error | A "not found" page answering 200 |
 | `status.redirect-chain` | warning | More hops than `maxRedirectHops` (default 1) |
 | `status.redirect-loop` | error | A chain that returns to itself |

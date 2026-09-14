@@ -4,7 +4,7 @@ import type { CheckGroup, Finding, Severity, VerifyInput, VerifyReport } from '.
 import { CHECK_GROUPS } from './types.js'
 import type { Context } from './checks.js'
 import {
-  assetChecks, identityChecks, indexingChecks, internationalChecks, navigationChecks,
+  assetChecks, baselineCoverageChecks, identityChecks, indexingChecks, internationalChecks, navigationChecks,
   notFoundPageChecks, redirectChecks, sitemapStaleChecks, sourceOriginChecks,
   statusChecks, structuredChecks,
 } from './checks.js'
@@ -36,6 +36,9 @@ function absentInputs(input: VerifyInput, groups: readonly CheckGroup[]): { grou
   }
   if (!input.build && groups.includes('status')) {
     skipped.push({ group: 'status', reason: 'not a build directory — the 404 page check did not run' })
+  }
+  if (input.baseline && !input.build && groups.includes('status')) {
+    skipped.push({ group: 'status', reason: 'not a build directory — pages the baseline has and the input lacks were not reported' })
   }
   if (!input.options?.sourceOrigin && groups.includes('assets')) {
     skipped.push({ group: 'assets', reason: 'no sourceOrigin — the old-host reference scan did not run' })
@@ -89,6 +92,7 @@ export function verify(input: VerifyInput): VerifyReport {
   run('indexing', () => sitemapStaleChecks(ctx))
   run('status', () => redirectChecks(ctx))
   run('status', () => notFoundPageChecks(ctx))
+  run('status', () => baselineCoverageChecks(ctx))
   run('international', () => internationalChecks(ctx))
   run('assets', () => sourceOriginChecks(ctx))
 

@@ -344,6 +344,68 @@ describe('the 404 page', () => {
   })
 })
 
+/**
+ * status.mismatch walks the build's documents, so a page the migration never
+ * produced is compared against nothing and reported by nothing — while every
+ * link and search result pointing at it ends on a 404.
+ */
+describe('baseline pages the build does not serve', () => {
+  const notFound = page('/404.html')
+
+  it('are an error, one finding per page, at the old address', () => {
+    const input: VerifyInput = {
+      site: SITE,
+      build: true,
+      documents: [page('/'), notFound],
+      baseline: { documents: [page('/'), page('/en/about/'), page('/en/about/index.html'), page('/en/contact')] },
+    }
+    const found = findings(input, 'status.baseline-page-missing')
+    // /en/about/ and /en/about/index.html are one address.
+    expect(found.map(f => [f.url, f.severity])).toEqual([['/en/about/', 'error'], ['/en/contact', 'error']])
+    expect(verify(input).passed).toBe(false)
+  })
+
+  it('a redirect for the address covers it, and a page at another spelling is the same page', () => {
+    const input: VerifyInput = {
+      site: SITE,
+      build: true,
+      documents: [page('/'), page('/about/index.html'), notFound],
+      redirects: [{ from: '/old-contact/', to: '/', status: 301 }],
+      baseline: { documents: [page(`${SITE}/about`), page('/old-contact')] },
+    }
+    expect(findings(input, 'status.baseline-page-missing')).toEqual([])
+  })
+
+  it('a non-page file the build serves counts as served', () => {
+    const input: VerifyInput = {
+      site: SITE,
+      build: true,
+      documents: [page('/'), notFound],
+      assets: ['/feed.xml'],
+      baseline: { documents: [page('/feed.xml')] },
+    }
+    expect(findings(input, 'status.baseline-page-missing')).toEqual([])
+  })
+
+  it('only pages the old site answered with 2xx count, and its 404 page is not one', () => {
+    const input: VerifyInput = {
+      site: SITE,
+      build: true,
+      documents: [page('/'), notFound],
+      baseline: { documents: [page('/moved', { status: 301 }), page('/broken', { status: 500 }), page('/404')] },
+    }
+    expect(findings(input, 'status.baseline-page-missing')).toEqual([])
+  })
+
+  /** A capture may just not include a page; absence there means nothing. */
+  it('is not asserted against a capture, and says so', () => {
+    const input: VerifyInput = { site: SITE, documents: [page('/')], baseline: { documents: [page('/'), page('/elsewhere')] } }
+    const report = verify(input)
+    expect(report.findings.filter(f => f.check === 'status.baseline-page-missing')).toEqual([])
+    expect(report.skipped.map(s => s.reason)).toContain('not a build directory — pages the baseline has and the input lacks were not reported')
+  })
+})
+
 describe('a build with no 404 page', () => {
   it('is an error, because a wrong path then lands on the host page', () => {
     const input: VerifyInput = { site: SITE, build: true, documents: [page('/')] }
