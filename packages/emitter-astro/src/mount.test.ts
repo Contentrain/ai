@@ -267,7 +267,7 @@ describe('a placement bound to a query', () => {
 
   const content: EmitInput['content'] = {
     posts: [{ slug: 'hello', title: 'Hello', body: '<p>x</p>' }],
-    queries: { 'q-recent': [{ params: {}, items: [{ slug: 'a', title: 'A' }], item_template: '<li>@@title@@</li>' }] },
+    queries: { 'q-recent': [{ params: {}, items: [{ slug: 'a', title: 'A', body: '<p>a</p>' }], item_template: '<li>@@title@@</li>' }] },
   }
 
   const emitted = emitAstroProject({ ir: base, content })
