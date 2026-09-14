@@ -50,6 +50,14 @@ import { loadSiteDirectory, verify } from '@contentrain/verify'
 const report = verify(await loadSiteDirectory('dist', 'https://example.com'))
 ```
 
+A build usually writes a sitemap index rather than one `sitemap.xml` —
+`@astrojs/sitemap` writes `sitemap-index.xml` naming `sitemap-0.xml`, … — so the
+loader follows the index and hands `verify` the pages every named sitemap lists.
+A sitemap the index names but the build does not serve is reported as a stale
+entry. Passed to `verify` directly, a bare index lists files rather than pages,
+so the membership checks skip and say so instead of reporting every page
+missing.
+
 ## The checks
 
 Severity is decided by one rule: **error** means the built site is wrong — a

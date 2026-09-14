@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { main, parseArgs } from './cli'
 import { loadSiteDirectory } from './load'
+import { verify } from './verify'
 
 const SITE = 'https://example.com'
 
@@ -61,6 +62,45 @@ describe('loadSiteDirectory', () => {
     expect(loaded.sitemap).toContain('<loc>')
     // The sitemap is an asset too — it is a file the build serves.
     expect(loaded.assets).toContain('/sitemap.xml')
+  })
+
+  it('follows a sitemap index to the sitemaps it names', async () => {
+    // What @astrojs/sitemap writes. Read alone, the index names no pages and
+    // every page is reported missing from a sitemap that lists it.
+    await write('index.html', clean('/'))
+    await write('about/index.html', clean('/about/'))
+    await write('sitemap-index.xml', `<sitemapindex><sitemap><loc>${SITE}/sitemap-0.xml</loc></sitemap><sitemap><loc>${SITE}/sitemap-1.xml</loc></sitemap></sitemapindex>`)
+    await write('sitemap-0.xml', `<urlset><url><loc>${SITE}/</loc></url></urlset>`)
+    await write('sitemap-1.xml', `<urlset><url><loc>${SITE}/about/?a=1&amp;b=2</loc></url></urlset>`)
+    // Not named by the index, so not what a crawler reads.
+    await write('sitemap-legacy.xml', `<urlset><url><loc>${SITE}/old</loc></url></urlset>`)
+
+    const loaded = await loadSiteDirectory(dir, SITE)
+    const report = verify({ ...loaded, groups: ['indexing'] })
+    expect(report.findings).toEqual([])
+    expect(report.skipped).toEqual([])
+    expect(loaded.sitemap).not.toContain('/old')
+    // An entity in a location survives being re-serialised.
+    expect(loaded.sitemap).toContain('?a=1&amp;b=2')
+  })
+
+  it('reports a sitemap the index names but the build does not serve', async () => {
+    await write('index.html', clean('/'))
+    await write('sitemap-index.xml', `<sitemapindex><sitemap><loc>${SITE}/sitemap-0.xml</loc></sitemap><sitemap><loc>${SITE}/sitemap-9.xml</loc></sitemap></sitemapindex>`)
+    await write('sitemap-0.xml', `<urlset><url><loc>${SITE}/</loc></url></urlset>`)
+
+    const report = verify({ ...(await loadSiteDirectory(dir, SITE)), groups: ['indexing'] })
+    expect(report.findings.map(f => [f.check, f.url])).toEqual([['indexing.sitemap-stale-entry', `${SITE}/sitemap-9.xml`]])
+  })
+
+  it('without an index, every sitemap file the build serves counts', async () => {
+    await write('index.html', clean('/'))
+    await write('about/index.html', clean('/about/'))
+    await write('sitemap-a.xml', `<urlset><url><loc>${SITE}/</loc></url></urlset>`)
+    await write('sitemap-b.xml', `<urlset><url><loc>${SITE}/about/</loc></url></urlset>`)
+
+    const report = verify({ ...(await loadSiteDirectory(dir, SITE)), groups: ['indexing'] })
+    expect(report.findings).toEqual([])
   })
 })
 

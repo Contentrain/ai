@@ -173,3 +173,12 @@ export function text(html: string): string {
 export function sitemapLocations(xml: string): string[] {
   return [...xml.matchAll(/<loc>\s*([\s\S]*?)\s*<\/loc>/gi)].map(m => decodeEntities((m[1] ?? '').trim()))
 }
+
+/**
+ * Whether a sitemap document is an index — a list of other sitemaps rather
+ * than of pages. Its `<loc>` entries are sitemap files, so reading them as page
+ * addresses reports every page missing and every child sitemap stale.
+ */
+export function isSitemapIndex(xml: string): boolean {
+  return /<sitemapindex[\s>]/i.test(xml)
+}
