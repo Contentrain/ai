@@ -205,7 +205,7 @@ const parts = splitComponents(html).map((part) => ({
 `
     : ''
   const bodyRender = mounts.length
-    ? `    {parts.map(({ html: part, Mount, variant, listHtml }) => (Mount ? <Mount entry={entry} variant={variant} html={listHtml} /> : <Fragment set:html={part} />))}`
+    ? `    {parts.map(({ html: part, Mount, variant, listHtml }) => (Mount ? <Mount entry={entry} variant={variant} html={listHtml} lang={htmlAttrs.lang} /> : <Fragment set:html={part} />))}`
     : `    <Fragment set:html={html} />`
   const renderRefs = (position: 'header' | 'footer') =>
     components

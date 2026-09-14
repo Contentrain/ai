@@ -75,7 +75,7 @@ describe('component mounting', () => {
     expect(layout).toContain(`import CComments from '../components/CComments.astro'`)
     expect(layout).toContain('splitComponents')
     expect(layout).toContain(`"c-comments": { Mount: CComments, variant: "threaded" }`)
-    expect(layout).toContain('<Mount entry={entry} variant={variant} html={listHtml} />')
+    expect(layout).toContain('<Mount entry={entry} variant={variant} html={listHtml} lang={htmlAttrs.lang} />')
     expect(layout).toContain('<Fragment set:html={part} />')
     expect(layout).not.toContain('<Fragment set:html={html} />')
     // the marker stays in the chrome data — it is the split point at render time
@@ -281,7 +281,7 @@ describe('a placement bound to a query', () => {
     expect(layout).toContain(`import q_q_recent from '../data/queries/q-recent.json'`)
     expect(layout).toContain('renderQuery(q_q_recent as EmittedQueryPage[], "q-recent")')
     expect(layout).toContain('html: q_q_recentHtml')
-    expect(layout).toContain('<Mount entry={entry} variant={variant} html={listHtml} />')
+    expect(layout).toContain('<Mount entry={entry} variant={variant} html={listHtml} lang={htmlAttrs.lang} />')
   })
 
   /**
@@ -346,7 +346,7 @@ describe('a placement bound to a query', () => {
     const result = emitAstroProject({ ir: plain, content })
     const layout = result.files['src/layouts/FArticle.astro']!
     expect(layout).not.toContain('renderQuery')
-    expect(layout).toContain('<Mount entry={entry} variant={variant} html={listHtml} />')
+    expect(layout).toContain('<Mount entry={entry} variant={variant} html={listHtml} lang={htmlAttrs.lang} />')
     expect(result.files['src/data/queries/q-recent.json']).toBeUndefined()
   })
 })

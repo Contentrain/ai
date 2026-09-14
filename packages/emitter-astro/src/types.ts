@@ -197,6 +197,16 @@ export interface EmitOptions {
    * sitemap silently for exactly that producer.
    */
   sitemap?: boolean
+  /**
+   * The site's interface-text dictionary (see \`UI_STRINGS_MODEL\`). Comments
+   * and forms read it at build time from \`dir\` (default
+   * \`.contentrain/content/site/ui-strings\`, project-relative).
+   *
+   * \`locales\` declares which languages the producer wrote. The emitter cannot
+   * see the store, so this is how it can say at emit time that a page's
+   * language has no dictionary; the build reports the same from the files.
+   */
+  uiStrings?: { dir?: string; locales?: string[] }
 }
 
 export interface EmitInput {

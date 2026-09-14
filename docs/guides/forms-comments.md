@@ -136,6 +136,22 @@ Then, at emit time:
 
 A placeholder looks fine in a screenshot. Read the warnings.
 
+### What the thread and the form say
+
+The labels, buttons and messages a visitor sees — "Post comment", "Your comment is awaiting moderation", "Send" — are the site's content, not its code. They live in a dictionary in the site's own store, `.contentrain/content/site/ui-strings/{locale}.json`, and the components read the page language's file at build time:
+
+```json
+{
+  "comments.title": "Yorumlar",
+  "comments.post": "Yorum gönder",
+  "form.send": "Gönder"
+}
+```
+
+- Edit it in Studio or through MCP, rebuild, and the site says the new text — no re-emit.
+- A key the dictionary lacks shows its English default. A page in another language with no dictionary shows English throughout, and **the build log says so** — once per language, naming the file or the missing keys.
+- The key list, the English defaults and the model definition are exported from `@contentrain/emitter-astro` as `UI_STRING_DEFAULTS` and `UI_STRINGS_MODEL`, so a migration creates exactly the dictionary the site reads. Declare the languages it wrote in `options.uiStrings.locales` and the emit report names any page language left without one.
+
 ## The acceptance test
 
 A migration is not finished because the components render. The gate is the round trip:
