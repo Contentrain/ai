@@ -48,6 +48,9 @@ export function emitAstroProject(input: EmitInput): EmitResult {
       warnings.push('site.url is empty — canonical links and absolute og:url/og:image are omitted; set it so search engines and share cards resolve')
     }
   }
+  if (input.options?.sitemap !== false && !ir.site.url) {
+    warnings.push('site.url is empty — no sitemap is generated and robots.txt names none; set it so search engines can find every page')
+  }
 
   const familiesById = new Map(ir.families.map((f) => [f.id, f]))
   const lang = ir.site.locales?.[0] ?? 'en'

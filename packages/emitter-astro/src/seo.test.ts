@@ -3,6 +3,7 @@ import type { ProjectIR } from '@contentrain/types'
 import { CHROME_BODY_SLOT, MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import type { EmitInput } from './index'
 import { bodySeoLeaks, emitAstroProject, stripSeoTags } from './index'
+import { robotsTxt } from './scaffold'
 
 // A migrated page used to inherit the template page's head verbatim: every post
 // carried one canonical, one og:title and one Article JSON-LD naming a different
@@ -212,5 +213,63 @@ describe('emitted SEO', () => {
     expect(leaky.warnings.some((w) => w.includes('f-leak') && w.includes('head-only canonical'))).toBe(true)
     // reported, not removed — the body chrome is untouched
     expect(JSON.parse(leaky.files['src/data/chrome/f-leak.json']!).body).toContain('rel="canonical"')
+  })
+})
+
+describe('sitemap and robots.txt', () => {
+  const result = emitAstroProject(input)
+  const noSite = { ...input, ir: { ...ir, site: { ...ir.site, url: '' } } }
+
+  it('wires @astrojs/sitemap into the build rather than computing a sitemap itself', () => {
+    // Only the build knows every URL getStaticPaths produced; a list worked out
+    // here would be a second answer that can disagree with the site.
+    const pkg = JSON.parse(result.files['package.json']!)
+    expect(pkg.dependencies['@astrojs/sitemap']).toBe('^3.7.0')
+    const config = result.files['astro.config.mjs']!
+    expect(config).toContain(`import sitemap from '@astrojs/sitemap'`)
+    expect(config).toContain('integrations: [sitemap()],')
+    expect(Object.keys(result.files).some((path) => path.includes('sitemap') && path.endsWith('.xml'))).toBe(false)
+  })
+
+  it('robots.txt allows everything and names the sitemap by absolute URL', () => {
+    expect(result.files['public/robots.txt']).toBe(
+      'User-agent: *\nAllow: /\n\nSitemap: https://example.com/sitemap-index.xml\n',
+    )
+    expect(result.files['public/robots.txt']).not.toContain('Disallow')
+  })
+
+  it('resolves the sitemap under a site that lives below the host root', () => {
+    expect(robotsTxt('https://example.com/blog')).toContain('Sitemap: https://example.com/blog/sitemap-index.xml')
+    expect(robotsTxt('https://example.com/blog/')).toContain('Sitemap: https://example.com/blog/sitemap-index.xml')
+    expect(robotsTxt('https://example.com')).toContain('Sitemap: https://example.com/sitemap-index.xml')
+  })
+
+  it('without a site URL: no integration, robots.txt without a Sitemap line, and a warning', () => {
+    const out = emitAstroProject(noSite)
+    expect(JSON.parse(out.files['package.json']!).dependencies['@astrojs/sitemap']).toBeUndefined()
+    expect(out.files['astro.config.mjs']).not.toContain('sitemap')
+    // A relative Sitemap line is invalid and crawlers skip it; better none.
+    expect(out.files['public/robots.txt']).toBe('User-agent: *\nAllow: /\n')
+    expect(out.warnings.some((w) => w.includes('no sitemap is generated'))).toBe(true)
+    // `site: ""` is an invalid URL to Astro and the project would not build.
+    expect(out.files['astro.config.mjs']).not.toContain('site:')
+  })
+
+  it('does not follow the seo flag: a producer owning its meta tags still gets a sitemap', () => {
+    const off = emitAstroProject({ ...input, options: { seo: false } })
+    expect(off.files['astro.config.mjs']).toContain('integrations: [sitemap()],')
+    expect(off.files['public/robots.txt']).toContain('Sitemap: ')
+    // …and the missing-site warning is still given when seo is off.
+    const offNoSite = emitAstroProject({ ...noSite, options: { seo: false } })
+    expect(offNoSite.warnings.some((w) => w.includes('no sitemap is generated'))).toBe(true)
+  })
+
+  it('sitemap:false leaves both out, and says nothing about them', () => {
+    const off = emitAstroProject({ ...input, options: { sitemap: false } })
+    expect(off.files['public/robots.txt']).toBeUndefined()
+    expect(off.files['astro.config.mjs']).not.toContain('sitemap')
+    expect(JSON.parse(off.files['package.json']!).dependencies['@astrojs/sitemap']).toBeUndefined()
+    const offNoSite = emitAstroProject({ ...noSite, options: { sitemap: false } })
+    expect(offNoSite.warnings.some((w) => w.includes('no sitemap is generated'))).toBe(false)
   })
 })
