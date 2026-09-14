@@ -25,10 +25,17 @@ export interface FamilyGenResult {
 }
 
 /** A component the family's chrome mounts at a `<!--@@component:ID@@-->` marker. */
+/** A safe identifier for a query id used as a module-local variable name. */
+function queryVar(id: string): string {
+  return `q_${id.replace(/[^a-zA-Z0-9]/g, '_')}`
+}
+
 export interface MountRef {
   id: string
   name: string
   variant: string
+  /** QueryBinding id when the placement binds this region to a query. */
+  query?: string
 }
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -44,6 +51,12 @@ export interface FamilyOptions {
   seo?: boolean
   /** `og:site_name`, from `ProjectIR.site.title`. */
   siteName?: string
+  /**
+   * Query ids a placement may bind to — the ones the caller verified exist in
+   * the content. A binding outside this set is ignored rather than emitting an
+   * import of a data file that was never supplied.
+   */
+  boundQueries?: ReadonlySet<string>
 }
 
 export function familyFiles(
@@ -107,8 +120,10 @@ export function familyFiles(
   const mounts: MountRef[] = []
   const mount = (id: string, def: ComponentDef) => {
     if (mounts.some((m) => m.id === id)) return
-    const variant = placements.get(id)?.variant ?? def.variants?.[0]?.key ?? 'default'
-    mounts.push({ id, name: pascalCase(id), variant })
+    const placement = placements.get(id)
+    const variant = placement?.variant ?? def.variants?.[0]?.key ?? 'default'
+    const query = placement?.query && (options.boundQueries?.has(placement.query) ?? false) ? placement.query : undefined
+    mounts.push({ id, name: pascalCase(id), variant, ...(query ? { query } : {}) })
   }
   for (const id of componentMarkers(body)) {
     const def = definitions.get(id)
@@ -161,21 +176,35 @@ export function familyFiles(
     ...imported.map((n) => `import ${n} from '../components/${n}.astro'`),
   ].join('\n')
   const mountType = [...new Set(mounts.map((m) => `typeof ${m.name}`))].join(' | ')
+  // A placement may bind its region to a query instead of to cloned markup.
+  // The LAYOUT resolves that data, not the component: a component file is
+  // shared by id across families, while a placement belongs to one family, so
+  // two families binding the same component to different queries cannot both
+  // be served by one file. Binding here is what lets them.
+  const queryMounts = mounts.filter((m) => m.query)
+  const queryImports = [...new Set(queryMounts.map((m) => m.query!))]
+    .map((q) => `import ${queryVar(q)} from '../data/queries/${q}.json'`)
+    .join('\n')
+  const queryRender = queryMounts.length
+    ? `${[...new Set(queryMounts.map((m) => m.query!))].map(q => `const ${queryVar(q)}Html = renderQuery(${queryVar(q)} as EmittedQueryPage[], ${JSON.stringify(q)})`).join('\n')}\n`
+    : ''
   const mountTable = mounts.length
     ? `// Components the chrome mounts at <!--@@component:ID@@--> markers; the page's
 // entry address travels to each so a comments thread knows which entry it is.
-const mounts: Record<string, { Mount: ${mountType}; variant: string } | undefined> = {
-${mounts.map((m) => `  ${JSON.stringify(m.id)}: { Mount: ${m.name}, variant: ${JSON.stringify(m.variant)} },`).join('\n')}
+// A mount with \`html\` renders a query's results rather than cloned markup.
+const mounts: Record<string, { Mount: ${mountType}; variant: string; html?: string } | undefined> = {
+${mounts.map((m) => `  ${JSON.stringify(m.id)}: { Mount: ${m.name}, variant: ${JSON.stringify(m.variant)}${m.query ? `, html: ${queryVar(m.query)}Html` : ''} },`).join('\n')}
 }
 const parts = splitComponents(html).map((part) => ({
   html: part.html,
   Mount: part.component ? mounts[part.component]?.Mount : undefined,
   variant: part.component ? (mounts[part.component]?.variant ?? 'default') : 'default',
+  listHtml: part.component ? mounts[part.component]?.html : undefined,
 }))
 `
     : ''
   const bodyRender = mounts.length
-    ? `    {parts.map(({ html: part, Mount, variant }) => (Mount ? <Mount entry={entry} variant={variant} /> : <Fragment set:html={part} />))}`
+    ? `    {parts.map(({ html: part, Mount, variant, listHtml }) => (Mount ? <Mount entry={entry} variant={variant} html={listHtml} /> : <Fragment set:html={part} />))}`
     : `    <Fragment set:html={html} />`
   const renderRefs = (position: 'header' | 'footer') =>
     components
@@ -186,7 +215,8 @@ const parts = splitComponents(html).map((part) => ({
   files[`src/layouts/${name}.astro`] = `---
 // Family: ${family.id}${family.name ? ` (${family.name})` : ''} — emitted by @contentrain/emitter-astro
 import chrome from '../data/chrome/${family.id}.json'
-import { cssHref, fillAttrs, renderTemplate, composeBody${mounts.length ? ', splitComponents' : ''}${seoOn ? ', type SeoInput' : ''} } from '../lib/fill'
+import { cssHref, fillAttrs, renderTemplate, composeBody${mounts.length ? ', splitComponents' : ''}${queryMounts.length ? ', renderQuery, type EmittedQueryPage' : ''}${seoOn ? ', type SeoInput' : ''} } from '../lib/fill'
+${queryImports}${queryImports ? '\n' : ''}
 ${componentImports ? `${componentImports}\n` : ''}
 interface Props {
   title?: string
@@ -212,7 +242,7 @@ const content = body ?? (Astro.slots.has('default') ? await Astro.slots.render('
 // Split at the marker FIRST, then fill marks per side — filling first would
 // eat the @@body@@ inside the marker and silently drop the content.
 const html = composeBody(chrome.body, marks, content)
-${mountTable}---
+${queryRender}${mountTable}---
 <!doctype html>
 <html {...htmlAttrs}>
   <head>

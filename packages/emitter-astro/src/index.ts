@@ -17,6 +17,7 @@ import { componentFiles, isRuntimeImplemented } from './components.js'
 import { chromeComponents } from './chrome.js'
 import { SEO_COMPONENT } from './seo.js'
 import { wrapLegacyCss } from './css.js'
+import { stableJson } from './util.js'
 
 export function emitAstroProject(input: EmitInput): EmitResult {
   const { ir } = input
@@ -66,8 +67,42 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     for (const post of posts) for (const id of componentMarkers(post.body)) ids.add(id)
     if (ids.size) bodyMarkersByFamily.set(route.family, ids)
   }
+  // A placement may bind its region to a query. Validated before the families
+  // are emitted, because the layout emits an import for the query's data file:
+  // an import of a file the producer never supplied is a build error with no
+  // explanation in it. A binding that does not check out is dropped here, so
+  // the region stays the cloned markup the warning says it stays.
+  const boundQueries = new Set<string>()
+  const queryBound = new Set<string>()
   for (const family of ir.families) {
-    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id), definitions, bodyMarkersByFamily.get(family.id) ?? [], { seo, siteName: ir.site.title })
+    for (const placement of family.components ?? []) {
+      if (!placement.query) continue
+      const pages = input.content?.queries?.[placement.query]
+      if (!pages) {
+        warnings.push(
+          `family ${family.id}: placement "${placement.component}" binds query "${placement.query}", `
+          + 'which is not in input.content.queries — binding dropped, region left as cloned markup',
+        )
+        continue
+      }
+      if (pages.length !== 1) {
+        warnings.push(
+          `family ${family.id}: placement "${placement.component}" binds query "${placement.query}", `
+          + `which has ${pages.length} result sets — a page region has no route parameter to choose between `
+          + 'them, so the build stops rather than rendering one of them everywhere',
+        )
+      }
+      // The layout imports this file. A route that renders the same query also
+      // writes it, but a region is not a route: bound without one, nothing else
+      // would, and the import would resolve to nothing.
+      add({ [`src/data/queries/${placement.query}.json`]: stableJson(pages) })
+      boundQueries.add(placement.query)
+      queryBound.add(placement.component)
+    }
+  }
+
+  for (const family of ir.families) {
+    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id), definitions, bodyMarkersByFamily.get(family.id) ?? [], { seo, siteName: ir.site.title, boundQueries })
     add(fam.files)
     warnings.push(...fam.warnings)
   }
@@ -139,7 +174,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     files[path] = collisionPage(path, first, second)
   }
 
-  const components = componentFiles(ir.components ?? [], input.runtime)
+  const components = componentFiles(ir.components ?? [], input.runtime, queryBound)
   add(components.files)
   warnings.push(...components.warnings)
 

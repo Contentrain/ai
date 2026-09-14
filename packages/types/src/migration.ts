@@ -629,6 +629,24 @@ export interface ComponentPlacement {
   component: string
   variant?: string
   selector?: string
+  /**
+   * `QueryBinding.id` whose results fill this region, instead of the cloned
+   * markup that was there.
+   *
+   * The case this exists for: a theme's "recent posts" block sits in the
+   * chrome of every article. Cloned, it freezes on the day of the migration —
+   * it keeps listing the same posts forever, and nobody notices because it
+   * still looks right. Bound to a query it stays current and becomes editable,
+   * which is the whole difference between a copy of a site and a site.
+   *
+   * On the placement rather than on `ComponentDef`, because it is a per-mount
+   * fact: one `related` component can be mounted by a post family filtered to
+   * the post's category and by an author family filtered to the author. The
+   * definition says what the region *is*; the placement says what it shows
+   * here — the same split `variant` (card shape) and `selector` (region)
+   * already follow.
+   */
+  query?: string
 }
 
 export interface FamilyVariant {
