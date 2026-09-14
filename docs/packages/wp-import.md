@@ -29,12 +29,14 @@ pnpm add @contentrain/wp-import
 
 You cannot always reach all of a WordPress site, and pretending otherwise is how migrations lose content silently. Every `RawIR` records **which rung produced it**, because two documents for the same site are only comparable when their rungs are.
 
-| Rung | How it reads the site | Measured field coverage |
+| Rung | How it reads the site | Field coverage |
 |---|---|---|
-| `rest_public` | The public REST API, no credentials | ~34% |
-| `rest_auth` | REST with an Application Password | ~57% |
-| `wxr` | A WXR export file | ~82% |
-| `bridge` | The WordPress Bridge plugin | 100% |
+| `rest_public` | The public REST API, no credentials | ~34% (measured) |
+| `rest_auth` | REST with an Application Password | ~57% (measured) |
+| `wxr` | A WXR export file | ~82% (measured) |
+| `bridge` | The WordPress Bridge plugin | All fields by design — it reads WordPress from inside; not a sampled figure |
+
+The measured figures date from August 2026, before migration contract version 1; a WordPress or plugin release can move them.
 
 ::: info The Bridge rung is not in this package
 `bridge` is a provenance value this package understands, not an importer it ships. The Bridge plugin is GPL-licensed and lives in a separate repository — a WordPress plugin cannot be MIT and link WordPress core. This package covers the three rungs you can reach from outside the site.
