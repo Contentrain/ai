@@ -251,6 +251,44 @@ export function notFoundPageChecks(ctx: Context): Finding[] {
   })]
 }
 
+/**
+ * Pages the old site served that the build does not, with no redirect for them.
+ *
+ * `status.mismatch` walks the build's own documents, so it can only compare
+ * pages that exist on both sides. A page that the migration never produced is
+ * not a document here at all, and nothing would ever report it — while every
+ * link and every search result pointing at it now ends on a 404. This walks the
+ * baseline instead.
+ *
+ * Only a build is the whole site. A set of captured pages may simply not
+ * include one, so asserting absence there would report a defect the input
+ * cannot express. Only baseline pages that answered 2xx count: a redirect or an
+ * error on the old site was not a page anyone could land on. A redirect rule
+ * for the address covers it — where it leads is `redirectChecks`' question.
+ */
+export function baselineCoverageChecks(ctx: Context): Finding[] {
+  if (!ctx.input.build || !ctx.input.baseline) return []
+  const redirected = new Set((ctx.input.redirects ?? []).map(rule => identity(rule.from, ctx.input.site)))
+  const out: Finding[] = []
+  const reported = new Set<string>()
+  for (const before of ctx.input.baseline.documents) {
+    const status = before.status ?? 200
+    if (status < 200 || status >= 300) continue
+    const id = identity(before.url, ctx.input.site)
+    if (id === '/404' || id === '/404.html') continue
+    if (ctx.served.has(id) || redirected.has(id) || reported.has(id)) continue
+    reported.add(id)
+    out.push(finding({
+      group: 'status',
+      check: 'status.baseline-page-missing',
+      severity: 'error',
+      url: before.url,
+      message: 'The old site served this page; the build does not, and no redirect covers it.',
+    }))
+  }
+  return out
+}
+
 /** Redirect rules: chains, loops, and targets that do not exist. */
 export function redirectChecks(ctx: Context): Finding[] {
   const rules = ctx.input.redirects

@@ -80,6 +80,7 @@ a page must not fail its own gate.
 | | `indexing.sitemap-missing-entry` | warning | An indexable page is not in the sitemap (a `noindex` page is not asked to be) |
 | | `indexing.sitemap-stale-entry` | warning | The sitemap lists a page the build does not serve |
 | status | `status.mismatch` | error | The status changed against the baseline |
+| | `status.baseline-page-missing` | error | A page the baseline answered with 2xx that the build does not serve and no redirect rule covers. `status.mismatch` only sees pages present on both sides, so a page the migration never produced would otherwise be reported by nothing. Only checked for a build (`input.build`) — a capture may simply not include a page; the old site's 404 page is not counted |
 | | `status.soft-404` | error | A "not found" page answering 200 — invisible to every status monitor, indexed as content |
 | | `status.redirect-chain` | warning | More hops than `maxRedirectHops` (default 1) |
 | | `status.redirect-loop` | error | A chain that returns to itself |
