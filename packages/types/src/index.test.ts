@@ -50,6 +50,9 @@ import {
   validateSlug,
   validateEntryId,
   validateLocale,
+  resolveModelLocales,
+  describeModelLocaleScope,
+  validateModelLocales,
   detectSecrets,
   validateFieldValue,
   sortKeys,
@@ -231,6 +234,16 @@ describe('@contentrain/types', () => {
     it('declares title_field', () => {
       expectTypeOf<ModelDefinition>().toHaveProperty('title_field')
     })
+
+    it('locales is an optional string[] — absent means every project locale', () => {
+      expectTypeOf<ModelDefinition>().toHaveProperty('locales')
+      expectTypeOf<ModelDefinition['locales']>().toEqualTypeOf<string[] | undefined>()
+      const narrowed: ModelDefinition = {
+        id: 'pages', name: 'Pages', kind: 'collection', domain: 'site',
+        i18n: true, locales: ['en'], title_field: 'title',
+      }
+      expect(narrowed.locales).toEqual(['en'])
+    })
   })
 
   describe('MODEL_FIELD_ORDER', () => {
@@ -244,7 +257,7 @@ describe('@contentrain/types', () => {
 
     it('is the exact canonical order', () => {
       expect([...MODEL_FIELD_ORDER]).toEqual([
-        'id', 'name', 'kind', 'domain', 'i18n', 'title_field',
+        'id', 'name', 'kind', 'domain', 'i18n', 'locales', 'title_field',
         'description', 'content_path', 'locale_strategy', 'fields', 'form', 'comments',
       ])
     })
@@ -575,6 +588,125 @@ describe('@contentrain/types', () => {
 
     it('rejects unsupported locale', () => {
       expect(validateLocale('fr', config)).toContain('not in supported locales')
+    })
+  })
+
+  describe('model locale scope', () => {
+    const config: ContentrainConfig = {
+      version: 1,
+      stack: 'astro',
+      workflow: 'review',
+      locales: { default: 'en', supported: ['en', 'tr', 'da'] },
+      domains: ['blog'],
+    }
+
+    describe('resolveModelLocales', () => {
+      it('covers every supported locale when the model declares none', () => {
+        expect(resolveModelLocales({ i18n: true }, config)).toEqual({
+          locales: ['en', 'tr', 'da'],
+          source: 'project',
+        })
+      })
+
+      it('narrows to the declared subset', () => {
+        expect(resolveModelLocales({ i18n: true, locales: ['en', 'da'] }, config)).toEqual({
+          locales: ['en', 'da'],
+          source: 'model',
+        })
+      })
+
+      it('returns the subset in config order, not the order the model listed it', () => {
+        expect(resolveModelLocales({ i18n: true, locales: ['da', 'en'] }, config).locales)
+          .toEqual(['en', 'da'])
+      })
+
+      it('ignores a subset on a non-i18n model — its scope is the default locale', () => {
+        expect(resolveModelLocales({ i18n: false, locales: ['tr'] }, config)).toEqual({
+          locales: ['en'],
+          source: 'project',
+        })
+      })
+
+      it('never narrows to nothing — an unusable declaration falls back to the project list', () => {
+        expect(resolveModelLocales({ i18n: true, locales: [] }, config).locales).toEqual(['en', 'tr', 'da'])
+        expect(resolveModelLocales({ i18n: true, locales: ['fr'] }, config)).toEqual({
+          locales: ['en', 'tr', 'da'],
+          source: 'project',
+        })
+      })
+    })
+
+    describe('describeModelLocaleScope', () => {
+      it('names which list a message was evaluated against', () => {
+        expect(describeModelLocaleScope({ locales: ['en', 'da'], source: 'model' }))
+          .toBe("the model's own locales [en, da]")
+        expect(describeModelLocaleScope({ locales: ['en', 'tr', 'da'], source: 'project' }))
+          .toBe("the project's supported locales [en, tr, da]")
+      })
+    })
+
+    describe('validateModelLocales', () => {
+      it('accepts an absent field — the model covers every supported locale', () => {
+        expect(validateModelLocales({ i18n: true }, config)).toEqual([])
+      })
+
+      it('accepts any subset of the supported locales, including all of them', () => {
+        expect(validateModelLocales({ i18n: true, locales: ['en'] }, config)).toEqual([])
+        expect(validateModelLocales({ i18n: true, locales: ['en', 'da'] }, config)).toEqual([])
+        expect(validateModelLocales({ i18n: true, locales: ['en', 'tr', 'da'] }, config)).toEqual([])
+      })
+
+      it('rejects a locale outside config.locales.supported, naming both', () => {
+        const issues = validateModelLocales({ i18n: true, locales: ['en', 'fr'] }, config)
+        expect(issues).toHaveLength(1)
+        expect(issues[0]!.severity).toBe('error')
+        expect(issues[0]!.field).toBe('locales')
+        expect(issues[0]!.message).toContain('"fr"')
+        expect(issues[0]!.message).toContain('[en, tr, da]')
+        expect(issues[0]!.message).toContain('must be a subset')
+      })
+
+      it('reports every unsupported locale, not just the first', () => {
+        const issues = validateModelLocales({ i18n: true, locales: ['fr', 'de'] }, config)
+        expect(issues.map(i => i.severity)).toEqual(['error', 'error'])
+        expect(issues[0]!.message).toContain('"fr"')
+        expect(issues[1]!.message).toContain('"de"')
+      })
+
+      it('rejects an empty list', () => {
+        const issues = validateModelLocales({ i18n: true, locales: [] }, config)
+        expect(issues).toHaveLength(1)
+        expect(issues[0]!.message).toContain('empty list covers nothing')
+      })
+
+      it('rejects a duplicate entry', () => {
+        const issues = validateModelLocales({ i18n: true, locales: ['en', 'en'] }, config)
+        expect(issues).toHaveLength(1)
+        expect(issues[0]!.message).toContain('listed more than once')
+      })
+
+      it('rejects a non-array and a non-string entry', () => {
+        const notArray = validateModelLocales(
+          { i18n: true, locales: 'en' as unknown as string[] },
+          config,
+        )
+        expect(notArray).toHaveLength(1)
+        expect(notArray[0]!.message).toContain('must be an array')
+
+        const notString = validateModelLocales(
+          { i18n: true, locales: [42 as unknown as string] },
+          config,
+        )
+        expect(notString).toHaveLength(1)
+        expect(notString[0]!.message).toContain('must be a locale code')
+      })
+
+      it('warns — does not error — when a non-i18n model declares an otherwise valid subset', () => {
+        const issues = validateModelLocales({ i18n: false, locales: ['en'] }, config)
+        expect(issues).toHaveLength(1)
+        expect(issues[0]!.severity).toBe('warning')
+        expect(issues[0]!.message).toContain('i18n:false')
+      })
     })
   })
 

@@ -283,6 +283,7 @@ interface ModelDefinition {
   kind: ModelKind                 // 'collection' | 'singleton' | 'document' | 'dictionary'
   domain: string                  // Organizational domain
   i18n: boolean                   // Whether content is localized
+  locales?: string[]              // Project locales this model covers (subset of locales.supported); absent = all
   title_field: string             // Field shown as an entry's title (dictionary: "key")
   description?: string            // Optional description
   fields?: Record<string, FieldDef> // Field definitions (not used for dictionary)
@@ -334,6 +335,14 @@ Each backfilled value is reported as a notice naming the rule that chose it,
 so a wrong pick is visible and correctable with `contentrain_model_save`. A
 `title_field` that is present but names the wrong field is reported and never
 rewritten — that is an authoring decision, not a gap to fill.
+
+### `locales`
+
+Optional. The project locales this model covers — a subset of `locales.supported`.
+
+Absent, the model covers every supported locale, which is what parity is validated against and what every model did before the field existed. Present, validation checks only the locales named, so a partially-translated site can say so instead of failing on translations it never had. A locale outside `locales.supported` is a validation error, and the field has no effect on an `i18n: false` model.
+
+`contentrain validate --fix` never invents a value here. See [Locale Coverage](/reference/model-kinds#locale-coverage).
 
 See the [Model Kinds](/reference/model-kinds) page for detailed kind-specific documentation and the [Field Types](/reference/field-types) page for field definition details.
 

@@ -55,6 +55,7 @@ Core interfaces:
 
 - `FieldDef`
 - `ModelDefinition`
+- `ModelLocaleScope`
 - `ModelSummary`
 - `ContentrainConfig`
 - `Vocabulary`
@@ -127,6 +128,9 @@ Validate functions (pure, dependency-free):
 - `validateSlug(slug)` — kebab-case slug validation
 - `validateEntryId(id)` — entry ID format validation
 - `validateLocale(locale, config)` — locale format + config support check
+- `resolveModelLocales(model, config)` — the locales a model's content is expected to cover: `model.locales` when it declares one, otherwise `config.locales.supported` (the default locale alone when `i18n: false`)
+- `describeModelLocaleScope(scope)` — name a resolved scope the way a validation message should quote it
+- `validateModelLocales(model, config)` — check a `locales` declaration is a subset of `config.locales.supported`
 - `detectSecrets(value)` — detect potential secrets in field values (provider-shaped patterns, plus an `api_key = …` assignment whose tail passes `looksLikeCredential`)
 - `validateFieldValue(value, fieldDef)` — full field schema validation (type, required, min/max, pattern, select)
 
@@ -182,6 +186,9 @@ const model: ModelDefinition = {
   kind: 'collection',
   domain: 'blog',
   i18n: true,
+  // Optional. Absent means every locale in config.locales.supported; a subset
+  // narrows validation for a partially-translated model.
+  locales: ['en', 'tr'],
   fields,
 }
 
@@ -250,6 +257,8 @@ Studio (Nuxt 4, web) cannot import `@contentrain/mcp` directly because MCP depen
 | `validateSlug(slug)` | Form validation for document slugs |
 | `validateEntryId(id)` | Validate collection entry IDs |
 | `validateLocale(locale, config)` | Locale picker validation |
+| `resolveModelLocales(model, config)` | Which locales to show, or require, for one model |
+| `validateModelLocales(model, config)` | Validate a model's locale-coverage subset in a model editor |
 | `detectSecrets(value)` | Content editor secret detection warnings |
 | `validateFieldValue(value, fieldDef)` | Full field-level validation in content forms |
 | `canonicalStringify(data, fieldOrder?)` | Preview canonical JSON output |
