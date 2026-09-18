@@ -1,0 +1,58 @@
+{
+  "0b7c6962d562": {
+    "location": "bridge-primary",
+    "menu": "Bridge Primary",
+    "position": 1,
+    "target_kind": "post",
+    "target_post_type": "post",
+    "target_resolved": true,
+    "target_slug": "bridge-article",
+    "title": "Article",
+    "url": "http://localhost:8094/bridge-article/"
+  },
+  "272c4401f80b": {
+    "location": "bridge-footer",
+    "menu": "Bridge Footer",
+    "position": 1,
+    "target_kind": "term",
+    "target_resolved": true,
+    "target_slug": "bridge-fixture-category",
+    "target_taxonomy": "category",
+    "title": "Category",
+    "url": "http://localhost:8094/topics/bridge-fixture-category/"
+  },
+  "45d15fa58307": {
+    "location": "bridge-footer",
+    "menu": "Bridge Footer",
+    "position": 2,
+    "target_kind": "url",
+    "target_resolved": true,
+    "title": "External",
+    "url": "https://example.test/about"
+  },
+  "4688a83504ba": {
+    "classes": "nav-child featured",
+    "location": "bridge-primary",
+    "menu": "Bridge Primary",
+    "parent": "0b7c6962d562",
+    "position": 2,
+    "target_kind": "post",
+    "target_post_type": "page",
+    "target_resolved": true,
+    "target_slug": "about-bridge",
+    "title": "About (child)",
+    "url": "http://localhost:8094/about-bridge/",
+    "window_target": "_blank"
+  },
+  "731fcfbb4161": {
+    "location": "bridge-primary",
+    "menu": "Bridge Primary",
+    "position": 3,
+    "target_kind": "post",
+    "target_post_type": "page",
+    "target_resolved": true,
+    "target_slug": "about-bridge",
+    "title": "Orphaned child",
+    "url": "http://localhost:8094/about-bridge/"
+  }
+}

@@ -12,8 +12,14 @@ Bridge; each file is copied here unchanged.
 - `bridge-b06/delta.json`: B-06's twelve-mutation delta
   (`feat/b06-delta-cursor@03b0327`, `tests/delta.sh`). It covers created,
   updated (including a meta-only edit), moved by slug, by parent and by term
-  base, trashed and purged. That run writes no store, so the tests plan it
+  base, trashed and purged. That run wrote no store, so the tests plan it
   against an empty one.
+- `bridge-b06-planner/`: the same twelve mutations with their store, from
+  Bridge main `3306dc3` (`tests/delta.sh` → `tests/.out/delta/planner`), the
+  whole directory byte for byte. `t0-store/` is the store at T0, `t1-export/`
+  is the export at T1 (each has its `entry-source-map.json` beside its
+  `.contentrain` files), and `t1.delta.json` is the delta between them.
+  `expected.json` is the Bridge's own list of the mutations.
 
 The negatives (a repository edit, a record missing from the map) are derived
 from these inside the tests. None is a separate fixture.

@@ -1,0 +1,20 @@
+{
+  "id": "site",
+  "name": "Site",
+  "kind": "singleton",
+  "domain": "site",
+  "i18n": false,
+  "title_field": "title",
+  "fields": {
+    "description": {
+      "type": "text"
+    },
+    "source_url": {
+      "type": "url"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    }
+  }
+}

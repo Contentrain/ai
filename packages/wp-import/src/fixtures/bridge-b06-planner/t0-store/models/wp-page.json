@@ -1,0 +1,54 @@
+{
+  "id": "wp-page",
+  "name": "Pages",
+  "kind": "collection",
+  "domain": "site",
+  "i18n": false,
+  "title_field": "title",
+  "fields": {
+    "acf_delta_tagline": {
+      "type": "string"
+    },
+    "author": {
+      "model": "wp-authors",
+      "type": "relation"
+    },
+    "body": {
+      "type": "richtext"
+    },
+    "date": {
+      "type": "datetime"
+    },
+    "excerpt": {
+      "type": "richtext"
+    },
+    "meta_yoast_wpseo_canonical": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_meta_robots_adv": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_metadesc": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_schema_page_type": {
+      "type": "text"
+    },
+    "modified": {
+      "type": "datetime"
+    },
+    "source_slug": {
+      "type": "string"
+    },
+    "source_url": {
+      "type": "url"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    },
+    "wp_id": {
+      "type": "integer"
+    }
+  }
+}

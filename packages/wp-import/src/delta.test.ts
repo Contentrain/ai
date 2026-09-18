@@ -117,7 +117,52 @@ describe('planSourceDelta — the Bridge e2e delivery', () => {
   })
 })
 
-describe('planSourceDelta — the Bridge B-06 twelve-mutation delta', () => {
+/** One planned entry as a table row: record, op, where it landed, and what changed. */
+const row = (entry: SourceDeltaPlan['entries'][number]) =>
+  [`${entry.wp_type}:${entry.wp_id}`, entry.op, entry.model, entry.entry_id, entry.deleted_kind, entry.fields_changed]
+
+describe('planSourceDelta — the Bridge B-06 twelve mutations, with their store', () => {
+  const dir = join(FIXTURES, 'bridge-b06-planner')
+  const delta = readJson<SourceDeltaPlan>('bridge-b06-planner/t1.delta.json')
+  const plan = planSourceDelta({ delta, store: loadStore(join(dir, 't0-store')), incoming: loadStore(join(dir, 't1-export')) })
+
+  it('covers the mutations the Bridge expects', () => {
+    const expected = readJson<string[]>('bridge-b06-planner/expected.json')
+    const ops = plan.entries.map(e => `${e.wp_type}:${e.wp_id}:${e.op}${e.deleted_kind ? `/${e.deleted_kind}` : ''}`)
+    expect(ops.toSorted()).toEqual(expected.toSorted())
+  })
+
+  it('places all twelve, with no conflict and nothing unmapped', () => {
+    expect(plan.entries.map(row)).toEqual([
+      ['attachment:51', 'deleted', 'wp-media', '4db25b7ecf5a', 'purged', undefined],
+      ['category:17', 'moved', 'wp-tax-category', 'fd4ec984e0ca', undefined, ['source_slug']],
+      // A meta-only edit: WordPress did not bump modified, the ACF field changed.
+      ['page:39', 'updated', 'wp-page', '4462e2e736b8', undefined, ['acf_delta_tagline']],
+      ['page:45', 'moved', 'wp-page', 'cb20119edfe9', undefined, ['modified', 'source_url']],
+      ['post:38', 'updated', 'wp-post', 'entry-38', undefined, ['body', 'modified']],
+      ['post:40', 'deleted', 'wp-post', 'entry-40', 'trashed', undefined],
+      ['post:41', 'deleted', 'wp-post', 'entry-41', 'purged', undefined],
+      ['post:42', 'moved', 'wp-post', 'entry-42', undefined, ['modified', 'source_slug', 'source_url']],
+      ['post:46', 'updated', 'wp-post', 'entry-46', undefined, ['modified', 'source_url']],
+      ['post:47', 'updated', 'wp-post', 'entry-47', undefined, ['modified', 'source_slug']],
+      ['post:48', 'updated', 'wp-post', 'entry-48', undefined, ['body', 'modified']],
+      ['post:52', 'created', 'wp-post', 'entry-52', undefined, undefined],
+    ])
+    expect(plan.entries.filter(e => e.unmapped)).toEqual([])
+    expect(plan.entries.filter(e => e.conflict)).toEqual([])
+    expect(plan.warnings).toBeUndefined()
+  })
+
+  it('proposes the three redirects', () => {
+    expect(plan.redirects).toEqual([
+      { from: '/topics/delta-cat-b07e7a/', to: '/topics/delta-cat-renamed-b07e7a/', status: 301 },
+      { from: '/delta-parent-a-b07e7a/delta-child-b07e7a/', to: '/delta-parent-b-b07e7a/delta-child-b07e7a/', status: 301 },
+      { from: '/delta-slug-b07e7a/', to: '/delta-slug-renamed-b07e7a/', status: 301 },
+    ])
+  })
+})
+
+describe('planSourceDelta — the Bridge B-06 twelve-mutation delta, without a store', () => {
   const delta = b06Delta()
   const plan = planSourceDelta({ delta, store: { files: {}, entry_source_map: {} } })
 
