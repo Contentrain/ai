@@ -328,13 +328,21 @@ Shared shapes for the WordPress → static-site migration pipeline. They exist h
 
 | Contract | Role |
 |---|---|
-| `RawIR` | Source-faithful extraction of a WordPress site (posts, terms, menus, comments, media, redirects) with provenance: which access rung produced it (`rest_public` → `rest_auth` → `wxr` → `bridge`). Unresolved references are kept and marked, never dropped. |
+| `RawIR` | Source-faithful extraction of a WordPress site (posts, terms, menus, comments, media, redirects, and from the bridge rung SEO and routing) with provenance: which access rung produced it (`rest_public` → `rest_auth` → `wxr` → `bridge`). Unresolved references are kept and marked, never dropped. |
 | `CapabilityManifest` | Evidence-based inventory of what the site uses (SEO, forms, comments, i18n, ACF, …) — the input for migration planning and the "what happens to X" conversation. `access.achieved` is the highest source-access rung actually reached, or `null` when none was: a site behind an access wall still gets a manifest, and a producer that writes a rung it did not reach makes the coverage figures unreadable. |
 | `ProjectIR` | The reproducible model of the site: route model, layout families, component variants, query bindings, design tokens. Not "this page's HTML" — the design system that generates unseen pages correctly. |
 | `MigrationHandoff` | What the migration hands the user: repository, per-capability dispositions, and offers for runtime capabilities (with cost comparison) — offering is this document's job; fulfilling is the receiving product's. `runtime` (`RuntimeBinding`) records where the generated site's runtime components were bound once an offer was fulfilled. `content_summary.body_kinds` counts standalone pages by `PageBodyKind` — `html` (editor markup, still editable), `builder_html` (rendered by a page builder, carried as rendered), `none` (the theme renders it) — because each promises something different to the person receiving the site. |
 | `RuntimeBinding` | The provider's public API origin (`base_url`) and `project_id` — all a static site needs to mount comments and forms. Never a credential: the public endpoints are unauthenticated by design. |
 
 All are plain JSON (snake_case keys), stamped with `MIGRATION_CONTRACT_VERSION`.
+
+`RawIR` also carries three optional parts from the bridge rung:
+
+- **`seo`** (`RawSeo`) holds which plugin serves the head (`serving`: `yoast` / `rank_math` / `aioseo` / `wordpress-core`), each provider's status and settings, and each page's values keyed by `post:<id>` or `term:<taxonomy>:<id>`. `status: 'none'` is an answer, not a missing export: no SEO plugin, and WordPress core renders only the title. `resolved: true` marks values the running plugin rendered; `false` marks stored values and templates only. `robots_served` is what the page actually carries after WordPress core and the plugin reconcile it.
+- **`routing`** (`RawRouting`) states the URL rules that `RawPost.link` holds as facts: permalink structure, bases, the front and posts pages, and each post type's and taxonomy's permastruct, with `with_front` applied.
+- **`redirects_excluded`** (`RawRedirectExcluded`) lists every rule a source holds that the site does not serve as a plain redirect, with the reason (`disabled`, `source-inactive`, `conditional-match:*`, `not-a-redirect:*`, …). Served plus excluded accounts for the whole table.
+
+`RawRedirect` gains `id`, `match` and `regex`. Only `match: 'url'` without `regex` is a one-to-one mapping. A consumer that writes a regex or prefix rule as a literal `from` produces the wrong redirect.
 
 Chrome markers the emitter honours: `CHROME_BODY_SLOT` (where page content goes), `CHROME_REPEAT_OPEN`/`CHROME_IF_OPEN` (per-item and conditional regions), `LIST_ITEMS_SLOT` (where a list section's items go) and `componentSlot(id)` (`<!--@@component:ID@@-->`, where a `ComponentDef` — a `comments` thread, a `form` — is mounted).
 

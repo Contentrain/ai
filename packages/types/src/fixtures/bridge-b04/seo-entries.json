@@ -1,0 +1,802 @@
+{
+  "post:1": {
+    "yoast": {
+      "canonical": "http://localhost:8094/blog/2026/hello-world/",
+      "open_graph": {
+        "description": "Welcome to WordPress. This is your first post. Edit or delete it, then start writing!",
+        "site_name": "Bridge Acceptance",
+        "title": "Hello world! | Bridge Acceptance Journal",
+        "type": "article",
+        "url": "http://localhost:8094/blog/2026/hello-world/"
+      },
+      "resolved": true,
+      "robots": {
+        "advanced": [
+          "max-snippet:-1",
+          "max-image-preview:large",
+          "max-video-preview:-1"
+        ],
+        "follow": "follow",
+        "index": "index"
+      },
+      "robots_served": [
+        "index",
+        "follow",
+        "max-image-preview:large",
+        "max-snippet:-1",
+        "max-video-preview:-1"
+      ],
+      "schema": {
+        "graph": {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@id": "http://localhost:8094/blog/2026/hello-world/#article",
+              "@type": "Article",
+              "author": {
+                "@id": "http://localhost:8094/#/schema/person/f5ce3b8715c090373414bf61b6634262",
+                "name": "bridge-admin"
+              },
+              "commentCount": 1,
+              "datePublished": "2026-09-18T09:47:57+00:00",
+              "headline": "Hello world!",
+              "inLanguage": "en-US",
+              "isPartOf": {
+                "@id": "http://localhost:8094/blog/2026/hello-world/"
+              },
+              "mainEntityOfPage": {
+                "@id": "http://localhost:8094/blog/2026/hello-world/"
+              },
+              "potentialAction": [
+                {
+                  "@type": "CommentAction",
+                  "name": "Comment",
+                  "target": [
+                    "http://localhost:8094/blog/2026/hello-world/#respond"
+                  ]
+                }
+              ],
+              "wordCount": 17
+            },
+            {
+              "@id": "http://localhost:8094/blog/2026/hello-world/",
+              "@type": "WebPage",
+              "author": {
+                "@id": "http://localhost:8094/#/schema/person/f5ce3b8715c090373414bf61b6634262"
+              },
+              "breadcrumb": {
+                "@id": "http://localhost:8094/blog/2026/hello-world/#breadcrumb"
+              },
+              "datePublished": "2026-09-18T09:47:57+00:00",
+              "inLanguage": "en-US",
+              "isPartOf": {
+                "@id": "http://localhost:8094/#website"
+              },
+              "name": "Hello world! | Bridge Acceptance Journal",
+              "potentialAction": [
+                {
+                  "@type": "ReadAction",
+                  "target": [
+                    "http://localhost:8094/blog/2026/hello-world/"
+                  ]
+                }
+              ],
+              "url": "http://localhost:8094/blog/2026/hello-world/"
+            },
+            {
+              "@id": "http://localhost:8094/blog/2026/hello-world/#breadcrumb",
+              "@type": "BreadcrumbList",
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "item": "http://localhost:8094/",
+                  "name": "Home",
+                  "position": 1
+                },
+                {
+                  "@type": "ListItem",
+                  "name": "Hello world!",
+                  "position": 2
+                }
+              ]
+            },
+            {
+              "@id": "http://localhost:8094/#website",
+              "@type": "WebSite",
+              "description": "",
+              "inLanguage": "en-US",
+              "name": "Bridge Acceptance",
+              "potentialAction": [
+                {
+                  "@type": "SearchAction",
+                  "query-input": {
+                    "@type": "PropertyValueSpecification",
+                    "valueName": "search_term_string",
+                    "valueRequired": true
+                  },
+                  "target": {
+                    "@type": "EntryPoint",
+                    "urlTemplate": "http://localhost:8094/?s={search_term_string}"
+                  }
+                }
+              ],
+              "url": "http://localhost:8094/"
+            },
+            {
+              "@id": "http://localhost:8094/#/schema/person/f5ce3b8715c090373414bf61b6634262",
+              "@type": "Person",
+              "image": {
+                "@id": "https://secure.gravatar.com/avatar/de5d95097b98baafa213ef451a7e65976903e719225c24e2c2d35bf39bf2be25?s=96&d=mm&r=g",
+                "@type": "ImageObject",
+                "caption": "bridge-admin",
+                "contentUrl": "https://secure.gravatar.com/avatar/de5d95097b98baafa213ef451a7e65976903e719225c24e2c2d35bf39bf2be25?s=96&d=mm&r=g",
+                "inLanguage": "en-US",
+                "url": "https://secure.gravatar.com/avatar/de5d95097b98baafa213ef451a7e65976903e719225c24e2c2d35bf39bf2be25?s=96&d=mm&r=g"
+              },
+              "name": "bridge-admin",
+              "sameAs": [
+                "http://localhost:8094"
+              ],
+              "url": "http://localhost:8094/blog/author/bridge-admin/"
+            }
+          ]
+        },
+        "types": [
+          "Article",
+          "BreadcrumbList",
+          "CommentAction",
+          "EntryPoint",
+          "ImageObject",
+          "ListItem",
+          "Person",
+          "PropertyValueSpecification",
+          "ReadAction",
+          "SearchAction",
+          "WebPage",
+          "WebSite"
+        ]
+      },
+      "title": "Hello world! | Bridge Acceptance Journal",
+      "twitter": {
+        "card": "summary_large_image"
+      }
+    }
+  },
+  "post:11": {
+    "aioseo": {
+      "description": "AIOSEO description",
+      "focus_keyword": "aioseo keyword",
+      "open_graph": {
+        "type": "default"
+      },
+      "resolved": false,
+      "robots": {
+        "follow": "follow",
+        "index": "noindex"
+      },
+      "schema": {
+        "types": [
+          "FAQPage",
+          "WebPage"
+        ]
+      },
+      "stored": {
+        "canonical_url": null,
+        "description": "AIOSEO description",
+        "keyphrases": {
+          "focus": {
+            "keyphrase": "aioseo keyword"
+          }
+        },
+        "og_description": null,
+        "og_object_type": "default",
+        "og_title": null,
+        "robots_default": "0",
+        "robots_nofollow": "0",
+        "robots_noindex": "1",
+        "schema": {
+          "graphs": [
+            {
+              "graphName": "FAQPage"
+            }
+          ]
+        },
+        "schema_type": "WebPage",
+        "title": "#post_title #separator_sa #site_title",
+        "twitter_card": "default",
+        "twitter_title": null
+      },
+      "title": "#post_title #separator_sa #site_title",
+      "twitter": {
+        "card": "default"
+      }
+    },
+    "rank_math": {
+      "description": "Rank Math description",
+      "focus_keyword": "rank math keyword",
+      "resolved": false,
+      "robots": {
+        "follow": "nofollow",
+        "index": "noindex"
+      },
+      "schema": {
+        "graph": [
+          {
+            "@type": "BlogPosting",
+            "headline": "%seo_title%"
+          }
+        ],
+        "types": [
+          "BlogPosting"
+        ]
+      },
+      "stored": {
+        "description": "Rank Math description",
+        "focus_keyword": "rank math keyword",
+        "robots": [
+          "noindex",
+          "nofollow"
+        ],
+        "schema_BlogPosting": {
+          "@type": "BlogPosting",
+          "headline": "%seo_title%"
+        },
+        "title": "%title% %sep% %sitename%"
+      },
+      "title": "%title% %sep% %sitename%"
+    },
+    "yoast": {
+      "canonical": "http://localhost:8094/blog/2026/seo-custom-title-4fb9db/",
+      "description": "A description written by hand, with \"quotes\" & ampersands.",
+      "focus_keyword": "custom title keyword",
+      "open_graph": {
+        "description": "A description written by hand, with \"quotes\" & ampersands.",
+        "site_name": "Bridge Acceptance",
+        "title": "Custom SEO custom title | Bridge Acceptance",
+        "type": "article",
+        "url": "http://localhost:8094/blog/2026/seo-custom-title-4fb9db/"
+      },
+      "resolved": true,
+      "robots": {
+        "advanced": [
+          "max-snippet:-1",
+          "max-image-preview:large",
+          "max-video-preview:-1"
+        ],
+        "follow": "follow",
+        "index": "index"
+      },
+      "robots_served": [
+        "index",
+        "follow",
+        "max-image-preview:large",
+        "max-snippet:-1",
+        "max-video-preview:-1"
+      ],
+      "schema": {
+        "graph": {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@id": "http://localhost:8094/blog/2026/seo-custom-title-4fb9db/#article",
+              "@type": "Article",
+              "articleSection": [
+                "SEO Topic 4fb9db"
+              ],
+              "author": {
+                "@id": "http://localhost:8094/#/schema/person/f5ce3b8715c090373414bf61b6634262",
+                "name": "bridge-admin"
+              },
+              "commentCount": 0,
+              "datePublished": "2026-09-18T09:48:46+00:00",
+              "headline": "SEO custom title",
+              "inLanguage": "en-US",
+              "isPartOf": {
+                "@id": "http://localhost:8094/blog/2026/seo-custom-title-4fb9db/"
+              },
+              "mainEntityOfPage": {
+                "@id": "http://localhost:8094/blog/2026/seo-custom-title-4fb9db/"
+              },
+              "potentialAction": [
+                {
+                  "@type": "CommentAction",
+                  "name": "Comment",
+                  "target": [
+                    "http://localhost:8094/blog/2026/seo-custom-title-4fb9db/#respond"
+                  ]
+                }
+              ],
+              "wordCount": 103
+            },
+            {
+              "@id": "http://localhost:8094/blog/2026/seo-custom-title-4fb9db/",
+              "@type": "WebPage",
+              "author": {
+                "@id": "http://localhost:8094/#/schema/person/f5ce3b8715c090373414bf61b6634262"
+              },
+              "breadcrumb": {
+                "@id": "http://localhost:8094/blog/2026/seo-custom-title-4fb9db/#breadcrumb"
+              },
+              "datePublished": "2026-09-18T09:48:46+00:00",
+              "description": "A description written by hand, with \"quotes\" & ampersands.",
+              "inLanguage": "en-US",
+              "isPartOf": {
+                "@id": "http://localhost:8094/#website"
+              },
+              "name": "Custom SEO custom title | Bridge Acceptance",
+              "potentialAction": [
+                {
+                  "@type": "ReadAction",
+                  "target": [
+                    "http://localhost:8094/blog/2026/seo-custom-title-4fb9db/"
+                  ]
+                }
+              ],
+              "url": "http://localhost:8094/blog/2026/seo-custom-title-4fb9db/"
+            },
+            {
+              "@id": "http://localhost:8094/blog/2026/seo-custom-title-4fb9db/#breadcrumb",
+              "@type": "BreadcrumbList",
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "item": "http://localhost:8094/",
+                  "name": "Home",
+                  "position": 1
+                },
+                {
+                  "@type": "ListItem",
+                  "name": "SEO custom title",
+                  "position": 2
+                }
+              ]
+            },
+            {
+              "@id": "http://localhost:8094/#website",
+              "@type": "WebSite",
+              "description": "",
+              "inLanguage": "en-US",
+              "name": "Bridge Acceptance",
+              "potentialAction": [
+                {
+                  "@type": "SearchAction",
+                  "query-input": {
+                    "@type": "PropertyValueSpecification",
+                    "valueName": "search_term_string",
+                    "valueRequired": true
+                  },
+                  "target": {
+                    "@type": "EntryPoint",
+                    "urlTemplate": "http://localhost:8094/?s={search_term_string}"
+                  }
+                }
+              ],
+              "url": "http://localhost:8094/"
+            },
+            {
+              "@id": "http://localhost:8094/#/schema/person/f5ce3b8715c090373414bf61b6634262",
+              "@type": "Person",
+              "image": {
+                "@id": "https://secure.gravatar.com/avatar/de5d95097b98baafa213ef451a7e65976903e719225c24e2c2d35bf39bf2be25?s=96&d=mm&r=g",
+                "@type": "ImageObject",
+                "caption": "bridge-admin",
+                "contentUrl": "https://secure.gravatar.com/avatar/de5d95097b98baafa213ef451a7e65976903e719225c24e2c2d35bf39bf2be25?s=96&d=mm&r=g",
+                "inLanguage": "en-US",
+                "url": "https://secure.gravatar.com/avatar/de5d95097b98baafa213ef451a7e65976903e719225c24e2c2d35bf39bf2be25?s=96&d=mm&r=g"
+              },
+              "name": "bridge-admin",
+              "sameAs": [
+                "http://localhost:8094"
+              ],
+              "url": "http://localhost:8094/blog/author/bridge-admin/"
+            }
+          ]
+        },
+        "types": [
+          "Article",
+          "BreadcrumbList",
+          "CommentAction",
+          "EntryPoint",
+          "ImageObject",
+          "ListItem",
+          "Person",
+          "PropertyValueSpecification",
+          "ReadAction",
+          "SearchAction",
+          "WebPage",
+          "WebSite"
+        ]
+      },
+      "stored": {
+        "focuskw": "custom title keyword",
+        "metadesc": "A description written by hand, with \"quotes\" & ampersands.",
+        "title": "Custom %%title%% %%sep%% %%sitename%%"
+      },
+      "title": "Custom SEO custom title | Bridge Acceptance",
+      "twitter": {
+        "card": "summary_large_image"
+      }
+    }
+  },
+  "post:12": {
+    "yoast": {
+      "description": "Hidden from search",
+      "open_graph": {
+        "description": "Hidden from search",
+        "site_name": "Bridge Acceptance",
+        "title": "SEO noindex | Bridge Acceptance Journal",
+        "type": "article",
+        "url": "http://localhost:8094/blog/2026/seo-noindex-4fb9db/"
+      },
+      "resolved": true,
+      "robots": {
+        "follow": "nofollow",
+        "index": "noindex"
+      },
+      "robots_served": [
+        "noindex",
+        "nofollow"
+      ],
+      "schema": {
+        "graph": {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@id": "http://localhost:8094/blog/2026/seo-noindex-4fb9db/#article",
+              "@type": "Article",
+              "author": {
+                "@id": "http://localhost:8094/#/schema/person/f5ce3b8715c090373414bf61b6634262",
+                "name": "bridge-admin"
+              },
+              "commentCount": 0,
+              "datePublished": "2026-09-18T09:48:46+00:00",
+              "headline": "SEO noindex",
+              "inLanguage": "en-US",
+              "isPartOf": {
+                "@id": "http://localhost:8094/blog/2026/seo-noindex-4fb9db/"
+              },
+              "mainEntityOfPage": {
+                "@id": "http://localhost:8094/blog/2026/seo-noindex-4fb9db/"
+              },
+              "potentialAction": [
+                {
+                  "@type": "CommentAction",
+                  "name": "Comment",
+                  "target": [
+                    "http://localhost:8094/blog/2026/seo-noindex-4fb9db/#respond"
+                  ]
+                }
+              ],
+              "wordCount": 82
+            },
+            {
+              "@id": "http://localhost:8094/blog/2026/seo-noindex-4fb9db/",
+              "@type": "WebPage",
+              "author": {
+                "@id": "http://localhost:8094/#/schema/person/f5ce3b8715c090373414bf61b6634262"
+              },
+              "breadcrumb": {
+                "@id": "http://localhost:8094/blog/2026/seo-noindex-4fb9db/#breadcrumb"
+              },
+              "datePublished": "2026-09-18T09:48:46+00:00",
+              "description": "Hidden from search",
+              "inLanguage": "en-US",
+              "isPartOf": {
+                "@id": "http://localhost:8094/#website"
+              },
+              "name": "SEO noindex | Bridge Acceptance Journal",
+              "potentialAction": [
+                {
+                  "@type": "ReadAction",
+                  "target": [
+                    "http://localhost:8094/blog/2026/seo-noindex-4fb9db/"
+                  ]
+                }
+              ],
+              "url": "http://localhost:8094/blog/2026/seo-noindex-4fb9db/"
+            },
+            {
+              "@id": "http://localhost:8094/blog/2026/seo-noindex-4fb9db/#breadcrumb",
+              "@type": "BreadcrumbList",
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "item": "http://localhost:8094/",
+                  "name": "Home",
+                  "position": 1
+                },
+                {
+                  "@type": "ListItem",
+                  "name": "SEO noindex",
+                  "position": 2
+                }
+              ]
+            },
+            {
+              "@id": "http://localhost:8094/#website",
+              "@type": "WebSite",
+              "description": "",
+              "inLanguage": "en-US",
+              "name": "Bridge Acceptance",
+              "potentialAction": [
+                {
+                  "@type": "SearchAction",
+                  "query-input": {
+                    "@type": "PropertyValueSpecification",
+                    "valueName": "search_term_string",
+                    "valueRequired": true
+                  },
+                  "target": {
+                    "@type": "EntryPoint",
+                    "urlTemplate": "http://localhost:8094/?s={search_term_string}"
+                  }
+                }
+              ],
+              "url": "http://localhost:8094/"
+            },
+            {
+              "@id": "http://localhost:8094/#/schema/person/f5ce3b8715c090373414bf61b6634262",
+              "@type": "Person",
+              "image": {
+                "@id": "https://secure.gravatar.com/avatar/de5d95097b98baafa213ef451a7e65976903e719225c24e2c2d35bf39bf2be25?s=96&d=mm&r=g",
+                "@type": "ImageObject",
+                "caption": "bridge-admin",
+                "contentUrl": "https://secure.gravatar.com/avatar/de5d95097b98baafa213ef451a7e65976903e719225c24e2c2d35bf39bf2be25?s=96&d=mm&r=g",
+                "inLanguage": "en-US",
+                "url": "https://secure.gravatar.com/avatar/de5d95097b98baafa213ef451a7e65976903e719225c24e2c2d35bf39bf2be25?s=96&d=mm&r=g"
+              },
+              "name": "bridge-admin",
+              "sameAs": [
+                "http://localhost:8094"
+              ],
+              "url": "http://localhost:8094/blog/author/bridge-admin/"
+            }
+          ]
+        },
+        "types": [
+          "Article",
+          "BreadcrumbList",
+          "CommentAction",
+          "EntryPoint",
+          "ImageObject",
+          "ListItem",
+          "Person",
+          "PropertyValueSpecification",
+          "ReadAction",
+          "SearchAction",
+          "WebPage",
+          "WebSite"
+        ]
+      },
+      "stored": {
+        "meta-robots-nofollow": "1",
+        "meta-robots-noindex": "1",
+        "metadesc": "Hidden from search"
+      },
+      "title": "SEO noindex | Bridge Acceptance Journal",
+      "twitter": {
+        "card": "summary_large_image"
+      }
+    }
+  },
+  "post:13": {
+    "yoast": {
+      "canonical": "https://example.org/the-original/",
+      "description": "Page about SEO canonical page",
+      "open_graph": {
+        "description": "Page about SEO canonical page",
+        "site_name": "Bridge Acceptance",
+        "title": "SEO canonical page | Bridge Acceptance",
+        "type": "article",
+        "url": "https://example.org/the-original/"
+      },
+      "resolved": true,
+      "robots": {
+        "advanced": [
+          "max-snippet:-1",
+          "max-video-preview:-1",
+          "noimageindex",
+          "noarchive"
+        ],
+        "follow": "follow",
+        "index": "index"
+      },
+      "robots_served": [
+        "index",
+        "follow",
+        "max-image-preview:none",
+        "max-snippet:-1",
+        "max-video-preview:-1",
+        "noimageindex",
+        "noarchive"
+      ],
+      "schema": {
+        "graph": {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@id": "http://localhost:8094/seo-canonical-page-4fb9db/",
+              "@type": "WebPage",
+              "breadcrumb": {
+                "@id": "https://example.org/the-original/#breadcrumb"
+              },
+              "datePublished": "2026-09-18T09:48:46+00:00",
+              "description": "Page about SEO canonical page",
+              "inLanguage": "en-US",
+              "isPartOf": {
+                "@id": "http://localhost:8094/#website"
+              },
+              "name": "SEO canonical page | Bridge Acceptance",
+              "potentialAction": [
+                {
+                  "@type": "ReadAction",
+                  "target": [
+                    "https://example.org/the-original/"
+                  ]
+                }
+              ],
+              "url": "https://example.org/the-original/"
+            },
+            {
+              "@id": "https://example.org/the-original/#breadcrumb",
+              "@type": "BreadcrumbList",
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "item": "http://localhost:8094/",
+                  "name": "Home",
+                  "position": 1
+                },
+                {
+                  "@type": "ListItem",
+                  "name": "SEO canonical page",
+                  "position": 2
+                }
+              ]
+            },
+            {
+              "@id": "http://localhost:8094/#website",
+              "@type": "WebSite",
+              "description": "",
+              "inLanguage": "en-US",
+              "name": "Bridge Acceptance",
+              "potentialAction": [
+                {
+                  "@type": "SearchAction",
+                  "query-input": {
+                    "@type": "PropertyValueSpecification",
+                    "valueName": "search_term_string",
+                    "valueRequired": true
+                  },
+                  "target": {
+                    "@type": "EntryPoint",
+                    "urlTemplate": "http://localhost:8094/?s={search_term_string}"
+                  }
+                }
+              ],
+              "url": "http://localhost:8094/"
+            }
+          ]
+        },
+        "types": [
+          "BreadcrumbList",
+          "EntryPoint",
+          "ListItem",
+          "PropertyValueSpecification",
+          "ReadAction",
+          "SearchAction",
+          "WebPage",
+          "WebSite"
+        ]
+      },
+      "stored": {
+        "canonical": "https://example.org/the-original/",
+        "meta-robots-adv": "noimageindex,noarchive"
+      },
+      "title": "SEO canonical page | Bridge Acceptance",
+      "twitter": {
+        "card": "summary_large_image"
+      }
+    }
+  },
+  "term:category:2": {
+    "yoast": {
+      "canonical": "http://localhost:8094/topics/bridge-fixture-category/",
+      "open_graph": {
+        "site_name": "Bridge Acceptance",
+        "title": "Bridge fixture category Archives | Bridge Acceptance",
+        "type": "article",
+        "url": "http://localhost:8094/topics/bridge-fixture-category/"
+      },
+      "resolved": true,
+      "robots": {
+        "advanced": [
+          "max-snippet:-1",
+          "max-image-preview:large",
+          "max-video-preview:-1"
+        ],
+        "follow": "follow",
+        "index": "index"
+      },
+      "robots_served": [
+        "index",
+        "follow",
+        "max-image-preview:large",
+        "max-snippet:-1",
+        "max-video-preview:-1"
+      ],
+      "schema": {
+        "graph": {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@id": "http://localhost:8094/topics/bridge-fixture-category/",
+              "@type": "CollectionPage",
+              "breadcrumb": {
+                "@id": "http://localhost:8094/topics/bridge-fixture-category/#breadcrumb"
+              },
+              "inLanguage": "en-US",
+              "isPartOf": {
+                "@id": "http://localhost:8094/#website"
+              },
+              "name": "Bridge fixture category Archives | Bridge Acceptance",
+              "url": "http://localhost:8094/topics/bridge-fixture-category/"
+            },
+            {
+              "@id": "http://localhost:8094/topics/bridge-fixture-category/#breadcrumb",
+              "@type": "BreadcrumbList",
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "item": "http://localhost:8094/",
+                  "name": "Home",
+                  "position": 1
+                },
+                {
+                  "@type": "ListItem",
+                  "name": "Bridge fixture category",
+                  "position": 2
+                }
+              ]
+            },
+            {
+              "@id": "http://localhost:8094/#website",
+              "@type": "WebSite",
+              "description": "",
+              "inLanguage": "en-US",
+              "name": "Bridge Acceptance",
+              "potentialAction": [
+                {
+                  "@type": "SearchAction",
+                  "query-input": {
+                    "@type": "PropertyValueSpecification",
+                    "valueName": "search_term_string",
+                    "valueRequired": true
+                  },
+                  "target": {
+                    "@type": "EntryPoint",
+                    "urlTemplate": "http://localhost:8094/?s={search_term_string}"
+                  }
+                }
+              ],
+              "url": "http://localhost:8094/"
+            }
+          ]
+        },
+        "types": [
+          "BreadcrumbList",
+          "CollectionPage",
+          "EntryPoint",
+          "ListItem",
+          "PropertyValueSpecification",
+          "SearchAction",
+          "WebSite"
+        ]
+      },
+      "title": "Bridge fixture category Archives | Bridge Acceptance",
+      "twitter": {
+        "card": "summary_large_image"
+      }
+    }
+  }
+}

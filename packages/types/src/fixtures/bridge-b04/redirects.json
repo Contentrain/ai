@@ -1,0 +1,318 @@
+{
+  "excluded": [
+    {
+      "from": "/rm-old-4fb9db",
+      "id": "rank_math:1:0",
+      "match": "url",
+      "reason": "source-inactive",
+      "regex": false,
+      "source": "rank_math",
+      "status": 301,
+      "to": "/rm-new/"
+    },
+    {
+      "from": "/rm-start-4fb9db",
+      "id": "rank_math:1:1",
+      "match": "start",
+      "reason": "source-inactive",
+      "regex": false,
+      "source": "rank_math",
+      "status": 301,
+      "to": "/rm-new/"
+    },
+    {
+      "from": "/rm-off-4fb9db",
+      "id": "rank_math:2:0",
+      "match": "url",
+      "reason": "disabled",
+      "regex": false,
+      "source": "rank_math"
+    },
+    {
+      "from": "/rm-old-423e85",
+      "id": "rank_math:3:0",
+      "match": "url",
+      "reason": "source-inactive",
+      "regex": false,
+      "source": "rank_math",
+      "status": 301,
+      "to": "/rm-new/"
+    },
+    {
+      "from": "/rm-start-423e85",
+      "id": "rank_math:3:1",
+      "match": "start",
+      "reason": "source-inactive",
+      "regex": false,
+      "source": "rank_math",
+      "status": 301,
+      "to": "/rm-new/"
+    },
+    {
+      "from": "/rm-off-423e85",
+      "id": "rank_math:4:0",
+      "match": "url",
+      "reason": "disabled",
+      "regex": false,
+      "source": "rank_math"
+    },
+    {
+      "from": "/seo-old-disabled-423e85",
+      "id": "redirection:14",
+      "match": "url",
+      "reason": "disabled",
+      "regex": false,
+      "source": "redirection"
+    },
+    {
+      "from": "/seo-gone-423e85",
+      "id": "redirection:15",
+      "match": "url",
+      "reason": "not-a-redirect:error",
+      "regex": false,
+      "source": "redirection",
+      "status": 410
+    },
+    {
+      "condition": {
+        "logged_in": "/in/",
+        "logged_out": "/out/"
+      },
+      "from": "/seo-members-423e85",
+      "id": "redirection:16",
+      "match": "login",
+      "reason": "conditional-match:login",
+      "regex": false,
+      "source": "redirection",
+      "status": 301
+    },
+    {
+      "from": "/seo-old-disabled-4fb9db",
+      "id": "redirection:6",
+      "match": "url",
+      "reason": "disabled",
+      "regex": false,
+      "source": "redirection"
+    },
+    {
+      "from": "/seo-gone-4fb9db",
+      "id": "redirection:7",
+      "match": "url",
+      "reason": "not-a-redirect:error",
+      "regex": false,
+      "source": "redirection",
+      "status": 410
+    },
+    {
+      "condition": {
+        "logged_in": "/in/",
+        "logged_out": "/out/"
+      },
+      "from": "/seo-members-4fb9db",
+      "id": "redirection:8",
+      "match": "login",
+      "reason": "conditional-match:login",
+      "regex": false,
+      "source": "redirection",
+      "status": 301
+    },
+    {
+      "from": "/srm-old-4fb9db",
+      "id": "safe_redirect_manager:23",
+      "match": "url",
+      "reason": "source-inactive",
+      "regex": false,
+      "source": "safe_redirect_manager",
+      "status": 301,
+      "to": "/srm-new/"
+    },
+    {
+      "from": "/srm-draft-4fb9db",
+      "id": "safe_redirect_manager:24",
+      "match": "url",
+      "reason": "disabled",
+      "regex": false,
+      "source": "safe_redirect_manager"
+    },
+    {
+      "from": "/srm-old-423e85",
+      "id": "safe_redirect_manager:38",
+      "match": "url",
+      "reason": "source-inactive",
+      "regex": false,
+      "source": "safe_redirect_manager",
+      "status": 301,
+      "to": "/srm-new/"
+    },
+    {
+      "from": "/srm-draft-423e85",
+      "id": "safe_redirect_manager:39",
+      "match": "url",
+      "reason": "disabled",
+      "regex": false,
+      "source": "safe_redirect_manager"
+    },
+    {
+      "from": "/yoast-old-423e85",
+      "id": "yoast_premium:0",
+      "match": "url",
+      "reason": "source-inactive",
+      "regex": false,
+      "source": "yoast_premium",
+      "status": 301,
+      "to": "/yoast-new/"
+    },
+    {
+      "from": "^yoast-regex-423e85/(.*)",
+      "id": "yoast_premium:1",
+      "match": "regex",
+      "reason": "source-inactive",
+      "regex": true,
+      "source": "yoast_premium",
+      "status": 302,
+      "to": "/blog/$1"
+    },
+    {
+      "from": "/yoast-gone-423e85",
+      "id": "yoast_premium:2",
+      "match": "url",
+      "reason": "not-a-redirect:gone",
+      "regex": false,
+      "source": "yoast_premium",
+      "status": 410
+    }
+  ],
+  "format": "contentrain-bridge-redirects@1",
+  "redirects": [
+    {
+      "from": "/seo-old-a-4fb9db",
+      "id": "redirection:1",
+      "match": "url",
+      "regex": false,
+      "source": "redirection",
+      "status": 301,
+      "to": "/blog/2026/seo-custom-title-4fb9db/"
+    },
+    {
+      "from": "/seo-old-b-423e85",
+      "id": "redirection:10",
+      "match": "url",
+      "regex": false,
+      "source": "redirection",
+      "status": 302,
+      "to": "https://example.org/b"
+    },
+    {
+      "from": "/seo-old-c-423e85",
+      "id": "redirection:11",
+      "match": "url",
+      "regex": false,
+      "source": "redirection",
+      "status": 307,
+      "to": "/seo-canonical-page-423e85/"
+    },
+    {
+      "from": "/seo-old-d-423e85",
+      "id": "redirection:12",
+      "match": "url",
+      "regex": false,
+      "source": "redirection",
+      "status": 308,
+      "to": "/seo-faq-page-423e85/"
+    },
+    {
+      "from": "^/seo-legacy-423e85/(.*)$",
+      "id": "redirection:13",
+      "match": "url",
+      "regex": true,
+      "source": "redirection",
+      "status": 301,
+      "to": "/blog/$1"
+    },
+    {
+      "from": "/seo-old-b-4fb9db",
+      "id": "redirection:2",
+      "match": "url",
+      "regex": false,
+      "source": "redirection",
+      "status": 302,
+      "to": "https://example.org/b"
+    },
+    {
+      "from": "/seo-old-c-4fb9db",
+      "id": "redirection:3",
+      "match": "url",
+      "regex": false,
+      "source": "redirection",
+      "status": 307,
+      "to": "/seo-canonical-page-4fb9db/"
+    },
+    {
+      "from": "/seo-old-d-4fb9db",
+      "id": "redirection:4",
+      "match": "url",
+      "regex": false,
+      "source": "redirection",
+      "status": 308,
+      "to": "/seo-faq-page-4fb9db/"
+    },
+    {
+      "from": "^/seo-legacy-4fb9db/(.*)$",
+      "id": "redirection:5",
+      "match": "url",
+      "regex": true,
+      "source": "redirection",
+      "status": 301,
+      "to": "/blog/$1"
+    },
+    {
+      "from": "/seo-old-a-423e85",
+      "id": "redirection:9",
+      "match": "url",
+      "regex": false,
+      "source": "redirection",
+      "status": 301,
+      "to": "/blog/2026/seo-custom-title-423e85/"
+    },
+    {
+      "from": "/blog/2026/seo-renamed-4fb9db/",
+      "id": "wordpress:old-slug:19:seo-renamed-4fb9db",
+      "match": "url",
+      "regex": false,
+      "source": "wordpress",
+      "status": 301,
+      "to": "/blog/2026/seo-renamed-new-4fb9db/"
+    },
+    {
+      "from": "/blog/2026/seo-renamed-423e85/",
+      "id": "wordpress:old-slug:34:seo-renamed-423e85",
+      "match": "url",
+      "regex": false,
+      "source": "wordpress",
+      "status": 301,
+      "to": "/blog/2026/seo-renamed-new-423e85/"
+    }
+  ],
+  "sources": {
+    "rank_math": {
+      "rules": 6,
+      "status": "inactive-with-data"
+    },
+    "redirection": {
+      "rules": 16,
+      "status": "active"
+    },
+    "safe_redirect_manager": {
+      "rules": 4,
+      "status": "inactive-with-data"
+    },
+    "wordpress_old_slug": {
+      "rules": 2,
+      "status": "active"
+    },
+    "yoast_premium": {
+      "rules": 3,
+      "status": "inactive-with-data"
+    }
+  }
+}

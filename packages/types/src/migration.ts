@@ -232,13 +232,166 @@ export interface RawComment {
   meta?: Record<string, unknown>
 }
 
-/** A redirect rule (e.g. from the Redirection plugin — visible from the authenticated rung up). */
+/**
+ * How a redirect's `from` is compared with a request path. Only `url` without
+ * `regex` is a plain one-to-one mapping; the others are patterns, and turning
+ * one into a literal `from` produces the wrong redirect.
+ */
+export type RawRedirectMatch = 'url' | 'regex' | 'start' | 'contains' | 'end'
+
+/** A redirect rule the live site serves (e.g. from the Redirection plugin — visible from the authenticated rung up). */
 export interface RawRedirect {
   from: string
   to: string
   status?: number
   /** Which plugin/table produced the rule. */
   source?: string
+  /** Stable id within the export, `<source>:<source-specific id>`. */
+  id?: string
+  /** How `from` matches; absent means `url`. */
+  match?: RawRedirectMatch
+  /** `from` is a regular expression in the source's own dialect. */
+  regex?: boolean
+  /** The source's own module/group serving it, when it has one (e.g. Redirection's "Apache"). */
+  served_by?: string
+  /** An adjustment the extractor made, stated rather than hidden (e.g. a non-redirect status read as 301). */
+  status_note?: string
+}
+
+/**
+ * A rule a source holds that the site does not serve as a plain redirect, with
+ * the reason. Every rule lands in `RawIR.redirects` or here, so the two
+ * together account for the source's whole table.
+ */
+export interface RawRedirectExcluded extends Omit<Partial<RawRedirect>, 'match'> {
+  id: string
+  source: string
+  /** The source's own match type — may be a condition (`login`, `referrer`, …) rather than a {@link RawRedirectMatch}. */
+  match?: RawRedirectMatch | (string & {})
+  reason:
+    | 'disabled'
+    | 'source-inactive'
+    | 'slug-reused'
+    | 'no-slug-address'
+    | `not-a-redirect:${string}`
+    | `conditional-match:${string}`
+  /** The condition a conditional rule depends on, verbatim. */
+  condition?: unknown
+}
+
+// ─── SEO ───
+
+export const SEO_PROVIDERS = ['yoast', 'rank_math', 'aioseo'] as const
+export type SeoProvider = (typeof SEO_PROVIDERS)[number]
+
+/** One page's SEO as one provider holds it. */
+export interface RawSeoEntry {
+  /** true: the running plugin rendered these values; false: stored values and templates only. */
+  resolved?: boolean
+  title?: string
+  description?: string
+  canonical?: string
+  robots?: { index?: 'index' | 'noindex', follow?: 'follow' | 'nofollow', advanced?: string[] }
+  /** The directives the page actually carries, after WordPress core and the plugin reconcile them. */
+  robots_served?: string[]
+  open_graph?: { title?: string, description?: string, type?: string, url?: string, image?: string, site_name?: string }
+  twitter?: { card?: string, title?: string, description?: string, image?: string }
+  focus_keyword?: string
+  /** Schema.org types, and the JSON-LD graph when the plugin rendered it. */
+  schema?: { types: string[], graph?: unknown }
+  /** What the plugin stored for this page (templates such as `%%title%% %%sep%%`), secrets removed. */
+  stored?: Record<string, unknown>
+}
+
+/** A provider's site-wide settings. */
+export interface RawSeoSettings {
+  separator?: string | null
+  /** Keyed by context: `post`, `page`, `home`, `author`, `archive`, `tax:<taxonomy>`, `ptarchive-<type>`, … */
+  title_templates: Record<string, string>
+  description_templates: Record<string, string>
+  noindex?: Record<string, boolean>
+  social?: Record<string, unknown>
+  /** Site verification codes — public meta values. */
+  verification?: Record<string, string>
+  /** Option name → cleaned value, verbatim otherwise. */
+  raw: Record<string, unknown>
+}
+
+/**
+ * The site's SEO layer: which plugin serves the head, its settings, and each
+ * page's values. `status: 'none'` is an answer — no SEO plugin, and WordPress
+ * core renders only the title — not a missing export.
+ */
+export interface RawSeo {
+  /** Producer's format identifier, e.g. `contentrain-bridge-seo@1`. */
+  format?: string
+  status: 'present' | 'none'
+  /** Whose output the live site serves. */
+  serving: SeoProvider | 'wordpress-core'
+  providers: Record<SeoProvider, { status: 'active' | 'inactive-with-data' | 'absent', version?: string }>
+  settings: Partial<Record<SeoProvider, RawSeoSettings>>
+  /** `post:<id>` or `term:<taxonomy>:<id>` → one block per provider that has data for it. */
+  entries: Record<string, Partial<Record<SeoProvider, RawSeoEntry>>>
+  /** Values deliberately not exported (e.g. a sensitive key), by address. */
+  excluded?: { source: string, reason: string }[]
+}
+
+// ─── Routing ───
+
+/** A page WordPress routes to itself (front page, posts page). */
+export interface RawRoutedPage {
+  id: number
+  slug: string
+  /** Site-root-relative address. */
+  path: string
+}
+
+/**
+ * The site's URL rules — what `RawPost.link` holds as facts, stated as the
+ * structure that produced them. Permastructs are site-root-relative with
+ * `front` already applied where `with_front` asks for it.
+ */
+export interface RawRouting {
+  /** Producer's format identifier, e.g. `contentrain-bridge-routing@1`. */
+  format?: string
+  /** The site's home URL. */
+  home?: string
+  permalink_structure: string
+  /** Plain `?p=` permalinks — no structure at all. */
+  plain: boolean
+  trailing_slash: boolean
+  front: string
+  category_base: string
+  tag_base: string
+  pagination_base: string
+  author_base: string
+  search_base: string
+  feed_base?: string
+  comments_pagination_base?: string
+  author_structure?: string | null
+  date_structure?: string | null
+  page_structure?: string | null
+  /** `posts` or `page`. */
+  show_on_front: string
+  page_on_front?: RawRoutedPage | null
+  page_for_posts?: RawRoutedPage | null
+  posts_per_page: number
+  post_types: {
+    name: string
+    hierarchical: boolean
+    rewrite: { slug?: string, with_front?: boolean, feeds?: boolean, pages?: boolean } | false
+    permastruct: string | null
+    has_archive: boolean
+    archive_path: string | null
+    query_var: string | false
+  }[]
+  taxonomies: {
+    name: string
+    object_types: string[]
+    hierarchical: boolean
+    rewrite: { slug?: string, with_front?: boolean, hierarchical?: boolean } | false
+    permastruct: string | null
+  }[]
 }
 
 /**
@@ -269,6 +422,10 @@ export interface RawIR {
   menus?: RawMenu[]
   comments?: RawComment[]
   redirects?: RawRedirect[]
+  /** Rules the sources hold that the site does not serve as plain redirects. */
+  redirects_excluded?: RawRedirectExcluded[]
+  seo?: RawSeo
+  routing?: RawRouting
   language_pairs?: RawLanguagePair[]
   /** Site options (bridge rung), verbatim. */
   options?: Record<string, unknown>

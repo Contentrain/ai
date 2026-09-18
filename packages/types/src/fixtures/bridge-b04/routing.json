@@ -1,0 +1,114 @@
+{
+  "author_base": "author",
+  "author_structure": "/blog/author/%author%",
+  "category_base": "topics",
+  "comments_pagination_base": "comment-page",
+  "date_structure": "/blog/%year%/%monthnum%/%day%",
+  "feed_base": "feed",
+  "format": "contentrain-bridge-routing@1",
+  "front": "/blog/",
+  "home": "http://localhost:8094/",
+  "page_for_posts": {
+    "id": 37,
+    "path": "/seo-journal-423e85-423e85/",
+    "slug": "seo-journal-423e85-423e85"
+  },
+  "page_on_front": {
+    "id": 36,
+    "path": "/",
+    "slug": "seo-home-423e85-423e85"
+  },
+  "page_structure": "/%pagename%",
+  "pagination_base": "page",
+  "permalink_structure": "/blog/%year%/%postname%/",
+  "plain": false,
+  "post_types": [
+    {
+      "archive_path": null,
+      "has_archive": false,
+      "hierarchical": false,
+      "name": "post",
+      "permastruct": null,
+      "query_var": false,
+      "rewrite": false
+    },
+    {
+      "archive_path": null,
+      "has_archive": false,
+      "hierarchical": true,
+      "name": "page",
+      "permastruct": null,
+      "query_var": false,
+      "rewrite": false
+    },
+    {
+      "archive_path": null,
+      "has_archive": false,
+      "hierarchical": false,
+      "name": "attachment",
+      "permastruct": null,
+      "query_var": false,
+      "rewrite": false
+    },
+    {
+      "archive_path": "/blog/library/",
+      "has_archive": true,
+      "hierarchical": false,
+      "name": "bridge_seo_book",
+      "permastruct": "/blog/library/%bridge_seo_book%",
+      "query_var": "bridge_seo_book",
+      "rewrite": {
+        "feeds": true,
+        "pages": true,
+        "slug": "library",
+        "with_front": true
+      }
+    }
+  ],
+  "posts_per_page": 10,
+  "search_base": "search",
+  "show_on_front": "page",
+  "tag_base": "labels",
+  "taxonomies": [
+    {
+      "hierarchical": true,
+      "name": "category",
+      "object_types": [
+        "post"
+      ],
+      "permastruct": "/topics/%category%",
+      "rewrite": {
+        "hierarchical": true,
+        "slug": "topics",
+        "with_front": false
+      }
+    },
+    {
+      "hierarchical": false,
+      "name": "post_tag",
+      "object_types": [
+        "post"
+      ],
+      "permastruct": "/labels/%post_tag%",
+      "rewrite": {
+        "hierarchical": false,
+        "slug": "labels",
+        "with_front": false
+      }
+    },
+    {
+      "hierarchical": false,
+      "name": "post_format",
+      "object_types": [
+        "post"
+      ],
+      "permastruct": "/blog/type/%post_format%",
+      "rewrite": {
+        "hierarchical": false,
+        "slug": "type",
+        "with_front": true
+      }
+    }
+  ],
+  "trailing_slash": true
+}
