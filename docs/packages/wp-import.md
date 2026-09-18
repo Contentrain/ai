@@ -113,6 +113,18 @@ A WordPress `future` post becomes `status: published` metadata carrying `publish
 `status` alone does not tell a public build whether a post should be visible — a `published` entry with a future `publish_at` must not ship. Use the query generator's public-build mode before deployment. Posts imported before this behaviour existed need re-importing or an explicit metadata update.
 :::
 
+## Source deltas
+
+After the first delivery, the site keeps changing. A bridge reports each change since the last delivery as a `SourceDeltaPlan`. `planSourceDelta({ delta, store, incoming })` places every record in the repository's store:
+
+- Post-type records are placed through the `EntrySourceMap`. Terms and media are placed by `wp_id` in their own model, never through the post map.
+- `updated` and `moved` records list the fields that differ from the incoming export. A changed address becomes a 301 redirect.
+- `deleted` records become tombstones, and `trashed` (can come back) is kept apart from `purged` (gone).
+- A record that cannot be placed says why (`unmapped`).
+- A record the repository also edited since the import (in Studio, by an agent, by hand) is a **conflict**. It carries the edit's `updated_by` and `updated_at`, and it is never silently overwritten.
+
+The function only plans. `contentrain delta --dry-run` prints the same plan from the command line, and applying it goes through review.
+
 ## Where this sits in the pipeline
 
 This package covers the first leg only. The full chain — and the part of it that is **not** open source — is laid out in the [WordPress Migration guide](/guides/migration).

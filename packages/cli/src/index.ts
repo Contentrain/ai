@@ -23,6 +23,7 @@ const main = defineCommand({
   subCommands: {
     init: () => import('./commands/init.js').then(m => m.default),
     import: () => import('./commands/import.js').then(m => m.default),
+    delta: () => import('./commands/delta.js').then(m => m.default),
     status: () => import('./commands/status.js').then(m => m.default),
     doctor: () => import('./commands/doctor.js').then(m => m.default),
     validate: () => import('./commands/validate.js').then(m => m.default),

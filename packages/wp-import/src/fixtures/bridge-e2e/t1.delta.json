@@ -1,0 +1,46 @@
+{
+    "version": 1,
+    "generated_at": "2026-09-18T13:55:18Z",
+    "cursor": {
+        "kind": "bridge_inventory",
+        "inventory_hash": "f8a368a4c3249aad250d88e74f533ec07f6e3ef88dd7e8ac3afcdb6c481b396e",
+        "taken_at": "2026-09-18T13:55:12Z"
+    },
+    "next_cursor": {
+        "kind": "bridge_inventory",
+        "inventory_hash": "129e09effa4a266530ed879d6252082b890cbf61e5af41da8dee6460803ab3ea",
+        "taken_at": "2026-09-18T13:55:16Z"
+    },
+    "entries": [
+        {
+            "op": "updated",
+            "wp_id": 62,
+            "wp_type": "post",
+            "fingerprint_before": "7f646aa327cb7e9cf87a1cd844eca7494075f9aeae2960e83869dd1df9ba4d7a",
+            "fingerprint_after": "e238e2ff31d703bb740700e8b4d16f18c75a14dfc968a797071d0f59cb97aaf7",
+            "detail": "content changed"
+        },
+        {
+            "op": "moved",
+            "wp_id": 63,
+            "wp_type": "post",
+            "fingerprint_before": "98af263582126ec278e2305fb64ae1f1f7e2568bf690056c9067071f20572b37",
+            "fingerprint_after": "5aa2f1da4aae3208f4979b20e41bc6eb10fb1811c5b719ef6acfea366148e00c",
+            "path_before": "/e2e-renamed-post-038932/",
+            "path_after": "/e2e-renamed-new-038932/",
+            "slug_before": "e2e-renamed-post-038932",
+            "slug_after": "e2e-renamed-new-038932",
+            "detail": "slug change; old slug recorded by WordPress"
+        },
+        {
+            "op": "deleted",
+            "wp_id": 64,
+            "wp_type": "post",
+            "fingerprint_before": "764e37a5bf197b7b0b18b19f097ee90b5e1a75a4a013c56ef8ce02374a9ee33e",
+            "fingerprint_after": "fb76e4ce35e40c582a3fbec3b94134716440cc163195e77c535b16fc5f84b923",
+            "deleted_kind": "trashed",
+            "detail": "trashed"
+        }
+    ],
+    "deletions_detectable": true
+}

@@ -67,6 +67,7 @@ Example: `contentrain --debug status` or `CONTENTRAIN_DEBUG=1 contentrain status
 | `contentrain describe-format` | Show file format specification and storage conventions |
 | `contentrain scaffold` | Apply starter templates (blog, landing, docs, SaaS, ...) |
 | `contentrain import <source>` | Import a WordPress site (WXR export file or REST URL) into a `.contentrain` store |
+| `contentrain delta <delta.json>` | Plan a WordPress source delta against the store (`--dry-run` only) |
 | `contentrain diff` | Review and merge or reject pending `cr/*` branches interactively (deletes the remote copy on merge/reject) |
 | `contentrain merge <branch>` | Merge one pending `cr/*` branch non-interactively (deletes the remote copy) |
 | `contentrain reconcile` | Content-aware three-way merge of a diverged contentrain ↔ base pair (dry-run plan, interactive conflict decisions) |
@@ -249,6 +250,30 @@ A REST import that hit a page cap, or whose pages partly failed, produces a stor
 :::
 
 ---
+
+### `contentrain delta <delta.json>`
+
+```bash
+contentrain delta bridge-delta.json --incoming ./next-export --dry-run
+contentrain delta bridge-delta.json --incoming ./next-export --store ./site --dry-run --json
+```
+
+| Flag | Effect |
+|------|--------|
+| `--dry-run` | Required. The command only plans. |
+| `--incoming <dir>` | The new export: its `.contentrain/` and `entry-source-map.json` (at the root or in `bridge/`) |
+| `--store <dir>` | The repository store (default: current directory) |
+| `--taxonomy <csv>` | Custom taxonomies whose ids are term ids |
+| `--json` | Print the planned `SourceDeltaPlan` |
+
+Wraps `planSourceDelta` from [`@contentrain/wp-import`](/packages/wp-import#source-deltas). Every record in the bridge's delta is placed in the store, or reported as `unmapped` with the reason. The plan shows:
+
+- which fields differ from the new export;
+- which addresses moved, each a 301;
+- tombstones, with trashed kept apart from purged;
+- conflicts: records the repository also edited since the import.
+
+A conflict is reported, never overwritten. There is no apply mode, because applying a plan is a governed write that goes through review.
 
 ### `contentrain diff`
 

@@ -69,6 +69,7 @@ Example: `contentrain --debug status` or `CONTENTRAIN_DEBUG=1 contentrain valida
 | `contentrain reconcile` | Content-aware three-way merge of a diverged contentrain ↔ base pair (dry-run plan, interactive decisions) |
 | `contentrain prune` | Delete merged `cr/*` branches locally and on the remote (backlog drain) |
 | `contentrain describe <model>` | Inspect a model's schema, stats, and import snippet |
+| `contentrain delta <delta.json> --dry-run` | Plan a WordPress source delta against the store: placement, field changes, conflicts, tombstones, redirects (plan only) |
 | `contentrain describe-format` | Print the Contentrain content-format specification |
 | `contentrain scaffold --template` | Apply a template (`blog`, `landing`, `docs`, `ecommerce`, `saas`, `i18n`, `mobile`) |
 | `contentrain setup <agent\|--all>` | Configure MCP server + AI rules for IDE (Claude Code, Cursor, Windsurf, VSCode, Copilot) |
@@ -101,6 +102,7 @@ Every read command supports `--json` for CI use; write commands surface `--watch
 | `merge` | `--yes` (skip confirm) |
 | `reconcile` | `--yes` (execute a clean plan without prompting), `--json` (dry-run plan) |
 | `prune` | `--dry-run`, `--yes`, `--json` (mutates only with `--yes`) |
+| `delta` | `--dry-run` (required; there is no apply mode), `--incoming <dir>`, `--store <dir>`, `--taxonomy <csv>`, `--json` |
 | `describe` | `--sample`, `--locale`, `--json` |
 | `scaffold` | `--template <id>`, `--locales <csv>`, `--no-sample`, `--json` |
 | `serve` | `--port`, `--host`, `--open`, `--demo`, `--stdio`, `--mcpHttp`, `--authToken` |
@@ -334,6 +336,17 @@ contentrain import https://site.example --auth user:app-password  # authenticate
 ```
 
 Writes the canonical store plus `import-report.json`, `entry-source-map.json` (WP id → entry address), and — when the source has comments — `comments-export.json` (`contentrain-comments@1`, ready for a comments-service intake). An existing `.contentrain` is only overwritten with `--force`. Powered by `@contentrain/wp-import`.
+
+### `contentrain delta`
+
+Plan what a later WordPress change means for a store that was already delivered:
+
+```bash
+contentrain delta bridge-delta.json --incoming ./next-export --dry-run         # report
+contentrain delta bridge-delta.json --incoming ./next-export --dry-run --json  # the planned SourceDeltaPlan
+```
+
+The command reads the store (`--store`, default: the current directory) and its `entry-source-map.json`, from the store root or from `bridge/`. It reads the new export the same way. For each record it reports where it lives in the store, which fields differ, and which addresses moved (each becomes a 301). Trashed and purged deletions are kept apart. A record that was also edited in the repository is a conflict, and it is not overwritten. There is no apply mode: without `--dry-run` the command refuses, because applying a plan goes through review. Taxonomies come from the bridge's `inventory.json` when it is beside the export; name others with `--taxonomy`.
 
 ### Public static builds
 

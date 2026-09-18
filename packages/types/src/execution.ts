@@ -621,6 +621,29 @@ export interface SourceDeltaEntry {
   deleted_kind?: 'trashed' | 'purged'
   /** True when the repository also changed this record since the cursor. */
   conflict?: boolean
+  /**
+   * The repository-side write behind `conflict`: the entry's meta when it was
+   * last written by something other than the importer (Studio, an agent, a
+   * person). `updated_at` is absent when the store never recorded it — an
+   * unknown time is still a conflict.
+   */
+  repo_edit?: { updated_by: string, updated_at?: string, source: string }
+  /**
+   * Why the planner could not place this record in the store:
+   * `not-in-source-map` (a post-type record the source map does not list),
+   * `no-model-for-type` (no store model holds this origin type),
+   * `entry-not-found` (the model exists, the entry does not).
+   */
+  unmapped?: 'not-in-source-map' | 'no-model-for-type' | 'entry-not-found'
+  /**
+   * For `updated` and `moved`: the fields whose stored value differs from the
+   * incoming export's, by field name (`body` for a document's body). Computed
+   * against the repository as it is now, so a repository-side edit shows here
+   * too — which is what `conflict` is for.
+   */
+  fields_changed?: string[]
+  /** For `moved`: the entry id at the new address, when the store derives ids from slugs and the id changes. */
+  entry_id_after?: string
   /** Why this entry is here, for the person reading the plan. */
   detail?: string
 }
