@@ -1,5 +1,5 @@
-import type { ValidationError, ModelDefinition, ContentrainConfig, EntryMeta } from '@contentrain/types'
-import { detectSecrets, MODEL_FIELD_ORDER } from '@contentrain/types'
+import type { ValidationError, ModelDefinition, ContentrainConfig, EntryMeta, ModelLocaleScope } from '@contentrain/types'
+import { describeModelLocaleScope, detectSecrets, MODEL_FIELD_ORDER, resolveModelLocales, validateModelLocales } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { writeJson, writeText } from '../../util/fs.js'
@@ -125,6 +125,23 @@ function scanUndeclaredFieldsForSecrets(
   }
 }
 
+// ─── Locale coverage ───
+
+/**
+ * The clause every locale-coverage message ends with: which list the check was
+ * evaluated against.
+ *
+ * Without it "missing tr" is unreadable. A model that legitimately covers two
+ * of four project locales and one that has genuinely lost a translation produce
+ * the same sentence, and the reader cannot tell which they are looking at
+ * without opening the model definition and config.json side by side. Naming the
+ * list turns the message into its own explanation — and, when the list is the
+ * project-wide one, into the hint that `locales` is what narrows it.
+ */
+function againstScope(scope: ModelLocaleScope): string {
+  return ` (checked against ${describeModelLocaleScope(scope)})`
+}
+
 // ─── Per-model validators ───
 
 async function validateCollectionModel(
@@ -140,7 +157,11 @@ async function validateCollectionModel(
   // Non-i18n models store content + meta locale-agnostically (data.json, a
   // single meta set), so iterating every supported locale produces phantom
   // per-locale orphan/parity warnings. Iterate just the default locale. #8/Y3
-  const locales = model.i18n ? config.locales.supported : [config.locales.default]
+  // An i18n model that declares `locales` covers that subset and no more — a
+  // partially-translated site says so once, in the model, instead of failing
+  // parity on every entry it never translated.
+  const scope = resolveModelLocales(model, config)
+  const locales = scope.locales
 
   // Collect all entry IDs per locale for parity check
   const localeEntryIds: Record<string, Set<string>> = {}
@@ -157,7 +178,7 @@ async function validateCollectionModel(
           severity: 'error',
           model: model.id,
           locale,
-          message: `Locale file missing: ${locale}.json`,
+          message: `Locale file missing: ${locale}.json${againstScope(scope)}`,
         })
 
         if (fix && projectRoot) {
@@ -246,7 +267,7 @@ async function validateCollectionModel(
             model: model.id,
             locale: locB,
             entry: id,
-            message: `Entry parity: entry "${id}" exists in ${locA} but missing in ${locB}`,
+            message: `Entry parity: entry "${id}" exists in ${locA} but missing in ${locB}${againstScope(scope)}`,
           })
         }
       }
@@ -257,7 +278,7 @@ async function validateCollectionModel(
             model: model.id,
             locale: locA,
             entry: id,
-            message: `Entry parity: entry "${id}" exists in ${locB} but missing in ${locA}`,
+            message: `Entry parity: entry "${id}" exists in ${locB} but missing in ${locA}${againstScope(scope)}`,
           })
         }
       }
@@ -385,9 +406,20 @@ async function validateCollectionModel(
 async function checkModelDefinition(
   projectRoot: string | undefined,
   model: ModelDefinition,
+  config: ContentrainConfig,
   issues: ValidationError[],
   fix: boolean,
 ): Promise<number> {
+  // `locales` is reported, never repaired — not even under `fix`. A model that
+  // does not declare one covers every project locale, and choosing a narrower
+  // set for it would be deciding which translations are *supposed* to exist,
+  // which is a content decision. The one MCP could compute — "the locales that
+  // happen to have files today" — would write the current gaps into the schema
+  // and silence the very errors that reveal them.
+  for (const issue of validateModelLocales(model, config)) {
+    issues.push({ ...issue, model: model.id })
+  }
+
   // Field names that predate the snake_case rule. `contentrain_model_save`
   // keeps them (#116) — this is how an agent learns a model carries one before
   // it edits the model, not mid-write. A notice, not a warning: renaming means
@@ -534,8 +566,9 @@ async function validateSingletonModel(
 ): Promise<{ entries: number; fixed: number }> {
   let entriesChecked = 0
   let fixed = 0
+  const scope = resolveModelLocales(model, config)
 
-  for (const locale of (model.i18n ? config.locales.supported : [config.locales.default])) {
+  for (const locale of scope.locales) {
     const filePath = contentFilePath(model, locale)
     const data = await readJsonViaReader<Record<string, unknown>>(reader, filePath)
 
@@ -545,7 +578,7 @@ async function validateSingletonModel(
           severity: 'error',
           model: model.id,
           locale,
-          message: `Locale file missing: ${locale}.json`,
+          message: `Locale file missing: ${locale}.json${againstScope(scope)}`,
         })
         if (fix && projectRoot) {
           await writeJson(join(projectRoot, filePath), {})
@@ -618,8 +651,9 @@ async function validateDictionaryModel(
   let fixed = 0
 
   const localeKeys: Record<string, Set<string>> = {}
+  const scope = resolveModelLocales(model, config)
 
-  for (const locale of (model.i18n ? config.locales.supported : [config.locales.default])) {
+  for (const locale of scope.locales) {
     const filePath = contentFilePath(model, locale)
     const data = await readJsonViaReader<Record<string, string>>(reader, filePath)
 
@@ -629,7 +663,7 @@ async function validateDictionaryModel(
           severity: 'error',
           model: model.id,
           locale,
-          message: `Locale file missing: ${locale}.json`,
+          message: `Locale file missing: ${locale}.json${againstScope(scope)}`,
         })
         if (fix && projectRoot) {
           await writeJson(join(projectRoot, filePath), {})
@@ -711,7 +745,7 @@ async function validateDictionaryModel(
             model: model.id,
             locale: locB,
             field: k,
-            message: `Key parity: key "${k}" exists in ${locA} but missing in ${locB}`,
+            message: `Key parity: key "${k}" exists in ${locA} but missing in ${locB}${againstScope(scope)}`,
           })
         }
       }
@@ -722,7 +756,7 @@ async function validateDictionaryModel(
             model: model.id,
             locale: locA,
             field: k,
-            message: `Key parity: key "${k}" exists in ${locB} but missing in ${locA}`,
+            message: `Key parity: key "${k}" exists in ${locB} but missing in ${locA}${againstScope(scope)}`,
           })
         }
       }
@@ -831,7 +865,9 @@ async function validateDocumentModel(
   // Non-i18n models store content + meta locale-agnostically (data.json, a
   // single meta set), so iterating every supported locale produces phantom
   // per-locale orphan/parity warnings. Iterate just the default locale. #8/Y3
-  const locales = model.i18n ? config.locales.supported : [config.locales.default]
+  // A declared `locales` narrows the i18n case — see validateCollectionModel.
+  const scope = resolveModelLocales(model, config)
+  const locales = scope.locales
 
   // Read every document once up front and keep its frontmatter per locale.
   // `unique` compares an entry against its siblings, so it needs the whole set —
@@ -869,7 +905,7 @@ async function validateDocumentModel(
             model: model.id,
             locale,
             slug,
-            message: `Missing translation: document "${slug}" missing ${locale} locale file`,
+            message: `Missing translation: document "${slug}" missing ${locale} locale file${againstScope(scope)}`,
           })
           if (fix && projectRoot) {
             // Create empty template
@@ -1056,7 +1092,7 @@ export async function validateProject(
     // Ahead of the content checks: a broken model definition explains the content
     // errors below it, and the repair mutates `model` in place so the content
     // validators downstream see the fixed object.
-    totalFixed += await checkModelDefinition(projectRoot, model, issues, fix)
+    totalFixed += await checkModelDefinition(projectRoot, model, config, issues, fix)
 
     let result: { entries: number; fixed: number }
 
@@ -1096,7 +1132,7 @@ export async function validateProject(
         const model = await readModel(reader, summary.id)
         if (!model) continue
 
-        for (const locale of (model.i18n ? config.locales.supported : [config.locales.default])) {
+        for (const locale of resolveModelLocales(model, config).locales) {
           if (!globalValueMap[locale]) globalValueMap[locale] = new Map()
           const data = await readJsonViaReader<Record<string, string>>(reader, contentFilePath(model, locale))
           if (!data) continue

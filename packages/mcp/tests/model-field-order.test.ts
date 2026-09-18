@@ -18,6 +18,7 @@ const FULL_MODEL: ModelDefinition = {
   kind: 'collection',
   domain: 'test',
   i18n: true,
+  locales: ['en'],
   title_field: 'title',
   description: 'Exercises every ModelDefinition key.',
   content_path: 'content/every-key',

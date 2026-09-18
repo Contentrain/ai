@@ -156,6 +156,7 @@ Model definitions live at `.contentrain/models/{model-id}.json`. One file per mo
 | `kind` | `string` | Yes | One of: `singleton`, `collection`, `document`, `dictionary`. |
 | `domain` | `string` | Yes | Organizational group (maps to content subdirectory). |
 | `i18n` | `boolean` | Yes | Whether the model supports multiple locales. |
+| `locales` | `string[]` | No | The project locales this model covers — a subset of `config.locales.supported`. Absent (the default) means every supported locale, which is what parity is validated against. Declare it only when the content genuinely exists in a subset, e.g. a partially-translated site. A locale outside `locales.supported` is a validation error; the field has no effect on an `i18n: false` model. |
 | `title_field` | `string` | Yes | Field shown as an entry's title in listings, pickers and relation references. Must name a field declared on this model whose type is `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or `richtext`. Dictionary models have no fields — they use the reserved value `"key"`, meaning the entry key is the title. |
 | `description` | `string` | No | Model description for documentation and agent context. |
 | `fields` | `object` | Yes (except dictionary) | Field definitions. Dictionary kind has NO fields. |
