@@ -389,12 +389,24 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
         report.acf_fields[k] = t
       }
     }
+    // The locales this type actually has content in. A partially-translated
+    // site — pages in one language, posts in three — used to fail validation on
+    // every untranslated entry, because parity was checked against the whole
+    // project list. Declaring the real coverage says so once, in the model.
+    //
+    // The default locale is always in: it is the site's source of truth, and a
+    // post that carries no language tag belongs to it (`postLocale`), so its
+    // absence here would be the importer's uncertainty, not a fact about the
+    // site. Full coverage writes nothing — absent already means "all", and a
+    // redundant list would then have to be maintained as locales are added.
+    const covered = locales.filter(l => l === locale || typeItems.some((p) => postLocale(p) === l))
     addModel({
       id: mid,
       name: type === 'post' ? 'Posts' : type === 'page' ? 'Pages' : mid,
       kind: 'collection',
       domain: domainOf(type),
       i18n: multilingual,
+      ...(multilingual && covered.length < locales.length ? { locales: covered } : {}),
       title_field: 'title',
       fields,
     })

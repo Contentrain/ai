@@ -196,8 +196,9 @@ Several fields are managed by the platform. Agents MUST NOT set or modify them.
 | `i18n: false` on model | Single file: `data.json` (or `{slug}.md` for documents) |
 | Locale code | ISO 639-1: `en`, `tr`, `de`, `fr`, `ja`, `ar` |
 | ID/slug are locale-agnostic | Same entry ID or document slug across all locales |
-| Entry parity (collections) | All locales MUST have the same set of entry IDs |
-| Key parity (dictionaries) | All locales MUST have the same set of keys |
+| Entry parity (collections) | All covered locales MUST have the same set of entry IDs |
+| Key parity (dictionaries) | All covered locales MUST have the same set of keys |
+| `locales` on model (optional) | The project locales this model covers — a subset of `locales.supported`. Absent means all of them. Parity is checked against it |
 
 ### Validation Checks
 

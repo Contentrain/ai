@@ -88,6 +88,7 @@ Create or update a model definition (upsert).
 | `kind` | string | Yes | `singleton`, `collection`, `document`, `dictionary` |
 | `domain` | string | Yes | Organizational group |
 | `i18n` | boolean | Yes | Whether model supports localization |
+| `locales` | string[] | No | The project locales this model covers — a subset of `config.locales.supported`. Absent means all of them, which is what parity is validated against. Declare it only for a genuinely partial model (a partially-translated site) |
 | `title_field` | string | Yes | Field shown as an entry's title. Must name a field on this model typed `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or `richtext`. Dictionaries have no fields — use `"key"` |
 | `fields` | object | No | Field definitions (not for dictionary) |
 | `description` | string | No | Model description |

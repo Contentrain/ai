@@ -10,7 +10,8 @@ Every rule applies whenever the project has more than one locale configured.
 ### 1.1 Coverage Requirement
 
 - Read `.contentrain/config.json` → `locales.supported` to determine the full list of supported locales.
-- EVERY entry that exists in the source locale MUST have a corresponding entry in ALL supported target locales.
+- A model MAY narrow that list with an optional `locales` array (a subset of `locales.supported`). When present, it — not the project list — is the model's coverage. Absent means every supported locale.
+- EVERY entry that exists in the source locale MUST have a corresponding entry in ALL of the model's covered target locales.
 - Missing translations are deployment blockers. Treat a missing locale file as an error, not a warning.
 
 ### 1.2 Dictionary Entries

@@ -91,6 +91,23 @@ export interface ModelDefinition {
   domain: string
   i18n: boolean
   /**
+   * The project locales this model's content actually covers — a subset of
+   * `config.locales.supported`.
+   *
+   * Absent means every project locale, which is the behaviour every model had
+   * before this field existed: parity is checked against the whole supported
+   * list. Present, it narrows that check to the locales named here, so a
+   * partially-translated site can declare the truth instead of failing.
+   *
+   * A locale not in `config.locales.supported` is a validation error — see
+   * {@link validateModelLocales}. Meaningless on a non-i18n model, which has
+   * only the default locale.
+   *
+   * It narrows validation; it never grants a locale. Writing content in a
+   * locale outside this list is still governed by `config.locales.supported`.
+   */
+  locales?: string[]
+  /**
    * Name of the field whose value is shown as an entry's title — in a Studio row,
    * a picker, a relation reference. Declared, never guessed: a consumer that infers
    * the title from field order or length picks the icon over the headline.
@@ -403,6 +420,7 @@ export const MODEL_FIELD_ORDER = [
   'kind',
   'domain',
   'i18n',
+  'locales',
   'title_field',
   'description',
   'content_path',
@@ -651,6 +669,119 @@ export function validateLocale(locale: string, config: ContentrainConfig): strin
     return `Locale "${locale}" is not in supported locales [${config.locales.supported.join(', ')}]. Update config first.`
   }
   return null
+}
+
+/**
+ * The locales one model's content is checked against, and where that list came
+ * from — `'model'` when the model narrowed it with `locales`, `'project'` when
+ * it is the project-wide list (or, for a non-i18n model, the default locale).
+ *
+ * The provenance travels with the list because every message derived from it
+ * has to say which list it evaluated: "missing tr" means something different
+ * when tr is one of four project locales than when the model declares it.
+ */
+export interface ModelLocaleScope {
+  locales: string[]
+  source: 'model' | 'project'
+}
+
+/**
+ * The locales a model's content is expected to cover.
+ *
+ * A non-i18n model stores content locale-agnostically, so its scope is the
+ * default locale alone — unchanged, and `locales` never applies to it. An i18n
+ * model narrows to `model.locales` when it declares one, otherwise it covers
+ * every supported locale, which is what every model did before the field
+ * existed.
+ *
+ * Locales are returned in `config.locales.supported` order, not the order the
+ * model happened to list them: a message that names the list should read the
+ * same for two models that declare the same locales differently. Anything the
+ * model names that the project does not support is dropped here and reported
+ * by {@link validateModelLocales} — resolution never invents coverage.
+ */
+export function resolveModelLocales(
+  model: Pick<ModelDefinition, 'i18n' | 'locales'>,
+  config: ContentrainConfig,
+): ModelLocaleScope {
+  if (!model.i18n) return { locales: [config.locales.default], source: 'project' }
+  const declared = model.locales
+  if (!Array.isArray(declared) || declared.length === 0) {
+    return { locales: [...config.locales.supported], source: 'project' }
+  }
+  const narrowed = config.locales.supported.filter(l => declared.includes(l))
+  if (narrowed.length === 0) return { locales: [...config.locales.supported], source: 'project' }
+  return { locales: narrowed, source: 'model' }
+}
+
+/** Name a locale scope the way a validation message should quote it. */
+export function describeModelLocaleScope(scope: ModelLocaleScope): string {
+  const list = `[${scope.locales.join(', ')}]`
+  return scope.source === 'model'
+    ? `the model's own locales ${list}`
+    : `the project's supported locales ${list}`
+}
+
+/**
+ * Check a model's `locales` declaration against the project config.
+ *
+ * Absent is valid and means every supported locale, so this returns nothing for
+ * the models that predate the field. What it rejects is a declaration that
+ * cannot be honoured: a locale the project does not support (the coverage would
+ * be unreachable), an empty list (a model that covers nothing is a deleted
+ * model, not a narrowed one), a duplicate, or a non-string entry.
+ *
+ * Declaring `locales` on a non-i18n model is a warning, not an error: the field
+ * has no effect there, but the model is still readable and its content still
+ * validates, so failing the project over it would be out of proportion.
+ */
+export function validateModelLocales(
+  model: Pick<ModelDefinition, 'i18n' | 'locales'>,
+  config: ContentrainConfig,
+): ValidationError[] {
+  if (model.locales === undefined) return []
+
+  const errors: ValidationError[] = []
+  const err = (message: string): void => { errors.push({ severity: 'error', field: 'locales', message }) }
+
+  if (!Array.isArray(model.locales)) {
+    err(`Invalid "locales": must be an array of locale codes, got ${typeof model.locales}.`)
+    return errors
+  }
+  if (model.locales.length === 0) {
+    err('Invalid "locales": an empty list covers nothing. Omit the field to cover every supported locale.')
+    return errors
+  }
+
+  const seen = new Set<string>()
+  for (const locale of model.locales) {
+    if (typeof locale !== 'string') {
+      err(`Invalid "locales": every entry must be a locale code, got ${typeof locale}.`)
+      continue
+    }
+    if (seen.has(locale)) {
+      err(`Invalid "locales": locale "${locale}" is listed more than once.`)
+      continue
+    }
+    seen.add(locale)
+    if (!config.locales.supported.includes(locale)) {
+      err(
+        `Invalid "locales": locale "${locale}" is not in the project's supported locales `
+        + `[${config.locales.supported.join(', ')}]. A model's locales must be a subset — `
+        + `add it to config.json first, or drop it here.`,
+      )
+    }
+  }
+
+  if (errors.length === 0 && !model.i18n) {
+    errors.push({
+      severity: 'warning',
+      field: 'locales',
+      message: '"locales" has no effect on a model with i18n:false — such a model stores one locale-agnostic copy. Remove it, or set i18n:true.',
+    })
+  }
+
+  return errors
 }
 
 /**

@@ -424,6 +424,53 @@ When a model has `i18n: false`, locale is ignored entirely:
 - **JSON models:** stored as `{dir}/data.json`
 - **Document models:** stored as `{dir}/{slug}.md`
 
+## Locale Coverage
+
+An `i18n: true` model is expected to carry content in **every** locale in `config.locales.supported`. That is what `contentrain validate` checks parity against, and on a fully-translated site it is exactly right.
+
+Some sites are not fully translated. A blog in three languages next to a set of pages that only ever existed in one is not a defect — but without a way to say so, every untranslated page is a hard error, and the only ways to clear it are to invent empty translations or to drop the locale from the whole project.
+
+The optional `locales` field says which project locales a model actually covers:
+
+```json
+{
+  "id": "pages",
+  "name": "Pages",
+  "kind": "collection",
+  "domain": "site",
+  "i18n": true,
+  "locales": ["en", "da"],
+  "title_field": "title"
+}
+```
+
+| | Meaning |
+|---|---|
+| **Absent** (the default) | The model covers every locale in `config.locales.supported` — the behaviour every model had before this field existed |
+| **Present** | Parity is checked against these locales only. The rest are neither required nor reported |
+
+Rules:
+
+- `locales` **must be a subset of `config.locales.supported`**. A locale the project does not support is a validation error — add it to `config.json` first, or drop it here.
+- It **narrows validation; it never grants a locale.** Writing content is still governed by `config.locales.supported`.
+- It has **no effect on an `i18n: false` model**, which stores one locale-agnostic copy. Declaring it there is a warning.
+- Inside the subset, the ordinary rules still apply: a locale a model claims but has not filled is still a parity error.
+
+Every locale-coverage message names the list it was evaluated against, so the two cases read differently:
+
+```
+Locale file missing: tr.json (checked against the model's own locales [en, tr])
+Entry parity: entry "a1b2c3" exists in en but missing in tr (checked against the project's supported locales [en, tr, da])
+```
+
+::: warning
+`contentrain validate --fix` never invents a `locales` value for a model that does not declare one. Choosing a narrower set would be deciding which translations are *supposed* to exist — a content decision — and the one value the tool could compute ("the locales that happen to have files today") would write the current gaps into the schema and silence the very errors that reveal them. Set it deliberately, with `contentrain_model_save`.
+:::
+
+Severity is unchanged and still follows the model kind: a missing translation is a **warning** on a `document` model and an **error** on a `collection`.
+
+`@contentrain/wp-import` writes this field for you: importing a partially-translated WordPress site sets `locales` to the languages each post type actually has content in (the default locale always included), and omits it entirely when the type is fully translated.
+
 ## content_path Override
 
 By default, content files are stored inside `.contentrain/content/{domain}/{model-id}/`. The `content_path` field overrides this, writing content directly into framework-specific directories at the project root.

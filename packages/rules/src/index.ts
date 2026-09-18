@@ -36,6 +36,7 @@ export const MODEL_PROPERTIES = [
   { name: 'kind', required: true },
   { name: 'domain', required: true },
   { name: 'i18n', required: true },
+  { name: 'locales', required: false },
   { name: 'title_field', required: true },
   { name: 'description', required: false },
   { name: 'content_path', required: false },

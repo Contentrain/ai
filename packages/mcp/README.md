@@ -357,6 +357,30 @@ Full documentation at **[ai.contentrain.io/packages/mcp](https://ai.contentrain.
 
 MIT
 
+### Locale coverage (`model.locales`)
+
+`contentrain_validate` checks an `i18n: true` model's parity against every locale
+in `config.locales.supported`. A model that declares `locales` — a subset of that
+list — is checked against the subset instead, which is how a partially-translated
+site states the truth rather than failing on translations it never had. Absent, as
+on every model that predates the field, means the whole project list.
+
+Severity is unchanged and still follows the kind: a missing translation is a
+**warning** on a `document` model and an **error** on a `collection`. Every message
+names the list it was evaluated against, so the two cases read apart:
+
+```
+Locale file missing: tr.json (checked against the model's own locales [en, tr])
+Entry parity: entry "a1b2c3" exists in en but missing in tr (checked against the project's supported locales [en, tr, da])
+```
+
+`contentrain_model_save` accepts `locales` and rejects a locale outside
+`config.locales.supported`. `contentrain_validate fix:true` reports a broken
+declaration but never invents one: narrowing a model's coverage is a content
+decision, and the only value the tool could derive — the locales that happen to
+have files today — would write the current gaps into the schema and silence the
+errors that reveal them.
+
 ### Runtime model configuration
 
 Structural `contentrain_model_save` edits preserve existing top-level `form` and

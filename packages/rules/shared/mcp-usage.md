@@ -48,7 +48,7 @@ MCP is **deterministic infrastructure**. The agent is the **intelligence layer**
 
 | Tool | Purpose | Parameters |
 |------|---------|------------|
-| `contentrain_model_save` | Create or update a model definition (upsert) | `id`, `name`, `kind`, `domain`, `i18n`, `title_field`, `fields?`, `description?`, `content_path?`, `locale_strategy?` |
+| `contentrain_model_save` | Create or update a model definition (upsert) | `id`, `name`, `kind`, `domain`, `i18n`, `title_field`, `fields?`, `description?`, `locales?`, `content_path?`, `locale_strategy?` |
 | `contentrain_model_delete` | Delete a model and its content | `model`, `confirm: true` |
 
 ### 2.4 Content Tools
@@ -389,6 +389,7 @@ Creates or updates a model definition. Key parameters:
 - `kind`: one of `singleton`, `collection`, `document`, `dictionary`.
 - `i18n`: whether the model supports localization.
 - `title_field`: **required** — the field shown as an entry's title. Must name a field declared on this model whose type is `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or `richtext`. Dictionary models use the reserved value `"key"`. Set it when creating a model, and keep it correct when renaming or removing fields.
+- `locales`: optional subset of `config.locales.supported` naming the project locales this model covers. Omit it and the model covers every supported locale, which is what validation checks parity against. Declare it only when the content genuinely exists in a subset — a partially-translated site. A locale outside `locales.supported` is rejected.
 - `content_path`: optional framework-relative path (e.g., `"content/blog"`, `"locales"`). When set, content is written here instead of `.contentrain/content/`.
 - `locale_strategy`: how locale is encoded in filenames: `"file"` (default), `"suffix"`, `"directory"`, `"none"`.
 - `contentrain_model_save` preserves existing `form` configuration and preserves existing `comments` configuration. These runtime-owned blocks are not structural tool inputs; use the runtime provider's settings surface to change them.

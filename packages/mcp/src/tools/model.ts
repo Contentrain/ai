@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ModelDefinition } from '@contentrain/types'
-import { MODEL_EXTENSION_KEYS } from '@contentrain/types'
+import { MODEL_EXTENSION_KEYS, validateModelLocales } from '@contentrain/types'
 import { z } from 'zod'
 import type { ToolProvider } from '../server.js'
 import { readConfig } from '../core/config.js'
@@ -31,6 +31,7 @@ export function registerModelTools(
       kind: z.enum(['singleton', 'collection', 'document', 'dictionary']).describe('Model kind'),
       domain: z.string().describe('Content domain (e.g. "blog", "marketing", "system")'),
       i18n: z.boolean().describe('Whether this model supports localization'),
+      locales: z.array(z.string()).optional().describe('The project locales this model\'s content covers — a subset of config.locales.supported. Omit it (the default) and the model covers every supported locale, which is what validation checks parity against. Declare it only when the content genuinely exists in a subset, e.g. a partially-translated site.'),
       title_field: z.string().describe('Name of the field shown as an entry\'s title in listings, pickers and relation references. Must name a field on this model whose type is string, text, slug, email, url, code, markdown or richtext. Dictionary models have no fields — use "key".'),
       description: z.string().optional().describe('Model description'),
       fields: fieldDefSchema.optional().describe('Field definitions (not needed for dictionary)'),
@@ -54,6 +55,12 @@ export function registerModelTools(
       const { errors, warnings: schemaWarnings } = validateModel(input, {
         existingFieldPaths: collectFieldPaths(existing?.fields),
       })
+      // `locales` is checked against this project's config, which the shared
+      // model validator does not see — it validates a definition in isolation.
+      for (const issue of validateModelLocales(input, config)) {
+        if (issue.severity === 'error') errors.push(issue.message)
+        else schemaWarnings.push(issue.message)
+      }
       if (errors.length > 0) {
         return {
           content: [{ type: 'text' as const, text: JSON.stringify({ error: 'Validation failed', details: errors }) }],
@@ -88,6 +95,7 @@ export function registerModelTools(
         kind: input.kind,
         domain: input.domain,
         i18n: input.i18n,
+        locales: input.locales,
         title_field: input.title_field,
         description: input.description,
         fields: input.fields as ModelDefinition['fields'],

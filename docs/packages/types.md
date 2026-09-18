@@ -105,7 +105,8 @@ const result: ValidationResult = {
 | Interface | Purpose |
 |-----------|---------|
 | `FieldDef` | Field schema definition (type, required, unique, constraints) |
-| `ModelDefinition` | Full model schema (id, kind, domain, fields, i18n, locale strategy) |
+| `ModelDefinition` | Full model schema (id, kind, domain, fields, i18n, locale coverage, locale strategy) |
+| `ModelLocaleScope` | The locales one model is checked against, plus whether that list came from the model (`locales`) or the project |
 | `ContentrainConfig` | Project configuration (stack, workflow, locales, domains) |
 | `Vocabulary` | Shared terms for content consistency |
 | `EntryMeta` | Per-entry metadata (status, source, timestamps) |
@@ -243,6 +244,9 @@ Validate functions (pure, dependency-free):
 | `validateSlug(slug)` | Kebab-case slug validation |
 | `validateEntryId(id)` | Entry ID format validation |
 | `validateLocale(locale, config)` | Locale format + config support check |
+| `resolveModelLocales(model, config)` | The locales a model's content is expected to cover — `model.locales` when it declares one, otherwise `config.locales.supported` (or the default locale alone when `i18n: false`). Returns `{ locales, source }` |
+| `describeModelLocaleScope(scope)` | Names a resolved scope the way a validation message should quote it |
+| `validateModelLocales(model, config)` | Checks a `locales` declaration is a subset of `config.locales.supported` — no duplicates, not empty, no unsupported locale |
 | `detectSecrets(value)` | Detect potential secrets in field values |
 | `looksLikeCredential(tail)` | Whether a value assigned to an API-key setting reads as a credential (has a digit, mixes letters and digits in a token) rather than a placeholder or setting name |
 | `validateFieldValue(value, fieldDef)` | Full field schema validation (type, required, min/max, pattern, select) |
