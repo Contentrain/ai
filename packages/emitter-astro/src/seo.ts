@@ -149,6 +149,29 @@ function decideLd(json: string): LdDecision {
   }
 }
 
+/**
+ * \`@id\` of the WebSite node in a head's structured data, if it declares one
+ * — the node the page's WebPage says it is part of. Only what the head says:
+ * no id, no link.
+ */
+export function websiteIdOf(html: string): string | undefined {
+  for (const match of html.matchAll(JSONLD_RE)) {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(match[1] ?? '')
+    } catch {
+      continue
+    }
+    const graph = (parsed as { '@graph'?: unknown } | null)?.['@graph']
+    const nodes: unknown[] = Array.isArray(parsed) ? parsed : Array.isArray(graph) ? graph : [parsed]
+    for (const node of nodes) {
+      const id = (node as LdNode | null)?.['@id']
+      if (typeof id === 'string' && id && typesOf(node).some((t) => t.toLowerCase() === 'website')) return id
+    }
+  }
+  return undefined
+}
+
 export interface StripResult {
   html: string
   /** What was taken out, for the emit warning — never a silent removal. */
@@ -228,7 +251,7 @@ export const SEO_COMPONENT = `---
  * Canonical and absolute URLs need \`site\` in astro.config.mjs; without it the
  * canonical link and og:url are omitted rather than pointing at a build host.
  */
-import { absoluteUrl, imageMetaTags, jsonLd, seoDescription, type ImageMeta } from '../lib/fill'
+import { absoluteUrl, imageMetaTags, jsonLd, pageStructuredData, seoDescription, type Breadcrumb, type ImageMeta } from '../lib/fill'
 
 interface Props {
   title?: string
@@ -242,6 +265,12 @@ interface Props {
   imageMeta?: ImageMeta
   /** This page's translations, itself included, plus x-default. */
   alternates?: Array<{ lang: string; path: string }>
+  /** The trail to this page, itself excluded — the page is appended with its own address. */
+  breadcrumbs?: Breadcrumb[]
+  /** \`CollectionPage\` on a list; \`WebPage\` otherwise. */
+  pageType?: 'WebPage' | 'CollectionPage'
+  /** \`@id\` of the site's WebSite node kept in the head chrome, when there is one. */
+  websiteId?: string
   /** \`article\` on entry pages, \`website\` on lists and static pages. */
   type?: 'article' | 'website'
   /** ISO 8601 — structured data only; the displayed date stays a mark. */
@@ -259,6 +288,9 @@ const {
   image,
   imageMeta,
   alternates = [],
+  breadcrumbs,
+  pageType,
+  websiteId,
   type = 'website',
   publishedAt,
   modifiedAt,
@@ -279,20 +311,22 @@ const hreflang = alternates.flatMap((a) => {
 const localeAlternates = [...new Set(hreflang.map((a) => a.lang))].filter((l) => l !== 'x-default' && l !== locale)
 const desc = seoDescription(description)
 const article = type === 'article'
-const structured = article
-  ? {
-      '@context': 'https://schema.org',
-      '@type': 'Article',
-      headline: title,
-      ...(desc ? { description: desc } : {}),
-      ...(imageUrl ? { image: [imageUrl] } : {}),
-      ...(publishedAt ? { datePublished: publishedAt } : {}),
-      ...(modifiedAt ? { dateModified: modifiedAt } : {}),
-      ...(author ? { author: { '@type': 'Person', name: author } } : {}),
-      ...(url ? { mainEntityOfPage: { '@type': 'WebPage', '@id': url } } : {}),
-      ...(siteName ? { publisher: { '@type': 'Organization', name: siteName } } : {}),
-    }
-  : undefined
+const structured = pageStructuredData({
+  url,
+  site,
+  title,
+  description: desc,
+  image: imageUrl,
+  locale,
+  article,
+  pageType,
+  publishedAt,
+  modifiedAt,
+  author,
+  siteName,
+  websiteId,
+  breadcrumbs,
+})
 ---
 <title>{title}</title>
 {desc && <meta name="description" content={desc} />}

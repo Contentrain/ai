@@ -361,6 +361,102 @@ export function jsonLd(value: unknown): string {
   return JSON.stringify(value).replace(/</g, '\\\\u003c')
 }
 
+export interface Breadcrumb {
+  name: string
+  path: string
+}
+
+/**
+ * A trail every crumb of which can be printed, or undefined. A crumb needs a
+ * name and a site-root-relative path; one bad crumb drops the trail, because a
+ * breadcrumb with a hole in it states a hierarchy the site does not have.
+ */
+export function validTrail(trail: unknown): Breadcrumb[] | undefined {
+  if (!Array.isArray(trail) || !trail.length) return undefined
+  const ok = trail.every((c) => c && typeof c === 'object'
+    && typeof (c as Breadcrumb).name === 'string' && (c as Breadcrumb).name.trim() !== ''
+    && typeof (c as Breadcrumb).path === 'string'
+    && !(c as Breadcrumb).path.includes(String.fromCharCode(92))
+    && ![...(c as Breadcrumb).path].some((char) => char.charCodeAt(0) <= 32) && /^\\/(?!\\/)/.test((c as Breadcrumb).path))
+  return ok ? (trail as Breadcrumb[]) : undefined
+}
+
+export interface PageStructuredDataInput {
+  url?: string
+  site?: URL
+  title: string
+  description?: string
+  image?: string
+  locale?: string
+  article: boolean
+  pageType?: 'WebPage' | 'CollectionPage'
+  publishedAt?: string
+  modifiedAt?: string
+  author?: string
+  siteName?: string
+  /** \`@id\` of the site's own WebSite node, when its head declares one. */
+  websiteId?: string
+  breadcrumbs?: Breadcrumb[]
+}
+
+/**
+ * The page's structured data as one graph: the page itself (WebPage, or
+ * CollectionPage for a list), its breadcrumb trail, and on an entry the
+ * Article whose main entity it is — linked by \`@id\` rather than repeated.
+ *
+ * The page node needs an absolute address to be anything; without \`site\`
+ * only an entry's Article remains, as before. \`isPartOf\` points at the site's
+ * own WebSite node when the kept head declares one — never at a WebSite this
+ * function invents.
+ */
+export function pageStructuredData(input: PageStructuredDataInput): Record<string, unknown> | undefined {
+  const graph: Array<Record<string, unknown>> = []
+  const { url } = input
+  const trail = url ? validTrail(input.breadcrumbs) : undefined
+  const crumbs = trail
+    ? trail.map((c) => ({ name: c.name, item: absoluteUrl(c.path, input.site) }))
+    : []
+  const breadcrumbId = url && trail && crumbs.every((c) => c.item) ? url + '#breadcrumb' : undefined
+  if (url) {
+    graph.push({
+      '@type': input.pageType ?? 'WebPage',
+      '@id': url,
+      url,
+      ...(input.title ? { name: input.title } : {}),
+      ...(input.description ? { description: input.description } : {}),
+      ...(input.locale ? { inLanguage: input.locale } : {}),
+      ...(input.websiteId ? { isPartOf: { '@id': input.websiteId } } : {}),
+      ...(breadcrumbId ? { breadcrumb: { '@id': breadcrumbId } } : {}),
+    })
+  }
+  if (breadcrumbId) {
+    graph.push({
+      '@type': 'BreadcrumbList',
+      '@id': breadcrumbId,
+      itemListElement: [...crumbs, { name: input.title, item: url }].map((c, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: c.name,
+        item: c.item,
+      })),
+    })
+  }
+  if (input.article) {
+    graph.push({
+      '@type': 'Article',
+      headline: input.title,
+      ...(input.description ? { description: input.description } : {}),
+      ...(input.image ? { image: [input.image] } : {}),
+      ...(input.publishedAt ? { datePublished: input.publishedAt } : {}),
+      ...(input.modifiedAt ? { dateModified: input.modifiedAt } : {}),
+      ...(input.author ? { author: { '@type': 'Person', name: input.author } } : {}),
+      ...(url ? { mainEntityOfPage: { '@id': url } } : {}),
+      ...(input.siteName ? { publisher: { '@type': 'Organization', name: input.siteName } } : {}),
+    })
+  }
+  return graph.length ? { '@context': 'https://schema.org', '@graph': graph } : undefined
+}
+
 /** Emitted stylesheets live under /styles/legacy/ — pages reference them by file name. */
 export const cssHref = (file: string): string => '/styles/legacy/' + (file.split('/').pop() ?? file)
 
@@ -444,6 +540,8 @@ export interface SeoInput {
   image?: string
   imageMeta?: ImageMeta
   alternates?: Array<{ lang: string; path: string }>
+  breadcrumbs?: Breadcrumb[]
+  pageType?: 'WebPage' | 'CollectionPage'
   type?: 'article' | 'website'
   publishedAt?: string
   modifiedAt?: string
@@ -466,6 +564,7 @@ export function postSeo(post: EmittedPost): SeoInput {
     // The measurements describe \`image\`; a \`featured\` fallback is another file.
     imageMeta: post.image ? post.image_meta : undefined,
     alternates: post.alternates,
+    breadcrumbs: post.breadcrumbs,
     type: 'article',
     publishedAt: post.published_at,
     modifiedAt: post.modified_at,
@@ -482,6 +581,8 @@ export interface EmittedPost extends MarkablePost {
   image_meta?: ImageMeta
   /** Translations of this entry, itself included, and x-default. Computed by the emitter. */
   alternates?: Array<{ lang: string; path: string }>
+  /** Trail to this page, itself excluded. */
+  breadcrumbs?: Breadcrumb[]
   /** Canonical override; default is the page's own address. */
   canonical?: string
   /** ISO 8601, for Article structured data. */
@@ -509,5 +610,6 @@ export interface EmittedQueryPage {
   image?: string
   image_meta?: ImageMeta
   canonical?: string
+  breadcrumbs?: Breadcrumb[]
 }
 `

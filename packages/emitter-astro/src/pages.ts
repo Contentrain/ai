@@ -160,7 +160,7 @@ const title = page.title ?? ${routeTitle}
   body={content}
   css={page.css ?? []}
   lang={${locale}}${seo ? `
-  seo={{ description: page.description, image: page.image, imageMeta: page.image_meta, canonical: page.canonical, type: 'website' }}` : ''}
+  seo={{ description: page.description, image: page.image, imageMeta: page.image_meta, canonical: page.canonical, breadcrumbs: page.breadcrumbs, type: 'website', pageType: 'CollectionPage' }}` : ''}
 />
 `
 }
@@ -178,5 +178,43 @@ function staticPage(route: RouteModel, layout: string, up: string, hasParams: bo
 import Layout from '${up}layouts/${layout}.astro'
 ${paths}---
 <Layout title=${JSON.stringify(route.title ?? '')} marks={{}} lang={${JSON.stringify(route.locale ?? siteLocale)}}${seo ? ` seo={{ type: 'website' }}` : ''} />
+`
+}
+
+/** Share a catchall while preserving the original editable collections. */
+export function sharedCollectionPage(routes: RouteModel[], content: EmitContent, siteLocale: string, seo = true): string | undefined {
+  const pattern = routes[0]?.pattern
+  if (!pattern || routes.length < 2 || !/^\/(?:[^:*]+\/)*:slug\*$/.test(pattern)
+    || routes.some(r => r.pattern !== pattern || r.query || (r.kind !== 'single' && !r.collection))) return undefined
+  const seen = new Set<string>()
+  for (const route of routes) for (const post of collectionItems(content, route.collection ?? DEFAULT_COLLECTION)) {
+    let key: string
+    try { key = decodeURIComponent(post.slug).replace(/\/+$/, '') }
+    catch { return undefined }
+    if (seen.has(key)) return undefined
+    seen.add(key)
+  }
+  const up = '../'.repeat(patternToPagePath(pattern)!.split('/').length)
+  return `---
+// Shared collection routes: ${routes.map(r => r.id).join(', ')}
+${routes.map((r, i) => `import Layout${i} from '${up}layouts/${pascalCase(r.family)}.astro'\nimport data${i} from '${up}data/${r.collection ?? DEFAULT_COLLECTION}.json'`).join('\n')}
+import { postMarks${seo ? ', postSeo' : ''}, type EmittedPost } from '${up}lib/fill'
+export function getStaticPaths() {
+  const sources = [${routes.map((_, i) => `data${i}`).join(', ')}] as EmittedPost[][]
+  const seen = new Set<string>()
+  return sources.flatMap((posts, routeIndex) => posts.map(post => {
+    const key = decodeURIComponent(post.slug).replace(/\\/+$/, '')
+    if (seen.has(key)) throw new Error('Route collision in shared collections: ' + post.slug)
+    seen.add(key)
+    return { params: { ...(post.params ?? {}), slug: post.slug }, props: { post, routeIndex } }
+  }))
+}
+const { post, routeIndex } = Astro.props as { post: EmittedPost, routeIndex: number }
+const layouts = [${routes.map((_, i) => `Layout${i}`).join(', ')}]
+const locales = ${JSON.stringify(routes.map(r => r.locale ?? siteLocale))}
+const Layout = layouts[routeIndex]!
+---
+<Layout title={post.title} marks={postMarks(post)} body={post.body}
+  css={post.css ?? []} lang={post.locale ?? locales[routeIndex]} entry={post.entry}${seo ? ' seo={postSeo(post)}' : ''} />
 `
 }
