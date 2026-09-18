@@ -1,0 +1,2550 @@
+{
+  "candidates": [
+    {
+      "context": "main>p",
+      "decision": "exclude",
+      "id": "0254cc215d976983c76f",
+      "key": "ui.main-p.the-xyz-doohickey-company-was-dae7f6",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:page",
+      "value": "The XYZ Doohickey Company was founded in 1971, and has been providing quality doohickeys to the public ever since. Located in Gotham City, XYZ employs over 2,000 people and does all kinds of awesome things for the Gotham community."
+    },
+    {
+      "context": "menu",
+      "decision": "include",
+      "id": "039da09c3f49725302cb",
+      "key": "menu.contact-f4eae3",
+      "kind": "menu",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "menu",
+          "line": 0,
+          "source": "nav_menu_item#50"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "nav_menu_item#50",
+      "target": "content:wp-menu-items",
+      "value": "Contact"
+    },
+    {
+      "context": "widget:p",
+      "decision": "include",
+      "id": "048273d1e2bf1d7aa771",
+      "key": "widget.p.main-street-next-to-the-26cfdc",
+      "kind": "widget",
+      "line": 1,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "widget",
+          "line": 1,
+          "source": "widget_block#3"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "widget_block#3",
+      "target": "dictionary:ui-strings",
+      "value": "Main street, next to the park"
+    },
+    {
+      "context": "footer>p",
+      "decision": "exclude",
+      "id": "097b4ae685e8470f6f68",
+      "key": "ui.footer-p.main-street-next-to-the-afb0e7",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "048273d1e2bf1d7aa771"
+      ],
+      "source": "render:home",
+      "value": "Main street, next to the park"
+    },
+    {
+      "context": "script",
+      "decision": "exclude",
+      "id": "0b3afacedf41ae4b5b98",
+      "key": "ui.script.this-file-is-auto-generated-0c8a0f",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "code",
+      "source": "render:home",
+      "value": "/*! This file is auto-generated */\nvar e=\"script#wp-emoji-settings\",t=document.querySelector(e);if(!(t instanceof HTMLScriptElement))throw new Error(\"Element missing: \"+e);const r=JSON.parse(t.text),s=(window._wpemojiSettings=r,\"wpEmojiSettingsSupports\"),o=[\"flag\",\"emoji\"];function i(e){try{var t={supportTests:e,timestamp:(new Date).valueOf()};sessionStorage.setItem(s,JSON.stringify(t))}catch(e){}}function c(e,t,n){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);t=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data);e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(n,0,0);const r=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data);return t.every((e,t)=>e===r[t])}function p(e,t){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);var n=e.getImageData(16,16,1,1);for(let e=0;e<n.data.length;e++)if(0!==n.data[e])return!1;return!0}function u(e,t,n,r){switch(t){case\"flag\":return n(e,\"\\ud83c\\udff3\\ufe0f\\u200d\\u26a7\\ufe0f\",\"\\ud83c\\udff3\\ufe0f\\u200b\\u26a7\\ufe0f\")?!1:!n(e,\"\\ud83c\\udde8\\ud83c\\uddf6\",\"\\ud83c\\udde8\\u200b\\ud83c\\uddf6\")&&!n(e,\"\\ud83c\\udff4\\udb40\\udc67\\udb40\\udc62\\udb40\\udc65\\udb40\\udc6e\\udb40\\udc67\\udb40\\udc7f\",\"\\ud83c\\udff4\\u200b\\udb40\\udc67\\u200b\\udb40\\udc62\\u200b\\udb40\\udc65\\u200b\\udb40\\udc6e\\u200b\\udb40\\udc67\\u200b\\udb40\\udc7f\");case\"emoji\":return!r(e,\"\\ud83e\\u1fac8\")}return!1}function f(e,t,n,r){let a;const s=(a=\"undefined\"!=typeof WorkerGlobalScope&&self instanceof WorkerGlobalScope?new OffscreenCanvas(300,150):document.createElement(\"canvas\")).getContext(\"2d\",{willReadFrequently:!0}),o=(s.textBaseline=\"top\",s.font=\"600 32px Arial\",{});return e.forEach(e=>{o[e]=t(s,e,n,r)}),o}function a(e){var t=document.createElement(\"script\");t.src=e,t.defer=!0,document.head.appendChild(t)}r.supports={everything:!0,everythingExceptFlag:!0},new Promise(t=>{let n=function(){try{var e=JSON.parse(sessionStorage.getItem(s));if(\"object\"==typeof e&&\"number\"==typeof e.timestamp&&(new Date).valueOf()<e.timestamp+604800&&\"object\"==typeof e.supportTests)return e.supportTests}catch(e){}return null}();if(!n){if(\"undefined\"!=typeof Worker&&\"undefined\"!=typeof OffscreenCanvas&&\"undefined\"!=typeof URL&&URL.createObjectURL&&\"undefined\"!=typeof Blob)try{var e=\"postMessage(\"+f.toString()+\"(\"+[JSON.stringify(o),u.toString(),c.toString(),p.toString()].join(\",\")+\"));\",r=new Blob([e],{type:\"text/javascript\"});const a=new Worker(URL.createObjectURL(r),{name:\"wpTestEmojiSupports\"});return void(a.onmessage=e=>{i(n=e.data),a.terminate(),t(n)})}catch(e){}i(n=f(o,u,c,p))}t(n)}).then(e=>{for(const n in e)r.supports[n]=e[n],r.supports.everything=r.supports.everything&&r.supports[n],\"flag\"!==n&&(r.supports.everythingExceptFlag=r.supports.everythingExceptFlag&&r.supports[n]);var t;r.supports.everythingExceptFlag=r.supports.everythingExceptFlag&&!r.supports.flag,r.supports.everything||((t=r.source||{}).concatemoji?a(t.concatemoji):t.wpemoji&&t.twemoji&&(a(t.twemoji),a(t.wpemoji)))});\n//# sourceURL=http://localhost:8094/wp-includes/js/wp-emoji-loader.min.js"
+    },
+    {
+      "context": "nav>nav@aria-label",
+      "decision": "exclude",
+      "id": "0df90f7a6ba3e465293d",
+      "key": "ui.nav-nav-aria-label.main-navigation-e1633f",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "61b1018938daf567fff5"
+      ],
+      "source": "render:home",
+      "value": "Main navigation"
+    },
+    {
+      "context": "gettext",
+      "decision": "include",
+      "id": "103c41f27f96cfad7446",
+      "key": "gettext.primary-menu-411ae7",
+      "kind": "php-gettext",
+      "line": 5,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-gettext",
+          "line": 5,
+          "source": "themes/bridge-text-theme/functions.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/functions.php",
+      "target": "dictionary:ui-strings",
+      "value": "Primary menu"
+    },
+    {
+      "context": "main>h1",
+      "decision": "exclude",
+      "id": "1d4cba6201a843fda054",
+      "key": "ui.main-h1.page-not-found-ae2b7d",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "456ec0d721cc42003f88"
+      ],
+      "source": "render:not-found",
+      "value": "Page not found"
+    },
+    {
+      "context": "form>input@value",
+      "decision": "exclude",
+      "id": "1ef5262b1db83897cffb",
+      "key": "ui.form-input-value.find-b6b434",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "f44f039ecc83ce2cf560"
+      ],
+      "source": "render:home",
+      "value": "Find"
+    },
+    {
+      "context": "customizer:footer_note",
+      "decision": "include",
+      "id": "1f0cc3bfa414fdadc37d",
+      "key": "theme-settings.footer_note",
+      "kind": "customizer",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "customizer",
+          "line": 0,
+          "source": "theme_mods_bridge-text-theme#footer_note"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "theme_mods_bridge-text-theme#footer_note",
+      "target": "theme-settings.footer_note",
+      "value": "Crafted with care in Istanbul"
+    },
+    {
+      "context": "main>p",
+      "decision": "exclude",
+      "id": "2cf6eca521a1731c7048",
+      "key": "ui.main-p.closed-on-mondays-0c6d6f",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "4ee03d1b0c471b35c4ef"
+      ],
+      "source": "render:home",
+      "value": "Closed on Mondays"
+    },
+    {
+      "context": "gettext:verb",
+      "decision": "include",
+      "id": "2e178afdf0aecdd9434a",
+      "key": "gettext.verb.post-084a3f",
+      "kind": "php-gettext",
+      "line": 7,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-gettext",
+          "line": 7,
+          "source": "themes/bridge-text-theme/index.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/index.php",
+      "target": "dictionary:ui-strings",
+      "value": "Post"
+    },
+    {
+      "context": "main>p",
+      "decision": "exclude",
+      "id": "2f8c7486c6e44cb8b353",
+      "key": "ui.main-p.hi-there-im-a-bike-96932a",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:page",
+      "value": "Hi there! I’m a bike messenger by day, aspiring actor by night, and this is my website. I live in Los Angeles, have a great dog named Jack, and I like piña coladas. (And gettin’ caught in the rain.)"
+    },
+    {
+      "context": "header>p",
+      "decision": "exclude",
+      "id": "34881c0518cf5b7bd03a",
+      "key": "ui.header-p.bridge-acceptance-1032cf",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:home",
+      "value": "Bridge Acceptance"
+    },
+    {
+      "context": "p",
+      "decision": "include",
+      "id": "36acdf4263fd7d7a157f",
+      "key": "ui.p.walk-ins-welcome-08bdb2",
+      "kind": "html",
+      "line": 1,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "html",
+          "line": 1,
+          "source": "themes/bridge-text-theme/parts/cta.html"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/parts/cta.html",
+      "target": "dictionary:ui-strings",
+      "value": "Walk-ins welcome"
+    },
+    {
+      "context": "main>p",
+      "decision": "exclude",
+      "id": "3847a17171282e950399",
+      "key": "ui.main-p.welcome-to-wordpress-this-is-ed948a",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:single",
+      "value": "Welcome to WordPress. This is your first post. Edit or delete it, then start writing!"
+    },
+    {
+      "context": "main>p",
+      "decision": "exclude",
+      "id": "3c65b643c96682bef3e9",
+      "key": "ui.main-p.walk-ins-welcome-7d2537",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "36acdf4263fd7d7a157f"
+      ],
+      "source": "render:not-found",
+      "value": "Walk-ins welcome"
+    },
+    {
+      "context": "label",
+      "decision": "include",
+      "id": "3d0fbc8a92869903fbb6",
+      "key": "ui.label.search-the-menu-d7ca31",
+      "kind": "php-html",
+      "line": 12,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-html",
+          "line": 12,
+          "source": "themes/bridge-text-theme/header.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/header.php",
+      "target": "dictionary:ui-strings",
+      "value": "Search the menu"
+    },
+    {
+      "context": "gettext",
+      "decision": "include",
+      "id": "3d76d7e3304a0d4e5958",
+      "key": "gettext.try-a-search-instead-f5d376",
+      "kind": "php-gettext",
+      "line": 3,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-gettext",
+          "line": 3,
+          "source": "themes/bridge-text-theme/404.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/404.php",
+      "target": "dictionary:ui-strings",
+      "value": "Try a search instead."
+    },
+    {
+      "context": "js",
+      "decision": "include",
+      "id": "401f930f1f8075b9906a",
+      "key": "ui.js.show-more-c6a5fb",
+      "kind": "js",
+      "line": 2,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "js",
+          "line": 2,
+          "source": "themes/bridge-text-theme/assets/app.js"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/assets/app.js",
+      "target": "dictionary:ui-strings",
+      "value": "Show more"
+    },
+    {
+      "context": "a",
+      "decision": "include",
+      "id": "40342d4c9e4dfe365e53",
+      "key": "ui.a.read-more-0bce4f",
+      "kind": "php-html",
+      "line": 6,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-html",
+          "line": 6,
+          "source": "themes/bridge-text-theme/index.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/index.php",
+      "target": "dictionary:ui-strings",
+      "value": "Read more"
+    },
+    {
+      "context": "customizer:header_textcolor",
+      "decision": "exclude",
+      "id": "40ebc45a90c8dc465858",
+      "key": "theme-settings.header_textcolor",
+      "kind": "customizer",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "customizer",
+          "line": 0,
+          "source": "theme_mods_bridge-text-theme#header_textcolor"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "number",
+      "source": "theme_mods_bridge-text-theme#header_textcolor",
+      "value": "333333"
+    },
+    {
+      "context": "js",
+      "decision": "exclude",
+      "id": "44d826bec86d5f3c6fa0",
+      "key": "ui.js.2026-38d9bd",
+      "kind": "js",
+      "line": 7,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "js",
+          "line": 7,
+          "source": "themes/bridge-text-theme/assets/app.js"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "number",
+      "source": "themes/bridge-text-theme/assets/app.js",
+      "value": "2026"
+    },
+    {
+      "context": "main>p",
+      "decision": "exclude",
+      "id": "44e160acb9aa86bf8596",
+      "key": "ui.main-p.seo-home-573ec7-body-text-486d00",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:home",
+      "value": "SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text. SEO Home 573ec7 body text."
+    },
+    {
+      "context": "script",
+      "decision": "exclude",
+      "id": "451843ecc6c7512d6f3f",
+      "key": "ui.script.baseurlhttps-s-w-org-images-b0489b",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "code",
+      "source": "render:home",
+      "value": "{\"baseUrl\":\"https://s.w.org/images/core/emoji/17.0.2/72x72/\",\"ext\":\".png\",\"svgUrl\":\"https://s.w.org/images/core/emoji/17.0.2/svg/\",\"svgExt\":\".svg\",\"source\":{\"concatemoji\":\"http://localhost:8094/wp-includes/js/wp-emoji-release.min.js?ver=7.1\"}}"
+    },
+    {
+      "context": "h1",
+      "decision": "include",
+      "id": "456ec0d721cc42003f88",
+      "key": "ui.h1.page-not-found-b86f5b",
+      "kind": "php-html",
+      "line": 2,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-html",
+          "line": 2,
+          "source": "themes/bridge-text-theme/404.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/404.php",
+      "target": "dictionary:ui-strings",
+      "value": "Page not found"
+    },
+    {
+      "context": "footer>a",
+      "decision": "exclude",
+      "id": "4624aad18d75da348745",
+      "key": "ui.footer-a.https-example-org-privacy-31d96a",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "url",
+      "source": "render:home",
+      "value": "https://example.org/privacy"
+    },
+    {
+      "context": "gettext",
+      "decision": "include",
+      "id": "4643f0b8785b8c96343d",
+      "key": "gettext.nothing-matched-your-search-236ed2",
+      "kind": "php-gettext",
+      "line": 10,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-gettext",
+          "line": 10,
+          "source": "themes/bridge-text-theme/index.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/index.php",
+      "target": "dictionary:ui-strings",
+      "value": "Nothing matched your search."
+    },
+    {
+      "context": "header>a",
+      "decision": "exclude",
+      "id": "4a4551cfc49c96e94320",
+      "key": "ui.header-a.book-a-table-e4d4af",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "818ef3d3b6d688000a2c"
+      ],
+      "source": "render:home",
+      "value": "Book a table"
+    },
+    {
+      "context": "p",
+      "decision": "include",
+      "id": "4ee03d1b0c471b35c4ef",
+      "key": "ui.p.closed-on-mondays-502d36",
+      "kind": "php-echo",
+      "line": 13,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-echo",
+          "line": 13,
+          "source": "themes/bridge-text-theme/index.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/index.php",
+      "target": "dictionary:ui-strings",
+      "value": "Closed on Mondays"
+    },
+    {
+      "context": "form>label",
+      "decision": "include",
+      "id": "50623306224df51e5c5e",
+      "key": "ui.form-label.search-for-6e14fc",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "render:not-found",
+      "target": "dictionary:ui-strings",
+      "value": "Search for:"
+    },
+    {
+      "context": "main>p",
+      "decision": "exclude",
+      "id": "54cb3c60b4ef3cd68c86",
+      "key": "ui.main-p.or-something-like-this-d6227e",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:page",
+      "value": "…or something like this:"
+    },
+    {
+      "context": "main>p",
+      "decision": "exclude",
+      "id": "581528e3acf36af5c1ce",
+      "key": "ui.main-p.this-is-an-example-page-77f045",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:page",
+      "value": "This is an example page. It’s different from a blog post because it will stay in one place and will show up in your site navigation (in most themes). Most people start with an About page that introduces them to potential site visitors. It might say something like this:"
+    },
+    {
+      "context": "h2",
+      "decision": "include",
+      "id": "5919ebcb56f327d5ae19",
+      "key": "ui.h2.opening-hours-e7ae9f",
+      "kind": "php-html",
+      "line": 3,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-html",
+          "line": 3,
+          "source": "themes/bridge-text-theme/footer.php"
+        },
+        {
+          "kind": "php-html",
+          "line": 16,
+          "source": "themes/bridge-text-theme/header.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/footer.php",
+      "target": "dictionary:ui-strings",
+      "value": "Opening hours"
+    },
+    {
+      "context": "gettext:noun",
+      "decision": "include",
+      "id": "5b14aaf43fe5f2783918",
+      "key": "gettext.noun.post-28f16b",
+      "kind": "php-gettext",
+      "line": 7,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-gettext",
+          "line": 7,
+          "source": "themes/bridge-text-theme/index.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/index.php",
+      "target": "dictionary:ui-strings",
+      "value": "Post"
+    },
+    {
+      "context": "input@placeholder",
+      "decision": "include",
+      "id": "5f3689c98ac451a84e3b",
+      "key": "ui.input-placeholder.type-a-dish-19e47b",
+      "kind": "php-html",
+      "line": 13,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-html",
+          "line": 13,
+          "source": "themes/bridge-text-theme/header.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/header.php",
+      "target": "dictionary:ui-strings",
+      "value": "Type a dish"
+    },
+    {
+      "context": "script",
+      "decision": "exclude",
+      "id": "60dc7b99f2d75c569871",
+      "key": "ui.script.prefetchsourcedocumentwhereandhref_matches-nothref-91c432",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "code",
+      "source": "render:home",
+      "value": "{\"prefetch\":[{\"source\":\"document\",\"where\":{\"and\":[{\"href_matches\":\"/*\"},{\"not\":{\"href_matches\":[\"/wp-*.php\",\"/wp-admin/*\",\"/wp-content/uploads/*\",\"/wp-content/*\",\"/wp-content/plugins/*\",\"/wp-content/themes/bridge-text-theme/*\",\"/*\\\\?(.+)\"]}},{\"not\":{\"selector_matches\":\"a[rel~=\\\"nofollow\\\"]\"}},{\"not\":{\"selector_matches\":\".no-prefetch, .no-prefetch a\"}}]},\"eagerness\":\"conservative\"}]}"
+    },
+    {
+      "context": "nav@aria-label",
+      "decision": "include",
+      "id": "61b1018938daf567fff5",
+      "key": "ui.nav-aria-label.main-navigation-2969a7",
+      "kind": "php-html",
+      "line": 8,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-html",
+          "line": 8,
+          "source": "themes/bridge-text-theme/header.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/header.php",
+      "target": "dictionary:ui-strings",
+      "value": "Main navigation"
+    },
+    {
+      "context": "p",
+      "decision": "exclude",
+      "id": "6319e9d05db11952d8d8",
+      "key": "ui.p.2026-d96207",
+      "kind": "php-html",
+      "line": 7,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-html",
+          "line": 7,
+          "source": "themes/bridge-text-theme/footer.php"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "number",
+      "source": "themes/bridge-text-theme/footer.php",
+      "value": "2026"
+    },
+    {
+      "context": "form>input@placeholder",
+      "decision": "exclude",
+      "id": "67a380d66bebcc60187a",
+      "key": "ui.form-input-placeholder.type-a-dish-084620",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "5f3689c98ac451a84e3b"
+      ],
+      "source": "render:home",
+      "value": "Type a dish"
+    },
+    {
+      "context": "footer>p",
+      "decision": "exclude",
+      "id": "67c02369f742ae9e5e30",
+      "key": "ui.footer-p.follow-us-e91613",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "6ae3294c781665490fa0"
+      ],
+      "source": "render:home",
+      "value": "Follow us"
+    },
+    {
+      "context": "gettext",
+      "decision": "exclude",
+      "id": "690e44cec7cf4a19910c",
+      "key": "gettext.s-09b397",
+      "kind": "php-gettext",
+      "line": 23,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-gettext",
+          "line": 23,
+          "source": "themes/bridge-text-theme/functions.php"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "placeholder-only",
+      "source": "themes/bridge-text-theme/functions.php",
+      "value": "%s"
+    },
+    {
+      "context": "widget:h2",
+      "decision": "include",
+      "id": "6954217ba22a70983a97",
+      "key": "widget.h2.find-us-e26c3b",
+      "kind": "widget",
+      "line": 1,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "widget",
+          "line": 1,
+          "source": "widget_block#3"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "widget_block#3",
+      "target": "dictionary:ui-strings",
+      "value": "Find us"
+    },
+    {
+      "context": "p",
+      "decision": "include",
+      "id": "6ae3294c781665490fa0",
+      "key": "ui.p.follow-us-1c68f4",
+      "kind": "php-html",
+      "line": 6,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-html",
+          "line": 6,
+          "source": "themes/bridge-text-theme/footer.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/footer.php",
+      "target": "dictionary:ui-strings",
+      "value": "Follow us"
+    },
+    {
+      "context": "js",
+      "decision": "include",
+      "id": "6c9d599d0c552cdb38ed",
+      "key": "ui.js.thanks-for-subscribing-50cb4d",
+      "kind": "js",
+      "line": 2,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "js",
+          "line": 2,
+          "source": "themes/bridge-text-theme/assets/app.js"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/assets/app.js",
+      "target": "dictionary:ui-strings",
+      "value": "Thanks for subscribing!"
+    },
+    {
+      "context": "footer>h2",
+      "decision": "exclude",
+      "id": "6fbd4fdb6334dce02ede",
+      "key": "ui.footer-h2.find-us-f07e6f",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "6954217ba22a70983a97"
+      ],
+      "source": "render:home",
+      "value": "Find us"
+    },
+    {
+      "context": "header>h2",
+      "decision": "exclude",
+      "id": "76fd4779a30f70489900",
+      "key": "ui.header-h2.opening-hours-ca5c27",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "5919ebcb56f327d5ae19",
+        "8fcce4f6b23f6a4d3a5f"
+      ],
+      "source": "render:home",
+      "value": "Opening hours"
+    },
+    {
+      "context": "main>p",
+      "decision": "exclude",
+      "id": "78a7bf0efb474c768652",
+      "key": "ui.main-p.as-a-new-wordpress-user-8e4398",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:page",
+      "value": "As a new WordPress user, you should go to"
+    },
+    {
+      "context": "main>p",
+      "decision": "exclude",
+      "id": "7a57eb5dcf82dd95f4c1",
+      "key": "ui.main-p.post-%c2%b7-post-12b379",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:home",
+      "value": "Post · Post"
+    },
+    {
+      "context": "p",
+      "decision": "exclude",
+      "id": "7e154b96e5592eeca674",
+      "key": "ui.p.%c2%b7-09fa83",
+      "kind": "php-html",
+      "line": 7,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-html",
+          "line": 7,
+          "source": "themes/bridge-text-theme/index.php"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "no-letters",
+      "source": "themes/bridge-text-theme/index.php",
+      "value": "·"
+    },
+    {
+      "context": "js",
+      "decision": "include",
+      "id": "7ffad10de4d3c9c79240",
+      "key": "ui.js.loading-your-table-ca55b2",
+      "kind": "js",
+      "line": 2,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "js",
+          "line": 2,
+          "source": "themes/bridge-text-theme/assets/app.js"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/assets/app.js",
+      "target": "dictionary:ui-strings",
+      "value": "Loading your table…"
+    },
+    {
+      "context": "main>h2",
+      "decision": "exclude",
+      "id": "816c089f8c8fc6e72d76",
+      "key": "ui.main-h2.book-a-table-today-f64b28",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "f77beef6be599158b21f"
+      ],
+      "source": "render:not-found",
+      "value": "Book a table today"
+    },
+    {
+      "context": "customizer:cta_label",
+      "decision": "include",
+      "id": "818ef3d3b6d688000a2c",
+      "key": "theme-settings.cta_label",
+      "kind": "customizer",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "customizer",
+          "line": 0,
+          "source": "theme_mods_bridge-text-theme#cta_label"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "theme_mods_bridge-text-theme#cta_label",
+      "target": "theme-settings.cta_label",
+      "value": "Book a table"
+    },
+    {
+      "context": "main>h1",
+      "decision": "exclude",
+      "id": "86d36f669a0ac5daa577",
+      "key": "ui.main-h1.seo-home-573ec7-85522e",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:home",
+      "value": "SEO Home 573ec7"
+    },
+    {
+      "context": "main>a",
+      "decision": "exclude",
+      "id": "89238e4c622158d5c040",
+      "key": "ui.main-a.read-more-0120ad",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:home",
+      "value": "Read more"
+    },
+    {
+      "context": "js",
+      "decision": "exclude",
+      "id": "8ad06c88f8dfd85faf90",
+      "key": "ui.js.https-example-org-api-v1-51e6d7",
+      "kind": "js",
+      "line": 5,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "js",
+          "line": 5,
+          "source": "themes/bridge-text-theme/assets/app.js"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "url",
+      "source": "themes/bridge-text-theme/assets/app.js",
+      "value": "https://example.org/api/v1"
+    },
+    {
+      "context": "widget:title",
+      "decision": "include",
+      "id": "8fcce4f6b23f6a4d3a5f",
+      "key": "widget.title.opening-hours-f1a5e2",
+      "kind": "widget",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "widget",
+          "line": 0,
+          "source": "widget_text#2"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "widget_text#2",
+      "target": "dictionary:ui-strings",
+      "value": "Opening hours"
+    },
+    {
+      "context": "gettext",
+      "decision": "exclude",
+      "id": "9a4dbc48a6fd8cad8840",
+      "key": "gettext.label-edf2fc",
+      "kind": "php-gettext",
+      "line": 19,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-gettext",
+          "line": 19,
+          "source": "themes/bridge-text-theme/functions.php"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "dynamic",
+      "source": "themes/bridge-text-theme/functions.php",
+      "value": "$label"
+    },
+    {
+      "context": "footer>h2",
+      "decision": "exclude",
+      "id": "9c3ce9b3edebd7e4d1be",
+      "key": "ui.footer-h2.opening-hours-e4f9a4",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "5919ebcb56f327d5ae19",
+        "8fcce4f6b23f6a4d3a5f"
+      ],
+      "source": "render:home",
+      "value": "Opening hours"
+    },
+    {
+      "context": "footer>p",
+      "decision": "exclude",
+      "id": "a0ff68dca79c62d45f84",
+      "key": "ui.footer-p.weekdays-from-nine-f2dbaa",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "dea1bfe26bcbe9983491"
+      ],
+      "source": "render:home",
+      "value": "Weekdays from nine"
+    },
+    {
+      "context": "footer>p",
+      "decision": "exclude",
+      "id": "a2b5956135edb1969788",
+      "key": "ui.footer-p.all-rights-reserved-2026-080309",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "c51bb16b2347aafe1d0b"
+      ],
+      "source": "render:home",
+      "value": "All rights reserved. 2026"
+    },
+    {
+      "context": "customizer:nav_menu_locations",
+      "decision": "exclude",
+      "id": "a3b863eab77f11d7b2ce",
+      "key": "theme-settings.nav_menu_locations",
+      "kind": "customizer",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "customizer",
+          "line": 0,
+          "source": "theme_mods_bridge-text-theme#nav_menu_locations"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "not-text",
+      "source": "theme_mods_bridge-text-theme#nav_menu_locations",
+      "value": ""
+    },
+    {
+      "context": "main>p",
+      "decision": "exclude",
+      "id": "a76438bfa17addb0dddf",
+      "key": "ui.main-p.try-a-search-instead-d70e9f",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "3d76d7e3304a0d4e5958"
+      ],
+      "source": "render:not-found",
+      "value": "Try a search instead."
+    },
+    {
+      "context": "footer>h3",
+      "decision": "exclude",
+      "id": "a7ad2e303ebdfb1d013b",
+      "key": "ui.footer-h3.opening-hours-c1ca20",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "5919ebcb56f327d5ae19",
+        "8fcce4f6b23f6a4d3a5f"
+      ],
+      "source": "render:home",
+      "value": "Opening hours"
+    },
+    {
+      "context": "js",
+      "decision": "exclude",
+      "id": "a922bb6070c0c70a28a1",
+      "key": "ui.js.data-toggle-72e562",
+      "kind": "js",
+      "line": 4,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "js",
+          "line": 4,
+          "source": "themes/bridge-text-theme/assets/app.js"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "code",
+      "source": "themes/bridge-text-theme/assets/app.js",
+      "value": "data-toggle"
+    },
+    {
+      "context": "nav>a",
+      "decision": "exclude",
+      "id": "a94178f176bc08de1d84",
+      "key": "ui.nav-a.our-menu-154327",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:home",
+      "value": "Our menu"
+    },
+    {
+      "context": "gettext",
+      "decision": "include",
+      "id": "ab18dc778c66813f5b75",
+      "key": "gettext.footer-widgets-0a1a5a",
+      "kind": "php-gettext",
+      "line": 8,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-gettext",
+          "line": 8,
+          "source": "themes/bridge-text-theme/functions.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/functions.php",
+      "target": "dictionary:ui-strings",
+      "value": "Footer widgets"
+    },
+    {
+      "context": "gettext",
+      "decision": "include",
+      "id": "b7dff7d3a71f5fcbc2c4",
+      "key": "gettext.one-guest-279b12",
+      "kind": "php-gettext",
+      "line": 23,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-gettext",
+          "line": 23,
+          "source": "themes/bridge-text-theme/functions.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/functions.php",
+      "target": "dictionary:ui-strings",
+      "value": "One guest"
+    },
+    {
+      "context": "main>p",
+      "decision": "exclude",
+      "id": "c07a3995d639122dee39",
+      "key": "ui.main-p.nothing-matched-your-search-6717db",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "4643f0b8785b8c96343d"
+      ],
+      "source": "render:search",
+      "value": "Nothing matched your search."
+    },
+    {
+      "context": "a",
+      "decision": "exclude",
+      "id": "c16df911792683374e9a",
+      "key": "ui.a.skip-to-content-9dfc9d",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "f5f97d09f9f0e849891f"
+      ],
+      "source": "render:home",
+      "value": "Skip to content"
+    },
+    {
+      "context": "gettext",
+      "decision": "include",
+      "id": "c51bb16b2347aafe1d0b",
+      "key": "gettext.all-rights-reserved-1e6db7",
+      "kind": "php-gettext",
+      "line": 7,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-gettext",
+          "line": 7,
+          "source": "themes/bridge-text-theme/footer.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/footer.php",
+      "target": "dictionary:ui-strings",
+      "value": "All rights reserved."
+    },
+    {
+      "context": "js",
+      "decision": "exclude",
+      "id": "c7b1926e20ff16a89b8e",
+      "key": "ui.js.redacted-78da3b",
+      "kind": "js",
+      "line": 6,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "js",
+          "line": 6,
+          "source": "themes/bridge-text-theme/assets/app.js"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "secret",
+      "source": "themes/bridge-text-theme/assets/app.js",
+      "value": "[redacted]"
+    },
+    {
+      "context": "header>button",
+      "decision": "exclude",
+      "id": "cdb4c70173cde3097f98",
+      "key": "ui.header-button.menu-d3d9ea",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "e41bc849f65ec517dfab"
+      ],
+      "source": "render:home",
+      "value": "Menu"
+    },
+    {
+      "context": "form>label",
+      "decision": "exclude",
+      "id": "ceba7bc5ef3dace79c9e",
+      "key": "ui.form-label.search-the-menu-01bd35",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "3d0fbc8a92869903fbb6"
+      ],
+      "source": "render:home",
+      "value": "Search the menu"
+    },
+    {
+      "context": "main>h1",
+      "decision": "exclude",
+      "id": "d0d8d16408b76e950360",
+      "key": "ui.main-h1.sample-page-363ff3",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:page",
+      "value": "Sample Page"
+    },
+    {
+      "context": "main>p",
+      "decision": "exclude",
+      "id": "d22760f719ecde442170",
+      "key": "ui.main-p.to-delete-this-page-and-65b58b",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:page",
+      "value": "to delete this page and create new pages for your content. Have fun!"
+    },
+    {
+      "context": "gettext",
+      "decision": "include",
+      "id": "d280bfb37395f62e534d",
+      "key": "gettext.book-now-538339",
+      "kind": "php-gettext",
+      "line": 12,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-gettext",
+          "line": 12,
+          "source": "themes/bridge-text-theme/functions.php"
+        },
+        {
+          "kind": "php-gettext",
+          "line": 10,
+          "source": "themes/bridge-text-theme/header.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/functions.php",
+      "target": "dictionary:ui-strings",
+      "value": "Book now"
+    },
+    {
+      "context": "a",
+      "decision": "exclude",
+      "id": "dcf85abcb9578fd08459",
+      "key": "ui.a.https-example-org-privacy-63bf35",
+      "kind": "php-html",
+      "line": 8,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-html",
+          "line": 8,
+          "source": "themes/bridge-text-theme/footer.php"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "url",
+      "source": "themes/bridge-text-theme/footer.php",
+      "value": "https://example.org/privacy"
+    },
+    {
+      "context": "widget:p",
+      "decision": "include",
+      "id": "dea1bfe26bcbe9983491",
+      "key": "widget.p.weekdays-from-nine-dcc271",
+      "kind": "widget",
+      "line": 1,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "widget",
+          "line": 1,
+          "source": "widget_text#2"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "widget_text#2",
+      "target": "dictionary:ui-strings",
+      "value": "Weekdays from nine"
+    },
+    {
+      "context": "gettext",
+      "decision": "include",
+      "id": "e384da192d861529abb9",
+      "key": "gettext.made-with-wordpress-f5e38e",
+      "kind": "php-gettext",
+      "line": 5,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-gettext",
+          "line": 5,
+          "source": "themes/bridge-text-theme/footer.php"
+        },
+        {
+          "kind": "php-gettext",
+          "line": 11,
+          "source": "themes/bridge-text-theme/functions.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/footer.php",
+      "target": "dictionary:ui-strings",
+      "value": "Made with WordPress"
+    },
+    {
+      "context": "button",
+      "decision": "include",
+      "id": "e41bc849f65ec517dfab",
+      "key": "ui.button.menu-85234d",
+      "kind": "php-html",
+      "line": 9,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-html",
+          "line": 9,
+          "source": "themes/bridge-text-theme/header.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/header.php",
+      "target": "dictionary:ui-strings",
+      "value": "Menu"
+    },
+    {
+      "context": "option:blogdescription",
+      "decision": "include",
+      "id": "e69bc8583b936fa2842f",
+      "key": "option.blogdescription.fresh-food-told-simply-ed39a1",
+      "kind": "option",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "option",
+          "line": 0,
+          "source": "blogdescription"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "blogdescription",
+      "target": "site.description",
+      "value": "Fresh food, told simply"
+    },
+    {
+      "context": "form>button",
+      "decision": "exclude",
+      "id": "e6e4343f94f29b55b8a2",
+      "key": "ui.form-button.read-more-d57a53",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "40342d4c9e4dfe365e53",
+        "fa7afc59c0c7953844c7"
+      ],
+      "source": "render:home",
+      "value": "Read more"
+    },
+    {
+      "context": "footer>p",
+      "decision": "exclude",
+      "id": "e74ae0022a0358e3ff15",
+      "key": "ui.footer-p.crafted-with-care-in-istanbul-f3ed00",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "rendered-from-source",
+      "related": [
+        "1f0cc3bfa414fdadc37d"
+      ],
+      "source": "render:home",
+      "value": "Crafted with care in Istanbul"
+    },
+    {
+      "context": "form>input@value",
+      "decision": "include",
+      "id": "ec2be0beec583f9e57ab",
+      "key": "ui.form-input-value.search-219b3d",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "render:not-found",
+      "target": "dictionary:ui-strings",
+      "value": "Search"
+    },
+    {
+      "context": "gettext:plural",
+      "decision": "include",
+      "id": "ec6eaee8df36a4f6ff34",
+      "key": "gettext.plural.s-guests-320479",
+      "kind": "php-gettext",
+      "line": 23,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-gettext",
+          "line": 23,
+          "source": "themes/bridge-text-theme/functions.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/functions.php",
+      "target": "dictionary:ui-strings",
+      "value": "%s guests"
+    },
+    {
+      "context": "main>h1",
+      "decision": "exclude",
+      "id": "ef4860c6074fc8a20e0a",
+      "key": "ui.main-h1.hello-world-3a0d3b",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:single",
+      "value": "Hello world!"
+    },
+    {
+      "context": "main>a",
+      "decision": "exclude",
+      "id": "f3398b735d16a5395c23",
+      "key": "ui.main-a.your-dashboard-74c5b1",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:page",
+      "value": "your dashboard"
+    },
+    {
+      "context": "input@value",
+      "decision": "include",
+      "id": "f44f039ecc83ce2cf560",
+      "key": "ui.input-value.find-8bc088",
+      "kind": "php-html",
+      "line": 14,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-html",
+          "line": 14,
+          "source": "themes/bridge-text-theme/header.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/header.php",
+      "target": "dictionary:ui-strings",
+      "value": "Find"
+    },
+    {
+      "context": "js",
+      "decision": "exclude",
+      "id": "f5f090ad9195c1c09a91",
+      "key": "ui.js.menu-toggle-40d88b",
+      "kind": "js",
+      "line": 3,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "js",
+          "line": 3,
+          "source": "themes/bridge-text-theme/assets/app.js"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "code",
+      "source": "themes/bridge-text-theme/assets/app.js",
+      "value": ".menu-toggle"
+    },
+    {
+      "context": "gettext",
+      "decision": "include",
+      "id": "f5f97d09f9f0e849891f",
+      "key": "gettext.skip-to-content-feef56",
+      "kind": "php-gettext",
+      "line": 5,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-gettext",
+          "line": 5,
+          "source": "themes/bridge-text-theme/header.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/header.php",
+      "target": "dictionary:ui-strings",
+      "value": "Skip to content"
+    },
+    {
+      "context": "h2",
+      "decision": "include",
+      "id": "f77beef6be599158b21f",
+      "key": "ui.h2.book-a-table-today-2bbf4e",
+      "kind": "html",
+      "line": 1,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "html",
+          "line": 1,
+          "source": "themes/bridge-text-theme/parts/cta.html"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/parts/cta.html",
+      "target": "dictionary:ui-strings",
+      "value": "Book a table today"
+    },
+    {
+      "context": "option:blogname",
+      "decision": "include",
+      "id": "f85f4cf0057344b0c2b7",
+      "key": "option.blogname.bridge-acceptance-e530d6",
+      "kind": "option",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "option",
+          "line": 0,
+          "source": "blogname"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "blogname",
+      "target": "site.title",
+      "value": "Bridge Acceptance"
+    },
+    {
+      "context": "button",
+      "decision": "include",
+      "id": "fa7afc59c0c7953844c7",
+      "key": "ui.button.read-more-8200a4",
+      "kind": "php-html",
+      "line": 12,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "php-html",
+          "line": 12,
+          "source": "themes/bridge-text-theme/index.php"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "themes/bridge-text-theme/index.php",
+      "target": "dictionary:ui-strings",
+      "value": "Read more"
+    },
+    {
+      "context": "nav>a",
+      "decision": "exclude",
+      "id": "fae782f13336783b1b27",
+      "key": "ui.nav-a.contact-a6be0a",
+      "kind": "render",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:home"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:not-found"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:page"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:search"
+        },
+        {
+          "kind": "render",
+          "line": 0,
+          "source": "render:single"
+        }
+      ],
+      "outcome": "exclude",
+      "reason": "content",
+      "source": "render:home",
+      "value": "Contact"
+    },
+    {
+      "context": "menu",
+      "decision": "include",
+      "id": "fd57fb7d7124678cc81b",
+      "key": "menu.our-menu-5f7076",
+      "kind": "menu",
+      "line": 0,
+      "locale": "en-us",
+      "occurrences": [
+        {
+          "kind": "menu",
+          "line": 0,
+          "source": "nav_menu_item#49"
+        }
+      ],
+      "outcome": "transfer",
+      "source": "nav_menu_item#49",
+      "target": "content:wp-menu-items",
+      "value": "Our menu"
+    }
+  ],
+  "errors": [
+    {
+      "reason": "source-over-2MiB",
+      "source": "themes/bridge-text-theme/assets/huge.js"
+    },
+    {
+      "reason": "render-fetch-failed: http_request_failed",
+      "source": "render:unreachable"
+    }
+  ],
+  "format": "contentrain-bridge-hardcoded-text@1",
+  "totals": {
+    "by_outcome": {
+      "error": 2,
+      "exclude": 56,
+      "transfer": 40
+    },
+    "candidates": 96,
+    "occurrences": 201,
+    "occurrences_listed": 201,
+    "sources": {
+      "files": 9,
+      "render_states": 6,
+      "settings": 1
+    },
+    "unlisted_by_reason": {},
+    "unlisted_excluded": 0
+  }
+}

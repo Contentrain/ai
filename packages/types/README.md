@@ -336,11 +336,12 @@ Shared shapes for the WordPress → static-site migration pipeline. They exist h
 
 All are plain JSON (snake_case keys), stamped with `MIGRATION_CONTRACT_VERSION`.
 
-`RawIR` also carries three optional parts from the bridge rung:
+`RawIR` also carries four optional parts from the bridge rung:
 
 - **`seo`** (`RawSeo`) holds which plugin serves the head (`serving`: `yoast` / `rank_math` / `aioseo` / `wordpress-core`), each provider's status and settings, and each page's values keyed by `post:<id>` or `term:<taxonomy>:<id>`. `status: 'none'` is an answer, not a missing export: no SEO plugin, and WordPress core renders only the title. `resolved: true` marks values the running plugin rendered; `false` marks stored values and templates only. `robots_served` is what the page actually carries after WordPress core and the plugin reconcile it.
 - **`routing`** (`RawRouting`) states the URL rules that `RawPost.link` holds as facts: permalink structure, bases, the front and posts pages, and each post type's and taxonomy's permastruct, with `with_front` applied.
 - **`redirects_excluded`** (`RawRedirectExcluded`) lists every rule a source holds that the site does not serve as a plain redirect, with the reason (`disabled`, `source-inactive`, `conditional-match:*`, `not-a-redirect:*`, …). Served plus excluded accounts for the whole table.
+- **`hardcoded_text`** (`RawHardcodedText`) accounts for the interface text outside the content tables — theme templates, scripts, widgets, menus, options, Customizer mods and rendered pages. Each `RawTextCandidate` has one outcome: `transfer` to a `target` (`dictionary:ui-strings`, `theme-settings.<mod>`, `site.title`, `site.description`, `content:wp-menu-items`) or `exclude` with a `reason` (`TEXT_EXCLUDE_REASONS`); a source that could not be read is listed in `errors`. Candidates merge only when text, locale and context are equal, and `key` depends on text and context only. Page text that also appears in source is `rendered-from-source` with `related` pointing at the source candidate, so the same words never land twice. `totals` closes: transfer + exclude = candidates, and error = `errors.length`.
 
 `RawRedirect` gains `id`, `match` and `regex`. Only `match: 'url'` without `regex` is a one-to-one mapping. A consumer that writes a regex or prefix rule as a literal `from` produces the wrong redirect.
 

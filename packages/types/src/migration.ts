@@ -394,6 +394,139 @@ export interface RawRouting {
   }[]
 }
 
+// ─── Hardcoded text ───
+//
+// Interface text that lives outside the content tables — theme templates,
+// scripts, widgets, menus, options, Customizer mods, and what the rendered
+// pages show. Every piece found gets exactly one outcome: transferred to a
+// named target, excluded with a reason, or — for a source that could not be
+// read — an error. Nothing is dropped silently.
+
+/** Where a candidate was found. */
+export const TEXT_CANDIDATE_KINDS = [
+  'php-gettext',
+  'php-html',
+  'php-echo',
+  'html',
+  'js',
+  'widget',
+  'menu',
+  'option',
+  'customizer',
+  'render',
+] as const
+
+export type RawTextCandidateKind = (typeof TEXT_CANDIDATE_KINDS)[number]
+
+/** Why a candidate is not transferred. `RawTextCandidate.reason` joins one or more with `,`. */
+export const TEXT_EXCLUDE_REASONS = [
+  'empty',
+  'too-long',
+  'secret',
+  'code',
+  'url',
+  'number',
+  'no-letters',
+  'placeholder-only',
+  'dynamic',
+  'not-text',
+  'content',
+  'rendered-from-source',
+] as const
+
+export type RawTextExcludeReason = (typeof TEXT_EXCLUDE_REASONS)[number]
+
+/** Where a transferred candidate lands in the store. */
+export type RawTextTarget =
+  | 'dictionary:ui-strings'
+  | `theme-settings.${string}`
+  | 'site.title'
+  | 'site.description'
+  | 'content:wp-menu-items'
+
+/** One place a candidate's text was found. */
+export interface RawTextOccurrence {
+  kind: RawTextCandidateKind
+  /** A file path relative to `wp-content`, `render:<state>`, `nav_menu_item#<id>`, … */
+  source: string
+  /** 1-based line in a file; `0` for a source without lines (render, menu, option). */
+  line: number
+}
+
+/**
+ * One piece of interface text in one place. Candidates merge only when text,
+ * locale and context are all equal: "Read more" in an `a` and in a `button`
+ * are two candidates, and so are `_x('Post', 'noun')` and `_x('Post', 'verb')`.
+ */
+export interface RawTextCandidate {
+  /** `sha256(text \0 locale \0 context)`, first 20 hex characters. */
+  id: string
+  /** The text; `[redacted]` when `reason` includes `secret`. */
+  value: string
+  locale: string
+  /**
+   * Where the text sits: an HTML tag (`a`, `input@placeholder`),
+   * `gettext[:<ctx>][:plural]`, `js`, `widget:<tag>` / `widget:title`, `menu`,
+   * `option:<name>`, `customizer:<mod>`, or for rendered text
+   * `<landmark>><tag>` (`footer>p`, `nav>nav@aria-label`).
+   */
+  context: string
+  kind: RawTextCandidateKind
+  /** The first occurrence's `source` and `line`. */
+  source: string
+  line: number
+  /** Every place the text was found, in the producer's listing order. */
+  occurrences: RawTextOccurrence[]
+  outcome: 'transfer' | 'exclude'
+  /** Set exactly when `outcome` is `transfer`. */
+  target?: RawTextTarget
+  /** Set exactly when `outcome` is `exclude`: one or more `RawTextExcludeReason`s joined with `,`. */
+  reason?: string
+  /**
+   * With `rendered-from-source`: ids of the source candidates this page text
+   * came from. Page text found in source is excluded here and transferred
+   * there, so the same words never land twice and contexts are not merged.
+   */
+  related?: string[]
+  /**
+   * The store key: `<group>.<context>.<words>-<sha256(text \0 context)[0:6]>`,
+   * or `theme-settings.<mod>` for a Customizer value. A function of text and
+   * context only — moving a string to another file changes no key. A
+   * collision fails the export rather than merging two texts.
+   */
+  key: string
+  decision: 'review' | 'include' | 'exclude'
+}
+
+/**
+ * Every piece of interface text a site shows, each with one outcome. Totals
+ * close: `by_outcome.transfer + by_outcome.exclude = candidates`,
+ * `by_outcome.error = errors.length`, and `occurrences` counts every
+ * occurrence the scanners found — listed ones plus those past the per-file
+ * listing cap, which are counted by reason instead.
+ */
+export interface RawHardcodedText {
+  /** Producer's format identifier, e.g. `contentrain-bridge-hardcoded-text@1`. */
+  format: string
+  candidates: RawTextCandidate[]
+  /**
+   * Sources that could not be read — an outcome, not a silent gap. Reasons:
+   * `source-over-2MiB`, `source-unreadable`, `render-fetch-failed: <code>`,
+   * `render-http-<status>`, `render-no-body`.
+   */
+  errors: { source: string, reason: string }[]
+  totals: {
+    occurrences: number
+    occurrences_listed: number
+    /** Occurrences past the listing cap: excluded and counted, not listed. */
+    unlisted_excluded: number
+    unlisted_by_reason: Record<string, number>
+    candidates: number
+    by_outcome: { transfer: number, exclude: number, error: number }
+    sources: { files: number, settings: number, render_states: number }
+  }
+}
+
 /**
  * Translation grouping for multilingual sites. The REST rungs read it from
  * Polylang's `translations` / WPML's `wpml_translations` post fields, WXR from
@@ -426,6 +559,8 @@ export interface RawIR {
   redirects_excluded?: RawRedirectExcluded[]
   seo?: RawSeo
   routing?: RawRouting
+  /** Interface text outside the content tables, each piece with one outcome. */
+  hardcoded_text?: RawHardcodedText
   language_pairs?: RawLanguagePair[]
   /** Site options (bridge rung), verbatim. */
   options?: Record<string, unknown>
