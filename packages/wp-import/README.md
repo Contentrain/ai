@@ -55,6 +55,17 @@ stay per-store; the `language` / `post_translations` bookkeeping taxonomies
 never become models. `report.locales` and `report.translation_groups` say
 what happened. A monolingual site is unchanged (`i18n: false`, `data.json`).
 
+Few sites are translated evenly. A post type whose content exists in some of the
+site's languages gets `model.locales` — the locales it actually has posts in,
+with the default locale always included, since a post that carries no language
+tag belongs to it and its absence would be the importer's uncertainty rather
+than a fact about the site. A type translated into every locale gets no
+`locales` key at all: absent already means "all", and a redundant list would
+have to be maintained as locales are added. `contentrain validate` checks
+parity against that subset, so pages that only ever existed in one language
+stop failing as missing translations. See
+[Locale Coverage](https://ai.contentrain.io/reference/model-kinds#locale-coverage).
+
 ## REST limits and completeness
 
 `fetchRestRawIR` accepts `concurrency` (default 4), `maxPages` (optional cap per

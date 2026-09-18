@@ -274,6 +274,56 @@ describe('comments export', () => {
     expect(result.report.models.posts!.entries).toBe(2)
   })
 
+  it('a partially-translated site declares each model\'s real locale coverage', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const hello = raw.posts.find((p) => p.id === 10)!
+    // Posts exist in all three site languages; pages only in the default one,
+    // and a CPT only in en + da. That is the shape `model.locales` exists for:
+    // without it, every untranslated page is a hard parity error downstream.
+    const posts = [
+      { ...hello, id: 10, lang: 'en' },
+      { ...hello, id: 20, slug: 'merhaba', title: 'Merhaba', lang: 'tr', terms: [] },
+      { ...hello, id: 30, slug: 'hej', title: 'Hej', lang: 'da', terms: [] },
+      { ...raw.posts.find((p) => p.id === 11)!, lang: 'en' },
+      { ...hello, id: 40, type: 'product', slug: 'widget', title: 'Widget', lang: 'en', terms: [] },
+      { ...hello, id: 41, type: 'product', slug: 'widget-da', title: 'Widget DA', lang: 'da', terms: [] },
+    ]
+    const result = rawToContentrain({ ...raw, posts, comments: [], language_pairs: [
+      { post: 10, translations: { en: 10, tr: 20, da: 30 } },
+      { post: 40, translations: { en: 40, da: 41 } },
+    ] }, { updatedBy: 'test' })
+
+    const config = JSON.parse(result.files['.contentrain/config.json']!)
+    expect(config.locales).toEqual({ default: 'en', supported: ['en', 'da', 'tr'] })
+
+    // Fully translated → no `locales` key at all; absent already means "all".
+    const postsModel = JSON.parse(result.files['.contentrain/models/posts.json']!)
+    expect(postsModel.i18n).toBe(true)
+    expect('locales' in postsModel).toBe(false)
+
+    // Untranslated → the default locale alone, and it is still an i18n model.
+    const pagesModel = JSON.parse(result.files['.contentrain/models/pages.json']!)
+    expect(pagesModel.i18n).toBe(true)
+    expect(pagesModel.locales).toEqual(['en'])
+
+    // Partially translated → exactly the locales with content, in config order.
+    const productModel = JSON.parse(result.files['.contentrain/models/product.json']!)
+    expect(productModel.locales).toEqual(['en', 'da'])
+    expect(result.files['.contentrain/content/custom/product/en.json']).toBeDefined()
+    expect(result.files['.contentrain/content/custom/product/da.json']).toBeDefined()
+    expect(result.files['.contentrain/content/custom/product/tr.json']).toBeUndefined()
+
+    // Non-i18n models are untouched: they have one locale-agnostic copy.
+    expect('locales' in JSON.parse(result.files['.contentrain/models/media.json']!)).toBe(false)
+  })
+
+  it('a monolingual site writes no locales field — every model already covers the one locale', async () => {
+    const { result } = await load()
+    for (const id of ['posts', 'pages', 'media', 'categories']) {
+      expect('locales' in JSON.parse(result.files[`.contentrain/models/${id}.json`]!), id).toBe(false)
+    }
+  })
+
   it('preserves separate translation groups with the same canonical slug, including their shared locale', async () => {
     const { raw } = await parseWxr(FIXTURE)
     const base = raw.posts[0]!
