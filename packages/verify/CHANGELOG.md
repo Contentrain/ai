@@ -1,5 +1,16 @@
 # @contentrain/verify
 
+## 0.3.0
+
+### Minor Changes
+
+- 9f103c4: New check, `status.baseline-page-missing` (error): a page the baseline answered with 2xx that the build does not serve, and no redirect rule covers. `status.mismatch` walks the build's own documents, so a page the migration never produced was compared against nothing and reported by nothing, while every link and search result pointing at it ended on a 404. The check walks the baseline instead. It runs for a build (`input.build`) only — a set of captured pages may simply not include one — and otherwise names itself in `report.skipped`. Baseline redirects and errors are not pages and do not count, nor does the old site's 404 page.
+
+### Patch Changes
+
+- 920e777: `indexing.noindex` and `identity.canonical-mismatch` read the baseline. A page the old site already kept out of search, or already canonicalized to the same target (for example a syndicated post pointing at its original), was the source's decision, and it was reported as a migration error whatever the baseline said. These are now reported as `info` with the message "… as on the baseline — kept". A noindex or a foreign canonical that the old page did not have is still an error, and so is every case without a baseline. In-site canonicals are compared by path, so the same decision carries over from the old origin to the new one.
+- c3c0cc4: `loadSiteDirectory` follows a sitemap index to the sitemaps it names. It used to keep whichever `sitemap*.xml` sorted last — with `@astrojs/sitemap` output, the index — and read its entries as pages, so every page was reported missing from the sitemap and every child sitemap as stale. A named sitemap the build does not serve is now a stale entry. A bare index passed to `verify` directly skips the membership checks and says so in `report.skipped`.
+
 ## 0.2.0
 
 ### Minor Changes
