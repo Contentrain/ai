@@ -1,6 +1,6 @@
 {
   "name": "contentrain",
-  "version": "0.13.4",
+  "version": "0.13.5",
   "license": "MIT",
   "description": "CLI for Contentrain — AI content governance infrastructure",
   "type": "module",
