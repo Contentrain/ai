@@ -1,0 +1,32 @@
+{
+  "3ac02cf4daa0": {
+    "description": "",
+    "name": "Uncategorized",
+    "source_slug": "uncategorized",
+    "wp_id": 1
+  },
+  "67500e1bb91e": {
+    "description": "",
+    "name": "Uncategorized",
+    "source_slug": "uncategorized-da",
+    "wp_id": 8
+  },
+  "ab58d49a5c9f": {
+    "description": "",
+    "name": "SEO Topic 8605a1",
+    "source_slug": "seo-topic-8605a1",
+    "wp_id": 16
+  },
+  "cca32f7d4bcc": {
+    "description": "",
+    "name": "Bridge fixture category",
+    "source_slug": "bridge-fixture-category",
+    "wp_id": 2
+  },
+  "fd4ec984e0ca": {
+    "description": "",
+    "name": "Delta category b07e7a",
+    "source_slug": "delta-cat-b07e7a",
+    "wp_id": 17
+  }
+}

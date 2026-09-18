@@ -1,0 +1,22 @@
+{
+  "1c7a9e80e6ba": {
+    "name": "0",
+    "position": 0,
+    "text": "noindex"
+  },
+  "2293b1ad1a42": {
+    "name": "headline",
+    "position": 1,
+    "text": "%seo_title%"
+  },
+  "b0623f12745b": {
+    "name": "@type",
+    "position": 0,
+    "text": "BlogPosting"
+  },
+  "bc0c179e61af": {
+    "name": "1",
+    "position": 1,
+    "text": "nofollow"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "id": "wp-media",
+  "name": "Media",
+  "kind": "collection",
+  "domain": "assets",
+  "i18n": false,
+  "title_field": "title",
+  "fields": {
+    "alt": {
+      "type": "text"
+    },
+    "caption": {
+      "type": "richtext"
+    },
+    "description": {
+      "type": "richtext"
+    },
+    "file": {
+      "type": "file"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    },
+    "url": {
+      "type": "url"
+    },
+    "wp_id": {
+      "type": "integer"
+    }
+  }
+}

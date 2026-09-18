@@ -1,0 +1,51 @@
+{
+  "id": "wp-menu-items",
+  "name": "Navigation links",
+  "kind": "collection",
+  "domain": "site",
+  "i18n": false,
+  "title_field": "title",
+  "fields": {
+    "classes": {
+      "type": "text"
+    },
+    "location": {
+      "type": "string"
+    },
+    "menu": {
+      "type": "string"
+    },
+    "parent": {
+      "model": "wp-menu-items",
+      "type": "relation"
+    },
+    "position": {
+      "type": "integer"
+    },
+    "target_kind": {
+      "type": "string"
+    },
+    "target_post_type": {
+      "type": "string"
+    },
+    "target_resolved": {
+      "type": "boolean"
+    },
+    "target_slug": {
+      "type": "string"
+    },
+    "target_taxonomy": {
+      "type": "string"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    },
+    "url": {
+      "type": "url"
+    },
+    "window_target": {
+      "type": "string"
+    }
+  }
+}

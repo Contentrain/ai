@@ -1,0 +1,17 @@
+{
+  "id": "wp-authors",
+  "name": "Authors",
+  "kind": "collection",
+  "domain": "blog",
+  "i18n": false,
+  "title_field": "name",
+  "fields": {
+    "name": {
+      "required": true,
+      "type": "string"
+    },
+    "wp_id": {
+      "type": "integer"
+    }
+  }
+}

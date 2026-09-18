@@ -1,0 +1,30 @@
+{
+  "id": "wp-structured-values",
+  "name": "Structured fields",
+  "kind": "collection",
+  "domain": "site",
+  "i18n": false,
+  "title_field": "name",
+  "fields": {
+    "boolean": {
+      "type": "boolean"
+    },
+    "children": {
+      "model": "wp-structured-values",
+      "type": "relations"
+    },
+    "name": {
+      "required": true,
+      "type": "string"
+    },
+    "number": {
+      "type": "number"
+    },
+    "position": {
+      "type": "integer"
+    },
+    "text": {
+      "type": "text"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "wp-tax-category",
+  "name": "category",
+  "kind": "collection",
+  "domain": "site",
+  "i18n": false,
+  "title_field": "name",
+  "fields": {
+    "description": {
+      "type": "richtext"
+    },
+    "name": {
+      "required": true,
+      "type": "string"
+    },
+    "source_slug": {
+      "type": "string"
+    },
+    "wp_id": {
+      "type": "integer"
+    }
+  }
+}
