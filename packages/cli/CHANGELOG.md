@@ -1,5 +1,29 @@
 # contentrain
 
+## 0.14.0
+
+### Minor Changes
+
+- d09cb72: New `contentrain delta <delta.json> --incoming <dir> --dry-run`: plans a WordPress source delta against the store, and prints a report or, with `--json`, the planned `SourceDeltaPlan`. The plan covers placement, field changes, conflicts with repository edits, tombstones and redirects. There is no apply mode. Without `--dry-run` the command refuses, because applying a plan goes through review.
+
+### Patch Changes
+
+- Updated dependencies [8e0331f]
+- Updated dependencies [568a319]
+- Updated dependencies [39a1de7]
+- Updated dependencies [8e0331f]
+- Updated dependencies [d44e030]
+- Updated dependencies [d09cb72]
+- Updated dependencies [ff9095e]
+- Updated dependencies [8e0331f]
+- Updated dependencies [d09cb72]
+  - @contentrain/mcp@3.5.0
+  - @contentrain/types@1.18.0
+  - @contentrain/wp-import@0.5.0
+  - @contentrain/rules@0.7.2
+  - @contentrain/skills@0.9.4
+  - @contentrain/query@7.3.6
+
 ## 0.13.5
 
 ### Patch Changes

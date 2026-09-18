@@ -1,5 +1,35 @@
 # @contentrain/wp-import
 
+## 0.5.0
+
+### Minor Changes
+
+- 8e0331f: `rawToContentrain` writes `model.locales` for a partially-translated site: each post type declares the locales it actually has content in, so `contentrain validate` checks parity against that subset instead of the whole project list. Pages that only ever existed in one language stop being hard errors.
+
+  The project's default locale is always included — a post carrying no language tag belongs to it, so its absence would be the importer's uncertainty rather than a fact about the site. A post type translated into every locale gets no `locales` key at all: absent already means "all", and a redundant list would have to be maintained as locales are added. A monolingual site is unchanged.
+
+  No new report is produced here; this only sets `model.locales` correctly.
+
+- d09cb72: `planSourceDelta` places a bridge's `SourceDeltaPlan` in the repository's store.
+
+  - Every record gets its model, entry id and locale. Post-type records are placed through the `EntrySourceMap`; terms and media by `wp_id` in their own model, never through the post map. A record that cannot be placed gets `unmapped` with a reason.
+  - `updated` and `moved` records get `fields_changed` against the incoming export.
+  - Every changed address adds a 301 to `redirects`.
+  - `deleted` stays a tombstone, with trashed and purged kept apart.
+  - A record the repository also edited since the import gets `conflict: true` and the edit's `repo_edit`; it is never overwritten.
+
+  The planner is pure and plan-only. `formatSourceDeltaReport` prints the plan for a dry run.
+
+### Patch Changes
+
+- Updated dependencies [568a319]
+- Updated dependencies [39a1de7]
+- Updated dependencies [8e0331f]
+- Updated dependencies [d44e030]
+- Updated dependencies [d09cb72]
+- Updated dependencies [ff9095e]
+  - @contentrain/types@1.18.0
+
 ## 0.4.6
 
 ### Patch Changes
