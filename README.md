@@ -185,6 +185,7 @@ See [`AGENTS.md`](AGENTS.md) for the full skill catalog and agent guidance.
 | [`@contentrain/wp-import`](packages/wp-import) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fwp-import)](https://www.npmjs.com/package/@contentrain/wp-import) | WordPress WXR / REST → `RawIR` → `.contentrain` store |
 | [`@contentrain/emitter-astro`](packages/emitter-astro) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Femitter-astro)](https://www.npmjs.com/package/@contentrain/emitter-astro) | `ProjectIR` → a complete Astro project |
 | [`@contentrain/verify`](packages/verify) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fverify)](https://www.npmjs.com/package/@contentrain/verify) | SEO, indexing, link and asset gates for a built site |
+| [`@contentrain/decide`](packages/decide) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fdecide)](https://www.npmjs.com/package/@contentrain/decide) | Typed decisions — rule first, then Jev — cached, budgeted, audited |
 
 ## Starter Templates
 

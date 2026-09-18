@@ -1,0 +1,61 @@
+{
+  "kind": "punch_item",
+  "version": "2",
+  "shape": "32da2187d1dc37d5",
+  "requested_model": "jev-latest",
+  "model": "jev-1.13.0",
+  "measured_at": "2026-09-18T20:40:22.837Z",
+  "set": {
+    "name": "PoC-1",
+    "items": 272,
+    "labelled": 40,
+    "sites": 22
+  },
+  "runs": 3,
+  "requests": 69,
+  "tokens": {
+    "input": 434958,
+    "output": 72745
+  },
+  "per_run": [
+    {
+      "class_match": 34,
+      "severity_within_1": 37,
+      "class_rate": 0.85,
+      "severity_within_1_rate": 0.925
+    },
+    {
+      "class_match": 35,
+      "severity_within_1": 37,
+      "class_rate": 0.875,
+      "severity_within_1_rate": 0.925
+    },
+    {
+      "class_match": 33,
+      "severity_within_1": 37,
+      "class_rate": 0.825,
+      "severity_within_1_rate": 0.925
+    }
+  ],
+  "stable": {
+    "labelled": {
+      "stable": 36,
+      "total": 40
+    },
+    "all": {
+      "stable": 237,
+      "total": 272
+    }
+  },
+  "gate": {
+    "thresholds": {
+      "median_class_rate": 0.85,
+      "median_severity_within_1_rate": 0.9,
+      "stable_rate": 0.85
+    },
+    "median_class_rate": 0.85,
+    "median_severity_within_1_rate": 0.925,
+    "stable_rate": 0.9,
+    "passed": true
+  }
+}

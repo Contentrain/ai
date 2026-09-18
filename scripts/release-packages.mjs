@@ -18,6 +18,7 @@ export const PUBLISHABLE_PACKAGES = [
   { name: '@contentrain/emitter-astro', dir: 'packages/emitter-astro', packageJson: 'packages/emitter-astro/package.json' },
   { name: '@contentrain/wp-import', dir: 'packages/wp-import', packageJson: 'packages/wp-import/package.json' },
   { name: '@contentrain/verify', dir: 'packages/verify', packageJson: 'packages/verify/package.json' },
+  { name: '@contentrain/decide', dir: 'packages/decide', packageJson: 'packages/decide/package.json' },
 ]
 
 export const PRIVATE_PACKAGE_JSONS = [

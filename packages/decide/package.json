@@ -1,0 +1,55 @@
+{
+  "name": "@contentrain/decide",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "Small typed decisions for migration and governance pipelines — rule first, then Jev, cached, budgeted and audited",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Contentrain/ai.git",
+    "directory": "packages/decide"
+  },
+  "homepage": "https://ai.contentrain.io",
+  "bugs": {
+    "url": "https://github.com/Contentrain/ai/issues"
+  },
+  "keywords": [
+    "contentrain",
+    "decision",
+    "classification",
+    "migration",
+    "jev",
+    "typesafe"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts",
+    "dev": "tsdown src/index.ts --format esm --dts --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "calibration:live": "node scripts/calibrate-live.mjs"
+  },
+  "dependencies": {
+    "@contentrain/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsdown": "^0.21.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,158 @@
+// ─── Jev provider (typesafe.ai systemone) ───
+//
+// The only network code in the package. Three rules hold here and nowhere
+// else needs to think about them:
+//   - The bearer token comes from the environment, read at the moment of each
+//     request and passed straight into the header. It is never stored on an
+//     object, returned, logged or put in an error message.
+//   - Requests go to one fixed endpoint. There is no base-URL option.
+//   - The request carries only what the kind's shaper and renderer produced.
+
+import { createHash } from 'node:crypto'
+import { canonicalStringify } from '@contentrain/types'
+import type { DecisionProvider, JevAnswer, JevQuestion, KindSpec, Outcome, ProviderAnswer } from './types.js'
+
+export const JEV_ENDPOINT = 'https://api.typesafe.ai/v1/systemone'
+export const JEV_TOKEN_ENV = 'CONTENTRAIN_JEW_API_TOKEN'
+export const DEFAULT_JEV_MODEL = 'jev-latest'
+
+export interface JevProviderOptions {
+  /** Where the token is read from. Default `process.env`. */
+  env?: Readonly<Record<string, string | undefined>>
+  /** Injected for tests and recorded replays. The URL it is called with is always `JEV_ENDPOINT`. */
+  fetch?: typeof globalThis.fetch
+  /** Per request. Default 15s. */
+  timeoutMs?: number
+  /** Default `jev-latest`. Part of the request shape: a different model is a different cache. */
+  model?: string
+}
+
+export class JevError extends Error {
+  constructor(message: string, readonly status: number | undefined, readonly timeout = false) {
+    super(message)
+    this.name = 'JevError'
+  }
+}
+
+/**
+ * The request one batch sends: the kind's header from the first item, then one
+ * `Item <n>: ` line per item; every item's questions keyed `item<n>_<suffix>`.
+ */
+export function buildJevRequest(spec: KindSpec<any, any>, shaped: readonly unknown[]): { state: string, questions: Record<string, JevQuestion> } {
+  const jev = spec.jev
+  if (!jev) throw new TypeError(`kind ${spec.kind} has no Jev prompt`)
+  const header = shaped.length && jev.header ? jev.header(shaped[0]) : ''
+  const lines = shaped.map((item, i) => `Item ${i + 1}: ${jev.render(item)}`)
+  const questions: Record<string, JevQuestion> = {}
+  shaped.forEach((_, i) => {
+    const prefix = `item${i + 1}`
+    for (const [suffix, question] of Object.entries(jev.questions(prefix))) questions[`${prefix}_${suffix}`] = question
+  })
+  return { state: header + lines.join('\n'), questions }
+}
+
+/**
+ * Hash of everything that shapes a kind's provider request: the model, the
+ * batch limits, whether items are grouped, and the request built from two
+ * copies of the kind's probe (header, line format, questions, criteria). A
+ * change to any of them changes the hash, and with it every cache key.
+ */
+export function requestShapeHash(spec: KindSpec<any, any>, model = DEFAULT_JEV_MODEL): string {
+  const jev = spec.jev
+  if (!jev) return 'none'
+  const shape = {
+    model,
+    batch: jev.batch ?? null,
+    grouped: Boolean(jev.group),
+    request: buildJevRequest(spec, [jev.probe, jev.probe]),
+  }
+  return createHash('sha256').update(canonicalStringify(shape)).digest('hex').slice(0, 16)
+}
+
+export function createJevProvider(options: JevProviderOptions = {}): DecisionProvider {
+  const env = options.env ?? process.env
+  const doFetch = options.fetch ?? globalThis.fetch
+  const timeoutMs = options.timeoutMs ?? 15_000
+  const model = options.model ?? DEFAULT_JEV_MODEL
+
+  return {
+    name: 'jev',
+    model,
+    available: () => Boolean(env[JEV_TOKEN_ENV]?.trim()),
+    async ask(spec, shaped) {
+      const token = env[JEV_TOKEN_ENV]?.trim()
+      if (!token) throw new JevError(`${JEV_TOKEN_ENV} is not set`, undefined)
+      const { state, questions } = buildJevRequest(spec, shaped)
+      let response: Response
+      try {
+        response = await doFetch(JEV_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ state, model, questions }),
+          signal: AbortSignal.timeout(timeoutMs),
+        })
+      }
+      catch (error) {
+        const name = (error as { name?: string }).name
+        if (name === 'TimeoutError' || name === 'AbortError') throw new JevError(`Jev did not answer within ${timeoutMs}ms`, undefined, true)
+        throw new JevError(`Jev request failed: ${redact(String((error as Error).message ?? error), token)}`, undefined)
+      }
+      const text = await response.text()
+      if (!response.ok) throw new JevError(`Jev answered HTTP ${response.status}: ${redact(text.slice(0, 200), token)}`, response.status)
+      let body: unknown
+      try {
+        body = JSON.parse(text)
+      }
+      catch {
+        throw new JevError('Jev answered with a body that is not JSON', response.status)
+      }
+      return readJevResponse(spec, shaped.length, body)
+    },
+  }
+}
+
+/** Per-item outcomes from a systemone response. An item whose answers are missing or malformed gets `undefined`. */
+export function readJevResponse(spec: KindSpec<any, any>, count: number, body: unknown): ProviderAnswer {
+  const jev = spec.jev!
+  const root = (body && typeof body === 'object' ? body : {}) as { answers?: unknown, usage?: unknown, model?: unknown }
+  const answers = (root.answers && typeof root.answers === 'object' ? root.answers : {}) as Record<string, unknown>
+  const outcomes: Array<Outcome | undefined> = []
+  for (let i = 1; i <= count; i++) {
+    const own: Record<string, JevAnswer> = {}
+    let complete = true
+    for (const suffix of Object.keys(jev.questions(`item${i}`))) {
+      const answer = readAnswer(answers[`item${i}_${suffix}`])
+      if (!answer) complete = false
+      else own[suffix] = answer
+    }
+    outcomes.push(complete ? jev.read(own) : undefined)
+  }
+  const usage = root.usage as { input_tokens?: unknown, output_tokens?: unknown } | undefined
+  return {
+    outcomes,
+    ...(usage && typeof usage.input_tokens === 'number' && typeof usage.output_tokens === 'number'
+      ? { usage: { input_tokens: usage.input_tokens, output_tokens: usage.output_tokens } }
+      : {}),
+    ...(typeof root.model === 'string' ? { model: root.model } : {}),
+  }
+}
+
+const isUnit = (value: unknown): value is number => typeof value === 'number' && value >= 0 && value <= 1
+
+function readAnswer(value: unknown): JevAnswer | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const answer = value as Record<string, unknown>
+  const probabilities = answer.probabilities && typeof answer.probabilities === 'object'
+    ? { probabilities: answer.probabilities as Record<string, number> }
+    : {}
+  if (answer.type === 'choice' && typeof answer.choice === 'string' && isUnit(answer.confidence))
+    return { type: 'choice', choice: answer.choice, confidence: answer.confidence, ...probabilities }
+  if (answer.type === 'score' && typeof answer.score === 'number' && Number.isFinite(answer.score) && isUnit(answer.confidence))
+    return { type: 'score', score: answer.score, confidence: answer.confidence, ...probabilities }
+  if (answer.type === 'noul' && isUnit(answer.noul)) return { type: 'noul', noul: answer.noul }
+  return undefined
+}
+
+function redact(text: string, token: string): string {
+  return text.split(token).join('[redacted]')
+}
