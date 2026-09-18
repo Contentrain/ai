@@ -517,6 +517,16 @@ Until a tool owns one, the behaviour is narrow and pinned by tests in
   their interiors — a field-level union on an approval policy would produce a
   policy nobody wrote.
 
+### SEO, routing and redirects in `RawIR`
+
+From the bridge rung, `RawIR` can carry three optional parts:
+
+- `seo` (`RawSeo`): the plugin that serves the head (`serving`), each provider's status and settings, and each page's title, description, canonical, robots, Open Graph, Twitter and JSON-LD values, keyed by `post:<id>` or `term:<taxonomy>:<id>`. `status: 'none'` means the site has no SEO plugin; it is not a missing export. `resolved: true` marks values the running plugin rendered, and `robots_served` is what the page actually carries.
+- `routing` (`RawRouting`): the permalink structure, bases, front and posts pages, and each post type's and taxonomy's permastruct.
+- `redirects_excluded` (`RawRedirectExcluded`): rules a source holds that the site does not serve as a plain redirect, each with its reason. Served plus excluded accounts for the source's whole table.
+
+`RawRedirect` gains `id`, `match` (`url` / `regex` / `start` / `contains` / `end`) and `regex`. Only `url` without `regex` is a one-to-one mapping. Writing a pattern rule as a literal `from` produces the wrong redirect.
+
 ::: tip Migration contracts
 The sibling family (`RawIR`, `ProjectIR`, `CapabilityManifest`,
 `MigrationHandoff`) is documented in the
