@@ -587,7 +587,7 @@ describe('two routes claiming one Astro page', () => {
 
   const content = {
     posts: [{ slug: 'hello', title: 'Hello', body: '<p>post</p>' }],
-    collections: { pages: [{ slug: 'about', title: 'About', body: '<p>page</p>' }] },
+    collections: { pages: [{ slug: 'hello', title: 'About', body: '<p>page</p>' }] },
   }
 
   const emitted = emitAstroProject({ ir: base, content })
@@ -666,5 +666,37 @@ describe('two routes claiming one Astro page', () => {
     expect(result.warnings.some((w) => w.includes('would be dropped'))).toBe(false)
     expect(result.files['src/pages/[...slug].astro']).toContain('import Layout')
     expect(result.files['src/pages/pages/[slug].astro']).toContain('import Layout')
+  })
+})
+
+describe('shared catchall collections', () => {
+  const model: ProjectIR = { ...ir, routes: [
+    { id: 'posts', kind: 'single', pattern: '/fr/:slug*', family: 'f-article', locale: 'fr' },
+    { id: 'pages', kind: 'page', pattern: '/fr/:slug*', family: 'f-nested', collection: 'pages', locale: 'fr' },
+  ] }
+  const posts = [{ slug: 'news/hello', title: 'Hello', body: 'post' }]
+  const pages = [{ slug: 'about', title: 'About', body: 'page' }]
+  const sharedInput: EmitInput = { ir: model, content: { posts, collections: { pages } } }
+  const result = emitAstroProject(sharedInput)
+  const source = result.files['src/pages/fr/[...slug].astro']!
+  // Execute the emitted getStaticPaths body itself, with its actual data imports.
+  const fn = source.slice(source.indexOf('export function getStaticPaths'), source.indexOf('const { post, routeIndex }'))
+    .replace('export function', 'function').replace(' as EmittedPost[][]', '').replace('new Set<string>()', 'new Set()')
+  const paths = new Function('data0', 'data1', `${fn}; return getStaticPaths()`)
+  it('keeps one data file per original collection and each entry’s layout identity', () => {
+    expect(Object.keys(result.files).filter(p => /^src\/data\/[^/]+\.json$/.test(p)).toSorted()).toEqual(['src/data/pages.json', 'src/data/posts.json'])
+    expect(paths(posts, pages)).toEqual([
+      { params: { slug: 'news/hello' }, props: { post: posts[0], routeIndex: 0 } },
+      { params: { slug: 'about' }, props: { post: pages[0], routeIndex: 1 } },
+    ])
+    expect(result.warnings.some(w => w.includes('would be dropped'))).toBe(false)
+    expect(sharedInput.content?.collections?.pages).toHaveLength(1)
+  })
+  it('new entries work on the next build without regenerating routes', () => {
+    expect(paths([...posts, { slug: 'news/new', title: 'New', body: '' }], pages)).toHaveLength(3)
+  })
+  it('a later content edit cannot silently overwrite another collection’s URL', () => {
+    expect(() => paths(posts, [{ ...pages[0], slug: 'news/hello' }])).toThrow('Route collision')
+    expect(() => paths(posts, [{ ...pages[0], slug: 'news%2Fhello/' }])).toThrow('Route collision')
   })
 })

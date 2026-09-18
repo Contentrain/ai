@@ -241,7 +241,7 @@ describe('emitted SEO', () => {
 
   it('entry pages carry the post SEO; lists and static pages declare themselves websites', () => {
     expect(result.files['src/pages/[slug].astro']).toContain('seo={postSeo(post)}')
-    expect(result.files['src/pages/news.astro']).toContain(`seo={{ description: page.description, image: page.image, imageMeta: page.image_meta, canonical: page.canonical, type: 'website' }}`)
+    expect(result.files['src/pages/news.astro']).toContain(`seo={{ description: page.description, image: page.image, imageMeta: page.image_meta, canonical: page.canonical, breadcrumbs: page.breadcrumbs, type: 'website', pageType: 'CollectionPage' }}`)
     expect(result.files['src/pages/about.astro']).toContain(`seo={{ type: 'website' }}`)
   })
 

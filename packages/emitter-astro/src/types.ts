@@ -73,6 +73,14 @@ export interface EmitPost {
   /** Locale of this entry, on a multilingual site — overrides the route's. */
   locale?: string
   /**
+   * The trail to this page for BreadcrumbList — home first, the page itself
+   * NOT included: the emitter appends it with the address it built, so the
+   * last crumb cannot disagree with the page. Each path is site-root-relative.
+   * Without a trail no BreadcrumbList is printed; a trail with an invalid
+   * crumb is dropped with a warning.
+   */
+  breadcrumbs?: Breadcrumb[]
+  /**
    * Content-store address of this post (model, entry id, locale) — what a
    * mounted `comments` component addresses its thread by. Only the tool that
    * wrote the content store knows it; without it the comments region mounts
@@ -132,6 +140,15 @@ export interface QueryPage {
   image_meta?: ImageMeta
   /** Canonical override; default is this page's own address. */
   canonical?: string
+  /** The trail to this list page, itself excluded — see `EmitPost.breadcrumbs`. */
+  breadcrumbs?: Breadcrumb[]
+}
+
+/** One step of a breadcrumb trail. */
+export interface Breadcrumb {
+  name: string
+  /** Site-root-relative (`/category/news/`). */
+  path: string
 }
 
 /**

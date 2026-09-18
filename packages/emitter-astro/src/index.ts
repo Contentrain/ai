@@ -12,14 +12,23 @@ import type { EmitInput, EmitPost, EmitResult } from './types.js'
 import { DEFAULT_COLLECTION } from './types.js'
 import { scaffoldFiles } from './scaffold.js'
 import { componentMarkers, familyFiles } from './layouts.js'
-import { collectionItems, routeFiles } from './pages.js'
+import { collectionItems, routeFiles, sharedCollectionPage } from './pages.js'
 import { componentFiles, isRuntimeImplemented } from './components.js'
 import { chromeComponents } from './chrome.js'
 import { SEO_COMPONENT } from './seo.js'
 import { withAlternates } from './alternates.js'
 import { UI_STRINGS_DIR, uiStringsDir } from './ui-strings.js'
 import { wrapLegacyCss } from './css.js'
-import { stableJson } from './util.js'
+import { stableJson, patternToPagePath } from './util.js'
+
+/**
+ * A supplied trail the build will not print — the same rule as \`validTrail\`
+ * in the emitted runtime, which a test holds this to.
+ */
+function badTrail(trail: EmitPost['breadcrumbs']): boolean {
+  return trail !== undefined && !(trail.length > 0 && trail.every((c) =>
+    typeof c?.name === 'string' && c.name.trim() !== '' && typeof c.path === 'string' && !c.path.includes(String.fromCharCode(92)) && ![...c.path].some((char) => char.charCodeAt(0) <= 32) && /^\/(?!\/)/.test(c.path)))
+}
 
 export function emitAstroProject(input: EmitInput): EmitResult {
   const { ir } = input
@@ -152,6 +161,20 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   // The pages are unrecoverable at this point either way: the emitter cannot
   // know which route should own the path. What it can do is refuse to produce
   // a site that is quietly wrong.
+  // A breadcrumb trail with a bad crumb prints nothing at build; say so here.
+  const trailOwners: Array<[string, EmitPost[] | undefined]> = [
+    ...Object.entries(input.content?.collections ?? {}),
+    ...(input.content?.posts ? [[DEFAULT_COLLECTION, input.content.posts] as [string, EmitPost[]]] : []),
+  ]
+  for (const [name, posts] of trailOwners) {
+    const bad = (posts ?? []).filter((p) => badTrail(p.breadcrumbs)).length
+    if (bad) warnings.push(`collection ${name}: ${bad} breadcrumb trails dropped — every crumb needs a name and a site-root-relative path`)
+  }
+  for (const [queryId, queryPages] of Object.entries(input.content?.queries ?? {})) {
+    const bad = queryPages.filter((qp) => badTrail(qp.breadcrumbs)).length
+    if (bad) warnings.push(`query ${queryId}: ${bad} breadcrumb trails dropped — every crumb needs a name and a site-root-relative path`)
+  }
+
   // hreflang alternates ride on the entry data, so they are attached before the
   // routes write it. The Seo component renders them; without it the producer
   // owns the head, alternates included.
@@ -161,10 +184,22 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     routeContent = alternates.content
     warnings.push(...alternates.warnings)
   }
+  const routeGroups = new Map<string, RouteModel[]>()
+  for (const route of ir.routes) {
+    const path = patternToPagePath(route.pattern)
+    if (path) routeGroups.set(path, [...(routeGroups.get(path) ?? []), route])
+  }
+  const sharedPages = new Map<string, string>()
+  for (const [path, group] of routeGroups) {
+    if (!group.every(route => familiesById.has(route.family))) continue
+    const page = sharedCollectionPage(group, routeContent, lang, seo)
+    if (page) sharedPages.set(`src/pages/${path}`, page)
+  }
   const pageOwner = new Map<string, RouteModel>()
   const collisions: { path: string, first: RouteModel, second: RouteModel }[] = []
   for (const route of ir.routes) {
     const result = routeFiles(route, familiesById.get(route.family), routeContent, lang, seo)
+    for (const path of sharedPages.keys()) delete result.files[path]
     for (const path of Object.keys(result.files)) {
       if (!path.startsWith('src/pages/')) continue
       const owner = pageOwner.get(path)
@@ -183,6 +218,8 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     add(result.files)
     warnings.push(...result.warnings)
   }
+
+  for (const [path, page] of sharedPages) files[path] = page
 
   for (const { path, first, second } of collisions) {
     warnings.push(
@@ -273,6 +310,7 @@ export type {
   EmitCssFile,
   EmitOptions,
   EmitTermRef,
+  Breadcrumb,
   ImageMeta,
   RuntimeBinding,
   EntrySourceRef,
@@ -282,7 +320,7 @@ export { pascalCase, patternToPagePath, stableJson } from './util.js'
 export { componentMarkers } from './layouts.js'
 export type { MountRef } from './layouts.js'
 export { isRuntimeImplemented, RUNTIME_IMPLEMENTED } from './components.js'
-export { bodySeoLeaks, stripSeoTags, SEO_COMPONENT } from './seo.js'
+export { bodySeoLeaks, stripSeoTags, websiteIdOf, SEO_COMPONENT } from './seo.js'
 export { entryPath, withAlternates } from './alternates.js'
 export type { Alternate, AlternatesResult } from './alternates.js'
 export type { StripResult } from './seo.js'
