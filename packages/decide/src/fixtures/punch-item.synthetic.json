@@ -1,0 +1,341 @@
+{
+  "_about": "SYNTHETIC. Invented punch items, invented labels, invented answers. It exercises the calibration harness (replay, batching, scoring) and says nothing about Jev. The real PoC-1 set stays in .internal; see README.md.",
+  "items": [
+    {
+      "id": "synthetic-01",
+      "input": {
+        "label": "(aile: post)",
+        "reason": "en kötü sayfa 31.0 < 80 (5 sayfa ölçüldü)",
+        "site": {
+          "decision": "KABUL + PUNCH LIST",
+          "median": 90.0,
+          "mobile_median": 88.0
+        }
+      },
+      "expected": {
+        "class": "measurement",
+        "severity": 4
+      },
+      "answers": {
+        "class": {
+          "type": "choice",
+          "choice": "measurement",
+          "confidence": 0.62
+        },
+        "severity": {
+          "type": "score",
+          "score": 2.71,
+          "confidence": 0.51
+        }
+      }
+    },
+    {
+      "id": "synthetic-02",
+      "input": {
+        "label": "(aile: page-0)",
+        "reason": "şablon hero sızıntısı — 4 sayfa aynı görseli basıyor (/assets/0000000000000001.png)",
+        "site": {
+          "decision": "KABUL + PUNCH LIST",
+          "median": 90.0,
+          "mobile_median": 88.0
+        }
+      },
+      "expected": {
+        "class": "product_defect",
+        "severity": 3
+      },
+      "answers": {
+        "class": {
+          "type": "choice",
+          "choice": "product_defect",
+          "confidence": 0.93
+        },
+        "severity": {
+          "type": "score",
+          "score": 1.88,
+          "confidence": 0.48
+        }
+      }
+    },
+    {
+      "id": "synthetic-03",
+      "input": {
+        "label": "(aile: archive)",
+        "reason": "en kötü sayfa 78.5 < 80 (1 sayfa ölçüldü)",
+        "site": {
+          "decision": "KABUL + PUNCH LIST",
+          "median": 90.0,
+          "mobile_median": 88.0
+        }
+      },
+      "expected": {
+        "class": "measurement",
+        "severity": 1
+      },
+      "answers": {
+        "class": {
+          "type": "choice",
+          "choice": "measurement",
+          "confidence": 0.55
+        },
+        "severity": {
+          "type": "score",
+          "score": 0.61,
+          "confidence": 0.4
+        }
+      }
+    },
+    {
+      "id": "synthetic-04",
+      "input": {
+        "label": "(düzenlenemez: post)",
+        "reason": "gövde yuvası yok — içerik veriden gelmiyor, chrome'a pişmiş",
+        "site": {
+          "decision": "KABUL + PUNCH LIST",
+          "median": 90.0,
+          "mobile_median": 88.0
+        }
+      },
+      "expected": {
+        "class": "source_limit",
+        "severity": 3
+      },
+      "answers": {
+        "class": {
+          "type": "choice",
+          "choice": "source_limit",
+          "confidence": 0.71
+        },
+        "severity": {
+          "type": "score",
+          "score": 2.02,
+          "confidence": 0.44
+        }
+      }
+    },
+    {
+      "id": "synthetic-05",
+      "input": {
+        "label": "(aile: category)",
+        "reason": "3 sayfa üretiyor, yalnız 1'i ölçüldü — genellik kanıtlanmadı",
+        "site": {
+          "decision": "KABUL + PUNCH LIST",
+          "median": 90.0,
+          "mobile_median": 88.0
+        }
+      },
+      "expected": {
+        "class": "measurement",
+        "severity": 2
+      },
+      "answers": {
+        "class": {
+          "type": "choice",
+          "choice": "measurement",
+          "confidence": 0.47
+        },
+        "severity": {
+          "type": "score",
+          "score": 1.12,
+          "confidence": 0.37
+        }
+      }
+    },
+    {
+      "id": "synthetic-06",
+      "input": {
+        "label": "örnek-sayfa-bir",
+        "reason": "mobil 80.2 < 85",
+        "site": {
+          "decision": "KABUL + PUNCH LIST",
+          "median": 90.0,
+          "mobile_median": 88.0
+        }
+      },
+      "expected": {
+        "class": "measurement",
+        "severity": 2
+      },
+      "answers": {
+        "class": {
+          "type": "choice",
+          "choice": "measurement",
+          "confidence": 0.44
+        },
+        "severity": {
+          "type": "score",
+          "score": 1.05,
+          "confidence": 0.35
+        }
+      }
+    },
+    {
+      "id": "synthetic-07",
+      "input": {
+        "label": "(aile: page-solo-1)",
+        "reason": "şablon hero sızıntısı — 1 sayfa aynı görseli basıyor (/assets/0000000000000002.jpg)",
+        "site": {
+          "decision": "KABUL + PUNCH LIST",
+          "median": 90.0,
+          "mobile_median": 88.0
+        }
+      },
+      "expected": {
+        "class": "product_defect",
+        "severity": 2
+      },
+      "answers": {
+        "class": {
+          "type": "choice",
+          "choice": "product_defect",
+          "confidence": 0.95
+        },
+        "severity": {
+          "type": "score",
+          "score": 1.27,
+          "confidence": 0.56
+        }
+      }
+    },
+    {
+      "id": "synthetic-08",
+      "input": {
+        "label": "(aile: post)",
+        "reason": "medya kaybı: canlıdaki 6 gömülü medyanın 2'i üretilende yok",
+        "site": {
+          "decision": "KABUL + PUNCH LIST",
+          "median": 90.0,
+          "mobile_median": 88.0
+        }
+      },
+      "expected": {
+        "class": "product_defect",
+        "severity": 3
+      },
+      "answers": {
+        "class": {
+          "type": "choice",
+          "choice": "product_defect",
+          "confidence": 0.81
+        },
+        "severity": {
+          "type": "score",
+          "score": 1.93,
+          "confidence": 0.42
+        }
+      }
+    },
+    {
+      "id": "synthetic-09",
+      "input": {
+        "label": "(aile: page-front)",
+        "reason": "en kötü sayfa 64.0 < 80 (1 sayfa ölçüldü)",
+        "site": {
+          "decision": "KABUL + PUNCH LIST",
+          "median": 90.0,
+          "mobile_median": 88.0
+        }
+      },
+      "expected": {
+        "class": "measurement",
+        "severity": 2
+      },
+      "answers": {
+        "class": {
+          "type": "choice",
+          "choice": "product_defect",
+          "confidence": 0.33
+        },
+        "severity": {
+          "type": "score",
+          "score": 1.61,
+          "confidence": 0.3
+        }
+      }
+    },
+    {
+      "id": "synthetic-10",
+      "input": {
+        "label": "(düzenlenemez: page-front)",
+        "reason": "tam sayfa klon — gövde yuvası ve veri yolu yok, sayfa düzenlenemez",
+        "site": {
+          "decision": "KABUL + PUNCH LIST",
+          "median": 90.0,
+          "mobile_median": 88.0
+        }
+      },
+      "expected": {
+        "class": "source_limit",
+        "severity": 4
+      },
+      "answers": {
+        "class": {
+          "type": "choice",
+          "choice": "source_limit",
+          "confidence": 0.77
+        },
+        "severity": {
+          "type": "score",
+          "score": 2.49,
+          "confidence": 0.45
+        }
+      }
+    },
+    {
+      "id": "synthetic-11",
+      "input": {
+        "label": "(aile: page-0)",
+        "reason": "ölçülemedi (bot engeli/zaman aşımı)",
+        "site": {
+          "decision": "KABUL + PUNCH LIST",
+          "median": 90.0,
+          "mobile_median": 88.0
+        }
+      },
+      "expected": {
+        "class": "measurement",
+        "severity": 2
+      },
+      "answers": {
+        "class": {
+          "type": "choice",
+          "choice": "measurement",
+          "confidence": 0.88
+        },
+        "severity": {
+          "type": "score",
+          "score": 1.34,
+          "confidence": 0.39
+        }
+      }
+    },
+    {
+      "id": "synthetic-12",
+      "input": {
+        "label": "örnek-sayfa-iki",
+        "reason": "menü canlıda açılıyor, üretilende açılmıyor",
+        "site": {
+          "decision": "KABUL + PUNCH LIST",
+          "median": 90.0,
+          "mobile_median": 88.0
+        }
+      },
+      "expected": {
+        "class": "product_defect",
+        "severity": 3
+      },
+      "answers": {
+        "class": {
+          "type": "choice",
+          "choice": "product_defect",
+          "confidence": 0.58
+        },
+        "severity": {
+          "type": "score",
+          "score": 0.35,
+          "confidence": 0.41
+        }
+      }
+    }
+  ]
+}

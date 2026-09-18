@@ -39,6 +39,7 @@ const PACKAGE_DIRS = {
   '@contentrain/skills': 'skills',
   '@contentrain/query': 'sdk/js',
   '@contentrain/verify': 'verify',
+  '@contentrain/decide': 'decide',
   '@contentrain/wp-import': 'wp-import',
   '@contentrain/emitter-astro': 'emitter-astro',
 }

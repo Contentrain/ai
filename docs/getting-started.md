@@ -265,6 +265,7 @@ All packages are published on npm:
 | [`@contentrain/wp-import`](https://www.npmjs.com/package/@contentrain/wp-import) | WordPress WXR/REST → `.contentrain` | `npx contentrain import export.xml` |
 | [`@contentrain/emitter-astro`](https://www.npmjs.com/package/@contentrain/emitter-astro) | ProjectIR → an Astro project | `pnpm add @contentrain/emitter-astro` |
 | [`@contentrain/verify`](https://www.npmjs.com/package/@contentrain/verify) | Offline gates for a built site | `npx @contentrain/verify dist` |
+| [`@contentrain/decide`](https://www.npmjs.com/package/@contentrain/decide) | Typed decisions: rule first, then Jev | `pnpm add @contentrain/decide` |
 
 ::: tip Updating Skills & Rules
 After upgrading packages, run `contentrain skills --update` to refresh IDE skills and rules. Use `contentrain skills --list` to check installation status.
