@@ -365,6 +365,7 @@ approval guarding it would be theatre.
 | `DeploymentTarget` | Where a build is published. Carries a `secret_ref`, never a secret — this document is written to git. |
 | `AutomationDefinition` | Reserved shape for `.contentrain/automations.json`. Nothing reads it yet; it exists so the first writer does not invent a fourth vocabulary for schedules. |
 | `SourceDeltaPlan` | The WordPress→repo delta — *not* `contentrain_reconcile`, which merges two git branches and knows nothing about WordPress. Carries explicit deletion tombstones, because `modified_after` is a filter on changed records and never reports a deletion, plus slug moves (which generate redirects) and semantic conflicts. `deletions_detectable: false` must not be read as "nothing was deleted". |
+| `SourceInventory` / `SourceInventoryRecord` | Every origin record in scope at one moment — what a `bridge_inventory` cursor's hash identifies. Deletions and moves are proven by comparing two inventories (records keyed by `wp_type` + `wp_id`, updates decided on `fingerprint`); `modified_after` only narrows what to fetch again. `SourceDeltaEntry` also carries `path_before`/`path_after` for moves a slug cannot express, and `deleted_kind` (`trashed` / `purged`). |
 
 ### The evaluator
 
