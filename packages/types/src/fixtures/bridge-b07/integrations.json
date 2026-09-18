@@ -1,0 +1,162 @@
+{
+  "format": "contentrain-bridge-integrations@1",
+  "scanned": {
+    "options": 152,
+    "plugins": 4,
+    "posts": 26,
+    "rendered_home": true,
+    "script_sources": 117
+  },
+  "services": [
+    {
+      "category": "analytics",
+      "evidence": [
+        {
+          "detail": "www.googletagmanager.com/gtm.js @ option:ihaf_insert_header",
+          "kind": "script-domain"
+        }
+      ],
+      "name": "Google Tag Manager",
+      "notes": "Connect again on the new site with its own credentials; none were exported.",
+      "reconnect_required": true,
+      "secret_present": false,
+      "service": "google-tag-manager"
+    },
+    {
+      "category": "analytics",
+      "evidence": [
+        {
+          "detail": "hotjar_site_id",
+          "kind": "option-key"
+        },
+        {
+          "detail": "static.hotjar.com @ render:home",
+          "kind": "script-domain"
+        }
+      ],
+      "name": "Hotjar",
+      "notes": "Connect again on the new site with its own credentials; none were exported.",
+      "reconnect_required": true,
+      "secret_present": false,
+      "service": "hotjar"
+    },
+    {
+      "category": "analytics",
+      "evidence": [
+        {
+          "detail": "jetpack_active_modules[stats]",
+          "kind": "option-key"
+        }
+      ],
+      "name": "Jetpack Stats",
+      "notes": "Connect again on the new site with its own credentials; none were exported.",
+      "reconnect_required": true,
+      "secret_present": false,
+      "service": "jetpack-stats"
+    },
+    {
+      "category": "captcha",
+      "evidence": [
+        {
+          "detail": "contact-form-7 integration: recaptcha",
+          "kind": "form-config"
+        }
+      ],
+      "name": "Google reCAPTCHA",
+      "notes": "Connect again on the new site with its own credentials; none were exported. A credential is configured on WordPress.",
+      "reconnect_required": true,
+      "secret_present": true,
+      "service": "recaptcha"
+    },
+    {
+      "category": "cdn",
+      "evidence": [
+        {
+          "detail": "jetpack_active_modules[photon]",
+          "kind": "option-key"
+        }
+      ],
+      "name": "Jetpack Site Accelerator",
+      "notes": "Connect again on the new site with its own credentials; none were exported.",
+      "reconnect_required": true,
+      "secret_present": false,
+      "service": "jetpack-photon"
+    },
+    {
+      "category": "crm",
+      "evidence": [
+        {
+          "detail": "leadin_access_token (leadin_access_token)",
+          "kind": "option-key"
+        },
+        {
+          "detail": "leadin_portalId",
+          "kind": "option-key"
+        },
+        {
+          "detail": "gravity forms feed: form 3 → gravityformshubspot",
+          "kind": "form-config"
+        }
+      ],
+      "name": "HubSpot",
+      "notes": "Connect again on the new site with its own credentials; none were exported. A credential is configured on WordPress.",
+      "reconnect_required": true,
+      "secret_present": true,
+      "service": "hubspot"
+    },
+    {
+      "category": "newsletter",
+      "evidence": [
+        {
+          "detail": "mailchimp-for-wp 4.14.1",
+          "kind": "plugin"
+        },
+        {
+          "detail": "mc4wp (api_key)",
+          "kind": "option-key"
+        },
+        {
+          "detail": "wpforms provider: mailchimpv3",
+          "kind": "form-config"
+        }
+      ],
+      "name": "Mailchimp",
+      "notes": "Connect again on the new site with its own credentials; none were exported. A credential is configured on WordPress.",
+      "reconnect_required": true,
+      "secret_present": true,
+      "service": "mailchimp"
+    },
+    {
+      "category": "other",
+      "evidence": [
+        {
+          "detail": "wordpress_api_key (wordpress_api_key)",
+          "kind": "option-key"
+        }
+      ],
+      "name": "Akismet",
+      "notes": "Connect again on the new site with its own credentials; none were exported. A credential is configured on WordPress.",
+      "reconnect_required": true,
+      "secret_present": true,
+      "service": "akismet"
+    },
+    {
+      "category": "other",
+      "evidence": [
+        {
+          "detail": "youtube.com",
+          "kind": "embed-domain"
+        }
+      ],
+      "name": "YouTube",
+      "notes": "Embedded content; kept as a URL in the body, no account to reconnect.",
+      "reconnect_required": false,
+      "secret_present": false,
+      "service": "embed-youtube"
+    }
+  ],
+  "totals": {
+    "reconnect_required": 8,
+    "services": 9
+  }
+}

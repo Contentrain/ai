@@ -517,14 +517,15 @@ Until a tool owns one, the behaviour is narrow and pinned by tests in
   their interiors — a field-level union on an approval policy would produce a
   policy nobody wrote.
 
-### SEO, routing, redirects and interface text in `RawIR`
+### SEO, routing, redirects, interface text and integrations in `RawIR`
 
-From the bridge rung, `RawIR` can carry four optional parts:
+From the bridge rung, `RawIR` can carry five optional parts:
 
 - `seo` (`RawSeo`): the plugin that serves the head (`serving`), each provider's status and settings, and each page's title, description, canonical, robots, Open Graph, Twitter and JSON-LD values, keyed by `post:<id>` or `term:<taxonomy>:<id>`. `status: 'none'` means the site has no SEO plugin; it is not a missing export. `resolved: true` marks values the running plugin rendered, and `robots_served` is what the page actually carries.
 - `routing` (`RawRouting`): the permalink structure, bases, front and posts pages, and each post type's and taxonomy's permastruct.
 - `redirects_excluded` (`RawRedirectExcluded`): rules a source holds that the site does not serve as a plain redirect, each with its reason. Served plus excluded accounts for the source's whole table.
 - `hardcoded_text` (`RawHardcodedText`): interface text outside the content tables (theme templates, scripts, widgets, menus, options, Customizer mods, rendered pages). Each candidate is transferred to a named target, excluded with a reason, or — when its source could not be read — reported in `errors`. Candidates merge only when text, locale and context are equal; keys depend on text and context, never on file or line. Page text also found in source is excluded as `rendered-from-source` and points back with `related`.
+- `integrations` (`RawIntegration[]`): outside services the site is connected to, each with a category, evidence (never a value), `reconnect_required` and `secret_present`. Only whether a credential is set is exported, never the credential. The `integration_reconnect_required` issue (`IntegrationReconnectRequiredIssue`) lists every service to connect again.
 
 `RawRedirect` gains `id`, `match` (`url` / `regex` / `start` / `contains` / `end`) and `regex`. Only `url` without `regex` is a one-to-one mapping. Writing a pattern rule as a literal `from` produces the wrong redirect.
 

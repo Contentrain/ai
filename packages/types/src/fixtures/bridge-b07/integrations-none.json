@@ -1,0 +1,15 @@
+{
+  "format": "contentrain-bridge-integrations@1",
+  "scanned": {
+    "options": 142,
+    "plugins": 3,
+    "posts": 25,
+    "rendered_home": true,
+    "script_sources": 9
+  },
+  "services": [],
+  "totals": {
+    "reconnect_required": 0,
+    "services": 0
+  }
+}
