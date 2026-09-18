@@ -1,0 +1,124 @@
+{
+  "cursor": {
+    "inventory_hash": "c230ba16ca63fbf7ace1c4edb7e214baa4004ff222d6265e24c2e04e6b0d2ff8",
+    "kind": "bridge_inventory",
+    "taken_at": "2026-09-18T09:25:41Z"
+  },
+  "deletions_detectable": true,
+  "entries": [
+    {
+      "deleted_kind": "purged",
+      "detail": "purged",
+      "fingerprint_before": "d144f4105f4d4dc61bc94e6ce56abbdfceff3cae97af60cc9c3e12778d05c7a8",
+      "op": "deleted",
+      "wp_id": 93,
+      "wp_type": "attachment"
+    },
+    {
+      "detail": "slug change; address changed without an old-slug record",
+      "fingerprint_after": "5f3a871a7c22156935863be2914f0fc2a6bf9b34632f6f8367e318670b01e156",
+      "fingerprint_before": "e115317ea4e64a0cd1e17be6bf9e891503ab286896034f7b080c19c614eda019",
+      "op": "moved",
+      "path_after": "/category/delta-cat-renamed-16e548/",
+      "path_before": "/category/delta-cat-16e548/",
+      "slug_after": "delta-cat-renamed-16e548",
+      "slug_before": "delta-cat-16e548",
+      "wp_id": 6,
+      "wp_type": "category"
+    },
+    {
+      "detail": "content changed with modified_at unchanged (meta-only edit)",
+      "fingerprint_after": "0338dde8328054e03da75db37794a9d4745c4f198255d3d7647df01c5e90c71f",
+      "fingerprint_before": "0e3c2a2c6ab37b0506a6914360bc01dd7ba8976210c3fa47726d28e1fc10aaa6",
+      "op": "updated",
+      "wp_id": 81,
+      "wp_type": "page"
+    },
+    {
+      "detail": "parent or permalink change; address changed without an old-slug record",
+      "fingerprint_after": "511d82a07771b5472ce88e5f33393fa6c2b4a36413190381524fef29d24147c6",
+      "fingerprint_before": "4146d321cc41f29c56ee82d7d8d72dc54d06c74afdcadb93c45d93ad8e4a10dc",
+      "op": "moved",
+      "path_after": "/delta-parent-b-16e548/delta-child-16e548/",
+      "path_before": "/delta-parent-a-16e548/delta-child-16e548/",
+      "slug_after": "delta-child-16e548",
+      "slug_before": "delta-child-16e548",
+      "wp_id": 87,
+      "wp_type": "page"
+    },
+    {
+      "detail": "content changed",
+      "fingerprint_after": "5993fc35d4fd835d610a825955946f2c728acdcf2728f80ac92343725b1b6796",
+      "fingerprint_before": "db5b6fe8d53deb44cab27f3aa3ecc540590beb04168c2492149c471a103e94cc",
+      "op": "updated",
+      "wp_id": 80,
+      "wp_type": "post"
+    },
+    {
+      "deleted_kind": "trashed",
+      "detail": "trashed",
+      "fingerprint_after": "389754091155ff4326c62d48411d6987bb4c2182e40343ba33cdadb9526d5469",
+      "fingerprint_before": "1510873f73608f78628601825039b9b9459d725b3a531c649409f5a261c27d8e",
+      "op": "deleted",
+      "wp_id": 82,
+      "wp_type": "post"
+    },
+    {
+      "deleted_kind": "purged",
+      "detail": "purged",
+      "fingerprint_before": "2c96f3e0ca57ba60b2816221a7472585de6bf264e143ff696dc75a021a1e3361",
+      "op": "deleted",
+      "wp_id": 83,
+      "wp_type": "post"
+    },
+    {
+      "detail": "slug change; old slug recorded by WordPress",
+      "fingerprint_after": "6b246ae9859c5bfdcb9c84c8208c77f3e3732831540ba028dfc9f7d939dca00d",
+      "fingerprint_before": "992b24615c866c39ca1b4c35acc16423066022f15db01ba4b212cb0055b8ee57",
+      "op": "moved",
+      "path_after": "/delta-slug-renamed-16e548/",
+      "path_before": "/delta-slug-16e548/",
+      "slug_after": "delta-slug-renamed-16e548",
+      "slug_before": "delta-slug-16e548",
+      "wp_id": 84,
+      "wp_type": "post"
+    },
+    {
+      "detail": "status publish -> draft",
+      "fingerprint_after": "48091d98674919377aa7333a54d4b0a26d5e3ad317689be8cdfa4421055f87db",
+      "fingerprint_before": "f1855f8af70d4fce9698cdfbe565c5589d19ef15084c0852ea230caae8c4bbb0",
+      "op": "updated",
+      "wp_id": 88,
+      "wp_type": "post"
+    },
+    {
+      "detail": "content changed",
+      "fingerprint_after": "30afd24a9006d95dbccc4887def164cd36ee024d833558d683ca8fb3077bd3a8",
+      "fingerprint_before": "f6a79a8db3cbcedc786ada9ffb263f76afb3f925d38e6fa2396c4f22e85e8a72",
+      "op": "updated",
+      "wp_id": 89,
+      "wp_type": "post"
+    },
+    {
+      "detail": "content changed",
+      "fingerprint_after": "cb690e6287cc2bd15be7eb800e309b9c5daf2eb263e4e403b69e143b591902fe",
+      "fingerprint_before": "927c503d56bd4011325388e2c19dce6e913e4b7de5553478fb5bb6d1ccabe26f",
+      "op": "updated",
+      "wp_id": 90,
+      "wp_type": "post"
+    },
+    {
+      "fingerprint_after": "14b59e81f9059fe5726957620021a4f1681ed678a77bbd294e4410fdcdc6651b",
+      "op": "created",
+      "wp_id": 94,
+      "wp_type": "post"
+    }
+  ],
+  "generated_at": "2026-09-18T09:25:42Z",
+  "next_cursor": {
+    "inventory_hash": "90fffd58fb5c973dbb5937bea9183e2553225b06c35f27fd32d64a18ad22c04d",
+    "kind": "bridge_inventory",
+    "taken_at": "2026-09-18T09:25:42Z"
+  },
+  "version": 1
+}

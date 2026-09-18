@@ -1,0 +1,100 @@
+{
+  "id": "wp-post",
+  "name": "Posts",
+  "kind": "document",
+  "domain": "blog",
+  "i18n": false,
+  "title_field": "title",
+  "fields": {
+    "author": {
+      "model": "wp-authors",
+      "type": "relation"
+    },
+    "cover": {
+      "type": "image"
+    },
+    "date": {
+      "type": "datetime"
+    },
+    "excerpt": {
+      "type": "richtext"
+    },
+    "meta_rank_math_description": {
+      "type": "text"
+    },
+    "meta_rank_math_focus_keyword": {
+      "type": "text"
+    },
+    "meta_rank_math_robots": {
+      "model": "wp-structured-values",
+      "type": "relations"
+    },
+    "meta_rank_math_schema_blogposting": {
+      "model": "wp-structured-values",
+      "type": "relations"
+    },
+    "meta_rank_math_title": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_focuskw": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_meta_robots_nofollow": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_meta_robots_noindex": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_metadesc": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_opengraph_description": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_opengraph_image": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_opengraph_title": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_schema_article_type": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_title": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_twitter_description": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_twitter_image": {
+      "type": "text"
+    },
+    "meta_yoast_wpseo_twitter_title": {
+      "type": "text"
+    },
+    "modified": {
+      "type": "datetime"
+    },
+    "source_slug": {
+      "type": "string"
+    },
+    "source_url": {
+      "type": "url"
+    },
+    "terms_category": {
+      "model": "wp-tax-category",
+      "type": "relations"
+    },
+    "terms_post_tag": {
+      "model": "wp-tax-post-tag",
+      "type": "relations"
+    },
+    "title": {
+      "required": true,
+      "type": "string"
+    },
+    "wp_id": {
+      "type": "integer"
+    }
+  }
+}

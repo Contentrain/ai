@@ -1,0 +1,17 @@
+{
+  "domains": [
+    "assets",
+    "blog",
+    "site"
+  ],
+  "locales": {
+    "default": "en-us",
+    "supported": [
+      "en-us"
+    ]
+  },
+  "platform": "web",
+  "stack": "other",
+  "version": 1,
+  "workflow": "review"
+}

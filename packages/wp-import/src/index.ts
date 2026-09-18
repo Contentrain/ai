@@ -1,9 +1,10 @@
 // @contentrain/wp-import — WordPress importers for the Contentrain migration
-// pipeline. Three stages, all pure where purity is possible:
+// pipeline. Four stages, all pure where purity is possible:
 //
 //   WXR file or REST API ──► RawIR (source-faithful, provenance-stamped)
 //   RawIR ──► .contentrain content store (pure file map) + EntrySourceMap
 //   RawIR + EntrySourceMap ──► CommentsExport (live-service intake payload)
+//   SourceDeltaPlan + store (+ incoming export) ──► placed SourceDeltaPlan
 //
 // Ported from the measured import chain — identity formulas, meta decoding,
 // and resolution passes carried over intact so WXR and REST imports of the
@@ -23,3 +24,5 @@ export { canon, hexId, slugify, strip, taxModelId } from './core.js'
 // answer "why is my custom post type missing?" — so they are part of the
 // public surface and a docs-parity test can hold them to it.
 export { PLUGIN_META, SKIP_TYPES } from './core.js'
+export { DEFAULT_IMPORTERS, DEFAULT_TAXONOMIES, formatSourceDeltaReport, planSourceDelta } from './delta.js'
+export type { DeltaStore, PlanSourceDeltaInput } from './delta.js'

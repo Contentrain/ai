@@ -6,6 +6,7 @@ WordPress importers for the Contentrain migration pipeline — ported from a cor
 WXR file or REST API ──► RawIR (source-faithful, provenance-stamped)
 RawIR ──► .contentrain content store (pure file map) + EntrySourceMap
 RawIR + EntrySourceMap ──► CommentsExport (live-service intake payload)
+SourceDeltaPlan + store (+ incoming export) ──► placed SourceDeltaPlan
 ```
 
 ## Usage
@@ -36,6 +37,28 @@ const commentsExport = buildCommentsExport(raw, entry_source_map)
 - **EntrySourceMap produced at the only place that can know it** — the WP-id → entry-address mapping the comments intake requires.
 
 Streaming WXR parse (sax): a 100 MB export holds only its records in memory.
+
+## Source deltas
+
+A bridge reports what changed at the origin since the last delivery as a `SourceDeltaPlan`: `created`, `updated`, `moved` and `deleted` records by WordPress id. `planSourceDelta` works out what each change means for the store:
+
+```ts
+import { planSourceDelta, formatSourceDeltaReport } from '@contentrain/wp-import'
+
+const plan = planSourceDelta({
+  delta,                                           // the bridge's SourceDeltaPlan
+  store: { files, entry_source_map },              // the repository's .contentrain, as it is now
+  incoming: { files: next, entry_source_map: nextMap }, // the new export
+})
+console.log(formatSourceDeltaReport(plan))
+```
+
+- **Placement.** A post-type record is looked up in the `EntrySourceMap`. A term or media record is found by its `wp_id` in its own model (`wp-tax-<taxonomy>` / `categories` / `tags`, `wp-media` / `media`). The map lists post ids only, and post 6 and category 6 are different records. A record that cannot be placed gets `unmapped` with a reason: `not-in-source-map`, `no-model-for-type` or `entry-not-found`.
+- **`updated` / `moved`** list `fields_changed`, comparing the stored entry with the incoming one (frontmatter keys and `body` for a document). A `moved` record whose address changed adds a 301 to `redirects`. If the store derives entry ids from slugs, the new id is in `entry_id_after`.
+- **`deleted`** is a tombstone. `trashed` (can come back) and `purged` (gone) stay distinct.
+- **Conflicts.** If the entry's meta says something other than the importer wrote it last (`source` is not `import`, or `updated_by` is not an importer), the record gets `conflict: true` and `repo_edit: { updated_by, updated_at?, source }`. Nothing is overwritten, and a person decides.
+
+The planner is pure and plan-only. Applying a plan is a governed write, and it goes through review. Pass `taxonomies` for custom taxonomies the store has no model of its own for; otherwise their term ids would be read as post ids.
 
 ## Multilingual sites
 
