@@ -108,6 +108,70 @@ describe('identity', () => {
   })
 })
 
+// The Bridge's B-04 parity scenario (wordpress-bridge tests/seo-verify.mjs):
+// pages rebuilt from exported SEO against the pages WordPress served. Its two
+// remaining errors were the source's own decisions — a deliberate noindex and a
+// syndicated canonical — which verify reported whatever the baseline said.
+const withCanonical = (doc: VerifyDocument, href: string) => ({
+  ...doc,
+  html: doc.html.replace(/<link rel="canonical" href="[^"]*">/, `<link rel="canonical" href="${href}">`),
+})
+
+describe('decisions the old site already made', () => {
+  const OLD = 'http://old.example.test'
+  const run = (documents: VerifyDocument[], baseline?: VerifyDocument[]) =>
+    verify({ site: SITE, documents, ...(baseline ? { baseline: { documents: baseline } } : {}), groups: ['identity', 'indexing'] })
+  const noindex = { head: '<meta name="robots" content="noindex, follow">' }
+
+  it('a noindex the baseline also had is kept, as info', () => {
+    const report = run([page('/thanks', noindex)], [page('/thanks', noindex)])
+    const found = report.findings.filter(f => f.check === 'indexing.noindex')
+    expect(found).toHaveLength(1)
+    expect(found[0]!.severity).toBe('info')
+    expect(found[0]!.message).toContain('as it was on the baseline')
+    expect(report.passed).toBe(true)
+  })
+
+  it('a noindex the baseline did not have is still the staging leak', () => {
+    expect(run([page('/a', noindex)], [page('/a')]).findings.find(f => f.check === 'indexing.noindex')!.severity).toBe('error')
+    // A page the baseline does not have cannot have been noindex there.
+    expect(run([page('/new', noindex)], [page('/a', noindex)]).findings.find(f => f.check === 'indexing.noindex')!.severity).toBe('error')
+    // The header counts on either side.
+    const header = { headers: { 'x-robots-tag': 'noindex' } }
+    expect(run([page('/a', header)], [page('/a', noindex)]).findings.find(f => f.check === 'indexing.noindex')!.severity).toBe('info')
+  })
+
+  it('a canonical to another site that the baseline declared too is kept, as info', () => {
+    const report = run(
+      [withCanonical(page('/syndicated'), 'https://original.test/story/')],
+      [withCanonical({ ...page('/syndicated'), url: `${OLD}/syndicated/` }, 'https://original.test/story')],
+    )
+    const found = report.findings.filter(f => f.check === 'identity.canonical-mismatch')
+    expect(found.map(f => f.severity)).toEqual(['info'])
+    expect(report.passed).toBe(true)
+  })
+
+  it('an in-site canonical to another page carries over from the old origin to the new', () => {
+    const found = run(
+      [withCanonical(page('/print'), `${SITE}/article`)],
+      [withCanonical({ ...page('/print'), url: `${OLD}/print/` }, `${OLD}/article/`)],
+    ).findings.filter(f => f.check === 'identity.canonical-mismatch')
+    expect(found.map(f => f.severity)).toEqual(['info'])
+  })
+
+  it('a canonical the baseline pointed elsewhere, or not away at all, is still an error', () => {
+    const elsewhere = run(
+      [withCanonical(page('/syndicated'), 'https://original.test/story')],
+      [withCanonical(page('/syndicated'), 'https://original.test/another-story')],
+    )
+    expect(elsewhere.findings.find(f => f.check === 'identity.canonical-mismatch')!.severity).toBe('error')
+    // The clone failure: the old page was self-canonical, the new one carries the template's.
+    const clone = run([withCanonical(page('/about'), `${SITE}/template-post`)], [page('/about')])
+    expect(clone.findings.find(f => f.check === 'identity.canonical-mismatch')!.severity).toBe('error')
+    expect(clone.passed).toBe(false)
+  })
+})
+
 describe('indexing', () => {
   it('fails a noindex left over from staging, from the meta or the header', () => {
     expect(one({ site: SITE, documents: [page('/a', { head: '<meta name="robots" content="noindex, nofollow">' })] }, 'indexing.noindex').severity).toBe('error')

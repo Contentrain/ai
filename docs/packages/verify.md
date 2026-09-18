@@ -75,7 +75,7 @@ must not fail its own gate.
 | `identity.title-duplicate` | error | Two titles in the head — a crawler picks one and it is not defined which. A `<title>` inside an inline `<svg>` is an accessibility label and is not counted |
 | `identity.canonical-missing` | warning | No canonical link |
 | `identity.canonical-duplicate` | error | Two canonicals: the page says two different things about itself |
-| `identity.canonical-mismatch` | error | A page carrying another page's canonical |
+| `identity.canonical-mismatch` | error | A page carrying another page's canonical. `info` when the baseline page declared the same target |
 | `identity.description-missing` | warning | No meta description |
 | `identity.open-graph-incomplete` | warning | Missing `og:title` / `og:type` / `og:url` — shares render without a card |
 | `identity.twitter-card-missing` | info | No `twitter:card` |
@@ -91,7 +91,7 @@ than having no canonical at all.
 
 | Check | Severity | What it catches |
 |---|---|---|
-| `indexing.noindex` | error | A `noindex` in the robots meta or `X-Robots-Tag` |
+| `indexing.noindex` | error | A `noindex` in the robots meta or `X-Robots-Tag`. `info` when the baseline page was noindex too |
 | `indexing.sitemap-missing-entry` | warning | An indexable page not in the sitemap. A `noindex` page is not asked to be in it |
 | `indexing.sitemap-stale-entry` | warning | The sitemap lists a page the build does not serve |
 

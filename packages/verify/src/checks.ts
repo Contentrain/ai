@@ -48,6 +48,19 @@ function finding(f: Finding): Finding {
 
 // ─── identity ───
 
+/**
+ * Where a canonical points, comparable between the old site and the new one:
+ * the path when it stays on the host of the page that declares it (the two
+ * sites live on different origins), origin and path when it leaves it.
+ */
+function canonicalTarget(href: string, docUrl: string, site?: string): string | undefined {
+  const declared = resolve(href, docUrl, site)
+  const own = absolute(docUrl, site) ?? resolve(docUrl, '/', site)
+  if (!declared || !own) return undefined
+  const host = new URL(declared)
+  return host.host === new URL(own).host ? identity(declared, site) : host.origin + identity(declared, site)
+}
+
 export function identityChecks(doc: VerifyDocument, ctx: Context): Finding[] {
   const out: Finding[] = []
   const url = doc.url
@@ -94,12 +107,20 @@ export function identityChecks(doc: VerifyDocument, ctx: Context): Finding[] {
     const declared = resolve(canonicals[0]!.href, url, ctx.input.site)
     const self = absolute(url, ctx.input.site) ?? resolve(url, '/', ctx.input.site)
     if (declared && self && identity(declared, ctx.input.site) !== identity(self, ctx.input.site)) {
+      // The same decision on the old site — syndicated content canonicalising
+      // to its original — is the source's intent, carried over, not a clone's
+      // leftover. Kept visible, not failed.
+      const target = canonicalTarget(canonicals[0]!.href, url, ctx.input.site)
+      const before = ctx.baselineByIdentity.get(identity(url, ctx.input.site))
+      const beforeCanonicals = before ? linksRel(before.html, 'canonical') : []
+      const kept = target !== undefined && beforeCanonicals.length === 1
+        && canonicalTarget(beforeCanonicals[0]!.href, before!.url, ctx.input.site) === target
       out.push(finding({
         group,
         check: 'identity.canonical-mismatch',
-        severity: 'error',
+        severity: kept ? 'info' : 'error',
         url,
-        message: 'Canonical points at a different page.',
+        message: kept ? 'Canonical points at a different page, as it did on the baseline — kept.' : 'Canonical points at a different page.',
         detail: `${canonicals[0]!.href} ≠ ${url}`,
       }))
     }
@@ -149,7 +170,19 @@ export function indexingChecks(doc: VerifyDocument, ctx: Context): Finding[] {
   // deploys, serves — and disappears from search over the following weeks.
   const reason = noindexReason(doc)
   if (reason) {
-    out.push(finding({ group, check: 'indexing.noindex', severity: 'error', url, message: 'Page is marked noindex.', detail: reason }))
+    // A page the old site already kept out of search — a thank-you page, an
+    // internal archive — is the source's decision, carried over. Kept visible,
+    // not failed: the leak is a noindex the old site did not have.
+    const before = ctx.baselineByIdentity.get(identity(url, ctx.input.site))
+    const kept = before !== undefined && noindexReason(before) !== undefined
+    out.push(finding({
+      group,
+      check: 'indexing.noindex',
+      severity: kept ? 'info' : 'error',
+      url,
+      message: kept ? 'Page is marked noindex, as it was on the baseline — kept.' : 'Page is marked noindex.',
+      detail: reason,
+    }))
   }
 
   if (ctx.input.sitemap !== undefined && !isSitemapIndex(ctx.input.sitemap)) {
