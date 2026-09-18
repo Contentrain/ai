@@ -71,12 +71,12 @@ a page must not fail its own gate.
 | | `identity.title-duplicate` | error | Two titles in the head — a crawler picks one, undefined which. A `<title>` inside an inline `<svg>` is an accessibility label and is not counted |
 | | `identity.canonical-missing` | warning | No canonical link |
 | | `identity.canonical-duplicate` | error | Two canonicals: the page says two things about itself |
-| | `identity.canonical-mismatch` | error | **The clone failure.** A page carrying the template's canonical points the whole site at one URL and removes it from the index. Invisible in a browser, worse than having no canonical |
+| | `identity.canonical-mismatch` | error | **The clone failure.** A page carrying the template's canonical points the whole site at one URL and removes it from the index. Invisible in a browser, worse than having no canonical. When the baseline page declared the same canonical target (a syndicated post pointing at its original), the finding is `info`: the source's decision was carried over |
 | | `identity.description-missing` | warning | No meta description |
 | | `identity.open-graph-incomplete` | warning | Missing `og:title` / `og:type` / `og:url` — shares render without a card |
 | | `identity.twitter-card-missing` | info | No `twitter:card` |
 | identity | `identity.lang-missing` | warning | No `lang` on `<html>` — what a screen reader picks a voice from |
-| indexing | `indexing.noindex` | error | **The staging leak.** A `noindex` in the meta or `X-Robots-Tag` survives deploy and the site disappears from search over the following weeks |
+| indexing | `indexing.noindex` | error | **The staging leak.** A `noindex` in the meta or `X-Robots-Tag` survives deploy and the site disappears from search over the following weeks. When the baseline page was noindex too, the finding is `info`: the page was deliberately kept out of search |
 | | `indexing.sitemap-missing-entry` | warning | An indexable page is not in the sitemap (a `noindex` page is not asked to be) |
 | | `indexing.sitemap-stale-entry` | warning | The sitemap lists a page the build does not serve |
 | status | `status.mismatch` | error | The status changed against the baseline |
