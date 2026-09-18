@@ -13,7 +13,7 @@ import { type BatchLimits, estimateTokens, planBatches } from './batch.js'
 import type { DecisionBudget } from './budget.js'
 import { CircuitBreaker } from './budget.js'
 import { type CachedDecision, type DecisionCache, MemoryDecisionCache, cacheKey } from './cache.js'
-import { JevError, buildJevRequest, createJevProvider } from './jev.js'
+import { DEFAULT_JEV_MODEL, JevError, buildJevRequest, createJevProvider, requestShapeHash } from './jev.js'
 import { BUILTIN_KINDS } from './kinds/index.js'
 import { noopLlmProvider } from './llm.js'
 import type { Decision, DecisionProvider, FallbackReason, KindSpec, Outcome, RuleVerdict } from './types.js'
@@ -52,6 +52,12 @@ export interface DecideOptions<I = unknown> {
   rule?: ((input: I) => RuleVerdict | undefined) | null
   /** Skip the cache lookup and do not store the answer. */
   noCache?: boolean
+  /**
+   * Ask a repeated input once (default). `false` asks every input as its own
+   * item, in the caller's order — what reproducing a calibrated request needs,
+   * since folding renumbers the items a request carries.
+   */
+  fold?: boolean
 }
 
 export interface Decider {
@@ -61,8 +67,10 @@ export interface Decider {
 }
 
 interface Pending {
-  /** Positions in the caller's input list sharing this key. */
+  /** Positions in the caller's input list this item answers. */
   at: number[]
+  /** Unique within one call: the cache key, or the key and position when not folding. */
+  id: string
   key: string
   shaped: unknown
   rule: RuleVerdict | undefined
@@ -75,8 +83,8 @@ function validOutcome(spec: KindSpec<any, any>, outcome: Outcome | undefined): o
   return Number.isFinite(outcome.confidence)
 }
 
-function fromOutcome(spec: KindSpec<any, any>, key: string, outcome: Outcome, source: Decision['source'], ms: number): Decision {
-  const decision: Decision = { kind: spec.kind, version: spec.version, key, confidence: outcome.confidence, source, ms }
+function fromOutcome(spec: KindSpec<any, any>, key: string, shape: string, outcome: Outcome, source: Decision['source'], ms: number): Decision {
+  const decision: Decision = { kind: spec.kind, version: spec.version, key, shape, confidence: outcome.confidence, source, ms }
   if (outcome.choice !== undefined) decision.choice = outcome.choice
   if (outcome.score !== undefined) decision.score = outcome.score
   if (outcome.probabilities) decision.probabilities = outcome.probabilities
@@ -90,10 +98,10 @@ function applyFloor(spec: KindSpec<any, any>, decision: Decision): Decision {
   return { ...decision, proposed: decision.choice, choice: floor.choice }
 }
 
-function fallback(spec: KindSpec<any, any>, item: Pending, reason: FallbackReason, ms: number): Decision {
+function fallback(spec: KindSpec<any, any>, item: Pending, shape: string, reason: FallbackReason, ms: number): Decision {
   const base = item.rule
-    ? fromOutcome(spec, item.key, item.rule, 'rule', ms)
-    : { kind: spec.kind, version: spec.version, key: item.key, confidence: 0, source: 'rule' as const, ms }
+    ? fromOutcome(spec, item.key, shape, item.rule, 'rule', ms)
+    : { kind: spec.kind, version: spec.version, key: item.key, shape, confidence: 0, source: 'rule' as const, ms }
   return { ...base, unreviewed: true, fallback: reason }
 }
 
@@ -103,7 +111,7 @@ function fromCache(cached: CachedDecision, key: string, ms: number): Decision {
 }
 
 function toCached(decision: Decision, source: 'jev' | 'llm', at: string): CachedDecision {
-  const cached: CachedDecision = { kind: decision.kind, version: decision.version, confidence: decision.confidence, source, at }
+  const cached: CachedDecision = { kind: decision.kind, version: decision.version, shape: decision.shape, confidence: decision.confidence, source, at }
   for (const field of ['choice', 'score', 'probabilities', 'proposed', 'model'] as const) {
     if (decision[field] !== undefined) Object.assign(cached, { [field]: decision[field] })
   }
@@ -124,6 +132,14 @@ export function createDecider(config: DeciderConfig = {}): Decider {
   if (config.jev !== false) providers.push(config.jev ?? createJevProvider())
   providers.push(config.llm ?? noopLlmProvider)
   const breakers = new Map<string, CircuitBreaker>(providers.map(p => [p.name, config.breakers?.[p.name] ?? new CircuitBreaker()]))
+  // The request shape a kind's answers are keyed under: the Jev prompt as the configured Jev provider would send it.
+  const jevModel = providers.find(p => p.name === 'jev')?.model ?? DEFAULT_JEV_MODEL
+  const shapes = new Map<string, string>()
+  const shapeOf = (spec: KindSpec<any, any>): string => {
+    let shape = shapes.get(spec.kind)
+    if (shape === undefined) shapes.set(spec.kind, shape = requestShapeHash(spec, jevModel))
+    return shape
+  }
 
   function cost(usage: { input_tokens: number, output_tokens: number } | undefined, parts: number, index: number): Decision['cost'] {
     if (!usage) return undefined
@@ -136,28 +152,38 @@ export function createDecider(config: DeciderConfig = {}): Decider {
   }
 
   /** Ask one provider about `items`; answered items are returned by key, the rest keep their reason to fall back. */
-  async function ask(provider: DecisionProvider, spec: KindSpec<any, any>, items: Pending[], tenant: string): Promise<{ answered: Map<string, Decision>, reasons: Map<string, FallbackReason> }> {
+  async function ask(provider: DecisionProvider, spec: KindSpec<any, any>, shape: string, items: Pending[], tenant: string): Promise<{ answered: Map<string, Decision>, reasons: Map<string, FallbackReason> }> {
     const answered = new Map<string, Decision>()
     const reasons = new Map<string, FallbackReason>()
     const breaker = breakers.get(provider.name)!
     if (!provider.available() || (provider.name === 'jev' && !spec.jev)) {
-      for (const item of items) reasons.set(item.key, 'no_provider')
+      for (const item of items) reasons.set(item.id, 'no_provider')
       return { answered, reasons }
     }
     let allowed = items
     if (config.budget) {
       const granted = await config.budget.take(tenant, items.length, now())
       allowed = items.slice(0, granted)
-      for (const item of items.slice(granted)) reasons.set(item.key, 'budget')
+      for (const item of items.slice(granted)) reasons.set(item.id, 'budget')
     }
     if (!allowed.length) return { answered, reasons }
 
-    const fixed = spec.jev ? estimateTokens(spec.jev.preamble) : 0
-    const costs = allowed.map(item => Math.max(1, estimateTokens(JSON.stringify(buildJevRequestFor(spec, item.shaped))) - fixed))
-    for (const batch of planBatches(costs, fixed, config.batch)) {
-      const members = batch.map(i => allowed[i]!)
+    // Items of different groups never share a request; within a group, the
+    // kind's calibrated batch limits win over the decider's.
+    const groups = new Map<string, Pending[]>()
+    for (const item of allowed) {
+      const group = spec.jev?.group?.(item.shaped) ?? ''
+      groups.set(group, [...(groups.get(group) ?? []), item])
+    }
+    const batches: Pending[][] = []
+    for (const members of groups.values()) {
+      const fixed = spec.jev?.header ? estimateTokens(spec.jev.header(members[0]!.shaped)) : 0
+      const costs = members.map(item => Math.max(1, estimateTokens(JSON.stringify(buildJevRequestFor(spec, item.shaped))) - fixed))
+      for (const batch of planBatches(costs, fixed, spec.jev?.batch ?? config.batch)) batches.push(batch.map(i => members[i]!))
+    }
+    for (const members of batches) {
       if (!breaker.allows()) {
-        for (const item of members) reasons.set(item.key, 'circuit_open')
+        for (const item of members) reasons.set(item.id, 'circuit_open')
         continue
       }
       const started = performance.now()
@@ -168,20 +194,20 @@ export function createDecider(config: DeciderConfig = {}): Decider {
         members.forEach((item, i) => {
           const outcome = answer.outcomes[i]
           if (!validOutcome(spec, outcome)) {
-            reasons.set(item.key, 'no_answer')
+            reasons.set(item.id, 'no_answer')
             return
           }
-          const decision = fromOutcome(spec, item.key, outcome, provider.name, ms)
+          const decision = fromOutcome(spec, item.key, shape, outcome, provider.name, ms)
           const spent = cost(answer.usage, members.length, i)
           if (spent) decision.cost = spent
           if (answer.model) decision.model = answer.model
-          answered.set(item.key, applyFloor(spec, decision))
+          answered.set(item.id, applyFloor(spec, decision))
         })
       }
       catch (error) {
         breaker.failure()
         const reason: FallbackReason = error instanceof JevError && error.timeout ? 'timeout' : 'error'
-        for (const item of members) reasons.set(item.key, reason)
+        for (const item of members) reasons.set(item.id, reason)
       }
     }
     return { answered, reasons }
@@ -191,6 +217,8 @@ export function createDecider(config: DeciderConfig = {}): Decider {
     const spec = kinds.get(kind) as KindSpec<I, unknown> | undefined
     if (!spec) throw new TypeError(`unknown decision kind: ${kind} (known: ${[...kinds.keys()].join(', ')})`)
     const tenant = options.tenant ?? 'default'
+    const shape = shapeOf(spec)
+    const fold = options.fold ?? true
     const rule = options.rule === null ? undefined : (options.rule ?? spec.rule)
     const results: Decision[] = Array.from({ length: inputs.length })
 
@@ -199,16 +227,17 @@ export function createDecider(config: DeciderConfig = {}): Decider {
     inputs.forEach((input, i) => {
       const started = performance.now()
       const shaped = spec.shape(input)
-      const key = cacheKey(spec.kind, spec.version, shaped)
+      const key = cacheKey(spec.kind, spec.version, shape, shaped)
       const verdict = rule?.(input)
       const valid = verdict && validOutcome(spec, verdict) ? verdict : undefined
       if (valid?.final) {
-        results[i] = fromOutcome(spec, key, valid, 'rule', Math.round(performance.now() - started))
+        results[i] = fromOutcome(spec, key, shape, valid, 'rule', Math.round(performance.now() - started))
         return
       }
-      const existing = pending.get(key)
+      const id = fold ? key : `${key}#${i}`
+      const existing = pending.get(id)
       if (existing) existing.at.push(i)
-      else pending.set(key, { at: [i], key, shaped, rule: valid })
+      else pending.set(id, { at: [i], id, key, shaped, rule: valid })
     })
 
     let open = [...pending.values()]
@@ -218,7 +247,7 @@ export function createDecider(config: DeciderConfig = {}): Decider {
       const ms = Math.round(performance.now() - started)
       open = open.filter((item, i) => {
         const hit = hits[i]
-        if (hit?.kind !== spec.kind || hit.version !== spec.version) return true
+        if (hit?.kind !== spec.kind || hit.version !== spec.version || hit.shape !== shape) return true
         for (const at of item.at) results[at] = fromCache(hit, item.key, ms)
         return false
       })
@@ -227,20 +256,20 @@ export function createDecider(config: DeciderConfig = {}): Decider {
     const lastReason = new Map<string, FallbackReason>()
     for (const provider of providers) {
       if (!open.length) break
-      const { answered, reasons } = await ask(provider, spec, open, tenant)
-      for (const [key, decision] of answered) {
-        const item = pending.get(key)!
+      const { answered, reasons } = await ask(provider, spec, shape, open, tenant)
+      for (const [id, decision] of answered) {
+        const item = pending.get(id)!
         for (const at of item.at) results[at] = decision
-        if (!options.noCache) await cache.set(key, toCached(decision, provider.name, now().toISOString()))
+        if (!options.noCache) await cache.set(item.key, toCached(decision, provider.name, now().toISOString()))
       }
       // A reason from a provider that was actually tried beats "not configured" from one after it.
-      for (const [key, reason] of reasons) {
-        if (reason !== 'no_provider' || !lastReason.has(key)) lastReason.set(key, reason)
+      for (const [id, reason] of reasons) {
+        if (reason !== 'no_provider' || !lastReason.has(id)) lastReason.set(id, reason)
       }
-      open = open.filter(item => !answered.has(item.key))
+      open = open.filter(item => !answered.has(item.id))
     }
     for (const item of open) {
-      const decision = fallback(spec, item, lastReason.get(item.key) ?? 'no_provider', 0)
+      const decision = fallback(spec, item, shape, lastReason.get(item.id) ?? 'no_provider', 0)
       for (const at of item.at) results[at] = decision
     }
 

@@ -53,8 +53,10 @@ export interface Decision {
   kind: string
   /** The kind's schema version the decision was made under. */
   version: string
-  /** sha256 of kind, canonical shaped input and version — the cache key, and all the audit log keeps of the input. */
+  /** sha256 of kind, version, request shape and canonical shaped input — the cache key, and all the audit log keeps of the input. */
   key: string
+  /** Hash of the provider request shape the decision was keyed under (`requestShapeHash`); `none` for a kind with no provider prompt. */
+  shape: string
   choice?: string
   score?: number
   confidence: number
@@ -73,16 +75,30 @@ export interface Decision {
   model?: string
 }
 
-/** Per-item Jev prompt for a kind. It only ever sees the shaped input. */
+/**
+ * A kind's Jev request shape. It only ever sees the shaped input. The request a
+ * batch sends is `header(first item)` followed by one `Item <n>: <render>` line
+ * per item, with `questions('item<n>')` asked of every item.
+ *
+ * Everything here is part of what was calibrated. The request-shape hash
+ * (`requestShapeHash`) is taken over a request built from `probe`; it enters
+ * the cache key and the audit log, so a changed shape never reuses an answer.
+ */
 export interface JevSpec<S> {
-  /** State header shared by every item of a batch. */
-  preamble: string
-  /** One line describing one item. */
+  /** Text the request's state opens with, from the batch's first item. Absent: none. */
+  header?: (shaped: S) => string
+  /** Items in different groups never share a request (PoC-1 sent one site per request). */
+  group?: (shaped: S) => string
+  /** One item's line, after `Item <n>: `. */
   render: (shaped: S) => string
-  /** Questions asked of every item, keyed by a suffix unique within the kind. */
-  questions: Record<string, JevQuestion>
-  /** The item's answers (keyed by the same suffixes) as an outcome, or undefined when they do not make one. */
+  /** The questions asked of one item. Keys are suffixes: the request asks `<prefix>_<suffix>`. */
+  questions: (prefix: string) => Record<string, JevQuestion>
+  /** The item's answers (keyed by suffix) as an outcome, or undefined when they do not make one. */
   read: (answers: Record<string, JevAnswer>) => Outcome | undefined
+  /** Batch limits of the calibrated shape. They take precedence over the decider's. */
+  batch?: { maxItems?: number, maxTokens?: number }
+  /** A representative shaped input, used to hash the request shape. */
+  probe: S
 }
 
 export interface KindSpec<I = unknown, S = unknown> {
@@ -121,6 +137,8 @@ export interface DecisionProvider {
   readonly name: 'jev' | 'llm'
   /** Whether the provider can be asked at all (a token is set, a model is wired). */
   available: () => boolean
+  /** The model the provider asks, when it names one; part of the request shape. */
+  readonly model?: string
   /** Answer one batch. Throws on transport failure; the decider turns that into a fallback. */
   ask: (spec: KindSpec<any, any>, shaped: unknown[]) => Promise<ProviderAnswer>
 }

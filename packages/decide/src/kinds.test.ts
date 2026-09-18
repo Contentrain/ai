@@ -24,17 +24,21 @@ describe('scrubText', () => {
 })
 
 describe('punch_item', () => {
-  it('drops the link and scrubs label and reason', () => {
-    expect(shapePunchItem({
+  it('keeps whether there is a link but not the link, hashes the site into a group, and scrubs label and reason', () => {
+    const shaped = shapePunchItem({
       label: '(aile: page-0)',
       reason: 'şablon hero sızıntısı — 6 sayfa aynı görseli basıyor (/assets/409246aec03b8886.jpg)',
       link: 'https://example.org/page/',
-      site: { decision: 'KABUL + PUNCH LIST', median: 99.4, mobile_median: Number.NaN },
-    })).toEqual({
+      site: { name: 'example-org', url: 'https://example.org', decision: 'KABUL + PUNCH LIST', median: 99.4, mobile_median: Number.NaN },
+    })
+    expect(shaped).toEqual({
       label: '(aile: page-0)',
       reason: 'şablon hero sızıntısı — 6 sayfa aynı görseli basıyor (<path>)',
-      site: { decision: 'KABUL + PUNCH LIST', median: 99.4 },
+      linked: true,
+      site: { group: expect.stringMatching(/^[0-9a-f]{16}$/), decision: 'KABUL + PUNCH LIST', median: 99.4, mobile_median: null },
     })
+    expect(JSON.stringify(shaped)).not.toMatch(/example/)
+    expect(shapePunchItem({ label: 'a', reason: 'b' }).site).toEqual({ group: '', decision: null, median: null, mobile_median: null })
   })
 
   it('has a tentative class for run-report phrasings it recognises, and no opinion otherwise', () => {
@@ -80,7 +84,7 @@ describe('eligibility_band', () => {
 
   it('never offers needs_human to a provider', () => {
     expect(eligibilityBand.choices).not.toContain('needs_human')
-    expect(Object.keys((eligibilityBand.jev!.questions.eligibility as { criteria: object }).criteria)).not.toContain('needs_human')
+    expect(Object.keys((eligibilityBand.jev!.questions('item1').eligibility as { criteria: object }).criteria)).not.toContain('needs_human')
     expect(eligibilityBand.lowConfidence).toEqual({ threshold: 0.5, choice: 'needs_human' })
   })
 })

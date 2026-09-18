@@ -1,5 +1,5 @@
 {
-  "_about": "SYNTHETIC. Invented punch items, invented labels, invented answers. It exercises the calibration harness (replay, batching, scoring) and says nothing about Jev. The real PoC-1 set stays in .internal; see README.md.",
+  "_about": "SYNTHETIC. Invented punch items, invented labels, invented answers. It exercises the replay smoke test (shaping, grouping, batching, reading, scoring) and says nothing about Jev. The live gate is calibration/*.json; see README.md.",
   "items": [
     {
       "id": "synthetic-01",
@@ -26,6 +26,10 @@
           "type": "score",
           "score": 2.71,
           "confidence": 0.51
+        },
+        "needs_human": {
+          "type": "noul",
+          "noul": 0.5
         }
       }
     },
@@ -54,6 +58,10 @@
           "type": "score",
           "score": 1.88,
           "confidence": 0.48
+        },
+        "needs_human": {
+          "type": "noul",
+          "noul": 0.5
         }
       }
     },
@@ -82,6 +90,10 @@
           "type": "score",
           "score": 0.61,
           "confidence": 0.4
+        },
+        "needs_human": {
+          "type": "noul",
+          "noul": 0.5
         }
       }
     },
@@ -110,6 +122,10 @@
           "type": "score",
           "score": 2.02,
           "confidence": 0.44
+        },
+        "needs_human": {
+          "type": "noul",
+          "noul": 0.5
         }
       }
     },
@@ -138,6 +154,10 @@
           "type": "score",
           "score": 1.12,
           "confidence": 0.37
+        },
+        "needs_human": {
+          "type": "noul",
+          "noul": 0.5
         }
       }
     },
@@ -166,6 +186,10 @@
           "type": "score",
           "score": 1.05,
           "confidence": 0.35
+        },
+        "needs_human": {
+          "type": "noul",
+          "noul": 0.5
         }
       }
     },
@@ -194,6 +218,10 @@
           "type": "score",
           "score": 1.27,
           "confidence": 0.56
+        },
+        "needs_human": {
+          "type": "noul",
+          "noul": 0.5
         }
       }
     },
@@ -222,6 +250,10 @@
           "type": "score",
           "score": 1.93,
           "confidence": 0.42
+        },
+        "needs_human": {
+          "type": "noul",
+          "noul": 0.5
         }
       }
     },
@@ -250,6 +282,10 @@
           "type": "score",
           "score": 1.61,
           "confidence": 0.3
+        },
+        "needs_human": {
+          "type": "noul",
+          "noul": 0.5
         }
       }
     },
@@ -278,6 +314,10 @@
           "type": "score",
           "score": 2.49,
           "confidence": 0.45
+        },
+        "needs_human": {
+          "type": "noul",
+          "noul": 0.5
         }
       }
     },
@@ -306,6 +346,10 @@
           "type": "score",
           "score": 1.34,
           "confidence": 0.39
+        },
+        "needs_human": {
+          "type": "noul",
+          "noul": 0.5
         }
       }
     },
@@ -334,6 +378,10 @@
           "type": "score",
           "score": 0.35,
           "confidence": 0.41
+        },
+        "needs_human": {
+          "type": "noul",
+          "noul": 0.5
         }
       }
     }

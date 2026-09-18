@@ -1,9 +1,10 @@
 // ─── Decision cache ───
 //
 // A provider is asked about the same input once. The key is
-// sha256(kind, schema version, canonical shaped input): the same shaped input
-// under the same schema always maps to the same entry, and a schema bump
-// retires every entry made under the old one. Only provider answers are
+// sha256(kind, schema version, request shape, canonical shaped input): the same
+// shaped input under the same schema and the same provider request always maps
+// to the same entry, and a schema bump or a changed request shape
+// (`requestShapeHash`) retires every entry made under the old one. Only provider answers are
 // cached — a rule answer is free to recompute and a fallback is not a decision
 // anyone reviewed.
 //
@@ -18,7 +19,7 @@ import { canonicalStringify } from '@contentrain/types'
 import type { Decision } from './types.js'
 
 /** What a cache keeps of a decision: the answer, never the input. */
-export type CachedDecision = Pick<Decision, 'kind' | 'version' | 'choice' | 'score' | 'confidence' | 'probabilities' | 'proposed' | 'model'> & {
+export type CachedDecision = Pick<Decision, 'kind' | 'version' | 'shape' | 'choice' | 'score' | 'confidence' | 'probabilities' | 'proposed' | 'model'> & {
   source: 'jev' | 'llm'
   /** ISO time the provider answered. */
   at: string
@@ -29,8 +30,8 @@ export interface DecisionCache {
   set: (key: string, value: CachedDecision) => Promise<void>
 }
 
-export function cacheKey(kind: string, version: string, shaped: unknown): string {
-  return createHash('sha256').update(`${kind}\n${version}\n${canonicalStringify(shaped)}`).digest('hex')
+export function cacheKey(kind: string, version: string, shape: string, shaped: unknown): string {
+  return createHash('sha256').update(`${kind}\n${version}\n${shape}\n${canonicalStringify(shaped)}`).digest('hex')
 }
 
 export class MemoryDecisionCache implements DecisionCache {

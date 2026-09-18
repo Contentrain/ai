@@ -4,7 +4,7 @@ import type { JevAnswer } from './types.js'
 export interface ScriptedCall {
   url: string
   headers: Record<string, string>
-  body: { state: string, model: string, questions: Record<string, { type: string, instructions: string }> }
+  body: { state: string, model: string, questions: Record<string, { type: string, instructions: string, criteria?: unknown }> }
 }
 
 /** A fetch that answers every item from `answer(line)`, recording each call. */
@@ -27,6 +27,7 @@ export function scriptedFetch(answer: (line: string, n: number) => Record<string
 export const punchAnswer = (choice: string, score: number, confidence = 0.8): Record<string, JevAnswer> => ({
   class: { type: 'choice', choice, confidence },
   severity: { type: 'score', score, confidence },
+  needs_human: { type: 'noul', noul: 0.5 },
 })
 
 export const eligibilityAnswer = (choice: string, confidence: number): Record<string, JevAnswer> => ({

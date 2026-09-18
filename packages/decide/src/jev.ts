@@ -8,10 +8,13 @@
 //   - Requests go to one fixed endpoint. There is no base-URL option.
 //   - The request carries only what the kind's shaper and renderer produced.
 
-import type { DecisionProvider, JevAnswer, KindSpec, Outcome, ProviderAnswer } from './types.js'
+import { createHash } from 'node:crypto'
+import { canonicalStringify } from '@contentrain/types'
+import type { DecisionProvider, JevAnswer, JevQuestion, KindSpec, Outcome, ProviderAnswer } from './types.js'
 
 export const JEV_ENDPOINT = 'https://api.typesafe.ai/v1/systemone'
 export const JEV_TOKEN_ENV = 'CONTENTRAIN_JEW_API_TOKEN'
+export const DEFAULT_JEV_MODEL = 'jev-latest'
 
 export interface JevProviderOptions {
   /** Where the token is read from. Default `process.env`. */
@@ -20,7 +23,7 @@ export interface JevProviderOptions {
   fetch?: typeof globalThis.fetch
   /** Per request. Default 15s. */
   timeoutMs?: number
-  /** Default `jev-latest`. */
+  /** Default `jev-latest`. Part of the request shape: a different model is a different cache. */
   model?: string
 }
 
@@ -31,27 +34,50 @@ export class JevError extends Error {
   }
 }
 
-/** The prompt one batch sends: every item's line under the kind's preamble, every item's questions prefixed `itemN_`. */
-export function buildJevRequest(spec: KindSpec<any, any>, shaped: readonly unknown[]): { state: string, questions: Record<string, unknown> } {
+/**
+ * The request one batch sends: the kind's header from the first item, then one
+ * `Item <n>: ` line per item; every item's questions keyed `item<n>_<suffix>`.
+ */
+export function buildJevRequest(spec: KindSpec<any, any>, shaped: readonly unknown[]): { state: string, questions: Record<string, JevQuestion> } {
   const jev = spec.jev
   if (!jev) throw new TypeError(`kind ${spec.kind} has no Jev prompt`)
+  const header = shaped.length && jev.header ? jev.header(shaped[0]) : ''
   const lines = shaped.map((item, i) => `Item ${i + 1}: ${jev.render(item)}`)
-  const questions: Record<string, unknown> = {}
+  const questions: Record<string, JevQuestion> = {}
   shaped.forEach((_, i) => {
-    for (const [suffix, question] of Object.entries(jev.questions))
-      questions[`item${i + 1}_${suffix}`] = { ...question, instructions: `Item ${i + 1} — ${question.instructions}` }
+    const prefix = `item${i + 1}`
+    for (const [suffix, question] of Object.entries(jev.questions(prefix))) questions[`${prefix}_${suffix}`] = question
   })
-  return { state: `${jev.preamble}\n${lines.join('\n')}`, questions }
+  return { state: header + lines.join('\n'), questions }
+}
+
+/**
+ * Hash of everything that shapes a kind's provider request: the model, the
+ * batch limits, whether items are grouped, and the request built from two
+ * copies of the kind's probe (header, line format, questions, criteria). A
+ * change to any of them changes the hash, and with it every cache key.
+ */
+export function requestShapeHash(spec: KindSpec<any, any>, model = DEFAULT_JEV_MODEL): string {
+  const jev = spec.jev
+  if (!jev) return 'none'
+  const shape = {
+    model,
+    batch: jev.batch ?? null,
+    grouped: Boolean(jev.group),
+    request: buildJevRequest(spec, [jev.probe, jev.probe]),
+  }
+  return createHash('sha256').update(canonicalStringify(shape)).digest('hex').slice(0, 16)
 }
 
 export function createJevProvider(options: JevProviderOptions = {}): DecisionProvider {
   const env = options.env ?? process.env
   const doFetch = options.fetch ?? globalThis.fetch
   const timeoutMs = options.timeoutMs ?? 15_000
-  const model = options.model ?? 'jev-latest'
+  const model = options.model ?? DEFAULT_JEV_MODEL
 
   return {
     name: 'jev',
+    model,
     available: () => Boolean(env[JEV_TOKEN_ENV]?.trim()),
     async ask(spec, shaped) {
       const token = env[JEV_TOKEN_ENV]?.trim()
@@ -94,7 +120,7 @@ export function readJevResponse(spec: KindSpec<any, any>, count: number, body: u
   for (let i = 1; i <= count; i++) {
     const own: Record<string, JevAnswer> = {}
     let complete = true
-    for (const suffix of Object.keys(jev.questions)) {
+    for (const suffix of Object.keys(jev.questions(`item${i}`))) {
       const answer = readAnswer(answers[`item${i}_${suffix}`])
       if (!answer) complete = false
       else own[suffix] = answer

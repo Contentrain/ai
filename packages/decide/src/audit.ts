@@ -16,6 +16,8 @@ export interface AuditRecord {
   version: string
   /** The input hash — the same value as the cache key. */
   key: string
+  /** The provider request shape the decision was keyed under. */
+  shape: string
   choice?: string
   score?: number
   confidence: number
@@ -41,6 +43,7 @@ export function toAuditRecord(decision: Decision, at: string, tenant: string): A
     kind: decision.kind,
     version: decision.version,
     key: decision.key,
+    shape: decision.shape,
     confidence: decision.confidence,
     source: decision.source,
     ms: decision.ms,

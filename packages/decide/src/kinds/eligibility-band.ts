@@ -14,7 +14,7 @@
 // as `options.rule`. A Jev answer under 0.5 confidence becomes `needs_human`,
 // which is never offered to Jev as a choice.
 
-import type { JevAnswer, KindSpec, RuleVerdict } from '../types.js'
+import type { JevAnswer, JevQuestion, KindSpec, RuleVerdict } from '../types.js'
 import { scrubSlug } from './shape.js'
 
 export const ELIGIBILITY_CHOICES = ['eligible', 'access_blocked', 'page_only', 'custom_type'] as const
@@ -49,6 +49,8 @@ const BAND_FACTOR = 2
 
 export function shapeEligibility(input: EligibilityBandInput): EligibilityBandShaped {
   const rest = input.rest
+  // Types whose slugs scrub to the same slug are summed. judgeEligibility does
+  // not merge them, but it only ever uses the total, which is the same either way.
   const counts = new Map<string, number>()
   for (const type of rest.postTypes ?? []) {
     if (type.slug === 'post' || type.slug === 'page' || !((type.count ?? 0) > 0)) continue
@@ -102,6 +104,21 @@ function readEligibility(answers: Record<string, JevAnswer>) {
   return { choice: answer.choice, confidence: answer.confidence, ...(answer.probabilities ? { probabilities: answer.probabilities } : {}) }
 }
 
+function eligibilityQuestions(prefix: string): Record<string, JevQuestion> {
+  return {
+    eligibility: {
+      type: 'choice',
+      instructions: `${prefix}: where does this site's content live, and can the engine move it?`,
+      criteria: {
+        eligible: 'Standard blog posts carry the site\'s content; moving posts and pages moves what matters.',
+        custom_type: 'The content lives mainly in custom post types (products, portfolio, members); moving posts and pages alone leaves it behind.',
+        page_only: 'No real blog: a corporate or brochure site whose content is its pages.',
+        access_blocked: 'What the scan could see is not the site\'s real content; authorized access is needed to reach it.',
+      },
+    },
+  }
+}
+
 export const eligibilityBand: KindSpec<EligibilityBandInput, EligibilityBandShaped> = {
   kind: 'eligibility_band',
   version: '1',
@@ -109,21 +126,11 @@ export const eligibilityBand: KindSpec<EligibilityBandInput, EligibilityBandShap
   shape: shapeEligibility,
   rule: eligibilityRule,
   jev: {
-    preamble: 'WordPress sites considered for migration. Each item is what a public discovery scan counted on one site. The migration engine moves standard posts and pages only.',
+    header: () => 'WordPress sites considered for migration. Each item is what a public discovery scan counted on one site. The migration engine moves standard posts and pages only.\n',
     render: renderEligibility,
-    questions: {
-      eligibility: {
-        type: 'choice',
-        instructions: 'where does this site\'s content live, and can the engine move it?',
-        criteria: {
-          eligible: 'Standard blog posts carry the site\'s content; moving posts and pages moves what matters.',
-          custom_type: 'The content lives mainly in custom post types (products, portfolio, members); moving posts and pages alone leaves it behind.',
-          page_only: 'No real blog: a corporate or brochure site whose content is its pages.',
-          access_blocked: 'What the scan could see is not the site\'s real content; authorized access is needed to reach it.',
-        },
-      },
-    },
+    questions: eligibilityQuestions,
     read: readEligibility,
+    probe: { access: 'open', rest_reachable: true, posts: 20, pages: 3, post_samples: 5, page_samples: 3, custom_types: [{ slug: 'product', count: 30 }] },
   },
   lowConfidence: { threshold: 0.5, choice: NEEDS_HUMAN },
 }

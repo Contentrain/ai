@@ -4,13 +4,20 @@
 // kind labels each item with its root cause (class) and how much it matters
 // (severity), as an advisory column beside the item — never as a gate.
 //
-// The class criteria and the severity rubric are PoC-1's, verbatim (Turkish,
-// because the run report is): that wording is what was calibrated — 37/40
-// class agreement and 39/40 severity within one level against hand labels,
-// 12/12 classes stable over three repeats. Changing a word means bumping
-// `version` and measuring again.
+// The request is PoC-1's, word for word, because that is the shape that was
+// measured: one request per site (at most 25 items), a three-line site header,
+// `Item <n>: etiket=…, link=…, neden=…` lines, and three questions per item —
+// class, severity and needs_human. needs_human is asked and not read: PoC-1
+// found it unreliable, but dropping the question changed the other two
+// answers. The one deliberate difference is privacy: the site's name, its URL
+// and item links are sent as placeholders.
+//
+// Any change here changes `requestShapeHash(punchItem)`. The test pins that
+// hash to the one in the latest `calibration/*.json`; a new shape needs a new
+// live calibration (`pnpm calibration:live`) before it can ship.
 
-import type { JevAnswer, KindSpec, RuleVerdict } from '../types.js'
+import { createHash } from 'node:crypto'
+import type { JevAnswer, JevQuestion, KindSpec, RuleVerdict } from '../types.js'
 import { finite, scrubText } from './shape.js'
 
 export const PUNCH_CLASSES = ['product_defect', 'source_limit', 'cosmetic', 'measurement'] as const
@@ -36,31 +43,40 @@ export interface PunchItemInput {
   label: string
   /** Why it is on the list, as the run report words it. */
   reason: string
-  /** A link to the page. Never sent: the shaper drops it. */
+  /** A link to the page. Never sent: the request says only whether there is one. */
   link?: string
-  /** The site-level verdict the item sits under. */
-  site?: { decision?: string, median?: number, mobile_median?: number }
+  /** The site the item belongs to. `name` and `url` only group items into one request and are never sent. */
+  site?: { name?: string, url?: string, decision?: string, median?: number, mobile_median?: number }
 }
 
 export interface PunchItemShaped {
   label: string
   reason: string
-  site?: { decision?: string, median?: number, mobile_median?: number }
+  /** Whether the item has a link; the link itself is not kept. */
+  linked: boolean
+  site: {
+    /** Opaque: a hash of the site's name or URL, so one site's items share a request. Never sent. */
+    group: string
+    decision: string | null
+    median: number | null
+    mobile_median: number | null
+  }
 }
 
 export function shapePunchItem(input: PunchItemInput): PunchItemShaped {
-  const shaped: PunchItemShaped = { label: scrubText(String(input.label ?? ''), 80), reason: scrubText(String(input.reason ?? ''), 300) }
-  const site = input.site
-  if (site) {
-    const context: NonNullable<PunchItemShaped['site']> = {}
-    if (typeof site.decision === 'string') context.decision = scrubText(site.decision, 40)
-    const median = finite(site.median)
-    const mobile = finite(site.mobile_median)
-    if (median !== undefined) context.median = median
-    if (mobile !== undefined) context.mobile_median = mobile
-    if (Object.keys(context).length) shaped.site = context
+  const site = input.site ?? {}
+  const identity = site.name ?? site.url ?? ''
+  return {
+    label: scrubText(String(input.label ?? ''), 120),
+    reason: scrubText(String(input.reason ?? ''), 500),
+    linked: Boolean(input.link),
+    site: {
+      group: identity ? createHash('sha256').update(identity).digest('hex').slice(0, 16) : '',
+      decision: typeof site.decision === 'string' ? scrubText(site.decision, 40) : null,
+      median: finite(site.median) ?? null,
+      mobile_median: finite(site.mobile_median) ?? null,
+    },
   }
-  return shaped
 }
 
 // Run-report phrasings whose class is not in doubt. Tentative only: a rule
@@ -77,12 +93,23 @@ export function punchItemRule(input: PunchItemInput): RuleVerdict | undefined {
   return hit ? { choice: hit[1], confidence: 1, final: false } : undefined
 }
 
+// PoC-1's `siteStateHeader`, with the site's name and URL as placeholders.
+function punchHeader(item: PunchItemShaped): string {
+  return `Site: <site> (<url>)\nGenel karar: ${item.site.decision}\nMedyan kalite skoru: ${item.site.median}, mobil: ${item.site.mobile_median}\n`
+}
+
+// PoC-1's `itemText`, after its `Item <n>: ` prefix.
 function renderPunchItem(item: PunchItemShaped): string {
-  const parts = [`etiket="${item.label}"`, `neden="${item.reason}"`]
-  if (item.site?.decision) parts.push(`site kararı="${item.site.decision}"`)
-  if (item.site?.median !== undefined) parts.push(`site medyan skoru=${item.site.median}`)
-  if (item.site?.mobile_median !== undefined) parts.push(`site mobil medyan=${item.site.mobile_median}`)
-  return parts.join(', ')
+  return `etiket="${item.label}", link="${item.linked ? '<url>' : '(yok)'}", neden="${item.reason}"`
+}
+
+// PoC-1's `itemQuestions`.
+function punchQuestions(prefix: string): Record<string, JevQuestion> {
+  return {
+    class: { type: 'choice', instructions: `${prefix} için: bu kalemin kök nedeni nedir?`, criteria: PUNCH_CLASS_CRITERIA },
+    severity: { type: 'score', instructions: `${prefix} için: bu kalem ne kadar ciddi?`, criteria: PUNCH_SEVERITY_CRITERIA },
+    needs_human: { type: 'noul', instructions: `${prefix} kalemi, teslim öncesi bir insanın karar vermesini gerektiriyor (otomatik/açık bir düzeltme değil, yargı gerektiriyor).` },
+  }
 }
 
 function readPunchItem(answers: Record<string, JevAnswer>) {
@@ -102,18 +129,24 @@ export const severityLevel = (score: number): number => Math.min(4, Math.max(1, 
 
 export const punchItem: KindSpec<PunchItemInput, PunchItemShaped> = {
   kind: 'punch_item',
-  version: '1',
+  version: '2',
   choices: PUNCH_CLASSES,
   scoreRange: [0, 3],
   shape: shapePunchItem,
   rule: punchItemRule,
   jev: {
-    preamble: 'WordPress → Astro taşıma koşusunun bitirilecekler (punch) listesi. Her kalem, üretilen sitenin ölçümünden çıkan bir bulgu.',
+    header: punchHeader,
+    group: item => item.site.group,
     render: renderPunchItem,
-    questions: {
-      class: { type: 'choice', instructions: 'bu kalemin kök nedeni nedir?', criteria: PUNCH_CLASS_CRITERIA },
-      severity: { type: 'score', instructions: 'bu kalem ne kadar ciddi?', criteria: PUNCH_SEVERITY_CRITERIA },
-    },
+    questions: punchQuestions,
     read: readPunchItem,
+    // PoC-1's MAX_ITEMS_PER_CHUNK.
+    batch: { maxItems: 25 },
+    probe: {
+      label: '(aile: post)',
+      reason: 'en kötü sayfa 56.4 < 80 (5 sayfa ölçüldü)',
+      linked: false,
+      site: { group: 'probe', decision: 'KABUL + PUNCH LIST', median: 94.7, mobile_median: 83.9 },
+    },
   },
 }

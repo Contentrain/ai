@@ -22,7 +22,7 @@ describe('Jev provider', () => {
     expect(JEV_ENDPOINT).toBe('https://api.typesafe.ai/v1/systemone')
     expect(calls[0]!.headers.Authorization).toBe(`Bearer ${TOKEN}`)
     expect(calls[0]!.body.model).toBe('jev-latest')
-    expect(Object.keys(calls[0]!.body.questions)).toEqual(['item1_class', 'item1_severity'])
+    expect(Object.keys(calls[0]!.body.questions)).toEqual(['item1_class', 'item1_severity', 'item1_needs_human'])
     expect(calls[0]!.body.state).not.toContain('example.org')
     expect(answer).toEqual({ outcomes: [{ choice: 'measurement', score: 1.4, confidence: 0.8 }], usage: { input_tokens: 100, output_tokens: 10 }, model: 'jev-test' })
   })
@@ -59,11 +59,11 @@ describe('Jev provider', () => {
 })
 
 describe('buildJevRequest / readJevResponse', () => {
-  it('numbers items and prefixes every question with its item', () => {
+  it('opens with the first item\'s header, numbers items and keys every question by its item', () => {
     const { state, questions } = buildJevRequest(punchItem, [punchItem.shape(item), punchItem.shape({ label: 'b', reason: 'r' })])
-    expect(state.split('\n').slice(1).map(line => line.slice(0, 8))).toEqual(['Item 1: ', 'Item 2: '])
-    expect(Object.keys(questions)).toEqual(['item1_class', 'item1_severity', 'item2_class', 'item2_severity'])
-    expect((questions.item2_class as { instructions: string }).instructions).toMatch(/^Item 2 — /)
+    expect(state.split('\n').slice(3).map(line => line.slice(0, 8))).toEqual(['Item 1: ', 'Item 2: '])
+    expect(Object.keys(questions)).toEqual(['item1_class', 'item1_severity', 'item1_needs_human', 'item2_class', 'item2_severity', 'item2_needs_human'])
+    expect(questions.item2_class!.instructions).toBe('item2 için: bu kalemin kök nedeni nedir?')
   })
 
   it('leaves an item undefined when any of its answers is missing or malformed', () => {
@@ -71,9 +71,12 @@ describe('buildJevRequest / readJevResponse', () => {
       answers: {
         item1_class: { type: 'choice', choice: 'cosmetic', confidence: 0.9 },
         item1_severity: { type: 'score', score: 0.2, confidence: 0.7 },
+        item1_needs_human: { type: 'noul', noul: 0.4 },
         item2_class: { type: 'choice', choice: 'cosmetic', confidence: 1.7 },
         item2_severity: { type: 'score', score: 1, confidence: 0.5 },
+        item2_needs_human: { type: 'noul', noul: 0.2 },
         item3_class: { type: 'choice', choice: 'cosmetic', confidence: 0.5 },
+        item3_severity: { type: 'score', score: 1, confidence: 0.5 },
       },
     }
     const { outcomes, usage, model } = readJevResponse(punchItem, 3, body)

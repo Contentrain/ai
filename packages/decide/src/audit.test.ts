@@ -6,22 +6,22 @@ import { JsonlAuditLog, MemoryAuditLog, toAuditRecord } from './audit.js'
 import type { Decision } from './types.js'
 
 const decision: Decision = {
-  kind: 'punch_item', version: '1', key: 'a'.repeat(64), choice: 'product_defect', score: 2.1, confidence: 0.6,
+  kind: 'punch_item', version: '1', key: 'a'.repeat(64), shape: 'abc', choice: 'product_defect', score: 2.1, confidence: 0.6,
   probabilities: { product_defect: 0.7 }, source: 'jev', ms: 312, model: 'jev-1.13.0', cost: { input_tokens: 80, output_tokens: 9, usd: 0.0001 },
 }
 
 describe('toAuditRecord', () => {
   it('keeps the hash, the answer, the source, time and cost', () => {
     expect(toAuditRecord(decision, '2026-09-18T10:00:00.000Z', 'acme')).toEqual({
-      at: '2026-09-18T10:00:00.000Z', tenant: 'acme', kind: 'punch_item', version: '1', key: 'a'.repeat(64),
+      at: '2026-09-18T10:00:00.000Z', tenant: 'acme', kind: 'punch_item', version: '1', key: 'a'.repeat(64), shape: 'abc',
       choice: 'product_defect', score: 2.1, confidence: 0.6, source: 'jev', ms: 312, model: 'jev-1.13.0',
       input_tokens: 80, output_tokens: 9, usd: 0.0001,
     })
   })
 
   it('marks a fallback and omits what a rule answer does not have', () => {
-    const record = toAuditRecord({ kind: 'eligibility_band', version: '1', key: 'b', confidence: 0.5, choice: 'eligible', source: 'rule', ms: 0, unreviewed: true, fallback: 'budget' }, 't', 'default')
-    expect(record).toEqual({ at: 't', tenant: 'default', kind: 'eligibility_band', version: '1', key: 'b', choice: 'eligible', confidence: 0.5, source: 'rule', ms: 0, unreviewed: true, fallback: 'budget' })
+    const record = toAuditRecord({ kind: 'eligibility_band', version: '1', key: 'b', shape: 'none', confidence: 0.5, choice: 'eligible', source: 'rule', ms: 0, unreviewed: true, fallback: 'budget' }, 't', 'default')
+    expect(record).toEqual({ at: 't', tenant: 'default', kind: 'eligibility_band', version: '1', key: 'b', shape: 'none', choice: 'eligible', confidence: 0.5, source: 'rule', ms: 0, unreviewed: true, fallback: 'budget' })
   })
 })
 

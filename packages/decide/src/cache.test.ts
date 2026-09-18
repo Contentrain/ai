@@ -5,21 +5,22 @@ import { describe, expect, it } from 'vitest'
 import { JsonlDecisionCache, MemoryDecisionCache, cacheKey } from './cache.js'
 import type { CachedDecision } from './cache.js'
 
-const value: CachedDecision = { kind: 'punch_item', version: '1', choice: 'measurement', score: 1.2, confidence: 0.7, source: 'jev', at: '2026-09-18T00:00:00.000Z' }
+const value: CachedDecision = { kind: 'punch_item', version: '1', shape: 's1', choice: 'measurement', score: 1.2, confidence: 0.7, source: 'jev', at: '2026-09-18T00:00:00.000Z' }
 
 describe('cacheKey', () => {
   it('is sha256 hex, the same for the same shaped input whatever its key order', () => {
-    const a = cacheKey('punch_item', '1', { label: 'x', reason: 'y', site: { median: 1, decision: 'd' } })
-    const b = cacheKey('punch_item', '1', { site: { decision: 'd', median: 1 }, reason: 'y', label: 'x' })
+    const a = cacheKey('punch_item', '1', 's1', { label: 'x', reason: 'y', site: { median: 1, decision: 'd' } })
+    const b = cacheKey('punch_item', '1', 's1', { site: { decision: 'd', median: 1 }, reason: 'y', label: 'x' })
     expect(a).toMatch(/^[0-9a-f]{64}$/)
     expect(a).toBe(b)
   })
 
-  it('changes with the kind, the schema version and the input', () => {
-    const base = cacheKey('punch_item', '1', { label: 'x' })
-    expect(cacheKey('punch_item', '2', { label: 'x' })).not.toBe(base)
-    expect(cacheKey('eligibility_band', '1', { label: 'x' })).not.toBe(base)
-    expect(cacheKey('punch_item', '1', { label: 'y' })).not.toBe(base)
+  it('changes with the kind, the schema version, the request shape and the input', () => {
+    const base = cacheKey('punch_item', '1', 's1', { label: 'x' })
+    expect(cacheKey('punch_item', '2', 's1', { label: 'x' })).not.toBe(base)
+    expect(cacheKey('eligibility_band', '1', 's1', { label: 'x' })).not.toBe(base)
+    expect(cacheKey('punch_item', '1', 's2', { label: 'x' })).not.toBe(base)
+    expect(cacheKey('punch_item', '1', 's1', { label: 'y' })).not.toBe(base)
   })
 })
 

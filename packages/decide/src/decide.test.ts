@@ -3,7 +3,8 @@ import { MemoryAuditLog } from './audit.js'
 import { CircuitBreaker, MemoryDailyBudget } from './budget.js'
 import { MemoryDecisionCache } from './cache.js'
 import { createDecider, decide } from './decide.js'
-import { createJevProvider } from './jev.js'
+import { createJevProvider, requestShapeHash } from './jev.js'
+import { punchItem } from './kinds/punch-item.js'
 import type { DecisionProvider } from './types.js'
 import { ENV, eligibilityAnswer, punchAnswer, scriptedFetch, site } from './test-support.js'
 
@@ -41,14 +42,26 @@ describe('decide — the chain', () => {
     const { jev, calls } = jevWith(() => punchAnswer('measurement', 2.2))
     const cache = new MemoryDecisionCache()
     const decider = createDecider({ jev, cache })
-    const first = await decider.decide('punch_item', punch('en kötü sayfa 43.2 < 80'))
-    // Same decision content, a different link: the shaper drops it, so the key is the same.
+    const first = await decider.decide('punch_item', { ...punch('en kötü sayfa 43.2 < 80'), link: 'https://example.org/a/' })
+    // Same decision content, a different link: the shaper keeps only that there is one, so the key is the same.
     const second = await decider.decide('punch_item', { ...punch('en kötü sayfa 43.2 < 80'), link: 'https://example.org/x/' })
     expect(calls).toHaveLength(1)
     expect(first.source).toBe('jev')
     expect(second).toMatchObject({ source: 'cache', choice: 'measurement', score: 2.2, key: first.key, model: 'jev-test' })
     expect(second.cost).toBeUndefined()
     expect(cache.size).toBe(1)
+  })
+
+  it('an answer cached under another request shape is not served', async () => {
+    const cache = new MemoryDecisionCache()
+    const first = jevWith(() => punchAnswer('measurement', 2.2))
+    await createDecider({ jev: first.jev, cache }).decide('punch_item', punch('r'))
+    const other = scriptedFetch(() => punchAnswer('cosmetic', 0.2))
+    const pinned = createJevProvider({ env: ENV, fetch: other.fetch, model: 'jev-1.13.0' })
+    const decision = await createDecider({ jev: pinned, cache }).decide('punch_item', punch('r'))
+    expect(decision).toMatchObject({ source: 'jev', choice: 'cosmetic', shape: requestShapeHash(punchItem, 'jev-1.13.0') })
+    expect(other.calls).toHaveLength(1)
+    expect(cache.size).toBe(2)
   })
 
   it('noCache neither reads nor writes the cache', async () => {
@@ -65,16 +78,16 @@ describe('decide — the chain', () => {
     const { jev, calls } = jevWith(line => punchAnswer(line.includes('b') ? 'cosmetic' : 'measurement', 0.5))
     const decisions = await createDecider({ jev }).decideMany('punch_item', [punch('a'), punch('b'), punch('a')])
     expect(calls).toHaveLength(1)
-    expect(Object.keys(calls[0]!.body.questions)).toHaveLength(4)
+    expect(Object.keys(calls[0]!.body.questions)).toHaveLength(6)
     expect(decisions.map(d => d.choice)).toEqual(['measurement', 'cosmetic', 'measurement'])
   })
 
-  it('batches at most 32 items a request and splits usage so the shares add up', async () => {
+  it('batches within the kind\'s limit (punch_item: 25) and splits usage so the shares add up', async () => {
     const { jev, calls } = jevWith(() => punchAnswer('cosmetic', 0.1))
     const decisions = await createDecider({ jev, pricing: { inputPerMTok: 1, outputPerMTok: 5 } })
       .decideMany('punch_item', Array.from({ length: 70 }, (_, i) => punch(`reason ${i}`)))
-    expect(calls.map(call => Object.keys(call.body.questions).length / 2)).toEqual([32, 32, 6])
-    const firstBatch = decisions.slice(0, 32)
+    expect(calls.map(call => Object.keys(call.body.questions).length / 3)).toEqual([25, 25, 20])
+    const firstBatch = decisions.slice(0, 25)
     expect(firstBatch.reduce((sum, d) => sum + d.cost!.input_tokens, 0)).toBe(100)
     expect(firstBatch.reduce((sum, d) => sum + d.cost!.output_tokens, 0)).toBe(10)
     expect(decisions[0]!.cost).toEqual({ input_tokens: 4, output_tokens: 1, usd: (4 + 5) / 1e6 })
@@ -148,7 +161,7 @@ describe('decide — nothing breaks the flow', () => {
     const decisions = await decider.decideMany('punch_item', [punch('a'), punch('b'), punch('c'), punch('d'), punch('e')], { tenant: 'acme' })
     expect(decisions.map(d => d.source)).toEqual(['jev', 'jev', 'jev', 'rule', 'rule'])
     expect(decisions[4]).toMatchObject({ unreviewed: true, fallback: 'budget' })
-    expect(Object.keys(calls[0]!.body.questions)).toHaveLength(6)
+    expect(Object.keys(calls[0]!.body.questions)).toHaveLength(9)
     expect((await decider.decide('punch_item', punch('f'), { tenant: 'other' })).source).toBe('jev')
   })
 
@@ -181,7 +194,7 @@ describe('decide — audit', () => {
     await decider.decide('eligibility_band', site(40))
     expect(audit.records).toHaveLength(2)
     expect(audit.records[0]).toEqual({
-      at: '2026-09-18T12:00:00.000Z', tenant: 'acme', kind: 'punch_item', version: '1', key: decision!.key,
+      at: '2026-09-18T12:00:00.000Z', tenant: 'acme', kind: 'punch_item', version: '2', key: decision!.key, shape: requestShapeHash(punchItem),
       choice: 'product_defect', score: 2.4, confidence: 0.66, source: 'jev', ms: decision!.ms, model: 'jev-test',
       input_tokens: 100, output_tokens: 10,
     })

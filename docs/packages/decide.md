@@ -82,7 +82,8 @@ provider as an option.
   Cache hits and final rule answers cost no budget.
 - **Circuit breaker:** one per provider. It opens after 3 consecutive failed
   requests and lets one request through after 60 seconds.
-- **Cache:** the key is `sha256(kind, schema version, canonical shaped input)`.
+- **Cache:** the key is `sha256(kind, schema version, request shape, canonical shaped input)`.
+  The request shape (`requestShapeHash`) covers the model, the batch limits and the whole prompt.
   Only provider answers are cached. `MemoryDecisionCache` and
   `JsonlDecisionCache` are built in; a database store implements
   `DecisionCache`.
@@ -95,14 +96,21 @@ only when you pass `pricing`.
 
 ## Calibration
 
-`punch_item` uses the wording that was measured in PoC-1 against 40
-hand-labelled items from 22 run reports:
+A kind is trusted only as far as a live run has measured it against hand
+labels. `pnpm calibration:live` asks Jev about the PoC-1 set five times: 272
+punch items from 22 run reports, 40 of them labelled by hand. Each request goes
+out exactly as the package would send it. The run writes
+`calibration/<date>.json`, which records the model, the request-shape hash and
+counts only.
 
-| Measure | Gate | Measured |
+| Measure | Gate | `calibration/2026-09-18.json` |
 |---|---|---|
-| class agreement | ≥ 90% | 37/40 |
-| severity within one level | ≥ 95% | 39/40 |
-| stable class over 5 runs | 5/5 | 40/40 |
+| class agreement, every run | ≥ 90% | 34–36/40 |
+| severity within one level, every run | ≥ 95% | 36–37/40 |
+| same class in all 5 runs | 40/40 | 34/40 |
 
-`createReplayFetch` replays recorded answers through the full decider, so this
-gate runs offline. The live run needs the token, and CI skips it.
+The gate does not pass today. Until a committed file passes it, `punch_item`
+answers are uncalibrated advice. A test holds the shipped request shape to the
+shape hash of the latest file, so a changed prompt cannot ship on an old
+measurement. `createReplayFetch` replays recorded answers through the full
+decider. It is a code-path smoke test, not a measurement.

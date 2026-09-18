@@ -46,7 +46,8 @@
     "docs:check": "node scripts/check-docs-facts.mjs && node scripts/check-docs-examples.mjs",
   "docs:dev": "pnpm --dir docs dev",
     "docs:build": "pnpm --dir docs build",
-    "docs:preview": "pnpm --dir docs preview"
+    "docs:preview": "pnpm --dir docs preview",
+    "calibration:live": "pnpm --filter @contentrain/decide calibration:live"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.6",
