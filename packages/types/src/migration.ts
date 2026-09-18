@@ -527,6 +527,66 @@ export interface RawHardcodedText {
   }
 }
 
+// ─── Integrations ───
+//
+// Outside services the site is connected to — analytics, CRM, newsletter,
+// captcha, CDN, embeds. A static site cannot carry these connections over:
+// each one with an account must be connected again, with the new site's own
+// credentials. Credentials never leave WordPress; only whether one is set does.
+
+export const INTEGRATION_CATEGORIES = ['analytics', 'crm', 'newsletter', 'ads', 'comments', 'captcha', 'cdn', 'other'] as const
+
+export type IntegrationCategory = (typeof INTEGRATION_CATEGORIES)[number]
+
+export const INTEGRATION_EVIDENCE_KINDS = ['plugin', 'option-key', 'script-domain', 'form-config', 'embed-domain'] as const
+
+export type IntegrationEvidenceKind = (typeof INTEGRATION_EVIDENCE_KINDS)[number]
+
+/** One outside service the site uses, and why we believe it does. */
+export interface RawIntegration {
+  /** Catalog id: `mailchimp`, `hubspot`, `google-tag-manager`, `jetpack-stats`, `embed-youtube`, … */
+  service: string
+  /** Display name. */
+  name: string
+  category: IntegrationCategory
+  /**
+   * Never a value. `detail` names a plugin and its version, a setting by name
+   * (`mc4wp (api_key)`), a script host and where it was seen
+   * (`static.hotjar.com @ render:home`), a form's wiring, or an embed host.
+   */
+  evidence: { kind: IntegrationEvidenceKind, detail: string }[]
+  /** An account must be connected again on the new site; `false` for an embed, which has no account. */
+  reconnect_required: boolean
+  /** A credential is configured on WordPress. Only this boolean is exported, never the value. */
+  secret_present: boolean
+  /** What to do, in words for the person receiving the site. */
+  notes: string
+}
+
+/**
+ * The document a bridge writes (`bridge/integrations.json`). `RawIR.integrations`
+ * carries its `services`. An empty `services` with `scanned` beside it is an
+ * answer — the site uses no outside service we recognise — not a missing scan.
+ */
+export interface RawIntegrationScan {
+  /** Producer's format identifier, e.g. `contentrain-bridge-integrations@1`. */
+  format: string
+  /** How much was looked at: option and post counts, active plugins, script sources, and whether the home page was rendered. */
+  scanned: { options: number, plugins: number, posts: number, rendered_home: boolean, script_sources: number }
+  services: RawIntegration[]
+  totals: { services: number, reconnect_required: number }
+}
+
+/**
+ * The intake / handoff issue for services that must be connected again. Raised
+ * once, listing every `RawIntegration` with `reconnect_required: true`; not
+ * raised when there are none.
+ */
+export interface IntegrationReconnectRequiredIssue {
+  code: 'integration_reconnect_required'
+  services: Pick<RawIntegration, 'service' | 'name' | 'category' | 'secret_present'>[]
+}
+
 /**
  * Translation grouping for multilingual sites. The REST rungs read it from
  * Polylang's `translations` / WPML's `wpml_translations` post fields, WXR from
@@ -561,6 +621,8 @@ export interface RawIR {
   routing?: RawRouting
   /** Interface text outside the content tables, each piece with one outcome. */
   hardcoded_text?: RawHardcodedText
+  /** Outside services the site is connected to (`RawIntegrationScan.services`). */
+  integrations?: RawIntegration[]
   language_pairs?: RawLanguagePair[]
   /** Site options (bridge rung), verbatim. */
   options?: Record<string, unknown>
