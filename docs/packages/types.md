@@ -480,7 +480,15 @@ mapped record — `updated` is decided on it, never on `modified_at`, because a
 meta-only edit in WordPress leaves the modified date alone. `old_slugs`
 (WordPress `_wp_old_slug`) corroborates a move but is never the authority. A
 type in the earlier inventory's `scope` but missing from the later one left the
-scope; its records were not deleted.
+scope; its records were not deleted. A password-protected record is
+inventoried with `protected: true` (it has no public address), so removing the
+password is an `updated`, not a `created`.
+
+`inventory_hash` is reproducible from the records alone: lowercase hex SHA-256
+of the records sorted by `wp_type` (byte order) then `wp_id` (numeric), each
+serialized as the JSON array `[wp_type, wp_id, fingerprint, path ?? null,
+status ?? null]` exactly as `JSON.stringify` prints it (no spaces, slashes and
+non-ASCII unescaped), joined by `\n` with no trailing newline.
 
 ### Reserved paths
 

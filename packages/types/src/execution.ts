@@ -701,6 +701,12 @@ export interface SourceInventoryRecord {
   wp_id: number
   /** Origin status (`publish`, `draft`, `trash`, …); a term has none. */
   status?: string
+  /**
+   * Password-protected at the origin. The record is inventoried like any other
+   * — so removing the password is an `updated`, not a `created` — but has no
+   * public address.
+   */
+  protected?: boolean
   slug?: string
   /** Site-root-relative public address. A change here is a `moved`. */
   path?: string
@@ -739,6 +745,13 @@ export interface SourceInventory {
     taxonomies?: string[]
   }
   records: SourceInventoryRecord[]
-  /** Hash over the sorted records — the value a cursor's `inventory_hash` carries. */
+  /**
+   * The value a cursor's `inventory_hash` carries: lowercase hex SHA-256 of the
+   * records sorted by `wp_type` (byte order) then `wp_id` (numeric), each
+   * serialized as the JSON array `[wp_type, wp_id, fingerprint, path ?? null,
+   * status ?? null]` — no spaces, slashes and non-ASCII unescaped (what
+   * `JSON.stringify` prints) — joined by `\n`, no trailing newline. Other fields
+   * do not enter it; a change they make shows through `fingerprint`.
+   */
   inventory_hash: string
 }

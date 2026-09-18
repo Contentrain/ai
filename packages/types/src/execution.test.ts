@@ -373,6 +373,26 @@ describe('source delta plan', () => {
     expectTypeOf<SourceInventory['records'][number]['fingerprint']>().toEqualTypeOf<string>()
   })
 
+  it('inventory_hash is reproducible from the records alone', async () => {
+    const records: SourceInventory['records'] = [
+      { wp_type: 'post', wp_id: 10, status: 'publish', path: '/çay/', fingerprint: 'b' },
+      { wp_type: 'category', wp_id: 5, path: '/category/news/', fingerprint: 'c' },
+      { wp_type: 'post', wp_id: 9, status: 'draft', protected: true, fingerprint: 'a' },
+    ]
+    const lines = records
+      .toSorted((a, b) => (a.wp_type < b.wp_type ? -1 : a.wp_type > b.wp_type ? 1 : a.wp_id - b.wp_id))
+      .map(r => JSON.stringify([r.wp_type, r.wp_id, r.fingerprint, r.path ?? null, r.status ?? null]))
+    expect(lines).toEqual([
+      '["category",5,"c","/category/news/",null]',
+      '["post",9,"a",null,"draft"]',
+      '["post",10,"b","/çay/","publish"]',
+    ])
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(lines.join('\n')))
+    expect(Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join(''))
+      // Recomputed independently: node:crypto over the same three lines.
+      .toBe('e28dcb30437061f7216f578c7bda2cbf1bec604ef6b26476a55a0c8b3215a7b5')
+  })
+
   it('states whether deletions could be seen at all', () => {
     expect(delta.deletions_detectable).toBe(true)
     const restDelta: SourceDeltaPlan = {
