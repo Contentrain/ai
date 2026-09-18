@@ -11,6 +11,7 @@ import type {
   RiskClass,
   RunStatus,
   SourceDeltaPlan,
+  SourceInventory,
 } from './index'
 import {
   APPROVAL_GATES,
@@ -334,6 +335,42 @@ describe('source delta plan', () => {
     const moved = delta.entries.find(entry => entry.op === 'moved')!
     expect([moved.slug_before, moved.slug_after]).toEqual(['old-name', 'new-name'])
     expect(delta.redirects).toEqual([{ from: '/old-name', to: '/new-name', status: 301 }])
+  })
+
+  it('moves by path, and says whether a deletion is recoverable', () => {
+    const movedPlan: SourceDeltaPlan = {
+      ...delta,
+      deletions_undetectable_types: ['product'],
+      entries: [
+        { op: 'moved', wp_id: 30, wp_type: 'page', slug_before: 'team', slug_after: 'team', path_before: '/about/team/', path_after: '/company/team/' },
+        { op: 'deleted', wp_id: 44, wp_type: 'post', deleted_kind: 'trashed' },
+        { op: 'deleted', wp_id: 5, wp_type: 'category', deleted_kind: 'purged' },
+      ],
+    }
+    const [moved, trashed, purged] = movedPlan.entries
+    // The slug is unchanged; only the path shows the page changed parent.
+    expect(moved!.slug_before).toBe(moved!.slug_after)
+    expect([moved!.path_before, moved!.path_after]).toEqual(['/about/team/', '/company/team/'])
+    expect([trashed!.deleted_kind, purged!.deleted_kind]).toEqual(['trashed', 'purged'])
+    expect(movedPlan.deletions_detectable).toBe(true)
+    expect(movedPlan.deletions_undetectable_types).toEqual(['product'])
+  })
+
+  it('an inventory keys records by type and id, and decides updates on the fingerprint', () => {
+    const inventory: SourceInventory = {
+      format: 'contentrain-bridge-inventory@2',
+      taken_at: '2026-09-01T00:00:00Z',
+      scope: { post_types: ['post', 'page', 'attachment'], taxonomies: ['category'] },
+      records: [
+        { wp_type: 'post', wp_id: 5, status: 'publish', slug: 'hello', path: '/hello/', modified_at: '2026-08-30T12:00:00Z', fingerprint: 'f1', old_slugs: ['hello-world'] },
+        { wp_type: 'category', wp_id: 5, slug: 'news', path: '/category/news/', fingerprint: 'f2' },
+      ],
+      inventory_hash: 'h0',
+    }
+    expect(new Set(inventory.records.map(r => `${r.wp_type}/${r.wp_id}`)).size).toBe(2)
+    expect(inventory.records[0]!.old_slugs).toEqual(['hello-world'])
+    expect(delta.cursor.inventory_hash).toBe(inventory.inventory_hash)
+    expectTypeOf<SourceInventory['records'][number]['fingerprint']>().toEqualTypeOf<string>()
   })
 
   it('states whether deletions could be seen at all', () => {

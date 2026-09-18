@@ -462,6 +462,26 @@ deleted" — it means this cursor could not tell. It also carries slug moves
 (which generate redirects) and semantic conflicts, where the same record changed
 at the origin *and* in the repository.
 
+A `moved` entry carries `path_before`/`path_after` next to the slugs: a page that
+changed parent, a renamed term base or a dated permalink moves without a slug
+change, and redirects are generated from the path. A `deleted` entry may say
+`deleted_kind: 'trashed'` (still at the origin, recoverable) or `'purged'`. A
+plan that could see deletions in general can still name the origin types it
+could not — `deletions_undetectable_types`, for a type that left the scope.
+
+### `SourceInventory`
+
+Every origin record in scope at one moment, and what a `bridge_inventory`
+cursor's `inventory_hash` identifies. Deletions and moves are proven by
+comparing two inventories; a `modified_after` query only narrows which bodies to
+fetch again. Each `SourceInventoryRecord` is keyed by `wp_type` + `wp_id` (post
+5 and category 5 are different records) and carries a `fingerprint` of the
+mapped record — `updated` is decided on it, never on `modified_at`, because a
+meta-only edit in WordPress leaves the modified date alone. `old_slugs`
+(WordPress `_wp_old_slug`) corroborates a move but is never the authority. A
+type in the earlier inventory's `scope` but missing from the later one left the
+scope; its records were not deleted.
+
 ### Reserved paths
 
 `RESERVED_PATHS` names four files under `.contentrain/` that this repository has

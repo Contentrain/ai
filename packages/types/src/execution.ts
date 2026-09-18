@@ -603,9 +603,22 @@ export interface SourceDeltaEntry {
   /** Origin content fingerprint at cursor time and now. */
   fingerprint_before?: string
   fingerprint_after?: string
-  /** For `moved`: the slugs, in that order. Redirects are generated from these. */
+  /** For `moved`: the slugs, in that order. */
   slug_before?: string
   slug_after?: string
+  /**
+   * For `moved`: the site-root-relative addresses, in that order. A slug
+   * cannot say that a page changed parent, a term base changed or a dated
+   * permalink moved; the path can, and redirects are generated from it.
+   */
+  path_before?: string
+  path_after?: string
+  /**
+   * For `deleted`: `trashed` is still at the origin and can come back;
+   * `purged` is gone from it. A draft or private record is `updated`, never
+   * `deleted` — unpublishing is the planner's decision.
+   */
+  deleted_kind?: 'trashed' | 'purged'
   /** True when the repository also changed this record since the cursor. */
   conflict?: boolean
   /** Why this entry is here, for the person reading the plan. */
@@ -633,6 +646,12 @@ export interface SourceDeltaPlan {
    * "nothing was deleted".
    */
   deletions_detectable: boolean
+  /**
+   * Origin types whose deletions could not be determined even though the plan
+   * as a whole could — a type that left the inventory's scope (its plugin was
+   * deactivated) is not a deletion of every record in it.
+   */
+  deletions_undetectable_types?: string[]
   /** Redirects implied by the `moved` entries. */
   redirects?: { from: string, to: string, status: 301 | 302 | 307 | 308 }[]
   /** Human-facing notes: truncation, skipped types, coverage limits. */
@@ -672,4 +691,54 @@ export async function computePlanHash(plan: ExecutionPlan): Promise<string> {
   const bytes = new TextEncoder().encode(planHashPayload(plan))
   const digest = await crypto.subtle.digest('SHA-256', bytes)
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('')
+}
+
+/** One origin record as the inventory saw it. */
+export interface SourceInventoryRecord {
+  /** Origin object type ("post", "page", "attachment", or a taxonomy name for a term). */
+  wp_type: string
+  /** Origin id — unique only together with `wp_type`: post 5 and category 5 are different records. */
+  wp_id: number
+  /** Origin status (`publish`, `draft`, `trash`, …); a term has none. */
+  status?: string
+  slug?: string
+  /** Site-root-relative public address. A change here is a `moved`. */
+  path?: string
+  /** Origin id of the parent record, when it has one. */
+  parent?: number
+  /** ISO 8601 UTC, from the origin — a hint only: a meta-only edit does not change it. */
+  modified_at?: string
+  /**
+   * Hash of the record as mapped, volatile fields excluded. `updated` is
+   * decided on this, never on `modified_at`.
+   */
+  fingerprint: string
+  /** Slugs the origin remembers for this record (WordPress `_wp_old_slug`). Corroborates a move; never the authority. */
+  old_slugs?: string[]
+  /** Locale of the record, when the origin is multilingual. */
+  locale?: string
+}
+
+/**
+ * Every record in scope at one moment — what a `bridge_inventory` cursor's
+ * `inventory_hash` identifies.
+ *
+ * Deletions and moves are proven by comparing two inventories, not by
+ * reading a feed; a `modified_after` query only narrows which bodies to fetch
+ * again. A type in the earlier inventory's `scope` but not in this one's left
+ * the scope — it was not deleted.
+ */
+export interface SourceInventory {
+  /** Inventory format identifier, e.g. `contentrain-bridge-inventory@2`. */
+  format: string
+  /** ISO 8601 UTC time the inventory was taken. */
+  taken_at: string
+  /** What was enumerated. */
+  scope: {
+    post_types: string[]
+    taxonomies?: string[]
+  }
+  records: SourceInventoryRecord[]
+  /** Hash over the sorted records — the value a cursor's `inventory_hash` carries. */
+  inventory_hash: string
 }
