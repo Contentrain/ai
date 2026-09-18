@@ -1,5 +1,39 @@
 # @contentrain/types
 
+## 1.18.0
+
+### Minor Changes
+
+- 568a319: `RawIR` gains optional `hardcoded_text` (`RawHardcodedText`, `RawTextCandidate`, `RawTextOccurrence`, `TEXT_CANDIDATE_KINDS`, `TEXT_EXCLUDE_REASONS`): the interface text a WordPress site shows outside its content tables — theme templates, scripts, widgets, menus, options, Customizer mods and rendered pages.
+
+  Every piece gets one outcome: transferred to a named target (`dictionary:ui-strings`, `theme-settings.<mod>`, `site.title`, `site.description`, `content:wp-menu-items`), excluded with a reason, or, for a source that could not be read, an error. Candidates merge only when text, locale and context are all equal; keys depend on text and context only, never on file or line. Rendered text that also appears in source is excluded as `rendered-from-source` and points back at the source candidate with `related`, so the same words never land twice. The totals close, and the shape is checked against the Bridge's own output, which is committed as a fixture.
+
+- 39a1de7: `RawIR` gains optional `integrations` (`RawIntegration[]`): the outside services a WordPress site is connected to, such as analytics, CRM, newsletter, captcha, CDN and embeds. Each service comes with its evidence, `reconnect_required` and `secret_present`. The evidence never contains a value: it names a plugin, a setting, a script host, a form's wiring or an embed host. `secret_present` is only a boolean. New exports: `RawIntegrationScan` (the bridge's `integrations.json`), `INTEGRATION_CATEGORIES`, `INTEGRATION_EVIDENCE_KINDS`, and `IntegrationReconnectRequiredIssue`, the `integration_reconnect_required` intake/handoff issue that lists every service to connect again. The shape is checked against the Bridge's own output, committed as fixtures.
+- 8e0331f: `ModelDefinition` gains optional `locales?: string[]`: the project locales a model's content actually covers, a subset of `config.locales.supported`. Absent — as on every model that predates the field — means every supported locale, so nothing changes for a fully-translated project.
+
+  Three pure helpers come with it. `resolveModelLocales(model, config)` returns the locales a model is expected to cover and whether that list came from the model or the project (`ModelLocaleScope`), `describeModelLocaleScope(scope)` names it the way a validation message should quote it, and `validateModelLocales(model, config)` rejects a declaration that cannot be honoured: a locale outside `locales.supported`, an empty list, a duplicate, a non-string entry. Declaring it on an `i18n: false` model is a warning, not an error.
+
+  `MODEL_FIELD_ORDER` carries `locales` between `i18n` and `title_field`, so canonical model JSON keeps the identity keys together.
+
+- d44e030: `RawIR` gains three optional parts that a WordPress bridge produces.
+
+  - `seo` (`RawSeo`, `RawSeoEntry`, `RawSeoSettings`, `SEO_PROVIDERS`): which plugin serves the head, each provider's status and settings, and each page's values. `status: 'none'` means the site has no SEO plugin, not a missing export. `resolved` separates rendered values from stored templates, and `robots_served` is what the page actually carries.
+  - `routing` (`RawRouting`): the permalink structure, bases, front and posts pages, and every post type's and taxonomy's permastruct.
+  - `redirects_excluded` (`RawRedirectExcluded`): every rule a source holds that the site does not serve as a plain redirect, with the reason.
+
+  `RawRedirect` gains optional `id`, `match`, `regex`, `served_by` and `status_note`. Only `match: 'url'` without `regex` is a plain mapping. The shapes are checked against the Bridge's own output, which is committed as fixtures.
+
+- d09cb72: `SourceDeltaEntry` gains four optional fields that a planner fills in when it places an origin delta in a store:
+
+  - `unmapped`: why a record has no place, one of `not-in-source-map`, `no-model-for-type` or `entry-not-found`.
+  - `fields_changed`: which stored fields differ from the incoming export.
+  - `repo_edit`: the repository-side write behind `conflict`, as `{ updated_by, updated_at?, source }`.
+  - `entry_id_after`: the new entry id when a move changes a slug-derived id.
+
+- ff9095e: `SourceInventory` / `SourceInventoryRecord`: the per-record origin inventory a `bridge_inventory` cursor's `inventory_hash` identifies. Deletions and moves are proven by comparing two inventories; `modified_after` only narrows which bodies to fetch again. Records are keyed by `wp_type` + `wp_id`, and `updated` is decided on the record's `fingerprint`, because a meta-only WordPress edit leaves the modified date alone.
+
+  `SourceDeltaEntry` gains optional `path_before` / `path_after` — a page that changed parent, a renamed term base or a dated permalink moves without a slug change, and redirects are generated from the path — and `deleted_kind` (`trashed` / `purged`). `SourceDeltaPlan` gains optional `deletions_undetectable_types` for origin types that left the scope. All additions are optional; existing plans stay valid. `SourceInventory.inventory_hash` is defined byte for byte (sort order and line serialization), so a producer in any language and the planner compute the same value; `SourceInventoryRecord.protected` marks a password-protected record, which is inventoried but has no public address.
+
 ## 1.17.0
 
 ### Minor Changes
