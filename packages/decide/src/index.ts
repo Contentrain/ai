@@ -1,7 +1,7 @@
 // @contentrain/decide — small typed decisions for migration and governance
 // pipelines. A decision is a pick from a closed set or a place on a fixed
 // rubric, asked of a chain: a deterministic rule first, then Jev
-// (typesafe.ai), then an optional bring-your-own LLM. Every answer is cached by
+// (typesafe.ai), then an LLM (Claude Haiku, or your own) when Jev does not answer. Every answer is cached by
 // its shaped input, capped by a per-tenant budget, guarded by a circuit
 // breaker and written to an audit log; no provider failure ever fails a call.
 
@@ -18,6 +18,8 @@ export type { BatchLimits } from './batch.js'
 export { DEFAULT_JEV_MODEL, JEV_ENDPOINT, JEV_TOKEN_ENV, JevError, buildJevRequest, createJevProvider, readJevResponse, requestShapeHash } from './jev.js'
 export type { JevProviderOptions } from './jev.js'
 export { noopLlmProvider } from './llm.js'
+export { ANTHROPIC_ENDPOINT, ANTHROPIC_KEY_ENV, AnthropicError, DEFAULT_ANTHROPIC_MODEL, anthropicRequestShapeHash, buildAnthropicRequest, createAnthropicProvider, genericLlmPrompt, readAnthropicResponse } from './anthropic.js'
+export type { AnthropicProviderOptions } from './anthropic.js'
 export { BUILTIN_KINDS } from './kinds/index.js'
 export { PUNCH_CLASSES, PUNCH_CLASS_CRITERIA, PUNCH_SEVERITY_CRITERIA, punchItem, punchItemRule, severityLevel, shapePunchItem } from './kinds/punch-item.js'
 export type { PunchClass, PunchItemInput, PunchItemShaped } from './kinds/punch-item.js'

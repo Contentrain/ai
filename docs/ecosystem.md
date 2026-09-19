@@ -45,7 +45,7 @@ Use **Contentrain Studio** when you need:
 | `@contentrain/wp-import` | Reads a WordPress site into source-faithful `RawIR`, then a `.contentrain` store | Studio receives the finished migration as a `MigrationHandoff` and hosts the comments the import exported | [WordPress Import](/packages/wp-import) |
 | `@contentrain/emitter-astro` | Renders a `ProjectIR` into a complete Astro project | Studio supplies the runtime binding that turns emitted form and comment placeholders into working components | [Astro Emitter](/packages/emitter-astro), [Forms & Comments](/guides/forms-comments) |
 | `@contentrain/verify` | Offline SEO/indexing/link/asset gates over documents you already have | Studio (or any producer holding a safe fetcher) supplies the pages; this package never makes a network request | [Verify](/packages/verify) |
-| `@contentrain/decide` | Typed decisions (a choice or a score) for the band a rule cannot settle: rule, then Jev, then an optional bring-your-own LLM | Migrate and Studio pass inputs; the package shapes them, caches, caps and audits, and never fails the call | [Decide](/packages/decide) |
+| `@contentrain/decide` | Typed decisions (a choice or a score) for the band a rule cannot settle: rule, then Jev, then Claude Haiku (opt-in) when Jev does not answer | Migrate and Studio pass inputs; the package shapes them, caches, caps and audits, and never fails the call | [Decide](/packages/decide) |
 
 ## MCP Distribution Surfaces
 

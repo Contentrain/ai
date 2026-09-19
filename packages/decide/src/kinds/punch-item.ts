@@ -124,6 +124,30 @@ function readPunchItem(answers: Record<string, JevAnswer>) {
   }
 }
 
+// The prompt AO-9 measured Claude Haiku with, word for word: the same state
+// and questions, in PoC-1's language, answered through a forced tool call.
+function punchLlmPrompt({ state, questions, count }: { state: string, questions: Record<string, JevQuestion>, count: number }): string {
+  const q = questions.class as Extract<JevQuestion, { type: 'choice' }>
+  const s = questions.severity as Extract<JevQuestion, { type: 'score' }>
+  const h = questions.needs_human!
+  return [
+    'Aşağıdaki durum bir WordPress → Astro taşıma koşusunun bitirilecekler listesinden bir sitenin kalemlerini içeriyor.',
+    '',
+    '<state>',
+    state,
+    '</state>',
+    '',
+    'Her kalem için üç soruyu yanıtla (itemN yerine kalem numarası):',
+    `1) class — ${q.instructions.replace('item1', 'itemN')} Seçenekler:`,
+    ...Object.entries(q.criteria).map(([k, v]) => `   - ${k}: ${v}`),
+    `2) severity — ${s.instructions.replace('item1', 'itemN')} 0–3 arası tam sayı:`,
+    ...s.criteria.map((c, n) => `   ${n}: ${c}`),
+    `3) needs_human — önermenin doğru olma olasılığı (0–1): ${h.instructions.replace('item1', 'itemN')}`,
+    '',
+    `Tüm ${count} kalemi record_answers aracıyla, her kalem için bir kayıt olarak ver.`,
+  ].join('\n')
+}
+
 /** Jev's 0–3 severity score as a 1–4 level (PoC-1's hand-label scale). */
 export const severityLevel = (score: number): number => Math.min(4, Math.max(1, Math.round(score) + 1))
 
@@ -140,6 +164,7 @@ export const punchItem: KindSpec<PunchItemInput, PunchItemShaped> = {
     render: renderPunchItem,
     questions: punchQuestions,
     read: readPunchItem,
+    llmPrompt: punchLlmPrompt,
     // PoC-1's MAX_ITEMS_PER_CHUNK.
     batch: { maxItems: 25 },
     probe: {

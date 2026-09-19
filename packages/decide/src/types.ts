@@ -99,6 +99,13 @@ export interface JevSpec<S> {
   batch?: { maxItems?: number, maxTokens?: number }
   /** A representative shaped input, used to hash the request shape. */
   probe: S
+  /**
+   * The prompt an LLM provider sends for one batch, from the same state and
+   * questions Jev gets (`questions` are item 1's; the provider asks them of
+   * every item). Absent: the provider's generic prompt. Not part of the
+   * request-shape hash: bump the kind's version when it changes.
+   */
+  llmPrompt?: (request: { state: string, questions: Record<string, JevQuestion>, count: number }) => string
 }
 
 export interface KindSpec<I = unknown, S = unknown> {
