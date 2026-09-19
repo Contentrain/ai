@@ -13,7 +13,7 @@ import { type BatchLimits, estimateTokens, planBatches } from './batch.js'
 import type { DecisionBudget } from './budget.js'
 import { CircuitBreaker } from './budget.js'
 import { type CachedDecision, type DecisionCache, MemoryDecisionCache, cacheKey } from './cache.js'
-import { DEFAULT_JEV_MODEL, JevError, buildJevRequest, createJevProvider, requestShapeHash } from './jev.js'
+import { DEFAULT_JEV_MODEL, buildJevRequest, createJevProvider, requestShapeHash } from './jev.js'
 import { BUILTIN_KINDS } from './kinds/index.js'
 import { noopLlmProvider } from './llm.js'
 import type { Decision, DecisionProvider, FallbackReason, KindSpec, Outcome, RuleVerdict } from './types.js'
@@ -30,7 +30,7 @@ export interface DeciderConfig {
   kinds?: ReadonlyArray<KindSpec<any, any>>
   /** Default: Jev over `process.env`; `false` turns it off. */
   jev?: DecisionProvider | false
-  /** Default: `noopLlmProvider`. */
+  /** Asked for what Jev does not answer. Default: `noopLlmProvider`; `createAnthropicProvider()` wires Claude Haiku. */
   llm?: DecisionProvider
   /** Default: an in-memory cache for this decider's lifetime. */
   cache?: DecisionCache
@@ -40,8 +40,8 @@ export interface DeciderConfig {
   /** One per provider. Default: 3 failures, 60s cooldown. */
   breakers?: Partial<Record<'jev' | 'llm', CircuitBreaker>>
   batch?: BatchLimits
-  /** Without it `cost.usd` is left out; the vendor publishes no price. */
-  pricing?: Pricing
+  /** Price per provider. Without one, that provider's `cost.usd` is left out; Jev's vendor publishes no price. */
+  pricing?: Partial<Record<'jev' | 'llm', Pricing>>
   now?: () => Date
 }
 
@@ -141,12 +141,13 @@ export function createDecider(config: DeciderConfig = {}): Decider {
     return shape
   }
 
-  function cost(usage: { input_tokens: number, output_tokens: number } | undefined, parts: number, index: number): Decision['cost'] {
+  function cost(provider: 'jev' | 'llm', usage: { input_tokens: number, output_tokens: number } | undefined, parts: number, index: number): Decision['cost'] {
     if (!usage) return undefined
     const input_tokens = share(usage.input_tokens, parts, index)
     const output_tokens = share(usage.output_tokens, parts, index)
-    const usd = config.pricing
-      ? (input_tokens * config.pricing.inputPerMTok + output_tokens * config.pricing.outputPerMTok) / 1e6
+    const price = config.pricing?.[provider]
+    const usd = price
+      ? (input_tokens * price.inputPerMTok + output_tokens * price.outputPerMTok) / 1e6
       : undefined
     return usd === undefined ? { input_tokens, output_tokens } : { input_tokens, output_tokens, usd }
   }
@@ -160,18 +161,10 @@ export function createDecider(config: DeciderConfig = {}): Decider {
       for (const item of items) reasons.set(item.id, 'no_provider')
       return { answered, reasons }
     }
-    let allowed = items
-    if (config.budget) {
-      const granted = await config.budget.take(tenant, items.length, now())
-      allowed = items.slice(0, granted)
-      for (const item of items.slice(granted)) reasons.set(item.id, 'budget')
-    }
-    if (!allowed.length) return { answered, reasons }
-
     // Items of different groups never share a request; within a group, the
     // kind's calibrated batch limits win over the decider's.
     const groups = new Map<string, Pending[]>()
-    for (const item of allowed) {
+    for (const item of items) {
       const group = spec.jev?.group?.(item.shaped) ?? ''
       groups.set(group, [...(groups.get(group) ?? []), item])
     }
@@ -181,11 +174,20 @@ export function createDecider(config: DeciderConfig = {}): Decider {
       const costs = members.map(item => Math.max(1, estimateTokens(JSON.stringify(buildJevRequestFor(spec, item.shaped))) - fixed))
       for (const batch of planBatches(costs, fixed, spec.jev?.batch ?? config.batch)) batches.push(batch.map(i => members[i]!))
     }
-    for (const members of batches) {
+    for (const batch of batches) {
+      // The breaker first: a request that never goes out spends no budget,
+      // so an outage upstream does not drain the cap the next provider needs.
       if (!breaker.allows()) {
-        for (const item of members) reasons.set(item.id, 'circuit_open')
+        for (const item of batch) reasons.set(item.id, 'circuit_open')
         continue
       }
+      let members = batch
+      if (config.budget) {
+        const granted = await config.budget.take(tenant, batch.length, now())
+        members = batch.slice(0, granted)
+        for (const item of batch.slice(granted)) reasons.set(item.id, 'budget')
+      }
+      if (!members.length) continue
       const started = performance.now()
       try {
         const answer = await provider.ask(spec, members.map(item => item.shaped))
@@ -198,7 +200,7 @@ export function createDecider(config: DeciderConfig = {}): Decider {
             return
           }
           const decision = fromOutcome(spec, item.key, shape, outcome, provider.name, ms)
-          const spent = cost(answer.usage, members.length, i)
+          const spent = cost(provider.name, answer.usage, members.length, i)
           if (spent) decision.cost = spent
           if (answer.model) decision.model = answer.model
           answered.set(item.id, applyFloor(spec, decision))
@@ -206,7 +208,7 @@ export function createDecider(config: DeciderConfig = {}): Decider {
       }
       catch (error) {
         breaker.failure()
-        const reason: FallbackReason = error instanceof JevError && error.timeout ? 'timeout' : 'error'
+        const reason: FallbackReason = (error as { timeout?: unknown } | null)?.timeout === true ? 'timeout' : 'error'
         for (const item of members) reasons.set(item.id, reason)
       }
     }

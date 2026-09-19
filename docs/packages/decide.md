@@ -1,6 +1,6 @@
 ---
 title: Decide
-description: "@contentrain/decide — small typed decisions (a choice or a score) asked rule first, then Jev, cached, budgeted, circuit-broken and audited; a provider failure never fails the call"
+description: "@contentrain/decide — small typed decisions (a choice or a score) asked rule first, then Jev, then Claude Haiku, cached, budgeted, circuit-broken and audited; a provider failure never fails the call"
 order: 10
 slug: decide
 ---
@@ -12,7 +12,7 @@ pick from a closed set (a *choice*) or a place on a fixed rubric (a *score*),
 never generated text. The chain that answers it:
 
 ```
-rule  →  cache  →  Jev (typesafe.ai)  →  your LLM (optional)  →  the rule's tentative answer
+rule  →  cache  →  Jev (typesafe.ai)  →  LLM (Claude Haiku, opt-in)  →  the rule's tentative answer
 ```
 
 ## Why a rule comes first
@@ -58,6 +58,37 @@ The token is read at the moment of each request. It is never stored, logged or
 put in an error message. Requests go to `https://api.typesafe.ai/v1/systemone`
 and nowhere else.
 
+## Claude Haiku, when Jev does not answer
+
+Haiku is the LLM link. It answers the items Jev does not: Jev is off, its
+breaker is open, it timed out or it failed. It is opt-in:
+
+```ts
+import { createAnthropicProvider, createDecider } from '@contentrain/decide'
+
+const decider = createDecider({
+  llm: createAnthropicProvider(), // claude-haiku-4-5-20251001, temperature 0
+  pricing: { llm: { inputPerMTok: 1, outputPerMTok: 5 } },
+})
+```
+
+The key comes only from `ANTHROPIC_API_KEY` and is handled like Jev's token.
+Requests go only to `https://api.anthropic.com/v1/messages`. Haiku receives
+the same shaped state and questions as Jev and answers through one forced tool
+call. `punch_item` sends the exact prompt AO-9 measured. Other kinds get a
+generic prompt built from their questions.
+
+Haiku's answers go into the same cache, under the same key, as Jev's. An input
+answered once, by either provider, is served from the cache after that. The
+`model` field says which provider answered. A model reports no confidence of
+its own, so Haiku's answers carry `confidence: 0`. For `eligibility_band`,
+every Haiku pick therefore goes to `needs_human`, and the pick is kept as
+`proposed`.
+
+A host can wire another model instead: implement `DecisionProvider` with
+`name: 'llm'`. The default LLM link is `noopLlmProvider`, which is never
+available.
+
 ## Input shaping
 
 Each kind's shaper decides what may leave the process. Its output is the only
@@ -82,7 +113,11 @@ provider as an option.
   day. Once the cap is spent, decisions fall back with `fallback: 'budget'`.
   Cache hits and final rule answers cost no budget.
 - **Circuit breaker:** one per provider. It opens after 3 consecutive failed
-  requests and lets one request through after 60 seconds.
+  requests and lets one request through after 60 seconds. An item behind Jev's
+  open breaker goes on to Haiku.
+- **Shared budget:** both providers spend from the same cap, per item in a
+  request that actually goes out. An item Jev failed on and Haiku then
+  answered spends twice. An item behind an open breaker spends nothing.
 - **Cache:** the key is `sha256(kind, schema version, request shape, canonical shaped input)`.
   The request shape (`requestShapeHash`) covers the model, the batch limits and the whole prompt.
   Only provider answers are cached. `MemoryDecisionCache` and
@@ -92,8 +127,8 @@ provider as an option.
   Each line holds the input hash, the answer, the confidence, the source, the
   time and the tokens used.
 
-The vendor publishes no price, so `cost` holds token counts. It includes `usd`
-only when you pass `pricing`.
+`cost` holds token counts. It includes `usd` only for a provider you price
+(`pricing: { jev, llm }`). Jev's vendor publishes no price.
 
 ## Calibration
 
@@ -119,6 +154,23 @@ five-run measurements on the same set gave 85–92.5% class agreement,
 request sends placeholders for the site name, its URL and item links. That
 keeps site identity out of the request, and it costs about two to three items
 of severity agreement compared with sending them.
+
+`pnpm calibration:live --provider haiku` measures Haiku on the same set
+against the same gate, and `--provider both` measures both providers. The
+Haiku result goes to `calibration/haiku/<date>.json`, with Haiku's own request
+shape and its cost at list price. Haiku is the fallback, so its result is
+recorded for information and blocks nothing:
+
+| Measure | Gate | `calibration/haiku/2026-09-19.json` |
+|---|---|---|
+| class agreement, median run | ≥ 85% | 92.5% (runs: 37 / 36 / 37 of 40) |
+| severity within one level, median run | ≥ 90% | **82.5%** (runs: 33 / 34 / 33 of 40) |
+| same class in all 3 runs, labelled items | ≥ 85% | 39/40 (97.5%); all items 259/272 |
+
+This was measured on `claude-haiku-4-5-20251001` with LLM request shape
+`96aa1feb04caef9a`. The three runs cost $0.33 at list price. Haiku fails on
+severity because it answers a whole level, while Jev answers a score between
+levels.
 
 A test holds the shipped request shape to the latest file's shape hash, and
 requires that file to pass. A changed prompt cannot ship on an old

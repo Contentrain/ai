@@ -5,7 +5,7 @@ pick from a closed set (a *choice*) or a place on a fixed rubric (a *score*) —
 never generated text. It is asked of a chain:
 
 ```
-rule  →  cache  →  Jev (typesafe.ai)  →  your LLM (optional)  →  the rule's tentative answer
+rule  →  cache  →  Jev (typesafe.ai)  →  LLM (Claude Haiku, opt-in)  →  the rule's tentative answer
 ```
 
 A deterministic rule answers first. Only what the rule leaves undecided goes to
@@ -101,15 +101,48 @@ Only provider answers are cached. A rule answer costs nothing to recompute, and
 a fallback is not an answer anyone reviewed. A cache hit and a final rule answer
 use no budget.
 
-Jev reports token usage; the vendor publishes no price. `cost` carries each
-decision's share of its batch's tokens, and `usd` only when you pass
-`pricing: { inputPerMTok, outputPerMTok }`.
+The budget and the breakers cover both providers. One daily cap is shared:
+every item in a request that actually goes out spends from it, so an item Jev
+failed on and Haiku then answered spends twice. An item behind an open breaker
+spends nothing: during a Jev outage only Haiku's requests are charged. Each provider has its own breaker, and
+an item behind Jev's open breaker goes on to Haiku.
 
-## Your own LLM
+Both providers report token usage. `cost` carries each decision's share of
+its batch's tokens, and `usd` only when you price that provider:
+`pricing: { jev: {…}, llm: { inputPerMTok, outputPerMTok } }`. Jev's vendor
+publishes no price.
 
-The last provider in the chain is yours: implement `DecisionProvider` with
-`name: 'llm'` and pass it as `llm`. The package ships only `noopLlmProvider`,
-which is never available. It does not call any model itself.
+## The LLM link: Claude Haiku
+
+Haiku answers what Jev does not: Jev off, its breaker open, a timeout, an
+error. It is opt-in: no model is called unless you wire it.
+
+```ts
+import { createAnthropicProvider, createDecider } from '@contentrain/decide'
+
+const decider = createDecider({
+  llm: createAnthropicProvider(), // claude-haiku-4-5-20251001, temperature 0
+  pricing: { llm: { inputPerMTok: 1, outputPerMTok: 5 } },
+})
+```
+
+The key is read from `ANTHROPIC_API_KEY` at the moment of each request, on the
+same terms as Jev's token: never stored, logged or put in an error message.
+Requests go only to `https://api.anthropic.com/v1/messages`. Haiku gets the
+same shaped state and questions as Jev, as a prompt, and answers through one
+forced tool call, so the answer is a structured record, not parsed prose.
+`punch_item` sends the prompt AO-9 measured, word for word; other kinds get a
+generic prompt built from their questions.
+
+Its answers are cached under the same key as Jev's: an input answered once, by
+either provider, is served from the cache after that, and `model` says which
+one answered. A model reports no confidence of its own, so Haiku's answers
+carry `confidence: 0` ("not measured"). For `eligibility_band` that means
+every Haiku pick goes to `needs_human`, with the pick kept as `proposed`.
+
+A host can wire another model instead: implement `DecisionProvider` with
+`name: 'llm'` and pass it as `llm`. The default is `noopLlmProvider`, which is
+never available.
 
 ## Calibration
 
@@ -117,8 +150,8 @@ which is never available. It does not call any model itself.
 every time, so these answers are not stable: show them beside the item for a
 person to confirm, never as a gate.**
 
-`pnpm calibration:live` sends the PoC-1 set three times, exactly as the
-package sends it: 272 punch items from 22 run reports, 40 of them labelled by
+`pnpm calibration:live` sends the PoC-1 set three times to Jev, exactly as
+the package sends it: 272 punch items from 22 run reports, 40 of them labelled by
 hand. It writes `calibration/<date>.json` with the model Jev reported, the
 request-shape hash, and counts only. The gate is set to what Jev measurably
 does. The median run must reach class agreement of at least 85% and severity
@@ -137,6 +170,20 @@ The request sends placeholders for the site name, its URL and item links. That
 keeps site identity out of the request and costs about two to three items of
 severity agreement. A test holds the shipped request shape to the file's shape
 hash, and requires the file to pass.
+
+`pnpm calibration:live --provider haiku` runs the same set against Haiku
+(`--provider both` runs both). It needs `ANTHROPIC_API_KEY`, is held to the
+same gate, and writes `calibration/haiku/<date>.json` with Haiku's own request
+shape (`anthropicRequestShapeHash`) and its cost at list price. Haiku is the
+fallback, so its gate result is recorded for information and blocks nothing.
+`calibration/haiku/2026-09-19.json` (claude-haiku-4-5-20251001, LLM request
+shape `96aa1feb04caef9a`, $0.33 for the three runs) **fails** the gate:
+
+- class agreement: 37 / 36 / 37 of 40, median 92.5%.
+- severity within one level: 33 / 34 / 33 of 40, median 82.5%. This is
+  under the 90% gate. Haiku answers severity as a whole level, while Jev
+  answers a score between levels.
+- stable: 39/40 labelled items and 259/272 of all items.
 
 The PoC-1 set names real sites, so it stays outside this repository.
 `CONTENTRAIN_DECIDE_POC1_DIR` points the script and the tests at it.

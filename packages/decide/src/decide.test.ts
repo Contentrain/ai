@@ -84,7 +84,7 @@ describe('decide — the chain', () => {
 
   it('batches within the kind\'s limit (punch_item: 25) and splits usage so the shares add up', async () => {
     const { jev, calls } = jevWith(() => punchAnswer('cosmetic', 0.1))
-    const decisions = await createDecider({ jev, pricing: { inputPerMTok: 1, outputPerMTok: 5 } })
+    const decisions = await createDecider({ jev, pricing: { jev: { inputPerMTok: 1, outputPerMTok: 5 } } })
       .decideMany('punch_item', Array.from({ length: 70 }, (_, i) => punch(`reason ${i}`)))
     expect(calls.map(call => Object.keys(call.body.questions).length / 3)).toEqual([25, 25, 20])
     const firstBatch = decisions.slice(0, 25)
