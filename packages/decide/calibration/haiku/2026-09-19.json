@@ -1,0 +1,69 @@
+{
+  "kind": "punch_item",
+  "version": "2",
+  "provider": "haiku",
+  "shape": "32da2187d1dc37d5",
+  "llm_shape": "96aa1feb04caef9a",
+  "temperature": 0,
+  "requested_model": "claude-haiku-4-5-20251001",
+  "model": "claude-haiku-4-5-20251001",
+  "measured_at": "2026-09-19T06:58:49.463Z",
+  "set": {
+    "name": "PoC-1",
+    "items": 272,
+    "labelled": 40,
+    "sites": 22
+  },
+  "runs": 3,
+  "requests": 69,
+  "tokens": {
+    "input": 152199,
+    "output": 35807
+  },
+  "usd": 0.3312,
+  "pricing": {
+    "inputPerMTok": 1,
+    "outputPerMTok": 5
+  },
+  "per_run": [
+    {
+      "class_match": 37,
+      "severity_within_1": 33,
+      "class_rate": 0.925,
+      "severity_within_1_rate": 0.825
+    },
+    {
+      "class_match": 36,
+      "severity_within_1": 34,
+      "class_rate": 0.9,
+      "severity_within_1_rate": 0.85
+    },
+    {
+      "class_match": 37,
+      "severity_within_1": 33,
+      "class_rate": 0.925,
+      "severity_within_1_rate": 0.825
+    }
+  ],
+  "stable": {
+    "labelled": {
+      "stable": 39,
+      "total": 40
+    },
+    "all": {
+      "stable": 259,
+      "total": 272
+    }
+  },
+  "gate": {
+    "thresholds": {
+      "median_class_rate": 0.85,
+      "median_severity_within_1_rate": 0.9,
+      "stable_rate": 0.85
+    },
+    "median_class_rate": 0.925,
+    "median_severity_within_1_rate": 0.825,
+    "stable_rate": 0.975,
+    "passed": false
+  }
+}
