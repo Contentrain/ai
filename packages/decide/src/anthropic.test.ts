@@ -244,6 +244,22 @@ describe('decide — Jev, then Haiku', () => {
     expect(calls).toHaveLength(1)
   })
 
+  it('spends no budget on Jev while its breaker is open: only requests that go out are charged', async () => {
+    const down = jevDown()
+    const { llm, calls } = haikuWith(() => ({ class: 'cosmetic', severity: 0, needs_human: 0.2 }))
+    const budget = new MemoryDailyBudget(5)
+    const now = new Date('2026-09-19T12:00:00Z')
+    const decider = createDecider({ jev: down.jev, llm, budget, now: () => now, breakers: { jev: new CircuitBreaker({ failures: 1, cooldownMs: 60_000 }) } })
+    // Item 1: Jev's request goes out and fails (1), Haiku answers (1).
+    // Items 2–4: Jev's breaker is open, nothing goes to Jev, Haiku answers (1 each).
+    const decisions = []
+    for (const reason of ['a', 'b', 'c', 'd']) decisions.push(await decider.decide('punch_item', punch(reason)))
+    expect(decisions.map(d => d.source)).toEqual(['llm', 'llm', 'llm', 'llm'])
+    expect(down.requests()).toBe(1)
+    expect(calls).toHaveLength(4)
+    expect(budget.used('default', now)).toBe(5)
+  })
+
   it('a Haiku pick for a kind with a confidence floor goes to a human, kept as proposed', async () => {
     const { llm } = haikuWith(() => ({ eligibility: 'custom_type' }))
     const decision = await createDecider({ jev: false, llm }).decide('eligibility_band', site(20, [['product', 30]]))

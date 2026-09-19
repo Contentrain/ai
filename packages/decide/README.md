@@ -102,8 +102,9 @@ a fallback is not an answer anyone reviewed. A cache hit and a final rule answer
 use no budget.
 
 The budget and the breakers cover both providers. One daily cap is shared:
-every item a provider is asked about spends from it, so an item Jev failed on
-and Haiku then answered spends twice. Each provider has its own breaker, and
+every item in a request that actually goes out spends from it, so an item Jev
+failed on and Haiku then answered spends twice. An item behind an open breaker
+spends nothing: during a Jev outage only Haiku's requests are charged. Each provider has its own breaker, and
 an item behind Jev's open breaker goes on to Haiku.
 
 Both providers report token usage. `cost` carries each decision's share of
@@ -173,12 +174,16 @@ hash, and requires the file to pass.
 `pnpm calibration:live --provider haiku` runs the same set against Haiku
 (`--provider both` runs both). It needs `ANTHROPIC_API_KEY`, is held to the
 same gate, and writes `calibration/haiku/<date>.json` with Haiku's own request
-shape (`anthropicRequestShapeHash`) and its cost at list price. No Haiku file
-has been committed yet. In an earlier experiment with the same requests,
-Haiku agreed on class for 36 of 40 labelled items in the median run and kept
-the same class in all three runs for 38–39 of 40. It placed severity within
-one level for only 33 of 40 (82.5%), under the 90% gate: it answers severity
-as a whole level, where Jev answers a score between levels.
+shape (`anthropicRequestShapeHash`) and its cost at list price. Haiku is the
+fallback, so its gate result is recorded for information and blocks nothing.
+`calibration/haiku/2026-09-19.json` (claude-haiku-4-5-20251001, LLM request
+shape `96aa1feb04caef9a`, $0.33 for the three runs) **fails** the gate:
+
+- class agreement: 37 / 36 / 37 of 40, median 92.5%.
+- severity within one level: 33 / 34 / 33 of 40, median 82.5%. This is
+  under the 90% gate. Haiku answers severity as a whole level, while Jev
+  answers a score between levels.
+- stable: 39/40 labelled items and 259/272 of all items.
 
 The PoC-1 set names real sites, so it stays outside this repository.
 `CONTENTRAIN_DECIDE_POC1_DIR` points the script and the tests at it.

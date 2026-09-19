@@ -161,18 +161,10 @@ export function createDecider(config: DeciderConfig = {}): Decider {
       for (const item of items) reasons.set(item.id, 'no_provider')
       return { answered, reasons }
     }
-    let allowed = items
-    if (config.budget) {
-      const granted = await config.budget.take(tenant, items.length, now())
-      allowed = items.slice(0, granted)
-      for (const item of items.slice(granted)) reasons.set(item.id, 'budget')
-    }
-    if (!allowed.length) return { answered, reasons }
-
     // Items of different groups never share a request; within a group, the
     // kind's calibrated batch limits win over the decider's.
     const groups = new Map<string, Pending[]>()
-    for (const item of allowed) {
+    for (const item of items) {
       const group = spec.jev?.group?.(item.shaped) ?? ''
       groups.set(group, [...(groups.get(group) ?? []), item])
     }
@@ -182,11 +174,20 @@ export function createDecider(config: DeciderConfig = {}): Decider {
       const costs = members.map(item => Math.max(1, estimateTokens(JSON.stringify(buildJevRequestFor(spec, item.shaped))) - fixed))
       for (const batch of planBatches(costs, fixed, spec.jev?.batch ?? config.batch)) batches.push(batch.map(i => members[i]!))
     }
-    for (const members of batches) {
+    for (const batch of batches) {
+      // The breaker first: a request that never goes out spends no budget,
+      // so an outage upstream does not drain the cap the next provider needs.
       if (!breaker.allows()) {
-        for (const item of members) reasons.set(item.id, 'circuit_open')
+        for (const item of batch) reasons.set(item.id, 'circuit_open')
         continue
       }
+      let members = batch
+      if (config.budget) {
+        const granted = await config.budget.take(tenant, batch.length, now())
+        members = batch.slice(0, granted)
+        for (const item of batch.slice(granted)) reasons.set(item.id, 'budget')
+      }
+      if (!members.length) continue
       const started = performance.now()
       try {
         const answer = await provider.ask(spec, members.map(item => item.shaped))

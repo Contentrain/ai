@@ -115,8 +115,9 @@ provider as an option.
 - **Circuit breaker:** one per provider. It opens after 3 consecutive failed
   requests and lets one request through after 60 seconds. An item behind Jev's
   open breaker goes on to Haiku.
-- **Shared budget:** both providers spend from the same cap. An item Jev
-  failed on and Haiku then answered spends twice.
+- **Shared budget:** both providers spend from the same cap, per item in a
+  request that actually goes out. An item Jev failed on and Haiku then
+  answered spends twice. An item behind an open breaker spends nothing.
 - **Cache:** the key is `sha256(kind, schema version, request shape, canonical shaped input)`.
   The request shape (`requestShapeHash`) covers the model, the batch limits and the whole prompt.
   Only provider answers are cached. `MemoryDecisionCache` and
@@ -157,12 +158,19 @@ of severity agreement compared with sending them.
 `pnpm calibration:live --provider haiku` measures Haiku on the same set
 against the same gate, and `--provider both` measures both providers. The
 Haiku result goes to `calibration/haiku/<date>.json`, with Haiku's own request
-shape and its cost at list price. No Haiku file has been committed yet. An
-earlier experiment sent Haiku the same requests. In the median run, Haiku
-agreed on class for 36 of 40 labelled items, and 38 to 39 of 40 kept the same
-class in all three runs. Severity was within one level for only 33 of 40
-(82.5%), which is below the 90% gate. Haiku answers severity as a whole level,
-while Jev answers a score between levels.
+shape and its cost at list price. Haiku is the fallback, so its result is
+recorded for information and blocks nothing:
+
+| Measure | Gate | `calibration/haiku/2026-09-19.json` |
+|---|---|---|
+| class agreement, median run | ≥ 85% | 92.5% (runs: 37 / 36 / 37 of 40) |
+| severity within one level, median run | ≥ 90% | **82.5%** (runs: 33 / 34 / 33 of 40) |
+| same class in all 3 runs, labelled items | ≥ 85% | 39/40 (97.5%); all items 259/272 |
+
+This was measured on `claude-haiku-4-5-20251001` with LLM request shape
+`96aa1feb04caef9a`. The three runs cost $0.33 at list price. Haiku fails on
+severity because it answers a whole level, while Jev answers a score between
+levels.
 
 A test holds the shipped request shape to the latest file's shape hash, and
 requires that file to pass. A changed prompt cannot ship on an old
