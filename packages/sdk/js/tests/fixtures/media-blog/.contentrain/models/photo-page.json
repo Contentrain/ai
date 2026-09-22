@@ -1,0 +1,14 @@
+{
+  "id": "photo-page",
+  "name": "Photo Page",
+  "kind": "document",
+  "domain": "blog",
+  "i18n": false,
+  "title_field": "title",
+  "fields": {
+    "title": {
+      "required": true,
+      "type": "string"
+    }
+  }
+}

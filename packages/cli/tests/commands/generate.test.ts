@@ -96,4 +96,16 @@ describe('generate command', () => {
     expect(successMock).not.toHaveBeenCalled()
     writeSpy.mockRestore()
   })
+
+  it('forwards --mediaBaseUrl to generate(), preferring it over the deprecated --cdnBaseUrl', async () => {
+    const { generate } = await import('@contentrain/query/generate')
+    const mod = await import('../../src/commands/generate.js')
+
+    await mod.default.run?.({ args: { root: '/test/project', mediaBaseUrl: 'https://cdn.test/' } })
+    expect(generate).toHaveBeenCalledWith(expect.objectContaining({ mediaBaseUrl: 'https://cdn.test/' }))
+
+    vi.clearAllMocks()
+    await mod.default.run?.({ args: { root: '/test/project', cdnBaseUrl: 'https://old.test/' } })
+    expect(generate).toHaveBeenCalledWith(expect.objectContaining({ mediaBaseUrl: 'https://old.test/' }))
+  })
 })

@@ -1,30 +1,28 @@
-import type { FieldDef, FieldType } from '@contentrain/types'
+import type { FieldDef, FieldType } from './index.js'
 
 /**
- * Media path → delivery URL rewriting for MCP content writes.
+ * Media path → delivery URL rewriting. The single source of truth for how a
+ * stored `media/...` reference becomes an absolute delivery URL — every
+ * reader of Contentrain content that resolves this at read or write time
+ * shares this module, so the rules can only be defined once.
  *
- * Ported from Studio's `server/utils/media-rewrite.ts`, with one deliberate
- * difference: Studio derives the delivery base from a `projectId` plus its
- * runtime config, whereas MCP receives the fully-qualified per-project base
- * directly via `RepoProvider.mediaBaseUrl`
- * (`{siteUrl}/api/cdn/v1/{projectId}` — the project segment is already
- * included). So here `toDeliveryUrl` is a single `{base}/{path}` join.
- *
- * Why this exists: Studio stores uploaded media in CDN/R2 and references it
- * from content by a relative storage path (`media/...`). That path renders
- * nowhere on its own — it must become an absolute, public delivery URL before
- * it reaches a browser. When an external agent writes through MCP Cloud, the
- * write bypasses Studio's content-engine and goes straight through
- * `planContentSave`, so this is where the normalization has to happen: the
- * git-committed value is then already a ready-to-use URL for any consumer
- * (`@contentrain/query`, raw markdown, a plain landing page) with no SDK.
+ * Two independent consumers need the exact same answer: `@contentrain/mcp`'s
+ * `planContentSave` normalizes on write, for hosted/cloud mode, so a
+ * git-committed value is ready to use with no SDK; `@contentrain/query`
+ * resolves the same relative paths at read time, for the local-file model
+ * (the generated client, the Astro loader, raw markdown) where nothing
+ * upstream rewrote them. A second, hand-rolled implementation on either side
+ * drifts the moment one of the rules below changes — titled markdown embeds,
+ * an HTML `src`/`href`, or a media field nested inside an `object`/`array`
+ * were all missed by an earlier, separate read-side implementation before
+ * this module existed.
  *
  * Only image/video/file fields (resolved via the model schema, including those
  * nested in object/array fields) and `media/...` src/href targets in
  * markdown/HTML are rewritten. External URLs (`http(s)://`, `//`, `data:`) and
  * already-absolute delivery URLs pass through untouched, so every entry point
- * is idempotent and safe to call repeatedly. In local mode (no base) media
- * stays a relative path — the OSS file model.
+ * is idempotent and safe to call repeatedly. No base means no-op — the
+ * relative path is kept verbatim, which is the OSS local-file model's default.
  */
 
 const MEDIA_FIELD_TYPES = new Set<FieldType>(['image', 'video', 'file'])

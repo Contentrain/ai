@@ -165,3 +165,48 @@ describe('contentrainLoader', () => {
     expect(handlers.change).toHaveLength(1)
   })
 })
+
+const MEDIA_FIXTURE = join(import.meta.dirname, '../fixtures/media-blog')
+
+describe('contentrainLoader mediaBaseUrl', () => {
+  it('resolves image/video/file fields and markdown/richtext ](media/...) refs on a collection', async () => {
+    const ctx = context()
+    await contentrainLoader({ model: 'photo-post', root: MEDIA_FIXTURE, mediaBaseUrl: 'https://cdn.test/proj/' }).load(ctx)
+    const sunset = ctx.entries.find(e => e.data.title === 'Sunset')!
+    expect(sunset.data.cover).toBe('https://cdn.test/proj/media/original/sunset.webp')
+    expect(sunset.data.notes).toBe(
+      'See ![alt](https://cdn.test/proj/media/original/inline.png) and [full res](https://cdn.test/proj/media/original/big.png).',
+    )
+    // an already-absolute value passes through untouched
+    const external = ctx.entries.find(e => e.data.title === 'External')!
+    expect(external.data.cover).toBe('https://images.unsplash.com/x.jpg')
+  })
+
+  it('resolves image fields nested inside array and object fields — a gallery array, an SEO object', async () => {
+    const ctx = context()
+    await contentrainLoader({ model: 'photo-post', root: MEDIA_FIXTURE, mediaBaseUrl: 'https://cdn.test/proj' }).load(ctx)
+    const sunset = ctx.entries.find(e => e.data.title === 'Sunset')!
+    expect(sunset.data.gallery).toEqual([
+      'https://cdn.test/proj/media/original/g1.webp',
+      'https://ext.example/g2.jpg',
+    ])
+    expect((sunset.data.seo as { og: string }).og).toBe('https://cdn.test/proj/media/original/og.webp')
+  })
+
+  it('resolves ](media/...) refs in a document body, including a titled embed and an HTML src attribute', async () => {
+    const ctx = context()
+    await contentrainLoader({ model: 'photo-page', root: MEDIA_FIXTURE, mediaBaseUrl: 'https://cdn.test/proj' }).load(ctx)
+    expect(ctx.entries[0]!.body).toBe(
+      'Check the gallery: ![cover](https://cdn.test/proj/media/original/hero.webp "Hero shot") and '
+      + '[download](https://cdn.test/proj/media/files/brochure.pdf), also <img src="https://cdn.test/proj/media/original/thumb.png">.',
+    )
+  })
+
+  it('leaves values exactly as stored when mediaBaseUrl is omitted — opt-in', async () => {
+    const ctx = context()
+    await contentrainLoader({ model: 'photo-post', root: MEDIA_FIXTURE }).load(ctx)
+    const sunset = ctx.entries.find(e => e.data.title === 'Sunset')!
+    expect(sunset.data.cover).toBe('media/original/sunset.webp')
+    expect(sunset.data.notes).toContain('](media/original/inline.png)')
+  })
+})

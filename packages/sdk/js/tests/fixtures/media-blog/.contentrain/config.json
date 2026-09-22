@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "stack": "other",
+  "workflow": "auto-merge",
+  "locales": {
+    "default": "en",
+    "supported": ["en"]
+  },
+  "domains": ["blog"]
+}

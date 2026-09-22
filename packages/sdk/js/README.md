@@ -159,18 +159,47 @@ Supported methods:
 - `first()`
 - `all()`
 
-### `media(value)`
+### `media(value, baseOverride?)` / `mediaBody(markdown, baseOverride?)`
 
-Resolves a stored `media/...` path to its absolute delivery URL. Emitted **only** when a CDN base is configured — set `cdn.url` in `.contentrain/config.json` or run `contentrain generate --cdnBaseUrl <base>`:
+Resolve a stored `media/...` path — `media()` for a single field value, `mediaBody()` for every `](media/...)` link and image embed inside a markdown string — to an absolute delivery URL. Emitted **only** when a media base is configured at generate time — set `cdn.url` in `.contentrain/config.json` or run `contentrain generate --mediaBaseUrl <base>` (`--cdnBaseUrl` still works as a deprecated alias). With no base configured, these are not emitted at all — not a pass-through, an absent export — so code that imports them from `#contentrain` without generating with a base will fail to resolve at build time:
 
 ```ts
-import { media } from '#contentrain'
+import { media, mediaBody } from '#contentrain'
 
-media('media/original/hero.webp')          // → '{cdn.url}/media/original/hero.webp'
+media('media/original/hero.webp')          // → '{mediaBaseUrl}/media/original/hero.webp'
 media('https://images.unsplash.com/x.jpg') // → unchanged (external pass-through)
+
+mediaBody('See ![cover](media/hero.webp) for more.')
+// → 'See ![cover](https://.../media/hero.webp) for more.'
 ```
 
-Idempotent — external URLs (`http(s)://`, `//`, `data:`) and already-absolute delivery URLs pass through untouched. It is the local-mode counterpart of CDN mode's `MediaAccessor.url()`. For Studio-CDN content, media fields already carry absolute URLs, so no resolution is needed.
+Both are idempotent — external URLs (`http(s)://`, `//`, `data:`) and already-absolute delivery URLs pass through untouched — and take an optional second argument that overrides the base baked in at generate time for that one call. That is how a Nuxt app stays on one build across environments: read the base from its own runtime config, not from what `contentrain generate` happened to bake in.
+
+```ts
+// Nuxt: nuxt.config.ts
+export default defineNuxtConfig({
+  runtimeConfig: {
+    public: { contentrainMediaBaseUrl: '' }, // filled from NUXT_PUBLIC_CONTENTRAIN_MEDIA_BASE_URL
+  },
+})
+
+// Nuxt: a composable or component
+const { public: { contentrainMediaBaseUrl } } = useRuntimeConfig()
+const cover = media(post.cover, contentrainMediaBaseUrl)
+```
+
+This is the local-mode counterpart of CDN mode's `MediaAccessor.url()`. For Studio-CDN content, media fields already carry absolute URLs, so no resolution is needed.
+
+For a Nuxt app (or anything else) that never bakes a base into the generated client at all — reading it purely from its own runtime config or env every time, so `media()`/`mediaBody()` are never emitted — import the underlying pure resolvers directly instead of going through the generated client:
+
+```ts
+import { resolveMediaUrl, resolveMediaRefsInBody } from '@contentrain/query'
+
+const cover = resolveMediaUrl(post.cover, useRuntimeConfig().public.contentrainMediaBaseUrl)
+const body  = resolveMediaRefsInBody(post.body, useRuntimeConfig().public.contentrainMediaBaseUrl)
+```
+
+Both are opt-in: called with no base (`undefined`, `null`, or `''`), they return the value unchanged, so a project that never configures one keeps relative `media/...` paths exactly as stored.
 
 ## 🔗 Relations
 
@@ -211,6 +240,7 @@ Public root exports:
 - `ConversationClient` — Conversation API client
 - `ContentrainError` — HTTP error class for CDN mode
 - `applyWhere` — shared where filter helper
+- `resolveMediaUrl`, `resolveMediaRefsInBody` — the media resolver behind `media()`/`mediaBody()`/`contentrainLoader`'s `mediaBaseUrl`, usable standalone with a base sourced from anywhere (a framework's own runtime config, an env var)
 
 ## CDN Transport
 
@@ -476,6 +506,18 @@ loads with ids prefixed (`en/my-post`) — Astro ids are unique per collection, 
 without the prefix one language would overwrite the other. `root` points at the
 project holding `.contentrain` (default: `process.cwd()`).
 
+This loader reads `.contentrain` directly, so nothing upstream has rewritten a
+stored `media/...` reference into an absolute URL yet — pass `mediaBaseUrl` to
+resolve it here, the same opt-in resolver `media()`/`mediaBody()` use:
+
+```ts
+contentrainLoader({ model: 'blog-post', locale: 'en', mediaBaseUrl: 'https://cdn.example.com' })
+```
+
+Applied automatically to `image`/`video`/`file` fields, to `](media/...)`
+references inside `markdown`/`richtext` fields, and to a document's markdown
+body. Omit it to keep values exactly as stored.
+
 Astro is not a dependency, not even a peer: the loader is structurally what
 `defineCollection` accepts, so any Astro 5 version works and non-Astro consumers
 of this package carry nothing extra.
@@ -496,9 +538,10 @@ const hero = client.singleton('hero').get()
 **Via the `contentrain` CLI (recommended for most users):**
 
 ```bash
-contentrain generate                # Generate once
-contentrain generate --watch        # Regenerate on model/content changes
-contentrain generate --json         # Machine-readable JSON for CI
+contentrain generate                                       # Generate once
+contentrain generate --watch                                # Regenerate on model/content changes
+contentrain generate --json                                  # Machine-readable JSON for CI
+contentrain generate --mediaBaseUrl https://cdn.example.com  # Bake media()/mediaBody() into the client
 ```
 
 **Via `contentrain-query` (programmatic / build tool flows):**

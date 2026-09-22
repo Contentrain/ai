@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { FieldDef } from '@contentrain/types'
+import type { FieldDef } from './index.js'
 import {
   isStoredMediaPath,
   rewriteEntryMedia,
@@ -7,7 +7,7 @@ import {
   rewriteMarkdownMedia,
   rewriteMediaUrl,
   toDeliveryUrl,
-} from '../../src/core/media/media-rewrite.js'
+} from './media.js'
 
 const BASE = 'https://cdn.test/api/cdn/v1/proj'
 
@@ -107,6 +107,18 @@ describe('media-rewrite', () => {
       expect(out).toContain(`](${BASE}/media/original/b.pdf)`)
       expect(out).toContain(`src="${BASE}/media/original/c.png"`)
       expect(out).toContain('](https://ext.example/y.jpg)')
+    })
+
+    it('rewrites a titled markdown image embed, keeping the title', () => {
+      const body = '![alt](media/original/a.webp "A title") after.'
+      const out = rewriteMarkdownMedia(body, BASE)
+      expect(out).toBe(`![alt](${BASE}/media/original/a.webp "A title") after.`)
+    })
+
+    it('rewrites href as well as src, both quote styles', () => {
+      const body = `<a href='media/files/brochure.pdf'>Download</a>`
+      const out = rewriteMarkdownMedia(body, BASE)
+      expect(out).toBe(`<a href='${BASE}/media/files/brochure.pdf'>Download</a>`)
     })
 
     it('is idempotent — a second pass changes nothing', () => {

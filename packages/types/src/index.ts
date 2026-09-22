@@ -1647,3 +1647,15 @@ export type {
   WriteReadiness,
 } from './provider.js'
 export { LOCAL_CAPABILITIES } from './provider.js'
+
+// Implemented in `media.ts` and re-exported here: both `@contentrain/mcp`
+// (write-time normalization) and `@contentrain/query` (read-time resolution)
+// share this single rewrite engine, so the rules can only be defined once.
+export {
+  isStoredMediaPath,
+  rewriteEntryMedia,
+  rewriteFieldMedia,
+  rewriteMarkdownMedia,
+  rewriteMediaUrl,
+  toDeliveryUrl,
+} from './media.js'

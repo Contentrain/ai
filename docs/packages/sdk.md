@@ -249,18 +249,31 @@ const latest = document('blog-article')
 | `all` | `all()` | `T[]` | Execute query, return all matches |
 | `first` | `first()` | `T \| undefined` | Execute query, return first match |
 
-### media — Delivery URLs
+### media / mediaBody — Delivery URLs
 
-A fifth export, `media(value)`, is generated **only** when a CDN delivery base is configured — set `cdn.url` in [`config.json`](/reference/config) or run `contentrain generate --cdnBaseUrl <base>`. It resolves a stored `media/...` path to its absolute delivery URL:
+Two more exports, `media(value, baseOverride?)` and `mediaBody(markdown, baseOverride?)`, are generated **only** when a media delivery base is configured at generate time — set `cdn.url` in [`config.json`](/reference/config) or run `contentrain generate --mediaBaseUrl <base>` (`--cdnBaseUrl` still works as a deprecated alias). Without a configured base, neither export exists on the client at all — not a pass-through, an absent export — so `import { media } from '#contentrain'` fails to resolve. `media()` resolves a stored `media/...` path; `mediaBody()` resolves every `](media/...)` link and image embed inside a markdown string:
 
 ```ts
-import { media } from '#contentrain'
+import { media, mediaBody } from '#contentrain'
 
-media('media/original/hero.webp')          // → '{cdn.url}/media/original/hero.webp'
+media('media/original/hero.webp')          // → '{mediaBaseUrl}/media/original/hero.webp'
 media('https://images.unsplash.com/x.jpg') // → unchanged (external pass-through)
+
+mediaBody('See ![cover](media/hero.webp) for more.')
+// → 'See ![cover](https://.../media/hero.webp) for more.'
 ```
 
-It is idempotent — external URLs (`http(s)://`, `//`, `data:`) and already-absolute delivery URLs pass through untouched — and is the local-mode counterpart of CDN mode's `MediaAccessor.url()`. For content delivered through Studio CDN, media fields already carry absolute URLs (normalized on write), so `media()` is only needed for the relative-path / local-file model.
+Both are idempotent — external URLs (`http(s)://`, `//`, `data:`) and already-absolute delivery URLs pass through untouched — and are the local-mode counterpart of CDN mode's `MediaAccessor.url()`. For content delivered through Studio CDN, media fields already carry absolute URLs (normalized on write), so these are only needed for the relative-path / local-file model.
+
+Each takes an optional second argument that overrides the base baked in at generate time, for a host that reads its own runtime config per request instead — a Nuxt app, for one:
+
+```ts
+// composable or component
+const { public: { contentrainMediaBaseUrl } } = useRuntimeConfig()
+const cover = media(post.cover, contentrainMediaBaseUrl)
+```
+
+A host that never bakes a base in at all — a Nuxt app reading `useRuntimeConfig()` per request, for one — has no `media()`/`mediaBody()` to call, since neither was generated. Import the underlying resolvers directly from `@contentrain/query` instead: `resolveMediaUrl(value, base)` and `resolveMediaRefsInBody(markdown, base)`. Both are opt-in — no base (`undefined`, `null`, `''`) returns the value unchanged — so they are safe to call unconditionally, unlike `media()`/`mediaBody()` which must be generated first. The Astro loader (`contentrainLoader({ mediaBaseUrl })`) applies the same resolver automatically to `image`/`video`/`file` fields — including those nested inside `object`/`array` fields, such as an image gallery — `markdown`/`richtext` fields, and document bodies (titled embeds and inline HTML `src`/`href` included), since it reads `.contentrain` directly and nothing upstream has rewritten those references yet.
 
 ## Relations
 

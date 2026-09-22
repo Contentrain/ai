@@ -1,0 +1,32 @@
+{
+  "id": "photo-post",
+  "name": "Photo Post",
+  "kind": "collection",
+  "domain": "blog",
+  "i18n": false,
+  "title_field": "title",
+  "fields": {
+    "title": {
+      "required": true,
+      "type": "string"
+    },
+    "cover": {
+      "type": "image"
+    },
+    "notes": {
+      "type": "markdown"
+    },
+    "gallery": {
+      "type": "array",
+      "items": "image"
+    },
+    "seo": {
+      "type": "object",
+      "fields": {
+        "og": {
+          "type": "image"
+        }
+      }
+    }
+  }
+}
