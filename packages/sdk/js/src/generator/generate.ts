@@ -11,12 +11,17 @@ import { readDir, writeText } from './utils.js'
 export interface GenerateOptions extends PublicationOptions {
   projectRoot: string
   /**
-   * Public media delivery base for resolving relative `media/...` references to
-   * absolute URLs. When set (or when `config.cdn.url` is present), the emitted
-   * client gains a `media(path)` resolver. The explicit option wins over the
-   * config value. Omit for the pure local-file model — media stays a relative
-   * path.
+   * Public media delivery base for resolving relative `media/...` references
+   * (in image/video/file fields, and `](media/...)` links in markdown) to
+   * absolute URLs. When set (or when `config.cdn.url` is present), the
+   * emitted client gains `media()`/`mediaBody()` resolvers. The explicit
+   * option wins over the config value. Omit for the pure local-file model —
+   * media stays a relative path until a consumer resolves it itself, e.g.
+   * via `resolveMediaUrl()`/`resolveMediaRefsInBody()` with a base sourced
+   * from its own env or runtime config (a Nuxt app's `useRuntimeConfig()`).
    */
+  mediaBaseUrl?: string
+  /** @deprecated Alias for `mediaBaseUrl`, kept for existing callers. */
   cdnBaseUrl?: string
 }
 
@@ -36,16 +41,16 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
   const manifest = await readProjectManifest(projectRoot)
 
   // Media delivery base: explicit option wins over config.cdn.url. When set,
-  // the emitted client gains a `media()` resolver.
-  const cdnBaseUrl = options.cdnBaseUrl ?? manifest.config.cdn?.url
-  const hasMedia = Boolean(cdnBaseUrl)
+  // the emitted client gains `media()`/`mediaBody()` resolvers.
+  const mediaBaseUrl = options.mediaBaseUrl ?? options.cdnBaseUrl ?? manifest.config.cdn?.url
+  const hasMedia = Boolean(mediaBaseUrl)
 
   // 2. Generate data modules (async — reads content files)
   const dataModules = await emitDataModules(manifest.models, manifest.contentFiles, publicationContext(projectRoot, manifest.config.locales.default, options))
 
   // 3. Generate all output content (sync — pure string transforms)
   const typesContent = emitTypes(manifest.models, hasMedia)
-  const runtimeContent = emitRuntimeModule(manifest.models, dataModules, manifest.config.locales.default, cdnBaseUrl)
+  const runtimeContent = emitRuntimeModule(manifest.models, dataModules, manifest.config.locales.default, mediaBaseUrl)
   const cjsContent = emitCjsWrapper(manifest.models, hasMedia)
 
   // 4. Clean stale data modules

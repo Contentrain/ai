@@ -17,7 +17,8 @@ export default defineCommand({
     at: { type: 'string', description: 'ISO publication timestamp for a reproducible public build (implies --published)', required: false },
     watch: { type: 'boolean', description: 'Watch for changes and regenerate', required: false },
     json: { type: 'boolean', description: 'Emit the generate result as JSON (silences pretty output)', required: false },
-    cdnBaseUrl: { type: 'string', description: 'Public media delivery base baked into the generated client\'s media() resolver (overrides config.cdn.url)', required: false },
+    mediaBaseUrl: { type: 'string', description: 'Public media delivery base baked into the generated client\'s media()/mediaBody() resolvers (overrides config.cdn.url)', required: false },
+    cdnBaseUrl: { type: 'string', description: 'Deprecated alias for --mediaBaseUrl', required: false },
   },
   async run({ args }) {
     const projectRoot = await resolveProjectRoot(args.root)
@@ -34,8 +35,8 @@ export default defineCommand({
 
     try {
       const { generate } = await import('@contentrain/query/generate')
-      const cdnBaseUrl = args.cdnBaseUrl || undefined
-      const result = await generate({ projectRoot, cdnBaseUrl, publishedOnly: args.published, at: args.at })
+      const mediaBaseUrl = args.mediaBaseUrl || args.cdnBaseUrl || undefined
+      const result = await generate({ projectRoot, mediaBaseUrl, publishedOnly: args.published, at: args.at })
 
       s?.stop('SDK client generated')
 
@@ -74,7 +75,7 @@ export default defineCommand({
             debounce = setTimeout(async () => {
               log.info('Changes detected, regenerating...')
               try {
-                const r = await generate({ projectRoot, cdnBaseUrl, publishedOnly: args.published, at: args.at })
+                const r = await generate({ projectRoot, mediaBaseUrl, publishedOnly: args.published, at: args.at })
                 log.success(`Regenerated: ${r.generatedFiles.length} files`)
               } catch (err) {
                 log.error(`Regeneration failed: ${err instanceof Error ? err.message : String(err)}`)

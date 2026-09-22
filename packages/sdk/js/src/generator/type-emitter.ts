@@ -122,10 +122,13 @@ export function emitTypes(models: ModelDefinition[], hasMedia = false): string {
   lines.push('export declare function document(model: string): DocumentQuery<Record<string, unknown>>')
   lines.push('')
 
-  // media() resolver — emitted only when a CDN delivery base is configured.
+  // media()/mediaBody() resolvers — emitted only when a media delivery base
+  // is configured.
   if (hasMedia) {
-    lines.push('/** Resolve a stored `media/...` path to its absolute delivery URL. External URLs and already-absolute values pass through unchanged. */')
-    lines.push('export declare function media(value: string): string')
+    lines.push('/** Resolve a stored `media/...` path to its absolute delivery URL. External URLs and already-absolute values pass through unchanged. An optional second argument overrides the configured base for this call — e.g. a value read from framework runtime config. */')
+    lines.push('export declare function media(value: string, baseOverride?: string): string')
+    lines.push('/** Resolve every `](media/...)` reference inside a markdown string to an absolute delivery URL. Same override rules as `media()`. */')
+    lines.push('export declare function mediaBody(markdown: string, baseOverride?: string): string')
     lines.push('')
   }
 
@@ -147,6 +150,10 @@ export function emitTypes(models: ModelDefinition[], hasMedia = false): string {
     lines.push(`  document(model: '${m.id}'): DocumentQuery<${kebabToPascal(m.id)}>`)
   }
   lines.push('  document(model: string): DocumentQuery<Record<string, unknown>>')
+  if (hasMedia) {
+    lines.push('  media(value: string, baseOverride?: string): string')
+    lines.push('  mediaBody(markdown: string, baseOverride?: string): string')
+  }
   lines.push('}')
   lines.push('')
   lines.push('export declare function createContentrainClient(): ContentrainClient')

@@ -127,7 +127,7 @@ interface ContentrainConfig {
 | `locales.supported` | `string[]` | Yes | All supported locale codes. Must include `default`. |
 | `domains` | `string[]` | Yes | Content domain names for organizing models. |
 | `assets_path` | `string` | No | Directory for media assets relative to project root. |
-| `cdn.url` | `string` | No | Public media delivery base. When set, `contentrain generate` bakes a `media()` resolver into the client that turns relative `media/...` paths into absolute `{cdn.url}/{path}` URLs. Like `platform`, it is not surfaced through MCP's config reader — only `generate` and tooling read it from the raw file. |
+| `cdn.url` | `string` | No | Public media delivery base. When set, `contentrain generate` (or its `--mediaBaseUrl` flag) bakes `media()`/`mediaBody()` resolvers into the client that turn relative `media/...` paths — and `](media/...)` references inside markdown — into absolute `{cdn.url}/{path}` URLs. Like `platform`, it is not surfaced through MCP's config reader — only `generate` and tooling read it from the raw file. |
 | `branchRetention` | `number` | No | Days a merged `cr/*` branch is kept locally before lazy cleanup. Default: `30`. |
 | `branchWarnLimit` | `number` | No | Unmerged `cr/*` branch count that triggers a warning. Default: `50`. |
 | `branchBlockLimit` | `number` | No | Unmerged `cr/*` branch count that blocks new writes. Default: `80`. |

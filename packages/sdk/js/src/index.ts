@@ -8,6 +8,7 @@ export { DocumentQuery } from './runtime/document.js'
 // Shared utilities
 export type { WhereClause } from './shared/where.js'
 export { applyWhere } from './shared/where.js'
+export { resolveMediaUrl, resolveMediaRefsInBody } from './shared/media.js'
 
 // Re-export types from @contentrain/types that SDK consumers need
 export type {

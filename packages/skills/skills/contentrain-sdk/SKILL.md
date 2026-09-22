@@ -83,14 +83,17 @@ const doc = document('blog-post').bySlug('getting-started')
 Media / image / file field values are plain strings. How you turn them into a URL depends on the storage model:
 
 - **Studio-CDN content** already carries absolute delivery URLs — the write path normalizes `media/...` references on save — so use the field value directly, no resolution needed.
-- **Relative-path content** (OSS / local-file model, values like `media/...`) resolves through an optional `media()` helper baked into the generated client. Set `config.json > cdn.url` (or run `contentrain generate --cdnBaseUrl <base>`) and the client exports it:
+- **Relative-path content** (OSS / local-file model, values like `media/...`) resolves through optional `media()`/`mediaBody()` helpers baked into the generated client. Set `config.json > cdn.url` (or run `contentrain generate --mediaBaseUrl <base>`) and the client exports them:
 
 ```typescript
-import { media } from '#contentrain'
+import { media, mediaBody } from '#contentrain'
 
-media('media/original/hero.webp')          // → '{cdn.url}/media/original/hero.webp'
+media('media/original/hero.webp')          // → '{mediaBaseUrl}/media/original/hero.webp'
 media('https://images.unsplash.com/x.jpg') // → unchanged (external pass-through)
+mediaBody('See ![cover](media/hero.webp)') // → resolves `](media/...)` refs inside markdown
 ```
+
+Both take an optional second argument overriding the baked base for that call — a Nuxt app passes its own `useRuntimeConfig()` value here instead of rebaking per environment. The Astro loader (`contentrainLoader({ mediaBaseUrl })`) applies the same resolver automatically.
 
 `media()` is omitted when no base is configured, and is idempotent — external URLs (`http(s)://`, `//`, `data:`) and already-absolute delivery URLs pass through untouched. It is the **local-mode** counterpart of CDN mode's `client.media()` (which returns a `MediaAccessor` over the media manifest, below).
 
@@ -189,7 +192,7 @@ const history = await conv.history(response.conversationId)
 - Locale fallback chain: explicit → config default → first available
 - Generated files in `.contentrain/client/` are **immutable** — always regenerate, never edit
 - Run `contentrain generate` after any model change
-- **Media**: Studio-CDN fields already carry absolute URLs; for relative `media/...` values set `config.cdn.url` (or `generate --cdnBaseUrl`) and resolve with the generated `media()` helper
+- **Media**: Studio-CDN fields already carry absolute URLs; for relative `media/...` values set `config.cdn.url` (or `generate --mediaBaseUrl`) and resolve with the generated `media()`/`mediaBody()` helpers
 
 ## Framework Integration
 

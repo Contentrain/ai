@@ -19,6 +19,7 @@ import type { ContentFileRef } from '../generator/config-reader.js'
 import { readProjectManifest } from '../generator/config-reader.js'
 import { readJson, readText } from '../generator/utils.js'
 import { parseFrontmatter, stringLikeFieldKeys } from '../shared/frontmatter.js'
+import { resolveMediaUrl, resolveMediaRefsInBody } from '../shared/media.js'
 
 /** The slice of Astro's `LoaderContext` this loader uses. */
 export interface ContentrainLoaderContext {
@@ -59,6 +60,15 @@ export interface ContentrainLoaderOptions extends PublicationOptions {
    * post do not collide — Astro ids are unique per collection.
    */
   locale?: string
+  /**
+   * Public media delivery base for resolving relative `media/...` references
+   * to absolute URLs. This loader reads `.contentrain` directly — nothing
+   * upstream has rewritten them yet — so, unlike CDN-bundled content, they
+   * need a resolver here. Applied automatically to image/video/file fields,
+   * to `](media/...)` references inside markdown/richtext fields, and to a
+   * document's markdown body. Omit to keep values exactly as stored.
+   */
+  mediaBaseUrl?: string
 }
 
 interface Entry {
@@ -118,7 +128,9 @@ export function contentrainLoader(options: ContentrainLoaderOptions): Contentrai
 
       const publication = publicationContext(root, manifest.config.locales.default, options)
       const perFile = await Promise.all(refs.map(ref => entriesOf(ref, model, prefixLocale, publication)))
-      const entries = perFile.flat()
+      const entries = options.mediaBaseUrl
+        ? resolveEntriesMedia(perFile.flat(), model, options.mediaBaseUrl)
+        : perFile.flat()
       // Astro rejects an absolute filePath ("must be relative to the site
       // root"), and a `.contentrain` outside the Astro root has no relative
       // form it accepts — there we send none rather than a path it refuses.
@@ -170,6 +182,39 @@ function toPath(root: URL | string | undefined): string | undefined {
   if (root === undefined) return undefined
   if (typeof root !== 'string') return fileURLToPath(root)
   return root.startsWith('file:') ? fileURLToPath(root) : root
+}
+
+const MEDIA_VALUE_TYPES = new Set(['image', 'video', 'file'])
+const MEDIA_BODY_TYPES = new Set(['markdown', 'richtext'])
+
+function fieldNamesOfType(model: ModelDefinition, types: Set<string>): string[] {
+  if (!model.fields) return []
+  return Object.entries(model.fields).filter(([, f]) => types.has(f.type)).map(([name]) => name)
+}
+
+/** Resolves `media/...` references to absolute URLs — image/video/file field
+ * values, `](media/...)` links inside markdown/richtext fields, and a
+ * document's markdown body — across every loaded entry. A model with no
+ * media-shaped fields and no body is returned unchanged, entry by entry. */
+function resolveEntriesMedia(entries: Entry[], model: ModelDefinition, mediaBaseUrl: string): Entry[] {
+  const valueFields = fieldNamesOfType(model, MEDIA_VALUE_TYPES)
+  const bodyFields = fieldNamesOfType(model, MEDIA_BODY_TYPES)
+  if (valueFields.length === 0 && bodyFields.length === 0 && model.kind !== 'document') return entries
+
+  return entries.map((entry) => {
+    let data = entry.data
+    if (valueFields.length > 0 || bodyFields.length > 0) {
+      data = { ...entry.data }
+      for (const field of valueFields) {
+        if (field in data) data[field] = resolveMediaUrl(data[field], mediaBaseUrl)
+      }
+      for (const field of bodyFields) {
+        if (field in data) data[field] = resolveMediaRefsInBody(data[field], mediaBaseUrl)
+      }
+    }
+    const body = entry.body === undefined ? undefined : resolveMediaRefsInBody(entry.body, mediaBaseUrl) as string
+    return { ...entry, data, ...(body === undefined ? {} : { body }) }
+  })
 }
 
 async function entriesOf(ref: ContentFileRef, model: ModelDefinition, prefixLocale: boolean, publication?: PublicationContext): Promise<Entry[]> {

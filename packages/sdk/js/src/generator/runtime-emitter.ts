@@ -1,7 +1,7 @@
 import type { ModelDefinition } from '@contentrain/types'
 import type { DataModule } from './data-emitter.js'
 
-export function emitRuntimeModule(models: ModelDefinition[], dataModules: DataModule[], defaultLocale?: string, cdnBaseUrl?: string): string {
+export function emitRuntimeModule(models: ModelDefinition[], dataModules: DataModule[], defaultLocale?: string, mediaBaseUrl?: string): string {
   const lines: string[] = [
     '/* eslint-disable */',
     '/* oxlint-disable */',
@@ -15,10 +15,10 @@ export function emitRuntimeModule(models: ModelDefinition[], dataModules: DataMo
     lines.push('')
   }
 
-  // Emit the media delivery base constant if a CDN base was configured. The
-  // base is trimmed of trailing slashes here so the resolver is a plain join.
-  if (cdnBaseUrl) {
-    lines.push(`const _mediaBase = ${JSON.stringify(cdnBaseUrl.replace(/\/+$/, ''))}`)
+  // Emit the media delivery base constant if one was configured. The base is
+  // trimmed of trailing slashes here so the resolvers below are a plain join.
+  if (mediaBaseUrl) {
+    lines.push(`const _mediaBase = ${JSON.stringify(mediaBaseUrl.replace(/\/+$/, ''))}`)
     lines.push('')
   }
 
@@ -219,16 +219,27 @@ export function emitRuntimeModule(models: ModelDefinition[], dataModules: DataMo
     lines.push('')
   }
 
-  // media() resolver — only when a CDN base is configured. Mirrors the rewrite
-  // rules of the write path: a stored `media/...` path becomes an absolute
-  // delivery URL; external URLs and already-absolute values pass through, so it
-  // is safe to call on any field value (idempotent).
-  if (cdnBaseUrl) {
+  // media()/mediaBody() resolvers — only when a media base is configured.
+  // Mirror the rewrite rules of the write path: a stored `media/...` path (or
+  // reference inside markdown, for mediaBody) becomes an absolute delivery
+  // URL; external URLs and already-absolute values pass through, so both are
+  // safe to call on any value (idempotent). Each takes an optional per-call
+  // base override so a host that reads its own runtime config — a Nuxt app's
+  // `useRuntimeConfig()`, for one — is not stuck with the base baked in at
+  // generate time.
+  if (mediaBaseUrl) {
     lines.push('// ─── Media ───')
     lines.push('')
-    lines.push('export function media(value) {')
+    lines.push('export function media(value, baseOverride) {')
     lines.push('  if (typeof value !== \'string\' || !value.startsWith(\'media/\')) return value')
-    lines.push('  return _mediaBase + \'/\' + value')
+    lines.push('  var base = baseOverride ? String(baseOverride).replace(/\\/+$/, \'\') : _mediaBase')
+    lines.push('  return base + \'/\' + value')
+    lines.push('}')
+    lines.push('')
+    lines.push('export function mediaBody(markdown, baseOverride) {')
+    lines.push('  if (typeof markdown !== \'string\') return markdown')
+    lines.push('  var base = baseOverride ? String(baseOverride).replace(/\\/+$/, \'\') : _mediaBase')
+    lines.push('  return markdown.replace(/\\]\\((media\\/[^)\\s]+)\\)/g, function (_m, p) { return \'](\' + base + \'/\' + p + \')\' })')
     lines.push('}')
     lines.push('')
   }
@@ -242,7 +253,7 @@ export function emitCjsWrapper(models: ModelDefinition[], hasMedia = false): str
   if (models.some(m => m.kind === 'singleton')) exports.push('singleton')
   if (models.some(m => m.kind === 'dictionary')) exports.push('dictionary')
   if (models.some(m => m.kind === 'document')) exports.push('document')
-  if (hasMedia) exports.push('media')
+  if (hasMedia) exports.push('media', 'mediaBody')
 
   return `/* eslint-disable */
 /* oxlint-disable */

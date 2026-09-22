@@ -332,15 +332,16 @@ describe('generate (integration)', () => {
     }
   })
 
-  it('bakes a working media() resolver into the client when cdnBaseUrl is set', async () => {
+  it('bakes working media()/mediaBody() resolvers into the client when mediaBaseUrl is set', async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), 'contentrain-sdk-media-'))
 
     try {
       await cp(FIXTURE, tempRoot, { recursive: true })
-      await generate({ projectRoot: tempRoot, cdnBaseUrl: 'https://cdn.test/api/cdn/v1/proj/' })
+      await generate({ projectRoot: tempRoot, mediaBaseUrl: 'https://cdn.test/api/cdn/v1/proj/' })
 
       const types = await readFile(join(tempRoot, '.contentrain', 'client', 'index.d.ts'), 'utf-8')
-      expect(types).toContain('export declare function media(value: string): string')
+      expect(types).toContain('export declare function media(value: string, baseOverride?: string): string')
+      expect(types).toContain('export declare function mediaBody(markdown: string, baseOverride?: string): string')
 
       const clientPath = pathToFileURL(join(tempRoot, '.contentrain', 'client', 'index.mjs')).href
       const client = await import(clientPath)
@@ -351,17 +352,31 @@ describe('generate (integration)', () => {
       expect(client.media('https://images.unsplash.com/y.jpg')).toBe('https://images.unsplash.com/y.jpg')
       expect(client.media('https://cdn.test/api/cdn/v1/proj/media/original/a.webp'))
         .toBe('https://cdn.test/api/cdn/v1/proj/media/original/a.webp')
+      // a per-call override wins over the baked base (e.g. a Nuxt app's runtimeConfig)
+      expect(client.media('media/original/a.webp', 'https://staging.test/'))
+        .toBe('https://staging.test/media/original/a.webp')
+
+      // mediaBody() resolves `](media/...)` links and image embeds, leaves the rest
+      const body = 'See ![cover](media/original/hero.webp) and [external](https://x.test/y.png).'
+      expect(client.mediaBody(body)).toBe(
+        'See ![cover](https://cdn.test/api/cdn/v1/proj/media/original/hero.webp) and [external](https://x.test/y.png).',
+      )
+      expect(client.mediaBody(body, 'https://staging.test')).toBe(
+        'See ![cover](https://staging.test/media/original/hero.webp) and [external](https://x.test/y.png).',
+      )
     } finally {
       await rm(tempRoot, { recursive: true, force: true })
     }
   })
 
-  it('omits media() from the client when no CDN base is configured', async () => {
+  it('omits media()/mediaBody() from the client when no media base is configured', async () => {
     await generate({ projectRoot })
 
     const types = await readFile(join(clientDir, 'index.d.ts'), 'utf-8')
     const esm = await readFile(join(clientDir, 'index.mjs'), 'utf-8')
     expect(types).not.toContain('function media(')
+    expect(types).not.toContain('function mediaBody(')
     expect(esm).not.toContain('export function media(')
+    expect(esm).not.toContain('export function mediaBody(')
   })
 })
