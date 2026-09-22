@@ -95,7 +95,7 @@ mediaBody('See ![cover](media/hero.webp)') // → resolves `](media/...)` refs i
 
 Both take an optional second argument overriding the baked base for that call — a Nuxt app passes its own `useRuntimeConfig()` value here instead of rebaking per environment. The Astro loader (`contentrainLoader({ mediaBaseUrl })`) applies the same resolver automatically.
 
-`media()` is omitted when no base is configured, and is idempotent — external URLs (`http(s)://`, `//`, `data:`) and already-absolute delivery URLs pass through untouched. It is the **local-mode** counterpart of CDN mode's `client.media()` (which returns a `MediaAccessor` over the media manifest, below).
+`media()`/`mediaBody()` do not exist on the client at all when no base is configured at generate time — not a pass-through, an absent export. A host that never bakes a base in (reading it purely from its own runtime config or env, e.g. Nuxt) must import `resolveMediaUrl(value, base)` / `resolveMediaRefsInBody(markdown, base)` from `@contentrain/query` directly instead of going through the generated client. Both take a nullable base and no-op when it is absent, so calling them unconditionally is safe. `media()`, when present, is idempotent — external URLs (`http(s)://`, `//`, `data:`) and already-absolute delivery URLs pass through untouched. It is the **local-mode** counterpart of CDN mode's `client.media()` (which returns a `MediaAccessor` over the media manifest, below).
 
 ## CDN Mode (Remote Data)
 

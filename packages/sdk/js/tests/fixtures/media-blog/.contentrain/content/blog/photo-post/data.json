@@ -2,7 +2,9 @@
   "photo001aaaa": {
     "title": "Sunset",
     "cover": "media/original/sunset.webp",
-    "notes": "See ![alt](media/original/inline.png) and [full res](media/original/big.png)."
+    "notes": "See ![alt](media/original/inline.png) and [full res](media/original/big.png).",
+    "gallery": ["media/original/g1.webp", "https://ext.example/g2.jpg"],
+    "seo": { "og": "media/original/og.webp" }
   },
   "photo002bbbb": {
     "title": "External",

@@ -161,7 +161,7 @@ Supported methods:
 
 ### `media(value, baseOverride?)` / `mediaBody(markdown, baseOverride?)`
 
-Resolve a stored `media/...` path — `media()` for a single field value, `mediaBody()` for every `](media/...)` link and image embed inside a markdown string — to an absolute delivery URL. Emitted **only** when a media base is configured — set `cdn.url` in `.contentrain/config.json` or run `contentrain generate --mediaBaseUrl <base>` (`--cdnBaseUrl` still works as a deprecated alias):
+Resolve a stored `media/...` path — `media()` for a single field value, `mediaBody()` for every `](media/...)` link and image embed inside a markdown string — to an absolute delivery URL. Emitted **only** when a media base is configured at generate time — set `cdn.url` in `.contentrain/config.json` or run `contentrain generate --mediaBaseUrl <base>` (`--cdnBaseUrl` still works as a deprecated alias). With no base configured, these are not emitted at all — not a pass-through, an absent export — so code that imports them from `#contentrain` without generating with a base will fail to resolve at build time:
 
 ```ts
 import { media, mediaBody } from '#contentrain'
@@ -190,7 +190,7 @@ const cover = media(post.cover, contentrainMediaBaseUrl)
 
 This is the local-mode counterpart of CDN mode's `MediaAccessor.url()`. For Studio-CDN content, media fields already carry absolute URLs, so no resolution is needed.
 
-For a Nuxt app (or anything else) that never bakes a base into the generated client at all — reading it purely from its own runtime config or env every time — import the underlying pure resolvers directly instead of going through the generated client:
+For a Nuxt app (or anything else) that never bakes a base into the generated client at all — reading it purely from its own runtime config or env every time, so `media()`/`mediaBody()` are never emitted — import the underlying pure resolvers directly instead of going through the generated client:
 
 ```ts
 import { resolveMediaUrl, resolveMediaRefsInBody } from '@contentrain/query'

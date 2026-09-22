@@ -251,7 +251,7 @@ const latest = document('blog-article')
 
 ### media / mediaBody — Delivery URLs
 
-Two more exports, `media(value, baseOverride?)` and `mediaBody(markdown, baseOverride?)`, are generated **only** when a media delivery base is configured — set `cdn.url` in [`config.json`](/reference/config) or run `contentrain generate --mediaBaseUrl <base>` (`--cdnBaseUrl` still works as a deprecated alias). `media()` resolves a stored `media/...` path; `mediaBody()` resolves every `](media/...)` link and image embed inside a markdown string:
+Two more exports, `media(value, baseOverride?)` and `mediaBody(markdown, baseOverride?)`, are generated **only** when a media delivery base is configured at generate time — set `cdn.url` in [`config.json`](/reference/config) or run `contentrain generate --mediaBaseUrl <base>` (`--cdnBaseUrl` still works as a deprecated alias). Without a configured base, neither export exists on the client at all — not a pass-through, an absent export — so `import { media } from '#contentrain'` fails to resolve. `media()` resolves a stored `media/...` path; `mediaBody()` resolves every `](media/...)` link and image embed inside a markdown string:
 
 ```ts
 import { media, mediaBody } from '#contentrain'
@@ -273,7 +273,7 @@ const { public: { contentrainMediaBaseUrl } } = useRuntimeConfig()
 const cover = media(post.cover, contentrainMediaBaseUrl)
 ```
 
-A host that never bakes a base in at all can import the underlying resolvers directly from `@contentrain/query` instead: `resolveMediaUrl(value, base)` and `resolveMediaRefsInBody(markdown, base)`. Both are opt-in — no base (`undefined`, `null`, `''`) returns the value unchanged. The Astro loader (`contentrainLoader({ mediaBaseUrl })`) applies the same resolver automatically to `image`/`video`/`file` fields, `markdown`/`richtext` fields, and document bodies, since it reads `.contentrain` directly and nothing upstream has rewritten those references yet.
+A host that never bakes a base in at all — a Nuxt app reading `useRuntimeConfig()` per request, for one — has no `media()`/`mediaBody()` to call, since neither was generated. Import the underlying resolvers directly from `@contentrain/query` instead: `resolveMediaUrl(value, base)` and `resolveMediaRefsInBody(markdown, base)`. Both are opt-in — no base (`undefined`, `null`, `''`) returns the value unchanged — so they are safe to call unconditionally, unlike `media()`/`mediaBody()` which must be generated first. The Astro loader (`contentrainLoader({ mediaBaseUrl })`) applies the same resolver automatically to `image`/`video`/`file` fields — including those nested inside `object`/`array` fields, such as an image gallery — `markdown`/`richtext` fields, and document bodies (titled embeds and inline HTML `src`/`href` included), since it reads `.contentrain` directly and nothing upstream has rewritten those references yet.
 
 ## Relations
 

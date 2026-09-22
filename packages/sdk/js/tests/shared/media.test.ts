@@ -67,4 +67,18 @@ describe('resolveMediaRefsInBody', () => {
       '![a](https://cdn.test/media/a.png) then ![b](https://cdn.test/media/b.png)',
     )
   })
+
+  it('resolves a titled image embed, keeping the title', () => {
+    const md = '![alt](media/original/a.webp "A title") after.'
+    expect(resolveMediaRefsInBody(md, 'https://cdn.test')).toBe(
+      '![alt](https://cdn.test/media/original/a.webp "A title") after.',
+    )
+  })
+
+  it('resolves an inline HTML src/href attribute, both quote styles', () => {
+    const md = `<img src="media/original/c.png"> and <a href='media/files/brochure.pdf'>Download</a>`
+    expect(resolveMediaRefsInBody(md, 'https://cdn.test')).toBe(
+      `<img src="https://cdn.test/media/original/c.png"> and <a href='https://cdn.test/media/files/brochure.pdf'>Download</a>`,
+    )
+  })
 })

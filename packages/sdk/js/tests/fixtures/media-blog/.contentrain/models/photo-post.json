@@ -15,6 +15,18 @@
     },
     "notes": {
       "type": "markdown"
+    },
+    "gallery": {
+      "type": "array",
+      "items": "image"
+    },
+    "seo": {
+      "type": "object",
+      "fields": {
+        "og": {
+          "type": "image"
+        }
+      }
     }
   }
 }

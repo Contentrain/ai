@@ -13,13 +13,14 @@
 
 import { publicationContext, publicationMeta, isPublishedAt, type PublicationOptions, type PublicationContext } from '../generator/publication.js'
 import type { ModelDefinition } from '@contentrain/types'
+import { rewriteEntryMedia } from '@contentrain/types'
 import { isAbsolute, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { ContentFileRef } from '../generator/config-reader.js'
 import { readProjectManifest } from '../generator/config-reader.js'
 import { readJson, readText } from '../generator/utils.js'
 import { parseFrontmatter, stringLikeFieldKeys } from '../shared/frontmatter.js'
-import { resolveMediaUrl, resolveMediaRefsInBody } from '../shared/media.js'
+import { resolveMediaRefsInBody } from '../shared/media.js'
 
 /** The slice of Astro's `LoaderContext` this loader uses. */
 export interface ContentrainLoaderContext {
@@ -184,7 +185,6 @@ function toPath(root: URL | string | undefined): string | undefined {
   return root.startsWith('file:') ? fileURLToPath(root) : root
 }
 
-const MEDIA_VALUE_TYPES = new Set(['image', 'video', 'file'])
 const MEDIA_BODY_TYPES = new Set(['markdown', 'richtext'])
 
 function fieldNamesOfType(model: ModelDefinition, types: Set<string>): string[] {
@@ -193,24 +193,19 @@ function fieldNamesOfType(model: ModelDefinition, types: Set<string>): string[] 
 }
 
 /** Resolves `media/...` references to absolute URLs — image/video/file field
- * values, `](media/...)` links inside markdown/richtext fields, and a
- * document's markdown body — across every loaded entry. A model with no
- * media-shaped fields and no body is returned unchanged, entry by entry. */
+ * values (including those nested inside object/array fields, via the shared
+ * `@contentrain/types` engine), `](media/...)` links and inline HTML
+ * src/href inside markdown/richtext fields, and a document's markdown body —
+ * across every loaded entry. A model with no fields and no body is returned
+ * unchanged, entry by entry. */
 function resolveEntriesMedia(entries: Entry[], model: ModelDefinition, mediaBaseUrl: string): Entry[] {
-  const valueFields = fieldNamesOfType(model, MEDIA_VALUE_TYPES)
   const bodyFields = fieldNamesOfType(model, MEDIA_BODY_TYPES)
-  if (valueFields.length === 0 && bodyFields.length === 0 && model.kind !== 'document') return entries
+  if (!model.fields && model.kind !== 'document') return entries
 
   return entries.map((entry) => {
-    let data = entry.data
-    if (valueFields.length > 0 || bodyFields.length > 0) {
-      data = { ...entry.data }
-      for (const field of valueFields) {
-        if (field in data) data[field] = resolveMediaUrl(data[field], mediaBaseUrl)
-      }
-      for (const field of bodyFields) {
-        if (field in data) data[field] = resolveMediaRefsInBody(data[field], mediaBaseUrl)
-      }
+    const data = model.fields ? rewriteEntryMedia(entry.data, model.fields, mediaBaseUrl) : entry.data
+    for (const field of bodyFields) {
+      if (field in data) data[field] = resolveMediaRefsInBody(data[field], mediaBaseUrl)
     }
     const body = entry.body === undefined ? undefined : resolveMediaRefsInBody(entry.body, mediaBaseUrl) as string
     return { ...entry, data, ...(body === undefined ? {} : { body }) }
