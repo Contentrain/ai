@@ -169,6 +169,11 @@ export interface ApplyPlanInput {
    * repository's default branch. This is the single source of truth for
    * content state; every feature branch forks from it. Pass an explicit
    * `base` only when you know you want to bypass the invariant.
+   *
+   * The GitHub provider also takes a full 40-hex commit SHA here, as a
+   * compare-and-set: a missing `branch` forks from that commit, and an
+   * existing one must still point at it or the write is refused with a
+   * 409 (`PROVIDER_CONFLICT`).
    */
   base?: string
   /**

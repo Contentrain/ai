@@ -237,3 +237,94 @@ describe('applyPlanToGitHub', () => {
     expect(treeArg[0].path).toBe('apps/web/.contentrain/config.json')
   })
 })
+
+describe('applyPlanToGitHub with a commit SHA as base (compare-and-set)', () => {
+  const PINNED = 'a'.repeat(40)
+
+  function writeStubs() {
+    return {
+      getCommit: vi.fn().mockResolvedValue({ data: { tree: { sha: 'base-tree' } } }),
+      createTree: vi.fn().mockResolvedValue({ data: { sha: 'new-tree' } }),
+      createCommit: vi.fn().mockResolvedValue({ data: { sha: 'new-commit', message: 'm', author: null } }),
+      createRef: vi.fn().mockResolvedValue({}),
+      updateRef: vi.fn().mockResolvedValue({}),
+    }
+  }
+  const write = (client: GitHubClient, branch: string, base?: string) =>
+    applyPlanToGitHub(client, REPO, {
+      branch,
+      changes: [{ path: '.contentrain/content/a.json', content: '{}' }],
+      message: 'm',
+      author: AUTHOR,
+      ...(base === undefined ? {} : { base }),
+    })
+
+  it('forks a missing branch from the SHA itself, with no lookup of the base as a ref', async () => {
+    const stubs = writeStubs()
+    const getRef = vi.fn().mockRejectedValueOnce(notFound())
+    await write(mockClient({ getRef, ...stubs }), 'cr/new', PINNED)
+
+    // Only the target branch is looked up; `heads/<sha>` never is.
+    expect(getRef).toHaveBeenCalledTimes(1)
+    expect(getRef).toHaveBeenCalledWith({ owner: 'o', repo: 'r', ref: 'heads/cr/new' })
+    expect(stubs.getCommit).toHaveBeenCalledWith({ owner: 'o', repo: 'r', commit_sha: PINNED })
+    expect(stubs.createCommit.mock.calls[0]![0].parents).toEqual([PINNED])
+    expect(stubs.createRef).toHaveBeenCalledWith({ owner: 'o', repo: 'r', ref: 'refs/heads/cr/new', sha: 'new-commit' })
+    expect(stubs.updateRef).not.toHaveBeenCalled()
+  })
+
+  it('writes onto an existing branch that still points at the SHA', async () => {
+    const stubs = writeStubs()
+    const getRef = vi.fn().mockResolvedValueOnce({ data: { object: { sha: PINNED } } })
+    await write(mockClient({ getRef, ...stubs }), 'cr/open', PINNED.toUpperCase())
+
+    expect(stubs.createCommit.mock.calls[0]![0].parents).toEqual([PINNED])
+    // Fast-forward only (no `force`): a branch that moves after the check rejects the commit.
+    expect(stubs.updateRef).toHaveBeenCalledWith({ owner: 'o', repo: 'r', ref: 'heads/cr/open', sha: 'new-commit' })
+    expect(stubs.createRef).not.toHaveBeenCalled()
+  })
+
+  it('refuses with a 409 when the existing branch has moved past the SHA, writing nothing', async () => {
+    const stubs = writeStubs()
+    const getRef = vi.fn().mockResolvedValueOnce({ data: { object: { sha: 'b'.repeat(40) } } })
+
+    const failure = await write(mockClient({ getRef, ...stubs }), 'cr/open', PINNED).catch((error: unknown) => error)
+    expect(failure).toBeInstanceOf(Error)
+    expect((failure as { status?: number }).status).toBe(409)
+    expect((failure as Error).message).toContain(PINNED)
+    expect(stubs.createTree).not.toHaveBeenCalled()
+    expect(stubs.createCommit).not.toHaveBeenCalled()
+    expect(stubs.updateRef).not.toHaveBeenCalled()
+  })
+
+  it('surfaces an unknown SHA as the provider error, with no fallback and no write', async () => {
+    const stubs = writeStubs()
+    stubs.getCommit = vi.fn().mockRejectedValueOnce(Object.assign(new Error('No commit found for SHA'), { status: 422 }))
+    const getRef = vi.fn().mockRejectedValueOnce(notFound())
+
+    await expect(write(mockClient({ getRef, ...stubs }), 'cr/new', 'f'.repeat(40))).rejects.toMatchObject({ status: 422 })
+    expect(getRef).toHaveBeenCalledTimes(1)
+    expect(stubs.createTree).not.toHaveBeenCalled()
+    expect(stubs.createRef).not.toHaveBeenCalled()
+  })
+
+  it('reads anything but a full 40-hex SHA as a branch name', async () => {
+    for (const base of ['aaaaaaa', 'a'.repeat(39), `${'a'.repeat(39)}g`]) {
+      const stubs = writeStubs()
+      const getRef = vi.fn()
+        .mockRejectedValueOnce(notFound())
+        .mockResolvedValueOnce({ data: { object: { sha: 'branch-head' } } })
+      await write(mockClient({ getRef, ...stubs }), 'cr/new', base)
+      expect(getRef).toHaveBeenLastCalledWith({ owner: 'o', repo: 'r', ref: `heads/${base}` })
+      expect(stubs.createCommit.mock.calls[0]![0].parents).toEqual(['branch-head'])
+    }
+  })
+
+  it('keeps a branch-name base ignored for an existing branch, as before', async () => {
+    const stubs = writeStubs()
+    const getRef = vi.fn().mockResolvedValueOnce({ data: { object: { sha: 'branch-head' } } })
+    await write(mockClient({ getRef, ...stubs }), 'cr/open', 'contentrain')
+    expect(getRef).toHaveBeenCalledTimes(1)
+    expect(stubs.createCommit.mock.calls[0]![0].parents).toEqual(['branch-head'])
+  })
+})

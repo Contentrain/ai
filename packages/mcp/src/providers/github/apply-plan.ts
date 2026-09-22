@@ -1,6 +1,6 @@
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import type { ApplyPlanInput, Commit, FileChange } from '../../core/contracts/index.js'
-import { isNotFoundError, resolveRepoPath } from '../shared/index.js'
+import { isCommitSha, isNotFoundError, resolveRepoPath } from '../shared/index.js'
 import type { GitHubClient } from './client.js'
 import type { RepoRef } from './types.js'
 
@@ -16,8 +16,10 @@ type TreeEntry =
  * Git Data API. High-level flow:
  *
  * 1. Resolve the base commit SHA — either the current HEAD of the target
- *    branch, or the HEAD of `input.base` (or the repo's default branch)
- *    when the target branch does not yet exist.
+ *    branch, or the HEAD of `input.base` (default: the `contentrain`
+ *    branch) when the target branch does not yet exist. A `base` that is a
+ *    full commit SHA is used as it is (compare-and-set, see
+ *    `resolveBaseSha`).
  * 2. Read the base tree SHA from that commit.
  * 3. Map `input.changes` to tree entries — `content` inline for each write,
  *    `sha: null` for each deletion. No per-file blob round trip: GitHub
@@ -115,16 +117,32 @@ async function resolveBaseSha(
   branch: string,
   base: string | undefined,
 ): Promise<{ baseSha: string, branchExists: boolean }> {
+  let head: string | undefined
   try {
     const ref = await client.rest.git.getRef({
       owner: repo.owner,
       repo: repo.name,
       ref: `heads/${branch}`,
     })
-    return { baseSha: ref.data.object.sha, branchExists: true }
+    head = ref.data.object.sha
   } catch (error) {
     if (!isNotFoundError(error)) throw error
   }
+
+  // A commit SHA as base is a compare-and-set: the caller read the content
+  // at that commit and the write must build on exactly it. A missing branch
+  // forks from the SHA with no ref lookup. An existing branch must still
+  // point at it; if it moved, the write is refused rather than silently
+  // layered on a state the caller never read. The race between this check
+  // and the ref update is closed by updateRef itself, which only
+  // fast-forwards: a branch that moves in between rejects the commit.
+  if (base !== undefined && isCommitSha(base)) {
+    if (head === undefined) return { baseSha: base, branchExists: false }
+    if (head.toLowerCase() !== base.toLowerCase()) throw staleBase(branch, base, head)
+    return { baseSha: head, branchExists: true }
+  }
+
+  if (head !== undefined) return { baseSha: head, branchExists: true }
 
   // Invariant: feature branches always fork from the Contentrain
   // content-tracking branch. Callers that genuinely want to bypass this
@@ -140,4 +158,12 @@ async function resolveBaseSha(
     ref: `heads/${baseRefName}`,
   })
   return { baseSha: baseRef.data.object.sha, branchExists: false }
+}
+
+/** A 409, so `mapProviderError` reports it as PROVIDER_CONFLICT: re-read, rebuild, retry once. */
+function staleBase(branch: string, base: string, head: string): Error {
+  return Object.assign(
+    new Error(`Branch ${branch} is at ${head}, not at the base ${base} the write was built on`),
+    { status: 409 },
+  )
 }

@@ -1,5 +1,6 @@
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import type { Branch, FileDiff, MergeResult } from '../../core/contracts/index.js'
+import { isCommitSha } from '../shared/index.js'
 import type { GitHubClient } from './client.js'
 import type { RepoRef } from './types.js'
 
@@ -37,22 +38,25 @@ export async function listBranches(
   return branches
 }
 
+/** `fromRef` is a branch name or a full commit SHA; a SHA is used as it is, with no ref lookup. */
 export async function createBranch(
   client: GitHubClient,
   repo: RepoRef,
   name: string,
   fromRef: string,
 ): Promise<void> {
-  const base = await client.rest.git.getRef({
-    owner: repo.owner,
-    repo: repo.name,
-    ref: `heads/${fromRef}`,
-  })
+  const sha = isCommitSha(fromRef)
+    ? fromRef
+    : (await client.rest.git.getRef({
+        owner: repo.owner,
+        repo: repo.name,
+        ref: `heads/${fromRef}`,
+      })).data.object.sha
   await client.rest.git.createRef({
     owner: repo.owner,
     repo: repo.name,
     ref: `refs/heads/${name}`,
-    sha: base.data.object.sha,
+    sha,
   })
 }
 

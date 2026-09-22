@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { GitHubClient } from '../../../src/providers/github/client.js'
-import { mergeBranch } from '../../../src/providers/github/branch-ops.js'
+import { createBranch, mergeBranch } from '../../../src/providers/github/branch-ops.js'
 
 interface Mocks {
   merge?: ReturnType<typeof vi.fn>
@@ -145,5 +145,36 @@ describe('mergeBranch', () => {
 
     await expect(mergeBranch(client, repo, 'cr/feat', 'contentrain', { removeSourceBranch: true })).rejects.toThrow('Conflict')
     expect(deleteRef).not.toHaveBeenCalled()
+  })
+})
+
+describe('createBranch', () => {
+  function refClient(getRef = vi.fn().mockResolvedValue({ data: { object: { sha: 'branch-head' } } })) {
+    const createRef = vi.fn().mockResolvedValue({})
+    const client = { rest: { git: { getRef, createRef } } } as unknown as GitHubClient
+    return { client, getRef, createRef }
+  }
+
+  it('creates the branch at a full commit SHA with no ref lookup', async () => {
+    const sha = 'c'.repeat(40)
+    const { client, getRef, createRef } = refClient()
+    await createBranch(client, repo, 'cr/at-sha', sha)
+    expect(getRef).not.toHaveBeenCalled()
+    expect(createRef).toHaveBeenCalledWith({ owner: 'o', repo: 'r', ref: 'refs/heads/cr/at-sha', sha })
+  })
+
+  it('resolves a branch name to its head, as before', async () => {
+    const { client, getRef, createRef } = refClient()
+    await createBranch(client, repo, 'cr/from-branch', 'contentrain')
+    expect(getRef).toHaveBeenCalledWith({ owner: 'o', repo: 'r', ref: 'heads/contentrain' })
+    expect(createRef).toHaveBeenCalledWith({ owner: 'o', repo: 'r', ref: 'refs/heads/cr/from-branch', sha: 'branch-head' })
+  })
+
+  it('reads an abbreviated SHA as a branch name, so a missing one is the ref lookup\'s 404', async () => {
+    const notFound = Object.assign(new Error('Not Found'), { status: 404 })
+    const { client, getRef, createRef } = refClient(vi.fn().mockRejectedValue(notFound))
+    await expect(createBranch(client, repo, 'cr/x', 'c'.repeat(12))).rejects.toMatchObject({ status: 404 })
+    expect(getRef).toHaveBeenCalledWith({ owner: 'o', repo: 'r', ref: `heads/${'c'.repeat(12)}` })
+    expect(createRef).not.toHaveBeenCalled()
   })
 })
