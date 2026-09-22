@@ -47,6 +47,27 @@ interface ApplyPlanInput {
 
 `changes` entries are `{ path, content }`; `content: null` means delete. Providers are responsible for resolving paths against their backing store and translating the change set into whatever commit primitive the backend supports.
 
+### A commit SHA as base (GitHub)
+
+The GitHub provider takes a full 40-hex commit SHA as `base` in `applyPlan`
+and as `fromRef` in `createBranch`. Anything shorter is read as a branch name.
+
+This is a compare-and-set write. A host reads content at a pinned commit and
+passes that commit as `base`, so the write builds on exactly what it read:
+
+- **`branch` does not exist:** it forks from the SHA. No ref is looked up.
+- **`branch` exists and points at the SHA:** the commit goes on top. The ref
+  update only fast-forwards, so a branch that moves after the check rejects
+  the commit.
+- **`branch` exists and has moved:** the write is refused with a 409, which
+  maps to `PROVIDER_CONFLICT`. Nothing is written. Re-read and rebuild.
+- **The SHA is unknown:** GitHub's error comes back as it is. There is no
+  fallback to a branch.
+
+A branch-name `base` behaves as before: it is used only when `branch` does not
+exist yet. The GitLab and Local providers accept a SHA in `createBranch`
+because their backends do, but their `applyPlan` takes a branch name only.
+
 ## Branch operations
 
 Providers extend `RepoReader` and `RepoWriter` with branch / merge / diff operations to form the full `RepoProvider`:

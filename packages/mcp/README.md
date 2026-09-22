@@ -199,7 +199,7 @@ MCP supports three backends behind the same `RepoProvider` contract:
 - **GitHubProvider** — Octokit over the Git Data + Repos APIs. No clone, no worktree. `@octokit/rest` ships as an optional peer dependency.
 - **GitLabProvider** — gitbeaker over the GitLab REST API. No clone, no worktree. `@gitbeaker/rest` ships as an optional peer dependency. Supports gitlab.com and self-hosted CE / EE.
 
-Each remote provider implements the same surface: reader (readFile / listDirectory / fileExists), writer (applyPlan — one atomic commit), branch ops (list / create / delete / diff / merge / isMerged / getDefaultBranch). `mergeBranch` goes straight through on GitHub; on GitLab it opens an MR and immediately accepts it so the final `MergeResult` shape matches either way.
+Each remote provider implements the same surface: reader (readFile / listDirectory / fileExists), writer (applyPlan — one atomic commit), branch ops (list / create / delete / diff / merge / isMerged / getDefaultBranch). `mergeBranch` goes straight through on GitHub; on GitLab it opens an MR and immediately accepts it so the final `MergeResult` shape matches either way. The GitHub provider also takes a full commit SHA as `applyPlan`'s `base` (and `createBranch`'s `fromRef`) for compare-and-set writes: a missing branch forks from that commit, and a branch that has moved away from it refuses the write with `PROVIDER_CONFLICT`.
 
 ### GitLab — installation & usage
 
