@@ -1,5 +1,12 @@
 # @contentrain/wp-import
 
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies [c069c67]
+  - @contentrain/types@1.19.0
+
 ## 0.5.1
 
 ### Patch Changes
