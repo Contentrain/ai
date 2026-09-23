@@ -26,7 +26,7 @@ const SEO_ENTRY_KEYS: Record<keyof RawSeoEntry, true> = {
   rendered: true, rendered_by: true, template_source: true, unresolved: true,
 }
 const RENDERED_KEYS: Record<keyof NonNullable<RawSeoEntry['rendered']>, true> = {
-  title: true, description: true, canonical: true, robots: true, open_graph: true, twitter: true,
+  title: true, description: true, canonical: true, robots: true, open_graph: true, twitter: true, schema: true,
 }
 const SEO_SETTINGS_KEYS: Record<keyof RawSeoSettings, true> = {
   separator: true, title_templates: true, description_templates: true, noindex: true, social: true, verification: true, raw: true,
@@ -62,8 +62,9 @@ const BR16_ENTRY = {
     description: 'What the editor wrote.',
     canonical: 'https://example.com/hello/',
     robots: { index: 'noindex', follow: 'follow' },
-    open_graph: { title: 'Share', description: 'Share text', image: 'https://example.com/share.jpg' },
+    open_graph: { title: 'Share', description: 'Share text', image: 'https://example.com/share.jpg', image_width: 1200, image_height: 630 },
     twitter: { title: 'Tweet', description: 'Tweet text', image: 'https://example.com/share.jpg' },
+    schema: { graph: [{ '@type': 'FAQPage', mainEntity: [] }] },
   },
   rendered_by: 'bridge',
   template_source: { title: 'post_type', description: 'default', robots: 'post' },

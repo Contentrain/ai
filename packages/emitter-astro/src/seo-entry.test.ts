@@ -154,6 +154,31 @@ describe('seoFromRawEntry — a block the exporter rendered (BR-16)', () => {
     expect(seoFromRawEntry({ rank_math: { ...rendered, rendered: { title: 'T' }, robots: { index: 'noindex' } } }).noindex).toBe(true)
   })
 
+  it('field by field: a value the rendering lacks falls back to the stored literal, a stored template does not', () => {
+    const partial = seoFromRawEntry({ yoast: {
+      title: '%%title%% %%sep%% %%sitename%%',
+      canonical: 'https://example.com/y/',
+      description: 'Literal.',
+      open_graph: { image: 'https://example.com/og.jpg', title: '%%title%%' },
+      twitter: { card: 'summary_large_image' },
+      rendered: { title: 'Rendered', open_graph: { title: 'Share' }, twitter: { title: 'Tweet' } },
+    } })
+    expect(partial).toEqual({
+      seo_title: 'Rendered',
+      canonical: 'https://example.com/y/',
+      description: 'Literal.',
+      open_graph: { image: 'https://example.com/og.jpg', title: 'Share' },
+      twitter: { card: 'summary_large_image', title: 'Tweet' },
+    })
+  })
+
+  it("the exporter's rendered schema nodes stand in when the block has no graph", () => {
+    const faq = { '@type': 'FAQPage', mainEntity: [] }
+    expect(seoFromRawEntry({ rank_math: { rendered: { schema: { graph: [faq] } } } }).schema).toEqual({ '@context': 'https://schema.org', '@graph': [faq] })
+    expect(seoFromRawEntry({ rank_math: { schema: { types: ['Article'], graph: YOAST_GRAPH }, rendered: { schema: { graph: [faq] } } } }).schema).toBe(YOAST_GRAPH)
+    expect(seoFromRawEntry({ rank_math: { rendered: { schema: { graph: [] } } } })).not.toHaveProperty('schema')
+  })
+
   it('a resolved block is read as it is, rendered ignored', () => {
     expect(seoFromRawEntry({ yoast: { resolved: true, title: 'Live', rendered: { title: 'Bridge' } } }).seo_title).toBe('Live')
   })

@@ -319,8 +319,11 @@ export interface RawSeoEntry {
     description?: string
     canonical?: string
     robots?: { index?: 'index' | 'noindex', follow?: 'follow' | 'nofollow' }
-    open_graph?: { title?: string, description?: string, image?: string }
-    twitter?: { title?: string, description?: string, image?: string }
+    /** `image_width` / `image_height` when the image is a local attachment of known size. */
+    open_graph?: { title?: string, description?: string, image?: string, image_width?: number, image_height?: number }
+    twitter?: { title?: string, description?: string, image?: string, image_width?: number, image_height?: number }
+    /** Schema nodes the plugin stored for the page (Rank Math), their variables rendered, the plugin's own `metadata` key removed. */
+    schema?: { graph: object[] }
   }
   /** Who rendered `rendered`, e.g. `bridge`. */
   rendered_by?: string

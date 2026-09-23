@@ -70,6 +70,13 @@ function social(value: TwitterOverride | undefined, template: RegExp | undefined
   return Object.keys(out).length ? out : undefined
 }
 
+/** Share-card values: the rendered ones, each missing one from the block. */
+function merged(rendered: TwitterOverride | undefined, stored: TwitterOverride | undefined): TwitterOverride | undefined {
+  if (!rendered) return stored
+  if (!stored) return rendered
+  return { ...stored, ...rendered }
+}
+
 /**
  * One page's SEO fields from the blocks each plugin holds for it. The serving
  * plugin's block wins; without one the first plugin (Yoast, Rank Math,
@@ -81,6 +88,9 @@ function social(value: TwitterOverride | undefined, template: RegExp | undefined
  *    could not render is already out of the string, and only listed in
  *    `unresolved` for a person to read;
  * 3. the stored values, with the plugin's unrendered templates dropped.
+ *
+ * 2 and 3 are taken field by field: a value the rendering does not carry
+ * falls back to the block's stored literal.
  *
  * Whatever the source, a string that still holds a template token in the
  * plugin's syntax is dropped: a token is never printed.
@@ -105,15 +115,17 @@ export function seoFromRawEntry(
   // checked for its plugin's template tokens.
   const template = entry.resolved === true ? undefined : TEMPLATE_RE[provider]
   const rendered = entry.resolved === true ? undefined : entry.rendered
-  const from = rendered ?? entry
   const out: SeoFields = {}
 
-  const title = text(from.title, template)
+  // Field by field: what the exporter rendered, else the block's own value —
+  // a stored literal still counts where the rendering has nothing to say, and
+  // a stored template is still dropped by `text`.
+  const title = text(rendered?.title, template) ?? text(entry.title, template)
   if (title) out.seo_title = title
-  const description = text(from.description, template)
+  const description = text(rendered?.description, template) ?? text(entry.description, template)
   if (description) out.description = description
 
-  const canonical = from.canonical?.trim()
+  const canonical = (rendered?.canonical ?? entry.canonical)?.trim()
   if (canonical && !(options.url && addressKey(canonical) === addressKey(options.url))) out.canonical = canonical
 
   const served = entry.robots_served?.map((d) => d.trim().toLowerCase())
@@ -123,14 +135,17 @@ export function seoFromRawEntry(
   if (noindex) out.noindex = true
   if (nofollow) out.nofollow = true
 
-  const og = social(from.open_graph, template)
+  const og = merged(social(rendered?.open_graph, template), social(entry.open_graph, template))
   if (og) out.open_graph = og
-  // The card is a setting, not rendered text: it stays with the block.
-  const card = entry.twitter?.card
-  const tw = social(rendered ? { ...rendered.twitter, ...(card ? { card } : {}) } : entry.twitter, template)
+  // The card is a setting, not rendered text: it comes from the block.
+  const tw = merged(social(rendered?.twitter, template), social(entry.twitter, template))
   if (tw) out.twitter = tw
 
+  // The plugin's rendered graph; else the stored schema nodes the exporter
+  // rendered (Rank Math), as a graph of their own.
   const graph = entry.schema?.graph
+  const renderedGraph = rendered?.schema?.graph
   if (graph && typeof graph === 'object') out.schema = graph
+  else if (Array.isArray(renderedGraph) && renderedGraph.length) out.schema = { '@context': 'https://schema.org', '@graph': renderedGraph }
   return out
 }
