@@ -176,7 +176,9 @@ WordPress serves every site's newest posts as RSS at `/feed/`, and readers, aggr
 
 Both describe the site in its default language (`ProjectIR.site.locales[0]`): a route in another language, and an entry whose `locale` is another, are left out. Both need `site.url`, since they name pages by absolute address; without it neither is built, with a warning.
 
-The feed is built at `/feed.xml`, not at `/feed/`: a static build writes an endpoint at `/feed/` as a file named `feed`, which no host serves at `/feed/`. The theme's head link to the site's main feed (`/feed/`, `/feed/rss2/`, `?feed=rss2`) is pointed at `/feed.xml`, so browsers and readers that discover the feed from a page find the new one. A reader already subscribed to `/feed/` needs a 301 from `/feed/` to `/feed.xml` at the host — feed readers do not follow a static redirect page — and when the source head advertised the feed, the emit says so. The site's other feed links in the head (comments, a category, Atom) name feeds that are not built; they are kept and counted in a warning. A feed on another host (FeedBurner, a newsletter tool) is left alone.
+The feed is built at `/feed.xml`, not at `/feed/`: a static build writes an endpoint at `/feed/` as a file named `feed`, which no host serves at `/feed/`. The theme's head link to the site's main feed (`/feed/`, `/feed/rss2/`, `?feed=rss2`) is pointed at `/feed.xml`, so browsers and readers that discover the feed from a page find the new one. A reader already subscribed to `/feed/` needs a 301 from `/feed/` to `/feed.xml` at the host — feed readers do not follow a static redirect page — and when the source head advertised the feed, the emit says so. The site's other feed links in the head (comments, a category, Atom) name feeds that are not built; they are kept and counted in a warning. A feed on another host (FeedBurner, a newsletter tool) is left alone; `www.` and the bare host count as one site.
+
+The feed lists every post, as WordPress's does — a post the source kept out of search included. An entry whose `canonical` points elsewhere is listed at its own address.
 
 `options.feed: false` and `options.llms: false` leave each out.
 

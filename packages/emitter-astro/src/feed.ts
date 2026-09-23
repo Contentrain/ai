@@ -140,7 +140,9 @@ function ownFeed(href: string, type: string, site: URL): 'main' | 'other' | unde
   } catch {
     return undefined
   }
-  if (url.host.toLowerCase() !== site.host.toLowerCase()) return undefined
+  // www. and the bare host are one site: a WordPress head often names the other.
+  const host = (u: URL) => u.host.toLowerCase().replace(/^www\./, '')
+  if (host(url) !== host(site)) return undefined
   const path = url.pathname.replace(/\/+$/, '')
   const query = url.searchParams.get('feed')
   const main = path === '/feed' || path === '/feed/rss2' || path === '/feed/rss' || (path === '' && (query === 'rss2' || query === 'rss'))

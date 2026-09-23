@@ -6,6 +6,7 @@ import type { ProjectIR } from '@contentrain/types'
 import { CHROME_BODY_SLOT, MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import type { EmitContent } from './index'
 import { emitAstroProject, linkSources, rewriteFeedLinks } from './index'
+import { entryPath } from './alternates'
 
 // MG-15 §3–4: WordPress serves the newest posts as RSS at /feed/ and Yoast
 // writes /llms.txt. The migrated site builds both from the data its pages are
@@ -79,6 +80,22 @@ describe('entry links (emitted runtime)', () => {
     expect(rt.entryLinks(pages, '/:slug*', site, 'en', 'en').map((l: { url: string }) => l.url))
       .toEqual(['https://example.com/about/team/', 'https://example.com/%C3%A7ay/'])
     expect(rt.entryLinks(content.posts, '/:year/:slug', undefined, 'en', 'en')).toEqual([])
+  })
+})
+
+describe('entryAddress agrees with entryPath', () => {
+  it('the runtime and the emitter address an entry the same way', () => {
+    const cases: Array<[string, Record<string, string | undefined>]> = [
+      ['/', {}],
+      ['/:slug', { slug: 'hello' }],
+      ['/:year/:slug/', { year: '2025', slug: 'a' }],
+      ['/:slug*', { slug: '/about/team/' }],
+      ['/category/:term*', { term: 'a/b' }],
+      ['/:year/:slug', { slug: 'missing-year' }],
+      ['/:slug', { slug: '' }],
+      ['/çay/:slug', { slug: 'ş' }],
+    ]
+    for (const [pattern, params] of cases) expect(rt.entryAddress(pattern, params) ?? null).toBe(entryPath(pattern, params))
   })
 })
 
@@ -214,10 +231,11 @@ describe('rewriteFeedLinks', () => {
       ["<link type='application/rss+xml' rel='alternate' href='https://EXAMPLE.com/?feed=rss2'>", "<link type='application/rss+xml' rel='alternate' href='/feed.xml'>"],
       ['<link rel="alternate" type="application/rss+xml" href="https://example.com/feed/rss2/">', '<link rel="alternate" type="application/rss+xml" href="/feed.xml">'],
       ['<link rel="alternate" type="application/atom+xml" href="/feed/atom/">', '<link rel="alternate" type="application/atom+xml" href="/feed/atom/">'],
+      ['<link rel="alternate" type="application/rss+xml" href="https://www.example.com/feed/">', '<link rel="alternate" type="application/rss+xml" href="/feed.xml">'],
       ['<link rel="alternate" type="application/rss+xml" href="https://other.example/feed/">', '<link rel="alternate" type="application/rss+xml" href="https://other.example/feed/">'],
       ['<link rel="alternate" hreflang="de" href="https://example.com/de/">', '<link rel="alternate" hreflang="de" href="https://example.com/de/">'],
     ]
     for (const [input, output] of cases) expect(rewriteFeedLinks(input, 'https://example.com').html).toBe(output)
-    expect(rewriteFeedLinks(cases.map((c) => c[0]).join(''), 'https://example.com')).toMatchObject({ rewritten: 3, other: 1 })
+    expect(rewriteFeedLinks(cases.map((c) => c[0]).join(''), 'https://example.com')).toMatchObject({ rewritten: 4, other: 1 })
   })
 })
