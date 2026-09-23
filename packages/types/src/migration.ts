@@ -1208,19 +1208,26 @@ export interface CommentsExport {
 }
 
 /**
- * Where the full comments export is. A producer writes exactly one of
+ * Where the full comments export is. A producer writes at most one of
  * `path`, `url` and `inline`; a consumer that meets more than one reads them
- * in that order (see `commentsExportSource`).
+ * in that order (see `commentsExportSource`). With none of them the export
+ * exists but has no reference yet (a large export with no repository, or
+ * one not readable yet): a valid state, nothing to import.
+ *
+ * The file at `path` or `url` is the export as UTF-8 JSON; `bytes` and
+ * `sha256` are taken over its raw bytes, as stored.
  */
 export interface HandoffCommentsExport {
   format: typeof COMMENTS_EXPORT_FORMAT
   /**
-   * The export as a file in the generated repository, at the same ref as the
-   * handoff: a POSIX path relative to the repository root, in normal form
-   * (`comments-export.json`, `data/comments.json`) — no leading `/` or `./`,
-   * no `..` or empty segment, no backslash, no scheme. The consumer reads it
-   * with the access it already has to that repository, so a large export in
-   * a private repository needs no public URL. See `isRepoRelativePath`.
+   * The export as a file in the generated repository: a POSIX path relative
+   * to the repository root, in normal form (`comments-export.json`,
+   * `data/comments.json`; see `isRepoRelativePath`). The consumer reads it at
+   * the same commit it read the handoff from — the commit SHA, not a branch
+   * name, which can move between the two reads — with the access it already
+   * has to that repository, so a large export in a private repository needs
+   * no public URL. A consumer reading a local checkout checks the file is not
+   * a symlink (lstat) before reading it.
    */
   path?: string
   /** Where the full export can be fetched… */
@@ -1246,15 +1253,18 @@ export interface HandoffComments {
 /**
  * A repository-relative POSIX path in normal form: non-empty, relative (no
  * leading `/`), no `.` or `..` or empty segment (so no `./` prefix, no `//`,
- * no trailing `/`), no backslash, no scheme or drive (`:` before the first
- * `/`), no control character. The one form accepted, so two producers cannot
- * spell the same file two ways, and a path can never leave the repository.
+ * no trailing `/`), no `.git` segment, no backslash, no scheme or drive (`:`
+ * before the first `/`), no control character, and Unicode in NFC. The one
+ * form accepted, so two producers cannot spell the same file two ways
+ * (`çay` composed or decomposed), and a path can never leave the repository
+ * or reach its git internals.
  */
 export function isRepoRelativePath(path: unknown): path is string {
   if (typeof path !== 'string' || path === '') return false
+  if (path.normalize('NFC') !== path) return false
   if (path.includes('\\') || [...path].some((c) => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127)) return false
   if (/^[^/]*:/.test(path)) return false
-  return path.split('/').every((segment) => segment !== '' && segment !== '.' && segment !== '..')
+  return path.split('/').every((segment) => segment !== '' && segment !== '.' && segment !== '..' && segment.toLowerCase() !== '.git')
 }
 
 /** The source a consumer reads the export from, after precedence and validation. */
@@ -1279,23 +1289,34 @@ export function commentsExportSource(exp: HandoffCommentsExport | undefined): Co
   return undefined
 }
 
+/** What `validateHandoffCommentsExport` found: `errors` make the pointer wrong, `warnings` weaker than it should be. */
+export interface HandoffCommentsExportReport {
+  errors: string[]
+  warnings: string[]
+}
+
 /**
- * What is wrong with a handoff's export pointer, as short sentences; empty
- * when nothing is. For a producer's own check and a consumer's report — it
- * does not decide what to read (`commentsExportSource` does).
+ * What is wrong with a handoff's export pointer, as short sentences. For a
+ * producer's own check and a consumer's report — it does not decide what to
+ * read (`commentsExportSource` does). A pointer with no source at all is
+ * valid (the export has no reference yet) and reports nothing.
  */
-export function validateHandoffCommentsExport(exp: HandoffCommentsExport): string[] {
+export function validateHandoffCommentsExport(exp: HandoffCommentsExport): HandoffCommentsExportReport {
   const issues: string[] = []
+  const warnings: string[] = []
   if (exp.format !== COMMENTS_EXPORT_FORMAT) issues.push(`format is not ${COMMENTS_EXPORT_FORMAT}`)
   const given = (['path', 'url', 'inline'] as const).filter((key) => exp[key] !== undefined)
-  if (!given.length) issues.push('none of path, url, inline is set')
   if (given.length > 1) issues.push(`more than one of path, url, inline is set (${given.join(', ')}); path is read first`)
   if (exp.path !== undefined && !isRepoRelativePath(exp.path)) issues.push('path is not a repository-relative POSIX path in normal form')
   if (exp.url !== undefined && !(typeof exp.url === 'string' && /^https?:\/\//i.test(exp.url))) issues.push('url is not an http(s) URL')
   if (exp.bytes !== undefined && !(Number.isSafeInteger(exp.bytes) && exp.bytes >= 0)) issues.push('bytes is not a non-negative integer')
   if (exp.sha256 !== undefined && !(typeof exp.sha256 === 'string' && /^[0-9a-f]{64}$/.test(exp.sha256))) issues.push('sha256 is not 64 lowercase hex characters')
   if ((exp.bytes !== undefined || exp.sha256 !== undefined) && exp.path === undefined && exp.url === undefined) issues.push('bytes and sha256 describe a file at path or url, and neither is set')
-  return issues
+  if (exp.path !== undefined || exp.url !== undefined) {
+    if (exp.sha256 === undefined) warnings.push('sha256 is missing — what is read cannot be checked')
+    if (exp.bytes === undefined) warnings.push('bytes is missing — an oversized export cannot be refused before reading it')
+  }
+  return { errors: issues, warnings }
 }
 
 // ─── Runtime binding ───

@@ -487,17 +487,19 @@ Until a tool owns one, the contract is narrow and pinned by tests in
 
 ## Comments export by repository path
 
-`MigrationHandoff.comments.export` (`HandoffCommentsExport`) says where the full comments export (`contentrain-comments@1`) is. A producer writes exactly one of:
+`MigrationHandoff.comments.export` (`HandoffCommentsExport`) says where the full comments export (`contentrain-comments@1`) is. A producer writes at most one of:
 
 | Field | When |
 |---|---|
-| `path` | Large exports: a file in the generated repository at the same ref as the handoff. The consumer reads it with the repository access it already has, so a private repository needs no public URL |
+| `path` | Large exports: a file in the generated repository. The consumer reads it at the same commit SHA it read the handoff from (not a branch name, which can move between the two reads), with the repository access it already has, so a private repository needs no public URL |
 | `url` | A file fetched over http(s) |
 | `inline` | Small exports, embedded in the handoff |
 
-`bytes` (file size) and `sha256` (lowercase hex) describe the file at `path` or `url`, so a consumer can refuse an oversized export before reading it and check what it read.
+With none of them, the export exists but has no reference yet (a large export with no repository to put it in): a valid state with nothing to import.
 
-`path` is a POSIX path relative to the repository root, in one normal form: no leading `/` or `./`, no `.`, `..` or empty segment, no backslash, no scheme or drive, no control character. `isRepoRelativePath()` is that check, so a path can never leave the repository and no two producers spell one file two ways.
+The file at `path` or `url` is the export as UTF-8 JSON. `bytes` (size) and `sha256` (lowercase hex) are taken over its raw bytes as stored, so a consumer can refuse an oversized export before reading it and check what it read.
+
+`path` is a POSIX path relative to the repository root, in one normal form: no leading `/` or `./`, no `.`, `..`, `.git` or empty segment, no backslash, no scheme or drive, no control character, Unicode in NFC. `isRepoRelativePath()` is that check, so a path can never leave the repository or reach its git internals, and no two producers spell one file two ways. A consumer reading a local checkout also checks that the file is not a symlink (`lstat`) before reading it.
 
 ```ts
 import { commentsExportSource, validateHandoffCommentsExport } from '@contentrain/types'
@@ -506,7 +508,7 @@ const source = commentsExportSource(handoff.comments?.export)
 // { kind: 'path', path } | { kind: 'url', url } | { kind: 'inline', export } | undefined
 ```
 
-`commentsExportSource()` reads `path` first, then `url`, then `inline`, and skips a `path` that is not in normal form and a `url` that is not http(s). `validateHandoffCommentsExport()` lists what is wrong with a pointer (none or several sources, a bad path, url, size or hash) for a producer's own check or a consumer's report.
+`commentsExportSource()` reads `path` first, then `url`, then `inline`, and skips a `path` that is not in normal form and a `url` that is not http(s). `validateHandoffCommentsExport()` returns `{ errors, warnings }` for a producer's own check or a consumer's report: errors for several sources or a bad path, url, size or hash; warnings when a file at `path` or `url` comes without `sha256` or `bytes`.
 
 ## Migrate → Studio claim
 

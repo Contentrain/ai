@@ -396,10 +396,10 @@ describe('comments export contract', () => {
     const byPath: HandoffCommentsExport = { format: COMMENTS_EXPORT_FORMAT, path: 'comments-export.json', bytes: 5_242_880, sha256: sha }
 
     it('accepts only a repository-relative POSIX path in normal form', () => {
-      for (const ok of ['comments-export.json', 'data/comments.json', '.contentrain/comments.json', 'a/b:c.json', 'çay/yorumlar.json']) {
+      for (const ok of ['comments-export.json', 'data/comments.json', '.contentrain/comments.json', '.github/c.json', 'a/b:c.json', 'çay/yorumlar.json'.normalize('NFC')]) {
         expect(isRepoRelativePath(ok), ok).toBe(true)
       }
-      for (const bad of ['', '/comments.json', './comments.json', '../comments.json', 'data/../../etc/passwd', 'data//c.json', 'data/', 'data\\c.json', 'https://x.com/c.json', 'C:/c.json', 'c\u0000.json', 'a/./b.json', 42, undefined]) {
+      for (const bad of ['', '/comments.json', './comments.json', '../comments.json', 'data/../../etc/passwd', 'data//c.json', 'data/', 'data\\c.json', 'https://x.com/c.json', 'C:/c.json', 'c\u0000.json', 'a/./b.json', '.git/config', 'sub/.GIT/HEAD', 'çay/yorumlar.json'.normalize('NFD'), 42, undefined]) {
         expect(isRepoRelativePath(bad), String(bad)).toBe(false)
       }
     })
@@ -417,17 +417,24 @@ describe('comments export contract', () => {
     })
 
     it('validates the pointer: one source, sane size and hash', () => {
-      expect(validateHandoffCommentsExport(byPath)).toEqual([])
-      expect(validateHandoffCommentsExport({ format: COMMENTS_EXPORT_FORMAT, inline: commentsExport })).toEqual([])
-      expect(validateHandoffCommentsExport({ format: COMMENTS_EXPORT_FORMAT, path: '/abs.json', url: 'ftp://x', bytes: -1, sha256: sha.toUpperCase() })).toEqual([
+      const clean = { errors: [], warnings: [] }
+      expect(validateHandoffCommentsExport(byPath)).toEqual(clean)
+      expect(validateHandoffCommentsExport({ format: COMMENTS_EXPORT_FORMAT, inline: commentsExport })).toEqual(clean)
+      // An export with no reference yet (large, no repository): valid, nothing to import.
+      expect(validateHandoffCommentsExport({ format: COMMENTS_EXPORT_FORMAT })).toEqual(clean)
+      expect(commentsExportSource({ format: COMMENTS_EXPORT_FORMAT })).toBeUndefined()
+      expect(validateHandoffCommentsExport({ format: COMMENTS_EXPORT_FORMAT, path: 'c.json' })).toEqual({ errors: [], warnings: [
+        'sha256 is missing — what is read cannot be checked',
+        'bytes is missing — an oversized export cannot be refused before reading it',
+      ] })
+      expect(validateHandoffCommentsExport({ format: COMMENTS_EXPORT_FORMAT, path: '/abs.json', url: 'ftp://x', bytes: -1, sha256: sha.toUpperCase() }).errors).toEqual([
         'more than one of path, url, inline is set (path, url); path is read first',
         'path is not a repository-relative POSIX path in normal form',
         'url is not an http(s) URL',
         'bytes is not a non-negative integer',
         'sha256 is not 64 lowercase hex characters',
       ])
-      expect(validateHandoffCommentsExport({ format: COMMENTS_EXPORT_FORMAT })).toEqual(['none of path, url, inline is set'])
-      expect(validateHandoffCommentsExport({ format: COMMENTS_EXPORT_FORMAT, inline: commentsExport, bytes: 10 })).toEqual([
+      expect(validateHandoffCommentsExport({ format: COMMENTS_EXPORT_FORMAT, inline: commentsExport, bytes: 10 }).errors).toEqual([
         'bytes and sha256 describe a file at path or url, and neither is set',
       ])
     })
