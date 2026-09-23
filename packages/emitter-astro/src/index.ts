@@ -21,7 +21,7 @@ import { UI_STRINGS_DIR, uiStringsDir } from './ui-strings.js'
 import { wrapLegacyCss } from './css.js'
 import { stableJson, patternToPagePath } from './util.js'
 import { noindexPaths } from './noindex.js'
-import { astroRedirectsConfig, builtAddresses, planRedirects } from './redirects.js'
+import { astroRedirectsConfig, builtAddresses, hostRedirectFiles, planRedirects } from './redirects.js'
 
 /**
  * A supplied trail the build will not print — the same rule as \`validTrail\`
@@ -62,6 +62,14 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   const seo = input.options?.seo !== false
   const noindex = noindexPaths(ir.routes, input.content ?? {})
   add(scaffoldFiles(ir, input.options ?? {}, noindex, redirectPlan ? astroRedirectsConfig(redirectPlan.config) : null))
+  const hostRedirects = redirectPlan ? hostRedirectFiles(redirectPlan.config, input.options?.redirectHost) : undefined
+  if (hostRedirects) {
+    add(hostRedirects.files)
+    if (hostRedirects.skipped.length) {
+      warnings.push(`redirects: ${hostRedirects.skipped.length} rules contain ":" or "*", which host redirect files read as patterns — served by the meta-refresh fallback only: ${hostRedirects.skipped.join(', ')}`)
+    }
+  }
+
   if (noindex.length && !seo) {
     warnings.push(`${noindex.length} noindex pages: options.seo is false, so no robots meta is emitted — the producer's head must carry it (they are still left out of the sitemap)`)
   }
@@ -280,7 +288,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   return {
     files,
     warnings,
-    ...(redirectPlan ? { redirects: { written: redirectPlan.written, manual: redirectPlan.manual } } : {}),
+    ...(redirectPlan ? { redirects: { written: redirectPlan.written, manual: redirectPlan.manual, host_files: hostRedirects?.written ?? [] } } : {}),
   }
 }
 
@@ -346,6 +354,6 @@ export { UI_STRING_DEFAULTS, UI_STRINGS_DIR, UI_STRINGS_MODEL } from './ui-strin
 export type { UiStringKey } from './ui-strings.js'
 export { checkBalance, balanceWarning } from './balance.js'
 export { noindexPaths } from './noindex.js'
-export { astroRedirectsConfig, builtAddresses, planRedirects, REDIRECT_STATUSES } from './redirects.js'
-export type { ManualRedirect, RedirectPlan, RedirectStatus } from './redirects.js'
+export { astroRedirectsConfig, builtAddresses, hostRedirectFiles, planRedirects, REDIRECT_STATUSES } from './redirects.js'
+export type { HostRedirectFiles, ManualRedirect, RedirectHost, RedirectPlan, RedirectStatus } from './redirects.js'
 export type { BalanceReport } from './balance.js'

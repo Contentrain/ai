@@ -176,7 +176,21 @@ Astro does not refuse a redirect whose `from` is a page it builds: it writes the
 
 A file-like `from` (`/old.php`) is returned because the directory build writes it as `/old.php/index.html`, which a host does not serve at `/old.php`.
 
-In a static build Astro serves each redirect as an HTML page with a meta refresh, `noindex`, and a canonical link to the target. The HTTP status reaches crawlers only through a host adapter that writes the host's own redirect file.
+In a static build Astro serves each redirect as an HTML page with a meta refresh, `noindex`, and a canonical link to the target. Those pages stay as the fallback for any host.
+
+### Real HTTP redirects
+
+A static build has no HTTP status, so the emitter also writes the rules into the host's own redirect file, which answers the request before any page is served:
+
+| `options.redirectHost` | File | Note |
+|---|---|---|
+| `netlify` | `public/_redirects` | Forced (`301!`): Netlify serves an existing file before an unforced rule, and the build writes a fallback page at every redirected path |
+| `cloudflare` | `public/_redirects` | Unforced: Cloudflare Pages always follows its redirects, even when an asset matches |
+| `vercel` | `vercel.json` `redirects` | `statusCode` per rule; path-to-regexp syntax escaped |
+| unset | Netlify `public/_redirects` and `vercel.json` | A Cloudflare Pages site should name its host |
+
+Each path is written percent-encoded, with and without its trailing slash. `EmitResult.redirects.host_files` names the files written. A `from` containing `*` or a `:` segment is a pattern to a host file; it is left to the meta-refresh fallback, with a warning.
+
 
 ## Route collisions fail the build
 

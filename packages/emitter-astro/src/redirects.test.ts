@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { ProjectIR, RawRedirect } from '@contentrain/types'
 import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import { emitAstroProject } from './index'
-import { astroRedirectsConfig, builtAddresses, planRedirects } from './redirects'
+import { astroRedirectsConfig, builtAddresses, hostRedirectFiles, planRedirects } from './redirects'
 
 const ir: ProjectIR = {
   version: MIGRATION_CONTRACT_VERSION,
@@ -21,7 +21,8 @@ const content = {
   queries: { 'by-term': [{ params: { term: 'news' }, items: [] }] },
 }
 
-const emit = (redirects: RawRedirect[]) => emitAstroProject({ ir, content, redirects })
+const emit = (redirects: RawRedirect[], redirectHost?: 'netlify' | 'cloudflare' | 'vercel') =>
+  emitAstroProject({ ir, content, redirects, ...(redirectHost ? { options: { redirectHost } } : {}) })
 
 describe('redirects → astro.config', () => {
   it('writes plain url rules with their status, sorted by from; a missing status is 301', () => {
@@ -41,6 +42,7 @@ describe('redirects → astro.config', () => {
     ].join('\n'))
     expect(result.redirects?.written).toHaveLength(4)
     expect(result.redirects?.manual).toEqual([])
+    expect(result.redirects?.host_files).toEqual(['public/_redirects (netlify)', 'vercel.json (vercel)'])
     expect(result.warnings.some((w) => w.startsWith('redirects:'))).toBe(false)
   })
 
@@ -68,6 +70,9 @@ describe('redirects → astro.config', () => {
       { from: 'relative/', to: '/x/' },
     ])
     expect(result.files['astro.config.mjs']).not.toContain('redirects')
+    expect(result.files['public/_redirects']).toBeUndefined()
+    expect(result.files['vercel.json']).toBeUndefined()
+    expect(result.redirects?.host_files).toEqual([])
     expect(result.redirects?.written).toEqual([])
     expect(result.redirects?.manual.map((m) => m.reason)).toEqual([
       'from is a regular expression',
@@ -135,5 +140,64 @@ describe('builtAddresses', () => {
 describe('astroRedirectsConfig', () => {
   it('is null when nothing is written', () => {
     expect(astroRedirectsConfig({})).toBeNull()
+  })
+})
+
+describe('host redirect files — real HTTP status, the meta-refresh pages stay as fallback', () => {
+  const rules: RawRedirect[] = [
+    { from: '/eski-yazi/', to: '/hello-world/' },
+    { from: '/%C3%A7ay', to: 'https://other.example.org/tea', status: 308 },
+  ]
+
+  it('without a host: forced Netlify rules and vercel.json, each path with and without its slash, percent-encoded', () => {
+    const { files, redirects } = emit(rules)
+    expect(files['public/_redirects']).toBe([
+      "# Emitted by @contentrain/emitter-astro — the source site's redirects, as real HTTP redirects.",
+      '/eski-yazi /hello-world/ 301!',
+      '/eski-yazi/ /hello-world/ 301!',
+      '/%C3%A7ay https://other.example.org/tea 308!',
+      '/%C3%A7ay/ https://other.example.org/tea 308!',
+      '',
+    ].join('\n'))
+    expect(JSON.parse(files['vercel.json']!)).toEqual({ redirects: [
+      { source: '/eski-yazi', destination: '/hello-world/', statusCode: 301 },
+      { source: '/eski-yazi/', destination: '/hello-world/', statusCode: 301 },
+      { source: '/%C3%A7ay', destination: 'https://other.example.org/tea', statusCode: 308 },
+      { source: '/%C3%A7ay/', destination: 'https://other.example.org/tea', statusCode: 308 },
+    ] })
+    // The fallback is still there for any other host.
+    expect(files['astro.config.mjs']).toContain(`"/eski-yazi/": { status: 301, destination: "/hello-world/" },`)
+    expect(redirects?.host_files).toEqual(['public/_redirects (netlify)', 'vercel.json (vercel)'])
+  })
+
+  it('a named host gets only its own file; Cloudflare rules are not forced', () => {
+    const cloudflare = emit(rules, 'cloudflare')
+    expect(cloudflare.files['public/_redirects']).toContain('/eski-yazi/ /hello-world/ 301\n')
+    expect(cloudflare.files['public/_redirects']).not.toContain('!')
+    expect(cloudflare.files['vercel.json']).toBeUndefined()
+    expect(cloudflare.redirects?.host_files).toEqual(['public/_redirects (cloudflare)'])
+
+    const vercel = emit(rules, 'vercel')
+    expect(vercel.files['public/_redirects']).toBeUndefined()
+    expect(vercel.redirects?.host_files).toEqual(['vercel.json (vercel)'])
+
+    const netlify = emit(rules, 'netlify')
+    expect(netlify.files['vercel.json']).toBeUndefined()
+    expect(netlify.files['public/_redirects']).toContain('301!')
+  })
+
+  it('leaves a path the host would read as a pattern to the fallback, and says so', () => {
+    const out = hostRedirectFiles({
+      '/tag/:old/': { status: 301, destination: '/x/' },
+      '/a*b/': { status: 301, destination: '/y/' },
+      '/v1:beta/': { status: 302, destination: '/z/' },
+    })
+    expect(out.skipped).toEqual(['/tag/:old/', '/a*b/'])
+    expect(out.files['public/_redirects']).toContain('/v1:beta/ /z/ 302!')
+    // path-to-regexp would read an unescaped ":" as a parameter.
+    expect(JSON.parse(out.files['vercel.json']!).redirects[0].source).toBe('/v1\\:beta')
+    const result = emit([{ from: '/tag/:old/', to: '/x/' }])
+    expect(result.warnings).toContain('redirects: 1 rules contain ":" or "*", which host redirect files read as patterns — served by the meta-refresh fallback only: /tag/:old/')
+    expect(result.files['public/_redirects']).toBeUndefined()
   })
 })

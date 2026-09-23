@@ -236,6 +236,14 @@ export interface EmitOptions {
    * language has no dictionary; the build reports the same from the files.
    */
   uiStrings?: { dir?: string; locales?: string[] }
+  /**
+   * The host the site deploys to, for `EmitInput.redirects`: its own redirect
+   * file is written so the rules answer with a real HTTP status (a static
+   * Astro build serves them as meta-refresh pages, kept as the fallback).
+   * Unset: Netlify `public/_redirects` and `vercel.json` are both written; a
+   * Cloudflare Pages site must name its host (no forced rules there).
+   */
+  redirectHost?: 'netlify' | 'cloudflare' | 'vercel'
 }
 
 export interface EmitInput {
@@ -272,6 +280,8 @@ export interface EmitResult {
   redirects?: {
     written: RawRedirect[]
     manual: Array<{ redirect: RawRedirect; reason: string }>
+    /** The host redirect files written, e.g. `public/_redirects (netlify)`. Empty: meta-refresh only. */
+    host_files: string[]
   }
 }
 

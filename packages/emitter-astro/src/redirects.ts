@@ -164,3 +164,79 @@ export function astroRedirectsConfig(config: RedirectPlan['config']): string | n
   const lines = entries.map(([from, rule]) => `    ${JSON.stringify(from)}: { status: ${rule.status}, destination: ${JSON.stringify(rule.destination)} },`)
   return [`  redirects: {`, ...lines, `  },`].join('\n')
 }
+
+/** Hosts whose own redirect file the emitter can write. */
+export type RedirectHost = 'netlify' | 'cloudflare' | 'vercel'
+
+export interface HostRedirectFiles {
+  /** Path → content, for the emitted project. */
+  files: Record<string, string>
+  /** Which host each written file is for, e.g. `public/_redirects (netlify)`. */
+  written: string[]
+  /** Config keys a host file cannot express, left to the meta-refresh fallback. */
+  skipped: string[]
+}
+
+/** Netlify reads `:name` and `*` in a rule as placeholders. */
+const HOST_PATTERN_CHAR = /(?:^|\/):|\*/
+
+/** path-to-regexp (vercel.json `source`): escape what it would read as syntax. */
+const escapePathPattern = (s: string): string => s.replace(/[:()*+?{}\\]/g, (c) => `\\${c}`)
+
+/** A path as a host matches it: percent-encoded, with and without the trailing slash. */
+function hostSources(path: string): string[] {
+  const encoded = encodeURI(path)
+  if (encoded === '/') return ['/']
+  const bare = encoded.replace(/\/+$/, '')
+  return [bare, `${bare}/`]
+}
+
+/**
+ * Real HTTP redirects for the host the site deploys to. A static Astro build
+ * serves `redirects` as meta-refresh pages; the status code only exists if the
+ * host answers the request itself, from its own redirect file. The
+ * meta-refresh pages stay as the fallback for a host without one.
+ *
+ * - `netlify` — `public/_redirects`, forced (`301!`): the build writes a page
+ *   at every redirected path, and Netlify serves an existing file before an
+ *   unforced rule.
+ * - `cloudflare` — `public/_redirects`, unforced: Cloudflare Pages has no `!`
+ *   and applies its rules before static assets.
+ * - `vercel` — `vercel.json` `redirects`, which Vercel applies before the
+ *   filesystem.
+ *
+ * Without a host both the Netlify file and `vercel.json` are written; a site
+ * on Cloudflare Pages should name its host.
+ */
+export function hostRedirectFiles(config: RedirectPlan['config'], host?: RedirectHost): HostRedirectFiles {
+  const entries = Object.entries(config)
+  const skipped = entries.filter(([from]) => HOST_PATTERN_CHAR.test(from)).map(([from]) => from)
+  const rules = entries.filter(([from]) => !skipped.includes(from))
+  if (!rules.length) return { files: {}, written: [], skipped }
+
+  const files: Record<string, string> = {}
+  const written: string[] = []
+  const redirectsFile = (force: boolean) => [
+    '# Emitted by @contentrain/emitter-astro — the source site\'s redirects, as real HTTP redirects.',
+    ...rules.flatMap(([from, rule]) => hostSources(from).map((source) => `${source} ${rule.destination} ${rule.status}${force ? '!' : ''}`)),
+    '',
+  ].join('\n')
+  if (host === undefined || host === 'netlify') {
+    files['public/_redirects'] = redirectsFile(true)
+    written.push('public/_redirects (netlify)')
+  }
+  if (host === 'cloudflare') {
+    files['public/_redirects'] = redirectsFile(false)
+    written.push('public/_redirects (cloudflare)')
+  }
+  if (host === undefined || host === 'vercel') {
+    const redirects = rules.flatMap(([from, rule]) => hostSources(from).map((source) => ({
+      source: escapePathPattern(source),
+      destination: rule.destination,
+      statusCode: rule.status,
+    })))
+    files['vercel.json'] = `${JSON.stringify({ redirects }, null, 2)}\n`
+    written.push('vercel.json (vercel)')
+  }
+  return { files, written, skipped }
+}
