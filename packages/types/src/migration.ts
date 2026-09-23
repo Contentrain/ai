@@ -363,6 +363,12 @@ export interface RawSeo {
   settings: Partial<Record<SeoProvider, RawSeoSettings>>
   /** `post:<id>` or `term:<taxonomy>:<id>` → one block per provider that has data for it. */
   entries: Record<string, Partial<Record<SeoProvider, RawSeoEntry>>>
+  /**
+   * The home page's SEO, one block per provider, when the home page lists
+   * posts: it is no record, so it has no `post:<id>` entry. A static front
+   * page is its page's `post:<id>`.
+   */
+  home?: Partial<Record<SeoProvider, RawSeoEntry>>
   /** Values deliberately not exported (e.g. a sensitive key), by address. */
   excluded?: { source: string, reason: string }[]
 }
