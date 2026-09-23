@@ -1624,6 +1624,14 @@ export * from './execution.js'
 
 export * from './approval.js'
 
+// ─── Migrate → Studio claim ───
+//
+// The signed hand-off from a paid Migrate order to a Studio trial: payload,
+// constants and a pure validator. Signing and verification (EdDSA) live in
+// the two apps; both bind to this one shape.
+
+export * from './migrate-claim.js'
+
 // ─── Repository provider contracts ───
 //
 // Provider-agnostic engine contracts used by @contentrain/mcp. Exposed from

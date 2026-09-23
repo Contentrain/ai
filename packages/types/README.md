@@ -485,6 +485,33 @@ Until a tool owns one, the contract is narrow and pinned by tests in
   their interiors, because it does not know their interiors — a field-level
   union on an approval policy would produce a policy nobody wrote.
 
+## Migrate → Studio claim
+
+A paid Migrate order includes a Studio trial. At delivery, Migrate hands the customer to Studio with a signed claim token: a compact JWS, `alg: "EdDSA"` (Ed25519), signed with Migrate's private key and verified with its public key (no shared secret; optional `kid` for rotation). `MigrateStudioClaim` is the payload both apps bind to.
+
+| Claim | Meaning |
+|---|---|
+| `iss` / `aud` | `contentrain-migrate` / `contentrain-studio` |
+| `sub` | Migrate account id |
+| `jti`, `iat`, `exp` | single-use id; `exp − iat ≤ 1800` s |
+| `v` | contract version (`1`) |
+| `order_id` | Migrate order; Studio grants once per order |
+| `email` | verified at Migrate; shown, not required to match the GitHub login |
+| `plan`, `plan_evidence` | `starter` \| `pro`, and the measurements it was sized on (`limit_key`, `measured`, `limit`, optional `capability`) |
+| `trial_days` | 1..90 (v1: 60), never taken from the client |
+| `repo` | `{ provider: 'github', owner, name }` of the delivered site |
+| `capabilities` | optional discovery summary for the claim screen |
+
+```ts
+import { validateMigrateStudioClaim } from '@contentrain/types'
+
+// after verifying the JWS signature:
+const result = validateMigrateStudioClaim(payload, { now: Math.floor(Date.now() / 1000) })
+if (!result.ok) throw new Error(result.errors.join('; '))
+```
+
+`validateMigrateStudioClaim` checks shape, ranges and — with `now` — the validity window (60 s skew). It does no cryptography: the signature, `jti` replay and `order_id` uniqueness are the consumer's job. `isMigrateStudioClaim` is the shape-only type guard.
+
 ## Frontmatter round trip
 
 A document's fields live in YAML frontmatter, and two readers open them: the
