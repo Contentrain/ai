@@ -73,6 +73,8 @@ export interface FeedInput {
   siteLocale: string
   /** The site's tagline, for the channel description and the llms.txt summary. */
   description?: string
+  /** false: entries are addressed without a trailing slash. */
+  trailingSlash?: boolean
 }
 
 /** `src/pages/feed.xml.ts`: the newest posts as RSS 2.0. */
@@ -86,7 +88,7 @@ import data from '../data/${source.collection}.json'
 import { entryLinks, rssFeed, type EmittedPost } from '../lib/fill'
 
 export const GET: APIRoute = ({ site }) => {
-  const items = entryLinks(data as EmittedPost[], ${JSON.stringify(source.pattern)}, site, ${locale}, ${locale}).slice(0, ${FEED_ITEMS})
+  const items = entryLinks(data as EmittedPost[], ${JSON.stringify(source.pattern)}, site, ${locale}, ${locale}${input.trailingSlash === false ? ', false, false' : ''}).slice(0, ${FEED_ITEMS})
   const body = rssFeed({
     title: ${JSON.stringify(siteTitle(input.ir))},
     link: new URL('/', site).toString(),
@@ -105,7 +107,7 @@ export function llmsEndpoint(sources: LinkSource[], input: FeedInput): string {
   const locale = JSON.stringify(input.siteLocale)
   const imports = sources.map((s, i) => `import c${i} from '../data/${s.collection}.json'`)
   const sections = sources.map((s, i) =>
-    `    { name: ${JSON.stringify(sectionName(s.collection))}, links: entryLinks(c${i} as EmittedPost[], ${JSON.stringify(s.pattern)}, site, ${locale}, ${locale}, true).slice(0, ${LLMS_LINKS}) },`)
+    `    { name: ${JSON.stringify(sectionName(s.collection))}, links: entryLinks(c${i} as EmittedPost[], ${JSON.stringify(s.pattern)}, site, ${locale}, ${locale}, true${input.trailingSlash === false ? ', false' : ''}).slice(0, ${LLMS_LINKS}) },`)
   return `// /llms.txt (llmstxt.org) — emitted by @contentrain/emitter-astro.
 // What a language model reads to find its way around the site: its name, its
 // tagline, and the newest ${LLMS_LINKS} pages of each kind, at their own addresses —

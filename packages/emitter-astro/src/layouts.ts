@@ -60,6 +60,8 @@ export interface FamilyOptions {
   boundQueries?: ReadonlySet<string>
   /** Run the page's content through the build-time image pass (src/lib/optimize-images.ts). */
   images?: boolean
+  /** false: the site's addresses end without a slash — the Seo component names pages that way. */
+  trailingSlash?: boolean
   /** The site URL, when the build writes the site feed: the head's link to the main feed is pointed at it. */
   feedSite?: string
 }
@@ -186,6 +188,7 @@ export function familyFiles(
     .join('\n')
 
   const siteNameProp = options.siteName ? ` siteName={${JSON.stringify(options.siteName)}}` : ''
+  const trailingSlashProp = options.trailingSlash === false ? ' trailingSlash={false}' : ''
   const websiteId = seoOn ? websiteIdOf(head) : undefined
   const websiteIdProp = websiteId ? ` websiteId={${JSON.stringify(websiteId)}}` : ''
   const robotsProp = robotsDefault.length ? ` robotsDefault={${JSON.stringify(robotsDefault)}}` : ''
@@ -283,7 +286,7 @@ ${cssLinks
     ))}
     <Fragment set:html={head} />
 ${seoOn
-  ? `    <Seo title={title} locale={lang}${siteNameProp}${websiteIdProp}${robotsProp}${headLdIdsProp} {...(seo ?? {})} />`
+  ? `    <Seo title={title} locale={lang}${siteNameProp}${websiteIdProp}${trailingSlashProp}${robotsProp}${headLdIdsProp} {...(seo ?? {})} />`
   : `    <title>{title}</title>`}
   </head>
   <body {...bodyAttrs}>

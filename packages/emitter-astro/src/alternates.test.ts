@@ -152,7 +152,7 @@ describe('emitted hreflang', () => {
   it('the Seo component prints each alternate as an absolute link, and og:locale:alternate for the others', () => {
     const seo = result.files['src/components/Seo.astro']!
     expect(seo).toContain('{hreflang.map((a) => <link rel="alternate" hreflang={a.lang} href={a.href} />)}')
-    expect(seo).toContain('const href = absoluteUrl(a.path, site)')
+    expect(seo).toContain('const href = absoluteUrl(pagePath(a.path, trailingSlash), site)')
     expect(seo).toContain(`{localeAlternates.map((l) => <meta property="og:locale:alternate" content={l} />)}`)
   })
 

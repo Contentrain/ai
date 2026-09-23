@@ -257,7 +257,7 @@ describe('emitted SEO', () => {
     // A permalink recomputed by the producer can disagree with what Astro
     // actually emitted; Astro.url cannot.
     const seo = result.files['src/components/Seo.astro']!
-    expect(seo).toContain('absoluteUrl(Astro.url.pathname, site)')
+    expect(seo).toContain('absoluteUrl(pagePath(Astro.url.pathname, trailingSlash), site)')
     expect(seo).toContain('const site = Astro.site')
     expect(result.files['astro.config.mjs']).toContain('site: "https://example.com"')
   })

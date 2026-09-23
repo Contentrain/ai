@@ -61,7 +61,12 @@ export function scaffoldFiles(ir: ProjectIR, options: EmitOptions, noindex: stri
     // Astro rejects an empty string as an invalid URL and refuses to build, so
     // with no site the key is left out; the emitter warns about that instead.
     ...(ir.site.url ? [`  site: ${JSON.stringify(ir.site.url)},`] : []),
-    `  build: { format: 'directory' },`,
+    // A site whose addresses end in a slash is built as directories
+    // (/hello/index.html); one whose addresses do not, as files (/hello.html),
+    // which hosts serve at /hello — either way at the source's own address.
+    ...(options.trailingSlash === false
+      ? [`  build: { format: 'file' },`, `  trailingSlash: 'never',`]
+      : [`  build: { format: 'directory' },`]),
     ...(redirectsConfig ? [redirectsConfig] : []),
     ...(sitemap ? [`  integrations: [${sitemapIntegration(noindex)}],`] : []),
     // Hosts content images may be optimized from — the same list the emitted
@@ -541,7 +546,7 @@ export function sourceStructuredData(schema: unknown, headIds: string[] = []): R
  * parameters — the values getStaticPaths builds the page from — in the
  * directory format the build writes. Undefined when a parameter is missing.
  */
-export function entryAddress(pattern: string, params: Record<string, string | undefined>): string | undefined {
+export function entryAddress(pattern: string, params: Record<string, string | undefined>, trailingSlash = true): string | undefined {
   const segments = pattern.replace(/^\\/+|\\/+$/g, '').split('/').filter(Boolean)
   if (!segments.length) return '/'
   const out: string[] = []
@@ -554,7 +559,20 @@ export function entryAddress(pattern: string, params: Record<string, string | un
     if (!value) return undefined
     out.push(value)
   }
-  return '/' + out.join('/') + '/'
+  return '/' + out.join('/') + (trailingSlash ? '/' : '')
+}
+
+/**
+ * The address a built page is served at, from the path Astro gives it. The
+ * file build names a page \`/hello.html\` and the host serves it at
+ * \`/hello\`; the source site's own form — with or without the trailing
+ * slash — is what its canonical, og:url and hreflang must name.
+ */
+export function pagePath(pathname: string, trailingSlash = true): string {
+  const path = pathname.replace(/\\/index\\.html$/, '/').replace(/\\.html$/, '')
+  if (path === '/' || path === '') return '/'
+  const bare = path.replace(/\\/+$/, '')
+  return trailingSlash ? bare + '/' : bare
 }
 
 /** One page as a feed item or an llms.txt link. */
@@ -573,12 +591,12 @@ export interface SiteLink {
  * an entry without one is in the site's default, \`siteLocale\` — and with
  * \`indexedOnly\`, none the source kept out of search.
  */
-export function entryLinks(posts: EmittedPost[], pattern: string, site: URL | undefined, locale: string, siteLocale: string, indexedOnly = false): SiteLink[] {
+export function entryLinks(posts: EmittedPost[], pattern: string, site: URL | undefined, locale: string, siteLocale: string, indexedOnly = false, trailingSlash = true): SiteLink[] {
   const links: SiteLink[] = []
   for (const post of posts) {
     if ((post.locale ?? siteLocale) !== locale) continue
     if (indexedOnly && post.noindex) continue
-    const url = absoluteUrl(entryAddress(pattern, { ...(post.params ?? {}), slug: post.slug }), site)
+    const url = absoluteUrl(entryAddress(pattern, { ...(post.params ?? {}), slug: post.slug }, trailingSlash), site)
     if (!url) continue
     links.push({
       title: post.title,
