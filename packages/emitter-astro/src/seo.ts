@@ -373,6 +373,8 @@ interface Props {
   authorUrl?: string
   /** On an author's archive: who the page is about — ProfilePage + Person. */
   profile?: AuthorProfile
+  /** This page's own feed (an archive's), site-root-relative: \`<link rel="alternate" type="application/rss+xml">\`. */
+  feed?: { path: string; title?: string }
   siteName?: string
   locale?: string
   /** The page is kept out of search: \`<meta name="robots" content="noindex">\`. */
@@ -408,6 +410,7 @@ const {
   author,
   authorUrl,
   profile,
+  feed,
   siteName,
   locale,
   noindex = false,
@@ -471,6 +474,7 @@ const structured = sourceStructuredData(schema, headLdIds) ?? pageStructuredData
 {desc && <meta name="description" content={desc} />}
 {url && <link rel="canonical" href={url} />}
 {hreflang.map((a) => <link rel="alternate" hreflang={a.lang} href={a.href} />)}
+{feed && <link rel="alternate" type="application/rss+xml" title={feed.title} href={feed.path} />}
 <meta property="og:type" content={type} />
 {ogTitle && <meta property="og:title" content={ogTitle} />}
 {ogDesc && <meta property="og:description" content={ogDesc} />}

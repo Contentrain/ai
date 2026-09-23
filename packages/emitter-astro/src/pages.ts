@@ -26,6 +26,8 @@ export function routeFiles(
   content: EmitContent,
   siteLocale: string,
   seo = true,
+  /** The route's pages each have a feed at <page>/feed.xml (see feed.ts): the page links it. */
+  archiveFeed = false,
 ): PageGenResult {
   const warnings: string[] = []
   const files: Record<string, string> = {}
@@ -70,7 +72,7 @@ export function routeFiles(
       warnings.push(`route ${route.id}: item template missing on some pages — plain fallback list rendered (not fidelity)`)
     }
     files[`src/data/queries/${route.query}.json`] = stableJson(queryPages)
-    files[`src/pages/${pagePath}`] = listPage(route, layout, up, hasParams, siteLocale, seo)
+    files[`src/pages/${pagePath}`] = listPage(route, layout, up, hasParams, siteLocale, seo, archiveFeed)
     return { files, warnings }
   }
 
@@ -122,7 +124,7 @@ const post = posts[0]!`}
 `
 }
 
-function listPage(route: RouteModel, layout: string, up: string, hasParams: boolean, siteLocale: string, seo: boolean): string {
+function listPage(route: RouteModel, layout: string, up: string, hasParams: boolean, siteLocale: string, seo: boolean, archiveFeed = false): string {
   const locale = JSON.stringify(route.locale ?? siteLocale)
   // Chain the fallbacks HERE, not in the emitted source: a route without a title
   // used to emit `page.title ?? "" ?? ''`, which "astro check" rejects as never
@@ -142,7 +144,7 @@ const { page } = Astro.props as Props`
 // Route: ${route.id} (${route.pattern}) — emitted by @contentrain/emitter-astro
 import Layout from '${up}layouts/${layout}.astro'
 import data from '${up}data/queries/${route.query}.json'
-import { renderQueryPage, type EmittedQueryPage } from '${up}lib/fill'
+import { ${archiveFeed && seo ? 'entryAddress, ' : ''}renderQueryPage, type EmittedQueryPage } from '${up}lib/fill'
 
 ${paths}
 // A list renders in sections (a big card then a grid) — one template is the
@@ -160,7 +162,7 @@ const title = page.title ?? ${routeTitle}
   body={content}
   css={page.css ?? []}
   lang={${locale}}${seo ? `
-  seo={{ description: page.description, image: page.image, imageMeta: page.image_meta, canonical: page.canonical, breadcrumbs: page.breadcrumbs, noindex: page.noindex, nofollow: page.nofollow, openGraph: page.open_graph, twitter: page.twitter, schema: page.schema, profile: page.profile, type: 'website', pageType: 'CollectionPage' }}` : ''}
+  seo={{ description: page.description, image: page.image, imageMeta: page.image_meta, canonical: page.canonical, breadcrumbs: page.breadcrumbs, noindex: page.noindex, nofollow: page.nofollow, openGraph: page.open_graph, twitter: page.twitter, schema: page.schema, profile: page.profile,${archiveFeed ? ` feed: { path: (entryAddress(${JSON.stringify(route.pattern)}, page.params) ?? '/') + 'feed.xml', title: title || undefined },` : ''} type: 'website', pageType: 'CollectionPage' }}` : ''}
 />
 `
 }

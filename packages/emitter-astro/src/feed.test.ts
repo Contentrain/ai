@@ -193,12 +193,12 @@ describe('emitted feed and llms.txt', () => {
     expect(llms).toContain(`{ name: "Pages", links: entryLinks(c1 as EmittedPost[], "/:slug*", site, "en", "en", true).slice(0, 100) },`)
   })
 
-  it("point the theme's main feed link at /feed.xml, leave other hosts' feeds alone, and say what 404s", () => {
+  it("point the theme's main feed link at /feed.xml, remove the template's other feeds, leave other hosts' alone", () => {
     const chrome = JSON.parse(result.files['src/data/chrome/f.json']!) as { head: string }
     expect(chrome.head).toContain('title="Example » Feed" href="/feed.xml"')
-    expect(chrome.head).toContain('href="https://example.com/comments/feed/"')
+    expect(chrome.head).not.toContain('comments/feed')
     expect(chrome.head).toContain('href="https://feeds.feedburner.com/example"')
-    expect(result.warnings).toContain('family f: 1 feed links in the head (comments, a category, Atom) name feeds the site does not build — they 404 on the migrated site')
+    expect(result.warnings).toContain("family f: removed 1 feed links from the head chrome — the template page's own archive feed, or a comments or Atom feed the site does not build; each archive page links its own feed")
   })
 
   it('/feed/ gets a 301 to /feed.xml: in astro.config and, for a real status, in the host redirect files', () => {
@@ -255,12 +255,69 @@ describe('rewriteFeedLinks', () => {
       ['<link rel="alternate" type="application/rss+xml" href="/feed/">', '<link rel="alternate" type="application/rss+xml" href="/feed.xml">'],
       ["<link type='application/rss+xml' rel='alternate' href='https://EXAMPLE.com/?feed=rss2'>", "<link type='application/rss+xml' rel='alternate' href='/feed.xml'>"],
       ['<link rel="alternate" type="application/rss+xml" href="https://example.com/feed/rss2/">', '<link rel="alternate" type="application/rss+xml" href="/feed.xml">'],
-      ['<link rel="alternate" type="application/atom+xml" href="/feed/atom/">', '<link rel="alternate" type="application/atom+xml" href="/feed/atom/">'],
+      ['<link rel="alternate" type="application/atom+xml" href="/feed/atom/">', ''],
       ['<link rel="alternate" type="application/rss+xml" href="https://www.example.com/feed/">', '<link rel="alternate" type="application/rss+xml" href="/feed.xml">'],
       ['<link rel="alternate" type="application/rss+xml" href="https://other.example/feed/">', '<link rel="alternate" type="application/rss+xml" href="https://other.example/feed/">'],
       ['<link rel="alternate" hreflang="de" href="https://example.com/de/">', '<link rel="alternate" hreflang="de" href="https://example.com/de/">'],
     ]
     for (const [input, output] of cases) expect(rewriteFeedLinks(input, 'https://example.com').html).toBe(output)
     expect(rewriteFeedLinks(cases.map((c) => c[0]).join(''), 'https://example.com')).toMatchObject({ rewritten: 4, other: 1 })
+  })
+})
+
+describe('archive feeds (B6) — every category, tag and author page gets its own', () => {
+  const archiveIr: ProjectIR = {
+    ...ir,
+    routes: [
+      { id: 'r-post', pattern: '/:year/:slug', kind: 'single', family: 'f' },
+      { id: 'r-cat', pattern: '/category/:term*', kind: 'archive', family: 'f', query: 'q-cat' },
+      { id: 'r-cat-paged', pattern: '/category/:term*/page/:page', kind: 'archive', family: 'f', query: 'q-cat-paged' },
+    ],
+    queries: [
+      { id: 'q-cat', source: 'posts', order: { by: 'date', direction: 'desc' }, per_page: 10, pagination: 'numbered' },
+      { id: 'q-cat-paged', source: 'posts', order: { by: 'date', direction: 'desc' }, per_page: 10, pagination: 'numbered' },
+    ],
+  }
+  const archiveContent: EmitContent = {
+    posts: content.posts,
+    queries: {
+      'q-cat': [
+        { params: { term: 'news' }, title: 'News – Example', items: [content.posts![1]!, content.posts![0]!] },
+        { params: { term: 'about/events' }, items: [] },
+      ],
+      'q-cat-paged': [{ params: { term: 'news', page: '2' }, items: [] }],
+    },
+  }
+  const result = emitAstroProject({ ir: archiveIr, content: archiveContent })
+
+  it('only routes whose pages are addresses: the paginated continuation has no feed', () => {
+    const endpoint = result.files['src/pages/category/[...term]/feed.xml.ts']!
+    expect(endpoint).toContain(`import data from '../../../data/queries/q-cat.json'`)
+    expect(endpoint).toContain('.map((page) => ({ params: page.params, props: { page } }))')
+    expect(endpoint).toContain(`entryLinks(page.items, "/:year/:slug", site, "en", "en").slice(0, 10)`)
+    expect(endpoint).toContain(`self: absoluteUrl(address + 'feed.xml', site) ?? '',`)
+    expect(Object.keys(result.files).filter((f) => f.endsWith('/feed.xml.ts') && f !== 'src/pages/feed.xml.ts')).toEqual(['src/pages/category/[...term]/feed.xml.ts'])
+  })
+
+  it("each archive page links its own feed; the template head's term feed is gone", () => {
+    expect(result.files['src/pages/category/[...term].astro']).toContain(`feed: { path: (entryAddress("/category/:term*", page.params) ?? '/') + 'feed.xml', title: title || undefined },`)
+    expect(result.files['src/pages/category/[...term].astro']).toContain(`import { entryAddress, renderQueryPage`)
+    expect(result.files['src/components/Seo.astro']).toContain('{feed && <link rel="alternate" type="application/rss+xml" title={feed.title} href={feed.path} />}')
+  })
+
+  it('<archive>/feed/ is a 301 to <archive>/feed.xml, for every archive page, beside the main feed', () => {
+    const config = result.files['astro.config.mjs']!
+    expect(config).toContain(`"/category/news/feed/": { status: 301, destination: "/category/news/feed.xml" },`)
+    expect(config).toContain(`"/category/about/events/feed/": { status: 301, destination: "/category/about/events/feed.xml" },`)
+    expect(config).toContain(`"/feed/": { status: 301, destination: "/feed.xml" },`)
+    expect(config).not.toContain('/page/2/feed')
+    expect(result.files['public/_redirects']).toContain('/category/news/feed/ /category/news/feed.xml 301!')
+  })
+
+  it('with the feed off, no archive feeds, no links, no redirects', () => {
+    const off = emitAstroProject({ ir: archiveIr, content: archiveContent, options: { feed: false } })
+    expect(Object.keys(off.files).some((f) => f.endsWith('/feed.xml.ts'))).toBe(false)
+    expect(off.files['src/pages/category/[...term].astro']).not.toContain('feed:')
+    expect(off.files['astro.config.mjs']).not.toContain('feed')
   })
 })

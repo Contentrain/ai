@@ -17,13 +17,13 @@ import { collectionItems, routeFiles, sharedCollectionPage } from './pages.js'
 import { componentFiles, isRuntimeImplemented } from './components.js'
 import { chromeComponents } from './chrome.js'
 import { SEO_COMPONENT } from './seo.js'
-import { withAlternates } from './alternates.js'
+import { entryPath, withAlternates } from './alternates.js'
 import { UI_STRINGS_DIR, uiStringsDir } from './ui-strings.js'
 import { wrapLegacyCss } from './css.js'
 import { stableJson, patternToPagePath } from './util.js'
 import { noindexPaths } from './noindex.js'
 import { astroRedirectsConfig, builtAddresses, HOST_RULE_LIMIT, hostRedirectFiles, planRedirects } from './redirects.js'
-import { FEED_PATH, FEED_REDIRECT_FROM, feedEndpoint, linkSources, llmsEndpoint, type LinkSource } from './feed.js'
+import { FEED_PATH, FEED_REDIRECT_FROM, archiveFeedEndpoint, archiveFeedFile, archiveFeedSources, feedEndpoint, linkSources, llmsEndpoint, type LinkSource } from './feed.js'
 
 /**
  * A supplied trail the build will not print — the same rule as \`validTrail\`
@@ -80,6 +80,9 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   const linkable = ir.site.url ? linkSources(ir.routes, siteLang) : []
   const feedSource = input.options?.feed !== false ? linkable.find((s) => s.collection === DEFAULT_COLLECTION) : undefined
   const llmsOn = input.options?.llms !== false && linkable.length > 0
+  // Every archive page (a category, a tag, an author) gets its feed, as in WordPress.
+  const archiveFeeds = feedSource ? archiveFeedSources(ir.routes, siteLang) : []
+  const archiveFeedRoutes = new Set(archiveFeeds.map((a) => a.routeId))
   if (!ir.site.url && (input.options?.feed !== false || input.options?.llms !== false)) {
     warnings.push('site.url is empty — no RSS feed and no llms.txt are built; both name pages by absolute address')
   }
@@ -100,6 +103,18 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     || builtAddresses(ir.routes, input.content ?? {}).has(FEED_REDIRECT_FROM)
   if (feedSource && !feedClaimed) {
     redirectConfig[FEED_REDIRECT_FROM] = { status: 301, destination: FEED_PATH }
+  }
+  // And each archive page's: <archive>/feed/ → <archive>/feed.xml.
+  const claimed = new Set(Object.keys(redirectConfig).map((from) => from.replace(/\/+$/, '')))
+  for (const source of archiveFeeds) {
+    for (const page of input.content?.queries?.[source.query] ?? []) {
+      const address = entryPath(source.pattern, page.params)
+      if (!address) continue
+      const from = `${address}feed/`
+      if (claimed.has(from.replace(/\/+$/, ''))) continue
+      claimed.add(from.replace(/\/+$/, ''))
+      redirectConfig[from] = { status: 301, destination: `${address}feed.xml` }
+    }
   }
   const hasRedirects = Object.keys(redirectConfig).length > 0
   add(scaffoldFiles(ir, input.options ?? {}, noindex, hasRedirects ? astroRedirectsConfig(sortedConfig(redirectConfig)) : null, input.runtime))
@@ -274,7 +289,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   const pageOwner = new Map<string, RouteModel>()
   const collisions: { path: string, first: RouteModel, second: RouteModel }[] = []
   for (const route of ir.routes) {
-    const result = routeFiles(route, familiesById.get(route.family), routeContent, lang, seo)
+    const result = routeFiles(route, familiesById.get(route.family), routeContent, lang, seo, archiveFeedRoutes.has(route.id))
     for (const path of sharedPages.keys()) delete result.files[path]
     for (const path of Object.keys(result.files)) {
       if (!path.startsWith('src/pages/')) continue
@@ -350,6 +365,12 @@ export function emitAstroProject(input: EmitInput): EmitResult {
       add({ 'src/pages/feed.xml.ts': feedEndpoint(feedSource, feedInput) })
     } else {
       warnings.push(`feed: no posts data file was written, so no feed is built — the head's feed link points at ${FEED_PATH}, which 404s`)
+    }
+  }
+  for (const source of archiveFeeds) {
+    const file = archiveFeedFile(source.pattern)
+    if (file && feedSource && files[`src/data/queries/${source.query}.json`] !== undefined) {
+      add({ [file]: archiveFeedEndpoint(source, feedSource.pattern, feedInput) })
     }
   }
   if (llmsOn) {
