@@ -200,6 +200,38 @@ export function headLdIdsOf(html: string): string[] {
   return ids
 }
 
+/**
+ * `@id` of the node that publishes the site, as the head's structured data
+ * says: the WebSite's own `publisher` reference (Yoast and Rank Math write
+ * one — an Organization, or the Person a personal site is published by),
+ * else the head's first Organization. The Article names it by `@id`, so the
+ * logo and profile the site declared count for every post.
+ */
+export function publisherIdOf(html: string): string | undefined {
+  let organization: string | undefined
+  for (const match of html.matchAll(JSONLD_RE)) {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(match[1] ?? '')
+    } catch {
+      continue
+    }
+    const graph = (parsed as { '@graph'?: unknown } | null)?.['@graph']
+    const nodes: unknown[] = Array.isArray(parsed) ? parsed : Array.isArray(graph) ? graph : [parsed]
+    for (const node of nodes) {
+      const types = typesOf(node).map((t) => t.toLowerCase())
+      if (types.includes('website')) {
+        const ref = (node as LdNode)['publisher']
+        const id = (Array.isArray(ref) ? ref[0] : ref) as LdNode | undefined
+        if (typeof id?.['@id'] === 'string' && id['@id']) return id['@id']
+      }
+      const id = (node as LdNode | null)?.['@id']
+      if (!organization && typeof id === 'string' && id && isSiteNode(node) && !types.includes('website')) organization = id
+    }
+  }
+  return organization
+}
+
 export interface StripResult {
   html: string
   /** What was taken out, for the emit warning — never a silent removal. */
@@ -299,7 +331,7 @@ export const SEO_COMPONENT = `---
  * Canonical and absolute URLs need \`site\` in astro.config.mjs; without it the
  * canonical link and og:url are omitted rather than pointing at a build host.
  */
-import { absoluteUrl, imageMetaTags, jsonLd, pagePath, pageStructuredData, seoDescription, sourceStructuredData, type Breadcrumb, type ImageMeta, type SocialOverride, type TwitterOverride } from '../lib/fill'
+import { absoluteUrl, imageMetaTags, jsonLd, ogLocale, pagePath, pageStructuredData, seoDescription, sourceStructuredData, type Breadcrumb, type ImageMeta, type SocialOverride, type TwitterOverride } from '../lib/fill'
 
 interface Props {
   /** The document title — an SEO plugin's composed one when the source had it. */
@@ -322,6 +354,8 @@ interface Props {
   pageType?: 'WebPage' | 'CollectionPage'
   /** \`@id\` of the site's WebSite node kept in the head chrome, when there is one. */
   websiteId?: string
+  /** \`@id\` of the node the kept head says publishes the site — the Article's publisher. */
+  publisherId?: string
   /** false: the site's addresses end without a slash (\`/hello\`), as the source's did. */
   trailingSlash?: boolean
   /** \`@id\` of every structured-data node the head chrome keeps — not repeated from \`schema\`. */
@@ -358,6 +392,7 @@ const {
   breadcrumbs,
   pageType,
   websiteId,
+  publisherId,
   trailingSlash = true,
   headLdIds = [],
   type = 'website',
@@ -383,7 +418,9 @@ const hreflang = alternates.flatMap((a) => {
   const href = absoluteUrl(pagePath(a.path, trailingSlash), site)
   return href ? [{ lang: a.lang, href }] : []
 })
-const localeAlternates = [...new Set(hreflang.map((a) => a.lang))].filter((l) => l !== 'x-default' && l !== locale)
+// og:locale takes ll_RR; a language without a region has no such form and is left out.
+const ogLang = ogLocale(locale)
+const localeAlternates = [...new Set(hreflang.map((a) => ogLocale(a.lang)))].filter((l): l is string => Boolean(l) && l !== ogLang)
 const desc = seoDescription(description)
 const robots = [noindex && 'noindex', nofollow && 'nofollow', ...robotsDefault].filter(Boolean).join(', ')
 // Share cards: what the source set by hand, else what the page says.
@@ -404,6 +441,7 @@ const structured = sourceStructuredData(schema, headLdIds) ?? pageStructuredData
   headline,
   description: desc,
   image: imageUrl,
+  imageMeta: imageUrl ? imageMeta : undefined,
   locale,
   article,
   pageType,
@@ -412,6 +450,7 @@ const structured = sourceStructuredData(schema, headLdIds) ?? pageStructuredData
   author,
   siteName,
   websiteId,
+  publisherId,
   breadcrumbs,
 })
 ---
@@ -429,7 +468,7 @@ const structured = sourceStructuredData(schema, headLdIds) ?? pageStructuredData
 {ogImageTags.height && <meta property="og:image:height" content={ogImageTags.height} />}
 {ogImageTags.type && <meta property="og:image:type" content={ogImageTags.type} />}
 {siteName && <meta property="og:site_name" content={siteName} />}
-{locale && <meta property="og:locale" content={locale} />}
+{ogLang && <meta property="og:locale" content={ogLang} />}
 {localeAlternates.map((l) => <meta property="og:locale:alternate" content={l} />)}
 {article && publishedAt && <meta property="article:published_time" content={publishedAt} />}
 {article && modifiedAt && <meta property="article:modified_time" content={modifiedAt} />}

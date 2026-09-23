@@ -117,7 +117,7 @@ const post = posts[0]!`}
   css={post.css ?? []}
   lang={post.locale ?? ${locale}}
   entry={post.entry}${seo ? `
-  seo={postSeo(post)}` : ''}
+  seo={postSeo(post${route.kind === 'page' ? ", 'page'" : ''})}` : ''}
 />
 `
 }
@@ -212,9 +212,10 @@ export function getStaticPaths() {
 const { post, routeIndex } = Astro.props as { post: EmittedPost, routeIndex: number }
 const layouts = [${routes.map((_, i) => `Layout${i}`).join(', ')}]
 const locales = ${JSON.stringify(routes.map(r => r.locale ?? siteLocale))}
+const kinds = ${JSON.stringify(routes.map(r => (r.kind === 'page' ? 'page' : 'post')))} as Array<'post' | 'page'>
 const Layout = layouts[routeIndex]!
 ---
 <Layout title={post.title} marks={postMarks(post)} body={post.body}
-  css={post.css ?? []} lang={post.locale ?? locales[routeIndex]} entry={post.entry}${seo ? ' seo={postSeo(post)}' : ''} />
+  css={post.css ?? []} lang={post.locale ?? locales[routeIndex]} entry={post.entry}${seo ? ' seo={postSeo(post, kinds[routeIndex])}' : ''} />
 `
 }
