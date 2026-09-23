@@ -184,7 +184,9 @@ cr/normalize/extract/...     ← normalize extraction
 cr/normalize/reuse/...       ← source patching
 ```
 
-Branches are auto-merged or held for review depending on your workflow config. When a review branch is merged or rejected, its remote copy is deleted too, so merged branches don't linger as phantom pending reviews — run `contentrain prune` to drain any existing backlog, or set `remoteBranchCleanup: false` to opt out.
+Branches are auto-merged or held for review depending on your workflow config. An auto-merge advances the project's [base branch](/reference/config#base-branch) — the default branch, never merely the branch you have checked out.
+
+A local write is planned from your working tree but committed on the `contentrain` tip, after fetching the remote. When another writer (Studio, a teammate, CI) reached `contentrain` since your last pull, the write is carried over entry by entry: their entries and fields stay, yours are added. If both sides changed the same value, nothing is written and the tool returns `CONTENT_WORKING_TREE_STALE` — pull and retry. When a review branch is merged or rejected, its remote copy is deleted too, so merged branches don't linger as phantom pending reviews — run `contentrain prune` to drain any existing backlog, or set `remoteBranchCleanup: false` to opt out.
 
 ### Divergence
 

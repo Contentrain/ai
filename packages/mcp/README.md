@@ -61,7 +61,9 @@ All write operations are designed around git-backed safety:
 
 - a dedicated `contentrain` branch serves as the content state single source of truth
 - each write creates a temporary worktree on a feature branch forked from `contentrain` (branch name: `cr/{operation}/{model}/{locale}/{timestamp}-{suffix}`)
-- auto-merge: feature merges into `contentrain`, baseBranch advanced via update-ref, `.contentrain/` files selectively synced to developer's working tree
+- auto-merge: feature merges into `contentrain`, baseBranch advanced via update-ref, `.contentrain/` files selectively synced to developer's working tree when the base branch is the one checked out
+- baseBranch = `CONTENTRAIN_BRANCH` env → `repository.default_branch` → remote HEAD → `main` → `master` → checked-out branch (last resort). A write made on a feature branch never merges, moves or pushes that branch
+- plans are read from the working tree but committed on the fetched `contentrain` tip: JSON changes are carried over key by key, so entries another writer pushed are kept; a same-value conflict writes nothing and returns `CONTENT_WORKING_TREE_STALE`
 - review: feature branch pushed to remote for team review; once merged (or deleted), its remote copy is removed too — best-effort, opt out with `remoteBranchCleanup: false` in config.json
 - merged-branch detection survives base-history rewrites (ancestry check with a patch-id fallback), so rebases/squashes don't strand stale branches
 - developer's working tree is never mutated during MCP git operations (no stash, no checkout, no merge)

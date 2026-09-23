@@ -122,7 +122,7 @@ interface ContentrainConfig {
 | `platform` | `Platform` | No | Target platform: `web`, `mobile`, `api`, `desktop`, `static`, `other`. Informational — MCP's config reader strips it; only the raw file (read by `generate` and tooling) retains it. |
 | `stack` | `StackType` | Yes | Framework identifier. See [Supported Stacks](#supported-stacks) below. |
 | `workflow` | `WorkflowMode` | Yes | `auto-merge` or `review`. See [Workflow Modes](#workflow-modes). |
-| `repository` | `object` | No | GitHub repository connection details. |
+| `repository` | `object` | No | Repository connection details. `repository.default_branch` is **not** informational: it is the [base branch](#base-branch) local writes advance. |
 | `locales.default` | `string` | Yes | Default locale code (e.g., `en`). |
 | `locales.supported` | `string[]` | Yes | All supported locale codes. Must include `default`. |
 | `domains` | `string[]` | Yes | Content domain names for organizing models. |
@@ -159,6 +159,18 @@ The `workflow` field controls how content changes are integrated:
 ::: warning
 Normalize operations (extraction and reuse) always use the `review` workflow regardless of this setting. This ensures human oversight for code-modifying changes.
 :::
+
+### Base Branch
+
+A local auto-merge merges the base branch into `contentrain` before each write, then fast-forwards the base to the `contentrain` tip and pushes both. The base is resolved the same way everywhere (writes, merge, reconcile, status, branch cleanup):
+
+1. the `CONTENTRAIN_BRANCH` environment variable;
+2. `repository.default_branch` in `config.json`;
+3. the remote's default branch (`refs/remotes/origin/HEAD`, as `git clone` leaves it), when that branch exists locally;
+4. a local `main`, then a local `master`;
+5. the checked-out branch — only when none of the above exists.
+
+The checked-out branch is deliberately last. A content write made while a feature branch is checked out lands on `contentrain` and the base branch only: the feature branch is not merged into `contentrain`, not moved, and not pushed, and the developer's working tree and index are left as they are (the response carries a `warning` saying so). Set `repository.default_branch` when your default branch is not `main`/`master` and the remote HEAD is not available.
 
 ## context.json
 
