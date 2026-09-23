@@ -26,5 +26,10 @@ export class ContentrainError extends Error {
  * form or thread instead of showing it to a visitor.
  */
 export function isPaymentRequired(error: unknown): boolean {
-  return error instanceof ContentrainError && (error.status === 402 || error.code === 'payment_required')
+  // By shape, not instanceof: a page can bundle two copies of the SDK (ESM
+  // and CJS, or a duplicate install), and an error from one is not an
+  // instance of the other's class.
+  if (!error || typeof error !== 'object') return false
+  const e = error as { name?: unknown; status?: unknown; code?: unknown }
+  return e.name === 'ContentrainError' && (e.status === 402 || e.code === 'payment_required')
 }

@@ -161,6 +161,16 @@ describe('FormsClient — 402 payment_required (workspace billing locked)', () =
     expect(isPaymentRequired(err)).toBe(false)
     expect(isPaymentRequired(new ContentrainError(400, 'x', 'payment_required'))).toBe(true)
     expect(isPaymentRequired(new TypeError('Failed to fetch'))).toBe(false)
+    // An error from another copy of the SDK: same name and shape, different class.
+    expect(isPaymentRequired(Object.assign(new Error('x'), { name: 'ContentrainError', status: 402 }))).toBe(true)
+    expect(isPaymentRequired({ name: 'OtherError', status: 402 })).toBe(false)
+  })
+
+  it('a submit on a locked workspace rejects the same way', async () => {
+    vi.stubGlobal('fetch', mockFetch({ statusCode: 402, message: locked.message, data: locked.data }, 402))
+    const err = await createClient().submit('contact', { name: 'Ada' }).catch((e: unknown) => e)
+    expect(err).toMatchObject({ name: 'ContentrainError', status: 402, code: 'payment_required' })
+    expect(isPaymentRequired(err)).toBe(true)
   })
 })
 
