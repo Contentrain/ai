@@ -57,6 +57,73 @@ export function linkSources(routes: RouteModel[], siteLocale: string): LinkSourc
     .toSorted((a, b) => rank(a.collection) - rank(b.collection) || (a.collection < b.collection ? -1 : a.collection > b.collection ? 1 : 0))
 }
 
+/** An archive route (a category, a tag, an author) whose pages get a feed each, as WordPress's do. */
+export interface ArchiveFeedSource {
+  routeId: string
+  pattern: string
+  query: string
+}
+
+/**
+ * Archive routes in the site's default language whose every page is an
+ * address with a feed: a query route with parameters and no page number —
+ * `/category/:term*`, `/tag/:term`, `/author/:author`. The paginated
+ * continuation (`/category/:term/page/:page`) has no feed of its own.
+ */
+export function archiveFeedSources(routes: RouteModel[], siteLocale: string): ArchiveFeedSource[] {
+  const out: ArchiveFeedSource[] = []
+  for (const route of routes) {
+    if (!route.query || (route.locale ?? siteLocale) !== siteLocale) continue
+    const pagePath = patternToPagePath(route.pattern)
+    if (!pagePath || !pagePath.includes('[')) continue
+    if (route.pattern.split('/').some((seg) => /^:page\*?$/.test(seg))) continue
+    out.push({ routeId: route.id, pattern: route.pattern, query: route.query })
+  }
+  return out
+}
+
+/** Where an archive route's feed endpoint lives: its page path with `/feed.xml` appended. */
+export function archiveFeedFile(pattern: string): string | null {
+  const pagePath = patternToPagePath(pattern)
+  return pagePath ? `src/pages/${pagePath.replace(/\.astro$/, '')}/feed.xml.ts` : null
+}
+
+/**
+ * The feed of every page an archive route builds — the newest posts it lists,
+ * at their own addresses — at `<archive>/feed.xml`. Its entries are the
+ * route's own first result set, so the feed lists what the archive page does.
+ */
+export function archiveFeedEndpoint(source: ArchiveFeedSource, postPattern: string, input: FeedInput): string {
+  const locale = JSON.stringify(input.siteLocale)
+  const file = archiveFeedFile(source.pattern)!
+  const up = '../'.repeat(file.split('/').length - 2)
+  const slash = input.trailingSlash === false ? ', false, false' : ''
+  return `// Archive feed for route ${source.routeId} (${source.pattern}) — emitted by @contentrain/emitter-astro.
+// One feed per page the archive builds, at <archive>/feed.xml, as WordPress serves
+// one at <archive>/feed/: the ${FEED_ITEMS} newest posts the archive lists.
+import type { APIRoute, GetStaticPaths } from 'astro'
+import data from '${up}data/queries/${source.query}.json'
+import { absoluteUrl, entryAddress, entryLinks, rssFeed, type EmittedQueryPage } from '${up}lib/fill'
+
+export const getStaticPaths = (() => (data as EmittedQueryPage[]).map((page) => ({ params: page.params, props: { page } }))) satisfies GetStaticPaths
+
+export const GET: APIRoute = ({ props, site }) => {
+  const page = (props as { page: EmittedQueryPage }).page
+  const address = entryAddress(${JSON.stringify(source.pattern)}, page.params) ?? '/'
+  const items = entryLinks(page.items, ${JSON.stringify(postPattern)}, site, ${locale}, ${locale}${slash}).slice(0, ${FEED_ITEMS})
+  const body = rssFeed({
+    title: page.title || ${JSON.stringify(siteTitle(input.ir))},
+    link: absoluteUrl(address, site) ?? '',
+    self: absoluteUrl(address + 'feed.xml', site) ?? '',
+    description: page.description ?? ${JSON.stringify(input.description ?? '')},
+    language: ${locale},
+    items,
+  })
+  return new Response(body, { headers: { 'Content-Type': 'application/rss+xml; charset=utf-8' } })
+}
+`
+}
+
 const sectionName = (collection: string) => collection.charAt(0).toUpperCase() + collection.slice(1).replace(/[-_]+/g, ' ')
 
 function siteTitle(ir: ProjectIR): string {
@@ -159,11 +226,15 @@ export interface FeedLinkResult {
   html: string
   /** Links now pointing at FEED_PATH. */
   rewritten: number
-  /** The site's other feed links (comments, a category, Atom) — not built, so they 404. */
+  /**
+   * The site's other feed links, removed: a category's, a tag's or an
+   * author's is the template page's own (each archive page links its feed
+   * itself), and a comments or Atom feed is not built.
+   */
   other: number
 }
 
-/** Point the head's link to the site's main feed at the one the build writes. */
+/** Point the head's link to the site's main feed at the one the build writes, and remove the template page's others. */
 export function rewriteFeedLinks(html: string, siteUrl: string): FeedLinkResult {
   let site: URL
   try {
@@ -177,7 +248,10 @@ export function rewriteFeedLinks(html: string, siteUrl: string): FeedLinkResult 
     const href = HREF_RE.exec(tag)
     const type = /\btype\s*=\s*["']?([^"'\s>]+)/i.exec(tag)?.[1] ?? ''
     const kind = href ? ownFeed(href[3] ?? '', type, site) : undefined
-    if (kind === 'other') other++
+    if (kind === 'other') {
+      other++
+      return ''
+    }
     if (kind !== 'main') return tag
     rewritten++
     return tag.replace(HREF_RE, `$1$2${FEED_PATH}$2`)

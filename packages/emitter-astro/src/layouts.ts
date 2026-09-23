@@ -171,7 +171,7 @@ export function familyFiles(
     const feed = rewriteFeedLinks(head, options.feedSite)
     head = feed.html
     if (feed.other) {
-      warnings.push(`family ${family.id}: ${feed.other} feed links in the head (comments, a category, Atom) name feeds the site does not build — they 404 on the migrated site`)
+      warnings.push(`family ${family.id}: removed ${feed.other} feed links from the head chrome — the template page's own archive feed, or a comments or Atom feed the site does not build; each archive page links its own feed`)
     }
   }
 

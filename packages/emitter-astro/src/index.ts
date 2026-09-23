@@ -8,7 +8,7 @@
 // by community emitters for other frameworks.
 
 import type { RouteModel } from '@contentrain/types'
-import type { EmitInput, EmitPost, EmitResult } from './types.js'
+import type { EmitInput, EmitPost, EmitResult, RawRedirect } from './types.js'
 import { DEFAULT_COLLECTION } from './types.js'
 import { scaffoldFiles } from './scaffold.js'
 import { imagesEnabled } from './images.js'
@@ -17,13 +17,13 @@ import { collectionItems, routeFiles, sharedCollectionPage } from './pages.js'
 import { componentFiles, isRuntimeImplemented } from './components.js'
 import { chromeComponents } from './chrome.js'
 import { SEO_COMPONENT } from './seo.js'
-import { withAlternates } from './alternates.js'
+import { entryPath, withAlternates } from './alternates.js'
 import { UI_STRINGS_DIR, uiStringsDir } from './ui-strings.js'
 import { wrapLegacyCss } from './css.js'
 import { stableJson, patternToPagePath } from './util.js'
 import { noindexPaths } from './noindex.js'
 import { astroRedirectsConfig, builtAddresses, HOST_RULE_LIMIT, hostRedirectFiles, planRedirects } from './redirects.js'
-import { FEED_PATH, FEED_REDIRECT_FROM, feedEndpoint, linkSources, llmsEndpoint, type LinkSource } from './feed.js'
+import { FEED_PATH, FEED_REDIRECT_FROM, archiveFeedEndpoint, archiveFeedFile, archiveFeedSources, feedEndpoint, linkSources, llmsEndpoint, type LinkSource } from './feed.js'
 
 /**
  * A supplied trail the build will not print — the same rule as \`validTrail\`
@@ -54,6 +54,15 @@ function sortedConfig<T>(config: Record<string, T>): Record<string, T> {
   return Object.fromEntries(Object.entries(config).toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
 }
 
+/** A redirect's from as its config key: percent-encoding decoded, as planRedirects writes it. */
+function decodedPath(from: string): string {
+  try {
+    return decodeURI(from)
+  } catch {
+    return from
+  }
+}
+
 export function emitAstroProject(input: EmitInput): EmitResult {
   const { ir } = input
   const warnings: string[] = []
@@ -80,6 +89,9 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   const linkable = ir.site.url ? linkSources(ir.routes, siteLang) : []
   const feedSource = input.options?.feed !== false ? linkable.find((s) => s.collection === DEFAULT_COLLECTION) : undefined
   const llmsOn = input.options?.llms !== false && linkable.length > 0
+  // Every archive page (a category, a tag, an author) gets its feed, as in WordPress.
+  const archiveFeeds = feedSource ? archiveFeedSources(ir.routes, siteLang) : []
+  const archiveFeedRoutes = new Set(archiveFeeds.map((a) => a.routeId))
   if (!ir.site.url && (input.options?.feed !== false || input.options?.llms !== false)) {
     warnings.push('site.url is empty — no RSS feed and no llms.txt are built; both name pages by absolute address')
   }
@@ -95,20 +107,48 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   // build writes — a real one from the host's redirect file; a static
   // redirect page, which feed readers do not follow, is only the fallback.
   // A rule the source itself holds for /feed/ wins.
-  const redirectConfig = { ...redirectPlan?.config }
-  const feedClaimed = Object.keys(redirectConfig).some((from) => from.replace(/\/+$/, '') === '/feed')
-    || builtAddresses(ir.routes, input.content ?? {}).has(FEED_REDIRECT_FROM)
-  if (feedSource && !feedClaimed) {
-    redirectConfig[FEED_REDIRECT_FROM] = { status: 301, destination: FEED_PATH }
+  // The feed addresses WordPress served: /feed/ and each archive page's
+  // <archive>/feed/, 301 to the feeds the build writes. They pass the same
+  // checks as the source's rules — never over a page the site builds, never
+  // a case twin of one — and a source rule for the same address wins.
+  const built = builtAddresses(ir.routes, input.content ?? {})
+  const sourceConfig = redirectPlan?.config ?? {}
+  const claimed = new Set(Object.keys(sourceConfig).map((from) => from.replace(/\/+$/, '').toLowerCase()))
+  const feedRules: RawRedirect[] = []
+  const addFeedRule = (from: string, to: string) => {
+    const key = from.replace(/\/+$/, '').toLowerCase()
+    if (claimed.has(key)) return
+    claimed.add(key)
+    feedRules.push({ from, to, status: 301 })
   }
+  if (feedSource) addFeedRule(FEED_REDIRECT_FROM, FEED_PATH)
+  for (const source of archiveFeeds) {
+    for (const page of input.content?.queries?.[source.query] ?? []) {
+      const address = entryPath(source.pattern, page.params)
+      if (address) addFeedRule(`${address}feed/`, `${address}feed.xml`)
+    }
+  }
+  const feedPlan = planRedirects(feedRules, built)
+  if (feedPlan.manual.length) {
+    warnings.push(`feed: ${feedPlan.manual.length} feed redirects not written — ${feedPlan.manual.map((m) => `${m.redirect.from} (${m.reason})`).join('; ')}`)
+  }
+  const redirectConfig = { ...sourceConfig, ...feedPlan.config }
   const hasRedirects = Object.keys(redirectConfig).length > 0
   add(scaffoldFiles(ir, input.options ?? {}, noindex, hasRedirects ? astroRedirectsConfig(sortedConfig(redirectConfig)) : null, input.runtime))
-  const hostRedirects = hasRedirects ? hostRedirectFiles(sortedConfig(redirectConfig), input.options?.redirectHost) : undefined
+  // Host files have a rule limit and keep the first rules: the source's own
+  // come first, the feeds' after, so an overflow drops a feed redirect.
+  // Among the feeds, /feed/ first, then the archives in their data order.
+  const feedOrder = new Map(feedRules.map((rule, index) => [decodedPath(rule.from), index]))
+  const feedKeys = Object.keys(feedPlan.config).toSorted((a, b) => (feedOrder.get(a) ?? 0) - (feedOrder.get(b) ?? 0))
+  const hostOrder = { ...sortedConfig(sourceConfig), ...Object.fromEntries(feedKeys.map((key) => [key, feedPlan.config[key]!])) }
+  const hostRedirects = hasRedirects ? hostRedirectFiles(hostOrder, input.options?.redirectHost) : undefined
   if (hostRedirects) {
     add(hostRedirects.files)
     if (hostRedirects.over_limit.length) {
       const limitedFiles = hostRedirects.written.filter((f) => !f.includes('(netlify)')).join(', ')
-      warnings.push(`redirects: ${hostRedirects.over_limit.length} rules not written to ${limitedFiles} — ${HOST_RULE_LIMIT / 2} rules (each path with and without its slash) fill Cloudflare Pages' 2,000 static and Vercel's 2,048 redirect limit. They are served by the meta-refresh fallback only; move them to the host's dynamic rules for a real status`)
+      const feedOver = hostRedirects.over_limit.filter((from) => from in feedPlan.config).length
+      const which = feedOver ? ` (${feedOver} of them feed redirects — /feed/ and archive feeds come after the site's own rules)` : ''
+      warnings.push(`redirects: ${hostRedirects.over_limit.length} rules not written to ${limitedFiles}${which} — ${HOST_RULE_LIMIT / 2} rules (each path with and without its slash) fill Cloudflare Pages' 2,000 static and Vercel's 2,048 redirect limit. They are served by the meta-refresh fallback only; move them to the host's dynamic rules for a real status`)
     }
     if (hostRedirects.skipped.length) {
       warnings.push(`redirects: ${hostRedirects.skipped.length} rules contain ":" or "*", which host redirect files read as patterns — served by the meta-refresh fallback only: ${hostRedirects.skipped.join(', ')}`)
@@ -274,7 +314,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   const pageOwner = new Map<string, RouteModel>()
   const collisions: { path: string, first: RouteModel, second: RouteModel }[] = []
   for (const route of ir.routes) {
-    const result = routeFiles(route, familiesById.get(route.family), routeContent, lang, seo)
+    const result = routeFiles(route, familiesById.get(route.family), routeContent, lang, seo, archiveFeedRoutes.has(route.id))
     for (const path of sharedPages.keys()) delete result.files[path]
     for (const path of Object.keys(result.files)) {
       if (!path.startsWith('src/pages/')) continue
@@ -350,6 +390,12 @@ export function emitAstroProject(input: EmitInput): EmitResult {
       add({ 'src/pages/feed.xml.ts': feedEndpoint(feedSource, feedInput) })
     } else {
       warnings.push(`feed: no posts data file was written, so no feed is built — the head's feed link points at ${FEED_PATH}, which 404s`)
+    }
+  }
+  for (const source of archiveFeeds) {
+    const file = archiveFeedFile(source.pattern)
+    if (file && feedSource && files[`src/data/queries/${source.query}.json`] !== undefined) {
+      add({ [file]: archiveFeedEndpoint(source, feedSource.pattern, feedInput) })
     }
   }
   if (llmsOn) {
