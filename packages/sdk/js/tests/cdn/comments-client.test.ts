@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { CommentsClient } from '../../src/cdn/comments-client.js'
-import { ContentrainError } from '../../src/cdn/errors.js'
+import { ContentrainError, isPaymentRequired } from '../../src/cdn/errors.js'
 import thread from '../fixtures/public-api/comments.read.response.json'
 import submitRequest from '../fixtures/public-api/comments.submit.request.json'
 import submitPending from '../fixtures/public-api/comments.submit.pending.response.json'
@@ -130,3 +130,15 @@ describe('CommentsClient', () => {
     expect((err as ContentrainError).message).toBe('Comments are closed for this entry')
   })
 })
+
+describe('CommentsClient — 402 payment_required (workspace billing locked)', () => {
+  it('rejects the thread read with the status and the machine code', async () => {
+    const locked = errors.comments.find((e) => e.statusCode === 402)!
+    vi.stubGlobal('fetch', mockFetch({ statusCode: 402, statusMessage: 'Server Error', message: locked.message, data: locked.data }, 402))
+    const err = await createClient().thread('posts', 'hello-world').catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(ContentrainError)
+    expect(err).toMatchObject({ status: 402, code: 'payment_required' })
+    expect(isPaymentRequired(err)).toBe(true)
+  })
+})
+

@@ -51,7 +51,7 @@ export async function createContentrainClient(
 export { createContentrain } from './cdn/index.js'
 export type { ContentrainCDNConfig, ContentrainCDNClient } from './cdn/index.js'
 export type { DocumentIndexEntry } from './cdn/data-source.js'
-export { ContentrainError } from './cdn/errors.js'
+export { ContentrainError, isPaymentRequired } from './cdn/errors.js'
 
 // CDN module re-exports — media, forms, comments, metadata
 export { MediaAccessor } from './cdn/media-accessor.js'
