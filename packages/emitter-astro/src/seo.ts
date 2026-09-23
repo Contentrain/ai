@@ -14,7 +14,7 @@
 
 /** Tags the emitter owns; a source copy of any of these is replaced, not duplicated. */
 const TITLE_RE = /<title\b[^>]*>[\s\S]*?<\/title>\s*/gi
-const META_RE = /<meta\b[^>]*\b(?:name|property)\s*=\s*["'](?:description|og:[^"']*|twitter:[^"']*)["'][^>]*>\s*/gi
+const META_RE = /<meta\b[^>]*\b(?:name|property)\s*=\s*["'](?:description|robots|googlebot|og:[^"']*|twitter:[^"']*)["'][^>]*>\s*/gi
 const CANONICAL_RE = /<link\b[^>]*\brel\s*=\s*["'][^"']*\bcanonical\b[^"']*["'][^>]*>\s*/gi
 /**
  * A translation link names the template page's translations. An RSS
@@ -279,6 +279,9 @@ interface Props {
   author?: string
   siteName?: string
   locale?: string
+  /** The page is kept out of search: \`<meta name="robots" content="noindex">\`. */
+  noindex?: boolean
+  nofollow?: boolean
 }
 
 const {
@@ -297,6 +300,8 @@ const {
   author,
   siteName,
   locale,
+  noindex = false,
+  nofollow = false,
 } = Astro.props
 
 const site = Astro.site
@@ -310,6 +315,7 @@ const hreflang = alternates.flatMap((a) => {
 })
 const localeAlternates = [...new Set(hreflang.map((a) => a.lang))].filter((l) => l !== 'x-default' && l !== locale)
 const desc = seoDescription(description)
+const robots = [noindex && 'noindex', nofollow && 'nofollow'].filter(Boolean).join(', ')
 const article = type === 'article'
 const structured = pageStructuredData({
   url,
@@ -329,6 +335,7 @@ const structured = pageStructuredData({
 })
 ---
 <title>{title}</title>
+{robots && <meta name="robots" content={robots} />}
 {desc && <meta name="description" content={desc} />}
 {url && <link rel="canonical" href={url} />}
 {hreflang.map((a) => <link rel="alternate" hreflang={a.lang} href={a.href} />)}

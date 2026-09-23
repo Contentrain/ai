@@ -86,6 +86,7 @@ at.
 | Structured data graph | One JSON-LD `@graph` per page: `WebPage` (`CollectionPage` on a list) with `@id` = the built address, `inLanguage` = the page `lang`, and `isPartOf` → the site's own WebSite `@id` when the kept head declares one (never an invented WebSite); a `BreadcrumbList` from `EmitPost.breadcrumbs` / `QueryPage.breadcrumbs` — the trail **without** the page, which the emitter appends at its own address; and on entries the `Article`, whose `mainEntityOfPage` is that `@id`. A trail with a crumb lacking a name or a site-root-relative path is dropped, with a warning. No trail, no BreadcrumbList. Without `site` there is no page node, only an entry's Article |
 | `<link rel="alternate" hreflang>`, `og:locale:alternate` | Entry pages whose content-store entry (`EmitPost.entry`) exists in another locale on the site. The address is computed from each route's own pattern and the post's parameters — the values `getStaticPaths` uses — and the language is the page's `lang` (post locale, else route locale, else site default). Every page lists itself; `x-default` is the version in the site's default locale. A post two routes generate, or an entry where two pages claim one language, gets none, with a warning. The template page's own hreflang links are removed from the head chrome |
 | `og:locale` | The page's `lang` |
+| `<meta name="robots">` | `noindex` / `nofollow` on `EmitPost` or `QueryPage` (the source page's robots, e.g. Yoast `robots.index`): `noindex`, `nofollow` or `noindex, nofollow`. Neither set, no tag. The template page's own `robots` and `googlebot` tags are removed from the head chrome, so one page's `noindex` cannot spread to every page |
 | `article:published_time` / `modified_time`, Article JSON-LD dates | `EmitPost.published_at` / `modified_at` (ISO 8601 — `dates` holds display strings, which schema.org cannot read) |
 
 Absolute URLs need `site` in `astro.config.mjs`, which the emitter fills from
@@ -124,6 +125,12 @@ Nothing is disallowed. A WordPress `robots.txt` typically keeps crawlers out of
 `/wp-admin/`; the migrated site has no such path. Without `site.url` there is no
 sitemap to name — the integration is not added, `robots.txt` carries no
 `Sitemap:` line (a relative one is invalid), and a warning says so.
+
+A `noindex` page is left out of the sitemap: the emitter computes its address
+from the route pattern and the entry's parameters (the values `getStaticPaths`
+builds the page from) and passes the list to `sitemap({ filter })`. This holds
+with `options.seo: false` too, and a warning then says the producer's head must
+carry the robots tag.
 
 `options.sitemap: false` leaves out both. It is independent of `options.seo`: a
 producer that writes its own meta tags has not thereby said it writes its own

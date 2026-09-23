@@ -4,8 +4,10 @@
 import type { DesignTokens, ProjectIR } from '@contentrain/types'
 import type { EmitOptions } from './types.js'
 import { stableJson } from './util.js'
+import { sitemapFilterDeclarations, sitemapIntegration } from './noindex.js'
 
-export function scaffoldFiles(ir: ProjectIR, options: EmitOptions): Record<string, string> {
+/** `noindex` holds the site-root paths the sitemap leaves out (see noindex.ts). */
+export function scaffoldFiles(ir: ProjectIR, options: EmitOptions, noindex: string[] = []): Record<string, string> {
   const tailwind = options.tailwind !== false
   const split = ir.viewport_strategy === 'split'
   // The sitemap integration needs an absolute site to build URLs from; without
@@ -43,6 +45,7 @@ export function scaffoldFiles(ir: ProjectIR, options: EmitOptions): Record<strin
     ...(tailwind ? [`import tailwindcss from '@tailwindcss/vite'`] : []),
     ...(sitemap ? [`import sitemap from '@astrojs/sitemap'`] : []),
     ``,
+    ...(sitemap ? sitemapFilterDeclarations(noindex) : []),
     `export default defineConfig({`,
     // Canonical URLs and sitemaps hang off \`site\` — for a migration, SEO
     // continuity is the point, so the source site's URL always lands here.
@@ -50,7 +53,7 @@ export function scaffoldFiles(ir: ProjectIR, options: EmitOptions): Record<strin
     // with no site the key is left out; the emitter warns about that instead.
     ...(ir.site.url ? [`  site: ${JSON.stringify(ir.site.url)},`] : []),
     `  build: { format: 'directory' },`,
-    ...(sitemap ? [`  integrations: [sitemap()],`] : []),
+    ...(sitemap ? [`  integrations: [${sitemapIntegration(noindex)}],`] : []),
     ...(tailwind ? [`  vite: { plugins: [tailwindcss()] },`] : []),
     `})`,
     ``,
@@ -546,6 +549,8 @@ export interface SeoInput {
   publishedAt?: string
   modifiedAt?: string
   author?: string
+  noindex?: boolean
+  nofollow?: boolean
 }
 
 /**
@@ -569,6 +574,8 @@ export function postSeo(post: EmittedPost): SeoInput {
     publishedAt: post.published_at,
     modifiedAt: post.modified_at,
     author: post.author,
+    noindex: post.noindex,
+    nofollow: post.nofollow,
   }
 }
 
@@ -595,6 +602,9 @@ export interface EmittedPost extends MarkablePost {
   locale?: string
   /** Present when the producer bound this post to the content store. */
   entry?: EntryRef
+  /** Kept out of search: robots meta, and no sitemap entry. */
+  noindex?: boolean
+  nofollow?: boolean
 }
 
 /** One static path of a list route, as it appears in the emitted query data. */
@@ -611,5 +621,7 @@ export interface EmittedQueryPage {
   image_meta?: ImageMeta
   canonical?: string
   breadcrumbs?: Breadcrumb[]
+  noindex?: boolean
+  nofollow?: boolean
 }
 `

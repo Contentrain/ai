@@ -20,6 +20,7 @@ import { withAlternates } from './alternates.js'
 import { UI_STRINGS_DIR, uiStringsDir } from './ui-strings.js'
 import { wrapLegacyCss } from './css.js'
 import { stableJson, patternToPagePath } from './util.js'
+import { noindexPaths } from './noindex.js'
 
 /**
  * A supplied trail the build will not print — the same rule as \`validTrail\`
@@ -49,10 +50,13 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     }
   }
 
-  add(scaffoldFiles(ir, input.options ?? {}))
-
   // Per-page SEO is on unless the producer owns those tags itself.
   const seo = input.options?.seo !== false
+  const noindex = noindexPaths(ir.routes, input.content ?? {})
+  add(scaffoldFiles(ir, input.options ?? {}, noindex))
+  if (noindex.length && !seo) {
+    warnings.push(`${noindex.length} noindex pages: options.seo is false, so no robots meta is emitted — the producer's head must carry it (they are still left out of the sitemap)`)
+  }
   if (seo) {
     add({ 'src/components/Seo.astro': SEO_COMPONENT })
     if (!ir.site.url) {
@@ -328,4 +332,5 @@ export { EMBED_TS } from './embed.js'
 export { UI_STRING_DEFAULTS, UI_STRINGS_DIR, UI_STRINGS_MODEL } from './ui-strings.js'
 export type { UiStringKey } from './ui-strings.js'
 export { checkBalance, balanceWarning } from './balance.js'
+export { noindexPaths } from './noindex.js'
 export type { BalanceReport } from './balance.js'
