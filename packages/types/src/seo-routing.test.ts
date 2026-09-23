@@ -13,6 +13,8 @@ import seoJson from './fixtures/bridge-b04/seo.json'
 import seoEntriesJson from './fixtures/bridge-b04/seo-entries.json'
 import routingJson from './fixtures/bridge-b04/routing.json'
 import redirectsJson from './fixtures/bridge-b04/redirects.json'
+import br16SeoJson from './fixtures/bridge-br16/seo.json'
+import br16EntriesJson from './fixtures/bridge-br16/seo-entries.json'
 
 // The Bridge's own output (fixtures/bridge-b04/README.md). A JSON import types
 // every string as `string`, so the check is structural: every key the producer
@@ -87,6 +89,31 @@ describe('RawSeoEntry — the Bridge-rendered block (BR-16)', () => {
     expect(SEO_PROVIDERS).toContain('seopress')
     const older: RawSeo = { status: 'present', serving: 'yoast', providers: { yoast: { status: 'active' }, rank_math: { status: 'absent' }, aioseo: { status: 'absent' } }, settings: {}, entries: {} }
     expect(older.providers.seopress).toBeUndefined()
+  })
+})
+
+describe('RawSeo against the Bridge BR-16 output (wordpress-bridge #18)', () => {
+  const seo = { ...br16SeoJson, entries: br16EntriesJson } as unknown as RawSeo
+
+  it('declares every key the Bridge writes, rendered blocks included', () => {
+    expect(undeclared(seo, SEO_KEYS)).toEqual([])
+    for (const settings of Object.values(seo.settings)) expect(undeclared(settings!, SEO_SETTINGS_KEYS)).toEqual([])
+    for (const byProvider of Object.values(seo.entries)) {
+      for (const entry of Object.values(byProvider)) {
+        expect(undeclared(entry!, SEO_ENTRY_KEYS)).toEqual([])
+        if (entry!.rendered) expect(undeclared(entry!.rendered, RENDERED_KEYS)).toEqual([])
+      }
+    }
+  })
+
+  it('names all four providers; the ones not serving the head are rendered by the Bridge, never with a top-level graph', () => {
+    expect(Object.keys(seo.providers).toSorted()).toEqual([...SEO_PROVIDERS].toSorted())
+    const post = seo.entries['post:23']!
+    expect(post.yoast!.resolved).toBe(true)
+    for (const provider of ['rank_math', 'aioseo', 'seopress'] as const) {
+      expect(post[provider]!.rendered_by).toBe('bridge')
+      expect(post[provider]!.schema?.graph).toBeUndefined()
+    }
   })
 })
 

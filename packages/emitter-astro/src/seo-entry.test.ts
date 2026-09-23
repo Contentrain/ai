@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -224,6 +225,24 @@ describe('seoFromRawEntry — a block the exporter rendered (BR-16)', () => {
     expect(seoFromRawEntry({ seopress: { title: '%%post_title%% %%sep%% %%sitetitle%%', description: 'Literal.' } })).toEqual({ description: 'Literal.' })
     // Behind the three older plugins in the fallback order, as it was added last.
     expect(seoFromRawEntry({ seopress: { title: 'S' }, aioseo: { title: 'A' } }).seo_title).toBe('A')
+  })
+})
+
+describe("seoFromRawEntry on the Bridge's real BR-16 output (wordpress-bridge #18)", () => {
+  const entry = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'types', 'src', 'fixtures', 'bridge-br16', 'seo-entries.json'), 'utf8'))['post:23'] as Partial<Record<'yoast' | 'rank_math' | 'aioseo' | 'seopress', RawSeoEntry>>
+  const TOKEN = /%%[a-z0-9_-]+%%|%[a-z_]+(?:\([^)]*\))?%|#(?:post_title|site_title|separator_sa|tagline|post_excerpt|taxonomy_title)\b/i
+
+  it('reads every provider block into fields, and no template token reaches them', () => {
+    for (const provider of ['yoast', 'rank_math', 'aioseo', 'seopress'] as const) {
+      const fields = seoFromRawEntry({ [provider]: entry[provider] }, { serving: provider })
+      expect(fields.seo_title, provider).toBeTruthy()
+      expect(TOKEN.test(JSON.stringify(fields)), provider).toBe(false)
+    }
+  })
+
+  it("the running plugin's graph is printed; a rendered Rank Math node stands in for its own", () => {
+    expect(seoFromRawEntry({ yoast: entry.yoast }).schema).toBe(entry.yoast!.schema!.graph)
+    expect(seoFromRawEntry({ rank_math: entry.rank_math }).schema).toEqual({ '@context': 'https://schema.org', '@graph': entry.rank_math!.rendered!.schema!.graph })
   })
 })
 

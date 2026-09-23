@@ -1,0 +1,351 @@
+{
+  "post:23": {
+    "aioseo": {
+      "description": "AIOSEO description",
+      "focus_keyword": "aioseo keyword",
+      "open_graph": {
+        "type": "default"
+      },
+      "rendered": {
+        "canonical": "http://localhost:8094/blog/2026/seo-custom-title-351f44/",
+        "description": "AIOSEO description",
+        "open_graph": {
+          "description": "AIOSEO description",
+          "image": "0",
+          "title": "SEO custom title - Bridge Acceptance"
+        },
+        "robots": {
+          "follow": "follow",
+          "index": "noindex"
+        },
+        "title": "SEO custom title - Bridge Acceptance",
+        "twitter": {
+          "description": "AIOSEO description",
+          "image": "0",
+          "title": "SEO custom title - Bridge Acceptance"
+        }
+      },
+      "rendered_by": "bridge",
+      "resolved": false,
+      "robots": {
+        "follow": "follow",
+        "index": "noindex"
+      },
+      "schema": {
+        "types": [
+          "FAQPage",
+          "WebPage"
+        ]
+      },
+      "stored": {
+        "canonical_url": null,
+        "description": "AIOSEO description",
+        "keyphrases": {
+          "focus": {
+            "keyphrase": "aioseo keyword"
+          }
+        },
+        "og_description": null,
+        "og_object_type": "default",
+        "og_title": null,
+        "robots_default": "0",
+        "robots_nofollow": "0",
+        "robots_noindex": "1",
+        "schema": {
+          "graphs": [
+            {
+              "graphName": "FAQPage"
+            }
+          ]
+        },
+        "schema_type": "WebPage",
+        "title": "#post_title #separator_sa #site_title",
+        "twitter_card": "default",
+        "twitter_title": null
+      },
+      "template_source": {
+        "description": "post",
+        "robots": "post",
+        "title": "post"
+      },
+      "title": "#post_title #separator_sa #site_title",
+      "twitter": {
+        "card": "default"
+      },
+      "unresolved": []
+    },
+    "rank_math": {
+      "description": "Rank Math description",
+      "focus_keyword": "rank math keyword",
+      "rendered": {
+        "canonical": "http://localhost:8094/blog/2026/seo-custom-title-351f44/",
+        "description": "Rank Math description",
+        "open_graph": {
+          "description": "Rank Math description",
+          "image": "0",
+          "title": "SEO custom title - Bridge Acceptance"
+        },
+        "robots": {
+          "follow": "nofollow",
+          "index": "noindex"
+        },
+        "schema": {
+          "graph": [
+            {
+              "@type": "BlogPosting",
+              "headline": "SEO custom title - Bridge Acceptance"
+            }
+          ]
+        },
+        "title": "SEO custom title - Bridge Acceptance",
+        "twitter": {
+          "description": "Rank Math description",
+          "image": "0",
+          "title": "SEO custom title - Bridge Acceptance"
+        }
+      },
+      "rendered_by": "bridge",
+      "resolved": false,
+      "robots": {
+        "follow": "nofollow",
+        "index": "noindex"
+      },
+      "schema": {
+        "types": [
+          "BlogPosting"
+        ]
+      },
+      "stored": {
+        "description": "Rank Math description",
+        "focus_keyword": "rank math keyword",
+        "robots": [
+          "noindex",
+          "nofollow"
+        ],
+        "schema_BlogPosting": {
+          "@type": "BlogPosting",
+          "headline": "%seo_title%"
+        },
+        "title": "%title% %sep% %sitename%"
+      },
+      "template_source": {
+        "description": "post",
+        "robots": "post",
+        "title": "post"
+      },
+      "title": "%title% %sep% %sitename%",
+      "unresolved": []
+    },
+    "seopress": {
+      "description": "SEOPress description",
+      "rendered": {
+        "canonical": "http://localhost:8094/blog/2026/seo-custom-title-351f44/",
+        "description": "SEOPress description",
+        "open_graph": {
+          "description": "SEOPress description",
+          "image": "0",
+          "title": "SEO custom title · Bridge Acceptance"
+        },
+        "robots": {
+          "follow": "follow",
+          "index": "noindex"
+        },
+        "title": "SEO custom title · Bridge Acceptance",
+        "twitter": {
+          "description": "SEOPress description",
+          "image": "0",
+          "title": "SEO custom title · Bridge Acceptance"
+        }
+      },
+      "rendered_by": "bridge",
+      "resolved": false,
+      "robots": {
+        "index": "noindex"
+      },
+      "stored": {
+        "robots_index": "yes",
+        "titles_desc": "SEOPress description",
+        "titles_title": "%%post_title%% %%sep%% %%sitetitle%%"
+      },
+      "template_source": {
+        "description": "post",
+        "robots": "post",
+        "title": "post"
+      },
+      "title": "%%post_title%% %%sep%% %%sitetitle%%",
+      "unresolved": []
+    },
+    "yoast": {
+      "canonical": "http://localhost:8094/blog/2026/seo-custom-title-351f44/",
+      "description": "A description written by hand, with \"quotes\" & ampersands.",
+      "focus_keyword": "custom title keyword",
+      "open_graph": {
+        "description": "A description written by hand, with \"quotes\" & ampersands.",
+        "site_name": "Bridge Acceptance",
+        "title": "Custom SEO custom title | Bridge Acceptance",
+        "type": "article",
+        "url": "http://localhost:8094/blog/2026/seo-custom-title-351f44/"
+      },
+      "resolved": true,
+      "robots": {
+        "advanced": [
+          "max-snippet:-1",
+          "max-image-preview:large",
+          "max-video-preview:-1"
+        ],
+        "follow": "follow",
+        "index": "index"
+      },
+      "robots_served": [
+        "index",
+        "follow",
+        "max-image-preview:large",
+        "max-snippet:-1",
+        "max-video-preview:-1"
+      ],
+      "schema": {
+        "graph": {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@id": "http://localhost:8094/blog/2026/seo-custom-title-351f44/#article",
+              "@type": "Article",
+              "articleSection": [
+                "SEO Topic 351f44"
+              ],
+              "author": {
+                "@id": "http://localhost:8094/#/schema/person/9775b6441ae05bbc8c483a71b02d9682",
+                "name": "bridge-admin"
+              },
+              "commentCount": 0,
+              "datePublished": "2026-09-23T21:55:20+00:00",
+              "headline": "SEO custom title",
+              "inLanguage": "en-US",
+              "isPartOf": {
+                "@id": "http://localhost:8094/blog/2026/seo-custom-title-351f44/"
+              },
+              "mainEntityOfPage": {
+                "@id": "http://localhost:8094/blog/2026/seo-custom-title-351f44/"
+              },
+              "potentialAction": [
+                {
+                  "@type": "CommentAction",
+                  "name": "Comment",
+                  "target": [
+                    "http://localhost:8094/blog/2026/seo-custom-title-351f44/#respond"
+                  ]
+                }
+              ],
+              "wordCount": 103
+            },
+            {
+              "@id": "http://localhost:8094/blog/2026/seo-custom-title-351f44/",
+              "@type": "WebPage",
+              "author": {
+                "@id": "http://localhost:8094/#/schema/person/9775b6441ae05bbc8c483a71b02d9682"
+              },
+              "breadcrumb": {
+                "@id": "http://localhost:8094/blog/2026/seo-custom-title-351f44/#breadcrumb"
+              },
+              "datePublished": "2026-09-23T21:55:20+00:00",
+              "description": "A description written by hand, with \"quotes\" & ampersands.",
+              "inLanguage": "en-US",
+              "isPartOf": {
+                "@id": "http://localhost:8094/#website"
+              },
+              "name": "Custom SEO custom title | Bridge Acceptance",
+              "potentialAction": [
+                {
+                  "@type": "ReadAction",
+                  "target": [
+                    "http://localhost:8094/blog/2026/seo-custom-title-351f44/"
+                  ]
+                }
+              ],
+              "url": "http://localhost:8094/blog/2026/seo-custom-title-351f44/"
+            },
+            {
+              "@id": "http://localhost:8094/blog/2026/seo-custom-title-351f44/#breadcrumb",
+              "@type": "BreadcrumbList",
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "item": "http://localhost:8094/",
+                  "name": "Home",
+                  "position": 1
+                },
+                {
+                  "@type": "ListItem",
+                  "name": "SEO custom title",
+                  "position": 2
+                }
+              ]
+            },
+            {
+              "@id": "http://localhost:8094/#website",
+              "@type": "WebSite",
+              "description": "",
+              "inLanguage": "en-US",
+              "name": "Bridge Acceptance",
+              "potentialAction": [
+                {
+                  "@type": "SearchAction",
+                  "query-input": {
+                    "@type": "PropertyValueSpecification",
+                    "valueName": "search_term_string",
+                    "valueRequired": true
+                  },
+                  "target": {
+                    "@type": "EntryPoint",
+                    "urlTemplate": "http://localhost:8094/?s={search_term_string}"
+                  }
+                }
+              ],
+              "url": "http://localhost:8094/"
+            },
+            {
+              "@id": "http://localhost:8094/#/schema/person/9775b6441ae05bbc8c483a71b02d9682",
+              "@type": "Person",
+              "image": {
+                "@id": "https://secure.gravatar.com/avatar/de5d95097b98baafa213ef451a7e65976903e719225c24e2c2d35bf39bf2be25?s=96&d=mm&r=g",
+                "@type": "ImageObject",
+                "caption": "bridge-admin",
+                "contentUrl": "https://secure.gravatar.com/avatar/de5d95097b98baafa213ef451a7e65976903e719225c24e2c2d35bf39bf2be25?s=96&d=mm&r=g",
+                "inLanguage": "en-US",
+                "url": "https://secure.gravatar.com/avatar/de5d95097b98baafa213ef451a7e65976903e719225c24e2c2d35bf39bf2be25?s=96&d=mm&r=g"
+              },
+              "name": "bridge-admin",
+              "sameAs": [
+                "http://localhost:8094"
+              ],
+              "url": "http://localhost:8094/blog/author/bridge-admin/"
+            }
+          ]
+        },
+        "types": [
+          "Article",
+          "BreadcrumbList",
+          "CommentAction",
+          "EntryPoint",
+          "ImageObject",
+          "ListItem",
+          "Person",
+          "PropertyValueSpecification",
+          "ReadAction",
+          "SearchAction",
+          "WebPage",
+          "WebSite"
+        ]
+      },
+      "stored": {
+        "focuskw": "custom title keyword",
+        "metadesc": "A description written by hand, with \"quotes\" & ampersands.",
+        "title": "Custom %%title%% %%sep%% %%sitename%%"
+      },
+      "title": "Custom SEO custom title | Bridge Acceptance",
+      "twitter": {
+        "card": "summary_large_image"
+      }
+    }
+  }
+}
