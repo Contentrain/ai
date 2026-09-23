@@ -57,6 +57,8 @@ export interface FamilyOptions {
    * import of a data file that was never supplied.
    */
   boundQueries?: ReadonlySet<string>
+  /** Run the page's content through the build-time image pass (src/lib/optimize-images.ts). */
+  images?: boolean
 }
 
 export function familyFiles(
@@ -222,7 +224,7 @@ const parts = splitComponents(html).map((part) => ({
 // Family: ${family.id}${family.name ? ` (${family.name})` : ''} — emitted by @contentrain/emitter-astro
 import chrome from '../data/chrome/${family.id}.json'
 import { cssHref, fillAttrs, renderTemplate, composeBody${mounts.length ? ', splitComponents' : ''}${queryMounts.length ? ', renderQuery, type EmittedQueryPage' : ''}${seoOn ? ', type SeoInput' : ''} } from '../lib/fill'
-${queryImports}${queryImports ? '\n' : ''}
+${options.images ? `import { optimizeHtmlImages } from '../lib/optimize-images'\n` : ''}${queryImports}${queryImports ? '\n' : ''}
 ${componentImports ? `${componentImports}\n` : ''}
 interface Props {
   title?: string
@@ -244,7 +246,11 @@ const head = renderTemplate(chrome.head, marks)
 // An explicit lang from the source wins over the project default.
 const htmlAttrs = { lang, ...fillAttrs(chrome.html_attrs, marks) }
 const bodyAttrs = fillAttrs(chrome.body_attrs, marks)
-const content = body ?? (Astro.slots.has('default') ? await Astro.slots.render('default') : '')
+${options.images
+  ? `// Content images get srcset, WebP, size and lazy loading at build time; the
+// theme chrome around them is left as the source had it.
+const content = await optimizeHtmlImages(body ?? (Astro.slots.has('default') ? await Astro.slots.render('default') : ''))`
+  : `const content = body ?? (Astro.slots.has('default') ? await Astro.slots.render('default') : '')`}
 // Split at the marker FIRST, then fill marks per side — filling first would
 // eat the @@body@@ inside the marker and silently drop the content.
 const html = composeBody(chrome.body, marks, content)
