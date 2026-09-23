@@ -6,8 +6,11 @@ import type { EmitOptions } from './types.js'
 import { stableJson } from './util.js'
 import { sitemapFilterDeclarations, sitemapIntegration } from './noindex.js'
 
-/** `noindex` holds the site-root paths the sitemap leaves out (see noindex.ts). */
-export function scaffoldFiles(ir: ProjectIR, options: EmitOptions, noindex: string[] = []): Record<string, string> {
+/**
+ * `noindex` holds the site-root paths the sitemap leaves out (see noindex.ts);
+ * `redirectsConfig` is the `redirects` block for astro.config.mjs (see redirects.ts).
+ */
+export function scaffoldFiles(ir: ProjectIR, options: EmitOptions, noindex: string[] = [], redirectsConfig: string | null = null): Record<string, string> {
   const tailwind = options.tailwind !== false
   const split = ir.viewport_strategy === 'split'
   // The sitemap integration needs an absolute site to build URLs from; without
@@ -53,6 +56,7 @@ export function scaffoldFiles(ir: ProjectIR, options: EmitOptions, noindex: stri
     // with no site the key is left out; the emitter warns about that instead.
     ...(ir.site.url ? [`  site: ${JSON.stringify(ir.site.url)},`] : []),
     `  build: { format: 'directory' },`,
+    ...(redirectsConfig ? [redirectsConfig] : []),
     ...(sitemap ? [`  integrations: [${sitemapIntegration(noindex)}],`] : []),
     ...(tailwind ? [`  vite: { plugins: [tailwindcss()] },`] : []),
     `})`,

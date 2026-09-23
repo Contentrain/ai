@@ -1,0 +1,166 @@
+// The live site's own redirect rules → Astro's `redirects` config (AI-11).
+//
+// Only a plain one-to-one rule can be written: `match` absent or `url`, not a
+// regular expression, a site-root `from` without a query string, and a
+// status Astro serves as a redirect. Everything else is returned with its
+// reason as a rule to set up by hand at the host. Turning a pattern into a
+// literal `from` would produce a redirect that matches the wrong address, so
+// the emitter never guesses.
+//
+// A rule whose `from` is an address the migrated site builds a page at is
+// not written either: the page holds the content. Astro does not refuse the
+// pair — the redirect is written over the page and the build reports no
+// error, so the page would vanish silently.
+//
+// In a static build Astro serves a redirect as an HTML page with a
+// meta refresh, `noindex` and a canonical link to the target; the status
+// reaches crawlers only through a host adapter that writes the host's own
+// redirect file.
+
+import type { RawRedirect, RouteModel } from '@contentrain/types'
+import type { EmitContent } from './types.js'
+import { DEFAULT_COLLECTION } from './types.js'
+import { entryPath } from './alternates.js'
+import { collectionItems } from './pages.js'
+import { patternToPagePath } from './util.js'
+
+/** The statuses written to `astro.config`; any other is a manual rule. */
+export const REDIRECT_STATUSES = [301, 302, 307, 308] as const
+export type RedirectStatus = typeof REDIRECT_STATUSES[number]
+
+/** A rule the emitter did not write, with why. */
+export interface ManualRedirect {
+  redirect: RawRedirect
+  reason: string
+}
+
+export interface RedirectPlan {
+  /** `from` → rule, as `astro.config` `redirects` takes it. Sorted by `from`. */
+  config: Record<string, { status: RedirectStatus; destination: string }>
+  /** The input rules written, in input order. */
+  written: RawRedirect[]
+  /** The rules to set up by hand at the host, in input order. */
+  manual: ManualRedirect[]
+}
+
+/** Whitespace, a control character or DEL anywhere in the string. */
+const hasControlOrSpace = (value: string): boolean =>
+  [...value].some((char) => char.charCodeAt(0) <= 32 || char.charCodeAt(0) === 127)
+
+/** `/old/` and `/old` are one address in the directory build format. */
+function addressKey(path: string): string {
+  return path === '/' ? '/' : `${path.replace(/\/+$/, '')}/`
+}
+
+/**
+ * Every address the emitted site builds a page at, as `addressKey`s, with the
+ * route that owns it. Single and collection routes build one page per entry,
+ * query routes one per result set, and a route without parameters one page.
+ */
+export function builtAddresses(routes: RouteModel[], content: EmitContent): Map<string, string> {
+  const out = new Map<string, string>()
+  const put = (path: string | null, routeId: string) => {
+    if (path !== null && !out.has(addressKey(path))) out.set(addressKey(path), routeId)
+  }
+  for (const route of routes) {
+    const pagePath = patternToPagePath(route.pattern)
+    if (!pagePath) continue
+    if (!pagePath.includes('[')) {
+      put(entryPath(route.pattern, {}), route.id)
+      continue
+    }
+    if (route.kind === 'single' || route.collection !== undefined) {
+      for (const post of collectionItems(content, route.collection ?? DEFAULT_COLLECTION)) {
+        put(entryPath(route.pattern, { ...post.params, slug: post.slug }), route.id)
+      }
+    }
+    if (route.query) {
+      for (const page of content.queries?.[route.query] ?? []) put(entryPath(route.pattern, page.params), route.id)
+    }
+  }
+  return out
+}
+
+/** The decoded path for a literal Astro redirect key, or why `from` cannot be one. */
+function checkFrom(from: string): { path: string } | { reason: string } {
+  if (!from.startsWith('/') || from.startsWith('//')) return { reason: 'from is not a site-root path' }
+  if (/[?#]/.test(from)) return { reason: 'from has a query string or fragment — a static redirect matches the path only' }
+  let path: string
+  try {
+    path = decodeURI(from)
+  }
+  catch {
+    return { reason: 'from is not a valid percent-encoded path' }
+  }
+  if (hasControlOrSpace(path) || path.includes('\\')) return { reason: 'from contains whitespace, control characters or a backslash' }
+  // Astro reads brackets in a route as parameters.
+  if (/[[\]]/.test(path)) return { reason: 'from contains [ or ], which Astro reads as a route parameter' }
+  const segments = path.split('/').filter(Boolean)
+  if (segments.some((s) => s === '.' || s === '..')) return { reason: 'from contains a . or .. segment' }
+  // The directory build writes a redirect as `<from>/index.html`; a host
+  // serving `/old.php` looks for that file, not the directory.
+  if (/\.[a-z0-9]{1,5}$/i.test(segments.at(-1) ?? '')) return { reason: 'from ends in a file name — the static build serves it as a directory, not at this address' }
+  return { path }
+}
+
+function checkTo(to: string): boolean {
+  if (hasControlOrSpace(to)) return false
+  if (to.startsWith('/')) return !to.startsWith('//')
+  try {
+    const url = new URL(to)
+    return url.protocol === 'https:' || url.protocol === 'http:'
+  }
+  catch {
+    return false
+  }
+}
+
+/**
+ * Split the rules into what `astro.config` serves and what the host has to.
+ * `built` is `builtAddresses` of the emitted routes.
+ */
+export function planRedirects(redirects: RawRedirect[], built: Map<string, string>): RedirectPlan {
+  const config: RedirectPlan['config'] = {}
+  const written: RawRedirect[] = []
+  const manual: ManualRedirect[] = []
+  const claimed = new Set<string>()
+
+  for (const redirect of redirects) {
+    const skip = (reason: string) => manual.push({ redirect, reason })
+    if (redirect.regex) { skip('from is a regular expression'); continue }
+    if (redirect.match !== undefined && redirect.match !== 'url') { skip(`match "${redirect.match}" is a pattern, not one address`); continue }
+    const status = redirect.status ?? 301
+    if (!(REDIRECT_STATUSES as readonly number[]).includes(status)) { skip(`status ${status} is not one of ${REDIRECT_STATUSES.join('/')}`); continue }
+    const from = checkFrom(redirect.from)
+    if ('reason' in from) { skip(from.reason); continue }
+    if (!checkTo(redirect.to)) { skip('to is not a site-root path or an http(s) URL'); continue }
+    const key = addressKey(from.path)
+    const owner = built.get(key)
+    if (owner !== undefined) { skip(`the migrated site builds a page at ${key} (route ${owner}) — the page is kept`); continue }
+    if (claimed.has(key)) { skip(`another rule already redirects ${key}`); continue }
+    if (!/^https?:/.test(redirect.to)) {
+      let target: string
+      try {
+        target = decodeURI(redirect.to.replace(/[?#].*$/, ''))
+      }
+      catch {
+        target = redirect.to
+      }
+      if (addressKey(target) === key) { skip('to is the same address as from'); continue }
+    }
+    claimed.add(key)
+    config[from.path] = { status: status as RedirectStatus, destination: redirect.to }
+    written.push(redirect)
+  }
+
+  const sorted = Object.fromEntries(Object.entries(config).toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+  return { config: sorted, written, manual }
+}
+
+/** The `redirects` line for astro.config.mjs, or null when there is nothing to write. */
+export function astroRedirectsConfig(config: RedirectPlan['config']): string | null {
+  const entries = Object.entries(config)
+  if (!entries.length) return null
+  const lines = entries.map(([from, rule]) => `    ${JSON.stringify(from)}: { status: ${rule.status}, destination: ${JSON.stringify(rule.destination)} },`)
+  return [`  redirects: {`, ...lines, `  },`].join('\n')
+}

@@ -1,4 +1,4 @@
-import type { EntrySourceRef, ProjectIR, RuntimeBinding } from '@contentrain/types'
+import type { EntrySourceRef, ProjectIR, RawRedirect, RuntimeBinding } from '@contentrain/types'
 
 // ─── Emit input ───
 
@@ -249,6 +249,13 @@ export interface EmitInput {
    * complete without any runtime offer being accepted.
    */
   runtime?: RuntimeBinding
+  /**
+   * The live site's redirect rules (`RawIR.redirects`). Plain one-to-one rules
+   * are written to `astro.config` `redirects`; patterns, regular expressions,
+   * other statuses and rules on an address the site builds a page at come
+   * back in `EmitResult.redirects.manual` with the reason, to set up at the host.
+   */
+  redirects?: RawRedirect[]
 }
 
 // ─── Emit output ───
@@ -261,6 +268,11 @@ export interface EmitInput {
 export interface EmitResult {
   files: Record<string, string>
   warnings: string[]
+  /** Present when `EmitInput.redirects` was given: what was written and what was not, with why. */
+  redirects?: {
+    written: RawRedirect[]
+    manual: Array<{ redirect: RawRedirect; reason: string }>
+  }
 }
 
-export type { ProjectIR, RuntimeBinding, EntrySourceRef }
+export type { ProjectIR, RawRedirect, RuntimeBinding, EntrySourceRef }

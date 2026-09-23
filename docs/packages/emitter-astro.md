@@ -156,6 +156,28 @@ A theme's "recent posts" block, cloned, freezes on the day of the migration. `Co
 
 What those components say to a visitor comes from the site's `ui-strings` dictionary (`.contentrain/content/site/ui-strings/{locale}.json`), read at build time for the page's language — see [What the thread and the form say](/guides/forms-comments#what-the-thread-and-the-form-say). `UI_STRINGS_MODEL` and `UI_STRING_DEFAULTS` are exported so a producer creates the dictionary the site reads.
 
+## Redirects
+
+`input.redirects` takes the live site's own redirect rules (`RawIR.redirects`). Only rules that map one address to one address are written to `astro.config.mjs` `redirects`:
+
+| Condition | Written when |
+|---|---|
+| `match` | absent or `url`, and `regex` not set |
+| `status` | 301, 302, 307 or 308 (absent = 301) |
+| `from` | a site-root path: no query string or fragment, no `[` / `]`, not ending in a file name. Percent-encoding is decoded |
+| `to` | a site-root path or an `http(s)` URL |
+| address | the migrated site builds no page there, and no earlier rule claims it |
+
+Everything else comes back in `EmitResult.redirects.manual`, each rule with its reason, plus one warning with the count. Those rules have to be set up at the host. A pattern turned into a literal `from` would redirect the wrong address, so the emitter never guesses.
+
+::: warning A redirect on a page's address would erase the page
+Astro does not refuse a redirect whose `from` is a page it builds: it writes the redirect over the page and the build reports no error. The emitter therefore keeps the page and returns the rule.
+:::
+
+A file-like `from` (`/old.php`) is returned because the directory build writes it as `/old.php/index.html`, which a host does not serve at `/old.php`.
+
+In a static build Astro serves each redirect as an HTML page with a meta refresh, `noindex`, and a canonical link to the target. The HTTP status reaches crawlers only through a host adapter that writes the host's own redirect file.
+
 ## Route collisions fail the build
 
 WordPress serves posts and pages from the same root and tells them apart in the database. A static generator cannot, so a posts route at `/:slug*` and a pages family at `/:slug*` resolve to the same Astro file.

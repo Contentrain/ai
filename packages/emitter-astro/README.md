@@ -160,6 +160,35 @@ body and runtime entry address. Missing or ambiguous data fails the Astro build.
 Dynamic routes continue to use `getStaticPaths`. Generated tsconfig files exclude
 `public`, `dist`, and `node_modules`, so copied WordPress assets are not typechecked.
 
+## Redirects
+
+`input.redirects` takes the live site's own redirect rules (`RawIR.redirects`,
+e.g. what the Bridge reads from Redirection, Yoast Premium, Rank Math, Safe
+Redirect Manager and `_wp_old_slug`). The emitter writes only rules that are
+one address to one address:
+
+- `match` absent or `url`, and not `regex`;
+- status 301, 302, 307 or 308 (absent means 301);
+- `from` a site-root path with no query string, no `[`/`]`, and not ending in a
+  file name (the directory build writes `/old.php` as `/old.php/index.html`,
+  which a host does not serve at `/old.php`);
+- `to` a site-root path or an `http(s)` URL.
+
+Those go to `astro.config.mjs` `redirects`, sorted by `from`, with the
+percent-encoding decoded. Everything else comes back in
+`EmitResult.redirects.manual` with its reason, and one warning gives the count:
+those rules have to be set up at the host. A pattern turned into a literal
+`from` would redirect the wrong address, so the emitter never guesses.
+
+A rule on an address the migrated site builds a page at is not written either;
+the page is kept and the rule is returned. Astro does not refuse that pair: it
+writes the redirect over the page without an error. Duplicate `from`s keep the
+first rule, and a rule that points at its own address is returned.
+
+In a static build Astro serves each redirect as an HTML page with a meta
+refresh, `noindex`, and a canonical link to the target. The HTTP status reaches
+crawlers only through a host adapter that writes the host's redirect file.
+
 ## Route collisions
 
 WordPress serves posts and pages from the same root and tells them apart in the
