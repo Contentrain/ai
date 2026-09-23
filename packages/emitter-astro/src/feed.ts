@@ -127,6 +127,9 @@ ${sections.join('\n')}
 const FEED_LINK_RE = /<link\b(?=[^>]*\brel\s*=\s*["']?[^"'>]*\balternate\b)(?=[^>]*\btype\s*=\s*["']?application\/(?:rss|atom)\+xml)[^>]*>/gi
 const HREF_RE = /(\bhref\s*=\s*)(["'])([^"']*)\2/i
 
+/** www. and the bare host are one site: a WordPress head often names the other. */
+const siteHost = (url: URL) => url.host.toLowerCase().replace(/^www\./, '')
+
 /**
  * The feed a head link names, when it is one of the site's own: `main` for
  * WordPress's main RSS feed (/feed/, /feed/rss2/, ?feed=rss2), `other` for
@@ -140,9 +143,7 @@ function ownFeed(href: string, type: string, site: URL): 'main' | 'other' | unde
   } catch {
     return undefined
   }
-  // www. and the bare host are one site: a WordPress head often names the other.
-  const host = (u: URL) => u.host.toLowerCase().replace(/^www\./, '')
-  if (host(url) !== host(site)) return undefined
+  if (siteHost(url) !== siteHost(site)) return undefined
   const path = url.pathname.replace(/\/+$/, '')
   const query = url.searchParams.get('feed')
   const main = path === '/feed' || path === '/feed/rss2' || path === '/feed/rss' || (path === '' && (query === 'rss2' || query === 'rss'))
