@@ -74,28 +74,46 @@ export type ImageOptimizer = (
   hints: { width?: number; height?: number },
 ) => Promise<OptimizedImage | null>
 
-const IMG_TAG = /<img\\b[^>]*>/gi
+// Quoted attribute values may hold a ">" (alt="a > b"); the tag ends at the
+// first ">" outside quotes.
+const IMG_TAG = /<img\\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi
 const ATTR = /([^\\s=/>]+)(?:\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>"']+)))?/g
 const SKIP_EXT = /\\.(svg|gif)(?:$|[?#])/i
 
+// Attribute values are kept as the source wrote them (entities and all) and
+// written back unchanged; only values this pass sets are escaped. Reading a
+// value decodes it: a WordPress src like "photo.jpg?w=800&amp;ssl=1" is the
+// URL "photo.jpg?w=800&ssl=1".
 function parseAttrs(tag: string): Array<[string, string | null]> {
   const inner = tag.replace(/^<img\\b/i, '').replace(/\\/?>$/, '')
   const attrs: Array<[string, string | null]> = []
   for (const m of inner.matchAll(ATTR)) {
     const name = m[1]
     if (!name) continue
-    const value = m[2] ?? m[3] ?? m[4]
+    const value = m[2] ?? (m[3] === undefined ? m[4] : m[3].replace(/"/g, '&quot;'))
     attrs.push([name, value === undefined ? null : value])
   }
   return attrs
 }
 
+const NAMED: Record<string, string> = { amp: '&', quot: '"', apos: "'", lt: '<', gt: '>' }
+
+function decodeAttr(value: string): string {
+  return value.replace(/&(?:#(\\d+)|#x([0-9a-f]+)|([a-z]+));/gi, (entity, dec, hex, name) => {
+    if (dec || hex) {
+      const code = dec ? Number(dec) : parseInt(hex, 16)
+      return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : entity
+    }
+    return NAMED[name.toLowerCase()] ?? entity
+  })
+}
+
 function escapeAttr(value: string): string {
-  return value.replace(/&(?!(?:[a-z]+|#\\d+|#x[0-9a-f]+);)/gi, '&amp;').replace(/"/g, '&quot;')
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
 }
 
 function serialize(attrs: Array<[string, string | null]>): string {
-  return \`<img\${attrs.map(([n, v]) => (v === null ? \` \${n}\` : \` \${n}="\${escapeAttr(v)}"\`)).join('')}>\`
+  return \`<img\${attrs.map(([n, v]) => (v === null ? \` \${n}\` : \` \${n}="\${v}"\`)).join('')}>\`
 }
 
 function positiveInt(value: string | null | undefined): number | undefined {
@@ -120,12 +138,19 @@ export async function rewriteImages(
   for (let index = 0; index < tags.length; index++) {
     const tag = tags[index]!
     const attrs = parseAttrs(tag)
-    const get = (name: string) => attrs.find(([n]) => n.toLowerCase() === name)?.[1]
+    const get = (name: string) => {
+      const raw = attrs.find(([n]) => n.toLowerCase() === name)?.[1]
+      return raw == null ? raw : decodeAttr(raw)
+    }
     const has = (name: string) => attrs.some(([n]) => n.toLowerCase() === name)
     const set = (name: string, value: string) => {
       const i = attrs.findIndex(([n]) => n.toLowerCase() === name)
-      if (i >= 0) attrs[i] = [attrs[i]![0], value]
-      else attrs.push([name, value])
+      if (i >= 0) attrs[i] = [attrs[i]![0], escapeAttr(value)]
+      else attrs.push([name, escapeAttr(value)])
+    }
+    const remove = (name: string) => {
+      const i = attrs.findIndex(([n]) => n.toLowerCase() === name)
+      if (i >= 0) attrs.splice(i, 1)
     }
 
     if (!has('loading')) {
@@ -144,6 +169,11 @@ export async function rewriteImages(
           if (result.srcset) {
             set('srcset', result.srcset)
             if (!has('sizes')) set('sizes', options.sizes)
+          } else {
+            // The source's own srcset (WordPress's size variants) would win
+            // over the optimized src in every browser that reads srcset.
+            remove('srcset')
+            remove('sizes')
           }
           if (result.width && result.height && !has('width') && !has('height')) {
             set('width', String(result.width))
@@ -174,6 +204,36 @@ const PATTERNS: Array<{ protocol: string; hostname: string; pathname?: string }>
 const WIDTHS = ${JSON.stringify(widths.toSorted((a, b) => a - b))}
 const SIZES = ${JSON.stringify(sizes)}
 
+// Astro downloads a remote image when the build writes its assets — after
+// this pass, outside its error handling — and one image that does not answer
+// 200 fails the whole astro build. So an image is only handed to getImage()
+// once it answered with an image here; anything else keeps its original URL.
+// One check per URL per build.
+const CHECK_TIMEOUT_MS = 10_000
+const checked = new Map<string, Promise<boolean>>()
+
+async function answersWithImage(src: string, method: 'HEAD' | 'GET'): Promise<boolean | null> {
+  try {
+    const res = await fetch(src, { method, redirect: 'follow', signal: AbortSignal.timeout(CHECK_TIMEOUT_MS) })
+    if (method === 'GET') await res.body?.cancel()
+    // Some hosts refuse HEAD; ask again with GET.
+    if (method === 'HEAD' && (res.status === 405 || res.status === 501 || res.status === 403)) return null
+    return res.ok && (res.headers.get('content-type') ?? '').toLowerCase().startsWith('image/')
+  }
+  catch {
+    return method === 'HEAD' ? null : false
+  }
+}
+
+function reachable(src: string): Promise<boolean> {
+  let pending = checked.get(src)
+  if (!pending) {
+    pending = answersWithImage(src, 'HEAD').then((ok) => ok ?? answersWithImage(src, 'GET').then((retry) => retry === true))
+    checked.set(src, pending)
+  }
+  return pending
+}
+
 function allowed(src: string): boolean {
   let url: URL
   try {
@@ -191,7 +251,7 @@ function allowed(src: string): boolean {
 export async function optimizeHtmlImages(html: string): Promise<string> {
   if (!html.includes('<img')) return html
   return rewriteImages(html, async (src, hints) => {
-    if (!allowed(src)) return null
+    if (!allowed(src) || !(await reachable(src))) return null
     const sized = hints.width !== undefined && hints.height !== undefined
     const widths = WIDTHS.filter((w) => hints.width === undefined || w <= hints.width)
     const image = await getImage({
