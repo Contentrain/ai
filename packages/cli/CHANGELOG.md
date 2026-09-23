@@ -1,5 +1,19 @@
 # contentrain
 
+## 0.14.5
+
+### Patch Changes
+
+- f9138bb: `contentrain studio usage` shows a meter Studio could not read as "unavailable" (no number, no percentage) instead of printing `null` or a false 0. Studio's usage endpoint now answers such a meter with `current: null` and `unavailable: true`.
+- Updated dependencies [4f132fb]
+- Updated dependencies [10c9b85]
+  - @contentrain/query@7.5.0
+  - @contentrain/types@1.21.0
+  - @contentrain/mcp@3.6.4
+  - @contentrain/wp-import@0.5.5
+  - @contentrain/rules@0.7.2
+  - @contentrain/skills@0.9.4
+
 ## 0.14.4
 
 ### Patch Changes

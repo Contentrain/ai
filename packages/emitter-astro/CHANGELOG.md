@@ -1,5 +1,34 @@
 # @contentrain/emitter-astro
 
+## 0.15.0
+
+### Minor Changes
+
+- c985235: Every archive page gets its feed, as in WordPress: a category, tag or author page builds `<archive>/feed.xml` with the newest posts it lists, links it in its head, and `<archive>/feed/` gets a 301 to it. The template head's own archive, comments and Atom feed links — one page's, or not built — are removed from the chrome.
+- ef99df6: Authors as one person across the site. `EmitPost.author_url` (the author's archive) becomes the Article author's `url`; `QueryPage.profile` makes the author's archive a `ProfilePage` whose main entity is a `Person` at that same address, with bio, image and `sameAs`.
+- 7e351a8: The migrated site builds an RSS feed and an llms.txt. `/feed.xml` carries the 10 newest posts, as WordPress serves them at `/feed/`, the theme's head link to the main feed now points at it, and `/feed/` gets a 301 to it in `astro.config` and the host's redirect file. `/llms.txt` lists the site's name, tagline (`options.siteDescription`) and the newest 100 pages of each collection, leaving out those kept out of search. Both are endpoints over the entry pages' own data, so each entry keeps its page's address. `options.feed: false` and `options.llms: false` turn them off.
+- 0e0d20b: Page-level signals as the source's SEO plugin stated them. A route of kind `page` renders web pages (`og:type` `website`, a `WebPage` node, no Article); the Article's publisher is the node the site's head declares, by `@id`, so its logo counts; `og:locale` is written as `ll_RR` and left out for a language without a region; a measured Article image is an `ImageObject`; the `WebPage` node carries `datePublished` / `dateModified`.
+- 4d677b6: Optimized images for migrated content.
+
+  Post bodies render as HTML (`set:html`), so `<Image>` never reached the pictures inside them. Each page's content now runs one build-time pass (`src/lib/optimize-images.ts`):
+
+  - Images on an allowed host go through `astro:assets` `getImage()`: WebP, a width-capped `srcset`, inferred `width`/`height`, and a default `sizes`. Allowed hosts are the runtime host, where migrated media is rehosted, plus `options.images.remotePatterns`.
+  - Every image gets `decoding="async"`. The first image is eager with `fetchpriority="high"`; the rest are lazy.
+  - Existing attributes are respected. SVG, GIF and `data:` images are never re-encoded, and a failed optimization keeps the original.
+
+  The same host list lands in `astro.config.mjs` as `image.remotePatterns`, and `sharp` is added to the dependencies. Theme chrome is untouched. `options.images.enabled: false` turns the pass off.
+
+- a4c3cf5: noindex: `EmitPost.noindex` / `nofollow` and `QueryPage.noindex` / `nofollow` print `<meta name="robots">` on the page, and noindex pages are left out of the sitemap through a `sitemap({ filter })` built from their addresses. The template page's `robots` and `googlebot` tags are removed from the head chrome, so one page's noindex no longer spreads to every page.
+- 68ff510: Redirects: `EmitInput.redirects` (the site's `RawIR.redirects`) writes plain one-to-one rules (301/302/307/308) to `astro.config` `redirects`. Patterns, regular expressions, other statuses, query-string or file-name `from`s, and rules on an address the migrated site builds a page at come back in `EmitResult.redirects.manual` with the reason, to set up at the host. The rules are also written as real HTTP redirects into the host's file (`options.redirectHost`: Netlify `public/_redirects` forced, Cloudflare Pages `public/_redirects`, Vercel `vercel.json`; unset writes Netlify and Vercel), with the meta-refresh pages as the fallback; `EmitResult.redirects.host_files` names them.
+- 983adbe: Per-page SEO the source's plugin set now survives the migration. `EmitPost.seo_title` is the page's `<title>` (the entry's `title` stays the Article headline and last breadcrumb); `open_graph` and `twitter` on `EmitPost` and `QueryPage` override the derived share-card tags; `schema` carries the plugin's JSON-LD graph (FAQ, HowTo, Product) and is printed instead of the generated one, without the WebSite `SearchAction` or the nodes the head already carries. The template head's `twitter:site` is now kept. `seoFromRawEntry()` maps a Bridge `RawSeo` entry to these fields.
+- e11d69b: `options.trailingSlash: false` keeps the addresses of a site whose permalinks end without a slash. The build writes files (`/hello.html`, served at `/hello`) with Astro's `trailingSlash: 'never'`, `vercel.json` gets `cleanUrls`, and the canonical, og:url, hreflang, sitemap, feed and llms.txt all name each page `/hello` — the form the source was indexed under. The default (`/hello/`) is emitted as before.
+
+### Patch Changes
+
+- 096a0a5: The emitted forms and comments runtime handles Studio's `402 payment_required`: the widget empties and hides itself, whether loading, submitting or loading more comments, shows the visitor nothing, doesn't retry, and leaves one `console.debug` note for the workspace owner. `EmbedError` now carries the API's `data.code`, and `isPaymentRequired()` checks it. Other failures are shown as before.
+- Updated dependencies [10c9b85]
+  - @contentrain/types@1.21.0
+
 ## 0.14.5
 
 ### Patch Changes
