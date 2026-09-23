@@ -61,6 +61,7 @@ describe('pageStructuredData', () => {
       inLanguage: 'en',
       isPartOf: { '@id': 'https://example.com/#website' },
       breadcrumb: { '@id': 'https://example.com/news/hello/#breadcrumb' },
+      datePublished: '2026-01-01T00:00:00Z',
     })
     // The last crumb is the page, at the address the page was built at.
     expect(trail).toEqual({

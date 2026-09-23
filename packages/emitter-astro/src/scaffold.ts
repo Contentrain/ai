@@ -428,7 +428,41 @@ export interface PageStructuredDataInput {
   siteName?: string
   /** \`@id\` of the site's own WebSite node, when its head declares one. */
   websiteId?: string
+  /** \`@id\` of the node the kept head says publishes the site (Organization or Person). */
+  publisherId?: string
+  /** What \`image\` is — an Article image with its size is an ImageObject. */
+  imageMeta?: ImageMeta
   breadcrumbs?: Breadcrumb[]
+}
+
+/**
+ * Open Graph's locale form, \`ll_RR\` (\`tr_TR\`), from a BCP 47 tag
+ * (\`tr-TR\`). A tag without a region has no OG form — guessing one would
+ * name the wrong country — so it gives undefined and the tag is left out.
+ */
+export function ogLocale(tag: string | undefined): string | undefined {
+  const match = /^([a-z]{2,3})[-_]([a-z]{2})$/i.exec(tag ?? '')
+  return match ? match[1]!.toLowerCase() + '_' + match[2]!.toUpperCase() : undefined
+}
+
+/** An Article image: an ImageObject when its size is known, the bare URL otherwise. */
+function articleImage(url: string, meta: ImageMeta | undefined): string | Record<string, unknown> {
+  const tags = imageMetaTags(meta)
+  if (!tags.width || !tags.height) return url
+  return { '@type': 'ImageObject', url, width: Number(tags.width), height: Number(tags.height) }
+}
+
+/**
+ * Who publishes the article: the node the site's own head declares, by
+ * \`@id\`, so the logo and profile it carries count; else the site by name
+ * and address. Nothing is invented beyond the name the site gives itself.
+ */
+function publisher(input: PageStructuredDataInput): Record<string, unknown> | undefined {
+  if (input.publisherId) return { '@id': input.publisherId }
+  if (!input.siteName) return undefined
+  // The site's own address, path included: a site under /blog/ is not its host.
+  const home = input.site ? new URL(input.site.pathname.endsWith('/') ? input.site.href : input.site.href + '/').toString() : undefined
+  return { '@type': 'Organization', name: input.siteName, ...(home ? { url: home } : {}) }
 }
 
 /**
@@ -459,6 +493,9 @@ export function pageStructuredData(input: PageStructuredDataInput): Record<strin
       ...(input.locale ? { inLanguage: input.locale } : {}),
       ...(input.websiteId ? { isPartOf: { '@id': input.websiteId } } : {}),
       ...(breadcrumbId ? { breadcrumb: { '@id': breadcrumbId } } : {}),
+      // A page is dated as its entry is — WordPress pages have dates too.
+      ...(input.publishedAt ? { datePublished: input.publishedAt } : {}),
+      ...(input.modifiedAt ? { dateModified: input.modifiedAt } : {}),
     })
   }
   if (breadcrumbId) {
@@ -478,12 +515,12 @@ export function pageStructuredData(input: PageStructuredDataInput): Record<strin
       '@type': 'Article',
       headline: input.headline ?? input.title,
       ...(input.description ? { description: input.description } : {}),
-      ...(input.image ? { image: [input.image] } : {}),
+      ...(input.image ? { image: [articleImage(input.image, input.imageMeta)] } : {}),
       ...(input.publishedAt ? { datePublished: input.publishedAt } : {}),
       ...(input.modifiedAt ? { dateModified: input.modifiedAt } : {}),
       ...(input.author ? { author: { '@type': 'Person', name: input.author } } : {}),
       ...(url ? { mainEntityOfPage: { '@id': url } } : {}),
-      ...(input.siteName ? { publisher: { '@type': 'Organization', name: input.siteName } } : {}),
+      ...(publisher(input) ? { publisher: publisher(input) } : {}),
     })
   }
   return graph.length ? { '@context': 'https://schema.org', '@graph': graph } : undefined
@@ -809,7 +846,7 @@ export interface SeoInput {
  * only when it already reads as a path; otherwise \`image\` supplies it and
  * the tag is omitted rather than pointing at a URL that does not resolve.
  */
-export function postSeo(post: EmittedPost): SeoInput {
+export function postSeo(post: EmittedPost, kind: 'post' | 'page' = 'post'): SeoInput {
   const featured = (post.featured ?? []).find((f) => f.startsWith('/') || /^https?:/i.test(f))
   return {
     // The document title an SEO plugin composed; the entry's own name stays the headline.
@@ -822,7 +859,9 @@ export function postSeo(post: EmittedPost): SeoInput {
     imageMeta: post.image ? post.image_meta : undefined,
     alternates: post.alternates,
     breadcrumbs: post.breadcrumbs,
-    type: 'article',
+    // A WordPress page is a web page, not an article: og:type website, no
+    // Article node, no article:* tags — as the source's SEO plugin printed it.
+    type: kind === 'page' ? 'website' : 'article',
     publishedAt: post.published_at,
     modifiedAt: post.modified_at,
     author: post.author,

@@ -16,7 +16,7 @@ import type { ComponentDef, LayoutFamily } from '@contentrain/types'
 import { CHROME_BODY_SLOT, CHROME_COMPONENT_CLOSE, CHROME_COMPONENT_OPEN } from '@contentrain/types'
 import type { ChromeComponentRef } from './chrome.js'
 import { balanceWarning } from './balance.js'
-import { bodySeoLeaks, headLdIdsOf, stripSeoTags, websiteIdOf } from './seo.js'
+import { bodySeoLeaks, headLdIdsOf, publisherIdOf, stripSeoTags, websiteIdOf } from './seo.js'
 import { rewriteFeedLinks } from './feed.js'
 import { pascalCase, stableJson } from './util.js'
 
@@ -189,6 +189,8 @@ export function familyFiles(
 
   const siteNameProp = options.siteName ? ` siteName={${JSON.stringify(options.siteName)}}` : ''
   const trailingSlashProp = options.trailingSlash === false ? ' trailingSlash={false}' : ''
+  const publisherId = seoOn ? publisherIdOf(head) : undefined
+  const publisherIdProp = publisherId ? ` publisherId={${JSON.stringify(publisherId)}}` : ''
   const websiteId = seoOn ? websiteIdOf(head) : undefined
   const websiteIdProp = websiteId ? ` websiteId={${JSON.stringify(websiteId)}}` : ''
   const robotsProp = robotsDefault.length ? ` robotsDefault={${JSON.stringify(robotsDefault)}}` : ''
@@ -286,7 +288,7 @@ ${cssLinks
     ))}
     <Fragment set:html={head} />
 ${seoOn
-  ? `    <Seo title={title} locale={lang}${siteNameProp}${websiteIdProp}${trailingSlashProp}${robotsProp}${headLdIdsProp} {...(seo ?? {})} />`
+  ? `    <Seo title={title} locale={lang}${siteNameProp}${websiteIdProp}${publisherIdProp}${trailingSlashProp}${robotsProp}${headLdIdsProp} {...(seo ?? {})} />`
   : `    <title>{title}</title>`}
   </head>
   <body {...bodyAttrs}>
