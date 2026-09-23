@@ -459,6 +459,7 @@ const structured = sourceStructuredData(schema, headLdIds) ?? pageStructuredData
   author,
   authorUrl,
   profile,
+  trailingSlash,
   siteName,
   websiteId,
   publisherId,

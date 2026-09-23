@@ -152,10 +152,24 @@ describe('A5 — an Article image with its size is an ImageObject', () => {
 describe('A3 + B4 — the author is one person: their articles and their archive', () => {
   it("an Article author carries the author's page as url, absolute", () => {
     const graph = rt.pageStructuredData({ url: 'https://example.com/2025/hello/', site, title: 'Hello', article: true, author: 'Ada', authorUrl: '/author/ada/' })['@graph']
-    expect(graph.at(-1).author).toEqual({ '@type': 'Person', name: 'Ada', url: 'https://example.com/author/ada/' })
+    expect(graph.at(-1).author).toEqual({ '@type': 'Person', '@id': 'https://example.com/author/ada/#person', name: 'Ada', url: 'https://example.com/author/ada/' })
     const nameOnly = rt.pageStructuredData({ url: 'https://example.com/2025/hello/', site, title: 'Hello', article: true, author: 'Ada' })['@graph']
     expect(nameOnly.at(-1).author).toEqual({ '@type': 'Person', name: 'Ada' })
     expect(rt.postSeo({ slug: 'hello', title: 'Hello', body: '', author: 'Ada', author_url: '/author/ada/' }).authorUrl).toBe('/author/ada/')
+  })
+
+  it("the Article's author and the archive's Person are one @id, whatever form the author url came in", () => {
+    for (const trailingSlash of [true, false]) {
+      const archive = trailingSlash ? 'https://example.com/author/ada/' : 'https://example.com/author/ada'
+      const person = rt.pageStructuredData({ url: archive, site, title: 'Ada', article: false, profile: { name: 'Ada' } })['@graph'][1]['@id']
+      for (const authorUrl of ['/author/ada/', '/author/ada', 'http://example.com/author/ada/', 'https://EXAMPLE.com/author/ada?ref=x']) {
+        const article = rt.pageStructuredData({ url: 'https://example.com/2025/hello/', site, title: 'Hello', article: true, author: 'Ada', authorUrl, trailingSlash })['@graph'].at(-1)
+        expect(article.author['@id']).toBe(person)
+      }
+    }
+    // Another host's page is kept as given.
+    const elsewhere = rt.pageStructuredData({ url: 'https://example.com/2025/hello/', site, title: 'Hello', article: true, author: 'Ada', authorUrl: 'https://ada.example/about' })['@graph'].at(-1)
+    expect(elsewhere.author.url).toBe('https://ada.example/about')
   })
 
   it("an author's archive is a ProfilePage about that Person, at the address the articles name", () => {

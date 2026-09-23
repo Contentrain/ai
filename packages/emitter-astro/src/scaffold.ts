@@ -429,6 +429,8 @@ export interface PageStructuredDataInput {
   authorUrl?: string
   /** On an author's archive: who the page is about — it becomes a ProfilePage whose main entity is this Person. */
   profile?: AuthorProfile
+  /** false: the site's addresses end without a slash — an author's page is named in that form. */
+  trailingSlash?: boolean
   siteName?: string
   /** \`@id\` of the site's own WebSite node, when its head declares one. */
   websiteId?: string
@@ -458,6 +460,20 @@ export interface AuthorProfile {
   image?: string
   /** The author's profiles elsewhere (social accounts, a personal site) — schema.org \`sameAs\`. */
   same_as?: string[]
+}
+
+/**
+ * An address on this site in the form its pages are named in — absolute, the
+ * page path in the site's trailing-slash form, no query or fragment — so a
+ * reference to a page and the page itself name one URL. Another host's
+ * address is kept as given.
+ */
+function siteAddress(value: string | undefined, site: URL | undefined, trailingSlash = true): string | undefined {
+  const absolute = absoluteUrl(value, site)
+  if (!absolute || !site) return absolute
+  const url = new URL(absolute)
+  if (url.host.toLowerCase() !== site.host.toLowerCase()) return absolute
+  return absoluteUrl(pagePath(url.pathname, trailingSlash), site)
 }
 
 /** An Article image: an ImageObject when its size is known, the bare URL otherwise. */
@@ -498,7 +514,7 @@ export function pageStructuredData(input: PageStructuredDataInput): Record<strin
     ? trail.map((c) => ({ name: c.name, item: absoluteUrl(c.path, input.site) }))
     : []
   const breadcrumbId = url && trail && crumbs.every((c) => c.item) ? url + '#breadcrumb' : undefined
-  const authorUrl = absoluteUrl(input.authorUrl, input.site)
+  const authorUrl = siteAddress(input.authorUrl, input.site, input.trailingSlash)
   // An author's archive is about a person: the page is a ProfilePage and the
   // Person its main entity, at the page's own address — the one the author's
   // articles name as their author's url.
@@ -549,7 +565,9 @@ export function pageStructuredData(input: PageStructuredDataInput): Record<strin
       ...(input.image ? { image: [articleImage(input.image, input.imageMeta)] } : {}),
       ...(input.publishedAt ? { datePublished: input.publishedAt } : {}),
       ...(input.modifiedAt ? { dateModified: input.modifiedAt } : {}),
-      ...(input.author ? { author: { '@type': 'Person', name: input.author, ...(authorUrl ? { url: authorUrl } : {}) } } : {}),
+      // The author by the same @id their archive's ProfilePage gives its Person,
+      // so the two are one entity; name and url stay for a reader of this page alone.
+      ...(input.author ? { author: { '@type': 'Person', ...(authorUrl ? { '@id': authorUrl + '#person' } : {}), name: input.author, ...(authorUrl ? { url: authorUrl } : {}) } } : {}),
       ...(url ? { mainEntityOfPage: { '@id': url } } : {}),
       ...(publisher(input) ? { publisher: publisher(input) } : {}),
     })
