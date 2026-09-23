@@ -78,13 +78,16 @@ at.
 
 | Tag | Source |
 |---|---|
-| `<title>` | `EmitPost.title` · `QueryPage.title` · `RouteModel.title` |
-| `description`, `og:description`, `twitter:description` | `EmitPost.description`, else `excerpt` with markup stripped and cut at a word boundary |
+| `<title>` | `EmitPost.seo_title` (the title an SEO plugin composed, "Post – Site"), else `EmitPost.title` · `QueryPage.title` · `RouteModel.title`. The entry's own `title` stays its Article headline and last breadcrumb |
+| `og:title`, `og:description`, `og:image` | `open_graph` on `EmitPost` or `QueryPage` — share-card values the source set by hand — else the page's title, description and image. `og:image:*` is printed only when the image is `image` itself |
+| `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image` | `twitter` on `EmitPost` or `QueryPage`, else the Open Graph values; the card is `summary` / `summary_large_image` as given, else by whether there is an image. The template head's `twitter:site` — the site's handle, the same on every page — is kept |
+| `description` | `EmitPost.description`, else `excerpt` with markup stripped and cut at a word boundary |
 | `canonical`, `og:url` | The address Astro generated (`Astro.url` + `site`), so it cannot disagree with the emitted page. `EmitPost.canonical` overrides |
-| `og:image`, `twitter:image` | `EmitPost.image`, else a `featured` entry that is already a path. A bare file name is skipped — only the producer knows where media is served |
+| Page image (`og:image` / `twitter:image` default) | `EmitPost.image`, else a `featured` entry that is already a path. A bare file name is skipped — only the producer knows where media is served |
 | `og:image:width` / `height` / `type` | `image_meta` on `EmitPost` or `QueryPage` — the producer measured the file; the emitter never sees it. Printed only beside `image` (a `featured` fallback is a different file), and only values that are true of an image: positive integer sizes, an `image/…` type |
 | `og:site_name` | `ProjectIR.site.title` |
 | Structured data graph | One JSON-LD `@graph` per page: `WebPage` (`CollectionPage` on a list) with `@id` = the built address, `inLanguage` = the page `lang`, and `isPartOf` → the site's own WebSite `@id` when the kept head declares one (never an invented WebSite); a `BreadcrumbList` from `EmitPost.breadcrumbs` / `QueryPage.breadcrumbs` — the trail **without** the page, which the emitter appends at its own address; and on entries the `Article`, whose `mainEntityOfPage` is that `@id`. A trail with a crumb lacking a name or a site-root-relative path is dropped, with a warning. No trail, no BreadcrumbList. Without `site` there is no page node, only an entry's Article |
+| Source structured data | `schema` on `EmitPost` or `QueryPage`: the page's JSON-LD as the source's SEO plugin rendered it (a `@graph` object, a node array or one node). It is printed **instead of** the generated graph, so FAQ, HowTo, Product and the plugin's own WebPage/Article survive. A WebSite `SearchAction` is dropped, and so is every node the kept head already carries — WebSite, Organization, its logo — matched by `@id` as an address (the scheme, the host's case and a slash before `#` do not count). The plugin's graph is the whole of the page's structured data: a plugin graph without a BreadcrumbList prints none, even when `breadcrumbs` is set. Addresses in the graph are printed as given — the migration keeps the source's, so rewrite only what moved (media). A value with no typed node is not printable: that page gets the generated graph, with a warning |
 | `<link rel="alternate" hreflang>`, `og:locale:alternate` | Entry pages whose content-store entry (`EmitPost.entry`) exists in another locale on the site. The address is computed from each route's own pattern and the post's parameters — the values `getStaticPaths` uses — and the language is the page's `lang` (post locale, else route locale, else site default). Every page lists itself; `x-default` is the version in the site's default locale. A post two routes generate, or an entry where two pages claim one language, gets none, with a warning. The template page's own hreflang links are removed from the head chrome |
 | `og:locale` | The page's `lang` |
 | `<meta name="robots">` | `noindex` / `nofollow` on `EmitPost` or `QueryPage` (the source page's robots, e.g. Yoast `robots.index`): `noindex`, `nofollow` or `noindex, nofollow`. Neither set, no tag. The template page's own `robots` and `googlebot` tags are removed from the head chrome, so one page's `noindex` cannot spread to every page. Their site-wide settings (Yoast's `max-image-preview:large, max-snippet:-1, max-video-preview:-1`, anything but index/noindex/follow/nofollow/all/none) are kept and printed on every page after the page's own directives |
@@ -101,6 +104,15 @@ Head-only tags that a faithful clone left in the **body** (a browser that closed
 the body is page content and `<title>` is legal inside `<svg>`, so cutting into
 it to fix an invisible tag would break real markup. Lift them into the head
 chunk, or drop them at capture.
+
+### From a Bridge SEO export
+
+`seoFromRawEntry(blocks, { serving, url })` maps one page's `RawSeo.entries[address]` — what each SEO plugin holds for it — to the fields above (`seo_title`, `description`, `canonical`, `noindex`/`nofollow`, `open_graph`, `twitter`, `schema`), ready to spread into an `EmitPost` or `QueryPage`:
+
+- The serving plugin's block is read (`RawSeo.serving`), else the first of Yoast, Rank Math and AIOSEO that has one.
+- A block not marked `resolved` holds stored values: its unrendered templates, in that plugin's own syntax (Yoast `%%title%%`, Rank Math `%title%`, AIOSEO's named tags such as `#post_title` — not any `#word`, so a hashtag survives), are dropped so the page's own values fall in, and its literal values are kept.
+- Robots come from `robots_served` — what the page actually carried — and from the plugin's setting only without it.
+- A canonical equal to the page's own `url` is left out; only one that points elsewhere becomes an override.
 
 `options.seo: false` turns all of this off: the source head travels verbatim and
 the layout prints its own `<title>`, exactly as before.

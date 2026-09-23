@@ -408,7 +408,10 @@ export function validTrail(trail: unknown): Breadcrumb[] | undefined {
 export interface PageStructuredDataInput {
   url?: string
   site?: URL
+  /** The document title: the page node's name. */
   title: string
+  /** The entry's own title, when \`title\` is one an SEO plugin composed: Article headline, last crumb. */
+  headline?: string
   description?: string
   image?: string
   locale?: string
@@ -457,7 +460,7 @@ export function pageStructuredData(input: PageStructuredDataInput): Record<strin
     graph.push({
       '@type': 'BreadcrumbList',
       '@id': breadcrumbId,
-      itemListElement: [...crumbs, { name: input.title, item: url }].map((c, i) => ({
+      itemListElement: [...crumbs, { name: input.headline ?? input.title, item: url }].map((c, i) => ({
         '@type': 'ListItem',
         position: i + 1,
         name: c.name,
@@ -468,7 +471,7 @@ export function pageStructuredData(input: PageStructuredDataInput): Record<strin
   if (input.article) {
     graph.push({
       '@type': 'Article',
-      headline: input.title,
+      headline: input.headline ?? input.title,
       ...(input.description ? { description: input.description } : {}),
       ...(input.image ? { image: [input.image] } : {}),
       ...(input.publishedAt ? { datePublished: input.publishedAt } : {}),
@@ -479,6 +482,56 @@ export function pageStructuredData(input: PageStructuredDataInput): Record<strin
     })
   }
   return graph.length ? { '@context': 'https://schema.org', '@graph': graph } : undefined
+}
+
+const SITE_SEARCH = 'SearchAction'
+
+/**
+ * An \`@id\` compared as an address: the scheme, the host's case and a slash
+ * before the fragment are not part of it, so \`https://a.com/#website\` and
+ * \`http://A.com#website\` name one node — the head and a page's graph can
+ * each have been rewritten to the new origin in their own way.
+ */
+const ldIdKey = (id: string): string => id.trim()
+  .replace(/^(?:https?:)?\\/\\/[^/?#]*/i, (origin) => origin.toLowerCase().replace(/^https?:/, ''))
+  .replace(/\\/+(?=#|$)/, '')
+
+/**
+ * The page's structured data as the source's SEO plugin rendered it, ready to
+ * print — or undefined, and the generated graph is used. What the plugin
+ * described is kept as it was (FAQ, HowTo, Product, its WebPage and Article)
+ * except a WebSite's SearchAction, which would be false on the migrated site
+ * (a static site has no ?s= search), and the nodes the kept head already
+ * carries (\`headIds\` — WebSite, Organization, its logo), which every page
+ * would otherwise print twice.
+ */
+export function sourceStructuredData(schema: unknown, headIds: string[] = []): Record<string, unknown> | undefined {
+  if (!schema || typeof schema !== 'object') return undefined
+  const root = schema as Record<string, unknown>
+  const graph = root['@graph']
+  const nodes: unknown[] = Array.isArray(schema) ? schema : Array.isArray(graph) ? graph : [schema]
+  const typesOf = (node: Record<string, unknown>): string[] =>
+    (Array.isArray(node['@type']) ? node['@type'] : [node['@type']]).filter((t): t is string => typeof t === 'string')
+  const inHead = new Set(headIds.map(ldIdKey))
+  const kept: Array<Record<string, unknown>> = []
+  for (const value of nodes) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) continue
+    let node = value as Record<string, unknown>
+    if (!typesOf(node).length) continue
+    const website = typesOf(node).some((t) => t.toLowerCase() === 'website')
+    if (typeof node['@id'] === 'string' && inHead.has(ldIdKey(node['@id']))) continue
+    if (website && node['potentialAction'] !== undefined) {
+      const action = node['potentialAction']
+      const actions = (Array.isArray(action) ? action : [action]).filter((a) =>
+        !(a && typeof a === 'object' && typesOf(a as Record<string, unknown>).includes(SITE_SEARCH)))
+      const { potentialAction: _, ...rest } = node
+      node = actions.length ? { ...rest, potentialAction: Array.isArray(action) ? actions : actions[0] } : rest
+    }
+    kept.push(node)
+  }
+  if (!kept.length) return undefined
+  const context = Array.isArray(schema) ? undefined : root['@context']
+  return { '@context': context ?? 'https://schema.org', '@graph': kept }
 }
 
 /** Emitted stylesheets live under /styles/legacy/ — pages reference them by file name. */
@@ -557,8 +610,20 @@ export interface EntryRef {
   locale?: string
 }
 
+/** Share-card values a page's source set by hand; each one left out is derived. */
+export interface SocialOverride {
+  title?: string
+  description?: string
+  image?: string
+}
+
+export interface TwitterOverride extends SocialOverride {
+  card?: string
+}
+
 export interface SeoInput {
   title?: string
+  headline?: string
   description?: string
   canonical?: string
   image?: string
@@ -572,6 +637,9 @@ export interface SeoInput {
   author?: string
   noindex?: boolean
   nofollow?: boolean
+  openGraph?: SocialOverride
+  twitter?: TwitterOverride
+  schema?: unknown
 }
 
 /**
@@ -583,7 +651,9 @@ export interface SeoInput {
 export function postSeo(post: EmittedPost): SeoInput {
   const featured = (post.featured ?? []).find((f) => f.startsWith('/') || /^https?:/i.test(f))
   return {
-    title: post.title,
+    // The document title an SEO plugin composed; the entry's own name stays the headline.
+    title: post.seo_title || post.title,
+    headline: post.title,
     description: post.description ?? post.excerpt,
     canonical: post.canonical,
     image: post.image ?? featured,
@@ -597,6 +667,9 @@ export function postSeo(post: EmittedPost): SeoInput {
     author: post.author,
     noindex: post.noindex,
     nofollow: post.nofollow,
+    openGraph: post.open_graph,
+    twitter: post.twitter,
+    schema: post.schema,
   }
 }
 
@@ -613,6 +686,12 @@ export interface EmittedPost extends MarkablePost {
   breadcrumbs?: Breadcrumb[]
   /** Canonical override; default is the page's own address. */
   canonical?: string
+  /** Document title, when the source composed one apart from \`title\`. */
+  seo_title?: string
+  open_graph?: SocialOverride
+  twitter?: TwitterOverride
+  /** The source SEO plugin's JSON-LD for this page. */
+  schema?: unknown
   /** ISO 8601, for Article structured data. */
   published_at?: string
   modified_at?: string
@@ -644,5 +723,8 @@ export interface EmittedQueryPage {
   breadcrumbs?: Breadcrumb[]
   noindex?: boolean
   nofollow?: boolean
+  open_graph?: SocialOverride
+  twitter?: TwitterOverride
+  schema?: unknown
 }
 `

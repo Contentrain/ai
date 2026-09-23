@@ -241,16 +241,16 @@ describe('emitted SEO', () => {
 
   it('entry pages carry the post SEO; lists and static pages declare themselves websites', () => {
     expect(result.files['src/pages/[slug].astro']).toContain('seo={postSeo(post)}')
-    expect(result.files['src/pages/news.astro']).toContain(`seo={{ description: page.description, image: page.image, imageMeta: page.image_meta, canonical: page.canonical, breadcrumbs: page.breadcrumbs, noindex: page.noindex, nofollow: page.nofollow, type: 'website', pageType: 'CollectionPage' }}`)
+    expect(result.files['src/pages/news.astro']).toContain(`seo={{ description: page.description, image: page.image, imageMeta: page.image_meta, canonical: page.canonical, breadcrumbs: page.breadcrumbs, noindex: page.noindex, nofollow: page.nofollow, openGraph: page.open_graph, twitter: page.twitter, schema: page.schema, type: 'website', pageType: 'CollectionPage' }}`)
     expect(result.files['src/pages/about.astro']).toContain(`seo={{ type: 'website' }}`)
   })
 
   it('prints og:image size and type only beside an image', () => {
     const seo = result.files['src/components/Seo.astro']!
     expect(seo).toContain('const imageTags = imageUrl ? imageMetaTags(imageMeta) : {}')
-    expect(seo).toContain('<meta property="og:image:width" content={imageTags.width} />')
-    expect(seo).toContain('<meta property="og:image:height" content={imageTags.height} />')
-    expect(seo).toContain('<meta property="og:image:type" content={imageTags.type} />')
+    expect(seo).toContain('<meta property="og:image:width" content={ogImageTags.width} />')
+    expect(seo).toContain('<meta property="og:image:height" content={ogImageTags.height} />')
+    expect(seo).toContain('<meta property="og:image:type" content={ogImageTags.type} />')
   })
 
   it('canonical comes from the generated address, not from data', () => {

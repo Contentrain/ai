@@ -63,6 +63,27 @@ export interface EmitPost {
   image_meta?: ImageMeta
   /** Canonical override — for a page that should point somewhere else. Default: this page's own address. */
   canonical?: string
+  /**
+   * The document title (`<title>`, and the default og/twitter title) when the
+   * source's SEO plugin composed one apart from the entry's — Yoast's
+   * "Post – Site". `title` stays the entry's own name: its marks, the Article
+   * headline, the last breadcrumb. Default: `title`.
+   */
+  seo_title?: string
+  /** Open Graph text and image the source set for this page, over the derived ones. */
+  open_graph?: SocialOverride
+  /** Twitter card values the source set for this page. Unset values follow Open Graph. */
+  twitter?: TwitterOverride
+  /**
+   * The page's JSON-LD as the source's SEO plugin rendered it — a `@graph`
+   * object, an array of nodes, or one node. Printed instead of the graph the
+   * emitter would build, so FAQ, HowTo, Product and whatever else the plugin
+   * described survive. The migrated site keeps the source addresses, so the
+   * graph's `@id`s and URLs stay true; media URLs in it are printed as given
+   * and are the producer's to rewrite. A WebSite `SearchAction` is dropped (a
+   * static site has no `?s=` search), as is a copy of the head's WebSite node.
+   */
+  schema?: unknown
   /** ISO 8601, for Article structured data. `dates` holds display strings, which schema.org cannot read. */
   published_at?: string
   modified_at?: string
@@ -154,6 +175,27 @@ export interface QueryPage {
   noindex?: boolean
   /** See `EmitPost.nofollow`. */
   nofollow?: boolean
+  /** See `EmitPost.open_graph`. */
+  open_graph?: SocialOverride
+  /** See `EmitPost.twitter`. */
+  twitter?: TwitterOverride
+  /** See `EmitPost.schema`. */
+  schema?: unknown
+}
+
+/**
+ * Share-card values a page's source set by hand. Each one left out falls back
+ * to the value derived from the page. `image` is absolute or site-root-relative.
+ */
+export interface SocialOverride {
+  title?: string
+  description?: string
+  image?: string
+}
+
+export interface TwitterOverride extends SocialOverride {
+  /** `summary` or `summary_large_image`; anything else is ignored. */
+  card?: string
 }
 
 /** One step of a breadcrumb trail. */

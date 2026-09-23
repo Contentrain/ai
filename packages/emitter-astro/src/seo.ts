@@ -12,9 +12,13 @@
 // feeds, icons, verification tokens, and the structured data that describes
 // the site rather than the page (WebSite, Organization).
 
-/** Tags the emitter owns; a source copy of any of these is replaced, not duplicated. */
+/**
+ * Tags the emitter owns; a source copy of any of these is replaced, not
+ * duplicated. `twitter:site` is the site's handle, the same on every page and
+ * not derivable from an entry, so it stays in the head.
+ */
 const TITLE_RE = /<title\b[^>]*>[\s\S]*?<\/title>\s*/gi
-const META_RE = /<meta\b[^>]*\b(?:name|property)\s*=\s*["'](?:description|robots|googlebot|og:[^"']*|twitter:[^"']*)["'][^>]*>\s*/gi
+const META_RE = /<meta\b[^>]*\b(?:name|property)\s*=\s*["'](?:description|robots|googlebot|og:[^"']*|twitter:(?!site["'])[^"']*)["'][^>]*>\s*/gi
 const CANONICAL_RE = /<link\b[^>]*\brel\s*=\s*["'][^"']*\bcanonical\b[^"']*["'][^>]*>\s*/gi
 /**
  * A translation link names the template page's translations. An RSS
@@ -172,6 +176,30 @@ export function websiteIdOf(html: string): string | undefined {
   return undefined
 }
 
+/**
+ * \`@id\` of every node in a head's structured data — the site's own nodes
+ * (WebSite, Organization, its logo) that every page already carries. A page's
+ * plugin graph repeats them; printing them twice is valid but is noise.
+ */
+export function headLdIdsOf(html: string): string[] {
+  const ids: string[] = []
+  for (const match of html.matchAll(JSONLD_RE)) {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(match[1] ?? '')
+    } catch {
+      continue
+    }
+    const graph = (parsed as { '@graph'?: unknown } | null)?.['@graph']
+    const nodes: unknown[] = Array.isArray(parsed) ? parsed : Array.isArray(graph) ? graph : [parsed]
+    for (const node of nodes) {
+      const id = (node as LdNode | null)?.['@id']
+      if (typeof id === 'string' && id && !ids.includes(id)) ids.push(id)
+    }
+  }
+  return ids
+}
+
 export interface StripResult {
   html: string
   /** What was taken out, for the emit warning — never a silent removal. */
@@ -271,10 +299,13 @@ export const SEO_COMPONENT = `---
  * Canonical and absolute URLs need \`site\` in astro.config.mjs; without it the
  * canonical link and og:url are omitted rather than pointing at a build host.
  */
-import { absoluteUrl, imageMetaTags, jsonLd, pageStructuredData, seoDescription, type Breadcrumb, type ImageMeta } from '../lib/fill'
+import { absoluteUrl, imageMetaTags, jsonLd, pageStructuredData, seoDescription, sourceStructuredData, type Breadcrumb, type ImageMeta, type SocialOverride, type TwitterOverride } from '../lib/fill'
 
 interface Props {
+  /** The document title — an SEO plugin's composed one when the source had it. */
   title?: string
+  /** The entry's own title, when it differs from \`title\`: Article headline, last breadcrumb. */
+  headline?: string
   /** Meta description; falls back to the entry's excerpt, tags stripped. */
   description?: string
   /** Overrides the generated address — for a page that canonicalises elsewhere. */
@@ -291,6 +322,8 @@ interface Props {
   pageType?: 'WebPage' | 'CollectionPage'
   /** \`@id\` of the site's WebSite node kept in the head chrome, when there is one. */
   websiteId?: string
+  /** \`@id\` of every structured-data node the head chrome keeps — not repeated from \`schema\`. */
+  headLdIds?: string[]
   /** \`article\` on entry pages, \`website\` on lists and static pages. */
   type?: 'article' | 'website'
   /** ISO 8601 — structured data only; the displayed date stays a mark. */
@@ -304,10 +337,17 @@ interface Props {
   nofollow?: boolean
   /** Site-wide robots directives from the template head (\`max-image-preview:large\`, …), printed on every page. */
   robotsDefault?: string[]
+  /** Share-card values the source set by hand, over the derived ones. */
+  openGraph?: SocialOverride
+  /** Unset values follow Open Graph. */
+  twitter?: TwitterOverride
+  /** The source SEO plugin's JSON-LD for this page — printed instead of the generated graph. */
+  schema?: unknown
 }
 
 const {
   title = '',
+  headline,
   description,
   canonical,
   image,
@@ -316,6 +356,7 @@ const {
   breadcrumbs,
   pageType,
   websiteId,
+  headLdIds = [],
   type = 'website',
   publishedAt,
   modifiedAt,
@@ -325,6 +366,9 @@ const {
   noindex = false,
   nofollow = false,
   robotsDefault = [],
+  openGraph,
+  twitter,
+  schema,
 } = Astro.props
 
 const site = Astro.site
@@ -339,11 +383,22 @@ const hreflang = alternates.flatMap((a) => {
 const localeAlternates = [...new Set(hreflang.map((a) => a.lang))].filter((l) => l !== 'x-default' && l !== locale)
 const desc = seoDescription(description)
 const robots = [noindex && 'noindex', nofollow && 'nofollow', ...robotsDefault].filter(Boolean).join(', ')
+// Share cards: what the source set by hand, else what the page says.
+const ogTitle = openGraph?.title || title
+const ogDesc = seoDescription(openGraph?.description) ?? desc
+const ogImage = absoluteUrl(openGraph?.image, site) ?? imageUrl
+// The measurements describe \`image\`; an override is another file.
+const ogImageTags = ogImage === imageUrl ? imageTags : {}
+const twTitle = twitter?.title || ogTitle
+const twDesc = seoDescription(twitter?.description) ?? ogDesc
+const twImage = absoluteUrl(twitter?.image, site) ?? ogImage
+const twCard = twitter?.card === 'summary' || twitter?.card === 'summary_large_image' ? twitter.card : twImage ? 'summary_large_image' : 'summary'
 const article = type === 'article'
-const structured = pageStructuredData({
+const structured = sourceStructuredData(schema, headLdIds) ?? pageStructuredData({
   url,
   site,
   title,
+  headline,
   description: desc,
   image: imageUrl,
   locale,
@@ -363,22 +418,22 @@ const structured = pageStructuredData({
 {url && <link rel="canonical" href={url} />}
 {hreflang.map((a) => <link rel="alternate" hreflang={a.lang} href={a.href} />)}
 <meta property="og:type" content={type} />
-{title && <meta property="og:title" content={title} />}
-{desc && <meta property="og:description" content={desc} />}
+{ogTitle && <meta property="og:title" content={ogTitle} />}
+{ogDesc && <meta property="og:description" content={ogDesc} />}
 {url && <meta property="og:url" content={url} />}
-{imageUrl && <meta property="og:image" content={imageUrl} />}
-{imageTags.width && <meta property="og:image:width" content={imageTags.width} />}
-{imageTags.height && <meta property="og:image:height" content={imageTags.height} />}
-{imageTags.type && <meta property="og:image:type" content={imageTags.type} />}
+{ogImage && <meta property="og:image" content={ogImage} />}
+{ogImageTags.width && <meta property="og:image:width" content={ogImageTags.width} />}
+{ogImageTags.height && <meta property="og:image:height" content={ogImageTags.height} />}
+{ogImageTags.type && <meta property="og:image:type" content={ogImageTags.type} />}
 {siteName && <meta property="og:site_name" content={siteName} />}
 {locale && <meta property="og:locale" content={locale} />}
 {localeAlternates.map((l) => <meta property="og:locale:alternate" content={l} />)}
 {article && publishedAt && <meta property="article:published_time" content={publishedAt} />}
 {article && modifiedAt && <meta property="article:modified_time" content={modifiedAt} />}
 {article && author && <meta property="article:author" content={author} />}
-<meta name="twitter:card" content={imageUrl ? 'summary_large_image' : 'summary'} />
-{title && <meta name="twitter:title" content={title} />}
-{desc && <meta name="twitter:description" content={desc} />}
-{imageUrl && <meta name="twitter:image" content={imageUrl} />}
+<meta name="twitter:card" content={twCard} />
+{twTitle && <meta name="twitter:title" content={twTitle} />}
+{twDesc && <meta name="twitter:description" content={twDesc} />}
+{twImage && <meta name="twitter:image" content={twImage} />}
 {structured && <script is:inline type="application/ld+json" set:html={jsonLd(structured)} />}
 `

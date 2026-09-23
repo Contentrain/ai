@@ -33,6 +33,21 @@ function badTrail(trail: EmitPost['breadcrumbs']): boolean {
     typeof c?.name === 'string' && c.name.trim() !== '' && typeof c.path === 'string' && !c.path.includes(String.fromCharCode(92)) && ![...c.path].some((char) => char.charCodeAt(0) <= 32) && /^\/(?!\/)/.test(c.path)))
 }
 
+/**
+ * A source JSON-LD value the Seo component cannot print (see
+ * `sourceStructuredData`): not an object, or no node in it names a type.
+ */
+function badSchema(schema: unknown): boolean {
+  if (schema === undefined) return false
+  if (!schema || typeof schema !== 'object') return true
+  const graph = (schema as { '@graph'?: unknown })['@graph']
+  const nodes: unknown[] = Array.isArray(schema) ? schema : Array.isArray(graph) ? graph : [schema]
+  return !nodes.some((n) => {
+    const type = n && typeof n === 'object' && !Array.isArray(n) ? (n as Record<string, unknown>)['@type'] : undefined
+    return (Array.isArray(type) ? type : [type]).some((t) => typeof t === 'string')
+  })
+}
+
 export function emitAstroProject(input: EmitInput): EmitResult {
   const { ir } = input
   const warnings: string[] = []
@@ -194,10 +209,14 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   for (const [name, posts] of trailOwners) {
     const bad = (posts ?? []).filter((p) => badTrail(p.breadcrumbs)).length
     if (bad) warnings.push(`collection ${name}: ${bad} breadcrumb trails dropped — every crumb needs a name and a site-root-relative path`)
+    const badLd = (posts ?? []).filter((p) => badSchema(p.schema)).length
+    if (badLd) warnings.push(`collection ${name}: ${badLd} schema values are not JSON-LD objects — those pages print the generated structured data instead`)
   }
   for (const [queryId, queryPages] of Object.entries(input.content?.queries ?? {})) {
     const bad = queryPages.filter((qp) => badTrail(qp.breadcrumbs)).length
     if (bad) warnings.push(`query ${queryId}: ${bad} breadcrumb trails dropped — every crumb needs a name and a site-root-relative path`)
+    const badLd = queryPages.filter((qp) => badSchema(qp.schema)).length
+    if (badLd) warnings.push(`query ${queryId}: ${badLd} schema values are not JSON-LD objects — those pages print the generated structured data instead`)
   }
 
   // hreflang alternates ride on the entry data, so they are attached before the
@@ -341,6 +360,8 @@ export type {
   EmitTermRef,
   Breadcrumb,
   ImageMeta,
+  SocialOverride,
+  TwitterOverride,
   RuntimeBinding,
   RawRedirect,
   EntrySourceRef,
@@ -351,6 +372,8 @@ export { componentMarkers } from './layouts.js'
 export type { MountRef } from './layouts.js'
 export { isRuntimeImplemented, RUNTIME_IMPLEMENTED } from './components.js'
 export { bodySeoLeaks, stripSeoTags, websiteIdOf, SEO_COMPONENT } from './seo.js'
+export { seoFromRawEntry } from './seo-entry.js'
+export type { SeoFields, SeoFromRawOptions } from './seo-entry.js'
 export { entryPath, withAlternates } from './alternates.js'
 export type { Alternate, AlternatesResult } from './alternates.js'
 export type { StripResult } from './seo.js'

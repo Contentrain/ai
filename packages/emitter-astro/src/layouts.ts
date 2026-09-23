@@ -16,7 +16,7 @@ import type { ComponentDef, LayoutFamily } from '@contentrain/types'
 import { CHROME_BODY_SLOT, CHROME_COMPONENT_CLOSE, CHROME_COMPONENT_OPEN } from '@contentrain/types'
 import type { ChromeComponentRef } from './chrome.js'
 import { balanceWarning } from './balance.js'
-import { bodySeoLeaks, stripSeoTags, websiteIdOf } from './seo.js'
+import { bodySeoLeaks, headLdIdsOf, stripSeoTags, websiteIdOf } from './seo.js'
 import { pascalCase, stableJson } from './util.js'
 
 export interface FamilyGenResult {
@@ -178,6 +178,8 @@ export function familyFiles(
   const websiteId = seoOn ? websiteIdOf(head) : undefined
   const websiteIdProp = websiteId ? ` websiteId={${JSON.stringify(websiteId)}}` : ''
   const robotsProp = robotsDefault.length ? ` robotsDefault={${JSON.stringify(robotsDefault)}}` : ''
+  const headLdIds = seoOn ? headLdIdsOf(head) : []
+  const headLdIdsProp = headLdIds.length ? ` headLdIds={${JSON.stringify(headLdIds)}}` : ''
   const imported = [...new Set([...components.map((c) => c.name), ...mounts.map((m) => m.name)])]
   const componentImports = [
     ...(seoOn ? [`import Seo from '../components/Seo.astro'`] : []),
@@ -270,7 +272,7 @@ ${cssLinks
     ))}
     <Fragment set:html={head} />
 ${seoOn
-  ? `    <Seo title={title} locale={lang}${siteNameProp}${websiteIdProp}${robotsProp} {...(seo ?? {})} />`
+  ? `    <Seo title={title} locale={lang}${siteNameProp}${websiteIdProp}${robotsProp}${headLdIdsProp} {...(seo ?? {})} />`
   : `    <title>{title}</title>`}
   </head>
   <body {...bodyAttrs}>

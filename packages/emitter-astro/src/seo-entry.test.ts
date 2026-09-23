@@ -1,0 +1,212 @@
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import type { ProjectIR, RawSeoEntry } from '@contentrain/types'
+import { CHROME_BODY_SLOT, MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
+import { emitAstroProject, seoFromRawEntry, stripSeoTags } from './index'
+
+// MG-15 §2–3: what the source's SEO plugin set for a page — its composed title,
+// hand-written share cards, its JSON-LD graph (FAQ, HowTo, Product) — survives
+// the migration instead of being re-derived from the entry.
+
+const TMP = join(dirname(fileURLToPath(import.meta.url)), '..', '.vitest-tmp-seo-entry')
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let rt: Record<string, any>
+const site = new URL('https://example.com')
+
+const ir: ProjectIR = {
+  version: MIGRATION_CONTRACT_VERSION,
+  site: { url: 'https://example.com', title: 'Example', locales: ['en'] },
+  routes: [
+    { id: 'r-post', pattern: '/:slug', kind: 'single', family: 'f' },
+    { id: 'r-news', pattern: '/news', kind: 'archive', family: 'f', query: 'q' },
+  ],
+  families: [{ id: 'f', kind: 'single', chrome: [{ id: 'body', position: 'body', html: `<main>${CHROME_BODY_SLOT}</main>` }], css: { strategy: 'localcss' } }],
+  queries: [{ id: 'q', source: 'posts', order: { by: 'date', direction: 'desc' }, per_page: 10, pagination: 'numbered' }],
+  css_default: 'purge_set',
+}
+
+beforeAll(async () => {
+  await mkdir(TMP, { recursive: true })
+  await writeFile(join(TMP, 'fill.ts'), emitAstroProject({ ir }).files['src/lib/fill.ts']!, 'utf8')
+  rt = await import(/* @vite-ignore */ join(TMP, 'fill.ts'))
+})
+
+afterAll(async () => {
+  await rm(TMP, { recursive: true, force: true })
+})
+
+/** What Yoast renders for a post with an FAQ block: one graph, page and site nodes mixed. */
+const YOAST_GRAPH = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    { '@type': ['WebPage', 'FAQPage'], '@id': 'https://example.com/hello/', url: 'https://example.com/hello/', name: 'Hello – Example', isPartOf: { '@id': 'https://example.com/#website' }, mainEntity: [{ '@id': 'https://example.com/hello/#faq-1' }] },
+    { '@type': 'Question', '@id': 'https://example.com/hello/#faq-1', name: 'Why?', acceptedAnswer: { '@type': 'Answer', text: 'Because.' } },
+    { '@type': 'WebSite', '@id': 'https://example.com/#website', url: 'https://example.com/', potentialAction: [{ '@type': 'SearchAction', target: 'https://example.com/?s={search_term_string}' }] },
+    { '@type': 'Organization', '@id': 'https://example.com/#organization', name: 'Example' },
+  ],
+}
+
+describe('seoFromRawEntry', () => {
+  const yoast: RawSeoEntry = {
+    resolved: true,
+    title: 'Hello – Example',
+    description: 'What the editor wrote.',
+    canonical: 'https://example.com/hello/',
+    robots: { index: 'index', follow: 'follow' },
+    robots_served: ['noindex', 'follow'],
+    open_graph: { title: 'Share title', description: 'Share text', image: 'https://example.com/share.jpg', type: 'article', url: 'https://example.com/hello/' },
+    twitter: { card: 'summary', title: 'Tweet title' },
+    schema: { types: ['WebPage', 'FAQPage'], graph: YOAST_GRAPH },
+  }
+
+  it("maps the serving plugin's rendered values to the emitter's fields", () => {
+    expect(seoFromRawEntry({ yoast }, { serving: 'yoast', url: 'http://example.com/hello' })).toEqual({
+      seo_title: 'Hello – Example',
+      description: 'What the editor wrote.',
+      // robots_served is what the page carried; the stored `index` setting lost to it.
+      noindex: true,
+      open_graph: { title: 'Share title', description: 'Share text', image: 'https://example.com/share.jpg' },
+      twitter: { card: 'summary', title: 'Tweet title' },
+      schema: YOAST_GRAPH,
+    })
+  })
+
+  it('keeps a canonical only when it sends the page somewhere else', () => {
+    expect(seoFromRawEntry({ yoast: { canonical: 'https://example.com/other/' } }, { url: 'https://example.com/hello/' }).canonical).toBe('https://example.com/other/')
+    expect(seoFromRawEntry({ yoast: { canonical: 'https://example.com/hello/' } }, { url: 'https://example.com/hello' }).canonical).toBeUndefined()
+  })
+
+  it('reads the serving plugin first, else the first plugin with data', () => {
+    const blocks = { yoast: { resolved: true, title: 'Y' }, rank_math: { resolved: true, title: 'R' } }
+    expect(seoFromRawEntry(blocks, { serving: 'rank_math' }).seo_title).toBe('R')
+    expect(seoFromRawEntry(blocks, { serving: 'wordpress-core' }).seo_title).toBe('Y')
+    expect(seoFromRawEntry({ aioseo: { resolved: true, title: 'A' } }).seo_title).toBe('A')
+    expect(seoFromRawEntry(undefined)).toEqual({})
+  })
+
+  it('drops unrendered templates and keeps literal values from a stored block', () => {
+    const stored: RawSeoEntry = {
+      resolved: false,
+      title: '%title% %sep% %sitename%',
+      description: 'A literal description.',
+      open_graph: { title: '%title% | %sitename%', description: '%customfield(teaser)%' },
+      twitter: { title: 'Literal tweet' },
+      robots: { index: 'noindex', follow: 'nofollow' },
+    }
+    expect(seoFromRawEntry({ rank_math: stored })).toEqual({
+      description: 'A literal description.',
+      noindex: true,
+      nofollow: true,
+      twitter: { title: 'Literal tweet' },
+    })
+    expect(seoFromRawEntry({ yoast: { title: '%%title%% %%sep%% %%sitename%%', description: '%%excerpt%%' } })).toEqual({})
+    expect(seoFromRawEntry({ aioseo: { title: '#post_title #separator_sa #site_title', description: '#tagline' } })).toEqual({})
+  })
+
+  it('reads a template in its own plugin\'s syntax only, so a hashtag or a percentage survives', () => {
+    const title = (provider: 'yoast' | 'rank_math' | 'aioseo', value: string) => seoFromRawEntry({ [provider]: { title: value } }).seo_title
+    expect(title('aioseo', 'Why #vuejs matters – Blog')).toBe('Why #vuejs matters – Blog')
+    expect(title('aioseo', 'Issue #fix_this and #postgres')).toBe('Issue #fix_this and #postgres')
+    expect(title('yoast', 'Top #post_title tips')).toBe('Top #post_title tips')
+    expect(title('rank_math', '50% off, 20% more')).toBe('50% off, 20% more')
+    expect(title('yoast', '100%%50 odds')).toBe('100%%50 odds')
+  })
+})
+
+describe('sourceStructuredData (emitted runtime)', () => {
+  it("keeps the plugin's graph — FAQ included — minus the SearchAction", () => {
+    const data = rt.sourceStructuredData(YOAST_GRAPH)
+    expect(data['@context']).toBe('https://schema.org')
+    expect(data['@graph'].map((n: { '@type': unknown }) => n['@type'])).toEqual([['WebPage', 'FAQPage'], 'Question', 'WebSite', 'Organization'])
+    expect(data['@graph'][2]).toEqual({ '@type': 'WebSite', '@id': 'https://example.com/#website', url: 'https://example.com/' })
+  })
+
+  it('drops the nodes the kept head already carries, matched by address rather than by spelling', () => {
+    const types = (ids: string[]) => rt.sourceStructuredData(YOAST_GRAPH, ids)['@graph'].map((n: { '@type': unknown }) => n['@type'])
+    for (const id of ['https://example.com/#website', 'http://example.com#website', 'https://EXAMPLE.com//#website']) {
+      expect(types([id])).toEqual([['WebPage', 'FAQPage'], 'Question', 'Organization'])
+    }
+    expect(types(['https://example.com/#website', 'https://example.com/#organization'])).toEqual([['WebPage', 'FAQPage'], 'Question'])
+    // The path is an address: its case counts.
+    expect(types(['https://example.com/HELLO/'])).toHaveLength(4)
+    expect(types(['https://other.example/#website'])).toHaveLength(4)
+  })
+
+  it('takes a node array or a single node, and gives up on anything it cannot print', () => {
+    expect(rt.sourceStructuredData([{ '@type': 'HowTo', name: 'x' }])).toEqual({ '@context': 'https://schema.org', '@graph': [{ '@type': 'HowTo', name: 'x' }] })
+    expect(rt.sourceStructuredData({ '@context': 'https://schema.org', '@type': 'Product', name: 'p' })['@graph'][0]['@type']).toBe('Product')
+    expect(rt.sourceStructuredData('{"@type":"x"}')).toBeUndefined()
+    expect(rt.sourceStructuredData({ '@graph': [{ name: 'untyped' }] })).toBeUndefined()
+    expect(rt.sourceStructuredData(undefined)).toBeUndefined()
+  })
+
+  it('cannot be closed early by a value holding </script>', () => {
+    const data = rt.sourceStructuredData([{ '@type': 'Question', name: '</script><script>alert(1)</script>' }])
+    expect(rt.jsonLd(data)).not.toContain('</script>')
+  })
+})
+
+describe('the document title and the entry title', () => {
+  it('an entry: the plugin title is <title>; the entry title stays the headline and the last crumb', () => {
+    const seo = rt.postSeo({ slug: 'hello', title: 'Hello', body: '', seo_title: 'Hello – Example', open_graph: { title: 'Share' }, twitter: { card: 'summary' }, schema: YOAST_GRAPH })
+    expect(seo).toMatchObject({ title: 'Hello – Example', headline: 'Hello', openGraph: { title: 'Share' }, twitter: { card: 'summary' }, schema: YOAST_GRAPH })
+    expect(rt.postSeo({ slug: 'a', title: 'A', body: '' })).toMatchObject({ title: 'A', headline: 'A', openGraph: undefined, schema: undefined })
+
+    const data = rt.pageStructuredData({ url: 'https://example.com/hello/', site, title: 'Hello – Example', headline: 'Hello', article: true, breadcrumbs: [{ name: 'Home', path: '/' }] })
+    const [page, trail, article] = data['@graph']
+    expect(page.name).toBe('Hello – Example')
+    expect(trail.itemListElement.at(-1).name).toBe('Hello')
+    expect(article.headline).toBe('Hello')
+  })
+})
+
+describe('emitted pages', () => {
+  const content = {
+    posts: [{ slug: 'hello', title: 'Hello', body: '<p>x</p>', seo_title: 'Hello – Example', open_graph: { title: 'Share' }, schema: YOAST_GRAPH }],
+    queries: { q: [{ params: {}, items: [], title: 'News – Example', open_graph: { image: '/og/news.png' }, twitter: { card: 'summary' }, schema: [{ '@type': 'CollectionPage' }] }] },
+  }
+  const result = emitAstroProject({ ir, content })
+
+  it('carry the overrides in their data and hand them to the Seo component', () => {
+    expect(JSON.parse(result.files['src/data/posts.json']!)[0]).toMatchObject({ seo_title: 'Hello – Example', open_graph: { title: 'Share' }, schema: YOAST_GRAPH })
+    expect(result.files['src/pages/news.astro']).toContain('openGraph: page.open_graph, twitter: page.twitter, schema: page.schema')
+    expect(result.warnings.some((w) => w.includes('schema'))).toBe(false)
+  })
+
+  it('share cards fall back tag by tag: twitter → Open Graph → the page', () => {
+    const seo = result.files['src/components/Seo.astro']!
+    expect(seo).toContain('const ogTitle = openGraph?.title || title')
+    expect(seo).toContain('const ogImage = absoluteUrl(openGraph?.image, site) ?? imageUrl')
+    expect(seo).toContain('const ogImageTags = ogImage === imageUrl ? imageTags : {}')
+    expect(seo).toContain('const twTitle = twitter?.title || ogTitle')
+    expect(seo).toContain('const twImage = absoluteUrl(twitter?.image, site) ?? ogImage')
+    expect(seo).toContain(`const twCard = twitter?.card === 'summary' || twitter?.card === 'summary_large_image' ? twitter.card : twImage ? 'summary_large_image' : 'summary'`)
+    expect(seo).toContain('const structured = sourceStructuredData(schema, headLdIds) ?? pageStructuredData({')
+    expect(seo).toContain('<meta name="twitter:card" content={twCard} />')
+  })
+
+  it('warn about a schema value that is not JSON-LD, instead of dropping it silently', () => {
+    const bad = emitAstroProject({ ir, content: { posts: [{ slug: 'a', title: 'A', body: '', schema: '{"@type":"FAQPage"}' }], queries: { q: [{ params: {}, items: [], schema: [{ name: 'untyped' }] }] } } })
+    expect(bad.warnings).toContain('collection posts: 1 schema values are not JSON-LD objects — those pages print the generated structured data instead')
+    expect(bad.warnings).toContain('query q: 1 schema values are not JSON-LD objects — those pages print the generated structured data instead')
+  })
+})
+
+describe('the layout names what the head carries', () => {
+  it('passes every structured-data @id the kept head holds, so the page graph does not repeat them', () => {
+    const head = '<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://example.com/template/"},{"@type":"WebSite","@id":"https://example.com/#website"},{"@type":"Organization","@id":"https://example.com/#organization","logo":{"@id":"https://example.com/#logo"}},{"@type":"ImageObject","@id":"https://example.com/#logo"}]}</script>'
+    const withHead = emitAstroProject({ ir: { ...ir, families: [{ ...ir.families[0]!, chrome: [{ id: 'head', position: 'head', html: head }, ...ir.families[0]!.chrome!] }] } })
+    expect(withHead.files['src/layouts/F.astro']).toContain('headLdIds={["https://example.com/#website","https://example.com/#organization","https://example.com/#logo"]}')
+    expect(emitAstroProject({ ir }).files['src/layouts/F.astro']).not.toContain('headLdIds=')
+  })
+})
+
+describe('the head keeps the site handle', () => {
+  it('twitter:site stays; the per-page twitter tags go', () => {
+    const { html, removed } = stripSeoTags('<meta name="twitter:site" content="@example"><meta name="twitter:creator" content="@ada"><meta name="twitter:title" content="T">')
+    expect(html).toBe('<meta name="twitter:site" content="@example">')
+    expect(removed).toEqual(['twitter:*'])
+  })
+})
