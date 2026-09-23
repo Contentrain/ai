@@ -34,14 +34,16 @@ export interface SeoFromRawOptions {
 }
 
 /**
- * A plugin's unrendered template, in its own syntax: Yoast \`%%title%%\`,
- * Rank Math \`%title%\` / \`%customfield(name)%\`, AIOSEO \`#post_title\`.
- * Printed as-is it would be a literal \`%%title%% %%sep%%\` in the search
- * result, so such a value is dropped and the page's own falls in. AIOSEO's
- * tags are matched by name, not as any \`#word\`: a title can hold a hashtag.
+ * A plugin's unrendered template, in its own syntax: Yoast `%%title%%`,
+ * SEOPress `%%post_title%%`, Rank Math `%title%` / `%customfield(name)%`,
+ * AIOSEO `#post_title`. Printed as-is it would be a literal
+ * `%%title%% %%sep%%` in the search result, so such a value is dropped and
+ * the page's own falls in. AIOSEO's tags are matched by name, not as any
+ * `#word`: a title can hold a hashtag.
  */
 const TEMPLATE_RE: Record<SeoProvider, RegExp> = {
   yoast: /%%[a-z0-9_-]+%%/i,
+  seopress: /%%[a-z0-9_-]+%%/i,
   rank_math: /%[a-z_]+(?:\([^)]*\))?%/i,
   aioseo: /#(?:(?:alt|archive|attachment|author|category|current|custom_field|page|parent|post|search|separator|site|tax|taxonomy)_[a-z0-9_-]+|categories|permalink|tagline)\b/i,
 }
@@ -68,16 +70,34 @@ function social(value: TwitterOverride | undefined, template: RegExp | undefined
   return Object.keys(out).length ? out : undefined
 }
 
+/** Share-card values: the rendered ones, each missing one from the block. */
+function merged(rendered: TwitterOverride | undefined, stored: TwitterOverride | undefined): TwitterOverride | undefined {
+  if (!rendered) return stored
+  if (!stored) return rendered
+  return { ...stored, ...rendered }
+}
+
 /**
  * One page's SEO fields from the blocks each plugin holds for it. The serving
- * plugin's block wins; without one the first plugin (Yoast, Rank Math, AIOSEO)
- * that has data does. A block not marked `resolved` holds stored values and
- * templates, so its template strings — in that plugin's syntax — are dropped
- * and its literal values kept.
+ * plugin's block wins; without one the first plugin (Yoast, Rank Math,
+ * AIOSEO, SEOPress) that has data does. Its values are read, in order, from:
+ *
+ * 1. the block itself when the running plugin rendered it (`resolved`);
+ * 2. `rendered` — the exporter's own rendering of the plugin's templates, for
+ *    a plugin that is not the one serving the head. Final text: a variable it
+ *    could not render is already out of the string, and only listed in
+ *    `unresolved` for a person to read;
+ * 3. the stored values, with the plugin's unrendered templates dropped.
+ *
+ * 2 and 3 are taken field by field: a value the rendering does not carry
+ * falls back to the block's stored literal.
+ *
+ * Whatever the source, a string that still holds a template token in the
+ * plugin's syntax is dropped: a token is never printed.
  *
  * Robots come from `robots_served` — what the page actually carried after
- * WordPress and the plugin reconciled their settings — and from the plugin's
- * own `robots` only when that is missing.
+ * WordPress and the plugin reconciled their settings — then `rendered.robots`,
+ * then the plugin's own `robots`.
  */
 export function seoFromRawEntry(
   blocks: Partial<Record<SeoProvider, RawSeoEntry>> | undefined,
@@ -91,30 +111,41 @@ export function seoFromRawEntry(
   const provider = order.find((p) => blocks[p] !== undefined)
   if (!provider) return {}
   const entry = blocks[provider]!
-  // A rendered block holds final text; a stored one may hold templates.
+  // A block the running plugin rendered is final text; anything else is
+  // checked for its plugin's template tokens.
   const template = entry.resolved === true ? undefined : TEMPLATE_RE[provider]
+  const rendered = entry.resolved === true ? undefined : entry.rendered
   const out: SeoFields = {}
 
-  const title = text(entry.title, template)
+  // Field by field: what the exporter rendered, else the block's own value —
+  // a stored literal still counts where the rendering has nothing to say, and
+  // a stored template is still dropped by `text`.
+  const title = text(rendered?.title, template) ?? text(entry.title, template)
   if (title) out.seo_title = title
-  const description = text(entry.description, template)
+  const description = text(rendered?.description, template) ?? text(entry.description, template)
   if (description) out.description = description
 
-  const canonical = entry.canonical?.trim()
+  const canonical = (rendered?.canonical ?? entry.canonical)?.trim()
   if (canonical && !(options.url && addressKey(canonical) === addressKey(options.url))) out.canonical = canonical
 
   const served = entry.robots_served?.map((d) => d.trim().toLowerCase())
-  const noindex = served ? served.includes('noindex') : entry.robots?.index === 'noindex'
-  const nofollow = served ? served.includes('nofollow') : entry.robots?.follow === 'nofollow'
+  const robots = rendered?.robots ?? entry.robots
+  const noindex = served ? served.includes('noindex') : robots?.index === 'noindex'
+  const nofollow = served ? served.includes('nofollow') : robots?.follow === 'nofollow'
   if (noindex) out.noindex = true
   if (nofollow) out.nofollow = true
 
-  const og = social(entry.open_graph, template)
+  const og = merged(social(rendered?.open_graph, template), social(entry.open_graph, template))
   if (og) out.open_graph = og
-  const tw = social(entry.twitter, template)
+  // The card is a setting, not rendered text: it comes from the block.
+  const tw = merged(social(rendered?.twitter, template), social(entry.twitter, template))
   if (tw) out.twitter = tw
 
+  // The plugin's rendered graph; else the stored schema nodes the exporter
+  // rendered (Rank Math), as a graph of their own.
   const graph = entry.schema?.graph
+  const renderedGraph = rendered?.schema?.graph
   if (graph && typeof graph === 'object') out.schema = graph
+  else if (Array.isArray(renderedGraph) && renderedGraph.length) out.schema = { '@context': 'https://schema.org', '@graph': renderedGraph }
   return out
 }
