@@ -48,10 +48,25 @@ const TEMPLATE_RE: Record<SeoProvider, RegExp> = {
   aioseo: /#(?:(?:alt|archive|attachment|author|category|current|custom_field|page|parent|post|search|separator|site|tax|taxonomy)_[a-z0-9_-]+|categories|permalink|tagline)\b/i,
 }
 
+/**
+ * Whether a string holds a template token. Percent-encoding is decoded first
+ * when it decodes: `%E4%B8%AD` in a CJK URL is text, not Rank Math's `%AD%`.
+ * A real token never decodes (`%ti…` is no escape), so it is tested as it is.
+ */
+function hasToken(value: string, template: RegExp): boolean {
+  let decoded = value
+  try {
+    decoded = decodeURI(value)
+  } catch {
+    // Not decodable — as a template token is not: test the string itself.
+  }
+  return template.test(decoded)
+}
+
 const text = (value: string | undefined, template: RegExp | undefined): string | undefined => {
   const v = value?.trim()
   if (!v) return undefined
-  return template?.test(v) ? undefined : v
+  return template && hasToken(v, template) ? undefined : v
 }
 
 const addressKey = (url: string): string => url.trim().replace(/^https?:\/\//i, '//').replace(/\/+(?=[?#]|$)/, '')
@@ -95,8 +110,8 @@ function merged(rendered: TwitterOverride | undefined, stored: TwitterOverride |
  * Whatever the source, a string that still holds a template token in the
  * plugin's syntax is dropped: a token is never printed. The same holds for
  * the JSON-LD: a resolved block's graph is the plugin's rendering; any other
- * block's top-level graph is not trusted — the exporter's rendered nodes are
- * read, and a node still holding a token is left out.
+ * block's graph — the exporter's rendered nodes, else its own top-level graph
+ * — is read node by node, and a node still holding a token is left out.
  *
  * Robots come from `robots_served` — what the page actually carried after
  * WordPress and the plugin reconciled their settings — then `rendered.robots`,
@@ -153,16 +168,29 @@ export function seoFromRawEntry(
   if (entry.resolved === true) {
     const graph = entry.schema?.graph
     if (graph && typeof graph === 'object') out.schema = graph
-  } else if (template && Array.isArray(rendered?.schema?.graph)) {
-    const nodes = rendered.schema.graph.filter((node) => !holdsToken(node, template))
+  } else if (template) {
+    // The rendering; without one, the block's own graph — both node by node.
+    const top = entry.schema?.graph
+    const source = Array.isArray(rendered?.schema?.graph)
+      ? rendered.schema.graph
+      : ldNodes(top)
+    const nodes = source.filter((node) => !holdsToken(node, template))
     if (nodes.length) out.schema = { '@context': 'https://schema.org', '@graph': nodes }
   }
   return out
 }
 
+/** A JSON-LD value's nodes: a @graph object's graph, a node array, or one node. */
+function ldNodes(value: unknown): unknown[] {
+  if (!value || typeof value !== 'object') return []
+  if (Array.isArray(value)) return value
+  const graph = (value as { '@graph'?: unknown })['@graph']
+  return Array.isArray(graph) ? graph : [value]
+}
+
 /** Whether any string anywhere in a JSON value holds a template token. */
 function holdsToken(value: unknown, template: RegExp): boolean {
-  if (typeof value === 'string') return template.test(value)
+  if (typeof value === 'string') return hasToken(value, template)
   if (Array.isArray(value)) return value.some((v) => holdsToken(v, template))
   if (value && typeof value === 'object') return Object.values(value).some((v) => holdsToken(v, template))
   return false
