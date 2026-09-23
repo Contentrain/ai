@@ -539,6 +539,31 @@ The sibling family (`RawIR`, `ProjectIR`, `CapabilityManifest`,
 [package README](https://github.com/Contentrain/ai/tree/main/packages/types#migration-contracts).
 :::
 
+## Comments export by repository path
+
+`MigrationHandoff.comments.export` (`HandoffCommentsExport`) says where the full comments export (`contentrain-comments@1`) is. A producer writes at most one of:
+
+| Field | When |
+|---|---|
+| `path` | Large exports: a file in the generated repository. The consumer reads it at the same commit SHA it read the handoff from (not a branch name, which can move between the two reads), with the repository access it already has, so a private repository needs no public URL |
+| `url` | A file fetched over http(s) |
+| `inline` | Small exports, embedded in the handoff |
+
+With none of them, the export exists but has no reference yet (a large export with no repository to put it in): a valid state with nothing to import.
+
+The file at `path` or `url` is the export as UTF-8 JSON. `bytes` (size) and `sha256` (lowercase hex) are taken over its raw bytes as stored, so a consumer can refuse an oversized export before reading it and check what it read.
+
+`path` is a POSIX path relative to the repository root, in one normal form: no leading `/` or `./`, no `.`, `..`, `.git` or empty segment, no backslash, no scheme or drive, no control character, Unicode in NFC. `isRepoRelativePath()` is that check, so a path can never leave the repository or reach its git internals, and no two producers spell one file two ways. A consumer reading a local checkout also checks that the file is not a symlink (`lstat`) before reading it.
+
+```ts
+import { commentsExportSource, validateHandoffCommentsExport } from '@contentrain/types'
+
+const source = commentsExportSource(handoff.comments?.export)
+// { kind: 'path', path } | { kind: 'url', url } | { kind: 'inline', export } | undefined
+```
+
+`commentsExportSource()` reads `path` first, then `url`, then `inline`, and skips a `path` that is not in normal form and a `url` that is not http(s). `validateHandoffCommentsExport()` returns `{ errors, warnings }` for a producer's own check or a consumer's report: errors for several sources or a bad path, url, size or hash; warnings when a file at `path` or `url` comes without `sha256` or `bytes`.
+
 ## Migrate → Studio claim
 
 A paid Migrate order includes a Studio trial. At delivery, Migrate hands the customer to Studio with a signed claim token: a compact JWS, `alg: "EdDSA"` (Ed25519), signed with Migrate's private key and verified with its public key (no shared secret; optional `kid` for rotation). `MigrateStudioClaim` is the payload both apps bind to.
