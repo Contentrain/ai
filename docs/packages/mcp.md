@@ -257,7 +257,8 @@ All write operations create or update `cr/*` branches:
 
 - Content changes go to isolated branches (`cr/{scope}/{target}[/{locale}]/{timestamp}-{suffix}`)
 - Humans review via `contentrain diff` or the serve UI
-- Approved changes merge into the `contentrain` branch, baseBranch is advanced via update-ref
+- Approved changes merge into the `contentrain` branch, baseBranch is advanced via update-ref. baseBranch is the project's default branch — `CONTENTRAIN_BRANCH` env, `repository.default_branch`, the remote HEAD, then `main`/`master` — and only as a last resort the checked-out branch; a write made on a feature branch never merges, moves or pushes it (see [Base Branch](/reference/config#base-branch))
+- A local write plans from the working tree but commits on the fetched `contentrain` tip; JSON changes carry over key by key, so another writer's entries survive a stale working tree. The same value changed on both sides is refused with `CONTENT_WORKING_TREE_STALE` and nothing is written
 - A diverged baseBranch (commits `contentrain` lacks — typically a dual-domain migration PR) is a **partial success**, not an error: the write lands on `contentrain`, the response reports `base_advance: "blocked_diverged"`, and `contentrain_reconcile` merges the branches content-aware so the fast-forward works again. `contentrain_status` reports the relation (`in_sync` / `content_ahead` / `base_ahead` / `diverged`) in both directions
 - Merging (or deleting) a branch also removes its copy on the remote, so merged branches don't pile up as phantom pending reviews — best-effort, opt out with `remoteBranchCleanup: false` in `config.json`. Drain an existing backlog with `contentrain prune`
 - Merged-branch detection survives base-history rewrites (ancestry check with a patch-id fallback)

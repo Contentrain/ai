@@ -2,6 +2,7 @@ import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { createGit } from '../../git/identity.js'
 import type { Branch, FileDiff, MergeResult } from '../../core/contracts/index.js'
 import { readConfig } from '../../core/config.js'
+import { resolveBaseBranch } from '../../git/base-branch.js'
 import { classifyMergedBranches, deleteRemoteBranch } from '../../git/branch-lifecycle.js'
 import { mergeBranch as mergeBranchOp } from '../../git/transaction.js'
 
@@ -14,13 +15,7 @@ import { mergeBranch as mergeBranchOp } from '../../git/transaction.js'
  */
 
 export async function getDefaultBranch(projectRoot: string): Promise<string> {
-  const config = await readConfig(projectRoot)
-  if (config?.repository?.default_branch) return config.repository.default_branch
-  const envBranch = process.env['CONTENTRAIN_BRANCH']
-  if (envBranch) return envBranch
-  const git = createGit(projectRoot)
-  const current = (await git.raw(['branch', '--show-current'])).trim()
-  return current || 'main'
+  return resolveBaseBranch(createGit(projectRoot), await readConfig(projectRoot))
 }
 
 export async function listBranches(

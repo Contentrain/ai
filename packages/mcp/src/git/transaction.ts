@@ -10,6 +10,7 @@ import { deleteRemoteBranch, networkGit, type RemoteDeleteResult } from './branc
 import { authorConfig } from './identity.js'
 import { branchTimestamp } from '../util/id.js'
 import { migrateLegacyBranches } from '../providers/local/migration.js'
+import { resolveBaseBranch } from './base-branch.js'
 import type { BaseAdvance, RemotePush, SyncResult, WorkflowMode } from '@contentrain/types'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 
@@ -60,6 +61,10 @@ export interface MergeBranchResult {
 export interface GitTransaction {
   worktree: string
   branch: string
+  /** The resolved base branch this transaction advances. */
+  baseBranch: string
+  /** Whether the developer has the base branch checked out. */
+  baseCheckedOut: boolean
   write(callback: (worktreePath: string) => Promise<void>): Promise<void>
   commit(message: string, contextUpdate?: ContextUpdate): Promise<string>
   complete(): Promise<CompleteResult>
@@ -75,9 +80,7 @@ export async function ensureContentBranch(projectRoot: string): Promise<void> {
   if (branches.all.includes(CONTENTRAIN_BRANCH)) return
 
   // Detect base branch
-  const baseBranch = config?.repository?.default_branch
-    || (await git.raw(['branch', '--show-current'])).trim()
-    || 'main'
+  const baseBranch = await resolveBaseBranch(git, config)
 
   // Clean up legacy `contentrain/*` feature branches so the singleton
   // `contentrain` ref can be created. Idempotent — safe to call even
@@ -217,19 +220,18 @@ export async function createTransaction(
 
   const remoteName = process.env['CONTENTRAIN_REMOTE'] ?? 'origin'
 
-  // Detect base branch + current branch + remote in ONE batch
-  // (reduces subprocess spawns from 4 to 2)
-  let baseBranch = process.env['CONTENTRAIN_BRANCH'] ?? config?.repository?.default_branch ?? ''
-  let currentBranch = ''
-  let hasRemote = false
-
+  // Detect current branch + remote in ONE batch, then the base branch.
   const [branchResult, remotes] = await Promise.all([
     git.raw(['branch', '--show-current']).catch(() => ''),
     git.getRemotes().catch(() => []),
   ])
-  currentBranch = branchResult.trim()
-  if (!baseBranch) baseBranch = currentBranch || 'main'
-  hasRemote = (remotes as { name: string }[]).some(r => r.name === remoteName)
+  const currentBranch = branchResult.trim()
+  const baseBranch = await resolveBaseBranch(git, config, { remoteName, currentBranch })
+  const hasRemote = (remotes as { name: string }[]).some(r => r.name === remoteName)
+  // The developer's HEAD moves with an advance only when the base is what
+  // they have checked out. On any other branch their tree stays exactly as
+  // it is — no index refresh, no selective sync.
+  const baseCheckedOut = currentBranch === baseBranch
 
   // Check if developer is on contentrain branch
   if (currentBranch === CONTENTRAIN_BRANCH) {
@@ -305,6 +307,8 @@ export async function createTransaction(
   return {
     worktree: worktreePath,
     branch,
+    baseBranch,
+    baseCheckedOut,
 
     async write(callback) {
       await callback(worktreePath)
@@ -405,24 +409,10 @@ export async function createTransaction(
       if (await isAncestor(git, previousBaseRef, contentrainTip)) {
         baseAdvance = 'advanced'
 
-        // Advance base branch to contentrain tip via update-ref
-        await git.raw(['update-ref', `refs/heads/${baseBranch}`, contentrainTip])
-
-        // Refresh index to match new HEAD.
-        // update-ref moves the branch pointer but leaves the index stale.
-        // read-tree updates the index to match HEAD without touching the working tree.
-        try {
-          await git.raw(['read-tree', 'HEAD'])
-        } catch {
-          // fallback: try reset for older git versions
-          try { await git.raw(['reset', 'HEAD']) } catch { /* ignore */ }
-        }
-
-        // Selective sync: copy .contentrain/ files to developer's working tree.
-        // Only after an advance — when the base did not move, the developer's
-        // HEAD did not change, and syncing files from the contentrain tip
-        // would desync their working tree from their own HEAD.
-        sync = await selectiveSync(projectRoot, worktreePath, contentrainTip, previousBaseRef, dirtyFilesBeforeUpdate)
+        sync = await advanceBase(git, {
+          projectRoot, worktreePath, baseBranch, currentBranch, baseCheckedOut,
+          contentrainTip, previousBaseRef, dirtyFilesBeforeUpdate,
+        })
       } else {
         baseAdvance = 'blocked_diverged'
         divergedWarning = `Content is committed and merged into "${CONTENTRAIN_BRANCH}", but "${baseBranch}" has commits that are not in "${CONTENTRAIN_BRANCH}" — the branches have diverged, so "${baseBranch}" was not advanced. Run contentrain_reconcile (CLI: npx contentrain reconcile) to merge them and restore the fast-forward advance.`
@@ -476,9 +466,9 @@ export async function mergeBranch(
   const remoteName = process.env['CONTENTRAIN_REMOTE'] ?? 'origin'
 
   // Detect base branch
-  const baseBranch = process.env['CONTENTRAIN_BRANCH']
-    ?? config?.repository?.default_branch
-    ?? ((await git.raw(['branch', '--show-current'])).trim() || 'main')
+  const currentBranch = (await git.raw(['branch', '--show-current']).catch(() => '')).trim()
+  const baseBranch = await resolveBaseBranch(git, config, { remoteName, currentBranch })
+  const baseCheckedOut = currentBranch === baseBranch
 
   // Ensure contentrain branch exists
   await ensureContentBranch(projectRoot)
@@ -579,19 +569,10 @@ export async function mergeBranch(
     if (await isAncestor(git, previousBaseRef, contentrainTip)) {
       baseAdvance = 'advanced'
 
-      // Advance base branch to contentrain tip via update-ref
-      await git.raw(['update-ref', `refs/heads/${baseBranch}`, contentrainTip])
-
-      // Refresh index to match new HEAD
-      try {
-        await git.raw(['read-tree', 'HEAD'])
-      } catch {
-        try { await git.raw(['reset', 'HEAD']) } catch { /* ignore */ }
-      }
-
-      // Selective sync: copy .contentrain/ files to developer's working tree.
-      // Only after an advance — see complete() for why.
-      sync = await selectiveSync(projectRoot, worktreePath, contentrainTip, previousBaseRef, dirtyFilesBeforeUpdate)
+      sync = await advanceBase(git, {
+        projectRoot, worktreePath, baseBranch, currentBranch, baseCheckedOut,
+        contentrainTip, previousBaseRef, dirtyFilesBeforeUpdate,
+      })
     } else {
       baseAdvance = 'blocked_diverged'
       divergedWarning = `Branch "${branchName}" is merged into "${CONTENTRAIN_BRANCH}", but "${baseBranch}" has commits that are not in "${CONTENTRAIN_BRANCH}" — the branches have diverged, so "${baseBranch}" was not advanced. Run contentrain_reconcile (CLI: npx contentrain reconcile) to merge them and restore the fast-forward advance.`
@@ -640,6 +621,56 @@ export function buildBranchName(scope: string, target: string, locale?: string):
   if (locale) parts.push(locale)
   parts.push(ts)
   return parts.join('/')
+}
+
+/**
+ * Fast-forward the base branch to the contentrain tip with `update-ref`, then
+ * bring the developer's working tree along — but only when the base is the
+ * branch they have checked out.
+ *
+ * When it is, `update-ref` moved their HEAD: the index is refreshed and the
+ * changed files are synced (dirty files skipped). When it is not — a feature
+ * branch is checked out — their HEAD did not move, so there is nothing to
+ * refresh: `read-tree HEAD` would only drop what they have staged, and a
+ * "sync" from HEAD would restore or delete files against the wrong branch.
+ * Their tree is left exactly as it is, and the result says where the content
+ * went.
+ */
+async function advanceBase(git: SimpleGit, input: {
+  projectRoot: string
+  worktreePath: string
+  baseBranch: string
+  currentBranch: string
+  baseCheckedOut: boolean
+  contentrainTip: string
+  previousBaseRef: string
+  dirtyFilesBeforeUpdate: Set<string>
+}): Promise<SyncResult> {
+  await git.raw(['update-ref', `refs/heads/${input.baseBranch}`, input.contentrainTip])
+
+  if (!input.baseCheckedOut) {
+    const where = input.currentBranch ? `"${input.currentBranch}"` : 'a detached HEAD'
+    return {
+      synced: [],
+      skipped: [],
+      warning: `Content landed on "${CONTENTRAIN_BRANCH}" and "${input.baseBranch}". Your working tree is on ${where}, which was not touched — merge or rebase "${input.baseBranch}" to see the change there.`,
+    }
+  }
+
+  // update-ref moves the branch pointer but leaves the index stale.
+  // read-tree updates the index to match HEAD without touching the working tree.
+  try {
+    await git.raw(['read-tree', 'HEAD'])
+  } catch {
+    // fallback: try reset for older git versions
+    try { await git.raw(['reset', 'HEAD']) } catch { /* ignore */ }
+  }
+
+  // Selective sync: copy the changed files to the developer's working tree.
+  // Only after an advance — when the base did not move, the developer's HEAD
+  // did not change, and syncing files from the contentrain tip would desync
+  // their working tree from their own HEAD.
+  return selectiveSync(input.projectRoot, input.worktreePath, input.contentrainTip, input.previousBaseRef, input.dirtyFilesBeforeUpdate)
 }
 
 /**

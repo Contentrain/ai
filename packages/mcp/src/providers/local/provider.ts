@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
@@ -28,6 +29,7 @@ import {
   mergeBranch as mergeBranchOp,
 } from './branch-ops.js'
 import { LocalReader } from './reader.js'
+import { rebaseChange } from './rebase-changes.js'
 import type { LocalApplyPlanInput, LocalApplyResult } from './types.js'
 
 const DEFAULT_AUTHOR_NAME = 'Contentrain'
@@ -81,12 +83,29 @@ export class LocalProvider implements RepoProvider {
   }
 
   async applyPlan(input: LocalApplyPlanInput): Promise<LocalApplyResult> {
+    // What the planner read: every read goes through LocalReader, i.e. the
+    // working tree. Captured before the transaction fetches, so it is the
+    // tree the plan was computed from — not whatever the remote says now.
+    const basis = await Promise.all(input.changes.map(c => readOrNull(join(this.projectRoot, c.path))))
     const tx = await createTransaction(this.projectRoot, input.branch, {
       workflowOverride: input.workflowOverride,
     })
     try {
       await tx.write(async (wt) => {
-        await applyChangesToWorktree(wt, input.changes)
+        // The worktree is the contentrain tip after fetch + merge — the tree
+        // this commit is built on. Carry the plan over to it instead of
+        // overwriting it with files built from a possibly stale working tree
+        // (#226). See rebaseChange.
+        const current = await Promise.all(input.changes.map(c => readOrNull(join(wt, c.path))))
+        const results = input.changes.map((change, i) => rebaseChange(change, basis[i]!, current[i]!))
+        const conflicts = results.filter(r => !r.ok)
+        if (conflicts.length > 0) {
+          throw Object.assign(new Error(
+            `Nothing was written: the content branch moved since your working tree was last updated, and this change cannot be applied on top of it. `
+            + conflicts.map(c => `${c.path}: ${c.reason}.`).join(' '),
+          ), staleTreeGuidance(tx.baseBranch, tx.baseCheckedOut))
+        }
+        await applyChangesToWorktree(wt, results.map(r => (r as Extract<typeof r, { ok: true }>).change))
       })
       await tx.commit(input.message, input.context)
       const gitResult = await tx.complete()
@@ -214,5 +233,34 @@ export class LocalProvider implements RepoProvider {
         // worktree may already be cleaned up
       }
     }
+  }
+}
+
+async function readOrNull(path: string): Promise<string | null> {
+  try {
+    return await readFile(path, 'utf-8')
+  } catch {
+    return null
+  }
+}
+
+/**
+ * How to bring the planner's tree up to date. On the base branch that is a
+ * pull. On a feature branch the content never reaches the working tree (the
+ * advance leaves a non-base checkout alone), so a pull fetches nothing
+ * useful — merging the base is what brings it in.
+ */
+function staleTreeGuidance(baseBranch: string, baseCheckedOut: boolean): {
+  code: string
+  agent_hint: string
+  developer_action: string
+} {
+  const update = baseCheckedOut
+    ? 'Ask the developer to update their working tree (git pull)'
+    : `The developer is on a branch other than "${baseBranch}", which content writes do not update. Ask them to merge "${baseBranch}" into it (or rebase onto it)`
+  return {
+    code: 'CONTENT_WORKING_TREE_STALE',
+    agent_hint: `The content on the contentrain branch differs from the working tree this write was planned from — another writer (Studio, a teammate, CI) or an earlier write changed the same value. ${update}, then re-read the content and retry — do not retry unchanged.`,
+    developer_action: baseCheckedOut ? 'git pull' : `git merge ${baseBranch}`,
   }
 }

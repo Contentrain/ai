@@ -11,6 +11,7 @@ import { join } from 'node:path'
 import { pathExists } from '../util/fs.js'
 import { checkBranchHealth, cleanupMergedBranches, contentBranchRelation } from '../git/branch-lifecycle.js'
 import { createGit } from '../git/identity.js'
+import { resolveBaseBranch } from '../git/base-branch.js'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 
@@ -131,8 +132,9 @@ export function registerContextTools(
             const git = createGit(projectRoot)
             const branches = await git.branchLocal()
             if (branches.all.includes(CONTENTRAIN_BRANCH)) {
-              const baseBranch = config?.repository?.default_branch
-                ?? (branches.current !== CONTENTRAIN_BRANCH ? branches.current : 'main')
+              const baseBranch = await resolveBaseBranch(git, config, {
+                currentBranch: branches.current,
+              })
               const relation = await contentBranchRelation(git, baseBranch)
               result['content_branch'] = {
                 base: baseBranch,
