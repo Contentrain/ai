@@ -1,5 +1,16 @@
 # @contentrain/query
 
+## 7.5.0
+
+### Minor Changes
+
+- 4f132fb: `ContentrainError.code` carries the API's machine code (`data.code`) from forms and comments error bodies, and `isPaymentRequired()` recognises Studio's `402 payment_required` (the workspace's billing is locked). On that error a site hides the form or thread instead of retrying or showing the owner-facing message to a visitor.
+
+### Patch Changes
+
+- Updated dependencies [10c9b85]
+  - @contentrain/types@1.21.0
+
 ## 7.4.2
 
 ### Patch Changes
