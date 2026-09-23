@@ -152,6 +152,18 @@ The labels, buttons and messages a visitor sees — "Post comment", "Your commen
 - A key the dictionary lacks shows its English default. A page in another language with no dictionary shows English throughout, and **the build log says so** — once per language, naming the file or the missing keys.
 - The key list, the English defaults and the model definition are exported from `@contentrain/emitter-astro` as `UI_STRING_DEFAULTS` and `UI_STRINGS_MODEL`, so a migration creates exactly the dictionary the site reads. Declare the languages it wrote in `options.uiStrings.locales` and the emit report names any page language left without one.
 
+### When the workspace's subscription is inactive
+
+Studio answers `402 payment_required` on the public forms and comments endpoints when the workspace's billing is locked (trial or grace period over, subscription canceled). The body's `data.code` is `payment_required`, and its `message` is written for the workspace owner, not for a visitor.
+
+`<cr-form>` and `<cr-comments>` take themselves off the page when they get it, whether loading, submitting or loading more comments:
+
+- The element is emptied and set `hidden`. The rest of the page is untouched, and the visitor sees no error.
+- The request is not retried: nothing changes until the owner updates billing.
+- One `console.debug` line tells the owner what happened.
+
+Every other failure (a 403 `*.upgrade`, a rate limit, validation) is shown as before. The emitted `isPaymentRequired()` checks the status or the code; it does not read `billingState`.
+
 ## The acceptance test
 
 A migration is not finished because the components render. The gate is the round trip:

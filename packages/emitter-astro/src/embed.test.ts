@@ -236,3 +236,65 @@ describe('emitted embed runtime — comments', () => {
     expect(em.bodyHtml('a <b>\nb\n\nc')).toBe('<p>a &lt;b&gt;<br />b</p><p>c</p>')
   })
 })
+
+/** Just enough of an element for a mount that fails before it renders. */
+const fakeHost = (dataset: Record<string, string>) => ({
+  dataset,
+  innerHTML: '',
+  hidden: false,
+  querySelector: () => null,
+  addEventListener: () => {},
+})
+
+describe('emitted embed runtime — 402 payment_required (the workspace subscription is inactive)', () => {
+  // Studio's public-API body for a locked workspace (studio #349, errors.json).
+  const locked = {
+    statusCode: 402,
+    message: "This workspace's subscription is inactive. The workspace owner needs to update billing to continue.",
+    data: { code: 'payment_required', billingState: 'trial_expired', requiresCheckout: true },
+  }
+
+  it('EmbedError carries the machine code; isPaymentRequired reads the status or the code, not an upgrade 403', async () => {
+    vi.stubGlobal('fetch', mockFetch(locked, 402))
+    const err = await em.fetchFormConfig(rt, 'contact').catch((e: unknown) => e)
+    expect(err.status).toBe(402)
+    expect(err.code).toBe('payment_required')
+    expect(em.isPaymentRequired(err)).toBe(true)
+    expect(em.isPaymentRequired(new em.EmbedError(400, 'x', 'payment_required'))).toBe(true)
+    expect(em.isPaymentRequired(new em.EmbedError(403, 'Upgrade your plan', 'forms.upgrade'))).toBe(false)
+    expect(em.isPaymentRequired(new Error('network'))).toBe(false)
+  })
+
+  it('a form is taken off the page quietly: no text for the visitor, one console note for the owner, no retry', async () => {
+    const fetchMock = mockFetch(locked, 402)
+    vi.stubGlobal('fetch', fetchMock)
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {})
+    const host = fakeHost({ baseUrl: rt.base_url, project: 'proj1', model: 'contact' })
+    await em.mountForm(host)
+    expect(host.hidden).toBe(true)
+    expect(host.innerHTML).toBe('')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(debug).toHaveBeenCalledTimes(1)
+    expect(debug.mock.calls[0]![0]).toContain('402 payment_required')
+  })
+
+  it('a comments thread likewise', async () => {
+    const fetchMock = mockFetch(locked, 402)
+    vi.stubGlobal('fetch', fetchMock)
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {})
+    const host = fakeHost({ baseUrl: rt.base_url, project: 'proj1', model: 'posts', entry: 'hello-world', locale: 'en' })
+    await em.mountComments(host)
+    expect(host.hidden).toBe(true)
+    expect(host.innerHTML).toBe('')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(debug.mock.calls[0]![0]).toContain('comments hidden')
+  })
+
+  it('any other failure still shows its message, as before', async () => {
+    vi.stubGlobal('fetch', mockFetch({ statusCode: 403, message: 'Forms are available on Pro. Upgrade your plan.' }, 403))
+    const host = fakeHost({ baseUrl: rt.base_url, project: 'proj1', model: 'contact' })
+    await em.mountForm(host)
+    expect(host.hidden).toBe(false)
+    expect(host.innerHTML).toBe('<p class="cr-error">Forms are available on Pro. Upgrade your plan.</p>')
+  })
+})
