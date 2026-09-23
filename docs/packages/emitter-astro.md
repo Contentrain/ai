@@ -108,13 +108,16 @@ SEO continuity is the reason a migration keeps the source addresses at all, so t
 
 | Tag | Source |
 |---|---|
-| `<title>` | `EmitPost.title` · `QueryPage.title` · `RouteModel.title` |
-| `description`, `og:description`, `twitter:description` | `EmitPost.description`, else `excerpt` with markup stripped and cut at a word boundary |
+| `<title>` | `EmitPost.seo_title` (the title an SEO plugin composed, "Post – Site"), else `EmitPost.title` · `QueryPage.title` · `RouteModel.title`. The entry's own `title` stays its Article headline and last breadcrumb |
+| `og:title`, `og:description`, `og:image` | `open_graph` on `EmitPost` or `QueryPage` — share-card values the source set by hand — else the page's title, description and image. `og:image:*` is printed only when the image is `image` itself |
+| `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image` | `twitter` on `EmitPost` or `QueryPage`, else the Open Graph values; the card is `summary` / `summary_large_image` as given, else by whether there is an image. The template head's `twitter:site` — the site's handle, the same on every page — is kept |
+| `description` | `EmitPost.description`, else `excerpt` with markup stripped and cut at a word boundary |
 | `canonical`, `og:url` | The address Astro generated (`Astro.url` + `site`), so it cannot disagree with the emitted page. `EmitPost.canonical` overrides |
-| `og:image`, `twitter:image` | `EmitPost.image`, else a `featured` entry that is already a path. A bare file name is skipped — only the producer knows where media is served |
+| Page image (`og:image` / `twitter:image` default) | `EmitPost.image`, else a `featured` entry that is already a path. A bare file name is skipped — only the producer knows where media is served |
 | `og:image:width` / `height` / `type` | `image_meta` on `EmitPost` or `QueryPage`, as the producer measured the file. Printed only beside `image` (a `featured` fallback is a different file), and only valid values — positive integer sizes, an `image/…` type |
 | `og:site_name` | `ProjectIR.site.title` |
 | Structured data graph | One JSON-LD `@graph` per page: `WebPage` (`CollectionPage` on lists) at the built address with `inLanguage`, `isPartOf` → the site's WebSite `@id` when the kept head declares one; `BreadcrumbList` from `EmitPost.breadcrumbs` / `QueryPage.breadcrumbs` (the trail without the page — the emitter appends it at its own address); and on entries the `Article`, `mainEntityOfPage` → that `@id`. Invalid trails are dropped with a warning; no trail, no BreadcrumbList |
+| Source structured data | `schema` on `EmitPost` or `QueryPage`: the page's JSON-LD as the source's SEO plugin rendered it (a `@graph` object, a node array or one node). It is printed **instead of** the generated graph, so FAQ, HowTo, Product and the plugin's own WebPage/Article survive. A WebSite `SearchAction` is dropped, and so is a copy of the WebSite node the kept head already declares (matched by address: scheme and a slash before `#` do not count). Addresses in the graph are printed as given — the migration keeps the source's, so rewrite only what moved (media). A value with no typed node is not printable: that page gets the generated graph, with a warning |
 | `hreflang` alternates, `og:locale:alternate` | Entry pages whose content-store entry (`EmitPost.entry`) exists in another locale. Addresses come from each route's own pattern and the post's parameters — what `getStaticPaths` uses — and the language is the page's `lang`. Every page lists itself; `x-default` is the site-default-locale version. An ambiguous address gets none, with a warning. The template page's own hreflang links are removed from the head chrome |
 | `og:locale` | The page's `lang` |
 | `<meta name="robots">` | `noindex` / `nofollow` on `EmitPost` or `QueryPage` (the source page's robots, e.g. Yoast `robots.index`): `noindex`, `nofollow` or `noindex, nofollow`. Neither set, no tag. The template page's own `robots` and `googlebot` tags are removed from the head chrome, so one page's `noindex` cannot spread to every page. Their site-wide settings (Yoast's `max-image-preview:large, max-snippet:-1, max-video-preview:-1`, anything but index/noindex/follow/nofollow/all/none) are kept and printed on every page after the page's own directives |
@@ -131,6 +134,15 @@ Page-scoped structured data is every `…Page` and `…Article` type (WebPage, C
 Head-only tags that a faithful clone left in the **body** are reported, not removed: the body is page content, `<title>` is legal inside `<svg>`, and cutting into it to fix an invisible tag would break real markup.
 
 Absolute URLs need `site` in `astro.config.mjs`, which the emitter fills from `ProjectIR.site.url`. Without it the canonical link and absolute social URLs are omitted with a warning, rather than pointing at a build host — and the `site` key is left out of the config altogether, because Astro refuses to build with an empty one.
+
+### From a Bridge SEO export
+
+`seoFromRawEntry(blocks, { serving, url })` maps one page's `RawSeo.entries[address]` — what each SEO plugin holds for it — to the fields above (`seo_title`, `description`, `canonical`, `noindex`/`nofollow`, `open_graph`, `twitter`, `schema`), ready to spread into an `EmitPost` or `QueryPage`:
+
+- The serving plugin's block is read (`RawSeo.serving`), else the first of Yoast, Rank Math and AIOSEO that has one.
+- A block not marked `resolved` holds stored values: its unrendered templates (`%%title%%`, `%title%`, `#post_title`) are dropped so the page's own values fall in, and its literal values are kept.
+- Robots come from `robots_served` — what the page actually carried — and from the plugin's setting only without it.
+- A canonical equal to the page's own `url` is left out; only one that points elsewhere becomes an override.
 
 `options.seo: false` turns all of this off: the source head travels verbatim.
 
