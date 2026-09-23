@@ -149,6 +149,17 @@ carry the robots tag.
 producer that writes its own meta tags has not thereby said it writes its own
 sitemap.
 
+## Trailing slash
+
+A WordPress site was indexed under its own form of every address — `/hello/` with the default permalinks, `/hello` with a structure that ends without a slash (`RawRouting.trailing_slash`). The migrated site serves and names each page in that form, so no indexed URL turns into a redirect.
+
+| `options.trailingSlash` | Build | Served at | Named as (canonical, og:url, hreflang, sitemap, feed, llms.txt) |
+|---|---|---|---|
+| `true` (default) | `build.format: 'directory'` — `/hello/index.html` | `/hello/` | `/hello/` |
+| `false` | `build.format: 'file'`, `trailingSlash: 'never'` — `/hello.html` | `/hello`: Netlify and Cloudflare Pages serve a file build that way; for Vercel the emitter adds `cleanUrls: true, trailingSlash: false` to `vercel.json` (unless `redirectHost` names another host) | `/hello` |
+
+The page's own address is taken from the one Astro built it at — a file build names it `/hello.html` — and put into the source's form (`pagePath` in the emitted runtime), so the canonical cannot disagree with the page. A permalink structure ending in `.html` (`/%postname%.html`) is not expressible as an Astro route pattern and is reported, like any other unsupported pattern.
+
 ## Feed and llms.txt
 
 WordPress serves every site's newest posts as RSS at `/feed/`, and readers, aggregators and newsletter tools subscribe to it; Yoast writes an `llms.txt` that tells a language model what the site holds. The emitter builds both, as Astro endpoints over the data files the entry pages are built from, and names each entry by the address its own page has — the route pattern filled with the entry's parameters — so neither can list a page the site does not build.

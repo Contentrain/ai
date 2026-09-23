@@ -310,6 +310,16 @@ export interface EmitOptions {
   /** The site's tagline (WordPress `blogdescription`): the feed's description and the llms.txt summary. */
   siteDescription?: string
   /**
+   * Whether the source site's addresses end in a slash (WordPress
+   * `RawRouting.trailing_slash`): `/hello/` or `/hello`. Default true. With
+   * false the build writes files (`/hello.html`, which Netlify and Cloudflare
+   * Pages serve at `/hello`, and Vercel with the `cleanUrls` this adds to
+   * `vercel.json`), and canonical, og:url, hreflang, the feed and llms.txt
+   * name every page without the slash — the migrated site keeps the form the
+   * source was indexed under.
+   */
+  trailingSlash?: boolean
+  /**
    * The site's interface-text dictionary (see \`UI_STRINGS_MODEL\`). Comments
    * and forms read it at build time from \`dir\` (default
    * \`.contentrain/content/site/ui-strings\`, project-relative).

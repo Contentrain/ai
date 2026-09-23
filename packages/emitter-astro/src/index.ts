@@ -115,6 +115,13 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     }
   }
 
+  // Without trailing slashes the build writes /hello.html; Vercel serves it
+  // at /hello only with cleanUrls (Netlify and Cloudflare Pages do by default).
+  if (input.options?.trailingSlash === false && (input.options.redirectHost ?? 'vercel') === 'vercel') {
+    const vercel = files['vercel.json'] ? JSON.parse(files['vercel.json']) as Record<string, unknown> : {}
+    files['vercel.json'] = `${JSON.stringify({ cleanUrls: true, trailingSlash: false, ...vercel }, null, 2)}\n`
+  }
+
   if (noindex.length && !seo) {
     warnings.push(`${noindex.length} noindex pages: options.seo is false, so no robots meta is emitted — the producer's head must carry it (they are still left out of the sitemap)`)
   }
@@ -186,7 +193,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   }
 
   for (const family of ir.families) {
-    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id), definitions, bodyMarkersByFamily.get(family.id) ?? [], { seo, siteName: ir.site.title, boundQueries, images: imagesEnabled(input.options ?? {}), feedSite: feedSource ? ir.site.url : undefined })
+    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id), definitions, bodyMarkersByFamily.get(family.id) ?? [], { seo, siteName: ir.site.title, boundQueries, images: imagesEnabled(input.options ?? {}), feedSite: feedSource ? ir.site.url : undefined, trailingSlash: input.options?.trailingSlash })
     add(fam.files)
     warnings.push(...fam.warnings)
   }
@@ -336,7 +343,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
 
   // Endpoints over the data files the routes wrote; a collection whose file
   // was not written (its route was dropped) has no pages to list.
-  const feedInput = { ir, siteLocale: lang, description: input.options?.siteDescription }
+  const feedInput = { ir, siteLocale: lang, description: input.options?.siteDescription, trailingSlash: input.options?.trailingSlash !== false }
   const written = (source: LinkSource) => files[`src/data/${source.collection}.json`] !== undefined
   if (feedSource) {
     if (written(feedSource)) {

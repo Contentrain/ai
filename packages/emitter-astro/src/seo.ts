@@ -299,7 +299,7 @@ export const SEO_COMPONENT = `---
  * Canonical and absolute URLs need \`site\` in astro.config.mjs; without it the
  * canonical link and og:url are omitted rather than pointing at a build host.
  */
-import { absoluteUrl, imageMetaTags, jsonLd, pageStructuredData, seoDescription, sourceStructuredData, type Breadcrumb, type ImageMeta, type SocialOverride, type TwitterOverride } from '../lib/fill'
+import { absoluteUrl, imageMetaTags, jsonLd, pagePath, pageStructuredData, seoDescription, sourceStructuredData, type Breadcrumb, type ImageMeta, type SocialOverride, type TwitterOverride } from '../lib/fill'
 
 interface Props {
   /** The document title — an SEO plugin's composed one when the source had it. */
@@ -322,6 +322,8 @@ interface Props {
   pageType?: 'WebPage' | 'CollectionPage'
   /** \`@id\` of the site's WebSite node kept in the head chrome, when there is one. */
   websiteId?: string
+  /** false: the site's addresses end without a slash (\`/hello\`), as the source's did. */
+  trailingSlash?: boolean
   /** \`@id\` of every structured-data node the head chrome keeps — not repeated from \`schema\`. */
   headLdIds?: string[]
   /** \`article\` on entry pages, \`website\` on lists and static pages. */
@@ -356,6 +358,7 @@ const {
   breadcrumbs,
   pageType,
   websiteId,
+  trailingSlash = true,
   headLdIds = [],
   type = 'website',
   publishedAt,
@@ -372,12 +375,12 @@ const {
 } = Astro.props
 
 const site = Astro.site
-const url = canonical ? absoluteUrl(canonical, site) : absoluteUrl(Astro.url.pathname, site)
+const url = canonical ? absoluteUrl(canonical, site) : absoluteUrl(pagePath(Astro.url.pathname, trailingSlash), site)
 const imageUrl = absoluteUrl(image, site)
 const imageTags = imageUrl ? imageMetaTags(imageMeta) : {}
 // hreflang needs absolute URLs; without \`site\` there are none to give.
 const hreflang = alternates.flatMap((a) => {
-  const href = absoluteUrl(a.path, site)
+  const href = absoluteUrl(pagePath(a.path, trailingSlash), site)
   return href ? [{ lang: a.lang, href }] : []
 })
 const localeAlternates = [...new Set(hreflang.map((a) => a.lang))].filter((l) => l !== 'x-default' && l !== locale)
