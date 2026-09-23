@@ -149,9 +149,11 @@ export function familyFiles(
   }
 
   let head = joined('head')
+  let robotsDefault: string[] = []
   if (seoOn) {
     const stripped = stripSeoTags(head)
     head = stripped.html
+    robotsDefault = stripped.robots
     if (stripped.removed.length) {
       const kept = stripped.kept.length ? `; kept the site-wide ${stripped.kept.join(', ')} from its structured data` : ''
       warnings.push(`family ${family.id}: removed the template page's ${stripped.removed.join(', ')} from head chrome — these describe one page, and the emitter renders title, description, canonical, social tags and Article data per page${kept}`)
@@ -173,6 +175,7 @@ export function familyFiles(
   const siteNameProp = options.siteName ? ` siteName={${JSON.stringify(options.siteName)}}` : ''
   const websiteId = seoOn ? websiteIdOf(head) : undefined
   const websiteIdProp = websiteId ? ` websiteId={${JSON.stringify(websiteId)}}` : ''
+  const robotsProp = robotsDefault.length ? ` robotsDefault={${JSON.stringify(robotsDefault)}}` : ''
   const imported = [...new Set([...components.map((c) => c.name), ...mounts.map((m) => m.name)])]
   const componentImports = [
     ...(seoOn ? [`import Seo from '../components/Seo.astro'`] : []),
@@ -261,7 +264,7 @@ ${cssLinks
     ))}
     <Fragment set:html={head} />
 ${seoOn
-  ? `    <Seo title={title} locale={lang}${siteNameProp}${websiteIdProp} {...(seo ?? {})} />`
+  ? `    <Seo title={title} locale={lang}${siteNameProp}${websiteIdProp}${robotsProp} {...(seo ?? {})} />`
   : `    <title>{title}</title>`}
   </head>
   <body {...bodyAttrs}>

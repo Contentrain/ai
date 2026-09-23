@@ -178,12 +178,31 @@ export interface StripResult {
   removed: string[]
   /** Site-wide structured-data types kept out of a block that was otherwise page-scoped. */
   kept: string[]
+  /**
+   * The robots directives of the template's `robots` / `googlebot` tags that
+   * are site settings rather than this page's indexing — Yoast's
+   * `max-image-preview:large, max-snippet:-1, max-video-preview:-1`. The Seo
+   * component prints them on every page, after the page's own noindex/nofollow.
+   */
+  robots: string[]
+}
+
+/** Directives that say whether THIS page is indexed or followed; everything else is a site setting. */
+const PAGE_ROBOTS = new Set(['index', 'noindex', 'follow', 'nofollow', 'all', 'none'])
+
+function siteRobots(tag: string, into: string[]): void {
+  const content = /\bcontent\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(tag)
+  for (const raw of (content?.[1] ?? content?.[2] ?? '').split(',')) {
+    const directive = raw.trim().toLowerCase()
+    if (directive && !PAGE_ROBOTS.has(directive) && !into.includes(directive)) into.push(directive)
+  }
 }
 
 /** Remove the source head's per-page SEO tags so the emitter's own are the only ones. */
 export function stripSeoTags(html: string): StripResult {
   const removed: string[] = []
   const kept: string[] = []
+  const robots: string[] = []
   const note = (label: string) => {
     if (!removed.includes(label)) removed.push(label)
   }
@@ -193,6 +212,7 @@ export function stripSeoTags(html: string): StripResult {
   })
   out = out.replace(META_RE, (tag) => {
     const name = /\b(?:name|property)\s*=\s*["']([^"']+)["']/i.exec(tag)?.[1] ?? 'meta'
+    if (/^(?:robots|googlebot)$/i.test(name)) siteRobots(tag, robots)
     note(name.toLowerCase().startsWith('og:') ? 'og:*' : name.toLowerCase().startsWith('twitter:') ? 'twitter:*' : name)
     return ''
   })
@@ -214,7 +234,7 @@ export function stripSeoTags(html: string): StripResult {
     const open = tag.slice(0, tag.indexOf('>') + 1)
     return `${open}${decision.json}</script>\n`
   })
-  return { html: out, removed, kept }
+  return { html: out, removed, kept, robots }
 }
 
 /**
@@ -282,6 +302,8 @@ interface Props {
   /** The page is kept out of search: \`<meta name="robots" content="noindex">\`. */
   noindex?: boolean
   nofollow?: boolean
+  /** Site-wide robots directives from the template head (\`max-image-preview:large\`, …), printed on every page. */
+  robotsDefault?: string[]
 }
 
 const {
@@ -302,6 +324,7 @@ const {
   locale,
   noindex = false,
   nofollow = false,
+  robotsDefault = [],
 } = Astro.props
 
 const site = Astro.site
@@ -315,7 +338,7 @@ const hreflang = alternates.flatMap((a) => {
 })
 const localeAlternates = [...new Set(hreflang.map((a) => a.lang))].filter((l) => l !== 'x-default' && l !== locale)
 const desc = seoDescription(description)
-const robots = [noindex && 'noindex', nofollow && 'nofollow'].filter(Boolean).join(', ')
+const robots = [noindex && 'noindex', nofollow && 'nofollow', ...robotsDefault].filter(Boolean).join(', ')
 const article = type === 'article'
 const structured = pageStructuredData({
   url,

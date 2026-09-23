@@ -90,7 +90,7 @@ describe('noindex pages', () => {
 
   it('get a robots meta from the Seo component, on entry and list pages', async () => {
     const seo = files['src/components/Seo.astro']!
-    expect(seo).toContain(`const robots = [noindex && 'noindex', nofollow && 'nofollow'].filter(Boolean).join(', ')`)
+    expect(seo).toContain(`const robots = [noindex && 'noindex', nofollow && 'nofollow', ...robotsDefault].filter(Boolean).join(', ')`)
     expect(seo).toContain('{robots && <meta name="robots" content={robots} />}')
     expect(postSeo({ title: 'T', body: '', noindex: true, nofollow: true })).toMatchObject({ noindex: true, nofollow: true })
     expect(postSeo({ title: 'T', body: '' })).toMatchObject({ noindex: undefined, nofollow: undefined })
@@ -107,8 +107,22 @@ describe('noindex pages', () => {
       html: '<meta name="viewport" content="x">',
       removed: ['robots', 'googlebot'],
       kept: [],
+      robots: [],
     })
     expect(warnings.some((w) => w.includes('noindex'))).toBe(false)
+  })
+
+  it("keep the template's site-wide robots settings on every page, after the page's own directives", () => {
+    // Yoast prints its site settings in the same tag as the page's index/follow.
+    const yoast = '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><meta name="googlebot" content="index, follow, max-snippet:-1, notranslate">'
+    expect(stripSeoTags(yoast).robots).toEqual(['max-image-preview:large', 'max-snippet:-1', 'max-video-preview:-1', 'notranslate'])
+    const withYoast = { ...ir, families: [{ ...ir.families[0]!, chrome: [{ id: 'h', position: 'head' as const, html: yoast }, ir.families[0]!.chrome[1]!] }] } as ProjectIR
+    const { files: yoastFiles } = emitAstroProject({ ir: withYoast, content })
+    const layout = Object.entries(yoastFiles).find(([path]) => path.startsWith('src/layouts/'))![1]
+    expect(layout).toContain(`robotsDefault={["max-image-preview:large","max-snippet:-1","max-video-preview:-1","notranslate"]}`)
+    expect(layout).not.toContain('name="robots"')
+    // So an indexable page prints the settings alone, a noindex page both.
+    expect(yoastFiles['src/components/Seo.astro']).toContain(`const robots = [noindex && 'noindex', nofollow && 'nofollow', ...robotsDefault].filter(Boolean).join(', ')`)
   })
 
   it('with seo off: still out of the sitemap, and a warning that the head must carry the robots meta', () => {
