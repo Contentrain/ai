@@ -242,17 +242,18 @@ const fakeHost = (dataset: Record<string, string>) => ({
   dataset,
   innerHTML: '',
   hidden: false,
+  style: { display: '' },
   querySelector: () => null,
   addEventListener: () => {},
 })
 
 describe('emitted embed runtime — 402 payment_required (the workspace subscription is inactive)', () => {
-  // Studio's public-API body for a locked workspace (studio #349, errors.json).
-  const locked = {
-    statusCode: 402,
-    message: "This workspace's subscription is inactive. The workspace owner needs to update billing to continue.",
-    data: { code: 'payment_required', billingState: 'trial_expired', requiresCheckout: true },
-  }
+  // Studio's public-API body for a locked workspace — the errors.json row (studio #349).
+  let locked: { statusCode: number; message: string; data: { code: string } }
+  beforeAll(async () => {
+    const row = (await fixture('errors')).forms.find((e: { statusCode: number }) => e.statusCode === 402)
+    locked = { statusCode: row.statusCode, message: row.message, data: row.data }
+  })
 
   it('EmbedError carries the machine code; isPaymentRequired reads the status or the code, not an upgrade 403', async () => {
     vi.stubGlobal('fetch', mockFetch(locked, 402))
@@ -272,6 +273,7 @@ describe('emitted embed runtime — 402 payment_required (the workspace subscrip
     const host = fakeHost({ baseUrl: rt.base_url, project: 'proj1', model: 'contact' })
     await em.mountForm(host)
     expect(host.hidden).toBe(true)
+    expect(host.style.display).toBe('none')
     expect(host.innerHTML).toBe('')
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(debug).toHaveBeenCalledTimes(1)

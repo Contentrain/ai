@@ -59,6 +59,8 @@ export function isPaymentRequired(error: unknown): boolean {
 export function hideUnavailable(host: HTMLElement, what: 'form' | 'comments'): void {
   host.innerHTML = ''
   host.hidden = true
+  // A site stylesheet that sets display on the element would override hidden.
+  host.style.display = 'none'
   console.debug('[contentrain] ' + what + ' hidden: the workspace subscription is inactive (402 payment_required). The workspace owner needs to update billing in Contentrain Studio.')
 }
 
