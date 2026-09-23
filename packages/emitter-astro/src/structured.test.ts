@@ -139,7 +139,7 @@ describe('the WebSite a page is part of', () => {
     const withHead = emitAstroProject({ ir: { ...ir, families: [{ ...ir.families[0]!, chrome: [{ id: 'head', position: 'head', html: head }, ...ir.families[0]!.chrome!] }] }, content: { posts: [], queries: { q: [] } } })
     expect(withHead.files['src/layouts/F.astro']).toContain('websiteId={"https://example.com/#website"}')
     expect(withHead.files['src/pages/news.astro']).toContain(`pageType: 'CollectionPage'`)
-    expect(withHead.files['src/components/Seo.astro']).toContain('const structured = sourceStructuredData(schema, websiteId) ?? pageStructuredData({')
+    expect(withHead.files['src/components/Seo.astro']).toContain('const structured = sourceStructuredData(schema, headLdIds) ?? pageStructuredData({')
     expect(emitAstroProject({ ir }).files['src/layouts/F.astro']).not.toContain('websiteId=')
   })
 })

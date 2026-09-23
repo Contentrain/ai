@@ -89,9 +89,9 @@ describe('seoFromRawEntry', () => {
   it('drops unrendered templates and keeps literal values from a stored block', () => {
     const stored: RawSeoEntry = {
       resolved: false,
-      title: '%%title%% %%sep%% %%sitename%%',
+      title: '%title% %sep% %sitename%',
       description: 'A literal description.',
-      open_graph: { title: '%title% | %sitename%', description: '#post_excerpt' },
+      open_graph: { title: '%title% | %sitename%', description: '%customfield(teaser)%' },
       twitter: { title: 'Literal tweet' },
       robots: { index: 'noindex', follow: 'nofollow' },
     }
@@ -101,6 +101,17 @@ describe('seoFromRawEntry', () => {
       nofollow: true,
       twitter: { title: 'Literal tweet' },
     })
+    expect(seoFromRawEntry({ yoast: { title: '%%title%% %%sep%% %%sitename%%', description: '%%excerpt%%' } })).toEqual({})
+    expect(seoFromRawEntry({ aioseo: { title: '#post_title #separator_sa #site_title', description: '#tagline' } })).toEqual({})
+  })
+
+  it('reads a template in its own plugin\'s syntax only, so a hashtag or a percentage survives', () => {
+    const title = (provider: 'yoast' | 'rank_math' | 'aioseo', value: string) => seoFromRawEntry({ [provider]: { title: value } }).seo_title
+    expect(title('aioseo', 'Why #vuejs matters – Blog')).toBe('Why #vuejs matters – Blog')
+    expect(title('aioseo', 'Issue #fix_this and #postgres')).toBe('Issue #fix_this and #postgres')
+    expect(title('yoast', 'Top #post_title tips')).toBe('Top #post_title tips')
+    expect(title('rank_math', '50% off, 20% more')).toBe('50% off, 20% more')
+    expect(title('yoast', '100%%50 odds')).toBe('100%%50 odds')
   })
 })
 
@@ -112,12 +123,15 @@ describe('sourceStructuredData (emitted runtime)', () => {
     expect(data['@graph'][2]).toEqual({ '@type': 'WebSite', '@id': 'https://example.com/#website', url: 'https://example.com/' })
   })
 
-  it("drops the head's WebSite node, matched by address rather than by spelling", () => {
-    for (const id of ['https://example.com/#website', 'http://example.com#website', 'https://example.com//#website']) {
-      const data = rt.sourceStructuredData(YOAST_GRAPH, id)
-      expect(data['@graph'].some((n: { '@type': unknown }) => n['@type'] === 'WebSite')).toBe(false)
+  it('drops the nodes the kept head already carries, matched by address rather than by spelling', () => {
+    const types = (ids: string[]) => rt.sourceStructuredData(YOAST_GRAPH, ids)['@graph'].map((n: { '@type': unknown }) => n['@type'])
+    for (const id of ['https://example.com/#website', 'http://example.com#website', 'https://EXAMPLE.com//#website']) {
+      expect(types([id])).toEqual([['WebPage', 'FAQPage'], 'Question', 'Organization'])
     }
-    expect(rt.sourceStructuredData(YOAST_GRAPH, 'https://other.example/#website')['@graph']).toHaveLength(4)
+    expect(types(['https://example.com/#website', 'https://example.com/#organization'])).toEqual([['WebPage', 'FAQPage'], 'Question'])
+    // The path is an address: its case counts.
+    expect(types(['https://example.com/HELLO/'])).toHaveLength(4)
+    expect(types(['https://other.example/#website'])).toHaveLength(4)
   })
 
   it('takes a node array or a single node, and gives up on anything it cannot print', () => {
@@ -169,7 +183,7 @@ describe('emitted pages', () => {
     expect(seo).toContain('const twTitle = twitter?.title || ogTitle')
     expect(seo).toContain('const twImage = absoluteUrl(twitter?.image, site) ?? ogImage')
     expect(seo).toContain(`const twCard = twitter?.card === 'summary' || twitter?.card === 'summary_large_image' ? twitter.card : twImage ? 'summary_large_image' : 'summary'`)
-    expect(seo).toContain('const structured = sourceStructuredData(schema, websiteId) ?? pageStructuredData({')
+    expect(seo).toContain('const structured = sourceStructuredData(schema, headLdIds) ?? pageStructuredData({')
     expect(seo).toContain('<meta name="twitter:card" content={twCard} />')
   })
 
@@ -177,6 +191,15 @@ describe('emitted pages', () => {
     const bad = emitAstroProject({ ir, content: { posts: [{ slug: 'a', title: 'A', body: '', schema: '{"@type":"FAQPage"}' }], queries: { q: [{ params: {}, items: [], schema: [{ name: 'untyped' }] }] } } })
     expect(bad.warnings).toContain('collection posts: 1 schema values are not JSON-LD objects — those pages print the generated structured data instead')
     expect(bad.warnings).toContain('query q: 1 schema values are not JSON-LD objects — those pages print the generated structured data instead')
+  })
+})
+
+describe('the layout names what the head carries', () => {
+  it('passes every structured-data @id the kept head holds, so the page graph does not repeat them', () => {
+    const head = '<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://example.com/template/"},{"@type":"WebSite","@id":"https://example.com/#website"},{"@type":"Organization","@id":"https://example.com/#organization","logo":{"@id":"https://example.com/#logo"}},{"@type":"ImageObject","@id":"https://example.com/#logo"}]}</script>'
+    const withHead = emitAstroProject({ ir: { ...ir, families: [{ ...ir.families[0]!, chrome: [{ id: 'head', position: 'head', html: head }, ...ir.families[0]!.chrome!] }] } })
+    expect(withHead.files['src/layouts/F.astro']).toContain('headLdIds={["https://example.com/#website","https://example.com/#organization","https://example.com/#logo"]}')
+    expect(emitAstroProject({ ir }).files['src/layouts/F.astro']).not.toContain('headLdIds=')
   })
 })
 

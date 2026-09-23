@@ -487,35 +487,39 @@ export function pageStructuredData(input: PageStructuredDataInput): Record<strin
 const SITE_SEARCH = 'SearchAction'
 
 /**
- * An \`@id\` compared as an address: the scheme and a slash before the
- * fragment are not part of it, so \`https://a.com/#website\` and
- * \`http://a.com#website\` name one node — the head and a page's graph can
+ * An \`@id\` compared as an address: the scheme, the host's case and a slash
+ * before the fragment are not part of it, so \`https://a.com/#website\` and
+ * \`http://A.com#website\` name one node — the head and a page's graph can
  * each have been rewritten to the new origin in their own way.
  */
-const ldIdKey = (id: string): string => id.trim().replace(/^https?:\\/\\//i, '//').replace(/\\/+(?=#|$)/, '')
+const ldIdKey = (id: string): string => id.trim()
+  .replace(/^(?:https?:)?\\/\\/[^/?#]*/i, (origin) => origin.toLowerCase().replace(/^https?:/, ''))
+  .replace(/\\/+(?=#|$)/, '')
 
 /**
  * The page's structured data as the source's SEO plugin rendered it, ready to
  * print — or undefined, and the generated graph is used. What the plugin
  * described is kept as it was (FAQ, HowTo, Product, its WebPage and Article)
- * with two exceptions that would be false on the migrated site: a WebSite's
- * SearchAction (a static site has no ?s= search) and a copy of the WebSite
- * node the kept head already declares (\`websiteId\`).
+ * except a WebSite's SearchAction, which would be false on the migrated site
+ * (a static site has no ?s= search), and the nodes the kept head already
+ * carries (\`headIds\` — WebSite, Organization, its logo), which every page
+ * would otherwise print twice.
  */
-export function sourceStructuredData(schema: unknown, websiteId?: string): Record<string, unknown> | undefined {
+export function sourceStructuredData(schema: unknown, headIds: string[] = []): Record<string, unknown> | undefined {
   if (!schema || typeof schema !== 'object') return undefined
   const root = schema as Record<string, unknown>
   const graph = root['@graph']
   const nodes: unknown[] = Array.isArray(schema) ? schema : Array.isArray(graph) ? graph : [schema]
   const typesOf = (node: Record<string, unknown>): string[] =>
     (Array.isArray(node['@type']) ? node['@type'] : [node['@type']]).filter((t): t is string => typeof t === 'string')
+  const inHead = new Set(headIds.map(ldIdKey))
   const kept: Array<Record<string, unknown>> = []
   for (const value of nodes) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) continue
     let node = value as Record<string, unknown>
     if (!typesOf(node).length) continue
     const website = typesOf(node).some((t) => t.toLowerCase() === 'website')
-    if (website && websiteId && typeof node['@id'] === 'string' && ldIdKey(node['@id']) === ldIdKey(websiteId)) continue
+    if (typeof node['@id'] === 'string' && inHead.has(ldIdKey(node['@id']))) continue
     if (website && node['potentialAction'] !== undefined) {
       const action = node['potentialAction']
       const actions = (Array.isArray(action) ? action : [action]).filter((a) =>

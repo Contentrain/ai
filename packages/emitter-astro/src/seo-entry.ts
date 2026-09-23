@@ -34,26 +34,31 @@ export interface SeoFromRawOptions {
 }
 
 /**
- * A plugin's unrendered title template: Yoast `%%title%%`, Rank Math
- * `%title%`, AIOSEO `#post_title`. Printed as-is it would be a literal
- * `%%title%% %%sep%% %%sitename%%` in the search result, so such a value is
- * dropped and the page's own falls in.
+ * A plugin's unrendered template, in its own syntax: Yoast \`%%title%%\`,
+ * Rank Math \`%title%\` / \`%customfield(name)%\`, AIOSEO \`#post_title\`.
+ * Printed as-is it would be a literal \`%%title%% %%sep%%\` in the search
+ * result, so such a value is dropped and the page's own falls in. AIOSEO's
+ * tags are matched by name, not as any \`#word\`: a title can hold a hashtag.
  */
-const TEMPLATE_RE = /%%[^%\s]+%%|%[a-z_]+%|#[a-z_]+\b/i
+const TEMPLATE_RE: Record<SeoProvider, RegExp> = {
+  yoast: /%%[a-z0-9_-]+%%/i,
+  rank_math: /%[a-z_]+(?:\([^)]*\))?%/i,
+  aioseo: /#(?:(?:alt|archive|attachment|author|category|current|custom_field|page|parent|post|search|separator|site|tax|taxonomy)_[a-z0-9_-]+|categories|permalink|tagline)\b/i,
+}
 
-const text = (value: string | undefined, resolved: boolean): string | undefined => {
+const text = (value: string | undefined, template: RegExp | undefined): string | undefined => {
   const v = value?.trim()
   if (!v) return undefined
-  return !resolved && TEMPLATE_RE.test(v) ? undefined : v
+  return template?.test(v) ? undefined : v
 }
 
 const addressKey = (url: string): string => url.trim().replace(/^https?:\/\//i, '//').replace(/\/+(?=[?#]|$)/, '')
 
-function social(value: TwitterOverride | undefined, resolved: boolean): TwitterOverride | undefined {
+function social(value: TwitterOverride | undefined, template: RegExp | undefined): TwitterOverride | undefined {
   if (!value) return undefined
   const out: TwitterOverride = {}
-  const title = text(value.title, resolved)
-  const description = text(value.description, resolved)
+  const title = text(value.title, template)
+  const description = text(value.description, template)
   const image = value.image?.trim()
   const card = value.card?.trim()
   if (title) out.title = title
@@ -67,7 +72,8 @@ function social(value: TwitterOverride | undefined, resolved: boolean): TwitterO
  * One page's SEO fields from the blocks each plugin holds for it. The serving
  * plugin's block wins; without one the first plugin (Yoast, Rank Math, AIOSEO)
  * that has data does. A block not marked `resolved` holds stored values and
- * templates, so its template strings are dropped and its literal values kept.
+ * templates, so its template strings — in that plugin's syntax — are dropped
+ * and its literal values kept.
  *
  * Robots come from `robots_served` — what the page actually carried after
  * WordPress and the plugin reconciled their settings — and from the plugin's
@@ -82,14 +88,16 @@ export function seoFromRawEntry(
     ...(options.serving && options.serving !== 'wordpress-core' ? [options.serving] : []),
     ...SEO_PROVIDERS,
   ]
-  const entry = order.map((p) => blocks[p]).find((b): b is RawSeoEntry => b !== undefined)
-  if (!entry) return {}
-  const resolved = entry.resolved === true
+  const provider = order.find((p) => blocks[p] !== undefined)
+  if (!provider) return {}
+  const entry = blocks[provider]!
+  // A rendered block holds final text; a stored one may hold templates.
+  const template = entry.resolved === true ? undefined : TEMPLATE_RE[provider]
   const out: SeoFields = {}
 
-  const title = text(entry.title, resolved)
+  const title = text(entry.title, template)
   if (title) out.seo_title = title
-  const description = text(entry.description, resolved)
+  const description = text(entry.description, template)
   if (description) out.description = description
 
   const canonical = entry.canonical?.trim()
@@ -101,9 +109,9 @@ export function seoFromRawEntry(
   if (noindex) out.noindex = true
   if (nofollow) out.nofollow = true
 
-  const og = social(entry.open_graph, resolved)
+  const og = social(entry.open_graph, template)
   if (og) out.open_graph = og
-  const tw = social(entry.twitter, resolved)
+  const tw = social(entry.twitter, template)
   if (tw) out.twitter = tw
 
   const graph = entry.schema?.graph

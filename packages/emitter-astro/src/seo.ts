@@ -176,6 +176,30 @@ export function websiteIdOf(html: string): string | undefined {
   return undefined
 }
 
+/**
+ * \`@id\` of every node in a head's structured data — the site's own nodes
+ * (WebSite, Organization, its logo) that every page already carries. A page's
+ * plugin graph repeats them; printing them twice is valid but is noise.
+ */
+export function headLdIdsOf(html: string): string[] {
+  const ids: string[] = []
+  for (const match of html.matchAll(JSONLD_RE)) {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(match[1] ?? '')
+    } catch {
+      continue
+    }
+    const graph = (parsed as { '@graph'?: unknown } | null)?.['@graph']
+    const nodes: unknown[] = Array.isArray(parsed) ? parsed : Array.isArray(graph) ? graph : [parsed]
+    for (const node of nodes) {
+      const id = (node as LdNode | null)?.['@id']
+      if (typeof id === 'string' && id && !ids.includes(id)) ids.push(id)
+    }
+  }
+  return ids
+}
+
 export interface StripResult {
   html: string
   /** What was taken out, for the emit warning — never a silent removal. */
@@ -298,6 +322,8 @@ interface Props {
   pageType?: 'WebPage' | 'CollectionPage'
   /** \`@id\` of the site's WebSite node kept in the head chrome, when there is one. */
   websiteId?: string
+  /** \`@id\` of every structured-data node the head chrome keeps — not repeated from \`schema\`. */
+  headLdIds?: string[]
   /** \`article\` on entry pages, \`website\` on lists and static pages. */
   type?: 'article' | 'website'
   /** ISO 8601 — structured data only; the displayed date stays a mark. */
@@ -330,6 +356,7 @@ const {
   breadcrumbs,
   pageType,
   websiteId,
+  headLdIds = [],
   type = 'website',
   publishedAt,
   modifiedAt,
@@ -367,7 +394,7 @@ const twDesc = seoDescription(twitter?.description) ?? ogDesc
 const twImage = absoluteUrl(twitter?.image, site) ?? ogImage
 const twCard = twitter?.card === 'summary' || twitter?.card === 'summary_large_image' ? twitter.card : twImage ? 'summary_large_image' : 'summary'
 const article = type === 'article'
-const structured = sourceStructuredData(schema, websiteId) ?? pageStructuredData({
+const structured = sourceStructuredData(schema, headLdIds) ?? pageStructuredData({
   url,
   site,
   title,
