@@ -199,6 +199,26 @@ export interface EmitCssFile {
   content: string
 }
 
+/** A host the emitted site may optimize images from (Astro \`image.remotePatterns\`). */
+export interface RemoteImagePattern {
+  protocol?: 'https' | 'http'
+  /** Exact host, or \`*.example.com\` for any subdomain. */
+  hostname: string
+  /** Path prefix, e.g. \`/media/\`. Optional. */
+  pathname?: string
+}
+
+export interface ImageOptions {
+  /** Default true. \`false\` emits no image pass at all. */
+  enabled?: boolean
+  /** Hosts whose images are optimized. The runtime host (Studio's CDN) is always added. */
+  remotePatterns?: RemoteImagePattern[]
+  /** srcset widths in px. Default 480, 768, 1024, 1600; widths above the width the HTML declares are dropped. */
+  widths?: number[]
+  /** \`sizes\` for an image that has none. Default \`(max-width: 768px) 100vw, 768px\`. */
+  sizes?: string
+}
+
 export interface EmitOptions {
   /** Generated project's package name. Default: "migrated-site". */
   projectName?: string
@@ -226,6 +246,13 @@ export interface EmitOptions {
    * sitemap silently for exactly that producer.
    */
   sitemap?: boolean
+  /**
+   * Build-time image optimization for content bodies (\`astro:assets\`):
+   * srcset, WebP, width/height and lazy loading for images on allowed hosts —
+   * migrated media on the runtime host is always allowed — and lazy loading
+   * with async decoding for every other image. Default on.
+   */
+  images?: ImageOptions
   /**
    * The site's interface-text dictionary (see \`UI_STRINGS_MODEL\`). Comments
    * and forms read it at build time from \`dir\` (default

@@ -11,6 +11,7 @@ import type { RouteModel } from '@contentrain/types'
 import type { EmitInput, EmitPost, EmitResult } from './types.js'
 import { DEFAULT_COLLECTION } from './types.js'
 import { scaffoldFiles } from './scaffold.js'
+import { imagesEnabled } from './images.js'
 import { componentMarkers, familyFiles } from './layouts.js'
 import { collectionItems, routeFiles, sharedCollectionPage } from './pages.js'
 import { componentFiles, isRuntimeImplemented } from './components.js'
@@ -61,7 +62,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   // Per-page SEO is on unless the producer owns those tags itself.
   const seo = input.options?.seo !== false
   const noindex = noindexPaths(ir.routes, input.content ?? {})
-  add(scaffoldFiles(ir, input.options ?? {}, noindex, redirectPlan ? astroRedirectsConfig(redirectPlan.config) : null))
+  add(scaffoldFiles(ir, input.options ?? {}, noindex, redirectPlan ? astroRedirectsConfig(redirectPlan.config) : null, input.runtime))
   const hostRedirects = redirectPlan ? hostRedirectFiles(redirectPlan.config, input.options?.redirectHost) : undefined
   if (hostRedirects) {
     add(hostRedirects.files)
@@ -145,7 +146,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   }
 
   for (const family of ir.families) {
-    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id), definitions, bodyMarkersByFamily.get(family.id) ?? [], { seo, siteName: ir.site.title, boundQueries })
+    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id), definitions, bodyMarkersByFamily.get(family.id) ?? [], { seo, siteName: ir.site.title, boundQueries, images: imagesEnabled(input.options ?? {}) })
     add(fam.files)
     warnings.push(...fam.warnings)
   }

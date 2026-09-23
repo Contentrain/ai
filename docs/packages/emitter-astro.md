@@ -83,6 +83,25 @@ Rendering order is repeats → conditionals → marks.
 
 A lifted region must close what it opens. A split fragment is something a browser silently repairs, so it survives every visual check — and costs a page its layout anyway. Measured on 2026-09-03 with emitter 0.6.1: a page whose chrome was split mid-element scored **36** on layout, against **100** for the same page kept whole. The emitter checks header, footer and body chrome and names the dangling tags in a warning rather than trusting the producer.
 
+## Images
+
+Migrated posts arrive as HTML and render through `set:html`, so Astro's `<Image>` component cannot reach the pictures inside them. The emitted site runs one build-time pass over each page's content instead:
+
+- **Allowed hosts** — the runtime host (where Studio rehosts migrated media) and anything in `options.images.remotePatterns` — are optimized with `astro:assets` `getImage()`: WebP, a `srcset` at 480/768/1024/1600 px (none wider than the width the HTML declares), `width`/`height` inferred so the page does not shift, and a `sizes` default when the image has none. The source's own `srcset` and `sizes` are replaced, or dropped when the optimized image has no `srcset`.
+- **An image is optimized only after its host answered 200 with an image** — a HEAD, or a GET where HEAD is refused, with a 10 s timeout and one check per URL per build. Astro downloads remote images later in the build, outside any error handling, so a single 404 would otherwise fail `astro build`; an image that does not answer keeps its original URL. `astro.config.mjs` carries the same list as `image.remotePatterns`, and `sharp` is added to the dependencies.
+- **Every image** gets `decoding="async"` and a `loading` hint: the first image on the page eager with `fetchpriority="high"` (usually the largest paint), the rest lazy.
+- Existing `loading`, `decoding`, `sizes` and dimensions are kept; SVG, GIF, `data:` URIs and images marked `data-cr-keep` are never re-encoded; an image that fails to optimize keeps its original markup.
+- The theme chrome (header, footer, logos) is left exactly as the source had it.
+
+```ts
+emitAstroProject({
+  ir, content, runtime,
+  options: { images: { remotePatterns: [{ hostname: 'media.example.com', pathname: '/uploads' }] } },
+})
+```
+
+`images: { enabled: false }` emits no image pass.
+
 ## SEO
 
 SEO continuity is the reason a migration keeps the source addresses at all, so the emitter owns the head tags that describe a page and renders them per entry in `src/components/Seo.astro`.

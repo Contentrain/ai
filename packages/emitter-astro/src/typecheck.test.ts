@@ -34,11 +34,18 @@ afterAll(async () => {
 })
 
 describe('emitted TypeScript under astro/tsconfigs/base-equivalent strictness', () => {
-  it('fill.ts and embed.ts compile with strict + DOM + verbatimModuleSyntax', async () => {
+  it('fill.ts, embed.ts and the image pass compile with strict + DOM + verbatimModuleSyntax', async () => {
     const { files } = emitAstroProject({ ir, runtime: { base_url: 'https://studio.test', project_id: 'p' } })
     await mkdir(TMP, { recursive: true })
     await writeFile(join(TMP, 'fill.ts'), files['src/lib/fill.ts']!, 'utf8')
     await writeFile(join(TMP, 'embed.ts'), files['src/lib/embed.ts']!, 'utf8')
+    await writeFile(join(TMP, 'images.ts'), files['src/lib/images.ts']!, 'utf8')
+    await writeFile(join(TMP, 'optimize-images.ts'), files['src/lib/optimize-images.ts']!, 'utf8')
+    // The one Astro API optimize-images.ts uses, declared as Astro types it.
+    await writeFile(join(TMP, 'astro-assets.d.ts'), `declare module 'astro:assets' {
+  export function getImage(options: { src: string; format?: string; width?: number; height?: number; inferSize?: boolean; widths?: number[] }): Promise<{ src: string; srcSet: { attribute: string }; attributes: Record<string, unknown> }>
+}
+`, 'utf8')
     await writeFile(
       join(TMP, 'tsconfig.json'),
       JSON.stringify({
@@ -55,7 +62,7 @@ describe('emitted TypeScript under astro/tsconfigs/base-equivalent strictness', 
           skipLibCheck: true,
           types: [],
         },
-        files: ['fill.ts', 'embed.ts'],
+        files: ['fill.ts', 'embed.ts', 'images.ts', 'optimize-images.ts', 'astro-assets.d.ts'],
       }),
       'utf8',
     )

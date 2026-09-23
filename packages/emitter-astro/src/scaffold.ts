@@ -2,20 +2,24 @@
 // the generated pages use to pour content into `@@mark@@` placeholders.
 
 import type { DesignTokens, ProjectIR } from '@contentrain/types'
-import type { EmitOptions } from './types.js'
+import type { EmitOptions, RuntimeBinding } from './types.js'
+import { DEFAULT_IMAGE_SIZES, DEFAULT_IMAGE_WIDTHS, IMAGES_TS, astroImageConfig, imagePatterns, imagesEnabled, optimizeImagesTs } from './images.js'
 import { stableJson } from './util.js'
 import { sitemapFilterDeclarations, sitemapIntegration } from './noindex.js'
 
 /**
  * `noindex` holds the site-root paths the sitemap leaves out (see noindex.ts);
- * `redirectsConfig` is the `redirects` block for astro.config.mjs (see redirects.ts).
+ * `redirectsConfig` is the `redirects` block for astro.config.mjs (see redirects.ts);
+ * `runtime` adds its host to the image allow-list (see images.ts).
  */
-export function scaffoldFiles(ir: ProjectIR, options: EmitOptions, noindex: string[] = [], redirectsConfig: string | null = null): Record<string, string> {
+export function scaffoldFiles(ir: ProjectIR, options: EmitOptions, noindex: string[] = [], redirectsConfig: string | null = null, runtime?: RuntimeBinding): Record<string, string> {
   const tailwind = options.tailwind !== false
   const split = ir.viewport_strategy === 'split'
   // The sitemap integration needs an absolute site to build URLs from; without
   // one it has nothing to write, so it is only wired when there is a site.
   const sitemap = options.sitemap !== false && Boolean(ir.site.url)
+  const images = imagesEnabled(options)
+  const imageConfig = images ? astroImageConfig(imagePatterns(options, runtime)) : null
   const files: Record<string, string> = {}
 
   const pkg: Record<string, unknown> = {
@@ -35,6 +39,8 @@ export function scaffoldFiles(ir: ProjectIR, options: EmitOptions, noindex: stri
       astro: '^5.0.0',
       ...(tailwind ? { tailwindcss: '^4.0.0', '@tailwindcss/vite': '^4.0.0' } : {}),
       ...(sitemap ? { '@astrojs/sitemap': '^3.7.0' } : {}),
+      // Astro's default image service; getImage() needs it at build time.
+      ...(images ? { sharp: '^0.34.0' } : {}),
     },
     devDependencies: {
       '@astrojs/check': '^0.9.0',
@@ -58,6 +64,9 @@ export function scaffoldFiles(ir: ProjectIR, options: EmitOptions, noindex: stri
     `  build: { format: 'directory' },`,
     ...(redirectsConfig ? [redirectsConfig] : []),
     ...(sitemap ? [`  integrations: [${sitemapIntegration(noindex)}],`] : []),
+    // Hosts content images may be optimized from — the same list the emitted
+    // src/lib/optimize-images.ts checks before calling getImage().
+    ...(imageConfig ? [imageConfig] : []),
     ...(tailwind ? [`  vite: { plugins: [tailwindcss()] },`] : []),
     `})`,
     ``,
@@ -72,6 +81,14 @@ export function scaffoldFiles(ir: ProjectIR, options: EmitOptions, noindex: stri
   if (options.sitemap !== false) files['public/robots.txt'] = robotsTxt(ir.site.url)
 
   files['src/lib/fill.ts'] = FILL_TS
+  if (images) {
+    files['src/lib/images.ts'] = IMAGES_TS
+    files['src/lib/optimize-images.ts'] = optimizeImagesTs(
+      imagePatterns(options, runtime),
+      options.images?.widths ?? DEFAULT_IMAGE_WIDTHS,
+      options.images?.sizes ?? DEFAULT_IMAGE_SIZES,
+    )
+  }
   return files
 }
 
