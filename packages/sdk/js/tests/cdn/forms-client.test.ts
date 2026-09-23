@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { FormsClient } from '../../src/cdn/forms-client.js'
-import { ContentrainError } from '../../src/cdn/errors.js'
+import { ContentrainError, isPaymentRequired } from '../../src/cdn/errors.js'
 import formConfig from '../fixtures/public-api/forms.config.response.json'
 import submitRequest from '../fixtures/public-api/forms.submit.request.json'
 import submitSuccess from '../fixtures/public-api/forms.submit.success.response.json'
@@ -140,3 +140,37 @@ describe('FormsClient', () => {
     expect((fetchMock.mock.calls[0] as [string])[0]).toBe('https://studio.test/api/forms/v1/proj1/contact%20form/config')
   })
 })
+
+describe('FormsClient — 402 payment_required (workspace billing locked)', () => {
+  const locked = errors.forms.find((e) => e.statusCode === 402)!
+
+  it('rejects with the status and the machine code from the error body', async () => {
+    vi.stubGlobal('fetch', mockFetch({ url: '/api/forms/v1/proj1/contact/config', statusCode: 402, statusMessage: 'Server Error', message: locked.message, data: locked.data }, 402))
+    const err = await createClient().config('contact').catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(ContentrainError)
+    expect(err).toMatchObject({ status: 402, code: 'payment_required', message: locked.message })
+    expect(isPaymentRequired(err)).toBe(true)
+  })
+
+  it('isPaymentRequired reads the status or the code, not an upgrade 403 or a network error', async () => {
+    const upgrade = errors.forms.find((e) => e.statusCode === 403)!
+    vi.stubGlobal('fetch', mockFetch({ statusCode: 403, message: upgrade.message }, 403))
+    const err = await createClient().config('contact').catch((e: unknown) => e)
+    expect(err).toMatchObject({ status: 403 })
+    expect((err as ContentrainError).code).toBeUndefined()
+    expect(isPaymentRequired(err)).toBe(false)
+    expect(isPaymentRequired(new ContentrainError(400, 'x', 'payment_required'))).toBe(true)
+    expect(isPaymentRequired(new TypeError('Failed to fetch'))).toBe(false)
+    // An error from another copy of the SDK: same name and shape, different class.
+    expect(isPaymentRequired(Object.assign(new Error('x'), { name: 'ContentrainError', status: 402 }))).toBe(true)
+    expect(isPaymentRequired({ name: 'OtherError', status: 402 })).toBe(false)
+  })
+
+  it('a submit on a locked workspace rejects the same way', async () => {
+    vi.stubGlobal('fetch', mockFetch({ statusCode: 402, message: locked.message, data: locked.data }, 402))
+    const err = await createClient().submit('contact', { name: 'Ada' }).catch((e: unknown) => e)
+    expect(err).toMatchObject({ name: 'ContentrainError', status: 402, code: 'payment_required' })
+    expect(isPaymentRequired(err)).toBe(true)
+  })
+})
+

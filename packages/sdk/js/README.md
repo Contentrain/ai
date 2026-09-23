@@ -359,7 +359,7 @@ const result = await form.submit('contact', {
 }, { captchaToken: 'tok_xxx', honeypot: '' })
 // → { success: true, message: 'Thank you!' }
 // → { success: false, errors: [{ field: 'email', message }] }   (a verdict, not an exception)
-// 403 / 404 / 429 reject with ContentrainError { status, message }
+// 402 / 403 / 404 / 429 reject with ContentrainError { status, code?, message }
 ```
 
 ### Comments
@@ -385,8 +385,27 @@ const result = await comments.submit('posts', entryId, {
 }, { locale: 'en' })
 // → { success: true, status: 'pending' | 'approved', comment }   (pending is only echoed to its author)
 // → { success: false, errors: [{ field: 'author.name' | 'author.email' | 'author.url' | 'body' | 'parentId' | 'captcha', message }] }
-// 403 (thread closed) / 404 / 429 reject with ContentrainError
+// 402 / 403 (thread closed) / 404 / 429 reject with ContentrainError
 ```
+
+When the workspace's subscription is inactive, forms and comments reject with
+`402` and `code: 'payment_required'`. The message is written for the workspace
+owner, not a visitor, and retrying does not help until the owner updates
+billing, so hide the form or thread:
+
+```ts
+import { isPaymentRequired } from '@contentrain/query'
+
+try {
+  await form.submit('contact', values)
+} catch (err) {
+  if (isPaymentRequired(err)) hideTheForm()   // no retry, no message to the visitor
+  else showError(err)
+}
+```
+
+`ContentrainError.code` carries the API's machine code (`data.code`) whenever
+the error body has one. Branch on `status` or `code`, never on the message.
 
 ### Conversation API
 

@@ -546,7 +546,7 @@ const result = await form.submit('contact', {
   name: 'Alice', email: 'alice@example.com',
 }, { captchaToken: 'tok_xxx', honeypot: '' })
 // { success: true, message } · { success: false, errors: [{ field, message }] }
-// 403 / 404 / 429 reject with ContentrainError { status, message }
+// 402 / 403 / 404 / 429 reject with ContentrainError { status, code?, message }
 ```
 
 ### CDN Comments
@@ -650,11 +650,31 @@ try {
   await client.collection('faq').locale('en').all()
 } catch (err) {
   if (err instanceof ContentrainError) {
-    console.log(err.status)  // 401, 403, 404, 429
+    console.log(err.status)  // 401, 402, 403, 404, 429
+    console.log(err.code)    // the API's machine code, when the body has one
     console.log(err.message)
   }
 }
 ```
+
+When the workspace's subscription is inactive, forms and comments reject with
+`402` and `code: 'payment_required'`. The message is written for the workspace
+owner, not a visitor, and retrying does not help until the owner updates
+billing, so hide the form or thread:
+
+```ts
+import { isPaymentRequired } from '@contentrain/query'
+
+try {
+  await form.submit('contact', values)
+} catch (err) {
+  if (isPaymentRequired(err)) hideTheForm()   // no retry, no message to the visitor
+  else showError(err)
+}
+```
+
+`ContentrainError.code` carries the API's machine code (`data.code`) whenever
+the error body has one. Branch on `status` or `code`, never on the message.
 
 ## For Framework SDK Authors
 
