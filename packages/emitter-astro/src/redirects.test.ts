@@ -22,7 +22,8 @@ const content = {
 }
 
 const emit = (redirects: RawRedirect[], redirectHost?: 'netlify' | 'cloudflare' | 'vercel') =>
-  emitAstroProject({ ir, content, redirects, ...(redirectHost ? { options: { redirectHost } } : {}) })
+  // The feed's own /feed/ redirect is feed.test.ts's subject; these hold the source's rules alone.
+  emitAstroProject({ ir, content, redirects, options: { feed: false, ...(redirectHost ? { redirectHost } : {}) } })
 
 describe('redirects → astro.config', () => {
   it('writes plain url rules with their status, sorted by from; a missing status is 301', () => {
@@ -121,7 +122,7 @@ describe('redirects → astro.config', () => {
   })
 
   it('without input.redirects there is no redirects block and no result field', () => {
-    const result = emitAstroProject({ ir, content })
+    const result = emitAstroProject({ ir, content, options: { feed: false } })
     expect(result.files['astro.config.mjs']).not.toContain('redirects')
     expect(result.redirects).toBeUndefined()
   })

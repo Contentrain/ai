@@ -165,6 +165,23 @@ A `noindex` page is left out of the sitemap: the emitter computes its address fr
 
 `options.sitemap: false` leaves out both. It is independent of `options.seo`: a producer that writes its own meta tags has not thereby said it writes its own sitemap.
 
+## Feed and llms.txt
+
+WordPress serves every site's newest posts as RSS at `/feed/`, and readers, aggregators and newsletter tools subscribe to it; Yoast writes an `llms.txt` that tells a language model what the site holds. The emitter builds both, as Astro endpoints over the data files the entry pages are built from, and names each entry by the address its own page has — the route pattern filled with the entry's parameters — so neither can list a page the site does not build.
+
+| File | What it holds |
+|---|---|
+| `/feed.xml` (`src/pages/feed.xml.ts`) | RSS 2.0: the 10 newest posts (WordPress's default `posts_per_rss`) of the `posts` collection, newest first by `published_at`, each with its title, address, date, author and description (`description`, else the excerpt). The channel is `ProjectIR.site.title` and `options.siteDescription` |
+| `/llms.txt` (`src/pages/llms.txt.ts`) | The [llmstxt.org](https://llmstxt.org) shape: the site's name, `options.siteDescription` as its summary, and a section per collection the site builds entry pages for — posts first, then pages — with the newest 100 links of each. An entry the source kept out of search (`noindex`) is left out |
+
+Both describe the site in its default language (`ProjectIR.site.locales[0]`): a route in another language, and an entry whose `locale` is another, are left out. Both need `site.url`, since they name pages by absolute address; without it neither is built, with a warning.
+
+The feed is built at `/feed.xml`, not at `/feed/`: a static build writes an endpoint at `/feed/` as a file named `feed`, which no host serves at `/feed/`. The theme's head link to the site's main feed (`/feed/`, `/feed/rss2/`, `?feed=rss2`) is pointed at `/feed.xml`, so browsers and readers that discover the feed from a page find the new one. A reader already subscribed to `/feed/` is sent on with a 301 to `/feed.xml`, written like the site's own redirects: in `astro.config` and in the host's redirect file (see **Redirects**), which is what gives it a real status — feed readers do not follow a static redirect page. A `/feed/` rule the source itself holds wins, and no rule is written when the site builds a page at `/feed/`. The site's other feed links in the head (comments, a category, Atom) name feeds that are not built; they are kept and counted in a warning. A feed on another host (FeedBurner, a newsletter tool) is left alone; `www.` and the bare host count as one site.
+
+The feed lists every post, as WordPress's does — a post the source kept out of search included. An entry whose `canonical` points elsewhere is listed at its own address.
+
+`options.feed: false` and `options.llms: false` leave each out.
+
 ## Components and mount points
 
 `<!--@@component:ID@@-->` — in the body chrome or in an entry's content body, via `componentSlot(id)` from `@contentrain/types` — is where a `ComponentDef` renders. The layout imports the component and mounts it at the marker with the placement's variant.

@@ -534,6 +534,149 @@ export function sourceStructuredData(schema: unknown, headIds: string[] = []): R
   return { '@context': context ?? 'https://schema.org', '@graph': kept }
 }
 
+// ─── Feed and llms.txt ───
+
+/**
+ * Site-root address of an entry: its route pattern filled with the entry's
+ * parameters — the values getStaticPaths builds the page from — in the
+ * directory format the build writes. Undefined when a parameter is missing.
+ */
+export function entryAddress(pattern: string, params: Record<string, string | undefined>): string | undefined {
+  const segments = pattern.replace(/^\\/+|\\/+$/g, '').split('/').filter(Boolean)
+  if (!segments.length) return '/'
+  const out: string[] = []
+  for (const segment of segments) {
+    if (!segment.startsWith(':')) {
+      out.push(segment)
+      continue
+    }
+    const value = params[segment.slice(1).replace(/\\*$/, '')]?.replace(/^\\/+|\\/+$/g, '')
+    if (!value) return undefined
+    out.push(value)
+  }
+  return '/' + out.join('/') + '/'
+}
+
+/** One page as a feed item or an llms.txt link. */
+export interface SiteLink {
+  title: string
+  url: string
+  description?: string
+  /** ISO 8601. */
+  date?: string
+  author?: string
+}
+
+/**
+ * A collection's entries as absolute links, newest first; undated entries
+ * keep their order after the dated ones. Only the entries in \`locale\` —
+ * an entry without one is in the site's default, \`siteLocale\` — and with
+ * \`indexedOnly\`, none the source kept out of search.
+ */
+export function entryLinks(posts: EmittedPost[], pattern: string, site: URL | undefined, locale: string, siteLocale: string, indexedOnly = false): SiteLink[] {
+  const links: SiteLink[] = []
+  for (const post of posts) {
+    if ((post.locale ?? siteLocale) !== locale) continue
+    if (indexedOnly && post.noindex) continue
+    const url = absoluteUrl(entryAddress(pattern, { ...(post.params ?? {}), slug: post.slug }), site)
+    if (!url) continue
+    links.push({
+      title: post.title,
+      url,
+      description: seoDescription(post.description ?? post.excerpt),
+      date: post.published_at,
+      author: post.author,
+    })
+  }
+  const time = (link: SiteLink) => (link.date ? Date.parse(link.date) || 0 : 0)
+  return links
+    .map((link, index) => ({ link, index }))
+    .sort((a, b) => time(b.link) - time(a.link) || a.index - b.index)
+    .map((entry) => entry.link)
+}
+
+/** Text for XML: escaped, and without the control characters XML 1.0 forbids. */
+const xmlText = (value: string): string => value
+  .replace(/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/g, '')
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+export interface RssChannel {
+  title: string
+  /** The site's home page, absolute. */
+  link: string
+  /** The feed's own address, absolute. */
+  self: string
+  description?: string
+  language?: string
+  items: SiteLink[]
+}
+
+/**
+ * RSS 2.0, the format WordPress serves at /feed/. The channel's
+ * \`lastBuildDate\` is its newest item's date, so rebuilding unchanged
+ * content writes the same bytes.
+ */
+export function rssFeed(channel: RssChannel): string {
+  const rfc822 = (iso: string | undefined): string | undefined => {
+    const time = iso ? Date.parse(iso) : NaN
+    return Number.isNaN(time) ? undefined : new Date(time).toUTCString()
+  }
+  const tag = (name: string, value: string | undefined) => (value ? '<' + name + '>' + xmlText(value) + '</' + name + '>' : '')
+  const newest = channel.items.map((item) => rfc822(item.date)).find(Boolean)
+  const items = channel.items.map((item) => [
+    '<item>',
+    tag('title', item.title),
+    tag('link', item.url),
+    '<guid isPermaLink="true">' + xmlText(item.url) + '</guid>',
+    tag('pubDate', rfc822(item.date)),
+    tag('dc:creator', item.author),
+    tag('description', item.description),
+    '</item>',
+  ].filter(Boolean).join(''))
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">',
+    '<channel>',
+    tag('title', channel.title),
+    tag('link', channel.link),
+    '<atom:link href="' + xmlText(channel.self) + '" rel="self" type="application/rss+xml"/>',
+    // Required by RSS 2.0; a site without a tagline gets its title.
+    tag('description', channel.description || channel.title),
+    tag('language', channel.language),
+    tag('lastBuildDate', newest),
+    ...items,
+    '</channel>',
+    '</rss>',
+  ].filter(Boolean).join('\\n') + '\\n'
+}
+
+export interface LlmsSection {
+  name: string
+  links: SiteLink[]
+}
+
+/**
+ * /llms.txt (llmstxt.org): the site's name, its tagline, and a section of
+ * links per kind of page — what a language model reads to find its way
+ * around the site, as Yoast's generator writes it.
+ */
+export function llmsTxt(input: { title: string; description?: string; sections: LlmsSection[] }): string {
+  const line = (value: string) => value.replace(/\\s+/g, ' ').trim()
+  const label = (value: string) => line(value).replace(/[\\[\\]\\\\]/g, '\\\\$&')
+  const href = (url: string) => url.replace(/\\(/g, '%28').replace(/\\)/g, '%29').replace(/\\s/g, '%20')
+  const out = ['# ' + line(input.title)]
+  if (input.description && line(input.description)) out.push('', '> ' + line(input.description))
+  for (const section of input.sections) {
+    if (!section.links.length) continue
+    out.push('', '## ' + line(section.name), '')
+    for (const link of section.links) {
+      const description = link.description ? line(link.description) : ''
+      out.push('- [' + label(link.title) + '](' + href(link.url) + ')' + (description ? ': ' + description : ''))
+    }
+  }
+  return out.join('\\n') + '\\n'
+}
+
 /** Emitted stylesheets live under /styles/legacy/ — pages reference them by file name. */
 export const cssHref = (file: string): string => '/styles/legacy/' + (file.split('/').pop() ?? file)
 
