@@ -296,6 +296,20 @@ export interface EmitOptions {
    */
   images?: ImageOptions
   /**
+   * Build the site's RSS feed at `/feed.xml` — the newest posts, as WordPress
+   * serves them at `/feed/` — and point the theme's head link at it. Default
+   * true. Needs `site.url` (feed links are absolute) and a route that builds
+   * the `posts` collection.
+   */
+  feed?: boolean
+  /**
+   * Build `/llms.txt` (llmstxt.org): the site's name, tagline and newest pages
+   * of each collection, for language models. Default true. Needs `site.url`.
+   */
+  llms?: boolean
+  /** The site's tagline (WordPress `blogdescription`): the feed's description and the llms.txt summary. */
+  siteDescription?: string
+  /**
    * The site's interface-text dictionary (see \`UI_STRINGS_MODEL\`). Comments
    * and forms read it at build time from \`dir\` (default
    * \`.contentrain/content/site/ui-strings\`, project-relative).

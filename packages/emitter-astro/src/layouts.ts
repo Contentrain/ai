@@ -17,6 +17,7 @@ import { CHROME_BODY_SLOT, CHROME_COMPONENT_CLOSE, CHROME_COMPONENT_OPEN } from 
 import type { ChromeComponentRef } from './chrome.js'
 import { balanceWarning } from './balance.js'
 import { bodySeoLeaks, headLdIdsOf, stripSeoTags, websiteIdOf } from './seo.js'
+import { rewriteFeedLinks } from './feed.js'
 import { pascalCase, stableJson } from './util.js'
 
 export interface FamilyGenResult {
@@ -59,6 +60,8 @@ export interface FamilyOptions {
   boundQueries?: ReadonlySet<string>
   /** Run the page's content through the build-time image pass (src/lib/optimize-images.ts). */
   images?: boolean
+  /** The site URL, when the build writes the site feed: the head's link to the main feed is pointed at it. */
+  feedSite?: string
 }
 
 export function familyFiles(
@@ -159,6 +162,14 @@ export function familyFiles(
     if (stripped.removed.length) {
       const kept = stripped.kept.length ? `; kept the site-wide ${stripped.kept.join(', ')} from its structured data` : ''
       warnings.push(`family ${family.id}: removed the template page's ${stripped.removed.join(', ')} from head chrome — these describe one page, and the emitter renders title, description, canonical, social tags and Article data per page${kept}`)
+    }
+  }
+
+  if (options.feedSite) {
+    const feed = rewriteFeedLinks(head, options.feedSite)
+    head = feed.html
+    if (feed.other) {
+      warnings.push(`family ${family.id}: ${feed.other} feed links in the head (comments, a category, Atom) name feeds the site does not build — they 404 on the migrated site`)
     }
   }
 

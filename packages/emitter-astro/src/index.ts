@@ -23,6 +23,7 @@ import { wrapLegacyCss } from './css.js'
 import { stableJson, patternToPagePath } from './util.js'
 import { noindexPaths } from './noindex.js'
 import { astroRedirectsConfig, builtAddresses, HOST_RULE_LIMIT, hostRedirectFiles, planRedirects } from './redirects.js'
+import { FEED_PATH, feedEndpoint, linkSources, llmsEndpoint, rewriteFeedLinks, type LinkSource } from './feed.js'
 
 /**
  * A supplied trail the build will not print — the same rule as \`validTrail\`
@@ -105,6 +106,13 @@ export function emitAstroProject(input: EmitInput): EmitResult {
 
   const familiesById = new Map(ir.families.map((f) => [f.id, f]))
   const lang = ir.site.locales?.[0] ?? 'en'
+  // The feed and llms.txt name every page by its absolute address.
+  const linkable = ir.site.url ? linkSources(ir.routes, lang) : []
+  const feedSource = input.options?.feed !== false ? linkable.find((s) => s.collection === DEFAULT_COLLECTION) : undefined
+  const llmsOn = input.options?.llms !== false && linkable.length > 0
+  if (!ir.site.url && (input.options?.feed !== false || input.options?.llms !== false)) {
+    warnings.push('site.url is empty — no RSS feed and no llms.txt are built; both name pages by absolute address')
+  }
   // Header/footer regions first: families that share one share the component.
   const chrome = chromeComponents(ir.families)
   add(chrome.files)
@@ -161,7 +169,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   }
 
   for (const family of ir.families) {
-    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id), definitions, bodyMarkersByFamily.get(family.id) ?? [], { seo, siteName: ir.site.title, boundQueries, images: imagesEnabled(input.options ?? {}) })
+    const fam = familyFiles(family, lang, chrome.byFamily.get(family.id), definitions, bodyMarkersByFamily.get(family.id) ?? [], { seo, siteName: ir.site.title, boundQueries, images: imagesEnabled(input.options ?? {}), feedSite: feedSource ? ir.site.url : undefined })
     add(fam.files)
     warnings.push(...fam.warnings)
   }
@@ -309,6 +317,25 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     }
   }
 
+  // Endpoints over the data files the routes wrote; a collection whose file
+  // was not written (its route was dropped) has no pages to list.
+  const feedInput = { ir, siteLocale: lang, description: input.options?.siteDescription }
+  const written = (source: LinkSource) => files[`src/data/${source.collection}.json`] !== undefined
+  if (feedSource) {
+    // The source advertised its feed in the head: readers hold the old address.
+    const advertised = ir.families.some((f) => (f.chrome ?? []).some((c) => c.position === 'head' && rewriteFeedLinks(c.html, ir.site.url).rewritten > 0))
+    if (written(feedSource)) {
+      add({ 'src/pages/feed.xml.ts': feedEndpoint(feedSource, feedInput) })
+      if (advertised) warnings.push(`feed: RSS is built at ${FEED_PATH}; a reader subscribed to the WordPress address /feed/ needs a 301 /feed/ → ${FEED_PATH} at the host — feed readers do not follow a static redirect page`)
+    } else {
+      warnings.push(`feed: no posts data file was written, so no feed is built — the head's feed link points at ${FEED_PATH}, which 404s`)
+    }
+  }
+  if (llmsOn) {
+    const listed = linkable.filter(written)
+    if (listed.length) add({ 'src/pages/llms.txt.ts': llmsEndpoint(listed, feedInput) })
+  }
+
   return {
     files,
     warnings,
@@ -367,6 +394,8 @@ export type {
   EntrySourceRef,
 } from './types.js'
 export { wrapLegacyCss } from './css.js'
+export { FEED_ITEMS, FEED_PATH, LLMS_LINKS, linkSources, rewriteFeedLinks } from './feed.js'
+export type { FeedLinkResult, LinkSource } from './feed.js'
 export { pascalCase, patternToPagePath, stableJson } from './util.js'
 export { componentMarkers } from './layouts.js'
 export type { MountRef } from './layouts.js'
