@@ -406,6 +406,7 @@ export type {
   EmitCssFile,
   EmitOptions,
   EmitTermRef,
+  AuthorProfile,
   Breadcrumb,
   ImageMeta,
   SocialOverride,

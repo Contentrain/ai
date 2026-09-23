@@ -334,7 +334,7 @@ export const SEO_COMPONENT = `---
  * Canonical and absolute URLs need \`site\` in astro.config.mjs; without it the
  * canonical link and og:url are omitted rather than pointing at a build host.
  */
-import { absoluteUrl, imageMetaTags, jsonLd, ogLocale, pagePath, pageStructuredData, seoDescription, sourceStructuredData, type Breadcrumb, type ImageMeta, type SocialOverride, type TwitterOverride } from '../lib/fill'
+import { absoluteUrl, imageMetaTags, jsonLd, ogLocale, pagePath, pageStructuredData, seoDescription, sourceStructuredData, type AuthorProfile, type Breadcrumb, type ImageMeta, type SocialOverride, type TwitterOverride } from '../lib/fill'
 
 interface Props {
   /** The document title — an SEO plugin's composed one when the source had it. */
@@ -369,6 +369,10 @@ interface Props {
   publishedAt?: string
   modifiedAt?: string
   author?: string
+  /** The author's page, for the Article author's \`url\`. */
+  authorUrl?: string
+  /** On an author's archive: who the page is about — ProfilePage + Person. */
+  profile?: AuthorProfile
   siteName?: string
   locale?: string
   /** The page is kept out of search: \`<meta name="robots" content="noindex">\`. */
@@ -402,6 +406,8 @@ const {
   publishedAt,
   modifiedAt,
   author,
+  authorUrl,
+  profile,
   siteName,
   locale,
   noindex = false,
@@ -451,6 +457,9 @@ const structured = sourceStructuredData(schema, headLdIds) ?? pageStructuredData
   publishedAt,
   modifiedAt,
   author,
+  authorUrl,
+  profile,
+  trailingSlash,
   siteName,
   websiteId,
   publisherId,
