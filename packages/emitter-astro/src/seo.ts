@@ -208,6 +208,9 @@ export function headLdIdsOf(html: string): string[] {
  * logo and profile the site declared count for every post.
  */
 export function publisherIdOf(html: string): string | undefined {
+  // A reference only counts when the node it names is on the page: an Article
+  // pointing at an @id nothing declares names no one.
+  const declared = new Set(headLdIdsOf(html))
   let organization: string | undefined
   for (const match of html.matchAll(JSONLD_RE)) {
     let parsed: unknown
@@ -223,7 +226,7 @@ export function publisherIdOf(html: string): string | undefined {
       if (types.includes('website')) {
         const ref = (node as LdNode)['publisher']
         const id = (Array.isArray(ref) ? ref[0] : ref) as LdNode | undefined
-        if (typeof id?.['@id'] === 'string' && id['@id']) return id['@id']
+        if (typeof id?.['@id'] === 'string' && declared.has(id['@id'])) return id['@id']
       }
       const id = (node as LdNode | null)?.['@id']
       if (!organization && typeof id === 'string' && id && isSiteNode(node) && !types.includes('website')) organization = id

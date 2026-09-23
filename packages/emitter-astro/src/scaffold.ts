@@ -460,7 +460,9 @@ function articleImage(url: string, meta: ImageMeta | undefined): string | Record
 function publisher(input: PageStructuredDataInput): Record<string, unknown> | undefined {
   if (input.publisherId) return { '@id': input.publisherId }
   if (!input.siteName) return undefined
-  return { '@type': 'Organization', name: input.siteName, ...(input.site ? { url: new URL('/', input.site).toString() } : {}) }
+  // The site's own address, path included: a site under /blog/ is not its host.
+  const home = input.site ? new URL(input.site.pathname.endsWith('/') ? input.site.href : input.site.href + '/').toString() : undefined
+  return { '@type': 'Organization', name: input.siteName, ...(home ? { url: home } : {}) }
 }
 
 /**

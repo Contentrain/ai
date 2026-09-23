@@ -93,9 +93,12 @@ describe('A2 — the Article names the publisher the site declared', () => {
     expect(publisherIdOf(HEAD)).toBe('https://example.com/#organization')
     const noRef = '<script type="application/ld+json">[{"@type":"WebSite","@id":"https://example.com/#website"},{"@type":"Organization","@id":"https://example.com/#org"}]</script>'
     expect(publisherIdOf(noRef)).toBe('https://example.com/#org')
-    const person = '<script type="application/ld+json">{"@graph":[{"@type":"WebSite","@id":"#w","publisher":{"@id":"https://example.com/#/schema/person/1"}}]}</script>'
+    const person = '<script type="application/ld+json">{"@graph":[{"@type":"WebSite","@id":"#w","publisher":{"@id":"https://example.com/#/schema/person/1"}},{"@type":"Person","@id":"https://example.com/#/schema/person/1","name":"Ada"}]}</script>'
     expect(publisherIdOf(person)).toBe('https://example.com/#/schema/person/1')
     expect(publisherIdOf('<meta charset="utf-8">')).toBeUndefined()
+    // A reference to a node the head does not declare falls back to one it does.
+    const dangling = '<script type="application/ld+json">{"@graph":[{"@type":"WebSite","@id":"#w","publisher":{"@id":"https://example.com/#missing"}},{"@type":"Organization","@id":"https://example.com/#org"}]}</script>'
+    expect(publisherIdOf(dangling)).toBe('https://example.com/#org')
   })
 
   it('the layout passes it, and the Article refers to it by @id', () => {
@@ -107,6 +110,8 @@ describe('A2 — the Article names the publisher the site declared', () => {
   it('without a declared publisher: the site by name and address, never an invented logo', () => {
     const graph = rt.pageStructuredData({ url: 'https://example.com/2025/hello/', site, title: 'Hello', article: true, siteName: 'Example' })['@graph']
     expect(graph.at(-1).publisher).toEqual({ '@type': 'Organization', name: 'Example', url: 'https://example.com/' })
+    const blog = rt.pageStructuredData({ url: 'https://example.com/blog/hello/', site: new URL('https://example.com/blog'), title: 'Hello', article: true, siteName: 'Example' })['@graph']
+    expect(blog.at(-1).publisher.url).toBe('https://example.com/blog/')
     const bare = rt.pageStructuredData({ url: 'https://example.com/2025/hello/', site, title: 'Hello', article: true })['@graph']
     expect(bare.at(-1)).not.toHaveProperty('publisher')
   })
