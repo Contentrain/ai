@@ -23,7 +23,7 @@ import { wrapLegacyCss } from './css.js'
 import { stableJson, patternToPagePath } from './util.js'
 import { noindexPaths } from './noindex.js'
 import { astroRedirectsConfig, builtAddresses, HOST_RULE_LIMIT, hostRedirectFiles, planRedirects } from './redirects.js'
-import { FEED_PATH, feedEndpoint, linkSources, llmsEndpoint, rewriteFeedLinks, type LinkSource } from './feed.js'
+import { FEED_PATH, FEED_REDIRECT_FROM, feedEndpoint, linkSources, llmsEndpoint, type LinkSource } from './feed.js'
 
 /**
  * A supplied trail the build will not print — the same rule as \`validTrail\`
@@ -49,6 +49,11 @@ function badSchema(schema: unknown): boolean {
   })
 }
 
+/** Redirect config sorted by `from`, the order astro.config and the host files list it in. */
+function sortedConfig<T>(config: Record<string, T>): Record<string, T> {
+  return Object.fromEntries(Object.entries(config).toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+}
+
 export function emitAstroProject(input: EmitInput): EmitResult {
   const { ir } = input
   const warnings: string[] = []
@@ -70,6 +75,14 @@ export function emitAstroProject(input: EmitInput): EmitResult {
 
   // The site's own redirect rules. Only plain ones become config; the rest,
   // and any on an address this site builds a page at, go back to the producer.
+  const siteLang = ir.site.locales?.[0] ?? 'en'
+  // The feed and llms.txt name every page by its absolute address.
+  const linkable = ir.site.url ? linkSources(ir.routes, siteLang) : []
+  const feedSource = input.options?.feed !== false ? linkable.find((s) => s.collection === DEFAULT_COLLECTION) : undefined
+  const llmsOn = input.options?.llms !== false && linkable.length > 0
+  if (!ir.site.url && (input.options?.feed !== false || input.options?.llms !== false)) {
+    warnings.push('site.url is empty — no RSS feed and no llms.txt are built; both name pages by absolute address')
+  }
   const redirectPlan = input.redirects ? planRedirects(input.redirects, builtAddresses(ir.routes, input.content ?? {})) : undefined
   if (redirectPlan?.manual.length) {
     warnings.push(`redirects: ${redirectPlan.manual.length} of ${input.redirects!.length} rules not written to astro.config — set them up at the host (EmitResult.redirects.manual has each with its reason)`)
@@ -78,8 +91,19 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   // Per-page SEO is on unless the producer owns those tags itself.
   const seo = input.options?.seo !== false
   const noindex = noindexPaths(ir.routes, input.content ?? {})
-  add(scaffoldFiles(ir, input.options ?? {}, noindex, redirectPlan ? astroRedirectsConfig(redirectPlan.config) : null, input.runtime))
-  const hostRedirects = redirectPlan ? hostRedirectFiles(redirectPlan.config, input.options?.redirectHost) : undefined
+  // Readers subscribed to WordPress's /feed/ follow a 301 to the feed the
+  // build writes — a real one from the host's redirect file; a static
+  // redirect page, which feed readers do not follow, is only the fallback.
+  // A rule the source itself holds for /feed/ wins.
+  const redirectConfig = { ...redirectPlan?.config }
+  const feedClaimed = Object.keys(redirectConfig).some((from) => from.replace(/\/+$/, '') === '/feed')
+    || builtAddresses(ir.routes, input.content ?? {}).has(FEED_REDIRECT_FROM)
+  if (feedSource && !feedClaimed) {
+    redirectConfig[FEED_REDIRECT_FROM] = { status: 301, destination: FEED_PATH }
+  }
+  const hasRedirects = Object.keys(redirectConfig).length > 0
+  add(scaffoldFiles(ir, input.options ?? {}, noindex, hasRedirects ? astroRedirectsConfig(sortedConfig(redirectConfig)) : null, input.runtime))
+  const hostRedirects = hasRedirects ? hostRedirectFiles(sortedConfig(redirectConfig), input.options?.redirectHost) : undefined
   if (hostRedirects) {
     add(hostRedirects.files)
     if (hostRedirects.over_limit.length) {
@@ -106,13 +130,6 @@ export function emitAstroProject(input: EmitInput): EmitResult {
 
   const familiesById = new Map(ir.families.map((f) => [f.id, f]))
   const lang = ir.site.locales?.[0] ?? 'en'
-  // The feed and llms.txt name every page by its absolute address.
-  const linkable = ir.site.url ? linkSources(ir.routes, lang) : []
-  const feedSource = input.options?.feed !== false ? linkable.find((s) => s.collection === DEFAULT_COLLECTION) : undefined
-  const llmsOn = input.options?.llms !== false && linkable.length > 0
-  if (!ir.site.url && (input.options?.feed !== false || input.options?.llms !== false)) {
-    warnings.push('site.url is empty — no RSS feed and no llms.txt are built; both name pages by absolute address')
-  }
   // Header/footer regions first: families that share one share the component.
   const chrome = chromeComponents(ir.families)
   add(chrome.files)
@@ -322,11 +339,8 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   const feedInput = { ir, siteLocale: lang, description: input.options?.siteDescription }
   const written = (source: LinkSource) => files[`src/data/${source.collection}.json`] !== undefined
   if (feedSource) {
-    // The source advertised its feed in the head: readers hold the old address.
-    const advertised = ir.families.some((f) => (f.chrome ?? []).some((c) => c.position === 'head' && rewriteFeedLinks(c.html, ir.site.url).rewritten > 0))
     if (written(feedSource)) {
       add({ 'src/pages/feed.xml.ts': feedEndpoint(feedSource, feedInput) })
-      if (advertised) warnings.push(`feed: RSS is built at ${FEED_PATH}; a reader subscribed to the WordPress address /feed/ needs a 301 /feed/ → ${FEED_PATH} at the host — feed readers do not follow a static redirect page`)
     } else {
       warnings.push(`feed: no posts data file was written, so no feed is built — the head's feed link points at ${FEED_PATH}, which 404s`)
     }

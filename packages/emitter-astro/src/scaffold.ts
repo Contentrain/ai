@@ -570,12 +570,14 @@ export interface SiteLink {
 /**
  * A collection's entries as absolute links, newest first; undated entries
  * keep their order after the dated ones. Only the entries in \`locale\` —
- * an entry without one is in the site's default, \`siteLocale\`.
+ * an entry without one is in the site's default, \`siteLocale\` — and with
+ * \`indexedOnly\`, none the source kept out of search.
  */
-export function entryLinks(posts: EmittedPost[], pattern: string, site: URL | undefined, locale: string, siteLocale: string): SiteLink[] {
+export function entryLinks(posts: EmittedPost[], pattern: string, site: URL | undefined, locale: string, siteLocale: string, indexedOnly = false): SiteLink[] {
   const links: SiteLink[] = []
   for (const post of posts) {
     if ((post.locale ?? siteLocale) !== locale) continue
+    if (indexedOnly && post.noindex) continue
     const url = absoluteUrl(entryAddress(pattern, { ...(post.params ?? {}), slug: post.slug }), site)
     if (!url) continue
     links.push({

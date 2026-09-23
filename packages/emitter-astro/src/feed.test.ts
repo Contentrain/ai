@@ -189,8 +189,8 @@ describe('emitted feed and llms.txt', () => {
     const llms = result.files['src/pages/llms.txt.ts']!
     expect(llms).toContain(`import c0 from '../data/posts.json'`)
     expect(llms).toContain(`import c1 from '../data/pages.json'`)
-    expect(llms).toContain(`{ name: "Posts", links: entryLinks(c0 as EmittedPost[], "/:year/:slug", site, "en", "en").slice(0, 100) },`)
-    expect(llms).toContain(`{ name: "Pages", links: entryLinks(c1 as EmittedPost[], "/:slug*", site, "en", "en").slice(0, 100) },`)
+    expect(llms).toContain(`{ name: "Posts", links: entryLinks(c0 as EmittedPost[], "/:year/:slug", site, "en", "en", true).slice(0, 100) },`)
+    expect(llms).toContain(`{ name: "Pages", links: entryLinks(c1 as EmittedPost[], "/:slug*", site, "en", "en", true).slice(0, 100) },`)
   })
 
   it("point the theme's main feed link at /feed.xml, leave other hosts' feeds alone, and say what 404s", () => {
@@ -199,7 +199,31 @@ describe('emitted feed and llms.txt', () => {
     expect(chrome.head).toContain('href="https://example.com/comments/feed/"')
     expect(chrome.head).toContain('href="https://feeds.feedburner.com/example"')
     expect(result.warnings).toContain('family f: 1 feed links in the head (comments, a category, Atom) name feeds the site does not build — they 404 on the migrated site')
-    expect(result.warnings).toContain('feed: RSS is built at /feed.xml; a reader subscribed to the WordPress address /feed/ needs a 301 /feed/ → /feed.xml at the host — feed readers do not follow a static redirect page')
+  })
+
+  it('/feed/ gets a 301 to /feed.xml: in astro.config and, for a real status, in the host redirect files', () => {
+    expect(result.files['astro.config.mjs']).toContain(`"/feed/": { status: 301, destination: "/feed.xml" },`)
+    expect(result.files['public/_redirects']).toContain('/feed /feed.xml 301!\n/feed/ /feed.xml 301!')
+    expect(JSON.parse(result.files['vercel.json']!).redirects).toContainEqual({ source: '/feed/', destination: '/feed.xml', statusCode: 301 })
+    expect(result.warnings.some((w) => w.startsWith('feed:'))).toBe(false)
+  })
+
+  it("a /feed/ rule the source holds wins, and the site's own rules sit beside the feed's", () => {
+    const own = emitAstroProject({ ir, content, redirects: [{ from: '/feed/', to: 'https://feeds.example.net/x', status: 302 }, { from: '/old-page/', to: '/about/team/' }] })
+    expect(own.files['astro.config.mjs']).toContain(`"/feed/": { status: 302, destination: "https://feeds.example.net/x" },`)
+    expect(own.files['astro.config.mjs']).not.toContain('"/feed.xml"')
+    expect(own.files['public/_redirects']).toContain('/old-page /about/team/ 301!')
+  })
+
+  it('llms.txt leaves out what the source kept out of search; the feed keeps it, as WordPress does', () => {
+    const posts = [
+      { slug: 'hidden', title: 'Hidden', body: '', params: { year: '2025' }, noindex: true },
+      { slug: 'shown', title: 'Shown', body: '', params: { year: '2025' } },
+    ]
+    expect(rt.entryLinks(posts, '/:year/:slug', site, 'en', 'en', true).map((l: { title: string }) => l.title)).toEqual(['Shown'])
+    expect(rt.entryLinks(posts, '/:year/:slug', site, 'en', 'en').map((l: { title: string }) => l.title)).toEqual(['Hidden', 'Shown'])
+    expect(result.files['src/pages/llms.txt.ts']).toContain(`site, "en", "en", true).slice(0, 100)`)
+    expect(result.files['src/pages/feed.xml.ts']).toContain(`site, "en", "en").slice(0, 10)`)
   })
 
   it('options.feed / options.llms false leave each out, and the head as it was', () => {
@@ -207,7 +231,8 @@ describe('emitted feed and llms.txt', () => {
     expect(off.files['src/pages/feed.xml.ts']).toBeUndefined()
     expect(off.files['src/pages/llms.txt.ts']).toBeUndefined()
     expect(JSON.parse(off.files['src/data/chrome/f.json']!).head).toContain('href="https://example.com/feed/"')
-    expect(off.warnings.some((w) => w.startsWith('feed:'))).toBe(false)
+    expect(off.files['astro.config.mjs']).not.toContain('/feed.xml')
+    expect(off.files['public/_redirects']).toBeUndefined()
   })
 
   it('without a site URL neither is built, and the emit says why', () => {

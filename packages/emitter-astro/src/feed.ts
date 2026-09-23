@@ -13,8 +13,8 @@
 //
 // The feed is built at /feed.xml, not /feed/: a static build writes an
 // endpoint at /feed/ as a file named `feed`, which no host serves at /feed/.
-// The theme's head link to the feed is pointed at the new address; a reader
-// holding the old one needs a 301 at the host, which the emitter says.
+// The theme's head link to the feed is pointed at the new address, and /feed/
+// gets a 301 to it in the redirect config and the host's redirect file.
 
 import type { ProjectIR, RouteModel } from '@contentrain/types'
 import { DEFAULT_COLLECTION } from './types.js'
@@ -22,6 +22,8 @@ import { patternToPagePath } from './util.js'
 
 /** Where the feed is built. */
 export const FEED_PATH = '/feed.xml'
+/** WordPress's feed address, redirected (301) to FEED_PATH. */
+export const FEED_REDIRECT_FROM = '/feed/'
 /** Items in the feed — WordPress's default `posts_per_rss`. */
 export const FEED_ITEMS = 10
 /** Links per llms.txt section. A long archive is summarised by its newest pages. */
@@ -103,10 +105,11 @@ export function llmsEndpoint(sources: LinkSource[], input: FeedInput): string {
   const locale = JSON.stringify(input.siteLocale)
   const imports = sources.map((s, i) => `import c${i} from '../data/${s.collection}.json'`)
   const sections = sources.map((s, i) =>
-    `    { name: ${JSON.stringify(sectionName(s.collection))}, links: entryLinks(c${i} as EmittedPost[], ${JSON.stringify(s.pattern)}, site, ${locale}, ${locale}).slice(0, ${LLMS_LINKS}) },`)
+    `    { name: ${JSON.stringify(sectionName(s.collection))}, links: entryLinks(c${i} as EmittedPost[], ${JSON.stringify(s.pattern)}, site, ${locale}, ${locale}, true).slice(0, ${LLMS_LINKS}) },`)
   return `// /llms.txt (llmstxt.org) — emitted by @contentrain/emitter-astro.
 // What a language model reads to find its way around the site: its name, its
-// tagline, and the newest ${LLMS_LINKS} pages of each kind, at their own addresses.
+// tagline, and the newest ${LLMS_LINKS} pages of each kind, at their own addresses —
+// none the source kept out of search (noindex).
 import type { APIRoute } from 'astro'
 ${imports.join('\n')}
 import { entryLinks, llmsTxt, type EmittedPost } from '../lib/fill'
