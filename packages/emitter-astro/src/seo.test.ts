@@ -112,7 +112,7 @@ describe('stripSeoTags', () => {
     const graph = '<script type="application/ld+json">{"@graph":[{"@type":["Article","CreativeWork"]},{"@type":"ImageObject"}]}</script>'
     expect(stripSeoTags(graph).html).toBe('')
     const siteOnly = '<script type="application/ld+json">{"@graph":[{"@type":"WebSite"},{"@type":"Organization"}]}</script>'
-    expect(stripSeoTags(siteOnly)).toEqual({ html: siteOnly, removed: [], kept: [] })
+    expect(stripSeoTags(siteOnly)).toEqual({ html: siteOnly, removed: [], kept: [], robots: [] })
   })
 
   it('treats every page and article subtype, and a breadcrumb trail, as page-scoped', () => {
@@ -128,7 +128,7 @@ describe('stripSeoTags', () => {
 
   it('is a no-op on a head with none of these tags', () => {
     const plain = '<meta charset="utf-8" /><link rel="icon" href="/favicon.ico" />'
-    expect(stripSeoTags(plain)).toEqual({ html: plain, removed: [], kept: [] })
+    expect(stripSeoTags(plain)).toEqual({ html: plain, removed: [], kept: [], robots: [] })
   })
 })
 
@@ -241,7 +241,7 @@ describe('emitted SEO', () => {
 
   it('entry pages carry the post SEO; lists and static pages declare themselves websites', () => {
     expect(result.files['src/pages/[slug].astro']).toContain('seo={postSeo(post)}')
-    expect(result.files['src/pages/news.astro']).toContain(`seo={{ description: page.description, image: page.image, imageMeta: page.image_meta, canonical: page.canonical, breadcrumbs: page.breadcrumbs, type: 'website', pageType: 'CollectionPage' }}`)
+    expect(result.files['src/pages/news.astro']).toContain(`seo={{ description: page.description, image: page.image, imageMeta: page.image_meta, canonical: page.canonical, breadcrumbs: page.breadcrumbs, noindex: page.noindex, nofollow: page.nofollow, type: 'website', pageType: 'CollectionPage' }}`)
     expect(result.files['src/pages/about.astro']).toContain(`seo={{ type: 'website' }}`)
   })
 

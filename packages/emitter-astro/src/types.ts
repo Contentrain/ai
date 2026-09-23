@@ -87,6 +87,14 @@ export interface EmitPost {
    * as a placeholder.
    */
   entry?: EntrySourceRef
+  /**
+   * The source page was `noindex` (e.g. Yoast `robots.index`). The page gets
+   * `<meta name="robots" content="noindex">` and is left out of the sitemap —
+   * a migration must not make indexable what the site kept out of search.
+   */
+  noindex?: boolean
+  /** The source page was `nofollow`: `<meta name="robots" content="nofollow">`. */
+  nofollow?: boolean
 }
 
 /**
@@ -142,6 +150,10 @@ export interface QueryPage {
   canonical?: string
   /** The trail to this list page, itself excluded — see `EmitPost.breadcrumbs`. */
   breadcrumbs?: Breadcrumb[]
+  /** See `EmitPost.noindex`. */
+  noindex?: boolean
+  /** See `EmitPost.nofollow`. */
+  nofollow?: boolean
 }
 
 /** One step of a breadcrumb trail. */
