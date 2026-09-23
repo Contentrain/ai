@@ -31,11 +31,37 @@ export interface EntryRef {
 
 export class EmbedError extends Error {
   status: number
-  constructor(status: number, message: string) {
+  /** The API's machine code (\`data.code\`), when the body carries one — e.g. \`payment_required\`. */
+  code?: string
+  constructor(status: number, message: string, code?: string) {
     super(message)
     this.name = 'EmbedError'
     this.status = status
+    if (code) this.code = code
   }
+}
+
+/**
+ * The workspace's subscription is inactive (Studio answers 402
+ * \`payment_required\` on the public forms and comments endpoints). Not the
+ * visitor's problem and not transient: no retry helps until the owner updates
+ * billing.
+ */
+export function isPaymentRequired(error: unknown): boolean {
+  return error instanceof EmbedError && (error.status === 402 || error.code === 'payment_required')
+}
+
+/**
+ * Take a widget off the page without a word to the visitor — the message is
+ * written for the workspace owner, who finds it in the console. The rest of
+ * the page is untouched.
+ */
+export function hideUnavailable(host: HTMLElement, what: 'form' | 'comments'): void {
+  host.innerHTML = ''
+  host.hidden = true
+  // A site stylesheet that sets display on the element would override hidden.
+  host.style.display = 'none'
+  console.debug('[contentrain] ' + what + ' hidden: the workspace subscription is inactive (402 payment_required). The workspace owner needs to update billing in Contentrain Studio.')
 }
 
 /**
@@ -90,14 +116,16 @@ export function publicUrl(base: string, segments: string[], query?: Record<strin
 async function failure(res: Response): Promise<EmbedError> {
   const text = await res.text().catch(() => '')
   let message = text || 'Request failed'
+  let code: string | undefined
   try {
-    const parsed = JSON.parse(text) as { message?: unknown; statusMessage?: unknown }
+    const parsed = JSON.parse(text) as { message?: unknown; statusMessage?: unknown; data?: { code?: unknown } }
     const m = parsed.message ?? parsed.statusMessage
     if (typeof m === 'string' && m) message = m
+    if (typeof parsed.data?.code === 'string') code = parsed.data.code
   } catch {
     // not JSON — the raw text is the message
   }
-  return new EmbedError(res.status, message)
+  return new EmbedError(res.status, message, code)
 }
 
 export async function getJson<T>(url: string): Promise<T> {
@@ -615,6 +643,7 @@ export async function mountForm(host: HTMLElement): Promise<void> {
   try {
     config = await fetchFormConfig(rt, model)
   } catch (error) {
+    if (isPaymentRequired(error)) return hideUnavailable(host, 'form')
     host.innerHTML = '<p class="cr-error">' + esc(error instanceof Error ? error.message : strings.failed) + '</p>'
     return
   }
@@ -635,6 +664,7 @@ export async function mountForm(host: HTMLElement): Promise<void> {
       setStatus(form, errorsHtml(result.errors ?? []))
       resetCaptcha(form)
     } catch (error) {
+      if (isPaymentRequired(error)) return hideUnavailable(host, 'form')
       setStatus(form, '<p class="cr-error" role="alert">' + esc(error instanceof Error ? error.message : strings.failed) + '</p>')
       resetCaptcha(form)
     } finally {
@@ -653,6 +683,7 @@ export async function mountComments(host: HTMLElement): Promise<void> {
   try {
     thread = await fetchThread(rt, entry)
   } catch (error) {
+    if (isPaymentRequired(error)) return hideUnavailable(host, 'comments')
     host.innerHTML = '<p class="cr-error">' + esc(error instanceof Error ? error.message : strings.failed) + '</p>'
     return
   }
@@ -702,6 +733,9 @@ export async function mountComments(host: HTMLElement): Promise<void> {
         const list = threadEl.querySelector('.cr-comment-list')
         if (list) list.insertAdjacentHTML('beforeend', next.comments.map((c) => commentHtml(c, next.config)).join(''))
         if (!hasMore(next)) more.closest('.cr-more')?.remove()
+      } catch (error) {
+        if (isPaymentRequired(error)) return hideUnavailable(host, 'comments')
+        // Anything else: the button comes back for another try.
       } finally {
         more.disabled = false
       }
@@ -743,6 +777,7 @@ export async function mountComments(host: HTMLElement): Promise<void> {
       resetCaptcha(form)
       setStatus(form, '<p class="cr-success" role="status">' + esc(result.status === 'approved' ? strings.posted : strings.pending) + '</p>')
     } catch (error) {
+      if (isPaymentRequired(error)) return hideUnavailable(host, 'comments')
       setStatus(form, '<p class="cr-error" role="alert">' + esc(error instanceof Error ? error.message : strings.failed) + '</p>')
       resetCaptcha(form)
     } finally {
