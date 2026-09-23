@@ -116,7 +116,7 @@ describe('noindex pages', () => {
     // Yoast prints its site settings in the same tag as the page's index/follow.
     const yoast = '<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><meta name="googlebot" content="index, follow, max-snippet:-1, notranslate">'
     expect(stripSeoTags(yoast).robots).toEqual(['max-image-preview:large', 'max-snippet:-1', 'max-video-preview:-1', 'notranslate'])
-    const withYoast = { ...ir, families: [{ ...ir.families[0]!, chrome: [{ id: 'h', position: 'head' as const, html: yoast }, ir.families[0]!.chrome[1]!] }] } as ProjectIR
+    const withYoast = { ...ir, families: [{ ...ir.families[0]!, chrome: [{ id: 'h', position: 'head' as const, html: yoast }, ir.families[0]!.chrome![1]!] }] } as ProjectIR
     const { files: yoastFiles } = emitAstroProject({ ir: withYoast, content })
     const layout = Object.entries(yoastFiles).find(([path]) => path.startsWith('src/layouts/'))![1]
     expect(layout).toContain(`robotsDefault={["max-image-preview:large","max-snippet:-1","max-video-preview:-1","notranslate"]}`)
