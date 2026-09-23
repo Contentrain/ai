@@ -6,6 +6,7 @@ import type { BaseAdvance, ConflictResolution, ContextSource, RemotePush, SyncRe
 import { createGit, authorConfig } from './identity.js'
 import { networkGit } from './branch-lifecycle.js'
 import { GitRefReader } from './ref-reader.js'
+import { resolveBaseBranch } from './base-branch.js'
 import {
   NETWORK_TIMEOUT_MS,
   ensureContentBranch,
@@ -70,11 +71,8 @@ export async function reconcileBranches(
   const config = await readConfig(projectRoot)
   const remoteName = process.env['CONTENTRAIN_REMOTE'] ?? 'origin'
 
-  const baseBranch = process.env['CONTENTRAIN_BRANCH']
-    ?? config?.repository?.default_branch
-    ?? ((await git.raw(['branch', '--show-current'])).trim() || 'main')
-
   const currentBranch = (await git.raw(['branch', '--show-current']).catch(() => '')).trim()
+  const baseBranch = await resolveBaseBranch(git, config, { remoteName, currentBranch })
   if (currentBranch === CONTENTRAIN_BRANCH) {
     throw Object.assign(new Error(
       `The '${CONTENTRAIN_BRANCH}' branch is checked out in your working directory. `

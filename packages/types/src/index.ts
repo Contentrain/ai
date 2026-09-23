@@ -156,6 +156,14 @@ export interface ContentrainConfig {
     provider: 'github' | 'gitlab'
     owner: string
     name: string
+    /**
+     * Not informational: local writes advance this branch. A local
+     * auto-merge merges it into `contentrain` before each write, then
+     * fast-forwards it to the `contentrain` tip and pushes it. The
+     * `CONTENTRAIN_BRANCH` env overrides it; without either, the base is
+     * the remote's default branch, then `main`, then `master` — never
+     * merely the checked-out branch.
+     */
     default_branch: string
   }
   locales: {

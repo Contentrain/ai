@@ -7,6 +7,7 @@ import type { ToolProvider } from '../server.js'
 import { validateProject } from '../core/validator/index.js'
 import { readConfig } from '../core/config.js'
 import { createTransaction, buildBranchName, mergeBranch } from '../git/transaction.js'
+import { resolveBaseBranch } from '../git/base-branch.js'
 import { checkBranchHealth, cleanupMergedBranches, deleteRemoteBranch, listRemoteCrBranches, pruneMergedRemoteBranches } from '../git/branch-lifecycle.js'
 import { isMerged } from '../providers/local/branch-ops.js'
 import { normalizeOperationError } from '../git/errors.js'
@@ -255,9 +256,7 @@ export function registerWorkflowTools(
 
       try {
         // Determine the base branch for merge-status checks
-        const baseBranch = config.repository?.default_branch
-          ?? process.env['CONTENTRAIN_BRANCH']
-          ?? ((await git.raw(['branch', '--show-current'])).trim() || 'main')
+        const baseBranch = await resolveBaseBranch(git, config)
 
         // Get contentrain branches
         const branchSummary = await git.branchLocal()

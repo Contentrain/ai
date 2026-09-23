@@ -3,6 +3,7 @@ import { createGit } from '../git/identity.js'
 import { CONTENTRAIN_BRANCH, type ContentrainConfig } from '@contentrain/types'
 import { readConfig } from '../core/config.js'
 import { NETWORK_UNSAFE } from './identity.js'
+import { resolveBaseBranch } from './base-branch.js'
 
 export interface CleanupResult {
   deleted: number
@@ -28,9 +29,7 @@ export async function cleanupMergedBranches(projectRoot: string): Promise<Cleanu
   const config = await readConfig(projectRoot)
 
   // Determine base branch
-  const baseBranch = config?.repository?.default_branch
-    ?? process.env['CONTENTRAIN_BRANCH']
-    ?? ((await git.raw(['branch', '--show-current'])).trim() || 'main')
+  const baseBranch = await resolveBaseBranch(git, config)
 
   // Get all local branches (exclude the dedicated contentrain branch itself)
   const branchSummary = await git.branchLocal()
@@ -95,9 +94,7 @@ export async function checkBranchHealth(projectRoot: string): Promise<BranchHeal
   const git = createGit(projectRoot)
   const config = await readConfig(projectRoot)
 
-  const baseBranch = config?.repository?.default_branch
-    ?? process.env['CONTENTRAIN_BRANCH']
-    ?? ((await git.raw(['branch', '--show-current'])).trim() || 'main')
+  const baseBranch = await resolveBaseBranch(git, config)
 
   const branchSummary = await git.branchLocal()
   const contentrainBranches = branchSummary.all
