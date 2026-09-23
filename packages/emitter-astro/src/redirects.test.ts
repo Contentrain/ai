@@ -200,4 +200,30 @@ describe('host redirect files — real HTTP status, the meta-refresh pages stay 
     expect(result.warnings).toContain('redirects: 1 rules contain ":" or "*", which host redirect files read as patterns — served by the meta-refresh fallback only: /tag/:old/')
     expect(result.files['public/_redirects']).toBeUndefined()
   })
+
+  it('stops the Cloudflare and Vercel files at their rule limit and reports the rest; Netlify takes all', () => {
+    const many = Array.from({ length: 1002 }, (_, i) => ({ from: `/old-${String(i).padStart(4, '0')}/`, to: '/hello-world/' }))
+    const result = emit(many)
+    expect(JSON.parse(result.files['vercel.json']!).redirects).toHaveLength(2000)
+    expect(result.files['public/_redirects']!.trim().split('\n')).toHaveLength(1 + 2004)
+    expect(result.redirects?.host_over_limit).toEqual(['/old-1000/', '/old-1001/'])
+    expect(result.warnings.some((w) => w.startsWith('redirects: 2 rules not written to vercel.json (vercel) — 1000 rules'))).toBe(true)
+    const cloudflare = emit(many, 'cloudflare')
+    expect(cloudflare.files['public/_redirects']!.trim().split('\n')).toHaveLength(1 + 2000)
+    expect(emit(many, 'netlify').redirects?.host_over_limit).toEqual([])
+    expect(emit(many.slice(0, 1000)).redirects?.host_over_limit).toEqual([])
+  })
 })
+
+describe('letter case', () => {
+  it('returns a rule that differs from a built page only in case, so no host serves it over the page', () => {
+    const result = emit([{ from: '/About/', to: '/about/' }, { from: '/Hello-World', to: '/hello-world/' }, { from: '/Old/', to: '/about/' }])
+    expect(result.redirects?.manual.map((m) => m.reason)).toEqual([
+      'from differs only in letter case from the page at /about/ (route about) — a case-insensitive host or file system would serve the redirect over it; the page is kept',
+      'from differs only in letter case from the page at /hello-world/ (route post) — a case-insensitive host or file system would serve the redirect over it; the page is kept',
+    ])
+    expect(result.files['public/_redirects']).not.toContain('/About')
+    expect(result.files['public/_redirects']).toContain('/Old/ /about/ 301!')
+  })
+})
+

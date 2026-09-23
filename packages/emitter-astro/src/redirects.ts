@@ -124,6 +124,7 @@ export function planRedirects(redirects: RawRedirect[], built: Map<string, strin
   const written: RawRedirect[] = []
   const manual: ManualRedirect[] = []
   const claimed = new Set<string>()
+  const builtLower = new Map([...built].map(([address, route]) => [address.toLowerCase(), [address, route] as const]))
 
   for (const redirect of redirects) {
     const skip = (reason: string) => manual.push({ redirect, reason })
@@ -137,6 +138,11 @@ export function planRedirects(redirects: RawRedirect[], built: Map<string, strin
     const key = addressKey(from.path)
     const owner = built.get(key)
     if (owner !== undefined) { skip(`the migrated site builds a page at ${key} (route ${owner}) — the page is kept`); continue }
+    // Netlify matches rules case-insensitively, and macOS and Windows file
+    // systems cannot hold /About/index.html beside /about/index.html: either
+    // way the redirect would be served over the page, or loop into it.
+    const caseTwin = builtLower.get(key.toLowerCase())
+    if (caseTwin) { skip(`from differs only in letter case from the page at ${caseTwin[0]} (route ${caseTwin[1]}) — a case-insensitive host or file system would serve the redirect over it; the page is kept`); continue }
     if (claimed.has(key)) { skip(`another rule already redirects ${key}`); continue }
     if (!/^https?:/.test(redirect.to)) {
       let target: string
@@ -168,6 +174,12 @@ export function astroRedirectsConfig(config: RedirectPlan['config']): string | n
 /** Hosts whose own redirect file the emitter can write. */
 export type RedirectHost = 'netlify' | 'cloudflare' | 'vercel'
 
+/**
+ * Cloudflare Pages takes 2,000 static rules, Vercel 2,048 redirects; each
+ * rule is written twice (with and without its trailing slash).
+ */
+export const HOST_RULE_LIMIT = 2000
+
 export interface HostRedirectFiles {
   /** Path → content, for the emitted project. */
   files: Record<string, string>
@@ -175,6 +187,11 @@ export interface HostRedirectFiles {
   written: string[]
   /** Config keys a host file cannot express, left to the meta-refresh fallback. */
   skipped: string[]
+  /**
+   * Config keys left out of a Cloudflare or Vercel file because it reached
+   * that host's rule limit — served by the meta-refresh fallback only there.
+   */
+  over_limit: string[]
 }
 
 /** Netlify reads `:name` and `*` in a rule as placeholders. */
@@ -212,25 +229,28 @@ export function hostRedirectFiles(config: RedirectPlan['config'], host?: Redirec
   const entries = Object.entries(config)
   const skipped = entries.filter(([from]) => HOST_PATTERN_CHAR.test(from)).map(([from]) => from)
   const rules = entries.filter(([from]) => !skipped.includes(from))
-  if (!rules.length) return { files: {}, written: [], skipped }
+  if (!rules.length) return { files: {}, written: [], skipped, over_limit: [] }
+  // Netlify has no rule limit; Cloudflare's and Vercel's files stop at theirs.
+  const limited = rules.slice(0, Math.floor(HOST_RULE_LIMIT / 2))
+  const overLimit = host === 'netlify' ? [] : rules.slice(limited.length).map(([from]) => from)
 
   const files: Record<string, string> = {}
   const written: string[] = []
-  const redirectsFile = (force: boolean) => [
+  const redirectsFile = (force: boolean, list: typeof rules) => [
     '# Emitted by @contentrain/emitter-astro — the source site\'s redirects, as real HTTP redirects.',
-    ...rules.flatMap(([from, rule]) => hostSources(from).map((source) => `${source} ${rule.destination} ${rule.status}${force ? '!' : ''}`)),
+    ...list.flatMap(([from, rule]) => hostSources(from).map((source) => `${source} ${rule.destination} ${rule.status}${force ? '!' : ''}`)),
     '',
   ].join('\n')
   if (host === undefined || host === 'netlify') {
-    files['public/_redirects'] = redirectsFile(true)
+    files['public/_redirects'] = redirectsFile(true, rules)
     written.push('public/_redirects (netlify)')
   }
   if (host === 'cloudflare') {
-    files['public/_redirects'] = redirectsFile(false)
+    files['public/_redirects'] = redirectsFile(false, limited)
     written.push('public/_redirects (cloudflare)')
   }
   if (host === undefined || host === 'vercel') {
-    const redirects = rules.flatMap(([from, rule]) => hostSources(from).map((source) => ({
+    const redirects = limited.flatMap(([from, rule]) => hostSources(from).map((source) => ({
       source: escapePathPattern(source),
       destination: rule.destination,
       statusCode: rule.status,
@@ -238,5 +258,5 @@ export function hostRedirectFiles(config: RedirectPlan['config'], host?: Redirec
     files['vercel.json'] = `${JSON.stringify({ redirects }, null, 2)}\n`
     written.push('vercel.json (vercel)')
   }
-  return { files, written, skipped }
+  return { files, written, skipped, over_limit: overLimit }
 }

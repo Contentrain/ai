@@ -282,6 +282,8 @@ export interface EmitResult {
     manual: Array<{ redirect: RawRedirect; reason: string }>
     /** The host redirect files written, e.g. `public/_redirects (netlify)`. Empty: meta-refresh only. */
     host_files: string[]
+    /** Rules (by `from`) left out of a Cloudflare / Vercel file at its rule limit: meta-refresh only there. */
+    host_over_limit: string[]
   }
 }
 

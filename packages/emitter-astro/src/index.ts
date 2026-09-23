@@ -21,7 +21,7 @@ import { UI_STRINGS_DIR, uiStringsDir } from './ui-strings.js'
 import { wrapLegacyCss } from './css.js'
 import { stableJson, patternToPagePath } from './util.js'
 import { noindexPaths } from './noindex.js'
-import { astroRedirectsConfig, builtAddresses, hostRedirectFiles, planRedirects } from './redirects.js'
+import { astroRedirectsConfig, builtAddresses, HOST_RULE_LIMIT, hostRedirectFiles, planRedirects } from './redirects.js'
 
 /**
  * A supplied trail the build will not print — the same rule as \`validTrail\`
@@ -65,6 +65,10 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   const hostRedirects = redirectPlan ? hostRedirectFiles(redirectPlan.config, input.options?.redirectHost) : undefined
   if (hostRedirects) {
     add(hostRedirects.files)
+    if (hostRedirects.over_limit.length) {
+      const limitedFiles = hostRedirects.written.filter((f) => !f.includes('(netlify)')).join(', ')
+      warnings.push(`redirects: ${hostRedirects.over_limit.length} rules not written to ${limitedFiles} — ${HOST_RULE_LIMIT / 2} rules (each path with and without its slash) fill Cloudflare Pages' 2,000 static and Vercel's 2,048 redirect limit. They are served by the meta-refresh fallback only; move them to the host's dynamic rules for a real status`)
+    }
     if (hostRedirects.skipped.length) {
       warnings.push(`redirects: ${hostRedirects.skipped.length} rules contain ":" or "*", which host redirect files read as patterns — served by the meta-refresh fallback only: ${hostRedirects.skipped.join(', ')}`)
     }
@@ -288,7 +292,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   return {
     files,
     warnings,
-    ...(redirectPlan ? { redirects: { written: redirectPlan.written, manual: redirectPlan.manual, host_files: hostRedirects?.written ?? [] } } : {}),
+    ...(redirectPlan ? { redirects: { written: redirectPlan.written, manual: redirectPlan.manual, host_files: hostRedirects?.written ?? [], host_over_limit: hostRedirects?.over_limit ?? [] } } : {}),
   }
 }
 

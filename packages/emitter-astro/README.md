@@ -202,7 +202,7 @@ host's own redirect file, which answers the request before any page is served:
 Each path is written percent-encoded, with and without its trailing slash.
 `EmitResult.redirects.host_files` names the files written. A `from` containing
 `*` or a `:` segment is a pattern to a host file; it is left to the meta-refresh
-fallback, with a warning.
+fallback, with a warning. A rule that differs from a built page only in letter case is returned too: Netlify matches rules case-insensitively, and macOS and Windows file systems cannot hold `/About/` beside `/about/`, so it would be served over the page. Cloudflare Pages and Vercel files stop at 1,000 rules (2,000 entries with both slash forms, their static limit); the rest are named in `EmitResult.redirects.host_over_limit`, with a warning, and keep only the meta-refresh fallback there. Netlify's file has no limit.
 
 
 ## Route collisions
