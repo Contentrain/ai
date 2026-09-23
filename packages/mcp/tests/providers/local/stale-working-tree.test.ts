@@ -76,12 +76,28 @@ afterEach(async () => {
   await Promise.all([work, remote, other].map(dir => rm(dir, { recursive: true, force: true })))
 })
 
-/** Rewrite the content file on the other clone's contentrain and push it. */
+const metaPath = '.contentrain/meta/faq/en.json'
+
+/**
+ * Rewrite the content file on the other clone's contentrain and push it.
+ * Every entry the mutation touches is re-stamped in meta, the way Studio and
+ * MCP writes stamp it — a probe that skips the stamp misses the conflict
+ * every real concurrent write carries.
+ */
 async function otherWriterPushes(mutate: (entries: Record<string, Record<string, unknown>>) => void): Promise<void> {
   const file = join(other, contentPath)
   const entries = JSON.parse(await readFile(file, 'utf-8')) as Record<string, Record<string, unknown>>
+  const before = canonicalStringify(entries)
   mutate(entries)
   await writeFile(file, canonicalStringify(entries), 'utf-8')
+  const metaFile = join(other, metaPath)
+  const meta = JSON.parse(await readFile(metaFile, 'utf-8')) as Record<string, Record<string, unknown>>
+  const previous = JSON.parse(before) as Record<string, unknown>
+  for (const id of Object.keys(entries)) {
+    if (canonicalStringify(previous[id] ?? null) === canonicalStringify(entries[id])) continue
+    meta[id] = { status: 'draft', ...meta[id], source: 'human', updated_by: 'editor@studio', updated_at: '2030-01-01T00:00:00.000Z' }
+  }
+  await writeFile(metaFile, canonicalStringify(meta), 'utf-8')
   const git = createGit(other)
   await git.add('.')
   await git.commit('content: faq (other writer)', { '--no-verify': null })
@@ -125,6 +141,10 @@ describe('local content_save with a working tree behind contentrain (#226)', () 
 
     expect(result['error']).toBeUndefined()
     expect((await remoteEntries(CONTENTRAIN_BRANCH))[seedId]).toEqual({ question: 'Seed, renamed?', answer: 'Edited in Studio.' })
+    // Both sides stamped the entry; this write's stamp wins as a unit.
+    const meta = JSON.parse(await createGit(remote).show([`${CONTENTRAIN_BRANCH}:${metaPath}`])) as Record<string, Record<string, unknown>>
+    expect(meta[seedId]).toMatchObject({ source: 'agent', updated_by: 'contentrain-mcp' })
+    expect(meta[seedId]!['updated_at']).not.toBe('2030-01-01T00:00:00.000Z')
   })
 
   it('refuses, writing nothing, when both sides changed the same field', async () => {
@@ -132,6 +152,7 @@ describe('local content_save with a working tree behind contentrain (#226)', () 
       entries[seedId]!['question'] = 'Studio wording?'
     })
     const remoteTipBefore = (await createGit(remote).raw(['rev-parse', CONTENTRAIN_BRANCH])).trim()
+    const baseBefore = (await createGit(work).raw(['rev-parse', baseBranch])).trim()
 
     const result = parseResult(await client.callTool({
       name: 'contentrain_content_save',
@@ -143,8 +164,13 @@ describe('local content_save with a working tree behind contentrain (#226)', () 
     expect(result['developer_action']).toBe('git pull')
     expect((await createGit(remote).raw(['rev-parse', CONTENTRAIN_BRANCH])).trim()).toBe(remoteTipBefore)
     expect((await remoteEntries(CONTENTRAIN_BRANCH))[seedId]!['question']).toBe('Studio wording?')
-    // No stray feature branch left behind.
-    expect((await createGit(work).branchLocal()).all.filter(b => b.startsWith('cr/'))).toEqual([])
+    // No stray feature branch left behind, and no local ref carries this write:
+    // the base did not move, and the local contentrain holds at most what it
+    // fetched from the remote.
+    const workGit = createGit(work)
+    expect((await workGit.branchLocal()).all.filter(b => b.startsWith('cr/'))).toEqual([])
+    expect((await workGit.raw(['rev-parse', baseBranch])).trim()).toBe(baseBefore)
+    expect((await workGit.raw(['rev-parse', CONTENTRAIN_BRANCH])).trim()).toBe(remoteTipBefore)
   })
 
   it('does not commit uncommitted working-tree edits along with the save', async () => {
@@ -161,5 +187,35 @@ describe('local content_save with a working tree behind contentrain (#226)', () 
 
     expect(result['error']).toBeUndefined()
     expect(Object.keys(await remoteEntries(CONTENTRAIN_BRANCH))).not.toContain('ffff00000001')
+  })
+
+  describe('on a feature branch, which content writes do not sync', () => {
+    beforeEach(async () => {
+      await createGit(work).raw(['checkout', '-b', 'feat/x'])
+    })
+
+    const save = async (data: Record<string, string>) => parseResult(await client.callTool({
+      name: 'contentrain_content_save',
+      arguments: { model: 'faq', entries: [{ locale: 'en', id: seedId, data }] },
+    }))
+
+    it('saves the same entry twice when the second save changes another field', async () => {
+      expect((await save({ question: 'v1?', answer: 'Seed.' }))['error']).toBeUndefined()
+      expect((await save({ question: 'Seed?', answer: 'Second.' }))['error']).toBeUndefined()
+
+      // The tree still said "Seed?" for the question, so the second save did not
+      // change it — the first save's value stays.
+      expect((await remoteEntries(CONTENTRAIN_BRANCH))[seedId]).toEqual({ question: 'v1?', answer: 'Second.' })
+    })
+
+    it('refuses a second edit of the same field, pointing at a merge of the base', async () => {
+      expect((await save({ question: 'v1?', answer: 'Seed.' }))['error']).toBeUndefined()
+
+      const second = await save({ question: 'v2?', answer: 'Seed.' })
+
+      expect(second['code']).toBe('CONTENT_WORKING_TREE_STALE')
+      expect(second['developer_action']).toBe(`git merge ${baseBranch}`)
+      expect(String(second['agent_hint'])).toContain(`merge "${baseBranch}"`)
+    })
   })
 })

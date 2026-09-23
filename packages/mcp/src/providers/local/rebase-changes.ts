@@ -26,6 +26,14 @@ import { canonicalStringify, sortKeys } from '../../core/serialization/index.js'
  * changed the same value, a markdown document, a delete of a file that
  * gained entries — is a conflict. Conflicts are never resolved by guessing:
  * the caller refuses the write.
+ *
+ * One exception, in meta files only: the write stamp (`updated_at`,
+ * `updated_by`, `source`). Every write re-stamps the entries it touches
+ * (`mergeEntryMeta`, `applyStatusChange`), so two writes to the same entry
+ * always disagree there. The stamp describes the latest write, which is this
+ * one — so when this write re-stamped an entry, its whole stamp wins, as a
+ * unit (never this write's `updated_at` with the other writer's
+ * `updated_by`). `status` and scheduling still merge or conflict normally.
  */
 export type RebaseResult =
   | { ok: true, change: FileChange }
@@ -50,7 +58,8 @@ export function rebaseChange(change: FileChange, basis: string | null, current: 
     return reject('the file changed on the contentrain branch since it was read, and is not a JSON object')
   }
 
-  const merged = merge3(base, ours, theirs, [])
+  const stampWins = change.path.startsWith('.contentrain/meta/')
+  const merged = merge3(base, ours, theirs, [], stampWins)
   if (!merged.ok) {
     return reject(`${describeKey(merged.at)} was changed both by this write and on the contentrain branch`)
   }
@@ -74,7 +83,10 @@ type Value = unknown | typeof ABSENT
 
 type MergeResult = { ok: true, value: Value } | { ok: false, at: string[] }
 
-function merge3(base: Value, ours: Value, theirs: Value, at: string[]): MergeResult {
+/** Meta keys that record who wrote last and when — see the module comment. */
+const WRITE_STAMP = new Set(['updated_at', 'updated_by', 'source'])
+
+function merge3(base: Value, ours: Value, theirs: Value, at: string[], stampWins: boolean): MergeResult {
   if (same(ours, base)) return { ok: true, value: theirs }
   if (same(theirs, base)) return { ok: true, value: ours }
   if (same(ours, theirs)) return { ok: true, value: ours }
@@ -82,10 +94,17 @@ function merge3(base: Value, ours: Value, theirs: Value, at: string[]): MergeRes
     return { ok: false, at }
   }
 
+  const restamped = stampWins
+    && [...WRITE_STAMP].some(key => !same(field(ours, key), field(base, key)))
   const out: Record<string, unknown> = {}
   const keys = new Set([...Object.keys(base), ...Object.keys(ours), ...Object.keys(theirs)])
   for (const key of keys) {
-    const result = merge3(field(base, key), field(ours, key), field(theirs, key), [...at, key])
+    if (restamped && WRITE_STAMP.has(key)) {
+      const value = field(ours, key)
+      if (value !== ABSENT) out[key] = value
+      continue
+    }
+    const result = merge3(field(base, key), field(ours, key), field(theirs, key), [...at, key], stampWins)
     if (!result.ok) return result
     if (result.value !== ABSENT) out[key] = result.value
   }

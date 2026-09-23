@@ -61,6 +61,10 @@ export interface MergeBranchResult {
 export interface GitTransaction {
   worktree: string
   branch: string
+  /** The resolved base branch this transaction advances. */
+  baseBranch: string
+  /** Whether the developer has the base branch checked out. */
+  baseCheckedOut: boolean
   write(callback: (worktreePath: string) => Promise<void>): Promise<void>
   commit(message: string, contextUpdate?: ContextUpdate): Promise<string>
   complete(): Promise<CompleteResult>
@@ -303,6 +307,8 @@ export async function createTransaction(
   return {
     worktree: worktreePath,
     branch,
+    baseBranch,
+    baseCheckedOut,
 
     async write(callback) {
       await callback(worktreePath)

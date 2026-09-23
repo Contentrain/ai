@@ -103,11 +103,7 @@ export class LocalProvider implements RepoProvider {
           throw Object.assign(new Error(
             `Nothing was written: the content branch moved since your working tree was last updated, and this change cannot be applied on top of it. `
             + conflicts.map(c => `${c.path}: ${c.reason}.`).join(' '),
-          ), {
-            code: 'CONTENT_WORKING_TREE_STALE',
-            agent_hint: 'Another writer (Studio, a teammate, CI) changed the same content on the contentrain branch. Ask the developer to update their working tree (git pull; if the base branch does not have the change yet, git checkout contentrain -- .contentrain/), then re-read the content and retry — do not retry unchanged.',
-            developer_action: 'git pull',
-          })
+          ), staleTreeGuidance(tx.baseBranch, tx.baseCheckedOut))
         }
         await applyChangesToWorktree(wt, results.map(r => (r as Extract<typeof r, { ok: true }>).change))
       })
@@ -245,5 +241,26 @@ async function readOrNull(path: string): Promise<string | null> {
     return await readFile(path, 'utf-8')
   } catch {
     return null
+  }
+}
+
+/**
+ * How to bring the planner's tree up to date. On the base branch that is a
+ * pull. On a feature branch the content never reaches the working tree (the
+ * advance leaves a non-base checkout alone), so a pull fetches nothing
+ * useful — merging the base is what brings it in.
+ */
+function staleTreeGuidance(baseBranch: string, baseCheckedOut: boolean): {
+  code: string
+  agent_hint: string
+  developer_action: string
+} {
+  const update = baseCheckedOut
+    ? 'Ask the developer to update their working tree (git pull)'
+    : `The developer is on a branch other than "${baseBranch}", which content writes do not update. Ask them to merge "${baseBranch}" into it (or rebase onto it)`
+  return {
+    code: 'CONTENT_WORKING_TREE_STALE',
+    agent_hint: `The content on the contentrain branch differs from the working tree this write was planned from — another writer (Studio, a teammate, CI) or an earlier write changed the same value. ${update}, then re-read the content and retry — do not retry unchanged.`,
+    developer_action: baseCheckedOut ? 'git pull' : `git merge ${baseBranch}`,
   }
 }

@@ -116,4 +116,81 @@ describe('rebaseChange', () => {
     expect(Object.keys(JSON.parse(content))).toEqual(['id', 'name', 'kind', 'fields'])
     expect(JSON.parse(content)).toEqual({ id: 'faq', name: 'Questions', kind: 'collection', fields: { a: { type: 'text' }, q: { type: 'string' } } })
   })
+
+  describe('meta files', () => {
+    const META = '.contentrain/meta/faq/en.json'
+
+    it('lets this write\'s stamp win when both sides stamped the same entry', () => {
+      const basis = json({ e1: { status: 'draft', source: 'agent', updated_by: 'contentrain-mcp', updated_at: '2026-01-01T00:00:00.000Z' } })
+      const planned = json({ e1: { status: 'draft', source: 'agent', updated_by: 'contentrain-mcp', updated_at: '2026-09-23T10:00:00.000Z' } })
+      const current = json({ e1: { status: 'draft', source: 'studio', updated_by: 'editor@studio', updated_at: '2026-09-23T09:00:00.000Z' } })
+
+      const result = rebaseChange({ path: META, content: planned }, basis, current)
+
+      expect(result).toEqual({ ok: true, change: { path: META, content: planned } })
+    })
+
+    it('still keeps the other writer\'s status change when only this write stamped', () => {
+      const basis = json({ e1: { status: 'draft', updated_at: 'T0' } })
+      const planned = json({ e1: { status: 'draft', updated_at: 'T2' } })
+      const current = json({ e1: { status: 'published', updated_at: 'T1' } })
+
+      const result = rebaseChange({ path: META, content: planned }, basis, current)
+
+      expect(result).toEqual({ ok: true, change: { path: META, content: json({ e1: { status: 'published', updated_at: 'T2' } }) } })
+    })
+
+    it('refuses when both sides changed the status', () => {
+      const basis = json({ e1: { status: 'draft', updated_at: 'T0' } })
+      const planned = json({ e1: { status: 'archived', updated_at: 'T2' } })
+      const current = json({ e1: { status: 'published', updated_at: 'T1' } })
+
+      expect(rebaseChange({ path: META, content: planned }, basis, current))
+        .toMatchObject({ ok: false, reason: '"e1" (field "status") was changed both by this write and on the contentrain branch' })
+    })
+
+    it('does not extend the stamp rule to content files', () => {
+      const basis = json({ e1: { source: 'a' } })
+      expect(rebaseChange({ path: CONTENT, content: json({ e1: { source: 'b' } }) }, basis, json({ e1: { source: 'c' } })))
+        .toMatchObject({ ok: false })
+    })
+
+    it('stamps a flat (singleton / dictionary) meta file the same way', () => {
+      const path = '.contentrain/meta/hero/en.json'
+      const result = rebaseChange(
+        { path, content: json({ status: 'draft', updated_at: 'T2' }) },
+        json({ status: 'draft', updated_at: 'T0' }),
+        json({ status: 'draft', updated_at: 'T1' }),
+      )
+      expect(result).toEqual({ ok: true, change: { path, content: json({ status: 'draft', updated_at: 'T2' }) } })
+    })
+  })
+
+  it('merges dictionary keys added on both sides', () => {
+    const path = '.contentrain/content/test/ui-strings/en.json'
+    const result = rebaseChange({ path, content: json({ 'a.b': 'A', 'mine.key': 'M' }) }, json({ 'a.b': 'A' }), json({ 'a.b': 'A', 'theirs.key': 'T' }))
+    expect(result).toEqual({ ok: true, change: { path, content: json({ 'a.b': 'A', 'mine.key': 'M', 'theirs.key': 'T' }) } })
+  })
+
+  it('merges singleton fields changed on different sides', () => {
+    const path = '.contentrain/content/marketing/hero/en.json'
+    const result = rebaseChange({ path, content: json({ title: 'Mine', subtitle: 'S' }) }, json({ title: 'T', subtitle: 'S' }), json({ title: 'T', subtitle: 'Theirs' }))
+    expect(result).toEqual({ ok: true, change: { path, content: json({ title: 'Mine', subtitle: 'Theirs' }) } })
+  })
+
+  it('treats arrays as atomic: one side\'s change is taken, both changing differently conflicts', () => {
+    const basis = json({ a: { tags: ['x'] } })
+    expect(rebaseChange({ path: CONTENT, content: json({ a: { tags: ['x', 'y'] }, b: 1 }) }, basis, json({ a: { tags: ['x'] }, c: 2 })))
+      .toEqual({ ok: true, change: { path: CONTENT, content: json({ a: { tags: ['x', 'y'] }, b: 1, c: 2 }) } })
+    expect(rebaseChange({ path: CONTENT, content: json({ a: { tags: ['x', 'y'] } }) }, basis, json({ a: { tags: ['z'] } })))
+      .toMatchObject({ ok: false, reason: expect.stringContaining('"a" (field "tags")') })
+  })
+
+  it('treats a null value as an absent key, as the serializer does', () => {
+    const basis = JSON.stringify({ a: { q: 'A', note: null } })
+    const planned = json({ a: { q: 'A2' } })
+    const current = json({ a: { q: 'A' }, b: { q: 'B' } })
+    expect(rebaseChange({ path: CONTENT, content: planned }, basis, current))
+      .toEqual({ ok: true, change: { path: CONTENT, content: json({ a: { q: 'A2' }, b: { q: 'B' } }) } })
+  })
 })
