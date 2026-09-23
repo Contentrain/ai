@@ -192,9 +192,12 @@ export interface ActivityEntry {
 // ── Usage ─────────────────────────────────────────────────────────────────
 
 export interface UsageMetric {
-  current: number
+  /** null when Studio could not read this meter (`unavailable`). */
+  current: number | null
   limit: number
-  percentage: number
+  percentage: number | null
+  /** Studio could not read this meter right now: there is no number to show. */
+  unavailable?: true
 }
 
 export interface UsageMetrics {

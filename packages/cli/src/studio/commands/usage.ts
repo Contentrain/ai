@@ -62,13 +62,15 @@ export default defineCommand({
   },
 })
 
-function metricRow(name: string, metric: UsageMetric, unit?: string): string[] {
+export function metricRow(name: string, metric: UsageMetric, unit?: string): string[] {
   const suffix = unit ? ` ${unit}` : ''
+  const limitText = metric.limit < 0 ? 'unlimited' : formatNumber(metric.limit) + suffix
+  // A meter Studio could not read has no number: say so rather than print 0 or "null".
+  if (metric.unavailable || metric.current === null) return [name, pc.dim('unavailable'), limitText, pc.dim('—')]
   const used = formatNumber(metric.current) + suffix
-  const limit = metric.limit < 0 ? 'unlimited' : formatNumber(metric.limit) + suffix
   const pct = metric.limit < 0 ? pc.dim('—') : formatPercent(metric.current, metric.limit)
 
-  return [name, used, limit, pct]
+  return [name, used, limitText, pct]
 }
 
 function formatNumber(n: number): string {

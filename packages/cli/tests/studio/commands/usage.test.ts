@@ -1,4 +1,7 @@
+import { stripVTControlCharacters } from 'node:util'
 import { describe, it, expect, vi } from 'vitest'
+
+const strip = (row: string[]) => row.map(cell => stripVTControlCharacters(cell))
 
 const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
 
@@ -42,4 +45,12 @@ describe('studio usage command', () => {
     expect(output['aiMessages']).toBeDefined()
     expect(output['formSubmissions']).toBeDefined()
   })
+
+  it('shows a meter Studio could not read as unavailable, not as 0 or "null"', async () => {
+    const { metricRow } = await import('../../../src/studio/commands/usage.js')
+    expect(strip(metricRow('Form submissions', { current: null, limit: 1000, percentage: null, unavailable: true }))).toEqual(['Form submissions', 'unavailable', '1.0K', '—'])
+    expect(strip(metricRow('CDN bandwidth', { current: null, limit: 10, percentage: null }, 'GB'))).toEqual(['CDN bandwidth', 'unavailable', '10 GB', '—'])
+    expect(strip(metricRow('AI messages', { current: 100, limit: 5000, percentage: 2 }))).toEqual(['AI messages', '100', '5.0K', '2%'])
+  })
 })
+
