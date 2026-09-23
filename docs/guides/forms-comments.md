@@ -158,7 +158,7 @@ Studio answers `402 payment_required` on the public forms and comments endpoints
 
 `<cr-form>` and `<cr-comments>` take themselves off the page when they get it, whether loading, submitting or loading more comments:
 
-- The element is emptied and set `hidden`. The rest of the page is untouched, and the visitor sees no error.
+- The element is emptied and hidden (`hidden` plus an inline `display: none`, so a site stylesheet cannot bring back an empty box). The rest of the page is untouched, and the visitor sees no error.
 - The request is not retried: nothing changes until the owner updates billing.
 - One `console.debug` line tells the owner what happened.
 
