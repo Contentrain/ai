@@ -175,8 +175,39 @@ describe('seoFromRawEntry — a block the exporter rendered (BR-16)', () => {
   it("the exporter's rendered schema nodes stand in when the block has no graph", () => {
     const faq = { '@type': 'FAQPage', mainEntity: [] }
     expect(seoFromRawEntry({ rank_math: { rendered: { schema: { graph: [faq] } } } }).schema).toEqual({ '@context': 'https://schema.org', '@graph': [faq] })
-    expect(seoFromRawEntry({ rank_math: { schema: { types: ['Article'], graph: YOAST_GRAPH }, rendered: { schema: { graph: [faq] } } } }).schema).toBe(YOAST_GRAPH)
+    // An unresolved block's top-level graph is the stored nodes: the rendering wins.
+    expect(seoFromRawEntry({ rank_math: { schema: { types: ['Article'], graph: YOAST_GRAPH }, rendered: { schema: { graph: [faq] } } } }).schema).toEqual({ '@context': 'https://schema.org', '@graph': [faq] })
     expect(seoFromRawEntry({ rank_math: { rendered: { schema: { graph: [] } } } })).not.toHaveProperty('schema')
+  })
+
+  it("never prints a template token in the JSON-LD: an unresolved block's stored graph is not read, a rendered node with a token is left out", () => {
+    // What the Bridge wrote for Rank Math before BR-16's fix: the stored nodes as the top-level graph.
+    const stored = [{ '@type': 'Article', headline: '%title%', author: { '@type': 'Person', name: '%name%' } }]
+    expect(seoFromRawEntry({ rank_math: { resolved: false, schema: { types: ['Article'], graph: stored } } })).not.toHaveProperty('schema')
+    // Without a rendering, the block's own graph is read node by node: a literal node stays.
+    const literal = { '@type': 'Organization', name: 'Example' }
+    expect(seoFromRawEntry({ rank_math: { resolved: false, schema: { types: ['Article'], graph: [...stored, literal] } } }).schema).toEqual({ '@context': 'https://schema.org', '@graph': [literal] })
+    const mixed = seoFromRawEntry({ rank_math: { rendered: { schema: { graph: [
+      { '@type': 'FAQPage', name: 'Questions' },
+      { '@type': 'Article', headline: 'Hello %sep% %sitename%' },
+      { '@type': 'HowTo', step: [{ '@type': 'HowToStep', text: 'Use %customfield(x)%' }] },
+    ] } } } })
+    expect(mixed.schema).toEqual({ '@context': 'https://schema.org', '@graph': [{ '@type': 'FAQPage', name: 'Questions' }] })
+    const allTokens = seoFromRawEntry({ rank_math: { rendered: { schema: { graph: [{ '@type': 'Article', headline: '%title%' }] } } } })
+    expect(allTokens).not.toHaveProperty('schema')
+    // Percent-encoded non-Latin addresses are text, not tokens: %E4%B8%AD holds "%AD%".
+    const cjk = { '@type': 'Article', url: 'https://x.com/%E4%B8%AD%E6%96%87/', image: 'https://x.com/%EF%BB%BF.jpg' }
+    expect(seoFromRawEntry({ rank_math: { rendered: { schema: { graph: [cjk] } } } }).schema).toEqual({ '@context': 'https://schema.org', '@graph': [cjk] })
+    expect(seoFromRawEntry({ rank_math: { rendered: { title: 'Hello', open_graph: { image: 'https://x.com/%E4%B8%AD.jpg' } } } }).open_graph).toEqual({ image: 'https://x.com/%E4%B8%AD.jpg' })
+    // Turkish slugs and images — ş ç ğ ı, percent-encoded — keep their schema.
+    const tr = { '@type': 'Article', url: 'https://x.com/%C5%9Feker-%C3%A7ay-da%C4%9F-%C4%B1s%C4%B1/', image: 'https://x.com/g%C3%B6rsel.jpg' }
+    expect(seoFromRawEntry({ rank_math: { rendered: { schema: { graph: [tr] } } } }).schema).toEqual({ '@context': 'https://schema.org', '@graph': [tr] })
+    // A token beside an encoded address is still caught.
+    expect(seoFromRawEntry({ rank_math: { rendered: { schema: { graph: [{ ...cjk, headline: '%title%' }] } } } })).not.toHaveProperty('schema')
+    // A literal percentage is not a token.
+    expect(seoFromRawEntry({ rank_math: { rendered: { schema: { graph: [{ '@type': 'Offer', description: '50% off, 20% more' }] } } } }).schema).toBeDefined()
+    // The graph the running plugin rendered is read as it is.
+    expect(seoFromRawEntry({ yoast: { resolved: true, schema: { types: ['WebPage'], graph: YOAST_GRAPH } } }).schema).toBe(YOAST_GRAPH)
   })
 
   it('a resolved block is read as it is, rendered ignored', () => {

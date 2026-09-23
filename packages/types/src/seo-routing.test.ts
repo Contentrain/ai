@@ -19,7 +19,7 @@ import redirectsJson from './fixtures/bridge-b04/redirects.json'
 // emits must be a key the type declares — `Record<keyof T, true>` makes the
 // compiler hold each list to its type — and every closed vocabulary must hold.
 
-const SEO_KEYS: Record<keyof RawSeo, true> = { format: true, status: true, serving: true, providers: true, settings: true, entries: true, excluded: true }
+const SEO_KEYS: Record<keyof RawSeo, true> = { format: true, status: true, serving: true, providers: true, settings: true, entries: true, home: true, excluded: true }
 const SEO_ENTRY_KEYS: Record<keyof RawSeoEntry, true> = {
   resolved: true, title: true, description: true, canonical: true, robots: true, robots_served: true,
   open_graph: true, twitter: true, focus_keyword: true, schema: true, stored: true,
@@ -75,6 +75,12 @@ describe('RawSeoEntry — the Bridge-rendered block (BR-16)', () => {
   it('declares every key of an entry and of its rendered values', () => {
     expect(undeclared(BR16_ENTRY, SEO_ENTRY_KEYS)).toEqual([])
     expect(undeclared(BR16_ENTRY.rendered, RENDERED_KEYS)).toEqual([])
+  })
+
+  it('a home page that lists posts has its SEO under home, one block per provider', () => {
+    const withHome: RawSeo = { status: 'present', serving: 'rank_math', providers: { yoast: { status: 'absent' }, rank_math: { status: 'active' }, aioseo: { status: 'absent' } }, settings: {}, entries: {}, home: { rank_math: BR16_ENTRY } }
+    expect(undeclared(withHome, SEO_KEYS)).toEqual([])
+    expect(undeclared(withHome.home!.rank_math!, SEO_ENTRY_KEYS)).toEqual([])
   })
 
   it('SEOPress is a provider, and optional in an older export', () => {
