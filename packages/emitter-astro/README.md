@@ -114,9 +114,10 @@ chunk, or drop them at capture.
 
 `seoFromRawEntry(blocks, { serving, url })` maps one page's `RawSeo.entries[address]` — what each SEO plugin holds for it — to the fields above (`seo_title`, `description`, `canonical`, `noindex`/`nofollow`, `open_graph`, `twitter`, `schema`), ready to spread into an `EmitPost` or `QueryPage`:
 
-- The serving plugin's block is read (`RawSeo.serving`), else the first of Yoast, Rank Math and AIOSEO that has one.
-- A block not marked `resolved` holds stored values: its unrendered templates, in that plugin's own syntax (Yoast `%%title%%`, Rank Math `%title%`, AIOSEO's named tags such as `#post_title` — not any `#word`, so a hashtag survives), are dropped so the page's own values fall in, and its literal values are kept.
-- Robots come from `robots_served` — what the page actually carried — and from the plugin's setting only without it.
+- The serving plugin's block is read (`RawSeo.serving`), else the first of Yoast, Rank Math, AIOSEO and SEOPress that has one.
+- Its values come from the block itself when the running plugin rendered it (`resolved`); else from `rendered` — the exporter's own rendering of the plugin's templates (the Bridge's, `rendered_by`), final text whose unrenderable variables are already out of the string and only listed in `unresolved`; else from the stored values.
+- Outside a `resolved` block, a string that still holds a template token in the plugin's own syntax (Yoast and SEOPress `%%title%%`, Rank Math `%title%`, AIOSEO's named tags such as `#post_title` — not any `#word`, so a hashtag survives) is dropped so the page's own value falls in; a token is never printed. Literal values are kept.
+- Robots come from `robots_served` — what the page actually carried — then `rendered.robots`, then the plugin's setting. The Twitter card is a setting and stays with the block.
 - A canonical equal to the page's own `url` is left out; only one that points elsewhere becomes an override.
 
 `options.seo: false` turns all of this off: the source head travels verbatim and

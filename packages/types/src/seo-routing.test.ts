@@ -23,6 +23,10 @@ const SEO_KEYS: Record<keyof RawSeo, true> = { format: true, status: true, servi
 const SEO_ENTRY_KEYS: Record<keyof RawSeoEntry, true> = {
   resolved: true, title: true, description: true, canonical: true, robots: true, robots_served: true,
   open_graph: true, twitter: true, focus_keyword: true, schema: true, stored: true,
+  rendered: true, rendered_by: true, template_source: true, unresolved: true,
+}
+const RENDERED_KEYS: Record<keyof NonNullable<RawSeoEntry['rendered']>, true> = {
+  title: true, description: true, canonical: true, robots: true, open_graph: true, twitter: true,
 }
 const SEO_SETTINGS_KEYS: Record<keyof RawSeoSettings, true> = {
   separator: true, title_templates: true, description_templates: true, noindex: true, social: true, verification: true, raw: true,
@@ -46,6 +50,39 @@ const EXCLUDED_KEYS: Record<keyof RawRedirectExcluded, true> = { ...REDIRECT_KEY
 
 const undeclared = (value: object, declared: object) => Object.keys(value).filter(key => !(key in declared))
 
+// BR-16 (contentrain-bridge-seo@1, additive): an entry the Bridge rendered
+// itself for a plugin that does not serve the head — the shape Opus Bridge
+// writes, key for key.
+const BR16_ENTRY = {
+  resolved: false,
+  title: '%title% %sep% %sitename%',
+  robots: { index: 'index', follow: 'follow', advanced: ['noimageindex'] },
+  rendered: {
+    title: 'Hello – Example',
+    description: 'What the editor wrote.',
+    canonical: 'https://example.com/hello/',
+    robots: { index: 'noindex', follow: 'follow' },
+    open_graph: { title: 'Share', description: 'Share text', image: 'https://example.com/share.jpg' },
+    twitter: { title: 'Tweet', description: 'Tweet text', image: 'https://example.com/share.jpg' },
+  },
+  rendered_by: 'bridge',
+  template_source: { title: 'post_type', description: 'default', robots: 'post' },
+  unresolved: ['%customfield(teaser)%'],
+} satisfies RawSeoEntry
+
+describe('RawSeoEntry — the Bridge-rendered block (BR-16)', () => {
+  it('declares every key of an entry and of its rendered values', () => {
+    expect(undeclared(BR16_ENTRY, SEO_ENTRY_KEYS)).toEqual([])
+    expect(undeclared(BR16_ENTRY.rendered, RENDERED_KEYS)).toEqual([])
+  })
+
+  it('SEOPress is a provider, and optional in an older export', () => {
+    expect(SEO_PROVIDERS).toContain('seopress')
+    const older: RawSeo = { status: 'present', serving: 'yoast', providers: { yoast: { status: 'active' }, rank_math: { status: 'absent' }, aioseo: { status: 'absent' } }, settings: {}, entries: {} }
+    expect(older.providers.seopress).toBeUndefined()
+  })
+})
+
 describe('RawSeo against the Bridge', () => {
   const seo = { ...seoJson, entries: seoEntriesJson } as unknown as RawSeo
 
@@ -60,7 +97,10 @@ describe('RawSeo against the Bridge', () => {
   it('holds the closed vocabularies', () => {
     expect(seo.status).toBe('present')
     expect(seo.serving).toBe('yoast')
-    expect(Object.keys(seo.providers).toSorted()).toEqual([...SEO_PROVIDERS].toSorted())
+    // SEOPress was added after this export: the three older providers are
+    // always named, SEOPress may be, and nothing else is.
+    expect(Object.keys(seo.providers).filter((p) => p !== 'seopress').toSorted()).toEqual(SEO_PROVIDERS.filter((p) => p !== 'seopress').toSorted())
+    expect(Object.keys(seo.providers).every((p) => (SEO_PROVIDERS as readonly string[]).includes(p))).toBe(true)
     expect(seo.providers.yoast).toEqual({ status: 'active', version: '28.5' })
     expect(seo.providers.rank_math.status).toBe('inactive-with-data')
     for (const key of Object.keys(seo.entries)) expect(key).toMatch(/^(post:\d+|term:[a-z_]+:\d+)$/)

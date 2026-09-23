@@ -281,8 +281,14 @@ export interface RawRedirectExcluded extends Omit<Partial<RawRedirect>, 'match'>
 
 // ─── SEO ───
 
-export const SEO_PROVIDERS = ['yoast', 'rank_math', 'aioseo'] as const
+export const SEO_PROVIDERS = ['yoast', 'rank_math', 'aioseo', 'seopress'] as const
 export type SeoProvider = (typeof SEO_PROVIDERS)[number]
+
+/** Whether a provider runs on the site, and its version. */
+export interface SeoProviderStatus {
+  status: 'active' | 'inactive-with-data' | 'absent'
+  version?: string
+}
 
 /** One page's SEO as one provider holds it. */
 export interface RawSeoEntry {
@@ -301,6 +307,27 @@ export interface RawSeoEntry {
   schema?: { types: string[], graph?: unknown }
   /** What the plugin stored for this page (templates such as `%%title%% %%sep%%`), secrets removed. */
   stored?: Record<string, unknown>
+  /**
+   * The page's SEO as the exporter rendered the plugin's templates itself,
+   * for a plugin that is not the one serving the live head (`resolved` is
+   * not true): final text, no template tokens. A template variable it could
+   * not render is taken out of the string (and the separators it leaves
+   * tidied) and named in `unresolved`.
+   */
+  rendered?: {
+    title?: string
+    description?: string
+    canonical?: string
+    robots?: { index?: 'index' | 'noindex', follow?: 'follow' | 'nofollow' }
+    open_graph?: { title?: string, description?: string, image?: string }
+    twitter?: { title?: string, description?: string, image?: string }
+  }
+  /** Who rendered `rendered`, e.g. `bridge`. */
+  rendered_by?: string
+  /** Where each rendered value's template came from: the page's own, its post type's, or the plugin default. */
+  template_source?: Partial<Record<'title' | 'description' | 'robots', 'post' | 'post_type' | 'default'>>
+  /** Template tokens `rendered` could not resolve (e.g. `%customfield(x)%`) — removed from its strings, listed for a person to see. */
+  unresolved?: string[]
 }
 
 /** A provider's site-wide settings. */
@@ -328,7 +355,8 @@ export interface RawSeo {
   status: 'present' | 'none'
   /** Whose output the live site serves. */
   serving: SeoProvider | 'wordpress-core'
-  providers: Record<SeoProvider, { status: 'active' | 'inactive-with-data' | 'absent', version?: string }>
+  /** SEOPress is optional here: exports made before it was covered do not name it. */
+  providers: Record<Exclude<SeoProvider, 'seopress'>, SeoProviderStatus> & Partial<Record<'seopress', SeoProviderStatus>>
   settings: Partial<Record<SeoProvider, RawSeoSettings>>
   /** `post:<id>` or `term:<taxonomy>:<id>` → one block per provider that has data for it. */
   entries: Record<string, Partial<Record<SeoProvider, RawSeoEntry>>>

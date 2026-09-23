@@ -115,6 +115,62 @@ describe('seoFromRawEntry', () => {
   })
 })
 
+describe('seoFromRawEntry — a block the exporter rendered (BR-16)', () => {
+  // Rank Math inactive, its templates rendered by the Bridge; one variable it
+  // could not render was taken out of the string and listed.
+  const rendered: RawSeoEntry = {
+    resolved: false,
+    title: '%title% %sep% %sitename%',
+    description: '%excerpt%',
+    robots: { index: 'index', follow: 'follow', advanced: ['noimageindex'] },
+    twitter: { card: 'summary' },
+    rendered: {
+      title: 'Hello – Example',
+      description: 'What the editor wrote.',
+      canonical: 'https://example.com/other/',
+      robots: { index: 'noindex', follow: 'follow' },
+      open_graph: { title: 'Share', image: 'https://example.com/share.jpg' },
+      twitter: { title: 'Tweet' },
+    },
+    rendered_by: 'bridge',
+    template_source: { title: 'post_type', description: 'default', robots: 'post' },
+    unresolved: ['%customfield(teaser)%'],
+  }
+
+  it('reads rendered over stored: final text, robots, share cards, the card kept from the block', () => {
+    expect(seoFromRawEntry({ rank_math: rendered }, { url: 'https://example.com/hello/' })).toEqual({
+      seo_title: 'Hello – Example',
+      description: 'What the editor wrote.',
+      canonical: 'https://example.com/other/',
+      noindex: true,
+      open_graph: { title: 'Share', image: 'https://example.com/share.jpg' },
+      twitter: { title: 'Tweet', card: 'summary' },
+    })
+  })
+
+  it('robots: robots_served first, then rendered, then the stored setting', () => {
+    expect(seoFromRawEntry({ rank_math: { ...rendered, robots_served: ['index', 'follow'] } }).noindex).toBeUndefined()
+    expect(seoFromRawEntry({ rank_math: { ...rendered, rendered: { title: 'T' } } })).not.toHaveProperty('noindex')
+    expect(seoFromRawEntry({ rank_math: { ...rendered, rendered: { title: 'T' }, robots: { index: 'noindex' } } }).noindex).toBe(true)
+  })
+
+  it('a resolved block is read as it is, rendered ignored', () => {
+    expect(seoFromRawEntry({ yoast: { resolved: true, title: 'Live', rendered: { title: 'Bridge' } } }).seo_title).toBe('Live')
+  })
+
+  it('never prints a template token, even one left in a rendered string', () => {
+    const leaked = seoFromRawEntry({ rank_math: { rendered: { title: 'Hello %sep% Example', description: 'Fine.' } } })
+    expect(leaked).toEqual({ description: 'Fine.' })
+  })
+
+  it('reads SEOPress: rendered when present, else stored with its %%variables%% dropped', () => {
+    expect(seoFromRawEntry({ seopress: { rendered: { title: 'Hello – Example' } } }, { serving: 'seopress' }).seo_title).toBe('Hello – Example')
+    expect(seoFromRawEntry({ seopress: { title: '%%post_title%% %%sep%% %%sitetitle%%', description: 'Literal.' } })).toEqual({ description: 'Literal.' })
+    // Behind the three older plugins in the fallback order, as it was added last.
+    expect(seoFromRawEntry({ seopress: { title: 'S' }, aioseo: { title: 'A' } }).seo_title).toBe('A')
+  })
+})
+
 describe('sourceStructuredData (emitted runtime)', () => {
   it("keeps the plugin's graph — FAQ included — minus the SearchAction", () => {
     const data = rt.sourceStructuredData(YOAST_GRAPH)
