@@ -321,3 +321,44 @@ describe('archive feeds (B6) — every category, tag and author page gets its ow
     expect(off.files['astro.config.mjs']).not.toContain('feed')
   })
 })
+
+describe('feed redirects pass the same checks as the source rules', () => {
+  const routes = [
+    { id: 'r-post', pattern: '/:year/:slug', kind: 'single' as const, family: 'f' },
+    { id: 'r-cat', pattern: '/category/:term', kind: 'archive' as const, family: 'f', query: 'q-cat' },
+  ]
+  const queries = [{ id: 'q-cat', source: 'posts', order: { by: 'date' as const, direction: 'desc' as const }, per_page: 10, pagination: 'numbered' as const }]
+  const catIr: ProjectIR = { ...ir, routes, queries }
+
+  it('never over a page the site builds, nor over a case twin of one', () => {
+    const withPage = emitAstroProject({
+      ir: { ...catIr, routes: [...routes, { id: 'r-page', pattern: '/:slug*', kind: 'page', family: 'f', collection: 'pages' }] },
+      content: {
+        posts: content.posts,
+        collections: { pages: [{ slug: 'category/news/feed', title: 'A real page', body: '' }, { slug: 'Category/Tips/Feed', title: 'Twin', body: '' }] },
+        queries: { 'q-cat': [{ params: { term: 'news' }, items: [] }, { params: { term: 'tips' }, items: [] }] },
+      },
+      options: { redirectHost: 'netlify' },
+    })
+    expect(withPage.files['public/_redirects']).not.toContain('/category/news/feed/')
+    expect(withPage.files['public/_redirects']).not.toContain('/category/tips/feed/')
+    expect(withPage.files['astro.config.mjs']).not.toContain('"/category/news/feed/"')
+    expect(withPage.warnings.find((w) => w.startsWith('feed: 2 feed redirects not written'))).toContain('/category/news/feed/ (the migrated site builds a page at /category/news/feed/')
+  })
+
+  it("a full host file keeps the site's own rules and drops feed redirects, and says which", () => {
+    const own = Array.from({ length: 999 }, (_, i) => ({ from: `/old-${String(i).padStart(4, '0')}/`, to: '/2025/newer/' }))
+    const full = emitAstroProject({
+      ir: catIr,
+      content: { posts: content.posts, queries: { 'q-cat': [{ params: { term: 'a' }, items: [] }, { params: { term: 'b' }, items: [] }] } },
+      redirects: own,
+      options: { redirectHost: 'vercel' },
+    })
+    const sources = JSON.parse(full.files['vercel.json']!).redirects.map((r: { source: string }) => r.source)
+    expect(sources).toContain('/old-0998/')
+    expect(sources).toContain('/feed/')
+    expect(sources).not.toContain('/category/b/feed/')
+    expect(full.redirects!.host_over_limit).toEqual(['/category/a/feed/', '/category/b/feed/'])
+    expect(full.warnings.find((w) => w.startsWith('redirects: 2 rules not written'))).toContain('(2 of them feed redirects')
+  })
+})
