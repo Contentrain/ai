@@ -148,3 +148,50 @@ describe('A5 — an Article image with its size is an ImageObject', () => {
     expect(emitAstroProject({ ir }).files['src/components/Seo.astro']).toContain('imageMeta: imageUrl ? imageMeta : undefined,')
   })
 })
+
+describe('A3 + B4 — the author is one person: their articles and their archive', () => {
+  it("an Article author carries the author's page as url, absolute", () => {
+    const graph = rt.pageStructuredData({ url: 'https://example.com/2025/hello/', site, title: 'Hello', article: true, author: 'Ada', authorUrl: '/author/ada/' })['@graph']
+    expect(graph.at(-1).author).toEqual({ '@type': 'Person', name: 'Ada', url: 'https://example.com/author/ada/' })
+    const nameOnly = rt.pageStructuredData({ url: 'https://example.com/2025/hello/', site, title: 'Hello', article: true, author: 'Ada' })['@graph']
+    expect(nameOnly.at(-1).author).toEqual({ '@type': 'Person', name: 'Ada' })
+    expect(rt.postSeo({ slug: 'hello', title: 'Hello', body: '', author: 'Ada', author_url: '/author/ada/' }).authorUrl).toBe('/author/ada/')
+  })
+
+  it("an author's archive is a ProfilePage about that Person, at the address the articles name", () => {
+    const graph = rt.pageStructuredData({
+      url: 'https://example.com/author/ada/',
+      site,
+      title: 'Ada – Example',
+      article: false,
+      pageType: 'CollectionPage',
+      profile: { name: 'Ada', description: 'Writes things.', image: '/media/ada.jpg', same_as: ['https://x.example/ada', 'javascript:alert(1)'] },
+    })['@graph']
+    expect(graph[0]).toMatchObject({ '@type': 'ProfilePage', '@id': 'https://example.com/author/ada/', mainEntity: { '@id': 'https://example.com/author/ada/#person' } })
+    expect(graph[1]).toEqual({
+      '@type': 'Person',
+      '@id': 'https://example.com/author/ada/#person',
+      name: 'Ada',
+      url: 'https://example.com/author/ada/',
+      description: 'Writes things.',
+      image: 'https://example.com/media/ada.jpg',
+      sameAs: ['https://x.example/ada'],
+    })
+  })
+
+  it('a profile without a name, or a page without an address, is a plain collection page', () => {
+    const noName = rt.pageStructuredData({ url: 'https://example.com/author/x/', site, title: 'X', article: false, pageType: 'CollectionPage', profile: { name: '' } })['@graph']
+    expect(noName.map((n: { '@type': string }) => n['@type'])).toEqual(['CollectionPage'])
+    expect(rt.pageStructuredData({ title: 'X', article: false, profile: { name: 'Ada' } })).toBeUndefined()
+  })
+
+  it('list routes hand the page profile to the Seo component', () => {
+    const lists = emitAstroProject({
+      ir: { ...ir, routes: [{ id: 'r-author', pattern: '/author/:author', kind: 'archive', family: 'f', query: 'q-author' }], queries: [{ id: 'q-author', source: 'posts', order: { by: 'date', direction: 'desc' }, per_page: 10, pagination: 'numbered' }] },
+      content: { queries: { 'q-author': [{ params: { author: 'ada' }, items: [], profile: { name: 'Ada' } }] } },
+      options: { feed: false, llms: false },
+    })
+    expect(lists.files['src/pages/author/[author].astro']).toContain('profile: page.profile,')
+    expect(JSON.parse(lists.files['src/data/queries/q-author.json']!)[0].profile).toEqual({ name: 'Ada' })
+  })
+})

@@ -35,6 +35,12 @@ export interface EmitPost {
   /** The site's date-format catalog applied to this post's date (index-aligned with `date{n}` marks). */
   dates?: string[]
   author?: string
+  /**
+   * The author's page — their archive on the site, absolute or site-root-
+   * relative. The Article's author gets it as `url`, the address the
+   * archive's ProfilePage names its Person at, so the two are one person.
+   */
+  author_url?: string
   author_first?: string
   author_last?: string
   /**
@@ -181,6 +187,22 @@ export interface QueryPage {
   twitter?: TwitterOverride
   /** See `EmitPost.schema`. */
   schema?: unknown
+  /**
+   * On an author's archive: who it is about. The page becomes a ProfilePage
+   * whose main entity is this Person, at the page's own address.
+   */
+  profile?: AuthorProfile
+}
+
+/** An author as their archive page presents them. */
+export interface AuthorProfile {
+  name: string
+  /** The author's bio. */
+  description?: string
+  /** Avatar or photo, absolute or site-root-relative. */
+  image?: string
+  /** Profiles elsewhere (social accounts, a personal site) — schema.org `sameAs`; http(s) only. */
+  same_as?: string[]
 }
 
 /**

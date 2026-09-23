@@ -425,6 +425,10 @@ export interface PageStructuredDataInput {
   publishedAt?: string
   modifiedAt?: string
   author?: string
+  /** The author's page (their archive), absolute: the Article author's \`url\`. */
+  authorUrl?: string
+  /** On an author's archive: who the page is about — it becomes a ProfilePage whose main entity is this Person. */
+  profile?: AuthorProfile
   siteName?: string
   /** \`@id\` of the site's own WebSite node, when its head declares one. */
   websiteId?: string
@@ -443,6 +447,17 @@ export interface PageStructuredDataInput {
 export function ogLocale(tag: string | undefined): string | undefined {
   const match = /^([a-z]{2,3})[-_]([a-z]{2})$/i.exec(tag ?? '')
   return match ? match[1]!.toLowerCase() + '_' + match[2]!.toUpperCase() : undefined
+}
+
+/** An author as their archive page presents them: the Person a ProfilePage is about. */
+export interface AuthorProfile {
+  name: string
+  /** The author's bio. */
+  description?: string
+  /** Avatar or photo, absolute or site-root-relative. */
+  image?: string
+  /** The author's profiles elsewhere (social accounts, a personal site) — schema.org \`sameAs\`. */
+  same_as?: string[]
 }
 
 /** An Article image: an ImageObject when its size is known, the bare URL otherwise. */
@@ -483,9 +498,23 @@ export function pageStructuredData(input: PageStructuredDataInput): Record<strin
     ? trail.map((c) => ({ name: c.name, item: absoluteUrl(c.path, input.site) }))
     : []
   const breadcrumbId = url && trail && crumbs.every((c) => c.item) ? url + '#breadcrumb' : undefined
+  const authorUrl = absoluteUrl(input.authorUrl, input.site)
+  // An author's archive is about a person: the page is a ProfilePage and the
+  // Person its main entity, at the page's own address — the one the author's
+  // articles name as their author's url.
+  const sameAs = (input.profile?.same_as ?? []).filter((u) => /^https?:\\/\\//i.test(u))
+  const profile = url && input.profile?.name ? {
+    '@type': 'Person',
+    '@id': url + '#person',
+    name: input.profile.name,
+    url,
+    ...(input.profile.description ? { description: input.profile.description } : {}),
+    ...(absoluteUrl(input.profile.image, input.site) ? { image: absoluteUrl(input.profile.image, input.site) } : {}),
+    ...(sameAs.length ? { sameAs } : {}),
+  } : undefined
   if (url) {
     graph.push({
-      '@type': input.pageType ?? 'WebPage',
+      '@type': profile ? 'ProfilePage' : input.pageType ?? 'WebPage',
       '@id': url,
       url,
       ...(input.title ? { name: input.title } : {}),
@@ -493,11 +522,13 @@ export function pageStructuredData(input: PageStructuredDataInput): Record<strin
       ...(input.locale ? { inLanguage: input.locale } : {}),
       ...(input.websiteId ? { isPartOf: { '@id': input.websiteId } } : {}),
       ...(breadcrumbId ? { breadcrumb: { '@id': breadcrumbId } } : {}),
+      ...(profile ? { mainEntity: { '@id': profile['@id'] } } : {}),
       // A page is dated as its entry is — WordPress pages have dates too.
       ...(input.publishedAt ? { datePublished: input.publishedAt } : {}),
       ...(input.modifiedAt ? { dateModified: input.modifiedAt } : {}),
     })
   }
+  if (profile) graph.push(profile)
   if (breadcrumbId) {
     graph.push({
       '@type': 'BreadcrumbList',
@@ -518,7 +549,7 @@ export function pageStructuredData(input: PageStructuredDataInput): Record<strin
       ...(input.image ? { image: [articleImage(input.image, input.imageMeta)] } : {}),
       ...(input.publishedAt ? { datePublished: input.publishedAt } : {}),
       ...(input.modifiedAt ? { dateModified: input.modifiedAt } : {}),
-      ...(input.author ? { author: { '@type': 'Person', name: input.author } } : {}),
+      ...(input.author ? { author: { '@type': 'Person', name: input.author, ...(authorUrl ? { url: authorUrl } : {}) } } : {}),
       ...(url ? { mainEntityOfPage: { '@id': url } } : {}),
       ...(publisher(input) ? { publisher: publisher(input) } : {}),
     })
@@ -833,6 +864,8 @@ export interface SeoInput {
   publishedAt?: string
   modifiedAt?: string
   author?: string
+  authorUrl?: string
+  profile?: AuthorProfile
   noindex?: boolean
   nofollow?: boolean
   openGraph?: SocialOverride
@@ -865,6 +898,7 @@ export function postSeo(post: EmittedPost, kind: 'post' | 'page' = 'post'): SeoI
     publishedAt: post.published_at,
     modifiedAt: post.modified_at,
     author: post.author,
+    authorUrl: post.author_url,
     noindex: post.noindex,
     nofollow: post.nofollow,
     openGraph: post.open_graph,
@@ -886,6 +920,8 @@ export interface EmittedPost extends MarkablePost {
   breadcrumbs?: Breadcrumb[]
   /** Canonical override; default is the page's own address. */
   canonical?: string
+  /** The author's page (their archive), absolute or site-root-relative. */
+  author_url?: string
   /** Document title, when the source composed one apart from \`title\`. */
   seo_title?: string
   open_graph?: SocialOverride
@@ -926,5 +962,7 @@ export interface EmittedQueryPage {
   open_graph?: SocialOverride
   twitter?: TwitterOverride
   schema?: unknown
+  /** On an author's archive: who the page is about. */
+  profile?: AuthorProfile
 }
 `

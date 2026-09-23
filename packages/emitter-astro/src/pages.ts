@@ -160,7 +160,7 @@ const title = page.title ?? ${routeTitle}
   body={content}
   css={page.css ?? []}
   lang={${locale}}${seo ? `
-  seo={{ description: page.description, image: page.image, imageMeta: page.image_meta, canonical: page.canonical, breadcrumbs: page.breadcrumbs, noindex: page.noindex, nofollow: page.nofollow, openGraph: page.open_graph, twitter: page.twitter, schema: page.schema, type: 'website', pageType: 'CollectionPage' }}` : ''}
+  seo={{ description: page.description, image: page.image, imageMeta: page.image_meta, canonical: page.canonical, breadcrumbs: page.breadcrumbs, noindex: page.noindex, nofollow: page.nofollow, openGraph: page.open_graph, twitter: page.twitter, schema: page.schema, profile: page.profile, type: 'website', pageType: 'CollectionPage' }}` : ''}
 />
 `
 }
