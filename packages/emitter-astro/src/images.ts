@@ -74,10 +74,34 @@ export type ImageOptimizer = (
   hints: { width?: number; height?: number },
 ) => Promise<OptimizedImage | null>
 
-// Quoted attribute values may hold a ">" (alt="a > b"); the tag ends at the
-// first ">" outside quotes.
-const IMG_TAG = /<img\\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi
-const ATTR = /([^\\s=/>]+)(?:\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>"']+)))?/g
+// Quoted attribute values may hold a ">" (alt="a > b"), so a tag ends at the
+// first ">" outside quotes. An unquoted value may hold a quote (alt=don't),
+// which a browser reads as part of the value; there the quote-aware match
+// would run on to the next quote and swallow the markup after the tag. A
+// match that reaches a "<" is that case, and the tag is read up to its first
+// ">" instead.
+const IMG_START = /<img\\b/gi
+const IMG_QUOTED = /<img\\b(?:[^>"']|"[^"]*"|'[^']*')*>/y
+const IMG_PLAIN = /<img\\b[^>]*>/y
+// An unquoted value runs to whitespace or ">", quotes included, as a browser reads it.
+const ATTR = /([^\\s=/>]+)(?:\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+)))?/g
+
+/** Every <img> tag in the html, with where it starts. */
+function imgTags(html: string): Array<{ start: number; tag: string }> {
+  const found: Array<{ start: number; tag: string }> = []
+  for (const open of html.matchAll(IMG_START)) {
+    const start = open.index ?? 0
+    if (found.length && start < found[found.length - 1]!.start + found[found.length - 1]!.tag.length) continue
+    IMG_QUOTED.lastIndex = start
+    let tag = IMG_QUOTED.exec(html)?.[0]
+    if (tag === undefined || tag.includes('<', 1)) {
+      IMG_PLAIN.lastIndex = start
+      tag = IMG_PLAIN.exec(html)?.[0]
+    }
+    if (tag !== undefined) found.push({ start, tag })
+  }
+  return found
+}
 const SKIP_EXT = /\\.(svg|gif)(?:$|[?#])/i
 
 // Attribute values are kept as the source wrote them (entities and all) and
@@ -90,7 +114,8 @@ function parseAttrs(tag: string): Array<[string, string | null]> {
   for (const m of inner.matchAll(ATTR)) {
     const name = m[1]
     if (!name) continue
-    const value = m[2] ?? (m[3] === undefined ? m[4] : m[3].replace(/"/g, '&quot;'))
+    // Written back double-quoted, so a double quote inside another form is escaped.
+    const value = m[2] ?? (m[3] ?? m[4])?.replace(/"/g, '&quot;')
     attrs.push([name, value === undefined ? null : value])
   }
   return attrs
@@ -132,11 +157,11 @@ export async function rewriteImages(
   optimize: ImageOptimizer,
   options: { sizes: string },
 ): Promise<string> {
-  const tags = html.match(IMG_TAG)
-  if (!tags) return html
+  const found = imgTags(html)
+  if (!found.length) return html
   const replacements: string[] = []
-  for (let index = 0; index < tags.length; index++) {
-    const tag = tags[index]!
+  for (let index = 0; index < found.length; index++) {
+    const tag = found[index]!.tag
     const attrs = parseAttrs(tag)
     const get = (name: string) => {
       const raw = attrs.find(([n]) => n.toLowerCase() === name)?.[1]
@@ -187,8 +212,13 @@ export async function rewriteImages(
     }
     replacements.push(serialize(attrs))
   }
-  let i = 0
-  return html.replace(IMG_TAG, () => replacements[i++] ?? '')
+  let out = ''
+  let at = 0
+  found.forEach(({ start, tag }, i) => {
+    out += html.slice(at, start) + replacements[i]
+    at = start + tag.length
+  })
+  return out + html.slice(at)
 }
 `
 

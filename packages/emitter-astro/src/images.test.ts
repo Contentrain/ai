@@ -103,6 +103,11 @@ describe('rewriteImages (emitted src/lib/images.ts)', () => {
     expect(out).toBe('<p>x</p><img alt="a > b" src="/a.jpg" loading="eager" fetchpriority="high" decoding="async"><p>y</p>')
   })
 
+  it('reads an unquoted value with an apostrophe as the browser does, without swallowing the markup after it', async () => {
+    const out = await lib.rewriteImages(`<img src=x.jpg alt=don't><p>It's fine</p><img src='/b.jpg' alt='say "hi"'>`, optimizer(() => false), { sizes: '100vw' })
+    expect(out).toBe(`<img src="x.jpg" alt="don't" loading="eager" fetchpriority="high" decoding="async"><p>It's fine</p><img src="/b.jpg" alt="say &quot;hi&quot;" loading="lazy" decoding="async">`)
+  })
+
   it('decodes entities in src before optimizing, and writes source values back as they were', async () => {
     const seen: string[] = []
     const spy: Optimizer = async (src) => { seen.push(src); return null }
