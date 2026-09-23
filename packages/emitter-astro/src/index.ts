@@ -21,6 +21,7 @@ import { UI_STRINGS_DIR, uiStringsDir } from './ui-strings.js'
 import { wrapLegacyCss } from './css.js'
 import { stableJson, patternToPagePath } from './util.js'
 import { noindexPaths } from './noindex.js'
+import { astroRedirectsConfig, builtAddresses, HOST_RULE_LIMIT, hostRedirectFiles, planRedirects } from './redirects.js'
 
 /**
  * A supplied trail the build will not print — the same rule as \`validTrail\`
@@ -50,10 +51,29 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     }
   }
 
+  // The site's own redirect rules. Only plain ones become config; the rest,
+  // and any on an address this site builds a page at, go back to the producer.
+  const redirectPlan = input.redirects ? planRedirects(input.redirects, builtAddresses(ir.routes, input.content ?? {})) : undefined
+  if (redirectPlan?.manual.length) {
+    warnings.push(`redirects: ${redirectPlan.manual.length} of ${input.redirects!.length} rules not written to astro.config — set them up at the host (EmitResult.redirects.manual has each with its reason)`)
+  }
+
   // Per-page SEO is on unless the producer owns those tags itself.
   const seo = input.options?.seo !== false
   const noindex = noindexPaths(ir.routes, input.content ?? {})
-  add(scaffoldFiles(ir, input.options ?? {}, noindex))
+  add(scaffoldFiles(ir, input.options ?? {}, noindex, redirectPlan ? astroRedirectsConfig(redirectPlan.config) : null))
+  const hostRedirects = redirectPlan ? hostRedirectFiles(redirectPlan.config, input.options?.redirectHost) : undefined
+  if (hostRedirects) {
+    add(hostRedirects.files)
+    if (hostRedirects.over_limit.length) {
+      const limitedFiles = hostRedirects.written.filter((f) => !f.includes('(netlify)')).join(', ')
+      warnings.push(`redirects: ${hostRedirects.over_limit.length} rules not written to ${limitedFiles} — ${HOST_RULE_LIMIT / 2} rules (each path with and without its slash) fill Cloudflare Pages' 2,000 static and Vercel's 2,048 redirect limit. They are served by the meta-refresh fallback only; move them to the host's dynamic rules for a real status`)
+    }
+    if (hostRedirects.skipped.length) {
+      warnings.push(`redirects: ${hostRedirects.skipped.length} rules contain ":" or "*", which host redirect files read as patterns — served by the meta-refresh fallback only: ${hostRedirects.skipped.join(', ')}`)
+    }
+  }
+
   if (noindex.length && !seo) {
     warnings.push(`${noindex.length} noindex pages: options.seo is false, so no robots meta is emitted — the producer's head must carry it (they are still left out of the sitemap)`)
   }
@@ -269,7 +289,11 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     }
   }
 
-  return { files, warnings }
+  return {
+    files,
+    warnings,
+    ...(redirectPlan ? { redirects: { written: redirectPlan.written, manual: redirectPlan.manual, host_files: hostRedirects?.written ?? [], host_over_limit: hostRedirects?.over_limit ?? [] } } : {}),
+  }
 }
 
 /**
@@ -317,6 +341,7 @@ export type {
   Breadcrumb,
   ImageMeta,
   RuntimeBinding,
+  RawRedirect,
   EntrySourceRef,
 } from './types.js'
 export { wrapLegacyCss } from './css.js'
@@ -333,4 +358,6 @@ export { UI_STRING_DEFAULTS, UI_STRINGS_DIR, UI_STRINGS_MODEL } from './ui-strin
 export type { UiStringKey } from './ui-strings.js'
 export { checkBalance, balanceWarning } from './balance.js'
 export { noindexPaths } from './noindex.js'
+export { astroRedirectsConfig, builtAddresses, hostRedirectFiles, planRedirects, REDIRECT_STATUSES } from './redirects.js'
+export type { HostRedirectFiles, ManualRedirect, RedirectHost, RedirectPlan, RedirectStatus } from './redirects.js'
 export type { BalanceReport } from './balance.js'

@@ -1,4 +1,4 @@
-import type { EntrySourceRef, ProjectIR, RuntimeBinding } from '@contentrain/types'
+import type { EntrySourceRef, ProjectIR, RawRedirect, RuntimeBinding } from '@contentrain/types'
 
 // ─── Emit input ───
 
@@ -236,6 +236,14 @@ export interface EmitOptions {
    * language has no dictionary; the build reports the same from the files.
    */
   uiStrings?: { dir?: string; locales?: string[] }
+  /**
+   * The host the site deploys to, for `EmitInput.redirects`: its own redirect
+   * file is written so the rules answer with a real HTTP status (a static
+   * Astro build serves them as meta-refresh pages, kept as the fallback).
+   * Unset: Netlify `public/_redirects` and `vercel.json` are both written; a
+   * Cloudflare Pages site must name its host (no forced rules there).
+   */
+  redirectHost?: 'netlify' | 'cloudflare' | 'vercel'
 }
 
 export interface EmitInput {
@@ -249,6 +257,13 @@ export interface EmitInput {
    * complete without any runtime offer being accepted.
    */
   runtime?: RuntimeBinding
+  /**
+   * The live site's redirect rules (`RawIR.redirects`). Plain one-to-one rules
+   * are written to `astro.config` `redirects`; patterns, regular expressions,
+   * other statuses and rules on an address the site builds a page at come
+   * back in `EmitResult.redirects.manual` with the reason, to set up at the host.
+   */
+  redirects?: RawRedirect[]
 }
 
 // ─── Emit output ───
@@ -261,6 +276,15 @@ export interface EmitInput {
 export interface EmitResult {
   files: Record<string, string>
   warnings: string[]
+  /** Present when `EmitInput.redirects` was given: what was written and what was not, with why. */
+  redirects?: {
+    written: RawRedirect[]
+    manual: Array<{ redirect: RawRedirect; reason: string }>
+    /** The host redirect files written, e.g. `public/_redirects (netlify)`. Empty: meta-refresh only. */
+    host_files: string[]
+    /** Rules (by `from`) left out of a Cloudflare / Vercel file at its rule limit: meta-refresh only there. */
+    host_over_limit: string[]
+  }
 }
 
-export type { ProjectIR, RuntimeBinding, EntrySourceRef }
+export type { ProjectIR, RawRedirect, RuntimeBinding, EntrySourceRef }

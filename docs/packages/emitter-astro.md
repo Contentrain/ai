@@ -156,6 +156,42 @@ A theme's "recent posts" block, cloned, freezes on the day of the migration. `Co
 
 What those components say to a visitor comes from the site's `ui-strings` dictionary (`.contentrain/content/site/ui-strings/{locale}.json`), read at build time for the page's language — see [What the thread and the form say](/guides/forms-comments#what-the-thread-and-the-form-say). `UI_STRINGS_MODEL` and `UI_STRING_DEFAULTS` are exported so a producer creates the dictionary the site reads.
 
+## Redirects
+
+`input.redirects` takes the live site's own redirect rules (`RawIR.redirects`). Only rules that map one address to one address are written to `astro.config.mjs` `redirects`:
+
+| Condition | Written when |
+|---|---|
+| `match` | absent or `url`, and `regex` not set |
+| `status` | 301, 302, 307 or 308 (absent = 301) |
+| `from` | a site-root path: no query string or fragment, no `[` / `]`, not ending in a file name. Percent-encoding is decoded |
+| `to` | a site-root path or an `http(s)` URL |
+| address | the migrated site builds no page there, and no earlier rule claims it |
+
+Everything else comes back in `EmitResult.redirects.manual`, each rule with its reason, plus one warning with the count. Those rules have to be set up at the host. A pattern turned into a literal `from` would redirect the wrong address, so the emitter never guesses.
+
+::: warning A redirect on a page's address would erase the page
+Astro does not refuse a redirect whose `from` is a page it builds: it writes the redirect over the page and the build reports no error. The emitter therefore keeps the page and returns the rule.
+:::
+
+A file-like `from` (`/old.php`) is returned because the directory build writes it as `/old.php/index.html`, which a host does not serve at `/old.php`.
+
+In a static build Astro serves each redirect as an HTML page with a meta refresh, `noindex`, and a canonical link to the target. Those pages stay as the fallback for any host.
+
+### Real HTTP redirects
+
+A static build has no HTTP status, so the emitter also writes the rules into the host's own redirect file, which answers the request before any page is served:
+
+| `options.redirectHost` | File | Note |
+|---|---|---|
+| `netlify` | `public/_redirects` | Forced (`301!`): Netlify serves an existing file before an unforced rule, and the build writes a fallback page at every redirected path |
+| `cloudflare` | `public/_redirects` | Unforced: Cloudflare Pages always follows its redirects, even when an asset matches |
+| `vercel` | `vercel.json` `redirects` | `statusCode` per rule; path-to-regexp syntax escaped |
+| unset | Netlify `public/_redirects` and `vercel.json` | A Cloudflare Pages site should name its host |
+
+Each path is written percent-encoded, with and without its trailing slash. `EmitResult.redirects.host_files` names the files written. A `from` containing `*` or a `:` segment is a pattern to a host file; it is left to the meta-refresh fallback, with a warning. A rule that differs from a built page only in letter case is returned too: Netlify matches rules case-insensitively, and macOS and Windows file systems cannot hold `/About/` beside `/about/`, so it would be served over the page. Cloudflare Pages and Vercel files stop at 1,000 rules (2,000 entries with both slash forms, their static limit); the rest are named in `EmitResult.redirects.host_over_limit`, with a warning, and keep only the meta-refresh fallback there. Netlify's file has no limit.
+
+
 ## Route collisions fail the build
 
 WordPress serves posts and pages from the same root and tells them apart in the database. A static generator cannot, so a posts route at `/:slug*` and a pages family at `/:slug*` resolve to the same Astro file.

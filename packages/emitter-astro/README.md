@@ -160,6 +160,51 @@ body and runtime entry address. Missing or ambiguous data fails the Astro build.
 Dynamic routes continue to use `getStaticPaths`. Generated tsconfig files exclude
 `public`, `dist`, and `node_modules`, so copied WordPress assets are not typechecked.
 
+## Redirects
+
+`input.redirects` takes the live site's own redirect rules (`RawIR.redirects`,
+e.g. what the Bridge reads from Redirection, Yoast Premium, Rank Math, Safe
+Redirect Manager and `_wp_old_slug`). The emitter writes only rules that are
+one address to one address:
+
+- `match` absent or `url`, and not `regex`;
+- status 301, 302, 307 or 308 (absent means 301);
+- `from` a site-root path with no query string, no `[`/`]`, and not ending in a
+  file name (the directory build writes `/old.php` as `/old.php/index.html`,
+  which a host does not serve at `/old.php`);
+- `to` a site-root path or an `http(s)` URL.
+
+Those go to `astro.config.mjs` `redirects`, sorted by `from`, with the
+percent-encoding decoded. Everything else comes back in
+`EmitResult.redirects.manual` with its reason, and one warning gives the count:
+those rules have to be set up at the host. A pattern turned into a literal
+`from` would redirect the wrong address, so the emitter never guesses.
+
+A rule on an address the migrated site builds a page at is not written either;
+the page is kept and the rule is returned. Astro does not refuse that pair: it
+writes the redirect over the page without an error. Duplicate `from`s keep the
+first rule, and a rule that points at its own address is returned.
+
+In a static build Astro serves each redirect as an HTML page with a meta
+refresh, `noindex`, and a canonical link to the target. Those pages stay as the
+fallback for any host.
+
+A static build has no HTTP status, so the emitter also writes the rules into the
+host's own redirect file, which answers the request before any page is served:
+
+| `options.redirectHost` | File | Note |
+|---|---|---|
+| `netlify` | `public/_redirects` | Forced (`301!`): Netlify serves an existing file before an unforced rule, and the build writes a fallback page at every redirected path |
+| `cloudflare` | `public/_redirects` | Unforced: Cloudflare Pages always follows its redirects, even when an asset matches |
+| `vercel` | `vercel.json` `redirects` | `statusCode` per rule; path-to-regexp syntax escaped |
+| unset | Netlify `public/_redirects` and `vercel.json` | A Cloudflare Pages site should name its host |
+
+Each path is written percent-encoded, with and without its trailing slash.
+`EmitResult.redirects.host_files` names the files written. A `from` containing
+`*` or a `:` segment is a pattern to a host file; it is left to the meta-refresh
+fallback, with a warning. A rule that differs from a built page only in letter case is returned too: Netlify matches rules case-insensitively, and macOS and Windows file systems cannot hold `/About/` beside `/about/`, so it would be served over the page. Cloudflare Pages and Vercel files stop at 1,000 rules (2,000 entries with both slash forms, their static limit); the rest are named in `EmitResult.redirects.host_over_limit`, with a warning, and keep only the meta-refresh fallback there. Netlify's file has no limit.
+
+
 ## Route collisions
 
 WordPress serves posts and pages from the same root and tells them apart in the
