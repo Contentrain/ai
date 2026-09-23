@@ -539,6 +539,29 @@ The sibling family (`RawIR`, `ProjectIR`, `CapabilityManifest`,
 [package README](https://github.com/Contentrain/ai/tree/main/packages/types#migration-contracts).
 :::
 
+## Comments export by repository path
+
+`MigrationHandoff.comments.export` (`HandoffCommentsExport`) says where the full comments export (`contentrain-comments@1`) is. A producer writes exactly one of:
+
+| Field | When |
+|---|---|
+| `path` | Large exports: a file in the generated repository at the same ref as the handoff. The consumer reads it with the repository access it already has, so a private repository needs no public URL |
+| `url` | A file fetched over http(s) |
+| `inline` | Small exports, embedded in the handoff |
+
+`bytes` (file size) and `sha256` (lowercase hex) describe the file at `path` or `url`, so a consumer can refuse an oversized export before reading it and check what it read.
+
+`path` is a POSIX path relative to the repository root, in one normal form: no leading `/` or `./`, no `.`, `..` or empty segment, no backslash, no scheme or drive, no control character. `isRepoRelativePath()` is that check, so a path can never leave the repository and no two producers spell one file two ways.
+
+```ts
+import { commentsExportSource, validateHandoffCommentsExport } from '@contentrain/types'
+
+const source = commentsExportSource(handoff.comments?.export)
+// { kind: 'path', path } | { kind: 'url', url } | { kind: 'inline', export } | undefined
+```
+
+`commentsExportSource()` reads `path` first, then `url`, then `inline`, and skips a `path` that is not in normal form and a `url` that is not http(s). `validateHandoffCommentsExport()` lists what is wrong with a pointer (none or several sources, a bad path, url, size or hash) for a producer's own check or a consumer's report.
+
 ## Migrate → Studio claim
 
 A paid Migrate order includes a Studio trial. At delivery, Migrate hands the customer to Studio with a signed claim token: a compact JWS, `alg: "EdDSA"` (Ed25519), signed with Migrate's private key and verified with its public key (no shared secret; optional `kid` for rotation). `MigrateStudioClaim` is the payload both apps bind to.

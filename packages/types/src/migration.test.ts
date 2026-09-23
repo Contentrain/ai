@@ -336,8 +336,8 @@ describe('migration contracts', () => {
 
 // ─── Comments export ───
 
-import type { CommentsExport, EntrySourceMap, HandoffComments } from './index'
-import { COMMENTS_EXPORT_FORMAT } from './index'
+import type { CommentsExport, EntrySourceMap, HandoffComments, HandoffCommentsExport } from './index'
+import { COMMENTS_EXPORT_FORMAT, commentsExportSource, isRepoRelativePath, validateHandoffCommentsExport } from './index'
 
 describe('comments export contract', () => {
   const entries: EntrySourceMap = {
@@ -389,6 +389,54 @@ describe('comments export contract', () => {
     expect(h.comments!.export!.url).toContain('comments.json')
     expect(h.comments!.threads_closed).toContain(11)
     expect(JSON.parse(JSON.stringify(h))).toEqual(h)
+  })
+
+  describe('export by repository path (large exports in private repositories)', () => {
+    const sha = 'a'.repeat(64)
+    const byPath: HandoffCommentsExport = { format: COMMENTS_EXPORT_FORMAT, path: 'comments-export.json', bytes: 5_242_880, sha256: sha }
+
+    it('accepts only a repository-relative POSIX path in normal form', () => {
+      for (const ok of ['comments-export.json', 'data/comments.json', '.contentrain/comments.json', 'a/b:c.json', 'çay/yorumlar.json']) {
+        expect(isRepoRelativePath(ok), ok).toBe(true)
+      }
+      for (const bad of ['', '/comments.json', './comments.json', '../comments.json', 'data/../../etc/passwd', 'data//c.json', 'data/', 'data\\c.json', 'https://x.com/c.json', 'C:/c.json', 'c\u0000.json', 'a/./b.json', 42, undefined]) {
+        expect(isRepoRelativePath(bad), String(bad)).toBe(false)
+      }
+    })
+
+    it('reads path first, then url, then inline — and skips a path that could leave the repository', () => {
+      const inline = commentsExport
+      const url = 'https://example.com/export/comments.json'
+      expect(commentsExportSource(byPath)).toEqual({ kind: 'path', path: 'comments-export.json' })
+      expect(commentsExportSource({ ...byPath, url, inline })).toEqual({ kind: 'path', path: 'comments-export.json' })
+      expect(commentsExportSource({ format: COMMENTS_EXPORT_FORMAT, url, inline })).toEqual({ kind: 'url', url })
+      expect(commentsExportSource({ format: COMMENTS_EXPORT_FORMAT, inline })).toEqual({ kind: 'inline', export: inline })
+      expect(commentsExportSource({ format: COMMENTS_EXPORT_FORMAT, path: '../secrets.json', url })).toEqual({ kind: 'url', url })
+      expect(commentsExportSource({ format: COMMENTS_EXPORT_FORMAT, url: 'file:///etc/passwd' })).toBeUndefined()
+      expect(commentsExportSource(undefined)).toBeUndefined()
+    })
+
+    it('validates the pointer: one source, sane size and hash', () => {
+      expect(validateHandoffCommentsExport(byPath)).toEqual([])
+      expect(validateHandoffCommentsExport({ format: COMMENTS_EXPORT_FORMAT, inline: commentsExport })).toEqual([])
+      expect(validateHandoffCommentsExport({ format: COMMENTS_EXPORT_FORMAT, path: '/abs.json', url: 'ftp://x', bytes: -1, sha256: sha.toUpperCase() })).toEqual([
+        'more than one of path, url, inline is set (path, url); path is read first',
+        'path is not a repository-relative POSIX path in normal form',
+        'url is not an http(s) URL',
+        'bytes is not a non-negative integer',
+        'sha256 is not 64 lowercase hex characters',
+      ])
+      expect(validateHandoffCommentsExport({ format: COMMENTS_EXPORT_FORMAT })).toEqual(['none of path, url, inline is set'])
+      expect(validateHandoffCommentsExport({ format: COMMENTS_EXPORT_FORMAT, inline: commentsExport, bytes: 10 })).toEqual([
+        'bytes and sha256 describe a file at path or url, and neither is set',
+      ])
+    })
+
+    it('rides on the handoff and survives a JSON round-trip', () => {
+      const h: MigrationHandoff = { ...handoff, comments: { ...handoffComments, export: byPath } }
+      expect(JSON.parse(JSON.stringify(h))).toEqual(h)
+      expect(commentsExportSource(h.comments!.export)).toEqual({ kind: 'path', path: 'comments-export.json' })
+    })
   })
 })
 

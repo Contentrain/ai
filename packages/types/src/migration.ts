@@ -1207,20 +1207,95 @@ export interface CommentsExport {
   comments: RawComment[]
 }
 
+/**
+ * Where the full comments export is. A producer writes exactly one of
+ * `path`, `url` and `inline`; a consumer that meets more than one reads them
+ * in that order (see `commentsExportSource`).
+ */
+export interface HandoffCommentsExport {
+  format: typeof COMMENTS_EXPORT_FORMAT
+  /**
+   * The export as a file in the generated repository, at the same ref as the
+   * handoff: a POSIX path relative to the repository root, in normal form
+   * (`comments-export.json`, `data/comments.json`) — no leading `/` or `./`,
+   * no `..` or empty segment, no backslash, no scheme. The consumer reads it
+   * with the access it already has to that repository, so a large export in
+   * a private repository needs no public URL. See `isRepoRelativePath`.
+   */
+  path?: string
+  /** Where the full export can be fetched… */
+  url?: string
+  /** …or the export itself, inline, for small sites. */
+  inline?: CommentsExport
+  /** Size of the file at `path` or `url` in bytes, so a consumer can refuse an oversized one before reading it. */
+  bytes?: number
+  /** SHA-256 of the file at `path` or `url`, lowercase hex, to check what was read. */
+  sha256?: string
+}
+
 /** Comments summary + payload pointer on the handoff (capability counts are not enough for intake). */
 export interface HandoffComments {
   total: number
   by_status?: Record<string, number>
   types?: Record<string, number>
-  export?: {
-    format: typeof COMMENTS_EXPORT_FORMAT
-    /** Where the full export can be fetched… */
-    url?: string
-    /** …or the export itself, inline, for small sites. */
-    inline?: CommentsExport
-  }
+  export?: HandoffCommentsExport
   threads_closed?: number[]
   unresolved?: Array<{ comment_id: number; post: number; reason: string }>
+}
+
+/**
+ * A repository-relative POSIX path in normal form: non-empty, relative (no
+ * leading `/`), no `.` or `..` or empty segment (so no `./` prefix, no `//`,
+ * no trailing `/`), no backslash, no scheme or drive (`:` before the first
+ * `/`), no control character. The one form accepted, so two producers cannot
+ * spell the same file two ways, and a path can never leave the repository.
+ */
+export function isRepoRelativePath(path: unknown): path is string {
+  if (typeof path !== 'string' || path === '') return false
+  if (path.includes('\\') || [...path].some((c) => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127)) return false
+  if (/^[^/]*:/.test(path)) return false
+  return path.split('/').every((segment) => segment !== '' && segment !== '.' && segment !== '..')
+}
+
+/** The source a consumer reads the export from, after precedence and validation. */
+export type CommentsExportSource =
+  | { kind: 'path'; path: string }
+  | { kind: 'url'; url: string }
+  | { kind: 'inline'; export: CommentsExport }
+
+/**
+ * Where to read the comments export from: `path`, else `url`, else `inline`.
+ * `path` comes first because it is in the same repository and ref as
+ * everything else the handoff describes and needs no public access; `url`
+ * wins over `inline` as it always has. A `path` that is not a
+ * repository-relative path in normal form is ignored — reading it could
+ * leave the repository — and so is a `url` that is not http(s).
+ */
+export function commentsExportSource(exp: HandoffCommentsExport | undefined): CommentsExportSource | undefined {
+  if (!exp) return undefined
+  if (isRepoRelativePath(exp.path)) return { kind: 'path', path: exp.path }
+  if (typeof exp.url === 'string' && /^https?:\/\//i.test(exp.url)) return { kind: 'url', url: exp.url }
+  if (exp.inline && typeof exp.inline === 'object') return { kind: 'inline', export: exp.inline }
+  return undefined
+}
+
+/**
+ * What is wrong with a handoff's export pointer, as short sentences; empty
+ * when nothing is. For a producer's own check and a consumer's report — it
+ * does not decide what to read (`commentsExportSource` does).
+ */
+export function validateHandoffCommentsExport(exp: HandoffCommentsExport): string[] {
+  const issues: string[] = []
+  if (exp.format !== COMMENTS_EXPORT_FORMAT) issues.push(`format is not ${COMMENTS_EXPORT_FORMAT}`)
+  const given = (['path', 'url', 'inline'] as const).filter((key) => exp[key] !== undefined)
+  if (!given.length) issues.push('none of path, url, inline is set')
+  if (given.length > 1) issues.push(`more than one of path, url, inline is set (${given.join(', ')}); path is read first`)
+  if (exp.path !== undefined && !isRepoRelativePath(exp.path)) issues.push('path is not a repository-relative POSIX path in normal form')
+  if (exp.url !== undefined && !(typeof exp.url === 'string' && /^https?:\/\//i.test(exp.url))) issues.push('url is not an http(s) URL')
+  if (exp.bytes !== undefined && !(Number.isSafeInteger(exp.bytes) && exp.bytes >= 0)) issues.push('bytes is not a non-negative integer')
+  if (exp.sha256 !== undefined && !(typeof exp.sha256 === 'string' && /^[0-9a-f]{64}$/.test(exp.sha256))) issues.push('sha256 is not 64 lowercase hex characters')
+  if ((exp.bytes !== undefined || exp.sha256 !== undefined) && exp.path === undefined && exp.url === undefined) issues.push('bytes and sha256 describe a file at path or url, and neither is set')
+  return issues
 }
 
 // ─── Runtime binding ───
