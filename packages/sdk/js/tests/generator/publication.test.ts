@@ -26,8 +26,9 @@ async function fixture() {
   await json('content/blog/posts/tr.json', { scheduled: { title: 'Private translation' } })
   await json('meta/posts/en.json', { scheduled: window, draft: { status: 'draft' } })
   await json('meta/posts/tr.json', { scheduled: { status: 'draft' } })
-  await json('content/blog/labels/en.json', { scheduled: 'Visible label', draft: 'Secret label' })
-  await json('meta/labels/en.json', { scheduled: window, draft: { status: 'draft' } })
+  // Dictionary meta is one record for the whole file (MCP writeMeta, Studio).
+  await json('content/blog/labels/en.json', { 'footer.copy': 'Copyright', 'nav.home': 'Home' })
+  await json('meta/labels/en.json', window)
   await json('content/blog/settings/en.json', { title: 'Settings' })
   await json('meta/settings/en.json', window)
   await mkdir(join(root, '.contentrain/content/blog/article/intro'), { recursive: true })
@@ -51,8 +52,9 @@ describe('public build publication windows', () => {
       expect(posts.map((p: { id: string }) => p.id)).toEqual(visible ? ['legacy', 'scheduled'] : ['legacy'])
       expect(await load('posts', at)).toEqual(posts.map((p: { id: string }) => p.id))
       expect(await data('posts.tr.mjs')).toEqual([])
-      expect(Object.keys(await data('labels.en.mjs'))).toEqual(visible ? ['scheduled'] : [])
-      expect(await load('labels', at)).toEqual(visible ? ['scheduled'] : [])
+      expect(result.generatedFiles.includes('data/labels.en.mjs')).toBe(visible)
+      if (visible) expect(Object.keys(await data('labels.en.mjs'))).toEqual(['footer.copy', 'nav.home'])
+      expect(await load('labels', at)).toEqual(visible ? ['footer.copy', 'nav.home'] : [])
       expect(result.generatedFiles.includes('data/settings.en.mjs')).toBe(visible)
       expect(await load('settings', at)).toEqual(visible ? ['settings'] : [])
       expect(result.generatedFiles.includes('data/article--intro.en.mjs')).toBe(visible)
@@ -96,6 +98,21 @@ describe('public build publication windows', () => {
     await rm(join(root, '.contentrain/meta/settings/en.json'))
     expect(await load('settings', start, true)).toEqual([])
     expect(await load('settings', start)).toEqual(['settings'])
+  })
+
+  it('a dictionary is gated as one file: published keeps every key under requireStatus, draft drops it', async () => {
+    await fixture()
+    await json('meta/labels/en.json', { status: 'published', source: 'agent', updated_by: 'mcp' })
+    const result = await generate({ projectRoot: root, requireStatus: true })
+    expect(result.generatedFiles).toContain('data/labels.en.mjs')
+    expect(await load('labels', undefined, true)).toEqual(['footer.copy', 'nav.home'])
+
+    await json('meta/labels/en.json', { status: 'draft' })
+    expect((await generate({ projectRoot: root, publishedOnly: true })).generatedFiles).not.toContain('data/labels.en.mjs')
+    expect(await load('labels', undefined, false)).toEqual(['footer.copy', 'nav.home'])
+    const entries: string[] = []
+    await contentrainLoader({ root, model: 'labels', locale: 'en', publishedOnly: true }).load({ store: { clear() {}, set(entry) { entries.push(entry.id) } } })
+    expect(entries).toEqual([])
   })
 
   it('requireStatus alone implies a public build', async () => {

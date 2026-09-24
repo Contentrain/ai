@@ -43,7 +43,8 @@ async function emitSingleModule(
 
   const meta = publication ? await publicationMeta(ref, model, publication) : undefined
   const visible = (id?: string) => !publication || isPublishedAt(id === undefined ? meta : meta?.[id], publication.at, publication.requireStatus)
-  if ((model.kind === 'singleton' || model.kind === 'document') && !visible()) return null
+  // Dictionary meta is one record for the whole file, as for a singleton or document.
+  if (model.kind !== 'collection' && !visible()) return null
 
   const localeSuffix = ref.locale ? `.${ref.locale}` : ''
 
@@ -67,8 +68,7 @@ async function emitSingleModule(
     case 'dictionary': {
       const raw = await readJson<Record<string, string>>(ref.filePath)
       if (!raw) return null
-      const entries = Object.fromEntries(Object.entries(raw).filter(([id]) => visible(id)))
-      return { fileName: `${model.id}${localeSuffix}.mjs`, content: `export default ${canonicalStringify(entries)}\n` }
+      return { fileName: `${model.id}${localeSuffix}.mjs`, content: `export default ${canonicalStringify(raw)}\n` }
     }
 
     case 'document': {

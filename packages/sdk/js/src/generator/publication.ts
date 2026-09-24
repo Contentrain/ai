@@ -53,7 +53,7 @@ export async function publicationMeta(ref: ContentFileRef, model: ModelDefinitio
 
 /**
  * Legacy content without meta remains visible, matching Studio's CDN contract —
- * unless `requireStatus`, where an entry without a status is held back.
+ * unless `requireStatus`, where an entry without a status (missing or empty) is held back.
  */
 export function isPublishedAt(meta: unknown, at: number, requireStatus = false): boolean {
   if (meta === undefined) return !requireStatus

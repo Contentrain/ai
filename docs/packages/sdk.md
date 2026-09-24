@@ -299,7 +299,7 @@ By default the generated client and the Astro loader include every entry, drafts
 |---|---|---|
 | `publishedOnly: true` | `--published` | Only `status: published` entries inside their `publish_at` / `expire_at` window. Entries with no meta stay visible (legacy content) |
 | `at: '<ISO>'` | `--at <ISO>` | Evaluate the window at a fixed time, for a reproducible build. Implies `publishedOnly` |
-| `requireStatus: true` | `--require-status` | Also hide an entry with no status: no meta record, or one without `status`. Use it when every entry should carry one, as after a WordPress import. Implies `publishedOnly` |
+| `requireStatus: true` | `--require-status` | Also hide an entry with no status: no meta record, or one without `status`. Use it when every entry should carry one, as after a WordPress import. Implies `publishedOnly`, not `at`: the clock stays the build time |
 
 ```ts
 // src/content.config.ts
