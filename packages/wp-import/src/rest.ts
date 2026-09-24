@@ -17,7 +17,14 @@ export interface RestImportOptions {
   origin: string
   /** Injectable for tests and for hosts that need custom dispatch. */
   fetchImpl?: typeof fetch
-  /** WordPress Application Password credentials — lifts the rung to rest_auth. */
+  /**
+   * WordPress Application Password credentials — lifts the rung to rest_auth.
+   * With them, post types are listed with every non-trash status
+   * (`AUTH_POST_STATUSES`) in the edit context, and comments with held ones
+   * too; anonymous REST only ever returns published posts and approved
+   * comments. A credential the site refuses for that falls back to the
+   * public listing, with a warning.
+   */
   auth?: { user: string; appPassword: string }
   perPage?: number
   /**
@@ -54,6 +61,8 @@ interface RestPost {
   parent?: number
   menu_order?: number
   sticky?: boolean
+  /** Edit context only. */
+  password?: string
   comment_status?: string
   ping_status?: string
   featured_media?: number
@@ -67,6 +76,12 @@ interface RestPost {
   wpml_current_locale?: string
   wpml_translations?: Array<{ locale?: string; id?: number }>
 }
+
+/** What a credential lists beyond `publish`: drafts, scheduled, in-review and private posts. Trash stays out. */
+export const AUTH_POST_STATUSES = ['publish', 'future', 'draft', 'pending', 'private'] as const
+/** Comment listings for a credential: WP's `status` takes one value, so approved and held are two requests. */
+const AUTH_COMMENT_STATUSES = ['approve', 'hold'] as const
+const DENIED = new Set([400, 401, 403])
 
 const positiveInteger = (name: string, value: number): number => {
   if (!Number.isSafeInteger(value) || value < 1) throw new RangeError(`${name} must be a positive safe integer`)
@@ -105,28 +120,41 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     headers.authorization = `Basic ${Buffer.from(`${options.auth.user}:${options.auth.appPassword}`).toString('base64')}`
   }
 
-  const getAll = async <T>(path: string): Promise<T[]> => {
+  /**
+   * Every page of `path`. With `fallback`, a first page the site refuses
+   * (400/401/403 — the credential may not list those statuses or the edit
+   * context) is retried as `fallback` instead of dropping the collection;
+   * an empty `fallback` means there is nothing public to retry, so it is
+   * skipped with that warning.
+   */
+  const getAll = async <T>(path: string, fallback?: string): Promise<T[]> => {
+    const label = path.split('?')[0]!
     const url = (page: number) => `${origin}/wp-json/wp/v2/${path}${path.includes('?') ? '&' : '?'}per_page=${perPage}&page=${page}`
     // Hold the slot until the body is consumed, not merely until headers arrive.
     const pageData = (page: number) => schedule(async () => {
       const response = await doFetch(url(page), { headers })
       if (!response.ok) {
-        warnings.push(`${path}: page ${page} HTTP ${response.status} — skipped`)
         await response.body?.cancel()
+        if (page === 1 && fallback !== undefined && DENIED.has(response.status)) return { items: [] as T[], pages: 1, denied: response.status }
+        warnings.push(`${label}: page ${page} HTTP ${response.status} — skipped`)
         return { items: [] as T[], pages: 1 }
       }
       const pages = Number(response.headers.get('x-wp-totalpages') ?? '1')
       if (!Number.isSafeInteger(pages) || pages < 0) throw new Error(`${path}: invalid x-wp-totalpages`)
       const items = await response.json() as T[]
       if (!Array.isArray(items)) throw new Error(`${path}: page ${page} is not a collection`)
-      return { items, pages: Math.max(1, pages) }
+      return { items, pages: Math.max(1, pages), denied: undefined as number | undefined }
     })
     const first = await pageData(1)
+    if (first.denied !== undefined) {
+      warnings.push(`${label}: HTTP ${first.denied} for ${path.split('?')[1]} with the credential — ${fallback ? 'fell back to the public listing' : 'skipped (no public listing)'}`)
+      return fallback ? getAll<T>(fallback) : []
+    }
     const totalPages = first.pages
     const firstPage = first.items
     const wanted = maxPages !== undefined ? Math.min(totalPages, maxPages) : totalPages
     if (wanted < totalPages) {
-      warnings.push(`${path}: ${totalPages} pages, fetched ${wanted} (maxPages) — ${totalPages - wanted} pages skipped`)
+      warnings.push(`${label}: ${totalPages} pages, fetched ${wanted} (maxPages) — ${totalPages - wanted} pages skipped`)
     }
     if (wanted <= 1) return firstPage
     const rest = await Promise.all(
@@ -176,13 +204,26 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     type?: string
   }
 
+  // Anonymous: WP's defaults (published posts, approved comments). With a
+  // credential: every non-trash status, and held comments as a second listing.
+  const postListing = (base: string): Promise<RestPost[]> =>
+    options.auth ? getAll<RestPost>(`${base}?status=${AUTH_POST_STATUSES.join(',')}&context=edit`, base) : getAll<RestPost>(base)
+  const commentListing = async (): Promise<RestComment[]> => {
+    if (!options.auth) return getAll<RestComment>('comments')
+    const lists = await Promise.all(AUTH_COMMENT_STATUSES.map((status) =>
+      // Approved comments are public, so a refused credential still gets them; held ones have no public listing.
+      getAll<RestComment>(`comments?status=${status}&context=edit`, status === 'approve' ? 'comments' : '')))
+    const byId = new Map<number, RestComment>()
+    for (const c of lists.flat()) if (!byId.has(c.id)) byId.set(c.id, c)
+    return [...byId.values()]
+  }
   const [categories, tags, users, media, restComments, ...postLists] = await Promise.all([
     getAll<RestTerm>('categories'),
     getAll<RestTerm>('tags'),
     getAll<RestUser>('users'),
     getAll<RestMedia>('media'),
-    getAll<RestComment>('comments'),
-    ...bases.map((b) => getAll<RestPost>(b.base)),
+    commentListing(),
+    ...bases.map((b) => postListing(b.base)),
   ])
 
   const termsById = new Map<number, RawTerm>()
@@ -254,7 +295,7 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
         parent: p.parent || null,
         menu_order: p.menu_order ?? 0,
         sticky: p.sticky ?? false,
-        password: null,
+        password: p.password || null,
         comment_status: p.comment_status ?? null,
         ping_status: p.ping_status ?? null,
         terms: termRefs,

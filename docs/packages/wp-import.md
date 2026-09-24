@@ -101,9 +101,22 @@ Primary-subtag normalization means `en_US` and `en_GB` both become `en`. A trans
 
 `fetchRestRawIR` takes `concurrency` (default 4), `perPage` (1–100, default 100), and an optional `maxPages` cap per collection. Limits must be positive safe integers. The concurrency slot covers response body consumption, not just the request.
 
+**Unpublished content needs a credential.** Anonymous REST returns what WordPress shows the public: published posts and approved comments. With an Application Password, `fetchRestRawIR` also lists `future`, `draft`, `pending` and `private` posts (in the edit context, so password-protected posts are marked too) and held comments. Trash is never imported. If the site refuses the credential those listings, the import falls back to the public one and says so in `warnings`. The WordPress status is kept as-is in `RawIR`, and [becomes entry metadata](#post-status) on conversion.
+
 **Truncated collections and failed pages are named in `warnings`.** Inspect them before claiming a complete migration — a capped or partially failed REST import looks exactly like a small site otherwise.
 
 ACF field and group records and their cross-model parents stay in the content store; deciding which records become public pages is route discovery's job, further down the pipeline. Importing configuration does not execute a plugin.
+
+## Post status
+
+| WordPress | Entry metadata |
+|---|---|
+| `publish` | `published` |
+| `future` | `published` + `publish_at` (see below) |
+| `pending` | `in_review` |
+| `draft` | `draft` |
+| `private` | `draft`, with `visibility: private` |
+| comment `approved` / `hold` | `published` / `in_review` |
 
 ## Scheduled posts
 
