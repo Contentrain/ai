@@ -228,3 +228,72 @@ describe('letter case', () => {
   })
 })
 
+
+describe('hostRedirects — host files only, no meta-refresh page', () => {
+  const emitHost = (hostRedirects: RawRedirect[], redirects?: RawRedirect[], options: Record<string, unknown> = {}) =>
+    emitAstroProject({ ir, content, ...(redirects ? { redirects } : {}), hostRedirects, options: { feed: false, ...options } })
+
+  it('writes the rule to _redirects and vercel.json but not to astro.config, so the build makes no page for it', () => {
+    const out = emitHost([{ from: '/hello-world/photo/', to: '/hello-world/', status: 301 }])
+    expect(out.files['public/_redirects']).toContain('/hello-world/photo/ /hello-world/ 301!\n')
+    expect(JSON.parse(out.files['vercel.json']!).redirects).toContainEqual({ source: '/hello-world/photo/', destination: '/hello-world/', statusCode: 301 })
+    expect(out.files['astro.config.mjs']).not.toContain('redirects:')
+    expect(out.redirects?.written.map((r) => r.from)).toEqual(['/hello-world/photo/'])
+    expect(out.redirects?.manual).toEqual([])
+  })
+
+  it('beside the site\'s own rules: those go to astro.config too, the host-only ones only to the host files', () => {
+    const out = emitHost([{ from: '/photo/', to: '/hello-world/' }], [{ from: '/eski/', to: '/hello-world/' }])
+    expect(out.files['astro.config.mjs']).toContain('"/eski/"')
+    expect(out.files['astro.config.mjs']).not.toContain('"/photo/"')
+    const lines = out.files['public/_redirects']!.split('\n')
+    // The site's own rules first: past a host limit, host-only rules are the ones left out.
+    expect(lines.indexOf('/eski/ /hello-world/ 301!')).toBeLessThan(lines.indexOf('/photo/ /hello-world/ 301!'))
+  })
+
+  it('the same checks as redirects: a built page, a query string and a pattern come back as manual', () => {
+    const out = emitHost([
+      { from: '/about/', to: '/hello-world/' },
+      { from: '/?attachment_id=5', to: '/hello-world/' },
+      { from: '/x/', to: '/y/', match: 'start' },
+    ])
+    expect(out.redirects?.written).toEqual([])
+    expect(out.redirects?.manual.map((m) => m.redirect.from)).toEqual(['/about/', '/?attachment_id=5', '/x/'])
+    expect(out.files['public/_redirects']).toBeUndefined()
+    expect(out.warnings).toContain('hostRedirects: 3 of 3 host-only rules not written — set them up at the host (EmitResult.redirects.manual has each with its reason)')
+  })
+
+  it('an address the site\'s own rules or the feed already redirect is theirs', () => {
+    const out = emitAstroProject({
+      ir, content,
+      redirects: [{ from: '/eski/', to: '/about/' }],
+      hostRedirects: [{ from: '/eski/', to: '/hello-world/' }, { from: '/feed/', to: '/hello-world/' }],
+    })
+    expect(out.files['public/_redirects']).toContain('/eski/ /about/ 301!')
+    expect(out.files['public/_redirects']).not.toContain('/eski/ /hello-world/')
+    expect(out.redirects?.manual.map((m) => [m.redirect.from, m.reason])).toEqual([
+      ['/eski/', 'another rule already redirects /eski/'],
+      ['/feed/', 'another rule already redirects /feed/'],
+    ])
+  })
+
+  it('a rule the host file reads as a pattern has no fallback, so it is manual, not a meta-refresh warning', () => {
+    const out = emitHost([{ from: '/tag/:old/', to: '/x/' }])
+    expect(out.redirects?.manual.map((m) => m.reason)).toEqual(['from contains ":" or "*", which host redirect files read as a pattern'])
+    expect(out.warnings.some((w) => w.includes('served by the meta-refresh fallback only'))).toBe(false)
+  })
+
+  it('past the Cloudflare/Vercel limit host-only rules go last and to manual; Netlify takes all', () => {
+    const own = Array.from({ length: 999 }, (_, i) => ({ from: `/old-${String(i).padStart(4, '0')}/`, to: '/hello-world/' }))
+    const bulk = Array.from({ length: 3 }, (_, i) => ({ from: `/att-${i}/`, to: '/hello-world/' }))
+    const out = emitHost(bulk, own)
+    expect(out.redirects?.written.map((r) => r.from)).toContain('/att-0/')
+    expect(out.redirects?.manual.map((m) => m.redirect.from)).toEqual(['/att-1/', '/att-2/'])
+    expect(out.redirects?.manual[0]!.reason).toMatch(/^left out of vercel\.json \(vercel\) at its rule limit \(1000 rules\)/)
+    // host_over_limit keeps its meaning: rules served by the meta-refresh fallback there.
+    expect(out.redirects?.host_over_limit).toEqual([])
+    expect(out.warnings.some((w) => w.startsWith('redirects: '))).toBe(false)
+    expect(out.files['public/_redirects']).toContain('/att-2/ /hello-world/ 301!')
+    expect(emitHost(bulk, own, { redirectHost: 'netlify' }).redirects?.manual).toEqual([])
+  })
+})

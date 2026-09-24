@@ -379,6 +379,18 @@ export interface EmitInput {
    * back in `EmitResult.redirects.manual` with the reason, to set up at the host.
    */
   redirects?: RawRedirect[]
+  /**
+   * Rules served only by the host's redirect file (`public/_redirects`,
+   * `vercel.json`), never by `astro.config` — so no meta-refresh page is built
+   * for them. For bulk rules the site does not need as pages: one per
+   * WordPress attachment page runs to tens of thousands, and a static build
+   * would write an HTML file for each. They pass the same checks as
+   * `redirects`, and the site's own rules and the feed redirects win an
+   * address they share. Without a fallback page, a rule the host file cannot
+   * hold — a pattern, or past Cloudflare's or Vercel's rule limit, where these
+   * go last — is returned in `EmitResult.redirects.manual`.
+   */
+  hostRedirects?: RawRedirect[]
 }
 
 // ─── Emit output ───
@@ -391,13 +403,15 @@ export interface EmitInput {
 export interface EmitResult {
   files: Record<string, string>
   warnings: string[]
-  /** Present when `EmitInput.redirects` was given: what was written and what was not, with why. */
+  /** Present when `EmitInput.redirects` or `hostRedirects` was given. */
   redirects?: {
+    /** Rules written: `redirects` to astro.config and the host files, `hostRedirects` to the host files. */
     written: RawRedirect[]
+    /** Rules not written, with why — to set up by hand at the host. */
     manual: Array<{ redirect: RawRedirect; reason: string }>
     /** The host redirect files written, e.g. `public/_redirects (netlify)`. Empty: meta-refresh only. */
     host_files: string[]
-    /** Rules (by `from`) left out of a Cloudflare / Vercel file at its rule limit: meta-refresh only there. */
+    /** `redirects` rules (by `from`) left out of a Cloudflare / Vercel file at its rule limit: meta-refresh only there. A `hostRedirects` rule left out is in `manual`. */
     host_over_limit: string[]
   }
 }
