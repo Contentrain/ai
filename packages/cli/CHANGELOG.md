@@ -1,5 +1,14 @@
 # contentrain
 
+## 0.14.7
+
+### Patch Changes
+
+- 0075321: `contentrain import` warns how many password-protected posts came in as drafts.
+- Updated dependencies [0075321]
+  - @contentrain/wp-import@0.5.7
+  - @contentrain/skills@0.9.4
+
 ## 0.14.6
 
 ### Patch Changes
