@@ -22,7 +22,14 @@ import { readJson, readText } from '../generator/utils.js'
 import { parseFrontmatter, stringLikeFieldKeys } from '../shared/frontmatter.js'
 import { resolveMediaRefsInBody } from '../shared/media.js'
 
-/** The slice of Astro's `LoaderContext` this loader uses. */
+/**
+ * The slice of Astro's `LoaderContext` this loader uses.
+ *
+ * Parameter types match Astro's own (5 through 7), and every optional member
+ * admits `undefined`: a context type that is narrower than what Astro passes
+ * fails `astro check` in a project with `strict` — `create-astro`'s default —
+ * or `exactOptionalPropertyTypes`.
+ */
 export interface ContentrainLoaderContext {
   store: {
     clear: () => void
@@ -35,13 +42,13 @@ export interface ContentrainLoaderContext {
       filePath?: string
     }) => void
   }
-  logger?: { info: (msg: string) => void, warn: (msg: string) => void }
+  logger?: { info: (msg: string) => void, warn: (msg: string) => void } | undefined
   /** Astro's resolved config; only `root` is read, to make file paths relative. */
-  config?: { root?: URL | string }
-  generateDigest?: (data: unknown) => string
-  parseData?: (entry: { id: string, data: Record<string, unknown>, filePath?: string }) => Promise<Record<string, unknown>>
-  renderMarkdown?: (content: string) => Promise<{ html: string, metadata?: Record<string, unknown> }>
-  watcher?: { add: (path: string) => void, on: (event: string, cb: (path: string) => void) => void }
+  config?: { root?: URL | string | undefined } | undefined
+  generateDigest?: ((data: Record<string, unknown> | string) => string) | undefined
+  parseData?: ((entry: { id: string, data: Record<string, unknown>, filePath?: string }) => Promise<Record<string, unknown>>) | undefined
+  renderMarkdown?: ((content: string) => Promise<{ html: string, metadata?: Record<string, unknown> }>) | undefined
+  watcher?: { add: (path: string) => void, on: (event: string, cb: (path: string) => void) => void } | undefined
 }
 
 /** Structurally Astro's `Loader`. */
