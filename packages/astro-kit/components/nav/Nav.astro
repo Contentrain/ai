@@ -1,0 +1,100 @@
+---
+// Site navigation. Wide screens get an inline list whose submenus open on
+// hover and keyboard focus; narrow screens get a toggle that opens the menu as
+// a native popover (drawer) or a <details> dropdown. No JavaScript.
+import { tv } from 'tailwind-variants'
+import type { NavItem } from '../_shared/types'
+
+const nav = tv({
+  slots: {
+    list: 'hidden items-center md:flex',
+    link: 'text-current no-underline opacity-80 hover:opacity-100 aria-[current=page]:font-semibold aria-[current=page]:opacity-100',
+    sub: 'invisible absolute top-full left-0 z-30 min-w-48 rounded-lg border border-line bg-surface p-2 text-ink opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100',
+    toggle: 'inline-flex cursor-pointer list-none items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-current/10 md:hidden [&::-webkit-details-marker]:hidden',
+  },
+  variants: {
+    align: { start: { list: 'justify-start' }, end: { list: 'justify-end' }, center: { list: 'justify-center' } },
+    density: { compact: { list: 'gap-5 text-sm' }, comfortable: { list: 'gap-8 text-base' } },
+  },
+  defaultVariants: { align: 'end', density: 'compact' },
+})
+
+interface Props {
+  items: NavItem[]
+  /** Accessible name of the navigation landmark ("Main"). */
+  label?: string | undefined
+  /** Text on the narrow-screen toggle ("Menu"). */
+  menuLabel?: string | undefined
+  /** Text on the drawer's close button ("Close"). */
+  closeLabel?: string | undefined
+  mobile?: 'popover' | 'details' | undefined
+  align?: 'start' | 'end' | 'center' | undefined
+  density?: 'compact' | 'comfortable' | undefined
+  /** Unique per page when a page has two navigations. */
+  id?: string | undefined
+}
+
+const { items, label = 'Main', menuLabel = 'Menu', closeLabel = 'Close', mobile = 'popover', align, density, id = 'site-nav' } = Astro.props
+const { list, link, sub, toggle } = nav({ align, density })
+const current = Astro.url.pathname
+const drawer = `${id}-drawer`
+---
+{items.length > 0 && (
+  <nav aria-label={label} class="relative">
+    <ul class={list()}>
+      {items.map(item => (
+        <li class="group relative">
+          <a href={item.href} aria-current={item.href === current ? 'page' : undefined} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener' : undefined} class={link()}>{item.label}</a>
+          {item.children && item.children.length > 0 && (
+            <ul class={sub()}>
+              {item.children.map(child => (
+                <li><a href={child.href} aria-current={child.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-sm text-ink no-underline hover:bg-surface-muted">{child.label}</a></li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))}
+    </ul>
+
+    {mobile === 'popover'
+      ? (
+        <>
+          <button type="button" popovertarget={drawer} class={toggle()}>
+            <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+            {menuLabel}
+          </button>
+          <div id={drawer} popover class="m-0 ml-auto h-dvh max-h-none w-80 max-w-[85vw] border-l border-line bg-surface p-6 text-ink shadow-xl backdrop:bg-ink/40">
+            <button type="button" popovertarget={drawer} popovertargetaction="hide" class="mb-6 ml-auto flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-surface-muted">
+              <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              {closeLabel}
+            </button>
+            <ul class="flex flex-col gap-1">
+              {items.map(item => (
+                <li>
+                  <a href={item.href} aria-current={item.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-ink no-underline hover:bg-surface-muted aria-[current=page]:font-semibold">{item.label}</a>
+                  {item.children && item.children.length > 0 && (
+                    <ul class="ml-3 border-l border-line pl-3">
+                      {item.children.map(child => <li><a href={child.href} class="block rounded-md px-3 py-1.5 text-sm text-ink-muted no-underline hover:text-ink">{child.label}</a></li>)}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )
+      : (
+        <details class="relative md:hidden">
+          <summary class={toggle()}>
+            <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+            {menuLabel}
+          </summary>
+          <ul class="absolute right-0 z-30 mt-2 flex w-64 flex-col gap-1 rounded-lg border border-line bg-surface p-3 text-ink shadow-lg">
+            {items.flatMap(item => [item, ...(item.children ?? [])]).map(item => (
+              <li><a href={item.href} aria-current={item.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-sm text-ink no-underline hover:bg-surface-muted">{item.label}</a></li>
+            ))}
+          </ul>
+        </details>
+      )}
+  </nav>
+)}

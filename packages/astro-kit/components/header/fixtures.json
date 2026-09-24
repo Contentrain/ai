@@ -1,0 +1,95 @@
+[
+  {
+    "name": "split",
+    "props": {
+      "siteName": "Northwind Journal",
+      "items": [
+        {
+          "label": "Journal",
+          "href": "/"
+        },
+        {
+          "label": "About",
+          "href": "/about/"
+        },
+        {
+          "label": "Contact",
+          "href": "/contact/"
+        }
+      ],
+      "action": {
+        "label": "Subscribe",
+        "href": "/subscribe/"
+      }
+    }
+  },
+  {
+    "name": "centered-inverse",
+    "props": {
+      "siteName": "Northwind Journal",
+      "layout": "centered",
+      "tone": "inverse",
+      "items": [
+        {
+          "label": "Journal",
+          "href": "/"
+        },
+        {
+          "label": "Guides",
+          "href": "/category/guides/"
+        },
+        {
+          "label": "About",
+          "href": "/about/"
+        }
+      ]
+    }
+  },
+  {
+    "name": "brand-left-logo",
+    "props": {
+      "siteName": "Northwind",
+      "layout": "brand-left",
+      "logo": {
+        "src": "/kit-fixtures/logo.svg",
+        "alt": "",
+        "width": 32,
+        "height": 32
+      },
+      "items": [
+        {
+          "label": "Work",
+          "href": "/work/"
+        },
+        {
+          "label": "Studio",
+          "href": "/studio/"
+        }
+      ]
+    }
+  },
+  {
+    "name": "transparent-sticky",
+    "frame": "dark",
+    "props": {
+      "siteName": "Northwind Journal",
+      "tone": "transparent",
+      "position": "sticky",
+      "items": [
+        {
+          "label": "Journal",
+          "href": "/"
+        },
+        {
+          "label": "About",
+          "href": "/about/"
+        }
+      ],
+      "action": {
+        "label": "Get in touch",
+        "href": "/contact/",
+        "style": "ghost"
+      }
+    }
+  }
+]

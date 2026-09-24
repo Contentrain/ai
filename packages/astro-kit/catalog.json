@@ -1,0 +1,286 @@
+{
+  "format": "astro-kit-catalog@1",
+  "tokens": [
+    "--color-surface",
+    "--color-surface-muted",
+    "--color-ink",
+    "--color-ink-muted",
+    "--color-line",
+    "--color-accent",
+    "--color-accent-ink",
+    "--font-sans",
+    "--container-prose",
+    "--container-page",
+    "--container-wide",
+    "--radius-card"
+  ],
+  "dependencies": {
+    "tailwind-merge": "^3.7.0",
+    "tailwind-variants": "^3.3.1"
+  },
+  "components": [
+    {
+      "id": "header",
+      "name": "Header",
+      "description": "Site header: brand (logo and/or name), navigation and an optional call-to-action button.",
+      "category": "chrome",
+      "uses": [
+        "nav"
+      ],
+      "shared": [
+        "Button.astro",
+        "KitImage.astro",
+        "types.ts"
+      ],
+      "variants": {
+        "layout": {
+          "options": [
+            "split",
+            "centered",
+            "brand-left"
+          ],
+          "default": "split",
+          "description": "split: brand left, navigation right. centered: brand above centred navigation. brand-left: navigation right after the brand."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "inverse",
+            "transparent"
+          ],
+          "default": "default",
+          "description": "Surface with a bottom border, dark (ink) background, or transparent over the hero that follows."
+        },
+        "position": {
+          "options": [
+            "static",
+            "sticky"
+          ],
+          "default": "static",
+          "description": "Sticky keeps the header at the top while scrolling."
+        }
+      },
+      "props": {
+        "siteName": {
+          "type": "string",
+          "required": true,
+          "description": "Site title (site.title)."
+        },
+        "logo": {
+          "type": "object",
+          "fields": {
+            "src": {
+              "type": "image",
+              "required": true
+            },
+            "alt": {
+              "type": "string",
+              "required": true
+            },
+            "width": {
+              "type": "integer"
+            },
+            "height": {
+              "type": "integer"
+            }
+          },
+          "description": "Logo image (site.logo)."
+        },
+        "showName": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the site name next to the logo."
+        },
+        "homeHref": {
+          "type": "url",
+          "default": "/",
+          "description": "Where the brand links."
+        },
+        "items": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "required": true
+              },
+              "href": {
+                "type": "url",
+                "required": true
+              },
+              "newTab": {
+                "type": "boolean"
+              },
+              "children": {
+                "type": "array"
+              }
+            }
+          },
+          "description": "Primary menu (menus → menu-items)."
+        },
+        "action": {
+          "type": "object",
+          "fields": {
+            "label": {
+              "type": "string",
+              "required": true
+            },
+            "href": {
+              "type": "url",
+              "required": true
+            },
+            "style": {
+              "type": "select",
+              "options": [
+                "primary",
+                "secondary",
+                "ghost"
+              ]
+            }
+          },
+          "description": "Header button, shown on wide screens."
+        },
+        "navLabel": {
+          "type": "string",
+          "description": "Accessible name of the navigation (ui-strings nav.label)."
+        },
+        "menuLabel": {
+          "type": "string",
+          "description": "Narrow-screen toggle text (ui-strings nav.menu)."
+        },
+        "closeLabel": {
+          "type": "string",
+          "description": "Drawer close text (ui-strings nav.close)."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/template-part:header",
+          "core/site-title",
+          "core/site-logo"
+        ],
+        "elementor": [
+          "elementor/theme-site-logo",
+          "elementor/theme-site-title"
+        ],
+        "divi": [
+          "divi/et_pb_menu"
+        ],
+        "classic": [
+          "classic/header"
+        ]
+      },
+      "a11y": "One <header> landmark; the brand link is named by the site name when only the logo shows. Navigation as in nav.",
+      "files": [
+        "Header.astro"
+      ]
+    },
+    {
+      "id": "nav",
+      "name": "Navigation",
+      "description": "Site navigation: an inline list with hover/focus submenus on wide screens and a toggle on narrow ones that opens a native popover drawer or a <details> dropdown. No JavaScript.",
+      "category": "chrome",
+      "uses": [],
+      "shared": [
+        "types.ts"
+      ],
+      "variants": {
+        "mobile": {
+          "options": [
+            "popover",
+            "details"
+          ],
+          "default": "popover",
+          "description": "Narrow-screen menu: a side drawer (Popover API) or a dropdown under the toggle."
+        },
+        "align": {
+          "options": [
+            "start",
+            "end",
+            "center"
+          ],
+          "default": "end",
+          "description": "Horizontal alignment of the inline list."
+        },
+        "density": {
+          "options": [
+            "compact",
+            "comfortable"
+          ],
+          "default": "compact",
+          "description": "Gap and text size of the inline list."
+        }
+      },
+      "props": {
+        "items": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "required": true
+              },
+              "href": {
+                "type": "url",
+                "required": true
+              },
+              "newTab": {
+                "type": "boolean"
+              },
+              "children": {
+                "type": "array"
+              }
+            }
+          },
+          "description": "Menu entries; one level of children is shown."
+        },
+        "label": {
+          "type": "string",
+          "description": "Accessible name of the navigation landmark (ui-strings nav.label)."
+        },
+        "menuLabel": {
+          "type": "string",
+          "description": "Text of the narrow-screen toggle (ui-strings nav.menu)."
+        },
+        "closeLabel": {
+          "type": "string",
+          "description": "Text of the drawer's close button (ui-strings nav.close)."
+        },
+        "id": {
+          "type": "string",
+          "description": "Unique id when a page renders two navigations."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/navigation",
+          "core/page-list"
+        ],
+        "elementor": [
+          "elementor/nav-menu"
+        ],
+        "divi": [
+          "divi/et_pb_menu",
+          "divi/et_pb_fullwidth_menu"
+        ],
+        "classic": [
+          "classic/nav-menu"
+        ]
+      },
+      "a11y": "A <nav> landmark with a label; the current page carries aria-current. Submenus open on :focus-within as well as hover. The drawer is a native popover: Escape and light dismiss close it and focus returns to the toggle.",
+      "files": [
+        "Nav.astro"
+      ]
+    }
+  ]
+}

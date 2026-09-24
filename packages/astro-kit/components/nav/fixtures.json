@@ -1,0 +1,80 @@
+[
+  {
+    "name": "popover",
+    "props": {
+      "id": "fx-nav-a",
+      "items": [
+        {
+          "label": "Journal",
+          "href": "/"
+        },
+        {
+          "label": "Services",
+          "href": "/services/",
+          "children": [
+            {
+              "label": "Design",
+              "href": "/services/design/"
+            },
+            {
+              "label": "Engineering",
+              "href": "/services/engineering/"
+            }
+          ]
+        },
+        {
+          "label": "About",
+          "href": "/about/"
+        },
+        {
+          "label": "Contact",
+          "href": "/contact/"
+        }
+      ]
+    }
+  },
+  {
+    "name": "details-start",
+    "props": {
+      "id": "fx-nav-b",
+      "mobile": "details",
+      "align": "start",
+      "density": "comfortable",
+      "items": [
+        {
+          "label": "Home",
+          "href": "/"
+        },
+        {
+          "label": "Blog",
+          "href": "/blog/"
+        },
+        {
+          "label": "Contact",
+          "href": "/contact/"
+        }
+      ]
+    }
+  },
+  {
+    "name": "center",
+    "props": {
+      "id": "fx-nav-c",
+      "align": "center",
+      "items": [
+        {
+          "label": "Work",
+          "href": "/work/"
+        },
+        {
+          "label": "Studio",
+          "href": "/studio/"
+        },
+        {
+          "label": "Journal",
+          "href": "/journal/"
+        }
+      ]
+    }
+  }
+]
