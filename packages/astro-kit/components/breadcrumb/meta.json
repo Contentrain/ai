@@ -18,7 +18,7 @@
   "js": "none",
   "dependencies": {},
   "sources": {
-    "gutenberg": ["core/breadcrumbs"],
+    "gutenberg": ["yoast-seo/breadcrumbs", "rank-math/breadcrumb"],
     "elementor": ["elementor/breadcrumbs"],
     "divi": ["divi/et_pb_breadcrumbs"],
     "classic": ["classic/yoast-breadcrumb", "classic/rank-math-breadcrumb"]

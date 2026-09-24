@@ -23,6 +23,16 @@ export const BUILDER_PREFIX: Record<KitBuilder, string> = {
   classic: 'classic/',
 }
 
+/**
+ * Whether an element name belongs to a builder. Gutenberg blocks are namespaced by their plugin
+ * (`core/cover`, `yoast-seo/breadcrumbs`, `uagb/container`), so any `<ns>/<name>` that is not another
+ * builder's is a Gutenberg block.
+ */
+export function isBuilderElement(builder: KitBuilder, name: string): boolean {
+  if (builder !== 'gutenberg') return name.startsWith(BUILDER_PREFIX[builder])
+  return /^[a-z0-9-]+\/[a-z0-9-]+(:[\w-]+)?$/.test(name) && !KIT_BUILDERS.some(b => b !== 'gutenberg' && name.startsWith(BUILDER_PREFIX[b]))
+}
+
 export type KitCategory = 'chrome' | 'section' | 'content' | 'primitive'
 
 /** Client JavaScript a component ships: none, Embla (carousel), Zag.js (accessible widget) or the Studio runtime. */
@@ -92,7 +102,7 @@ export function validateCatalog(catalog: KitCatalog): string[] {
     }
     for (const [builder, names] of Object.entries(c.sources) as Array<[KitBuilder, string[]]>) {
       const prefix = BUILDER_PREFIX[builder]
-      for (const name of names) if (!name.startsWith(prefix)) problems.push(`${at}: source "${name}" is not a ${builder} element (${prefix}…)`)
+      for (const name of names) if (!isBuilderElement(builder, name)) problems.push(`${at}: source "${name}" is not a ${builder} element (${prefix}…)`)
     }
   }
   const seen = new Set<string>()

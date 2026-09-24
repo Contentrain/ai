@@ -1,0 +1,205 @@
+{
+  "format": "astro-kit-mapping@1",
+  "builder": "elementor",
+  "version": "1",
+  "fallback": "prose",
+  "rules": [
+    {
+      "match": "elementor/theme-site-logo",
+      "component": "header",
+      "props": {
+        "siteName": "site:title",
+        "logo": "site:logo",
+        "items": "menu:primary",
+        "navLabel": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "elementor/theme-site-title",
+      "component": "header",
+      "props": {
+        "siteName": "site:title",
+        "logo": "site:logo",
+        "items": "menu:primary",
+        "navLabel": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "elementor/nav-menu",
+      "component": "nav",
+      "props": {
+        "items": "menu:primary",
+        "label": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "elementor/social-icons",
+      "component": "footer",
+      "props": {
+        "siteName": "site:title"
+      },
+      "into": "social",
+      "each": ".elementor-social-icon",
+      "item": {
+        "label": "dom:.elementor-screen-only",
+        "href": "dom:@href"
+      }
+    },
+    {
+      "match": "elementor/icon-list",
+      "component": "footer",
+      "props": {
+        "siteName": "site:title"
+      },
+      "into": "links",
+      "each": ".elementor-icon-list-item",
+      "item": {
+        "label": "dom:.elementor-icon-list-text",
+        "href": "dom:a@href"
+      }
+    },
+    {
+      "match": "elementor/icon-box",
+      "component": "card-grid",
+      "group": "siblings",
+      "into": "items",
+      "item": {
+        "title": "dom:.elementor-icon-box-title",
+        "text": "dom:.elementor-icon-box-description",
+        "href": "dom:a@href"
+      }
+    },
+    {
+      "match": "elementor/image-box",
+      "component": "card-grid",
+      "group": "siblings",
+      "into": "items",
+      "item": {
+        "title": "dom:.elementor-image-box-title",
+        "text": "dom:.elementor-image-box-description",
+        "href": "dom:a@href",
+        "image": "img:img"
+      }
+    },
+    {
+      "match": "elementor/call-to-action",
+      "component": "card-grid",
+      "variant": {
+        "tone": "accent"
+      },
+      "group": "siblings",
+      "into": "items",
+      "item": {
+        "title": "dom:.elementor-cta__title",
+        "text": "dom:.elementor-cta__description",
+        "href": "dom:a@href",
+        "eyebrow": "dom:.elementor-ribbon-inner"
+      }
+    },
+    {
+      "match": "elementor/posts",
+      "component": "post-card",
+      "bind": "collection:posts",
+      "item": {
+        "title": "field:title",
+        "href": "href:self",
+        "excerpt": "field:excerpt",
+        "date": "field:date",
+        "image": "media:featured_image",
+        "author": "ref:author.name"
+      }
+    },
+    {
+      "match": "elementor/archive-posts",
+      "component": "post-card",
+      "bind": "collection:posts",
+      "item": {
+        "title": "field:title",
+        "href": "href:self",
+        "excerpt": "field:excerpt",
+        "date": "field:date",
+        "image": "media:featured_image",
+        "author": "ref:author.name"
+      }
+    },
+    {
+      "match": "elementor/posts:pagination",
+      "component": "pagination",
+      "props": {
+        "base": "page:base",
+        "current": "page:current",
+        "total": "page:total",
+        "label": "ui:pagination.label",
+        "prevLabel": "ui:pagination.prev",
+        "nextLabel": "ui:pagination.next",
+        "pageLabel": "ui:pagination.page"
+      }
+    },
+    {
+      "match": "elementor/breadcrumbs",
+      "component": "breadcrumb",
+      "props": {
+        "items": "page:breadcrumb",
+        "current": "field:title",
+        "label": "ui:breadcrumb.label"
+      }
+    },
+    {
+      "match": "elementor/image-carousel",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".swiper-slide:not(.swiper-slide-duplicate)",
+      "item": {
+        "image": "img:img",
+        "text": "dom:figcaption"
+      }
+    },
+    {
+      "match": "elementor/media-carousel",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".swiper-slide:not(.swiper-slide-duplicate)",
+      "item": {
+        "image": "img:img"
+      }
+    },
+    {
+      "match": "elementor/slides",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".swiper-slide:not(.swiper-slide-duplicate)",
+      "item": {
+        "title": "dom:.elementor-slide-heading",
+        "text": "dom:.elementor-slide-description",
+        "action": "link:.elementor-slide-button"
+      }
+    }
+  ]
+}

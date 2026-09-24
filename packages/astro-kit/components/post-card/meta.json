@@ -23,7 +23,7 @@
   "js": "none",
   "dependencies": {},
   "sources": {
-    "gutenberg": ["core/post-template", "core/latest-posts"],
+    "gutenberg": ["core/query", "core/post-template", "core/latest-posts"],
     "elementor": ["elementor/posts", "elementor/archive-posts"],
     "divi": ["divi/et_pb_blog"],
     "classic": ["classic/archive-item"]
