@@ -104,6 +104,18 @@ function checkFrom(from: string, hostOnly = false): { path: string } | { reason:
   return { path }
 }
 
+/**
+ * A path the build writes a file at: the emitter's own endpoints (robots,
+ * llms.txt, every feed, the sitemaps) and the directories its assets and
+ * Astro's bundles live in. A host file answers before the filesystem — a
+ * forced Netlify rule and every vercel.json redirect — so a host-only rule
+ * here would shadow the file. `builtAddresses` knows pages only.
+ */
+function buildOutputFile(path: string): boolean {
+  return path === '/robots.txt' || path === '/llms.txt' || path.endsWith('/feed.xml') || /^\/sitemap[^/]*\.xml$/.test(path)
+    || /^\/(?:_astro|assets|styles)\//.test(path)
+}
+
 function checkTo(to: string): boolean {
   if (hasControlOrSpace(to)) return false
   if (to.startsWith('/')) return !to.startsWith('//')
@@ -137,6 +149,8 @@ export function planRedirects(redirects: RawRedirect[], built: Map<string, strin
     if (!(REDIRECT_STATUSES as readonly number[]).includes(status)) { skip(`status ${status} is not one of ${REDIRECT_STATUSES.join('/')}`); continue }
     const from = checkFrom(redirect.from, options.hostOnly)
     if ('reason' in from) { skip(from.reason); continue }
+    // Only a host-only rule can name a file (see checkFrom).
+    if (options.hostOnly && buildOutputFile(from.path)) { skip('from is a file the build writes — the host file would serve the redirect over it'); continue }
     if (!checkTo(redirect.to)) { skip('to is not a site-root path or an http(s) URL'); continue }
     const key = addressKey(from.path)
     const owner = built.get(key)

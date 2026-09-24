@@ -271,6 +271,14 @@ describe('hostRedirects — host files only, no meta-refresh page', () => {
     expect(page.redirects?.manual[0]?.reason).toMatch(/^from ends in a file name/)
   })
 
+  it('never over a file the build writes: the host file answers before the filesystem', () => {
+    const files = ['/feed.xml', '/category/news/feed.xml', '/llms.txt', '/robots.txt', '/sitemap-index.xml', '/sitemap-0.xml', '/assets/a.jpg', '/_astro/x.js', '/styles/legacy/s.css']
+    const out = emitHost(files.map((from) => ({ from, to: '/hello-world/' })))
+    expect(out.redirects?.written).toEqual([])
+    expect(out.redirects?.manual.map((m) => m.reason)).toEqual(files.map(() => 'from is a file the build writes — the host file would serve the redirect over it'))
+    expect(out.files['public/_redirects']).toBeUndefined()
+  })
+
   it('an address the site\'s own rules or the feed already redirect is theirs', () => {
     const out = emitAstroProject({
       ir, content,
