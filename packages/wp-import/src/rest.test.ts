@@ -204,6 +204,7 @@ describe('fetchRestRawIR with a credential lists every non-trash status', () => 
       const u = String(url)
       calls.push(u)
       if (deny?.test(u)) return new Response('{"code":"rest_forbidden_context"}', { status: 403 })
+      if (u.endsWith('/users/me')) return json({ id: 1, slug: 'ada', name: 'Ada Lovelace' })
       if (u.includes(`/posts?${statuses}&`)) {
         return json([
           post(10, 'live'),
@@ -294,5 +295,48 @@ describe('fetchRestRawIR with a credential lists every non-trash status', () => 
       `pages: HTTP 403 for ${statuses} with the credential — fell back to the public listing`,
       `posts: HTTP 403 for ${statuses} with the credential — fell back to the public listing`,
     ])
+  })
+
+  describe('the result says whether the credential was honoured, without parsing warnings', () => {
+    // WordPress answers a wrong Application Password with 401 on every request,
+    // public routes included.
+    const rejectsAuth = (calls: string[]): typeof fetch => {
+      const site = authedSite(calls)
+      return (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) =>
+        (init?.headers as Record<string, string>)?.authorization
+          ? new Response('{"code":"incorrect_password"}', { status: 401 })
+          : site(url, init)) as typeof fetch
+    }
+
+    it('a credential rejected everywhere: rejected, every listing fell back, and the public site is still imported', async () => {
+      const calls: string[] = []
+      const { raw, credential, warnings } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: rejectsAuth(calls), auth })
+      expect(credential).toEqual({ status: 'rejected', fell_back: ['comments', 'comments:hold', 'pages', 'posts'] })
+      // Nothing was read with the credential, so the rung is the public one.
+      expect(raw.provenance.kind).toBe('rest_public')
+      expect(raw.posts.map((p) => p.slug).toSorted()).toEqual(['about', 'live'])
+      expect(raw.comments!.map((c) => c.id)).toEqual([500])
+      expect(raw.terms.map((t) => t.slug)).toEqual(['news'])
+      expect(raw.authors.map((a) => a.login)).toEqual(['ada'])
+      expect(warnings).toContain('credential: HTTP 401 on users/me — the site rejected it; imported the public listings only')
+    })
+
+    it('one listing refused: rejected, naming only that listing; the others were read with the credential', async () => {
+      const { raw, credential } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: authedSite([], /\/posts\?status=/), auth })
+      expect(credential).toEqual({ status: 'rejected', fell_back: ['posts'] })
+      expect(raw.provenance.kind).toBe('rest_auth')
+      expect(raw.posts.map((p) => p.slug).toSorted()).toEqual(['about', 'live'])
+      expect(raw.comments!.map((c) => c.id)).toEqual([500, 501])
+    })
+
+    it('held comments refused alone: rejected, comments:hold', async () => {
+      const { credential } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: authedSite([], /status=hold/), auth })
+      expect(credential).toEqual({ status: 'rejected', fell_back: ['comments:hold'] })
+    })
+
+    it('every listing honoured: accepted; no credential: none', async () => {
+      expect((await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: authedSite([]), auth })).credential).toEqual({ status: 'accepted', fell_back: [] })
+      expect((await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: authedSite([]) })).credential).toEqual({ status: 'none', fell_back: [] })
+    })
   })
 })

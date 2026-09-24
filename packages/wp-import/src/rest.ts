@@ -44,6 +44,15 @@ export interface RestImportOptions {
 export interface RestImportResult {
   raw: RawIR
   warnings: string[]
+  /**
+   * Whether the credential was honoured, for callers that must act on it
+   * without reading `warnings`. `none`: no `auth` given. `accepted`: every
+   * listing it unlocks was read with it. `rejected`: at least one was not —
+   * `fell_back` names each (`posts`, `pages`, a CPT's rest base, `comments`,
+   * `comments:hold`), and those came from the public listing instead, or not
+   * at all for `comments:hold`, which has none.
+   */
+  credential: { status: 'none' | 'accepted' | 'rejected'; fell_back: string[] }
 }
 
 interface RestPost {
@@ -82,6 +91,8 @@ export const AUTH_POST_STATUSES = ['publish', 'future', 'draft', 'pending', 'pri
 /** Comment listings for a credential: WP's `status` takes one value, so approved and held are two requests. */
 const AUTH_COMMENT_STATUSES = ['approve', 'hold'] as const
 const DENIED = new Set([400, 401, 403])
+/** A comment listing's name in `credential.fell_back`: `comments` (approved) or `comments:hold`. */
+const commentKey = (status: string): string => (status === 'approve' ? 'comments' : `comments:${status}`)
 
 const positiveInteger = (name: string, value: number): number => {
   if (!Number.isSafeInteger(value) || value < 1) throw new RangeError(`${name} must be a positive safe integer`)
@@ -115,9 +126,24 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
       })
     }
   }
-  const headers: Record<string, string> = { accept: 'application/json' }
+  const anonymous: Record<string, string> = { accept: 'application/json' }
+  let headers = anonymous
   if (options.auth) {
-    headers.authorization = `Basic ${Buffer.from(`${options.auth.user}:${options.auth.appPassword}`).toString('base64')}`
+    headers = { ...anonymous, authorization: `Basic ${Buffer.from(`${options.auth.user}:${options.auth.appPassword}`).toString('base64')}` }
+  }
+  const fellBack = new Set<string>()
+  // WordPress answers a wrong Application Password with 401 on every route,
+  // public ones too, so a rejected credential is found once and dropped:
+  // sent on, it would also empty the public listings the import falls back to.
+  let rejected = false
+  if (options.auth) {
+    const me = await doFetch(`${origin}/wp-json/wp/v2/users/me`, { headers })
+    await me.body?.cancel()
+    if (me.status === 401 || me.status === 403) {
+      rejected = true
+      headers = anonymous
+      warnings.push(`credential: HTTP ${me.status} on users/me — the site rejected it; imported the public listings only`)
+    }
   }
 
   /**
@@ -125,14 +151,15 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
    * (400/401/403 — the credential may not list those statuses or the edit
    * context) is retried as `fallback` instead of dropping the collection;
    * an empty `fallback` means there is nothing public to retry, so it is
-   * skipped with that warning.
+   * skipped with that warning. The retry is anonymous, and `key` goes into
+   * `credential.fell_back`.
    */
-  const getAll = async <T>(path: string, fallback?: string): Promise<T[]> => {
+  const getAll = async <T>(path: string, fallback?: string, key?: string, send = headers): Promise<T[]> => {
     const label = path.split('?')[0]!
     const url = (page: number) => `${origin}/wp-json/wp/v2/${path}${path.includes('?') ? '&' : '?'}per_page=${perPage}&page=${page}`
     // Hold the slot until the body is consumed, not merely until headers arrive.
     const pageData = (page: number) => schedule(async () => {
-      const response = await doFetch(url(page), { headers })
+      const response = await doFetch(url(page), { headers: send })
       if (!response.ok) {
         await response.body?.cancel()
         if (page === 1 && fallback !== undefined && DENIED.has(response.status)) return { items: [] as T[], pages: 1, denied: response.status }
@@ -148,7 +175,8 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     const first = await pageData(1)
     if (first.denied !== undefined) {
       warnings.push(`${label}: HTTP ${first.denied} for ${path.split('?')[1]} with the credential — ${fallback ? 'fell back to the public listing' : 'skipped (no public listing)'}`)
-      return fallback ? getAll<T>(fallback) : []
+      fellBack.add(key ?? label)
+      return fallback ? getAll<T>(fallback, undefined, undefined, anonymous) : []
     }
     const totalPages = first.pages
     const firstPage = first.items
@@ -206,13 +234,19 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
 
   // Anonymous: WP's defaults (published posts, approved comments). With a
   // credential: every non-trash status, and held comments as a second listing.
+  // A credential rejected outright unlocks nothing: every listing it would have read fell back.
+  if (rejected) {
+    for (const b of bases) fellBack.add(b.base)
+    for (const status of AUTH_COMMENT_STATUSES) fellBack.add(commentKey(status))
+  }
+  const authed = options.auth !== undefined && !rejected
   const postListing = (base: string): Promise<RestPost[]> =>
-    options.auth ? getAll<RestPost>(`${base}?status=${AUTH_POST_STATUSES.join(',')}&context=edit`, base) : getAll<RestPost>(base)
+    authed ? getAll<RestPost>(`${base}?status=${AUTH_POST_STATUSES.join(',')}&context=edit`, base, base) : getAll<RestPost>(base)
   const commentListing = async (): Promise<RestComment[]> => {
-    if (!options.auth) return getAll<RestComment>('comments')
+    if (!authed) return getAll<RestComment>('comments')
     const lists = await Promise.all(AUTH_COMMENT_STATUSES.map((status) =>
       // Approved comments are public, so a refused credential still gets them; held ones have no public listing.
-      getAll<RestComment>(`comments?status=${status}&context=edit`, status === 'approve' ? 'comments' : '')))
+      getAll<RestComment>(`comments?status=${status}&context=edit`, status === 'approve' ? 'comments' : '', commentKey(status))))
     const byId = new Map<number, RestComment>()
     for (const c of lists.flat()) if (!byId.has(c.id)) byId.set(c.id, c)
     return [...byId.values()]
@@ -339,7 +373,8 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
   }))
   for (const c of comments) if (!postIds.has(c.post)) warnings.push(`comment ${c.id}: post ${c.post} not in fetched set`)
 
-  const kind: SourceAccessKind = options.auth ? 'rest_auth' : 'rest_public'
+  // The rung is what was actually read: a credential rejected outright read nothing.
+  const kind: SourceAccessKind = authed ? 'rest_auth' : 'rest_public'
   const raw: RawIR = {
     version: MIGRATION_CONTRACT_VERSION,
     provenance: { kind, tool: options.tool ?? '@contentrain/wp-import' },
@@ -351,5 +386,9 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     comments,
     ...(languagePairs.length ? { language_pairs: languagePairs } : {}),
   }
-  return { raw, warnings }
+  const credential: RestImportResult['credential'] = {
+    status: !options.auth ? 'none' : fellBack.size ? 'rejected' : 'accepted',
+    fell_back: [...fellBack].toSorted(),
+  }
+  return { raw, warnings, credential }
 }
