@@ -61,6 +61,7 @@ function emit(options) {
       },
     },
     redirects: [{ from: '/eski/', to: '/2025/merhaba/' }],
+    hostRedirects: [{ from: '/2025/merhaba/ek/', to: '/2025/merhaba/' }],
     options: { tailwind: false, siteDescription: 'Bir site.', ...options },
   })
 }

@@ -23,6 +23,7 @@ import { wrapLegacyCss } from './css.js'
 import { stableJson, patternToPagePath } from './util.js'
 import { noindexPaths } from './noindex.js'
 import { astroRedirectsConfig, builtAddresses, HOST_RULE_LIMIT, hostRedirectFiles, planRedirects } from './redirects.js'
+import type { ManualRedirect } from './redirects.js'
 import { FEED_PATH, FEED_REDIRECT_FROM, archiveFeedEndpoint, archiveFeedFile, archiveFeedSources, feedEndpoint, linkSources, llmsEndpoint, type LinkSource } from './feed.js'
 
 /**
@@ -135,23 +136,67 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   const redirectConfig = { ...sourceConfig, ...feedPlan.config }
   const hasRedirects = Object.keys(redirectConfig).length > 0
   add(scaffoldFiles(ir, input.options ?? {}, noindex, hasRedirects ? astroRedirectsConfig(sortedConfig(redirectConfig)) : null, input.runtime))
+  // Host-only rules: the same checks, then an address the site's own rules or
+  // the feeds already redirect is theirs. Never in astro.config.
+  const hostOnlyPlan = input.hostRedirects ? planRedirects(input.hostRedirects, built, { hostOnly: true }) : undefined
+  const hostOnlyConfig: typeof redirectConfig = {}
+  const hostOnlyRule = new Map<string, RawRedirect>()
+  const hostOnlyManual: ManualRedirect[] = [...(hostOnlyPlan?.manual ?? [])]
+  if (hostOnlyPlan) {
+    const byFrom = new Map(hostOnlyPlan.written.map((rule) => [decodedPath(rule.from), rule]))
+    for (const [from, rule] of Object.entries(hostOnlyPlan.config)) {
+      const redirect = byFrom.get(from)!
+      const key = from.replace(/\/+$/, '').toLowerCase()
+      if (claimed.has(key)) {
+        hostOnlyManual.push({ redirect, reason: `another rule already redirects ${from}` })
+        continue
+      }
+      claimed.add(key)
+      hostOnlyConfig[from] = rule
+      hostOnlyRule.set(from, redirect)
+    }
+  }
   // Host files have a rule limit and keep the first rules: the source's own
   // come first, the feeds' after, so an overflow drops a feed redirect.
   // Among the feeds, /feed/ first, then the archives in their data order.
   const feedOrder = new Map(feedRules.map((rule, index) => [decodedPath(rule.from), index]))
   const feedKeys = Object.keys(feedPlan.config).toSorted((a, b) => (feedOrder.get(a) ?? 0) - (feedOrder.get(b) ?? 0))
-  const hostOrder = { ...sortedConfig(sourceConfig), ...Object.fromEntries(feedKeys.map((key) => [key, feedPlan.config[key]!])) }
-  const hostRedirects = hasRedirects ? hostRedirectFiles(hostOrder, input.options?.redirectHost) : undefined
+  // Host-only rules come last: past a host's limit they are the ones left out.
+  const hostOrder = { ...sortedConfig(sourceConfig), ...Object.fromEntries(feedKeys.map((key) => [key, feedPlan.config[key]!])), ...sortedConfig(hostOnlyConfig) }
+  const hostRedirects = Object.keys(hostOrder).length ? hostRedirectFiles(hostOrder, input.options?.redirectHost) : undefined
+  // A host-only rule the host file cannot hold has no meta-refresh page behind
+  // it — it would not be served at all — so it is set up by hand.
+  const hostOnly = (from: string) => hostOnlyRule.has(from)
+  for (const from of hostRedirects?.skipped ?? []) {
+    if (hostOnly(from)) hostOnlyManual.push({ redirect: hostOnlyRule.get(from)!, reason: 'from contains ":" or "*", which host redirect files read as a pattern' })
+  }
+  // Past a limited file: with its host named nothing serves the rule, so it is
+  // manual; with no host named the Netlify file still holds it, so it is
+  // written, and named in host_over_limit for the Vercel file it is missing from.
+  const namedHost = input.options?.redirectHost
+  const hostOnlyOver = (hostRedirects?.over_limit ?? []).filter(hostOnly)
+  if (namedHost !== undefined) {
+    for (const from of hostOnlyOver) hostOnlyManual.push({ redirect: hostOnlyRule.get(from)!, reason: `left out of ${hostRedirects!.written.join(', ')} at its rule limit (${HOST_RULE_LIMIT / 2} rules) — a host-only rule has no meta-refresh page to fall back on` })
+  }
+  else if (hostOnlyOver.length) {
+    warnings.push(`hostRedirects: ${hostOnlyOver.length} host-only rules not written to vercel.json at its rule limit (${HOST_RULE_LIMIT / 2} rules) — public/_redirects (Netlify) has them; on Vercel they are not served. Name the host (options.redirectHost) to have them reported as manual`)
+  }
+  const unservedHostOnly = new Set(hostOnlyManual.map((m) => m.redirect))
+  if (hostOnlyManual.length) {
+    warnings.push(`hostRedirects: ${hostOnlyManual.length} of ${input.hostRedirects!.length} host-only rules not written — set them up at the host (EmitResult.redirects.manual has each with its reason)`)
+  }
   if (hostRedirects) {
     add(hostRedirects.files)
-    if (hostRedirects.over_limit.length) {
+    const overLimit = hostRedirects.over_limit.filter((from) => !hostOnly(from))
+    const skippedPatterns = hostRedirects.skipped.filter((from) => !hostOnly(from))
+    if (overLimit.length) {
       const limitedFiles = hostRedirects.written.filter((f) => !f.includes('(netlify)')).join(', ')
-      const feedOver = hostRedirects.over_limit.filter((from) => from in feedPlan.config).length
+      const feedOver = overLimit.filter((from) => from in feedPlan.config).length
       const which = feedOver ? ` (${feedOver} of them feed redirects — /feed/ and archive feeds come after the site's own rules)` : ''
-      warnings.push(`redirects: ${hostRedirects.over_limit.length} rules not written to ${limitedFiles}${which} — ${HOST_RULE_LIMIT / 2} rules (each path with and without its slash) fill Cloudflare Pages' 2,000 static and Vercel's 2,048 redirect limit. They are served by the meta-refresh fallback only; move them to the host's dynamic rules for a real status`)
+      warnings.push(`redirects: ${overLimit.length} rules not written to ${limitedFiles}${which} — ${HOST_RULE_LIMIT / 2} rules (each path with and without its slash) fill Cloudflare Pages' 2,000 static and Vercel's 2,048 redirect limit. They are served by the meta-refresh fallback only; move them to the host's dynamic rules for a real status`)
     }
-    if (hostRedirects.skipped.length) {
-      warnings.push(`redirects: ${hostRedirects.skipped.length} rules contain ":" or "*", which host redirect files read as patterns — served by the meta-refresh fallback only: ${hostRedirects.skipped.join(', ')}`)
+    if (skippedPatterns.length) {
+      warnings.push(`redirects: ${skippedPatterns.length} rules contain ":" or "*", which host redirect files read as patterns — served by the meta-refresh fallback only: ${skippedPatterns.join(', ')}`)
     }
   }
 
@@ -406,7 +451,17 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   return {
     files,
     warnings,
-    ...(redirectPlan ? { redirects: { written: redirectPlan.written, manual: redirectPlan.manual, host_files: hostRedirects?.written ?? [], host_over_limit: hostRedirects?.over_limit ?? [] } } : {}),
+    ...(redirectPlan || hostOnlyPlan
+      ? {
+          redirects: {
+            written: [...(redirectPlan?.written ?? []), ...[...hostOnlyRule.values()].filter((rule) => !unservedHostOnly.has(rule))],
+            manual: [...(redirectPlan?.manual ?? []), ...hostOnlyManual],
+            host_files: hostRedirects?.written ?? [],
+            // A host-only rule past a named host's limit is in `manual` instead: nothing serves it.
+            host_over_limit: (hostRedirects?.over_limit ?? []).filter((from) => !hostOnly(from) || namedHost === undefined),
+          },
+        }
+      : {}),
   }
 }
 
