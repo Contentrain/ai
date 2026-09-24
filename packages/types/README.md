@@ -537,6 +537,34 @@ if (!result.ok) throw new Error(result.errors.join('; '))
 
 `validateMigrateStudioClaim` checks shape, ranges and — with `now` — the validity window (60 s skew). It does no cryptography: the signature, `jti` replay and `order_id` uniqueness are the consumer's job. `isMigrateStudioClaim` is the shape-only type guard.
 
+## Project plan
+
+`ProjectPlan` (`contentrain-project-plan@1`) is the one holistic decision of a
+Migrate v3 migration. It sits between the fact pack (what the WordPress site is)
+and the writer (the Astro + Contentrain project). Content is **bound, never
+copied**: a plan names fields, and the engine applies it to every entry.
+
+| Part | Holds |
+|---|---|
+| `site` | the starter's `site.config.ts` (permalinks, home, postsPerPage, menu slugs, studio), plus `url`, `redirects` and `tokens` (the kit's `@theme` roles, extra scale, WordPress presets, self-hosted fonts) |
+| `layout` | header and footer placements shared by every route |
+| `models` | `import` models (wp-import's ids) are referenced; `plan` models carry `name`, `domain`, `i18n`, `title_field`, `fields` and `extract` rules (builder element → entry → `<path>\|<prop>` field paths) |
+| `components` | `kit` (catalog id; the kit's copy planner places it under `src/components/kit/<id>/`) or `site` (props + a brief for the writer) |
+| `routes` | pattern, fact template, `source` (one page per entry), `body` `rich-text` \| `composed`, and placements |
+| `decisions` | who answered what (rule, cache, jew, haiku, opus, fallback, human) |
+
+A placement binds props with a small closed value set: `field:<name>`,
+`media:<field>` (the kit's `ImageInput`), `ref:<field>.<field>`,
+`href:self` / `href:<relation>`, `ui:<key>`, `const:<value>`. It also takes
+`labels` (prop → `ui-strings` key). A collection binding with `into` fills one
+array prop (`card-grid.items`); without it, the component repeats per entry.
+
+`validateProjectPlan(plan)` returns `{ errors, warnings }`. It checks that every
+reference resolves, that permalinks and values are well formed, that required
+props are bound, that plan models are valid Contentrain models (a text-like
+`title_field`), and that routes over one model give each entry exactly one
+address. Kit catalog and fact checks belong to the caller.
+
 ## Frontmatter round trip
 
 A document's fields live in YAML frontmatter, and two readers open them: the

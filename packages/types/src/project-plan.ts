@@ -13,8 +13,11 @@
 // `site` mirrors the starter's `src/site.config.ts` field for field, plus the
 // three files the deterministic writer also owns: `astro.config` (`url`),
 // `redirects.json` and the `@theme` block of `global.css`.
+//
+// Addresses the starter owns are not plan routes: `/search/`, `/rss.xml`,
+// `/404`, `robots.txt` and the sitemap. A plan never emits them.
 
-import type { FieldDef, FieldType, ModelKind } from './index.js'
+import { isTitleFieldType, type FieldDef, type ModelKind } from './index.js'
 
 export const PROJECT_PLAN_FORMAT = 'contentrain-project-plan@1'
 
@@ -29,6 +32,8 @@ export interface ProjectPlan {
   format: typeof PROJECT_PLAN_FORMAT
   source: PlanSource
   site: PlanSite
+  /** The starter's single `BaseLayout`: chrome every route shares. */
+  layout: { header?: PlanPlacement, footer?: PlanPlacement }
   models: PlanModel[]
   components: PlanComponent[]
   routes: PlanRoute[]
@@ -61,7 +66,7 @@ export interface PlanSite {
   permalinks: { post: PlanPermalink, page: PlanPermalink, category: PlanPermalink, tag: PlanPermalink, author: PlanPermalink, blog: PlanPermalink }
   home: { kind: 'posts' } | { kind: 'page', slug: string }
   postsPerPage: number
-  /** Menu entry ids (in the `menus` model) for the starter's navigation areas. */
+  /** Menu slugs (`menus.slug`, as WordPress named them) for the starter's navigation areas — `getMenu(slug)`. */
   menus: { primary: string, footer: string }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
@@ -91,6 +96,12 @@ export interface PlanModel {
   id: string
   kind: ModelKind
   origin: 'import' | 'plan'
+  /** What a `plan` model needs to be a Contentrain model: display name, storage domain (`.contentrain/content/<domain>/<id>`), locales, and the field an entry list shows. */
+  name?: string
+  domain?: string
+  i18n?: boolean
+  /** Required for a `plan` collection/document: a text-like field (`validate` refuses a model without one). */
+  title_field?: string
   /** Fields of a `plan` model (an imported model's fields are the import's). */
   fields?: Record<string, FieldDef>
   /** How entries of a `plan` model are filled from the source, deterministically. */
@@ -116,12 +127,16 @@ export interface PlanExtraction {
 // ─── Components ───
 
 export interface PlanComponent {
-  /** Component name in the project (`Hero`, `PostCard`) — the file `src/components/<id>.astro`. */
+  /**
+   * Plan-level name (`Hero`, `PostCard`). A `site` component is written to `src/components/<id>.astro`; a
+   * `kit` component is copied by the kit's copy planner to `src/components/kit/<kit-id>/`.
+   */
   id: string
-  /** Copied from the kit (with a variant), or written for this site by the writer. */
+  /** Copied from the kit, or written for this site by the writer. Variants are per placement. */
   origin: 'kit' | 'site'
-  kit?: { id: string, variant?: Record<string, string> }
-  props: Record<string, { type: FieldType, required?: boolean, description?: string }>
+  kit?: { id: string }
+  /** A `site` component's props. For a `kit` component the catalog is the source and this stays empty. */
+  props?: Record<string, FieldDef>
   /** Fact component ids / builder elements this component stands for. */
   covers?: string[]
   /** For `site` components: what the writer must reproduce (fact template + region paths to look at). */
@@ -130,7 +145,7 @@ export interface PlanComponent {
 
 // ─── Routes ───
 
-export type PlanRouteKind = 'home' | 'post' | 'page' | 'blog' | 'category' | 'tag' | 'author' | 'custom' | 'not-found'
+export type PlanRouteKind = 'home' | 'post' | 'page' | 'blog' | 'category' | 'tag' | 'author' | 'custom'
 
 export interface PlanRoute {
   id: string
@@ -139,39 +154,59 @@ export interface PlanRoute {
   pattern: PlanPermalink
   /** Fact template this route renders like. */
   template: string
-  /** Entries the route builds one page each for (`getStaticPaths`); none for a single page. */
+  /**
+   * Entries the route builds one page each for (`getStaticPaths`); none for a single page. Routes over the
+   * same model must not share an entry: disjoint `where: { wp_id: [...] }` sets plus at most one catch-all.
+   */
   source?: { model: string, where?: Record<string, unknown>, paginate?: number }
   /**
    * `rich-text`: the entry body renders as prose (posts, simple pages).
    * `composed`: the page is the `sections` below, top to bottom.
    */
   body: 'rich-text' | 'composed'
-  /** Page chrome and composition, in document order. `header`/`footer` placements are the layout's. */
+  /** The page body, in document order (chrome is `layout`'s). */
   sections: PlanPlacement[]
 }
 
 export interface PlanPlacement {
   /** `PlanComponent.id`. */
   component: string
-  region?: string
   variant?: Record<string, string>
   bind: PlanBinding
+  /** Interface strings from `ui-strings`: prop → key (`prevLabel: 'pagination.prev'`). */
+  labels?: Record<string, string>
 }
 
-/** Where a placement's props come from. Values are field names of the bound entry, never content. */
+/**
+ * A prop value, never content itself. A small closed set, the same in the mapping table's `from`:
+ *
+ * - `field:<name>` — a field of the bound entry
+ * - `media:<field>` — an image field resolved to the kit's `ImageInput` (`src`, `alt`, `width`, `height`)
+ * - `ref:<field>.<target field>` — a field of the entry a relation points at (`ref:category.name`)
+ * - `href:self` — the bound entry's own address; `href:<relation field>` — the related entry's, via `site.permalinks`
+ * - `ui:<key>` — an interface string of `ui-strings`
+ * - `const:<value>` — a fixed value (layout switches, never content)
+ */
+export type PlanValue = `field:${string}` | `media:${string}` | `ref:${string}` | `href:${string}` | `ui:${string}` | `const:${string}`
+
+export const PLAN_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|ui:[\w.-]+|const:.*)$/
+
+/** Where a placement's props come from. */
 export type PlanBinding =
-  /** The route's own entry: prop → field (`title`, `featured_image`, `content`). */
-  | { kind: 'entry', props: Record<string, string> }
-  /** One entry of a model (a singleton, or a fixed entry). */
-  | { kind: 'model', model: string, entry?: string, props: Record<string, string> }
-  /** A list: a query over a collection, each item's props from its fields. */
-  | { kind: 'collection', model: string, where?: Record<string, unknown>, sort?: string, limit?: number, item: Record<string, string> }
-  /** A menu of the `menus` model. */
-  | { kind: 'menu', menu: string }
-  /** Interface strings of a dictionary: prop → key. */
-  | { kind: 'dictionary', model: string, props: Record<string, string> }
-  /** Fixed props (layout switches, never content). */
-  | { kind: 'static', props: Record<string, string | number | boolean> }
+  /** The route's own entry. */
+  | { kind: 'entry', props: Record<string, PlanValue> }
+  /** One entry of a model (a singleton, or a fixed entry id). */
+  | { kind: 'model', model: string, entry?: string, props: Record<string, PlanValue> }
+  /**
+   * A list: a query over a collection. With `into`, the list fills that one array prop (`card-grid.items`,
+   * `faq.items`) and `item` maps each element; without it, the component repeats once per entry (`post-card`)
+   * and `item` maps its props.
+   */
+  | { kind: 'collection', model: string, where?: Record<string, unknown>, sort?: string, limit?: number, into?: string, item: Record<string, PlanValue>, props?: Record<string, PlanValue> }
+  /** A menu by slug; its items fill `into` (default `items`). */
+  | { kind: 'menu', menu: string, into?: string, props?: Record<string, PlanValue> }
+  /** Only fixed values and labels. */
+  | { kind: 'static', props: Record<string, PlanValue> }
 
 // ─── Decisions ───
 
@@ -219,9 +254,18 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   for (const m of plan.models ?? []) {
     if (models.has(m.id)) errors.push(`model ${m.id} is declared twice`)
     models.set(m.id, m)
-    if (m.origin === 'plan' && !m.fields) errors.push(`plan model ${m.id} has no fields`)
-    if (m.origin === 'plan' && !m.extract?.length) warnings.push(`plan model ${m.id} has no extraction — its entries start empty`)
     if (m.origin === 'import' && !IMPORTED_MODELS.has(m.id)) warnings.push(`model ${m.id} is marked imported but wp-import does not write it`)
+    if (m.origin === 'plan') {
+      if (!m.fields) errors.push(`plan model ${m.id} has no fields`)
+      if (!m.name || !m.domain) errors.push(`plan model ${m.id} needs name and domain`)
+      if (m.kind === 'collection' || m.kind === 'document') {
+        const title = m.title_field ? m.fields?.[m.title_field] : undefined
+        if (!m.title_field) errors.push(`plan model ${m.id} has no title_field`)
+        else if (!title) errors.push(`plan model ${m.id}: title_field ${m.title_field} is not one of its fields`)
+        else if (!isTitleFieldType(title.type)) errors.push(`plan model ${m.id}: title_field ${m.title_field} is ${title.type}, not a text-like type`)
+      }
+      if (!m.extract?.length) warnings.push(`plan model ${m.id} has no extraction — its entries start empty`)
+    }
     for (const x of m.extract ?? []) {
       for (const [field, path] of Object.entries(x.fields)) {
         if (m.fields && !m.fields[field]) errors.push(`model ${m.id} extraction fills unknown field ${field}`)
@@ -237,29 +281,58 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     components.set(c.id, c)
     if (!/^[A-Z][A-Za-z0-9]*$/.test(c.id)) errors.push(`component ${c.id} is not a PascalCase name`)
     if (c.origin === 'kit' && !c.kit?.id) errors.push(`kit component ${c.id} names no kit id`)
+    if (c.origin === 'site' && !c.props) errors.push(`site component ${c.id} declares no props`)
     if (c.origin === 'site' && !c.brief) warnings.push(`site component ${c.id} has no brief for the writer`)
   }
 
+  const placement = (s: PlanPlacement, at: string, route?: PlanRoute) => {
+    const c = components.get(s.component)
+    if (!c) { errors.push(`${at}: component ${s.component} is not declared`); return }
+    const b = s.bind
+    if ('model' in b && !knownModel(b.model)) errors.push(`${at}: model ${b.model} is not declared`)
+    if (b.kind === 'entry' && !route?.source) errors.push(`${at}: binds the route entry but ${route ? 'the route has no source' : 'layout has no entry'}`)
+    const values: Record<string, PlanValue> = { ...('props' in b ? b.props : {}), ...(b.kind === 'collection' && !b.into ? b.item : {}) }
+    for (const [prop, value] of Object.entries({ ...values, ...(b.kind === 'collection' ? b.item : {}) })) {
+      if (!PLAN_VALUE_PATTERN.test(value)) errors.push(`${at}: ${prop} = ${value} is not a plan value (field: media: ref: href: ui: const:)`)
+    }
+    // A kit component's props are the catalog's; the caller checks them. A site component's are here.
+    if (c.props) {
+      const bound = new Set([...Object.keys(values), ...Object.keys(s.labels ?? {}), ...('into' in b && b.into ? [b.into] : b.kind === 'menu' ? ['items'] : [])])
+      for (const prop of bound) if (!c.props[prop]) errors.push(`${at}: ${c.id} has no prop ${prop}`)
+      for (const [prop, def] of Object.entries(c.props)) if (def.required && !bound.has(prop)) errors.push(`${at}: required prop ${c.id}.${prop} is not bound`)
+    }
+  }
+  if (plan.layout?.header) placement(plan.layout.header, 'layout header')
+  if (plan.layout?.footer) placement(plan.layout.footer, 'layout footer')
+
   const routeIds = new Set<string>()
+  const byModel = new Map<string, PlanRoute[]>()
   for (const r of plan.routes ?? []) {
     if (routeIds.has(r.id)) errors.push(`route ${r.id} is declared twice`)
     routeIds.add(r.id)
     if (!PERMALINK.test(r.pattern)) errors.push(`route ${r.id}: pattern ${r.pattern} must start and end with "/"`)
-    if (r.source && !knownModel(r.source.model)) errors.push(`route ${r.id}: source model ${r.source.model} is not declared`)
-    if (r.body === 'composed' && !r.sections.some(s => s.region !== 'header' && s.region !== 'footer')) warnings.push(`route ${r.id} is composed but has no body sections`)
-    r.sections.forEach((s, i) => {
-      const at = `route ${r.id} section ${i}`
-      const c = components.get(s.component)
-      if (!c) { errors.push(`${at}: component ${s.component} is not declared`); return }
-      const b = s.bind
-      if ('model' in b && !knownModel(b.model)) errors.push(`${at}: model ${b.model} is not declared`)
-      if (b.kind === 'entry' && !r.source) errors.push(`${at}: binds the route entry but the route has no source`)
-      const props = b.kind === 'collection' ? b.item : b.kind === 'menu' ? {} : b.props
-      for (const prop of Object.keys(props)) if (!c.props[prop]) errors.push(`${at}: ${c.id} has no prop ${prop}`)
-      for (const [prop, def] of Object.entries(c.props)) {
-        if (def.required && b.kind !== 'menu' && !(prop in props)) errors.push(`${at}: required prop ${c.id}.${prop} is not bound`)
+    if (r.source) {
+      if (!knownModel(r.source.model)) errors.push(`route ${r.id}: source model ${r.source.model} is not declared`)
+      ;(byModel.get(r.source.model) ?? byModel.set(r.source.model, []).get(r.source.model)!).push(r)
+    }
+    if (r.body === 'composed' && !r.sections.length) warnings.push(`route ${r.id} is composed but has no sections`)
+    r.sections.forEach((s, i) => placement(s, `route ${r.id} section ${i}`, r))
+  }
+  // One address per entry: routes over one model split it by disjoint wp_id sets plus at most one catch-all.
+  for (const [model, routes] of byModel) {
+    if (routes.length < 2) continue
+    const catchAll = routes.filter(r => !r.source?.where || Object.keys(r.source.where).length === 0)
+    if (catchAll.length > 1) errors.push(`model ${model}: routes ${catchAll.map(r => r.id).join(', ')} are all catch-alls`)
+    const seen = new Map<unknown, string>()
+    for (const r of routes) {
+      const ids = r.source?.where?.wp_id
+      if (r.source?.where && ids === undefined) warnings.push(`route ${r.id}: where without wp_id — overlap with other ${model} routes cannot be checked`)
+      for (const id of Array.isArray(ids) ? ids : ids === undefined ? [] : [ids]) {
+        const other = seen.get(id)
+        if (other) errors.push(`model ${model}: entry ${String(id)} is in routes ${other} and ${r.id}`)
+        else seen.set(id, r.id)
       }
-    })
+    }
   }
   if (!plan.routes?.some(r => r.kind === 'home')) errors.push('no home route')
   return { errors, warnings }
