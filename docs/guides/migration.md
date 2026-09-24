@@ -81,7 +81,7 @@ npx contentrain import https://site.example --auth user:app-password
 | Flag | Effect |
 |---|---|
 | `--out <dir>` | Target directory (default: current) |
-| `--auth <user:password>` | REST Application Password — lifts access to `rest_auth` |
+| `--auth <user:password>` | REST Application Password — lifts access to `rest_auth`, which also imports drafts, scheduled, pending and private posts and held comments |
 | `--force` | Overwrite an existing `.contentrain/` |
 | `--json` | Machine-readable report, for scripting |
 

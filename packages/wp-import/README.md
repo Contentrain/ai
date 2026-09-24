@@ -17,7 +17,9 @@ import { parseWxr, fetchRestRawIR, rawToContentrain, buildCommentsExport } from 
 // Highest offline rung: a WXR export file
 const { raw, stats } = await parseWxr(createReadStream('export.xml'))
 
-// Or the REST rungs (public, or Application Password → rest_auth)
+// Or the REST rungs (public, or Application Password → rest_auth).
+// With a credential, drafts, scheduled, pending and private posts and held
+// comments are listed too; anonymous REST sees only what is published.
 const { raw: viaRest } = await fetchRestRawIR({ origin: 'https://site.example', auth: { user, appPassword } })
 
 // RawIR → .contentrain (pure: returns { files, entry_source_map, report })

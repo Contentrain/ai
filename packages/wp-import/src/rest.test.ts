@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fetchRestRawIR } from './index'
+import { fetchRestRawIR, rawToContentrain, hexId } from './index'
 
 const json = (body: unknown, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json', ...headers } })
@@ -191,6 +191,108 @@ describe('fetchRestRawIR', () => {
     expect(raw.language_pairs).toEqual([
       { post: 10, translations: { en: 10, tr: 20 } },
       { post: 40, translations: { en_US: 41, de_DE: 40 } },
+    ])
+  })
+})
+
+describe('fetchRestRawIR with a credential lists every non-trash status', () => {
+  const statuses = 'status=publish,future,draft,pending,private&context=edit'
+  // A site that answers the credential's listings only: anonymous-style URLs get published posts and approved comments.
+  function authedSite(calls: string[], deny: RegExp | null = null): typeof fetch {
+    const base = stubFetch([])
+    return (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+      const u = String(url)
+      calls.push(u)
+      if (deny?.test(u)) return new Response('{"code":"rest_forbidden_context"}', { status: 403 })
+      if (u.includes(`/posts?${statuses}&`)) {
+        return json([
+          post(10, 'live'),
+          post(20, 'scheduled', { status: 'future', date_gmt: '2027-01-01T09:00:00' }),
+          post(21, 'unfinished', { status: 'draft', date_gmt: null }),
+          post(22, 'awaiting', { status: 'pending' }),
+          post(23, 'members', { status: 'private' }),
+          post(24, 'locked', { password: 'hunter2' }),
+        ])
+      }
+      if (u.includes(`/pages?${statuses}&`)) return json([post(11, 'about', { featured_media: 0, categories: [] })])
+      if (u.includes('/comments?status=approve&context=edit&')) {
+        return json([{ id: 500, post: 10, parent: 0, author_name: 'Reader', date_gmt: '2026-01-03T09:00:00', content: { rendered: '<p>Nice</p>' }, status: 'approved', type: 'comment' }])
+      }
+      if (u.includes('/comments?status=hold&context=edit&')) {
+        return json([{ id: 501, post: 10, parent: 0, author_name: 'Waiting', date_gmt: '2026-01-04T09:00:00', content: { rendered: '<p>Held</p>' }, status: 'hold', type: 'comment' }])
+      }
+      if (u.includes('/posts?per_page')) return json([post(10, 'live')])
+      if (u.includes('/pages?per_page')) return json([post(11, 'about', { featured_media: 0, categories: [] })])
+      if (u.includes('/comments?per_page')) {
+        return json([{ id: 500, post: 10, parent: 0, author_name: 'Reader', date_gmt: '2026-01-03T09:00:00', content: { rendered: '<p>Nice</p>' }, status: 'approved', type: 'comment' }])
+      }
+      return base(url, init)
+    }) as typeof fetch
+  }
+  const auth = { user: 'ada', appPassword: 'xxxx yyyy' }
+
+  it('asks for drafts, scheduled, pending and private posts in the edit context, and held comments', async () => {
+    const calls: string[] = []
+    const { raw, warnings } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: authedSite(calls), auth })
+    expect(warnings).toEqual([])
+    expect(calls).toContain(`https://s.example/wp-json/wp/v2/posts?${statuses}&per_page=100&page=1`)
+    expect(calls).toContain(`https://s.example/wp-json/wp/v2/pages?${statuses}&per_page=100&page=1`)
+    expect(calls).toContain('https://s.example/wp-json/wp/v2/comments?status=approve&context=edit&per_page=100&page=1')
+    expect(calls).toContain('https://s.example/wp-json/wp/v2/comments?status=hold&context=edit&per_page=100&page=1')
+    // The WordPress status stays verbatim in the migration source.
+    expect(Object.fromEntries(raw.posts.map((p) => [p.slug, p.status]))).toEqual({
+      live: 'publish', scheduled: 'future', unfinished: 'draft', awaiting: 'pending', members: 'private', locked: 'publish', about: 'publish',
+    })
+    // The fact that it is protected, never the password.
+    expect(raw.posts.find((p) => p.slug === 'locked')!.password).toBe('[protected]')
+    expect(JSON.stringify(raw)).not.toContain('hunter2')
+    expect(raw.comments!.map((c) => [c.id, c.approved])).toEqual([[500, '1'], [501, '0']])
+  })
+
+  it('the statuses reach the store: published, scheduled with publish_at, draft, in_review, private as draft', async () => {
+    const { raw } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: authedSite([]), auth })
+    const { files, report } = rawToContentrain(raw, { updatedBy: 'test' })
+    const meta = JSON.parse(files['.contentrain/meta/posts/en.json']!)
+    const status = (slug: string) => meta[hexId(`posts:${slug}`)]
+    expect(status('live')).toMatchObject({ status: 'published' })
+    expect(status('live').publish_at).toBeUndefined()
+    expect(status('scheduled')).toMatchObject({ status: 'published', publish_at: '2027-01-01T09:00:00Z' })
+    expect(status('unfinished')).toMatchObject({ status: 'draft' })
+    expect(status('awaiting')).toMatchObject({ status: 'in_review' })
+    expect(status('members')).toMatchObject({ status: 'draft' })
+    // Its WordPress status is publish, and the edit context returned the protected body: it must not come in published.
+    expect(status('locked')).toMatchObject({ status: 'draft' })
+    expect(report.password_protected_drafts).toBe(1)
+    const posts = JSON.parse(files['.contentrain/content/blog/posts/data.json']!)
+    expect(posts[hexId('posts:members')].visibility).toBe('private')
+    expect(posts[hexId('posts:locked')].visibility).toBe('password')
+    expect(Object.values(files).join('\n')).not.toContain('hunter2')
+    const commentMeta = JSON.parse(Object.entries(files).find(([path]) => path.startsWith('.contentrain/meta/comments'))![1])
+    expect(commentMeta[hexId('comments:500')]).toMatchObject({ status: 'published' })
+    expect(commentMeta[hexId('comments:501')]).toMatchObject({ status: 'in_review' })
+  })
+
+  it('without a credential the listing is unchanged: WordPress defaults, no status, no edit context', async () => {
+    const calls: string[] = []
+    const { raw } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: authedSite(calls) })
+    expect(calls.filter((c) => /\/(posts|pages|comments)\?/.test(c)).toSorted()).toEqual([
+      'https://s.example/wp-json/wp/v2/comments?per_page=100&page=1',
+      'https://s.example/wp-json/wp/v2/pages?per_page=100&page=1',
+      'https://s.example/wp-json/wp/v2/posts?per_page=100&page=1',
+    ])
+    expect(calls.some((c) => c.includes('status=') || c.includes('context=edit'))).toBe(false)
+    expect(raw.posts.map((p) => p.status)).toEqual(['publish', 'publish'])
+  })
+
+  it('a credential the site refuses for those listings falls back to the public one, with a warning', async () => {
+    const { raw, warnings } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: authedSite([], /context=edit/), auth })
+    expect(raw.posts.map((p) => p.slug).toSorted()).toEqual(['about', 'live'])
+    expect(raw.comments!.map((c) => c.id)).toEqual([500])
+    expect(warnings.toSorted()).toEqual([
+      'comments: HTTP 403 for status=approve&context=edit with the credential — fell back to the public listing',
+      'comments: HTTP 403 for status=hold&context=edit with the credential — skipped (no public listing)',
+      `pages: HTTP 403 for ${statuses} with the credential — fell back to the public listing`,
+      `posts: HTTP 403 for ${statuses} with the credential — fell back to the public listing`,
     ])
   })
 })

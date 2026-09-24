@@ -126,6 +126,11 @@ export interface RawPost {
   parent?: number | null
   menu_order?: number
   sticky?: boolean
+  /**
+   * Set when the post is password-protected. Importers write the marker
+   * `'[protected]'`, never the password itself; treat any non-empty value as
+   * "protected".
+   */
   password?: string | null
   comment_status?: string | null
   ping_status?: string | null
