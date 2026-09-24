@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "divi",
-  "version": "1",
+  "version": "2",
   "fallback": "prose",
   "rules": [
     {
@@ -167,6 +167,113 @@
         "title": "field:title",
         "text": "field:excerpt",
         "image": "media:featured_image"
+      }
+    },
+    {
+      "match": "divi/et_pb_fullwidth_header",
+      "component": "hero",
+      "props": {
+        "heading": "dom:.et_pb_module_header",
+        "eyebrow": "dom:.et_pb_fullwidth_header_subhead",
+        "lead": "dom:.et_pb_header_content_wrapper",
+        "image": "img:.header-image img"
+      },
+      "into": "actions",
+      "each": ".et_pb_button",
+      "item": {
+        "label": "dom:",
+        "href": "dom:@href"
+      }
+    },
+    {
+      "match": "divi/et_pb_fullwidth_image",
+      "component": "hero",
+      "variant": {
+        "layout": "cover"
+      },
+      "props": {
+        "heading": "attr:title_text",
+        "image": "img:img"
+      }
+    },
+    {
+      "match": "divi/et_pb_cta",
+      "component": "cta",
+      "props": {
+        "heading": "dom:.et_pb_module_header",
+        "body": "dom:.et_pb_promo_description > div"
+      },
+      "into": "actions",
+      "each": ".et_pb_promo_button",
+      "item": {
+        "label": "dom:",
+        "href": "dom:@href"
+      }
+    },
+    {
+      "match": "divi/et_pb_accordion",
+      "component": "faq",
+      "into": "items",
+      "each": ".et_pb_accordion_item",
+      "item": {
+        "question": "dom:.et_pb_toggle_title",
+        "answer": "html:.et_pb_toggle_content"
+      }
+    },
+    {
+      "match": "divi/et_pb_toggle",
+      "component": "faq",
+      "props": {
+        "exclusive": "const:false"
+      },
+      "group": "siblings",
+      "into": "items",
+      "item": {
+        "question": "dom:.et_pb_toggle_title",
+        "answer": "html:.et_pb_toggle_content"
+      }
+    },
+    {
+      "match": "divi/et_pb_tabs",
+      "component": "tabs",
+      "into": "items",
+      "each": ".et_pb_tabs_controls li",
+      "item": {
+        "label": "dom:a",
+        "content": "html:.et_pb_tab"
+      }
+    },
+    {
+      "match": "divi/et_pb_testimonial",
+      "component": "testimonial",
+      "group": "siblings",
+      "into": "items",
+      "item": {
+        "quote": "dom:.et_pb_testimonial_content",
+        "name": "dom:.et_pb_testimonial_author",
+        "role": "dom:.et_pb_testimonial_position",
+        "avatar": "img:.et_pb_testimonial_portrait img"
+      }
+    },
+    {
+      "match": "divi/et_pb_gallery",
+      "component": "gallery",
+      "props": {
+        "closeLabel": "ui:gallery.close"
+      },
+      "into": "items",
+      "each": ".et_pb_gallery_item",
+      "item": {
+        "image": "img:img",
+        "caption": "dom:.et_pb_gallery_caption"
+      }
+    },
+    {
+      "match": "divi/et_pb_contact_form",
+      "component": "contact-form",
+      "props": {
+        "model": "const:contact",
+        "heading": "dom:.et_pb_contact_main_title"
       }
     }
   ]

@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { KIT_BUILDERS, rulesFor, unmappedSources, validateMapping, type KitCatalog, type MappingTable } from '../src/index'
+import { claimMatches, KIT_BUILDERS, rulesFor, unmappedSources, validateMapping, type KitCatalog, type MappingTable } from '../src/index'
 
 const ROOT = join(import.meta.dirname, '..')
 const catalog = JSON.parse(await readFile(join(ROOT, 'catalog.json'), 'utf8')) as KitCatalog
@@ -25,7 +25,7 @@ describe('mapping tables', () => {
       format: 'astro-kit-mapping@1', builder: 'elementor', version: '1', fallback: 'prose',
       rules: [
         { match: 'elementor/icon-box', component: 'card-grid', variant: { columns: '5' }, into: 'items', item: { heading: 'dom:h3', title: 'innerHTML' } },
-        { match: 'core/cover', component: 'hero' },
+        { match: 'core/cover', component: 'no-such-component' },
         { match: 'elementor/nav-menu', component: 'nav', props: { items: 'menu:sidebar' } },
       ],
     }
@@ -35,7 +35,7 @@ describe('mapping tables', () => {
       'elementor elementor/icon-box: items[].title = innerHTML is not a mapping value',
       'elementor elementor/icon-box: into items needs each, group or bind to say what repeats',
       'elementor core/cover: not a elementor element',
-      'elementor core/cover: component hero is not in the catalog',
+      'elementor core/cover: component no-such-component is not in the catalog',
       'elementor elementor/nav-menu: items = menu:sidebar is not a mapping value',
     ])
   })
@@ -45,4 +45,19 @@ describe('mapping tables', () => {
     expect(rules.map(r => r.match)).toEqual(['core/template-part:header', 'core/template-part:footer'])
     expect(rulesFor(tables.gutenberg!, 'core/query').map(r => r.component)).toEqual(['post-card'])
   })
+
+  it('lets the outermost match own its subtree', () => {
+    const tree = [
+      { name: 'core/template-part', attrs: { area: 'header' }, children: [{ name: 'core/site-logo' }, { name: 'core/site-title' }, { name: 'core/navigation' }] },
+      { name: 'core/group', children: [{ name: 'core/cover', children: [{ name: 'core/heading' }] }, { name: 'core/site-title' }] },
+      { name: 'core/template-part', attrs: { area: 'footer' }, children: [{ name: 'core/social-links' }] },
+    ]
+    expect(claimMatches(tree, tables.gutenberg!).map(m => `${m.path} ${m.rule.match} -> ${m.rule.component}`)).toEqual([
+      '0.0 core/template-part:header -> header',
+      '0.1.0 core/cover -> hero',
+      '0.1.1 core/site-title -> header',
+      '0.2 core/template-part:footer -> footer',
+    ])
+  })
 })
+

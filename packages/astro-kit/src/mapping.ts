@@ -111,3 +111,34 @@ export function rulesFor(table: MappingTable, element: string): MappingRule[] {
     .filter(r => r.match === element || r.match.split(':')[0] === element)
     .toSorted((a, b) => Number(!!b.when || b.match.includes(':')) - Number(!!a.when || a.match.includes(':')))
 }
+
+/** A builder element as the fact pack gives it (`FactBlock`): name, attributes, children. */
+export interface MappingNode {
+  name: string
+  attrs?: Record<string, unknown>
+  children?: MappingNode[]
+}
+
+/** Whether a rule's `match` (with an optional `:qualifier`) and `when.attr` fit an element. */
+export function ruleMatches(rule: MappingRule, node: MappingNode): boolean {
+  const [name, qualifier] = rule.match.split(':')
+  if (name !== node.name) return false
+  const attrs = node.attrs ?? {}
+  // A qualifier names the element's role: a template part's area or slug, or a sub-part the fact pack marks.
+  if (qualifier && ![attrs.area, attrs.slug, attrs.tagName, attrs.qualifier].includes(qualifier)) return false
+  for (const [key, value] of Object.entries(rule.when?.attr ?? {})) if (attrs[key] !== value) return false
+  if (rule.when?.class && !String(attrs.className ?? attrs.classes ?? '').split(/\s+/).includes(rule.when.class)) return false
+  return true
+}
+
+/**
+ * Apply a table to a tree: the outermost matching element owns its whole subtree, and nothing inside
+ * it is matched again — a header template part holding the site title and logo is one header, not three.
+ */
+export function claimMatches(nodes: MappingNode[], table: MappingTable, path = '0'): { path: string, node: MappingNode, rule: MappingRule }[] {
+  return nodes.flatMap((node, i) => {
+    const at = `${path}.${i}`
+    const rule = rulesFor(table, node.name).find(r => ruleMatches(r, node))
+    return rule ? [{ path: at, node, rule }] : claimMatches(node.children ?? [], table, at)
+  })
+}
