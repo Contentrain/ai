@@ -1,0 +1,32 @@
+{
+  "id": "post-card",
+  "name": "Post card",
+  "description": "One post in a list (index, archive, related posts): image, category, date, title, excerpt, author. The whole card links to the post.",
+  "category": "content",
+  "uses": [],
+  "shared": ["KitImage.astro", "types.ts"],
+  "variants": {
+    "layout": { "options": ["vertical", "horizontal", "minimal"], "default": "vertical", "description": "Image on top, image beside the text, or text only with a divider." }
+  },
+  "props": {
+    "title": { "type": "string", "required": true, "description": "Post title (posts.title)." },
+    "href": { "type": "url", "required": true, "description": "Post address (from the permalink pattern)." },
+    "excerpt": { "type": "text", "description": "Summary (posts.excerpt)." },
+    "date": { "type": "datetime", "description": "Publication date (posts.published_at)." },
+    "locale": { "type": "string", "description": "Locale the date is written in (site.language)." },
+    "image": { "type": "object", "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } }, "description": "Cover (posts.cover → media)." },
+    "category": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true } }, "description": "Primary category and its archive." },
+    "author": { "type": "string", "description": "Author name (posts.author → authors.name)." },
+    "headingLevel": { "type": "integer", "min": 2, "max": 3, "default": 2, "description": "Title heading level in the page outline." }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": ["core/post-template", "core/latest-posts"],
+    "elementor": ["elementor/posts", "elementor/archive-posts"],
+    "divi": ["divi/et_pb_blog"],
+    "classic": ["classic/archive-item"]
+  },
+  "a11y": "An <article> with one link (the title), stretched over the card; the category link sits above it and stays separately focusable. Dates are <time datetime>."
+}

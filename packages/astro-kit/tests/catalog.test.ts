@@ -49,9 +49,10 @@ describe('catalog', () => {
         expect(bare).toEqual([])
       })
 
-      it('uses every variant option it lists', async () => {
-        const main = c.files.find(file => file.endsWith('.astro'))!
-        const source = await readFile(join(COMPONENTS, c.id, main), 'utf8')
+      it('uses every variant option it lists (in its own files or a shared one it passes the variant to)', async () => {
+        const own = await Promise.all(c.files.map(file => readFile(join(COMPONENTS, c.id, file), 'utf8')))
+        const shared = await Promise.all(c.shared.map(file => readFile(join(COMPONENTS, '_shared', file), 'utf8')))
+        const source = [...own, ...shared].join('\n')
         for (const [axis, variant] of Object.entries(c.variants)) {
           for (const option of variant.options) expect(source, `${axis}=${option}`).toContain(option)
         }

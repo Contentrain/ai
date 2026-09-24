@@ -1,0 +1,5 @@
+[
+  { "name": "slash", "props": { "items": [{ "label": "Home", "href": "/" }, { "label": "About", "href": "/about/" }], "current": "Team" } },
+  { "name": "chevron", "props": { "separator": "chevron", "items": [{ "label": "Home", "href": "/" }, { "label": "Guides", "href": "/category/guides/" }], "current": "What a careful migration keeps" } },
+  { "name": "dot-schema", "props": { "separator": "dot", "schema": true, "items": [{ "label": "Home", "href": "/" }], "current": "Contact" } }
+]

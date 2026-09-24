@@ -1,0 +1,130 @@
+---
+// A carousel of images with optional captions. Without JavaScript it is a
+// horizontally scrolling, snapping row — every slide is reachable. With it,
+// Embla turns the row into a paged carousel with previous/next buttons and
+// slide dots.
+import { tv } from 'tailwind-variants'
+import Button from '../_shared/Button.astro'
+import KitImage from '../_shared/KitImage.astro'
+import type { ActionInput, ImageInput } from '../_shared/types'
+
+const slider = tv({
+  slots: {
+    viewport: 'flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth group-data-[ready]:snap-none group-data-[ready]:overflow-hidden [scrollbar-width:none]',
+    slide: 'relative min-w-0 shrink-0 snap-start overflow-hidden',
+    image: 'w-full object-cover',
+    caption: 'flex flex-col items-start gap-2',
+  },
+  variants: {
+    perView: {
+      '1': { slide: 'basis-full' },
+      '2': { slide: 'basis-[85%] sm:basis-[calc(50%-0.5rem)]' },
+      '3': { slide: 'basis-[85%] sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33.333%-0.667rem)]' },
+    },
+    aspect: {
+      wide: { image: 'aspect-[4/3] md:aspect-[21/9]' },
+      standard: { image: 'aspect-[3/2]' },
+      square: { image: 'aspect-square' },
+    },
+    caption: {
+      below: { image: 'rounded-[var(--radius-card)]', caption: 'pt-4' },
+      // Over the image on wide screens; under it on phones, where the image is too short to hold text.
+      overlay: { image: 'rounded-[var(--radius-card)] md:rounded-none', slide: 'md:rounded-[var(--radius-card)]', caption: 'pt-4 md:absolute md:inset-x-0 md:bottom-0 md:bg-gradient-to-t md:from-ink/80 md:to-transparent md:p-6 md:pt-16 md:text-surface' },
+    },
+  },
+  defaultVariants: { perView: '1', aspect: 'wide', caption: 'overlay' },
+})
+
+interface Slide {
+  image: ImageInput
+  title?: string | undefined
+  text?: string | undefined
+  action?: ActionInput | undefined
+}
+
+interface Props {
+  slides: Slide[]
+  /** Accessible name of the carousel ("Featured projects"). */
+  label: string
+  prevLabel?: string | undefined
+  nextLabel?: string | undefined
+  /** Word before a slide number in dot labels and slide names ("Slide"). */
+  slideLabel?: string | undefined
+  /** Word between a slide number and the count ("of"). */
+  ofLabel?: string | undefined
+  loop?: boolean | undefined
+  perView?: '1' | '2' | '3' | undefined
+  aspect?: 'wide' | 'standard' | 'square' | undefined
+  caption?: 'below' | 'overlay' | undefined
+}
+
+const { slides, label, prevLabel = 'Previous slide', nextLabel = 'Next slide', slideLabel = 'Slide', ofLabel = 'of', loop = false, perView = '1', aspect, caption } = Astro.props
+const slots = slider({ perView, aspect, caption })
+const sizes = perView === '1' ? '(min-width: 1216px) 1152px, 100vw' : perView === '2' ? '(min-width: 640px) 50vw, 85vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 85vw'
+// Arrows from sm up; on phones the carousel is swiped and the dots show the position.
+const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md ring-1 ring-line hover:bg-surface disabled:opacity-40 sm:group-data-[ready]:flex'
+---
+<section class="group container-page relative py-8" aria-roledescription="carousel" aria-label={label} data-kit-slider data-loop={loop ? '' : undefined} data-slide-label={slideLabel}>
+  <div class={slots.viewport()} data-viewport>
+    <div class="flex gap-4 [&>*]:shrink-0 group-data-[ready]:[&>*]:snap-align-none" data-container>
+      {slides.map((slide, index) => (
+        <div class={slots.slide()} role="group" aria-roledescription="slide" aria-label={`${slideLabel} ${index + 1} ${ofLabel} ${slides.length}`}>
+          <KitImage image={slide.image} sizes={sizes} priority={index === 0} class={slots.image()} />
+          {(slide.title || slide.text || slide.action) && (
+            <div class={slots.caption()}>
+              {slide.title && <p class="text-xl font-semibold text-balance">{slide.title}</p>}
+              {slide.text && <p class="opacity-85">{slide.text}</p>}
+              {slide.action && <Button action={slide.action} size="sm" class="mt-2" />}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+  {slides.length > 1 && (
+    <>
+      <button type="button" class:list={[arrow, 'left-6 md:left-10']} aria-label={prevLabel} data-prev>
+        <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" /></svg>
+      </button>
+      <button type="button" class:list={[arrow, 'right-6 md:right-10']} aria-label={nextLabel} data-next>
+        <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg>
+      </button>
+      <div class="mt-4 hidden justify-center gap-2 group-data-[ready]:flex" data-dots></div>
+    </>
+  )}
+</section>
+
+<script>
+  import EmblaCarousel from 'embla-carousel'
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-kit-slider]')) {
+    const viewport = root.querySelector<HTMLElement>('[data-viewport]')
+    if (!viewport || root.dataset.ready !== undefined) continue
+    root.dataset.ready = ''
+    const embla = EmblaCarousel(viewport, { loop: root.dataset.loop !== undefined, align: 'start', containScroll: 'trimSnaps' })
+    const prev = root.querySelector<HTMLButtonElement>('[data-prev]')
+    const next = root.querySelector<HTMLButtonElement>('[data-next]')
+    const dots = root.querySelector<HTMLElement>('[data-dots]')
+    prev?.addEventListener('click', () => embla.scrollPrev())
+    next?.addEventListener('click', () => embla.scrollNext())
+
+    const label = root.dataset.slideLabel ?? 'Slide'
+    const buttons = embla.scrollSnapList().map((_, index) => {
+      const dot = document.createElement('button')
+      dot.type = 'button'
+      dot.className = 'size-2.5 rounded-full bg-ink/25 aria-[current=true]:bg-ink'
+      dot.setAttribute('aria-label', `${label} ${index + 1}`)
+      dot.addEventListener('click', () => embla.scrollTo(index))
+      dots?.append(dot)
+      return dot
+    })
+    const sync = () => {
+      const selected = embla.selectedScrollSnap()
+      buttons.forEach((dot, index) => dot.setAttribute('aria-current', String(index === selected)))
+      if (prev) prev.disabled = !embla.canScrollPrev()
+      if (next) next.disabled = !embla.canScrollNext()
+    }
+    embla.on('select', sync).on('reInit', sync)
+    sync()
+  }
+</script>
