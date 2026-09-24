@@ -1,4 +1,4 @@
-import type { EntrySourceRef, ProjectIR, RawRedirect, RuntimeBinding } from '@contentrain/types'
+import type { ContentStatus, EntrySourceRef, ProjectIR, RawRedirect, RuntimeBinding } from '@contentrain/types'
 
 // ─── Emit input ───
 
@@ -122,6 +122,51 @@ export interface EmitPost {
   noindex?: boolean
   /** The source page was `nofollow`: `<meta name="robots" content="nofollow">`. */
   nofollow?: boolean
+  /**
+   * The entry's workflow status in the content store (`EntryMeta.status`).
+   * Only `published` is built; unset reads as published unless
+   * `EmitOptions.requireStatus` is set. Any other status
+   * keeps the entry out of the site — no page, sitemap line, feed item,
+   * llms.txt link or list card — and `EmitResult.withheld` names it.
+   */
+  status?: ContentStatus
+  /**
+   * When a published entry goes live (`EntryMeta.publish_at`, ISO 8601) — a
+   * WordPress post scheduled for later. Until then it is held back like a
+   * draft; compared with `EmitOptions.now`. A value that is not a date holds
+   * the entry back too.
+   */
+  publish_at?: string
+  /**
+   * Who may read the entry (the store's `visibility` field — WordPress
+   * `public`, `private`, or `password` for a password-protected post). Anything
+   * but `public` is never built, whatever `status` says: no page, sitemap
+   * line, feed item, list card, share card or link to it. Unset reads as public.
+   */
+  visibility?: 'public' | 'private' | 'password' | (string & {})
+}
+
+/** An entry the build leaves out because it is not published yet. */
+export interface WithheldEntry {
+  collection: string
+  slug: string
+  status?: ContentStatus
+  publish_at?: string
+  visibility?: string
+  /**
+   * `visibility`: password-protected or private · `status`: not published ·
+   * `status_missing`: no status, with `EmitOptions.requireStatus` ·
+   * `scheduled`: publish_at is ahead · `publish_at_invalid`: publish_at is not a date.
+   */
+  reason: 'visibility' | 'status' | 'status_missing' | 'scheduled' | 'publish_at_invalid'
+}
+
+/** A link on a published page to a held-back entry, kept as its text. */
+export interface WithheldLink {
+  /** The page it was on (site-root path), or `<collection>/<slug>` when no route builds it. */
+  page: string
+  /** The address it pointed at. */
+  href: string
 }
 
 /**
@@ -359,6 +404,20 @@ export interface EmitOptions {
    * Cloudflare Pages site must name its host (no forced rules there).
    */
   redirectHost?: 'netlify' | 'cloudflare' | 'vercel'
+  /**
+   * The moment `EmitPost.publish_at` is compared with, ISO 8601. Default: the
+   * time of the emit. The data files hold only what is live then, so a
+   * scheduled entry is built by the first emit after its time.
+   */
+  now?: string
+  /**
+   * Hold back every entry — in posts, collections and list items — that
+   * carries no `EmitPost.status`, and say so. Default false: an entry with
+   * no status is published, as before statuses existed. A producer that
+   * reads statuses from the content store sets it, so an entry it failed to
+   * give one fails closed instead of going out as published.
+   */
+  requireStatus?: boolean
 }
 
 export interface EmitInput {
@@ -418,6 +477,15 @@ export interface EmitResult {
      * holds it, `vercel.json` does not); past a named host's limit it is in `manual`.
      */
     host_over_limit: string[]
+  }
+  /**
+   * Present when entries were held back (`EmitPost.status`, `publish_at`):
+   * each one, and each link to one that a published page carried — kept as
+   * its text. Redirects to a held-back entry are in `redirects.manual`.
+   */
+  withheld?: {
+    entries: WithheldEntry[]
+    links: WithheldLink[]
   }
 }
 

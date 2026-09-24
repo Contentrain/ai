@@ -1,7 +1,11 @@
 // `astro check` over an emitted site that exercises every kind of page and
 // endpoint the emitter writes: posts, pages, a nested category archive with its
 // feed, a tag archive, an author profile, a plain list, a static page, the feed,
-// llms.txt, redirects and the image pass.
+// llms.txt, redirects and the image pass — with entries the build leaves out
+// (a draft, one in review, a published post scheduled for later, published
+// posts that are password-protected or private) beside a published one
+// scheduled in the past and a live page that links to the draft and the
+// password-protected post.
 //
 // The unit suite asserts the emitted strings; this checks what the build checks
 // first — the types of the emitted .astro and .ts files against Astro's own.
@@ -50,17 +54,29 @@ function emit(options) {
         image: '/media/a.jpg', image_meta: { width: 1200, height: 630, type: 'image/jpeg' },
         seo_title: 'Merhaba – Example', open_graph: { title: 'Paylaş' }, twitter: { card: 'summary' },
         breadcrumbs: [{ name: 'Ana sayfa', path: '/' }], noindex: false,
-      }],
+        status: 'published',
+      },
+      { slug: 'gecmis', title: 'Geçmiş', body: '<p><a href="/2025/taslak/">taslak</a> <a href="/2025/sifreli/">şifreli</a></p>', params: { year: '2025' }, status: 'published', publish_at: '2020-01-01T00:00:00Z' },
+      { slug: 'sifreli', title: 'Şifreli', body: '<p>yalnız üyelere</p>', params: { year: '2025' }, status: 'published', visibility: 'password' },
+      { slug: 'ozel', title: 'Özel', body: '<p>x</p>', params: { year: '2025' }, status: 'published', visibility: 'private' },
+      { slug: 'gelecek', title: 'Gelecek', body: '<p>x</p>', params: { year: '2025' }, status: 'published', publish_at: '2999-01-01T00:00:00Z' },
+      { slug: 'taslak', title: 'Taslak', body: '<p>x</p>', params: { year: '2025' }, status: 'draft' },
+      { slug: 'incelemede', title: 'İncelemede', body: '<p>x</p>', params: { year: '2025' }, status: 'in_review' }],
       collections: { pages: [{ slug: 'hakkimizda/ekip', title: 'Ekip', body: '', modified_at: '2025-03-01T00:00:00Z', noindex: true }] },
       queries: {
-        'q-cat': [{ params: { term: 'haberler/yerel' }, title: 'Yerel', items: [] }],
+        'q-cat': [{ params: { term: 'haberler/yerel' }, title: 'Yerel', items: [
+          { slug: 'gecmis', title: 'Geçmiş', body: '', params: { year: '2025' }, publish_at: '2020-01-01T00:00:00Z' },
+          { slug: 'gelecek', title: 'Gelecek', body: '', params: { year: '2025' }, publish_at: '2999-01-01T00:00:00Z' },
+          { slug: 'taslak', title: 'Taslak', body: '', params: { year: '2025' }, status: 'draft' },
+          { slug: 'sifreli', title: 'Şifreli', body: '', params: { year: '2025' }, visibility: 'password' },
+        ] }],
         'q-cat-paged': [{ params: { term: 'haberler/yerel', page: '2' }, items: [] }],
         'q-tag': [{ params: { tag: 'x' }, items: [], open_graph: { title: 'X' } }],
         'q-author': [{ params: { author: 'ada' }, items: [], profile: { name: 'Ada', same_as: ['https://x.example/ada'] } }],
         'q-news': [{ params: {}, items: [] }],
       },
     },
-    redirects: [{ from: '/eski/', to: '/2025/merhaba/' }],
+    redirects: [{ from: '/eski/', to: '/2025/merhaba/' }, { from: '/eski-taslak/', to: '/2025/taslak/' }],
     hostRedirects: [{ from: '/2025/merhaba/ek/', to: '/2025/merhaba/' }],
     options: { tailwind: false, siteDescription: 'Bir site.', ...options },
   })
@@ -118,12 +134,55 @@ async function check(label, options, modules) {
   return { ok, dir }
 }
 
+/**
+ * Build the checked site and read what it wrote: the published entries have
+ * pages, sitemap lines and feed items; a draft, an entry in review and a post
+ * scheduled for later have none, and the live page's link to the draft is text.
+ */
+async function buildUnpublished(dir) {
+  const result = spawnSync(join(dir, 'node_modules', '.bin', 'astro'), ['build'], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], shell: process.platform === 'win32' })
+  if (result.status !== 0) {
+    console.error(`astro build failed:\n${result.stdout}${result.stderr}`)
+    return false
+  }
+  const read = (path) => readFile(join(dir, 'dist', path), 'utf8').catch(() => null)
+  const sitemap = (await read('sitemap-0.xml')) ?? ''
+  const feed = (await read('feed.xml')) ?? ''
+  const llms = (await read('llms.txt')) ?? ''
+  const category = (await read('kategori/haberler/yerel/index.html')) ?? ''
+  const live = await read('2025/gecmis/index.html')
+  const failures = []
+  for (const slug of ['merhaba', 'gecmis']) {
+    if (!(await read(`2025/${slug}/index.html`))) failures.push(`/2025/${slug}/ has no page`)
+    if (!sitemap.includes(`/2025/${slug}/`)) failures.push(`/2025/${slug}/ is not in the sitemap`)
+    if (!feed.includes(`/2025/${slug}/`)) failures.push(`/2025/${slug}/ is not in the feed`)
+  }
+  // The category's list: the live card and no other (the plain fallback list prints titles).
+  if (!category.includes('>Geçmiş<')) failures.push('the category page does not list Geçmiş')
+  for (const title of ['Gelecek', 'Taslak', 'Şifreli']) if (category.includes(`>${title}<`)) failures.push(`the category page lists ${title}`)
+  for (const slug of ['gelecek', 'taslak', 'incelemede', 'sifreli', 'ozel']) {
+    if (await read(`2025/${slug}/index.html`)) failures.push(`/2025/${slug}/ was built`)
+    for (const [name, text] of [['sitemap', sitemap], ['feed', feed], ['llms.txt', llms], ['category page', category]]) {
+      if (text.includes(`/2025/${slug}/`)) failures.push(`/2025/${slug}/ is in the ${name}`)
+    }
+  }
+  if (await read('eski-taslak/index.html')) failures.push('the redirect to the draft was built')
+  if (live && (live.includes('href="/2025/taslak/"') || live.includes('href="/2025/sifreli/"'))) failures.push('the live page still links to a held-back entry')
+  if (live && !(live.includes('taslak') && live.includes('şifreli'))) failures.push('the live page lost the link text')
+  // Nothing of the password-protected post anywhere in the build.
+  const leak = spawnSync('grep', ['-rl', 'yalnız üyelere', join(dir, 'dist')], { encoding: 'utf8' }).stdout.trim()
+  if (leak) failures.push(`the password-protected post's content is in ${leak}`)
+  console.log(`astro build (unpublished entries): ${failures.length ? failures.join('; ') : 'published built; draft, in review, scheduled, password-protected and private left out'}`)
+  return failures.length === 0
+}
+
 // Both address forms: the file build (no trailing slash) writes other pages.
 const dirs = []
 let ok = false
 try {
   const slash = await check('slash', {})
   dirs.push(slash.dir)
+  if (slash.ok) slash.ok = await buildUnpublished(slash.dir)
   const noSlash = slash.ok ? await check('no-slash', { trailingSlash: false }, join(slash.dir, 'node_modules')) : slash
   if (noSlash !== slash) dirs.push(noSlash.dir)
   ok = slash.ok && noSlash.ok

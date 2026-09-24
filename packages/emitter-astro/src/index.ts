@@ -22,6 +22,7 @@ import { UI_STRINGS_DIR, uiStringsDir } from './ui-strings.js'
 import { wrapLegacyCss } from './css.js'
 import { stableJson, patternToPagePath } from './util.js'
 import { noindexPaths } from './noindex.js'
+import { publishedContent, withheldTarget, withheldWarnings } from './published.js'
 import { astroRedirectsConfig, builtAddresses, HOST_RULE_LIMIT, hostRedirectFiles, planRedirects } from './redirects.js'
 import type { ManualRedirect } from './redirects.js'
 import { FEED_PATH, FEED_REDIRECT_FROM, archiveFeedEndpoint, archiveFeedFile, archiveFeedSources, feedEndpoint, linkSources, llmsEndpoint, type LinkSource } from './feed.js'
@@ -83,6 +84,31 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     }
   }
 
+  // Only published entries are built: drafts, entries in review and ones
+  // scheduled for later are held back before anything reads the content.
+  let now = Date.now()
+  if (input.options?.now !== undefined) {
+    const at = Date.parse(input.options.now)
+    if (Number.isNaN(at)) warnings.push(`options.now "${input.options.now}" is not a date — publish_at is compared with the time of this emit`)
+    else now = at
+  }
+  const published = publishedContent(ir.routes, input.content ?? {}, now, ir.site.url, input.options?.requireStatus === true)
+  const content = published.content
+  warnings.push(...withheldWarnings(published.withheld, published.links))
+  // A rule to a held-back entry would redirect to a page the build does not
+  // have. It goes back to the producer with the rest of the manual rules.
+  const withheldManual: ManualRedirect[] = []
+  const toPublished = (rules: RawRedirect[] | undefined) => rules?.filter((redirect) => {
+    const target = withheldTarget(redirect.to, published.gone, ir.site.url)
+    if (target) withheldManual.push({ redirect, reason: `to ${target}, an entry that is not published — the build has no page there` })
+    return !target
+  })
+  const siteRedirects = toPublished(input.redirects)
+  const hostOnlyRedirects = toPublished(input.hostRedirects)
+  if (withheldManual.length) {
+    warnings.push(`unpublished: ${withheldManual.length} redirects point at unpublished entries — not written (EmitResult.redirects.manual has each)`)
+  }
+
   // The site's own redirect rules. Only plain ones become config; the rest,
   // and any on an address this site builds a page at, go back to the producer.
   const siteLang = ir.site.locales?.[0] ?? 'en'
@@ -96,14 +122,14 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   if (!ir.site.url && (input.options?.feed !== false || input.options?.llms !== false)) {
     warnings.push('site.url is empty — no RSS feed and no llms.txt are built; both name pages by absolute address')
   }
-  const redirectPlan = input.redirects ? planRedirects(input.redirects, builtAddresses(ir.routes, input.content ?? {})) : undefined
+  const redirectPlan = siteRedirects ? planRedirects(siteRedirects, builtAddresses(ir.routes, content)) : undefined
   if (redirectPlan?.manual.length) {
-    warnings.push(`redirects: ${redirectPlan.manual.length} of ${input.redirects!.length} rules not written to astro.config — set them up at the host (EmitResult.redirects.manual has each with its reason)`)
+    warnings.push(`redirects: ${redirectPlan.manual.length} of ${siteRedirects!.length} rules not written to astro.config — set them up at the host (EmitResult.redirects.manual has each with its reason)`)
   }
 
   // Per-page SEO is on unless the producer owns those tags itself.
   const seo = input.options?.seo !== false
-  const noindex = noindexPaths(ir.routes, input.content ?? {})
+  const noindex = noindexPaths(ir.routes, content)
   // Readers subscribed to WordPress's /feed/ follow a 301 to the feed the
   // build writes — a real one from the host's redirect file; a static
   // redirect page, which feed readers do not follow, is only the fallback.
@@ -112,7 +138,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   // <archive>/feed/, 301 to the feeds the build writes. They pass the same
   // checks as the source's rules — never over a page the site builds, never
   // a case twin of one — and a source rule for the same address wins.
-  const built = builtAddresses(ir.routes, input.content ?? {})
+  const built = builtAddresses(ir.routes, content)
   const sourceConfig = redirectPlan?.config ?? {}
   const claimed = new Set(Object.keys(sourceConfig).map((from) => from.replace(/\/+$/, '').toLowerCase()))
   const feedRules: RawRedirect[] = []
@@ -124,7 +150,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   }
   if (feedSource) addFeedRule(FEED_REDIRECT_FROM, FEED_PATH)
   for (const source of archiveFeeds) {
-    for (const page of input.content?.queries?.[source.query] ?? []) {
+    for (const page of content.queries?.[source.query] ?? []) {
       const address = entryPath(source.pattern, page.params)
       if (address) addFeedRule(`${address}feed/`, `${address}feed.xml`)
     }
@@ -138,7 +164,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   add(scaffoldFiles(ir, input.options ?? {}, noindex, hasRedirects ? astroRedirectsConfig(sortedConfig(redirectConfig)) : null, input.runtime))
   // Host-only rules: the same checks, then an address the site's own rules or
   // the feeds already redirect is theirs. Never in astro.config.
-  const hostOnlyPlan = input.hostRedirects ? planRedirects(input.hostRedirects, built, { hostOnly: true }) : undefined
+  const hostOnlyPlan = hostOnlyRedirects ? planRedirects(hostOnlyRedirects, built, { hostOnly: true }) : undefined
   const hostOnlyConfig: typeof redirectConfig = {}
   const hostOnlyRule = new Map<string, RawRedirect>()
   const hostOnlyManual: ManualRedirect[] = [...(hostOnlyPlan?.manual ?? [])]
@@ -183,7 +209,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   }
   const unservedHostOnly = new Set(hostOnlyManual.map((m) => m.redirect))
   if (hostOnlyManual.length) {
-    warnings.push(`hostRedirects: ${hostOnlyManual.length} of ${input.hostRedirects!.length} host-only rules not written — set them up at the host (EmitResult.redirects.manual has each with its reason)`)
+    warnings.push(`hostRedirects: ${hostOnlyManual.length} of ${hostOnlyRedirects!.length} host-only rules not written — set them up at the host (EmitResult.redirects.manual has each with its reason)`)
   }
   if (hostRedirects) {
     add(hostRedirects.files)
@@ -233,7 +259,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   const bodyMarkersByFamily = new Map<string, Set<string>>()
   for (const route of ir.routes) {
     if (route.kind !== 'single' && route.collection === undefined) continue
-    const posts = collectionItems(input.content ?? {}, route.collection ?? DEFAULT_COLLECTION)
+    const posts = collectionItems(content, route.collection ?? DEFAULT_COLLECTION)
     const ids = bodyMarkersByFamily.get(route.family) ?? new Set<string>()
     for (const post of posts) for (const id of componentMarkers(post.body)) ids.add(id)
     if (ids.size) bodyMarkersByFamily.set(route.family, ids)
@@ -248,7 +274,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   for (const family of ir.families) {
     for (const placement of family.components ?? []) {
       if (!placement.query) continue
-      const pages = input.content?.queries?.[placement.query]
+      const pages = content.queries?.[placement.query]
       if (!pages) {
         warnings.push(
           `family ${family.id}: placement "${placement.component}" binds query "${placement.query}", `
@@ -299,11 +325,11 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   }
   for (const family of ir.families) missingCss(family.css.files, `family ${family.id}`)
   const allPosts = [
-    ...(input.content?.posts ?? []),
-    ...Object.values(input.content?.collections ?? {}).flat(),
+    ...(content.posts ?? []),
+    ...Object.values(content.collections ?? {}).flat(),
   ]
   for (const post of allPosts) missingCss(post.css, `post ${post.slug}`)
-  for (const [queryId, queryPages] of Object.entries(input.content?.queries ?? {})) {
+  for (const [queryId, queryPages] of Object.entries(content.queries ?? {})) {
     for (const qp of queryPages) missingCss(qp.css, `query ${queryId}`)
   }
 
@@ -320,8 +346,8 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   // a site that is quietly wrong.
   // A breadcrumb trail with a bad crumb prints nothing at build; say so here.
   const trailOwners: Array<[string, EmitPost[] | undefined]> = [
-    ...Object.entries(input.content?.collections ?? {}),
-    ...(input.content?.posts ? [[DEFAULT_COLLECTION, input.content.posts] as [string, EmitPost[]]] : []),
+    ...Object.entries(content.collections ?? {}),
+    ...(content.posts ? [[DEFAULT_COLLECTION, content.posts] as [string, EmitPost[]]] : []),
   ]
   for (const [name, posts] of trailOwners) {
     const bad = (posts ?? []).filter((p) => badTrail(p.breadcrumbs)).length
@@ -329,7 +355,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     const badLd = (posts ?? []).filter((p) => badSchema(p.schema)).length
     if (badLd) warnings.push(`collection ${name}: ${badLd} schema values are not JSON-LD objects — those pages print the generated structured data instead`)
   }
-  for (const [queryId, queryPages] of Object.entries(input.content?.queries ?? {})) {
+  for (const [queryId, queryPages] of Object.entries(content.queries ?? {})) {
     const bad = queryPages.filter((qp) => badTrail(qp.breadcrumbs)).length
     if (bad) warnings.push(`query ${queryId}: ${bad} breadcrumb trails dropped — every crumb needs a name and a site-root-relative path`)
     const badLd = queryPages.filter((qp) => badSchema(qp.schema)).length
@@ -339,7 +365,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   // hreflang alternates ride on the entry data, so they are attached before the
   // routes write it. The Seo component renders them; without it the producer
   // owns the head, alternates included.
-  let routeContent = input.content ?? {}
+  let routeContent = content
   if (seo) {
     const alternates = withAlternates(ir.routes, routeContent, lang)
     routeContent = alternates.content
@@ -418,8 +444,8 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   // without one renders no thread. Say so once per collection, not per page.
   const commentsMounted = (ir.components ?? []).some((c) => isRuntimeImplemented(c, input.runtime) && c.type === 'comments')
   if (commentsMounted) {
-    const collections: Record<string, EmitPost[]> = { ...input.content?.collections }
-    if (input.content?.posts && !collections[DEFAULT_COLLECTION]) collections[DEFAULT_COLLECTION] = input.content.posts
+    const collections: Record<string, EmitPost[]> = { ...content.collections }
+    if (content.posts && !collections[DEFAULT_COLLECTION]) collections[DEFAULT_COLLECTION] = content.posts
     for (const [name, posts] of Object.entries(collections)) {
       const unbound = posts.filter((p) => !p.entry).length
       if (unbound) warnings.push(`collection ${name}: ${unbound} of ${posts.length} posts carry no entry address — the comments component renders nothing on those pages`)
@@ -455,13 +481,14 @@ export function emitAstroProject(input: EmitInput): EmitResult {
       ? {
           redirects: {
             written: [...(redirectPlan?.written ?? []), ...[...hostOnlyRule.values()].filter((rule) => !unservedHostOnly.has(rule))],
-            manual: [...(redirectPlan?.manual ?? []), ...hostOnlyManual],
+            manual: [...(redirectPlan?.manual ?? []), ...hostOnlyManual, ...withheldManual],
             host_files: hostRedirects?.written ?? [],
             // A host-only rule past a named host's limit is in `manual` instead: nothing serves it.
             host_over_limit: (hostRedirects?.over_limit ?? []).filter((from) => !hostOnly(from) || namedHost === undefined),
           },
         }
       : {}),
+    ...(published.withheld.length || published.links.length ? { withheld: { entries: published.withheld, links: published.links } } : {}),
   }
 }
 
@@ -515,6 +542,8 @@ export type {
   RuntimeBinding,
   RawRedirect,
   EntrySourceRef,
+  WithheldEntry,
+  WithheldLink,
 } from './types.js'
 export { wrapLegacyCss } from './css.js'
 export { FEED_ITEMS, FEED_PATH, LLMS_LINKS, linkSources, rewriteFeedLinks } from './feed.js'
@@ -534,6 +563,8 @@ export { UI_STRING_DEFAULTS, UI_STRINGS_DIR, UI_STRINGS_MODEL } from './ui-strin
 export type { UiStringKey } from './ui-strings.js'
 export { checkBalance, balanceWarning } from './balance.js'
 export { noindexPaths } from './noindex.js'
+export { holdReason, publishedContent } from './published.js'
+export type { PublishedContent } from './published.js'
 export { astroRedirectsConfig, builtAddresses, hostRedirectFiles, planRedirects, REDIRECT_STATUSES } from './redirects.js'
 export type { HostRedirectFiles, ManualRedirect, RedirectHost, RedirectPlan, RedirectStatus } from './redirects.js'
 export type { BalanceReport } from './balance.js'

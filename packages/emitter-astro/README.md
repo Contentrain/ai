@@ -185,6 +185,39 @@ The feed lists every post, as WordPress's does — a post the source kept out of
 
 **Archive feeds.** WordPress serves a feed for every archive page — `/category/news/feed/`, `/tag/x/feed/`, `/author/ada/feed/`. Every dynamic archive route with a query in the site's default language (not its paginated continuation) gets one per page it builds, at `<archive>/feed.xml` (`src/pages/<archive>/feed.xml.ts`): the 10 newest posts that page lists, each at its own address, titled with the page's title. Each archive page links its feed in its head, and `<archive>/feed/` gets a 301 to it in `astro.config` and the host's redirect file, as the main feed does. The feed redirects pass the checks the site's own rules do — none over a page the site builds or a case twin of one, and a source rule for the same address wins — and in a host file with a rule limit they come after the site's own rules, `/feed/` first, so an overflow drops a feed redirect, which the warning counts. The template head's own archive feed link names one term's feed on every page, so it is removed with the other feed links the site does not build (comments, Atom). `options.feed: false` turns these off with the main feed.
 
+## Unpublished entries
+
+The content store keeps every entry the source had; only the published ones are
+built. `EmitPost.status` is the entry's `EntryMeta.status` (unset reads as
+`published`) and `publish_at` its `EntryMeta.publish_at` — a WordPress post
+scheduled for later is imported as `published` with a `publish_at` ahead. An
+entry is built when its status is `published` and its `publish_at`, if set, is
+not after `options.now` (default: the time of the emit). `EmitPost.visibility`
+(the store's `visibility` field) other than `public` — a password-protected or
+private post — is never built, whatever its status. Every other entry — a
+draft, one in review, rejected or archived, one scheduled for later, one whose
+`publish_at` is not a date, one that is not public — is held back before anything reads the content: no
+page, sitemap line, feed item, llms.txt link, list card or hreflang alternate.
+`EmitResult.withheld.entries` names each with its reason, and a warning counts
+them.
+
+An entry with no `status` is published, as before statuses existed — which
+fails open if a producer forgets to pass one. `options.requireStatus: true`
+turns that around: every entry (in posts, collections and list items) must
+carry a status, and one without it is held back (`status_missing`) and
+reported. A producer that reads statuses from the content store sets it.
+
+The data files hold only what is live at the emit, so a scheduled entry is
+built by the first emit after its time; rebuilding the same files does not
+publish it.
+
+A link on a published page (its body or `excerpt_html`, on its own page or as a
+list card) to a held-back entry would 404: the anchor is replaced by its text
+and listed in `EmitResult.withheld.links`. A link to an address a published
+entry still builds is left alone. A redirect (`redirects` or `hostRedirects`)
+whose target is a held-back entry is not written; it is returned in
+`EmitResult.redirects.manual` with the reason.
+
 ## Binding the runtime later
 
 `src/data/runtime.json` is the only place the binding lives; the components
@@ -285,4 +318,4 @@ literal routes.
 
 ## Checking the emitted types
 
-The unit suite asserts what the emitter writes; `pnpm --filter @contentrain/emitter-astro test:astro` (after `pnpm build`) checks it the way a migrated site's build does. It emits a site with every kind of page and endpoint — posts, pages, nested category and tag archives with their feeds, an author profile, a list, a static page, the feed, llms.txt, redirects — once with trailing slashes and once without, installs it with npm from its own `package.json`, and runs `astro check`. A pass is a result naming 0 errors. CI and the release workflow run it on every change.
+The unit suite asserts what the emitter writes; `pnpm --filter @contentrain/emitter-astro test:astro` (after `pnpm build`) checks it the way a migrated site's build does. It emits a site with every kind of page and endpoint — posts, pages, nested category and tag archives with their feeds, an author profile, a list, a static page, the feed, llms.txt, redirects, and a draft, an entry in review, a post scheduled for later and password-protected and private posts beside published ones — once with trailing slashes and once without, installs it with npm from its own `package.json`, and runs `astro check`. A pass is a result naming 0 errors. The first site is then built with `astro build`, and the output is read: the published posts have pages, sitemap lines and feed items, the held-back ones have none (nor llms.txt links or list cards), no file holds the password-protected post's text, and the live page's links to held-back entries are text. CI and the release workflow run it on every change.
