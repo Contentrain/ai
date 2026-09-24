@@ -119,7 +119,12 @@ try {
     const page = await browser.newPage({ viewport: { width, height: 900 }, deviceScaleFactor: 1, reducedMotion: 'reduce' })
     for (const c of components) {
       await page.goto(`${origin}/kit/${c.id}/`, { waitUntil: 'networkidle' })
+      // Settle before shooting: fonts loaded, scripted components mounted
+      // (Embla marks its root data-ready; a looping carousel repositions its
+      // slides right after), then two frames and a short pause for layout.
       await page.evaluate(() => document.fonts.ready)
+      await page.waitForFunction(() => [...document.querySelectorAll('[data-kit-slider]')].every(el => el.hasAttribute('data-ready')))
+      await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 300)))))
       for (const element of await page.locator('[data-fixture]').all()) {
         const name = await element.getAttribute('data-fixture')
         const shot = PNG.sync.read(await element.screenshot({ animations: 'disabled' }))
