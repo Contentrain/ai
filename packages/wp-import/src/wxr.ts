@@ -23,7 +23,7 @@ import type {
 } from '@contentrain/types'
 import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import { tryUnserialize } from './php-unserialize.js'
-import { strip } from './core.js'
+import { strip, PROTECTED } from './core.js'
 
 export interface WxrStats {
   serialized: { detected: number; decoded: number; failed: number; keys: string[] }
@@ -319,7 +319,7 @@ export async function parseWxr(input: string | Readable, opts?: { tool?: string 
       parent: num(it.parent) || null,
       menu_order: num(it.menu_order),
       sticky: it.sticky === '1',
-      password: (it.password as string) || null,
+      password: it.password ? PROTECTED : null,
       comment_status: (it.comment_status as string) || null,
       ping_status: (it.ping_status as string) || null,
       terms: termRefs,

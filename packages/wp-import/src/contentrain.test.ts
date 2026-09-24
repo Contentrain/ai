@@ -9,6 +9,55 @@ const load = async () => {
   return { raw, result: rawToContentrain(raw, { updatedBy: 'test' }) }
 }
 
+const protectedItem = (id: number, slug: string, status: string) => `<item>
+  <title>${slug}</title>
+  <wp:post_id>${id}</wp:post_id>
+  <wp:post_date_gmt>2027-01-01 09:00:00</wp:post_date_gmt>
+  <wp:post_name>${slug}</wp:post_name>
+  <wp:status>${status}</wp:status>
+  <wp:post_type>post</wp:post_type>
+  <wp:post_password>hunter2</wp:post_password>
+  <content:encoded><![CDATA[<p>members only</p>]]></content:encoded>
+</item>`
+const protectedMeta = (files: Record<string, string>, slug: string) => JSON.parse(files['.contentrain/meta/posts/en.json']!)[hexId(`posts:${slug}`)]
+const postEntries = (files: Record<string, string>) => JSON.parse(files['.contentrain/content/blog/posts/data.json']!)
+
+describe('password-protected posts never come in published, on any path', () => {
+  it('WXR: published and scheduled protected posts become drafts, and the password is never read into RawIR', async () => {
+    const xml = FIXTURE.replace('</channel>', `${protectedItem(30, 'locked', 'publish')}${protectedItem(31, 'locked-later', 'future')}${protectedItem(32, 'locked-bin', 'trash')}</channel>`)
+    const { raw } = await parseWxr(xml)
+    expect(raw.posts.filter((p) => p.password).map((p) => [p.slug, p.password])).toEqual([
+      ['locked', '[protected]'], ['locked-later', '[protected]'], ['locked-bin', '[protected]'],
+    ])
+    expect(JSON.stringify(raw)).not.toContain('hunter2')
+    const { files, report } = rawToContentrain(raw, { updatedBy: 'test' })
+    expect(protectedMeta(files, 'locked')).toMatchObject({ status: 'draft' })
+    expect(protectedMeta(files, 'locked-later')).toMatchObject({ status: 'draft' })
+    expect(protectedMeta(files, 'locked-later').publish_at).toBeUndefined()
+    expect(protectedMeta(files, 'locked-bin')).toMatchObject({ status: 'archived' })
+    expect(report.password_protected_drafts).toBe(2)
+    expect(JSON.parse(files['import-report.json']!).password_protected_drafts).toBe(2)
+    expect(postEntries(files)[hexId('posts:locked')].visibility).toBe('password')
+    // Unprotected posts are untouched.
+    expect(protectedMeta(files, 'hello-world')).toMatchObject({ status: 'published' })
+  })
+
+  it('Bridge: a RawIR that carries the plaintext password still yields a draft, and the password reaches no file', async () => {
+    const { raw: base } = await parseWxr(FIXTURE)
+    const hello = base.posts.find((p) => p.slug === 'hello-world')!
+    const raw: RawIR = {
+      ...base,
+      provenance: { kind: 'bridge', tool: 'contentrain-bridge' },
+      posts: [...base.posts, { ...hello, id: 40, slug: 'bridged-locked', password: 'hunter2', status: 'publish' }],
+    }
+    const { files, report } = rawToContentrain(raw, { updatedBy: 'test' })
+    expect(protectedMeta(files, 'bridged-locked')).toMatchObject({ status: 'draft' })
+    expect(postEntries(files)[hexId('posts:bridged-locked')].visibility).toBe('password')
+    expect(report.password_protected_drafts).toBe(1)
+    expect(Object.values(files).join('\n')).not.toContain('hunter2')
+  })
+})
+
 describe('rawToContentrain', () => {
   it('produces a PATH_PATTERNS-conformant canonical file map', async () => {
     const { result } = await load()

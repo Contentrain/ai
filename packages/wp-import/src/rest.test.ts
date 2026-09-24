@@ -243,13 +243,15 @@ describe('fetchRestRawIR with a credential lists every non-trash status', () => 
     expect(Object.fromEntries(raw.posts.map((p) => [p.slug, p.status]))).toEqual({
       live: 'publish', scheduled: 'future', unfinished: 'draft', awaiting: 'pending', members: 'private', locked: 'publish', about: 'publish',
     })
-    expect(raw.posts.find((p) => p.slug === 'locked')!.password).toBe('hunter2')
+    // The fact that it is protected, never the password.
+    expect(raw.posts.find((p) => p.slug === 'locked')!.password).toBe('[protected]')
+    expect(JSON.stringify(raw)).not.toContain('hunter2')
     expect(raw.comments!.map((c) => [c.id, c.approved])).toEqual([[500, '1'], [501, '0']])
   })
 
   it('the statuses reach the store: published, scheduled with publish_at, draft, in_review, private as draft', async () => {
     const { raw } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: authedSite([]), auth })
-    const { files } = rawToContentrain(raw, { updatedBy: 'test' })
+    const { files, report } = rawToContentrain(raw, { updatedBy: 'test' })
     const meta = JSON.parse(files['.contentrain/meta/posts/en.json']!)
     const status = (slug: string) => meta[hexId(`posts:${slug}`)]
     expect(status('live')).toMatchObject({ status: 'published' })
@@ -258,10 +260,13 @@ describe('fetchRestRawIR with a credential lists every non-trash status', () => 
     expect(status('unfinished')).toMatchObject({ status: 'draft' })
     expect(status('awaiting')).toMatchObject({ status: 'in_review' })
     expect(status('members')).toMatchObject({ status: 'draft' })
+    // Its WordPress status is publish, and the edit context returned the protected body: it must not come in published.
+    expect(status('locked')).toMatchObject({ status: 'draft' })
+    expect(report.password_protected_drafts).toBe(1)
     const posts = JSON.parse(files['.contentrain/content/blog/posts/data.json']!)
     expect(posts[hexId('posts:members')].visibility).toBe('private')
     expect(posts[hexId('posts:locked')].visibility).toBe('password')
-    expect(JSON.stringify(posts)).not.toContain('hunter2')
+    expect(Object.values(files).join('\n')).not.toContain('hunter2')
     const commentMeta = JSON.parse(Object.entries(files).find(([path]) => path.startsWith('.contentrain/meta/comments'))![1])
     expect(commentMeta[hexId('comments:500')]).toMatchObject({ status: 'published' })
     expect(commentMeta[hexId('comments:501')]).toMatchObject({ status: 'in_review' })

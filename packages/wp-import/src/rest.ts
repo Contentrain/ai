@@ -7,7 +7,7 @@
 
 import type { RawIR, RawAttachment, RawComment, RawLanguagePair, RawPost, RawTerm, RawTermRef, SourceAccessKind } from '@contentrain/types'
 import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
-import { strip, SKIP_TYPES } from './core.js'
+import { strip, SKIP_TYPES, PROTECTED } from './core.js'
 
 const iso = (gmt: string | undefined): string | null => (gmt ? `${gmt}Z` : null)
 const approvedOf = (status: string | undefined): RawComment['approved'] =>
@@ -295,7 +295,7 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
         parent: p.parent || null,
         menu_order: p.menu_order ?? 0,
         sticky: p.sticky ?? false,
-        password: p.password || null,
+        password: p.password ? PROTECTED : null,
         comment_status: p.comment_status ?? null,
         ping_status: p.ping_status ?? null,
         terms: termRefs,

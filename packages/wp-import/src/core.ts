@@ -50,6 +50,9 @@ export const byValue = (v: unknown): string | null => {
   return s.length > 200 ? 'text' : 'string'
 }
 
+/** What `RawPost.password` holds for a protected post: the fact, never the password. */
+export const PROTECTED = '[protected]'
+
 /**
  * WP post types that never become content models: core plumbing (`wp_*`
  * covers `wp_global_styles`, `wp_navigation`, `wp_block`, `wp_template*`),

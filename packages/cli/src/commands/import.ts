@@ -82,6 +82,7 @@ export default defineCommand({
     for (const [id, m] of Object.entries(report.models)) {
       log.message(`${pc.cyan(id.padEnd(16))} ${m.kind.padEnd(10)} ${String(m.fields).padStart(3)} fields  ${String(m.entries).padStart(5)} entries`)
     }
+    if (report.password_protected_drafts) log.warning(`${report.password_protected_drafts} password-protected posts brought in as drafts — their body is the protected text; publish one only after deciding what it should show`)
     if (report.dropped_relations) log.warning(`${report.dropped_relations} relations pointed outside the import and were dropped (details in import-report.json)`)
     for (const w of warnings) log.warning(w)
     if (raw.comments?.length) log.info(`comments-export.json written (contentrain-comments@1) — ready for a comments-service intake`)

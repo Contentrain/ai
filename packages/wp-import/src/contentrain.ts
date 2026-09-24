@@ -38,6 +38,13 @@ export interface ImportReport {
   locales: string[]
   /** Translation groups that were folded into one entry id across locales. */
   translation_groups: number
+  /**
+   * Password-protected posts imported as `draft`, whatever their WordPress
+   * status. Their body is the protected text, and nothing downstream (query
+   * SDK, emitter) enforces `visibility: password`, so publishing one would
+   * put that text on a public site. Publish only after deciding what to show.
+   */
+  password_protected_drafts: number
 }
 
 export interface ContentrainResult {
@@ -128,6 +135,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     models: {},
     locales,
     translation_groups: translationGroups,
+    password_protected_drafts: 0,
   }
   const importMeta = (status: string, extra: Partial<Meta> = {}): Meta => ({
     status,
@@ -136,6 +144,11 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     ...extra,
   })
   const mapStatus = (p: RawPost): Meta => {
+    // Checked first: a protected post must never come in published or scheduled.
+    if (p.password && p.status !== 'trash') {
+      report.password_protected_drafts++
+      return importMeta('draft')
+    }
     if (p.status === 'future' && (!p.date || !Number.isFinite(Date.parse(p.date))))
       throw new Error(`Scheduled WordPress post ${p.id} has no valid publication date`)
     return p.status === 'publish' || p.status === 'inherit'
