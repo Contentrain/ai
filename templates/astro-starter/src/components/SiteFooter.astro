@@ -1,0 +1,25 @@
+---
+// Site footer: the footer menu, the feed and the copyright line.
+import type { CollectionEntry } from 'astro:content'
+import { getMenu } from '../lib/content'
+import { siteConfig } from '../site.config'
+import MenuList from './MenuList.astro'
+
+interface Props {
+  site: CollectionEntry<'site'>['data']
+  t: (key: string) => string
+}
+
+const { site, t } = Astro.props
+const menu = await getMenu(siteConfig.menus.footer)
+const year = new Date().getFullYear()
+---
+<footer class="mt-16 border-t border-line">
+  <div class="container-page flex flex-col gap-6 py-10 text-sm text-ink-muted md:flex-row md:items-center md:justify-between">
+    <p>© {year} {site.organization ?? site.title}</p>
+    <div class="flex flex-wrap items-center gap-6">
+      {menu.length > 0 && <MenuList links={menu} class="flex flex-wrap gap-6" />}
+      <a href="/rss.xml" class="text-ink-muted no-underline hover:text-ink">{t('footer.rss')}</a>
+    </div>
+  </div>
+</footer>

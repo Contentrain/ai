@@ -300,3 +300,12 @@ describe('emitted embed runtime — 402 payment_required (the workspace subscrip
     expect(host.innerHTML).toBe('<p class="cr-error">Forms are available on Pro. Upgrade your plan.</p>')
   })
 })
+
+describe('embed runtime — the Astro starter carries the same client', () => {
+  it('templates/astro-starter/src/lib/studio/embed.ts is EMBED_TS byte for byte', async () => {
+    // The starter ships this client as a file; a fix made here and not there
+    // would leave every site built from the starter on the old behaviour.
+    const starter = join(HERE, '..', '..', '..', 'templates', 'astro-starter', 'src', 'lib', 'studio', 'embed.ts')
+    expect(await readFile(starter, 'utf8')).toBe(EMBED_TS)
+  })
+})

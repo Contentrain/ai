@@ -1,0 +1,52 @@
+{
+  "domain": "site",
+  "fields": {
+    "language": {
+      "label": "Language",
+      "order": 40,
+      "type": "string"
+    },
+    "logo": {
+      "label": "Logo",
+      "order": 50,
+      "type": "image"
+    },
+    "organization": {
+      "label": "Organization name",
+      "order": 70,
+      "type": "string"
+    },
+    "same_as": {
+      "items": "url",
+      "label": "Social profiles",
+      "order": 80,
+      "type": "array"
+    },
+    "social_image": {
+      "label": "Default social image",
+      "order": 60,
+      "type": "image"
+    },
+    "tagline": {
+      "label": "Tagline",
+      "order": 20,
+      "type": "string"
+    },
+    "title": {
+      "label": "Site title",
+      "order": 10,
+      "required": true,
+      "type": "string"
+    },
+    "url": {
+      "label": "URL",
+      "order": 30,
+      "type": "url"
+    }
+  },
+  "i18n": false,
+  "id": "site",
+  "kind": "singleton",
+  "name": "Site",
+  "title_field": "title"
+}

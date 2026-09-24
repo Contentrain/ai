@@ -1,0 +1,28 @@
+---
+// A menu tree as nested lists. The current page is marked with aria-current.
+import type { MenuLink } from '../lib/content'
+
+interface Props {
+  links: MenuLink[]
+  class?: string
+}
+
+const { links, class: className } = Astro.props
+const current = Astro.url.pathname
+---
+<ul class={className}>
+  {links.map(link => (
+    <li>
+      <a
+        href={link.href}
+        aria-current={link.href === current ? 'page' : undefined}
+        target={link.newTab ? '_blank' : undefined}
+        rel={link.newTab ? 'noopener' : undefined}
+        class="text-ink-muted no-underline hover:text-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink"
+      >
+        {link.label}
+      </a>
+      {link.children.length > 0 && <Astro.self links={link.children} class="mt-2 ml-4 flex flex-col gap-2" />}
+    </li>
+  ))}
+</ul>

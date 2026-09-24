@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.astro/
+.lighthouseci/
+.env
+.env.*
+!.env.example
+.DS_Store

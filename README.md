@@ -206,6 +206,8 @@ Production-ready templates with Contentrain content models, generated SDK client
 
 Each template is a GitHub template repo — click "Use this template" to start.
 
+[`templates/astro-starter`](templates/astro-starter) lives in this repository: the base a WordPress migration starts from — posts, pages, archives and permalinks, SEO, RSS, sitemap, search, Studio forms and comments, Gutenberg block styles — and it passes its own gates (`astro check`, knip, build, built-site checks, Lighthouse) with no content. `node scripts/starter-gates.mjs` runs them on a standalone copy; CI runs them with the SDK at HEAD, empty and with `templates/fixtures/wp-demo`.
+
 ## Quick reference
 
 ```bash

@@ -1,0 +1,14 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { getStrings } from '../lib/content'
+
+const t = await getStrings()
+---
+<BaseLayout title={t('notfound.title')} noindex>
+  <div class="container-prose flex flex-col items-start gap-6 py-24">
+    <p class="text-sm font-semibold tracking-wide text-accent uppercase">404</p>
+    <h1 class="text-4xl font-bold tracking-tight">{t('notfound.title')}</h1>
+    <p class="text-lg text-ink-muted">{t('notfound.body')}</p>
+    <a href="/" class="rounded-md bg-ink px-5 py-3 font-medium text-surface no-underline hover:bg-accent">{t('notfound.home')}</a>
+  </div>
+</BaseLayout>

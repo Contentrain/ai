@@ -1,0 +1,126 @@
+{
+  "domain": "blog",
+  "fields": {
+    "author": {
+      "label": "Author",
+      "model": "authors",
+      "order": 70,
+      "type": "relation"
+    },
+    "body": {
+      "label": "Body",
+      "order": 50,
+      "type": "richtext"
+    },
+    "categories": {
+      "label": "Categories",
+      "model": "categories",
+      "order": 80,
+      "type": "relations"
+    },
+    "comments_open": {
+      "label": "Comments open",
+      "order": 150,
+      "type": "boolean"
+    },
+    "cover": {
+      "label": "Cover",
+      "model": "media",
+      "order": 100,
+      "type": "relation"
+    },
+    "excerpt": {
+      "label": "Excerpt",
+      "order": 40,
+      "type": "text"
+    },
+    "link": {
+      "label": "Original permalink",
+      "order": 130,
+      "type": "url"
+    },
+    "modified_at": {
+      "label": "Modified at",
+      "order": 120,
+      "type": "datetime"
+    },
+    "published_at": {
+      "label": "Published at",
+      "order": 60,
+      "type": "datetime"
+    },
+    "seo": {
+      "fields": {
+        "canonical": {
+          "label": "Canonical URL",
+          "order": 30,
+          "type": "url"
+        },
+        "description": {
+          "label": "Meta description",
+          "max": 320,
+          "order": 20,
+          "type": "text"
+        },
+        "image": {
+          "label": "Social image",
+          "order": 40,
+          "type": "image"
+        },
+        "nofollow": {
+          "label": "Do not follow links",
+          "order": 60,
+          "type": "boolean"
+        },
+        "noindex": {
+          "label": "Hide from search engines",
+          "order": 50,
+          "type": "boolean"
+        },
+        "title": {
+          "label": "SEO title",
+          "order": 10,
+          "type": "string"
+        }
+      },
+      "label": "SEO",
+      "order": 900,
+      "type": "object"
+    },
+    "slug": {
+      "label": "Slug",
+      "order": 20,
+      "required": true,
+      "type": "slug",
+      "unique": true
+    },
+    "sticky": {
+      "label": "Sticky",
+      "order": 140,
+      "type": "boolean"
+    },
+    "tags": {
+      "label": "Tags",
+      "model": "tags",
+      "order": 90,
+      "type": "relations"
+    },
+    "title": {
+      "label": "Title",
+      "order": 10,
+      "required": true,
+      "type": "string"
+    },
+    "wp_id": {
+      "label": "WP post ID",
+      "order": 110,
+      "type": "integer",
+      "unique": true
+    }
+  },
+  "i18n": false,
+  "id": "posts",
+  "kind": "collection",
+  "name": "Posts",
+  "title_field": "title"
+}

@@ -1,0 +1,47 @@
+---
+// A paginated list of posts: the blog index and the category, tag and author
+// archives.
+import Pagination from '../components/Pagination.astro'
+import PostCard from '../components/PostCard.astro'
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { getSite, getStrings, type Post } from '../lib/content'
+import { collectionLd } from '../lib/seo'
+
+interface Props {
+  /** The archive's heading; the blog index on the front page has none. */
+  title?: string | undefined
+  /** What kind of archive this is, shown above the title ("Category"). */
+  eyebrow?: string | undefined
+  description?: string | undefined
+  posts: Post[]
+  base: string
+  current: number
+  total: number
+}
+
+const { title, eyebrow, description, posts, base, current, total } = Astro.props
+const [site, t] = await Promise.all([getSite(), getStrings()])
+const pageSuffix = current > 1 ? ` – ${t('pagination.page')} ${current}` : ''
+const url = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href
+---
+<BaseLayout
+  title={title ? `${title}${pageSuffix}` : current > 1 ? `${t('blog.title')}${pageSuffix}` : undefined}
+  description={description}
+  jsonLd={[collectionLd(url, title ?? t('blog.title'))]}
+>
+  <div class="container-page py-12 md:py-16">
+    <header class:list={['mb-12 flex max-w-2xl flex-col gap-3', !title && 'sr-only']}>
+      {eyebrow && <p class="text-sm font-medium tracking-wide text-accent uppercase">{eyebrow}</p>}
+      <h1 class="text-4xl font-bold tracking-tight text-balance">{title ?? site.title}</h1>
+      {description && <p class="text-lg text-ink-muted">{description}</p>}
+    </header>
+    {posts.length > 0
+      ? (
+        <div class="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+          {posts.map(post => <PostCard post={post} locale={site.language ?? 'en'} />)}
+        </div>
+      )
+      : <p class="text-ink-muted">{t('blog.empty')}</p>}
+    <Pagination base={base} current={current} total={total} t={t} />
+  </div>
+</BaseLayout>

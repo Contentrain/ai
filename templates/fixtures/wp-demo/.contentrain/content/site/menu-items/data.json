@@ -1,0 +1,51 @@
+{
+  "190cd4969df5": {
+    "menu": "5e27e5dd7d41",
+    "open_in_new_tab": false,
+    "order": 2,
+    "title": "Guides",
+    "url": "/category/guides/"
+  },
+  "90fe8f8dbcdf": {
+    "menu": "5e27e5dd7d41",
+    "open_in_new_tab": false,
+    "order": 4,
+    "title": "Contact",
+    "url": "/contact/"
+  },
+  "9e3f026a359e": {
+    "menu": "5e27e5dd7d41",
+    "open_in_new_tab": false,
+    "order": 3,
+    "title": "About",
+    "url": "/about/"
+  },
+  "b45a32ad24ea": {
+    "menu": "5e27e5dd7d41",
+    "open_in_new_tab": false,
+    "order": 1,
+    "title": "Journal",
+    "url": "/"
+  },
+  "b71932f1b0a5": {
+    "menu": "764a4318abae",
+    "open_in_new_tab": false,
+    "order": 3,
+    "title": "Search",
+    "url": "/search/"
+  },
+  "d1ab2ccb1435": {
+    "menu": "764a4318abae",
+    "open_in_new_tab": false,
+    "order": 1,
+    "title": "About",
+    "url": "/about/"
+  },
+  "e8beae5623cd": {
+    "menu": "764a4318abae",
+    "open_in_new_tab": false,
+    "order": 2,
+    "title": "Team",
+    "url": "/about/team/"
+  }
+}

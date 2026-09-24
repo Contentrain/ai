@@ -1,0 +1,234 @@
+{
+  "0eb9aabd492c": {
+    "author": "d1056283cf72",
+    "body": "<p>Shipping the first version — a short note from the studio. Each post in this demo carries real WordPress block markup so the starter’s typography and block styles can be checked against something close to production.</p><h2 class=\"wp-block-heading\">The short version</h2><p>Start with the content model, keep every address, and let the build prove it: type checks, link checks and a Lighthouse run on every change.</p><ol class=\"wp-block-list\"><li>Import the content.</li><li>Map the templates.</li><li>Verify, then switch.</li></ol>",
+    "categories": [
+      "b9009a778471"
+    ],
+    "comments_open": true,
+    "cover": "933f7aefb1b3",
+    "excerpt": "Shipping the first version: notes from moving a real WordPress site to Astro and Contentrain without losing a single address.",
+    "published_at": "2026-08-06T09:00:00Z",
+    "slug": "shipping-the-first-version",
+    "sticky": false,
+    "tags": [
+      "4bae0be8699e",
+      "1f13ff00ff25"
+    ],
+    "title": "Shipping the first version",
+    "wp_id": 211
+  },
+  "25dc2ce5f904": {
+    "author": "d1056283cf72",
+    "body": "<p>Search without a server — a short note from the studio. Each post in this demo carries real WordPress block markup so the starter’s typography and block styles can be checked against something close to production.</p><h2 class=\"wp-block-heading\">The short version</h2><p>Start with the content model, keep every address, and let the build prove it: type checks, link checks and a Lighthouse run on every change.</p><ol class=\"wp-block-list\"><li>Import the content.</li><li>Map the templates.</li><li>Verify, then switch.</li></ol>",
+    "categories": [
+      "b9009a778471"
+    ],
+    "comments_open": true,
+    "cover": "eb80cf83a8f2",
+    "excerpt": "Search without a server: notes from moving a real WordPress site to Astro and Contentrain without losing a single address.",
+    "published_at": "2026-08-10T09:00:00Z",
+    "slug": "search-without-a-server",
+    "sticky": false,
+    "tags": [
+      "de1dd34c99d0",
+      "2e773194b10d"
+    ],
+    "title": "Search without a server",
+    "wp_id": 209
+  },
+  "26312c042b97": {
+    "author": "d1056283cf72",
+    "body": "<p>Why static sites rank well — a short note from the studio. Each post in this demo carries real WordPress block markup so the starter’s typography and block styles can be checked against something close to production.</p><h2 class=\"wp-block-heading\">The short version</h2><p>Start with the content model, keep every address, and let the build prove it: type checks, link checks and a Lighthouse run on every change.</p><ol class=\"wp-block-list\"><li>Import the content.</li><li>Map the templates.</li><li>Verify, then switch.</li></ol>",
+    "categories": [
+      "b9009a778471"
+    ],
+    "comments_open": true,
+    "cover": "933f7aefb1b3",
+    "excerpt": "Why static sites rank well: notes from moving a real WordPress site to Astro and Contentrain without losing a single address.",
+    "published_at": "2026-09-22T09:00:00Z",
+    "slug": "why-static-sites-rank-well",
+    "sticky": false,
+    "tags": [
+      "4bae0be8699e",
+      "1f13ff00ff25"
+    ],
+    "title": "Why static sites rank well",
+    "wp_id": 203
+  },
+  "3bb351503cd1": {
+    "author": "d1056283cf72",
+    "body": "<p>Forms and comments, the static way — a short note from the studio. Each post in this demo carries real WordPress block markup so the starter’s typography and block styles can be checked against something close to production.</p><h2 class=\"wp-block-heading\">The short version</h2><p>Start with the content model, keep every address, and let the build prove it: type checks, link checks and a Lighthouse run on every change.</p><ol class=\"wp-block-list\"><li>Import the content.</li><li>Map the templates.</li><li>Verify, then switch.</li></ol>",
+    "categories": [
+      "ad60efc636f2"
+    ],
+    "comments_open": true,
+    "cover": "784383b7be3c",
+    "excerpt": "Forms and comments, the static way: notes from moving a real WordPress site to Astro and Contentrain without losing a single address.",
+    "published_at": "2026-08-08T09:00:00Z",
+    "slug": "forms-and-comments-the-static-way",
+    "sticky": false,
+    "tags": [
+      "2e773194b10d",
+      "4bae0be8699e"
+    ],
+    "title": "Forms and comments, the static way",
+    "wp_id": 210
+  },
+  "4063350761da": {
+    "author": "d1056283cf72",
+    "body": "<p>Measuring what visitors feel — a short note from the studio. Each post in this demo carries real WordPress block markup so the starter’s typography and block styles can be checked against something close to production.</p><h2 class=\"wp-block-heading\">The short version</h2><p>Start with the content model, keep every address, and let the build prove it: type checks, link checks and a Lighthouse run on every change.</p><ol class=\"wp-block-list\"><li>Import the content.</li><li>Map the templates.</li><li>Verify, then switch.</li></ol>",
+    "categories": [
+      "b9009a778471"
+    ],
+    "comments_open": true,
+    "cover": "933f7aefb1b3",
+    "excerpt": "Measuring what visitors feel: notes from moving a real WordPress site to Astro and Contentrain without losing a single address.",
+    "published_at": "2026-09-14T09:00:00Z",
+    "slug": "measuring-what-visitors-feel",
+    "sticky": false,
+    "tags": [
+      "4bae0be8699e",
+      "1f13ff00ff25"
+    ],
+    "title": "Measuring what visitors feel",
+    "wp_id": 207
+  },
+  "606f604a4a83": {
+    "author": "d1056283cf72",
+    "body": "<p>Typography that survives a redesign — a short note from the studio. Each post in this demo carries real WordPress block markup so the starter’s typography and block styles can be checked against something close to production.</p><h2 class=\"wp-block-heading\">The short version</h2><p>Start with the content model, keep every address, and let the build prove it: type checks, link checks and a Lighthouse run on every change.</p><ol class=\"wp-block-list\"><li>Import the content.</li><li>Map the templates.</li><li>Verify, then switch.</li></ol>",
+    "categories": [
+      "ad60efc636f2"
+    ],
+    "comments_open": true,
+    "cover": "784383b7be3c",
+    "excerpt": "Typography that survives a redesign: notes from moving a real WordPress site to Astro and Contentrain without losing a single address.",
+    "published_at": "2026-09-24T09:00:00Z",
+    "slug": "typography-that-survives-a-redesign",
+    "sticky": false,
+    "tags": [
+      "2e773194b10d",
+      "4bae0be8699e"
+    ],
+    "title": "Typography that survives a redesign",
+    "wp_id": 202
+  },
+  "60d35c8d38a3": {
+    "author": "d1056283cf72",
+    "body": "<p>Images without the plugin zoo — a short note from the studio. Each post in this demo carries real WordPress block markup so the starter’s typography and block styles can be checked against something close to production.</p><h2 class=\"wp-block-heading\">The short version</h2><p>Start with the content model, keep every address, and let the build prove it: type checks, link checks and a Lighthouse run on every change.</p><ol class=\"wp-block-list\"><li>Import the content.</li><li>Map the templates.</li><li>Verify, then switch.</li></ol>",
+    "categories": [
+      "b9009a778471"
+    ],
+    "comments_open": true,
+    "cover": "eb80cf83a8f2",
+    "excerpt": "Images without the plugin zoo: notes from moving a real WordPress site to Astro and Contentrain without losing a single address.",
+    "published_at": "2026-09-18T09:00:00Z",
+    "slug": "images-without-the-plugin-zoo",
+    "sticky": false,
+    "tags": [
+      "de1dd34c99d0",
+      "2e773194b10d"
+    ],
+    "title": "Images without the plugin zoo",
+    "wp_id": 205
+  },
+  "7a3cc498769f": {
+    "author": "d1056283cf72",
+    "body": "<p>Menus, footers and the bits between — a short note from the studio. Each post in this demo carries real WordPress block markup so the starter’s typography and block styles can be checked against something close to production.</p><h2 class=\"wp-block-heading\">The short version</h2><p>Start with the content model, keep every address, and let the build prove it: type checks, link checks and a Lighthouse run on every change.</p><ol class=\"wp-block-list\"><li>Import the content.</li><li>Map the templates.</li><li>Verify, then switch.</li></ol>",
+    "categories": [
+      "ad60efc636f2"
+    ],
+    "comments_open": true,
+    "cover": "4176cfe5de20",
+    "excerpt": "Menus, footers and the bits between: notes from moving a real WordPress site to Astro and Contentrain without losing a single address.",
+    "published_at": "2026-08-12T09:00:00Z",
+    "slug": "menus-footers-and-the-bits-between",
+    "sticky": false,
+    "tags": [
+      "1f13ff00ff25",
+      "de1dd34c99d0"
+    ],
+    "title": "Menus, footers and the bits between",
+    "wp_id": 208
+  },
+  "aa015cce68e5": {
+    "author": "d1056283cf72",
+    "body": "<p>Designing with fewer requests — a short note from the studio. Each post in this demo carries real WordPress block markup so the starter’s typography and block styles can be checked against something close to production.</p><h2 class=\"wp-block-heading\">The short version</h2><p>Start with the content model, keep every address, and let the build prove it: type checks, link checks and a Lighthouse run on every change.</p><ol class=\"wp-block-list\"><li>Import the content.</li><li>Map the templates.</li><li>Verify, then switch.</li></ol>",
+    "categories": [
+      "b9009a778471"
+    ],
+    "comments_open": true,
+    "cover": "eb80cf83a8f2",
+    "excerpt": "Designing with fewer requests: notes from moving a real WordPress site to Astro and Contentrain without losing a single address.",
+    "published_at": "2026-09-26T09:00:00Z",
+    "slug": "designing-with-fewer-requests",
+    "sticky": false,
+    "tags": [
+      "de1dd34c99d0",
+      "2e773194b10d"
+    ],
+    "title": "Designing with fewer requests",
+    "wp_id": 201
+  },
+  "ac833b8b5e28": {
+    "author": "d1056283cf72",
+    "body": "<p class=\"has-drop-cap\">Moving a WordPress site to a static stack is mostly about keeping what already works: the addresses people have bookmarked, the formatting editors spent years on, and the search rankings that took just as long. This post walks through the blocks a typical site uses and how they survive the move.</p>\n<h2 class=\"wp-block-heading\">Columns and buttons</h2>\n<div class=\"wp-block-columns is-layout-flex\"><div class=\"wp-block-column is-layout-flow\"><h3 class=\"wp-block-heading\">Before</h3><p>Pages rendered by PHP on every request, a plugin for caching, another for images, and a theme that loads three versions of jQuery.</p></div><div class=\"wp-block-column is-layout-flow\"><h3 class=\"wp-block-heading\">After</h3><p>Plain HTML built once, one stylesheet, images sized at build time, and content edited in Contentrain Studio.</p></div></div>\n<div class=\"wp-block-buttons is-layout-flex\"><div class=\"wp-block-button\"><a class=\"wp-block-button__link wp-element-button\" href=\"/about/\">About the studio</a></div><div class=\"wp-block-button is-style-outline\"><a class=\"wp-block-button__link wp-element-button\" href=\"/contact/\">Get in touch</a></div></div>\n<blockquote class=\"wp-block-quote\"><p>The fastest request is the one the server never has to think about.</p><cite>Every performance engineer, eventually</cite></blockquote>\n<figure class=\"wp-block-image alignwide size-large\"><img src=\"/demo/cover-2.svg\" alt=\"Abstract green gradient\" width=\"1600\" height=\"900\"/><figcaption class=\"wp-element-caption\">A wide image breaks out of the reading column.</figcaption></figure>\n<h2 class=\"wp-block-heading\">A table</h2>\n<figure class=\"wp-block-table is-style-stripes\"><table><thead><tr><th>Metric</th><th>WordPress</th><th>Astro</th></tr></thead><tbody><tr><td>Requests</td><td>84</td><td>9</td></tr><tr><td>Transfer</td><td>2.4 MB</td><td>180 kB</td></tr><tr><td>LCP</td><td>3.1 s</td><td>0.8 s</td></tr></tbody></table><figcaption class=\"wp-element-caption\">Measured on the home page, mobile, cold cache.</figcaption></figure>\n<hr class=\"wp-block-separator has-alpha-channel-opacity is-style-dots\"/>\n<figure class=\"wp-block-pullquote\"><blockquote><p>Keep every address. Redirect the ones you cannot keep.</p><cite>The migration checklist</cite></blockquote></figure>\n<ul class=\"wp-block-list\"><li>Permalinks stay exactly where they were.</li><li>Categories, tags and authors keep their archives.</li><li>SEO titles and descriptions move with each post.</li></ul>\n<div class=\"wp-block-group has-pale-cyan-blue-background-color has-background is-layout-constrained\"><p class=\"has-medium-font-size\"><strong>Tip:</strong> run the build locally before switching DNS, and compare the sitemap with the old one.</p></div>",
+    "categories": [
+      "ad60efc636f2"
+    ],
+    "comments_open": true,
+    "cover": "4176cfe5de20",
+    "excerpt": "What a careful migration keeps: notes from moving a real WordPress site to Astro and Contentrain without losing a single address.",
+    "published_at": "2026-09-28T09:00:00Z",
+    "seo": {
+      "description": "Addresses, formatting and rankings: what a careful WordPress to Astro migration keeps, block by block.",
+      "title": "What a careful WordPress migration keeps"
+    },
+    "slug": "what-a-careful-migration-keeps",
+    "sticky": false,
+    "tags": [
+      "1f13ff00ff25",
+      "de1dd34c99d0"
+    ],
+    "title": "What a careful migration keeps",
+    "wp_id": 200
+  },
+  "bf82b7b36766": {
+    "author": "d1056283cf72",
+    "body": "<p>A calmer editorial workflow — a short note from the studio. Each post in this demo carries real WordPress block markup so the starter’s typography and block styles can be checked against something close to production.</p><h2 class=\"wp-block-heading\">The short version</h2><p>Start with the content model, keep every address, and let the build prove it: type checks, link checks and a Lighthouse run on every change.</p><ol class=\"wp-block-list\"><li>Import the content.</li><li>Map the templates.</li><li>Verify, then switch.</li></ol>",
+    "categories": [
+      "ad60efc636f2"
+    ],
+    "comments_open": true,
+    "cover": "4176cfe5de20",
+    "excerpt": "A calmer editorial workflow: notes from moving a real WordPress site to Astro and Contentrain without losing a single address.",
+    "published_at": "2026-09-20T09:00:00Z",
+    "slug": "a-calmer-editorial-workflow",
+    "sticky": false,
+    "tags": [
+      "1f13ff00ff25",
+      "de1dd34c99d0"
+    ],
+    "title": "A calmer editorial workflow",
+    "wp_id": 204
+  },
+  "d289c94ef327": {
+    "author": "d1056283cf72",
+    "body": "<p>Redirects: the unglamorous hero — a short note from the studio. Each post in this demo carries real WordPress block markup so the starter’s typography and block styles can be checked against something close to production.</p><h2 class=\"wp-block-heading\">The short version</h2><p>Start with the content model, keep every address, and let the build prove it: type checks, link checks and a Lighthouse run on every change.</p><ol class=\"wp-block-list\"><li>Import the content.</li><li>Map the templates.</li><li>Verify, then switch.</li></ol>",
+    "categories": [
+      "ad60efc636f2"
+    ],
+    "comments_open": true,
+    "cover": "784383b7be3c",
+    "excerpt": "Redirects: the unglamorous hero: notes from moving a real WordPress site to Astro and Contentrain without losing a single address.",
+    "published_at": "2026-09-16T09:00:00Z",
+    "slug": "redirects-the-unglamorous-hero",
+    "sticky": false,
+    "tags": [
+      "2e773194b10d",
+      "4bae0be8699e"
+    ],
+    "title": "Redirects: the unglamorous hero",
+    "wp_id": 206
+  }
+}
