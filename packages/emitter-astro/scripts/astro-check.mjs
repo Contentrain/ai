@@ -42,7 +42,8 @@ function emit(options) {
       ],
       families: [{ id: 'f', kind: 'single', chrome: [
         { id: 'head', position: 'head', html: head },
-        { id: 'body', position: 'body', html: '<main><!--@@body@@--></main>' },
+        // A Turkish capital before a body script: the balance check once read every such script as never closed.
+        { id: 'body', position: 'body', html: '<main><!--@@body@@--></main><footer><a href="/iletisim/">İletişime geçin</a></footer><script type="module">var ready = 1 < 2</script>' },
       ], css: { strategy: 'localcss' } }],
       queries: ['q-cat', 'q-cat-paged', 'q-tag', 'q-author', 'q-news'].map(q),
       css_default: 'purge_set',
@@ -90,7 +91,9 @@ function emit(options) {
 async function check(label, options, modules) {
   const dir = await mkdtemp(join(tmpdir(), `emitter-astro-check-${label}-`))
   try {
-    const { files } = emit(options)
+    const { files, warnings } = emit(options)
+    const unbalanced = warnings.filter((w) => /balanced/.test(w))
+    if (unbalanced.length) throw new Error(`emit (${label}) reported unbalanced chrome:\n${unbalanced.join('\n')}`)
     for (const [path, content] of Object.entries(files)) {
       await mkdir(dirname(join(dir, path)), { recursive: true })
       await writeFile(join(dir, path), content)

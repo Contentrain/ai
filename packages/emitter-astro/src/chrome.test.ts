@@ -56,6 +56,23 @@ describe('balance check', () => {
     expect(balanceWarning('<div><!--@@if:feat@@--><span>x</span><!--@@/if@@--></div>')).toBeNull()
   })
 
+  it('finds the end of script, style, textarea and title after text whose case conversion changes its length', () => {
+    // 'İ'.toLowerCase() is two code units, 'ẞ'.toLowerCase() is 'ß' (one) but
+    // 'ß'.toUpperCase() is 'SS', and 'ﬁ'.toUpperCase() is 'FI'. An index found
+    // in a converted copy of the fragment does not point into the fragment.
+    for (const text of ['İletişime geçin', 'İİİ', 'Straße ẞ', 'ﬁnance ﬂow', 'ß', 'İ ẞ ﬁ']) {
+      for (const [open, close] of [['<script>', '</script>'], ['<style>', '</style>'], ['<textarea>', '</textarea>'], ['<title>', '</title>'], ['<SCRIPT type="module">', '</Script >']]) {
+        expect(checkBalance(`<footer><p>${text}</p>${open}x < y${close}<div>z</div></footer>`)).toEqual({ unclosed: [], unopened: [] })
+      }
+    }
+    // Measured on a TasteWP block theme: the footer's "İletişime geçin" before four body scripts.
+    expect(balanceWarning('<a class="wp-block-button__link">İletişime geçin</a><script type="speculationrules">{}</script><script type="module">var e="script#x"</script>')).toBeNull()
+  })
+
+  it('a raw-text element that really is never closed is still reported', () => {
+    expect(balanceWarning('<p>İ</p><div><script>x')).toBe('never closed: script, div')
+  })
+
   it('accepts a self-closing element written the XML way', () => {
     expect(balanceWarning('<div><svg /><span>x</span></div>')).toBeNull()
   })

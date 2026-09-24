@@ -73,7 +73,15 @@ function scanTags(html: string): Tag[] {
     tags.push({ name, closing, selfClosing: html.slice(lt, j + 1).endsWith('/>') })
     i = j + 1
     if (!closing && RAW_TEXT_TAGS.has(name)) {
-      const close = html.toLowerCase().indexOf(`</${name}`, i)
+      // Searched in `html` itself, not in `html.toLowerCase()`: lowercasing
+      // changes the length of some text ('İ' becomes two code units), so an
+      // index found in the lowered copy lands past the real `</script` once
+      // such a character comes before it — and every raw-text element after a
+      // Turkish capital read as never closed. HTML matches tag names by ASCII
+      // case only, which is what `i` without `u` does.
+      const end = new RegExp(`</${name}`, 'gi')
+      end.lastIndex = i
+      const close = end.exec(html)?.index ?? -1
       i = close === -1 ? html.length : close
     }
   }
