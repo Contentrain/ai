@@ -9,7 +9,7 @@ async function main() {
   const args = process.argv.slice(2)
 
   if (args[0] !== 'generate' && args.length === 0) {
-    console.log('Usage: contentrain-query generate [--root <path>] [--watch] [--published] [--at <ISO timestamp>]')
+    console.log('Usage: contentrain-query generate [--root <path>] [--watch] [--published] [--at <ISO timestamp>] [--require-status]')
     console.log('')
     console.log('Commands:')
     console.log('  generate    Generate typed client from .contentrain/ project files')
@@ -19,6 +19,7 @@ async function main() {
     console.log('  --watch     Watch for changes and regenerate automatically')
     console.log('  --published Include only published content within its publication window')
     console.log('  --at        Reproducible publication timestamp (implies --published)')
+    console.log('  --require-status  Also hold back entries with no status in meta (implies --published)')
     process.exit(0)
   }
 
@@ -38,7 +39,7 @@ async function main() {
     const atIndex = args.indexOf('--at')
     const at = atIndex < 0 ? undefined : args[atIndex + 1]
     if (atIndex >= 0 && (!at || at.startsWith('--'))) throw new Error('--at requires an ISO timestamp')
-    const publication = { publishedOnly: args.includes('--published'), at }
+    const publication = { publishedOnly: args.includes('--published'), at, requireStatus: args.includes('--require-status') }
     const result = await generate({ projectRoot, ...publication })
 
     console.log(`@contentrain/query — generated client`)

@@ -15,6 +15,7 @@ export default defineCommand({
     root: { type: 'string', description: 'Project root path', required: false },
     published: { type: 'boolean', description: 'Include only published content within its publication window', required: false },
     at: { type: 'string', description: 'ISO publication timestamp for a reproducible public build (implies --published)', required: false },
+    requireStatus: { type: 'boolean', description: 'Also hold back entries with no status in meta (implies --published)', required: false },
     watch: { type: 'boolean', description: 'Watch for changes and regenerate', required: false },
     json: { type: 'boolean', description: 'Emit the generate result as JSON (silences pretty output)', required: false },
     mediaBaseUrl: { type: 'string', description: 'Public media delivery base baked into the generated client\'s media()/mediaBody() resolvers (overrides config.cdn.url)', required: false },
@@ -36,7 +37,7 @@ export default defineCommand({
     try {
       const { generate } = await import('@contentrain/query/generate')
       const mediaBaseUrl = args.mediaBaseUrl || args.cdnBaseUrl || undefined
-      const result = await generate({ projectRoot, mediaBaseUrl, publishedOnly: args.published, at: args.at })
+      const result = await generate({ projectRoot, mediaBaseUrl, publishedOnly: args.published, at: args.at, requireStatus: args.requireStatus })
 
       s?.stop('SDK client generated')
 
@@ -75,7 +76,7 @@ export default defineCommand({
             debounce = setTimeout(async () => {
               log.info('Changes detected, regenerating...')
               try {
-                const r = await generate({ projectRoot, mediaBaseUrl, publishedOnly: args.published, at: args.at })
+                const r = await generate({ projectRoot, mediaBaseUrl, publishedOnly: args.published, at: args.at, requireStatus: args.requireStatus })
                 log.success(`Regenerated: ${r.generatedFiles.length} files`)
               } catch (err) {
                 log.error(`Regeneration failed: ${err instanceof Error ? err.message : String(err)}`)
