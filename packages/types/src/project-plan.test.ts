@@ -36,7 +36,7 @@ const plan = (): ProjectPlan => ({
   ],
   routes: [
     { id: 'home', kind: 'home', pattern: '/', template: 't4', body: 'composed', sections: [
-      { component: 'PostCard', variant: { layout: 'stacked' }, bind: { kind: 'collection', model: 'posts', sort: '-date', limit: 6, item: { title: 'field:title', image: 'media:featured_image', category: 'ref:category.name', href: 'href:self' } } },
+      { component: 'PostCard', variant: { layout: 'stacked' }, bind: { kind: 'collection', model: 'posts', sort: '-date', limit: 6, item: { title: 'field:title', image: 'media:featured_image', category: 'term:categories', href: 'href:self' } } },
     ] },
     { id: 'post', kind: 'post', pattern: '/:slug/', template: 't3', source: { model: 'posts' }, body: 'rich-text', sections: [
       { component: 'Prose', bind: { kind: 'entry', props: { body: 'field:content' } } },
@@ -74,7 +74,7 @@ describe('validateProjectPlan', () => {
       'kit component hero names no kit id',
       'route post section 1: component Missing is not declared',
       'route home section 1: binds the route entry but the route has no source',
-      'route post section 0: text = content is not a plan value (field: media: ref: href: ui: const:)',
+      'route post section 0: text = content is not a plan value (field: media: ref: href: term: ui: const:)',
       'route post section 0: Prose has no prop text',
       'route post section 0: required prop Prose.body is not bound',
       'route about section 0: model nope is not declared',

@@ -184,12 +184,13 @@ export interface PlanPlacement {
  * - `media:<field>` — an image field resolved to the kit's `ImageInput` (`src`, `alt`, `width`, `height`)
  * - `ref:<field>.<target field>` — a field of the entry a relation points at (`ref:category.name`)
  * - `href:self` — the bound entry's own address; `href:<relation field>` — the related entry's, via `site.permalinks`
+ * - `term:<relation field>` — a related term as `{ label, href }` (the first of a multi-relation; all of them with `into`)
  * - `ui:<key>` — an interface string of `ui-strings`
  * - `const:<value>` — a fixed value (layout switches, never content)
  */
-export type PlanValue = `field:${string}` | `media:${string}` | `ref:${string}` | `href:${string}` | `ui:${string}` | `const:${string}`
+export type PlanValue = `field:${string}` | `media:${string}` | `ref:${string}` | `href:${string}` | `term:${string}` | `ui:${string}` | `const:${string}`
 
-export const PLAN_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|ui:[\w.-]+|const:.*)$/
+export const PLAN_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|term:[\w-]+|ui:[\w.-]+|const:.*)$/
 
 /** Where a placement's props come from. */
 export type PlanBinding =
@@ -293,7 +294,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (b.kind === 'entry' && !route?.source) errors.push(`${at}: binds the route entry but ${route ? 'the route has no source' : 'layout has no entry'}`)
     const values: Record<string, PlanValue> = { ...('props' in b ? b.props : {}), ...(b.kind === 'collection' && !b.into ? b.item : {}) }
     for (const [prop, value] of Object.entries({ ...values, ...(b.kind === 'collection' ? b.item : {}) })) {
-      if (!PLAN_VALUE_PATTERN.test(value)) errors.push(`${at}: ${prop} = ${value} is not a plan value (field: media: ref: href: ui: const:)`)
+      if (!PLAN_VALUE_PATTERN.test(value)) errors.push(`${at}: ${prop} = ${value} is not a plan value (field: media: ref: href: term: ui: const:)`)
     }
     // A kit component's props are the catalog's; the caller checks them. A site component's are here.
     if (c.props) {
