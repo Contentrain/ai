@@ -42,7 +42,7 @@ async function emitSingleModule(
   if (!model) return null
 
   const meta = publication ? await publicationMeta(ref, model, publication) : undefined
-  const visible = (id?: string) => !publication || isPublishedAt(id === undefined ? meta : meta?.[id], publication.at)
+  const visible = (id?: string) => !publication || isPublishedAt(id === undefined ? meta : meta?.[id], publication.at, publication.requireStatus)
   if ((model.kind === 'singleton' || model.kind === 'document') && !visible()) return null
 
   const localeSuffix = ref.locale ? `.${ref.locale}` : ''

@@ -34,9 +34,9 @@ async function fixture() {
   await writeFile(join(root, '.contentrain/content/blog/article/intro/en.md'), '---\ntitle: Article\n---\nDocument body')
   await json('meta/article/intro/en.json', window)
 }
-async function load(model: string, at: string) {
+async function load(model: string, at?: string, requireStatus?: boolean) {
   const entries: string[] = []
-  await contentrainLoader({ root, model, locale: 'en', at }).load({ store: { clear() {}, set(entry) { entries.push(entry.id) } } })
+  await contentrainLoader({ root, model, locale: 'en', at, requireStatus }).load({ store: { clear() {}, set(entry) { entries.push(entry.id) } } })
   return entries.toSorted()
 }
 afterEach(async () => { if (root) await rm(root, { recursive: true, force: true }) })
@@ -76,5 +76,45 @@ describe('public build publication windows', () => {
     expect(isPublishedAt({ status: 'published', publish_at: 'bad-date' }, Date.parse(start))).toBe(false)
     expect(isPublishedAt({ status: 'published', expire_at: 'bad-date' }, Date.parse(start))).toBe(false)
     expect(isPublishedAt(undefined, Date.parse(start))).toBe(true)
+  })
+
+  it('requireStatus holds back entries without a status in the generator and the Astro loader alike', async () => {
+    await fixture()
+    // A meta record the producer wrote without a status — a broken import.
+    await json('content/blog/posts/en.json', { scheduled: { title: 'Scheduled' }, draft: { title: 'Secret' }, legacy: { title: 'Legacy' }, nostatus: { title: 'No status' } })
+    await json('meta/posts/en.json', { scheduled: window, draft: { status: 'draft' }, nostatus: { source: 'import' } })
+    const ids = async () => (JSON.parse((await readFile(join(root, '.contentrain/client/data/posts.en.mjs'), 'utf8')).replace(/^export default /, '')) as Array<{ id: string }>).map(p => p.id)
+
+    await generate({ projectRoot: root, at: start })
+    expect(await ids()).toEqual(['legacy', 'nostatus', 'scheduled'])
+    expect(await load('posts', start)).toEqual(['legacy', 'nostatus', 'scheduled'])
+
+    await generate({ projectRoot: root, at: start, requireStatus: true })
+    expect(await ids()).toEqual(['scheduled'])
+    expect(await load('posts', start, true)).toEqual(['scheduled'])
+    // A singleton whose meta file is missing is held back too.
+    await rm(join(root, '.contentrain/meta/settings/en.json'))
+    expect(await load('settings', start, true)).toEqual([])
+    expect(await load('settings', start)).toEqual(['settings'])
+  })
+
+  it('requireStatus alone implies a public build', async () => {
+    await fixture()
+    await generate({ projectRoot: root, requireStatus: true })
+    const posts = await readFile(join(root, '.contentrain/client/data/posts.en.mjs'), 'utf8')
+    expect(posts).not.toContain('Secret')
+    expect(posts).not.toContain('Legacy')
+    expect(await load('posts', undefined, true)).toEqual([])
+  })
+
+  it('requireStatus: a missing status fails, a published one still honours its window', () => {
+    const at = Date.parse(start)
+    expect(isPublishedAt(undefined, at, true)).toBe(false)
+    expect(isPublishedAt({}, at, true)).toBe(false)
+    expect(isPublishedAt({ source: 'import', publish_at: start }, at, true)).toBe(false)
+    expect(isPublishedAt({}, at)).toBe(true)
+    expect(isPublishedAt({ status: 'published' }, at, true)).toBe(true)
+    expect(isPublishedAt({ status: 'published', publish_at: end }, at, true)).toBe(false)
+    expect(isPublishedAt({ status: 'draft' }, at, true)).toBe(false)
   })
 })

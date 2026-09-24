@@ -214,7 +214,7 @@ function resolveEntriesMedia(entries: Entry[], model: ModelDefinition, mediaBase
 
 async function entriesOf(ref: ContentFileRef, model: ModelDefinition, prefixLocale: boolean, publication?: PublicationContext): Promise<Entry[]> {
   const meta = publication ? await publicationMeta(ref, model, publication) : undefined
-  const visible = (id?: string) => !publication || isPublishedAt(id === undefined ? meta : meta?.[id], publication.at)
+  const visible = (id?: string) => !publication || isPublishedAt(id === undefined ? meta : meta?.[id], publication.at, publication.requireStatus)
   if ((model.kind === 'singleton' || model.kind === 'document') && !visible()) return []
   const prefix = prefixLocale && ref.locale ? `${ref.locale}/` : ''
   const withLocale = (data: Record<string, unknown>): Record<string, unknown> =>
