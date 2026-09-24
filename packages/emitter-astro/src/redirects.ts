@@ -106,14 +106,19 @@ function checkFrom(from: string, hostOnly = false): { path: string } | { reason:
 
 /**
  * A path the build writes a file at: the emitter's own endpoints (robots,
- * llms.txt, every feed, the sitemaps) and the directories its assets and
- * Astro's bundles live in. A host file answers before the filesystem — a
- * forced Netlify rule and every vercel.json redirect — so a host-only rule
- * here would shadow the file. `builtAddresses` knows pages only.
+ * llms.txt, every feed, @astrojs/sitemap's files), the 404 page, and the
+ * directories of Astro's bundles and the legacy stylesheets. A host file
+ * answers before the filesystem — a forced Netlify rule and every vercel.json
+ * redirect — so a host-only rule here would shadow the file. `builtAddresses`
+ * knows pages only. Compared without a trailing slash (a host file gets both
+ * forms) and in lower case (Netlify matches rules case-insensitively).
+ * WordPress's own `/sitemap.xml` and `/sitemap_index.xml` are not the build's:
+ * a 301 from them is one a migration wants.
  */
 function buildOutputFile(path: string): boolean {
-  return path === '/robots.txt' || path === '/llms.txt' || path.endsWith('/feed.xml') || /^\/sitemap[^/]*\.xml$/.test(path)
-    || /^\/(?:_astro|assets|styles)\//.test(path)
+  const p = (path.replace(/\/+$/, '') || '/').toLowerCase()
+  return p === '/robots.txt' || p === '/llms.txt' || p === '/404.html' || p.endsWith('/feed.xml')
+    || /^\/sitemap-(?:index|\d+)\.xml$/.test(p) || /^\/(?:_astro|styles)(?:\/|$)/.test(p)
 }
 
 function checkTo(to: string): boolean {
