@@ -8,7 +8,7 @@
 // the project plan's values (`@contentrain/types` `PlanValue`) and bind
 // content; the rest read the builder element itself or the page it is on:
 //
-//   field:<name> · media:<field> · ref:<field>.<field> · href:self|<field> · ui:<key> · const:<value>
+//   field:<name> · media:<field> · ref:<field>.<field> · href:self|<field> · term:<field> · ui:<key> · const:<value>
 //   site:<field>          a field of the `site` singleton (`site:title`, `site:logo`)
 //   menu:primary|footer   the menu the starter shows in that area
 //   page:<value>          what the route knows: `page:base`, `page:current`, `page:total`, `page:breadcrumb`
@@ -24,7 +24,7 @@ import { isBuilderElement, KIT_BUILDERS } from './catalog.js'
 
 export const MAPPING_FORMAT = 'astro-kit-mapping@1'
 
-export const MAPPING_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|ui:[\w.-]+|const:.*|site:[\w-]+|menu:(?:primary|footer)|page:(?:base|current|total|breadcrumb)|attr:[\w.-]+|(?:dom|img|link|html):[^@]*(?:@[\w-]+)?)$/
+export const MAPPING_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|term:[\w-]+|ui:[\w.-]+|const:.*|site:[\w-]+|menu:(?:primary|footer)|page:(?:base|current|total|breadcrumb)|attr:[\w.-]+|(?:dom|img|link|html):[^@]*(?:@[\w-]+)?)$/
 
 export interface MappingRule {
   /** Builder element, as the fact pack names it; a `:qualifier` narrows it (`core/template-part:header`). */

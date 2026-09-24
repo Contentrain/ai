@@ -127,7 +127,8 @@
         "excerpt": "field:excerpt",
         "date": "field:date",
         "image": "media:featured_image",
-        "author": "ref:author.name"
+        "author": "ref:author.name",
+        "category": "term:categories"
       }
     },
     {
@@ -140,7 +141,8 @@
         "excerpt": "field:excerpt",
         "date": "field:date",
         "image": "media:featured_image",
-        "author": "ref:author.name"
+        "author": "ref:author.name",
+        "category": "term:categories"
       }
     },
     {
@@ -153,7 +155,8 @@
         "excerpt": "field:excerpt",
         "date": "field:date",
         "image": "media:featured_image",
-        "author": "ref:author.name"
+        "author": "ref:author.name",
+        "category": "term:categories"
       }
     },
     {
