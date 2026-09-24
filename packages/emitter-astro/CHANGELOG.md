@@ -1,5 +1,16 @@
 # @contentrain/emitter-astro
 
+## 0.18.0
+
+### Minor Changes
+
+- 4a846b2: Only published entries are built. `EmitPost.status` and `publish_at` (the entry's `EntryMeta`) hold back drafts, entries in review, rejected or archived ones, and posts scheduled for later (`publish_at` after `options.now`, default the emit time); `EmitPost.visibility` other than `public` (password-protected or private) is never built, whatever its status. None of them gets a page, sitemap line, feed item, llms.txt link, list card or hreflang alternate. A published page's link to a held-back entry is kept as its text, and a redirect to one is returned in `redirects.manual`. `EmitResult.withheld` lists the held-back entries and the unlinked links. Content without a status, `publish_at` or `visibility` is emitted as before; `options.requireStatus: true` holds back every entry that carries no status instead (fail closed), with a warning.
+
+### Patch Changes
+
+- 85a85c1: The chrome balance check no longer reports every `script`, `style`, `textarea` or `title` as never closed when text such as a Turkish `İ` comes before it. It looked for the closing tag in a lowercased copy of the fragment, and lowercasing `İ` adds a code unit, so the index it found pointed past the real closing tag. It now searches the fragment itself, matching the tag name by ASCII case as HTML does.
+- b9b8b00: The emitted `package.json` lists `@astrojs/check` and `typescript` under `dependencies`, not `devDependencies`. The site's `build` script runs `astro check`, and an install with `NODE_ENV=production` (a worker image, a host's production build) leaves devDependencies out: Astro then asks to install the checker, so with no terminal the build fails, and with `CI` set `astro check` exits 0 without checking anything.
+
 ## 0.17.0
 
 ### Minor Changes
