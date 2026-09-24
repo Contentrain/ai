@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "gutenberg",
-  "version": "1",
+  "version": "2",
   "fallback": "prose",
   "rules": [
     {
@@ -101,17 +101,20 @@
     },
     {
       "match": "core/media-text",
-      "component": "card-grid",
+      "component": "hero",
       "variant": {
-        "columns": "2"
+        "layout": "split"
       },
-      "into": "items",
-      "each": ":scope > .wp-block-media-text__content",
-      "item": {
-        "title": "dom:h2,h3,h4",
-        "text": "dom:p",
-        "href": "dom:a@href",
+      "props": {
+        "heading": "dom:h1,h2,h3",
+        "lead": "dom:p",
         "image": "img:.wp-block-media-text__media img"
+      },
+      "into": "actions",
+      "each": ".wp-block-button__link",
+      "item": {
+        "label": "dom:",
+        "href": "dom:@href"
       }
     },
     {
@@ -202,6 +205,47 @@
       "item": {
         "image": "img:img",
         "text": "dom:figcaption"
+      }
+    },
+    {
+      "match": "core/cover",
+      "component": "hero",
+      "variant": {
+        "layout": "cover"
+      },
+      "props": {
+        "heading": "dom:h1,h2",
+        "lead": "dom:p",
+        "image": "img:.wp-block-cover__image-background,img"
+      },
+      "into": "actions",
+      "each": ".wp-block-button__link",
+      "item": {
+        "label": "dom:",
+        "href": "dom:@href"
+      }
+    },
+    {
+      "match": "core/details",
+      "component": "faq",
+      "group": "siblings",
+      "into": "items",
+      "item": {
+        "question": "dom:summary",
+        "answer": "html::scope > :not(summary)"
+      }
+    },
+    {
+      "match": "core/gallery",
+      "component": "gallery",
+      "props": {
+        "closeLabel": "ui:gallery.close"
+      },
+      "into": "items",
+      "each": "figure.wp-block-image",
+      "item": {
+        "image": "img:img",
+        "caption": "dom:figcaption"
       }
     }
   ]

@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "classic",
-  "version": "1",
+  "version": "2",
   "fallback": "prose",
   "rules": [
     {
@@ -142,6 +142,111 @@
       "item": {
         "image": "img:img",
         "title": "dom:.n2-ss-item-content"
+      }
+    },
+    {
+      "match": "classic/hero",
+      "component": "hero",
+      "props": {
+        "heading": "dom:h1,h2",
+        "lead": "dom:p",
+        "image": "img:img"
+      },
+      "into": "actions",
+      "each": "a.button,a.btn,.wp-block-button__link",
+      "item": {
+        "label": "dom:",
+        "href": "dom:@href"
+      }
+    },
+    {
+      "match": "classic/cta",
+      "component": "cta",
+      "props": {
+        "heading": "dom:h2,h3",
+        "body": "dom:p"
+      },
+      "into": "actions",
+      "each": "a",
+      "item": {
+        "label": "dom:",
+        "href": "dom:@href"
+      }
+    },
+    {
+      "match": "classic/faq",
+      "component": "faq",
+      "into": "items",
+      "each": "details, .faq-item",
+      "item": {
+        "question": "dom:summary, .faq-question",
+        "answer": "html:.faq-answer, :scope > :not(summary)"
+      }
+    },
+    {
+      "match": "classic/tabs",
+      "component": "tabs",
+      "into": "items",
+      "each": "[role=tab]",
+      "item": {
+        "label": "dom:",
+        "content": "html:[role=tabpanel]"
+      }
+    },
+    {
+      "match": "classic/testimonial",
+      "component": "testimonial",
+      "group": "siblings",
+      "into": "items",
+      "item": {
+        "quote": "dom:blockquote, .testimonial-text",
+        "name": "dom:cite, .testimonial-name",
+        "avatar": "img:img"
+      }
+    },
+    {
+      "match": "classic/gallery",
+      "component": "gallery",
+      "props": {
+        "closeLabel": "ui:gallery.close"
+      },
+      "into": "items",
+      "each": ".gallery-item",
+      "item": {
+        "image": "img:img",
+        "caption": "dom:.gallery-caption, .wp-caption-text"
+      }
+    },
+    {
+      "match": "classic/contact-form-7",
+      "component": "contact-form",
+      "props": {
+        "model": "const:contact",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/wpforms",
+      "component": "contact-form",
+      "props": {
+        "model": "const:contact",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/gravityforms",
+      "component": "contact-form",
+      "props": {
+        "model": "const:contact",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/ninja-forms",
+      "component": "contact-form",
+      "props": {
+        "model": "const:contact",
+        "heading": "dom:h2,h3"
       }
     }
   ]
