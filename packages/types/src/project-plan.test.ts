@@ -68,7 +68,7 @@ describe('validateProjectPlan', () => {
     p.routes[0]!.sections.push({ component: 'Prose', bind: { kind: 'entry', props: { body: 'field:content' } } })
     p.routes[1]!.sections[0] = { component: 'Prose', bind: { kind: 'entry', props: { text: 'content' as never } } }
     p.routes[2]!.sections[0] = { component: 'FeatureGrid', bind: { kind: 'collection', model: 'nope', into: 'items', item: { title: 'field:title' } } }
-    p.models[2]!.extract![0]!.fields.subtitle = '0.3|innerHTML'
+    p.models[2]!.extract![0]!.fields!.subtitle = '0.3|innerHTML'
     const { errors } = validateProjectPlan(p)
     expect(errors).toEqual(expect.arrayContaining([
       'site.permalinks.post must start and end with "/" (/:slug)',
