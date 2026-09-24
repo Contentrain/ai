@@ -1,0 +1,37 @@
+[
+  {
+    "name": "underline",
+    "props": {
+      "heading": "Getting there",
+      "id": "getting-there",
+      "items": [
+        { "label": "By train", "content": "<p>The night train from Madrid arrives at 7:40. Book a couchette a month ahead in summer.</p>" },
+        { "label": "By air", "content": "<p>The airport is 20 minutes from the centre by metro (line red).</p>" },
+        { "label": "By car", "content": "<p>Parking in the old town is expensive; use the park-and-ride at <strong>Campo Grande</strong>.</p>" }
+      ]
+    }
+  },
+  {
+    "name": "pills-vertical-muted",
+    "props": {
+      "style": "pills",
+      "orientation": "vertical",
+      "tone": "muted",
+      "label": "Seasons",
+      "id": "seasons",
+      "items": [
+        { "label": "Spring", "content": "<p>Mild, green, and the best light for photographs.</p>" },
+        { "label": "Summer", "content": "<p>Hot and busy; start early and rest at midday.</p>" },
+        { "label": "Autumn", "content": "<p>Harvest festivals and warm sea.</p>" }
+      ]
+    }
+  },
+  {
+    "name": "underline-inverse",
+    "props": { "tone": "inverse", "label": "Plans", "id": "plans", "items": [{ "label": "Free", "content": "<p>The newsletter and every guide.</p>" }, { "label": "Member", "content": "<p>Plus the seasonal print issue.</p>" }] }
+  },
+  {
+    "name": "pills-accent",
+    "props": { "style": "pills", "tone": "accent", "label": "Formats", "id": "formats", "items": [{ "label": "Online", "content": "<p>Read on the site.</p>" }, { "label": "Print", "content": "<p>Delivered each season.</p>" }] }
+  }
+]
