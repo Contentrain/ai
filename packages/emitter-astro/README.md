@@ -201,6 +201,12 @@ page, sitemap line, feed item, llms.txt link, list card or hreflang alternate.
 `EmitResult.withheld.entries` names each with its reason, and a warning counts
 them.
 
+An entry with no `status` is published, as before statuses existed — which
+fails open if a producer forgets to pass one. `options.requireStatus: true`
+turns that around: every entry (in posts, collections and list items) must
+carry a status, and one without it is held back (`status_missing`) and
+reported. A producer that reads statuses from the content store sets it.
+
 The data files hold only what is live at the emit, so a scheduled entry is
 built by the first emit after its time; rebuilding the same files does not
 publish it.

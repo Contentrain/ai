@@ -92,7 +92,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
     if (Number.isNaN(at)) warnings.push(`options.now "${input.options.now}" is not a date — publish_at is compared with the time of this emit`)
     else now = at
   }
-  const published = publishedContent(ir.routes, input.content ?? {}, now, ir.site.url)
+  const published = publishedContent(ir.routes, input.content ?? {}, now, ir.site.url, input.options?.requireStatus === true)
   const content = published.content
   warnings.push(...withheldWarnings(published.withheld, published.links))
   // A rule to a held-back entry would redirect to a page the build does not

@@ -25,11 +25,17 @@ import { collectionItems } from './pages.js'
 import { patternToPagePath } from './util.js'
 import { builtAddresses } from './redirects.js'
 
-/** Why an entry is not built, or null when it is. `now` is epoch ms. */
-export function holdReason(post: Pick<EmitPost, 'status' | 'publish_at' | 'visibility'>, now: number): WithheldEntry['reason'] | null {
+/**
+ * Why an entry is not built, or null when it is. `now` is epoch ms. With
+ * `requireStatus` an entry that carries no status is held back: the producer
+ * said it passes every entry's status, so a missing one is a gap, not a
+ * published entry.
+ */
+export function holdReason(post: Pick<EmitPost, 'status' | 'publish_at' | 'visibility'>, now: number, requireStatus = false): WithheldEntry['reason'] | null {
   // Password-protected and private content is never built, whatever its status
   // says — and a visibility this does not know is not taken for public.
   if (post.visibility !== undefined && post.visibility !== 'public') return 'visibility'
+  if (post.status === undefined && requireStatus) return 'status_missing'
   if (post.status !== undefined && post.status !== 'published') return 'status'
   if (post.publish_at === undefined) return null
   const at = Date.parse(post.publish_at)
@@ -83,10 +89,10 @@ export function withheldTarget(href: string, gone: Set<string>, siteUrl?: string
  * from the list pages that carry it as an item — and links to them unwrapped.
  * Content with nothing held back is returned as given.
  */
-export function publishedContent(routes: RouteModel[], content: EmitContent, now: number, siteUrl?: string): PublishedContent {
+export function publishedContent(routes: RouteModel[], content: EmitContent, now: number, siteUrl?: string, requireStatus = false): PublishedContent {
   const withheld: WithheldEntry[] = []
   const keep = (collection: string) => (post: EmitPost) => {
-    const reason = holdReason(post, now)
+    const reason = holdReason(post, now, requireStatus)
     if (!reason) return true
     withheld.push({ collection, slug: post.slug, ...(post.status ? { status: post.status } : {}), ...(post.visibility ? { visibility: post.visibility } : {}), ...(post.publish_at ? { publish_at: post.publish_at } : {}), reason })
     return false
@@ -94,7 +100,7 @@ export function publishedContent(routes: RouteModel[], content: EmitContent, now
   const collections = content.collections
     ? Object.fromEntries(Object.entries(content.collections).map(([name, posts]) => [name, posts.filter(keep(name))]))
     : undefined
-  const isLive = (post: EmitPost) => holdReason(post, now) === null
+  const isLive = (post: EmitPost) => holdReason(post, now, requireStatus) === null
   // `posts` is read only when `collections.posts` is absent; filtered either way, reported once.
   const posts = content.posts?.filter(content.collections?.[DEFAULT_COLLECTION] ? isLive : keep(DEFAULT_COLLECTION))
   const queries = content.queries
@@ -168,6 +174,7 @@ export function withheldWarnings(withheld: WithheldEntry[], links: WithheldLink[
     const count = (reason: WithheldEntry['reason']) => withheld.filter((w) => w.reason === reason).length
     const parts = [
       count('visibility') && `${count('visibility')} password-protected or private`,
+      count('status_missing') && `${count('status_missing')} with no status (options.requireStatus)`,
       count('status') && `${count('status')} not published (draft, in review, rejected or archived)`,
       count('scheduled') && `${count('scheduled')} scheduled for later — built by the first emit after their publish_at`,
       count('publish_at_invalid') && `${count('publish_at_invalid')} with a publish_at that is not a date`,

@@ -70,6 +70,12 @@ describe('holdReason', () => {
     // Status first: a draft with a past date is still a draft.
     expect(holdReason({ status: 'draft', publish_at: '2020-01-01T00:00:00Z' }, now)).toBe('status')
   })
+  it('with requireStatus, no status is held back; without it, no status is published', () => {
+    expect(holdReason({}, now, true)).toBe('status_missing')
+    expect(holdReason({ publish_at: '2020-01-01T00:00:00Z' }, now, true)).toBe('status_missing')
+    expect(holdReason({ status: 'published' }, now, true)).toBeNull()
+    expect(holdReason({}, now, false)).toBeNull()
+  })
   it('password-protected, private, or any visibility but public: never built, even published and live', () => {
     expect(holdReason({ status: 'published', visibility: 'password' }, now)).toBe('visibility')
     expect(holdReason({ status: 'published', visibility: 'private', publish_at: '2020-01-01T00:00:00Z' }, now)).toBe('visibility')
@@ -153,6 +159,27 @@ describe('only published entries are built', () => {
     expect(r.withheld).toBeUndefined()
     expect(r.warnings.filter((w) => w.startsWith('unpublished:'))).toEqual([])
     expect(JSON.parse(r.files['src/data/posts.json']!)).toEqual(plain.posts)
+  })
+
+  it('requireStatus: an entry with no status fails closed — in posts, collections and list items — and is reported', () => {
+    const r = emitAstroProject({
+      ir,
+      content: {
+        posts: [post('ok', { status: 'published', body: '<a href="/2026/bare/">bare</a>' }), post('bare')],
+        collections: { pages: [{ slug: 'about', title: 'About', body: '' }] },
+        queries: { 'by-term': [{ params: { term: 'news' }, items: [post('ok', { status: 'published' }), post('bare')] }] },
+      },
+      options: { tailwind: false, now: NOW, requireStatus: true },
+    })
+    expect(slugs(r.files['src/data/posts.json'])).toEqual(['ok'])
+    expect(slugs(r.files['src/data/pages.json'])).toEqual([])
+    expect(JSON.parse(r.files['src/data/queries/by-term.json']!)[0].items.map((i: EmitPost) => i.slug)).toEqual(['ok'])
+    expect(JSON.parse(r.files['src/data/posts.json']!)[0].body).toBe('bare')
+    expect(r.withheld?.entries).toEqual([
+      { collection: 'pages', slug: 'about', reason: 'status_missing' },
+      { collection: 'posts', slug: 'bare', reason: 'status_missing' },
+    ])
+    expect(r.warnings).toContain('unpublished: 2 entries not built — 2 with no status (options.requireStatus). They stay in the content store; EmitResult.withheld lists each')
   })
 
   it('an options.now that is not a date falls back to the emit time and says so', () => {

@@ -124,7 +124,8 @@ export interface EmitPost {
   nofollow?: boolean
   /**
    * The entry's workflow status in the content store (`EntryMeta.status`).
-   * Only `published` is built; unset reads as published. Any other status
+   * Only `published` is built; unset reads as published unless
+   * `EmitOptions.requireStatus` is set. Any other status
    * keeps the entry out of the site — no page, sitemap line, feed item,
    * llms.txt link or list card — and `EmitResult.withheld` names it.
    */
@@ -154,9 +155,10 @@ export interface WithheldEntry {
   visibility?: string
   /**
    * `visibility`: password-protected or private · `status`: not published ·
+   * `status_missing`: no status, with `EmitOptions.requireStatus` ·
    * `scheduled`: publish_at is ahead · `publish_at_invalid`: publish_at is not a date.
    */
-  reason: 'visibility' | 'status' | 'scheduled' | 'publish_at_invalid'
+  reason: 'visibility' | 'status' | 'status_missing' | 'scheduled' | 'publish_at_invalid'
 }
 
 /** A link on a published page to a held-back entry, kept as its text. */
@@ -408,6 +410,14 @@ export interface EmitOptions {
    * scheduled entry is built by the first emit after its time.
    */
   now?: string
+  /**
+   * Hold back every entry — in posts, collections and list items — that
+   * carries no `EmitPost.status`, and say so. Default false: an entry with
+   * no status is published, as before statuses existed. A producer that
+   * reads statuses from the content store sets it, so an entry it failed to
+   * give one fails closed instead of going out as published.
+   */
+  requireStatus?: boolean
 }
 
 export interface EmitInput {
