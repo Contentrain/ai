@@ -884,6 +884,8 @@ export interface SeoInput {
   author?: string
   authorUrl?: string
   profile?: AuthorProfile
+  /** An archive page's own feed, site-root-relative — the Seo component links it. */
+  feed?: { path: string; title?: string }
   noindex?: boolean
   nofollow?: boolean
   openGraph?: SocialOverride

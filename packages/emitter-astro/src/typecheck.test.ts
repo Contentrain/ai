@@ -6,7 +6,7 @@ import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { ProjectIR } from '@contentrain/types'
-import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
+import { CHROME_BODY_SLOT, MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import { emitAstroProject } from './index'
 
 // The generated site's build runs `astro check` first, so emitted TypeScript
@@ -69,6 +69,69 @@ describe('emitted TypeScript under astro/tsconfigs/base-equivalent strictness', 
     const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc')
     const result = await run(process.execPath, [tsc, '-p', TMP]).catch((e: { stdout?: string; stderr?: string }) => e)
     expect(result.stderr ?? '', result.stdout).toBe('')
+    expect(result.stdout ?? '').toBe('')
+  }, 60_000)
+})
+
+describe('the seo object each emitted page hands its layout is a SeoInput', () => {
+  // astro check types `seo={{ … }}` against the layout's `seo?: SeoInput`: a
+  // key the page passes and SeoInput lacks fails the whole build (0.16.0: the
+  // archive pages' `feed`). The literal is lifted out of every emitted page and
+  // compiled against the emitted runtime, with the page's frontmatter names.
+  const DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '.vitest-tmp-tsc-seo')
+
+  afterAll(async () => {
+    await rm(DIR, { recursive: true, force: true })
+  })
+
+  it('archive (with its feed), list, static and author pages all compile', async () => {
+    const seoIr: ProjectIR = {
+      version: MIGRATION_CONTRACT_VERSION,
+      site: { url: 'https://example.com', title: 'Example', locales: ['en'] },
+      routes: [
+        { id: 'r-post', pattern: '/:year/:slug', kind: 'single', family: 'f' },
+        { id: 'r-cat', pattern: '/categoria/:term*', kind: 'archive', family: 'f', query: 'q-cat' },
+        { id: 'r-tag', pattern: '/tag/:tag', kind: 'archive', family: 'f', query: 'q-tag' },
+        { id: 'r-news', pattern: '/news', kind: 'archive', family: 'f', query: 'q-news' },
+        { id: 'r-about', pattern: '/about', kind: 'page', family: 'f' },
+      ],
+      families: [{ id: 'f', kind: 'single', chrome: [{ id: 'body', position: 'body', html: `<main>${CHROME_BODY_SLOT}</main>` }], css: { strategy: 'localcss' } }],
+      queries: ['q-cat', 'q-tag', 'q-news'].map((id) => ({ id, source: 'posts', order: { by: 'date' as const, direction: 'desc' as const }, per_page: 10, pagination: 'numbered' as const })),
+      css_default: 'purge_set',
+    }
+    const { files } = emitAstroProject({
+      ir: seoIr,
+      content: {
+        posts: [{ slug: 'hello', title: 'Hello', body: '', params: { year: '2025' } }],
+        queries: {
+          'q-cat': [{ params: { term: 'news' }, items: [] }],
+          'q-tag': [{ params: { tag: 'x' }, items: [], profile: { name: 'Ada' } }],
+          'q-news': [{ params: {}, items: [] }],
+        },
+      },
+    })
+    const literals = Object.entries(files)
+      .filter(([path]) => path.startsWith('src/pages/') && path.endsWith('.astro'))
+      .flatMap(([path, source]) => [...source.matchAll(/seo=\{(\{[\s\S]*?\})\}\s*(?:\/>|\n)/g)].map((m) => ({ path, literal: m[1]! })))
+    // Every page kind that builds its seo object inline is covered.
+    expect(literals.some((l) => l.literal.includes('feed:'))).toBe(true)
+    expect(literals.length).toBeGreaterThanOrEqual(4)
+
+    await mkdir(DIR, { recursive: true })
+    await writeFile(join(DIR, 'fill.ts'), files['src/lib/fill.ts']!, 'utf8')
+    await writeFile(join(DIR, 'check.ts'), [
+      `import { entryAddress, type EmittedQueryPage, type SeoInput } from './fill'`,
+      `declare const page: EmittedQueryPage`,
+      `declare const title: string`,
+      `void entryAddress`,
+      ...literals.map((l, i) => `// ${l.path}\nexport const seo${i}: SeoInput = ${l.literal}`),
+    ].join('\n'), 'utf8')
+    await writeFile(join(DIR, 'tsconfig.json'), JSON.stringify({
+      compilerOptions: { target: 'ES2022', module: 'ESNext', moduleResolution: 'Bundler', lib: ['ES2022', 'DOM'], strict: true, noUncheckedIndexedAccess: true, verbatimModuleSyntax: true, noEmit: true, skipLibCheck: true, types: [] },
+      files: ['fill.ts', 'check.ts'],
+    }), 'utf8')
+    const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc')
+    const result = await run(process.execPath, [tsc, '-p', DIR]).catch((e: { stdout?: string; stderr?: string }) => e)
     expect(result.stdout ?? '').toBe('')
   }, 60_000)
 })
