@@ -99,7 +99,12 @@ async function check(label, options, modules) {
     await rm(dir, { recursive: true, force: true })
     throw error
   }
-  const run = (cmd, args) => spawnSync(cmd, args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], shell: process.platform === 'win32' })
+  // Installed and built the way a production host and the migration worker do
+  // it: NODE_ENV=production (npm then leaves devDependencies out), CI set and
+  // no terminal. A dependency the build needs but the install skipped shows up
+  // here, not in a customer's first deploy.
+  const env = { ...process.env, NODE_ENV: 'production', CI: 'true' }
+  const run = (cmd, args) => spawnSync(cmd, args, { cwd: dir, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], shell: process.platform === 'win32' })
   if (modules) {
     await symlink(modules, join(dir, 'node_modules'), 'dir')
   } else {
@@ -117,9 +122,16 @@ async function check(label, options, modules) {
     }
     // What the ranges resolved to: a failure after a new astro or checker
     // release reads as that, not as a mystery.
+    // A package the production install left out is the failure itself.
+    const missing = []
     for (const name of ['astro', '@astrojs/check', 'typescript']) {
-      const version = JSON.parse(await readFile(join(dir, 'node_modules', name, 'package.json'), 'utf8')).version
-      console.log(`${name} ${version}`)
+      const version = await readFile(join(dir, 'node_modules', name, 'package.json'), 'utf8').then((text) => JSON.parse(text).version, () => null)
+      if (version === null) missing.push(name)
+      console.log(`${name} ${version ?? 'NOT INSTALLED'}`)
+    }
+    if (missing.length) {
+      console.error(`npm install (${label}, NODE_ENV=production) did not install ${missing.join(', ')} — the build's astro check cannot run`)
+      return { ok: false, dir }
     }
   }
   const result = run(join(dir, 'node_modules', '.bin', 'astro'), ['check'])
@@ -130,8 +142,20 @@ async function check(label, options, modules) {
   // A pass is a result that names 0 errors — not merely an exit code: astro
   // exits 0 when it stops at a prompt without checking anything.
   const ok = result.status === 0 && /Result \(\d+ files?\)/.test(output) && /- 0 errors/.test(output)
-  if (!ok) console.error(output)
-  return { ok, dir }
+  if (!ok) {
+    console.error(output)
+    return { ok, dir }
+  }
+  // The site's own build script, as the customer runs it. Astro's answer to a
+  // missing @astrojs/check is a prompt, and with CI set it prints an error and
+  // exits 0 without checking — so the output is read, not only the status.
+  const build = run('npm', ['run', 'build'])
+  const buildOutput = `${build.stdout}${build.stderr}`
+  const skipped = /requires the following dependenc|packages are required/i.test(buildOutput)
+  const built = build.status === 0 && !skipped && /Result \(\d+ files?\)/.test(buildOutput) && /- 0 errors/.test(buildOutput) && /Complete!/.test(buildOutput)
+  console.log(`npm run build (${label}, NODE_ENV=production): ${built ? 'astro check 0 errors, astro build complete' : skipped ? 'astro check did not run — its packages were not installed' : 'failed'}`)
+  if (!built) console.error(buildOutput)
+  return { ok: built, dir }
 }
 
 /**

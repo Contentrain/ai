@@ -396,8 +396,11 @@ describe('emitAstroProject', () => {
   it('the build script type-checks before building', () => {
     const pkg = JSON.parse(result.files['package.json']!)
     expect(pkg.scripts.build).toBe('astro check && astro build')
-    expect(pkg.devDependencies['@astrojs/check']).toBeDefined()
-    expect(pkg.devDependencies.typescript).toBeDefined()
+    // Dependencies, not devDependencies: `build` runs `astro check`, and an
+    // install with NODE_ENV=production leaves devDependencies out.
+    expect(pkg.dependencies['@astrojs/check']).toBe('^0.9.0')
+    expect(pkg.dependencies.typescript).toBe('^5.7.0')
+    expect(pkg.devDependencies).toBeUndefined()
   })
 
   it('nested taxonomy addresses survive as rest parameters', () => {
