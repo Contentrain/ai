@@ -1,0 +1,208 @@
+{
+  "format": "astro-kit-mapping@1",
+  "builder": "gutenberg",
+  "version": "1",
+  "fallback": "prose",
+  "rules": [
+    {
+      "match": "core/template-part:header",
+      "component": "header",
+      "props": {
+        "siteName": "site:title",
+        "logo": "site:logo",
+        "items": "menu:primary",
+        "navLabel": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "core/site-title",
+      "component": "header",
+      "props": {
+        "siteName": "site:title",
+        "logo": "site:logo",
+        "items": "menu:primary",
+        "navLabel": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "core/site-logo",
+      "component": "header",
+      "props": {
+        "siteName": "site:title",
+        "logo": "site:logo",
+        "items": "menu:primary",
+        "navLabel": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "core/navigation",
+      "component": "nav",
+      "props": {
+        "items": "menu:primary",
+        "label": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "core/page-list",
+      "component": "nav",
+      "props": {
+        "items": "menu:primary",
+        "label": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "core/template-part:footer",
+      "component": "footer",
+      "props": {
+        "siteName": "site:title",
+        "tagline": "site:description",
+        "links": "menu:footer",
+        "copyright": "ui:footer.copyright",
+        "navLabel": "ui:footer.nav"
+      }
+    },
+    {
+      "match": "core/social-links",
+      "component": "footer",
+      "props": {
+        "siteName": "site:title"
+      },
+      "into": "social",
+      "each": ".wp-block-social-link",
+      "item": {
+        "label": "dom:.wp-block-social-link-label",
+        "href": "dom:a@href"
+      }
+    },
+    {
+      "match": "core/columns",
+      "component": "card-grid",
+      "variant": {
+        "style": "plain"
+      },
+      "into": "items",
+      "each": ".wp-block-column",
+      "item": {
+        "title": "dom:h2,h3,h4",
+        "text": "dom:p",
+        "href": "dom:a@href",
+        "image": "img:img"
+      }
+    },
+    {
+      "match": "core/media-text",
+      "component": "card-grid",
+      "variant": {
+        "columns": "2"
+      },
+      "into": "items",
+      "each": ":scope > .wp-block-media-text__content",
+      "item": {
+        "title": "dom:h2,h3,h4",
+        "text": "dom:p",
+        "href": "dom:a@href",
+        "image": "img:.wp-block-media-text__media img"
+      }
+    },
+    {
+      "match": "core/query",
+      "component": "post-card",
+      "bind": "collection:posts",
+      "item": {
+        "title": "field:title",
+        "href": "href:self",
+        "excerpt": "field:excerpt",
+        "date": "field:date",
+        "image": "media:featured_image",
+        "author": "ref:author.name"
+      }
+    },
+    {
+      "match": "core/post-template",
+      "component": "post-card",
+      "bind": "collection:posts",
+      "item": {
+        "title": "field:title",
+        "href": "href:self",
+        "excerpt": "field:excerpt",
+        "date": "field:date",
+        "image": "media:featured_image",
+        "author": "ref:author.name"
+      }
+    },
+    {
+      "match": "core/latest-posts",
+      "component": "post-card",
+      "bind": "collection:posts",
+      "item": {
+        "title": "field:title",
+        "href": "href:self",
+        "excerpt": "field:excerpt",
+        "date": "field:date",
+        "image": "media:featured_image",
+        "author": "ref:author.name"
+      }
+    },
+    {
+      "match": "core/query-pagination",
+      "component": "pagination",
+      "props": {
+        "base": "page:base",
+        "current": "page:current",
+        "total": "page:total",
+        "label": "ui:pagination.label",
+        "prevLabel": "ui:pagination.prev",
+        "nextLabel": "ui:pagination.next",
+        "pageLabel": "ui:pagination.page"
+      }
+    },
+    {
+      "match": "yoast-seo/breadcrumbs",
+      "component": "breadcrumb",
+      "props": {
+        "items": "page:breadcrumb",
+        "current": "field:title",
+        "label": "ui:breadcrumb.label"
+      }
+    },
+    {
+      "match": "rank-math/breadcrumb",
+      "component": "breadcrumb",
+      "props": {
+        "items": "page:breadcrumb",
+        "current": "field:title",
+        "label": "ui:breadcrumb.label"
+      }
+    },
+    {
+      "match": "core/gallery:carousel",
+      "component": "slider",
+      "when": {
+        "class": "is-style-carousel"
+      },
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": "figure.wp-block-image",
+      "item": {
+        "image": "img:img",
+        "text": "dom:figcaption"
+      }
+    }
+  ]
+}

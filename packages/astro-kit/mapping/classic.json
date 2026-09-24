@@ -1,0 +1,148 @@
+{
+  "format": "astro-kit-mapping@1",
+  "builder": "classic",
+  "version": "1",
+  "fallback": "prose",
+  "rules": [
+    {
+      "match": "classic/header",
+      "component": "header",
+      "props": {
+        "siteName": "site:title",
+        "logo": "site:logo",
+        "items": "menu:primary",
+        "navLabel": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "classic/nav-menu",
+      "component": "nav",
+      "props": {
+        "items": "menu:primary",
+        "label": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "classic/footer",
+      "component": "footer",
+      "props": {
+        "siteName": "site:title",
+        "tagline": "site:description",
+        "links": "menu:footer",
+        "copyright": "ui:footer.copyright",
+        "navLabel": "ui:footer.nav"
+      }
+    },
+    {
+      "match": "classic/widget-area",
+      "component": "footer",
+      "props": {
+        "siteName": "site:title"
+      },
+      "into": "columns",
+      "each": ".widget",
+      "item": {
+        "title": "dom:.widget-title,h2,h3"
+      }
+    },
+    {
+      "match": "classic/archive-item",
+      "component": "post-card",
+      "bind": "collection:posts",
+      "item": {
+        "title": "field:title",
+        "href": "href:self",
+        "excerpt": "field:excerpt",
+        "date": "field:date",
+        "image": "media:featured_image",
+        "author": "ref:author.name"
+      }
+    },
+    {
+      "match": "classic/pagination",
+      "component": "pagination",
+      "props": {
+        "base": "page:base",
+        "current": "page:current",
+        "total": "page:total",
+        "label": "ui:pagination.label",
+        "prevLabel": "ui:pagination.prev",
+        "nextLabel": "ui:pagination.next",
+        "pageLabel": "ui:pagination.page"
+      }
+    },
+    {
+      "match": "classic/yoast-breadcrumb",
+      "component": "breadcrumb",
+      "props": {
+        "items": "page:breadcrumb",
+        "current": "field:title",
+        "label": "ui:breadcrumb.label"
+      }
+    },
+    {
+      "match": "classic/rank-math-breadcrumb",
+      "component": "breadcrumb",
+      "props": {
+        "items": "page:breadcrumb",
+        "current": "field:title",
+        "label": "ui:breadcrumb.label"
+      }
+    },
+    {
+      "match": "classic/revslider",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": "rs-slide, .tp-revslider-slidesli",
+      "item": {
+        "image": "img:img",
+        "title": "dom:rs-layer"
+      }
+    },
+    {
+      "match": "classic/metaslider",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".slides > li",
+      "item": {
+        "image": "img:img",
+        "text": "dom:.caption"
+      }
+    },
+    {
+      "match": "classic/smart-slider",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".n2-ss-slide",
+      "item": {
+        "image": "img:img",
+        "title": "dom:.n2-ss-item-content"
+      }
+    }
+  ]
+}

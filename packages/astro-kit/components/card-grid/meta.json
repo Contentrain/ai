@@ -96,7 +96,6 @@
   "sources": {
     "gutenberg": [
       "core/columns",
-      "core/query-loop",
       "core/media-text"
     ],
     "elementor": [
