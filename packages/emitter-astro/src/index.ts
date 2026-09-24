@@ -138,7 +138,7 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   add(scaffoldFiles(ir, input.options ?? {}, noindex, hasRedirects ? astroRedirectsConfig(sortedConfig(redirectConfig)) : null, input.runtime))
   // Host-only rules: the same checks, then an address the site's own rules or
   // the feeds already redirect is theirs. Never in astro.config.
-  const hostOnlyPlan = input.hostRedirects ? planRedirects(input.hostRedirects, built) : undefined
+  const hostOnlyPlan = input.hostRedirects ? planRedirects(input.hostRedirects, built, { hostOnly: true }) : undefined
   const hostOnlyConfig: typeof redirectConfig = {}
   const hostOnlyRule = new Map<string, RawRedirect>()
   const hostOnlyManual: ManualRedirect[] = [...(hostOnlyPlan?.manual ?? [])]
@@ -170,8 +170,16 @@ export function emitAstroProject(input: EmitInput): EmitResult {
   for (const from of hostRedirects?.skipped ?? []) {
     if (hostOnly(from)) hostOnlyManual.push({ redirect: hostOnlyRule.get(from)!, reason: 'from contains ":" or "*", which host redirect files read as a pattern' })
   }
-  for (const from of hostRedirects?.over_limit ?? []) {
-    if (hostOnly(from)) hostOnlyManual.push({ redirect: hostOnlyRule.get(from)!, reason: `left out of ${hostRedirects!.written.filter((f) => !f.includes('(netlify)')).join(', ')} at its rule limit (${HOST_RULE_LIMIT / 2} rules) — a host-only rule has no meta-refresh page to fall back on there` })
+  // Past a limited file: with its host named nothing serves the rule, so it is
+  // manual; with no host named the Netlify file still holds it, so it is
+  // written, and named in host_over_limit for the Vercel file it is missing from.
+  const namedHost = input.options?.redirectHost
+  const hostOnlyOver = (hostRedirects?.over_limit ?? []).filter(hostOnly)
+  if (namedHost !== undefined) {
+    for (const from of hostOnlyOver) hostOnlyManual.push({ redirect: hostOnlyRule.get(from)!, reason: `left out of ${hostRedirects!.written.join(', ')} at its rule limit (${HOST_RULE_LIMIT / 2} rules) — a host-only rule has no meta-refresh page to fall back on` })
+  }
+  else if (hostOnlyOver.length) {
+    warnings.push(`hostRedirects: ${hostOnlyOver.length} host-only rules not written to vercel.json at its rule limit (${HOST_RULE_LIMIT / 2} rules) — public/_redirects (Netlify) has them; on Vercel they are not served. Name the host (options.redirectHost) to have them reported as manual`)
   }
   const unservedHostOnly = new Set(hostOnlyManual.map((m) => m.redirect))
   if (hostOnlyManual.length) {
@@ -449,8 +457,8 @@ export function emitAstroProject(input: EmitInput): EmitResult {
             written: [...(redirectPlan?.written ?? []), ...[...hostOnlyRule.values()].filter((rule) => !unservedHostOnly.has(rule))],
             manual: [...(redirectPlan?.manual ?? []), ...hostOnlyManual],
             host_files: hostRedirects?.written ?? [],
-            // Host-only rules past the limit are in `manual`: nothing serves them.
-            host_over_limit: (hostRedirects?.over_limit ?? []).filter((from) => !hostOnly(from)),
+            // A host-only rule past a named host's limit is in `manual` instead: nothing serves it.
+            host_over_limit: (hostRedirects?.over_limit ?? []).filter((from) => !hostOnly(from) || namedHost === undefined),
           },
         }
       : {}),

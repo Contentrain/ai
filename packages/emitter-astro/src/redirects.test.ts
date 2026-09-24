@@ -263,6 +263,14 @@ describe('hostRedirects — host files only, no meta-refresh page', () => {
     expect(out.warnings).toContain('hostRedirects: 3 of 3 host-only rules not written — set them up at the host (EmitResult.redirects.manual has each with its reason)')
   })
 
+  it('a from naming a file is fine in a host file (it matches the address itself), not in astro.config', () => {
+    const host = emitHost([{ from: '/old-page.php', to: '/hello-world/' }])
+    expect(host.redirects?.manual).toEqual([])
+    expect(host.files['public/_redirects']).toContain('/old-page.php /hello-world/ 301!')
+    const page = emitAstroProject({ ir, content, redirects: [{ from: '/old-page.php', to: '/hello-world/' }], options: { feed: false } })
+    expect(page.redirects?.manual[0]?.reason).toMatch(/^from ends in a file name/)
+  })
+
   it('an address the site\'s own rules or the feed already redirect is theirs', () => {
     const out = emitAstroProject({
       ir, content,
@@ -283,17 +291,29 @@ describe('hostRedirects — host files only, no meta-refresh page', () => {
     expect(out.warnings.some((w) => w.includes('served by the meta-refresh fallback only'))).toBe(false)
   })
 
-  it('past the Cloudflare/Vercel limit host-only rules go last and to manual; Netlify takes all', () => {
-    const own = Array.from({ length: 999 }, (_, i) => ({ from: `/old-${String(i).padStart(4, '0')}/`, to: '/hello-world/' }))
-    const bulk = Array.from({ length: 3 }, (_, i) => ({ from: `/att-${i}/`, to: '/hello-world/' }))
-    const out = emitHost(bulk, own)
-    expect(out.redirects?.written.map((r) => r.from)).toContain('/att-0/')
-    expect(out.redirects?.manual.map((m) => m.redirect.from)).toEqual(['/att-1/', '/att-2/'])
-    expect(out.redirects?.manual[0]!.reason).toMatch(/^left out of vercel\.json \(vercel\) at its rule limit \(1000 rules\)/)
-    // host_over_limit keeps its meaning: rules served by the meta-refresh fallback there.
-    expect(out.redirects?.host_over_limit).toEqual([])
-    expect(out.warnings.some((w) => w.startsWith('redirects: '))).toBe(false)
-    expect(out.files['public/_redirects']).toContain('/att-2/ /hello-world/ 301!')
+  const own = Array.from({ length: 999 }, (_, i) => ({ from: `/old-${String(i).padStart(4, '0')}/`, to: '/hello-world/' }))
+  const bulk = Array.from({ length: 3 }, (_, i) => ({ from: `/att-${i}/`, to: '/hello-world/' }))
+
+  it('past a named host\'s limit host-only rules go last and to manual: nothing serves them there', () => {
+    for (const host of ['vercel', 'cloudflare'] as const) {
+      const out = emitHost(bulk, own, { redirectHost: host })
+      expect(out.redirects?.written.map((r) => r.from)).toContain('/att-0/')
+      expect(out.redirects?.written.map((r) => r.from)).not.toContain('/att-1/')
+      expect(out.redirects?.manual.map((m) => m.redirect.from)).toEqual(['/att-1/', '/att-2/'])
+      expect(out.redirects?.manual[0]!.reason).toMatch(/^left out of .* at its rule limit \(1000 rules\) — a host-only rule has no meta-refresh page/)
+      expect(out.redirects?.host_over_limit).toEqual([])
+      expect(out.warnings.some((w) => w.startsWith('redirects: '))).toBe(false)
+    }
     expect(emitHost(bulk, own, { redirectHost: 'netlify' }).redirects?.manual).toEqual([])
+  })
+
+  it('with no host named the Netlify file holds them: written, named in host_over_limit, not manual', () => {
+    const out = emitHost(bulk, own)
+    expect(out.files['public/_redirects']).toContain('/att-2/ /hello-world/ 301!')
+    expect(out.redirects?.written.map((r) => r.from)).toEqual(expect.arrayContaining(['/att-0/', '/att-1/', '/att-2/']))
+    expect(out.redirects?.manual).toEqual([])
+    expect(out.redirects?.host_over_limit).toEqual(['/att-1/', '/att-2/'])
+    expect(out.warnings).toContain('hostRedirects: 2 host-only rules not written to vercel.json at its rule limit (1000 rules) — public/_redirects (Netlify) has them; on Vercel they are not served. Name the host (options.redirectHost) to have them reported as manual')
+    expect(out.warnings.some((w) => w.startsWith('redirects: '))).toBe(false)
   })
 })

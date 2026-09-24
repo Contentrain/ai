@@ -411,7 +411,12 @@ export interface EmitResult {
     manual: Array<{ redirect: RawRedirect; reason: string }>
     /** The host redirect files written, e.g. `public/_redirects (netlify)`. Empty: meta-refresh only. */
     host_files: string[]
-    /** `redirects` rules (by `from`) left out of a Cloudflare / Vercel file at its rule limit: meta-refresh only there. A `hostRedirects` rule left out is in `manual`. */
+    /**
+     * Rules (by `from`) left out of a Cloudflare / Vercel file at its rule
+     * limit. A `redirects` rule keeps its meta-refresh page there. A
+     * `hostRedirects` rule is here only with no host named (the Netlify file
+     * holds it, `vercel.json` does not); past a named host's limit it is in `manual`.
+     */
     host_over_limit: string[]
   }
 }

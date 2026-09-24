@@ -82,7 +82,7 @@ export function builtAddresses(routes: RouteModel[], content: EmitContent): Map<
 }
 
 /** The decoded path for a literal Astro redirect key, or why `from` cannot be one. */
-function checkFrom(from: string): { path: string } | { reason: string } {
+function checkFrom(from: string, hostOnly = false): { path: string } | { reason: string } {
   if (!from.startsWith('/') || from.startsWith('//')) return { reason: 'from is not a site-root path' }
   if (/[?#]/.test(from)) return { reason: 'from has a query string or fragment — a static redirect matches the path only' }
   let path: string
@@ -98,8 +98,9 @@ function checkFrom(from: string): { path: string } | { reason: string } {
   const segments = path.split('/').filter(Boolean)
   if (segments.some((s) => s === '.' || s === '..')) return { reason: 'from contains a . or .. segment' }
   // The directory build writes a redirect as `<from>/index.html`; a host
-  // serving `/old.php` looks for that file, not the directory.
-  if (/\.[a-z0-9]{1,5}$/i.test(segments.at(-1) ?? '')) return { reason: 'from ends in a file name — the static build serves it as a directory, not at this address' }
+  // serving `/old.php` looks for that file, not the directory. A host file
+  // matches the address itself, so a host-only rule may name a file.
+  if (!hostOnly && /\.[a-z0-9]{1,5}$/i.test(segments.at(-1) ?? '')) return { reason: 'from ends in a file name — the static build serves it as a directory, not at this address' }
   return { path }
 }
 
@@ -117,9 +118,11 @@ function checkTo(to: string): boolean {
 
 /**
  * Split the rules into what `astro.config` serves and what the host has to.
- * `built` is `builtAddresses` of the emitted routes.
+ * `built` is `builtAddresses` of the emitted routes. `hostOnly`: the rules go
+ * to host files alone (`EmitInput.hostRedirects`), so the checks that hold
+ * only for a static redirect page (a `from` naming a file) are left out.
  */
-export function planRedirects(redirects: RawRedirect[], built: Map<string, string>): RedirectPlan {
+export function planRedirects(redirects: RawRedirect[], built: Map<string, string>, options: { hostOnly?: boolean } = {}): RedirectPlan {
   const config: RedirectPlan['config'] = {}
   const written: RawRedirect[] = []
   const manual: ManualRedirect[] = []
@@ -132,7 +135,7 @@ export function planRedirects(redirects: RawRedirect[], built: Map<string, strin
     if (redirect.match !== undefined && redirect.match !== 'url') { skip(`match "${redirect.match}" is a pattern, not one address`); continue }
     const status = redirect.status ?? 301
     if (!(REDIRECT_STATUSES as readonly number[]).includes(status)) { skip(`status ${status} is not one of ${REDIRECT_STATUSES.join('/')}`); continue }
-    const from = checkFrom(redirect.from)
+    const from = checkFrom(redirect.from, options.hostOnly)
     if ('reason' in from) { skip(from.reason); continue }
     if (!checkTo(redirect.to)) { skip('to is not a site-root path or an http(s) URL'); continue }
     const key = addressKey(from.path)
