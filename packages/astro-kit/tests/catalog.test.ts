@@ -103,3 +103,19 @@ describe('componentsForSource', () => {
     expect(componentsForSource(catalog, 'core/navigation').map(c => c.id)).toContain('nav')
   })
 })
+
+describe('templates/astro-starter', () => {
+  it('carries kit components as exact copies', async () => {
+    // The starter's chrome and list components are kit components; a fix made
+    // in one place and not the other would split them.
+    const starterKit = join(ROOT, '..', '..', 'templates', 'astro-starter', 'src', 'components', 'kit')
+    const walk = async (dir: string): Promise<string[]> => (await Promise.all((await readdir(join(starterKit, dir), { withFileTypes: true })).map(entry =>
+      entry.isDirectory() ? walk(join(dir, entry.name)) : Promise.resolve([join(dir, entry.name)]),
+    ))).flat()
+    const files = await walk('.')
+    expect(files.length).toBeGreaterThan(0)
+    for (const file of files) {
+      expect(await readFile(join(starterKit, file), 'utf8'), file).toBe(await readFile(join(COMPONENTS, file), 'utf8'))
+    }
+  })
+})

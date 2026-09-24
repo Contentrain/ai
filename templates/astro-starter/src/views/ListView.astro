@@ -1,10 +1,11 @@
 ---
 // A paginated list of posts: the blog index and the category, tag and author
 // archives.
-import Pagination from '../components/Pagination.astro'
-import PostCard from '../components/PostCard.astro'
+import { getEntry } from 'astro:content'
+import Pagination from '../components/kit/pagination/Pagination.astro'
+import PostCard from '../components/kit/post-card/PostCard.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
-import { getSite, getStrings, type Post } from '../lib/content'
+import { byId, getSite, getStrings, imageOf, postHref, termHref, type Post } from '../lib/content'
 import { collectionLd } from '../lib/seo'
 
 interface Props {
@@ -20,7 +21,19 @@ interface Props {
 }
 
 const { title, eyebrow, description, posts, base, current, total } = Astro.props
-const [site, t] = await Promise.all([getSite(), getStrings()])
+const [site, t, categories] = await Promise.all([getSite(), getStrings(), byId('categories')])
+const cards = await Promise.all(posts.map(async (post) => {
+  const cover = post.data.cover ? await getEntry(post.data.cover) : undefined
+  const category = post.data.categories[0] ? categories.get(post.data.categories[0].id) : undefined
+  return {
+    title: post.data.title,
+    href: postHref(post),
+    excerpt: post.data.excerpt,
+    date: post.data.published_at,
+    image: cover ? imageOf(cover) : undefined,
+    category: category ? { label: category.data.name, href: termHref('category', category, categories) } : undefined,
+  }
+}))
 const pageSuffix = current > 1 ? ` – ${t('pagination.page')} ${current}` : ''
 const url = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href
 ---
@@ -35,13 +48,13 @@ const url = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href
       <h1 class="text-4xl font-bold tracking-tight text-balance">{title ?? site.title}</h1>
       {description && <p class="text-lg text-ink-muted">{description}</p>}
     </header>
-    {posts.length > 0
+    {cards.length > 0
       ? (
         <div class="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-          {posts.map(post => <PostCard post={post} locale={site.language ?? 'en'} />)}
+          {cards.map(card => <PostCard {...card} locale={site.language ?? 'en'} />)}
         </div>
       )
       : <p class="text-ink-muted">{t('blog.empty')}</p>}
-    <Pagination base={base} current={current} total={total} t={t} />
+    <Pagination base={base} current={current} total={total} label={t('pagination.label')} prevLabel={t('pagination.prev')} nextLabel={t('pagination.next')} pageLabel={t('pagination.page')} />
   </div>
 </BaseLayout>

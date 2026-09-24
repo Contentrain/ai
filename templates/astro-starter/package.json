@@ -22,7 +22,9 @@
     "@astrojs/sitemap": "^3.7.4",
     "@contentrain/query": "^7.5.1",
     "astro": "^7.3.5",
-    "sharp": "^0.35.4"
+    "sharp": "^0.35.4",
+    "tailwind-merge": "^3.7.0",
+    "tailwind-variants": "^3.3.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
