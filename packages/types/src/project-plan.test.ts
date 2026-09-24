@@ -17,7 +17,7 @@ const plan = (): ProjectPlan => ({
     tokens: { roles: { 'color-accent': '#9dff20', 'color-accent-ink': '#000000', 'font-sans': 'Inter, sans-serif', 'container-prose': '650px' } },
   },
   layout: {
-    header: { component: 'Header', variant: { layout: 'split' }, bind: { kind: 'menu', menu: 'primary-menu', props: { siteName: 'const:Example' } }, labels: { menuLabel: 'nav.menu' } },
+    header: { component: 'Header', variant: { layout: 'split' }, bind: { kind: 'static', props: { siteName: 'site:title', items: 'menu:primary' } }, labels: { menuLabel: 'nav.menu' } },
   },
   models: [
     { id: 'posts', kind: 'collection', origin: 'import' },
@@ -25,7 +25,10 @@ const plan = (): ProjectPlan => ({
     {
       id: 'about-features', kind: 'collection', origin: 'plan', name: 'About features', domain: 'pages', i18n: true, title_field: 'title',
       fields: { title: { type: 'string', required: true }, body: { type: 'markdown' }, icon: { type: 'image' } },
-      extract: [{ from: 'repeat:1x2y', pages: [11], entryId: 'about:index', fields: { title: '0.1|text', body: '0.2|text', icon: '0.0|src' } }],
+      extract: [
+        { from: 'repeat:1x2y', pages: [11], entryId: 'about:index', fields: { title: '0.1|text', body: '0.2|text', icon: '0.0|src' } },
+        { from: 'core/columns', pages: [12], entryId: 'services:index', rule: 'gutenberg:core/columns', fields: { title: 'dom:h2' } },
+      ],
     },
   ],
   components: [
@@ -74,12 +77,12 @@ describe('validateProjectPlan', () => {
       'kit component hero names no kit id',
       'route post section 1: component Missing is not declared',
       'route home section 1: binds the route entry but the route has no source',
-      'route post section 0: text = content is not a plan value (field: media: ref: href: term: ui: const:)',
+      'route post section 0: text = content is not a plan value (field: media: ref: href: term: ui: site: menu: page: const:)',
       'route post section 0: Prose has no prop text',
       'route post section 0: required prop Prose.body is not bound',
       'route about section 0: model nope is not declared',
       'model about-features extraction fills unknown field subtitle',
-      'model about-features field subtitle: path 0.3|innerHTML is not "<path>|<prop>" or "attr:<name>"',
+      'model about-features field subtitle: path 0.3|innerHTML is not "<path>|<prop>", "attr:<name>" or an element expression',
     ]))
   })
 
