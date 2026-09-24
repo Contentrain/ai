@@ -41,8 +41,11 @@ export function scaffoldFiles(ir: ProjectIR, options: EmitOptions, noindex: stri
       ...(sitemap ? { '@astrojs/sitemap': '^3.7.0' } : {}),
       // Astro's default image service; getImage() needs it at build time.
       ...(images ? { sharp: '^0.34.0' } : {}),
-    },
-    devDependencies: {
+      // `build` runs `astro check`, so the checker is a build dependency, not a
+      // dev one — as create-astro writes it. As devDependencies they were left
+      // out by every install with NODE_ENV=production (a worker image, a host's
+      // production build), and Astro then asks to install them: with no
+      // terminal the build fails, with CI set `astro check` exits 0 unchecked.
       '@astrojs/check': '^0.9.0',
       typescript: '^5.7.0',
     },
