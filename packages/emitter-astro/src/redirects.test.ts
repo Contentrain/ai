@@ -271,6 +271,21 @@ describe('hostRedirects — host files only, no meta-refresh page', () => {
     expect(page.redirects?.manual[0]?.reason).toMatch(/^from ends in a file name/)
   })
 
+  it('never over a file the build writes: the host file answers before the filesystem', () => {
+    // Both slash forms reach the host file, and Netlify matches case-insensitively.
+    const files = ['/feed.xml', '/category/news/feed.xml', '/llms.txt', '/robots.txt', '/robots.txt/', '/Feed.xml', '/404.html', '/sitemap-index.xml', '/sitemap-0.xml', '/_astro/x.js', '/styles/legacy/s.css']
+    const out = emitHost(files.map((from) => ({ from, to: '/hello-world/' })))
+    expect(out.redirects?.written).toEqual([])
+    expect(out.redirects?.manual.map((m) => m.reason)).toEqual(files.map(() => 'from is a file the build writes — the host file would serve the redirect over it'))
+    expect(out.files['public/_redirects']).toBeUndefined()
+  })
+
+  it('WordPress\'s own sitemap and a producer\'s /assets/ are not the build\'s files: those rules are written', () => {
+    const out = emitHost([{ from: '/sitemap.xml', to: '/sitemap-index.xml' }, { from: '/sitemap_index.xml', to: '/sitemap-index.xml' }, { from: '/assets/old.jpg', to: '/hello-world/' }])
+    expect(out.redirects?.manual).toEqual([])
+    expect(out.files['public/_redirects']).toContain('/sitemap.xml /sitemap-index.xml 301!')
+  })
+
   it('an address the site\'s own rules or the feed already redirect is theirs', () => {
     const out = emitAstroProject({
       ir, content,

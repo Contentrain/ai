@@ -104,6 +104,23 @@ function checkFrom(from: string, hostOnly = false): { path: string } | { reason:
   return { path }
 }
 
+/**
+ * A path the build writes a file at: the emitter's own endpoints (robots,
+ * llms.txt, every feed, @astrojs/sitemap's files), the 404 page, and the
+ * directories of Astro's bundles and the legacy stylesheets. A host file
+ * answers before the filesystem — a forced Netlify rule and every vercel.json
+ * redirect — so a host-only rule here would shadow the file. `builtAddresses`
+ * knows pages only. Compared without a trailing slash (a host file gets both
+ * forms) and in lower case (Netlify matches rules case-insensitively).
+ * WordPress's own `/sitemap.xml` and `/sitemap_index.xml` are not the build's:
+ * a 301 from them is one a migration wants.
+ */
+function buildOutputFile(path: string): boolean {
+  const p = (path.replace(/\/+$/, '') || '/').toLowerCase()
+  return p === '/robots.txt' || p === '/llms.txt' || p === '/404.html' || p.endsWith('/feed.xml')
+    || /^\/sitemap-(?:index|\d+)\.xml$/.test(p) || /^\/(?:_astro|styles)(?:\/|$)/.test(p)
+}
+
 function checkTo(to: string): boolean {
   if (hasControlOrSpace(to)) return false
   if (to.startsWith('/')) return !to.startsWith('//')
@@ -137,6 +154,8 @@ export function planRedirects(redirects: RawRedirect[], built: Map<string, strin
     if (!(REDIRECT_STATUSES as readonly number[]).includes(status)) { skip(`status ${status} is not one of ${REDIRECT_STATUSES.join('/')}`); continue }
     const from = checkFrom(redirect.from, options.hostOnly)
     if ('reason' in from) { skip(from.reason); continue }
+    // Only a host-only rule can name a file (see checkFrom).
+    if (options.hostOnly && buildOutputFile(from.path)) { skip('from is a file the build writes — the host file would serve the redirect over it'); continue }
     if (!checkTo(redirect.to)) { skip('to is not a site-root path or an http(s) URL'); continue }
     const key = addressKey(from.path)
     const owner = built.get(key)
