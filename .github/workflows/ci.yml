@@ -58,6 +58,12 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Emitted Astro site passes astro check
+        # The unit suite asserts emitted strings; this installs an emitted site
+        # with npm and runs the check its build runs first (0.16.0 shipped an
+        # archive page that failed it).
+        run: pnpm --filter @contentrain/emitter-astro test:astro
+
       - name: Plugin payload in sync
         run: |
           pnpm plugin:build

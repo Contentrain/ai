@@ -41,7 +41,8 @@
     "dev": "tsdown src/index.ts --format esm --dts --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test:astro": "node scripts/astro-check.mjs"
   },
   "dependencies": {
     "@contentrain/types": "workspace:*"

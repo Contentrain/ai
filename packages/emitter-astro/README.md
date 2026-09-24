@@ -280,3 +280,7 @@ collection: Astro serves one file per path, so one of the two routes does not
 exist in the built site, and which one survived is an accident of ordering. Fix
 it by giving one route a distinct pattern, or by expanding the narrower one into
 literal routes.
+
+## Checking the emitted types
+
+The unit suite asserts what the emitter writes; `pnpm --filter @contentrain/emitter-astro test:astro` (after `pnpm build`) checks it the way a migrated site's build does. It emits a site with every kind of page and endpoint — posts, pages, nested category and tag archives with their feeds, an author profile, a list, a static page, the feed, llms.txt, redirects — once with trailing slashes and once without, installs it with npm from its own `package.json`, and runs `astro check`. A pass is a result naming 0 errors. CI and the release workflow run it on every change.
