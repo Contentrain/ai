@@ -1,0 +1,28 @@
+{
+  "id": "cta",
+  "name": "CTA",
+  "description": "A call to action: a short heading, an optional line of text and one or two buttons — across the whole section, or as a card inside it.",
+  "category": "section",
+  "uses": [],
+  "shared": ["Button.astro", "Section.astro", "types.ts"],
+  "variants": {
+    "layout": { "options": ["inline", "centered"], "default": "inline", "description": "inline: text left, buttons right on wide screens. centered: everything centred." },
+    "frame": { "options": ["full", "card"], "default": "full", "description": "full: the tone fills the section. card: a rounded box in a plain section carries the tone." },
+    "tone": { "options": ["default", "muted", "inverse", "accent"], "default": "accent", "description": "Background. On accent, primary buttons are drawn in the secondary style so they stay visible." }
+  },
+  "props": {
+    "heading": { "type": "string", "required": true, "description": "The call's heading (Divi CTA title, Elementor call-to-action title)." },
+    "body": { "type": "text", "description": "One or two sentences under the heading." },
+    "actions": { "type": "array", "required": true, "items": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true }, "newTab": { "type": "boolean" }, "style": { "type": "select", "options": ["primary", "secondary", "ghost"] } } }, "description": "Buttons, in order; usually one." },
+    "id": { "type": "string", "description": "Anchor id of the section; the heading gets `<id>-title`." }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "elementor": ["elementor/call-to-action"],
+    "divi": ["divi/et_pb_cta"],
+    "classic": ["classic/cta"]
+  },
+  "a11y": "A labelled region (aria-labelledby its h2). Buttons are links with their own text. Accent tone swaps the primary button style so its contrast holds."
+}

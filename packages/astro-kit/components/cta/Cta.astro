@@ -1,0 +1,63 @@
+---
+// A call to action: a short heading, a line of text and one or two buttons —
+// across the full section, or as a card inside it.
+import { tv } from 'tailwind-variants'
+import Button from '../_shared/Button.astro'
+import Section from '../_shared/Section.astro'
+import type { ActionInput } from '../_shared/types'
+
+const cta = tv({
+  slots: {
+    box: 'flex flex-col gap-6',
+    copy: 'flex flex-col gap-3',
+    heading: 'text-2xl font-bold tracking-tight text-balance md:text-3xl',
+    body: 'max-w-2xl text-pretty opacity-85',
+    actions: 'flex flex-wrap gap-3',
+  },
+  variants: {
+    layout: {
+      inline: { box: 'md:flex-row md:items-center md:justify-between', actions: 'md:shrink-0' },
+      centered: { box: 'items-center text-center', body: 'mx-auto', actions: 'justify-center' },
+    },
+    frame: {
+      full: {},
+      card: { box: 'rounded-card border border-line p-8 md:p-12' },
+    },
+    tone: { default: {}, muted: {}, inverse: {}, accent: {} },
+  },
+  compoundVariants: [
+    // A card carries the tone itself, on a plain section; a plain card still needs a surface to read as one.
+    { frame: 'card', tone: 'default', class: { box: 'bg-surface-muted text-ink' } },
+    { frame: 'card', tone: 'muted', class: { box: 'border-transparent bg-surface-muted text-ink' } },
+    { frame: 'card', tone: 'inverse', class: { box: 'border-transparent bg-ink text-surface' } },
+    { frame: 'card', tone: 'accent', class: { box: 'border-transparent bg-accent text-accent-ink' } },
+  ],
+  defaultVariants: { layout: 'inline', frame: 'full', tone: 'accent' },
+})
+
+interface Props {
+  heading: string
+  body?: string | undefined
+  actions: ActionInput[]
+  layout?: 'inline' | 'centered' | undefined
+  frame?: 'full' | 'card' | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  id?: string | undefined
+}
+
+const { heading, body, actions, layout, frame, tone = 'accent', id } = Astro.props
+const s = cta({ layout, frame, tone })
+const headingId = id ? `${id}-title` : undefined
+// On the accent background the primary button (accent) would vanish: it is drawn as the secondary style there.
+const onAccent = (action: ActionInput): ActionInput => ({ label: action.label, href: action.href, newTab: action.newTab, style: 'secondary' })
+const shown = actions.map(action => (tone === 'accent' && (action.style ?? 'primary') === 'primary' ? onAccent(action) : action))
+---
+<Section tone={frame === 'card' ? 'default' : tone} spacing="md" id={id} aria-labelledby={headingId}>
+  <div class={s.box()}>
+    <div class={s.copy()}>
+      <h2 id={headingId} class={s.heading()}>{heading}</h2>
+      {body && <p class={s.body()}>{body}</p>}
+    </div>
+    {shown.length > 0 && <div class={s.actions()}>{shown.map(action => <Button action={action} size="lg" />)}</div>}
+  </div>
+</Section>

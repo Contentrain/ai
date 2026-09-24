@@ -1,0 +1,83 @@
+---
+// The page's opening section: heading, lead, actions and an image — beside the
+// text, below it, or behind it as a cover with the text over a scrim.
+import { tv } from 'tailwind-variants'
+import Button from '../_shared/Button.astro'
+import KitImage from '../_shared/KitImage.astro'
+import Section from '../_shared/Section.astro'
+import type { ActionInput, ImageInput } from '../_shared/types'
+
+const hero = tv({
+  slots: {
+    grid: 'grid items-center gap-10',
+    copy: 'flex flex-col gap-5',
+    eyebrow: 'text-sm font-semibold tracking-wide uppercase opacity-80',
+    heading: 'text-4xl font-bold tracking-tight text-balance md:text-5xl lg:text-6xl',
+    lead: 'max-w-2xl text-lg text-pretty opacity-85 md:text-xl',
+    actions: 'flex flex-wrap gap-3 pt-2',
+    media: 'overflow-hidden rounded-card',
+  },
+  variants: {
+    layout: {
+      split: { grid: 'md:grid-cols-2' },
+      centered: { copy: 'items-center text-center', lead: 'mx-auto', actions: 'justify-center', media: 'mx-auto w-full max-w-4xl' },
+      cover: { grid: 'relative z-10 min-h-[28rem] md:min-h-[36rem]', copy: 'max-w-3xl' },
+    },
+    tone: { default: {}, muted: {}, inverse: {}, accent: {} },
+  },
+  defaultVariants: { layout: 'split', tone: 'default' },
+})
+
+interface Props {
+  heading: string
+  /** Heading level: 1 when the hero opens the page (the default), 2 inside a page that already has one. */
+  level?: 1 | 2 | undefined
+  eyebrow?: string | undefined
+  lead?: string | undefined
+  actions?: ActionInput[] | undefined
+  image?: ImageInput | undefined
+  layout?: 'split' | 'centered' | 'cover' | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  id?: string | undefined
+}
+
+const { heading, level = 1, eyebrow, lead, actions = [], image, layout = 'split', tone, id } = Astro.props
+const s = hero({ layout, tone })
+const Heading = level === 1 ? 'h1' : 'h2'
+const headingId = id ? `${id}-title` : undefined
+const cover = layout === 'cover' && image
+---
+{cover
+  ? (
+    <Section tone="inverse" spacing="none" width="none" id={id} aria-labelledby={headingId} class="relative isolate overflow-hidden">
+      <KitImage image={image} priority sizes="100vw" class="absolute inset-0 -z-10 h-full w-full object-cover" />
+      <div class="absolute inset-0 -z-10 bg-ink/60" aria-hidden="true" />
+      <div class="container-page py-16 md:py-28">
+        <div class={s.grid()}>
+          <div class={s.copy()}>
+            {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
+            <Heading id={headingId} class={s.heading()}>{heading}</Heading>
+            {lead && <p class={s.lead()}>{lead}</p>}
+            {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
+          </div>
+        </div>
+      </div>
+    </Section>
+  )
+  : (
+    <Section tone={tone} spacing="lg" id={id} aria-labelledby={headingId}>
+      <div class={s.grid()}>
+        <div class={s.copy()}>
+          {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
+          <Heading id={headingId} class={s.heading()}>{heading}</Heading>
+          {lead && <p class={s.lead()}>{lead}</p>}
+          {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
+        </div>
+        {image && (
+          <div class={s.media()}>
+            <KitImage image={image} priority sizes={layout === 'split' ? '(min-width: 768px) 50vw, 100vw' : '(min-width: 1024px) 56rem, 100vw'} class="h-auto w-full object-cover" />
+          </div>
+        )}
+      </div>
+    </Section>
+  )}
