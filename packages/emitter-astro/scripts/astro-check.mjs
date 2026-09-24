@@ -11,7 +11,7 @@
 // Run after `pnpm build` (it imports dist/): `pnpm --filter @contentrain/emitter-astro test:astro`.
 
 import { spawnSync } from 'node:child_process'
-import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
@@ -72,19 +72,37 @@ function emit(options) {
  */
 async function check(label, options, modules) {
   const dir = await mkdtemp(join(tmpdir(), `emitter-astro-check-${label}-`))
-  const { files } = emit(options)
-  for (const [path, content] of Object.entries(files)) {
-    await mkdir(dirname(join(dir, path)), { recursive: true })
-    await writeFile(join(dir, path), content)
+  try {
+    const { files } = emit(options)
+    for (const [path, content] of Object.entries(files)) {
+      await mkdir(dirname(join(dir, path)), { recursive: true })
+      await writeFile(join(dir, path), content)
+    }
+  } catch (error) {
+    await rm(dir, { recursive: true, force: true })
+    throw error
   }
   const run = (cmd, args) => spawnSync(cmd, args, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], shell: process.platform === 'win32' })
   if (modules) {
     await symlink(modules, join(dir, 'node_modules'), 'dir')
   } else {
-    const install = run('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error'])
+    // The emitted package.json has ranges and no lockfile, as a migrated site
+    // starts: one retry absorbs a transient registry error.
+    const npmInstall = () => run('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error'])
+    let install = npmInstall()
+    if (install.status !== 0) {
+      console.warn(`npm install (${label}) failed, retrying once:\n${install.stderr}`)
+      install = npmInstall()
+    }
     if (install.status !== 0) {
       console.error(`npm install (${label}) failed:\n${install.stdout}${install.stderr}`)
       return { ok: false, dir }
+    }
+    // What the ranges resolved to: a failure after a new astro or checker
+    // release reads as that, not as a mystery.
+    for (const name of ['astro', '@astrojs/check', 'typescript']) {
+      const version = JSON.parse(await readFile(join(dir, 'node_modules', name, 'package.json'), 'utf8')).version
+      console.log(`${name} ${version}`)
     }
   }
   const result = run(join(dir, 'node_modules', '.bin', 'astro'), ['check'])
@@ -100,8 +118,15 @@ async function check(label, options, modules) {
 }
 
 // Both address forms: the file build (no trailing slash) writes other pages.
-const slash = await check('slash', {})
-const noSlash = await check('no-slash', { trailingSlash: false }, join(slash.dir, 'node_modules'))
-await rm(noSlash.dir, { recursive: true, force: true })
-await rm(slash.dir, { recursive: true, force: true })
-if (!slash.ok || !noSlash.ok) process.exit(1)
+const dirs = []
+let ok = false
+try {
+  const slash = await check('slash', {})
+  dirs.push(slash.dir)
+  const noSlash = slash.ok ? await check('no-slash', { trailingSlash: false }, join(slash.dir, 'node_modules')) : slash
+  if (noSlash !== slash) dirs.push(noSlash.dir)
+  ok = slash.ok && noSlash.ok
+} finally {
+  for (const dir of dirs.toReversed()) await rm(dir, { recursive: true, force: true })
+}
+if (!ok) process.exit(1)
