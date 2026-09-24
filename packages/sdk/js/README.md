@@ -658,10 +658,16 @@ implies `--published`. The programmatic equivalents are
 `generate({ projectRoot, publishedOnly: true })` and
 `generate({ projectRoot, at: '2026-10-01T12:00:00Z' })`.
 
+`--require-status` (`requireStatus: true`) also holds back an entry with no
+workflow status: no meta record, or one without `status`. Use it when every
+entry is expected to carry one, as after a WordPress import. There, a missing
+status means a broken import, not legacy content. It implies `--published`.
+
 Astro content collections use the same filter:
 
 ```ts
 contentrainLoader({ model: 'posts', locale: 'en', publishedOnly: true })
+contentrainLoader({ model: 'posts', locale: 'en', requireStatus: true }) // also hides entries with no status
 ```
 
 Publication begins exactly at `publish_at` and ends exactly at `expire_at`.

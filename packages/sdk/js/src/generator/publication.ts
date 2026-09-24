@@ -8,21 +8,30 @@ export interface PublicationOptions {
   publishedOnly?: boolean
   /** ISO timestamp for a reproducible public build. Implies publishedOnly. */
   at?: string
+  /**
+   * Hold back an entry that carries no workflow status — no meta record, or a
+   * record without `status`. Without it such an entry stays visible (legacy
+   * content predates meta). Set it when the producer writes a status for every
+   * entry, as the WordPress import does: a missing status then means a broken
+   * import, and a public build must not guess. Implies publishedOnly.
+   */
+  requireStatus?: boolean
 }
 
 export interface PublicationContext {
   projectRoot: string
   defaultLocale: string
   at: number
+  requireStatus: boolean
 }
 
 export function publicationContext(projectRoot: string, defaultLocale: string, options: PublicationOptions): PublicationContext | undefined {
-  if (!options.publishedOnly && options.at === undefined) return undefined
+  if (!options.publishedOnly && !options.requireStatus && options.at === undefined) return undefined
   if (options.at !== undefined && !/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/i.test(options.at))
     throw new Error('Invalid publication --at timestamp: include an ISO date, time and timezone')
   const at = options.at === undefined ? Date.now() : Date.parse(options.at)
   if (!Number.isFinite(at)) throw new Error('Invalid publication --at timestamp')
-  return { projectRoot, defaultLocale, at }
+  return { projectRoot, defaultLocale, at, requireStatus: options.requireStatus === true }
 }
 
 /** Canonical meta is independent of custom content paths and locale strategies. */
@@ -42,11 +51,15 @@ export async function publicationMeta(ref: ContentFileRef, model: ModelDefinitio
   return meta as Record<string, unknown>
 }
 
-/** Legacy content without meta remains visible, matching Studio's CDN contract. */
-export function isPublishedAt(meta: unknown, at: number): boolean {
-  if (meta === undefined) return true
+/**
+ * Legacy content without meta remains visible, matching Studio's CDN contract —
+ * unless `requireStatus`, where an entry without a status (missing or empty) is held back.
+ */
+export function isPublishedAt(meta: unknown, at: number, requireStatus = false): boolean {
+  if (meta === undefined) return !requireStatus
   if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return false
   const value = meta as Record<string, unknown>
+  if (!value.status && requireStatus) return false
   if (value.status && value.status !== 'published') return false
   for (const key of ['publish_at', 'expire_at'] as const) {
     if (value[key] === undefined || value[key] === null) continue
