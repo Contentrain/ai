@@ -8,3 +8,5 @@
 - `data-kit-text` on the lead and body paragraphs of hero, CTA and card grid.
 
 **Plain FAQ.** Faq gains `style: 'plain'`, the browser's own disclosure triangle with no rules or boxes. Gutenberg's `core/details` now maps to it.
+
+**Cover alignment.** Gutenberg covers now choose the Hero's `align`: `start` when WordPress positions the content on the left (`is-position-*-left`), `center` otherwise, which is WordPress's default.
