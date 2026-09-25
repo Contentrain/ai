@@ -23,7 +23,8 @@ const cta = tv({
       full: {},
       card: { box: 'rounded-card border border-line p-8 md:p-12' },
     },
-    tone: { default: {}, muted: {}, inverse: {}, accent: {} },
+    // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
+    tone: { default: {}, muted: {}, inverse: {}, accent: { body: 'opacity-100' } },
   },
   compoundVariants: [
     // A card carries the tone itself, on a plain section; a plain card still needs a surface to read as one.

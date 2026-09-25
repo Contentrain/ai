@@ -33,7 +33,8 @@ const contact = tv({
       split: { grid: 'md:grid-cols-[2fr_3fr] md:items-start' },
       stacked: { grid: 'mx-auto max-w-2xl' },
     },
-    tone: { default: { form: 'border border-line bg-surface p-6 md:p-8' }, muted: { form: 'bg-surface p-6 text-ink md:p-8' }, inverse: { form: 'bg-surface p-6 text-ink md:p-8' }, accent: { form: 'bg-surface p-6 text-ink md:p-8' } },
+    // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
+    tone: { default: { form: 'border border-line bg-surface p-6 md:p-8' }, muted: { form: 'bg-surface p-6 text-ink md:p-8' }, inverse: { form: 'bg-surface p-6 text-ink md:p-8' }, accent: { form: 'bg-surface p-6 text-ink md:p-8', intro: 'opacity-100', term: 'opacity-100' } },
   },
   defaultVariants: { layout: 'split', tone: 'default' },
 })
