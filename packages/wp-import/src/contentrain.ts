@@ -12,7 +12,7 @@
 //    comments intake downstream cannot exist without it.
 
 import type { EntrySourceMap, FieldDef, ModelDefinition, RawIR, RawPost } from '@contentrain/types'
-import { ACF_REFERENCE_TYPES, acfFieldDef, acfRows, acfValue, mergeFieldDef, type AcfReference } from './acf.js'
+import { ACF_REFERENCE_TYPES, acfFieldDef, acfRows, acfScrub, acfValue, mergeFieldDef, type AcfReference } from './acf.js'
 import {
   byValue,
   canon,
@@ -248,7 +248,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
           out.set(k, cur)
           continue
         }
-        const def = acfFieldDef(k, acf.value, { type: acf.type, label: acf.label })
+        const def = acfFieldDef(k, acfScrub(acf.value), { type: acf.type, label: acf.label })
         if (!def) continue
         const cur = out.get(k)
         out.set(k, { def: cur?.def ? mergeFieldDef(cur.def, def) : def, multiple: false, models: new Set() })
@@ -531,7 +531,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       for (const [k, acf] of Object.entries(p.acf ?? {})) {
         const plan = acfFields.get(k)
         if (!plan || k in e) continue
-        const v = plan.def ? acfValue(plan.def, plan.kind === 'address' ? addressOf(acf.value) : acfRows(acf.value)) : acfRefs(plan, acf.value)
+        const v = plan.def ? acfValue(plan.def, plan.kind === 'address' ? addressOf(acf.value) : acfRows(acfScrub(acf.value))) : acfRefs(plan, acf.value)
         if (v !== undefined) e[k] = v
       }
       contentBucket[id] = e

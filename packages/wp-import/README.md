@@ -163,10 +163,13 @@ states it (the field description then says so).
 | tab, accordion, message | nothing (layout only) |
 | password | nothing, ever |
 
-**A password field is never read.** Its value is skipped where the source
-states the type; where it does not, a secret-looking name (`password`, `token`,
-`api_key`, …) is skipped instead. It never reaches `RawIR`, the store, or a
-report.
+**A password field is never read** — at any depth: a password sub-field of a
+repeater row, a group or a flexible layout is removed with its `_source` before
+the value reaches `RawIR`. Where the source states the type, the type decides;
+where it does not (plain ACF, no `<name>_source`), a field whose name has a
+secret word in it (`password`, `user_pass`, `apiKey`, `access_token`, …; whole
+words, so `passage` stays) is skipped instead. It never reaches `RawIR`, the
+store, or a report.
 
 ACF values follow their post: a draft's fields land in the store with the
 draft (meta `status: draft`), like its body. A reference to an entry the import

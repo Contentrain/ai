@@ -8,7 +8,7 @@
 import type { RawAcfValue, RawIR, RawAttachment, RawComment, RawLanguagePair, RawMenu, RawPost, RawTerm, RawTermRef, SourceAccessKind } from '@contentrain/types'
 import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import { strip, SKIP_TYPES, PROTECTED } from './core.js'
-import { acfIsSecret } from './acf.js'
+import { acfIsSecret, acfScrub } from './acf.js'
 import { blockMenus, classicMenus, type MenuContext, type RestMenu, type RestMenuItem, type RestNavigation, type RestTemplatePart } from './rest-menus.js'
 
 const iso = (gmt: string | undefined): string | null => (gmt ? `${gmt}Z` : null)
@@ -60,7 +60,8 @@ export interface RestImportResult {
    * `menus_require_auth`: menus and block navigation are only readable with an application password
    * of a user who may edit theme options — none was given, the site rejected it, or it lacks that right.
    * `acf_partial`: the site runs ACF / Secure Custom Fields; REST shows only the field groups set to
-   * `show_in_rest` (off by default) and no options page — the Bridge export reads the rest.
+   * `show_in_rest` (off by default) and no options page — the Bridge export reads the rest. Where the site
+   * states no field types (plain ACF, no `<name>_source`), a secret field is recognised by its name only.
    */
   gaps: string[]
 }
@@ -124,7 +125,7 @@ function acfOf(acf: RestPost['acf']): { acf?: Record<string, RawAcfValue> } {
     const source = acf[`${name}_source`] as { type?: unknown; label?: unknown } | undefined
     const type = typeof source?.type === 'string' ? source.type : undefined
     if (acfIsSecret(name, type)) continue
-    out[name] = { value, ...(type ? { type } : {}), ...(typeof source?.label === 'string' && source.label ? { label: source.label } : {}) }
+    out[name] = { value: acfScrub(value), ...(type ? { type } : {}), ...(typeof source?.label === 'string' && source.label ? { label: source.label } : {}) }
   }
   return Object.keys(out).length ? { acf: out } : {}
 }

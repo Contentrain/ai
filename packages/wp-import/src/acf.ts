@@ -55,16 +55,52 @@ export const ACF_REFERENCE_TYPES: Readonly<Record<string, AcfReference>> = {
   page_link: 'address',
 }
 
-/** Names that mean a secret whatever the field's type, for sources that do not state the type. */
-const SECRET_NAME = /pass(word|wd)?|secret|token|api[_-]?key|private[_-]?key|credential/i
+/**
+ * Names that mean a secret whatever the field's type, for sources that do not state the type: whole words
+ * of the name (`user_pass`, `apiKey`, `client-secret`), so `passage_text` or `compass` stay content.
+ */
+const SECRET_NAME = /(?:^|_)(?:pass(?:word|wd)?|secret|token|api_?key|private_?key|credentials?)(?:_|$)/i
+const secretName = (name: string): boolean => SECRET_NAME.test(name.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/-/g, '_'))
 
 /** Whether a field must never be read: a secret by type, or — when the type is unknown — by name. */
 export function acfIsSecret(name: string, type: string | undefined): boolean {
   if (type) return ACF_SECRET_TYPES.has(type)
-  return SECRET_NAME.test(name)
+  return secretName(name)
 }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
+const SOURCE = '_source'
+/** The ACF type SCF states for a sub-field of a row or group (`<name>_source.type`). */
+const statedType = (row: Record<string, unknown>, k: string): string | undefined => {
+  const s = row[`${k}${SOURCE}`]
+  return isRecord(s) && typeof s.type === 'string' ? s.type : undefined
+}
+/** A sub-field that carries nothing to keep: a secret (stated, or by name) or a layout field. */
+const droppedKey = (row: Record<string, unknown>, k: string): boolean => {
+  const t = statedType(row, k)
+  return (t !== undefined && ACF_LAYOUT_TYPES.has(t)) || acfIsSecret(k, t)
+}
+
+/**
+ * An ACF value with every secret sub-field removed, at any depth: repeater rows, groups, flexible layouts.
+ * A sub-field's `_source` keeps only its type and label — its `formatted_value` repeats the value.
+ */
+export function acfScrub(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(acfScrub)
+  if (!isRecord(value)) return value
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(value)) {
+    if (k.endsWith(SOURCE) && k.length > SOURCE.length) {
+      const base = k.slice(0, -SOURCE.length)
+      if (droppedKey(value, base) || !isRecord(v)) continue
+      out[k] = { ...(typeof v.type === 'string' ? { type: v.type } : {}), ...(typeof v.label === 'string' ? { label: v.label } : {}) }
+      continue
+    }
+    if (droppedKey(value, k)) continue
+    out[k] = acfScrub(v)
+  }
+  return out
+}
 /** ACF's image/file array (`return_format: array`): `{ ID, url, filename, … }`. */
 const isAttachment = (v: unknown): v is { url: string } => isRecord(v) && typeof v.url === 'string' && ('ID' in v || 'id' in v) && ('filename' in v || 'mime_type' in v)
 const isLink = (v: unknown): v is { url: string; title?: string; target?: string } => isRecord(v) && typeof v.url === 'string' && 'title' in v && 'target' in v && Object.keys(v).length <= 3
@@ -99,7 +135,7 @@ function rowFields(rows: Record<string, unknown>[]): Record<string, FieldDef> {
   const out: Record<string, FieldDef> = {}
   for (const row of rows) {
     for (const [k, v] of Object.entries(row)) {
-      if (k.endsWith('_source') || SECRET_NAME.test(k)) continue
+      if (k.endsWith(SOURCE) || droppedKey(row, k)) continue
       const d = inferDef(v)
       if (!d) continue
       const seen = out[k]
@@ -134,6 +170,8 @@ export function acfValue(def: FieldDef, value: unknown): unknown {
       if (!isRecord(value)) return undefined
       const out: Record<string, unknown> = {}
       for (const [k, sub] of Object.entries(def.fields ?? {})) {
+        // Another row may have typed the name; this one says it is a secret.
+        if (droppedKey(value, k)) continue
         const v = acfValue(sub, value[k])
         if (v !== undefined) out[k] = v
       }

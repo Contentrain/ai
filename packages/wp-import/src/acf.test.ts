@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { validateFieldValue } from '@contentrain/types'
-import { ACF_SCALAR_TYPES, acfFieldDef, acfIsSecret, acfRows, acfValue } from './acf'
+import { ACF_SCALAR_TYPES, acfFieldDef, acfIsSecret, acfRows, acfScrub, acfValue } from './acf'
 import { fetchRestRawIR, rawToContentrain } from './index'
 
 describe('ACF → Contentrain mapping table', () => {
@@ -67,6 +67,22 @@ describe('ACF → Contentrain mapping table', () => {
     expect(acfFieldDef('related', [1, 2], { type: 'relationship' })).toBeNull()
   })
 
+  it('matches secret names by whole word: passage and compass are content, apiKey and user_pass are not', () => {
+    for (const name of ['user_pass', 'password', 'apiKey', 'api-key', 'client_secret', 'access_token', 'userPassword', 'private_key', 'credentials']) expect(acfIsSecret(name, undefined), name).toBe(true)
+    for (const name of ['passage_text', 'compass', 'passenger_count', 'tokenized', 'secretary', 'keynote']) expect(acfIsSecret(name, undefined), name).toBe(false)
+  })
+
+  it('removes a secret sub-field at any depth, stated by its _source or by its name, with its _source', () => {
+    const pw = { type: 'password', label: 'Door', formatted_value: 'S3' }
+    const value = [{ title: 'Design', door: 'S1', door_source: pw, rows: [{ pin: 'S2', pin_source: pw, note: 'ok', note_source: { type: 'text', label: 'Note', formatted_value: 'ok' } }], api_key: 'S4', tip: 'x', tip_source: { type: 'message' } }]
+    const out = acfScrub(value)
+    expect(JSON.stringify(out)).not.toMatch(/S[1-4]|door|pin|api_key|tip/)
+    expect(out).toEqual([{ title: 'Design', rows: [{ note: 'ok', note_source: { type: 'text', label: 'Note' } }] }])
+    // A row typed by another row still drops the field where its own _source says password.
+    const def = acfFieldDef('m', [{ title: 'A', door: 'blue' }], { type: 'repeater' })!
+    expect(acfValue(def, [{ title: 'A', door: 'blue' }, { title: 'B', door: 'S1', door_source: pw }])).toEqual([{ title: 'A', door: 'blue' }, { title: 'B' }])
+  })
+
   it('infers a type from the value only when the source states none, and says so', () => {
     expect(acfFieldDef('subtitle', 'A subtitle')).toMatchObject({ type: 'string', description: 'ACF (type inferred from the value)' })
   })
@@ -92,9 +108,9 @@ const projectAcf = (id: number, others: number[]) => ({
   gallery: [85], gallery_source: src('gallery', 'Gallery'),
   location: { address: 'Galata Bridge, Istanbul', lat: 41.0201, lng: 28.9731, zoom: 14 }, location_source: src('google_map', 'Location'),
   api_secret: SECRET, api_secret_source: src('password', 'Api Secret'),
-  specs: { label: 'Span', value: `${300 + id} m` }, specs_source: src('group', 'Specs'),
-  milestones: [{ title: 'Design', date: '20240901', done: true }], milestones_source: src('repeater', 'Milestones'),
-  sections: [{ acf_fc_layout: 'cta', heading: 'Build yours', link: { url: 'https://s.example/contact/', title: 'Contact', target: '' } }], sections_source: src('flexible_content', 'Sections'),
+  specs: { label: 'Span', value: `${300 + id} m`, pin: SECRET, pin_source: { type: 'password', label: 'Pin', formatted_value: SECRET } }, specs_source: src('group', 'Specs'),
+  milestones: [{ title: 'Design', date: '20240901', done: true, door: SECRET, door_source: { type: 'password', label: 'Door', formatted_value: SECRET } }], milestones_source: src('repeater', 'Milestones'),
+  sections: [{ acf_fc_layout: 'cta', heading: 'Build yours', code: SECRET, code_source: { type: 'password', label: 'Code', formatted_value: SECRET }, link: { url: 'https://s.example/contact/', title: 'Contact', target: '' } }], sections_source: src('flexible_content', 'Sections'),
 })
 
 const json = (b: unknown) => new Response(JSON.stringify(b), { headers: { 'content-type': 'application/json' } })
