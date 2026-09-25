@@ -42,7 +42,7 @@ const jsonLd = schema
   }).replace(/</g, '\\u003c')
   : undefined
 ---
-<nav aria-label={label}>
+<nav aria-label={label} data-cr-part="breadcrumb">
   <ol class={slots.list()}>
     {items.map(item => (
       <li class="flex items-center gap-2">

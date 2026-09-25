@@ -25,6 +25,8 @@ export const PROJECT_PLAN_FORMAT = 'contentrain-project-plan@1'
 export const PLAN_TOKEN_ROLES = [
   'color-surface', 'color-surface-muted', 'color-ink', 'color-ink-muted', 'color-line', 'color-accent', 'color-accent-ink',
   'font-sans', 'font-serif', 'font-mono', 'container-prose', 'container-page', 'container-wide', 'radius-card',
+  // The source theme's type and shape (theme.json styles): absent means the kit's own values.
+  'font-weight-heading', 'font-weight-body', 'text-body', 'leading-body', 'leading-heading', 'radius-control', 'radius-image', 'spacing-gutter',
 ] as const
 export type PlanTokenRole = (typeof PLAN_TOKEN_ROLES)[number]
 
@@ -71,8 +73,23 @@ export interface PlanSite {
   permalinks: { post: PlanPermalink, page: PlanPermalink, category: PlanPermalink, tag: PlanPermalink, author: PlanPermalink, blog: PlanPermalink }
   home: { kind: 'posts' } | { kind: 'page', slug: string }
   postsPerPage: number
-  /** Menu slugs (`menus.slug`, as WordPress named them) for the starter's navigation areas — `getMenu(slug)`. */
-  menus: { primary: string, footer: string }
+  /**
+   * Menu slugs (`menus.slug`, as WordPress named them) for the starter's navigation areas — `getMenu(slug)`.
+   * `footer` lists the footer's menus in the source's order, one column each (at most 4); empty for none.
+   * A plan written before 1.25 has one slug, or `'none'`: read it through {@link footerMenusOf}.
+   */
+  menus: { primary: string, footer: string | string[] }
+  /**
+   * A single post as the source's single template lays it out: the header parts in their order, links
+   * to the previous and next post (`core/post-navigation-link`), and how many other posts a list under
+   * it shows (a `core/query` after the content; 0 for none). Absent: the starter's own layout.
+   */
+  post?: { header: Array<'terms' | 'title' | 'byline' | 'cover'>, adjacent: boolean, more: number }
+  /**
+   * Post lists (blog index, archives): `cards`, or `full` when the source's query loop shows each post's
+   * content; `heading` shows the index's title on the front page. Absent: cards without a heading.
+   */
+  lists?: { display: 'cards' | 'full', heading: boolean }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
   redirects: Record<string, string | { status: number, destination: string }>
@@ -211,6 +228,12 @@ export interface PlanPlacement {
   bind: PlanBinding
   /** Interface strings from `ui-strings`: prop → key (`prevLabel: 'pagination.prev'`). */
   labels?: Record<string, string>
+  /**
+   * How wide the section's content runs, as the source block's alignment: `content` for a block without
+   * one (the theme's contentSize, `container-prose`), `wide` for `alignwide`/`alignfull` (`container-page`).
+   * The section's background spans the page either way. Absent: `wide`.
+   */
+  width?: 'content' | 'wide'
 }
 
 /**
@@ -223,7 +246,7 @@ export interface PlanPlacement {
  * - `term:<relation field>` — a related term as `{ label, href }` (the first of a multi-relation; all of them with `into`)
  * - `ui:<key>` — an interface string of `ui-strings`
  * - `site:<field>` — a field of the `site` singleton (`site:title`, `site:logo`)
- * - `menu:primary|footer` — the items of the menu `site.menus` names for that area
+ * - `menu:primary|footer` — the items of the menu `site.menus` names for that area (the first footer menu)
  * - `page:base|current|total|breadcrumb` — what the route knows about the page being built
  * - `const:<value>` — a layout switch, never content: `true`, `false`, a number, or a lowercase identifier
  *   (`const:contact`); anything that reads like text is refused, so page copy cannot be baked into code
@@ -307,6 +330,13 @@ const IMPORTED_MODELS = new Set(['posts', 'pages', 'categories', 'tags', 'author
  * their fields. Kit catalog and fact checks (does the kit id exist, does the template exist) belong to
  * the caller, which holds those documents.
  */
+/** The footer's menus as a list: an older plan's single slug is one menu, its `'none'` is none. */
+export function footerMenusOf(site: Pick<PlanSite, 'menus'>): string[] {
+  const footer = site.menus.footer
+  if (typeof footer === 'string') return footer === 'none' || footer === '' ? [] : [footer]
+  return [...footer]
+}
+
 export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   const errors: string[] = []
   const warnings: string[] = []
@@ -317,6 +347,21 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (!PERMALINK.test(value)) errors.push(`site.permalinks.${key} must start and end with "/" (${value})`)
   }
   if (!Number.isSafeInteger(site?.postsPerPage) || site.postsPerPage < 1) errors.push('site.postsPerPage is not a positive integer')
+  if (site?.post) {
+    const parts = site.post.header ?? []
+    if (parts.some(part => !['terms', 'title', 'byline', 'cover'].includes(part)) || new Set(parts).size !== parts.length) errors.push('site.post.header lists a part twice or one the starter does not have')
+    if (!Number.isSafeInteger(site.post.more) || site.post.more < 0 || site.post.more > 20) errors.push('site.post.more is not a count from 0 to 20')
+  }
+  if (site?.lists && !['cards', 'full'].includes(site.lists.display)) errors.push(`site.lists.display ${site.lists.display} is not cards or full`)
+  const footer = site?.menus?.footer
+  if (typeof footer === 'string') {
+    if (footer === '') errors.push('site.menus.footer has an empty menu slug')
+  } else if (!Array.isArray(footer)) errors.push('site.menus.footer is not a menu slug or a list of them')
+  else {
+    if (footer.length > 4) errors.push(`site.menus.footer has ${footer.length} menus; the footer takes at most 4`)
+    if (footer.some(slug => typeof slug !== 'string' || slug === '')) errors.push('site.menus.footer has an empty menu slug')
+    if (new Set(footer).size !== footer.length) errors.push('site.menus.footer names a menu twice')
+  }
   for (const [from, to] of Object.entries(site?.redirects ?? {})) {
     if (!from.startsWith('/')) errors.push(`redirect ${from} does not start with "/"`)
     const status = typeof to === 'string' ? 301 : to.status
@@ -374,6 +419,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   }
 
   const placement = (s: PlanPlacement, at: string, route?: PlanRoute) => {
+    if (s.width !== undefined && s.width !== 'content' && s.width !== 'wide') errors.push(`${at}: width ${s.width as string} is not content or wide`)
     const c = components.get(s.component)
     if (!c) { errors.push(`${at}: component ${s.component} is not declared`); return }
     const b = s.bind

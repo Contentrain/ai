@@ -55,7 +55,7 @@ const { root, inner, brand } = header({ layout, tone, position })
       {showName && <span>{siteName}</span>}
     </a>
     <div class:list={['flex items-center gap-4', layout === 'centered' ? 'justify-center' : 'ml-auto']}>
-      <Nav items={items} label={navLabel} menuLabel={menuLabel} closeLabel={closeLabel} align={layout === 'centered' ? 'center' : 'end'} />
+      <Nav items={items} label={navLabel} menuLabel={menuLabel} closeLabel={closeLabel} part="nav-header" align={layout === 'centered' ? 'center' : 'end'} />
       {action && <Button action={action} size="sm" class="hidden md:inline-flex" />}
     </div>
   </div>

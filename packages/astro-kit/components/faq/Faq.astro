@@ -14,10 +14,10 @@ export interface FaqItem {
 
 const faq = tv({
   slots: {
-    heading: 'mb-8 text-2xl font-bold tracking-tight text-balance md:text-3xl',
+    heading: 'mb-8 text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
     list: 'flex flex-col',
     item: 'group',
-    summary: 'flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-lg font-semibold [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    summary: 'flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-lg [font-weight:var(--font-weight-heading,600)] [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
     marker: 'size-5 shrink-0 transition-transform duration-200 group-open:rotate-45',
     answer: 'prose-site prose max-w-none pb-5 text-current',
   },
