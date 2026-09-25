@@ -1,10 +1,11 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { claimMatches, KIT_BUILDERS, rulesFor, unmappedSources, validateMapping, type KitCatalog, type MappingTable } from '../src/index'
+import { attrsOf, claimMatches, KIT_BUILDERS, rulesFor, unmappedSources, validateMapping, type KitCatalog, type MappingTable } from '../src/index'
 
 const ROOT = join(import.meta.dirname, '..')
 const catalog = JSON.parse(await readFile(join(ROOT, 'catalog.json'), 'utf8')) as KitCatalog
+const video = (attrs: Record<string, unknown>) => ({ name: 'elementor/video', attrs })
 const tables = Object.fromEntries(await Promise.all(KIT_BUILDERS.map(async b => [b, JSON.parse(await readFile(join(ROOT, 'mapping', `${b}.json`), 'utf8')) as MappingTable] as const)))
 
 describe('mapping tables', () => {
@@ -28,8 +29,10 @@ describe('mapping tables', () => {
         { match: 'core/cover', component: 'no-such-component' },
         { match: 'elementor/nav-menu', component: 'nav', props: { items: 'menu:sidebar', label: 'const:Our great studio' } },
       ],
+      defaults: { 'core/video': { autoplay: false } },
     }
     expect(validateMapping(broken, catalog)).toEqual([
+      'defaults core/video: not a elementor element',
       'elementor elementor/icon-box: card-grid.columns has no option 5',
       'elementor elementor/icon-box: card-grid.items[] has no field heading',
       'elementor elementor/icon-box: items[].title = innerHTML is not a mapping value',
@@ -60,5 +63,20 @@ describe('mapping tables', () => {
       '0.2 core/template-part:footer -> footer',
     ])
   })
-})
 
+  it('reads an attribute the builder leaves out at its default: an Elementor video without video_type is YouTube', () => {
+    const tree = [
+      video({ youtube_url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ' }),
+      video({ video_type: 'vimeo', vimeo_url: 'https://vimeo.com/76979871' }),
+      video({ video_type: 'hosted' }),
+    ]
+    expect(claimMatches(tree, tables.elementor!).map(m => `${m.path} ${m.rule.component} ${m.rule.props?.url}`)).toEqual([
+      '0.0 embed attr:youtube_url',
+      '0.1 embed attr:vimeo_url',
+    ])
+    expect(attrsOf(tree[0]!, tables.elementor!.defaults).video_type).toBe('youtube')
+    expect(attrsOf(tree[1]!, tables.elementor!.defaults).video_type).toBe('vimeo')
+    // Without the table's defaults the default video matches nothing: the bug this guards.
+    expect(claimMatches(tree, { ...tables.elementor!, defaults: {} })).toHaveLength(1)
+  })
+})

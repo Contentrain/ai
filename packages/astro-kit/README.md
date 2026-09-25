@@ -73,7 +73,10 @@ rulesFor(gutenberg, 'core/cover') // → the rule that turns a cover block into 
 builder elements to components, with a source for each prop from a small closed
 set of expressions (see `src/mapping.ts`). They are versioned, and an element
 no rule covers stays rich text (`fallback: "prose"`). When one rule matches an
-element, the outermost match owns its subtree.
+element, the outermost match owns its subtree. `defaults` lists attribute
+values a builder leaves out of its data while they are at their default
+(Elementor saves no `video_type` for a YouTube video); `when.attr` and `attr:`
+read through them (`attrsOf`).
 
 ## Development
 
