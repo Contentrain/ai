@@ -33,13 +33,13 @@ const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
   jsonLd={trail.length > 0 ? [breadcrumbLd(crumbs.map(crumb => ({ name: crumb.title, url: new URL(crumb.href, origin).href })))] : []}
 >
   {(trail.length > 0 || (showTitle && !isHome)) && (
-    <header class="container-page pt-12 md:pt-16">
+    <header class="container-prose pt-12 md:pt-16">
       {trail.length > 0 && (
         <div class="mb-6">
           <Breadcrumb items={trail.map(crumb => ({ label: crumb.title, href: crumb.href }))} current={data.title} label={t('nav.breadcrumb')} />
         </div>
       )}
-      {showTitle && !isHome && <h1 class="text-4xl leading-tight font-bold tracking-tight text-balance md:text-5xl">{data.title}</h1>}
+      {showTitle && !isHome && <h1 class="text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{data.title}</h1>}
     </header>
   )}
   <slot />

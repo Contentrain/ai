@@ -236,7 +236,17 @@ class View {
     return tests.join(' && ')
   }
 
+  /** A placement, narrowed to the reading column when its source block had no alignment. */
   placement(placement: PlanPlacement, index: number): void {
+    const start = this.body.length
+    this.place(placement, index)
+    // `width` is on plans from @contentrain/types 1.25; the section's background still spans the page.
+    if ((placement as PlanPlacement & { width?: 'content' | 'wide' }).width !== 'content') return
+    const lines = this.body.splice(start)
+    this.body.push('<div class="section-content">', ...lines.map(line => `  ${line}`), '</div>')
+  }
+
+  place(placement: PlanPlacement, index: number): void {
     const { name, importPath, kit } = componentOf(this.ctx, placement.component)
     this.imports.set(name, importPath)
     const bind: PlanBinding = placement.bind

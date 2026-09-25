@@ -42,7 +42,7 @@ const plan: ProjectPlan = {
   routes: [
     { id: 'post', kind: 'post', pattern: '/:year/:slug/', template: 't1', source: { model: 'posts' }, body: 'rich-text', sections: [] },
     { id: 'page-services', kind: 'page', pattern: '/:path/', template: 't2', source: { model: 'pages', where: { wp_id: [303] } }, body: 'composed', sections: [
-      { component: 'CardGrid', bind: { kind: 'model', model: 'section-card-grid', entry: 'services-0', props: { title: 'field:title', items: 'field:items' } } },
+      { component: 'CardGrid', width: 'content', bind: { kind: 'model', model: 'section-card-grid', entry: 'services-0', props: { title: 'field:title', items: 'field:items' } } } as ProjectPlan['routes'][number]['sections'][number],
     ] },
   ],
 }
@@ -62,6 +62,9 @@ beforeAll(async () => {
   await mkdir(join(project, 'public', 'media', '2026', '01'), { recursive: true })
   await writeFile(join(project, 'public', 'media', '2026', '01', 'cover.png'), 'png bytes')
   await writeFile(join(project, 'public', 'favicon.svg'), '<svg>the site\'s own</svg>')
+  // A dictionary an earlier starter seeded: one string the editor changed, the newer keys missing.
+  await mkdir(join(project, '.contentrain', 'content', 'site', 'ui-strings'), { recursive: true })
+  await writeFile(join(project, '.contentrain', 'content', 'site', 'ui-strings', 'en.json'), '{\n  "blog.title": "Journal"\n}\n')
   for (const path of PRESERVED) before.set(path, await readFile(join(project, path), 'utf8'))
   report = await generateProject({ plan, catalog, kitRoot: KIT_COMPONENTS_DIR, starterDir: starterDir(), outDir: project })
 }, 60_000)
@@ -75,7 +78,7 @@ const read = (path: string) => readFile(join(project, path), 'utf8')
 describe('generateProject in place', () => {
   it('leaves imported content, meta, media and existing public files byte-identical', async () => {
     for (const path of PRESERVED) expect(await read(path), path).toBe(before.get(path))
-    expect(report.written.filter(path => path.startsWith('.contentrain/content/') || path.startsWith('public/'))).toEqual(['.contentrain/content/site/redirects/data.json'])
+    expect(report.written.filter(path => path.startsWith('.contentrain/content/') || path.startsWith('public/'))).toEqual(['.contentrain/content/site/redirects/data.json', '.contentrain/content/site/ui-strings/en.json'])
   })
 
   it('writes the site settings from the plan', async () => {
@@ -127,6 +130,10 @@ describe('generateProject in place', () => {
     expect(await read('src/views/composed/PageServices.astro')).toContain(`await getEntry('sectionCardGrid', 'en/services-0')`)
   })
 
+  it('narrows a section whose source block had no alignment to the reading column', async () => {
+    expect(await read('src/views/composed/PageServices.astro')).toMatch(/<div class="section-content">\n\s+\{section0 && <CardGrid \{\.\.\.section0\} \/>\}\n\s+<\/div>/)
+  })
+
   it('passes section links through the published set', async () => {
     const view = await read('src/views/composed/PageServices.astro')
     expect(view).toContain(`import { publicItems } from '../../lib/links'`)
@@ -136,6 +143,13 @@ describe('generateProject in place', () => {
   it('leaves to the agent only the template elements the starter does not render', () => {
     expect(report.lowConfidence.map(d => d.id)).toEqual(['unmapped_element:core/latest-comments'])
     expect(report.starterCovered).toEqual(['unmapped_element:core/post-title'])
+  })
+
+  it('adds the interface strings the store lacks and keeps the ones it has', async () => {
+    const strings = JSON.parse(await read('.contentrain/content/site/ui-strings/en.json')) as Record<string, string>
+    expect(strings['blog.title']).toBe('Journal')
+    expect(strings['post.more']).toBe('More posts')
+    expect(report.seeded.some(entry => entry.startsWith('.contentrain/content/site/ui-strings/en.json (+'))).toBe(true)
   })
 
   it('names the package after the site', async () => {

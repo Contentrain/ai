@@ -51,7 +51,7 @@ const url = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href
   jsonLd={[collectionLd(url, title ?? t('blog.title'))]}
 >
   <div class="container-page py-12 md:py-16">
-    <header class:list={['mb-12 flex max-w-2xl flex-col gap-3', !showHeading && 'sr-only']}>
+    <header class:list={['mb-12 flex flex-col gap-3', full ? 'mx-auto max-w-(--container-prose)' : 'max-w-2xl', !showHeading && 'sr-only']}>
       {eyebrow && <p class="text-sm font-medium tracking-wide text-accent uppercase">{eyebrow}</p>}
       <h1 class="text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance">{title ?? (siteConfig.lists.heading ? t('blog.title') : site.title)}</h1>
       {description && <p class="text-lg text-ink-muted">{description}</p>}

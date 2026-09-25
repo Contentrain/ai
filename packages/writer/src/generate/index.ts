@@ -164,6 +164,23 @@ export async function generateProject(input: GenerateInput): Promise<GenerateRep
       seeded.push(`.contentrain/${dir}`)
     }
   }
+  // Interface strings the starter's views use but the store's dictionary lacks (added in a later starter):
+  // the starter's default text fills them; every string the store already has stays as it is.
+  const strings = starterModels.find(m => m.id === 'ui-strings')
+  if (strings && !merged.added['ui-strings']) {
+    const dir = `content/${strings.domain}/ui-strings`
+    const files = existsSync(join(starterStore, dir)) ? (await readdir(join(starterStore, dir))).filter(name => name.endsWith('.json')) : []
+    for (const file of files) {
+      const target = `.contentrain/${dir}/${file}`
+      if (!existsSync(join(outDir, target))) continue
+      const own = JSON.parse(await read(target)) as Record<string, string>
+      const defaults = JSON.parse(await readFile(join(starterStore, dir, file), 'utf8')) as Record<string, string>
+      const missing = Object.keys(defaults).filter(key => !(key in own))
+      if (!missing.length) continue
+      await write(target, canonicalStringify({ ...own, ...Object.fromEntries(missing.map(key => [key, defaults[key]!])) }))
+      seeded.push(`${target} (+${missing.length} keys)`)
+    }
+  }
   if (!existsSync(join(outDir, '.contentrain/config.json'))) await cp(join(starterStore, 'config.json'), join(outDir, '.contentrain/config.json'))
 
   // 2. Plan models and their domains; then the content config over every model.

@@ -41,7 +41,7 @@ const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
         <Breadcrumb items={trail.map(crumb => ({ label: crumb.title, href: crumb.href }))} current={data.title} label={t('nav.breadcrumb')} />
       </div>
     )}
-    {!isHome && <h1 class="mb-10 text-4xl leading-tight font-bold tracking-tight text-balance md:text-5xl">{data.title}</h1>}
+    {!isHome && <h1 class="mb-10 text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{data.title}</h1>}
     {cover && <KitImage image={imageOf(cover)} priority sizes="(min-width: 768px) 768px, 100vw" class="mb-10 w-full rounded-xl" />}
     {body && <Prose html={body} />}
     {data.form && <StudioForm model={data.form} class="mt-12" />}
