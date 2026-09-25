@@ -130,5 +130,71 @@ describe('validateProjectPlan', () => {
     // about + page on /:path/ split pages by wp_id: no warning (the fixture already has them).
     expect(validateProjectPlan(plan()).warnings).toEqual([])
   })
+
+  it('plans every fact behavior once, with a reason when nothing reproduces it', () => {
+    const p = withContactForm()
+    expect(validateProjectPlan(p)).toEqual({ errors: [], warnings: [] })
+    p.behaviors!.push(
+      { fact: 'form:3fa9c21e', outcome: 'component', component: 'ContactForm', model: 'contact' },
+      { fact: 'embed:1', outcome: 'component' },
+      { fact: 'embed:2', outcome: 'component', component: 'Embed' },
+      { fact: 'search:1', outcome: 'starter', feature: 'comments' as never },
+      { fact: 'popup:1', outcome: 'needs_review' },
+      { fact: 'counter:1', outcome: 'drop', reason: 'no reason given' },
+      { fact: 'form:x', outcome: 'component', component: 'ContactForm', model: 'posts' },
+      { fact: 'form:y', outcome: 'component', component: 'ContactForm', model: 'nope' },
+    )
+    expect(validateProjectPlan(p).errors).toEqual([
+      'behavior form:3fa9c21e is planned twice',
+      'behavior embed:1: outcome component names no component',
+      'behavior embed:2: component Embed is not declared',
+      'behavior search:1: starter feature comments is not one of search',
+      'behavior popup:1: needs_review needs a reason "<code>: <sentence>"',
+      'behavior counter:1: drop needs a reason "<code>: <sentence>"',
+      'behavior form:x: model posts is not a form model',
+      'behavior form:y: model nope is not declared',
+    ])
+  })
+
+  it('keeps a form model a plan collection whose form names its own fields', () => {
+    const p = withContactForm()
+    const contact = p.models.find(m => m.id === 'contact')!
+    contact.form = { ...contact.form!, exposedFields: ['name', 'fax'], requiredOverrides: { phone: true }, captcha: 'recaptcha' as never }
+    p.models.push({ id: 'site', kind: 'singleton', origin: 'import', i18n: false, form: { enabled: true, public: true, exposedFields: [] } })
+    expect(validateProjectPlan(p).errors).toEqual([
+      'model contact: form field fax is not a model field',
+      'model contact: form field phone is not a model field',
+      'model contact: form captcha recaptcha is not turnstile',
+      'model site: a form model must be a plan collection',
+      'model site: form exposes no fields',
+    ])
+  })
+
+  it('keeps a form model out of i18n: Studio writes every submission in the default locale', () => {
+    const p = withContactForm()
+    const contact = p.models.find(m => m.id === 'contact')!
+    delete contact.i18n
+    expect(validateProjectPlan(p).errors).toEqual(['model contact: a form model must be i18n: false (Studio writes submissions in the default locale)'])
+    contact.i18n = true
+    expect(validateProjectPlan(p).errors).toEqual(['model contact: a form model must be i18n: false (Studio writes submissions in the default locale)'])
+  })
 })
 
+/** The fixture plus a CF7 contact form (→ ContactForm + a Studio form model), site search, a YouTube embed in a post, and a popup nobody can reproduce yet. */
+function withContactForm(): ProjectPlan {
+  const p = plan()
+  p.components.push({ id: 'ContactForm', origin: 'kit', kit: { id: 'contact-form' } })
+  p.models.push({
+    id: 'contact', kind: 'collection', origin: 'plan', name: 'Contact', domain: 'forms', i18n: false, title_field: 'name',
+    fields: { name: { type: 'string', required: true }, email: { type: 'email', required: true }, topic: { type: 'select', options: ['Sales', 'Support'] }, message: { type: 'text', required: true } },
+    form: { enabled: true, public: true, exposedFields: ['name', 'email', 'topic', 'message'], honeypot: true, captcha: 'turnstile', notifications: true },
+  })
+  p.routes[0]!.sections.push({ component: 'ContactForm', bind: { kind: 'static', props: { model: 'const:contact' } } })
+  p.behaviors = [
+    { fact: 'form:3fa9c21e', outcome: 'component', component: 'ContactForm', model: 'contact' },
+    { fact: 'search:5b6c7d8e', outcome: 'starter', feature: 'search' },
+    { fact: 'embed:0c1d2e3f', outcome: 'prose' },
+    { fact: 'interactive:9a8b7c6d', outcome: 'needs_review', reason: 'popup: exit-intent popups have no kit counterpart' },
+  ]
+  return p
+}
