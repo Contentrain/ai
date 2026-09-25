@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
+import type { FieldDef } from '@contentrain/types'
 import { componentsForSource, planCopy, validateCatalog, type KitCatalog } from '../src/index'
 
 const ROOT = join(import.meta.dirname, '..')
@@ -27,6 +28,22 @@ describe('catalog', () => {
     expect(catalog.components.map(c => c.id)).toEqual(expect.arrayContaining([
       'header', 'nav', 'footer', 'hero', 'card-grid', 'post-card', 'cta', 'faq', 'tabs', 'testimonial', 'gallery', 'slider', 'contact-form', 'pagination', 'breadcrumb',
     ]))
+  })
+
+  it('spells out every object prop, nested ones too — a section model built from the catalog types each field', () => {
+    const loose: string[] = []
+    const walk = (fields: Record<string, FieldDef> | undefined, at: string) => {
+      for (const [name, def] of Object.entries(fields ?? {})) {
+        if (def.type === 'object' && !def.fields) loose.push(`${at}${name}`)
+        walk(def.fields, `${at}${name}.`)
+        if (typeof def.items === 'object') {
+          if (def.items.type === 'object' && !def.items.fields) loose.push(`${at}${name}[]`)
+          walk(def.items.fields, `${at}${name}[].`)
+        }
+      }
+    }
+    for (const c of catalog.components) walk(c.props as Record<string, FieldDef>, `${c.id}.`)
+    expect(loose).toEqual([])
   })
 
   it('says for every component which builder elements feed it', () => {
