@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "elementor",
-  "version": "2",
+  "version": "3",
   "fallback": "prose",
   "rules": [
     {
@@ -302,6 +302,20 @@
       "props": {
         "model": "const:contact",
         "heading": "attr:form_name"
+      }
+    },
+    {
+      "match": "elementor/text-editor",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "elementor/theme-post-content",
+      "component": "prose",
+      "props": {
+        "html": "html:"
       }
     }
   ]

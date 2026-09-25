@@ -1,0 +1,69 @@
+{
+  "id": "prose",
+  "name": "Prose",
+  "description": "A rich-text body (post or page content) rendered as the editor wrote it: WordPress block markup kept, styled by Tailwind Typography on the site's tokens and the starter's Gutenberg block styles. The fallback for every builder element no rule maps to a component. Container blocks (core/group, core/columns) are not sources: their children are matched instead. Needs the starter's global.css (prose-site utility, wp-blocks.css).",
+  "category": "content",
+  "uses": [],
+  "shared": [],
+  "variants": {
+    "size": {
+      "options": [
+        "base",
+        "lg"
+      ],
+      "default": "lg",
+      "description": "Type scale of the body."
+    }
+  },
+  "props": {
+    "html": {
+      "type": "richtext",
+      "required": true,
+      "description": "Rendered HTML of a richtext field (posts.body, pages.body)."
+    },
+    "searchable": {
+      "type": "boolean",
+      "default": true,
+      "description": "Mark the body for the site search index (data-pagefind-body)."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": [
+      "core/paragraph",
+      "core/heading",
+      "core/list",
+      "core/list-item",
+      "core/quote",
+      "core/pullquote",
+      "core/image",
+      "core/table",
+      "core/code",
+      "core/preformatted",
+      "core/verse",
+      "core/separator",
+      "core/spacer",
+      "core/embed",
+      "core/video",
+      "core/audio",
+      "core/file",
+      "core/html",
+      "core/freeform",
+      "core/post-content"
+    ],
+    "elementor": [
+      "elementor/text-editor",
+      "elementor/theme-post-content"
+    ],
+    "divi": [
+      "divi/et_pb_text",
+      "divi/et_pb_post_content"
+    ],
+    "classic": [
+      "classic/the-content"
+    ]
+  },
+  "a11y": "Keeps the author's heading levels and list/table semantics; embedded media keep their own titles and captions. Block styles give focus-visible links and readable measure."
+}

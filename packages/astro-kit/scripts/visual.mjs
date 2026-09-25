@@ -69,13 +69,13 @@ import type { ComponentProps } from 'astro/types'
 import Component from '../../components/kit/${c.id}/${main}'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 
-type Fixture = { name: string, frame?: 'dark' | 'tall', props: ComponentProps<typeof Component> }
+type Fixture = { name: string, frame?: 'dark' | 'tall' | 'narrow', props: ComponentProps<typeof Component> }
 const fixtures = ${fixtures.trim()} satisfies Fixture[]
 ---
 <BaseLayout title="Kit: ${pascal(c.id)}" noindex>
   {(fixtures as Fixture[]).map(fixture => (
     <div data-fixture={fixture.name} class:list={['relative', fixture.frame === 'dark' && 'bg-ink pb-40', fixture.frame === 'tall' && 'min-h-[40rem]']}>
-      <Component {...fixture.props} />
+      {fixture.frame === 'narrow' ? <div class="container-page py-6"><div class="max-w-sm"><Component {...fixture.props} /></div></div> : <Component {...fixture.props} />}
     </div>
   ))}
 </BaseLayout>

@@ -91,5 +91,35 @@
         "style": "ghost"
       }
     }
+  },
+  {
+    "name": "split-submenu-last",
+    "props": {
+      "siteName": "Northwind",
+      "items": [
+        {
+          "label": "Journal",
+          "href": "/"
+        },
+        {
+          "label": "About",
+          "href": "/about/"
+        },
+        {
+          "label": "Services",
+          "href": "/services/",
+          "children": [
+            {
+              "label": "Design systems",
+              "href": "/services/design/"
+            },
+            {
+              "label": "Migrations",
+              "href": "/services/migrations/"
+            }
+          ]
+        }
+      ]
+    }
   }
 ]

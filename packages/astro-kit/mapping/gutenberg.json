@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "gutenberg",
-  "version": "2",
+  "version": "3",
   "fallback": "prose",
   "rules": [
     {
@@ -249,6 +249,146 @@
       "item": {
         "image": "img:img",
         "caption": "dom:figcaption"
+      }
+    },
+    {
+      "match": "core/paragraph",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/heading",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/list",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/list-item",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/quote",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/pullquote",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/image",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/table",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/code",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/preformatted",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/verse",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/separator",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/spacer",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/embed",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/video",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/audio",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/file",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/html",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/freeform",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/post-content",
+      "component": "prose",
+      "props": {
+        "html": "html:"
       }
     }
   ]

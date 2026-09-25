@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "divi",
-  "version": "2",
+  "version": "3",
   "fallback": "prose",
   "rules": [
     {
@@ -275,6 +275,20 @@
       "props": {
         "model": "const:contact",
         "heading": "dom:.et_pb_contact_main_title"
+      }
+    },
+    {
+      "match": "divi/et_pb_text",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "divi/et_pb_post_content",
+      "component": "prose",
+      "props": {
+        "html": "html:"
       }
     }
   ]

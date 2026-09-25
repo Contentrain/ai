@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "classic",
-  "version": "2",
+  "version": "3",
   "fallback": "prose",
   "rules": [
     {
@@ -248,6 +248,13 @@
       "props": {
         "model": "const:contact",
         "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/the-content",
+      "component": "prose",
+      "props": {
+        "html": "html:"
       }
     }
   ]
