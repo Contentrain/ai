@@ -14,12 +14,12 @@ export interface TabItem {
 
 const tabs = tv({
   slots: {
-    heading: 'mb-8 text-2xl font-bold tracking-tight text-balance md:text-3xl',
+    heading: 'mb-8 text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
     root: 'group/tabs flex flex-col gap-6',
     list: 'hidden gap-1 group-data-[ready]/tabs:flex',
     trigger: 'cursor-pointer rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap opacity-75 transition hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent data-[selected]:opacity-100',
     panel: 'prose-site prose max-w-none text-current',
-    title: 'mb-3 text-lg font-semibold group-data-[ready]/tabs:sr-only',
+    title: 'mb-3 text-lg [font-weight:var(--font-weight-heading,600)] group-data-[ready]/tabs:sr-only',
   },
   variants: {
     style: {

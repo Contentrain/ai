@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PROJECT_PLAN_FORMAT, validateProjectPlan, type ProjectPlan } from './project-plan.js'
+import { footerMenusOf, PROJECT_PLAN_FORMAT, validateProjectPlan, type ProjectPlan } from './project-plan.js'
 
 /** A small blog with a composed About page — the shape the planner writes for a block-theme site. */
 const plan = (): ProjectPlan => ({
@@ -12,7 +12,7 @@ const plan = (): ProjectPlan => ({
     permalinks: { post: '/:slug/', page: '/:path/', category: '/category/:slug/', tag: '/tag/:slug/', author: '/author/:slug/', blog: '/' },
     home: { kind: 'posts' },
     postsPerPage: 6,
-    menus: { primary: 'primary-menu', footer: 'footer-menu' },
+    menus: { primary: 'primary-menu', footer: ['footer-menu', 'footer-legal'] },
     redirects: { '/old-about/': '/about/', '/gone/': { status: 410, destination: '/' } },
     tokens: { roles: { 'color-accent': '#9dff20', 'color-accent-ink': '#000000', 'font-sans': 'Inter, sans-serif', 'container-prose': '650px' } },
   },
@@ -104,6 +104,52 @@ describe('validateProjectPlan', () => {
     const { errors } = validateProjectPlan(p)
     expect(errors).toContain('model pages: entry 11 is in routes about and landing')
     expect(errors).toContain('model pages: routes page, page-2 are all catch-alls')
+  })
+
+  it('takes up to four distinct footer menus', () => {
+    const p = plan()
+    p.site.menus.footer = ['a', 'b', 'a', '', 'c', 'd']
+    expect(validateProjectPlan(p).errors).toEqual([
+      'site.menus.footer has 6 menus; the footer takes at most 4',
+      'site.menus.footer has an empty menu slug',
+      'site.menus.footer names a menu twice',
+    ])
+    p.site.menus.footer = []
+    expect(validateProjectPlan(p).errors).toEqual([])
+  })
+
+  it('still reads a plan written before footer menus were a list', () => {
+    const p = plan()
+    p.site.menus.footer = 'footer-menu'
+    expect(validateProjectPlan(p).errors).toEqual([])
+    expect(footerMenusOf(p.site)).toEqual(['footer-menu'])
+    p.site.menus.footer = 'none'
+    expect(validateProjectPlan(p).errors).toEqual([])
+    expect(footerMenusOf(p.site)).toEqual([])
+    p.site.menus.footer = ['a', 'b']
+    expect(footerMenusOf(p.site)).toEqual(['a', 'b'])
+  })
+
+  it('checks the post layout and list display a plan copies from the source templates', () => {
+    const p = plan()
+    p.site.post = { header: ['title', 'cover', 'byline'], adjacent: true, more: 4 }
+    p.site.lists = { display: 'full', heading: true }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.post = { header: ['title', 'title'], adjacent: false, more: 30 }
+    p.site.lists = { display: 'grid' as 'cards', heading: false }
+    expect(validateProjectPlan(p).errors).toEqual([
+      'site.post.header lists a part twice or one the starter does not have',
+      'site.post.more is not a count from 0 to 20',
+      'site.lists.display grid is not cards or full',
+    ])
+  })
+
+  it('takes a section width of content or wide', () => {
+    const p = plan()
+    p.routes[1]!.sections[0]!.width = 'content'
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.routes[1]!.sections[0]!.width = 'full' as 'wide'
+    expect(validateProjectPlan(p).errors.some(e => e.endsWith('width full is not content or wide'))).toBe(true)
   })
 
   it('requires a home route', () => {

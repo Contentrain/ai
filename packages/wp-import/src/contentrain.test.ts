@@ -457,3 +457,18 @@ describe('comments export', () => {
     expect(result.report.translation_groups).toBe(0)
   })
 })
+
+describe('site title', () => {
+  it('is the source\'s own; with none, the entry has no title and the report says so — never a stand-in name', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const named = rawToContentrain(raw)
+    expect(named.report.site_title_missing).toBe(false)
+    const { files, report } = rawToContentrain({ ...raw, site: { ...raw.site, title: '' } })
+    const site = JSON.parse(files['.contentrain/content/site/site/data.json']!)
+    expect(site.title).toBeUndefined()
+    expect(report.site_title_missing).toBe(true)
+    expect(JSON.parse(files['import-report.json']!).site_title_missing).toBe(true)
+    // The field stays required: the store names what is missing.
+    expect(JSON.parse(files['.contentrain/models/site.json']!).fields.title.required).toBe(true)
+  })
+})

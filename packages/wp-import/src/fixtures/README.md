@@ -23,3 +23,12 @@ Bridge; each file is copied here unchanged.
 
 The negatives (a repository edit, a record missing from the map) are derived
 from these inside the tests. None is a separate fixture.
+
+# ACF parity fixture
+
+`acf-parity.json` is the other direction: owned here, copied by the Bridge.
+Each case is an ACF field as the site's schema states it, a stored value, and
+the Contentrain field definition and value both importers must write
+(`acf.parity.test.ts` runs wp-import's side). The Bridge copies the file
+unchanged and pins the commit it copied; a mapping change bumps
+`ACF_MAPPING_VERSION` and the file's `mapping_version` together.
