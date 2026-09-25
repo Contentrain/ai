@@ -80,15 +80,21 @@ server.listen(0, '127.0.0.1', () => console.log(server.address().port))`
     studioServer.stdout.once('data', chunk => done(String(chunk).trim()))
     studioServer.once('exit', code => failed(new Error(`studio media server exited (${code})`)))
   })
-  process.env.CONTENTRAIN_STUDIO_URL = `http://127.0.0.1:${port}`
-  process.env.CONTENTRAIN_STUDIO_PROJECT = 'fixture'
+  // The stand-in must not keep this process alive once the gates are done.
+  studioServer.removeAllListeners('exit')
+  studioServer.stdout.destroy()
+  studioServer.unref()
+  // The binding as Studio writes it when a site is connected, with media on a CDN host of its own
+  // (the stand-in); the API origin is never fetched at build time.
+  const studioUrl = `http://127.0.0.1:${port}`
+  writeFileSync(join(project, 'studio.json'), `${JSON.stringify({ baseUrl: 'https://studio.invalid', mediaBaseUrl: `${studioUrl}/api/cdn/v1/fixture`, projectId: 'fixture' }, null, 2)}\n`)
   const mediaFile = join(project, '.contentrain', 'content', 'assets', 'media', 'data.json')
   const media = JSON.parse(readFileSync(mediaFile, 'utf8'))
   for (const entry of Object.values(media)) {
     if (!entry.url?.startsWith('/')) continue
     // Only the stand-in has the file now: a build that passes fetched it from there.
     rmSync(join(project, 'public', entry.url), { force: true })
-    entry.url = `${process.env.CONTENTRAIN_STUDIO_URL}/api/cdn/v1/fixture/media/${entry.url.replace(/^\/(?:media\/)?/, '')}`
+    entry.url = `${studioUrl}/api/cdn/v1/fixture/media/${entry.url.replace(/^\/(?:media\/)?/, '')}`
   }
   writeFileSync(mediaFile, `${JSON.stringify(media, null, 2)}\n`)
 }
@@ -122,5 +128,6 @@ if (optimized.length) {
   console.log(`\n${optimized.length} image(s) optimized with a srcset (media: ${values.media})`)
 }
 
+studioServer?.kill()
 console.log(`\nstarter gates passed${values.fixture ? ` (fixture: ${values.fixture})` : ''} — ${project}`)
 if (!values.out) rmSync(project, { recursive: true, force: true })
