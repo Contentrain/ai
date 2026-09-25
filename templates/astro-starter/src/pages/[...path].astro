@@ -55,7 +55,10 @@ export const getStaticPaths = (async () => {
   // The posts index: the front page, or — on a site whose front page is a
   // static page — its own address (WordPress: Settings → Reading).
   const blog = siteConfig.home.kind === 'posts' ? '/' : permalinks.blog
-  paginate(blog, posts, blog === '/' ? {} : { title: t('blog.title') })
+  // The posts page keeps the name and description its editors gave it ("Journal"), as in WordPress.
+  const postsPage = blog === '/' ? undefined : [...pages.values()].find(page => pageHref(page, pages) === blog)
+  const blogDescription = postsPage?.data.seo?.description ?? postsPage?.data.excerpt
+  paginate(blog, posts, blog === '/' ? {} : { title: postsPage?.data.title ?? t('blog.title'), ...(blogDescription ? { description: blogDescription } : {}) })
 
   for (const category of categories.values()) {
     paginate(termHref('category', category, categories), posts.filter(post => post.data.categories.some(ref => ref.id === category.id)), {
