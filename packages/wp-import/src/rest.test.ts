@@ -302,7 +302,7 @@ describe('fetchRestRawIR with a credential lists every non-trash status', () => 
     expect(raw.posts.map((p) => p.slug).toSorted()).toEqual(['about', 'live'])
     expect(raw.comments!.map((c) => c.id)).toEqual([500])
     // Menus have no public listing: refused with the credential, they are a named gap.
-    expect(gaps).toEqual(['menus_require_auth'])
+    expect(gaps).toEqual(['menus_require_auth', 'redirects_partial'])
     expect(warnings.toSorted()).toEqual([
       'comments: HTTP 403 for status=approve&context=edit with the credential — fell back to the public listing',
       'comments: HTTP 403 for status=hold&context=edit with the credential — skipped (no public listing)',

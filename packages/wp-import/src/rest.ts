@@ -5,10 +5,11 @@
 // absence at a low rung is information, not an error, and the manifest layer
 // decides what to recommend about it.
 
-import type { RawAcfValue, RawIR, RawAttachment, RawComment, RawLanguagePair, RawMenu, RawPost, RawTerm, RawTermRef, SourceAccessKind } from '@contentrain/types'
+import type { RawAcfValue, RawIR, RawAttachment, RawComment, RawLanguagePair, RawMenu, RawPost, RawRedirect, RawRedirectExcluded, RawTerm, RawTermRef, SourceAccessKind } from '@contentrain/types'
 import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import { strip, SKIP_TYPES, PROTECTED } from './core.js'
 import { acfIsSecret, acfScrub } from './acf.js'
+import { redirectionRules, type RestRedirection, type RestRedirectionGroup } from './rest-redirects.js'
 import { blockMenus, classicMenus, type MenuContext, type RestMenu, type RestMenuItem, type RestNavigation, type RestTemplate, type RestTemplatePart } from './rest-menus.js'
 
 const iso = (gmt: string | undefined): string | null => (gmt ? `${gmt}Z` : null)
@@ -59,6 +60,10 @@ export interface RestImportResult {
    * What this rung could not read, as codes a caller can act on (the text is in `warnings`).
    * `menus_require_auth`: menus and block navigation are only readable with an application password
    * of a user who may edit theme options — none was given, the site rejected it, or it lacks that right.
+   * `redirects_partial`: always, over REST — it reads only the Redirection plugin's rules; Yoast Premium, Rank Math,
+   * Safe Redirect Manager and `.htaccess` keep theirs where only the Bridge export reads them.
+   * `redirects_require_auth`: the site runs Redirection, and its rules need an application password of a user who
+   * may manage it — none was given, the site rejected it, or it lacks that right.
    * `acf_partial`: the site runs ACF / Secure Custom Fields; REST shows only the field groups set to
    * `show_in_rest` (off by default) and no options page — the Bridge export reads the rest. Where the site
    * states no field types (plain ACF, no `<name>_source`), a secret field is recognised by its name only.
@@ -238,7 +243,7 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     try {
       const index = await doFetch(`${origin}/wp-json/`, { headers })
       if (!index.ok) { await index.body?.cancel(); return null }
-      return (await index.json()) as { name?: unknown; description?: unknown; url?: unknown; home?: unknown; timezone_string?: unknown; gmt_offset?: unknown } | null
+      return (await index.json()) as { name?: unknown; description?: unknown; url?: unknown; home?: unknown; timezone_string?: unknown; gmt_offset?: unknown; namespaces?: unknown } | null
     } catch { return null }
   })
 
@@ -275,6 +280,8 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     media_details?: { width?: number; height?: number; file?: string }
     post?: number | null
     date_gmt?: string
+    /** The attachment page. */
+    link?: string
   }
   interface RestComment {
     id: number
@@ -430,6 +437,7 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     mime: m.mime_type ?? null,
     parent: m.post ?? null,
     parent_resolved: m.post ? posts.some((p) => p.id === m.post) : null,
+    link: m.link || null,
     date: iso(m.date_gmt),
   }))
 
@@ -511,6 +519,39 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
   for (const c of comments) if (!postIds.has(c.post)) warnings.push(`comment ${c.id}: post ${c.post} not in fetched set`)
 
   // The rung is what was actually read: a credential rejected outright read nothing.
+  // ── redirects: the Redirection plugin's rules (`redirection/v1`), with a credential that may manage them ──
+  let redirects: RawRedirect[] = []
+  let redirectsExcluded: RawRedirectExcluded[] = []
+  gaps.push('redirects_partial')
+  const namespaces = Array.isArray(about?.namespaces) ? (about.namespaces as unknown[]) : undefined
+  const redirection = namespaces ? namespaces.includes('redirection/v1') : undefined
+  if (redirection && !authed) gaps.push('redirects_require_auth')
+  else if (authed && redirection !== false) {
+    // Redirection pages from 0 and answers `{ items, total }`.
+    const all = async <T extends { id: number }>(path: string): Promise<{ items: T[]; status: number }> => {
+      const items: T[] = []
+      const seen = new Set<number>()
+      for (let page = 0; page < (maxPages ?? 500); page++) {
+        // oxlint-disable-next-line no-await-in-loop -- `total` is only known from the page before
+        const r = await schedule(() => doFetch(`${origin}/wp-json/redirection/v1/${path}?per_page=200&page=${page}`, { headers }))
+        if (!r.ok) { await r.body?.cancel(); return { items, status: r.status } }
+        // oxlint-disable-next-line no-await-in-loop -- the body of the page just fetched
+        const body = await r.json() as { items?: T[]; total?: number }
+        const fresh = (Array.isArray(body.items) ? body.items : []).filter((x) => !seen.has(x.id))
+        for (const x of fresh) { seen.add(x.id); items.push(x) }
+        if (!fresh.length || items.length >= Number(body.total ?? 0)) break
+      }
+      return { items, status: 200 }
+    }
+    const [rules, groups] = await Promise.all([all<RestRedirection>('redirect'), all<RestRedirectionGroup>('group')])
+    if (DENIED.has(rules.status)) {
+      gaps.push('redirects_require_auth')
+      warnings.push(`redirects: HTTP ${rules.status} with the credential — the user may not manage Redirection; its rules not read`)
+    } else if (rules.status === 200) {
+      ;({ redirects, excluded: redirectsExcluded } = redirectionRules(rules.items, groups.status === 200 ? groups.items : [], origin))
+    } else if (redirection) warnings.push(`redirects: HTTP ${rules.status} — Redirection's rules not read`)
+  }
+
   const kind: SourceAccessKind = authed ? 'rest_auth' : 'rest_public'
   const raw: RawIR = {
     version: MIGRATION_CONTRACT_VERSION,
@@ -532,6 +573,8 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     attachments,
     comments,
     ...(menus.length ? { menus } : {}),
+    ...(redirects.length ? { redirects } : {}),
+    ...(redirectsExcluded.length ? { redirects_excluded: redirectsExcluded } : {}),
     ...(languagePairs.length ? { language_pairs: languagePairs } : {}),
   }
   const credential: RestImportResult['credential'] = {

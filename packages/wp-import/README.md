@@ -140,6 +140,26 @@ contains `menus_require_auth` — an empty menu list is never presented as the
 site having none. The `menus` model gains a `locations` field only when the
 source named them.
 
+### Redirects over REST
+
+REST reads one source of redirects: the Redirection plugin (`redirection/v1`).
+This needs an application password of a user who may manage the plugin. Its
+rules are shaped as the Bridge shapes them. Each rule lands in exactly one of
+two places:
+
+- `redirects`: the rules the site serves, with the plugin's query, case and
+  trailing-slash modes. A "gone" rule (410, 451) is served with an empty `to`.
+- `redirects_excluded`: every other rule, with its reason (disabled,
+  conditional, a 404 or pass-through action).
+
+Yoast Premium, Rank Math, Safe Redirect Manager and `.htaccess` keep their
+rules where only the Bridge export reads them. So `gaps` always contains
+`redirects_partial`. It also contains `redirects_require_auth` when the site
+runs Redirection but its rules could not be read with the credential given.
+
+Each attachment carries its attachment page as `link`, so the migrated site
+can redirect it.
+
 ### ACF fields, custom post types and taxonomies over REST
 
 ACF / Secure Custom Fields values arrive on a post's `acf` key — only for field

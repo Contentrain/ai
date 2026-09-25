@@ -47,6 +47,7 @@ const TAXONOMY_KEYS: Record<keyof RawRouting['taxonomies'][number], true> = {
 }
 const REDIRECT_KEYS: Record<keyof RawRedirect, true> = {
   from: true, to: true, status: true, source: true, id: true, match: true, regex: true, served_by: true, status_note: true,
+  query: true, case_insensitive: true, trailing_slash: true,
 }
 const EXCLUDED_KEYS: Record<keyof RawRedirectExcluded, true> = { ...REDIRECT_KEYS, reason: true, condition: true }
 
