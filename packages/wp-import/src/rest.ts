@@ -1,13 +1,14 @@
 // Public/authenticated WordPress REST → RawIR.
 //
-// The lowest rungs of the source-access ladder. What REST cannot see (menus,
-// rest:false CPTs, unregistered meta) is simply absent from the result —
+// The lowest rungs of the source-access ladder. What REST cannot see (rest:false
+// CPTs, unregistered meta; menus without an application password) is absent from the result —
 // absence at a low rung is information, not an error, and the manifest layer
 // decides what to recommend about it.
 
-import type { RawIR, RawAttachment, RawComment, RawLanguagePair, RawPost, RawTerm, RawTermRef, SourceAccessKind } from '@contentrain/types'
+import type { RawIR, RawAttachment, RawComment, RawLanguagePair, RawMenu, RawPost, RawTerm, RawTermRef, SourceAccessKind } from '@contentrain/types'
 import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import { strip, SKIP_TYPES, PROTECTED } from './core.js'
+import { blockMenus, classicMenus, type MenuContext, type RestMenu, type RestMenuItem, type RestNavigation, type RestTemplatePart } from './rest-menus.js'
 
 const iso = (gmt: string | undefined): string | null => (gmt ? `${gmt}Z` : null)
 const approvedOf = (status: string | undefined): RawComment['approved'] =>
@@ -53,6 +54,12 @@ export interface RestImportResult {
    * at all for `comments:hold`, which has none.
    */
   credential: { status: 'none' | 'accepted' | 'rejected'; fell_back: string[] }
+  /**
+   * What this rung could not read, as codes a caller can act on (the text is in `warnings`).
+   * `menus_require_auth`: menus and block navigation are only readable with an application password
+   * of a user who may edit theme options — none was given, the site rejected it, or it lacks that right.
+   */
+  gaps: string[]
 }
 
 interface RestPost {
@@ -353,6 +360,55 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     date: iso(m.date_gmt),
   }))
 
+  // ── menus: classic menus + published block navigation; both need `edit_theme_options` ──
+  const gaps: string[] = []
+  let menus: RawMenu[] = []
+  if (!authed) {
+    // Not a warning: without a working credential this is the rung's known limit, named for the caller in `gaps`.
+    gaps.push('menus_require_auth')
+  } else {
+    const listing = async <T>(path: string): Promise<{ items: T[]; status: number }> => {
+      const url = (page: number) => `${origin}/wp-json/wp/v2/${path}${path.includes('?') ? '&' : '?'}per_page=${perPage}&page=${page}`
+      const first = await schedule(async () => {
+        const r = await doFetch(url(1), { headers })
+        if (!r.ok) { await r.body?.cancel(); return { items: [] as T[], status: r.status, pages: 1 } }
+        const items = await r.json() as T[]
+        return { items: Array.isArray(items) ? items : [], status: r.status, pages: Math.max(1, Number(r.headers.get('x-wp-totalpages') ?? '1') || 1) }
+      })
+      const wanted = maxPages !== undefined ? Math.min(first.pages, maxPages) : first.pages
+      const rest = await Promise.all(Array.from({ length: wanted - 1 }, (_v, i) => schedule(async () => {
+        const r = await doFetch(url(i + 2), { headers })
+        if (!r.ok) { await r.body?.cancel(); warnings.push(`${path.split('?')[0]}: page ${i + 2} HTTP ${r.status} — skipped`); return [] as T[] }
+        const items = await r.json() as T[]
+        return Array.isArray(items) ? items : []
+      })))
+      return { items: first.items.concat(...rest), status: first.status }
+    }
+    const [classic, items, navs, parts] = await Promise.all([
+      listing<RestMenu>('menus?context=edit'),
+      listing<RestMenuItem>('menu-items?context=edit'),
+      listing<RestNavigation>('navigation?context=edit&status=publish'),
+      listing<RestTemplatePart>('template-parts?context=edit'),
+    ])
+    const denied = [classic, items, navs].filter((l) => DENIED.has(l.status))
+    if (denied.length) {
+      gaps.push('menus_require_auth')
+      warnings.push(`menus: HTTP ${denied[0]!.status} with the credential — the user may not edit theme options; menus not read`)
+    }
+    for (const [name, l] of [['menus', classic], ['menu-items', items], ['navigation', navs]] as const) {
+      if (!l.status || (l.status >= 400 && !DENIED.has(l.status) && l.status !== 404)) warnings.push(`${name}: HTTP ${l.status} — skipped`)
+    }
+    const slugOf = new Map(posts.map((p) => [p.id, p.slug]))
+    const ctx: MenuContext = {
+      origin,
+      postSlug: (id) => slugOf.get(id),
+      termSlug: (taxonomy, id) => { const t = termsById.get(id); return t && t.taxonomy === taxonomy ? t.slug : undefined },
+      pages: posts.filter((p) => p.type === 'page' && p.status === 'publish' && !p.password).map((p) => ({ id: p.id, parent: p.parent ?? null, menu_order: p.menu_order ?? 0, title: strip(p.title), link: p.link ?? null, slug: p.slug })),
+    }
+    menus = classicMenus(DENIED.has(classic.status) ? [] : classic.items, DENIED.has(items.status) ? [] : items.items, ctx)
+    menus.push(...blockMenus(DENIED.has(navs.status) ? [] : navs.items, parts.status < 400 ? parts.items : [], ctx, new Set(menus.map((m) => m.slug))))
+  }
+
   const postIds = new Set(posts.map((p) => p.id))
   const commentIds = new Set(restComments.map((c) => c.id))
   const comments: RawComment[] = restComments.map((c) => ({
@@ -384,11 +440,12 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     posts,
     attachments,
     comments,
+    ...(menus.length ? { menus } : {}),
     ...(languagePairs.length ? { language_pairs: languagePairs } : {}),
   }
   const credential: RestImportResult['credential'] = {
     status: !options.auth ? 'none' : fellBack.size ? 'rejected' : 'accepted',
     fell_back: [...fellBack].toSorted(),
   }
-  return { raw, warnings, credential }
+  return { raw, warnings, credential, gaps }
 }

@@ -286,12 +286,15 @@ describe('fetchRestRawIR with a credential lists every non-trash status', () => 
   })
 
   it('a credential the site refuses for those listings falls back to the public one, with a warning', async () => {
-    const { raw, warnings } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: authedSite([], /context=edit/), auth })
+    const { raw, warnings, gaps } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: authedSite([], /context=edit/), auth })
     expect(raw.posts.map((p) => p.slug).toSorted()).toEqual(['about', 'live'])
     expect(raw.comments!.map((c) => c.id)).toEqual([500])
+    // Menus have no public listing: refused with the credential, they are a named gap.
+    expect(gaps).toEqual(['menus_require_auth'])
     expect(warnings.toSorted()).toEqual([
       'comments: HTTP 403 for status=approve&context=edit with the credential — fell back to the public listing',
       'comments: HTTP 403 for status=hold&context=edit with the credential — skipped (no public listing)',
+      'menus: HTTP 403 with the credential — the user may not edit theme options; menus not read',
       `pages: HTTP 403 for ${statuses} with the credential — fell back to the public listing`,
       `posts: HTTP 403 for ${statuses} with the credential — fell back to the public listing`,
     ])
