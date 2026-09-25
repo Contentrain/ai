@@ -31,7 +31,9 @@ const { image, sizes = '100vw', class: className, priority = false } = Astro.pro
 const loading = priority ? 'eager' : 'lazy'
 const fetchpriority = priority ? 'high' : 'auto'
 const path = image.src.startsWith('/') && !image.src.startsWith('//') ? image.src.split(/[?#]/)[0]! : undefined
-const load = path === undefined ? undefined : LOCAL[`/public${decodeURI(path)}`]
+// A malformed escape (`%E0%A4%A`) is no file in public/: the image stays a plain <img> rather than failing the build.
+const decoded = (() => { try { return path === undefined ? undefined : decodeURI(path) } catch { return undefined } })()
+const load = decoded === undefined ? undefined : LOCAL[`/public${decoded}`]
 const local = load ? await load() : undefined
 // The stored size (WordPress's chosen size of the file), else the file's own.
 const size = image.width && image.height ? { width: image.width, height: image.height } : {}

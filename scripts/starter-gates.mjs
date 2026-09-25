@@ -84,7 +84,7 @@ server.listen(0, '127.0.0.1', () => console.log(server.address().port))`
   studioServer.removeAllListeners('exit')
   studioServer.stdout.destroy()
   studioServer.unref()
-  // The binding as Studio writes it when a site is connected, with media on a CDN host of its own
+  // The binding as Studio writes it when it moves the media (Migration → Media), with media on a CDN host of its own
   // (the stand-in); the API origin is never fetched at build time.
   const studioUrl = `http://127.0.0.1:${port}`
   writeFileSync(join(project, 'studio.json'), `${JSON.stringify({ baseUrl: 'https://studio.invalid', mediaBaseUrl: `${studioUrl}/api/cdn/v1/fixture`, projectId: 'fixture' }, null, 2)}\n`)
