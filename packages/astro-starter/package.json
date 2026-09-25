@@ -1,0 +1,53 @@
+{
+  "name": "@contentrain/astro-starter",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "The Astro + Contentrain starter a migration lays down: the template directory, packed from templates/astro-starter, and its path",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Contentrain/ai.git",
+    "directory": "packages/astro-starter"
+  },
+  "homepage": "https://ai.contentrain.io",
+  "bugs": {
+    "url": "https://github.com/Contentrain/ai/issues"
+  },
+  "keywords": [
+    "contentrain",
+    "astro",
+    "starter",
+    "template",
+    "migration",
+    "wordpress"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist",
+    "template"
+  ],
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "prepack": "node scripts/bundle-template.mjs",
+    "postpack": "rm -rf template"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsdown": "^0.21.0",
+    "typescript": "^5.7.0"
+  }
+}
