@@ -316,7 +316,7 @@
       "match": "divi/et_pb_signup",
       "component": "newsletter",
       "props": {
-        "action": "site:newsletter_action",
+        "action": "dom:form@action",
         "emailLabel": "ui:newsletter.email",
         "nameLabel": "ui:newsletter.name",
         "submitLabel": "ui:newsletter.submit",

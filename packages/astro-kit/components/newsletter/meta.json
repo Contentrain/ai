@@ -10,7 +10,7 @@
     "tone": { "options": ["default", "muted", "inverse", "accent"], "default": "muted", "description": "Section background." }
   },
   "props": {
-    "action": { "type": "url", "required": true, "description": "The provider's form endpoint, read from the source form at migration into the site singleton (`site:newsletter_action`) so it stays editable in Studio. Only https." },
+    "action": { "type": "url", "required": true, "description": "The provider's form endpoint. At migration the engine reads it from the source form element (`dom:form@action`) into the section's content, where it stays editable in Studio; it never passes through the fact pack or a model. The plan places the component only when the action host is a known provider's (otherwise needs_review). Only https." },
     "provider": { "type": "select", "options": ["mailchimp", "kit", "mailerlite", "brevo", "buttondown", "other"], "default": "mailchimp", "description": "Names the fields the endpoint expects (Mailchimp EMAIL/FNAME + its bot-trap field, Kit email_address, MailerLite fields[email], Brevo EMAIL, Buttondown email)." },
     "emailName": { "type": "string", "description": "Field name for the address when the provider is other or names it differently." },
     "askName": { "type": "boolean", "default": false, "description": "Ask for a first name too, when the provider takes one (the source form had a name field)." },
@@ -21,7 +21,7 @@
     "nameLabel": { "type": "string", "description": "ui-strings newsletter.name." },
     "submitLabel": { "type": "string", "description": "ui-strings newsletter.submit." },
     "newTab": { "type": "boolean", "default": true, "description": "Open the provider's confirmation page in a new tab (the reader keeps the site)." },
-    "id": { "type": "string", "description": "Section id; the heading gets `<id>-title`, the inputs `<id>-email`/`<id>-name`." }
+    "id": { "type": "string", "description": "Section id, unique per page (two sign-ups on one page need two ids): the heading gets `<id>-title`, the inputs `<id>-email`/`<id>-name`." }
   },
   "slots": {},
   "js": "none",

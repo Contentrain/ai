@@ -1298,7 +1298,7 @@
         "action": {
           "type": "url",
           "required": true,
-          "description": "The provider's form endpoint, read from the source form at migration into the site singleton (`site:newsletter_action`) so it stays editable in Studio. Only https."
+          "description": "The provider's form endpoint. At migration the engine reads it from the source form element (`dom:form@action`) into the section's content, where it stays editable in Studio; it never passes through the fact pack or a model. The plan places the component only when the action host is a known provider's (otherwise needs_review). Only https."
         },
         "provider": {
           "type": "select",
@@ -1353,7 +1353,7 @@
         },
         "id": {
           "type": "string",
-          "description": "Section id; the heading gets `<id>-title`, the inputs `<id>-email`/`<id>-name`."
+          "description": "Section id, unique per page (two sign-ups on one page need two ids): the heading gets `<id>-title`, the inputs `<id>-email`/`<id>-name`."
         }
       },
       "slots": {},
