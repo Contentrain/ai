@@ -7,6 +7,7 @@ import Header from '../components/kit/header/Header.astro'
 import SEO from '../components/SEO.astro'
 import { getSite, getStrings } from '../lib/content'
 import { getMenu } from '../lib/links'
+import { queryMap } from '../lib/redirects'
 import { organizationLd, websiteLd } from '../lib/seo'
 import { siteConfig } from '../site.config'
 import '../styles/global.css'
@@ -42,11 +43,23 @@ const fullTitle = seoTitle ?? (title && !isHome
   : site.tagline ? `${site.title} – ${site.tagline}` : site.title)
 const lang = site.language ?? 'en'
 const shareImage = image ?? site.social_image
+// WordPress's query addresses land on the home page of a static host; a host rule (_redirects) answers
+// them with a 301 where the host reads one, and this map sends the browser on everywhere else.
+const wpQueries = isHome ? await queryMap() : {}
 ---
 <!doctype html>
 <html lang={lang}>
   <head>
     <meta charset="utf-8" />
+    {Object.keys(wpQueries).length > 0 && (
+      <script is:inline define:vars={{ wpQueries }}>
+        const query = new URLSearchParams(location.search)
+        for (const [param, targets] of Object.entries(wpQueries)) {
+          const to = query.has(param) ? targets[query.get(param)] : undefined
+          if (to) { location.replace(to); break }
+        }
+      </script>
+    )}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

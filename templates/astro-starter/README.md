@@ -27,7 +27,28 @@ pnpm lhci        # Lighthouse CI on the built site
 | `src/components/Prose.astro`, `src/styles/wp-blocks.css` | Rich-text bodies: Tailwind Typography plus styles for WordPress block markup (columns, buttons, gallery, cover, media & text, tables, quotes, separators, alignments, preset colors and sizes). |
 | `src/components/studio/` | Studio forms and comment threads. |
 | `src/styles/global.css` | The one stylesheet. Design tokens are in `@theme`. |
+| `public/_headers` | Response headers (Netlify, Cloudflare Pages): an SVG under `/media/` opened on its own runs no script and loads nothing (CSP `default-src 'none'`, `sandbox`, `nosniff`). |
 | `redirects` model, `src/lib/redirects.ts` | Old address → new address, edited in Studio. Built as a redirect page per old address and as `_redirects` (Netlify, Cloudflare Pages). A rule whose target is not public is left out. |
+
+### Old addresses on your host
+
+WordPress answers query addresses — `/?p=12`, `/?page_id=7`, `/?cat=3`,
+`/?tag=news`, `/?author=2` — on every site, and a site with plain permalinks
+has no others. A static page cannot answer a query, so the build covers them
+three ways:
+
+- **`_redirects`** (Netlify): `/ p=12 /hello-world/ 301`, a real 301.
+  Cloudflare Pages reads the same file but cannot match a query; the lines
+  are ignored there.
+- **The home page** carries a small inline map and sends a browser that
+  arrives with one of those queries on with `location.replace` — works on any
+  host, but it is not a 301, so search engines give it less weight than a
+  host rule. Without JavaScript the home page shows as usual.
+- **`/wp-query-map.json`**: the same map, for a host's own rules or a check.
+
+On Vercel, add the rules to `vercel.json` (`has: [{ type: 'query', … }]`)
+from `/wp-query-map.json`; Vercel reads its config before the build, so the
+build cannot write it for you.
 
 Also built: `sitemap-index.xml` (public addresses from the route table, without noindex entries or redirects), `rss.xml`, `robots.txt`,
 `404.html` and `/search/` (Pagefind — the index is built after `astro build`,

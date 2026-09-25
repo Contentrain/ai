@@ -75,3 +75,10 @@ export async function queryRules(): Promise<QueryRule[]> {
   }
   return out.toSorted((a, b) => a.param.localeCompare(b.param) || a.value.localeCompare(b.value, undefined, { numeric: true }))
 }
+
+/** WordPress query addresses as one lookup: parameter → value → new address. The home page's fallback and `/wp-query-map.json` share it. */
+export async function queryMap(): Promise<Record<string, Record<string, string>>> {
+  const map: Record<string, Record<string, string>> = {}
+  for (const rule of await queryRules()) (map[rule.param] ??= {})[rule.value] = rule.to
+  return map
+}

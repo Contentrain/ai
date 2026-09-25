@@ -35,6 +35,26 @@
         "/old-about/",
         "/search/"
       ]
+    },
+    "wp-query-map.json": {
+      "contains": [
+        "\"302\": \"/contact/\"",
+        "\"301\": \"/about/team/\""
+      ],
+      "excludes": [
+        "\"304\""
+      ]
+    },
+    "index.html": {
+      "contains": [
+        "location.replace(to)"
+      ]
+    },
+    "_headers": {
+      "contains": [
+        "/media/*.svg",
+        "Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox"
+      ]
     }
   }
 }
