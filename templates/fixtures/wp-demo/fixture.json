@@ -56,7 +56,14 @@
     },
     "index.html": {
       "contains": [
-        "location.replace(to)"
+        "location.replace(to)",
+        "aria-label=\"Primary\"",
+        "aria-label=\"Footer\" data-cr-part=\"nav-footer\"",
+        "aria-label=\"Legal\" data-cr-part=\"nav-footer\"",
+        ">Imprint</a>"
+      ],
+      "excludes": [
+        "Sidebar only link"
       ]
     },
     "_headers": {

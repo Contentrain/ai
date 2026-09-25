@@ -84,7 +84,7 @@ describe('themeSource', () => {
     const out = themeSource(css, { roles: { 'text-heading-2': 'clamp(1.5rem, 3vw, 2rem)', 'text-nav': '1.125rem', 'spacing-section': '5rem' } } as unknown as PlanSite['tokens'])
     expect(out).toContain('main h2 { font-size: var(--text-heading-2); }')
     expect(out).toContain('[data-cr-part="nav-header"] :is(a, summary) { font-size: var(--text-nav); }')
-    expect(out).toContain('[data-kit-section]:not([data-kit-spacing="none"]) { padding-block: var(--spacing-section); }')
+    expect(out).toContain('[data-kit-section]:not([data-kit-spacing="none"]) { padding-block: calc(var(--spacing-section) / 2); }')
     expect(out).not.toContain('main h1')
     expect(out).not.toContain('[data-kit-text]')
     expect(out.indexOf('main h2')).toBeGreaterThan(out.indexOf(':root'))

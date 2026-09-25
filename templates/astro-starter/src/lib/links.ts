@@ -158,11 +158,40 @@ async function itemHref(item: MenuItem, link: (url: string | undefined) => strin
  * A menu as a tree, ordered as the editor ordered it. An item whose target is not public — a draft,
  * a private page, a deleted entry — is left out with the items under it: its label may be a draft's
  * title. An unknown menu is empty.
+ *
+ * @public generated section views call it (a plan's `menu:` binding)
  */
 export async function getMenu(slug: string): Promise<NavItem[]> {
-  const menus = await getCollection('menus', menu => menu.data.slug === slug)
-  const menu = menus[0]
-  if (!menu) return []
+  const menu = (await getCollection('menus', entry => entry.data.slug === slug))[0]
+  return menu ? menuItems(menu) : []
+}
+
+/** The theme locations each area answers to: WordPress themes name them differently. */
+const AREAS = {
+  header: (location: string) => ['header', 'primary', 'main', 'menu-1', 'top'].includes(location),
+  footer: (location: string) => location.startsWith('footer'),
+} as const
+
+/**
+ * The menus an area shows, as WordPress places them: a menu assigned to theme locations shows where
+ * they are, so moving or unassigning it in Studio moves it on the site; a menu with no location shows
+ * where site.config names it. Each comes with its name, the navigation's accessible name.
+ */
+export async function menusAt(area: keyof typeof AREAS): Promise<Array<{ name: string, items: NavItem[] }>> {
+  const configured = area === 'header' ? [siteConfig.menus.primary] : [...siteConfig.menus.footer]
+  const all = await getCollection('menus')
+  const placed = all.filter(menu => (menu.data.locations?.length ? menu.data.locations.some(AREAS[area]) : configured.includes(menu.data.slug)))
+  const rank = (menu: Menu) => {
+    const index = configured.indexOf(menu.data.slug)
+    return index === -1 ? configured.length : index
+  }
+  const ordered = placed.toSorted((a, b) => rank(a) - rank(b) || String(a.data.locations ?? '').localeCompare(String(b.data.locations ?? '')))
+  return Promise.all((area === 'header' ? ordered.slice(0, 1) : ordered).map(async menu => ({ name: menu.data.name, items: await menuItems(menu) })))
+}
+
+type Menu = CollectionEntry<'menus'>
+
+async function menuItems(menu: Menu): Promise<NavItem[]> {
   const [items, link] = await Promise.all([resolve(menu.data.items), publicLinks()])
   const hrefs = new Map(await Promise.all(items.map(async item => [item.id, await itemHref(item, link)] as const)))
   const sorted = items.filter(item => hrefs.get(item.id) !== undefined).toSorted((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0))

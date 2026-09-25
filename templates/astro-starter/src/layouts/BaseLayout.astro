@@ -6,7 +6,7 @@ import Footer from '../components/kit/footer/Footer.astro'
 import Header from '../components/kit/header/Header.astro'
 import SEO from '../components/SEO.astro'
 import { getSite, getStrings } from '../lib/content'
-import { getMenu } from '../lib/links'
+import { menusAt } from '../lib/links'
 import { queryMap } from '../lib/redirects'
 import { organizationLd, websiteLd } from '../lib/seo'
 import { siteConfig } from '../site.config'
@@ -31,9 +31,7 @@ interface Props {
 }
 
 const { title, fullTitle: seoTitle, description, image, canonical, type, noindex, nofollow, published, modified, jsonLd = [] } = Astro.props
-const [site, t, primary, footerMenus] = await Promise.all([
-  getSite(), getStrings(), getMenu(siteConfig.menus.primary), Promise.all(siteConfig.menus.footer.map(slug => getMenu(slug))),
-])
+const [site, t, [primary], footerMenus] = await Promise.all([getSite(), getStrings(), menusAt('header'), menusAt('footer')])
 const origin = Astro.site ?? Astro.url
 const home = new URL('/', origin).href
 const identity = { name: site.title, url: home, description: site.tagline, logo: site.logo, sameAs: site.same_as }
@@ -44,7 +42,7 @@ const fullTitle = seoTitle ?? (title && !isHome
 const lang = site.language ?? 'en'
 const shareImage = image ?? site.social_image
 // Two or more footer menus are columns, as the source theme's footer showed them; one is a row of links.
-const footerColumns = footerMenus.filter(menu => menu.length > 0)
+const footerColumns = footerMenus.filter(menu => menu.items.length > 0)
 const rss = { label: t('footer.rss'), href: '/rss.xml' }
 // WordPress's query addresses land on the home page of a static host; a host rule (_redirects) answers
 // them with a 301 where the host reads one, and this map sends the browser on everywhere else.
@@ -89,8 +87,8 @@ const wpQueries = isHome ? await queryMap() : {}
     <Header
       siteName={site.title}
       logo={site.logo ? { src: site.logo, alt: '' } : undefined}
-      items={primary}
-      navLabel={t('nav.label')}
+      items={primary?.items ?? []}
+      navLabel={primary?.name ?? t('nav.label')}
       menuLabel={t('nav.menu')}
       closeLabel={t('nav.close')}
     />
@@ -101,10 +99,10 @@ const wpQueries = isHome ? await queryMap() : {}
       siteName={site.organization ?? site.title}
       tagline={site.tagline}
       layout={footerColumns.length > 1 ? 'columns' : 'simple'}
-      columns={footerColumns.map((menu, index) => ({ title: '', links: index === footerColumns.length - 1 ? [...menu, rss] : menu }))}
-      links={[...(footerColumns[0] ?? []), rss]}
+      columns={footerColumns.map((menu, index) => ({ label: menu.name, links: index === footerColumns.length - 1 ? [...menu.items, rss] : menu.items }))}
+      links={[...(footerColumns[0]?.items ?? []), rss]}
       social={site.same_as?.map(url => ({ label: new URL(url).hostname.replace(/^www\./, ''), href: url }))}
-      navLabel={t('nav.footer')}
+      navLabel={footerColumns[0]?.name ?? t('nav.footer')}
     />
   </body>
 </html>
