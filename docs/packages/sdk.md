@@ -291,6 +291,28 @@ const resolved = query('blog-post').locale('en').include('author', 'tags').all()
 
 Relations are resolved 1 level deep. Nested relations are not expanded.
 
+## Public Builds
+
+By default the generated client and the Astro loader include every entry, drafts included, which suits an editorial preview. For a deployed site, filter by publication state:
+
+| Option | CLI | Effect |
+|---|---|---|
+| `publishedOnly: true` | `--published` | Only `status: published` entries inside their `publish_at` / `expire_at` window. Entries with no meta stay visible (legacy content) |
+| `at: '<ISO>'` | `--at <ISO>` | Evaluate the window at a fixed time, for a reproducible build. Implies `publishedOnly` |
+| `requireStatus: true` | `--require-status` | Also hide an entry with no status: no meta record, or one without `status`. Use it when every entry should carry one, as after a WordPress import. Implies `publishedOnly`, not `at`: the clock stays the build time |
+
+```ts
+// src/content.config.ts
+import { defineCollection } from 'astro:content'
+import { contentrainLoader } from '@contentrain/query/astro'
+
+export const collections = {
+  posts: defineCollection({ loader: contentrainLoader({ model: 'posts', locale: 'en', requireStatus: true }) }),
+}
+```
+
+The window is evaluated when the site is built. A scheduled entry goes live at the first build after its `publish_at`, so a static site needs a build scheduled at each deadline.
+
 ## Framework Setup
 
 The `#contentrain` subpath import works natively in Node.js 22+. For browser bundlers, you need an alias.
