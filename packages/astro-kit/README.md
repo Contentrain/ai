@@ -27,6 +27,8 @@ They read its design tokens and pass its gates: `astro check` with the
 | `gallery` | Image grid with a popover lightbox | none |
 | `slider` | Carousel on a scroll-snap row | Embla |
 | `contact-form` | Contentrain Studio form in a section | Studio runtime |
+| `newsletter` | Sign-up posting straight to the list provider (Mailchimp, Kit, MailerLite, Brevo, Buttondown) | none |
+| `embed` | Video, map or player loaded on click; a provider link until then (YouTube via nocookie) | a few lines, no dependency |
 | `pagination` | WordPress-style `/page/N/` links | none |
 | `breadcrumb` | Ancestors, then the current page, optional JSON-LD | none |
 
@@ -71,7 +73,10 @@ rulesFor(gutenberg, 'core/cover') // → the rule that turns a cover block into 
 builder elements to components, with a source for each prop from a small closed
 set of expressions (see `src/mapping.ts`). They are versioned, and an element
 no rule covers stays rich text (`fallback: "prose"`). When one rule matches an
-element, the outermost match owns its subtree.
+element, the outermost match owns its subtree. `defaults` lists attribute
+values a builder leaves out of its data while they are at their default
+(Elementor saves no `video_type` for a YouTube video); `when.attr` and `attr:`
+read through them (`attrsOf`).
 
 ## Development
 

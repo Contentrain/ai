@@ -1,8 +1,13 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "elementor",
-  "version": "3",
+  "version": "5",
   "fallback": "prose",
+  "defaults": {
+    "elementor/video": {
+      "video_type": "youtube"
+    }
+  },
   "rules": [
     {
       "match": "elementor/theme-site-logo",
@@ -316,6 +321,46 @@
       "component": "prose",
       "props": {
         "html": "html:"
+      }
+    },
+    {
+      "match": "elementor/video",
+      "when": {
+        "attr": {
+          "video_type": "youtube"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:youtube_url",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "elementor/video",
+      "when": {
+        "attr": {
+          "video_type": "vimeo"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:vimeo_url",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "elementor/google_maps",
+      "component": "embed",
+      "variant": {
+        "aspect": "map"
+      },
+      "props": {
+        "address": "attr:address",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
       }
     }
   ]

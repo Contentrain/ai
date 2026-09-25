@@ -101,7 +101,15 @@ export interface RawTermRef {
 /** An ACF field value paired with its field-definition key (`field_…`). */
 export interface RawAcfValue {
   value: unknown
-  field_key: string
+  /** ACF field key (`field_…`), where the source carries it (WXR meta, Bridge). REST does not. */
+  field_key?: string
+  /**
+   * ACF field type as the source states it (`text`, `repeater`, `relationship`, …): SCF's REST
+   * `<name>_source.type`, a Bridge field schema. Absent = the reader infers the type from the value.
+   */
+  type?: string
+  /** Field label as the source states it. */
+  label?: string
 }
 
 export interface RawPost {

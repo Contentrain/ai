@@ -54,6 +54,11 @@ export interface MappingTable {
   version: string
   /** What an element no rule covers becomes when no decision is made: rich text. */
   fallback: 'prose'
+  /**
+   * Attribute values the builder leaves out of its data while they are at their default, per element:
+   * Elementor saves no `video_type` for a YouTube video. `when.attr` and `attr:` read through them.
+   */
+  defaults?: Record<string, Record<string, string | number | boolean>>
   rules: MappingRule[]
 }
 
@@ -63,6 +68,7 @@ export function validateMapping(table: MappingTable, catalog: KitCatalog): strin
   if (table.format !== MAPPING_FORMAT) problems.push(`format is not ${MAPPING_FORMAT}`)
   if (!KIT_BUILDERS.includes(table.builder)) problems.push(`unknown builder ${table.builder}`)
   if (!/^\d+$/.test(table.version)) problems.push('version is not an integer string')
+  for (const element of Object.keys(table.defaults ?? {})) if (!isBuilderElement(table.builder, element)) problems.push(`defaults ${element}: not a ${table.builder} element`)
   const components = new Map(catalog.components.map(c => [c.id, c]))
   const seen = new Set<string>()
   for (const rule of table.rules) {
@@ -119,11 +125,16 @@ export interface MappingNode {
   children?: MappingNode[]
 }
 
+/** An element's attributes with the builder's unsaved defaults filled in. */
+export function attrsOf(node: MappingNode, defaults: MappingTable['defaults'] = {}): Record<string, unknown> {
+  return { ...defaults[node.name], ...node.attrs }
+}
+
 /** Whether a rule's `match` (with an optional `:qualifier`) and `when.attr` fit an element. */
-export function ruleMatches(rule: MappingRule, node: MappingNode): boolean {
+export function ruleMatches(rule: MappingRule, node: MappingNode, defaults?: MappingTable['defaults']): boolean {
   const [name, qualifier] = rule.match.split(':')
   if (name !== node.name) return false
-  const attrs = node.attrs ?? {}
+  const attrs = attrsOf(node, defaults)
   // A qualifier names the element's role: a template part's area or slug, or a sub-part the fact pack marks.
   if (qualifier && ![attrs.area, attrs.slug, attrs.tagName, attrs.qualifier].includes(qualifier)) return false
   for (const [key, value] of Object.entries(rule.when?.attr ?? {})) if (attrs[key] !== value) return false
@@ -138,7 +149,7 @@ export function ruleMatches(rule: MappingRule, node: MappingNode): boolean {
 export function claimMatches(nodes: MappingNode[], table: MappingTable, path = '0'): { path: string, node: MappingNode, rule: MappingRule }[] {
   return nodes.flatMap((node, i) => {
     const at = `${path}.${i}`
-    const rule = rulesFor(table, node.name).find(r => ruleMatches(r, node))
+    const rule = rulesFor(table, node.name).find(r => ruleMatches(r, node, table.defaults))
     return rule ? [{ path: at, node, rule }] : claimMatches(node.children ?? [], table, at)
   })
 }
