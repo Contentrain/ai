@@ -49,6 +49,12 @@ export interface SiteConfig {
    */
   lists: { display: 'cards' | 'full', heading: boolean }
   /**
+   * The source site's hosts (`site.com`): a link to one of them in migrated content is internal
+   * whatever its scheme, `www.` or letter case, and resolves through the published set. Fixed at
+   * build time, so moving the site to a new domain in Studio does not turn the old links external.
+   */
+  sourceHosts: readonly string[]
+  /**
    * Contentrain Studio's public forms and comments API, from studio.json at the
    * project root (see astro.config.mjs). Without it, forms and comment threads
    * render nothing — a form that cannot be sent is worse than no form.
@@ -74,5 +80,6 @@ export const siteConfig: SiteConfig = {
   menus: { primary: 'primary', footer: ['footer'] },
   post: { header: ['terms', 'title', 'byline', 'cover'], adjacent: false, more: 0 },
   lists: { display: 'cards', heading: false },
+  sourceHosts: [],
   ...(typeof __CONTENTRAIN_STUDIO__ !== 'undefined' && __CONTENTRAIN_STUDIO__ ? { studio: __CONTENTRAIN_STUDIO__ } : {}),
 }

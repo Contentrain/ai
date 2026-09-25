@@ -37,7 +37,12 @@ function normalizeRelative(path: string): string {
 }
 
 const matches = (path: string, prefixes: readonly string[]) =>
-  prefixes.some(prefix => (prefix.endsWith('/') ? path.startsWith(prefix) : path === prefix))
+  prefixes.some(prefix => (prefix.endsWith('/') ? path.startsWith(prefix) || path === prefix.slice(0, -1) : path === prefix))
+
+/** An environment file anywhere in the project: `.env`, `.env.local`, `apps/web/.env.production`. */
+const ENV_FILE = /(?:^|\/)\.env(?:\.[^/]*)?$/
+
+const unreadable = (path: string) => matches(path, UNREADABLE) || ENV_FILE.test(path)
 
 /**
  * The real directory a path's nearest existing ancestor resolves to must still be
@@ -79,12 +84,12 @@ export async function writablePath(root: string, path: string): Promise<string> 
 /** The absolute path the agent may read `path` from, or a GuardError. */
 export async function readablePath(root: string, path: string): Promise<string> {
   const rel = normalizeRelative(path)
-  if (matches(rel, UNREADABLE) || rel === '.env') {
+  if (unreadable(rel)) {
     throw new GuardError(`"${rel}" is not readable: entries are content, and the agent works from models (.contentrain/models/) and props, not content.`)
   }
   const absolute = resolve(root, rel)
   await assertInside(root, absolute, rel, false)
   const realRel = relative(await realpath(root), await realpath(absolute).catch(() => absolute)).split(sep).join('/')
-  if (matches(realRel, UNREADABLE)) throw new GuardError(`"${rel}" resolves to content`)
+  if (unreadable(realRel)) throw new GuardError(`"${rel}" resolves to content`)
   return absolute
 }

@@ -5,7 +5,7 @@
 import type { PlanSite, ProjectPlan } from '@contentrain/types'
 import { describe, expect, it } from 'vitest'
 import { STARTER_COVERED, unfulfilledFontRoles } from '../src/generate/index'
-import { readsStudioJson, siteConfigSource, studioJsonSource, themeSource } from '../src/generate/site'
+import { readsStudioJson, siteConfigSource, sourceHostsOf, studioJsonSource, themeSource } from '../src/generate/site'
 
 const STARTER_CONFIG = `export const siteConfig: SiteConfig = {
   menus: { primary: 'primary', footer: ['footer'] },
@@ -30,6 +30,11 @@ describe('siteConfigSource', () => {
     expect(out).toContain(`menus: { primary: 'header', footer: ['footer-1', 'footer-2'] },`)
     expect(out).toContain(`post: { header: ['title', 'cover', 'byline'], adjacent: true, more: 4 },`)
     expect(out).toContain(`lists: { display: 'full', heading: true },`)
+  })
+
+  it('fixes the source host in code, without www., so its links stay internal after a domain move', () => {
+    expect(siteConfigSource(STARTER_CONFIG, site({ url: 'https://WWW.Golden.test/' }))).toContain(`sourceHosts: ['golden.test'],`)
+    expect(sourceHostsOf('not a url')).toEqual([])
   })
 
   it('keeps the starter\'s own layout when the plan says nothing', () => {

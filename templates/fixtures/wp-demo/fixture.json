@@ -5,7 +5,10 @@
   "absentFromDist": [
     "Roadmap draft",
     "/roadmap/",
-    "Unannounced plans"
+    "Unannounced plans",
+    "northwind.example/roadmap/",
+    "Northwind.Example/?page_id=304",
+    "northwind.example/?p=211"
   ],
   "distFiles": {
     "_redirects": {
@@ -54,6 +57,12 @@
       "contains": [
         "/media/*.svg",
         "Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox"
+      ]
+    },
+    "blog/what-a-careful-migration-keeps/index.html": {
+      "contains": [
+        "<a href=\"/blog/shipping-the-first-version/\">the launch post by number</a>",
+        "(or the old roadmap, its short link and"
       ]
     }
   },

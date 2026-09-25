@@ -17,6 +17,11 @@ function replaceOnce(source: string, pattern: RegExp, replacement: string, what:
   return source.replace(pattern, () => replacement)
 }
 
+/** The source site's host without `www.`, as the starter's links compare hosts. */
+export function sourceHostsOf(url: string): string[] {
+  try { return [new URL(url).hostname.toLowerCase().replace(/^www\./, '')] } catch { return [] }
+}
+
 /** Whether the starter reads its Studio binding from `studio.json` (see its astro.config.mjs). */
 export const readsStudioJson = (starterSiteConfig: string): boolean => starterSiteConfig.includes('__CONTENTRAIN_STUDIO__')
 
@@ -33,6 +38,8 @@ export function siteConfigSource(starter: string, site: PlanSite, titleTemplate 
   // A starter that reads the binding from studio.json keeps its own line for it; the writer writes the file.
   const bound = /\n( {2}\.\.\.\(typeof __CONTENTRAIN_STUDIO__[^\n]*)/.exec(starter)?.[1]
   const studio = bound ? `\n${bound}` : site.studio ? `\n  studio: { baseUrl: ${sq(site.studio.baseUrl)}, projectId: ${sq(site.studio.projectId)} },` : ''
+  // The source's host, fixed in code: links to it stay internal after the site moves domain in Studio.
+  const sourceHosts = sourceHostsOf(site.url)
   const literal = `export const siteConfig: SiteConfig = {
   permalinks: {
     post: ${sq(p.post)},
@@ -47,7 +54,8 @@ export function siteConfigSource(starter: string, site: PlanSite, titleTemplate 
   postsPerPage: ${site.postsPerPage},
   menus: { primary: ${sq(site.menus.primary)}, footer: [${footerMenusOf(site).map(sq).join(', ')}] },
   post: { header: [${post.header.map(sq).join(', ')}], adjacent: ${post.adjacent}, more: ${post.more} },
-  lists: { display: ${sq(lists.display)}, heading: ${lists.heading} },${studio}
+  lists: { display: ${sq(lists.display)}, heading: ${lists.heading} },
+  sourceHosts: [${sourceHosts.map(sq).join(', ')}],${studio}
 }
 `
   return replaceOnce(starter, /export const siteConfig: SiteConfig = \{[\s\S]*\n\}\n/, literal, 'site.config.ts')

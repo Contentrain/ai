@@ -40,7 +40,7 @@ const { report, stopped } = await writeProject(
 
 ## Guarantees
 
-- **Content is never written by a model.** The agent's tools write only `src/views/`, `src/components/site/` and `src/styles/site.css`. Entries and meta cannot be read, and nothing under `.contentrain/` can be written. Paths are resolved through symlinks before the check.
+- **Content is never written by a model.** The agent's tools write only `src/views/`, `src/components/site/` and `src/styles/site.css`. Entries and meta cannot be read, and nothing under `.contentrain/` can be written. Environment files (`.env`, `.env.*`) cannot be read anywhere in the project. Paths are resolved through symlinks before the check. This guard keeps the agent's code honest; it is not a privacy boundary. What keeps the key and unpublished content from leaving the machine is the runtime's network and environment isolation (the allowlisted child env and the leak gate).
 - **The key stays in the caller.**
   - The API key comes from `WriteContext.apiKey` and is never read from `process.env`.
   - Builds and installs run with an allowlisted environment that has no credentials in it. The Agent SDK child gets that allowlist plus the key.

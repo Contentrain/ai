@@ -58,7 +58,7 @@ describe('readablePath — models yes, content no', () => {
   it('reads models', async () => {
     expect(await readFile(await readablePath(root, '.contentrain/models/posts.json'), 'utf8')).toContain('posts')
   })
-  for (const path of ['.contentrain/content/blog/posts/data.json', '.contentrain/meta/posts/en.json', '.env', 'src/views/escape/content/blog/posts/data.json', 'src/../.contentrain/content/blog/posts/data.json']) {
+  for (const path of ['.contentrain/content/blog/posts/data.json', '.contentrain/meta/posts/en.json', '.env', '.env.local', 'apps/web/.env.production', '.contentrain/content', '.contentrain/meta', 'src/views/escape/content/blog/posts/data.json', 'src/../.contentrain/content/blog/posts/data.json']) {
     it(`refuses ${path}`, async () => {
       await expect(readablePath(root, path)).rejects.toBeInstanceOf(GuardError)
     })

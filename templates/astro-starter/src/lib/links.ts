@@ -9,6 +9,7 @@ import { join } from 'node:path'
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content'
 import type { NavItem } from '../components/kit/_shared/types'
 import { byId, getSite, pageHref, postHref, resolve, termHref } from './content'
+import { siteConfig } from '../site.config'
 import { routeTable } from './site-routes'
 
 /** Addresses outside the route table that the site serves: search, the feed. */
@@ -17,6 +18,12 @@ const SERVED = new Set(['/search/', '/rss.xml'])
 const FILE = /\/[^/]+\.[a-z\d]{2,5}$/i
 const SCHEMES = new Set(['mailto:', 'tel:', 'sms:'])
 const BASE = 'http://link.invalid'
+
+/** A host as links compare it: `http://WWW.Site.com:8080` and `https://site.com` are the same site. */
+const bareHost = (hostname: string) => hostname.toLowerCase().replace(/^www\./, '')
+const hostOf = (url: string) => {
+  try { return bareHost(new URL(url.includes('//') ? url : `http://${url}`).hostname) } catch { return undefined }
+}
 
 const inPublic = (path: string) => {
   try { return existsSync(join(process.cwd(), 'public', decodeURI(path))) } catch { return false }
@@ -39,7 +46,11 @@ let linker: Promise<Linker> | undefined
 export function publicLinks(): Promise<Linker> {
   linker ??= (async () => {
     const [routes, site, redirects] = await Promise.all([routeTable(), getSite(), getCollection('redirects')])
-    const internal = new Set([BASE, import.meta.env.SITE, site.url].flatMap(url => (url ? [new URL(url).origin] : [])))
+    // The source's hosts are fixed at build time; the site singleton's url is editable in Studio.
+    const internal = new Set([BASE, import.meta.env.SITE, site.url, ...siteConfig.sourceHosts].flatMap((url) => {
+      const host = url ? hostOf(url) : undefined
+      return host ? [host] : []
+    }))
     const rules = new Map(redirects.map(entry => [sitePath(new URL(entry.data.from, `${BASE}/`).pathname), entry.data]))
     // WordPress's own short links (`/?p=12`, `/?page_id=7`) point at the entry, wherever it lives now.
     const byWpId = new Map<number, string>()
@@ -55,7 +66,7 @@ export function publicLinks(): Promise<Linker> {
       try { parsed = new URL(raw, `${BASE}/`) } catch { return undefined }
       if (SCHEMES.has(parsed.protocol)) return raw
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return undefined
-      if (!internal.has(parsed.origin)) return raw
+      if (!internal.has(bareHost(parsed.hostname))) return raw
       const shortLink = parsed.pathname === '/' ? Number(parsed.searchParams.get('p') ?? parsed.searchParams.get('page_id') ?? Number.NaN) : Number.NaN
       if (!Number.isNaN(shortLink)) return byWpId.get(shortLink)
       const path = sitePath(parsed.pathname)
