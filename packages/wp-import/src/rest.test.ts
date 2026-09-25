@@ -25,6 +25,7 @@ function stubFetch(calls: string[]): typeof fetch {
   return (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
     const u = String(url)
     calls.push(u + ((init?.headers as Record<string, string>)?.authorization ? ' [auth]' : ''))
+    if (u.endsWith('/wp-json/')) return json({ name: 'Golden &amp; Studio', description: 'Notes on <em>calm</em> software', url: 'https://s.example/wp', home: 'https://s.example', namespaces: ['wp/v2'] })
     if (u.includes('/types')) return json({ post: { slug: 'post', rest_base: 'posts' }, page: { slug: 'page', rest_base: 'pages' }, attachment: { slug: 'attachment', rest_base: 'media' } })
     if (u.includes('/posts?') && u.endsWith('&page=1')) return json([post(10, 'one')], { 'x-wp-totalpages': '2' })
     if (u.includes('/posts?') && u.endsWith('&page=2')) return json([post(12, 'two')])
@@ -63,6 +64,9 @@ describe('fetchRestRawIR', () => {
     const { raw, warnings } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: stubFetch(calls) })
     expect(warnings).toEqual([])
     expect(raw.provenance.kind).toBe('rest_public')
+    // The index names the site: the store's site singleton no longer says "Site".
+    expect(raw.site).toEqual({ url: 'https://s.example', title: 'Golden & Studio', description: 'Notes on calm software', base_site_url: 'https://s.example/wp', base_blog_url: 'https://s.example' })
+    expect(JSON.parse(rawToContentrain(raw).files['.contentrain/content/site/site/data.json']!)).toMatchObject({ title: 'Golden & Studio', tagline: 'Notes on calm software' })
     expect(raw.posts.map((p) => p.id).toSorted()).toEqual([10, 11, 12])
     const p = raw.posts.find((x) => x.id === 10)!
     expect(p.author).toBe('ada')

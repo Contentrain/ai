@@ -101,6 +101,9 @@ const DENIED = new Set([400, 401, 403])
 /** A comment listing's name in `credential.fell_back`: `comments` (approved) or `comments:hold`. */
 const commentKey = (status: string): string => (status === 'approve' ? 'comments' : `comments:${status}`)
 
+/** What a visitor can open: published, not behind a post password. */
+const visible = (p: RawPost): boolean => p.status === 'publish' && !p.password
+
 const positiveInteger = (name: string, value: number): number => {
   if (!Number.isSafeInteger(value) || value < 1) throw new RangeError(`${name} must be a positive safe integer`)
   return value
@@ -199,6 +202,11 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     )
     return firstPage.concat(...rest)
   }
+
+  // The site's own name and tagline (`/wp-json/` index, public): without them the store's site singleton says "Site".
+  // Advisory: an index that does not answer leaves them out, as before.
+  const index = await doFetch(`${origin}/wp-json/`, { headers })
+  const about = index.ok ? ((await index.json().catch(() => null)) as { name?: unknown; description?: unknown; url?: unknown; home?: unknown } | null) : (await index.body?.cancel(), null)
 
   interface RestType { slug: string; rest_base?: string }
   const typesResp = await doFetch(`${origin}/wp-json/wp/v2/types`, { headers })
@@ -398,15 +406,20 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     for (const [name, l] of [['menus', classic], ['menu-items', items], ['navigation', navs]] as const) {
       if (!l.status || (l.status >= 400 && !DENIED.has(l.status) && l.status !== 404)) warnings.push(`${name}: HTTP ${l.status} — skipped`)
     }
-    const slugOf = new Map(posts.map((p) => [p.id, p.slug]))
+    const slugOf = new Map(posts.filter(visible).map((p) => [p.id, p.slug]))
+    const hiddenIds = new Set(posts.filter((p) => !visible(p)).map((p) => p.id))
     const ctx: MenuContext = {
       origin,
       postSlug: (id) => slugOf.get(id),
+      hidden: (id) => hiddenIds.has(id),
       termSlug: (taxonomy, id) => { const t = termsById.get(id); return t && t.taxonomy === taxonomy ? t.slug : undefined },
       pages: posts.filter((p) => p.type === 'page' && p.status === 'publish' && !p.password).map((p) => ({ id: p.id, parent: p.parent ?? null, menu_order: p.menu_order ?? 0, title: strip(p.title), link: p.link ?? null, slug: p.slug })),
     }
-    menus = classicMenus(DENIED.has(classic.status) ? [] : classic.items, DENIED.has(items.status) ? [] : items.items, ctx)
-    menus.push(...blockMenus(DENIED.has(navs.status) ? [] : navs.items, parts.status < 400 ? parts.items : [], ctx, new Set(menus.map((m) => m.slug))))
+    const dropped = { count: 0 }
+    menus = classicMenus(DENIED.has(classic.status) ? [] : classic.items, DENIED.has(items.status) ? [] : items.items, ctx, dropped)
+    menus.push(...blockMenus(DENIED.has(navs.status) ? [] : navs.items, parts.status < 400 ? parts.items : [], ctx, new Set(menus.map((m) => m.slug)), dropped))
+    // A count only: the titles of what was left out are exactly what must not travel.
+    if (dropped.count) warnings.push(`menus: ${dropped.count} item(s) are drafts or point at unpublished or password-protected content — left out, as visitors never see them`)
   }
 
   const postIds = new Set(posts.map((p) => p.id))
@@ -434,7 +447,14 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
   const raw: RawIR = {
     version: MIGRATION_CONTRACT_VERSION,
     provenance: { kind, tool: options.tool ?? '@contentrain/wp-import' },
-    site: { url: origin },
+    site: {
+      url: origin,
+      ...(typeof about?.name === 'string' && strip(about.name) ? { title: strip(about.name) } : {}),
+      ...(typeof about?.description === 'string' && strip(about.description) ? { description: strip(about.description) } : {}),
+      // Where WordPress is installed and where the site is served, as WXR names them (they differ for a subdirectory install).
+      ...(typeof about?.url === 'string' && about.url ? { base_site_url: about.url } : {}),
+      ...(typeof about?.home === 'string' && about.home ? { base_blog_url: about.home } : {}),
+    },
     authors: users.map((u) => ({ id: u.id, login: u.slug, display_name: strip(u.name) || u.slug, email: null })),
     terms: [...termsById.values()],
     posts,

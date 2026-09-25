@@ -43,7 +43,14 @@ export interface RestTemplatePart { area?: string; content?: { raw?: string } }
 /** What a target is checked against: the posts and terms this import read. */
 export interface MenuContext {
   origin: string
+  /** Slug of a published, unprotected post — the only kind a menu may link to after the move. */
   postSlug: (id: number) => string | undefined
+  /**
+   * A post this import read that is not published (draft, pending, private, scheduled) or is behind a
+   * password. WordPress does not show a link to it to visitors; its menu item is left out, never
+   * resolved: its title and slug must not reach the store.
+   */
+  hidden: (id: number) => boolean
   termSlug: (taxonomy: string, id: number) => string | undefined
   /** Published pages, for `core/page-list` (id, parent, order, title, link). */
   pages: Array<{ id: number; parent: number | null; menu_order: number; title: string; link: string | null; slug: string }>
@@ -64,11 +71,29 @@ const targetOf = (kind: string | undefined, object: string | undefined, id: numb
   return { kind: 'unknown', resolved: false }
 }
 
-/** Classic menus and their items; each menu names the theme locations it is assigned to. */
-export function classicMenus(menus: RestMenu[], items: RestMenuItem[], ctx: MenuContext): RawMenu[] {
+/**
+ * Items a visitor never sees: a draft item, or one pointing at hidden content. Their children move up
+ * to the nearest kept ancestor, as WordPress's walker shows them.
+ */
+function hiddenItems(items: RestMenuItem[], drop: (i: RestMenuItem) => boolean): { gone: Set<number>; lift: (parent: number | null) => number | null } {
+  const parentOf = new Map(items.filter(drop).map((i) => [i.id, i.parent || null]))
+  const lift = (parent: number | null): number | null => {
+    const seen = new Set<number>()
+    let p = parent
+    while (p !== null && parentOf.has(p) && !seen.has(p)) { seen.add(p); p = parentOf.get(p) ?? null }
+    return p
+  }
+  return { gone: new Set(parentOf.keys()), lift }
+}
+
+/** Classic menus and their items; each menu names the theme locations it is assigned to. `dropped` counts left-out items. */
+export function classicMenus(menus: RestMenu[], items: RestMenuItem[], ctx: MenuContext, dropped = { count: 0 }): RawMenu[] {
   const out: RawMenu[] = []
   for (const m of [...menus].toSorted((a, b) => a.id - b.id)) {
-    const own = items.filter((i) => i.menus === m.id).toSorted((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0) || a.id - b.id)
+    const all = items.filter((i) => i.menus === m.id).toSorted((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0) || a.id - b.id)
+    const { gone, lift } = hiddenItems(all, (i) => (i.status ?? 'publish') !== 'publish' || (i.type === 'post_type' && !!i.object_id && ctx.hidden(i.object_id)))
+    dropped.count += gone.size
+    const own = all.filter((i) => !gone.has(i.id))
     const ids = new Set(own.map((i) => i.id))
     const menu: RawMenu = {
       id: m.id,
@@ -79,7 +104,7 @@ export function classicMenus(menus: RestMenu[], items: RestMenuItem[], ctx: Menu
           id: i.id,
           title: i.title?.raw || i.title?.rendered || '',
           order: i.menu_order ?? 0,
-          parent: i.parent || null,
+          parent: lift(i.parent || null),
           url: i.url || null,
           target: targetOf(i.type, i.object, i.object_id, i.url, ctx),
           target_attr: i.target || null,
@@ -87,7 +112,7 @@ export function classicMenus(menus: RestMenu[], items: RestMenuItem[], ctx: Menu
           description: i.description ?? '',
           status: i.status ?? 'publish',
         }
-        if (i.parent && !ids.has(i.parent)) item.parent_unresolved = true
+        if (item.parent && !ids.has(item.parent)) item.parent_unresolved = true
         return item
       }),
     }
@@ -139,7 +164,7 @@ const KIND: Record<string, string> = { 'post-type': 'post_type', taxonomy: 'taxo
  * Menu items of one `wp_navigation` body. Links and submenus become items; a page list becomes the
  * published pages it lists; a home link points at `/`. Other blocks (search, social icons, spacers) are not links.
  */
-export function navigationItems(content: string, ctx: MenuContext, nextId: () => number): RawMenuItem[] {
+export function navigationItems(content: string, ctx: MenuContext, nextId: () => number, dropped = { count: 0 }): RawMenuItem[] {
   const items: RawMenuItem[] = []
   const push = (b: { title: string; url?: string; kind?: string; object?: string; id?: number; newTab?: boolean; className?: string; description?: string }, parent: number | null): number => {
     const id = nextId()
@@ -171,6 +196,12 @@ export function navigationItems(content: string, ctx: MenuContext, nextId: () =>
       if (b.name === 'core/navigation-link' || b.name === 'core/navigation-submenu') {
         const kind = KIND[str(a.kind) ?? ''] ?? (str(a.type) === 'category' || str(a.type) === 'tag' || str(a.type) === 'post_tag' ? 'taxonomy' : a.id ? 'post_type' : 'custom')
         const object = kind === 'taxonomy' && str(a.type) === 'tag' ? 'post_tag' : str(a.type)
+        // WordPress renders no link to unpublished content; its children show in its place.
+        if (kind === 'post_type' && typeof a.id === 'number' && ctx.hidden(a.id)) {
+          dropped.count++
+          walk(b.children, parent)
+          continue
+        }
         const id = push({ title: strip(a.label), url: str(a.url), kind, object, id: typeof a.id === 'number' ? a.id : undefined, newTab: a.opensInNewTab === true, className: str(a.className), description: str(a.description) }, parent)
         walk(b.children, id)
       } else if (b.name === 'core/home-link') {
@@ -213,7 +244,7 @@ export function navigationLocations(parts: RestTemplatePart[], navigations: Rest
 }
 
 /** Published `wp_navigation` posts → RawMenu[], slugs kept unique against the classic menus already read. */
-export function blockMenus(navigations: RestNavigation[], parts: RestTemplatePart[], ctx: MenuContext, taken: Set<string>): RawMenu[] {
+export function blockMenus(navigations: RestNavigation[], parts: RestTemplatePart[], ctx: MenuContext, taken: Set<string>, dropped = { count: 0 }): RawMenu[] {
   const published = navigations.filter((n) => (n.status ?? 'publish') === 'publish').toSorted((a, b) => a.id - b.id)
   const locations = navigationLocations(parts, published)
   let next = 0
@@ -226,7 +257,7 @@ export function blockMenus(navigations: RestNavigation[], parts: RestTemplatePar
       id: n.id,
       slug,
       name: strip(n.title?.raw || n.title?.rendered || '') || slug,
-      items: navigationItems(n.content?.raw ?? '', ctx, () => -++next),
+      items: navigationItems(n.content?.raw ?? '', ctx, () => -++next, dropped),
     }
     const where = locations.get(n.id)
     if (where?.length) menu.locations = where

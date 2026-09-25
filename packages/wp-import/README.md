@@ -102,6 +102,13 @@ these before claiming a complete migration. ACF field/group records and their
 cross-model parents remain in the content store; route discovery decides which
 records become public pages. Importing configuration does not execute a plugin.
 
+### Site name over REST
+
+`fetchRestRawIR` reads the `/wp-json/` index for the site's name and tagline
+(`RawIR.site.title` / `description`, the store's `site` singleton) and its
+install and public addresses (`base_site_url` / `base_blog_url`). An index that
+does not answer leaves them out.
+
 ### Menus over REST
 
 With an Application Password, `fetchRestRawIR` reads the site's menus into
@@ -112,6 +119,11 @@ theme locations each is assigned to) and a block theme's published
 block refers to it; an empty navigation block without a `ref` shows the most
 recent published one, as WordPress does. Block menu items have no WordPress id
 and get negative ids; the store claims no `wp_id` for them.
+
+A menu item that is itself a draft, or that points at a draft, pending,
+private, scheduled or password-protected post, is left out — visitors never
+see it, and its label is often that post's title. Its children move up to the
+nearest kept ancestor; `warnings` gives only the count.
 
 Both need `edit_theme_options`. Without a credential, with a rejected one, or
 with a user who lacks that right, no menus are read and the result's `gaps`

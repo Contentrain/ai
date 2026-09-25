@@ -5,6 +5,7 @@ import { fetchRestRawIR, rawToContentrain } from './index'
 const ctx: MenuContext = {
   origin: 'https://s.example',
   postSlug: (id) => ({ 11: 'about', 12: 'team', 10: 'one' } as Record<number, string>)[id],
+  hidden: (id) => id === 14,
   termSlug: (taxonomy, id) => (taxonomy === 'category' && id === 2 ? 'news' : undefined),
   pages: [
     { id: 11, parent: null, menu_order: 1, title: 'About', link: 'https://s.example/about/', slug: 'about' },
@@ -65,6 +66,34 @@ describe('block navigation', () => {
   })
 })
 
+describe('unpublished targets never reach a menu', () => {
+  it('leaves out classic items that are drafts or point at hidden content, moving their children up', () => {
+    const dropped = { count: 0 }
+    const [menu] = classicMenus([{ id: 3, name: 'Main', slug: 'main' }], [
+      { id: 30, title: { raw: '', rendered: 'Secret plan' }, type: 'post_type', object: 'page', object_id: 14, parent: 0, menu_order: 1, url: 'https://s.example/?page_id=14', menus: 3, status: 'publish' },
+      { id: 31, title: { raw: 'Under the secret' }, type: 'post_type', object: 'page', object_id: 11, parent: 30, menu_order: 2, url: 'https://s.example/about/', menus: 3, status: 'publish' },
+      { id: 32, title: { raw: 'Unsaved item' }, type: 'custom', object: 'custom', parent: 0, menu_order: 3, url: 'https://x.example/', menus: 3, status: 'draft' },
+    ], ctx, dropped)
+    expect(menu!.items.map((i) => [i.id, i.parent, i.parent_unresolved])).toEqual([[31, null, undefined]])
+    expect(dropped.count).toBe(2)
+    expect(JSON.stringify(menu)).not.toMatch(/Secret plan|page_id=14|Unsaved/)
+  })
+
+  it('leaves out block links to hidden content; a hidden submenu\'s links take its place', () => {
+    let n = 0
+    const dropped = { count: 0 }
+    const items = navigationItems(
+      '<!-- wp:navigation-link {"label":"Secret plan","type":"page","id":14,"url":"/secret-plan/","kind":"post-type"} /-->'
+      + '<!-- wp:navigation-submenu {"label":"Secret hub","type":"page","id":14,"url":"/secret-plan/","kind":"post-type"} -->'
+      + '<!-- wp:navigation-link {"label":"Team","type":"page","id":12,"url":"/about/team/","kind":"post-type"} /-->'
+      + '<!-- /wp:navigation-submenu -->',
+      ctx, () => -++n, dropped)
+    expect(items.map((i) => [i.title, i.parent])).toEqual([['Team', null]])
+    expect(dropped.count).toBe(2)
+    expect(JSON.stringify(items)).not.toMatch(/Secret|secret-plan/)
+  })
+})
+
 describe('classic menus', () => {
   it('groups items by menu, orders them, resolves targets and carries locations', () => {
     const menus = classicMenus(
@@ -97,12 +126,18 @@ function site(opts: { menus?: number } = {}): { fetchImpl: typeof fetch; calls: 
     calls.push(u + (auth ? ' [auth]' : ''))
     if (u.includes('/users/me')) return json({ id: 1 })
     if (u.includes('/types')) return json({ page: { slug: 'page', rest_base: 'pages' } })
-    if (u.includes('/pages?')) return json([{ id: 11, slug: 'about', status: 'publish', link: 'https://s.example/about/', title: { rendered: 'About' }, content: { rendered: '' }, parent: 0 }])
+    if (u.includes('/pages?')) {
+      const pages = [{ id: 11, slug: 'about', status: 'publish', link: 'https://s.example/about/', title: { rendered: 'About' }, content: { rendered: '' }, parent: 0 }]
+      return json(auth ? [...pages, { id: 14, slug: 'secret-plan', status: 'draft', link: 'https://s.example/?page_id=14', title: { rendered: 'Secret plan' }, content: { rendered: '' }, parent: 0 }] : pages)
+    }
     if (/\/(menus|menu-items|navigation|template-parts)\?/.test(u)) {
       if (!auth) return json({ code: 'rest_cannot_view' }, 401)
       if (opts.menus && !u.includes('/template-parts?')) return json({ code: 'rest_cannot_view' }, opts.menus)
       if (u.includes('/menus?')) return json([{ id: 3, name: 'Main', slug: 'main', locations: ['primary'] }])
-      if (u.includes('/menu-items?')) return json([{ id: 20, title: { raw: 'About' }, type: 'post_type', object: 'page', object_id: 11, parent: 0, menu_order: 1, url: 'https://s.example/about/', menus: 3, status: 'publish' }])
+      if (u.includes('/menu-items?')) return json([
+        { id: 20, title: { raw: 'About' }, type: 'post_type', object: 'page', object_id: 11, parent: 0, menu_order: 1, url: 'https://s.example/about/', menus: 3, status: 'publish' },
+        { id: 21, title: { raw: '', rendered: 'Secret plan' }, type: 'post_type', object: 'page', object_id: 14, parent: 0, menu_order: 2, url: 'https://s.example/?page_id=14', menus: 3, status: 'publish' },
+      ])
       if (u.includes('/navigation?')) {
         expect(u).toContain('status=publish')
         return json([{ id: 9, slug: 'navigation', status: 'publish', date_gmt: '2026-01-01T00:00:00', title: { raw: 'Navigation' }, content: { raw: NAV } }])
@@ -120,7 +155,8 @@ describe('fetchRestRawIR menus', () => {
     const { fetchImpl } = site()
     const { raw, gaps, warnings } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl, auth: { user: 'u', appPassword: 'p' } })
     expect(gaps).toEqual([])
-    expect(warnings).toEqual([])
+    expect(warnings).toEqual(['menus: 1 item(s) are drafts or point at unpublished or password-protected content — left out, as visitors never see them'])
+    expect(JSON.stringify(raw.menus)).not.toMatch(/Secret plan|secret-plan|page_id=14/)
     expect(raw.menus!.map((m) => [m.slug, m.locations, m.items.length])).toEqual([['main', ['primary'], 1], ['navigation', ['header'], 4]])
     expect(raw.menus![0]!.items[0]!.target).toEqual({ kind: 'post', post_type: 'page', id: 11, slug: 'about', resolved: true })
   })
@@ -154,6 +190,7 @@ describe('fetchRestRawIR menus', () => {
     const itemsFile = Object.keys(files).find((f) => f.includes('content/') && f.includes('/menu-items/'))!
     const items = Object.values(JSON.parse(files[itemsFile]!)) as Array<Record<string, unknown>>
     expect(items).toHaveLength(5)
+    expect(JSON.stringify(items)).not.toMatch(/Secret plan|secret-plan|page_id=14/)
     expect(items.filter((i) => 'wp_id' in i).map((i) => i.wp_id)).toEqual([20])
   })
 })
