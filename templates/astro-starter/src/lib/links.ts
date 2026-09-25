@@ -4,6 +4,8 @@
 // set — or is dropped: a menu item without a public target is left out, a link
 // in a body becomes its text. External links pass through unchanged.
 
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content'
 import redirects from '../../redirects.json' with { type: 'json' }
 import type { NavItem } from '../components/kit/_shared/types'
@@ -16,6 +18,10 @@ const SERVED = new Set(['/search/', '/rss.xml'])
 const FILE = /\/[^/]+\.[a-z\d]{2,5}$/i
 const SCHEMES = new Set(['mailto:', 'tel:', 'sms:'])
 const BASE = 'http://link.invalid'
+
+const inPublic = (path: string) => {
+  try { return existsSync(join(process.cwd(), 'public', decodeURI(path))) } catch { return false }
+}
 
 type Redirect = string | { status?: number, destination: string }
 
@@ -64,7 +70,8 @@ export function publicLinks(): Promise<(url: string | undefined) => string | und
       if (!internal.has(parsed.origin)) return raw
       const shortLink = parsed.pathname === '/' ? Number(parsed.searchParams.get('p') ?? parsed.searchParams.get('page_id') ?? Number.NaN) : Number.NaN
       if (!Number.isNaN(shortLink)) return byWpId.get(shortLink)
-      if (FILE.test(parsed.pathname)) return `${parsed.pathname}${parsed.search}${parsed.hash}`
+      // A file the media stage copied into public/ is served here; one it could not copy stays at its old address.
+      if (FILE.test(parsed.pathname)) return inPublic(parsed.pathname) ? `${parsed.pathname}${parsed.search}${parsed.hash}` : raw
       const path = landing(parsed.pathname.endsWith('/') ? parsed.pathname : `${parsed.pathname}/`)
       if (path === undefined || !(routes.has(path) || SERVED.has(path))) return undefined
       return `${path}${parsed.search}${parsed.hash}`
