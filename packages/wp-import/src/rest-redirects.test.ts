@@ -8,6 +8,9 @@ const rule = (id: number, extra: Partial<RestRedirection> = {}): RestRedirection
   action_data: { url: `${O}/new-${id}/` }, match_type: 'url', ...extra,
 })
 
+/** A rule's id and its query, case and trailing-slash modes. */
+const modes = (r: { id?: string; query?: string; case_insensitive?: boolean; trailing_slash?: string }) => [r.id, r.query, r.case_insensitive, r.trailing_slash]
+
 describe('Redirection rules over REST', () => {
   it('accounts for every rule: served, gone, or excluded with its reason — shaped as the Bridge shapes them', () => {
     const { redirects, excluded } = redirectionRules([
@@ -29,7 +32,7 @@ describe('Redirection rules over REST', () => {
       { id: 'redirection:10', from: '/old-10/', to: '/new-10/', status: 301, source: 'redirection', match: 'url', regex: false, served_by: 'apache' },
       { id: 'redirection:11', from: '/old-11/', to: '/new-11/', status: 301, source: 'redirection', match: 'url', regex: false, status_note: 'source status 200 is not a redirect code; 301 assumed' },
       { id: 'redirection:2', from: '/old-2/', to: 'https://other.example/x', status: 302, source: 'redirection', match: 'url', regex: false },
-      { id: 'redirection:3', from: '^/archive/(.*)$', to: '/blog/$1', status: 301, source: 'redirection', match: 'url', regex: true, query: 'pass', case_insensitive: true, trailing_slash: 'ignore' },
+      { id: 'redirection:3', from: '^/archive/(.*)$', to: '/blog/$1', status: 301, source: 'redirection', match: 'url', regex: true, query: 'exact', case_insensitive: true, trailing_slash: 'ignore' },
       // Gone: served as that answer, leading nowhere.
       { id: 'redirection:4', from: '/old-4/', to: '', status: 410, source: 'redirection', match: 'url', regex: false },
       { id: 'redirection:5', from: '/old-5/', to: '', status: 451, source: 'redirection', match: 'url', regex: false },
@@ -42,6 +45,24 @@ describe('Redirection rules over REST', () => {
     ])
     expect(excluded.find((x) => x.id === 'redirection:9')!.condition).toEqual({ logged_in: '/in/', logged_out: '/out/' })
     expect(excluded.every((x) => !('to' in x))).toBe(true)
+  })
+
+  it('states each rule\'s modes as Redirection applies them: its own flags, else the site\'s, else the plugin\'s defaults', () => {
+    const items = [
+      rule(1, { match_data: { source: { flag_query: 'ignore' } } }),
+      rule(2),
+      rule(3, { enabled: false, match_data: { source: { flag_case: true } } }),
+    ]
+    const withSite = redirectionRules(items, [], O, { flag_query: 'pass', flag_trailing: true })
+    expect(withSite.redirects.map(modes)).toEqual([['redirection:1', 'ignore', false, 'ignore'], ['redirection:2', 'pass', false, 'ignore']])
+    // An excluded rule states them too.
+    expect(withSite.excluded.map(modes)).toEqual([['redirection:3', 'pass', true, 'ignore']])
+    // The site's settings not readable: only what a rule states itself.
+    // Only values Redirection accepts: `exactorder` is an exact match; a string "1" is not a boolean.
+    const odd = redirectionRules([rule(4, { match_data: { source: { flag_query: 'exactorder', flag_case: '1', flag_trailing: 'yes' } } })], [], O, { flag_query: 'bogus', flag_case: true })
+    expect(odd.redirects.map(modes)).toEqual([['redirection:4', 'exact', true, 'exact']])
+    const unknown = redirectionRules(items, [], O)
+    expect(unknown.redirects.map(modes)).toEqual([['redirection:1', 'ignore', undefined, undefined], ['redirection:2', undefined, undefined, undefined]])
   })
 
   it('reads the older `status` field and a string target', () => {
@@ -68,6 +89,7 @@ function site(opts: { redirection?: boolean; denied?: boolean } = {}): { fetchIm
     if (u.includes('/redirection/v1/')) {
       if (!auth || opts.denied) return json({ code: 'rest_forbidden' }, 403)
       const page = Number(new URL(u).searchParams.get('page'))
+      if (u.endsWith('/setting')) return json({ settings: { flag_query: 'ignore', flag_case: true, flag_trailing: false, support: false } })
       if (u.includes('/group?')) return json({ items: [{ id: 1, module_id: 1, enabled: true }], total: 1 })
       return json({ items: rules.slice(page * 2, page * 2 + 2), total: rules.length })
     }
@@ -84,7 +106,7 @@ describe('fetchRestRawIR redirects', () => {
   it('reads Redirection with a credential, page by page, and says what REST cannot read', async () => {
     const { fetchImpl, calls } = site()
     const { raw, gaps } = await fetchRestRawIR({ origin: O, fetchImpl, auth: { user: 'u', appPassword: 'p' } })
-    expect(raw.redirects!.map((r) => [r.id, r.to, r.status])).toEqual([['redirection:1', '/new-1/', 301], ['redirection:2', '/new-2/', 301], ['redirection:3', '', 410]])
+    expect(raw.redirects!.map((r) => [r.id, r.to, r.status, r.query, r.case_insensitive])).toEqual([['redirection:1', '/new-1/', 301, 'ignore', true], ['redirection:2', '/new-2/', 301, 'ignore', true], ['redirection:3', '', 410, 'ignore', true]])
     expect(raw.redirects_excluded).toBeUndefined()
     expect(calls.filter((c) => c.includes('/redirection/v1/redirect')).map((c) => new URL(c.split(' ')[0]!).searchParams.get('page'))).toEqual(['0', '1'])
     expect(gaps).toEqual(['redirects_partial'])

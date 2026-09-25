@@ -9,7 +9,7 @@ import type { RawAcfValue, RawIR, RawAttachment, RawComment, RawLanguagePair, Ra
 import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import { strip, SKIP_TYPES, PROTECTED } from './core.js'
 import { acfIsSecret, acfScrub } from './acf.js'
-import { redirectionRules, type RestRedirection, type RestRedirectionGroup } from './rest-redirects.js'
+import { redirectionRules, type RestRedirection, type RestRedirectionGroup, type RestRedirectionOptions } from './rest-redirects.js'
 import { blockMenus, classicMenus, type MenuContext, type RestMenu, type RestMenuItem, type RestNavigation, type RestTemplate, type RestTemplatePart } from './rest-menus.js'
 
 const iso = (gmt: string | undefined): string | null => (gmt ? `${gmt}Z` : null)
@@ -543,12 +543,21 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
       }
       return { items, status: 200 }
     }
-    const [rules, groups] = await Promise.all([all<RestRedirection>('redirect'), all<RestRedirectionGroup>('group')])
+    // The site-wide match defaults a rule without its own flags takes; answered as `{ settings }`.
+    const settings = async (): Promise<RestRedirectionOptions | undefined> => {
+      try {
+        const r = await schedule(() => doFetch(`${origin}/wp-json/redirection/v1/setting`, { headers }))
+        if (!r.ok) { await r.body?.cancel(); return undefined }
+        const body = await r.json() as { settings?: RestRedirectionOptions } | null
+        return body?.settings && typeof body.settings === 'object' ? body.settings : undefined
+      } catch { return undefined }
+    }
+    const [rules, groups, siteFlags] = await Promise.all([all<RestRedirection>('redirect'), all<RestRedirectionGroup>('group'), settings()])
     if (DENIED.has(rules.status)) {
       gaps.push('redirects_require_auth')
       warnings.push(`redirects: HTTP ${rules.status} with the credential — the user may not manage Redirection; its rules not read`)
     } else if (rules.status === 200) {
-      ;({ redirects, excluded: redirectsExcluded } = redirectionRules(rules.items, groups.status === 200 ? groups.items : [], origin))
+      ;({ redirects, excluded: redirectsExcluded } = redirectionRules(rules.items, groups.status === 200 ? groups.items : [], origin, siteFlags))
     } else if (redirection) warnings.push(`redirects: HTTP ${rules.status} — Redirection's rules not read`)
   }
 
