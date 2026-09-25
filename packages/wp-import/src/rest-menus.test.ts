@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { blockMenus, classicMenus, navigationItems, navigationLocations, parseBlocks, type MenuContext } from './rest-menus'
-import { fetchRestRawIR, rawToContentrain } from './index'
+import { blockMenus, classicMenus, inlineMenus, navigationItems, navigationLocations, parseBlocks, usedParts, type MenuContext } from './rest-menus'
+import { fetchRestRawIR, parseWxr, rawToContentrain } from './index'
+import { FIXTURE } from './wxr.test'
 
 const ctx: MenuContext = {
   origin: 'https://s.example',
@@ -62,6 +63,76 @@ describe('block navigation', () => {
     expect(menus).toHaveLength(1)
     expect(menus[0]).toMatchObject({ id: 9, slug: 'main-nav', name: 'Header nav', locations: ['header'] })
     expect(menus[0]!.items).toHaveLength(4)
+  })
+})
+
+// Twenty Twenty-Five's footer, as REST serves the template part (its pattern already expanded): two inline navigations.
+const TT5_FOOTER = '<!-- wp:group {"layout":{"type":"constrained"}} --><!-- wp:columns --><!-- wp:column -->'
+  + '<!-- wp:navigation {"overlayMenu":"never","layout":{"type":"flex","orientation":"vertical"}} -->'
+  + '<!-- wp:navigation-link {"label":"Blog","url":"#"} /--><!-- wp:navigation-link {"label":"About","url":"#"} /--><!-- wp:navigation-link {"label":"FAQs","url":"#"} /--><!-- wp:navigation-link {"label":"Authors","url":"#"} /-->'
+  + '<!-- /wp:navigation --><!-- /wp:column --><!-- wp:column -->'
+  + '<!-- wp:navigation {"overlayMenu":"never","layout":{"type":"flex","orientation":"vertical"}} -->'
+  + '<!-- wp:navigation-link {"label":"Events","url":"#"} /--><!-- wp:navigation-submenu {"label":"Shop","url":"/shop/"} --><!-- wp:navigation-link {"label":"Gift cards","url":"/shop/gift-cards/"} /--><!-- /wp:navigation-submenu -->'
+  + '<!-- wp:navigation-link {"label":"Secret launch","type":"page","id":99,"url":"/?page_id=99","kind":"post-type"} /-->'
+  + '<!-- /wp:navigation --><!-- /wp:column --><!-- /wp:columns --><!-- /wp:group -->'
+const TEMPLATES = [{ slug: 'index', content: { raw: '<!-- wp:template-part {"slug":"header","area":"header"} /--><!-- wp:group --><!-- wp:template-part {"slug":"footer","area":"footer"} /--><!-- /wp:group -->' } }]
+
+describe('inline navigation in template parts', () => {
+  it('counts only the parts a template uses; without templates, the part named after its area', () => {
+    const parts = [
+      { slug: 'header', area: 'header' }, { slug: 'header-large-title', area: 'header' },
+      { slug: 'footer', area: 'footer' }, { slug: 'footer-columns', area: 'footer' }, { area: 'footer' },
+    ]
+    expect(usedParts(parts, TEMPLATES).map((p) => p.slug)).toEqual(['header', 'footer', undefined])
+    expect(usedParts(parts).map((p) => p.slug)).toEqual(['header', 'footer', undefined])
+    expect(usedParts(parts, [{ slug: 'page', content: { raw: '<!-- wp:template-part {"slug":"footer-columns"} /-->' } }]).map((p) => p.slug)).toEqual(['footer-columns', undefined])
+  })
+
+  it('turns each inline navigation of a used part into a menu of its area: order, nesting, # links kept; hidden targets left out', () => {
+    let n = 0
+    const dropped = { count: 0 }
+    const menus = inlineMenus(usedParts([{ slug: 'footer', area: 'footer', content: { raw: TT5_FOOTER } }], TEMPLATES), ctx, new Set(), () => -++n, dropped)
+    expect(menus.map((m) => [m.slug, m.name, m.locations])).toEqual([['footer-navigation-1', 'Footer navigation 1', ['footer']], ['footer-navigation-2', 'Footer navigation 2', ['footer']]])
+    expect(menus[0]!.items.map((i) => [i.title, i.url, i.parent])).toEqual([['Blog', '#', null], ['About', '#', null], ['FAQs', '#', null], ['Authors', '#', null]])
+    const shop = menus[1]!.items.find((i) => i.title === 'Shop')!
+    expect(menus[1]!.items.map((i) => [i.title, i.parent])).toEqual([['Events', null], ['Shop', null], ['Gift cards', shop.id]])
+    expect(menus[1]!.items[2]!.url).toBe('https://s.example/shop/gift-cards/')
+    // Page 99 is not proven public: its link (and title) stays out.
+    expect(JSON.stringify(menus)).not.toContain('Secret launch')
+    expect(dropped.count).toBe(1)
+    expect(menus.every((m) => (m.id ?? 0) < 0 && m.items.every((i) => i.id < 0))).toBe(true)
+  })
+
+  it('names a navigation by its aria label, skips an empty or referenced one, and keeps slugs unique', () => {
+    let n = 0
+    const raw = '<!-- wp:navigation {"ariaLabel":"Legal"} --><!-- wp:navigation-link {"label":"Privacy","url":"/privacy/"} /--><!-- /wp:navigation -->'
+      + '<!-- wp:navigation {"ref":5} /--><!-- wp:navigation /-->'
+    const menus = inlineMenus([{ slug: 'footer', area: 'footer', content: { raw } }], ctx, new Set(['legal']), () => -++n)
+    expect(menus.map((m) => [m.slug, m.name])).toEqual([['legal-1', 'Legal']])
+  })
+
+  it('reads with the wp_navigation menus, only from used parts', () => {
+    const parts = [
+      { slug: 'header', area: 'header', content: { raw: '<!-- wp:navigation {"ref":9} /-->' } },
+      { slug: 'footer', area: 'footer', content: { raw: TT5_FOOTER } },
+      { slug: 'footer-columns', area: 'footer', content: { raw: TT5_FOOTER.replace('Blog', 'Unused') } },
+    ]
+    const menus = blockMenus([{ id: 9, slug: 'navigation', status: 'publish', title: { raw: 'Header' }, content: { raw: NAV } }], parts, ctx, new Set(), { count: 0 }, TEMPLATES)
+    expect(menus.map((m) => [m.slug, m.locations])).toEqual([['navigation', ['header']], ['footer-navigation-1', ['footer']], ['footer-navigation-2', ['footer']]])
+    expect(JSON.stringify(menus)).not.toContain('Unused')
+    // Item ids stay unique across the wp_navigation menu and the inline ones.
+    const ids = menus.flatMap((m) => m.items.map((i) => i.id))
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('stores an inline menu with its area and claims no WordPress id for it', async () => {
+    let n = 0
+    const { raw } = await parseWxr(FIXTURE)
+    raw.menus = inlineMenus([{ slug: 'footer', area: 'footer', content: { raw: TT5_FOOTER } }], ctx, new Set(), () => -++n)
+    const { files } = rawToContentrain(raw)
+    const file = Object.keys(files).find((f) => f.includes('content/') && f.includes('/menus/'))!
+    const stored = Object.values(JSON.parse(files[file]!)) as Array<Record<string, unknown>>
+    expect(stored.map((m) => [m.name, m.locations, 'wp_id' in m]).toSorted((a, b) => String(a[0]).localeCompare(String(b[0])))).toEqual([['Footer navigation 1', ['footer'], false], ['Footer navigation 2', ['footer'], false]])
   })
 })
 

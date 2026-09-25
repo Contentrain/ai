@@ -4,9 +4,12 @@
 //   - classic menus: `/wp/v2/menus` (with the theme locations each is assigned to) and `/wp/v2/menu-items`;
 //   - block-theme navigation: published `wp_navigation` posts, whose block markup is the menu. A block
 //     menu's location is the template part (`header` / `footer`) that references it — or, for a
-//     navigation block without a `ref`, the most recent published one, which is what WordPress shows.
-// Block menu items have no ids of their own; they get negative ids, unique within the import, so they
-// can never collide with a WordPress post id.
+//     navigation block without a `ref`, the most recent published one, which is what WordPress shows;
+//   - inline navigation: a navigation block in a template part that carries its own links (Twenty
+//     Twenty-Five's footer columns). It is a menu of that part's area, with no WordPress record behind it.
+// Only template parts a template uses count: a theme ships alternatives (`footer-columns`, `header-large-title`)
+// that no page shows. Block menu items, and inline menus, have no ids of their own; they get negative ids,
+// unique within the import, so they can never collide with a WordPress id.
 
 import type { RawMenu, RawMenuItem, RawMenuTarget } from '@contentrain/types'
 import { strip } from './core.js'
@@ -38,7 +41,8 @@ export interface RestNavigation {
   content?: { raw?: string }
 }
 
-export interface RestTemplatePart { area?: string; content?: { raw?: string } }
+export interface RestTemplatePart { slug?: string; area?: string; title?: { rendered?: string; raw?: string }; content?: { raw?: string } }
+export interface RestTemplate { slug?: string; content?: { raw?: string } }
 
 /** What a target is checked against: the posts and terms this import read. */
 export interface MenuContext {
@@ -154,6 +158,8 @@ export function parseBlocks(content: string): Block[] {
 const str = (v: unknown): string | undefined => (typeof v === 'string' && v ? v : undefined)
 const absolute = (url: string | undefined, origin: string): string | undefined => {
   if (!url) return undefined
+  // `#` (a placeholder link) stays on the page it is on; made absolute it would point at the home page.
+  if (url.startsWith('#')) return url
   try { return new URL(url, `${origin}/`).href } catch { return url }
 }
 /** The block editor's link kinds → the classic menu item types. */
@@ -164,6 +170,11 @@ const KIND: Record<string, string> = { 'post-type': 'post_type', taxonomy: 'taxo
  * published pages it lists; a home link points at `/`. Other blocks (search, social icons, spacers) are not links.
  */
 export function navigationItems(content: string, ctx: MenuContext, nextId: () => number, dropped = { count: 0 }): RawMenuItem[] {
+  return blockItems(parseBlocks(content), ctx, nextId, dropped)
+}
+
+/** Menu items of navigation blocks already parsed (a `wp_navigation` body, or an inline navigation's links). */
+function blockItems(tree: Block[], ctx: MenuContext, nextId: () => number, dropped: { count: number }): RawMenuItem[] {
   const items: RawMenuItem[] = []
   const push = (b: { title: string; url?: string; kind?: string; object?: string; id?: number; newTab?: boolean; className?: string; description?: string }, parent: number | null): number => {
     const id = nextId()
@@ -212,8 +223,59 @@ export function navigationItems(content: string, ctx: MenuContext, nextId: () =>
       }
     }
   }
-  walk(parseBlocks(content), null)
+  walk(tree, null)
   return items
+}
+
+/** Template-part slugs the templates use, at any depth (a part inside a group, a part inside a part is not followed). */
+function partSlugs(blocks: Block[], out = new Set<string>()): Set<string> {
+  for (const b of blocks) {
+    if (b.name === 'core/template-part' && typeof b.attrs.slug === 'string') out.add(b.attrs.slug)
+    partSlugs(b.children, out)
+  }
+  return out
+}
+
+/**
+ * The template parts a page can show: those a template references. Without the templates (not readable), the
+ * part named after its area (`header`, `footer`) — what a theme's templates use unless they say otherwise.
+ * Parts without a slug (older callers) all count.
+ */
+export function usedParts(parts: RestTemplatePart[], templates: RestTemplate[] = []): RestTemplatePart[] {
+  const used = new Set<string>()
+  for (const t of templates) if (t.content?.raw) partSlugs(parseBlocks(t.content.raw), used)
+  return parts.filter((p) => !p.slug || (used.size ? used.has(p.slug) : p.slug === p.area))
+}
+
+const AREA_ORDER = ['header', 'footer']
+const areaOf = (p: RestTemplatePart): string | undefined => (p.area && p.area !== 'uncategorized' ? p.area : undefined)
+const titleCase = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
+const slugOf = (s: string): string => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+/**
+ * Inline navigations of the used template parts → RawMenu[], in area order (header, footer, others) and document
+ * order within a part. A part's single inline navigation is named after its area (`Footer navigation`), several
+ * are numbered; a navigation's own `ariaLabel` wins. Links keep their order and nesting; a link to content not
+ * proven public is left out, as in every other menu.
+ */
+export function inlineMenus(parts: RestTemplatePart[], ctx: MenuContext, taken: Set<string>, nextId: () => number, dropped = { count: 0 }): RawMenu[] {
+  const out: RawMenu[] = []
+  const ordered = parts.filter((p) => areaOf(p) && p.content?.raw).toSorted((a, b) => (AREA_ORDER.indexOf(areaOf(a)!) + 1 || 99) - (AREA_ORDER.indexOf(areaOf(b)!) + 1 || 99))
+  for (const p of ordered) {
+    const area = areaOf(p)!
+    const navs: Block[] = []
+    const find = (blocks: Block[]) => { for (const b of blocks) { if (b.name === 'core/navigation') { if (typeof b.attrs.ref !== 'number' && b.children.length) navs.push(b) } else find(b.children) } }
+    find(parseBlocks(p.content!.raw!))
+    navs.forEach((nav, i) => {
+      const name = strip(nav.attrs.ariaLabel) || `${titleCase(area)} navigation${navs.length > 1 ? ` ${i + 1}` : ''}`
+      let slug = slugOf(name) || `${area}-navigation`
+      while (taken.has(slug)) slug = `${slug}-${i + 1}`
+      taken.add(slug)
+      const items = blockItems(nav.children, ctx, nextId, dropped)
+      if (items.length) out.push({ id: nextId(), slug, name, items, locations: [area] })
+    })
+  }
+  return out
 }
 
 /**
@@ -242,8 +304,12 @@ export function navigationLocations(parts: RestTemplatePart[], navigations: Rest
   return new Map([...out].map(([id, set]) => [id, [...set].toSorted()]))
 }
 
-/** Published `wp_navigation` posts → RawMenu[], slugs kept unique against the classic menus already read. */
-export function blockMenus(navigations: RestNavigation[], parts: RestTemplatePart[], ctx: MenuContext, taken: Set<string>, dropped = { count: 0 }): RawMenu[] {
+/**
+ * Published `wp_navigation` posts, then the inline navigations of the used template parts → RawMenu[], slugs kept
+ * unique against the classic menus already read. `templates` says which parts are used (see `usedParts`).
+ */
+export function blockMenus(navigations: RestNavigation[], allParts: RestTemplatePart[], ctx: MenuContext, taken: Set<string>, dropped = { count: 0 }, templates: RestTemplate[] = []): RawMenu[] {
+  const parts = usedParts(allParts, templates)
   const published = navigations.filter((n) => (n.status ?? 'publish') === 'publish').toSorted((a, b) => a.id - b.id)
   const locations = navigationLocations(parts, published)
   let next = 0
@@ -262,5 +328,6 @@ export function blockMenus(navigations: RestNavigation[], parts: RestTemplatePar
     if (where?.length) menu.locations = where
     out.push(menu)
   }
+  out.push(...inlineMenus(parts, ctx, taken, () => -++next, dropped))
   return out
 }
