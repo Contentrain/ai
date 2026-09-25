@@ -127,7 +127,7 @@ export function themeSource(starter: string, tokens: PlanSite['tokens']): string
   }
   // Outside @theme, which drops variables no utility uses: the kit reads these through var() fallbacks.
   const root = added.length ? `\n\n/* The source theme's type and shape; without them the kit uses its own values. */\n:root {\n${added.join('\n')}\n}` : ''
-  const markers = markerRules(tokens.roles)
+  const markers = markerRules(tokens)
   const rules = markers.length ? `\n\n/* The source theme's type scale and rhythm on the kit's markers. Unlayered, so they beat the utilities. */\n${markers.join('\n')}` : ''
   return `${starter.slice(0, block.index)}@theme {\n${body}\n}${root}${rules}${starter.slice(block.index + block[0].length)}`
 }
@@ -140,10 +140,26 @@ const MARKER_RULES: Array<[string, string]> = [
   ['text-body', '[data-kit-text] { font-size: var(--text-body); line-height: var(--leading-body, inherit); }'],
   ['text-nav', '[data-cr-part="nav-header"] :is(a, summary) { font-size: var(--text-nav); }'],
   ['spacing-section', '[data-kit-section]:not([data-kit-spacing="none"]) { padding-block: calc(var(--spacing-section) / 2); }'],
+  // The site title takes its size from where it sits, as WordPress's does: body text in the header, a heading in the footer.
+  ['text-body', 'header [data-kit-brand] { font-size: var(--text-body); }'],
+  ['text-heading-2', 'footer [data-kit-brand] { font-size: var(--text-heading-2); }'],
+  // Post terms and byline carry the body's weight, not the kit's medium.
+  ['font-weight-body', '[data-kit-meta], [data-kit-meta] a { font-weight: var(--font-weight-body); }'],
 ]
 
-function markerRules(roles: PlanSite['tokens']['roles']): string[] {
-  return MARKER_RULES.filter(([role]) => (roles as Record<string, string | undefined>)[role] !== undefined).map(([, rule]) => rule)
+/** The theme's own presets (`tokens.extra`) the kit's markers take where the source theme uses them. */
+const PRESET_MARKER_RULES: Array<[string, string]> = [
+  ['text-medium', '[data-kit-tagline] { font-size: var(--text-medium); }'],
+  ['text-small', '[data-kit-meta], main figcaption, [data-cr-part="related"] time { font-size: var(--text-small); }'],
+]
+
+function markerRules(tokens: PlanSite['tokens']): string[] {
+  const roles = tokens.roles as Record<string, string | undefined>
+  const extra = tokens.extra ?? {}
+  return [
+    ...MARKER_RULES.filter(([role]) => roles[role] !== undefined).map(([, rule]) => rule),
+    ...PRESET_MARKER_RULES.filter(([name]) => extra[name] !== undefined).map(([, rule]) => rule),
+  ]
 }
 
 const PRESET_RULES: Record<string, (slug: string) => string[]> = {

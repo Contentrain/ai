@@ -50,7 +50,7 @@ const { root, inner, brand } = header({ layout, tone, position })
 ---
 <header class={root()}>
   <div class={inner()}>
-    <a href={homeHref} class={brand()} aria-label={showName ? undefined : siteName}>
+    <a href={homeHref} class={brand()} aria-label={showName ? undefined : siteName} data-kit-brand>
       {logo && <KitImage image={logo} priority class="h-8 w-auto" sizes="160px" />}
       {showName && <span>{siteName}</span>}
     </a>
