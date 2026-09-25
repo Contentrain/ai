@@ -255,6 +255,7 @@ The package also exposes low-level modules for embedding and advanced use:
 - `@contentrain/mcp/util/fs`
 - `@contentrain/mcp/git/transaction`
 - `@contentrain/mcp/git/branch-lifecycle` — branch health/cleanup plus the remote cr/* lifecycle: `deleteRemoteBranch`, `listRemoteCrBranches`, `pruneMergedRemoteBranches`, `isRefMerged`, `classifyMergedBranches`
+- `@contentrain/mcp/git/base-branch` — `resolveBaseBranch`, the one base-branch resolver every MCP write and `contentrain status` / `serve` use (env → `repository.default_branch` → `origin/HEAD` → `main` → `master` → checked-out branch)
 - `@contentrain/mcp/git/errors`
 - `@contentrain/mcp/git/reconcile` — `reconcileBranches`, the local reconcile executor
 - `@contentrain/mcp/tools/annotations`
