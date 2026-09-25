@@ -47,6 +47,8 @@ export const getStaticPaths = (async () => {
       trail.unshift({ title: parent.data.title, href: pageHref(parent, pages) })
     }
     const href = pageHref(page, pages)
+    // The page WordPress uses as the posts page (Settings → Reading) shows the posts, not its own body.
+    if (siteConfig.home.kind === 'page' && href === permalinks.blog) continue
     add(href, { view: 'page', page, trail, isHome: href === '/' })
   }
 
