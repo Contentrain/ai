@@ -122,17 +122,30 @@ describe('componentsForSource', () => {
 })
 
 describe('templates/astro-starter', () => {
-  it('carries kit components as exact copies', async () => {
-    // The starter's chrome and list components are kit components; a fix made
-    // in one place and not the other would split them.
-    const starterKit = join(ROOT, '..', '..', 'templates', 'astro-starter', 'src', 'components', 'kit')
-    const walk = async (dir: string): Promise<string[]> => (await Promise.all((await readdir(join(starterKit, dir), { withFileTypes: true })).map(entry =>
-      entry.isDirectory() ? walk(join(dir, entry.name)) : Promise.resolve([join(dir, entry.name)]),
+  it('has a default for every interface string the mapping tables bind', async () => {
+    const strings = JSON.parse(await readFile(join(ROOT, '..', '..', 'templates', 'astro-starter', '.contentrain', 'content', 'site', 'ui-strings', 'en.json'), 'utf8')) as Record<string, string>
+    const used = new Set<string>()
+    for (const file of await readdir(join(ROOT, 'mapping'))) {
+      for (const match of (await readFile(join(ROOT, 'mapping', file), 'utf8')).matchAll(/"ui:([\w.-]+)"/g)) used.add(match[1]!)
+    }
+    expect([...used].filter(key => !(key in strings))).toEqual([])
+  })
+
+  it.each([
+    ['templates/astro-starter', 'the starter'],
+    ['templates/fixtures/wp-demo', 'the wp-demo fixture'],
+  ])('%s carries kit components as exact copies', async (dir) => {
+    // The starter's chrome and list components, and the sections the fixture's
+    // composed page places, are kit components; a fix made in one place and
+    // not the other would split them.
+    const siteKit = join(ROOT, '..', '..', dir, 'src', 'components', 'kit')
+    const walk = async (at: string): Promise<string[]> => (await Promise.all((await readdir(join(siteKit, at), { withFileTypes: true })).map(entry =>
+      entry.isDirectory() ? walk(join(at, entry.name)) : Promise.resolve([join(at, entry.name)]),
     ))).flat()
     const files = await walk('.')
     expect(files.length).toBeGreaterThan(0)
     for (const file of files) {
-      expect(await readFile(join(starterKit, file), 'utf8'), file).toBe(await readFile(join(COMPONENTS, file), 'utf8'))
+      expect(await readFile(join(siteKit, file), 'utf8'), file).toBe(await readFile(join(COMPONENTS, file), 'utf8'))
     }
   })
 })
