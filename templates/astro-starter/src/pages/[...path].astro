@@ -8,6 +8,7 @@ import { getCollection } from 'astro:content'
 import { authorHref, byId, getPosts, getStrings, pageHref, postHref, termHref, type Page, type Post } from '../lib/content'
 import { pagePath, permalinks, toParam } from '../lib/routes'
 import { siteConfig } from '../site.config'
+import { composedViews } from '../views/composed'
 import ListView from '../views/ListView.astro'
 import PageView from '../views/PageView.astro'
 import PostView from '../views/PostView.astro'
@@ -74,7 +75,9 @@ export const getStaticPaths = (async () => {
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>
 const route = Astro.props as Props
+// A page the migration composed from sections has a view of its own.
+const PageRoute = route.view === 'page' ? composedViews[route.page.data.wp_id ?? -1] ?? PageView : PageView
 ---
 {route.view === 'post' && <PostView post={route.post} />}
-{route.view === 'page' && <PageView page={route.page} trail={route.trail} isHome={route.isHome} />}
+{route.view === 'page' && <PageRoute page={route.page} trail={route.trail} isHome={route.isHome} />}
 {route.view === 'list' && <ListView {...route} />}
