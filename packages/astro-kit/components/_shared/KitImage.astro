@@ -1,0 +1,21 @@
+---
+// An image through astro:assets when its size is known — optimized and
+// sized, so the layout never shifts — and a plain lazy <img> when it is not.
+import { Image } from 'astro:assets'
+import type { ImageInput } from './types'
+
+interface Props {
+  image: ImageInput
+  /** Rendered width in the layout, for srcset selection. */
+  sizes?: string | undefined
+  class?: string | undefined
+  /** The page's largest image: load it first. */
+  priority?: boolean | undefined
+}
+
+const { image, sizes = '100vw', class: className, priority = false } = Astro.props
+const loading = priority ? 'eager' : 'lazy'
+---
+{image.width && image.height
+  ? <Image src={image.src} alt={image.alt} width={image.width} height={image.height} sizes={sizes} class={className} loading={loading} fetchpriority={priority ? 'high' : 'auto'} />
+  : <img src={image.src} alt={image.alt} class={className} loading={loading} decoding="async" />}

@@ -2,6 +2,7 @@
 // Contentrain loader fills from `.contentrain` — no page reads files itself.
 
 import { getCollection, getEntry, type CollectionEntry, type CollectionKey } from 'astro:content'
+import type { ImageInput, NavItem } from '../components/kit/_shared/types'
 import { siteConfig } from '../site.config'
 import { dateParams, fillPattern, permalinks } from './routes'
 
@@ -67,21 +68,20 @@ export async function resolve<C extends CollectionKey>(refs: ReadonlyArray<{ col
   return entries.filter(entry => entry !== undefined) as Array<CollectionEntry<C>>
 }
 
-export interface MenuLink {
-  label: string
-  href: string
-  newTab: boolean
-  children: MenuLink[]
+/** A media entry as the kit's image input. */
+export function imageOf(media: Media): ImageInput {
+  const { url, alt = '', width, height } = media.data
+  return { src: url, alt, width, height }
 }
 
 /** A menu as a tree, ordered as the editor ordered it. An unknown menu is empty. */
-export async function getMenu(slug: string): Promise<MenuLink[]> {
+export async function getMenu(slug: string): Promise<NavItem[]> {
   const menus = await getCollection('menus', menu => menu.data.slug === slug)
   const menu = menus[0]
   if (!menu) return []
   const items = await resolve(menu.data.items)
   const sorted = items.toSorted((a, b) => a.data.order - b.data.order)
-  const link = (item: CollectionEntry<'menuItems'>): MenuLink => ({
+  const link = (item: CollectionEntry<'menuItems'>): NavItem => ({
     label: item.data.title,
     href: item.data.url ?? '/',
     newTab: item.data.open_in_new_tab,

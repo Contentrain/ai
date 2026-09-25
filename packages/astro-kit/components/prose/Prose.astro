@@ -1,0 +1,30 @@
+---
+// A rich-text body as the editor wrote it. A migrated post keeps the markup
+// WordPress rendered — `wp-block-*` classes, alignments, preset colors — and
+// is styled by Tailwind Typography bound to the site's tokens (`prose-site`)
+// plus the Gutenberg block styles in the starter's styles/wp-blocks.css. The
+// body is the site's own content from its own repository, so it is rendered
+// as HTML. Only post and page bodies carry `data-pagefind-body`, so search
+// indexes content, not chrome.
+import { tv } from 'tailwind-variants'
+
+const prose = tv({
+  base: 'prose prose-site max-w-none',
+  variants: {
+    size: { base: 'prose-base', lg: 'prose-lg' },
+  },
+  defaultVariants: { size: 'lg' },
+})
+
+interface Props {
+  /** Rendered HTML of a richtext field. */
+  html: string
+  /** Index this body for site search. */
+  searchable?: boolean | undefined
+  class?: string | undefined
+  size?: 'base' | 'lg' | undefined
+}
+
+const { html, searchable = true, class: className, size } = Astro.props
+---
+<div class={prose({ size, class: className })} data-pagefind-body={searchable ? '' : undefined} set:html={html} />

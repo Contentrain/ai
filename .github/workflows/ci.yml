@@ -72,6 +72,22 @@ jobs:
           node scripts/starter-gates.mjs --local-sdk
           node scripts/starter-gates.mjs --local-sdk --fixture wp-demo
 
+      - name: Kit components render as their baselines
+        # Every fixture of every astro-kit component, in a copy of the starter,
+        # at 390/768/1280 px against visual/linux/. A baseline that does not
+        # exist yet is written and uploaded below for review and commit.
+        run: |
+          pnpm --filter @contentrain/astro-kit exec playwright install --with-deps chromium
+          node packages/astro-kit/scripts/visual.mjs --local-sdk
+
+      - name: Upload kit screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astro-kit-visual-linux
+          path: packages/astro-kit/visual/linux
+          if-no-files-found: ignore
+
       - name: Plugin payload in sync
         run: |
           pnpm plugin:build

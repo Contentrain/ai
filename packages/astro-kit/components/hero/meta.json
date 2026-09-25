@@ -1,0 +1,127 @@
+{
+  "id": "hero",
+  "name": "Hero",
+  "description": "The page's opening section: optional eyebrow, heading, lead, action buttons and an image — beside the text, below it, or behind it as a full-bleed cover with a scrim.",
+  "category": "section",
+  "uses": [],
+  "shared": [
+    "Button.astro",
+    "KitImage.astro",
+    "Section.astro",
+    "types.ts"
+  ],
+  "variants": {
+    "layout": {
+      "options": [
+        "split",
+        "centered",
+        "cover"
+      ],
+      "default": "split",
+      "description": "split: text and image side by side (stacked on phones). centered: centred text with the image below. cover: the image fills the section behind the text, darkened by a scrim; without an image it falls back to split."
+    },
+    "tone": {
+      "options": [
+        "default",
+        "muted",
+        "inverse",
+        "accent"
+      ],
+      "default": "default",
+      "description": "Section background (ignored by cover, which is always light text on the image)."
+    }
+  },
+  "props": {
+    "heading": {
+      "type": "string",
+      "required": true,
+      "description": "The main heading (Cover/Group heading, Elementor heading, Divi header title)."
+    },
+    "level": {
+      "type": "select",
+      "options": [
+        "1",
+        "2"
+      ],
+      "default": "1",
+      "description": "Heading level: 1 when the hero opens the page, 2 when the page already has an h1."
+    },
+    "eyebrow": {
+      "type": "string",
+      "description": "Short line above the heading."
+    },
+    "lead": {
+      "type": "text",
+      "description": "Paragraph under the heading."
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "fields": {
+          "label": {
+            "type": "string",
+            "required": true
+          },
+          "href": {
+            "type": "url",
+            "required": true
+          },
+          "newTab": {
+            "type": "boolean"
+          },
+          "style": {
+            "type": "select",
+            "options": [
+              "primary",
+              "secondary",
+              "ghost"
+            ]
+          }
+        }
+      },
+      "description": "Buttons, in order."
+    },
+    "image": {
+      "type": "object",
+      "fields": {
+        "src": {
+          "type": "image",
+          "required": true
+        },
+        "alt": {
+          "type": "string",
+          "required": true
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        }
+      },
+      "description": "Hero image; loaded first (the page's largest image)."
+    },
+    "id": {
+      "type": "string",
+      "description": "Anchor id of the section; the heading gets `<id>-title`."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": [
+      "core/cover",
+      "core/media-text"
+    ],
+    "divi": [
+      "divi/et_pb_fullwidth_header",
+      "divi/et_pb_fullwidth_image"
+    ],
+    "classic": [
+      "classic/hero"
+    ]
+  },
+  "a11y": "A labelled region (aria-labelledby the heading). One h1 by default; `level: 2` inside pages that already have one. The cover image is decorative when its alt is empty; text sits on an ink scrim for contrast."
+}

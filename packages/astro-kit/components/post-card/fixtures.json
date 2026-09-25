@@ -1,0 +1,54 @@
+[
+  {
+    "name": "vertical",
+    "props": {
+      "title": "What a careful migration keeps",
+      "href": "/blog/what-a-careful-migration-keeps/",
+      "excerpt": "Addresses, formatting and rankings: what a careful WordPress to Astro migration keeps, block by block.",
+      "date": "2026-09-28T09:00:00Z",
+      "category": {
+        "label": "Guides",
+        "href": "/category/guides/"
+      },
+      "author": "Mira Kovač",
+      "image": {
+        "src": "/kit-fixtures/photo-1.svg",
+        "alt": "",
+        "width": 1200,
+        "height": 800
+      }
+    },
+    "frame": "narrow"
+  },
+  {
+    "name": "horizontal",
+    "props": {
+      "layout": "horizontal",
+      "title": "Designing with fewer requests",
+      "href": "/blog/designing-with-fewer-requests/",
+      "excerpt": "One stylesheet, no runtime, images sized at build time.",
+      "date": "2026-09-26T09:00:00Z",
+      "image": {
+        "src": "/kit-fixtures/photo-2.svg",
+        "alt": "",
+        "width": 1200,
+        "height": 800
+      }
+    }
+  },
+  {
+    "name": "minimal",
+    "props": {
+      "layout": "minimal",
+      "headingLevel": 3,
+      "title": "Redirects: the unglamorous hero",
+      "href": "/blog/redirects/",
+      "excerpt": "Keep every address. Redirect the ones you cannot keep.",
+      "date": "2026-09-16T09:00:00Z",
+      "category": {
+        "label": "News",
+        "href": "/category/news/"
+      }
+    }
+  }
+]

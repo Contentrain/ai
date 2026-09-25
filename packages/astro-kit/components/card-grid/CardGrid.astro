@@ -1,0 +1,82 @@
+---
+// A grid of cards — features, services, team members, linked pages — with an
+// optional heading and intro above it.
+import { tv } from 'tailwind-variants'
+import KitImage from '../_shared/KitImage.astro'
+import Section, { type Tone } from '../_shared/Section.astro'
+import type { ImageInput } from '../_shared/types'
+
+const grid = tv({
+  slots: {
+    list: 'grid items-start gap-6 md:gap-8',
+    card: 'group relative flex flex-col gap-3 rounded-[var(--radius-card)]',
+    media: 'overflow-hidden rounded-[var(--radius-card)]',
+    title: 'text-lg leading-snug font-semibold text-balance',
+    text: 'opacity-80',
+  },
+  variants: {
+    columns: {
+      '2': { list: 'sm:grid-cols-2' },
+      '3': { list: 'sm:grid-cols-2 md:grid-cols-3' },
+      '4': { list: 'sm:grid-cols-2 lg:grid-cols-4' },
+    },
+    style: {
+      plain: {},
+      bordered: { card: 'border border-line p-6', media: '-mx-6 -mt-6 mb-2 rounded-b-none' },
+      elevated: { card: 'bg-surface p-6 text-ink shadow-md ring-1 ring-line/60', media: '-mx-6 -mt-6 mb-2 rounded-b-none' },
+    },
+    align: { start: { card: 'text-left' }, center: { card: 'items-center text-center' } },
+  },
+  defaultVariants: { columns: '3', style: 'plain', align: 'start' },
+})
+
+interface Item {
+  title: string
+  text?: string | undefined
+  href?: string | undefined
+  image?: ImageInput | undefined
+  eyebrow?: string | undefined
+}
+
+interface Props {
+  title?: string | undefined
+  intro?: string | undefined
+  items: Item[]
+  /** Heading level of the section title; card titles are one level below. */
+  headingLevel?: 2 | 3 | undefined
+  columns?: '2' | '3' | '4' | undefined
+  style?: 'plain' | 'bordered' | 'elevated' | undefined
+  align?: 'start' | 'center' | undefined
+  tone?: Tone | undefined
+}
+
+const { title, intro, items, headingLevel = 2, columns, style, align, tone } = Astro.props
+const { list, card, media, title: cardTitle, text } = grid({ columns, style, align })
+// Accent backgrounds have the least contrast headroom: text on them is never dimmed.
+const dim = tone === 'accent' ? 'opacity-100' : undefined
+const Heading = `h${headingLevel}` as 'h2' | 'h3'
+const CardHeading = `h${headingLevel + 1}` as 'h3' | 'h4'
+const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : undefined
+---
+<Section tone={tone} aria-labelledby={headingId}>
+  {(title || intro) && (
+    <header class:list={['mb-10 flex max-w-2xl flex-col gap-3', align === 'center' && 'mx-auto items-center text-center']}>
+      {title && <Heading id={headingId} class="text-3xl font-bold tracking-tight text-balance md:text-4xl">{title}</Heading>}
+      {intro && <p class:list={['text-lg', tone === 'accent' ? undefined : 'opacity-80']}>{intro}</p>}
+    </header>
+  )}
+  <ul class={list()}>
+    {items.map(item => (
+      <li class={card()}>
+        {item.image && <div class={media()}><KitImage image={item.image} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover transition duration-300 group-hover:scale-[1.02]" /></div>}
+        {item.eyebrow && <p class="text-sm font-medium text-accent">{item.eyebrow}</p>}
+        <CardHeading class={cardTitle()}>
+          {item.href
+            ? <a href={item.href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent">{item.title}</a>
+            : item.title}
+        </CardHeading>
+        {item.text && <p class={text({ class: dim })}>{item.text}</p>}
+      </li>
+    ))}
+  </ul>
+</Section>

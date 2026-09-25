@@ -27,6 +27,31 @@ importers:
         specifier: ^1.6.4
         version: 1.6.4(@algolia/client-search@5.49.2)(@types/node@25.4.0)(lightningcss@1.31.1)(postcss@8.5.8)(search-insights@2.17.3)(typescript@5.9.3)
 
+  packages/astro-kit:
+    dependencies:
+      '@contentrain/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.19.15
+      pixelmatch:
+        specifier: ^7.2.0
+        version: 7.2.0
+      playwright:
+        specifier: ^1.63.0
+        version: 1.63.0
+      pngjs:
+        specifier: ^7.0.0
+        version: 7.0.0
+      tsdown:
+        specifier: ^0.21.0
+        version: 0.21.2(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
   packages/cli:
     dependencies:
       '@clack/prompts':
@@ -2815,9 +2840,27 @@ packages:
       typescript:
         optional: true
 
+  pixelmatch@7.2.0:
+    resolution: {integrity: sha512-xhcb4yHu9sM/G7foGzoLtXYcC0zHEaOXXjRKhGup0fw78Nf2Tkiapv4EQyMzrbcmQPsllAI7DbFY2UT7PlI9Pg==}
+    hasBin: true
+
   pkce-challenge@5.0.1:
     resolution: {integrity: sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ==}
     engines: {node: '>=16.20.0'}
+
+  playwright-core@1.63.0:
+    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  playwright@1.63.0:
+    resolution: {integrity: sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  pngjs@7.0.0:
+    resolution: {integrity: sha512-LKWqWJRhstyYo9pGvgor/ivk2w94eSjE3RGVuzLGlr3NmD8bf7RcYGze1mNdEHRP6TRP6rMuDHk5t44hnTRyow==}
+    engines: {node: '>=14.19.0'}
 
   postcss-selector-parser@6.0.10:
     resolution: {integrity: sha512-IQ7TZdoaqbT+LCpShg46jnZVlhWD2w6iQYAcYXfHARZ7X1t/UGhhceQDs5X0cGqKvYlHNOuv7Oa1xmb0oQuA3w==}
@@ -4645,7 +4688,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 25.4.0
+      '@types/node': 22.19.15
 
   '@ungap/structured-clone@1.3.0': {}
 
@@ -5791,7 +5834,19 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.3
 
+  pixelmatch@7.2.0:
+    dependencies:
+      pngjs: 7.0.0
+
   pkce-challenge@5.0.1: {}
+
+  playwright-core@1.63.0: {}
+
+  playwright@1.63.0:
+    dependencies:
+      playwright-core: 1.63.0
+
+  pngjs@7.0.0: {}
 
   postcss-selector-parser@6.0.10:
     dependencies:

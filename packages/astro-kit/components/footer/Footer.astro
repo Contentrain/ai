@@ -1,0 +1,87 @@
+---
+// Site footer: brand and tagline, link columns or a single link row, social
+// links and the copyright line.
+import { tv } from 'tailwind-variants'
+import type { LinkInput } from '../_shared/types'
+
+const footer = tv({
+  slots: {
+    root: 'mt-auto',
+    inner: 'container-page py-10 text-sm',
+    muted: 'opacity-75',
+    link: 'text-current no-underline opacity-75 hover:opacity-100 hover:underline',
+  },
+  variants: {
+    layout: {
+      simple: { inner: 'flex flex-col gap-6 md:flex-row md:items-center md:justify-between' },
+      columns: { inner: 'grid gap-10 md:grid-cols-[2fr_repeat(var(--footer-columns),1fr)] md:py-16' },
+    },
+    tone: {
+      default: { root: 'border-t border-line bg-surface text-ink' },
+      muted: { root: 'bg-surface-muted text-ink' },
+      inverse: { root: 'bg-ink text-surface' },
+    },
+  },
+  defaultVariants: { layout: 'simple', tone: 'default' },
+})
+
+interface Props {
+  siteName: string
+  tagline?: string | undefined
+  /** Link groups for the `columns` layout. */
+  columns?: Array<{ title: string, links: LinkInput[] }> | undefined
+  /** A single row of links (the footer menu). */
+  links?: LinkInput[] | undefined
+  social?: LinkInput[] | undefined
+  /** The copyright line, e.g. "© 2026 Northwind Studio". */
+  copyright?: string | undefined
+  /** Accessible name of the footer navigation ("Footer"). */
+  navLabel?: string | undefined
+  layout?: 'simple' | 'columns' | undefined
+  tone?: 'default' | 'muted' | 'inverse' | undefined
+}
+
+const { siteName, tagline, columns = [], links = [], social = [], copyright, navLabel = 'Footer', layout = 'simple', tone } = Astro.props
+const { root, inner, muted, link } = footer({ layout, tone })
+const line = copyright ?? `© ${new Date().getFullYear()} ${siteName}`
+---
+<footer class={root()}>
+  <div class={inner()} style={layout === 'columns' ? `--footer-columns: ${Math.max(columns.length, 1)}` : undefined}>
+    <div class="flex flex-col gap-3">
+      <p class="text-base font-semibold">{siteName}</p>
+      {tagline && <p class={muted()}>{tagline}</p>}
+      {layout === 'columns' && <p class:list={[muted(), 'mt-auto pt-6']}>{line}</p>}
+    </div>
+    {layout === 'columns'
+      ? columns.map(column => (
+        <nav aria-label={column.title}>
+          <p class="mb-3 font-semibold">{column.title}</p>
+          <ul class="flex flex-col gap-2">
+            {column.links.map(item => <li><a href={item.href} class={link()}>{item.label}</a></li>)}
+          </ul>
+        </nav>
+      ))
+      : (
+        <div class="flex flex-col gap-4 md:items-end">
+          {social.length > 0 && (
+            <ul class="flex flex-wrap gap-4">
+              {social.map(item => <li><a href={item.href} rel="me noopener" target="_blank" class={link()}>{item.label}</a></li>)}
+            </ul>
+          )}
+          {links.length > 0 && (
+            <nav aria-label={navLabel}>
+              <ul class="flex flex-wrap gap-x-6 gap-y-2">
+                {links.map(item => <li><a href={item.href} class={link()}>{item.label}</a></li>)}
+              </ul>
+            </nav>
+          )}
+          <p class={muted()}>{line}</p>
+        </div>
+      )}
+    {layout === 'columns' && social.length > 0 && (
+      <ul class="flex flex-wrap gap-4 md:col-span-full">
+        {social.map(item => <li><a href={item.href} rel="me noopener" target="_blank" class={link()}>{item.label}</a></li>)}
+      </ul>
+    )}
+  </div>
+</footer>

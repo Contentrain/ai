@@ -1,0 +1,79 @@
+---
+// The contact section: heading, a line of introduction, the ways to reach you
+// and the form. The form is a Contentrain Studio form (the starter's
+// StudioForm): its fields, spam protection and notifications live in Studio,
+// and submissions arrive there for review — no form plugin, no mail server.
+// Until the site is bound to a Studio project the form renders nothing and the
+// contact details still show.
+import { tv } from 'tailwind-variants'
+import Section from '../_shared/Section.astro'
+import StudioForm from '../../studio/StudioForm.astro'
+import { siteConfig } from '../../../site.config'
+
+export interface ContactDetail {
+  label: string
+  value: string
+  /** `mailto:`, `tel:` or a map link. */
+  href?: string | undefined
+}
+
+const contact = tv({
+  slots: {
+    grid: 'grid gap-10',
+    copy: 'flex flex-col gap-4',
+    heading: 'text-2xl font-bold tracking-tight text-balance md:text-3xl',
+    intro: 'max-w-xl text-pretty opacity-85',
+    details: 'mt-2 flex flex-col gap-4',
+    term: 'text-sm font-semibold opacity-75',
+    value: 'text-current',
+    form: 'rounded-card',
+  },
+  variants: {
+    layout: {
+      split: { grid: 'md:grid-cols-[2fr_3fr] md:items-start' },
+      stacked: { grid: 'mx-auto max-w-2xl' },
+    },
+    // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
+    tone: { default: { form: 'border border-line bg-surface p-6 md:p-8' }, muted: { form: 'bg-surface p-6 text-ink md:p-8' }, inverse: { form: 'bg-surface p-6 text-ink md:p-8' }, accent: { form: 'bg-surface p-6 text-ink md:p-8', intro: 'opacity-100', term: 'opacity-100' } },
+  },
+  defaultVariants: { layout: 'split', tone: 'default' },
+})
+
+interface Props {
+  /** The Studio model submissions are saved to (e.g. `contact-submissions`). */
+  model: string
+  heading?: string | undefined
+  intro?: string | undefined
+  details?: ContactDetail[] | undefined
+  layout?: 'split' | 'stacked' | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  id?: string | undefined
+}
+
+const { model, heading, intro, details = [], layout, tone, id = 'contact' } = Astro.props
+// No Studio project bound: no form renders, so a split would leave an empty column — the details stand alone.
+const formShown = Boolean(siteConfig.studio)
+const s = contact({ layout: formShown ? layout : 'stacked', tone })
+const headingId = heading ? `${id}-title` : undefined
+---
+<Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+  <div class={s.grid()}>
+    {(heading || intro || details.length > 0) && (
+      <div class={s.copy()}>
+        {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+        {intro && <p class={s.intro()}>{intro}</p>}
+        {details.length > 0 && (
+          <dl class={s.details()}>
+            {details.map(detail => (
+              <div>
+                <dt class={s.term()}>{detail.label}</dt>
+                <dd class={s.value()}>{detail.href ? <a href={detail.href} class="underline decoration-line underline-offset-4 hover:decoration-current">{detail.value}</a> : detail.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </div>
+    )}
+    {formShown && <StudioForm model={model} class={s.form()} />}
+  </div>
+</Section>

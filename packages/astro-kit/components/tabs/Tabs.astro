@@ -1,0 +1,101 @@
+---
+// Tabbed panels with the WAI-ARIA tabs pattern (arrow keys, Home/End,
+// roving focus) from Zag.js. Without script every panel shows, one after the
+// other under its own title — nothing is ever unreachable; the script turns
+// the same markup into tabs.
+import { tv } from 'tailwind-variants'
+import Section from '../_shared/Section.astro'
+
+export interface TabItem {
+  label: string
+  /** The panel as HTML (the rich text the tab came with). */
+  content: string
+}
+
+const tabs = tv({
+  slots: {
+    heading: 'mb-8 text-2xl font-bold tracking-tight text-balance md:text-3xl',
+    root: 'group/tabs flex flex-col gap-6',
+    list: 'hidden gap-1 group-data-[ready]/tabs:flex',
+    trigger: 'cursor-pointer rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap opacity-75 transition hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent data-[selected]:opacity-100',
+    panel: 'prose-site prose max-w-none text-current',
+    title: 'mb-3 text-lg font-semibold group-data-[ready]/tabs:sr-only',
+  },
+  variants: {
+    style: {
+      underline: { list: 'border-b border-line', trigger: '-mb-px rounded-none border-b-2 border-transparent data-[selected]:border-accent' },
+      pills: { trigger: 'data-[selected]:bg-accent data-[selected]:text-accent-ink' },
+    },
+    orientation: {
+      horizontal: { list: 'overflow-x-auto' },
+      vertical: { root: 'md:data-[ready]:flex-row md:data-[ready]:items-start md:data-[ready]:gap-10', list: 'md:w-56 md:shrink-0 md:flex-col', trigger: 'text-left' },
+    },
+    tone: { default: {}, muted: {}, inverse: { panel: 'prose-invert' }, accent: { panel: 'prose-invert', trigger: 'opacity-100' } },
+  },
+  compoundVariants: [
+    { style: 'underline', orientation: 'vertical', class: { list: 'md:border-b-0 md:border-l', trigger: 'md:mb-0 md:-ml-px md:border-b-0 md:border-l-2' } },
+  ],
+  defaultVariants: { style: 'underline', orientation: 'horizontal', tone: 'default' },
+})
+
+interface Props {
+  items: TabItem[]
+  heading?: string | undefined
+  /** Accessible name of the tab list when there is no heading. */
+  label?: string | undefined
+  style?: 'underline' | 'pills' | undefined
+  orientation?: 'horizontal' | 'vertical' | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  id?: string | undefined
+}
+
+const { items, heading, label, style, orientation = 'horizontal', tone, id = 'tabs' } = Astro.props
+const s = tabs({ style, orientation, tone })
+const headingId = heading ? `${id}-title` : undefined
+const value = (i: number) => `tab-${i + 1}`
+---
+{items.length > 0 && (
+  <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+    {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+    <div class={s.root()} data-kit-tabs={id} data-orientation={orientation} data-label={label ?? heading ?? undefined}>
+      <div class={s.list()} data-part="list">
+        {items.map((item, i) => <button type="button" class={s.trigger()} data-part="trigger" data-value={value(i)}>{item.label}</button>)}
+      </div>
+      {items.map((item, i) => (
+        <div data-part="content" data-value={value(i)} class="min-w-0 flex-1">
+          <h3 class={s.title()}>{item.label}</h3>
+          <div class={s.panel()} set:html={item.content} />
+        </div>
+      ))}
+    </div>
+  </Section>
+)}
+
+<script>
+  import * as tabs from '@zag-js/tabs'
+  import { normalizeProps, spreadProps, VanillaMachine } from '@zag-js/vanilla'
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-kit-tabs]')) {
+    const list = root.querySelector<HTMLElement>('[data-part="list"]')
+    const triggers = [...root.querySelectorAll<HTMLElement>('[data-part="trigger"]')]
+    const contents = [...root.querySelectorAll<HTMLElement>('[data-part="content"]')]
+    if (!list || triggers.length === 0) continue
+    const machine = new VanillaMachine(tabs.machine, {
+      id: root.dataset.kitTabs ?? 'tabs',
+      defaultValue: triggers[0]!.dataset.value ?? null,
+      orientation: root.dataset.orientation === 'vertical' ? 'vertical' : 'horizontal',
+    })
+    const render = () => {
+      const api = tabs.connect(machine.service, normalizeProps)
+      spreadProps(root, api.getRootProps())
+      spreadProps(list, { ...api.getListProps(), ...(root.dataset.label ? { 'aria-label': root.dataset.label } : {}) })
+      for (const trigger of triggers) spreadProps(trigger, api.getTriggerProps({ value: trigger.dataset.value! }))
+      for (const content of contents) spreadProps(content, api.getContentProps({ value: content.dataset.value! }))
+    }
+    machine.subscribe(render)
+    machine.start()
+    render()
+    // Tabs only once they work: before this, every panel shows under its own title.
+    root.dataset.ready = ''
+  }
+</script>

@@ -1,0 +1,30 @@
+{
+  "id": "faq",
+  "name": "FAQ",
+  "description": "Questions and answers as native <details> disclosures (no script), in lines or cards; optionally one open at a time, and optionally with FAQPage structured data for search engines and AI answers.",
+  "category": "section",
+  "uses": [],
+  "shared": ["Section.astro"],
+  "variants": {
+    "style": { "options": ["lines", "cards"], "default": "lines", "description": "lines: rows divided by rules. cards: each question in a rounded box." },
+    "tone": { "options": ["default", "muted", "inverse", "accent"], "default": "default", "description": "Section background." }
+  },
+  "props": {
+    "items": { "type": "array", "required": true, "items": { "type": "object", "fields": { "question": { "type": "string", "required": true }, "answer": { "type": "richtext", "required": true } } }, "description": "The questions in order (core/details summary + content, Elementor accordion/toggle tabs, Divi accordion/toggle items)." },
+    "heading": { "type": "string", "description": "Section heading." },
+    "exclusive": { "type": "boolean", "default": false, "description": "One answer open at a time (Elementor accordion, Divi accordion). Off for toggles." },
+    "openFirst": { "type": "boolean", "default": false, "description": "The first answer starts open (Divi open_toggle, Elementor active item 1)." },
+    "schema": { "type": "boolean", "default": false, "description": "Emit FAQPage JSON-LD built from these items. Use on at most one FAQ per page, and only when the page is really a FAQ." },
+    "id": { "type": "string", "description": "Section id; also the exclusive group's name." }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": ["core/details"],
+    "elementor": ["elementor/accordion", "elementor/toggle", "elementor/nested-accordion"],
+    "divi": ["divi/et_pb_accordion", "divi/et_pb_toggle"],
+    "classic": ["classic/faq"]
+  },
+  "a11y": "Native <details>/<summary>: keyboard operable and announced as expandable by every screen reader, with no script to fail. The plus icon is decorative. The JSON-LD answer text is the answer with its markup removed."
+}

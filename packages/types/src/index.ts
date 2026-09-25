@@ -1632,6 +1632,13 @@ export * from './approval.js'
 
 export * from './migrate-claim.js'
 
+// ─── Project plan ───
+//
+// Migrate v3: facts → one plan (models, components, routes, bindings) → a
+// deterministic writer. Content is bound, never copied.
+
+export * from './project-plan.js'
+
 // ─── Repository provider contracts ───
 //
 // Provider-agnostic engine contracts used by @contentrain/mcp. Exposed from

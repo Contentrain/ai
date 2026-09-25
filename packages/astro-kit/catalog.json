@@ -1,0 +1,1780 @@
+{
+  "format": "astro-kit-catalog@1",
+  "tokens": [
+    "--color-surface",
+    "--color-surface-muted",
+    "--color-ink",
+    "--color-ink-muted",
+    "--color-line",
+    "--color-accent",
+    "--color-accent-ink",
+    "--font-sans",
+    "--container-prose",
+    "--container-page",
+    "--container-wide",
+    "--radius-card"
+  ],
+  "dependencies": {
+    "tailwind-merge": "^3.7.0",
+    "tailwind-variants": "^3.3.1"
+  },
+  "components": [
+    {
+      "id": "breadcrumb",
+      "name": "Breadcrumb",
+      "description": "The page's ancestors as links followed by the page itself; optionally emits BreadcrumbList JSON-LD.",
+      "category": "content",
+      "uses": [],
+      "shared": [
+        "types.ts"
+      ],
+      "variants": {
+        "separator": {
+          "options": [
+            "slash",
+            "chevron",
+            "dot"
+          ],
+          "default": "slash",
+          "description": "Mark between items."
+        }
+      },
+      "props": {
+        "items": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "required": true
+              },
+              "href": {
+                "type": "url",
+                "required": true
+              }
+            }
+          },
+          "description": "Ancestors, root first (pages.parent chain, or Home → category)."
+        },
+        "current": {
+          "type": "string",
+          "required": true,
+          "description": "Current page title."
+        },
+        "label": {
+          "type": "string",
+          "description": "Accessible name (ui-strings nav.breadcrumb)."
+        },
+        "schema": {
+          "type": "boolean",
+          "default": false,
+          "description": "Emit BreadcrumbList JSON-LD (off when the SEO graph has one)."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "yoast-seo/breadcrumbs",
+          "rank-math/breadcrumb"
+        ],
+        "elementor": [
+          "elementor/breadcrumbs"
+        ],
+        "divi": [
+          "divi/et_pb_breadcrumbs"
+        ],
+        "classic": [
+          "classic/yoast-breadcrumb",
+          "classic/rank-math-breadcrumb"
+        ]
+      },
+      "a11y": "A labelled <nav> with an ordered list; the current page is aria-current=page and not a link; separators are aria-hidden.",
+      "files": [
+        "Breadcrumb.astro"
+      ]
+    },
+    {
+      "id": "card-grid",
+      "name": "Card grid",
+      "description": "A grid of cards (features, services, team, linked pages) with an optional section heading and intro. A card with a link is clickable as a whole.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "KitImage.astro",
+        "Section.astro",
+        "types.ts"
+      ],
+      "variants": {
+        "columns": {
+          "options": [
+            "2",
+            "3",
+            "4"
+          ],
+          "default": "3",
+          "description": "Columns on wide screens; one on phones, two on tablets."
+        },
+        "style": {
+          "options": [
+            "plain",
+            "bordered",
+            "elevated"
+          ],
+          "default": "plain",
+          "description": "Card chrome: none, a border, or a raised surface."
+        },
+        "align": {
+          "options": [
+            "start",
+            "center"
+          ],
+          "default": "start",
+          "description": "Text alignment inside cards and of the header."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "default",
+          "description": "Section background."
+        }
+      },
+      "props": {
+        "title": {
+          "type": "string",
+          "description": "Section heading."
+        },
+        "intro": {
+          "type": "text",
+          "description": "Paragraph under the heading."
+        },
+        "items": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "title": {
+                "type": "string",
+                "required": true
+              },
+              "text": {
+                "type": "text"
+              },
+              "href": {
+                "type": "url"
+              },
+              "image": {
+                "type": "object",
+                "fields": {
+                  "src": {
+                    "type": "image",
+                    "required": true
+                  },
+                  "alt": {
+                    "type": "string",
+                    "required": true
+                  },
+                  "width": {
+                    "type": "integer"
+                  },
+                  "height": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "eyebrow": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The cards. image is an ImageInput ({ src, alt, width?, height? })."
+        },
+        "headingLevel": {
+          "type": "integer",
+          "min": 2,
+          "max": 3,
+          "default": 2,
+          "description": "Level of the section heading; card titles are one below."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/columns",
+          "core/media-text"
+        ],
+        "elementor": [
+          "elementor/icon-box",
+          "elementor/image-box",
+          "elementor/call-to-action",
+          "elementor/posts"
+        ],
+        "divi": [
+          "divi/et_pb_blurb",
+          "divi/et_pb_team_member",
+          "divi/et_pb_pricing_tables"
+        ],
+        "classic": [
+          "classic/widget-area"
+        ]
+      },
+      "a11y": "A list of cards; the whole card is clickable through a stretched link on its title, so screen readers hear one link per card. The section is labelled by its heading.",
+      "files": [
+        "CardGrid.astro"
+      ]
+    },
+    {
+      "id": "contact-form",
+      "name": "Contact form",
+      "description": "The contact section: heading, introduction, contact details (email, phone, address) and a Contentrain Studio form — fields, spam protection and notifications set in Studio, submissions reviewed there. Replaces form plugins; renders the details alone until the site is bound to a Studio project.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "Section.astro"
+      ],
+      "variants": {
+        "layout": {
+          "options": [
+            "split",
+            "stacked"
+          ],
+          "default": "split",
+          "description": "split: details beside the form on wide screens. stacked: one centred column."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "default",
+          "description": "Section background; the form always sits on a surface card."
+        }
+      },
+      "props": {
+        "model": {
+          "type": "string",
+          "required": true,
+          "description": "The Studio model submissions are saved to — the form's fields are that model's form settings (from the plugin form's fields at migration)."
+        },
+        "heading": {
+          "type": "string",
+          "description": "Section heading."
+        },
+        "intro": {
+          "type": "text",
+          "description": "A line or two above the details."
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "required": true
+              },
+              "value": {
+                "type": "string",
+                "required": true
+              },
+              "href": {
+                "type": "url"
+              }
+            }
+          },
+          "description": "Ways to reach you, in order (Email → mailto:, Phone → tel:, Address → map link)."
+        },
+        "id": {
+          "type": "string",
+          "description": "Section id; the heading gets `<id>-title`."
+        }
+      },
+      "slots": {},
+      "js": "studio",
+      "dependencies": {},
+      "sources": {
+        "elementor": [
+          "elementor/form"
+        ],
+        "divi": [
+          "divi/et_pb_contact_form"
+        ],
+        "classic": [
+          "classic/contact-form-7",
+          "classic/wpforms",
+          "classic/gravityforms",
+          "classic/ninja-forms"
+        ]
+      },
+      "a11y": "Contact details are a description list; links say what they open. The form's labels, errors and focus handling are Studio's form runtime (FormMount). The section is labelled by its heading.",
+      "files": [
+        "ContactForm.astro"
+      ]
+    },
+    {
+      "id": "cta",
+      "name": "CTA",
+      "description": "A call to action: a short heading, an optional line of text and one or two buttons — across the whole section, or as a card inside it.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "Button.astro",
+        "Section.astro",
+        "types.ts"
+      ],
+      "variants": {
+        "layout": {
+          "options": [
+            "inline",
+            "centered"
+          ],
+          "default": "inline",
+          "description": "inline: text left, buttons right on wide screens. centered: everything centred."
+        },
+        "frame": {
+          "options": [
+            "full",
+            "card"
+          ],
+          "default": "full",
+          "description": "full: the tone fills the section. card: a rounded box in a plain section carries the tone."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "accent",
+          "description": "Background. On accent, primary buttons are drawn in the secondary style so they stay visible."
+        }
+      },
+      "props": {
+        "heading": {
+          "type": "string",
+          "required": true,
+          "description": "The call's heading (Divi CTA title, Elementor call-to-action title)."
+        },
+        "body": {
+          "type": "text",
+          "description": "One or two sentences under the heading."
+        },
+        "actions": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "required": true
+              },
+              "href": {
+                "type": "url",
+                "required": true
+              },
+              "newTab": {
+                "type": "boolean"
+              },
+              "style": {
+                "type": "select",
+                "options": [
+                  "primary",
+                  "secondary",
+                  "ghost"
+                ]
+              }
+            }
+          },
+          "description": "Buttons, in order; usually one."
+        },
+        "id": {
+          "type": "string",
+          "description": "Anchor id of the section; the heading gets `<id>-title`."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "elementor": [
+          "elementor/call-to-action"
+        ],
+        "divi": [
+          "divi/et_pb_cta"
+        ],
+        "classic": [
+          "classic/cta"
+        ]
+      },
+      "a11y": "A labelled region (aria-labelledby its h2). Buttons are links with their own text. Accent tone swaps the primary button style so its contrast holds.",
+      "files": [
+        "Cta.astro"
+      ]
+    },
+    {
+      "id": "faq",
+      "name": "FAQ",
+      "description": "Questions and answers as native <details> disclosures (no script), in lines or cards; optionally one open at a time, and optionally with FAQPage structured data for search engines and AI answers.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "Section.astro"
+      ],
+      "variants": {
+        "style": {
+          "options": [
+            "lines",
+            "cards"
+          ],
+          "default": "lines",
+          "description": "lines: rows divided by rules. cards: each question in a rounded box."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "default",
+          "description": "Section background."
+        }
+      },
+      "props": {
+        "items": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "question": {
+                "type": "string",
+                "required": true
+              },
+              "answer": {
+                "type": "richtext",
+                "required": true
+              }
+            }
+          },
+          "description": "The questions in order (core/details summary + content, Elementor accordion/toggle tabs, Divi accordion/toggle items)."
+        },
+        "heading": {
+          "type": "string",
+          "description": "Section heading."
+        },
+        "exclusive": {
+          "type": "boolean",
+          "default": false,
+          "description": "One answer open at a time (Elementor accordion, Divi accordion). Off for toggles."
+        },
+        "openFirst": {
+          "type": "boolean",
+          "default": false,
+          "description": "The first answer starts open (Divi open_toggle, Elementor active item 1)."
+        },
+        "schema": {
+          "type": "boolean",
+          "default": false,
+          "description": "Emit FAQPage JSON-LD built from these items. Use on at most one FAQ per page, and only when the page is really a FAQ."
+        },
+        "id": {
+          "type": "string",
+          "description": "Section id; also the exclusive group's name."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/details"
+        ],
+        "elementor": [
+          "elementor/accordion",
+          "elementor/toggle",
+          "elementor/nested-accordion"
+        ],
+        "divi": [
+          "divi/et_pb_accordion",
+          "divi/et_pb_toggle"
+        ],
+        "classic": [
+          "classic/faq"
+        ]
+      },
+      "a11y": "Native <details>/<summary>: keyboard operable and announced as expandable by every screen reader, with no script to fail. The plus icon is decorative. The JSON-LD answer text is the answer with its markup removed.",
+      "files": [
+        "Faq.astro"
+      ]
+    },
+    {
+      "id": "footer",
+      "name": "Footer",
+      "description": "Site footer: brand and tagline, link columns or one row of links, social links and the copyright line.",
+      "category": "chrome",
+      "uses": [],
+      "shared": [
+        "types.ts"
+      ],
+      "variants": {
+        "layout": {
+          "options": [
+            "simple",
+            "columns"
+          ],
+          "default": "simple",
+          "description": "simple: brand left, links and copyright right. columns: brand column plus one column per link group."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse"
+          ],
+          "default": "default",
+          "description": "Surface with a top border, muted surface, or dark (ink) background."
+        }
+      },
+      "props": {
+        "siteName": {
+          "type": "string",
+          "required": true,
+          "description": "Site title (site.title or site.organization)."
+        },
+        "tagline": {
+          "type": "string",
+          "description": "One line under the name (site.tagline)."
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "title": {
+                "type": "string",
+                "required": true
+              },
+              "links": {
+                "type": "array",
+                "required": true
+              }
+            }
+          },
+          "description": "Link groups for the columns layout; each footer menu or widget area becomes one."
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "required": true
+              },
+              "href": {
+                "type": "url",
+                "required": true
+              }
+            }
+          },
+          "description": "One row of links (the footer menu) for the simple layout."
+        },
+        "social": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "required": true
+              },
+              "href": {
+                "type": "url",
+                "required": true
+              }
+            }
+          },
+          "description": "Social profile links (site.same_as)."
+        },
+        "copyright": {
+          "type": "string",
+          "description": "Copyright line; defaults to © <year> <siteName>."
+        },
+        "navLabel": {
+          "type": "string",
+          "description": "Accessible name of the footer navigation (ui-strings nav.footer)."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/template-part:footer",
+          "core/social-links"
+        ],
+        "elementor": [
+          "elementor/social-icons",
+          "elementor/icon-list"
+        ],
+        "divi": [
+          "divi/et_pb_social_media_follow"
+        ],
+        "classic": [
+          "classic/footer",
+          "classic/widget-area"
+        ]
+      },
+      "a11y": "One <footer> landmark; each link group is a <nav> named by its title. Social links open in a new tab with rel=me.",
+      "files": [
+        "Footer.astro"
+      ]
+    },
+    {
+      "id": "gallery",
+      "name": "Gallery",
+      "description": "Images in a square grid or in masonry columns, with optional captions. A click shows the image large in a native popover (no script), opens the image file, or does nothing.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "KitImage.astro",
+        "Section.astro",
+        "types.ts"
+      ],
+      "variants": {
+        "layout": {
+          "options": [
+            "grid",
+            "masonry"
+          ],
+          "default": "grid",
+          "description": "grid: square crops in rows. masonry: columns that keep each image's shape."
+        },
+        "columns": {
+          "options": [
+            "2",
+            "3",
+            "4"
+          ],
+          "default": "3",
+          "description": "Columns on wide screens; phones show two."
+        },
+        "open": {
+          "options": [
+            "popover",
+            "link",
+            "none"
+          ],
+          "default": "popover",
+          "description": "popover: the image opens large in place (Popover API; Escape or a click outside closes it). link: the thumbnail links to the image file (the WordPress 'link to media file'). none: images only."
+        }
+      },
+      "props": {
+        "items": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "image": {
+                "type": "object",
+                "required": true,
+                "fields": {
+                  "src": {
+                    "type": "image",
+                    "required": true
+                  },
+                  "alt": {
+                    "type": "string",
+                    "required": true
+                  },
+                  "width": {
+                    "type": "integer"
+                  },
+                  "height": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "caption": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The images in order (core/gallery inner images, Elementor gallery items, Divi gallery_ids)."
+        },
+        "heading": {
+          "type": "string",
+          "description": "Section heading above the images."
+        },
+        "closeLabel": {
+          "type": "string",
+          "description": "Text of the viewer's close button (ui-strings gallery.close)."
+        },
+        "tone": {
+          "type": "select",
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "description": "Section background."
+        },
+        "id": {
+          "type": "string",
+          "description": "Section id, unique per page: viewer ids derive from it (`<id>-image-<n>`)."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/gallery"
+        ],
+        "elementor": [
+          "elementor/image-gallery",
+          "elementor/gallery"
+        ],
+        "divi": [
+          "divi/et_pb_gallery"
+        ],
+        "classic": [
+          "classic/gallery"
+        ]
+      },
+      "a11y": "A list of figures. In popover mode each thumbnail is a <button> named by the image's alt (or caption) that opens the viewer; the viewer has a visible close button, and Escape closes it, returning focus to the thumbnail. Captions are <figcaption>s.",
+      "files": [
+        "Gallery.astro"
+      ]
+    },
+    {
+      "id": "header",
+      "name": "Header",
+      "description": "Site header: brand (logo and/or name), navigation and an optional call-to-action button.",
+      "category": "chrome",
+      "uses": [
+        "nav"
+      ],
+      "shared": [
+        "Button.astro",
+        "KitImage.astro",
+        "types.ts"
+      ],
+      "variants": {
+        "layout": {
+          "options": [
+            "split",
+            "centered",
+            "brand-left"
+          ],
+          "default": "split",
+          "description": "split: brand left, navigation right. centered: brand above centred navigation. brand-left: navigation right after the brand."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "inverse",
+            "transparent"
+          ],
+          "default": "default",
+          "description": "Surface with a bottom border, dark (ink) background, or transparent over the hero that follows."
+        },
+        "position": {
+          "options": [
+            "static",
+            "sticky"
+          ],
+          "default": "static",
+          "description": "Sticky keeps the header at the top while scrolling."
+        }
+      },
+      "props": {
+        "siteName": {
+          "type": "string",
+          "required": true,
+          "description": "Site title (site.title)."
+        },
+        "logo": {
+          "type": "object",
+          "fields": {
+            "src": {
+              "type": "image",
+              "required": true
+            },
+            "alt": {
+              "type": "string",
+              "required": true
+            },
+            "width": {
+              "type": "integer"
+            },
+            "height": {
+              "type": "integer"
+            }
+          },
+          "description": "Logo image (site.logo)."
+        },
+        "showName": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the site name next to the logo."
+        },
+        "homeHref": {
+          "type": "url",
+          "default": "/",
+          "description": "Where the brand links."
+        },
+        "items": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "required": true
+              },
+              "href": {
+                "type": "url",
+                "required": true
+              },
+              "newTab": {
+                "type": "boolean"
+              },
+              "children": {
+                "type": "array"
+              }
+            }
+          },
+          "description": "Primary menu (menus → menu-items)."
+        },
+        "action": {
+          "type": "object",
+          "fields": {
+            "label": {
+              "type": "string",
+              "required": true
+            },
+            "href": {
+              "type": "url",
+              "required": true
+            },
+            "style": {
+              "type": "select",
+              "options": [
+                "primary",
+                "secondary",
+                "ghost"
+              ]
+            }
+          },
+          "description": "Header button, shown on wide screens."
+        },
+        "navLabel": {
+          "type": "string",
+          "description": "Accessible name of the navigation (ui-strings nav.label)."
+        },
+        "menuLabel": {
+          "type": "string",
+          "description": "Narrow-screen toggle text (ui-strings nav.menu)."
+        },
+        "closeLabel": {
+          "type": "string",
+          "description": "Drawer close text (ui-strings nav.close)."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/template-part:header",
+          "core/site-title",
+          "core/site-logo"
+        ],
+        "elementor": [
+          "elementor/theme-site-logo",
+          "elementor/theme-site-title"
+        ],
+        "divi": [
+          "divi/et_pb_menu"
+        ],
+        "classic": [
+          "classic/header"
+        ]
+      },
+      "a11y": "One <header> landmark; the brand link is named by the site name when only the logo shows. Navigation as in nav.",
+      "files": [
+        "Header.astro"
+      ]
+    },
+    {
+      "id": "hero",
+      "name": "Hero",
+      "description": "The page's opening section: optional eyebrow, heading, lead, action buttons and an image — beside the text, below it, or behind it as a full-bleed cover with a scrim.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "Button.astro",
+        "KitImage.astro",
+        "Section.astro",
+        "types.ts"
+      ],
+      "variants": {
+        "layout": {
+          "options": [
+            "split",
+            "centered",
+            "cover"
+          ],
+          "default": "split",
+          "description": "split: text and image side by side (stacked on phones). centered: centred text with the image below. cover: the image fills the section behind the text, darkened by a scrim; without an image it falls back to split."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "default",
+          "description": "Section background (ignored by cover, which is always light text on the image)."
+        }
+      },
+      "props": {
+        "heading": {
+          "type": "string",
+          "required": true,
+          "description": "The main heading (Cover/Group heading, Elementor heading, Divi header title)."
+        },
+        "level": {
+          "type": "select",
+          "options": [
+            "1",
+            "2"
+          ],
+          "default": "1",
+          "description": "Heading level: 1 when the hero opens the page, 2 when the page already has an h1."
+        },
+        "eyebrow": {
+          "type": "string",
+          "description": "Short line above the heading."
+        },
+        "lead": {
+          "type": "text",
+          "description": "Paragraph under the heading."
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "required": true
+              },
+              "href": {
+                "type": "url",
+                "required": true
+              },
+              "newTab": {
+                "type": "boolean"
+              },
+              "style": {
+                "type": "select",
+                "options": [
+                  "primary",
+                  "secondary",
+                  "ghost"
+                ]
+              }
+            }
+          },
+          "description": "Buttons, in order."
+        },
+        "image": {
+          "type": "object",
+          "fields": {
+            "src": {
+              "type": "image",
+              "required": true
+            },
+            "alt": {
+              "type": "string",
+              "required": true
+            },
+            "width": {
+              "type": "integer"
+            },
+            "height": {
+              "type": "integer"
+            }
+          },
+          "description": "Hero image; loaded first (the page's largest image)."
+        },
+        "id": {
+          "type": "string",
+          "description": "Anchor id of the section; the heading gets `<id>-title`."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/cover",
+          "core/media-text"
+        ],
+        "divi": [
+          "divi/et_pb_fullwidth_header",
+          "divi/et_pb_fullwidth_image"
+        ],
+        "classic": [
+          "classic/hero"
+        ]
+      },
+      "a11y": "A labelled region (aria-labelledby the heading). One h1 by default; `level: 2` inside pages that already have one. The cover image is decorative when its alt is empty; text sits on an ink scrim for contrast.",
+      "files": [
+        "Hero.astro"
+      ]
+    },
+    {
+      "id": "nav",
+      "name": "Navigation",
+      "description": "Site navigation: an inline list with hover/focus submenus on wide screens and a toggle on narrow ones that opens a native popover drawer or a <details> dropdown. No JavaScript.",
+      "category": "chrome",
+      "uses": [],
+      "shared": [
+        "types.ts"
+      ],
+      "variants": {
+        "mobile": {
+          "options": [
+            "popover",
+            "details"
+          ],
+          "default": "popover",
+          "description": "Narrow-screen menu: a side drawer (Popover API) or a dropdown under the toggle."
+        },
+        "align": {
+          "options": [
+            "start",
+            "end",
+            "center"
+          ],
+          "default": "end",
+          "description": "Horizontal alignment of the inline list."
+        },
+        "density": {
+          "options": [
+            "compact",
+            "comfortable"
+          ],
+          "default": "compact",
+          "description": "Gap and text size of the inline list."
+        }
+      },
+      "props": {
+        "items": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "required": true
+              },
+              "href": {
+                "type": "url",
+                "required": true
+              },
+              "newTab": {
+                "type": "boolean"
+              },
+              "children": {
+                "type": "array"
+              }
+            }
+          },
+          "description": "Menu entries; one level of children is shown."
+        },
+        "label": {
+          "type": "string",
+          "description": "Accessible name of the navigation landmark (ui-strings nav.label)."
+        },
+        "menuLabel": {
+          "type": "string",
+          "description": "Text of the narrow-screen toggle (ui-strings nav.menu)."
+        },
+        "closeLabel": {
+          "type": "string",
+          "description": "Text of the drawer's close button (ui-strings nav.close)."
+        },
+        "id": {
+          "type": "string",
+          "description": "Unique id when a page renders two navigations."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/navigation",
+          "core/page-list"
+        ],
+        "elementor": [
+          "elementor/nav-menu"
+        ],
+        "divi": [
+          "divi/et_pb_menu",
+          "divi/et_pb_fullwidth_menu"
+        ],
+        "classic": [
+          "classic/nav-menu"
+        ]
+      },
+      "a11y": "A <nav> landmark with a label; the current page carries aria-current. Submenus open on :focus-within as well as hover. The drawer is a native popover: Escape and light dismiss close it and focus returns to the toggle.",
+      "files": [
+        "Nav.astro"
+      ]
+    },
+    {
+      "id": "pagination",
+      "name": "Pagination",
+      "description": "Links between the pages of a post list, at WordPress addresses (<base>page/<n>/).",
+      "category": "content",
+      "uses": [],
+      "shared": [],
+      "variants": {
+        "style": {
+          "options": [
+            "numbered",
+            "simple"
+          ],
+          "default": "numbered",
+          "description": "Numbered pages with ellipses, or previous/next with 'Page n / m'."
+        },
+        "align": {
+          "options": [
+            "start",
+            "center",
+            "end"
+          ],
+          "default": "center",
+          "description": "Alignment of the numbered style."
+        }
+      },
+      "props": {
+        "base": {
+          "type": "string",
+          "required": true,
+          "description": "The list's first-page address, ending in a slash."
+        },
+        "current": {
+          "type": "integer",
+          "required": true,
+          "min": 1,
+          "description": "Current page number."
+        },
+        "total": {
+          "type": "integer",
+          "required": true,
+          "min": 1,
+          "description": "Number of pages; nothing renders when it is 1."
+        },
+        "label": {
+          "type": "string",
+          "description": "Accessible name (ui-strings pagination.label)."
+        },
+        "prevLabel": {
+          "type": "string",
+          "description": "ui-strings pagination.prev."
+        },
+        "nextLabel": {
+          "type": "string",
+          "description": "ui-strings pagination.next."
+        },
+        "pageLabel": {
+          "type": "string",
+          "description": "ui-strings pagination.page."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/query-pagination"
+        ],
+        "elementor": [
+          "elementor/posts:pagination"
+        ],
+        "divi": [
+          "divi/et_pb_blog:pagination"
+        ],
+        "classic": [
+          "classic/pagination"
+        ]
+      },
+      "a11y": "A labelled <nav>; the current page is aria-current=page; prev/next carry rel. Numbers are prefixed with a visually hidden 'Page'.",
+      "files": [
+        "Pagination.astro"
+      ]
+    },
+    {
+      "id": "post-card",
+      "name": "Post card",
+      "description": "One post in a list (index, archive, related posts): image, category, date, title, excerpt, author. The whole card links to the post.",
+      "category": "content",
+      "uses": [],
+      "shared": [
+        "KitImage.astro",
+        "types.ts"
+      ],
+      "variants": {
+        "layout": {
+          "options": [
+            "vertical",
+            "horizontal",
+            "minimal"
+          ],
+          "default": "vertical",
+          "description": "Image on top, image beside the text, or text only with a divider."
+        }
+      },
+      "props": {
+        "title": {
+          "type": "string",
+          "required": true,
+          "description": "Post title (posts.title)."
+        },
+        "href": {
+          "type": "url",
+          "required": true,
+          "description": "Post address (from the permalink pattern)."
+        },
+        "excerpt": {
+          "type": "text",
+          "description": "Summary (posts.excerpt)."
+        },
+        "date": {
+          "type": "datetime",
+          "description": "Publication date (posts.published_at)."
+        },
+        "locale": {
+          "type": "string",
+          "description": "Locale the date is written in (site.language)."
+        },
+        "image": {
+          "type": "object",
+          "fields": {
+            "src": {
+              "type": "image",
+              "required": true
+            },
+            "alt": {
+              "type": "string",
+              "required": true
+            },
+            "width": {
+              "type": "integer"
+            },
+            "height": {
+              "type": "integer"
+            }
+          },
+          "description": "Cover (posts.cover → media)."
+        },
+        "category": {
+          "type": "object",
+          "fields": {
+            "label": {
+              "type": "string",
+              "required": true
+            },
+            "href": {
+              "type": "url",
+              "required": true
+            }
+          },
+          "description": "Primary category and its archive."
+        },
+        "author": {
+          "type": "string",
+          "description": "Author name (posts.author → authors.name)."
+        },
+        "headingLevel": {
+          "type": "integer",
+          "min": 2,
+          "max": 3,
+          "default": 2,
+          "description": "Title heading level in the page outline."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/query",
+          "core/post-template",
+          "core/latest-posts"
+        ],
+        "elementor": [
+          "elementor/posts",
+          "elementor/archive-posts"
+        ],
+        "divi": [
+          "divi/et_pb_blog"
+        ],
+        "classic": [
+          "classic/archive-item"
+        ]
+      },
+      "a11y": "An <article> with one link (the title), stretched over the card; the category link sits above it and stays separately focusable. Dates are <time datetime>.",
+      "files": [
+        "PostCard.astro"
+      ]
+    },
+    {
+      "id": "prose",
+      "name": "Prose",
+      "description": "A rich-text body (post or page content) rendered as the editor wrote it: WordPress block markup kept, styled by Tailwind Typography on the site's tokens and the starter's Gutenberg block styles. The fallback for every builder element no rule maps to a component. Container blocks (core/group, core/columns) are not sources: their children are matched instead. Needs the starter's global.css (prose-site utility, wp-blocks.css).",
+      "category": "content",
+      "uses": [],
+      "shared": [],
+      "variants": {
+        "size": {
+          "options": [
+            "base",
+            "lg"
+          ],
+          "default": "lg",
+          "description": "Type scale of the body."
+        }
+      },
+      "props": {
+        "html": {
+          "type": "richtext",
+          "required": true,
+          "description": "Rendered HTML of a richtext field (posts.body, pages.body)."
+        },
+        "searchable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Mark the body for the site search index (data-pagefind-body)."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/paragraph",
+          "core/heading",
+          "core/list",
+          "core/list-item",
+          "core/quote",
+          "core/pullquote",
+          "core/image",
+          "core/table",
+          "core/code",
+          "core/preformatted",
+          "core/verse",
+          "core/separator",
+          "core/spacer",
+          "core/embed",
+          "core/video",
+          "core/audio",
+          "core/file",
+          "core/html",
+          "core/freeform",
+          "core/post-content"
+        ],
+        "elementor": [
+          "elementor/text-editor",
+          "elementor/theme-post-content"
+        ],
+        "divi": [
+          "divi/et_pb_text",
+          "divi/et_pb_post_content"
+        ],
+        "classic": [
+          "classic/the-content"
+        ]
+      },
+      "a11y": "Keeps the author's heading levels and list/table semantics; embedded media keep their own titles and captions. Block styles give focus-visible links and readable measure.",
+      "files": [
+        "Prose.astro"
+      ]
+    },
+    {
+      "id": "slider",
+      "name": "Slider",
+      "description": "A carousel of images with optional title, text and button per slide. Without JavaScript it is a snapping horizontal scroller; Embla adds paging, arrows and dots.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "Button.astro",
+        "KitImage.astro",
+        "types.ts"
+      ],
+      "variants": {
+        "perView": {
+          "options": [
+            "1",
+            "2",
+            "3"
+          ],
+          "default": "1",
+          "description": "Slides visible at once on wide screens."
+        },
+        "aspect": {
+          "options": [
+            "wide",
+            "standard",
+            "square"
+          ],
+          "default": "wide",
+          "description": "Image aspect ratio: 21:9, 3:2 or 1:1."
+        },
+        "caption": {
+          "options": [
+            "below",
+            "overlay"
+          ],
+          "default": "overlay",
+          "description": "Caption under the image, or over its lower edge on a gradient."
+        }
+      },
+      "props": {
+        "slides": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "image": {
+                "type": "object",
+                "required": true,
+                "fields": {
+                  "src": {
+                    "type": "image",
+                    "required": true
+                  },
+                  "alt": {
+                    "type": "string",
+                    "required": true
+                  },
+                  "width": {
+                    "type": "integer"
+                  },
+                  "height": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "title": {
+                "type": "string"
+              },
+              "text": {
+                "type": "text"
+              },
+              "action": {
+                "type": "object",
+                "fields": {
+                  "label": {
+                    "type": "string",
+                    "required": true
+                  },
+                  "href": {
+                    "type": "url",
+                    "required": true
+                  },
+                  "newTab": {
+                    "type": "boolean"
+                  },
+                  "style": {
+                    "type": "select",
+                    "options": [
+                      "primary",
+                      "secondary",
+                      "ghost"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "description": "Slides; image is an ImageInput, action an ActionInput."
+        },
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Accessible name of the carousel."
+        },
+        "prevLabel": {
+          "type": "string",
+          "description": "ui-strings slider.prev."
+        },
+        "nextLabel": {
+          "type": "string",
+          "description": "ui-strings slider.next."
+        },
+        "slideLabel": {
+          "type": "string",
+          "description": "ui-strings slider.slide."
+        },
+        "ofLabel": {
+          "type": "string",
+          "description": "ui-strings slider.of."
+        },
+        "loop": {
+          "type": "boolean",
+          "default": false,
+          "description": "Wrap from the last slide to the first."
+        }
+      },
+      "slots": {},
+      "js": "embla",
+      "dependencies": {
+        "embla-carousel": "^8.6.0"
+      },
+      "sources": {
+        "gutenberg": [
+          "core/gallery:carousel"
+        ],
+        "elementor": [
+          "elementor/image-carousel",
+          "elementor/slides",
+          "elementor/media-carousel"
+        ],
+        "divi": [
+          "divi/et_pb_slider",
+          "divi/et_pb_fullwidth_slider",
+          "divi/et_pb_post_slider"
+        ],
+        "classic": [
+          "classic/revslider",
+          "classic/metaslider",
+          "classic/smart-slider"
+        ]
+      },
+      "a11y": "WAI-ARIA carousel pattern: a labelled region with aria-roledescription=carousel, slides as labelled groups ('Slide 2 of 5'), labelled previous/next buttons disabled at the ends, and dot buttons marking the current slide. No autoplay; with prefers-reduced-motion slides change without animation. Without JavaScript every slide is reachable by scrolling.",
+      "files": [
+        "Slider.astro"
+      ]
+    },
+    {
+      "id": "tabs",
+      "name": "Tabs",
+      "description": "Tabbed panels with the WAI-ARIA tabs pattern from Zag.js (arrow keys, Home/End, roving focus). Without script every panel shows in turn under its own title, so no content is ever hidden from a reader or a crawler.",
+      "category": "content",
+      "uses": [],
+      "shared": [
+        "Section.astro"
+      ],
+      "variants": {
+        "style": {
+          "options": [
+            "underline",
+            "pills"
+          ],
+          "default": "underline",
+          "description": "underline: a rule under the list, the selected tab underlined in accent. pills: the selected tab filled with accent."
+        },
+        "orientation": {
+          "options": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal",
+          "description": "vertical: the tab list beside the panel on wide screens (Elementor vertical tabs)."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "default",
+          "description": "Section background."
+        }
+      },
+      "props": {
+        "items": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "required": true
+              },
+              "content": {
+                "type": "richtext",
+                "required": true
+              }
+            }
+          },
+          "description": "Tabs in order (Elementor tabs tab_title/tab_content, Divi tab title + content)."
+        },
+        "heading": {
+          "type": "string",
+          "description": "Section heading; also names the tab list."
+        },
+        "label": {
+          "type": "string",
+          "description": "Accessible name of the tab list when there is no heading."
+        },
+        "id": {
+          "type": "string",
+          "description": "Section id, unique per page: the tabs machine and its element ids derive from it."
+        }
+      },
+      "slots": {},
+      "js": "zag",
+      "dependencies": {
+        "@zag-js/tabs": "^1.44.0",
+        "@zag-js/vanilla": "^1.44.0"
+      },
+      "sources": {
+        "elementor": [
+          "elementor/tabs",
+          "elementor/nested-tabs"
+        ],
+        "divi": [
+          "divi/et_pb_tabs"
+        ],
+        "classic": [
+          "classic/tabs"
+        ]
+      },
+      "a11y": "Zag.js tabs: role=tablist/tab/tabpanel with aria-selected, aria-controls and aria-labelledby; arrow keys (per orientation), Home and End move between tabs. Before the script runs every panel is visible with its own h3 title; after, the titles become screen-reader-only and the tabs label the panels.",
+      "files": [
+        "Tabs.astro"
+      ]
+    },
+    {
+      "id": "testimonial",
+      "name": "Testimonial",
+      "description": "Quotes from customers or readers with who said them: one large quote, or several as cards. Every quote is shown; rotating quotes are the slider's job.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "KitImage.astro",
+        "Section.astro",
+        "types.ts"
+      ],
+      "variants": {
+        "layout": {
+          "options": [
+            "single",
+            "grid"
+          ],
+          "default": "grid",
+          "description": "single: one large centred quote (the first item stands alone; more items stack). grid: cards, up to three per row."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "default",
+          "description": "Section background."
+        }
+      },
+      "props": {
+        "items": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "quote": {
+                "type": "text",
+                "required": true
+              },
+              "name": {
+                "type": "string",
+                "required": true
+              },
+              "role": {
+                "type": "string"
+              },
+              "avatar": {
+                "type": "object",
+                "fields": {
+                  "src": {
+                    "type": "image",
+                    "required": true
+                  },
+                  "alt": {
+                    "type": "string",
+                    "required": true
+                  },
+                  "width": {
+                    "type": "integer"
+                  },
+                  "height": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "description": "The quotes (Elementor testimonial content/name/job/image, Divi testimonial body/author/job_title/portrait_url)."
+        },
+        "heading": {
+          "type": "string",
+          "description": "Section heading above the quotes."
+        },
+        "id": {
+          "type": "string",
+          "description": "Anchor id of the section; the heading gets `<id>-title`."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "elementor": [
+          "elementor/testimonial"
+        ],
+        "divi": [
+          "divi/et_pb_testimonial"
+        ],
+        "classic": [
+          "classic/testimonial"
+        ]
+      },
+      "a11y": "Each quote is a <figure> whose <figcaption> names the speaker; the text is in a <blockquote>. Avatars are decorative when their alt is empty. The section is labelled by its heading when it has one.",
+      "files": [
+        "Testimonial.astro"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+[
+  {
+    "name": "split",
+    "props": {
+      "model": "contact-submissions",
+      "heading": "Get in touch",
+      "intro": "Questions, corrections and invitations are all welcome. We answer within two working days.",
+      "details": [
+        { "label": "Email", "value": "hello@northwind.example", "href": "mailto:hello@northwind.example" },
+        { "label": "Phone", "value": "+351 21 000 0000", "href": "tel:+351210000000" },
+        { "label": "Studio", "value": "Rua das Flores 12, Lisbon" }
+      ]
+    }
+  },
+  { "name": "stacked-muted", "props": { "model": "contact-submissions", "heading": "Write to us", "layout": "stacked", "tone": "muted", "id": "write" } },
+  { "name": "split-inverse", "props": { "model": "contact-submissions", "heading": "Press", "tone": "inverse", "id": "press", "details": [{ "label": "Press office", "value": "press@northwind.example", "href": "mailto:press@northwind.example" }] } },
+  { "name": "stacked-accent", "props": { "model": "newsletter-requests", "heading": "Request a print copy", "layout": "stacked", "tone": "accent", "id": "print" } }
+]

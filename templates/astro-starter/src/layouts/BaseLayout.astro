@@ -2,11 +2,12 @@
 // The document shell every page renders in: head (SEO, font, the one
 // stylesheet), skip link, site header, main, site footer.
 import { Font } from 'astro:assets'
+import Footer from '../components/kit/footer/Footer.astro'
+import Header from '../components/kit/header/Header.astro'
 import SEO from '../components/SEO.astro'
-import SiteFooter from '../components/SiteFooter.astro'
-import SiteHeader from '../components/SiteHeader.astro'
-import { getSite, getStrings } from '../lib/content'
+import { getMenu, getSite, getStrings } from '../lib/content'
 import { organizationLd, websiteLd } from '../lib/seo'
+import { siteConfig } from '../site.config'
 import '../styles/global.css'
 
 interface Props {
@@ -26,8 +27,9 @@ interface Props {
 }
 
 const { title, description, image, canonical, type, noindex, nofollow, published, modified, jsonLd = [] } = Astro.props
-const site = await getSite()
-const t = await getStrings()
+const [site, t, primary, footerMenu] = await Promise.all([
+  getSite(), getStrings(), getMenu(siteConfig.menus.primary), getMenu(siteConfig.menus.footer),
+])
 const origin = Astro.site ?? Astro.url
 const home = new URL('/', origin).href
 const identity = { name: site.title, url: home, description: site.tagline, logo: site.logo, sameAs: site.same_as }
@@ -63,10 +65,22 @@ const shareImage = image ?? site.social_image
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-ink focus:px-4 focus:py-2 focus:text-surface">
       {t('nav.skip')}
     </a>
-    <SiteHeader site={site} t={t} />
+    <Header
+      siteName={site.title}
+      logo={site.logo ? { src: site.logo, alt: '' } : undefined}
+      items={primary}
+      navLabel={t('nav.label')}
+      menuLabel={t('nav.menu')}
+      closeLabel={t('nav.close')}
+    />
     <main id="main" class="flex-1">
       <slot />
     </main>
-    <SiteFooter site={site} t={t} />
+    <Footer
+      siteName={site.organization ?? site.title}
+      links={[...footerMenu, { label: t('footer.rss'), href: '/rss.xml' }]}
+      social={site.same_as?.map(url => ({ label: new URL(url).hostname.replace(/^www\./, ''), href: url }))}
+      navLabel={t('nav.footer')}
+    />
   </body>
 </html>

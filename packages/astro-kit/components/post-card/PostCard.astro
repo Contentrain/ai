@@ -1,0 +1,67 @@
+---
+// One post in a list: image, category, date, title, excerpt and author. The
+// whole card is clickable through its title link.
+import { tv } from 'tailwind-variants'
+import KitImage from '../_shared/KitImage.astro'
+import type { ImageInput, LinkInput } from '../_shared/types'
+
+const card = tv({
+  slots: {
+    root: 'group relative flex gap-4',
+    media: 'shrink-0 overflow-hidden rounded-[var(--radius-card)]',
+    body: 'flex min-w-0 flex-col gap-2',
+    meta: 'flex flex-wrap items-center gap-x-2 text-sm text-ink-muted',
+    title: 'leading-snug font-semibold text-balance text-ink',
+    excerpt: 'text-ink-muted',
+  },
+  variants: {
+    layout: {
+      vertical: { root: 'flex-col', media: 'w-full', title: 'text-xl', excerpt: 'line-clamp-3' },
+      horizontal: { root: 'flex-col sm:flex-row sm:items-start', media: 'w-full sm:w-64', title: 'text-xl', excerpt: 'line-clamp-2' },
+      minimal: { root: 'flex-col border-b border-line pb-5', media: 'hidden', title: 'text-lg', excerpt: 'line-clamp-2' },
+    },
+  },
+  defaultVariants: { layout: 'vertical' },
+})
+
+interface Props {
+  title: string
+  href: string
+  excerpt?: string | undefined
+  /** Publication date: a Date, or ISO 8601 text as Contentrain stores it. */
+  date?: Date | string | undefined
+  /** BCP 47 locale the date is written in (site.language). */
+  locale?: string | undefined
+  image?: ImageInput | undefined
+  category?: LinkInput | undefined
+  author?: string | undefined
+  headingLevel?: 2 | 3 | undefined
+  layout?: 'vertical' | 'horizontal' | 'minimal' | undefined
+}
+
+const { title, href, excerpt, date: rawDate, locale = 'en', image, category, author, headingLevel = 2, layout } = Astro.props
+const date = rawDate === undefined ? undefined : new Date(rawDate)
+const slots = card({ layout })
+const Heading = `h${headingLevel}` as 'h2' | 'h3'
+---
+<article class={slots.root()}>
+  {image && layout !== 'minimal' && (
+    <div class={slots.media()}>
+      <KitImage image={image} sizes={layout === 'horizontal' ? '256px' : '(min-width: 1024px) 360px, 100vw'} class="aspect-[16/9] w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
+    </div>
+  )}
+  <div class={slots.body()}>
+    {(category || date) && (
+      <p class={slots.meta()}>
+        {category && <a href={category.href} class="relative z-10 font-medium text-accent no-underline hover:underline">{category.label}</a>}
+        {category && date && <span aria-hidden="true">·</span>}
+        {date && <time datetime={date.toISOString()}>{date.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' })}</time>}
+      </p>
+    )}
+    <Heading class={slots.title()}>
+      <a href={href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent">{title}</a>
+    </Heading>
+    {excerpt && <p class={slots.excerpt()}>{excerpt}</p>}
+    {author && <p class="text-sm text-ink-muted">{author}</p>}
+  </div>
+</article>
