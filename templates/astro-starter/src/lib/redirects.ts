@@ -10,6 +10,7 @@
 // unpublished one.
 
 import { getCollection } from 'astro:content'
+import { authorHref, byId, pageHref, termHref } from './content'
 import { publicLinks, sitePath } from './links'
 import { routeTable } from './site-routes'
 
@@ -38,4 +39,39 @@ export function redirectRules(): Promise<RedirectRule[]> {
     return [...out.values()].toSorted((a, b) => a.from.localeCompare(b.from))
   })()
   return rules
+}
+
+/** An address WordPress answers by query (`/?p=12`), whatever the permalink structure: one parameter, one value. */
+export interface QueryRule { param: 'p' | 'page_id' | 'cat' | 'tag' | 'author', value: string, to: string }
+
+/**
+ * WordPress's query addresses for every public entry — `?p=` posts, `?page_id=` pages, `?cat=`
+ * categories, `?tag=` tags, `?author=` authors — leading to where the entry lives now. They are the
+ * addresses of a site with plain permalinks and the short links of every other. A static page cannot
+ * answer a query, so these exist only as host rules.
+ */
+export async function queryRules(): Promise<QueryRule[]> {
+  const [routes, pages, categories, tags, authors] = await Promise.all([routeTable(), byId('pages'), byId('categories'), byId('tags'), getCollection('authors')])
+  const out: QueryRule[] = []
+  for (const [href, route] of routes) {
+    if (route.view === 'post' && route.post.data.wp_id !== undefined) out.push({ param: 'p', value: String(route.post.data.wp_id), to: href })
+  }
+  // By page, not by route: the posts page (Settings → Reading) is not a page route but lives at the blog address.
+  for (const page of pages.values()) {
+    const to = pageHref(page, pages)
+    if (page.data.wp_id !== undefined && routes.has(to)) out.push({ param: 'page_id', value: String(page.data.wp_id), to })
+  }
+  for (const category of categories.values()) {
+    const to = termHref('category', category, categories)
+    if (category.data.wp_id !== undefined && routes.has(to)) out.push({ param: 'cat', value: String(category.data.wp_id), to })
+  }
+  for (const tag of tags.values()) {
+    const to = termHref('tag', tag, tags)
+    if (routes.has(to)) out.push({ param: 'tag', value: tag.data.slug, to })
+  }
+  for (const author of authors) {
+    const to = authorHref(author)
+    if (author.data.wp_id !== undefined && routes.has(to)) out.push({ param: 'author', value: String(author.data.wp_id), to })
+  }
+  return out.toSorted((a, b) => a.param.localeCompare(b.param) || a.value.localeCompare(b.value, undefined, { numeric: true }))
 }

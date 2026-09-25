@@ -13,7 +13,9 @@
         "/old-about/ /about/ 301",
         "/feed/ /rss.xml 301",
         "/gone/ /404.html 410",
-        "/team/ /about/team/ 301"
+        "/team/ /about/team/ 301",
+        "/ page_id=302 /contact/ 301",
+        "/ page_id=301 /about/team/ 301"
       ],
       "excludes": [
         "/2019/plans/"
