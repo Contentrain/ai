@@ -26,6 +26,8 @@ export interface GenerateInput {
    */
   importDir?: string
   outDir: string
+  /** The source's document title pattern (`{title} - {site}`), from the fact pack's SEO. */
+  titleTemplate?: string
   /** Decisions under this confidence count as low (site component instead of a kit guess). Default 0.8. */
   confidenceFloor?: number
 }
@@ -48,7 +50,7 @@ export interface GenerateReport {
 
 const SKIP = /(?:^|\/)(?:node_modules|dist|\.astro|\.lighthouseci)(?:\/|$)/
 
-async function readModels(dir: string): Promise<ModelDefinition[]> {
+export async function readModels(dir: string): Promise<ModelDefinition[]> {
   const names = (await readdir(dir)).filter(name => name.endsWith('.json')).toSorted()
   return Promise.all(names.map(async name => JSON.parse(await readFile(join(dir, name), 'utf8')) as ModelDefinition))
 }
@@ -107,7 +109,7 @@ export async function generateProject(input: GenerateInput): Promise<GenerateRep
   await write('src/content.config.ts', contentConfigSource(models))
 
   // 3. Site settings: addresses, redirects, the design tokens and the source theme's presets.
-  await write('src/site.config.ts', siteConfigSource(await read('src/site.config.ts'), plan.site))
+  await write('src/site.config.ts', siteConfigSource(await read('src/site.config.ts'), plan.site, input.titleTemplate))
   const fonts = plan.site.tokens.fonts ?? []
   await write('astro.config.mjs', withSiteFonts(astroConfigSource(await read('astro.config.mjs'), plan.site, []), fonts))
   if (fonts.length) await write('src/layouts/BaseLayout.astro', withSiteFontTags(await read('src/layouts/BaseLayout.astro'), fonts))

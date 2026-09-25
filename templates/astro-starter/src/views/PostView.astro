@@ -33,7 +33,8 @@ const formatDate = (date: Date) => date.toLocaleDateString(locale, { dateStyle: 
 const updated = data.modified_at && data.published_at && data.modified_at.getTime() - data.published_at.getTime() > 86_400_000
 ---
 <BaseLayout
-  title={data.seo?.title ?? data.title}
+  title={data.title}
+  fullTitle={data.seo?.title}
   description={description}
   image={image}
   canonical={data.seo?.canonical}

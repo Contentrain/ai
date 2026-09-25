@@ -5,7 +5,7 @@
 // model — or in a dry run — no model is called at all.
 
 import { existsSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { KIT_COMPONENTS_DIR, loadCatalog, type KitCatalog } from '@contentrain/astro-kit'
@@ -14,7 +14,8 @@ import { DEFAULT_MODELS, runWriter, type RunReport, type WriterJob } from './age
 import type { ToolContext } from './agent/tools.js'
 import type { RunBudget } from './budget.js'
 import type { FactsView } from './facts.js'
-import { generateProject, type GenerateReport } from './generate/index.js'
+import { generateProject, readModels, type GenerateReport } from './generate/index.js'
+import { seoContentFiles, titleTemplateOf, type FactsSeo } from './generate/seo.js'
 import { runCommand } from './project.js'
 import { Shooter } from './shoot.js'
 
@@ -60,6 +61,8 @@ export interface WriterReport {
   agentWritten: string[]
   /** Kit placements vs site components — the kit reuse rate the blind comparison measures. */
   kitReuse: { kitComponents: number, siteComponents: number }
+  /** The source's title pattern and how many entries got its hand-written SEO values. */
+  seo?: { titleTemplate: string, entries: number }
   /** unmapped_element decisions below the floor: written as site components, not kit guesses. */
   lowConfidence: number
 }
@@ -122,11 +125,22 @@ export async function writeProject(input: WriteProjectInput, ctx: WriteContext):
 
   let generated: GenerateReport | undefined
   let jobs: Array<WriterJob & { reason: string }>
+  let seoReport: WriterReport['seo']
   if (input.feedback) {
     jobs = repairJobs(input.feedback)
   } else {
     ctx.log('writer: generating the project from the plan')
-    generated = await generateProject({ plan, catalog, kitRoot: KIT_COMPONENTS_DIR, starterDir: starterDir(), outDir: projectDir })
+    const seoFacts = input.facts as unknown as FactsSeo
+    const titleTemplate = titleTemplateOf(seoFacts)
+    generated = await generateProject({ plan, catalog, kitRoot: KIT_COMPONENTS_DIR, starterDir: starterDir(), outDir: projectDir, titleTemplate })
+    // The source's per-page titles and descriptions, copied from the fact pack into the entries' seo fields.
+    const models = await readModels(join(projectDir, '.contentrain', 'models'))
+    const seo = await seoContentFiles(projectDir, models, seoFacts, titleTemplate)
+    for (const [path, text] of Object.entries(seo.files)) {
+      await writeFile(join(projectDir, path), text)
+      generated.written.push(path)
+    }
+    seoReport = { titleTemplate, entries: seo.entries }
     jobs = [
       ...plan.components.filter(c => c.origin === 'site').map(siteComponentJob),
       ...generated.routes.unsupported.map(u => routeJob(u.route, u.reason, plan)),
@@ -140,6 +154,7 @@ export async function writeProject(input: WriteProjectInput, ctx: WriteContext):
     costUsd: 0,
     models: {},
     ...(generated ? { generated } : {}),
+    ...(seoReport ? { seo: seoReport } : {}),
     jobs: jobs.map(j => ({ id: j.id, role: j.role, reason: j.reason })),
     agentWritten: [],
     kitReuse,

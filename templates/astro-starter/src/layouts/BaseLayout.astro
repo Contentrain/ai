@@ -11,8 +11,10 @@ import { siteConfig } from '../site.config'
 import '../styles/global.css'
 
 interface Props {
-  /** The page's own title; the site name is added unless this is the home page. */
+  /** The page's own title; siteConfig.titleTemplate adds the site name, unless this is the home page. */
   title?: string | undefined
+  /** A complete document title (an SEO override), used as it is. */
+  fullTitle?: string | undefined
   description?: string | undefined
   /** Absolute or site-relative image for link previews. */
   image?: string | undefined
@@ -26,7 +28,7 @@ interface Props {
   jsonLd?: ReadonlyArray<Record<string, unknown>>
 }
 
-const { title, description, image, canonical, type, noindex, nofollow, published, modified, jsonLd = [] } = Astro.props
+const { title, fullTitle: seoTitle, description, image, canonical, type, noindex, nofollow, published, modified, jsonLd = [] } = Astro.props
 const [site, t, primary, footerMenu] = await Promise.all([
   getSite(), getStrings(), getMenu(siteConfig.menus.primary), getMenu(siteConfig.menus.footer),
 ])
@@ -34,7 +36,9 @@ const origin = Astro.site ?? Astro.url
 const home = new URL('/', origin).href
 const identity = { name: site.title, url: home, description: site.tagline, logo: site.logo, sameAs: site.same_as }
 const isHome = Astro.url.pathname === '/'
-const fullTitle = title && !isHome ? `${title} – ${site.title}` : site.tagline ? `${site.title} – ${site.tagline}` : site.title
+const fullTitle = seoTitle ?? (title && !isHome
+  ? siteConfig.titleTemplate.replace('{title}', title).replace('{site}', site.title)
+  : site.tagline ? `${site.title} – ${site.tagline}` : site.title)
 const lang = site.language ?? 'en'
 const shareImage = image ?? site.social_image
 ---

@@ -21,6 +21,12 @@ export interface SiteConfig {
   }
   /** The front page: the posts index, or one page by slug. */
   home: { kind: 'posts' } | { kind: 'page', slug: string }
+  /**
+   * The document title of a page with a title of its own: `{title}` and `{site}` are filled in.
+   * A migration copies the source's pattern (Yoast's separator, WordPress's en dash); an entry's
+   * SEO title replaces it whole.
+   */
+  titleTemplate: string
   /** Posts per index or archive page (WordPress: Settings → Reading). */
   postsPerPage: number
   /** Menu slugs for the site's navigation areas; a missing menu renders nothing. */
@@ -43,6 +49,7 @@ export const siteConfig: SiteConfig = {
     blog: '/blog/',
   },
   home: { kind: 'posts' },
+  titleTemplate: '{title} – {site}',
   postsPerPage: 10,
   menus: { primary: 'primary', footer: 'footer' },
 }

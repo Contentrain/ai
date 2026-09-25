@@ -16,7 +16,7 @@ function replaceOnce(source: string, pattern: RegExp, replacement: string, what:
   return source.replace(pattern, () => replacement)
 }
 
-export function siteConfigSource(starter: string, site: PlanSite): string {
+export function siteConfigSource(starter: string, site: PlanSite, titleTemplate = '{title} – {site}'): string {
   const p = site.permalinks
   const home = site.home.kind === 'page' ? `{ kind: 'page', slug: ${sq(site.home.slug)} }` : `{ kind: 'posts' }`
   const studio = site.studio ? `\n  studio: { baseUrl: ${sq(site.studio.baseUrl)}, projectId: ${sq(site.studio.projectId)} },` : ''
@@ -30,6 +30,7 @@ export function siteConfigSource(starter: string, site: PlanSite): string {
     blog: ${sq(p.blog)},
   },
   home: ${home},
+  titleTemplate: ${sq(titleTemplate)},
   postsPerPage: ${site.postsPerPage},
   menus: { primary: ${sq(site.menus.primary)}, footer: ${sq(site.menus.footer)} },${studio}
 }
