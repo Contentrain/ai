@@ -2,7 +2,7 @@ import { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach, vi } 
 
 // Real git; contends with the other git suites.
 vi.setConfig({ testTimeout: 120000, hookTimeout: 120000 })
-import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -18,18 +18,27 @@ import { cloneTemplate, createClient, makeInitedTemplate, parseResult } from '..
  * Every git spawn in this file goes through a logging wrapper. `gitBinary()`
  * resolves the binary once per process, so the override is set before the
  * first git call; it slows every spawn, which is why this lives apart from
- * feature-branch-reads.test.ts.
+ * feature-branch-reads.test.ts. The object ids a `cat-file --batch` is asked for
+ * go to a second log, so a test can tell which blobs the batch loaded.
  */
 const spawnDir = await mkdtemp(join(tmpdir(), 'cr-git-spawns-'))
 const spawnLog = join(spawnDir, 'spawns.log')
+const batchLog = join(spawnDir, 'batch.log')
 const realGit = execFileSync('/bin/sh', ['-c', 'command -v git'], { encoding: 'utf-8' }).trim()
-await writeFile(join(spawnDir, 'git'), `#!/bin/sh\nprintf '%s\\n' "$1" >> '${spawnLog}'\nexec '${realGit}' "$@"\n`)
+await writeFile(join(spawnDir, 'git'), [
+  '#!/bin/sh',
+  `printf '%s\\n' "$1" >> '${spawnLog}'`,
+  `if [ "$1" = cat-file ] && [ "$2" = --batch ]; then tee -a '${batchLog}' | '${realGit}' "$@"; exit $?; fi`,
+  `exec '${realGit}' "$@"`,
+  '',
+].join('\n'))
 await chmod(join(spawnDir, 'git'), 0o755)
 const savedBinary = process.env['CONTENTRAIN_GIT_BINARY']
 process.env['CONTENTRAIN_GIT_BINARY'] = join(spawnDir, 'git')
 
 async function spawnsDuring(fn: () => Promise<unknown>): Promise<string[]> {
   await writeFile(spawnLog, '')
+  await writeFile(batchLog, '')
   await fn()
   return (await readFile(spawnLog, 'utf-8')).split('\n').filter(Boolean)
 }
@@ -95,6 +104,30 @@ describe('read spawns (#229)', () => {
     const again = await spawnsDuring(() => call('contentrain_content_list', { model: 'faq', locale: 'tr' }))
     expect(reads(again)).toEqual([])
     expect(again.length).toBeLessThanOrEqual(2)
+  })
+
+  it('media stays out of the batch: a 2 MB image on contentrain is never read by describe or content_list', async () => {
+    const git = createGit(work)
+    // Put the image on the contentrain tip, as a media upload would.
+    const side = await mkdtemp(join(tmpdir(), 'cr-assets-'))
+    await git.raw(['worktree', 'add', side, 'contentrain'])
+    await mkdir(join(side, '.contentrain/assets'), { recursive: true })
+    await writeFile(join(side, '.contentrain/assets/hero.png'), Buffer.alloc(2 * 1024 * 1024, 0xAB))
+    const sideGit = createGit(side)
+    await sideGit.add('.')
+    await sideGit.commit('hero image', { '--no-verify': null })
+    const image = (await sideGit.raw(['rev-parse', 'HEAD:.contentrain/assets/hero.png'])).trim()
+    await git.raw(['worktree', 'remove', '--force', side])
+    await git.raw(['checkout', '-b', 'feat/x'])
+
+    const spawns = await spawnsDuring(async () => {
+      await call('contentrain_describe', { model: 'faq' })
+      await call('contentrain_content_list', { model: 'faq', locale: 'en' })
+    })
+    expect(reads(spawns).toSorted()).toEqual(['cat-file', 'ls-tree'])
+    const batched = (await readFile(batchLog, 'utf-8')).split('\n').filter(Boolean)
+    expect(batched.length).toBeGreaterThan(0)
+    expect(batched).not.toContain(image)
   })
 
   it('on the base branch: no ref reads at all', async () => {

@@ -11,7 +11,10 @@ import { gitBinary } from './identity.js'
  * every locale file (`content_list`, `status`, validation): a few hundred
  * spawns per call (#229). Here one `ls-tree -r` lists the subtree — which
  * answers `listDirectory` and `fileExists` from memory — and the first
- * `readFile` pulls every blob under it through a single `cat-file --batch`.
+ * `readFile` pulls every content blob under it through a single
+ * `cat-file --batch`. Only content is batched ({@link batched}): media under
+ * `assets_path`, and any large or non-text file, is read on demand, one
+ * `cat-file blob` each, so a list or a save never loads the project's images.
  *
  * Bound to a commit sha, not a branch name, so a snapshot never changes
  * under its reader; {@link loadRefSnapshot} caches one per (repo, sha).
@@ -22,23 +25,34 @@ import { gitBinary } from './identity.js'
  */
 export class RefSnapshotReader implements RepoReader {
   private blobs: Promise<Map<string, string>> | null = null
+  private readonly single = new Map<string, Promise<string>>()
 
   constructor(
     private readonly repoDir: string,
     public readonly commit: string,
     public readonly root: string,
-    /** repo-relative file path → blob oid */
-    private readonly files: ReadonlyMap<string, string>,
+    /** repo-relative file path → blob oid and size in bytes */
+    private readonly files: ReadonlyMap<string, SnapshotFile>,
     /** repo-relative directory path → child names */
     private readonly dirs: ReadonlyMap<string, readonly string[]>,
   ) {}
 
   async readFile(path: string, _ref?: string): Promise<string> {
-    const oid = this.files.get(trim(path))
-    if (!oid) throw Object.assign(new Error(`ENOENT: ${path} is not in ${this.commit.slice(0, 8)}:${this.root}`), { code: 'ENOENT' })
-    this.blobs ??= readBlobs(this.repoDir, [...new Set(this.files.values())])
-    const text = (await this.blobs).get(oid)
-    if (text === undefined) throw new Error(`blob ${oid} for ${path} could not be read`)
+    const p = trim(path)
+    const file = this.files.get(p)
+    if (!file) throw Object.assign(new Error(`ENOENT: ${path} is not in ${this.commit.slice(0, 8)}:${this.root}`), { code: 'ENOENT' })
+    if (!batched(p, file.size)) {
+      let text = this.single.get(file.oid)
+      if (!text) {
+        text = runGit(this.repoDir, ['cat-file', 'blob', file.oid]).then(buf => buf.toString('utf-8'))
+        text.catch(() => this.single.delete(file.oid))
+        this.single.set(file.oid, text)
+      }
+      return text
+    }
+    this.blobs ??= readBlobs(this.repoDir, [...new Set([...this.files].filter(([f, { size }]) => batched(f, size)).map(([, { oid }]) => oid))])
+    const text = (await this.blobs).get(file.oid)
+    if (text === undefined) throw new Error(`blob ${file.oid} for ${path} could not be read`)
     return text
   }
 
@@ -50,6 +64,21 @@ export class RefSnapshotReader implements RepoReader {
     const p = trim(path)
     return this.files.has(p) || this.dirs.has(p)
   }
+}
+
+interface SnapshotFile { oid: string, size: number }
+
+/** Largest blob the batch loads; a content file is far smaller. */
+const BATCH_MAX_BYTES = 1024 * 1024
+
+/**
+ * Whether the first `readFile` loads this file with the rest: a content file —
+ * JSON (config, models, content, meta) or Markdown (documents) — no larger
+ * than {@link BATCH_MAX_BYTES}. Media never matches by extension, wherever
+ * `assets_path` points.
+ */
+function batched(path: string, size: number): boolean {
+  return size <= BATCH_MAX_BYTES && /\.(?:json|md|mdx)$/i.test(path)
 }
 
 const snapshots = new Map<string, Promise<RefSnapshotReader>>()
@@ -74,17 +103,17 @@ export function loadRefSnapshot(repoDir: string, commit: string, root: string): 
 }
 
 async function listTree(repoDir: string, commit: string, root: string): Promise<RefSnapshotReader> {
-  const raw = await runGit(repoDir, ['ls-tree', '-r', '-z', '--full-tree', commit, '--', root])
-  const files = new Map<string, string>()
+  const raw = await runGit(repoDir, ['ls-tree', '-r', '-l', '-z', '--full-tree', commit, '--', root])
+  const files = new Map<string, SnapshotFile>()
   const children = new Map<string, Set<string>>()
   for (const record of raw.toString('utf-8').split('\0')) {
     if (!record) continue
-    // "<mode> <type> <oid>\t<path>"
+    // "<mode> <type> <oid> <size, space-padded>\t<path>"
     const tab = record.indexOf('\t')
-    const [, type, oid] = record.slice(0, tab).split(' ')
+    const [, type, oid, size] = record.slice(0, tab).split(/ +/)
     if (type !== 'blob' || !oid) continue
     const path = record.slice(tab + 1)
-    files.set(path, oid)
+    files.set(path, { oid, size: Number(size) })
     // Register every ancestor directory down from the repo root.
     const parts = path.split('/')
     for (let i = 0; i < parts.length; i++) {
@@ -98,7 +127,7 @@ async function listTree(repoDir: string, commit: string, root: string): Promise<
   return new RefSnapshotReader(repoDir, commit, root, files, dirs)
 }
 
-/** Every blob in one `cat-file --batch` process. */
+/** The given blobs in one `cat-file --batch` process. */
 async function readBlobs(repoDir: string, oids: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>()
   if (oids.length === 0) return out
