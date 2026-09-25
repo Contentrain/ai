@@ -87,6 +87,10 @@ describe('newsletterForm', () => {
     // `other` takes any https address except the site's own origin.
     expect(newsletterForm('other', 'https://example.com/subscribe', {}, 'https://www.example.com')).toBeNull()
     expect(newsletterForm('other', 'https://lists.example.org/subscribe', {}, 'https://example.com')).not.toBeNull()
+    // WordPress handlers on any host, with or without Astro.site (QA-46 P3).
+    for (const action of ['https://old.example.net/wp-admin/admin-ajax.php', 'https://old.example.net/wp-json/mc4wp/v1/form', 'https://old.example.net/?wc-ajax=subscribe', 'https://old.example.net/wp-admin/admin-post.php']) {
+      expect(newsletterForm('other', action), action).toBeNull()
+    }
   })
 
   it('names the provider an action belongs to, for the migration to choose `provider`', () => {

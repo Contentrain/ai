@@ -34,6 +34,8 @@ export const NEWSLETTER_ENDPOINTS: Record<Exclude<NewsletterProvider, 'other'>, 
   buttondown: { email: 'email', name: null, accepts: u => u.hostname === 'buttondown.com' && u.pathname.startsWith('/api/emails/embed-subscribe/') },
 }
 
+const WP_HANDLER = /^\/(?:wp-admin|wp-json|wp-login\.php|xmlrpc\.php)(?:\/|$)|admin-ajax\.php|admin-post\.php/
+
 /** The provider whose hosted endpoint an action is, or null. What the migration uses to choose `provider`. */
 export function newsletterProviderOf(action: string): Exclude<NewsletterProvider, 'other'> | null {
   let url: URL
@@ -56,6 +58,8 @@ export function newsletterForm(provider: NewsletterProvider, action: string, nam
   if (provider === 'other') {
     const own = siteOrigin ? new URL(String(siteOrigin)).hostname.replace(/^www\./, '') : null
     if (own && url.hostname.replace(/^www\./, '') === own) return null
+    // A WordPress handler on any host (the old site under another name, a staging copy) is just as dead.
+    if (WP_HANDLER.test(url.pathname) || url.searchParams.has('wc-ajax')) return null
   }
   const preset = provider === 'other' ? { email: 'email', name: null } : NEWSLETTER_ENDPOINTS[provider]
   const hidden: NewsletterForm['hidden'] = []
