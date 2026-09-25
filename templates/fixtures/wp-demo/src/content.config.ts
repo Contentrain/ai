@@ -126,6 +126,57 @@ export const collections = {
       wp_id: z.number().int().optional(),
     }),
   }),
+  sectionCardGrid: defineCollection({
+    loader: loader('section-card-grid'),
+    schema: z.object({
+      id: z.string(),
+      locale: z.string().optional(),
+      headingLevel: z.number().int().default(2),
+      intro: z.string().optional(),
+      items: z.array(z.object({
+      eyebrow: z.string().optional(),
+      href: z.string().optional(),
+      image: z.object({
+      alt: z.string(),
+      height: z.number().int().optional(),
+      src: z.string(),
+      width: z.number().int().optional(),
+    }).optional(),
+      text: z.string().optional(),
+      title: z.string(),
+    })).optional(),
+      title: z.string().optional(),
+    }),
+  }),
+  sectionSlider: defineCollection({
+    loader: loader('section-slider'),
+    schema: z.object({
+      id: z.string(),
+      locale: z.string().optional(),
+      label: z.string().optional(),
+      loop: z.boolean().default(false),
+      nextLabel: z.string().optional(),
+      ofLabel: z.string().optional(),
+      prevLabel: z.string().optional(),
+      slideLabel: z.string().optional(),
+      slides: z.array(z.object({
+      action: z.object({
+      href: z.string(),
+      label: z.string(),
+      newTab: z.boolean().default(false),
+      style: z.enum(['primary', 'secondary', 'ghost']).optional(),
+    }).optional(),
+      image: z.object({
+      alt: z.string(),
+      height: z.number().int().optional(),
+      src: z.string(),
+      width: z.number().int().optional(),
+    }),
+      text: z.string().optional(),
+      title: z.string().optional(),
+    })).optional(),
+    }),
+  }),
   site: defineCollection({
     loader: loader('site'),
     schema: z.object({

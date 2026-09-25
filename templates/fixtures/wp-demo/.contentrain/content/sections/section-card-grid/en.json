@@ -1,0 +1,41 @@
+{
+  "services-0": {
+    "intro": "Three ways we work with a team, from a new design to a move off WordPress.",
+    "items": [
+      {
+        "href": "/about/",
+        "image": {
+          "alt": "Sketches of a page layout",
+          "height": 450,
+          "src": "/demo/cover-1.svg",
+          "width": 800
+        },
+        "text": "A calm design system your editors can keep consistent.",
+        "title": "Design"
+      },
+      {
+        "href": "/blog/",
+        "image": {
+          "alt": "Code on a laptop screen",
+          "height": 450,
+          "src": "/demo/cover-2.svg",
+          "width": 800
+        },
+        "text": "Static sites that load in a blink and stay that way.",
+        "title": "Build"
+      },
+      {
+        "href": "/contact/",
+        "image": {
+          "alt": "Boxes stacked for a move",
+          "height": 450,
+          "src": "/demo/cover-3.svg",
+          "width": 800
+        },
+        "text": "Every address, ranking and editor's formatting carried over.",
+        "title": "Move"
+      }
+    ],
+    "title": "What we do"
+  }
+}
