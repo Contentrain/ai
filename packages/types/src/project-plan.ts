@@ -228,6 +228,12 @@ export interface PlanPlacement {
   bind: PlanBinding
   /** Interface strings from `ui-strings`: prop → key (`prevLabel: 'pagination.prev'`). */
   labels?: Record<string, string>
+  /**
+   * How wide the section's content runs, as the source block's alignment: `content` for a block without
+   * one (the theme's contentSize, `container-prose`), `wide` for `alignwide`/`alignfull` (`container-page`).
+   * The section's background spans the page either way. Absent: `wide`.
+   */
+  width?: 'content' | 'wide'
 }
 
 /**
@@ -413,6 +419,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   }
 
   const placement = (s: PlanPlacement, at: string, route?: PlanRoute) => {
+    if (s.width !== undefined && s.width !== 'content' && s.width !== 'wide') errors.push(`${at}: width ${s.width as string} is not content or wide`)
     const c = components.get(s.component)
     if (!c) { errors.push(`${at}: component ${s.component} is not declared`); return }
     const b = s.bind

@@ -144,6 +144,14 @@ describe('validateProjectPlan', () => {
     ])
   })
 
+  it('takes a section width of content or wide', () => {
+    const p = plan()
+    p.routes[1]!.sections[0]!.width = 'content'
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.routes[1]!.sections[0]!.width = 'full' as 'wide'
+    expect(validateProjectPlan(p).errors.some(e => e.endsWith('width full is not content or wide'))).toBe(true)
+  })
+
   it('requires a home route', () => {
     const p = plan()
     p.routes = p.routes.filter(r => r.kind !== 'home')
