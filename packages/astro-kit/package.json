@@ -1,8 +1,8 @@
 {
   "name": "@contentrain/astro-kit",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "MIT",
-  "description": "Copy-in Astro components for Contentrain sites (shadcn model): typed props, tailwind-variants, zero JavaScript by default \u2014 with a machine-readable catalog",
+  "description": "Copy-in Astro components for Contentrain sites (shadcn model): typed props, tailwind-variants, zero JavaScript by default — with a machine-readable catalog",
   "type": "module",
   "repository": {
     "type": "git",
