@@ -29,6 +29,14 @@
       ],
       "default": "default",
       "description": "Section background (ignored by cover, which is always light text on the image)."
+    },
+    "align": {
+      "options": [
+        "start",
+        "center"
+      ],
+      "default": "center",
+      "description": "Text position over a cover image (layout cover only): centred, as WordPress covers default to, or at the start edge."
     }
   },
   "props": {

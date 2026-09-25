@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { validateFieldValue } from '@contentrain/types'
-import { ACF_SCALAR_TYPES, acfFieldDef, acfIsSecret, acfRows, acfScrub, acfValue } from './acf'
+import { ACF_SCALAR_TYPES, acfFieldDef, acfIsSecret, acfRows, acfScrub, acfValue, zonedDateTime } from './acf'
 import { fetchRestRawIR, rawToContentrain } from './index'
 
 describe('ACF → Contentrain mapping table', () => {
@@ -85,6 +85,22 @@ describe('ACF → Contentrain mapping table', () => {
     expect(acfScrub([{ title: 'A', door: 'S5' }, { title: 'B', door: 'S1', door_source: pw }])).toEqual([{ title: 'A' }, { title: 'B' }])
   })
 
+  it('writes a site-local date-time with the site\'s offset for that moment; without a known zone it stays local and says so', () => {
+    expect(zonedDateTime('2025-03-10T09:30:00', { timeZone: 'Europe/Istanbul' })).toEqual({ value: '2025-03-10T09:30:00+03:00', zoned: true })
+    expect(zonedDateTime('2025-07-01T09:30:00', { timeZone: 'Europe/Berlin' }).value).toBe('2025-07-01T09:30:00+02:00')
+    expect(zonedDateTime('2025-01-15T09:30:00', { timeZone: 'Europe/Berlin' }).value).toBe('2025-01-15T09:30:00+01:00')
+    expect(zonedDateTime('2025-03-10T09:30:00', { timeZone: 'America/St_Johns' }).value).toBe('2025-03-10T09:30:00-02:30')
+    expect(zonedDateTime('2025-03-10T09:30:00', { gmtOffset: 5.5 }).value).toBe('2025-03-10T09:30:00+05:30')
+    expect(zonedDateTime('2025-03-10T09:30:00', { gmtOffset: -3.5 }).value).toBe('2025-03-10T09:30:00-03:30')
+    // The named zone wins over the offset, which WordPress keeps in step with it.
+    expect(zonedDateTime('2025-03-10T09:30:00', { timeZone: 'UTC', gmtOffset: 3 }).value).toBe('2025-03-10T09:30:00+00:00')
+    expect(zonedDateTime('2025-03-10T09:30:00', {})).toEqual({ value: '2025-03-10T09:30:00', zoned: false })
+    expect(zonedDateTime('2025-03-10T09:30:00', { timeZone: 'Not/AZone' })).toEqual({ value: '2025-03-10T09:30:00', zoned: false })
+    let unzoned = 0
+    expect(acfValue({ type: 'datetime' }, '2024-09-03 09:30:00', { unzoned: () => unzoned++ })).toBe('2024-09-03T09:30:00')
+    expect(unzoned).toBe(1)
+  })
+
   it('infers a type from the value only when the source states none, and says so', () => {
     expect(acfFieldDef('subtitle', 'A subtitle')).toMatchObject({ type: 'string', description: 'ACF (type inferred from the value)' })
   })
@@ -98,6 +114,7 @@ const projectAcf = (id: number, others: number[]) => ({
   client: 'Harbor Co', client_source: src('text', 'Client'),
   budget: 250000, budget_source: src('number', 'Budget'),
   launch_date: '20250310', launch_date_source: src('date_picker', 'Launch Date'),
+  kickoff: '2025-03-10 09:30:00', kickoff_source: src('date_time_picker', 'Kickoff'),
   status: 'done', status_source: src('select', 'Status'),
   services: ['design', 'build'], services_source: src('checkbox', 'Services'),
   hero_image: { ID: 85, id: 85, url: 'https://s.example/wp-content/uploads/a.png', filename: 'a.png' }, hero_image_source: src('image', 'Hero Image'),
@@ -123,7 +140,7 @@ function scfSite(): typeof fetch {
     const u = String(url)
     const auth = !!(init?.headers as Record<string, string>)?.authorization
     if (u.includes('/users/me')) return json({ id: 1 })
-    if (u.endsWith('/wp-json/')) return json({ name: 'Golden Works' })
+    if (u.endsWith('/wp-json/')) return json({ name: 'Golden Works', timezone_string: 'Europe/Istanbul', gmt_offset: 3 })
     if (u.includes('/wp/v2/types')) return json({
       page: { slug: 'page', rest_base: 'pages', ...(auth ? { viewable: true } : {}) },
       project: { slug: 'project', rest_base: 'projects', ...(auth ? { viewable: true } : {}) },
@@ -202,6 +219,15 @@ describe('fetchRestRawIR + rawToContentrain on a Secure Custom Fields site', () 
     expect(harbor.landing_page).toBeUndefined()
     // Every value validates against its field definition.
     for (const [k, def] of Object.entries(f as Record<string, never>)) if (k in harbor) expect(validateFieldValue(harbor[k], def).filter((x: { severity: string }) => x.severity === 'error'), k).toEqual([])
+  })
+
+  it('reads the site\'s zone from the index and writes date-times with it', async () => {
+    const { raw } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: scfSite() })
+    expect(raw.site).toMatchObject({ timezone: 'Europe/Istanbul', gmt_offset: 3 })
+    const { files, report } = rawToContentrain(raw)
+    const projects = JSON.parse(files['.contentrain/content/custom/project/data.json']!) as Record<string, { kickoff?: string }>
+    expect(Object.values(projects).map((p) => p.kickoff)).toContain('2025-03-10T09:30:00+03:00')
+    expect(report.acf_datetime_unzoned).toBe(0)
   })
 
   it('a draft keeps its custom fields and comes in as a draft', async () => {
