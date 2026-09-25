@@ -23,7 +23,8 @@ const hero = tv({
       centered: { copy: 'items-center text-center', lead: 'mx-auto', actions: 'justify-center', media: 'mx-auto w-full max-w-4xl' },
       cover: { grid: 'relative z-10 min-h-[28rem] md:min-h-[36rem]', copy: 'max-w-3xl' },
     },
-    tone: { default: {}, muted: {}, inverse: {}, accent: {} },
+    // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
+    tone: { default: {}, muted: {}, inverse: {}, accent: { eyebrow: 'opacity-100', lead: 'opacity-100' } },
   },
   defaultVariants: { layout: 'split', tone: 'default' },
 })

@@ -149,5 +149,43 @@
         }
       ]
     }
+  },
+  {
+    "name": "grid-accent-captions",
+    "props": {
+      "tone": "accent",
+      "columns": "3",
+      "open": "none",
+      "id": "accent-captions",
+      "items": [
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-4.svg",
+            "alt": "",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Harbour"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-5.svg",
+            "alt": "",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Old town"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-6.svg",
+            "alt": "",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Last light"
+        }
+      ]
+    }
   }
 ]

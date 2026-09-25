@@ -29,7 +29,7 @@ const testimonial = tv({
       single: { heading: 'text-center', list: 'mx-auto max-w-3xl', card: 'items-center text-center', quote: 'text-2xl leading-snug font-medium md:text-3xl', person: 'mt-0' },
       grid: { list: 'md:grid-cols-2 lg:grid-cols-3', card: 'rounded-card border border-line p-6', quote: 'text-base' },
     },
-    tone: { default: {}, muted: { card: 'bg-surface' }, inverse: { card: 'border-surface/20' }, accent: { card: 'border-accent-ink/30' } },
+    tone: { default: {}, muted: { card: 'bg-surface' }, inverse: { card: 'border-surface/20' }, accent: { card: 'border-accent-ink/30', role: 'opacity-100' } },
   },
   compoundVariants: [
     { layout: 'grid', tone: 'muted', class: { card: 'border-transparent text-ink' } },
