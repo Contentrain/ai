@@ -94,7 +94,9 @@ async function prefixTarget(to: string, routes: ReadonlyMap<string, unknown>, li
   const own = await ownPath(to.slice(0, at))
   if (own === null) return to
   if (own === undefined) return undefined
-  return [...routes.keys()].some(href => href.startsWith(own) && href !== own) ? `${own}${to.slice(at)}` : undefined
+  // `/blog/draft-title:splat` must not pass on a public `/blog/draft-title-2/`: the fixed part is a directory.
+  const under = own.endsWith('/') ? own : `${own}/`
+  return [...routes.keys()].some(href => href.startsWith(under) && href !== under) ? `${own}${to.slice(at)}` : undefined
 }
 
 /** An attachment page's old address (`/post/image/`, `/?attachment_id=12`) and where it leads now. */

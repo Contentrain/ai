@@ -34,6 +34,11 @@
     "status": 301,
     "to": "/about/"
   },
+  "97287a92d878": {
+    "from": "/launch/*",
+    "status": 301,
+    "to": "/blog/shipping-the-first:splat"
+  },
   "b0574a38799d": {
     "from": "/y/*",
     "status": 301,

@@ -12,7 +12,8 @@
     "/x/*",
     "/y/*",
     "/roadmap/:splat",
-    "/draft-attachment/"
+    "/draft-attachment/",
+    "/launch/*"
   ],
   "distFiles": {
     "_redirects": {
