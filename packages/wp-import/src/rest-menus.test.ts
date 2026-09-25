@@ -108,7 +108,7 @@ describe('inline navigation in template parts', () => {
     const raw = '<!-- wp:navigation {"ariaLabel":"Legal"} --><!-- wp:navigation-link {"label":"Privacy","url":"/privacy/"} /--><!-- /wp:navigation -->'
       + '<!-- wp:navigation {"ref":5} /--><!-- wp:navigation /-->'
     const menus = inlineMenus([{ slug: 'footer', area: 'footer', content: { raw } }], ctx, new Set(['legal']), () => -++n)
-    expect(menus.map((m) => [m.slug, m.name])).toEqual([['legal-1', 'Legal']])
+    expect(menus.map((m) => [m.slug, m.name])).toEqual([['legal-2', 'Legal']])
   })
 
   it('reads with the wp_navigation menus, only from used parts', () => {
@@ -123,6 +123,17 @@ describe('inline navigation in template parts', () => {
     // Item ids stay unique across the wp_navigation menu and the inline ones.
     const ids = menus.flatMap((m) => m.items.map((i) => i.id))
     expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('follows a part inside a used part (once each); a navigation that refers to a draft wp_navigation shows nothing', () => {
+    const parts = [
+      { slug: 'header', area: 'header', content: { raw: '<!-- wp:group --><!-- wp:template-part {"slug":"site-nav"} /--><!-- wp:template-part {"slug":"header"} /--><!-- /wp:group -->' } },
+      { slug: 'site-nav', area: 'uncategorized', content: { raw: '<!-- wp:navigation --><!-- wp:navigation-link {"label":"Docs","url":"/docs/"} /--><!-- /wp:navigation --><!-- wp:navigation {"ref":8} /-->' } },
+      { slug: 'footer', area: 'footer', content: { raw: '<!-- wp:navigation {"ref":8} /-->' } },
+    ]
+    const menus = blockMenus([{ id: 8, slug: 'old', status: 'draft', title: { raw: 'Old plans' }, content: { raw: NAV } }], parts, ctx, new Set(), { count: 0 }, TEMPLATES)
+    expect(menus.map((m) => [m.slug, m.locations, m.items.map((i) => i.title)])).toEqual([['header-navigation', ['header'], ['Docs']]])
+    expect(JSON.stringify(menus)).not.toContain('Old plans')
   })
 
   it('stores an inline menu with its area and claims no WordPress id for it', async () => {

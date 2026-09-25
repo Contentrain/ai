@@ -249,6 +249,25 @@ export function usedParts(parts: RestTemplatePart[], templates: RestTemplate[] =
 
 const AREA_ORDER = ['header', 'footer']
 const areaOf = (p: RestTemplatePart): string | undefined => (p.area && p.area !== 'uncategorized' ? p.area : undefined)
+
+/**
+ * A part's blocks with the parts it holds in their place (a header holding a `navigation` part), each part once:
+ * what the part shows, in its area.
+ */
+function partTree(part: RestTemplatePart, all: RestTemplatePart[]): Block[] {
+  const bySlug = new Map(all.filter((p) => p.slug).map((p) => [p.slug!, p]))
+  const seen = new Set(part.slug ? [part.slug] : [])
+  const expand = (blocks: Block[]): Block[] => blocks.flatMap((b) => {
+    if (b.name === 'core/template-part') {
+      const inner = typeof b.attrs.slug === 'string' ? bySlug.get(b.attrs.slug) : undefined
+      if (!inner?.content?.raw || seen.has(inner.slug!)) return []
+      seen.add(inner.slug!)
+      return expand(parseBlocks(inner.content.raw))
+    }
+    return [{ ...b, children: expand(b.children) }]
+  })
+  return expand(parseBlocks(part.content?.raw ?? ''))
+}
 const titleCase = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
 const slugOf = (s: string): string => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
@@ -258,18 +277,19 @@ const slugOf = (s: string): string => s.toLowerCase().normalize('NFKD').replace(
  * are numbered; a navigation's own `ariaLabel` wins. Links keep their order and nesting; a link to content not
  * proven public is left out, as in every other menu.
  */
-export function inlineMenus(parts: RestTemplatePart[], ctx: MenuContext, taken: Set<string>, nextId: () => number, dropped = { count: 0 }): RawMenu[] {
+export function inlineMenus(parts: RestTemplatePart[], ctx: MenuContext, taken: Set<string>, nextId: () => number, dropped = { count: 0 }, all: RestTemplatePart[] = parts): RawMenu[] {
   const out: RawMenu[] = []
   const ordered = parts.filter((p) => areaOf(p) && p.content?.raw).toSorted((a, b) => (AREA_ORDER.indexOf(areaOf(a)!) + 1 || 99) - (AREA_ORDER.indexOf(areaOf(b)!) + 1 || 99))
   for (const p of ordered) {
     const area = areaOf(p)!
     const navs: Block[] = []
     const find = (blocks: Block[]) => { for (const b of blocks) { if (b.name === 'core/navigation') { if (typeof b.attrs.ref !== 'number' && b.children.length) navs.push(b) } else find(b.children) } }
-    find(parseBlocks(p.content!.raw!))
+    find(partTree(p, all))
     navs.forEach((nav, i) => {
       const name = strip(nav.attrs.ariaLabel) || `${titleCase(area)} navigation${navs.length > 1 ? ` ${i + 1}` : ''}`
-      let slug = slugOf(name) || `${area}-navigation`
-      while (taken.has(slug)) slug = `${slug}-${i + 1}`
+      const base = slugOf(name) || `${area}-navigation`
+      let slug = base
+      for (let k = 2; taken.has(slug); k++) slug = `${base}-${k}`
       taken.add(slug)
       const items = blockItems(nav.children, ctx, nextId, dropped)
       if (items.length) out.push({ id: nextId(), slug, name, items, locations: [area] })
@@ -283,7 +303,7 @@ export function inlineMenus(parts: RestTemplatePart[], ctx: MenuContext, taken: 
  * refers to it. An empty navigation block without a `ref` shows the fallback — the most recent published one;
  * one with links of its own shows those (an inline menu, not a `wp_navigation` post).
  */
-export function navigationLocations(parts: RestTemplatePart[], navigations: RestNavigation[]): Map<number, string[]> {
+export function navigationLocations(parts: RestTemplatePart[], navigations: RestNavigation[], all: RestTemplatePart[] = parts): Map<number, string[]> {
   const out = new Map<number, Set<string>>()
   const fallback = [...navigations].toSorted((a, b) => (b.date_gmt ?? '').localeCompare(a.date_gmt ?? '') || b.id - a.id)[0]?.id
   const find = (blocks: Block[], area: string) => {
@@ -298,8 +318,8 @@ export function navigationLocations(parts: RestTemplatePart[], navigations: Rest
     }
   }
   for (const p of parts) {
-    const area = p.area && p.area !== 'uncategorized' ? p.area : undefined
-    if (area && p.content?.raw) find(parseBlocks(p.content.raw), area)
+    const area = areaOf(p)
+    if (area && p.content?.raw) find(partTree(p, all), area)
   }
   return new Map([...out].map(([id, set]) => [id, [...set].toSorted()]))
 }
@@ -311,7 +331,7 @@ export function navigationLocations(parts: RestTemplatePart[], navigations: Rest
 export function blockMenus(navigations: RestNavigation[], allParts: RestTemplatePart[], ctx: MenuContext, taken: Set<string>, dropped = { count: 0 }, templates: RestTemplate[] = []): RawMenu[] {
   const parts = usedParts(allParts, templates)
   const published = navigations.filter((n) => (n.status ?? 'publish') === 'publish').toSorted((a, b) => a.id - b.id)
-  const locations = navigationLocations(parts, published)
+  const locations = navigationLocations(parts, published, allParts)
   let next = 0
   const out: RawMenu[] = []
   for (const n of published) {
@@ -328,6 +348,6 @@ export function blockMenus(navigations: RestNavigation[], allParts: RestTemplate
     if (where?.length) menu.locations = where
     out.push(menu)
   }
-  out.push(...inlineMenus(parts, ctx, taken, () => -++next, dropped))
+  out.push(...inlineMenus(parts, ctx, taken, () => -++next, dropped, allParts))
   return out
 }
