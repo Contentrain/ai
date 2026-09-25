@@ -49,12 +49,15 @@ export interface SiteConfig {
    */
   lists: { display: 'cards' | 'full', heading: boolean }
   /**
-   * Contentrain Studio's public forms and comments API. Without it, forms and
-   * comment threads render nothing — a form that cannot be sent is worse than
-   * no form.
+   * Contentrain Studio's public forms and comments API, from studio.json at the
+   * project root (see astro.config.mjs). Without it, forms and comment threads
+   * render nothing — a form that cannot be sent is worse than no form.
    */
   studio?: { baseUrl: string, projectId: string }
 }
+
+/** The Studio binding astro.config.mjs read from studio.json, or null. */
+declare const __CONTENTRAIN_STUDIO__: { baseUrl: string, projectId: string } | null
 
 export const siteConfig: SiteConfig = {
   permalinks: {
@@ -71,4 +74,5 @@ export const siteConfig: SiteConfig = {
   menus: { primary: 'primary', footer: ['footer'] },
   post: { header: ['terms', 'title', 'byline', 'cover'], adjacent: false, more: 0 },
   lists: { display: 'cards', heading: false },
+  ...(typeof __CONTENTRAIN_STUDIO__ !== 'undefined' && __CONTENTRAIN_STUDIO__ ? { studio: __CONTENTRAIN_STUDIO__ } : {}),
 }
