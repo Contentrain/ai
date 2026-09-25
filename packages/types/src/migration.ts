@@ -1248,16 +1248,17 @@ export interface CommentsExport {
   /**
    * Verbatim `RawComment`s; parents are re-linked via `RawComment.parent` in a second pass.
    *
-   * What travels: comments on **public** entries (published, no post password) that are approved
-   * (`approved: '1'`) or waiting for moderation (`'0'` — the receiving side puts them in its
-   * moderation queue, so the site owner's queue survives the move). Never: comments on drafts,
-   * private, scheduled or password-protected entries (their discussion is not public), and spam or
-   * trash (never shown, and only carry bots' and strangers' personal data). A reply whose parent was
-   * left out keeps its `parent` id; the receiver treats a parent it does not have as none.
+   * An allowlist — what travels: comments on **public** entries (published, no post password) that
+   * the RawIR holds, whose status is approved (`approved: '1'` or absent) or waiting for moderation
+   * (`'0'` — the receiving side puts them in its moderation queue, so the site owner's queue survives
+   * the move). Everything else stays behind: comments on drafts, private, scheduled or
+   * password-protected entries, on entries the RawIR does not hold, and any other status (spam,
+   * trash, WordPress's `post-trashed`, a plugin's own). A reply whose parent was left out keeps its
+   * `parent` id; the receiver treats a parent it does not have as none.
    */
   comments: RawComment[]
   /** What was left out and why, counted — so a smaller export is explained, not suspicious. */
-  excluded?: { non_public_entry?: number; spam?: number; trash?: number }
+  excluded?: { non_public_entry?: number; unknown_entry?: number; spam?: number; trash?: number; other_status?: number }
 }
 
 /**
@@ -1302,7 +1303,7 @@ export interface HandoffComments {
   threads_closed?: number[]
   unresolved?: Array<{ comment_id: number; post: number; reason: string }>
   /** Comments the export left out on purpose (`CommentsExport.excluded`). */
-  excluded?: { non_public_entry?: number; spam?: number; trash?: number }
+  excluded?: { non_public_entry?: number; unknown_entry?: number; spam?: number; trash?: number; other_status?: number }
 }
 
 /**

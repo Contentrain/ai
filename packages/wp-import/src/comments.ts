@@ -7,9 +7,10 @@ import type { CommentsExport, EntrySourceMap, HandoffComments, RawComment, RawIR
 import { COMMENTS_EXPORT_FORMAT, MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 
 /**
- * The comments that may leave the source site (see `CommentsExport.comments`): public entries only,
- * approved or pending; never spam or trash. A comment on a post this RawIR does not hold is kept —
- * `summarizeComments` reports it as unresolved, as before.
+ * The comments that may leave the source site (see `CommentsExport.comments`). An allowlist, so it
+ * fails closed: a comment travels only when its entry is in this RawIR and public, and its status is
+ * approved (`'1'`, or none) or pending (`'0'`). Everything else is counted in `excluded`: spam, trash,
+ * WordPress's `post-trashed`, a plugin's own status, a post this RawIR does not hold.
  */
 export function selectComments(raw: RawIR): { comments: RawComment[]; excluded: NonNullable<CommentsExport['excluded']> } {
   const posts = new Map(raw.posts.map((p) => [p.id, p]))
@@ -18,10 +19,11 @@ export function selectComments(raw: RawIR): { comments: RawComment[]; excluded: 
   const comments: RawComment[] = []
   for (const c of raw.comments ?? []) {
     const post = posts.get(c.post)
-    if (post && (post.status !== 'publish' || (post.password !== null && post.password !== undefined && post.password !== ''))) { count('non_public_entry'); continue }
-    if (c.approved === 'spam') { count('spam'); continue }
-    if (c.approved === 'trash') { count('trash'); continue }
-    comments.push(c)
+    if (!post) { count('unknown_entry'); continue }
+    if (post.status !== 'publish' || (post.password !== null && post.password !== undefined && post.password !== '')) { count('non_public_entry'); continue }
+    const status = c.approved ?? '1'
+    if (status === '1' || status === '0') { comments.push(c); continue }
+    count(status === 'spam' ? 'spam' : status === 'trash' ? 'trash' : 'other_status')
   }
   return { comments, excluded }
 }

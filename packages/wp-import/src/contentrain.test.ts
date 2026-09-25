@@ -301,15 +301,18 @@ describe('comments export', () => {
         { ...base, id: 904, post: 10, approved: 'spam', content: 'buy now' },
         { ...base, id: 905, post: 10, approved: 'trash', content: 'deleted' },
         { ...base, id: 906, post: 10, approved: '0', content: 'waiting for moderation' },
+        { ...base, id: 907, post: 10, approved: 'post-trashed', content: 'on a trashed post' },
+        { ...base, id: 908, post: 10, approved: 'akismet-held', content: 'a plugin status' },
+        { ...base, id: 909, post: 999, content: 'on a post the export does not hold' },
+        { ...base, id: 910, post: 10, approved: undefined, content: 'no status means approved' },
       ],
     }
     const exp = buildCommentsExport(withMore, result.entry_source_map, { generated_at: '2026-09-25T00:00:00Z' })
     const ids = exp.comments.map((c) => c.id)
-    expect(ids).toContain(906)
-    expect(ids.filter((id) => id >= 900 && id !== 906)).toEqual([])
-    expect(exp.excluded).toEqual({ non_public_entry: 4, spam: 1, trash: 1 })
-    expect(summarizeComments(exp).excluded).toEqual({ non_public_entry: 4, spam: 1, trash: 1 })
-    expect(JSON.stringify(exp)).not.toMatch(/on a draft|private post|behind a password|scheduled post|buy now|deleted/)
+    expect(ids.filter((id) => id >= 900)).toEqual([906, 910])
+    expect(exp.excluded).toEqual({ non_public_entry: 4, unknown_entry: 1, spam: 1, trash: 1, other_status: 2 })
+    expect(summarizeComments(exp).excluded).toEqual(exp.excluded)
+    expect(JSON.stringify(exp)).not.toMatch(/on a draft|private post|behind a password|scheduled post|buy now|deleted|trashed post|plugin status|does not hold/)
   })
 
   it('a multilingual site becomes an i18n store: content per locale, one entry id per translation group', async () => {

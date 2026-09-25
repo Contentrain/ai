@@ -37,7 +37,7 @@ const commentsExport = buildCommentsExport(raw, entry_source_map)
 - **UTC dates** — GMT columns preferred, stamped ISO 8601 `Z`.
 - **Pure conversion** — `rawToContentrain` returns a canonical-serialized file map (sorted keys, 2-space indent, trailing newline); writing to disk is the caller's one line.
 - **EntrySourceMap produced at the only place that can know it** — the WP-id → entry-address mapping the comments intake requires.
-- **Only public discussion leaves the site** — `buildCommentsExport` carries comments on published, unprotected entries that are approved or pending (pending lands in the receiver's moderation queue). Comments on drafts, private, scheduled or password-protected entries, and spam and trash, stay behind; `excluded` counts them.
+- **Only public discussion leaves the site** — `buildCommentsExport` carries comments on published, unprotected entries that are approved or pending (pending lands in the receiver's moderation queue). Comments on drafts, private, scheduled or password-protected entries, any other status (spam, trash, `post-trashed`, a plugin's) and entries the import does not hold, stay behind; `excluded` counts them.
 
 Streaming WXR parse (sax): a 100 MB export holds only its records in memory.
 
