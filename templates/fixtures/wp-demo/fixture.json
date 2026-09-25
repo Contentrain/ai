@@ -8,7 +8,10 @@
     "Unannounced plans",
     "northwind.example/roadmap/",
     "Northwind.Example/?page_id=304",
-    "northwind.example/?p=211"
+    "northwind.example/?p=211",
+    "/x/*",
+    "/y/*",
+    "/roadmap/:splat"
   ],
   "distFiles": {
     "_redirects": {
@@ -20,7 +23,10 @@
         "/ page_id=302 /contact/ 301",
         "/ page_id=301 /about/team/ 301",
         "/ page_id=999 /about/ 301",
-        "/old.php id=3 /contact/ 302"
+        "/old.php id=3 /contact/ 302",
+        "/team/ /about/team/ 301\n/old-shop/* /404.html 410\n/archive/* /blog/:splat 301\n/news/* /blog/:splat 301\n/ext/* https://elsewhere.example/:splat 301\n/ author=",
+        "/ext/* https://elsewhere.example/:splat 301",
+        "/news/* /blog/:splat 301"
       ],
       "excludes": [
         "/2019/plans/",
@@ -55,7 +61,14 @@
     },
     "index.html": {
       "contains": [
-        "location.replace(to)"
+        "location.replace(to)",
+        "aria-label=\"Primary\"",
+        "aria-label=\"Footer\" data-cr-part=\"nav-footer\"",
+        "aria-label=\"Legal\" data-cr-part=\"nav-footer\"",
+        ">Imprint</a>"
+      ],
+      "excludes": [
+        "Sidebar only link"
       ]
     },
     "_headers": {

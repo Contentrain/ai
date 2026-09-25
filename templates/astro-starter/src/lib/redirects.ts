@@ -11,7 +11,7 @@
 
 import { getCollection } from 'astro:content'
 import { authorHref, byId, pageHref, termHref } from './content'
-import { publicLinks, sitePath } from './links'
+import { ownPath, publicLinks, sitePath } from './links'
 import { routeTable } from './site-routes'
 
 export type RedirectStatus = 301 | 302 | 303 | 307 | 308
@@ -25,9 +25,12 @@ export interface QueryRule { param: 'p' | 'page_id' | 'cat' | 'tag' | 'author', 
 /** Any other old address with a query (`/old.php?id=3`): only a host rule can answer it. */
 export interface QueriedRule { path: string, query: ReadonlyArray<readonly [string, string]>, to: string, status: RedirectStatus | 410 }
 
+/** An old address prefix (`/a/*`) and its target, which may carry the matched rest as `:splat` (`/b/:splat`). */
+export interface PrefixRule { from: string, to: string, status: RedirectStatus | 410 }
+
 const WP_PARAMS = new Set<string>(['p', 'page_id', 'cat', 'tag', 'author'])
 
-let collected: Promise<{ paths: RedirectRule[], wp: QueryRule[], queried: QueriedRule[] }> | undefined
+let collected: Promise<{ paths: RedirectRule[], prefixes: PrefixRule[], wp: QueryRule[], queried: QueriedRule[] }> | undefined
 
 /**
  * The redirects collection, split by what can answer each old address: a path gets a page and a host
@@ -40,7 +43,19 @@ function collect() {
     const paths = new Map<string, RedirectRule>()
     const wp: QueryRule[] = []
     const queried: QueriedRule[] = []
+    const prefixes: PrefixRule[] = []
     for (const { data } of entries) {
+      // A prefix covers every address under it, live or not (the host serves a built file first), so it is
+      // only a host rule. Its target is checked like any link: a whole target through the published set, a
+      // `:splat` one by its fixed part, which must lead into public addresses. An external target stays.
+      if (data.from.includes('*')) {
+        if (data.status === 410) prefixes.push({ from: data.from, to: '/404.html', status: 410 })
+        else if (MOVES.has(data.status) && data.to) {
+          const target = await prefixTarget(data.to, routes, link)
+          if (target) prefixes.push({ from: data.from, to: target, status: data.status as RedirectStatus })
+        }
+        continue
+      }
       const url = new URL(data.from, BASE)
       const from = sitePath(url.pathname)
       const query = [...url.searchParams]
@@ -58,6 +73,8 @@ function collect() {
     }
     return {
       paths: [...paths.values()].toSorted((a, b) => a.from.localeCompare(b.from)),
+      // Longest first: a host takes the first rule that matches, so `/a/b/*` must come before `/a/*`.
+      prefixes: prefixes.toSorted((a, b) => b.from.length - a.from.length || a.from.localeCompare(b.from)),
       wp,
       queried: queried.toSorted((a, b) => a.path.localeCompare(b.path) || String(a.query).localeCompare(String(b.query))),
     }
@@ -65,9 +82,29 @@ function collect() {
   return collected
 }
 
+/**
+ * A prefix rule's target, or undefined to drop the rule. Without `:splat` it is one address and must be
+ * public. With it, the part before `:splat` on this site must be the start of at least one public
+ * address (`/blog/:splat` with `/blog/…` built), so the rule cannot reveal a draft's address or send a
+ * moved site back to the old host; on another host it is left as it is.
+ */
+async function prefixTarget(to: string, routes: ReadonlyMap<string, unknown>, link: (url: string | undefined) => string | undefined): Promise<string | undefined> {
+  const at = to.indexOf(':splat')
+  if (at === -1) return link(to)
+  const own = await ownPath(to.slice(0, at))
+  if (own === null) return to
+  if (own === undefined) return undefined
+  return [...routes.keys()].some(href => href.startsWith(own) && href !== own) ? `${own}${to.slice(at)}` : undefined
+}
+
 /** Every redirect of an old path the site serves, sorted by old address. An old address the site still builds is not redirected. */
 export async function redirectRules(): Promise<RedirectRule[]> {
   return (await collect()).paths
+}
+
+/** Prefix rules (`/a/* /b/:splat 301`), for the host only: no page is built for them. */
+export async function prefixRules(): Promise<PrefixRule[]> {
+  return (await collect()).prefixes
 }
 
 /** Old addresses with a query other than WordPress's own, as host rules (`/old.php id=3 /contact/ 302`). */

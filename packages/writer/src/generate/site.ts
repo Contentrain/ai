@@ -139,7 +139,7 @@ const MARKER_RULES: Array<[string, string]> = [
   ['text-heading-3', 'main h3 { font-size: var(--text-heading-3); }'],
   ['text-body', '[data-kit-text] { font-size: var(--text-body); line-height: var(--leading-body, inherit); }'],
   ['text-nav', '[data-cr-part="nav-header"] :is(a, summary) { font-size: var(--text-nav); }'],
-  ['spacing-section', '[data-kit-section]:not([data-kit-spacing="none"]) { padding-block: var(--spacing-section); }'],
+  ['spacing-section', '[data-kit-section]:not([data-kit-spacing="none"]) { padding-block: calc(var(--spacing-section) / 2); }'],
 ]
 
 function markerRules(roles: PlanSite['tokens']['roles']): string[] {

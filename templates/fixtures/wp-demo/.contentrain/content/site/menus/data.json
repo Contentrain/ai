@@ -8,7 +8,10 @@
       "c4d5e6f7a8b9"
     ],
     "name": "Primary",
-    "slug": "primary"
+    "slug": "primary",
+    "locations": [
+      "header"
+    ]
   },
   "764a4318abae": {
     "items": [
@@ -19,5 +22,25 @@
     ],
     "name": "Footer",
     "slug": "footer"
+  },
+  "a1b2c3d4e5f6": {
+    "items": [
+      "f6e5d4c3b2a1"
+    ],
+    "locations": [
+      "footer-2"
+    ],
+    "name": "Legal",
+    "slug": "legal"
+  },
+  "b2c3d4e5f6a7": {
+    "items": [
+      "a7f6e5d4c3b2"
+    ],
+    "locations": [
+      "sidebar"
+    ],
+    "name": "Sidebar",
+    "slug": "sidebar"
   }
 }

@@ -32,6 +32,29 @@ const inPublic = (path: string) => {
 /** A path as the site builds it: directories end in a slash (trailingSlash: 'always'), files do not. */
 export const sitePath = (path: string): string => (FILE.test(path) || path.endsWith('/') ? path : `${path}/`)
 
+let hosts: Promise<ReadonlySet<string>> | undefined
+
+/** The hosts whose links are this site's: its own, the store's site url and the source's (fixed at build time). */
+function internalHosts(): Promise<ReadonlySet<string>> {
+  hosts ??= getSite().then(site => new Set([BASE, import.meta.env.SITE, site.url, ...siteConfig.sourceHosts].flatMap((url) => {
+    const host = url ? hostOf(url) : undefined
+    return host ? [host] : []
+  })))
+  return hosts
+}
+
+/**
+ * A URL as this site's path when it points at this site (any scheme, `www.` or case), null when it
+ * points elsewhere, undefined when it is no web address. For targets the published set cannot check
+ * whole, such as a prefix redirect's `/b/:splat`.
+ */
+export async function ownPath(url: string): Promise<string | null | undefined> {
+  let parsed: URL
+  try { parsed = new URL(url.trim(), `${BASE}/`) } catch { return undefined }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return undefined
+  return (await internalHosts()).has(bareHost(parsed.hostname)) ? parsed.pathname : null
+}
+
 type Linker = (url: string | undefined) => string | undefined
 let linker: Promise<Linker> | undefined
 
@@ -45,15 +68,10 @@ let linker: Promise<Linker> | undefined
  */
 export function publicLinks(): Promise<Linker> {
   linker ??= (async () => {
-    const [routes, site, redirects] = await Promise.all([routeTable(), getSite(), getCollection('redirects')])
-    // The source's hosts are fixed at build time; the site singleton's url is editable in Studio.
-    const internal = new Set([BASE, import.meta.env.SITE, site.url, ...siteConfig.sourceHosts].flatMap((url) => {
-      const host = url ? hostOf(url) : undefined
-      return host ? [host] : []
-    }))
+    const [routes, internal, redirects] = await Promise.all([routeTable(), internalHosts(), getCollection('redirects')])
     // Keyed by path and query: a rule for `/old.php?id=3` or `/?page_id=5` stands for that address only, not its path.
     const ruleKey = (url: URL) => `${sitePath(url.pathname)}${url.search}`
-    const rules = new Map(redirects.map(entry => [ruleKey(new URL(entry.data.from, `${BASE}/`)), entry.data]))
+    const rules = new Map(redirects.filter(entry => !entry.data.from.includes('*')).map(entry => [ruleKey(new URL(entry.data.from, `${BASE}/`)), entry.data]))
     // WordPress's own short links (`/?p=12`, `/?page_id=7`) point at the entry, wherever it lives now.
     const byWpId = new Map<number, string>()
     for (const [href, route] of routes) {
@@ -158,11 +176,40 @@ async function itemHref(item: MenuItem, link: (url: string | undefined) => strin
  * A menu as a tree, ordered as the editor ordered it. An item whose target is not public — a draft,
  * a private page, a deleted entry — is left out with the items under it: its label may be a draft's
  * title. An unknown menu is empty.
+ *
+ * @public generated section views call it (a plan's `menu:` binding)
  */
 export async function getMenu(slug: string): Promise<NavItem[]> {
-  const menus = await getCollection('menus', menu => menu.data.slug === slug)
-  const menu = menus[0]
-  if (!menu) return []
+  const menu = (await getCollection('menus', entry => entry.data.slug === slug))[0]
+  return menu ? menuItems(menu) : []
+}
+
+/** The theme locations each area answers to: WordPress themes name them differently. */
+const AREAS = {
+  header: (location: string) => ['header', 'primary', 'main', 'menu-1', 'top'].includes(location),
+  footer: (location: string) => location.startsWith('footer'),
+} as const
+
+/**
+ * The menus an area shows, as WordPress places them: a menu assigned to theme locations shows where
+ * they are, so moving or unassigning it in Studio moves it on the site; a menu with no location shows
+ * where site.config names it. Each comes with its name, the navigation's accessible name.
+ */
+export async function menusAt(area: keyof typeof AREAS): Promise<Array<{ name: string, items: NavItem[] }>> {
+  const configured = area === 'header' ? [siteConfig.menus.primary] : [...siteConfig.menus.footer]
+  const all = await getCollection('menus')
+  const placed = all.filter(menu => (menu.data.locations?.length ? menu.data.locations.some(AREAS[area]) : configured.includes(menu.data.slug)))
+  const rank = (menu: Menu) => {
+    const index = configured.indexOf(menu.data.slug)
+    return index === -1 ? configured.length : index
+  }
+  const ordered = placed.toSorted((a, b) => rank(a) - rank(b) || String(a.data.locations ?? '').localeCompare(String(b.data.locations ?? '')))
+  return Promise.all((area === 'header' ? ordered.slice(0, 1) : ordered).map(async menu => ({ name: menu.data.name, items: await menuItems(menu) })))
+}
+
+type Menu = CollectionEntry<'menus'>
+
+async function menuItems(menu: Menu): Promise<NavItem[]> {
   const [items, link] = await Promise.all([resolve(menu.data.items), publicLinks()])
   const hrefs = new Map(await Promise.all(items.map(async item => [item.id, await itemHref(item, link)] as const)))
   const sorted = items.filter(item => hrefs.get(item.id) !== undefined).toSorted((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0))

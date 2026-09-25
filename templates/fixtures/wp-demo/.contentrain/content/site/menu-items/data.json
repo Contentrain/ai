@@ -25,6 +25,13 @@
     "title": "About",
     "type": "post_type"
   },
+  "a7f6e5d4c3b2": {
+    "menu": "b2c3d4e5f6a7",
+    "open_in_new_tab": false,
+    "order": 1,
+    "title": "Sidebar only link",
+    "url": "/about/"
+  },
   "b45a32ad24ea": {
     "menu": "5e27e5dd7d41",
     "open_in_new_tab": false,
@@ -71,5 +78,12 @@
     "order": 2,
     "title": "Team",
     "url": "/about/team/"
+  },
+  "f6e5d4c3b2a1": {
+    "menu": "a1b2c3d4e5f6",
+    "open_in_new_tab": false,
+    "order": 1,
+    "title": "Imprint",
+    "url": "/contact/"
   }
 }
