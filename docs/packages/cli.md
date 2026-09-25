@@ -105,7 +105,7 @@ contentrain init --root /path # Different project root
 | `--yes` | Skip prompts, use defaults |
 | `--root <path>` | Project root path |
 
-Creates `.contentrain/config.json`, the `models/`, `content/`, and `meta/` directories, `vocabulary.json`, and `context.json`, appends `.contentrain/.cache/` and `.contentrain/client/` to `.gitignore`, installs IDE rules, Agent Skills, and the MCP config (`.mcp.json` or IDE equivalent). Runs `git init` plus an initial commit if not already a repo.
+Creates `.contentrain/config.json`, the `models/`, `content/`, and `meta/` directories, `vocabulary.json`, and `context.json`, appends `.contentrain/.cache/` and `.contentrain/client/` to `.gitignore`, installs IDE rules, Agent Skills, and the MCP config (`.mcp.json` or IDE equivalent). Runs `git init` plus an initial commit if not already a repo. Records the project's default branch as `repository.default_branch` — the [base branch](/reference/config#base-branch) local writes advance — resolved once from the remote's default, then `main`, then `master`; run from a feature branch it still records the default. An initialized project is never re-initialized, so an existing value is kept.
 
 ---
 
