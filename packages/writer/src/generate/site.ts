@@ -20,7 +20,7 @@ function replaceOnce(source: string, pattern: RegExp, replacement: string, what:
 /** Whether the starter reads its Studio binding from `studio.json` (see its astro.config.mjs). */
 export const readsStudioJson = (starterSiteConfig: string): boolean => starterSiteConfig.includes('__CONTENTRAIN_STUDIO__')
 
-/** `studio.json`: the plan's Studio binding, as Studio itself writes it when a site is connected. */
+/** `studio.json`: the plan's Studio binding, in the shape Studio writes when it moves the site's media (Migration → Media). */
 export function studioJsonSource(site: PlanSite): string | undefined {
   return site.studio ? canonicalStringify({ baseUrl: site.studio.baseUrl, projectId: site.studio.projectId }) : undefined
 }
