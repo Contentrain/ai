@@ -114,7 +114,8 @@
       "each": ".wp-block-button__link",
       "item": {
         "label": "dom:",
-        "href": "dom:@href"
+        "href": "dom:@href",
+        "style": "class:is-style-outline=ghost|primary"
       }
     },
     {
@@ -225,7 +226,8 @@
       "each": ".wp-block-button__link",
       "item": {
         "label": "dom:",
-        "href": "dom:@href"
+        "href": "dom:@href",
+        "style": "class:is-style-outline=ghost|primary"
       }
     },
     {

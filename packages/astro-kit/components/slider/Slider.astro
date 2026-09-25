@@ -27,9 +27,9 @@ const slider = tv({
       square: { image: 'aspect-square' },
     },
     caption: {
-      below: { image: 'rounded-[var(--radius-card)]', caption: 'pt-4' },
+      below: { image: 'rounded-[var(--radius-image,var(--radius-card))]', caption: 'pt-4' },
       // Over the image on wide screens; under it on phones, where the image is too short to hold text.
-      overlay: { image: 'rounded-[var(--radius-card)] md:rounded-none', slide: 'md:rounded-[var(--radius-card)]', caption: 'pt-4 md:absolute md:inset-x-0 md:bottom-0 md:bg-gradient-to-t md:from-ink/80 md:to-transparent md:p-6 md:pt-16 md:text-surface' },
+      overlay: { image: 'rounded-[var(--radius-image,var(--radius-card))] md:rounded-none', slide: 'md:rounded-[var(--radius-image,var(--radius-card))]', caption: 'pt-4 md:absolute md:inset-x-0 md:bottom-0 md:bg-gradient-to-t md:from-ink/80 md:to-transparent md:p-6 md:pt-16 md:text-surface' },
     },
   },
   defaultVariants: { perView: '1', aspect: 'wide', caption: 'overlay' },
@@ -72,7 +72,7 @@ const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-cente
           <KitImage image={slide.image} sizes={sizes} priority={index === 0} class={slots.image()} />
           {(slide.title || slide.text || slide.action) && (
             <div class={slots.caption()}>
-              {slide.title && <p class="text-xl font-semibold text-balance">{slide.title}</p>}
+              {slide.title && <p class="text-xl [font-weight:var(--font-weight-heading,600)] text-balance">{slide.title}</p>}
               {slide.text && <p class="opacity-85">{slide.text}</p>}
               {slide.action && <Button action={slide.action} size="sm" class="mt-2" />}
             </div>

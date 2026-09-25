@@ -10,8 +10,8 @@ const grid = tv({
   slots: {
     list: 'grid items-start gap-6 md:gap-8',
     card: 'group relative flex flex-col gap-3 rounded-[var(--radius-card)]',
-    media: 'overflow-hidden rounded-[var(--radius-card)]',
-    title: 'text-lg leading-snug font-semibold text-balance',
+    media: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
+    title: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)] text-balance',
     text: 'opacity-80',
   },
   variants: {
@@ -61,7 +61,7 @@ const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-
 <Section tone={tone} aria-labelledby={headingId}>
   {(title || intro) && (
     <header class:list={['mb-10 flex max-w-2xl flex-col gap-3', align === 'center' && 'mx-auto items-center text-center']}>
-      {title && <Heading id={headingId} class="text-3xl font-bold tracking-tight text-balance md:text-4xl">{title}</Heading>}
+      {title && <Heading id={headingId} class="text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl">{title}</Heading>}
       {intro && <p class:list={['text-lg', tone === 'accent' ? undefined : 'opacity-80']}>{intro}</p>}
     </header>
   )}
