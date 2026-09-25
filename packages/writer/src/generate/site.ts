@@ -17,12 +17,22 @@ function replaceOnce(source: string, pattern: RegExp, replacement: string, what:
   return source.replace(pattern, () => replacement)
 }
 
+/** Whether the starter reads its Studio binding from `studio.json` (see its astro.config.mjs). */
+export const readsStudioJson = (starterSiteConfig: string): boolean => starterSiteConfig.includes('__CONTENTRAIN_STUDIO__')
+
+/** `studio.json`: the plan's Studio binding, as Studio itself writes it when a site is connected. */
+export function studioJsonSource(site: PlanSite): string | undefined {
+  return site.studio ? canonicalStringify({ baseUrl: site.studio.baseUrl, projectId: site.studio.projectId }) : undefined
+}
+
 export function siteConfigSource(starter: string, site: PlanSite, titleTemplate = '{title} – {site}'): string {
   const post = site.post ?? { header: ['terms', 'title', 'byline', 'cover'], adjacent: false, more: 0 }
   const lists = site.lists ?? { display: 'cards', heading: false }
   const p = site.permalinks
   const home = site.home.kind === 'page' ? `{ kind: 'page', slug: ${sq(site.home.slug)} }` : `{ kind: 'posts' }`
-  const studio = site.studio ? `\n  studio: { baseUrl: ${sq(site.studio.baseUrl)}, projectId: ${sq(site.studio.projectId)} },` : ''
+  // A starter that reads the binding from studio.json keeps its own line for it; the writer writes the file.
+  const bound = /\n( {2}\.\.\.\(typeof __CONTENTRAIN_STUDIO__[^\n]*)/.exec(starter)?.[1]
+  const studio = bound ? `\n${bound}` : site.studio ? `\n  studio: { baseUrl: ${sq(site.studio.baseUrl)}, projectId: ${sq(site.studio.projectId)} },` : ''
   const literal = `export const siteConfig: SiteConfig = {
   permalinks: {
     post: ${sq(p.post)},

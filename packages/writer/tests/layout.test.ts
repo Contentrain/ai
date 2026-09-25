@@ -5,7 +5,7 @@
 import type { PlanSite, ProjectPlan } from '@contentrain/types'
 import { describe, expect, it } from 'vitest'
 import { STARTER_COVERED, unfulfilledFontRoles } from '../src/generate/index'
-import { siteConfigSource, themeSource } from '../src/generate/site'
+import { readsStudioJson, siteConfigSource, studioJsonSource, themeSource } from '../src/generate/site'
 
 const STARTER_CONFIG = `export const siteConfig: SiteConfig = {
   menus: { primary: 'primary', footer: ['footer'] },
@@ -36,6 +36,31 @@ describe('siteConfigSource', () => {
     const out = siteConfigSource(STARTER_CONFIG, site())
     expect(out).toContain(`post: { header: ['terms', 'title', 'byline', 'cover'], adjacent: false, more: 0 },`)
     expect(out).toContain(`lists: { display: 'cards', heading: false },`)
+  })
+})
+
+describe('the Studio binding', () => {
+  const studio = { baseUrl: 'https://studio.contentrain.io', projectId: 'p1' }
+  const BOUND_CONFIG = `declare const __CONTENTRAIN_STUDIO__: { baseUrl: string, projectId: string } | null
+
+export const siteConfig: SiteConfig = {
+  menus: { primary: 'primary', footer: ['footer'] },
+  ...(typeof __CONTENTRAIN_STUDIO__ !== 'undefined' && __CONTENTRAIN_STUDIO__ ? { studio: __CONTENTRAIN_STUDIO__ } : {}),
+}
+`
+
+  it('goes to studio.json when the starter reads it, and the starter keeps its line for it', () => {
+    expect(readsStudioJson(BOUND_CONFIG)).toBe(true)
+    const out = siteConfigSource(BOUND_CONFIG, site({ studio }))
+    expect(out).toContain('  ...(typeof __CONTENTRAIN_STUDIO__ !== \'undefined\' && __CONTENTRAIN_STUDIO__ ? { studio: __CONTENTRAIN_STUDIO__ } : {}),\n}')
+    expect(out).not.toContain('studio: { baseUrl')
+    expect(JSON.parse(studioJsonSource(site({ studio }))!)).toEqual(studio)
+  })
+
+  it('stays a site.config literal for a starter without studio.json, and is absent without a binding', () => {
+    expect(readsStudioJson(STARTER_CONFIG)).toBe(false)
+    expect(siteConfigSource(STARTER_CONFIG, site({ studio }))).toContain(`studio: { baseUrl: 'https://studio.contentrain.io', projectId: 'p1' },`)
+    expect(studioJsonSource(site())).toBeUndefined()
   })
 })
 

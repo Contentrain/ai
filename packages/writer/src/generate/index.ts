@@ -10,7 +10,7 @@ import { copyComponents, planCopy, type KitCatalog } from '@contentrain/astro-ki
 import { canonicalStringify, type ModelDefinition, type ProjectPlan } from '@contentrain/types'
 import { configWithDomains, mergeStarterModels, planModelFiles } from './models.js'
 import { contentConfigSource } from './schema.js'
-import { astroConfigSource, fontRoles, presetsSource, REDIRECTS_CONTENT, redirectsContent, siteConfigSource, themeSource, withPresetsImport, withSiteFonts, withSiteFontTags } from './site.js'
+import { astroConfigSource, fontRoles, presetsSource, readsStudioJson, REDIRECTS_CONTENT, redirectsContent, siteConfigSource, studioJsonSource, themeSource, withPresetsImport, withSiteFonts, withSiteFontTags } from './site.js'
 import { composedIndexSource, composedViews, type RoutePlanOutcome } from './views.js'
 
 export interface GenerateInput {
@@ -191,7 +191,10 @@ export async function generateProject(input: GenerateInput): Promise<GenerateRep
   await write('src/content.config.ts', contentConfigSource(models))
 
   // 3. Site settings: addresses, redirects, the design tokens and the source theme's presets.
-  await write('src/site.config.ts', siteConfigSource(await read('src/site.config.ts'), plan.site, input.titleTemplate))
+  const starterSiteConfig = await read('src/site.config.ts')
+  await write('src/site.config.ts', siteConfigSource(starterSiteConfig, plan.site, input.titleTemplate))
+  const studioJson = readsStudioJson(starterSiteConfig) ? studioJsonSource(plan.site) : undefined
+  if (studioJson) await write('studio.json', studioJson)
   const fonts = plan.site.tokens.fonts ?? []
   await write('astro.config.mjs', withSiteFonts(astroConfigSource(await read('astro.config.mjs'), plan.site, []), fonts))
   if (fonts.length) await write('src/layouts/BaseLayout.astro', withSiteFontTags(await read('src/layouts/BaseLayout.astro'), fonts))
