@@ -57,7 +57,7 @@ const shown = actions.map(action => (tone === 'accent' && (action.style ?? 'prim
   <div class={s.box()}>
     <div class={s.copy()}>
       <h2 id={headingId} class={s.heading()}>{heading}</h2>
-      {body && <p class={s.body()}>{body}</p>}
+      {body && <p class={s.body()} data-kit-text>{body}</p>}
     </div>
     {shown.length > 0 && <div class={s.actions()}>{shown.map(action => <Button action={action} size="lg" />)}</div>}
   </div>

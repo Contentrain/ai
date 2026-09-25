@@ -38,6 +38,6 @@ interface Props {
 
 const { tone, spacing, width = 'page', as: Tag = 'section', id, class: className, 'aria-labelledby': labelledBy } = Astro.props
 ---
-<Tag id={id} aria-labelledby={labelledBy} class={section({ tone, spacing, class: className })} data-tone={tone ?? 'default'}>
+<Tag id={id} aria-labelledby={labelledBy} class={section({ tone, spacing, class: className })} data-tone={tone ?? 'default'} data-kit-section data-kit-spacing={spacing ?? 'md'}>
   {width === 'none' ? <slot /> : <div class={width === 'prose' ? 'container-prose' : 'container-page'}><slot /></div>}
 </Tag>

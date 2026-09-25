@@ -60,6 +60,15 @@ unchanged:
 - `--spacing-gutter`: the page frame's side padding, which falls back to 1rem
   on phones and 2rem from `md` up.
 
+The theme's type scale and rhythm are not read by components. The site's
+theme applies them to the kit's markers, and only when the site sets them:
+- `--text-heading-1` to `--text-heading-3`: headings inside `main`.
+- `--text-body`: `[data-kit-text]`, the lead and body paragraphs of hero, CTA
+  and card grid.
+- `--text-nav`: the header navigation, `[data-cr-part="nav-header"]`.
+- `--spacing-section`: the vertical padding of `[data-kit-section]`, except
+  where `data-kit-spacing="none"`.
+
 The full list is in `catalog.json` under `tokens`.
 
 ## API

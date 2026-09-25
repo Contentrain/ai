@@ -75,7 +75,7 @@ const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-
             ? <a href={item.href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent">{item.title}</a>
             : item.title}
         </CardHeading>
-        {item.text && <p class={text({ class: dim })}>{item.text}</p>}
+        {item.text && <p class={text({ class: dim })} data-kit-text>{item.text}</p>}
       </li>
     ))}
   </ul>

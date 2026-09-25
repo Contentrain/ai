@@ -21,6 +21,10 @@ describe('mapping tables', () => {
     })
   }
 
+  it('maps WordPress\'s details block to the plain FAQ, the browser\'s own disclosure', () => {
+    expect(rulesFor(tables.gutenberg!, 'core/details')[0]).toMatchObject({ component: 'faq', variant: { style: 'plain' } })
+  })
+
   it('catches what a broken rule gets wrong', () => {
     const broken: MappingTable = {
       format: 'astro-kit-mapping@1', builder: 'elementor', version: '1', fallback: 'prose',

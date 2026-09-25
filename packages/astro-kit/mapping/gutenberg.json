@@ -233,6 +233,9 @@
     {
       "match": "core/details",
       "component": "faq",
+      "variant": {
+        "style": "plain"
+      },
       "group": "siblings",
       "into": "items",
       "item": {

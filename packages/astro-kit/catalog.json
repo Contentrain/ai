@@ -20,7 +20,12 @@
     "--leading-heading",
     "--radius-control",
     "--radius-image",
-    "--spacing-gutter"
+    "--spacing-gutter",
+    "--text-nav",
+    "--text-heading-1",
+    "--text-heading-2",
+    "--text-heading-3",
+    "--spacing-section"
   ],
   "dependencies": {
     "tailwind-merge": "^3.7.0",
@@ -554,10 +559,11 @@
         "style": {
           "options": [
             "lines",
-            "cards"
+            "cards",
+            "plain"
           ],
           "default": "lines",
-          "description": "lines: rows divided by rules. cards: each question in a rounded box."
+          "description": "lines: rows divided by rules. cards: each question in a rounded box. plain: the browser's own disclosure triangle without rules or boxes (WordPress's details block)."
         },
         "tone": {
           "options": [
