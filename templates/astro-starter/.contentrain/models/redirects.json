@@ -2,7 +2,7 @@
   "domain": "site",
   "fields": {
     "from": {
-      "description": "The old path, as it was on the source site: /old-post/",
+      "description": "The old address, as it was on the source site: /old-post/, or with its query: /?page_id=5, /old.php?id=3",
       "label": "From",
       "order": 10,
       "required": true,

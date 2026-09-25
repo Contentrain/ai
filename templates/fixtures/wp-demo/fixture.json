@@ -18,10 +18,14 @@
         "/gone/ /404.html 410",
         "/team/ /about/team/ 301",
         "/ page_id=302 /contact/ 301",
-        "/ page_id=301 /about/team/ 301"
+        "/ page_id=301 /about/team/ 301",
+        "/ page_id=999 /about/ 301",
+        "/old.php id=3 /contact/ 302"
       ],
       "excludes": [
-        "/2019/plans/"
+        "/2019/plans/",
+        "/ page_id=302 /about/",
+        "\n/ /"
       ]
     },
     "old-about/index.html": {
@@ -42,7 +46,8 @@
     "wp-query-map.json": {
       "contains": [
         "\"302\": \"/contact/\"",
-        "\"301\": \"/about/team/\""
+        "\"301\": \"/about/team/\"",
+        "\"999\": \"/about/\""
       ],
       "excludes": [
         "\"304\""

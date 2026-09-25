@@ -51,7 +51,9 @@ export function publicLinks(): Promise<Linker> {
       const host = url ? hostOf(url) : undefined
       return host ? [host] : []
     }))
-    const rules = new Map(redirects.map(entry => [sitePath(new URL(entry.data.from, `${BASE}/`).pathname), entry.data]))
+    // Keyed by path and query: a rule for `/old.php?id=3` or `/?page_id=5` stands for that address only, not its path.
+    const ruleKey = (url: URL) => `${sitePath(url.pathname)}${url.search}`
+    const rules = new Map(redirects.map(entry => [ruleKey(new URL(entry.data.from, `${BASE}/`)), entry.data]))
     // WordPress's own short links (`/?p=12`, `/?page_id=7`) point at the entry, wherever it lives now.
     const byWpId = new Map<number, string>()
     for (const [href, route] of routes) {
@@ -68,10 +70,12 @@ export function publicLinks(): Promise<Linker> {
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return undefined
       if (!internal.has(bareHost(parsed.hostname))) return raw
       const shortLink = parsed.pathname === '/' ? Number(parsed.searchParams.get('p') ?? parsed.searchParams.get('page_id') ?? Number.NaN) : Number.NaN
-      if (!Number.isNaN(shortLink)) return byWpId.get(shortLink)
       const path = sitePath(parsed.pathname)
-      const rule = routes.has(path) ? undefined : rules.get(path)
-      if (rule) return followed.has(path) || rule.status === 410 ? undefined : link(rule.to, new Set([...followed, path]))
+      const key = ruleKey(parsed)
+      // The entry's own address wins; the collection's rule answers a short link to an entry that is gone.
+      const rule = (!Number.isNaN(shortLink) && byWpId.has(shortLink)) || (!parsed.search && routes.has(path)) ? undefined : rules.get(key) ?? (routes.has(path) ? undefined : rules.get(path))
+      if (!Number.isNaN(shortLink)) return byWpId.get(shortLink) ?? (rule && !followed.has(key) && rule.status !== 410 ? link(rule.to, new Set([...followed, key])) : undefined)
+      if (rule) return followed.has(key) || rule.status === 410 ? undefined : link(rule.to, new Set([...followed, key]))
       // A file the media stage copied into public/ is served here; one it could not copy stays at its old address.
       if (FILE.test(path)) return inPublic(path) ? `${path}${parsed.search}${parsed.hash}` : raw
       return routes.has(path) || SERVED.has(path) ? `${path}${parsed.search}${parsed.hash}` : undefined
