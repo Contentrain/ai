@@ -68,13 +68,17 @@ export async function generateProject(input: GenerateInput): Promise<GenerateRep
   //    only its models (merged below) and the content of models the import lacks (interface strings,
   //    empty menus) are taken from it.
   const starterStore = join(input.starterDir, '.contentrain')
+  const inStarter = (source: string) => relative(input.starterDir, source)
+  const under = (rel: string, dir: string) => rel === dir || rel.startsWith(`${dir}${sep}`)
   await cp(input.starterDir, outDir, {
     recursive: true,
-    filter: source => {
-      const rel = relative(input.starterDir, source)
-      return !SKIP.test(rel) && rel !== '.contentrain' && !rel.startsWith(`.contentrain${sep}`)
+    filter: (source) => {
+      const rel = inStarter(source)
+      return !SKIP.test(rel) && !under(rel, '.contentrain') && !under(rel, 'public')
     },
   })
+  // public/ holds what earlier stages put there (media, the site's favicon): a starter file never replaces one.
+  await cp(join(input.starterDir, 'public'), join(outDir, 'public'), { recursive: true, force: false, errorOnExist: false })
   if (input.importDir) await cp(join(input.importDir, '.contentrain'), join(outDir, '.contentrain'), { recursive: true, force: true })
   const starterModels = await readModels(join(starterStore, 'models'))
   const importedModels = await readModels(join(outDir, '.contentrain/models'))
