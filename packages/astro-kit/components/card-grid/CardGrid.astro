@@ -8,7 +8,7 @@ import type { ImageInput } from '../_shared/types'
 
 const grid = tv({
   slots: {
-    list: 'grid gap-6 md:gap-8',
+    list: 'grid items-start gap-6 md:gap-8',
     card: 'group relative flex flex-col gap-3 rounded-[var(--radius-card)]',
     media: 'overflow-hidden rounded-[var(--radius-card)]',
     title: 'text-lg leading-snug font-semibold text-balance',
@@ -17,7 +17,7 @@ const grid = tv({
   variants: {
     columns: {
       '2': { list: 'sm:grid-cols-2' },
-      '3': { list: 'sm:grid-cols-2 lg:grid-cols-3' },
+      '3': { list: 'sm:grid-cols-2 md:grid-cols-3' },
       '4': { list: 'sm:grid-cols-2 lg:grid-cols-4' },
     },
     style: {
@@ -52,6 +52,8 @@ interface Props {
 
 const { title, intro, items, headingLevel = 2, columns, style, align, tone } = Astro.props
 const { list, card, media, title: cardTitle, text } = grid({ columns, style, align })
+// Accent backgrounds have the least contrast headroom: text on them is never dimmed.
+const dim = tone === 'accent' ? 'opacity-100' : undefined
 const Heading = `h${headingLevel}` as 'h2' | 'h3'
 const CardHeading = `h${headingLevel + 1}` as 'h3' | 'h4'
 const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : undefined
@@ -60,7 +62,7 @@ const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-
   {(title || intro) && (
     <header class:list={['mb-10 flex max-w-2xl flex-col gap-3', align === 'center' && 'mx-auto items-center text-center']}>
       {title && <Heading id={headingId} class="text-3xl font-bold tracking-tight text-balance md:text-4xl">{title}</Heading>}
-      {intro && <p class="text-lg opacity-80">{intro}</p>}
+      {intro && <p class:list={['text-lg', tone === 'accent' ? undefined : 'opacity-80']}>{intro}</p>}
     </header>
   )}
   <ul class={list()}>
@@ -73,7 +75,7 @@ const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-
             ? <a href={item.href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent">{item.title}</a>
             : item.title}
         </CardHeading>
-        {item.text && <p class={text()}>{item.text}</p>}
+        {item.text && <p class={text({ class: dim })}>{item.text}</p>}
       </li>
     ))}
   </ul>

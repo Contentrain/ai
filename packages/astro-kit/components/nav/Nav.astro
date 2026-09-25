@@ -9,11 +9,13 @@ const nav = tv({
   slots: {
     list: 'hidden items-center md:flex',
     link: 'text-current no-underline opacity-80 hover:opacity-100 aria-[current=page]:font-semibold aria-[current=page]:opacity-100',
-    sub: 'invisible absolute top-full left-0 z-30 min-w-48 rounded-lg border border-line bg-surface p-2 text-ink opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100',
+    // hidden, not invisible: a closed submenu takes no space, so one under the last item cannot widen the page.
+    sub: 'absolute top-full z-30 hidden min-w-48 rounded-lg border border-line bg-surface p-2 text-ink shadow-lg group-hover:block group-focus-within:block',
     toggle: 'inline-flex cursor-pointer list-none items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-current/10 md:hidden [&::-webkit-details-marker]:hidden',
   },
   variants: {
-    align: { start: { list: 'justify-start' }, end: { list: 'justify-end' }, center: { list: 'justify-center' } },
+    // Submenus open towards the page: leftwards under an end-aligned menu.
+    align: { start: { list: 'justify-start', sub: 'left-0' }, end: { list: 'justify-end', sub: 'right-0' }, center: { list: 'justify-center', sub: 'left-0' } },
     density: { compact: { list: 'gap-5 text-sm' }, comfortable: { list: 'gap-8 text-base' } },
   },
   defaultVariants: { align: 'end', density: 'compact' },
