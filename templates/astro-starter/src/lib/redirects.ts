@@ -25,9 +25,12 @@ export interface QueryRule { param: 'p' | 'page_id' | 'cat' | 'tag' | 'author', 
 /** Any other old address with a query (`/old.php?id=3`): only a host rule can answer it. */
 export interface QueriedRule { path: string, query: ReadonlyArray<readonly [string, string]>, to: string, status: RedirectStatus | 410 }
 
+/** An old address prefix (`/a/*`) and its target, which may carry the matched rest as `:splat` (`/b/:splat`). */
+export interface PrefixRule { from: string, to: string, status: RedirectStatus | 410 }
+
 const WP_PARAMS = new Set<string>(['p', 'page_id', 'cat', 'tag', 'author'])
 
-let collected: Promise<{ paths: RedirectRule[], wp: QueryRule[], queried: QueriedRule[] }> | undefined
+let collected: Promise<{ paths: RedirectRule[], prefixes: PrefixRule[], wp: QueryRule[], queried: QueriedRule[] }> | undefined
 
 /**
  * The redirects collection, split by what can answer each old address: a path gets a page and a host
@@ -40,7 +43,15 @@ function collect() {
     const paths = new Map<string, RedirectRule>()
     const wp: QueryRule[] = []
     const queried: QueriedRule[] = []
+    const prefixes: PrefixRule[] = []
     for (const { data } of entries) {
+      // A prefix covers every address under it, live or not (the host serves a built file first), so it is
+      // only a host rule; its target keeps `:splat` and is written as the source had it.
+      if (data.from.includes('*')) {
+        if (data.status === 410) prefixes.push({ from: data.from, to: '/404.html', status: 410 })
+        else if (MOVES.has(data.status) && data.to) prefixes.push({ from: data.from, to: data.to, status: data.status as RedirectStatus })
+        continue
+      }
       const url = new URL(data.from, BASE)
       const from = sitePath(url.pathname)
       const query = [...url.searchParams]
@@ -58,6 +69,8 @@ function collect() {
     }
     return {
       paths: [...paths.values()].toSorted((a, b) => a.from.localeCompare(b.from)),
+      // Longest first: a host takes the first rule that matches, so `/a/b/*` must come before `/a/*`.
+      prefixes: prefixes.toSorted((a, b) => b.from.length - a.from.length || a.from.localeCompare(b.from)),
       wp,
       queried: queried.toSorted((a, b) => a.path.localeCompare(b.path) || String(a.query).localeCompare(String(b.query))),
     }
@@ -68,6 +81,11 @@ function collect() {
 /** Every redirect of an old path the site serves, sorted by old address. An old address the site still builds is not redirected. */
 export async function redirectRules(): Promise<RedirectRule[]> {
   return (await collect()).paths
+}
+
+/** Prefix rules (`/a/* /b/:splat 301`), for the host only: no page is built for them. */
+export async function prefixRules(): Promise<PrefixRule[]> {
+  return (await collect()).prefixes
 }
 
 /** Old addresses with a query other than WordPress's own, as host rules (`/old.php id=3 /contact/ 302`). */

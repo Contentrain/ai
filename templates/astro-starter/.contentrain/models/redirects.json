@@ -2,7 +2,7 @@
   "domain": "site",
   "fields": {
     "from": {
-      "description": "The old address, as it was on the source site: /old-post/, or with its query: /?page_id=5, /old.php?id=3",
+      "description": "The old address, as it was on the source site: /old-post/, with its query: /?page_id=5, /old.php?id=3, or a prefix: /a/* (the target may end in :splat, the rest of the address)",
       "label": "From",
       "order": 10,
       "required": true,

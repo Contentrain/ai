@@ -1,4 +1,9 @@
 {
+  "13b6e0e76b1e": {
+    "from": "/archive/*",
+    "status": 301,
+    "to": "/blog/:splat"
+  },
   "65a53ff40f1a": {
     "from": "/?page_id=302",
     "status": 301,
@@ -28,6 +33,10 @@
     "from": "/old.php?id=3",
     "status": 302,
     "to": "/contact/"
+  },
+  "eba6cf379871": {
+    "from": "/old-shop/*",
+    "status": 410
   },
   "f92de45212d6": {
     "from": "/gone/",

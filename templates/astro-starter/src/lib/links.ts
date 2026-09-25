@@ -53,7 +53,7 @@ export function publicLinks(): Promise<Linker> {
     }))
     // Keyed by path and query: a rule for `/old.php?id=3` or `/?page_id=5` stands for that address only, not its path.
     const ruleKey = (url: URL) => `${sitePath(url.pathname)}${url.search}`
-    const rules = new Map(redirects.map(entry => [ruleKey(new URL(entry.data.from, `${BASE}/`)), entry.data]))
+    const rules = new Map(redirects.filter(entry => !entry.data.from.includes('*')).map(entry => [ruleKey(new URL(entry.data.from, `${BASE}/`)), entry.data]))
     // WordPress's own short links (`/?p=12`, `/?page_id=7`) point at the entry, wherever it lives now.
     const byWpId = new Map<number, string>()
     for (const [href, route] of routes) {

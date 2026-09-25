@@ -20,7 +20,8 @@
         "/ page_id=302 /contact/ 301",
         "/ page_id=301 /about/team/ 301",
         "/ page_id=999 /about/ 301",
-        "/old.php id=3 /contact/ 302"
+        "/old.php id=3 /contact/ 302",
+        "/team/ /about/team/ 301\n/old-shop/* /404.html 410\n/archive/* /blog/:splat 301\n/ author="
       ],
       "excludes": [
         "/2019/plans/",

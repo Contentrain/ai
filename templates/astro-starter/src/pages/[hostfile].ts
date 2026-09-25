@@ -7,14 +7,16 @@
 // (A page file named `_redirects.ts` would be ignored: Astro skips pages whose
 // name starts with an underscore, hence the parameter.)
 import type { APIRoute, GetStaticPaths } from 'astro'
-import { queriedRules, queryRules, redirectRules } from '../lib/redirects'
+import { prefixRules, queriedRules, queryRules, redirectRules } from '../lib/redirects'
 
 export const getStaticPaths = (() => [{ params: { hostfile: '_redirects' } }]) satisfies GetStaticPaths
 
 export const GET: APIRoute = async () => {
-  const [rules, queries, queried] = await Promise.all([redirectRules(), queryRules(), queriedRules()])
+  const [rules, prefixes, queries, queried] = await Promise.all([redirectRules(), prefixRules(), queryRules(), queriedRules()])
   const lines = [
     ...rules.map(rule => (rule.status === 410 ? `${rule.from} /404.html 410` : `${rule.from} ${rule.to} ${rule.status}`)),
+    // After the exact addresses: a host takes the first rule that matches.
+    ...prefixes.map(rule => `${rule.from} ${rule.to} ${rule.status}`),
     ...queries.map(rule => `/ ${rule.param}=${rule.value} ${rule.to} ${rule.status}`),
     ...queried.map(rule => `${rule.path} ${rule.query.map(([name, value]) => `${encodeURIComponent(name)}=${encodeURIComponent(value)}`).join(' ')} ${rule.to} ${rule.status}`),
   ]
