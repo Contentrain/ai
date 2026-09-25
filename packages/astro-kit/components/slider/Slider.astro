@@ -101,7 +101,9 @@ const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-cente
     const viewport = root.querySelector<HTMLElement>('[data-viewport]')
     if (!viewport || root.dataset.ready !== undefined) continue
     root.dataset.ready = ''
-    const embla = EmblaCarousel(viewport, { loop: root.dataset.loop !== undefined, align: 'start', containScroll: 'trimSnaps' })
+    // Reduced motion: slides change instantly instead of gliding.
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+    const embla = EmblaCarousel(viewport, { loop: root.dataset.loop !== undefined, align: 'start', containScroll: 'trimSnaps', duration: reduce ? 0 : 25 })
     const prev = root.querySelector<HTMLButtonElement>('[data-prev]')
     const next = root.querySelector<HTMLButtonElement>('[data-next]')
     const dots = root.querySelector<HTMLElement>('[data-dots]')
