@@ -300,7 +300,7 @@ describe('fetchRestRawIR menus', () => {
   it('reads classic menus and block navigation with a credential, with their locations', async () => {
     const { fetchImpl } = site()
     const { raw, gaps, warnings } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl, auth: { user: 'u', appPassword: 'p' } })
-    expect(gaps).toEqual([])
+    expect(gaps).toEqual(['redirects_partial'])
     // Two left out: the draft page's classic item, and the block link to page 12, which this site never listed.
     expect(warnings).toEqual(['menus: 2 item(s) are drafts or point at content not proven public (unpublished, password-protected, or not read by this import) — left out'])
     expect(JSON.stringify(raw.menus)).not.toMatch(/Secret plan|secret-plan|page_id=14/)
@@ -330,7 +330,7 @@ describe('fetchRestRawIR menus', () => {
     const { fetchImpl, calls } = site()
     const { raw, gaps, warnings } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl })
     expect(raw.menus).toBeUndefined()
-    expect(gaps).toEqual(['menus_require_auth'])
+    expect(gaps).toEqual(['menus_require_auth', 'redirects_partial'])
     expect(warnings).toEqual([])
     expect(calls.some((c) => /\/(menus|navigation)\?/.test(c))).toBe(false)
   })
@@ -339,7 +339,7 @@ describe('fetchRestRawIR menus', () => {
     const { fetchImpl } = site({ menus: 403 })
     const { raw, gaps, credential } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl, auth: { user: 'u', appPassword: 'p' } })
     expect(raw.menus).toBeUndefined()
-    expect(gaps).toEqual(['menus_require_auth'])
+    expect(gaps).toEqual(['menus_require_auth', 'redirects_partial'])
     // A missing right on menus is not a rejected credential: the content listings were read with it.
     expect(credential.status).toBe('accepted')
   })

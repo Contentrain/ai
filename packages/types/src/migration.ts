@@ -182,6 +182,11 @@ export interface RawAttachment {
   mime?: string | null
   parent?: number | null
   parent_resolved?: boolean | null
+  /**
+   * The attachment's own page (`/post-name/image-name/`, `/?attachment_id=12`), which WordPress serves for every
+   * upload and search engines may have indexed. Equal to `url` where the site sends attachment pages to the file.
+   */
+  link?: string | null
   author?: string | null
   date?: string | null
   status?: string
@@ -264,10 +269,19 @@ export interface RawComment {
  */
 export type RawRedirectMatch = 'url' | 'regex' | 'start' | 'contains' | 'end'
 
+/**
+ * How a rule treats the request's query string (the Redirection plugin's own three modes):
+ * `exact`: the query must match `from`'s; `ignore`: any query matches, and it is not carried to `to`;
+ * `pass`: any query matches, and it is carried to `to`.
+ */
+export type RawRedirectQuery = 'exact' | 'ignore' | 'pass'
+
 /** A redirect rule the live site serves (e.g. from the Redirection plugin — visible from the authenticated rung up). */
 export interface RawRedirect {
   from: string
+  /** Where the rule leads; empty for a rule that answers "gone" (410, 451), which leads nowhere. */
   to: string
+  /** The answer's code: a 3xx move, or 410/451 for an address the site says is gone. Absent means 301. */
   status?: number
   /** Which plugin/table produced the rule. */
   source?: string
@@ -281,6 +295,12 @@ export interface RawRedirect {
   served_by?: string
   /** An adjustment the extractor made, stated rather than hidden (e.g. a non-redirect status read as 301). */
   status_note?: string
+  /** How the request's query string is matched and carried; absent: the source did not say. */
+  query?: RawRedirectQuery
+  /** `from` matches without regard to letter case. */
+  case_insensitive?: boolean
+  /** `/a` and `/a/` are one address for this rule (`ignore`) or two (`exact`); absent: the source did not say. */
+  trailing_slash?: 'exact' | 'ignore'
 }
 
 /**

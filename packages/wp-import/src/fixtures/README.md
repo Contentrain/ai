@@ -42,3 +42,13 @@ posts, and the menus both importers must export from them (wp-import's
 each item's title, address and ancestors. `public` is what the importer read
 and proved public; the file's `rules` state what is compared. The Bridge
 copies the file unchanged and pins the commit it copied.
+
+# Redirect parity fixture
+
+`redirect-parity.json` is owned here and copied by the Bridge, like the ACF one.
+Its input is the Redirection plugin's own rows (groups, rules, and the site's
+saved options). Each case gives the `RawRedirect` / `RawRedirectExcluded` lists
+both importers must export from them: wp-import over REST
+(`rest-redirects.parity.test.ts`), the Bridge from the tables. A case marked
+`only: 'rest'` applies to wp-import alone. The Bridge copies the file unchanged
+and pins the commit it copied.
