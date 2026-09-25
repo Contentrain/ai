@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { blockMenus, classicMenus, navigationItems, navigationLocations, parseBlocks, type MenuContext } from './rest-menus'
-import { fetchRestRawIR, rawToContentrain } from './index'
+import { blockMenus, classicMenus, inlineMenus, navigationItems, navigationLocations, parseBlocks, plainPostId, usedParts, type MenuContext } from './rest-menus'
+import { fetchRestRawIR, parseWxr, rawToContentrain } from './index'
+import { FIXTURE } from './wxr.test'
 
 const ctx: MenuContext = {
   origin: 'https://s.example',
@@ -65,6 +66,87 @@ describe('block navigation', () => {
   })
 })
 
+// Twenty Twenty-Five's footer, as REST serves the template part (its pattern already expanded): two inline navigations.
+const TT5_FOOTER = '<!-- wp:group {"layout":{"type":"constrained"}} --><!-- wp:columns --><!-- wp:column -->'
+  + '<!-- wp:navigation {"overlayMenu":"never","layout":{"type":"flex","orientation":"vertical"}} -->'
+  + '<!-- wp:navigation-link {"label":"Blog","url":"#"} /--><!-- wp:navigation-link {"label":"About","url":"#"} /--><!-- wp:navigation-link {"label":"FAQs","url":"#"} /--><!-- wp:navigation-link {"label":"Authors","url":"#"} /-->'
+  + '<!-- /wp:navigation --><!-- /wp:column --><!-- wp:column -->'
+  + '<!-- wp:navigation {"overlayMenu":"never","layout":{"type":"flex","orientation":"vertical"}} -->'
+  + '<!-- wp:navigation-link {"label":"Events","url":"#"} /--><!-- wp:navigation-submenu {"label":"Shop","url":"/shop/"} --><!-- wp:navigation-link {"label":"Gift cards","url":"/shop/gift-cards/"} /--><!-- /wp:navigation-submenu -->'
+  + '<!-- wp:navigation-link {"label":"Secret launch","type":"page","id":99,"url":"/?page_id=99","kind":"post-type"} /-->'
+  + '<!-- /wp:navigation --><!-- /wp:column --><!-- /wp:columns --><!-- /wp:group -->'
+const TEMPLATES = [{ slug: 'index', content: { raw: '<!-- wp:template-part {"slug":"header","area":"header"} /--><!-- wp:group --><!-- wp:template-part {"slug":"footer","area":"footer"} /--><!-- /wp:group -->' } }]
+
+describe('inline navigation in template parts', () => {
+  it('counts only the parts a template uses; without templates, the part named after its area', () => {
+    const parts = [
+      { slug: 'header', area: 'header' }, { slug: 'header-large-title', area: 'header' },
+      { slug: 'footer', area: 'footer' }, { slug: 'footer-columns', area: 'footer' }, { area: 'footer' },
+    ]
+    expect(usedParts(parts, TEMPLATES).map((p) => p.slug)).toEqual(['header', 'footer', undefined])
+    expect(usedParts(parts).map((p) => p.slug)).toEqual(['header', 'footer', undefined])
+    expect(usedParts(parts, [{ slug: 'page', content: { raw: '<!-- wp:template-part {"slug":"footer-columns"} /-->' } }]).map((p) => p.slug)).toEqual(['footer-columns', undefined])
+  })
+
+  it('turns each inline navigation of a used part into a menu of its area: order, nesting, # links kept; hidden targets left out', () => {
+    let n = 0
+    const dropped = { count: 0 }
+    const menus = inlineMenus(usedParts([{ slug: 'footer', area: 'footer', content: { raw: TT5_FOOTER } }], TEMPLATES), ctx, new Set(), () => -++n, dropped)
+    expect(menus.map((m) => [m.slug, m.name, m.locations])).toEqual([['footer-navigation-1', 'Footer navigation 1', ['footer']], ['footer-navigation-2', 'Footer navigation 2', ['footer']]])
+    expect(menus[0]!.items.map((i) => [i.title, i.url, i.parent])).toEqual([['Blog', '#', null], ['About', '#', null], ['FAQs', '#', null], ['Authors', '#', null]])
+    const shop = menus[1]!.items.find((i) => i.title === 'Shop')!
+    expect(menus[1]!.items.map((i) => [i.title, i.parent])).toEqual([['Events', null], ['Shop', null], ['Gift cards', shop.id]])
+    expect(menus[1]!.items[2]!.url).toBe('https://s.example/shop/gift-cards/')
+    // Page 99 is not proven public: its link (and title) stays out.
+    expect(JSON.stringify(menus)).not.toContain('Secret launch')
+    expect(dropped.count).toBe(1)
+    expect(menus.every((m) => (m.id ?? 0) < 0 && m.items.every((i) => i.id < 0))).toBe(true)
+  })
+
+  it('names a navigation by its aria label, skips an empty or referenced one, and keeps slugs unique', () => {
+    let n = 0
+    const raw = '<!-- wp:navigation {"ariaLabel":"Legal"} --><!-- wp:navigation-link {"label":"Privacy","url":"/privacy/"} /--><!-- /wp:navigation -->'
+      + '<!-- wp:navigation {"ref":5} /--><!-- wp:navigation /-->'
+    const menus = inlineMenus([{ slug: 'footer', area: 'footer', content: { raw } }], ctx, new Set(['legal']), () => -++n)
+    expect(menus.map((m) => [m.slug, m.name])).toEqual([['legal-2', 'Legal']])
+  })
+
+  it('reads with the wp_navigation menus, only from used parts', () => {
+    const parts = [
+      { slug: 'header', area: 'header', content: { raw: '<!-- wp:navigation {"ref":9} /-->' } },
+      { slug: 'footer', area: 'footer', content: { raw: TT5_FOOTER } },
+      { slug: 'footer-columns', area: 'footer', content: { raw: TT5_FOOTER.replace('Blog', 'Unused') } },
+    ]
+    const menus = blockMenus([{ id: 9, slug: 'navigation', status: 'publish', title: { raw: 'Header' }, content: { raw: NAV } }], parts, ctx, new Set(), { count: 0 }, TEMPLATES)
+    expect(menus.map((m) => [m.slug, m.locations])).toEqual([['navigation', ['header']], ['footer-navigation-1', ['footer']], ['footer-navigation-2', ['footer']]])
+    expect(JSON.stringify(menus)).not.toContain('Unused')
+    // Item ids stay unique across the wp_navigation menu and the inline ones.
+    const ids = menus.flatMap((m) => m.items.map((i) => i.id))
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('follows a part inside a used part (once each); a navigation that refers to a draft wp_navigation shows nothing', () => {
+    const parts = [
+      { slug: 'header', area: 'header', content: { raw: '<!-- wp:group --><!-- wp:template-part {"slug":"site-nav"} /--><!-- wp:template-part {"slug":"header"} /--><!-- /wp:group -->' } },
+      { slug: 'site-nav', area: 'uncategorized', content: { raw: '<!-- wp:navigation --><!-- wp:navigation-link {"label":"Docs","url":"/docs/"} /--><!-- /wp:navigation --><!-- wp:navigation {"ref":8} /-->' } },
+      { slug: 'footer', area: 'footer', content: { raw: '<!-- wp:navigation {"ref":8} /-->' } },
+    ]
+    const menus = blockMenus([{ id: 8, slug: 'old', status: 'draft', title: { raw: 'Old plans' }, content: { raw: NAV } }], parts, ctx, new Set(), { count: 0 }, TEMPLATES)
+    expect(menus.map((m) => [m.slug, m.locations, m.items.map((i) => i.title)])).toEqual([['header-navigation', ['header'], ['Docs']]])
+    expect(JSON.stringify(menus)).not.toContain('Old plans')
+  })
+
+  it('stores an inline menu with its area and claims no WordPress id for it', async () => {
+    let n = 0
+    const { raw } = await parseWxr(FIXTURE)
+    raw.menus = inlineMenus([{ slug: 'footer', area: 'footer', content: { raw: TT5_FOOTER } }], ctx, new Set(), () => -++n)
+    const { files } = rawToContentrain(raw)
+    const file = Object.keys(files).find((f) => f.includes('content/') && f.includes('/menus/'))!
+    const stored = Object.values(JSON.parse(files[file]!)) as Array<Record<string, unknown>>
+    expect(stored.map((m) => [m.name, m.locations, 'wp_id' in m]).toSorted((a, b) => String(a[0]).localeCompare(String(b[0])))).toEqual([['Footer navigation 1', ['footer'], false], ['Footer navigation 2', ['footer'], false]])
+  })
+})
+
 describe('unpublished targets never reach a menu', () => {
   it('leaves out classic items that are drafts or point at hidden content, moving their children up', () => {
     const dropped = { count: 0 }
@@ -104,6 +186,29 @@ describe('unpublished targets never reach a menu', () => {
     expect(items.map((i) => [i.title, i.parent])).toEqual([['Team', null]])
     expect(dropped.count).toBe(2)
     expect(JSON.stringify(items)).not.toMatch(/Secret|secret-plan/)
+  })
+})
+
+describe('custom links to a plain permalink', () => {
+  it('name the post they point at, on this site only', () => {
+    expect(plainPostId('/?page_id=14', ctx.origin)).toBe(14)
+    expect(plainPostId('https://s.example/?p=10&preview=true', ctx.origin)).toBe(10)
+    expect(plainPostId('https://other.example/?p=10', ctx.origin)).toBeUndefined()
+    expect(plainPostId('/about/', ctx.origin)).toBeUndefined()
+    expect(plainPostId('/?s=bread', ctx.origin)).toBeUndefined()
+  })
+
+  it('are left out when that post is not proven public — block and classic menus alike', () => {
+    let n = 0
+    const dropped = { count: 0 }
+    const block = navigationItems('<!-- wp:navigation-link {"label":"Secret plan","url":"/?page_id=14","kind":"custom"} /--><!-- wp:navigation-link {"label":"About","url":"/?page_id=11","kind":"custom"} /--><!-- wp:navigation-link {"label":"Search","url":"/?s=bread"} /-->', ctx, () => -++n, dropped)
+    expect(block.map((i) => i.title)).toEqual(['About', 'Search'])
+    const classic = classicMenus([{ id: 1, slug: 'main', name: 'Main' }], [
+      { id: 20, menus: 1, type: 'custom', url: 'https://s.example/?p=99', title: { raw: 'Unreleased post' }, menu_order: 1 },
+      { id: 21, menus: 1, type: 'custom', url: 'https://s.example/?p=10', title: { raw: 'One' }, menu_order: 2 },
+    ], ctx, dropped)
+    expect(classic[0]!.items.map((i) => i.title)).toEqual(['One'])
+    expect(dropped.count).toBe(2)
   })
 })
 
