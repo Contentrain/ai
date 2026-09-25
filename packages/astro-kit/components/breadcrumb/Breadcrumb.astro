@@ -1,0 +1,56 @@
+---
+// Where the page sits: its ancestors as links, then the page itself. Can emit
+// the matching BreadcrumbList JSON-LD.
+import { tv } from 'tailwind-variants'
+import type { LinkInput } from '../_shared/types'
+
+const breadcrumb = tv({
+  slots: {
+    list: 'flex flex-wrap items-center gap-2 text-sm text-ink-muted',
+    link: 'text-ink-muted no-underline hover:text-ink hover:underline',
+  },
+  variants: {
+    separator: { slash: {}, chevron: {}, dot: {} },
+  },
+  defaultVariants: { separator: 'slash' },
+})
+
+const MARKS = { slash: '/', chevron: '›', dot: '·' } as const
+
+interface Props {
+  /** Ancestors, root first. */
+  items: LinkInput[]
+  /** The current page's title. */
+  current: string
+  /** Accessible name ("Breadcrumb"). */
+  label?: string | undefined
+  /** Emit schema.org BreadcrumbList JSON-LD. Leave off when the page's SEO graph already has one. */
+  schema?: boolean | undefined
+  separator?: 'slash' | 'chevron' | 'dot' | undefined
+}
+
+const { items, current, label = 'Breadcrumb', schema = false, separator = 'slash' } = Astro.props
+const slots = breadcrumb({ separator })
+const origin = Astro.site ?? Astro.url
+const jsonLd = schema
+  ? JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [...items, { label: current, href: Astro.url.pathname }].map((item, index) => ({
+      '@type': 'ListItem', position: index + 1, name: item.label, item: new URL(item.href, origin).href,
+    })),
+  }).replace(/</g, '\\u003c')
+  : undefined
+---
+<nav aria-label={label} data-cr-part="breadcrumb">
+  <ol class={slots.list()}>
+    {items.map(item => (
+      <li class="flex items-center gap-2">
+        <a href={item.href} class={slots.link()}>{item.label}</a>
+        <span aria-hidden="true">{MARKS[separator]}</span>
+      </li>
+    ))}
+    <li aria-current="page" class="text-ink">{current}</li>
+  </ol>
+</nav>
+{jsonLd && <script type="application/ld+json" is:inline set:html={jsonLd} />}

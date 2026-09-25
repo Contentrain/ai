@@ -1,0 +1,124 @@
+{
+  "id": "footer",
+  "name": "Footer",
+  "description": "Site footer: brand and tagline, link columns or one row of links, social links and the copyright line.",
+  "category": "chrome",
+  "uses": [],
+  "shared": [
+    "types.ts"
+  ],
+  "variants": {
+    "layout": {
+      "options": [
+        "simple",
+        "columns"
+      ],
+      "default": "simple",
+      "description": "simple: brand left, links and copyright right. columns: brand column plus one column per link group."
+    },
+    "tone": {
+      "options": [
+        "default",
+        "muted",
+        "inverse"
+      ],
+      "default": "default",
+      "description": "Surface with a top border, muted surface, or dark (ink) background."
+    }
+  },
+  "props": {
+    "siteName": {
+      "type": "string",
+      "required": true,
+      "description": "Site title (site.title or site.organization)."
+    },
+    "tagline": {
+      "type": "string",
+      "description": "One line under the name (site.tagline)."
+    },
+    "columns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "fields": {
+          "title": {
+            "type": "string",
+            "description": "Heading shown above the links; leave out when the source shows none."
+          },
+          "label": {
+            "type": "string",
+            "description": "Accessible name of the column navigation (the menu name); defaults to the title."
+          },
+          "links": {
+            "type": "array",
+            "required": true
+          }
+        }
+      },
+      "description": "Link groups for the columns layout; each footer menu or widget area becomes one."
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "fields": {
+          "label": {
+            "type": "string",
+            "required": true
+          },
+          "href": {
+            "type": "url",
+            "required": true
+          }
+        }
+      },
+      "description": "One row of links (the footer menu) for the simple layout."
+    },
+    "social": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "fields": {
+          "label": {
+            "type": "string",
+            "required": true
+          },
+          "href": {
+            "type": "url",
+            "required": true
+          }
+        }
+      },
+      "description": "Social profile links (site.same_as)."
+    },
+    "copyright": {
+      "type": "string",
+      "description": "Copyright line; defaults to © <year> <siteName>."
+    },
+    "navLabel": {
+      "type": "string",
+      "description": "Accessible name of the footer navigation (ui-strings nav.footer)."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": [
+      "core/template-part:footer",
+      "core/social-links"
+    ],
+    "elementor": [
+      "elementor/social-icons",
+      "elementor/icon-list"
+    ],
+    "divi": [
+      "divi/et_pb_social_media_follow"
+    ],
+    "classic": [
+      "classic/footer",
+      "classic/widget-area"
+    ]
+  },
+  "a11y": "One <footer> landmark; each link group is a <nav> named by its title. Social links open in a new tab with rel=me."
+}

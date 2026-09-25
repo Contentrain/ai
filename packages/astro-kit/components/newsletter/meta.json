@@ -1,0 +1,105 @@
+{
+  "id": "newsletter",
+  "name": "Newsletter sign-up",
+  "description": "A newsletter sign-up that posts straight to the list provider's hosted form endpoint (Mailchimp, Kit, MailerLite, Brevo, Buttondown): a plain HTML form with no script and no server of ours. The provider shows its own confirmation page. The action must be the named provider's endpoint (exact host and path; `other`: https off the site's origin), otherwise nothing renders. WordPress-side sign-up plugins (MC4WP, Divi signup, Jetpack) post through the site and are not mapped here: the plan lists them for review.",
+  "category": "section",
+  "uses": [],
+  "shared": [
+    "Section.astro"
+  ],
+  "variants": {
+    "layout": {
+      "options": [
+        "inline",
+        "stacked"
+      ],
+      "default": "inline",
+      "description": "inline: copy beside the form on wide screens. stacked: one centred column."
+    },
+    "tone": {
+      "options": [
+        "default",
+        "muted",
+        "inverse",
+        "accent"
+      ],
+      "default": "muted",
+      "description": "Section background."
+    }
+  },
+  "props": {
+    "action": {
+      "type": "url",
+      "required": true,
+      "description": "The provider's hosted form endpoint (Mailchimp *.list-manage.com/subscribe/post, Kit app.kit.com/forms/<n>/subscriptions, MailerLite assets.mailerlite.com/jsonp/<n>/forms/<n>/subscribe, Brevo *.sibforms.com/serve/, Buttondown buttondown.com/api/emails/embed-subscribe/). At migration the engine reads it from the source form element (`dom:form@action`) into the section's content, where it stays editable in Studio; it never passes through the fact pack or a model."
+    },
+    "provider": {
+      "type": "select",
+      "options": [
+        "mailchimp",
+        "kit",
+        "mailerlite",
+        "brevo",
+        "buttondown",
+        "other"
+      ],
+      "default": "mailchimp",
+      "description": "Names the fields the endpoint expects (Mailchimp EMAIL/FNAME + its bot-trap field, Kit email_address, MailerLite fields[email], Brevo EMAIL, Buttondown email)."
+    },
+    "emailName": {
+      "type": "string",
+      "description": "Field name for the address when the provider is other or names it differently."
+    },
+    "askName": {
+      "type": "boolean",
+      "default": false,
+      "description": "Ask for a first name too, when the provider takes one (the source form had a name field)."
+    },
+    "heading": {
+      "type": "string",
+      "description": "Section heading."
+    },
+    "intro": {
+      "type": "text",
+      "description": "A line or two about the newsletter."
+    },
+    "note": {
+      "type": "string",
+      "description": "Small print under the form (privacy, frequency)."
+    },
+    "emailLabel": {
+      "type": "string",
+      "description": "ui-strings newsletter.email."
+    },
+    "nameLabel": {
+      "type": "string",
+      "description": "ui-strings newsletter.name."
+    },
+    "submitLabel": {
+      "type": "string",
+      "description": "ui-strings newsletter.submit."
+    },
+    "newTab": {
+      "type": "boolean",
+      "default": true,
+      "description": "Open the provider's confirmation page in a new tab (the reader keeps the site)."
+    },
+    "id": {
+      "type": "string",
+      "description": "Section id, unique per page (two sign-ups on one page need two ids): the heading gets `<id>-title`, the inputs `<id>-email`/`<id>-name`."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "classic": [
+      "classic/mailchimp",
+      "classic/kit",
+      "classic/mailerlite",
+      "classic/brevo",
+      "classic/buttondown"
+    ]
+  },
+  "a11y": "Every input has a visible label and the address field is type=email, required, with autocomplete=email, so the browser validates it and announces errors without script. The form is named by the section heading (or the submit label). Mailchimp's bot-trap field is aria-hidden, off screen and out of the tab order."
+}

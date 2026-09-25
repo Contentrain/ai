@@ -1,0 +1,6 @@
+[
+  { "name": "inline-accent", "props": { "heading": "Get the next issue in your inbox", "body": "One email a month. No tracking, unsubscribe any time.", "actions": [{ "label": "Subscribe", "href": "/subscribe/" }] } },
+  { "name": "centered-inverse", "props": { "heading": "Planning a trip?", "body": "Start with the guides readers use most.", "layout": "centered", "tone": "inverse", "actions": [{ "label": "Popular guides", "href": "/guides/" }, { "label": "Ask a question", "href": "/contact/", "style": "ghost" }] } },
+  { "name": "card-default", "props": { "heading": "Write for the journal", "body": "We publish reader essays every season.", "frame": "card", "tone": "default", "actions": [{ "label": "Pitch an essay", "href": "/pitch/" }] } },
+  { "name": "card-muted", "props": { "heading": "Support independent travel writing", "frame": "card", "tone": "muted", "layout": "centered", "actions": [{ "label": "Become a member", "href": "/members/" }] } }
+]

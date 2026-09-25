@@ -1,0 +1,40 @@
+[
+  {
+    "name": "lines-exclusive-schema",
+    "props": {
+      "heading": "Frequently asked questions",
+      "exclusive": true,
+      "openFirst": true,
+      "schema": true,
+      "items": [
+        { "question": "Do you accept guest essays?", "answer": "<p>Yes — we publish reader essays every season. Send a <a href=\"/pitch/\">short pitch</a> first.</p>" },
+        { "question": "Can I reuse your photographs?", "answer": "<p>Only with written permission. Most are licensed from the photographers, not owned by us.</p>" },
+        { "question": "How often do you publish?", "answer": "<p>Two or three pieces a month, plus the seasonal issue.</p><ul><li>Guides: monthly</li><li>Essays: seasonal</li></ul>" }
+      ]
+    }
+  },
+  {
+    "name": "cards-muted",
+    "props": {
+      "style": "cards",
+      "tone": "muted",
+      "id": "faq-cards",
+      "items": [
+        { "question": "Is the newsletter free?", "answer": "<p>Yes, and it always will be.</p>" },
+        { "question": "Do you run ads?", "answer": "<p>No. The journal is funded by members.</p>" }
+      ]
+    }
+  },
+  {
+    "name": "lines-inverse",
+    "props": { "tone": "inverse", "id": "faq-dark", "openFirst": true, "items": [{ "question": "Where are you based?", "answer": "<p>Lisbon, most of the year.</p>" }] }
+  },
+  {
+    "name": "cards-accent",
+    "props": { "style": "cards", "tone": "accent", "id": "faq-accent", "items": [{ "question": "How do I cancel my membership?", "answer": "<p>From your account page, at any time.</p>" }] }
+  },
+  {
+    "name": "plain",
+    "props": { "style": "plain", "id": "faq-plain", "items": [{ "question": "Do you accept guest essays?", "answer": "<p>Yes, send a short pitch first.</p>" }, { "question": "How often do you publish?", "answer": "<p>Two or three pieces a month.</p>" }] }
+  }
+]

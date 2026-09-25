@@ -1,5 +1,34 @@
 # @contentrain/decide
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies [3eb5832]
+- Updated dependencies [36e5773]
+- Updated dependencies [01c0065]
+- Updated dependencies [9121e22]
+  - @contentrain/types@1.25.0
+
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [53505cd]
+  - @contentrain/types@1.24.0
+
+## 0.2.0
+
+### Minor Changes
+
+- aa0c0bf: Three kinds for Migrate v3's fact pack, each a closed set with a rule first: `field_type` (a varying value's field type among the options the fact pack offers, one Jev request per option set), `region_name` (what a top-level page section is), and `unmapped_element` (which astro-kit component a builder element becomes, or `prose` / `site-specific`). Without `CONTENTRAIN_JEW_API_TOKEN`, the rules answer and in-band decisions come back `unreviewed`, so the same code goes live once the token is set.
+
+### Patch Changes
+
+- Updated dependencies [d87121b]
+- Updated dependencies [90b5049]
+  - @contentrain/types@1.23.0
+
 ## 0.1.6
 
 ### Patch Changes

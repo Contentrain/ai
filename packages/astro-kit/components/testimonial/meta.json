@@ -1,0 +1,97 @@
+{
+  "id": "testimonial",
+  "name": "Testimonial",
+  "description": "Quotes from customers or readers with who said them: one large quote, or several as cards. Every quote is shown; rotating quotes are the slider's job.",
+  "category": "section",
+  "uses": [],
+  "shared": [
+    "KitImage.astro",
+    "Section.astro",
+    "types.ts"
+  ],
+  "variants": {
+    "layout": {
+      "options": [
+        "single",
+        "grid"
+      ],
+      "default": "grid",
+      "description": "single: one large centred quote (the first item stands alone; more items stack). grid: cards, up to three per row."
+    },
+    "tone": {
+      "options": [
+        "default",
+        "muted",
+        "inverse",
+        "accent"
+      ],
+      "default": "default",
+      "description": "Section background."
+    }
+  },
+  "props": {
+    "items": {
+      "type": "array",
+      "required": true,
+      "items": {
+        "type": "object",
+        "fields": {
+          "quote": {
+            "type": "text",
+            "required": true
+          },
+          "name": {
+            "type": "string",
+            "required": true
+          },
+          "role": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "object",
+            "fields": {
+              "src": {
+                "type": "image",
+                "required": true
+              },
+              "alt": {
+                "type": "string",
+                "required": true
+              },
+              "width": {
+                "type": "integer"
+              },
+              "height": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "description": "The quotes (Elementor testimonial content/name/job/image, Divi testimonial body/author/job_title/portrait_url)."
+    },
+    "heading": {
+      "type": "string",
+      "description": "Section heading above the quotes."
+    },
+    "id": {
+      "type": "string",
+      "description": "Anchor id of the section; the heading gets `<id>-title`."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "elementor": [
+      "elementor/testimonial"
+    ],
+    "divi": [
+      "divi/et_pb_testimonial"
+    ],
+    "classic": [
+      "classic/testimonial"
+    ]
+  },
+  "a11y": "Each quote is a <figure> whose <figcaption> names the speaker; the text is in a <blockquote>. Avatars are decorative when their alt is empty. The section is labelled by its heading when it has one."
+}

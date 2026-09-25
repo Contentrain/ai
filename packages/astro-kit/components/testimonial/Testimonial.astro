@@ -1,0 +1,70 @@
+---
+// What people say: one large quote, or several as cards. Each is a <figure>
+// with the quote and who said it. A rotating carousel of quotes is the
+// slider's job; this one shows them all.
+import { tv } from 'tailwind-variants'
+import KitImage from '../_shared/KitImage.astro'
+import Section from '../_shared/Section.astro'
+import type { ImageInput } from '../_shared/types'
+
+export interface TestimonialItem {
+  quote: string
+  name: string
+  role?: string | undefined
+  avatar?: ImageInput | undefined
+}
+
+const testimonial = tv({
+  slots: {
+    heading: 'mb-10 text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
+    list: 'grid gap-6',
+    card: 'flex h-full flex-col gap-6',
+    quote: 'text-pretty',
+    person: 'mt-auto flex items-center gap-3 not-italic',
+    name: 'font-semibold',
+    role: 'text-sm opacity-75',
+  },
+  variants: {
+    layout: {
+      single: { heading: 'text-center', list: 'mx-auto max-w-3xl', card: 'items-center text-center', quote: 'text-2xl leading-snug font-medium md:text-3xl', person: 'mt-0' },
+      grid: { list: 'md:grid-cols-2 lg:grid-cols-3', card: 'rounded-card border border-line p-6', quote: 'text-base' },
+    },
+    tone: { default: {}, muted: { card: 'bg-surface' }, inverse: { card: 'border-surface/20' }, accent: { card: 'border-accent-ink/30', role: 'opacity-100' } },
+  },
+  compoundVariants: [
+    { layout: 'grid', tone: 'muted', class: { card: 'border-transparent text-ink' } },
+  ],
+  defaultVariants: { layout: 'grid', tone: 'default' },
+})
+
+interface Props {
+  items: TestimonialItem[]
+  heading?: string | undefined
+  layout?: 'single' | 'grid' | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  id?: string | undefined
+}
+
+const { items, heading, layout, tone, id } = Astro.props
+const s = testimonial({ layout, tone })
+const headingId = heading && id ? `${id}-title` : undefined
+---
+{items.length > 0 && (
+  <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+    {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+    <div class={s.list()}>
+      {items.map(item => (
+        <figure class={s.card()}>
+          <blockquote class={s.quote()}><p>“{item.quote}”</p></blockquote>
+          <figcaption class={s.person()}>
+            {item.avatar && <KitImage image={item.avatar} sizes="48px" class="size-12 shrink-0 rounded-full object-cover" />}
+            <span class="flex flex-col text-left">
+              <span class={s.name()}>{item.name}</span>
+              {item.role && <span class={s.role()}>{item.role}</span>}
+            </span>
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  </Section>
+)}

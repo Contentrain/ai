@@ -1,0 +1,88 @@
+---
+// Images in a grid or in columns, with optional captions. Opening an image
+// shows it large in a native popover — no script: `popovertarget` opens it,
+// Escape and a click outside close it. `link` opens the image file instead.
+import { tv } from 'tailwind-variants'
+import KitImage from '../_shared/KitImage.astro'
+import Section from '../_shared/Section.astro'
+import type { ImageInput } from '../_shared/types'
+
+export interface GalleryItem {
+  image: ImageInput
+  caption?: string | undefined
+}
+
+const gallery = tv({
+  slots: {
+    heading: 'mb-8 text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight md:text-3xl',
+    list: 'gap-3 md:gap-4',
+    item: 'm-0',
+    frame: 'block w-full cursor-zoom-in overflow-hidden rounded-[var(--radius-image,var(--radius-card))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    thumb: 'h-full w-full object-cover transition-transform duration-300 hover:scale-[1.02]',
+    caption: 'mt-2 text-sm opacity-75',
+    viewer: 'm-auto max-h-[92vh] max-w-[92vw] bg-transparent p-0 backdrop:bg-ink/85',
+  },
+  variants: {
+    layout: {
+      grid: { list: 'grid', frame: 'aspect-square' },
+      masonry: { list: 'columns-2 [&>*]:mb-3 md:[&>*]:mb-4', item: 'break-inside-avoid' },
+    },
+    columns: { '2': { list: 'grid-cols-2' }, '3': { list: 'grid-cols-2 md:grid-cols-3' }, '4': { list: 'grid-cols-2 md:grid-cols-4' } },
+    open: { popover: {}, link: {}, none: { frame: 'cursor-default' } },
+  },
+  compoundVariants: [
+    { layout: 'masonry', columns: '3', class: { list: 'md:columns-3' } },
+    { layout: 'masonry', columns: '4', class: { list: 'md:columns-4' } },
+  ],
+  defaultVariants: { layout: 'grid', columns: '3', open: 'popover' },
+})
+
+interface Props {
+  items: GalleryItem[]
+  heading?: string | undefined
+  layout?: 'grid' | 'masonry' | undefined
+  columns?: '2' | '3' | '4' | undefined
+  /** What a click on an image does: show it large in place, open the file, or nothing. */
+  open?: 'popover' | 'link' | 'none' | undefined
+  /** Text of the viewer's close button ("Close"). */
+  closeLabel?: string | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  id?: string | undefined
+}
+
+const { items, heading, layout, columns, open = 'popover', closeLabel = 'Close', tone, id = 'gallery' } = Astro.props
+const s = gallery({ layout, columns, open })
+const headingId = heading ? `${id}-title` : undefined
+const sizes = columns === '2' ? '50vw' : columns === '4' ? '(min-width: 768px) 25vw, 50vw' : '(min-width: 768px) 33vw, 50vw'
+---
+{items.length > 0 && (
+  <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+    {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+    <ul class={s.list()} role="list">
+      {items.map((item, i) => {
+        const viewer = `${id}-image-${i + 1}`
+        return (
+          <li class={s.item()}>
+            <figure class="m-0">
+              {open === 'popover'
+                ? <button type="button" popovertarget={viewer} class={s.frame()} aria-label={item.image.alt || item.caption || undefined}><KitImage image={item.image} sizes={sizes} class={s.thumb()} /></button>
+                : open === 'link'
+                  ? <a href={item.image.src} class={s.frame()}><KitImage image={item.image} sizes={sizes} class={s.thumb()} /></a>
+                  : <div class={s.frame()}><KitImage image={item.image} sizes={sizes} class={s.thumb()} /></div>}
+              {item.caption && <figcaption class={s.caption({ class: tone === 'accent' ? 'opacity-100' : undefined })}>{item.caption}</figcaption>}
+            </figure>
+            {open === 'popover' && (
+              <div id={viewer} popover class={s.viewer()}>
+                <figure class="m-0 flex flex-col items-center gap-3">
+                  <KitImage image={item.image} sizes="92vw" class="max-h-[80vh] w-auto rounded-[var(--radius-image,var(--radius-card))] object-contain" />
+                  {item.caption && <figcaption class="text-sm text-surface">{item.caption}</figcaption>}
+                  <button type="button" popovertarget={viewer} popovertargetaction="hide" class="rounded-md border border-surface/40 px-4 py-2 text-sm text-surface hover:bg-surface/10">{closeLabel}</button>
+                </figure>
+              </div>
+            )}
+          </li>
+        )
+      })}
+    </ul>
+  </Section>
+)}

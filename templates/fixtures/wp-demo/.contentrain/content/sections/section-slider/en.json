@@ -1,0 +1,27 @@
+{
+  "services-1": {
+    "label": "Recent work",
+    "slides": [
+      {
+        "image": {
+          "alt": "A fast, quiet homepage",
+          "height": 450,
+          "src": "/demo/cover-2.svg",
+          "width": 800
+        },
+        "text": "From 4 MB to 400 KB per page.",
+        "title": "A publisher's front page"
+      },
+      {
+        "image": {
+          "alt": "A product documentation site",
+          "height": 450,
+          "src": "/demo/cover-4.svg",
+          "width": 800
+        },
+        "text": "Moved 900 pages without a broken link.",
+        "title": "Product documentation"
+      }
+    ]
+  }
+}

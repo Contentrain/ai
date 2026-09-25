@@ -14,6 +14,14 @@
     "title": "About",
     "wp_id": 300
   },
+  "9a51c2e04b7d": {
+    "body": "<p>Design, build and move: what we do for the sites we take on.</p>",
+    "excerpt": "Design, build and move: what we do for the sites we take on.",
+    "menu_order": 4,
+    "slug": "services",
+    "title": "Services",
+    "wp_id": 303
+  },
   "e587e67fb9ed": {
     "body": "<p>Tell us about your site. We answer within two working days.</p>",
     "form": "contact-messages",

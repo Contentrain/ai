@@ -1,0 +1,6 @@
+[
+  { "name": "numbered-middle", "props": { "base": "/blog/", "current": 5, "total": 12 } },
+  { "name": "simple", "props": { "base": "/blog/", "current": 2, "total": 3, "style": "simple" } },
+  { "name": "numbered-start", "props": { "base": "/tag/astro/", "current": 1, "total": 3, "align": "start" } },
+  { "name": "numbered-end", "props": { "base": "/tag/astro/", "current": 3, "total": 3, "align": "end" } }
+]

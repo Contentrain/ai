@@ -19,6 +19,7 @@ export const PUBLISHABLE_PACKAGES = [
   { name: '@contentrain/wp-import', dir: 'packages/wp-import', packageJson: 'packages/wp-import/package.json' },
   { name: '@contentrain/verify', dir: 'packages/verify', packageJson: 'packages/verify/package.json' },
   { name: '@contentrain/decide', dir: 'packages/decide', packageJson: 'packages/decide/package.json' },
+  { name: '@contentrain/astro-kit', dir: 'packages/astro-kit', packageJson: 'packages/astro-kit/package.json' },
 ]
 
 export const PRIVATE_PACKAGE_JSONS = [

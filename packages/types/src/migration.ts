@@ -66,6 +66,10 @@ export interface RawSite {
   /** WXR export timestamp, when the source was a WXR file. */
   export_date?: string | null
   wxr_version?: string | null
+  /** The site's time zone (`timezone_string`, IANA, e.g. `Europe/Istanbul`), when it names one. */
+  timezone?: string | null
+  /** The site's fixed UTC offset in hours (`gmt_offset`), for a site set to an offset rather than a zone. */
+  gmt_offset?: number | null
 }
 
 export interface RawAuthor {
@@ -101,7 +105,15 @@ export interface RawTermRef {
 /** An ACF field value paired with its field-definition key (`field_…`). */
 export interface RawAcfValue {
   value: unknown
-  field_key: string
+  /** ACF field key (`field_…`), where the source carries it (WXR meta, Bridge). REST does not. */
+  field_key?: string
+  /**
+   * ACF field type as the source states it (`text`, `repeater`, `relationship`, …): SCF's REST
+   * `<name>_source.type`, a Bridge field schema. Absent = the reader infers the type from the value.
+   */
+  type?: string
+  /** Field label as the source states it. */
+  label?: string
 }
 
 export interface RawPost {
@@ -185,6 +197,7 @@ export type RawMenuTarget =
   | { kind: 'unknown'; resolved: false }
 
 export interface RawMenuItem {
+  /** `nav_menu_item` post id. Negative for an item of a block navigation, which has no id of its own. */
   id: number
   title: string
   order?: number
@@ -201,10 +214,17 @@ export interface RawMenuItem {
 }
 
 export interface RawMenu {
+  /** Menu term id; for a block theme's navigation, the `wp_navigation` post id. */
   id: number | null
   slug: string
   name: string
   items: RawMenuItem[]
+  /**
+   * Where the site shows it: the theme locations a classic menu is assigned to (`primary`, `footer`,
+   * `menu-1`, …), or the template-part areas (`header`, `footer`) whose navigation block shows a
+   * block theme's navigation. Absent when the producer does not know.
+   */
+  locations?: string[]
 }
 
 export interface RawComment {

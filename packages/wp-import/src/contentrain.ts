@@ -12,6 +12,7 @@
 //    comments intake downstream cannot exist without it.
 
 import type { EntrySourceMap, FieldDef, ModelDefinition, RawIR, RawPost } from '@contentrain/types'
+import { ACF_REFERENCE_TYPES, acfFieldDef, acfRows, acfScrub, acfValue, mergeFieldDef, type AcfReference } from './acf.js'
 import {
   byValue,
   canon,
@@ -31,6 +32,10 @@ export interface ImportReport {
   title_fallback: number
   meta_fields: Record<string, string>
   acf_fields: Record<string, string>
+  /** ACF select/checkbox values outside their field's stated choices, left out (`field: count`). */
+  acf_outside_choices: Record<string, number>
+  /** ACF date-times written without a zone because the source named none (`timezone_string` / `gmt_offset`). */
+  acf_datetime_unzoned: number
   skipped_types: string[]
   dropped_relations: number
   models: Record<string, { kind: string; domain: string; fields: number; entries: number }>
@@ -45,6 +50,11 @@ export interface ImportReport {
    * put that text on a public site. Publish only after deciding what to show.
    */
   password_protected_drafts: number
+  /**
+   * The source named no site title (no REST index name, no WXR channel title): the `site` entry has no
+   * `title`. The field stays required, so the store says what is missing rather than inventing a name.
+   */
+  site_title_missing: boolean
 }
 
 export interface ContentrainResult {
@@ -85,6 +95,12 @@ function relationOver(targets: string[]): {
   const single = targets.length === 1
   return { model: single ? targets[0]! : targets, ref: (entry) => (single ? entry.ref : entry) }
 }
+
+/** Post, term, user or attachment ids of an ACF reference value: ids, numeric strings or `{ ID }` objects. */
+const idsOf = (v: unknown): number[] =>
+  (Array.isArray(v) ? v : [v])
+    .map((x) => (typeof x === 'number' ? x : typeof x === 'string' && /^\d+$/.test(x) ? Number(x) : x && typeof x === 'object' ? Number((x as { ID?: unknown; id?: unknown; term_id?: unknown }).ID ?? (x as { id?: unknown }).id ?? (x as { term_id?: unknown }).term_id) : Number.NaN))
+    .filter((n) => Number.isSafeInteger(n) && n > 0)
 
 export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): ContentrainResult {
   const updatedBy = opts?.updatedBy ?? '@contentrain/wp-import'
@@ -130,12 +146,15 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     title_fallback: 0,
     meta_fields: {},
     acf_fields: {},
+    acf_outside_choices: {},
+    acf_datetime_unzoned: 0,
     skipped_types: [],
     dropped_relations: 0,
     models: {},
     locales,
     translation_groups: translationGroups,
     password_protected_drafts: 0,
+    site_title_missing: false,
   }
   const importMeta = (status: string, extra: Partial<Meta> = {}): Meta => ({
     status,
@@ -209,6 +228,65 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     postEntry.set(p.id, { model: mid, ref: hexId(identityOwner.get(key) === canonical ? key : `${mid}:wp:${canonical}`) })
   }
   const mediaRef = (id: number): string | null => (raw.attachments.some((a) => a.id === id) ? hexId(`media:${id}`) : null)
+
+  // ── ACF references: the store entry each id points at ──
+  const termById = new Map(raw.terms.map((t) => [t.id, t]))
+  const authorById = new Map(raw.authors.filter((a) => a.id !== null).map((a) => [a.id!, a]))
+  const refOf = (kind: AcfReference, id: number): { model: string; ref: string } | null => {
+    if (kind === 'post') return postEntry.get(id) ?? null
+    if (kind === 'media') { const m = mediaRef(id); return m ? { model: 'media', ref: m } : null }
+    if (kind === 'user') { const a = authorById.get(id); return a && models.authors ? { model: 'authors', ref: authorId(slugify(a.login)) } : null }
+    if (kind === 'term') { const t = termById.get(id); return t && models[taxModelId(t.taxonomy)] ? { model: taxModelId(t.taxonomy), ref: termId(t.taxonomy, t.slug) } : null }
+    return null
+  }
+  interface AcfFieldPlan { def?: FieldDef; kind?: AcfReference; multiple: boolean; models: Set<string> }
+  /** Every ACF field on these posts: its definition, or — for a reference — its kind and target models. */
+  const acfPlan = (items: RawPost[], taken: (k: string) => boolean): Map<string, AcfFieldPlan> => {
+    const out = new Map<string, AcfFieldPlan>()
+    for (const p of items) {
+      for (const [k, acf] of Object.entries(p.acf ?? {})) {
+        if (taken(k) || acf.value === null || acf.value === undefined || acf.value === '' || acf.value === false && acf.type !== 'true_false') continue
+        const kind = acf.type ? ACF_REFERENCE_TYPES[acf.type] : undefined
+        if (kind === 'address') {
+          const def: FieldDef = Array.isArray(acf.value) ? { type: 'array', items: 'url' } : { type: 'url' }
+          const cur = out.get(k)
+          out.set(k, { def: cur?.def ?? { ...def, ...(acf.label ? { label: strip(acf.label) } : {}) }, kind, multiple: false, models: new Set() })
+          continue
+        }
+        if (kind) {
+          const cur = out.get(k) ?? { kind, multiple: acf.type === 'relationship' || acf.type === 'gallery', models: new Set<string>() }
+          if (Array.isArray(acf.value)) cur.multiple = true
+          for (const id of idsOf(acf.value)) { const r = refOf(kind, id); if (r) cur.models.add(r.model) }
+          out.set(k, cur)
+          continue
+        }
+        const def = acfFieldDef(k, acfScrub(acf.value), { type: acf.type, label: acf.label })
+        if (!def) continue
+        const cur = out.get(k)
+        out.set(k, { def: cur?.def ? mergeFieldDef(cur.def, def) : def, multiple: false, models: new Set() })
+      }
+    }
+    // A reference none of whose targets is in the store has no model to point at: it is left out.
+    for (const [k, plan] of out) if (!plan.def && !plan.models.size) out.delete(k)
+    return out
+  }
+  const acfRefs = (plan: AcfFieldPlan, value: unknown): unknown => {
+    const refs = idsOf(value).map((id) => refOf(plan.kind!, id)).filter((r): r is { model: string; ref: string } => !!r)
+    const missing = idsOf(value).length - refs.length
+    if (missing > 0) report.dropped_relations += missing
+    if (!refs.length) return undefined
+    const poly = plan.models.size > 1
+    const one = (r: { model: string; ref: string }) => (poly ? r : r.ref)
+    return plan.multiple ? refs.map(one) : one(refs[0]!)
+  }
+  // page_link: an id is the address of that post as it is now.
+  // Only a published, unprotected target's address: a draft's `?page_id=` is no address to keep.
+  const addressOf = (v: unknown): unknown => {
+    if (Array.isArray(v)) return v.map(addressOf).filter(Boolean)
+    if (typeof v !== 'number') return v
+    const t = postById.get(v)
+    return t && t.status === 'publish' && !t.password ? (t.link ?? undefined) : undefined
+  }
   const titleOf = (p: RawPost): string => {
     const t = strip(p.title)
     if (t) return t
@@ -395,12 +473,13 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
           report.meta_fields[k] = t
         }
       }
-      for (const [k, acf] of Object.entries(p.acf ?? {})) {
-        if (fields[k]) continue
-        const t = byValue(acf.value) ?? 'string'
-        fields[k] = { type: (t === 'object' ? 'object' : t) as FieldDef['type'], label: k, description: 'ACF', order: (o += 10) }
-        report.acf_fields[k] = t
-      }
+    }
+    // ACF: one field per ACF field, typed by the mapping table (acf.ts); references resolved to store entries.
+    const acfFields = acfPlan(typeItems, (k) => !!fields[k])
+    for (const [k, plan] of acfFields) {
+      const def = plan.def ?? { type: plan.multiple ? 'relations' : 'relation', model: plan.models.size > 1 ? [...plan.models].toSorted() : [...plan.models][0]! } as FieldDef
+      fields[k] = { ...def, ...(def.label ? {} : { label: k }), description: def.description ?? 'ACF', order: (o += 10) }
+      report.acf_fields[k] = plan.def ? plan.def.type : `${def.type}:${[...plan.models].toSorted().join('|')}`
     }
     // The locales this type actually has content in. A partially-translated
     // site — pages in one language, posts in three — used to fail validation on
@@ -461,7 +540,17 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       if (fields.visibility) e.visibility = p.password ? 'password' : p.status === 'private' ? 'private' : 'public'
       if (fields.comments_open) e.comments_open = p.comment_status === 'open'
       for (const k of Object.keys(fields)) if (k in p.meta && !(k in e) && !k.startsWith('_')) e[k] = p.meta[k]
-      for (const [k, acf] of Object.entries(p.acf ?? {})) if (fields[k] && !(k in e)) e[k] = acf.value
+      for (const [k, acf] of Object.entries(p.acf ?? {})) {
+        const plan = acfFields.get(k)
+        if (!plan || k in e) continue
+        const ctx = {
+          timeZone: raw.site.timezone, gmtOffset: raw.site.gmt_offset,
+          dropped: () => { report.acf_outside_choices[k] = (report.acf_outside_choices[k] ?? 0) + 1 },
+          unzoned: () => { report.acf_datetime_unzoned++ },
+        }
+        const v = plan.def ? acfValue(plan.def, plan.kind === 'address' ? addressOf(acf.value) : acfRows(acfScrub(acf.value)), ctx) : acfRefs(plan, acf.value)
+        if (v !== undefined) e[k] = v
+      }
       contentBucket[id] = e
       metaBucket[id] = mapStatus(p)
     }
@@ -477,6 +566,8 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
         slug: { type: 'slug', required: true, unique: true, label: 'Slug', order: 20 },
         items: { type: 'relations', model: 'menu-items', label: 'Items', order: 30 },
         wp_id: { type: 'integer', label: 'WP term ID', order: 40 },
+        // Only when the source said where its menus are shown: stores from sources that do not know stay as they were.
+        ...(menus.some((m) => m.locations?.length) ? { locations: { type: 'array', items: 'string', label: 'Locations', order: 50 } as FieldDef } : {}),
       },
     })
     const toTarget = relationOver([...contentModelIds, ...taxonomies.map(taxModelId)])
@@ -503,7 +594,9 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
         name: strip(m.name),
         slug: slugify(m.slug) || `menu-${m.id}`,
         items: m.items.map((i) => itemRef(i.id)),
-        wp_id: m.id,
+        // An inline navigation has no WordPress record (a negative placeholder): none is claimed.
+        ...(m.id !== null && m.id > 0 ? { wp_id: m.id } : {}),
+        ...(m.locations?.length ? { locations: m.locations } : {}),
       }
       metas.menus![mid] = importMeta('published')
       for (const i of m.items) {
@@ -512,7 +605,8 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
           menu: mid,
           order: i.order,
           type: i.target.kind === 'url' ? 'custom' : i.target.kind === 'post' ? 'post_type' : i.target.kind === 'term' ? 'taxonomy' : i.target.kind === 'archive' ? 'post_type_archive' : 'custom',
-          wp_id: i.id,
+          // A block navigation's items have no WordPress id (negative placeholders): none is claimed.
+          ...(i.id > 0 ? { wp_id: i.id } : {}),
           open_in_new_tab: i.target_attr === '_blank',
         }
         if (i.parent && !i.parent_unresolved) e.parent = itemRef(i.parent)
@@ -590,10 +684,11 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     },
   })
   siteEntry = pick(
-    { title: strip(raw.site.title) || 'Site', tagline: raw.site.description, url: raw.site.url, language: raw.site.language },
+    { title: strip(raw.site.title), tagline: raw.site.description, url: raw.site.url, language: raw.site.language },
     new Set(['title', 'tagline', 'url', 'language']),
   )
   siteMeta = importMeta('published')
+  report.site_title_missing = !siteEntry.title
   const vocabTerms: Record<string, Record<string, string>> = {}
   for (const m of menus) {
     for (const i of m.items) {
