@@ -76,8 +76,9 @@ export interface PlanSite {
   /**
    * Menu slugs (`menus.slug`, as WordPress named them) for the starter's navigation areas — `getMenu(slug)`.
    * `footer` lists the footer's menus in the source's order, one column each (at most 4); empty for none.
+   * A plan written before 1.25 has one slug, or `'none'`: read it through {@link footerMenusOf}.
    */
-  menus: { primary: string, footer: string[] }
+  menus: { primary: string, footer: string | string[] }
   /**
    * A single post as the source's single template lays it out: the header parts in their order, links
    * to the previous and next post (`core/post-navigation-link`), and how many other posts a list under
@@ -323,6 +324,13 @@ const IMPORTED_MODELS = new Set(['posts', 'pages', 'categories', 'tags', 'author
  * their fields. Kit catalog and fact checks (does the kit id exist, does the template exist) belong to
  * the caller, which holds those documents.
  */
+/** The footer's menus as a list: an older plan's single slug is one menu, its `'none'` is none. */
+export function footerMenusOf(site: Pick<PlanSite, 'menus'>): string[] {
+  const footer = site.menus.footer
+  if (typeof footer === 'string') return footer === 'none' || footer === '' ? [] : [footer]
+  return [...footer]
+}
+
 export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   const errors: string[] = []
   const warnings: string[] = []
@@ -340,7 +348,9 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   }
   if (site?.lists && !['cards', 'full'].includes(site.lists.display)) errors.push(`site.lists.display ${site.lists.display} is not cards or full`)
   const footer = site?.menus?.footer
-  if (!Array.isArray(footer)) errors.push('site.menus.footer is not a list of menu slugs')
+  if (typeof footer === 'string') {
+    if (footer === '') errors.push('site.menus.footer has an empty menu slug')
+  } else if (!Array.isArray(footer)) errors.push('site.menus.footer is not a menu slug or a list of them')
   else {
     if (footer.length > 4) errors.push(`site.menus.footer has ${footer.length} menus; the footer takes at most 4`)
     if (footer.some(slug => typeof slug !== 'string' || slug === '')) errors.push('site.menus.footer has an empty menu slug')

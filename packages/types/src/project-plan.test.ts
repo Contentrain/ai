@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PROJECT_PLAN_FORMAT, validateProjectPlan, type ProjectPlan } from './project-plan.js'
+import { footerMenusOf, PROJECT_PLAN_FORMAT, validateProjectPlan, type ProjectPlan } from './project-plan.js'
 
 /** A small blog with a composed About page — the shape the planner writes for a block-theme site. */
 const plan = (): ProjectPlan => ({
@@ -116,6 +116,18 @@ describe('validateProjectPlan', () => {
     ])
     p.site.menus.footer = []
     expect(validateProjectPlan(p).errors).toEqual([])
+  })
+
+  it('still reads a plan written before footer menus were a list', () => {
+    const p = plan()
+    p.site.menus.footer = 'footer-menu'
+    expect(validateProjectPlan(p).errors).toEqual([])
+    expect(footerMenusOf(p.site)).toEqual(['footer-menu'])
+    p.site.menus.footer = 'none'
+    expect(validateProjectPlan(p).errors).toEqual([])
+    expect(footerMenusOf(p.site)).toEqual([])
+    p.site.menus.footer = ['a', 'b']
+    expect(footerMenusOf(p.site)).toEqual(['a', 'b'])
   })
 
   it('checks the post layout and list display a plan copies from the source templates', () => {
