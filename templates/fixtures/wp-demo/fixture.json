@@ -1,5 +1,10 @@
 {
   "dependencies": {
     "embla-carousel": "^8.6.0"
-  }
+  },
+  "absentFromDist": [
+    "Roadmap draft",
+    "/roadmap/",
+    "Unannounced plans"
+  ]
 }

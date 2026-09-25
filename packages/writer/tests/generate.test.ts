@@ -32,7 +32,7 @@ const plan: ProjectPlan = {
   layout: {},
   models: [{
     id: 'section-card-grid', kind: 'collection', origin: 'plan', name: 'Card sections', domain: 'sections', i18n: true, title_field: 'title',
-    fields: { title: { type: 'string' }, items: { type: 'array', items: { type: 'object', fields: { title: { type: 'string', required: true }, text: { type: 'text' } } } } },
+    fields: { title: { type: 'string' }, items: { type: 'array', items: { type: 'object', fields: { title: { type: 'string', required: true }, text: { type: 'text' }, href: { type: 'url' } } } } },
   }],
   components: [{ id: 'CardGrid', origin: 'kit', kit: { id: 'card-grid' } }],
   routes: [
@@ -111,6 +111,12 @@ describe('generateProject in place', () => {
     expect(report.routes.covered).toEqual(['post'])
     expect(await read('src/views/composed/index.ts')).toContain('303: PageServices,')
     expect(await read('src/views/composed/PageServices.astro')).toContain(`await getEntry('sectionCardGrid', 'en/services-0')`)
+  })
+
+  it('passes section links through the published set', async () => {
+    const view = await read('src/views/composed/PageServices.astro')
+    expect(view).toContain(`import { publicItems } from '../../lib/links'`)
+    expect(view).toContain(`(await publicItems(entry0?.data.items, ['href'], []))`)
   })
 
   it('names the package after the site', async () => {

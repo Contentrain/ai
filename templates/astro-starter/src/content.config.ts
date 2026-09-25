@@ -53,11 +53,15 @@ export const collections = {
     loader: loader('menu-items'),
     schema: z.object({
       id: z.string(),
+      classes: z.array(z.string()).optional(),
+      description: z.string().optional(),
       menu: reference('menus'),
       open_in_new_tab: z.boolean().default(false),
       order: z.number().int().optional(),
       parent: reference('menuItems').optional(),
+      target: z.object({ model: z.string(), ref: z.string() }).optional(),
       title: z.string(),
+      type: z.enum(['custom', 'post_type', 'taxonomy', 'post_type_archive']).optional(),
       url: z.string().optional(),
       wp_id: z.number().int().optional(),
     }),
@@ -67,6 +71,7 @@ export const collections = {
     schema: z.object({
       id: z.string(),
       items: z.array(reference('menuItems')).default([]),
+      locations: z.array(z.string()).optional(),
       name: z.string(),
       slug: z.string(),
       wp_id: z.number().int().optional(),

@@ -17,7 +17,9 @@
 // A fixture is laid over the starter as files. Its `fixture.json` is not a
 // site file: `dependencies` there are added after install, the way a
 // migration adds what the kit components it copies need (embla-carousel for
-// the slider).
+// the slider). `absentFromDist` lists text no built file may contain: the
+// titles and addresses of the fixture's drafts, which no menu, body link,
+// sitemap or feed may reveal.
 
 import { execFileSync } from 'node:child_process'
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
@@ -50,9 +52,8 @@ cpSync(starter, project, {
 })
 const fixtureDir = values.fixture ? join(root, 'templates', 'fixtures', values.fixture) : undefined
 if (fixtureDir) cpSync(fixtureDir, project, { recursive: true, filter: source => source !== join(fixtureDir, 'fixture.json') })
-const fixtureDeps = fixtureDir && existsSync(join(fixtureDir, 'fixture.json'))
-  ? Object.entries(JSON.parse(readFileSync(join(fixtureDir, 'fixture.json'), 'utf8')).dependencies ?? {})
-  : []
+const fixture = fixtureDir && existsSync(join(fixtureDir, 'fixture.json')) ? JSON.parse(readFileSync(join(fixtureDir, 'fixture.json'), 'utf8')) : {}
+const fixtureDeps = Object.entries(fixture.dependencies ?? {})
 
 if (values.frozen && values['local-sdk']) throw new Error('--frozen tests the published packages; --local-sdk replaces one. Pick one.')
 run('pnpm', ['install', values.frozen ? '--frozen-lockfile' : '--no-frozen-lockfile'])
@@ -70,6 +71,19 @@ run('pnpm', ['exec', 'astro', 'check'])
 run('pnpm', ['exec', 'knip'])
 run('pnpm', ['run', 'build'])
 run('node', ['scripts/check-dist.mjs'])
+
+const absent = fixture.absentFromDist ?? []
+if (absent.length) {
+  const leaks = []
+  for (const entry of readdirSync(join(project, 'dist'), { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !/\.(?:html|xml|txt|json)$/.test(entry.name)) continue
+    const path = join(entry.parentPath, entry.name)
+    const text = readFileSync(path, 'utf8')
+    for (const needle of absent) if (text.includes(needle)) leaks.push(`${path.slice(project.length + 1)}: ${needle}`)
+  }
+  if (leaks.length) throw new Error(`Unpublished content reached dist:\n${leaks.join('\n')}`)
+  console.log(`\nno unpublished content in dist (${absent.length} markers)`)
+}
 
 console.log(`\nstarter gates passed${values.fixture ? ` (fixture: ${values.fixture})` : ''} — ${project}`)
 if (!values.out) rmSync(project, { recursive: true, force: true })
