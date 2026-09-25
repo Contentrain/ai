@@ -43,11 +43,12 @@ export function pageHref(page: Page, pages: ReadonlyMap<string, Page>): string {
   return fillPattern(permalinks.page, { slug: page.data.slug, path: trail.join('/') })
 }
 
+/** Categories nest; tags have no parent field. */
+const parentOf = (term: Term) => ('parent' in term.data ? term.data.parent : undefined)
+
 export function termHref(kind: 'category' | 'tag', term: Term, terms: ReadonlyMap<string, Term>): string {
   const trail: string[] = []
   const seen = new Set<string>()
-  // Categories nest; tags have no parent field.
-  const parentOf = (t: Term) => ('parent' in t.data ? t.data.parent : undefined)
   for (let at: Term | undefined = term; at && !seen.has(at.id); at = parentOf(at) ? terms.get(parentOf(at)!.id) : undefined) {
     seen.add(at.id)
     trail.unshift(at.data.slug)

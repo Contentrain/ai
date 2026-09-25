@@ -139,10 +139,18 @@ export async function generateProject(input: GenerateInput): Promise<GenerateRep
     written: [...written].toSorted(),
     kit: { components: copy.components, dependencies: Object.fromEntries(missing) },
     routes: { covered: routes.covered, unsupported: routes.unsupported, views: routes.views.map(v => ({ route: v.route, file: v.file, wpIds: v.wpIds })) },
-    siteComponents: plan.components.filter(c => c.origin === 'site').map(c => ({ id: c.id, covers: c.covers ?? [], ...(c.brief?.template ? { template: c.brief.template } : {}) })),
+    siteComponents: plan.components.filter(c => c.origin === 'site').map((c) => {
+      const entry: GenerateReport['siteComponents'][number] = { id: c.id, covers: c.covers ?? [] }
+      if (c.brief?.template) entry.template = c.brief.template
+      return entry
+    }),
     lowConfidence: (plan.decisions ?? [])
       // Only element placement is a kit-or-site choice; field typing has its own fallbacks.
       .filter(d => d.id.startsWith('unmapped_element:') && (d.by === 'fallback' || d.answer === 'site-specific' || (d.confidence !== undefined && d.confidence < floor)))
-      .map(d => ({ id: d.id, answer: d.answer, by: d.by, ...(d.confidence !== undefined ? { confidence: d.confidence } : {}) })),
+      .map((d) => {
+        const entry: GenerateReport['lowConfidence'][number] = { id: d.id, answer: d.answer, by: d.by }
+        if (d.confidence !== undefined) entry.confidence = d.confidence
+        return entry
+      }),
   }
 }

@@ -16,6 +16,9 @@ import { collectionName } from './schema.js'
 
 export class CodegenError extends Error {}
 
+/** Sort key of an import line: `astro:` modules first, then relative imports by path. */
+const importKey = (line: string) => line.slice(line.lastIndexOf(' from ') + 7).replace(/^astro:/, ' ')
+
 export interface ComposedView {
   route: string
   /** Component name and file, under `src/views/composed/`. */
@@ -277,11 +280,7 @@ class View {
       `import { ${[...lib, 'type Page'].join(', ')} } from '../../lib/content'`,
       ...(this.needs.has('siteConfig') ? [`import { siteConfig } from '../../site.config'`] : []),
       `import ComposedPage from '../ComposedPage.astro'`,
-    ].toSorted((a, b) => {
-      // astro: modules first, then relative imports by path.
-      const key = (line: string) => line.slice(line.lastIndexOf(' from ') + 7).replace(/^astro:/, ' ')
-      return key(a).localeCompare(key(b))
-    })
+    ].toSorted((a, b) => importKey(a).localeCompare(importKey(b)))
     const shared = [...(this.needs.has('getSite') ? [['site', 'getSite()']] : []), ...(this.needs.has('getStrings') ? [['t', 'getStrings()']] : [])]
     const setup = [
       ...(shared.length === 1 ? [`const ${shared[0]![0]} = await ${shared[0]![1]}`] : []),

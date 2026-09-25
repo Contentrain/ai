@@ -14,10 +14,11 @@ describe('contentConfigSource', () => {
   })
 })
 
+const model = (fields: ModelDefinition['fields'], kind: ModelDefinition['kind'] = 'collection'): ModelDefinition =>
+  ({ id: 'posts', name: 'Posts', kind, domain: 'blog', i18n: false, title_field: 'title', fields })
+
 describe('modelSchema', () => {
   const known = new Set(['posts', 'categories', 'media'])
-  const model = (fields: ModelDefinition['fields'], kind: ModelDefinition['kind'] = 'collection'): ModelDefinition =>
-    ({ id: 'posts', name: 'Posts', kind, domain: 'blog', i18n: false, title_field: 'title', fields })
 
   it('maps field types, required-ness and defaults', () => {
     const schema = modelSchema(model({

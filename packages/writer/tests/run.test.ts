@@ -102,6 +102,11 @@ const result = (cost: number) => ({
   modelUsage: { 'claude-opus-5-5': { inputTokens: 1000, outputTokens: 200, cacheReadInputTokens: 5000, cacheCreationInputTokens: 800, costUSD: cost } },
 })
 
+const turn = (id: string, output: number) => ({
+  type: 'assistant',
+  message: { id, model: 'claude-opus-5-5', usage: { input_tokens: 1000, output_tokens: output, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
+})
+
 describe('runWriter', () => {
   it('runs jobs, reports cost and tokens per job and in total', async () => {
     const seen: string[] = []
@@ -133,10 +138,6 @@ describe('runWriter', () => {
     expect(report.jobs.map(j => j.outcome)).toEqual(['success', 'skipped_budget'])
   })
 
-  const turn = (id: string, output: number) => ({
-    type: 'assistant',
-    message: { id, model: 'claude-opus-5-5', usage: { input_tokens: 1000, output_tokens: output, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
-  })
 
   it('charges the budget on every turn and stops within one turn of the cap', async () => {
     const budget = localBudget(0.05, 60_000)
