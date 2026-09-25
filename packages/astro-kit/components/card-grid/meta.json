@@ -73,7 +73,13 @@
             "type": "url"
           },
           "image": {
-            "type": "object"
+            "type": "object",
+            "fields": {
+              "src": { "type": "image", "required": true },
+              "alt": { "type": "string", "required": true },
+              "width": { "type": "integer" },
+              "height": { "type": "integer" }
+            }
           },
           "eyebrow": {
             "type": "string"

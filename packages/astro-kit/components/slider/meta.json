@@ -11,7 +11,7 @@
     "caption": { "options": ["below", "overlay"], "default": "overlay", "description": "Caption under the image, or over its lower edge on a gradient." }
   },
   "props": {
-    "slides": { "type": "array", "required": true, "items": { "type": "object", "fields": { "image": { "type": "object", "required": true }, "title": { "type": "string" }, "text": { "type": "text" }, "action": { "type": "object" } } }, "description": "Slides; image is an ImageInput, action an ActionInput." },
+    "slides": { "type": "array", "required": true, "items": { "type": "object", "fields": { "image": { "type": "object", "required": true, "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } } }, "title": { "type": "string" }, "text": { "type": "text" }, "action": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true }, "newTab": { "type": "boolean" }, "style": { "type": "select", "options": ["primary", "secondary", "ghost"] } } } } }, "description": "Slides; image is an ImageInput, action an ActionInput." },
     "label": { "type": "string", "required": true, "description": "Accessible name of the carousel." },
     "prevLabel": { "type": "string", "description": "ui-strings slider.prev." },
     "nextLabel": { "type": "string", "description": "ui-strings slider.next." },

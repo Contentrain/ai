@@ -172,7 +172,23 @@
                 "type": "url"
               },
               "image": {
-                "type": "object"
+                "type": "object",
+                "fields": {
+                  "src": {
+                    "type": "image",
+                    "required": true
+                  },
+                  "alt": {
+                    "type": "string",
+                    "required": true
+                  },
+                  "width": {
+                    "type": "integer"
+                  },
+                  "height": {
+                    "type": "integer"
+                  }
+                }
               },
               "eyebrow": {
                 "type": "string"
@@ -1459,7 +1475,23 @@
             "fields": {
               "image": {
                 "type": "object",
-                "required": true
+                "required": true,
+                "fields": {
+                  "src": {
+                    "type": "image",
+                    "required": true
+                  },
+                  "alt": {
+                    "type": "string",
+                    "required": true
+                  },
+                  "width": {
+                    "type": "integer"
+                  },
+                  "height": {
+                    "type": "integer"
+                  }
+                }
               },
               "title": {
                 "type": "string"
@@ -1468,7 +1500,28 @@
                 "type": "text"
               },
               "action": {
-                "type": "object"
+                "type": "object",
+                "fields": {
+                  "label": {
+                    "type": "string",
+                    "required": true
+                  },
+                  "href": {
+                    "type": "url",
+                    "required": true
+                  },
+                  "newTab": {
+                    "type": "boolean"
+                  },
+                  "style": {
+                    "type": "select",
+                    "options": [
+                      "primary",
+                      "secondary",
+                      "ghost"
+                    ]
+                  }
+                }
               }
             }
           },
