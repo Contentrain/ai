@@ -113,6 +113,10 @@ describe('generateProject in place', () => {
     expect(await read('src/views/composed/PageServices.astro')).toContain(`await getEntry('sectionCardGrid', 'en/services-0')`)
   })
 
+  it('names the package after the site', async () => {
+    expect(JSON.parse(await read('package.json')).name).toBe('northwind')
+  })
+
   it('copies the kit components the plan places', async () => {
     expect(report.kit.components).toContain('card-grid')
     expect(await read('src/components/kit/card-grid/CardGrid.astro')).toBe(await readFile(join(KIT_COMPONENTS_DIR, 'card-grid', 'CardGrid.astro'), 'utf8'))

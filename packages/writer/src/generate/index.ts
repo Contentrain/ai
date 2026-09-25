@@ -55,6 +55,15 @@ export async function readModels(dir: string): Promise<ModelDefinition[]> {
   return Promise.all(names.map(async name => JSON.parse(await readFile(join(dir, name), 'utf8')) as ModelDefinition))
 }
 
+const slug = (value: string) => value.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64)
+
+/** npm package name for the site: its title, else its host, as a valid lowercase name. */
+export function packageName(plan: ProjectPlan): string {
+  let host = ''
+  try { host = new URL(plan.site.url).hostname.replace(/^www\./, '') } catch {}
+  return slug(plan.site.title) || slug(host) || 'site'
+}
+
 export async function generateProject(input: GenerateInput): Promise<GenerateReport> {
   const { plan, catalog, outDir } = input
   const written = new Set<string>()
@@ -127,12 +136,12 @@ export async function generateProject(input: GenerateInput): Promise<GenerateRep
   const copy = planCopy(catalog, kitIds)
   await copyComponents(copy, input.kitRoot, outDir)
   for (const path of Object.keys(copy.files)) written.add(path)
-  const pkg = JSON.parse(await read('package.json')) as { dependencies?: Record<string, string> }
+  // The project is the site's: its package is named after it, with what the copied components need.
+  const pkg = JSON.parse(await read('package.json')) as { name?: string, dependencies?: Record<string, string> }
   const missing = Object.entries(copy.dependencies).filter(([name]) => !pkg.dependencies?.[name])
-  if (missing.length) {
-    pkg.dependencies = Object.fromEntries(Object.entries({ ...pkg.dependencies, ...Object.fromEntries(missing) }).toSorted(([a], [b]) => a.localeCompare(b)))
-    await write('package.json', `${JSON.stringify(pkg, null, 2)}\n`)
-  }
+  pkg.name = packageName(plan)
+  if (missing.length) pkg.dependencies = Object.fromEntries(Object.entries({ ...pkg.dependencies, ...Object.fromEntries(missing) }).toSorted(([a], [b]) => a.localeCompare(b)))
+  await write('package.json', `${JSON.stringify(pkg, null, 2)}\n`)
 
   // 5. Composed pages.
   const routes = composedViews(plan, catalog, models)
