@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { ModelDefinition } from '@contentrain/types'
 import { describe, expect, it } from 'vitest'
-import { seoContentFiles, titleTemplateOf, type FactsSeo } from '../src/generate/seo'
+import { seoContentFiles, siteTitleFile, titleTemplateOf, type FactsSeo } from '../src/generate/seo'
 
 // Golden tt5's head titles: Yoast's " - " pattern, two hand-written titles.
 const facts: FactsSeo = {
@@ -60,6 +60,29 @@ describe('seoContentFiles', () => {
     expect(out.c!.seo).toBeUndefined()
     expect(out.d!.seo).toEqual({ noindex: true })
     expect(out.e!.seo).toBeUndefined()
+    await rm(dir, { recursive: true, force: true })
+  })
+})
+
+describe('siteTitleFile', () => {
+  const store = async (site: Record<string, unknown>) => {
+    const dir = await mkdtemp(join(tmpdir(), 'writer-site-'))
+    await mkdir(join(dir, '.contentrain/content/site/site'), { recursive: true })
+    await writeFile(join(dir, '.contentrain/content/site/site/data.json'), JSON.stringify(site))
+    return dir
+  }
+
+  it('replaces an importer\'s placeholder name with the source\'s', async () => {
+    const dir = await store({ title: 'Site', tagline: 'Notes' })
+    const file = await siteTitleFile(dir, facts)
+    expect(file?.path).toBe('.contentrain/content/site/site/data.json')
+    expect(JSON.parse(file!.text)).toEqual({ tagline: 'Notes', title: 'Golden Studio' })
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('keeps a name the store already has', async () => {
+    const dir = await store({ title: 'Golden Studio Ltd' })
+    expect(await siteTitleFile(dir, facts)).toBeUndefined()
     await rm(dir, { recursive: true, force: true })
   })
 })

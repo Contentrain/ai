@@ -131,6 +131,15 @@ export const collections = {
       wp_id: z.number().int().optional(),
     }),
   }),
+  redirects: defineCollection({
+    loader: loader('redirects'),
+    schema: z.object({
+      id: z.string(),
+      from: z.string(),
+      status: z.number().int().default(301),
+      to: z.string().optional(),
+    }),
+  }),
   sectionCardGrid: defineCollection({
     loader: loader('section-card-grid'),
     schema: z.object({

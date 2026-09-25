@@ -1,11 +1,12 @@
 // The files a plan's `site` owns in the starter: `src/site.config.ts`, the
-// public address in `astro.config.mjs`, `redirects.json`, the `@theme` block of
+// public address in `astro.config.mjs`, the `redirects` collection, the `@theme` block of
 // `src/styles/global.css` and the WordPress presets rich-text bodies still use
 // (`has-<slug>-color`, `has-<slug>-font-size`). Each is an edit of the
 // starter's own file, so everything around the values — comments, the font
 // setup, the utilities — stays as the starter wrote it.
 
-import type { PlanSite, PlanTokenRole } from '@contentrain/types'
+import { createHash } from 'node:crypto'
+import { canonicalStringify, type PlanSite, type PlanTokenRole } from '@contentrain/types'
 
 const sq = (value: string) => `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
 
@@ -51,9 +52,23 @@ export function astroConfigSource(starter: string, site: PlanSite, imageHosts: r
   return out
 }
 
-export function redirectsSource(site: PlanSite): string {
-  const sorted = Object.fromEntries(Object.entries(site.redirects).toSorted(([a], [b]) => a.localeCompare(b)))
-  return `${JSON.stringify(sorted, null, 2)}\n`
+/** Where the redirects collection's entries live (non-i18n collection, domain `site`). */
+export const REDIRECTS_CONTENT = '.contentrain/content/site/redirects/data.json'
+
+/**
+ * The plan's redirects as entries of the `redirects` collection, which editors then keep in Studio.
+ * An entry's id is derived from its old address, so a re-run updates the same entry; entries already in
+ * the store for other addresses (an editor's) stay as they are.
+ */
+export function redirectsContent(existing: Record<string, Record<string, unknown>>, site: PlanSite): string {
+  const out: Record<string, Record<string, unknown>> = { ...existing }
+  for (const [from, rule] of Object.entries(site.redirects)) {
+    const id = createHash('sha256').update(from).digest('hex').slice(0, 12)
+    const status = typeof rule === 'string' ? 301 : rule.status
+    const to = typeof rule === 'string' ? rule : rule.destination
+    out[id] = status === 410 ? { from, status } : { from, status, to }
+  }
+  return canonicalStringify(out)
 }
 
 /** A CSS value safe to put in a declaration: no block or declaration breaks. */

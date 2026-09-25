@@ -19,7 +19,9 @@
 // migration adds what the kit components it copies need (embla-carousel for
 // the slider). `absentFromDist` lists text no built file may contain: the
 // titles and addresses of the fixture's drafts, which no menu, body link,
-// sitemap or feed may reveal.
+// sitemap or feed may reveal. `distFiles` names built files and text each
+// must contain or must not (the host's redirect rules, a redirect page, the
+// sitemap).
 
 import { execFileSync } from 'node:child_process'
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
@@ -83,6 +85,20 @@ if (absent.length) {
   }
   if (leaks.length) throw new Error(`Unpublished content reached dist:\n${leaks.join('\n')}`)
   console.log(`\nno unpublished content in dist (${absent.length} markers)`)
+}
+
+const fileChecks = Object.entries(fixture.distFiles ?? {})
+if (fileChecks.length) {
+  const problems = []
+  for (const [file, { contains = [], excludes = [] }] of fileChecks) {
+    const path = join(project, 'dist', file)
+    if (!existsSync(path)) { problems.push(`${file}: not built`); continue }
+    const text = readFileSync(path, 'utf8')
+    for (const needle of contains) if (!text.includes(needle)) problems.push(`${file}: missing ${needle}`)
+    for (const needle of excludes) if (text.includes(needle)) problems.push(`${file}: must not contain ${needle}`)
+  }
+  if (problems.length) throw new Error(`Built files are not as expected:\n${problems.join('\n')}`)
+  console.log(`\n${fileChecks.length} built file(s) as expected`)
 }
 
 console.log(`\nstarter gates passed${values.fixture ? ` (fixture: ${values.fixture})` : ''} — ${project}`)

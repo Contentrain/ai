@@ -10,7 +10,7 @@ import { copyComponents, planCopy, type KitCatalog } from '@contentrain/astro-ki
 import { canonicalStringify, type ModelDefinition, type ProjectPlan } from '@contentrain/types'
 import { configWithDomains, mergeStarterModels, planModelFiles } from './models.js'
 import { contentConfigSource } from './schema.js'
-import { astroConfigSource, fontRoles, presetsSource, redirectsSource, siteConfigSource, themeSource, withPresetsImport, withSiteFonts, withSiteFontTags } from './site.js'
+import { astroConfigSource, fontRoles, presetsSource, REDIRECTS_CONTENT, redirectsContent, siteConfigSource, themeSource, withPresetsImport, withSiteFonts, withSiteFontTags } from './site.js'
 import { composedIndexSource, composedViews, type RoutePlanOutcome } from './views.js'
 
 export interface GenerateInput {
@@ -122,7 +122,10 @@ export async function generateProject(input: GenerateInput): Promise<GenerateRep
   const fonts = plan.site.tokens.fonts ?? []
   await write('astro.config.mjs', withSiteFonts(astroConfigSource(await read('astro.config.mjs'), plan.site, []), fonts))
   if (fonts.length) await write('src/layouts/BaseLayout.astro', withSiteFontTags(await read('src/layouts/BaseLayout.astro'), fonts))
-  await write('redirects.json', redirectsSource(plan.site))
+  if (Object.keys(plan.site.redirects).length > 0) {
+    const existing = await read(REDIRECTS_CONTENT).then(text => JSON.parse(text) as Record<string, Record<string, unknown>>, () => ({}))
+    await write(REDIRECTS_CONTENT, redirectsContent(existing, plan.site))
+  }
   let globalCss = themeSource(await read('src/styles/global.css'), fontRoles(plan.site.tokens))
   const presets = presetsSource(plan.site.tokens)
   if (presets) {

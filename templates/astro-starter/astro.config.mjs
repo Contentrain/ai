@@ -1,8 +1,6 @@
 // @ts-check
-import sitemap from '@astrojs/sitemap'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig, fontProviders } from 'astro/config'
-import redirects from './redirects.json' with { type: 'json' }
 
 // The site's public address. Canonical URLs, the sitemap, RSS and JSON-LD all
 // hang off it, so a migration writes the source site's own address here.
@@ -17,10 +15,6 @@ export default defineConfig({
   // URL at the same place without a redirect.
   trailingSlash: 'always',
   build: { format: 'directory' },
-  // Old address → new address, 301. Generated from the source site's redirect
-  // rules and changed permalinks; kept in a JSON file so tools can rewrite it.
-  redirects,
-  integrations: [sitemap()],
   image: {
     // Hosts whose images astro:assets may download and optimize at build time.
     domains: [],

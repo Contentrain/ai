@@ -19,16 +19,17 @@ pnpm lhci        # Lighthouse CI on the built site
 | `.contentrain/models/` | The content models: `site` (singleton), `posts`, `pages`, `categories`, `tags`, `authors`, `media`, `menus`, `menu-items`, and the `ui-strings` dictionary. |
 | `src/content.config.ts` | One Astro collection per model, loaded with `contentrainLoader` and validated by a schema that mirrors the model. Public builds show published entries only. |
 | `src/site.config.ts` | What is not content: permalink patterns, the front page, posts per page, menu slugs and the Studio binding. |
-| `src/pages/[...path].astro` | The route table. Every content address — posts, pages, the posts index, category/tag/author archives and their `/page/N/` pages — comes from the permalink patterns. Two entries claiming one address fail the build. |
+| `src/lib/site-routes.ts`, `src/pages/[...path].astro` | The route table. Every content address — posts, pages, the posts index, category/tag/author archives and their `/page/N/` pages — comes from the permalink patterns. Two entries claiming one address fail the build. |
+| `src/lib/links.ts` | Links to what the public can see: menu targets, body links and section links resolve through the route table; a link to a draft, a private page or the source site's old address is dropped or rewritten. |
 | `src/views/` | The page templates: `PostView`, `PageView`, `ListView`. |
 | `src/layouts/BaseLayout.astro` | Document shell: SEO head, font, skip link, header, footer. |
 | `src/components/SEO.astro`, `src/lib/seo.ts` | Title, description, canonical, robots, Open Graph, Twitter, RSS discovery and a JSON-LD graph (WebSite, Organization, BlogPosting, BreadcrumbList, CollectionPage). |
 | `src/components/Prose.astro`, `src/styles/wp-blocks.css` | Rich-text bodies: Tailwind Typography plus styles for WordPress block markup (columns, buttons, gallery, cover, media & text, tables, quotes, separators, alignments, preset colors and sizes). |
 | `src/components/studio/` | Studio forms and comment threads. |
 | `src/styles/global.css` | The one stylesheet. Design tokens are in `@theme`. |
-| `redirects.json` | Old address → new address (301), read by `astro.config.mjs`. |
+| `redirects` model, `src/lib/redirects.ts` | Old address → new address, edited in Studio. Built as a redirect page per old address and as `_redirects` (Netlify, Cloudflare Pages). A rule whose target is not public is left out. |
 
-Also built: `sitemap-index.xml` (`@astrojs/sitemap`), `rss.xml`, `robots.txt`,
+Also built: `sitemap-index.xml` (public addresses from the route table, without noindex entries or redirects), `rss.xml`, `robots.txt`,
 `404.html` and `/search/` (Pagefind — the index is built after `astro build`,
 no server needed).
 

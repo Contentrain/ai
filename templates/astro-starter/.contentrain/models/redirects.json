@@ -1,0 +1,31 @@
+{
+  "domain": "site",
+  "fields": {
+    "from": {
+      "description": "The old path, as it was on the source site: /old-post/",
+      "label": "From",
+      "order": 10,
+      "required": true,
+      "type": "string",
+      "unique": true
+    },
+    "status": {
+      "default": 301,
+      "description": "301 moved for good, 302 or 307 for now, 410 gone (no destination).",
+      "label": "Status",
+      "order": 30,
+      "type": "integer"
+    },
+    "to": {
+      "description": "Where it leads: a path on this site or a full URL. Empty for 410.",
+      "label": "To",
+      "order": 20,
+      "type": "string"
+    }
+  },
+  "i18n": false,
+  "id": "redirects",
+  "kind": "collection",
+  "name": "Redirects",
+  "title_field": "from"
+}

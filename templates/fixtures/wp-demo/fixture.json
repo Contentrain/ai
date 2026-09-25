@@ -6,5 +6,33 @@
     "Roadmap draft",
     "/roadmap/",
     "Unannounced plans"
-  ]
+  ],
+  "distFiles": {
+    "_redirects": {
+      "contains": [
+        "/old-about/ /about/ 301",
+        "/feed/ /rss.xml 301",
+        "/gone/ /404.html 410",
+        "/team/ /about/team/ 301"
+      ],
+      "excludes": [
+        "/2019/plans/"
+      ]
+    },
+    "old-about/index.html": {
+      "contains": [
+        "http-equiv=\"refresh\"",
+        "/about/"
+      ]
+    },
+    "sitemap-0.xml": {
+      "contains": [
+        "/about/team/</loc>"
+      ],
+      "excludes": [
+        "/old-about/",
+        "/search/"
+      ]
+    }
+  }
 }

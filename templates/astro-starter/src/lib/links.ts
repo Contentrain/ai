@@ -7,7 +7,6 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content'
-import redirects from '../../redirects.json' with { type: 'json' }
 import type { NavItem } from '../components/kit/_shared/types'
 import { byId, getSite, pageHref, postHref, resolve, termHref } from './content'
 import { routeTable } from './site-routes'
@@ -23,43 +22,32 @@ const inPublic = (path: string) => {
   try { return existsSync(join(process.cwd(), 'public', decodeURI(path))) } catch { return false }
 }
 
-type Redirect = string | { status?: number, destination: string }
+/** A path as the site builds it: directories end in a slash (trailingSlash: 'always'), files do not. */
+export const sitePath = (path: string): string => (FILE.test(path) || path.endsWith('/') ? path : `${path}/`)
 
-/** Follow redirects.json: the address a link lands on, or undefined when it ends in a 410 or loops. */
-function landing(path: string): string | undefined {
-  const table = redirects as Record<string, Redirect>
-  const seen = new Set<string>()
-  let at = path
-  while (table[at] !== undefined) {
-    if (seen.has(at)) return undefined
-    seen.add(at)
-    const rule = table[at]!
-    if (typeof rule !== 'string' && rule.status === 410) return undefined
-    at = new URL(typeof rule === 'string' ? rule : rule.destination, BASE).pathname
-  }
-  return at
-}
-
-let linker: Promise<(url: string | undefined) => string | undefined> | undefined
+type Linker = (url: string | undefined) => string | undefined
+let linker: Promise<Linker> | undefined
 
 /**
  * A function from a stored URL to the address to print: a site path for an internal link to a public
  * address, the URL itself for an external one, undefined for anything else (a draft, a private page,
- * a deleted entry, a `javascript:` URL).
+ * a deleted entry, a `javascript:` URL). A link to an old address follows the site's redirects to
+ * where it lands now; one that ends in a 410 or a loop is not public.
  *
  * @public generated section views call it
  */
-export function publicLinks(): Promise<(url: string | undefined) => string | undefined> {
+export function publicLinks(): Promise<Linker> {
   linker ??= (async () => {
-    const [routes, site] = await Promise.all([routeTable(), getSite()])
+    const [routes, site, redirects] = await Promise.all([routeTable(), getSite(), getCollection('redirects')])
     const internal = new Set([BASE, import.meta.env.SITE, site.url].flatMap(url => (url ? [new URL(url).origin] : [])))
+    const rules = new Map(redirects.map(entry => [sitePath(new URL(entry.data.from, `${BASE}/`).pathname), entry.data]))
     // WordPress's own short links (`/?p=12`, `/?page_id=7`) point at the entry, wherever it lives now.
     const byWpId = new Map<number, string>()
     for (const [href, route] of routes) {
       if (route.view === 'post' && route.post.data.wp_id !== undefined) byWpId.set(route.post.data.wp_id, href)
       if (route.view === 'page' && route.page.data.wp_id !== undefined) byWpId.set(route.page.data.wp_id, href)
     }
-    return (url) => {
+    const link = (url: string | undefined, followed: ReadonlySet<string>): string | undefined => {
       const raw = url?.trim()
       if (!raw) return undefined
       if (raw.startsWith('#')) return raw
@@ -70,12 +58,14 @@ export function publicLinks(): Promise<(url: string | undefined) => string | und
       if (!internal.has(parsed.origin)) return raw
       const shortLink = parsed.pathname === '/' ? Number(parsed.searchParams.get('p') ?? parsed.searchParams.get('page_id') ?? Number.NaN) : Number.NaN
       if (!Number.isNaN(shortLink)) return byWpId.get(shortLink)
+      const path = sitePath(parsed.pathname)
+      const rule = routes.has(path) ? undefined : rules.get(path)
+      if (rule) return followed.has(path) || rule.status === 410 ? undefined : link(rule.to, new Set([...followed, path]))
       // A file the media stage copied into public/ is served here; one it could not copy stays at its old address.
-      if (FILE.test(parsed.pathname)) return inPublic(parsed.pathname) ? `${parsed.pathname}${parsed.search}${parsed.hash}` : raw
-      const path = landing(parsed.pathname.endsWith('/') ? parsed.pathname : `${parsed.pathname}/`)
-      if (path === undefined || !(routes.has(path) || SERVED.has(path))) return undefined
-      return `${path}${parsed.search}${parsed.hash}`
+      if (FILE.test(path)) return inPublic(path) ? `${path}${parsed.search}${parsed.hash}` : raw
+      return routes.has(path) || SERVED.has(path) ? `${path}${parsed.search}${parsed.hash}` : undefined
     }
+    return url => link(url, new Set())
   })()
   return linker
 }

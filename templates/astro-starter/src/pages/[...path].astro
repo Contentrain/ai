@@ -1,20 +1,28 @@
 ---
-// Every content address the site builds, from the route table in lib/site-routes.ts.
+// Every content address the site builds, from the route table in lib/site-routes.ts,
+// and every old address in the redirects collection as an instant redirect page
+// (the host's own 301 rules are in _redirects).
 import type { GetStaticPaths, InferGetStaticPropsType } from 'astro'
+import { redirectRules, type RedirectStatus } from '../lib/redirects'
 import { toParam } from '../lib/routes'
-import { routeTable } from '../lib/site-routes'
+import { type Route, routeTable } from '../lib/site-routes'
 import { composedViews } from '../views/composed'
 import ListView from '../views/ListView.astro'
 import PageView from '../views/PageView.astro'
 import PostView from '../views/PostView.astro'
 
+type Moved = { view: 'redirect', to: string, status: RedirectStatus }
+
 export const getStaticPaths = (async () => {
-  const routes = await routeTable()
-  return [...routes].map(([href, route]) => ({ params: { path: toParam(href) }, props: route }))
+  const [routes, redirects] = await Promise.all([routeTable(), redirectRules()])
+  // A file address (`/old.pdf`) cannot be a page; the host rules redirect it.
+  const moved = redirects.flatMap(rule => (rule.status !== 410 && rule.from.endsWith('/') ? [[rule.from, { view: 'redirect', to: rule.to, status: rule.status }] as const] : []))
+  return [...routes, ...moved].map(([href, route]: readonly [string, Route | Moved]) => ({ params: { path: toParam(href) }, props: route }))
 }) satisfies GetStaticPaths
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>
 const route = Astro.props as Props
+if (route.view === 'redirect') return Astro.redirect(route.to, route.status)
 // A page the migration composed from sections has a view of its own.
 const PageRoute = route.view === 'page' ? composedViews[route.page.data.wp_id ?? -1] ?? PageView : PageView
 ---

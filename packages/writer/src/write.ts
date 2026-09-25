@@ -15,7 +15,7 @@ import type { ToolContext } from './agent/tools.js'
 import type { RunBudget } from './budget.js'
 import type { FactsView } from './facts.js'
 import { generateProject, readModels, type GenerateReport } from './generate/index.js'
-import { seoContentFiles, titleTemplateOf, type FactsSeo } from './generate/seo.js'
+import { seoContentFiles, siteTitleFile, titleTemplateOf, type FactsSeo } from './generate/seo.js'
 import { runCommand } from './project.js'
 import { Shooter } from './shoot.js'
 
@@ -62,7 +62,7 @@ export interface WriterReport {
   /** Kit placements vs site components — the kit reuse rate the blind comparison measures. */
   kitReuse: { kitComponents: number, siteComponents: number }
   /** The source's title pattern and how many entries got its hand-written SEO values. */
-  seo?: { titleTemplate: string, entries: number }
+  seo?: { titleTemplate: string, entries: number, /** The site name taken from the facts, when the store had none. */ siteTitle?: string }
   /** unmapped_element decisions below the floor: written as site components, not kit guesses. */
   lowConfidence: number
 }
@@ -140,7 +140,12 @@ export async function writeProject(input: WriteProjectInput, ctx: WriteContext):
       await writeFile(join(projectDir, path), text)
       generated.written.push(path)
     }
-    seoReport = { titleTemplate, entries: seo.entries }
+    const siteTitle = await siteTitleFile(projectDir, seoFacts)
+    if (siteTitle) {
+      await writeFile(join(projectDir, siteTitle.path), siteTitle.text)
+      generated.written.push(siteTitle.path)
+    }
+    seoReport = { titleTemplate, entries: seo.entries, ...(siteTitle ? { siteTitle: seoFacts.site.name.trim() } : {}) }
     jobs = [
       ...plan.components.filter(c => c.origin === 'site').map(siteComponentJob),
       ...generated.routes.unsupported.map(u => routeJob(u.route, u.reason, plan)),

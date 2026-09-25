@@ -72,3 +72,22 @@ export async function seoContentFiles(projectDir: string, models: readonly Model
   }
   return { files, entries: changed }
 }
+
+/** What an importer writes when it could not read the site's name (wp-import before the REST index was read). */
+const PLACEHOLDER_TITLES = new Set(['', 'Site'])
+
+/**
+ * The site singleton with the source's name, when the store has none of its own: every document title
+ * (`{title} - {site}`), the feed and the JSON-LD organization print it. A name an editor or the importer
+ * set is kept. Returns the file's path and text, or undefined when nothing changes.
+ */
+export async function siteTitleFile(projectDir: string, facts: FactsSeo): Promise<{ path: string, text: string } | undefined> {
+  const name = facts.site.name.trim()
+  const path = '.contentrain/content/site/site/data.json'
+  let site: Record<string, unknown>
+  try { site = JSON.parse(await readFile(join(projectDir, path), 'utf8')) as typeof site }
+  catch { return undefined }
+  const current = typeof site.title === 'string' ? site.title.trim() : ''
+  if (!name || PLACEHOLDER_TITLES.has(name) || !PLACEHOLDER_TITLES.has(current)) return undefined
+  return { path, text: canonicalStringify({ ...site, title: name }) }
+}

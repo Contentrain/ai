@@ -1,0 +1,26 @@
+{
+  "75200d6cf850": {
+    "from": "/team/",
+    "status": 301,
+    "to": "https://northwind.example/about/team/"
+  },
+  "80a4bc03017d": {
+    "from": "/old-about/",
+    "status": 301,
+    "to": "/about/"
+  },
+  "b8a1634bf238": {
+    "from": "/2019/plans/",
+    "status": 301,
+    "to": "https://northwind.example/roadmap/"
+  },
+  "f92de45212d6": {
+    "from": "/gone/",
+    "status": 410
+  },
+  "fc39fd6bcca9": {
+    "from": "/feed/",
+    "status": 301,
+    "to": "/rss.xml"
+  }
+}

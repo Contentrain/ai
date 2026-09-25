@@ -71,7 +71,7 @@ const read = (path: string) => readFile(join(project, path), 'utf8')
 describe('generateProject in place', () => {
   it('leaves imported content, meta, media and existing public files byte-identical', async () => {
     for (const path of PRESERVED) expect(await read(path), path).toBe(before.get(path))
-    expect(report.written.filter(path => path.startsWith('.contentrain/content/') || path.startsWith('public/'))).toEqual([])
+    expect(report.written.filter(path => path.startsWith('.contentrain/content/') || path.startsWith('public/'))).toEqual(['.contentrain/content/site/redirects/data.json'])
   })
 
   it('writes the site settings from the plan', async () => {
@@ -83,7 +83,12 @@ describe('generateProject in place', () => {
     expect(astro).toContain(`const site = 'https://northwind.example'`)
     // The build never fetches from the source site: its media is in public/.
     expect(astro).toContain('domains: []')
-    expect(JSON.parse(await read('redirects.json'))).toEqual({ '/gone/': { status: 410, destination: '/' }, '/old/': '/about/' })
+    // Redirects are content, kept in Studio: the plan's become entries of the redirects collection.
+    const redirects = Object.values(JSON.parse(await read('.contentrain/content/site/redirects/data.json')) as Record<string, { from: string }>)
+    expect(redirects.toSorted((a, b) => a.from.localeCompare(b.from))).toEqual([
+      { from: '/gone/', status: 410 },
+      { from: '/old/', status: 301, to: '/about/' },
+    ])
   })
 
   it('sets the design roles and adds the source scale and presets', async () => {
