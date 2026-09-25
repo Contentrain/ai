@@ -10,7 +10,7 @@ The writer writes programs, not data. The imported content in `.contentrain/` is
    - It lays the Astro starter (bundled as `starter/`) around the imported store. Existing files in `public/` (media, favicon) and the store's content and meta are left byte-identical.
    - **Models:** it merges the starter's models with the import's (the import wins; starter fields are added as optional). It seeds models the import lacks (interface strings, menus) and writes `src/content.config.ts`.
    - **Site settings from the plan:** permalink patterns, front page, posts per page, title template, site address. Redirects go into the `redirects` collection, which editors keep in Studio.
-   - **Design:** the plan's design roles and the source theme's presets go into `global.css`. The site's own fonts are self-hosted from the media stage's files.
+   - **Design:** the plan's design roles and the source theme's presets go into `global.css`. Roles no kit component reads are written as rules on the kit's markers, and only when the plan sets them: the heading sizes, body text, header navigation size and section padding. The site's own fonts are self-hosted from the media stage's files.
    - **Kit components** the plan places are copied in the shadcn copy model. Composed pages get a generated view per route, and every link on them resolves through the published set.
 2. **Copies the source SEO:**
    - The title pattern, from the source's majority separator.

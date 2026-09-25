@@ -6,7 +6,7 @@
 // setup, the utilities — stays as the starter wrote it.
 
 import { createHash } from 'node:crypto'
-import { canonicalStringify, type PlanSite, type PlanTokenRole } from '@contentrain/types'
+import { canonicalStringify, footerMenusOf, type PlanSite, type PlanTokenRole } from '@contentrain/types'
 
 const sq = (value: string) => `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
 
@@ -17,25 +17,9 @@ function replaceOnce(source: string, pattern: RegExp, replacement: string, what:
   return source.replace(pattern, () => replacement)
 }
 
-type PostPart = 'terms' | 'title' | 'byline' | 'cover'
-/** What the plan may say about layout (`@contentrain/types` ≥ 1.25); older plans say less. */
-interface PlanLayout {
-  menus: { primary: string, footer: string | readonly string[] }
-  post?: { header: readonly PostPart[], adjacent: boolean, more: number }
-  lists?: { display: 'cards' | 'full', heading: boolean }
-}
-
-/** The footer's menus: a list; an older plan's single slug is one, its 'none' is none. */
-export function footerMenus(site: PlanSite): string[] {
-  const footer = (site as unknown as PlanLayout).menus.footer
-  if (typeof footer === 'string') return footer && footer !== 'none' ? [footer] : []
-  return [...footer]
-}
-
 export function siteConfigSource(starter: string, site: PlanSite, titleTemplate = '{title} – {site}'): string {
-  const layout = site as unknown as PlanLayout
-  const post = layout.post ?? { header: ['terms', 'title', 'byline', 'cover'], adjacent: false, more: 0 }
-  const lists = layout.lists ?? { display: 'cards', heading: false }
+  const post = site.post ?? { header: ['terms', 'title', 'byline', 'cover'], adjacent: false, more: 0 }
+  const lists = site.lists ?? { display: 'cards', heading: false }
   const p = site.permalinks
   const home = site.home.kind === 'page' ? `{ kind: 'page', slug: ${sq(site.home.slug)} }` : `{ kind: 'posts' }`
   const studio = site.studio ? `\n  studio: { baseUrl: ${sq(site.studio.baseUrl)}, projectId: ${sq(site.studio.projectId)} },` : ''
@@ -51,7 +35,7 @@ export function siteConfigSource(starter: string, site: PlanSite, titleTemplate 
   home: ${home},
   titleTemplate: ${sq(titleTemplate)},
   postsPerPage: ${site.postsPerPage},
-  menus: { primary: ${sq(site.menus.primary)}, footer: [${footerMenus(site).map(sq).join(', ')}] },
+  menus: { primary: ${sq(site.menus.primary)}, footer: [${footerMenusOf(site).map(sq).join(', ')}] },
   post: { header: [${post.header.map(sq).join(', ')}], adjacent: ${post.adjacent}, more: ${post.more} },
   lists: { display: ${sq(lists.display)}, heading: ${lists.heading} },${studio}
 }
@@ -125,7 +109,23 @@ export function themeSource(starter: string, tokens: PlanSite['tokens']): string
   }
   // Outside @theme, which drops variables no utility uses: the kit reads these through var() fallbacks.
   const root = added.length ? `\n\n/* The source theme's type and shape; without them the kit uses its own values. */\n:root {\n${added.join('\n')}\n}` : ''
-  return `${starter.slice(0, block.index)}@theme {\n${body}\n}${root}${starter.slice(block.index + block[0].length)}`
+  const markers = markerRules(tokens.roles)
+  const rules = markers.length ? `\n\n/* The source theme's type scale and rhythm on the kit's markers. Unlayered, so they beat the utilities. */\n${markers.join('\n')}` : ''
+  return `${starter.slice(0, block.index)}@theme {\n${body}\n}${root}${rules}${starter.slice(block.index + block[0].length)}`
+}
+
+/** Roles no component reads: each is a rule on the kit's markers, written only when the plan sets the role. */
+const MARKER_RULES: Array<[string, string]> = [
+  ['text-heading-1', 'main h1 { font-size: var(--text-heading-1); }'],
+  ['text-heading-2', 'main h2 { font-size: var(--text-heading-2); }'],
+  ['text-heading-3', 'main h3 { font-size: var(--text-heading-3); }'],
+  ['text-body', '[data-kit-text] { font-size: var(--text-body); line-height: var(--leading-body, inherit); }'],
+  ['text-nav', '[data-cr-part="nav-header"] :is(a, summary) { font-size: var(--text-nav); }'],
+  ['spacing-section', '[data-kit-section]:not([data-kit-spacing="none"]) { padding-block: var(--spacing-section); }'],
+]
+
+function markerRules(roles: PlanSite['tokens']['roles']): string[] {
+  return MARKER_RULES.filter(([role]) => (roles as Record<string, string | undefined>)[role] !== undefined).map(([, rule]) => rule)
 }
 
 const PRESET_RULES: Record<string, (slug: string) => string[]> = {

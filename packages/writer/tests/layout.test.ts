@@ -5,7 +5,7 @@
 import type { PlanSite, ProjectPlan } from '@contentrain/types'
 import { describe, expect, it } from 'vitest'
 import { STARTER_COVERED, unfulfilledFontRoles } from '../src/generate/index'
-import { footerMenus, siteConfigSource, themeSource } from '../src/generate/site'
+import { siteConfigSource, themeSource } from '../src/generate/site'
 
 const STARTER_CONFIG = `export const siteConfig: SiteConfig = {
   menus: { primary: 'primary', footer: ['footer'] },
@@ -19,14 +19,6 @@ const site = (extra: Record<string, unknown> = {}): PlanSite => ({
   tokens: { roles: {} },
   ...extra,
 } as unknown as PlanSite)
-
-describe('footer menus', () => {
-  it('reads a list, and an older plan\'s single slug or none', () => {
-    expect(footerMenus(site({ menus: { primary: 'p', footer: ['footer-1', 'footer-2'] } }))).toEqual(['footer-1', 'footer-2'])
-    expect(footerMenus(site({ menus: { primary: 'p', footer: 'footer' } }))).toEqual(['footer'])
-    expect(footerMenus(site({ menus: { primary: 'p', footer: 'none' } }))).toEqual([])
-  })
-})
 
 describe('siteConfigSource', () => {
   it('writes the footer menus, the post layout and the list display the plan carries', () => {
@@ -56,6 +48,20 @@ describe('themeSource', () => {
     expect(out).toMatch(/:root \{\n {2}--font-weight-heading: 400;\n {2}--radius-control: 9999px;\n\}/)
     expect(out.indexOf(':root')).toBeGreaterThan(out.indexOf('@theme'))
     expect(out).toContain('@utility x {}')
+  })
+
+  it('applies the type scale and section rhythm to the kit\'s markers only for the roles the plan sets', () => {
+    const out = themeSource(css, { roles: { 'text-heading-2': 'clamp(1.5rem, 3vw, 2rem)', 'text-nav': '1.125rem', 'spacing-section': '5rem' } } as unknown as PlanSite['tokens'])
+    expect(out).toContain('main h2 { font-size: var(--text-heading-2); }')
+    expect(out).toContain('[data-cr-part="nav-header"] :is(a, summary) { font-size: var(--text-nav); }')
+    expect(out).toContain('[data-kit-section]:not([data-kit-spacing="none"]) { padding-block: var(--spacing-section); }')
+    expect(out).not.toContain('main h1')
+    expect(out).not.toContain('[data-kit-text]')
+    expect(out.indexOf('main h2')).toBeGreaterThan(out.indexOf(':root'))
+  })
+
+  it('writes no marker rules for a plan without those roles', () => {
+    expect(themeSource(css, { roles: { 'color-accent': '#111111' } } as unknown as PlanSite['tokens'])).not.toContain('Unlayered')
   })
 })
 
