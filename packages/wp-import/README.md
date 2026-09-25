@@ -102,6 +102,36 @@ these before claiming a complete migration. ACF field/group records and their
 cross-model parents remain in the content store; route discovery decides which
 records become public pages. Importing configuration does not execute a plugin.
 
+### Site name over REST
+
+`fetchRestRawIR` reads the `/wp-json/` index for the site's name and tagline
+(`RawIR.site.title` / `description`, the store's `site` singleton) and its
+install and public addresses (`base_site_url` / `base_blog_url`). An index that
+does not answer leaves them out.
+
+### Menus over REST
+
+With an Application Password, `fetchRestRawIR` reads the site's menus into
+`RawIR.menus`: classic menus (`/wp/v2/menus` + `/wp/v2/menu-items`, with the
+theme locations each is assigned to) and a block theme's published
+`wp_navigation` posts (links, submenus, page lists, home links). A block menu's
+`locations` are the template-part areas (`header`, `footer`) whose navigation
+block refers to it; an empty navigation block without a `ref` shows the most
+recent published one, as WordPress does. Block menu items have no WordPress id
+and get negative ids; the store claims no `wp_id` for them.
+
+A menu item that is itself a draft, or whose post target is not proven public
+— a draft, pending, private, scheduled or password-protected post, or one this
+import never read (a type outside REST, a listing past a page cap) — is left
+out, fail-closed: its label is often that post's title. Its children move up to the
+nearest kept ancestor; `warnings` gives only the count.
+
+Both need `edit_theme_options`. Without a credential, with a rejected one, or
+with a user who lacks that right, no menus are read and the result's `gaps`
+contains `menus_require_auth` — an empty menu list is never presented as the
+site having none. The `menus` model gains a `locations` field only when the
+source named them.
+
 
 ### Publication and translation identity
 
