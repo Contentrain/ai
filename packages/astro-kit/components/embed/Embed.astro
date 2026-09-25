@@ -1,0 +1,104 @@
+---
+// A video, map or player from another site, loaded only when the reader asks
+// for it. Until then it is a link to the provider's page drawn as a poster:
+// no iframe, no third-party request, no cookie (YouTube plays from
+// youtube-nocookie.com). A small script turns the click into the player in
+// place; without it the link simply opens the provider. Unknown providers are
+// never framed — they stay a plain link.
+import { tv } from 'tailwind-variants'
+import KitImage from '../_shared/KitImage.astro'
+import type { ImageInput } from '../_shared/types'
+import { embedTarget, mapTarget } from './embed'
+
+const embed = tv({
+  slots: {
+    root: 'mx-auto my-8 w-full',
+    frame: 'relative overflow-hidden rounded-card bg-ink text-surface',
+    facade: 'group absolute inset-0 flex items-end justify-start no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    poster: 'absolute inset-0 h-full w-full object-cover opacity-80 transition-opacity group-hover:opacity-65',
+    play: 'absolute top-1/2 left-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-accent text-accent-ink shadow-lg transition-transform group-hover:scale-105 group-focus-visible:scale-105',
+    label: 'relative m-0 w-full bg-gradient-to-t from-ink/90 to-transparent px-4 pt-10 pb-3 text-sm font-semibold text-balance text-surface md:px-5 md:pb-4 md:text-base',
+    caption: 'mt-2 text-sm text-ink-muted',
+  },
+  variants: {
+    aspect: {
+      auto: {},
+      video: { frame: 'aspect-video' },
+      portrait: { root: 'max-w-sm', frame: 'aspect-[9/16]' },
+      square: { root: 'max-w-xl', frame: 'aspect-square' },
+      map: { frame: 'aspect-[4/3] md:aspect-[16/9]' },
+    },
+    width: { prose: { root: 'max-w-(--container-prose)' }, page: {} },
+  },
+  defaultVariants: { aspect: 'auto', width: 'prose' },
+})
+
+interface Props {
+  /** A video page (YouTube, Vimeo) or a known provider's embed address (Google Maps embed, Spotify, SoundCloud, Calendly, Typeform, Loom, Wistia). */
+  url?: string | undefined
+  /** A place or address to show on a Google map, when there is no `url`. */
+  address?: string | undefined
+  /** What it is ("Studio tour", "Our office"): the iframe's accessible name and the poster's text. */
+  title?: string | undefined
+  caption?: string | undefined
+  /** Local poster image; without one the poster is a plain dark panel. */
+  poster?: ImageInput | undefined
+  /** Poster action for a video or player (ui-strings embed.play). */
+  playLabel?: string | undefined
+  /** Poster action for a map or widget (ui-strings embed.show). */
+  showLabel?: string | undefined
+  aspect?: 'auto' | 'video' | 'portrait' | 'square' | 'map' | undefined
+  width?: 'prose' | 'page' | undefined
+  id?: string | undefined
+}
+
+const { url, address, title, caption, poster, playLabel = 'Play', showLabel = 'Show', aspect = 'auto', width, id } = Astro.props
+const target = (url ? embedTarget(url) : null) ?? (address && !url ? mapTarget(address) : null)
+const shape = aspect !== 'auto' ? aspect : target?.portrait ? 'portrait' : target?.kind === 'map' ? 'map' : 'video'
+// A player strip (Spotify, SoundCloud) has a fixed height, not a ratio.
+const strip = aspect === 'auto' && target?.kind === 'audio'
+const s = embed({ aspect: strip ? 'auto' : shape, width })
+const action = target && (target.kind === 'video' || target.kind === 'audio') ? playLabel : showLabel
+const name = title ?? caption ?? ''
+const linkUrl = url && /^https?:\/\//i.test(url) ? url : undefined
+---
+{target
+  ? (
+    <figure id={id} class={s.root()} data-kit-embed>
+      <div class={s.frame({ class: strip ? 'h-[166px]' : undefined })}>
+        <a href={target.href} class={s.facade()} data-embed-src={target.src} data-embed-title={name || target.provider} aria-label={name ? `${action}: ${name}` : action} rel="noopener">
+          {poster && <KitImage image={{ ...poster, alt: '' }} sizes="(min-width: 768px) 48rem, 100vw" class={s.poster()} />}
+          <span class={s.play()} aria-hidden="true">
+            {target.kind === 'map'
+              ? <svg viewBox="0 0 24 24" class="size-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 1 1 14 0C19 14.8 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" /></svg>
+              : <svg viewBox="0 0 24 24" class="ms-1 size-7" fill="currentColor"><path d="M7 4.5v15a.5.5 0 0 0 .77.42l11.5-7.5a.5.5 0 0 0 0-.84L7.77 4.08A.5.5 0 0 0 7 4.5Z" /></svg>}
+          </span>
+          <span class={s.label()} aria-hidden="true">{name ? `${action}: ${name}` : action}</span>
+        </a>
+      </div>
+      {caption && <figcaption class={s.caption()}>{caption}</figcaption>}
+    </figure>
+  )
+  : linkUrl && (
+    <p id={id} class={s.root()}><a href={linkUrl} rel="noopener" class="underline decoration-line underline-offset-4 hover:decoration-current">{name || linkUrl}</a></p>
+  )}
+
+<script>
+  // Click (or Enter) on the poster: the player replaces it, focused, so keyboard and screen-reader users land in it.
+  // A modified click (new tab, new window) keeps the link's own behaviour.
+  document.addEventListener('click', (event) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    const link = (event.target as Element | null)?.closest<HTMLAnchorElement>('[data-kit-embed] a[data-embed-src]')
+    if (!link?.dataset.embedSrc) return
+    event.preventDefault()
+    const frame = document.createElement('iframe')
+    frame.src = link.dataset.embedSrc
+    frame.title = link.dataset.embedTitle ?? ''
+    frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write'
+    frame.allowFullscreen = true
+    frame.referrerPolicy = 'strict-origin-when-cross-origin'
+    frame.className = 'absolute inset-0 h-full w-full border-0'
+    link.replaceWith(frame)
+    frame.focus()
+  })
+</script>
