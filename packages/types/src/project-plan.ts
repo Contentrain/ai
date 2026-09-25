@@ -194,14 +194,15 @@ export interface PlanPlacement {
  * - `site:<field>` — a field of the `site` singleton (`site:title`, `site:logo`)
  * - `menu:primary|footer` — the items of the menu `site.menus` names for that area
  * - `page:base|current|total|breadcrumb` — what the route knows about the page being built
- * - `const:<value>` — a fixed value (layout switches, never content)
+ * - `const:<value>` — a layout switch, never content: `true`, `false`, a number, or a lowercase identifier
+ *   (`const:contact`); anything that reads like text is refused, so page copy cannot be baked into code
  *
  * The builder mapping tables use the same set plus element expressions; one placement can mix them
  * (a header's `siteName` from `site:title`, its `items` from `menu:primary`).
  */
 export type PlanValue = `field:${string}` | `media:${string}` | `ref:${string}` | `href:${string}` | `term:${string}` | `ui:${string}` | `site:${string}` | `menu:${string}` | `page:${string}` | `const:${string}`
 
-export const PLAN_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|term:[\w-]+|ui:[\w.-]+|site:[\w-]+|menu:(?:primary|footer)|page:(?:base|current|total|breadcrumb)|const:.*)$/
+export const PLAN_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|term:[\w-]+|ui:[\w.-]+|site:[\w-]+|menu:(?:primary|footer)|page:(?:base|current|total|breadcrumb)|const:(?:true|false|-?\d+(?:\.\d+)?|[a-z][a-z0-9_-]{0,31}))$/
 
 /** Where a placement's props come from. */
 export type PlanBinding =
@@ -331,6 +332,15 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     }
     if (r.body === 'composed' && !r.sections.length) warnings.push(`route ${r.id} is composed but has no sections`)
     r.sections.forEach((s, i) => placement(s, `route ${r.id} section ${i}`, r))
+  }
+  // Two routes on one pattern build one address twice, unless they split one model's entries by `where`.
+  const byPattern = new Map<string, PlanRoute[]>()
+  for (const r of plan.routes ?? []) (byPattern.get(r.pattern) ?? byPattern.set(r.pattern, []).get(r.pattern)!).push(r)
+  for (const [pattern, routes] of byPattern) {
+    if (routes.length < 2) continue
+    const sources = new Set(routes.map(r => r.source?.model ?? ''))
+    const split = sources.size === 1 && !sources.has('') && routes.filter(r => !r.source?.where).length <= 1
+    if (!split) warnings.push(`routes ${routes.map(r => r.id).join(', ')} share the pattern ${pattern}`)
   }
   // One address per entry: routes over one model split it by disjoint wp_id sets plus at most one catch-all.
   for (const [model, routes] of byModel) {

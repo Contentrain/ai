@@ -111,4 +111,24 @@ describe('validateProjectPlan', () => {
     p.routes = p.routes.filter(r => r.kind !== 'home')
     expect(validateProjectPlan(p).errors).toContain('no home route')
   })
+
+  it('const: takes layout switches only, never text', () => {
+    const p = plan()
+    p.routes[0]!.sections.push({ component: 'Prose', bind: { kind: 'static', props: { body: 'const:Welcome to our studio, we build calm software' } } })
+    p.routes[0]!.sections.push({ component: 'Prose', bind: { kind: 'static', props: { body: 'const:Hello' } } })
+    const bad = validateProjectPlan(p).errors.filter(e => e.includes('is not a plan value'))
+    expect(bad).toHaveLength(2)
+    const ok = plan()
+    ok.layout.header!.bind = { kind: 'static', props: { siteName: 'site:title', items: 'menu:primary', showName: 'const:true', columns: 'const:3', ratio: 'const:1.5', model: 'const:contact-form' } }
+    expect(validateProjectPlan(ok).errors).toEqual([])
+  })
+
+  it('warns when two routes share a pattern without splitting one model', () => {
+    const p = plan()
+    p.routes.push({ id: 'landing', kind: 'custom', pattern: '/:slug/', template: 't9', body: 'rich-text', sections: [] })
+    expect(validateProjectPlan(p).warnings).toContain('routes post, landing share the pattern /:slug/')
+    // about + page on /:path/ split pages by wp_id: no warning (the fixture already has them).
+    expect(validateProjectPlan(plan()).warnings).toEqual([])
+  })
 })
+
