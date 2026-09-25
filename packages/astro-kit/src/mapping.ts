@@ -24,7 +24,7 @@ import { isBuilderElement, KIT_BUILDERS } from './catalog.js'
 
 export const MAPPING_FORMAT = 'astro-kit-mapping@1'
 
-export const MAPPING_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|term:[\w-]+|ui:[\w.-]+|const:.*|site:[\w-]+|menu:(?:primary|footer)|page:(?:base|current|total|breadcrumb)|attr:[\w.-]+|(?:dom|img|link|html):[^@]*(?:@[\w-]+)?)$/
+export const MAPPING_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|term:[\w-]+|ui:[\w.-]+|const:(?:true|false|-?\d+(?:\.\d+)?|[a-z][a-z0-9_-]{0,31})|site:[\w-]+|menu:(?:primary|footer)|page:(?:base|current|total|breadcrumb)|attr:[\w.-]+|(?:dom|img|link|html):[^@]*(?:@[\w-]+)?)$/
 
 export interface MappingRule {
   /** Builder element, as the fact pack names it; a `:qualifier` narrows it (`core/template-part:header`). */
