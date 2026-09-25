@@ -120,6 +120,14 @@ block refers to it; an empty navigation block without a `ref` shows the most
 recent published one, as WordPress does. Block menu items have no WordPress id
 and get negative ids; the store claims no `wp_id` for them.
 
+A navigation block in a template part that carries its own links (an inline
+navigation, as in Twenty Twenty-Five's footer columns) is a menu of that part's
+area: `Footer navigation 1`, `2`, … (its `ariaLabel` names it when set), links
+in order and nested. Only template parts a template uses count — a theme ships
+alternatives (`footer-columns`, `header-large-title`) that no page shows; without
+the templates, the part named after its area (`header`, `footer`). A `#` link
+stays `#`. Inline menus have no WordPress record: negative ids, no `wp_id`.
+
 A menu item that is itself a draft, or whose post target is not proven public
 — a draft, pending, private, scheduled or password-protected post, or one this
 import never read (a type outside REST, a listing past a page cap) — is left
@@ -147,7 +155,7 @@ states it (the field description then says so).
 | textarea | `text` |
 | wysiwyg | `richtext` |
 | email / url, oembed / number, range / true false | `email` / `url` / `number` / `boolean` |
-| date picker / date time picker | `date` / `datetime` (ISO) |
+| date picker / date time picker | `date` / `datetime` (ISO, with the site's offset) |
 | color picker / icon picker | `color` / `icon` |
 | select, radio, button group | `select` (its choices) |
 | checkbox, multiple select | `array` of `select` |
@@ -162,6 +170,16 @@ states it (the field description then says so).
 | page link | `url`: the target's address, only when the target is published and unprotected |
 | tab, accordion, message | nothing (layout only) |
 | password | nothing, ever |
+
+Sub-fields of a repeater, group or flexible layout are typed by the same table
+when the site states their type (SCF's `_source` inside each row); a reference
+inside a row, and a sub-field with no stated type, are typed from the value. A
+select or checkbox value outside the field's stated choices is left out and
+counted in the report's `acf_outside_choices`. A date time picker's value is written
+with the site's UTC offset for that moment, DST included (the `/wp-json/`
+index's `timezone_string`, else `gmt_offset`); with neither it stays local and
+`acf_datetime_unzoned` counts it. `src/fixtures/acf-parity.json`
+holds the cases the Contentrain Bridge must map the same way.
 
 **A password field is never read** — at any depth: a password sub-field of a
 repeater row, a group or a flexible layout is removed with its `_source` before

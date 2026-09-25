@@ -66,6 +66,10 @@ export interface RawSite {
   /** WXR export timestamp, when the source was a WXR file. */
   export_date?: string | null
   wxr_version?: string | null
+  /** The site's time zone (`timezone_string`, IANA, e.g. `Europe/Istanbul`), when it names one. */
+  timezone?: string | null
+  /** The site's fixed UTC offset in hours (`gmt_offset`), for a site set to an offset rather than a zone. */
+  gmt_offset?: number | null
 }
 
 export interface RawAuthor {
