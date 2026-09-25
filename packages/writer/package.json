@@ -1,7 +1,6 @@
 {
   "name": "@contentrain/writer",
   "version": "0.0.0",
-  "private": true,
   "license": "MIT",
   "description": "Writes an Astro + Contentrain project from a project plan: deterministic generation, then an agent for site-specific components within a fixed tool surface and budget",
   "type": "module",
@@ -47,5 +46,20 @@
     "tsdown": "^0.21.0",
     "typescript": "^5.7.0",
     "@types/pngjs": "^6.0.5"
-  }
+  },
+  "homepage": "https://ai.contentrain.io",
+  "bugs": {
+    "url": "https://github.com/Contentrain/ai/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "contentrain",
+    "astro",
+    "wordpress",
+    "migration",
+    "agent",
+    "generator"
+  ]
 }

@@ -20,11 +20,10 @@ export const PUBLISHABLE_PACKAGES = [
   { name: '@contentrain/verify', dir: 'packages/verify', packageJson: 'packages/verify/package.json' },
   { name: '@contentrain/decide', dir: 'packages/decide', packageJson: 'packages/decide/package.json' },
   { name: '@contentrain/astro-kit', dir: 'packages/astro-kit', packageJson: 'packages/astro-kit/package.json' },
+  { name: '@contentrain/writer', dir: 'packages/writer', packageJson: 'packages/writer/package.json' },
 ]
 
 export const PRIVATE_PACKAGE_JSONS = [
   'docs/package.json',
   'packages/cli/src/serve-ui/package.json',
-  // The migration worker's site writer: private until it is published with the starter bundled (prepack).
-  'packages/writer/package.json',
 ]
