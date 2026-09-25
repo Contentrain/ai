@@ -13,6 +13,7 @@ import { validateProject } from '../core/validator/index.js'
 import { OverlayReader } from '../core/overlay-reader.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 import { commitThroughProvider, divergenceNextSteps, gitReport, type CommitThroughProviderResult } from './commit-plan.js'
+import { refSource } from './guards.js'
 
 export function registerContentTools(
   server: McpServer,
@@ -383,12 +384,13 @@ export function registerContentTools(
           limit: input.limit,
           offset: input.offset,
         }
-        const result = projectRoot
+        const fromRef = await refSource(provider)
+        const result = projectRoot && !fromRef
           ? await listContent(projectRoot, model, listOpts, config)
           : await listContent(provider, model, listOpts, config)
 
         return {
-          content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
+          content: [{ type: 'text' as const, text: JSON.stringify(fromRef ? { ...(result as Record<string, unknown>), content_source: fromRef } : result, null, 2) }],
         }
       } catch (error) {
         return {

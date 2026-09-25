@@ -1655,6 +1655,7 @@ export type {
   ConflictCode,
   ConflictItem,
   ConflictResolution,
+  ContentReadSource,
   FileChange,
   FileDiff,
   MediaAsset,

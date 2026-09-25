@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { RepoProvider } from './core/contracts/index.js'
 import { LocalProvider } from './providers/local/index.js'
+import { withReadScope } from './providers/local/content-view.js'
 import { isToolAvailable, TOOL_REQUIREMENTS } from './tools/availability.js'
 
 /**
@@ -86,6 +87,12 @@ class CapabilityFilteredMcpServer extends McpServer {
   override tool(...args: unknown[]): ReturnType<McpServer['tool']> {
     if (this._skipTools.has(args[0] as string)) {
       return undefined as unknown as ReturnType<McpServer['tool']>
+    }
+    // One read scope per call: a local provider resolves where `.contentrain/`
+    // is read from once per call and answers every read from it (#229).
+    const handler = args.at(-1)
+    if (typeof handler === 'function') {
+      args[args.length - 1] = (...callArgs: unknown[]) => withReadScope(() => handler(...callArgs))
     }
     return (McpServer.prototype.tool as (...toolArgs: unknown[]) => ReturnType<McpServer['tool']>).apply(this, args)
   }

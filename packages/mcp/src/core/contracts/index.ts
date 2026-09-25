@@ -10,6 +10,7 @@ export type {
   Branch,
   Commit,
   CommitAuthor,
+  ContentReadSource,
   FileChange,
   FileDiff,
   MediaAsset,

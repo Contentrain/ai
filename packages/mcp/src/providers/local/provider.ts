@@ -7,6 +7,7 @@ import type {
   Branch,
   Commit,
   CommitAuthor,
+  ContentReadSource,
   FileChange,
   FileDiff,
   MergeResult,
@@ -28,6 +29,7 @@ import {
   listBranches as listBranchesOp,
   mergeBranch as mergeBranchOp,
 } from './branch-ops.js'
+import { contentView, describeSource, refPath, type ContentView } from './content-view.js'
 import { LocalReader } from './reader.js'
 import { rebaseChange } from './rebase-changes.js'
 import type { LocalApplyPlanInput, LocalApplyResult } from './types.js'
@@ -58,16 +60,34 @@ export class LocalProvider implements RepoProvider {
     this.reader = new LocalReader(projectRoot)
   }
 
-  readFile(path: string, ref?: string): Promise<string> {
-    return this.reader.readFile(path, ref)
+  // Reads: `.contentrain/**` from the content view (the `contentrain` ref
+  // while a feature branch is checked out — #229), everything else from the
+  // working tree. See content-view.ts.
+
+  async readFile(path: string, ref?: string): Promise<string> {
+    const at = await this.routed(path)
+    return at ? at.view.reader.readFile(at.path) : this.reader.readFile(path, ref)
   }
 
-  listDirectory(path: string, ref?: string): Promise<string[]> {
-    return this.reader.listDirectory(path, ref)
+  async listDirectory(path: string, ref?: string): Promise<string[]> {
+    const at = await this.routed(path)
+    return at ? at.view.reader.listDirectory(at.path) : this.reader.listDirectory(path, ref)
   }
 
-  fileExists(path: string, ref?: string): Promise<boolean> {
-    return this.reader.fileExists(path, ref)
+  async fileExists(path: string, ref?: string): Promise<boolean> {
+    const at = await this.routed(path)
+    return at ? at.view.reader.fileExists(at.path) : this.reader.fileExists(path, ref)
+  }
+
+  async contentSource(): Promise<ContentReadSource> {
+    return describeSource(await contentView(this.projectRoot))
+  }
+
+  private async routed(path: string): Promise<{ view: ContentView & { source: 'ref' }, path: string } | null> {
+    const view = await contentView(this.projectRoot)
+    if (view.source !== 'ref') return null
+    const inRef = refPath(view, this.projectRoot, path)
+    return inRef === null ? null : { view, path: inRef }
   }
 
   /**
@@ -83,10 +103,12 @@ export class LocalProvider implements RepoProvider {
   }
 
   async applyPlan(input: LocalApplyPlanInput): Promise<LocalApplyResult> {
-    // What the planner read: every read goes through LocalReader, i.e. the
-    // working tree. Captured before the transaction fetches, so it is the
-    // tree the plan was computed from — not whatever the remote says now.
-    const basis = await Promise.all(input.changes.map(c => readOrNull(join(this.projectRoot, c.path))))
+    // What the planner read: the content view — the working tree, or the
+    // `contentrain` snapshot on a feature branch (#229). Captured before the
+    // transaction fetches, so it is the tree the plan was computed from — not
+    // whatever the remote says now.
+    const view = await contentView(this.projectRoot)
+    const basis = await Promise.all(input.changes.map(c => this.readBasis(view, c.path)))
     const tx = await createTransaction(this.projectRoot, input.branch, {
       workflowOverride: input.workflowOverride,
     })
@@ -103,7 +125,7 @@ export class LocalProvider implements RepoProvider {
           throw Object.assign(new Error(
             `Nothing was written: the content branch moved since your working tree was last updated, and this change cannot be applied on top of it. `
             + conflicts.map(c => `${c.path}: ${c.reason}.`).join(' '),
-          ), staleTreeGuidance(tx.baseBranch, tx.baseCheckedOut))
+          ), staleTreeGuidance(tx.baseBranch, tx.baseCheckedOut, view.source === 'ref'))
         }
         await applyChangesToWorktree(wt, results.map(r => (r as Extract<typeof r, { ok: true }>).change))
       })
@@ -126,6 +148,14 @@ export class LocalProvider implements RepoProvider {
     } finally {
       await tx.cleanup()
     }
+  }
+
+  private async readBasis(view: ContentView, path: string): Promise<string | null> {
+    if (view.source === 'ref') {
+      const inRef = refPath(view, this.projectRoot, path)
+      if (inRef !== null) return view.reader.readFile(inRef).catch(() => null)
+    }
+    return readOrNull(join(this.projectRoot, path))
   }
 
   listBranches(prefix?: string): Promise<Branch[]> {
@@ -250,11 +280,20 @@ async function readOrNull(path: string): Promise<string | null> {
  * advance leaves a non-base checkout alone), so a pull fetches nothing
  * useful — merging the base is what brings it in.
  */
-function staleTreeGuidance(baseBranch: string, baseCheckedOut: boolean): {
+function staleTreeGuidance(baseBranch: string, baseCheckedOut: boolean, readFromRef: boolean): {
   code: string
   agent_hint: string
-  developer_action: string
+  developer_action?: string
 } {
+  // Planned from the contentrain snapshot (#229): nothing on the developer's
+  // side is stale — another writer moved contentrain between the read and
+  // this write. Re-reading is the whole fix.
+  if (readFromRef) {
+    return {
+      code: 'CONTENT_WORKING_TREE_STALE',
+      agent_hint: `Another writer (Studio, a teammate, CI) changed the same value on the contentrain branch after this write read it. Re-read the content and retry — do not retry unchanged. No git action is needed.`,
+    }
+  }
   const update = baseCheckedOut
     ? 'Ask the developer to update their working tree (git pull)'
     : `The developer is on a branch other than "${baseBranch}", which content writes do not update. Ask them to merge "${baseBranch}" into it (or rebase onto it)`

@@ -1,3 +1,5 @@
+import type { ContentReadSource, RepoProvider } from '../core/contracts/index.js'
+
 /**
  * Emit a uniform "capability not available" response for tools that
  * require local filesystem access but are being driven by a remote
@@ -14,4 +16,16 @@ export function capabilityError(tool: string, capability: string) {
     }) }],
     isError: true as const,
   }
+}
+
+/**
+ * The content source to report on a read tool's response, or null when the
+ * content came from where it always has (#229). Non-null only for a local
+ * provider on a feature branch, which reads `.contentrain/` from the
+ * `contentrain` ref: tools then read through the provider, not the
+ * working-tree fast paths, and say so as `content_source`.
+ */
+export async function refSource(provider: RepoProvider): Promise<ContentReadSource | null> {
+  const source = await provider.contentSource?.()
+  return source?.source === 'ref' ? source : null
 }

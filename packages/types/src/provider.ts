@@ -94,6 +94,15 @@ export const LOCAL_CAPABILITIES: ProviderCapabilities = {
  * - `listDirectory` returns `[]` for a missing directory because the empty
  *   case is the common, uninteresting one.
  */
+/**
+ * Where a provider read `.contentrain/` from (see `RepoProvider.contentSource`).
+ * `ref`: the content branch at `commit`, because `checked_out` is a branch
+ * content writes do not update.
+ */
+export type ContentReadSource =
+  | { source: 'working_tree' }
+  | { source: 'ref', ref: string, commit: string, checked_out: string }
+
 export interface RepoReader {
   /**
    * Read a file's contents as UTF-8.
@@ -461,6 +470,15 @@ export interface RepoProvider extends RepoReader, RepoWriter {
    * Optional: a provider that omits it is always ready.
    */
   checkWriteReadiness?(): Promise<WriteReadiness>
+
+  /**
+   * Where this provider's `.contentrain/` reads come from right now. A local
+   * provider on a checked-out feature branch reads content from the
+   * `contentrain` ref rather than the working tree, which content writes do
+   * not update there; read tools report that. Optional: a provider that
+   * omits it reads one fixed source.
+   */
+  contentSource?(): Promise<ContentReadSource>
 
   listBranches(prefix?: string): Promise<Branch[]>
   createBranch(name: string, fromRef?: string): Promise<void>
