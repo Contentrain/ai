@@ -1,8 +1,13 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "elementor",
-  "version": "4",
+  "version": "5",
   "fallback": "prose",
+  "defaults": {
+    "elementor/video": {
+      "video_type": "youtube"
+    }
+  },
   "rules": [
     {
       "match": "elementor/theme-site-logo",
