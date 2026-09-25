@@ -205,8 +205,13 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
 
   // The site's own name and tagline (`/wp-json/` index, public): without them the store's site singleton says "Site".
   // Advisory: an index that does not answer leaves them out, as before.
-  const index = await doFetch(`${origin}/wp-json/`, { headers })
-  const about = index.ok ? ((await index.json().catch(() => null)) as { name?: unknown; description?: unknown; url?: unknown; home?: unknown } | null) : (await index.body?.cancel(), null)
+  const about = await schedule(async () => {
+    try {
+      const index = await doFetch(`${origin}/wp-json/`, { headers })
+      if (!index.ok) { await index.body?.cancel(); return null }
+      return (await index.json()) as { name?: unknown; description?: unknown; url?: unknown; home?: unknown } | null
+    } catch { return null }
+  })
 
   interface RestType { slug: string; rest_base?: string }
   const typesResp = await doFetch(`${origin}/wp-json/wp/v2/types`, { headers })
@@ -407,11 +412,9 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
       if (!l.status || (l.status >= 400 && !DENIED.has(l.status) && l.status !== 404)) warnings.push(`${name}: HTTP ${l.status} — skipped`)
     }
     const slugOf = new Map(posts.filter(visible).map((p) => [p.id, p.slug]))
-    const hiddenIds = new Set(posts.filter((p) => !visible(p)).map((p) => p.id))
     const ctx: MenuContext = {
       origin,
       postSlug: (id) => slugOf.get(id),
-      hidden: (id) => hiddenIds.has(id),
       termSlug: (taxonomy, id) => { const t = termsById.get(id); return t && t.taxonomy === taxonomy ? t.slug : undefined },
       pages: posts.filter((p) => p.type === 'page' && p.status === 'publish' && !p.password).map((p) => ({ id: p.id, parent: p.parent ?? null, menu_order: p.menu_order ?? 0, title: strip(p.title), link: p.link ?? null, slug: p.slug })),
     }
@@ -419,7 +422,7 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     menus = classicMenus(DENIED.has(classic.status) ? [] : classic.items, DENIED.has(items.status) ? [] : items.items, ctx, dropped)
     menus.push(...blockMenus(DENIED.has(navs.status) ? [] : navs.items, parts.status < 400 ? parts.items : [], ctx, new Set(menus.map((m) => m.slug)), dropped))
     // A count only: the titles of what was left out are exactly what must not travel.
-    if (dropped.count) warnings.push(`menus: ${dropped.count} item(s) are drafts or point at unpublished or password-protected content — left out, as visitors never see them`)
+    if (dropped.count) warnings.push(`menus: ${dropped.count} item(s) are drafts or point at content not proven public (unpublished, password-protected, or not read by this import) — left out`)
   }
 
   const postIds = new Set(posts.map((p) => p.id))

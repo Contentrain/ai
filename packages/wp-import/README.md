@@ -120,9 +120,10 @@ block refers to it; an empty navigation block without a `ref` shows the most
 recent published one, as WordPress does. Block menu items have no WordPress id
 and get negative ids; the store claims no `wp_id` for them.
 
-A menu item that is itself a draft, or that points at a draft, pending,
-private, scheduled or password-protected post, is left out — visitors never
-see it, and its label is often that post's title. Its children move up to the
+A menu item that is itself a draft, or whose post target is not proven public
+— a draft, pending, private, scheduled or password-protected post, or one this
+import never read (a type outside REST, a listing past a page cap) — is left
+out, fail-closed: its label is often that post's title. Its children move up to the
 nearest kept ancestor; `warnings` gives only the count.
 
 Both need `edit_theme_options`. Without a credential, with a rejected one, or

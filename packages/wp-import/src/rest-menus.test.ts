@@ -5,7 +5,6 @@ import { fetchRestRawIR, rawToContentrain } from './index'
 const ctx: MenuContext = {
   origin: 'https://s.example',
   postSlug: (id) => ({ 11: 'about', 12: 'team', 10: 'one' } as Record<number, string>)[id],
-  hidden: (id) => id === 14,
   termSlug: (taxonomy, id) => (taxonomy === 'category' && id === 2 ? 'news' : undefined),
   pages: [
     { id: 11, parent: null, menu_order: 1, title: 'About', link: 'https://s.example/about/', slug: 'about' },
@@ -79,6 +78,20 @@ describe('unpublished targets never reach a menu', () => {
     expect(JSON.stringify(menu)).not.toMatch(/Secret plan|page_id=14|Unsaved/)
   })
 
+  it('leaves out an item whose target this import never read (fail-closed): no title, no address', () => {
+    const dropped = { count: 0 }
+    const [menu] = classicMenus([{ id: 3, name: 'Main', slug: 'main' }], [
+      { id: 40, title: { raw: '', rendered: 'Beyond the page cap' }, type: 'post_type', object: 'page', object_id: 999, parent: 0, menu_order: 1, url: 'https://s.example/beyond/', menus: 3, status: 'publish' },
+      { id: 41, title: { raw: 'Zero id' }, type: 'post_type', object: 'team_member', object_id: 0, parent: 0, menu_order: 2, url: 'https://s.example/team/x/', menus: 3, status: 'publish' },
+    ], ctx, dropped)
+    expect(menu!.items).toEqual([])
+    expect(dropped.count).toBe(2)
+    let n = 0
+    const block = navigationItems('<!-- wp:navigation-link {"label":"Beyond","type":"page","id":999,"url":"/beyond/","kind":"post-type"} /-->', ctx, () => -++n, dropped)
+    expect(block).toEqual([])
+    expect(JSON.stringify([menu, block])).not.toMatch(/Beyond|beyond|Zero/)
+  })
+
   it('leaves out block links to hidden content; a hidden submenu\'s links take its place', () => {
     let n = 0
     const dropped = { count: 0 }
@@ -102,7 +115,7 @@ describe('classic menus', () => {
         { id: 21, title: { raw: '', rendered: 'About' }, type: 'post_type', object: 'page', object_id: 11, parent: 0, menu_order: 2, url: 'https://s.example/about/', menus: 3, status: 'publish' },
         { id: 20, title: { raw: 'Home' }, type: 'custom', object: 'custom', object_id: 20, parent: 0, menu_order: 1, url: 'https://s.example/', menus: 3, target: '_blank', classes: ['', 'cta'] },
         { id: 22, title: { raw: 'Projects' }, type: 'post_type_archive', object: 'project', parent: 21, menu_order: 3, url: 'https://s.example/projects/', menus: 3 },
-        { id: 23, title: { raw: 'Gone' }, type: 'post_type', object: 'page', object_id: 99, parent: 77, menu_order: 1, url: '', menus: 4 },
+        { id: 23, title: { raw: 'Custom' }, type: 'custom', object: 'custom', parent: 77, menu_order: 1, url: '', menus: 4 },
       ],
       ctx,
     )
@@ -110,7 +123,7 @@ describe('classic menus', () => {
     expect(menus[0]!.items.map((i) => [i.id, i.title, i.target.kind])).toEqual([[20, 'Home', 'url'], [21, 'About', 'post'], [22, 'Projects', 'archive']])
     expect(menus[0]!.items[0]).toMatchObject({ target_attr: '_blank', classes: ['cta'] })
     expect(menus[0]!.items[2]!.parent).toBe(21)
-    expect(menus[1]!.items[0]).toMatchObject({ parent_unresolved: true, url: null, target: { kind: 'post', id: 99, resolved: false } })
+    expect(menus[1]!.items[0]).toMatchObject({ parent_unresolved: true, url: null, target: { kind: 'unknown', resolved: false } })
   })
 })
 
@@ -155,9 +168,10 @@ describe('fetchRestRawIR menus', () => {
     const { fetchImpl } = site()
     const { raw, gaps, warnings } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl, auth: { user: 'u', appPassword: 'p' } })
     expect(gaps).toEqual([])
-    expect(warnings).toEqual(['menus: 1 item(s) are drafts or point at unpublished or password-protected content — left out, as visitors never see them'])
+    // Two left out: the draft page's classic item, and the block link to page 12, which this site never listed.
+    expect(warnings).toEqual(['menus: 2 item(s) are drafts or point at content not proven public (unpublished, password-protected, or not read by this import) — left out'])
     expect(JSON.stringify(raw.menus)).not.toMatch(/Secret plan|secret-plan|page_id=14/)
-    expect(raw.menus!.map((m) => [m.slug, m.locations, m.items.length])).toEqual([['main', ['primary'], 1], ['navigation', ['header'], 4]])
+    expect(raw.menus!.map((m) => [m.slug, m.locations, m.items.length])).toEqual([['main', ['primary'], 1], ['navigation', ['header'], 3]])
     expect(raw.menus![0]!.items[0]!.target).toEqual({ kind: 'post', post_type: 'page', id: 11, slug: 'about', resolved: true })
   })
 
@@ -189,7 +203,7 @@ describe('fetchRestRawIR menus', () => {
     expect(menus.map((m) => m.locations).toSorted()).toEqual([['header'], ['primary']])
     const itemsFile = Object.keys(files).find((f) => f.includes('content/') && f.includes('/menu-items/'))!
     const items = Object.values(JSON.parse(files[itemsFile]!)) as Array<Record<string, unknown>>
-    expect(items).toHaveLength(5)
+    expect(items).toHaveLength(4)
     expect(JSON.stringify(items)).not.toMatch(/Secret plan|secret-plan|page_id=14/)
     expect(items.filter((i) => 'wp_id' in i).map((i) => i.wp_id)).toEqual([20])
   })

@@ -49,6 +49,14 @@ describe('fetchRestRawIR', () => {
     expect(result.warnings).toContain('posts: page 2 HTTP 503 — skipped')
   })
 
+  it('an index that fails at the network leaves the site name out and the import runs', async () => {
+    const base = stubFetch([])
+    const fetchImpl = (async (url, init) => (String(url).endsWith('/wp-json/') ? Promise.reject(new TypeError('fetch failed')) : base(url, init))) as typeof fetch
+    const { raw } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl })
+    expect(raw.site).toEqual({ url: 'https://s.example' })
+    expect(raw.posts).toHaveLength(3)
+  })
+
   it('rejects invalid limits before fetching, including values that would stall the queue', async () => {
     const calls: string[] = []
     for (const concurrency of [0, -1, 1.5, NaN, Infinity]) {

@@ -43,14 +43,13 @@ export interface RestTemplatePart { area?: string; content?: { raw?: string } }
 /** What a target is checked against: the posts and terms this import read. */
 export interface MenuContext {
   origin: string
-  /** Slug of a published, unprotected post — the only kind a menu may link to after the move. */
-  postSlug: (id: number) => string | undefined
   /**
-   * A post this import read that is not published (draft, pending, private, scheduled) or is behind a
-   * password. WordPress does not show a link to it to visitors; its menu item is left out, never
-   * resolved: its title and slug must not reach the store.
+   * Slug of a post this import read and saw published and unprotected — the only kind a menu item may
+   * point at. Anything else (a draft, a private or scheduled post, one behind a password, or one this
+   * import never read: a type outside REST, past a page cap) is left out, fail-closed: a menu item's label
+   * is often its target's title, and that title must not reach the store.
    */
-  hidden: (id: number) => boolean
+  postSlug: (id: number) => string | undefined
   termSlug: (taxonomy: string, id: number) => string | undefined
   /** Published pages, for `core/page-list` (id, parent, order, title, link). */
   pages: Array<{ id: number; parent: number | null; menu_order: number; title: string; link: string | null; slug: string }>
@@ -72,7 +71,7 @@ const targetOf = (kind: string | undefined, object: string | undefined, id: numb
 }
 
 /**
- * Items a visitor never sees: a draft item, or one pointing at hidden content. Their children move up
+ * Items that are left out: a draft item, or one whose post target is not proven visible. Their children move up
  * to the nearest kept ancestor, as WordPress's walker shows them.
  */
 function hiddenItems(items: RestMenuItem[], drop: (i: RestMenuItem) => boolean): { gone: Set<number>; lift: (parent: number | null) => number | null } {
@@ -91,7 +90,7 @@ export function classicMenus(menus: RestMenu[], items: RestMenuItem[], ctx: Menu
   const out: RawMenu[] = []
   for (const m of [...menus].toSorted((a, b) => a.id - b.id)) {
     const all = items.filter((i) => i.menus === m.id).toSorted((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0) || a.id - b.id)
-    const { gone, lift } = hiddenItems(all, (i) => (i.status ?? 'publish') !== 'publish' || (i.type === 'post_type' && !!i.object_id && ctx.hidden(i.object_id)))
+    const { gone, lift } = hiddenItems(all, (i) => (i.status ?? 'publish') !== 'publish' || (i.type === 'post_type' && !(i.object_id && ctx.postSlug(i.object_id))))
     dropped.count += gone.size
     const own = all.filter((i) => !gone.has(i.id))
     const ids = new Set(own.map((i) => i.id))
@@ -196,8 +195,8 @@ export function navigationItems(content: string, ctx: MenuContext, nextId: () =>
       if (b.name === 'core/navigation-link' || b.name === 'core/navigation-submenu') {
         const kind = KIND[str(a.kind) ?? ''] ?? (str(a.type) === 'category' || str(a.type) === 'tag' || str(a.type) === 'post_tag' ? 'taxonomy' : a.id ? 'post_type' : 'custom')
         const object = kind === 'taxonomy' && str(a.type) === 'tag' ? 'post_tag' : str(a.type)
-        // WordPress renders no link to unpublished content; its children show in its place.
-        if (kind === 'post_type' && typeof a.id === 'number' && ctx.hidden(a.id)) {
+        // A link to a post not proven visible is left out (fail-closed); its children show in its place.
+        if (kind === 'post_type' && typeof a.id === 'number' && !ctx.postSlug(a.id)) {
           dropped.count++
           walk(b.children, parent)
           continue
