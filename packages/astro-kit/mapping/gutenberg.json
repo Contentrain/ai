@@ -215,7 +215,8 @@
       "match": "core/cover",
       "component": "hero",
       "variant": {
-        "layout": "cover"
+        "layout": "cover",
+        "align": "class:is-position-*-left=start|center"
       },
       "props": {
         "heading": "dom:h1,h2",
@@ -233,6 +234,9 @@
     {
       "match": "core/details",
       "component": "faq",
+      "variant": {
+        "style": "plain"
+      },
       "group": "siblings",
       "into": "items",
       "item": {

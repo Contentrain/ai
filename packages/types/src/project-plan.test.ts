@@ -59,6 +59,12 @@ describe('validateProjectPlan', () => {
     expect(validateProjectPlan(plan())).toEqual({ errors: [], warnings: [] })
   })
 
+  it('accepts the theme\'s type scale and section rhythm as roles', () => {
+    const p = plan()
+    p.site.tokens.roles = { ...p.site.tokens.roles, 'text-nav': '1.125rem', 'text-heading-1': 'clamp(2rem, 5vw, 3rem)', 'text-heading-2': '2rem', 'text-heading-3': '1.5rem', 'spacing-section': '5rem' }
+    expect(validateProjectPlan(p).errors).toEqual([])
+  })
+
   it('catches broken references, permalinks, values and bindings', () => {
     const p = plan()
     p.site.permalinks.post = '/:slug'

@@ -65,7 +65,7 @@ const cover = layout === 'cover' && image
           <div class={s.copy()}>
             {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
             <Heading id={headingId} class={s.heading()}>{heading}</Heading>
-            {lead && <p class={s.lead()}>{lead}</p>}
+            {lead && <p class={s.lead()} data-kit-text>{lead}</p>}
             {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
           </div>
         </div>
@@ -78,7 +78,7 @@ const cover = layout === 'cover' && image
         <div class={s.copy()}>
           {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
           <Heading id={headingId} class={s.heading()}>{heading}</Heading>
-          {lead && <p class={s.lead()}>{lead}</p>}
+          {lead && <p class={s.lead()} data-kit-text>{lead}</p>}
           {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
         </div>
         {image && (

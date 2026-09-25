@@ -25,6 +25,8 @@ const faq = tv({
     style: {
       lines: { list: 'divide-y divide-line border-y border-line' },
       cards: { list: 'gap-3', item: 'rounded-card border border-line px-5', summary: 'py-5' },
+      // WordPress's details block: the browser's own disclosure triangle, no rules or box.
+      plain: { list: 'gap-2', summary: 'list-item list-[revert] py-1 text-base [font-weight:inherit] [&::-webkit-details-marker]:inline', marker: 'hidden', answer: 'pt-2 pl-5' },
     },
     tone: { default: {}, muted: { item: 'bg-surface' }, inverse: { answer: 'prose-invert' }, accent: { answer: 'prose-invert' } },
   },
@@ -37,7 +39,7 @@ const faq = tv({
 interface Props {
   items: FaqItem[]
   heading?: string | undefined
-  style?: 'lines' | 'cards' | undefined
+  style?: 'lines' | 'cards' | 'plain' | undefined
   /** One answer open at a time (`<details name>`). */
   exclusive?: boolean | undefined
   /** Open the first answer. */
