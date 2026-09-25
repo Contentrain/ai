@@ -1,5 +1,40 @@
 # @contentrain/wp-import
 
+## 0.7.0
+
+### Minor Changes
+
+- 53505cd: `fetchRestRawIR` reads menus. With an Application Password it fills `RawIR.menus` from classic menus (`/wp/v2/menus`, `/wp/v2/menu-items`) and from a block theme's published `wp_navigation` posts, so a REST import of a block-theme site no longer arrives with an empty header navigation. Each menu carries `locations`: the theme locations a classic menu is assigned to, or the template-part areas (`header`, `footer`) that show a block navigation.
+
+  Only what visitors are proven to see is kept: an item that is a draft, or points at a post this import did not read as published and unprotected, is left out (fail-closed) (its label is often that post's title); its children move up, and `warnings` gives only a count.
+
+  `fetchRestRawIR` also reads the `/wp-json/` index: the site's name and tagline fill `RawIR.site.title` / `description`, so the store's `site` singleton no longer says "Site"; `url` / `home` fill `base_site_url` / `base_blog_url`.
+
+  Menus need `edit_theme_options`. When they cannot be read — no credential, a rejected one, or a user without that right — the new `gaps` field of the result contains `menus_require_auth` instead of the import silently returning no menus.
+
+  `@contentrain/types`: `RawMenu.locations?: string[]` (optional; producers that do not know leave it out). A block navigation's items, which have no WordPress id, carry negative ids.
+
+### Patch Changes
+
+- Updated dependencies [53505cd]
+  - @contentrain/types@1.24.0
+
+## 0.6.0
+
+### Minor Changes
+
+- d87121b: The comments export carries only public discussion. `buildCommentsExport` keeps comments on published, unprotected entries that are approved (`'1'`) or pending (`'0'`, which lands in the receiving service's moderation queue). It leaves out comments on drafts, private, scheduled and password-protected entries, any other status (spam, trash, `post-trashed`, a plugin's own), and comments on entries the import does not hold. An allowlist, so it fails closed. It counts what it leaves out in the new optional `CommentsExport.excluded` (`non_public_entry`, `unknown_entry`, `spam`, `trash`, `other_status`), which `summarizeComments` passes to `HandoffComments.excluded`. `selectComments(raw)` exposes the selection.
+
+### Patch Changes
+
+- a726843: `fetchRestRawIR` returns `credential: { status, fell_back }`, so a caller can tell whether the Application Password was honoured without reading `warnings`. `status` is `none` without `auth`, `accepted` when every listing it unlocks was read with it, and `rejected` when at least one was not; `fell_back` names those listings (`posts`, `pages`, a custom type's REST base, `comments`, `comments:hold`).
+
+  A credential the site rejects outright is now found by one `users/me` request and dropped. WordPress answers a wrong Application Password with 401 on every route, public ones included, and the fallback to the public listing used to resend it, so such an import came back with no posts, no terms and no comments while its provenance said `rest_auth`. It now imports the public site, as `rest_public`. The fallback for a single refused listing is anonymous too.
+
+- Updated dependencies [d87121b]
+- Updated dependencies [90b5049]
+  - @contentrain/types@1.23.0
+
 ## 0.5.7
 
 ### Patch Changes

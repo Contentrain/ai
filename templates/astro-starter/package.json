@@ -20,7 +20,7 @@
   "dependencies": {
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.4",
-    "@contentrain/query": "^7.5.1",
+    "@contentrain/query": "^7.6.0",
     "astro": "^7.3.5",
     "sharp": "^0.35.4",
     "tailwind-merge": "^3.7.0",

@@ -185,6 +185,7 @@ export type RawMenuTarget =
   | { kind: 'unknown'; resolved: false }
 
 export interface RawMenuItem {
+  /** `nav_menu_item` post id. Negative for an item of a block navigation, which has no id of its own. */
   id: number
   title: string
   order?: number
@@ -201,10 +202,17 @@ export interface RawMenuItem {
 }
 
 export interface RawMenu {
+  /** Menu term id; for a block theme's navigation, the `wp_navigation` post id. */
   id: number | null
   slug: string
   name: string
   items: RawMenuItem[]
+  /**
+   * Where the site shows it: the theme locations a classic menu is assigned to (`primary`, `footer`,
+   * `menu-1`, …), or the template-part areas (`header`, `footer`) whose navigation block shows a
+   * block theme's navigation. Absent when the producer does not know.
+   */
+  locations?: string[]
 }
 
 export interface RawComment {

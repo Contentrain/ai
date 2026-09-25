@@ -15,8 +15,8 @@ importers:
         specifier: ^3.7.4
         version: 3.7.4
       '@contentrain/query':
-        specifier: ^7.5.1
-        version: 7.5.1
+        specifier: ^7.6.0
+        version: 7.6.0
       astro:
         specifier: ^7.3.5
         version: 7.3.5(@types/node@26.6.2)(jiti@2.7.0)(yaml@2.9.1)
@@ -243,12 +243,12 @@ packages:
     resolution: {integrity: sha512-dlT1m5e/0yUL0kRNcQn7yGLVThkgbB0Ga/1AmfDDC/8ik6AIiSf2QLQO2zPYvefsHP0aFgxO93cVLCCfDp7kzQ==}
     engines: {node: '>= 20.12.0'}
 
-  '@contentrain/query@7.5.1':
-    resolution: {integrity: sha512-tcssFSU0xVl0X1sbvBPD+geWCcK1QdtnJvwrVqEKCuFEH33sxdKAxT2UwWaddVLMPWcuaz+sUO95E2egdEjeuA==}
+  '@contentrain/query@7.6.0':
+    resolution: {integrity: sha512-scyNE18AZoCtPntFnemLDTeeAYnNo5XH9xRAoChX6WFm95jQqHWYj8DuqoR3yaoAsnWTmGwsrLCuGxSYWJRS1A==}
     hasBin: true
 
-  '@contentrain/types@1.22.0':
-    resolution: {integrity: sha512-bJOqK8xRt4mSLdiP2vOzBXkbP685+F5ktRc/jwKkQf2WIxU+Alr2zCwS3HlASFoLH4/5BMRy54CQDdM4KH7syw==}
+  '@contentrain/types@1.23.0':
+    resolution: {integrity: sha512-n7UohZwtQgNU26qbvo7HteekF9nX0YvTGE53LUMX0lHeF0zb3XqBPjQcxdyjiQp3AltxphxHXcVyhCo7tKyImg==}
 
   '@emmetio/abbreviation@2.3.3':
     resolution: {integrity: sha512-mgv58UrU3rh4YgbE/TzgLQwJ3pFsHHhCLqY20aJq+9comytTXUDNGG/SMtSeMJdkpxgXSXunBGLD8Boka3JyVA==}
@@ -3594,11 +3594,11 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@contentrain/query@7.5.1':
+  '@contentrain/query@7.6.0':
     dependencies:
-      '@contentrain/types': 1.22.0
+      '@contentrain/types': 1.23.0
 
-  '@contentrain/types@1.22.0': {}
+  '@contentrain/types@1.23.0': {}
 
   '@emmetio/abbreviation@2.3.3':
     dependencies:
