@@ -22,7 +22,7 @@ describe('Redirection rules over REST', () => {
       rule(6, { action_type: 'error', action_code: 404, action_data: '' }),
       rule(7, { enabled: false }),
       rule(8, { group_id: 2 }),
-      rule(9, { match_type: 'login', action_data: { logged_in: '/in/', logged_out: '/out/' } as unknown as { url?: string } }),
+      rule(9, { match_type: 'login', action_data: { logged_in: '/in/', logged_out: '/out/', extra: 'NOT-A-TARGET' } as unknown as { url?: string } }),
       rule(10, { group_id: 3 }),
       rule(11, { action_code: 200 }),
       rule(12, { match_type: 'cookie', action_data: { name: 'session', value: 'COOKIE-SECRET', url_from: '/in/' } as unknown as { url?: string } }),
