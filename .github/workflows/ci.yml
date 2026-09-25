@@ -64,6 +64,14 @@ jobs:
         # archive page that failed it).
         run: pnpm --filter @contentrain/emitter-astro test:astro
 
+      - name: Astro starter passes its gates
+        # templates/astro-starter is copied out, installed on its own and
+        # checked with the SDK at HEAD: empty, then with a WordPress-shaped
+        # demo site laid over it (astro check, knip, build, built-site checks).
+        run: |
+          node scripts/starter-gates.mjs --local-sdk
+          node scripts/starter-gates.mjs --local-sdk --fixture wp-demo
+
       - name: Plugin payload in sync
         run: |
           pnpm plugin:build

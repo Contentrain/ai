@@ -1,0 +1,59 @@
+{
+  "domain": "assets",
+  "fields": {
+    "alt": {
+      "label": "Alt text",
+      "order": 40,
+      "type": "string"
+    },
+    "caption": {
+      "label": "Caption",
+      "order": 50,
+      "type": "text"
+    },
+    "height": {
+      "label": "Height",
+      "order": 90,
+      "type": "integer"
+    },
+    "mime": {
+      "label": "MIME type",
+      "order": 70,
+      "type": "string"
+    },
+    "slug": {
+      "label": "Slug",
+      "order": 20,
+      "required": true,
+      "type": "slug",
+      "unique": true
+    },
+    "title": {
+      "label": "Title",
+      "order": 10,
+      "required": true,
+      "type": "string"
+    },
+    "url": {
+      "label": "Source URL",
+      "order": 30,
+      "required": true,
+      "type": "url"
+    },
+    "width": {
+      "label": "Width",
+      "order": 80,
+      "type": "integer"
+    },
+    "wp_id": {
+      "label": "WP attachment ID",
+      "order": 120,
+      "type": "integer"
+    }
+  },
+  "i18n": false,
+  "id": "media",
+  "kind": "collection",
+  "name": "Media",
+  "title_field": "title"
+}

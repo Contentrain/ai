@@ -1,0 +1,33 @@
+---
+// The client half of StudioForm: the custom element and the script that
+// mounts it. Kept apart so the script ships only on pages that render a form.
+interface Props {
+  baseUrl: string
+  projectId: string
+  model: string
+  text: Record<string, string>
+  class?: string | undefined
+}
+
+const { baseUrl, projectId, model, text, class: className } = Astro.props
+---
+<cr-form
+  class:list={['cr-form-mount block', className]}
+  data-base-url={baseUrl}
+  data-project={projectId}
+  data-model={model}
+  data-strings={JSON.stringify(text)}
+>
+  <noscript><p class="cr-noscript">{text['form.noscript']}</p></noscript>
+</cr-form>
+
+<script>
+  import { mountForm } from '../../lib/studio/embed'
+
+  class CrForm extends HTMLElement {
+    connectedCallback() {
+      void mountForm(this)
+    }
+  }
+  if (!customElements.get('cr-form')) customElements.define('cr-form', CrForm)
+</script>

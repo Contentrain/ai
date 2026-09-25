@@ -1,0 +1,13 @@
+---
+// A rich-text body as the editor wrote it — a migrated post keeps its
+// WordPress block markup, styled by Tailwind Typography plus the Gutenberg
+// block styles in styles/wp-blocks.css. The body is the site's own content
+// from its own repository, so it is rendered as HTML.
+interface Props {
+  html: string
+  class?: string
+}
+
+const { html, class: className } = Astro.props
+---
+<div class:list={['prose prose-lg prose-site max-w-none', className]} data-pagefind-body set:html={html} />

@@ -1,0 +1,39 @@
+{
+  "domain": "blog",
+  "fields": {
+    "description": {
+      "label": "Description",
+      "order": 30,
+      "type": "text"
+    },
+    "name": {
+      "label": "Name",
+      "order": 10,
+      "required": true,
+      "type": "string"
+    },
+    "parent": {
+      "label": "Parent",
+      "model": "categories",
+      "order": 40,
+      "type": "relation"
+    },
+    "slug": {
+      "label": "Slug",
+      "order": 20,
+      "required": true,
+      "type": "slug",
+      "unique": true
+    },
+    "wp_id": {
+      "label": "WP term ID",
+      "order": 50,
+      "type": "integer"
+    }
+  },
+  "i18n": false,
+  "id": "categories",
+  "kind": "collection",
+  "name": "Categories",
+  "title_field": "name"
+}

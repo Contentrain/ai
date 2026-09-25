@@ -1,0 +1,42 @@
+{
+  "4176cfe5de20": {
+    "alt": "",
+    "height": 900,
+    "mime": "image/svg+xml",
+    "slug": "cover-1",
+    "title": "Cover 1",
+    "url": "/demo/cover-1.svg",
+    "width": 1600,
+    "wp_id": 100
+  },
+  "784383b7be3c": {
+    "alt": "",
+    "height": 900,
+    "mime": "image/svg+xml",
+    "slug": "cover-3",
+    "title": "Cover 3",
+    "url": "/demo/cover-3.svg",
+    "width": 1600,
+    "wp_id": 102
+  },
+  "933f7aefb1b3": {
+    "alt": "",
+    "height": 900,
+    "mime": "image/svg+xml",
+    "slug": "cover-4",
+    "title": "Cover 4",
+    "url": "/demo/cover-4.svg",
+    "width": 1600,
+    "wp_id": 103
+  },
+  "eb80cf83a8f2": {
+    "alt": "",
+    "height": 900,
+    "mime": "image/svg+xml",
+    "slug": "cover-2",
+    "title": "Cover 2",
+    "url": "/demo/cover-2.svg",
+    "width": 1600,
+    "wp_id": 101
+  }
+}

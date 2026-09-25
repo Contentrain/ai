@@ -1,0 +1,72 @@
+---
+// The document shell every page renders in: head (SEO, font, the one
+// stylesheet), skip link, site header, main, site footer.
+import { Font } from 'astro:assets'
+import SEO from '../components/SEO.astro'
+import SiteFooter from '../components/SiteFooter.astro'
+import SiteHeader from '../components/SiteHeader.astro'
+import { getSite, getStrings } from '../lib/content'
+import { organizationLd, websiteLd } from '../lib/seo'
+import '../styles/global.css'
+
+interface Props {
+  /** The page's own title; the site name is added unless this is the home page. */
+  title?: string | undefined
+  description?: string | undefined
+  /** Absolute or site-relative image for link previews. */
+  image?: string | undefined
+  /** An explicit canonical (an SEO override); the page's own address otherwise. */
+  canonical?: string | undefined
+  type?: 'website' | 'article'
+  noindex?: boolean | undefined
+  nofollow?: boolean | undefined
+  published?: Date | undefined
+  modified?: Date | undefined
+  jsonLd?: ReadonlyArray<Record<string, unknown>>
+}
+
+const { title, description, image, canonical, type, noindex, nofollow, published, modified, jsonLd = [] } = Astro.props
+const site = await getSite()
+const t = await getStrings()
+const origin = Astro.site ?? Astro.url
+const home = new URL('/', origin).href
+const identity = { name: site.title, url: home, description: site.tagline, logo: site.logo, sameAs: site.same_as }
+const isHome = Astro.url.pathname === '/'
+const fullTitle = title && !isHome ? `${title} – ${site.title}` : site.tagline ? `${site.title} – ${site.tagline}` : site.title
+const lang = site.language ?? 'en'
+const shareImage = image ?? site.social_image
+---
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <Font cssVariable="--font-inter" preload />
+    <SEO
+      title={fullTitle}
+      description={description ?? (isHome ? site.tagline : undefined)}
+      canonical={canonical ?? new URL(Astro.url.pathname, origin).href}
+      image={shareImage ? new URL(shareImage, origin).href : undefined}
+      type={type ?? 'website'}
+      noindex={noindex}
+      nofollow={nofollow}
+      siteName={site.title}
+      locale={lang}
+      published={published}
+      modified={modified}
+      jsonLd={isHome ? [websiteLd(identity), organizationLd(identity), ...jsonLd] : jsonLd}
+    />
+  </head>
+  <body class="flex min-h-dvh flex-col bg-surface font-sans text-ink antialiased">
+    <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-ink focus:px-4 focus:py-2 focus:text-surface">
+      {t('nav.skip')}
+    </a>
+    <SiteHeader site={site} t={t} />
+    <main id="main" class="flex-1">
+      <slot />
+    </main>
+    <SiteFooter site={site} t={t} />
+  </body>
+</html>

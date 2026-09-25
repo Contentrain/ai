@@ -1,0 +1,31 @@
+# Every push and pull request runs the site's gates. Content edits made in
+# Contentrain Studio arrive as pull requests too, so an entry that breaks the
+# build is caught before it is merged.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Type check (astro check)
+        run: pnpm check
+      - name: Unused files, exports and dependencies (knip)
+        run: pnpm knip
+      - name: Build and index search
+        run: pnpm build
+      - name: Built-site checks
+        run: node scripts/check-dist.mjs
+      - name: Lighthouse
+        run: pnpm lhci

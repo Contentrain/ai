@@ -79,6 +79,15 @@ audit record, so a changed prompt never serves an answer given to the old one.
 |---|---|---|---|
 | `punch_item` | class (`product_defect` · `source_limit` · `cosmetic` · `measurement`) + severity 0–3 | tentative class for run-report phrasings it recognises; never final, because a rule cannot place severity | Jev, with PoC-1's request word for word (site placeholders aside); **advisory** |
 | `eligibility_band` | `eligible` · `access_blocked` · `page_only` · `custom_type`, or `needs_human` | mirrors Migrate's `judgeEligibility`; final outside the undecided band | Jev, in the band only |
+| `field_type` | `string` · `text` · `markdown` · `richtext` · `relation` · `url` · `select`, limited per item to the options the fact pack offers | final for clear lengths (≤ 100 chars → `string`, ≥ 200 → `text`) and for many instances with ≤ 3 values (`select`); tentative otherwise | Jev, one request per option set |
+| `region_name` | `hero` · `card-grid` · `faq` · `cta` · … (18 section roles) | tentative from class, builder and child hints; `content` at 0.3 when nothing matches | Jev |
+| `unmapped_element` | an astro-kit component id, `prose`, or `site-specific` | final (0.9) when the element name says it (`*-carousel` → `slider`, `*toggle` → `faq`, `*heading` → `prose`); tentative `site-specific` otherwise | Jev, one request per builder; under 0.5 confidence → `site-specific` |
+
+The last three are Migrate v3's fact-pack leftovers: everything else about a
+site's structure is settled deterministically before them. Their inputs come
+already shaped by the fact pack, and these shapers scrub again: box sizes are
+rounded, text is cut and scrubbed, and element and class names are reduced to
+slugs.
 
 The `eligibility_band` band is two cases: posts and custom-type entries within
 a factor of two of each other, and a site with exactly one sampled post. A Jev

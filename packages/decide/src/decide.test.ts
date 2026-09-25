@@ -100,7 +100,7 @@ describe('decide — the chain', () => {
   })
 
   it('throws only for an unknown kind', async () => {
-    await expect(createDecider({ jev: false }).decide('nope', {})).rejects.toThrow('unknown decision kind: nope (known: punch_item, eligibility_band)')
+    await expect(createDecider({ jev: false }).decide('nope', {})).rejects.toThrow('unknown decision kind: nope (known: punch_item, eligibility_band, field_type, region_name, unmapped_element)')
   })
 
   it('options.rule replaces the kind\'s rule, and null asks none', async () => {

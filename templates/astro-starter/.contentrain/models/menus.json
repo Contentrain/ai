@@ -1,0 +1,34 @@
+{
+  "domain": "site",
+  "fields": {
+    "items": {
+      "label": "Items",
+      "model": "menu-items",
+      "order": 30,
+      "type": "relations"
+    },
+    "name": {
+      "label": "Name",
+      "order": 10,
+      "required": true,
+      "type": "string"
+    },
+    "slug": {
+      "label": "Slug",
+      "order": 20,
+      "required": true,
+      "type": "slug",
+      "unique": true
+    },
+    "wp_id": {
+      "label": "WP term ID",
+      "order": 40,
+      "type": "integer"
+    }
+  },
+  "i18n": false,
+  "id": "menus",
+  "kind": "collection",
+  "name": "Menus",
+  "title_field": "name"
+}

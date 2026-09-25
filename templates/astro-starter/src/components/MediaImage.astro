@@ -1,0 +1,24 @@
+---
+// A media-library image. With known dimensions it goes through astro:assets —
+// optimized when its host is in `image.domains` or it is local, and always
+// sized, so the layout never shifts. Without dimensions it is a plain lazy
+// <img>, because guessing a size would distort it.
+import { Image } from 'astro:assets'
+import type { Media } from '../lib/content'
+
+interface Props {
+  media: Media
+  /** Rendered width in the layout, for srcset selection. */
+  sizes?: string
+  class?: string
+  /** The page's largest image: load it first. */
+  priority?: boolean
+}
+
+const { media, sizes = '100vw', class: className, priority = false } = Astro.props
+const { url, alt = '', width, height } = media.data
+const loading = priority ? 'eager' : 'lazy'
+---
+{width && height
+  ? <Image src={url} alt={alt} width={width} height={height} sizes={sizes} class={className} loading={loading} fetchpriority={priority ? 'high' : 'auto'} />
+  : <img src={url} alt={alt} class={className} loading={loading} decoding="async" />}

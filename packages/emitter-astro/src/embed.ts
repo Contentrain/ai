@@ -607,7 +607,8 @@ export function runtimeOf(host: HTMLElement): Runtime {
 }
 
 function entryOf(host: HTMLElement): EntryRef {
-  return { model_id: host.dataset.model ?? '', entry_id: host.dataset.entry ?? '', locale: host.dataset.locale || undefined }
+  const locale = host.dataset.locale
+  return { model_id: host.dataset.model ?? '', entry_id: host.dataset.entry ?? '', ...(locale ? { locale } : {}) }
 }
 
 function setStatus(form: HTMLFormElement, html: string): void {

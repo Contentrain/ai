@@ -1,0 +1,33 @@
+---
+// Site search with Pagefind's component UI. The index is built from the
+// finished site after `astro build`, so search needs no server and no third
+// party; its interface text follows the page language. Only post and page
+// bodies are indexed (data-pagefind-body in Prose).
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { getStrings } from '../lib/content'
+
+const t = await getStrings()
+---
+<BaseLayout title={t('search.title')} noindex>
+  <div class="container-prose py-12 md:py-16">
+    <h1 class="mb-8 text-4xl font-bold tracking-tight">{t('search.title')}</h1>
+    <pagefind-input placeholder={t('search.placeholder')} autofocus></pagefind-input>
+    <pagefind-summary class="mt-4 block text-sm text-ink-muted"></pagefind-summary>
+    <pagefind-results class="mt-6 block"></pagefind-results>
+    <noscript><p class="text-ink-muted">{t('search.noscript')}</p></noscript>
+  </div>
+  <link rel="stylesheet" href="/pagefind/pagefind-component-ui.css" />
+  <script is:inline type="module" src="/pagefind/pagefind-component-ui.js"></script>
+  <script is:inline type="module">
+    // ?q= — the SearchAction address in the site's JSON-LD.
+    const query = new URLSearchParams(location.search).get('q')
+    if (query) {
+      await customElements.whenDefined('pagefind-input')
+      const input = document.querySelector('pagefind-input input')
+      if (input) {
+        input.value = query
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      }
+    }
+  </script>
+</BaseLayout>

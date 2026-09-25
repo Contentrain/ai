@@ -1,0 +1,9 @@
+{
+  "description": "What the site says around its content — navigation, lists, search, forms and comments — per language. A missing key shows the key itself.",
+  "domain": "site",
+  "i18n": true,
+  "id": "ui-strings",
+  "kind": "dictionary",
+  "name": "Site interface text",
+  "title_field": "key"
+}

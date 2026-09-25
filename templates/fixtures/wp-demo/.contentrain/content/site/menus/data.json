@@ -1,0 +1,21 @@
+{
+  "5e27e5dd7d41": {
+    "items": [
+      "b45a32ad24ea",
+      "190cd4969df5",
+      "9e3f026a359e",
+      "90fe8f8dbcdf"
+    ],
+    "name": "Primary",
+    "slug": "primary"
+  },
+  "764a4318abae": {
+    "items": [
+      "d1ab2ccb1435",
+      "e8beae5623cd",
+      "b71932f1b0a5"
+    ],
+    "name": "Footer",
+    "slug": "footer"
+  }
+}
