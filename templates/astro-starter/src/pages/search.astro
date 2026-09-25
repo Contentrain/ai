@@ -9,7 +9,7 @@ import { getStrings } from '../lib/content'
 const t = await getStrings()
 ---
 <BaseLayout title={t('search.title')} noindex>
-  <div class="container-prose py-12 md:py-16">
+  <div data-cr-part="search" class="container-prose py-12 md:py-16">
     <h1 class="mb-8 text-4xl font-bold tracking-tight">{t('search.title')}</h1>
     <pagefind-input placeholder={t('search.placeholder')} autofocus></pagefind-input>
     <pagefind-summary class="mt-4 block text-sm text-ink-muted"></pagefind-summary>
