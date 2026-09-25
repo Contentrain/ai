@@ -135,7 +135,10 @@ export function registerContextTools(
             const git = createGit(projectRoot)
             const branches = await git.branchLocal()
             if (branches.all.includes(CONTENTRAIN_BRANCH)) {
-              const baseBranch = await resolveBaseBranch(git, config, {
+              // The working tree's config, as every git-level resolver reads it (writes, merge,
+              // reconcile, content-view routing): on a feature branch `config` above comes from
+              // the contentrain snapshot and could name another base than the one writes use.
+              const baseBranch = await resolveBaseBranch(git, await readConfig(projectRoot), {
                 currentBranch: branches.current,
               })
               const relation = await contentBranchRelation(git, baseBranch)
