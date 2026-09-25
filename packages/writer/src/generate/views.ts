@@ -244,7 +244,9 @@ class View {
       if (!bind.entry) throw new CodegenError(`${name}: a model binding without an entry id`)
       this.needs.add('getEntry')
       const entry = this.local('entry')
-      this.lines.push(`const ${entry} = await getEntry(${sq(collectionName(bind.model))}, ${sq(bind.entry)})`)
+      // The loader keys an i18n collection's entries `<locale>/<id>`; a page reads the site's language.
+      const i18n = this.ctx.models.get(bind.model)?.i18n === true
+      this.lines.push(`const ${entry} = await getEntry(${sq(collectionName(bind.model))}, ${sq(i18n ? `${this.ctx.plan.site.locale}/${bind.entry}` : bind.entry)})`)
       const scope: Scope = { data: `${entry}.data`, entry, model: bind.model }
       // Values read the entry only when it exists; a missing section renders nothing.
       const outer = this.lines

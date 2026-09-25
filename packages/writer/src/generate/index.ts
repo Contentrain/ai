@@ -3,8 +3,9 @@
 // express — site components, placements the view generator refuses — is
 // listed in the report for the agent, which then works inside the same tree.
 
+import { existsSync } from 'node:fs'
 import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, join, relative } from 'node:path'
+import { dirname, join, relative, sep } from 'node:path'
 import { copyComponents, planCopy, type KitCatalog } from '@contentrain/astro-kit'
 import { canonicalStringify, type ModelDefinition, type ProjectPlan } from '@contentrain/types'
 import { configWithDomains, mergeStarterModels, planModelFiles } from './models.js'
@@ -19,8 +20,11 @@ export interface GenerateInput {
   kitRoot: string
   /** templates/astro-starter. */
   starterDir: string
-  /** A directory holding wp-import's `.contentrain` (models, content, meta, config). */
-  importDir: string
+  /**
+   * A directory holding wp-import's `.contentrain` (models, content, meta, config), copied into `outDir`.
+   * Absent, `outDir` already holds it (the worker's project directory) and it is left in place.
+   */
+  importDir?: string
   outDir: string
   /** Decisions under this confidence count as low (site component instead of a kit guess). Default 0.8. */
   confidenceFloor?: number
@@ -30,6 +34,8 @@ export interface GenerateReport {
   outDir: string
   /** Starter fields and models added to the imported ones, by model. */
   modelsExtended: Record<string, string[]>
+  /** Starter content copied for models the import did not have (interface strings, empty menus). */
+  seeded: string[]
   /** Files the generator wrote or rewrote, site-relative, sorted. */
   written: string[]
   kit: { components: string[], dependencies: Record<string, string> }
@@ -58,16 +64,36 @@ export async function generateProject(input: GenerateInput): Promise<GenerateRep
   }
   const read = (path: string) => readFile(join(outDir, path), 'utf8')
 
-  // 1. The starter, then the imported store over its sample `.contentrain`; the imported models gain
-  //    what the starter's code reads (menus, interface strings, SEO overrides).
-  await cp(input.starterDir, outDir, { recursive: true, filter: source => !SKIP.test(relative(input.starterDir, source)) })
-  const starterModels = await readModels(join(input.starterDir, '.contentrain/models'))
-  const importedModels = await readModels(join(input.importDir, '.contentrain/models'))
-  await cp(join(input.importDir, '.contentrain'), join(outDir, '.contentrain'), { recursive: true, force: true })
+  // 1. The starter's code around the imported store. The starter's own `.contentrain` is sample data;
+  //    only its models (merged below) and the content of models the import lacks (interface strings,
+  //    empty menus) are taken from it.
+  const starterStore = join(input.starterDir, '.contentrain')
+  await cp(input.starterDir, outDir, {
+    recursive: true,
+    filter: source => {
+      const rel = relative(input.starterDir, source)
+      return !SKIP.test(rel) && rel !== '.contentrain' && !rel.startsWith(`.contentrain${sep}`)
+    },
+  })
+  if (input.importDir) await cp(join(input.importDir, '.contentrain'), join(outDir, '.contentrain'), { recursive: true, force: true })
+  const starterModels = await readModels(join(starterStore, 'models'))
+  const importedModels = await readModels(join(outDir, '.contentrain/models'))
   const merged = mergeStarterModels(starterModels, importedModels)
   for (const model of merged.models) {
     if (merged.added[model.id]) await write(`.contentrain/models/${model.id}.json`, canonicalStringify(model))
   }
+  // A whole model the import did not write starts with the starter's entries (ui-strings defaults), never over imported ones.
+  const seeded: string[] = []
+  for (const [id, fields] of Object.entries(merged.added)) {
+    if (fields[0] !== '(model)') continue
+    const model = starterModels.find(m => m.id === id)!
+    for (const dir of [`content/${model.domain}/${id}`, `meta/${id}`]) {
+      if (!existsSync(join(starterStore, dir)) || existsSync(join(outDir, '.contentrain', dir))) continue
+      await cp(join(starterStore, dir), join(outDir, '.contentrain', dir), { recursive: true })
+      seeded.push(`.contentrain/${dir}`)
+    }
+  }
+  if (!existsSync(join(outDir, '.contentrain/config.json'))) await cp(join(starterStore, 'config.json'), join(outDir, '.contentrain/config.json'))
 
   // 2. Plan models and their domains; then the content config over every model.
   for (const [path, text] of Object.entries(planModelFiles(plan))) await write(path, text)
@@ -109,6 +135,7 @@ export async function generateProject(input: GenerateInput): Promise<GenerateRep
   return {
     outDir,
     modelsExtended: merged.added,
+    seeded,
     written: [...written].toSorted(),
     kit: { components: copy.components, dependencies: Object.fromEntries(missing) },
     routes: { covered: routes.covered, unsupported: routes.unsupported, views: routes.views.map(v => ({ route: v.route, file: v.file, wpIds: v.wpIds })) },

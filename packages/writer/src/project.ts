@@ -1,6 +1,7 @@
 // Commands the agent may run in the project, with bounded time and output.
 
 import { execFile } from 'node:child_process'
+import { commandEnv } from './env.js'
 
 export interface CommandResult {
   ok: boolean
@@ -14,7 +15,7 @@ const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g')
 
 export function runCommand(cwd: string, command: string, args: string[], timeoutMs = 300_000): Promise<CommandResult> {
   return new Promise((done) => {
-    execFile(command, args, { cwd, timeout: timeoutMs, maxBuffer: 32 * 1024 * 1024, env: { ...process.env, CI: 'true', FORCE_COLOR: '0' } }, (error, stdout, stderr) => {
+    execFile(command, args, { cwd, timeout: timeoutMs, maxBuffer: 32 * 1024 * 1024, env: commandEnv() }, (error, stdout, stderr) => {
       const output = `${stdout}\n${stderr}`.replace(ANSI, '')
       done({ ok: !error, output: output.length > TAIL ? `…\n${output.slice(-TAIL)}` : output })
     })

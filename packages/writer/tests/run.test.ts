@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { qualifiedToolNames, writerTools, type ToolContext } from '../src/agent/tools'
 import { jobOptions, runWriter, writerPermissions, type RunOptions } from '../src/agent/run'
 import type { Shooter } from '../src/shoot'
+import { localBudget } from '../src/budget'
 
 let root: string
 let ctx: ToolContext
@@ -71,7 +72,7 @@ describe('permission gate', () => {
 })
 
 describe('job options', () => {
-  const base = (): RunOptions => ({ jobs: [], context: ctx, budgetUsd: 10 })
+  const base = (): RunOptions => ({ jobs: [], context: ctx, apiKey: 'test-key', budgetUsd: 10 })
 
   it('switches off built-in tools, filesystem settings and session persistence, and caps turns and dollars', () => {
     const options = jobOptions(base(), { id: 'a', prompt: 'p', role: 'write' }, 2.5, [])
@@ -107,6 +108,7 @@ describe('runWriter', () => {
     const report = await runWriter({
       jobs: [{ id: 'hero', prompt: 'write Hero', role: 'write' }, { id: 'home', prompt: 'fix home', role: 'repair' }],
       context: ctx,
+      apiKey: 'test-key',
       budgetUsd: 10,
       query: (({ prompt }: { prompt: string }) => (async function* () {
         seen.push(prompt)
@@ -123,10 +125,81 @@ describe('runWriter', () => {
     const report = await runWriter({
       jobs: [{ id: 'a', prompt: 'a', role: 'write' }, { id: 'b', prompt: 'b', role: 'write' }],
       context: ctx,
+      apiKey: 'test-key',
       budgetUsd: 1,
       concurrency: 1,
       query: (() => (async function* () { yield result(1) })()) as never,
     })
     expect(report.jobs.map(j => j.outcome)).toEqual(['success', 'skipped_budget'])
+  })
+
+  const turn = (id: string, output: number) => ({
+    type: 'assistant',
+    message: { id, model: 'claude-opus-5-5', usage: { input_tokens: 1000, output_tokens: output, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
+  })
+
+  it('charges the budget on every turn and stops within one turn of the cap', async () => {
+    const budget = localBudget(0.05, 60_000)
+    const charges: number[] = []
+    const charge = budget.charge
+    budget.charge = (entry) => { charges.push(entry.usd); charge(entry) }
+    let turns = 0
+    const report = await runWriter({
+      jobs: [{ id: 'a', prompt: 'a', role: 'write' }, { id: 'b', prompt: 'b', role: 'write' }],
+      context: ctx,
+      apiKey: 'test-key',
+      budget,
+      budgetUsd: 10,
+      concurrency: 1,
+      query: (() => (async function* () {
+        // $0.004 input + $0.02 output = $0.024 a turn: the third turn crosses $0.05.
+        for (let i = 0; i < 10; i++) { turns++; yield turn(`m${i}`, 1000) }
+        yield result(0.24)
+      })()) as never,
+    })
+    expect(turns).toBe(3)
+    expect(charges).toEqual([0.024, 0.024, 0.024])
+    expect(report.stopped).toBe('budget')
+    expect(report.jobs.map(j => j.outcome)).toEqual(['stopped_budget', 'stopped_budget'])
+  })
+
+  it('charges a streamed message once, by its growth', async () => {
+    const budget = localBudget(10, 60_000)
+    const charges: number[] = []
+    const charge = budget.charge
+    budget.charge = (entry) => { charges.push(entry.usd); charge(entry) }
+    await runWriter({
+      jobs: [{ id: 'a', prompt: 'a', role: 'write' }],
+      context: ctx,
+      apiKey: 'test-key',
+      budget,
+      budgetUsd: 10,
+      query: (() => (async function* () {
+        yield turn('m1', 100)
+        yield turn('m1', 1000)
+        yield result(0.024)
+      })()) as never,
+    })
+    // $0.006 for the first block, $0.018 more when the same message grows; the SDK total adds nothing.
+    expect(charges).toEqual([0.006, 0.018])
+  })
+
+  it('stops on the signal and reports it as time', async () => {
+    const controller = new AbortController()
+    const report = await runWriter({
+      jobs: [{ id: 'a', prompt: 'a', role: 'write' }, { id: 'b', prompt: 'b', role: 'write' }],
+      context: ctx,
+      apiKey: 'test-key',
+      signal: controller.signal,
+      budgetUsd: 10,
+      concurrency: 1,
+      query: ((({ options }: { options: { abortController: AbortController } }) => (async function* () {
+        yield turn('m1', 10)
+        controller.abort()
+        if (options.abortController.signal.aborted) throw Object.assign(new Error('aborted'), { name: 'AbortError' })
+      })())) as never,
+    })
+    expect(report.stopped).toBe('time')
+    expect(report.jobs.map(j => j.outcome)).toEqual(['stopped_time', 'stopped_time'])
   })
 })

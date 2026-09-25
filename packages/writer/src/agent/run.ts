@@ -7,6 +7,8 @@
 // writer server's, and canUseTool refuses anything else by name.
 
 import { query as sdkQuery, type CanUseTool, type Options, type SDKMessage } from '@anthropic-ai/claude-agent-sdk'
+import { isBudgetExceeded, tokensIn, usdOf, type RunBudget } from '../budget.js'
+import { agentEnv } from '../env.js'
 import { SYSTEM_PROMPT } from './prompt.js'
 import { qualifiedToolNames, SERVER_NAME, writerServer, type ToolContext } from './tools.js'
 
@@ -24,6 +26,12 @@ export interface WriterJob {
 export interface RunOptions {
   jobs: WriterJob[]
   context: ToolContext
+  /** The Anthropic key, passed to the SDK's child only; the writer never reads it from the environment. */
+  apiKey: string
+  /** Charged on every model turn; a charge that throws stops the run. */
+  budget?: RunBudget
+  /** Aborts every running job (the worker's time cap). */
+  signal?: AbortSignal
   models?: { write: string, repair: string }
   /** Dollar ceiling for the whole run; each job gets what is left, capped at perJobUsd. */
   budgetUsd: number
@@ -40,7 +48,7 @@ export interface RunOptions {
 export interface JobReport {
   id: string
   model: string
-  outcome: 'success' | 'error_max_turns' | 'error_max_budget_usd' | 'error_during_execution' | 'error_max_structured_output_retries' | 'skipped_budget'
+  outcome: 'success' | 'error_max_turns' | 'error_max_budget_usd' | 'error_during_execution' | 'error_max_structured_output_retries' | 'skipped_budget' | 'stopped_budget' | 'stopped_time'
   turns: number
   durationMs: number
   costUsd: number
@@ -52,6 +60,8 @@ export interface JobReport {
 }
 
 export interface RunReport {
+  /** Set when the run ended early: the budget's charge refused a turn, or the signal fired. */
+  stopped?: 'budget' | 'time'
   jobs: JobReport[]
   costUsd: number
   durationMs: number
@@ -69,7 +79,7 @@ export function writerPermissions(allowed: readonly string[], denied: string[]):
   }
 }
 
-export function jobOptions(options: RunOptions, job: WriterJob, budgetUsd: number, denied: string[]): Options {
+export function jobOptions(options: RunOptions, job: WriterJob, budgetUsd: number, denied: string[], abort?: AbortController): Options {
   const models = options.models ?? DEFAULT_MODELS
   const allowed = qualifiedToolNames()
   return {
@@ -86,25 +96,65 @@ export function jobOptions(options: RunOptions, job: WriterJob, budgetUsd: numbe
     maxTurns: options.maxTurns ?? 60,
     maxBudgetUsd: budgetUsd,
     effort: options.effort ?? 'high',
+    // An explicit environment: the key and the basics, nothing else of the worker's.
+    env: agentEnv(options.apiKey),
+    ...(abort ? { abortController: abort } : {}),
   }
 }
 
 async function runJob(options: RunOptions, job: WriterJob, budgetUsd: number): Promise<JobReport> {
   const denied: string[] = []
-  const opts = jobOptions(options, job, budgetUsd, denied)
+  const abort = new AbortController()
+  const onAbort = () => abort.abort()
+  options.signal?.addEventListener('abort', onAbort, { once: true })
+  const opts = jobOptions(options, job, budgetUsd, denied, abort)
   const started = Date.now()
   const report: JobReport = { id: job.id, model: opts.model!, outcome: 'error_during_execution', turns: 0, durationMs: 0, costUsd: 0, usage: {}, denied }
   const query = options.query ?? sdkQuery
-  for await (const message of query({ prompt: job.prompt, options: opts }) as AsyncIterable<SDKMessage>) {
-    if (message.type !== 'result') continue
-    report.outcome = message.subtype
-    report.turns = message.num_turns
-    report.costUsd = message.total_cost_usd
-    report.usage = Object.fromEntries(Object.entries(message.modelUsage).map(([model, u]) => [model, {
-      input: u.inputTokens, output: u.outputTokens, cacheRead: u.cacheReadInputTokens, cacheWrite: u.cacheCreationInputTokens, costUsd: u.costUSD,
-    }]))
-    if (message.subtype === 'success') report.result = message.result
+  const stage = job.role === 'write' ? 'writer' : 'repair'
+  // A streamed message arrives block by block with its usage so far: charge each message's growth.
+  const charged = new Map<string, number>()
+  let chargedTotal = 0
+  const charge = (model: string, amount: number, tokens: { in: number, out: number }) => {
+    const usd = Math.round(amount * 1_000_000) / 1_000_000
+    if (usd <= 0) return
+    chargedTotal += usd
+    options.budget?.charge({ stage, model, tokensIn: tokens.in, tokensOut: tokens.out, usd })
   }
+  try {
+    for await (const message of query({ prompt: job.prompt, options: opts }) as AsyncIterable<SDKMessage>) {
+      if (message.type === 'assistant') {
+        const { id, model, usage } = message.message
+        const usd = usdOf(model, usage)
+        const before = charged.get(id) ?? 0
+        charged.set(id, Math.max(before, usd))
+        charge(model, usd - before, { in: before === 0 ? tokensIn(usage) : 0, out: before === 0 ? usage.output_tokens ?? 0 : 0 })
+        continue
+      }
+      if (message.type !== 'result') continue
+      report.outcome = message.subtype
+      report.turns = message.num_turns
+      report.costUsd = message.total_cost_usd
+      report.usage = Object.fromEntries(Object.entries(message.modelUsage).map(([model, u]) => [model, {
+        input: u.inputTokens, output: u.outputTokens, cacheRead: u.cacheReadInputTokens, cacheWrite: u.cacheCreationInputTokens, costUsd: u.costUSD,
+      }]))
+      if (message.subtype === 'success') report.result = message.result
+      // The SDK's total is authoritative; charge what the per-turn estimate missed.
+      charge(opts.model!, message.total_cost_usd - chargedTotal, { in: 0, out: 0 })
+    }
+  } catch (error) {
+    if (isBudgetExceeded(error)) {
+      report.outcome = 'stopped_budget'
+      abort.abort()
+    } else if (abort.signal.aborted) {
+      report.outcome = options.signal?.aborted ? 'stopped_time' : 'stopped_budget'
+    } else {
+      throw error
+    }
+  } finally {
+    options.signal?.removeEventListener('abort', onAbort)
+  }
+  if (report.costUsd === 0) report.costUsd = Math.round(chargedTotal * 1_000_000) / 1_000_000
   report.durationMs = Date.now() - started
   return report
 }
@@ -116,10 +166,15 @@ export async function runWriter(options: RunOptions): Promise<RunReport> {
   const queue = [...options.jobs]
   const reports: JobReport[] = []
   let spent = 0
+  let stopped: RunReport['stopped']
 
   const worker = async () => {
     for (let job = queue.shift(); job; job = queue.shift()) {
-      const left = options.budgetUsd - spent
+      const left = Math.min(options.budgetUsd - spent, options.budget?.remainingUsd() ?? Number.POSITIVE_INFINITY)
+      if (stopped || options.signal?.aborted) {
+        reports.push({ id: job.id, model: '', outcome: options.signal?.aborted ? 'stopped_time' : 'stopped_budget', turns: 0, durationMs: 0, costUsd: 0, usage: {}, denied: [] })
+        continue
+      }
       if (left <= 0.01) {
         reports.push({ id: job.id, model: '', outcome: 'skipped_budget', turns: 0, durationMs: 0, costUsd: 0, usage: {}, denied: [] })
         log(`job ${job.id}: skipped, run budget spent`)
@@ -129,6 +184,8 @@ export async function runWriter(options: RunOptions): Promise<RunReport> {
       const report = await runJob(options, job, Math.min(perJob, left))
       spent += report.costUsd
       reports.push(report)
+      if (report.outcome === 'stopped_budget') stopped = 'budget'
+      if (report.outcome === 'stopped_time') stopped = 'time'
       log(`job ${job.id}: ${report.outcome}, ${report.turns} turns, $${report.costUsd.toFixed(2)}`)
     }
   }
@@ -143,6 +200,7 @@ export async function runWriter(options: RunOptions): Promise<RunReport> {
   }
   const order = new Map(options.jobs.map((job, index) => [job.id, index]))
   return {
+    ...(stopped ? { stopped } : {}),
     jobs: reports.toSorted((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0)),
     costUsd: Math.round(spent * 10000) / 10000,
     durationMs: Date.now() - started,
