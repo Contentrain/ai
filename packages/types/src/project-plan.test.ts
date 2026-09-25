@@ -160,7 +160,7 @@ describe('validateProjectPlan', () => {
     const p = withContactForm()
     const contact = p.models.find(m => m.id === 'contact')!
     contact.form = { ...contact.form!, exposedFields: ['name', 'fax'], requiredOverrides: { phone: true }, captcha: 'recaptcha' as never }
-    p.models.push({ id: 'site', kind: 'singleton', origin: 'import', form: { enabled: true, public: true, exposedFields: [] } })
+    p.models.push({ id: 'site', kind: 'singleton', origin: 'import', i18n: false, form: { enabled: true, public: true, exposedFields: [] } })
     expect(validateProjectPlan(p).errors).toEqual([
       'model contact: form field fax is not a model field',
       'model contact: form field phone is not a model field',
@@ -169,6 +169,15 @@ describe('validateProjectPlan', () => {
       'model site: form exposes no fields',
     ])
   })
+
+  it('keeps a form model out of i18n: Studio writes every submission in the default locale', () => {
+    const p = withContactForm()
+    const contact = p.models.find(m => m.id === 'contact')!
+    delete contact.i18n
+    expect(validateProjectPlan(p).errors).toEqual(['model contact: a form model must be i18n: false (Studio writes submissions in the default locale)'])
+    contact.i18n = true
+    expect(validateProjectPlan(p).errors).toEqual(['model contact: a form model must be i18n: false (Studio writes submissions in the default locale)'])
+  })
 })
 
 /** The fixture plus a CF7 contact form (→ ContactForm + a Studio form model), site search, a YouTube embed in a post, and a popup nobody can reproduce yet. */
@@ -176,7 +185,7 @@ function withContactForm(): ProjectPlan {
   const p = plan()
   p.components.push({ id: 'ContactForm', origin: 'kit', kit: { id: 'contact-form' } })
   p.models.push({
-    id: 'contact', kind: 'collection', origin: 'plan', name: 'Contact', domain: 'forms', title_field: 'name',
+    id: 'contact', kind: 'collection', origin: 'plan', name: 'Contact', domain: 'forms', i18n: false, title_field: 'name',
     fields: { name: { type: 'string', required: true }, email: { type: 'email', required: true }, topic: { type: 'select', options: ['Sales', 'Support'] }, message: { type: 'text', required: true } },
     form: { enabled: true, public: true, exposedFields: ['name', 'email', 'topic', 'message'], honeypot: true, captcha: 'turnstile', notifications: true },
   })

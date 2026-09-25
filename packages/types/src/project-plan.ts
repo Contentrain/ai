@@ -113,7 +113,7 @@ export interface PlanModel {
   extract?: PlanExtraction[]
   /**
    * A Studio form: submissions from the site's form are saved as entries of this model (a `plan`
-   * collection whose fields are the source form's fields). Written to the model definition's `form` key.
+   * collection with `i18n: false` whose fields are the source form's fields). Written to the model definition's `form` key.
    */
   form?: PlanFormConfig
 }
@@ -344,6 +344,8 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     }
     if (m.form) {
       if (m.origin !== 'plan' || m.kind !== 'collection') errors.push(`model ${m.id}: a form model must be a plan collection`)
+      // Unset means localized for a Contentrain model; submissions have no locale to be translated into.
+      if (m.i18n !== false) errors.push(`model ${m.id}: a form model must be i18n: false (Studio writes submissions in the default locale)`)
       if (!m.form.exposedFields.length) errors.push(`model ${m.id}: form exposes no fields`)
       for (const field of [...m.form.exposedFields, ...Object.keys(m.form.requiredOverrides ?? {})]) {
         if (m.fields && !m.fields[field]) errors.push(`model ${m.id}: form field ${field} is not a model field`)
