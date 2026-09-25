@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "classic",
-  "version": "3",
+  "version": "4",
   "fallback": "prose",
   "rules": [
     {
@@ -255,6 +255,96 @@
       "component": "prose",
       "props": {
         "html": "html:"
+      }
+    },
+    {
+      "match": "classic/youtube",
+      "component": "embed",
+      "props": {
+        "url": "dom:iframe@src",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "classic/vimeo",
+      "component": "embed",
+      "props": {
+        "url": "dom:iframe@src",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "classic/google-maps",
+      "component": "embed",
+      "variant": {
+        "aspect": "map"
+      },
+      "props": {
+        "url": "dom:iframe@src",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "classic/mailchimp",
+      "component": "newsletter",
+      "props": {
+        "action": "dom:form@action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit",
+        "provider": "const:mailchimp",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/kit",
+      "component": "newsletter",
+      "props": {
+        "action": "dom:form@action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit",
+        "provider": "const:kit",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/mailerlite",
+      "component": "newsletter",
+      "props": {
+        "action": "dom:form@action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit",
+        "provider": "const:mailerlite",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/brevo",
+      "component": "newsletter",
+      "props": {
+        "action": "dom:form@action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit",
+        "provider": "const:brevo",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/buttondown",
+      "component": "newsletter",
+      "props": {
+        "action": "dom:form@action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit",
+        "provider": "const:buttondown",
+        "heading": "dom:h2,h3"
       }
     }
   ]
