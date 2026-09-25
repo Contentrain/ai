@@ -86,4 +86,21 @@ describe('contentrain init command', { sequential: true }, () => {
     const gitignore = await readFile(join(testDir, '.gitignore'), 'utf-8')
     expect(gitignore).toContain('.contentrain/client/')
   })
+
+  // #230 — resolved with the MCP resolver (its cases are covered in
+  // packages/mcp/tests/git/init-default-branch.test.ts); here, that the CLI
+  // records it, and from a feature branch still records the default.
+  it('records the default branch in repository.default_branch, even from a feature branch', async () => {
+    await initGitRepo(testDir)
+    const git = simpleGit(testDir)
+    await git.raw(['branch', '-M', 'master'])
+    await git.raw(['checkout', '-b', 'feat/x'])
+
+    const mod = await import('../../src/commands/init.js')
+    await mod.default.run?.({ args: { root: testDir, yes: true } })
+
+    const config = JSON.parse(await git.show(['master:.contentrain/config.json'])) as Record<string, unknown>
+    expect(config['repository']).toEqual({ default_branch: 'master' })
+    expect((await git.raw(['branch', '--show-current'])).trim()).toBe('feat/x')
+  })
 })

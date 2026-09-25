@@ -13,6 +13,7 @@ import { writeContent, type ContentEntry } from '../core/content-manager.js'
 import { getTemplate, listTemplates } from '../templates/index.js'
 import { createTransaction, buildBranchName, ensureContentBranch } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
+import { resolveInitDefaultBranch } from '../git/base-branch.js'
 import { normalizeOperationError } from '../git/errors.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 import { capabilityError } from './guards.js'
@@ -86,6 +87,10 @@ export function registerSetupTools(
         }
       }
 
+      // Record the default branch once, before the transaction's own
+      // branches exist (#230). Never the env override, never a feature branch.
+      const defaultBranch = await resolveInitDefaultBranch(git)
+
       // Create git transaction
       const branch = buildBranchName('new', 'init')
       const tx = await createTransaction(projectRoot, branch)
@@ -110,6 +115,7 @@ export function registerSetupTools(
               supported: supportedLocales,
             },
             domains: suggestedDomains,
+            ...(defaultBranch ? { repository: { default_branch: defaultBranch } } : {}),
           }
           await writeJson(join(wtCrDir, 'config.json'), config)
 
@@ -151,6 +157,7 @@ export function registerSetupTools(
             config_created: '.contentrain/config.json',
             detected_stack: detectedStack,
             detected_locales: supportedLocales,
+            default_branch: defaultBranch,
             suggested_domains: suggestedDomains,
             files_created: [
               '.contentrain/config.json',
