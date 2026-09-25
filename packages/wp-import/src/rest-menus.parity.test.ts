@@ -45,7 +45,7 @@ function shape(menu: RawMenu): ExpectedMenu {
     for (let p = parent; p !== null; p = byId.get(p)?.parent ?? null) out.unshift(byId.get(p)?.title ?? '?')
     return out
   }
-  const out: ExpectedMenu = { slug: menu.slug, name: menu.name, items: menu.items.map((i) => ({ title: i.title, url: i.url ?? '', parent: ancestors(i.parent) })) }
+  const out: ExpectedMenu = { slug: menu.slug, name: menu.name, items: menu.items.map((i) => ({ title: i.title, url: i.url ?? '', parent: ancestors(i.parent ?? null) })) }
   if (menu.locations) out.locations = menu.locations
   return out
 }
