@@ -146,6 +146,14 @@ describe('parseWxr', () => {
     expect(att.image_meta).toEqual({ width: 800, height: 600 })
   })
 
+  it('keeps an attachment page only under a public parent: under a draft it carries the draft\'s slug', async () => {
+    const page = (parent: number) => FIXTURE
+      .replace('<wp:post_parent>10</wp:post_parent>', `<wp:post_parent>${parent}</wp:post_parent>`)
+      .replace('<wp:post_id>77</wp:post_id>', '<link>https://fixture.example/parent/hero/</link>\n    <wp:post_id>77</wp:post_id>')
+    expect((await parseWxr(page(10))).raw.attachments[0]!.link).toBe('https://fixture.example/parent/hero/')
+    expect((await parseWxr(page(11))).raw.attachments[0]!.link).toBeNull()
+  })
+
   it('builds menus from nav_menu terms and items with resolved targets', async () => {
     const { raw } = await parseWxr(FIXTURE)
     const menu = raw.menus![0]!

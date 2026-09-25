@@ -163,8 +163,16 @@ rules where only the Bridge export reads them. So `gaps` always contains
 `redirects_partial`. It also contains `redirects_require_auth` when the site
 runs Redirection but its rules could not be read with the credential given.
 
+A conditional rule (login, cookie, header, IP, role…) is excluded. Only a login
+rule keeps its `condition`, which is its two addresses. Any other condition
+holds the value a visitor must present, often a secret, so it is never
+exported; the reason names its type.
+
 Each attachment carries its attachment page as `link`, so the migrated site
-can redirect it.
+can redirect it. The link is kept only when the attachment has no parent or
+its parent is proven public, because the page sits under the parent's address
+and would otherwise carry a draft's, a private post's or a scheduled post's
+slug.
 
 ### ACF fields, custom post types and taxonomies over REST
 

@@ -370,7 +370,8 @@ export async function parseWxr(input: string | Readable, opts?: { tool?: string 
       parent: r.parent,
       parent_resolved: r.parent ? byId.has(r.parent) : null,
       // The attachment page (`<link>`), where the site serves one.
-      link: r.link || null,
+      // Kept only when there is no parent or the parent is public: the page sits under the parent's address.
+      link: !r.parent || (byId.get(r.parent)?.status === 'publish' && !byId.get(r.parent)?.password) ? (r.link || null) : null,
       author: r.author,
       date: r.date,
       status: r.status,

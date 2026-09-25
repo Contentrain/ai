@@ -5,7 +5,7 @@
   "rules": [
     "`groups` and `items` are Redirection's own rows (its tables' columns; REST items carry the same values). `action_data` is the target URL for a url action, the condition's data otherwise; `match_data` is the rule's own flags or null. `options` is the site's saved redirection_options, or null when never saved. The plugin is active.",
     "Flags a rule is matched with (Red_Source_Flags): query `exact`, case- and slash-sensitive; options never saved (a fresh install) ignore case and trailing slash; the saved options, then the rule's own `match_data.source`, override. Only valid values count: query exact|ignore|pass|exactorder, case and trailing booleans. A regex rule matches its query exactly; `exactorder` is written `exact`. Every rule, excluded ones too, carries `query`, `case_insensitive` and `trailing_slash`.",
-    "An enabled rule in an enabled group with a url action and url match is served: `to` root-relative when on `origin`, else absolute; a status outside 3xx becomes 301 with a `status_note`. An error action with 410 or 451 is served too, `to` empty. A disabled rule or group, any other action (reason `not-a-redirect:<action>`, with its status) and any other match (reason `conditional-match:<match>`, with its `condition` and status) are excluded, with no `to`. `served_by` names a group's Apache (2) or nginx (3) module.",
+    "An enabled rule in an enabled group with a url action and url match is served: `to` root-relative when on `origin`, else absolute; a status outside 3xx becomes 301 with a `status_note`. An error action with 410 or 451 is served too, `to` empty. A disabled rule or group, any other action (reason `not-a-redirect:<action>`, with its status) and any other match (reason `conditional-match:<match>`, with its status; only a `login` rule keeps its `condition`, its two addresses — a cookie, header, IP, role or other condition holds the value a visitor must present and is never exported) are excluded, with no `to`. `served_by` names a group's Apache (2) or nginx (3) module.",
     "`redirects` and `excluded` are each ordered by id as strings (`redirection:10` before `redirection:2`); `rules` is how many the source holds. Keys are compared order-free.",
     "`options: null` is what the Bridge reads as no saved option; over REST, `redirection/v1/setting` returns the fresh-install values merged the same way, so the expected output is one. A case with `only: 'rest'` (`options: 'unreadable'`: the settings endpoint refused) is wp-import's alone: a rule's flags are written only where the rule states them, a regex rule's query always `exact`. The Bridge always reads its options and skips it."
   ],
@@ -223,6 +223,42 @@
           "flag_query": "exactorder"
         }
       }
+    },
+    {
+      "id": 15,
+      "url": "/old-15",
+      "regex": false,
+      "group_id": 1,
+      "status": "enabled",
+      "action_type": "url",
+      "action_code": 301,
+      "action_data": {
+        "name": "session_token",
+        "value": "GOLDEN-COOKIE-SECRET",
+        "regex": false,
+        "url_from": "/in/",
+        "url_notfrom": ""
+      },
+      "match_type": "cookie",
+      "match_data": null
+    },
+    {
+      "id": 16,
+      "url": "/old-16",
+      "regex": false,
+      "group_id": 1,
+      "status": "enabled",
+      "action_type": "url",
+      "action_code": 302,
+      "action_data": {
+        "name": "X-Api-Key",
+        "value": "GOLDEN-HEADER-SECRET",
+        "regex": false,
+        "url_from": "/in/",
+        "url_notfrom": ""
+      },
+      "match_type": "header",
+      "match_data": null
     }
   ],
   "cases": [
@@ -373,6 +409,30 @@
             "reason": "disabled"
           },
           {
+            "id": "redirection:15",
+            "from": "/old-15",
+            "source": "redirection",
+            "match": "cookie",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "status": 301,
+            "reason": "conditional-match:cookie"
+          },
+          {
+            "id": "redirection:16",
+            "from": "/old-16",
+            "source": "redirection",
+            "match": "header",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "status": 302,
+            "reason": "conditional-match:header"
+          },
+          {
             "id": "redirection:7",
             "from": "/old-7",
             "source": "redirection",
@@ -412,7 +472,7 @@
             "reason": "conditional-match:login"
           }
         ],
-        "rules": 14
+        "rules": 16
       }
     },
     {
@@ -559,6 +619,30 @@
             "reason": "disabled"
           },
           {
+            "id": "redirection:15",
+            "from": "/old-15",
+            "source": "redirection",
+            "match": "cookie",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "status": 301,
+            "reason": "conditional-match:cookie"
+          },
+          {
+            "id": "redirection:16",
+            "from": "/old-16",
+            "source": "redirection",
+            "match": "header",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "status": 302,
+            "reason": "conditional-match:header"
+          },
+          {
             "id": "redirection:7",
             "from": "/old-7",
             "source": "redirection",
@@ -598,7 +682,7 @@
             "reason": "conditional-match:login"
           }
         ],
-        "rules": 14
+        "rules": 16
       }
     },
     {
@@ -743,6 +827,30 @@
             "reason": "disabled"
           },
           {
+            "id": "redirection:15",
+            "from": "/old-15",
+            "source": "redirection",
+            "match": "cookie",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "ignore",
+            "status": 301,
+            "reason": "conditional-match:cookie"
+          },
+          {
+            "id": "redirection:16",
+            "from": "/old-16",
+            "source": "redirection",
+            "match": "header",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "ignore",
+            "status": 302,
+            "reason": "conditional-match:header"
+          },
+          {
             "id": "redirection:7",
             "from": "/old-7",
             "source": "redirection",
@@ -782,7 +890,7 @@
             "reason": "conditional-match:login"
           }
         ],
-        "rules": 14
+        "rules": 16
       }
     },
     {
@@ -902,6 +1010,24 @@
             "reason": "disabled"
           },
           {
+            "id": "redirection:15",
+            "from": "/old-15",
+            "source": "redirection",
+            "match": "cookie",
+            "regex": false,
+            "status": 301,
+            "reason": "conditional-match:cookie"
+          },
+          {
+            "id": "redirection:16",
+            "from": "/old-16",
+            "source": "redirection",
+            "match": "header",
+            "regex": false,
+            "status": 302,
+            "reason": "conditional-match:header"
+          },
+          {
             "id": "redirection:7",
             "from": "/old-7",
             "source": "redirection",
@@ -932,7 +1058,7 @@
             "reason": "conditional-match:login"
           }
         ],
-        "rules": 14
+        "rules": 16
       }
     }
   ]
