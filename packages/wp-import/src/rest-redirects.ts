@@ -50,6 +50,13 @@ const valid = (f: Flags | undefined): Flags => ({
   ...(typeof f?.flag_trailing === 'boolean' ? { flag_trailing: f.flag_trailing } : {}),
 })
 
+/** A login rule's two addresses, and nothing else its data may hold. */
+const loginCondition = (data: unknown): { logged_in: string, logged_out: string } | null => {
+  if (!data || typeof data !== 'object') return null
+  const d = data as Record<string, unknown>
+  return { logged_in: typeof d.logged_in === 'string' ? d.logged_in : '', logged_out: typeof d.logged_out === 'string' ? d.logged_out : '' }
+}
+
 /** By id as bytes, as the Bridge sorts (`strcmp`). */
 const order = (a: { id?: string }, b: { id?: string }): number => ((a.id ?? '') < (b.id ?? '') ? -1 : (a.id ?? '') > (b.id ?? '') ? 1 : 0)
 
@@ -106,7 +113,7 @@ export function redirectionRules(items: RestRedirection[], groups: RestRedirecti
       // Its own match type (`login`), as the Bridge states it. Only a login rule keeps its condition (two addresses):
       // a cookie, header, IP, role, agent or server condition holds the very value a visitor must present — often a
       // secret — and never leaves the site; its type is in the reason.
-      excluded.push({ ...rule, match: matchType, status: code, ...(matchType === 'login' ? { condition: data ?? null } : {}), reason: `conditional-match:${matchType}` })
+      excluded.push({ ...rule, match: matchType, status: code, ...(matchType === 'login' ? { condition: loginCondition(data) } : {}), reason: `conditional-match:${matchType}` })
     } else {
       const move = code >= 300 && code < 400
       redirects.push({ ...rule, to: relative(target, origin), status: move ? code : 301, ...(move ? {} : { status_note: `source status ${code} is not a redirect code; 301 assumed` }) })

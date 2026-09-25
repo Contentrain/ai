@@ -22,7 +22,7 @@ describe('Redirection rules over REST', () => {
       rule(6, { action_type: 'error', action_code: 404, action_data: '' }),
       rule(7, { enabled: false }),
       rule(8, { group_id: 2 }),
-      rule(9, { match_type: 'login', action_data: { logged_in: '/in/', logged_out: '/out/' } as unknown as { url?: string } }),
+      rule(9, { match_type: 'login', action_data: { logged_in: '/in/', logged_out: '/out/', extra: 'NOT-A-TARGET' } as unknown as { url?: string } }),
       rule(10, { group_id: 3 }),
       rule(11, { action_code: 200 }),
       rule(12, { match_type: 'cookie', action_data: { name: 'session', value: 'COOKIE-SECRET', url_from: '/in/' } as unknown as { url?: string } }),
@@ -83,9 +83,9 @@ describe('Redirection rules over REST', () => {
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 
 /** A site running Redirection (three rules, two per page), with an attachment page. */
-function site(opts: { redirection?: boolean; denied?: boolean } = {}): { fetchImpl: typeof fetch; calls: string[] } {
+function site(opts: { redirection?: boolean; denied?: boolean; extra?: RestRedirection[] } = {}): { fetchImpl: typeof fetch; calls: string[] } {
   const calls: string[] = []
-  const rules = [rule(1), rule(2), rule(3, { action_type: 'error', action_code: 410, action_data: '' })]
+  const rules = [rule(1), rule(2), rule(3, { action_type: 'error', action_code: 410, action_data: '' }), ...(opts.extra ?? [])]
   const fetchImpl = (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
     const u = String(url)
     const auth = !!(init?.headers as Record<string, string>)?.authorization
@@ -126,6 +126,24 @@ describe('fetchRestRawIR redirects', () => {
     // The attachment page, for its redirect — only under a public parent, or none: under a draft it carries the draft's slug.
     expect(raw.attachments.map((a) => [a.id, a.link])).toEqual([[40, `${O}/hello/photo/`], [41, null], [42, `${O}/logo/`]])
     expect(JSON.stringify(raw.attachments)).not.toContain('secret-launch')
+  })
+
+  it('never exports the value a conditional rule matches on — end to end, whatever field it might land in', async () => {
+    // One canary per condition Redirection offers besides login: each is what a visitor must present.
+    const conditions: Array<[string, Record<string, unknown>]> = [
+      ['cookie', { name: 'session', value: 'CANARY-COOKIE' }],
+      ['header', { name: 'X-Api-Key', value: 'CANARY-HEADER' }],
+      ['ip', { ip: ['203.0.113.77'], note: 'CANARY-IP' }],
+      ['server', { server: 'https://CANARY-SERVER.example' }],
+      ['agent', { agent: 'CANARY-AGENT/1.0' }],
+      ['role', { role: 'CANARY-ROLE' }],
+      ['referrer', { referrer: 'https://CANARY-REFERRER.example/' }],
+    ]
+    const extra = conditions.map(([type, data], i) => rule(20 + i, { match_type: type, action_data: { ...data, url_from: '/in/', url_notfrom: '/out/' } as unknown as { url?: string } }))
+    const { raw } = await fetchRestRawIR({ origin: O, fetchImpl: site({ extra }).fetchImpl, auth: { user: 'u', appPassword: 'p' } })
+    expect(raw.redirects_excluded!.filter((x) => x.reason.startsWith('conditional-match:')).map((x) => x.reason).toSorted()).toEqual(conditions.map(([type]) => `conditional-match:${type}`).toSorted())
+    const all = JSON.stringify(raw)
+    for (const canary of ['CANARY-COOKIE', 'CANARY-HEADER', '203.0.113.77', 'CANARY-IP', 'CANARY-SERVER', 'CANARY-AGENT', 'CANARY-ROLE', 'CANARY-REFERRER']) expect(all).not.toContain(canary)
   })
 
   it('names the gap without a credential, or when the credential may not manage Redirection', async () => {
