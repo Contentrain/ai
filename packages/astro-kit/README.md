@@ -27,6 +27,8 @@ They read its design tokens and pass its gates: `astro check` with the
 | `gallery` | Image grid with a popover lightbox | none |
 | `slider` | Carousel on a scroll-snap row | Embla |
 | `contact-form` | Contentrain Studio form in a section | Studio runtime |
+| `newsletter` | Sign-up posting straight to the list provider (Mailchimp, Kit, MailerLite, Brevo, Buttondown) | none |
+| `embed` | Video, map or player loaded on click; a provider link until then (YouTube via nocookie) | a few lines, no dependency |
 | `pagination` | WordPress-style `/page/N/` links | none |
 | `breadcrumb` | Ancestors, then the current page, optional JSON-LD | none |
 
