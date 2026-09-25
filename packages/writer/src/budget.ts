@@ -50,6 +50,15 @@ export function tokensIn(usage: Usage): number {
   return (usage.input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0)
 }
 
+/**
+ * What the next turn can cost at most: the whole context so far read at the input price (as if nothing
+ * were cached) plus a full-length answer. The run stops when the budget cannot cover it.
+ */
+export function nextTurnUsd(model: string, usage: Usage, maxOutputTokens: number): number {
+  const context = tokensIn(usage) + (usage.output_tokens ?? 0)
+  return usdOf(model, { input_tokens: context, output_tokens: maxOutputTokens })
+}
+
 export const isBudgetExceeded = (error: unknown): boolean => error instanceof Error && error.name === 'AiBudgetExceeded'
 
 /** A budget for standalone runs (the CLI, the acceptance run): a dollar cap and a time cap. */

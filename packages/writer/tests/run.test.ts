@@ -102,9 +102,9 @@ const result = (cost: number) => ({
   modelUsage: { 'claude-opus-5-5': { inputTokens: 1000, outputTokens: 200, cacheReadInputTokens: 5000, cacheCreationInputTokens: 800, costUSD: cost } },
 })
 
-const turn = (id: string, output: number) => ({
+const turn = (id: string, output: number, stopReason: string | null = null) => ({
   type: 'assistant',
-  message: { id, model: 'claude-opus-5-5', usage: { input_tokens: 1000, output_tokens: output, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
+  message: { id, model: 'claude-opus-5-5', stop_reason: stopReason, usage: { input_tokens: 1000, output_tokens: output, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
 })
 
 describe('runWriter', () => {
@@ -140,7 +140,7 @@ describe('runWriter', () => {
 
 
   it('charges the budget on every turn and stops within one turn of the cap', async () => {
-    const budget = localBudget(0.05, 60_000)
+    const budget = localBudget(0.4, 60_000)
     const charges: number[] = []
     const charge = budget.charge
     budget.charge = (entry) => { charges.push(entry.usd); charge(entry) }
@@ -153,15 +153,53 @@ describe('runWriter', () => {
       budgetUsd: 10,
       concurrency: 1,
       query: (() => (async function* () {
-        // $0.004 input + $0.02 output = $0.024 a turn: the third turn crosses $0.05.
-        for (let i = 0; i < 10; i++) { turns++; yield turn(`m${i}`, 1000) }
-        yield result(0.24)
+        // $0.004 input + $0.2 output = $0.204 a turn: the second turn crosses $0.4.
+        for (let i = 0; i < 10; i++) { turns++; yield turn(`m${i}`, 10_000) }
+        yield result(2.04)
       })()) as never,
     })
-    expect(turns).toBe(3)
-    expect(charges).toEqual([0.024, 0.024, 0.024])
+    expect(turns).toBe(2)
+    expect(charges).toEqual([0.204, 0.204])
     expect(report.stopped).toBe('budget')
     expect(report.jobs.map(j => j.outcome)).toEqual(['stopped_budget', 'stopped_budget'])
+  })
+
+  it('stops before a turn the budget cannot cover', async () => {
+    const budget = localBudget(1, 60_000)
+    let turns = 0
+    const report = await runWriter({
+      jobs: [{ id: 'a', prompt: 'a', role: 'write' }, { id: 'b', prompt: 'b', role: 'write' }],
+      context: ctx,
+      apiKey: 'test-key',
+      budget,
+      budgetUsd: 10,
+      concurrency: 1,
+      query: (() => (async function* () {
+        // $0.204 a turn; the next turn may cost 11,000 tokens in and 16,000 out, $0.364. After the fourth turn
+        // $0.816 is spent and $1.18 would not fit.
+        for (let i = 0; i < 10; i++) { turns++; yield turn(`m${i}`, 10_000, 'tool_use') }
+        yield result(2.04)
+      })()) as never,
+    })
+    expect(turns).toBe(4)
+    expect(budget.spent()).toBeCloseTo(0.816, 6)
+    expect(report.stopped).toBe('budget')
+    expect(report.jobs.map(j => j.outcome)).toEqual(['stopped_budget', 'stopped_budget'])
+  })
+
+  it('starts no job whose first turn the budget cannot cover', async () => {
+    let calls = 0
+    const report = await runWriter({
+      jobs: [{ id: 'a', prompt: 'a', role: 'write' }],
+      context: ctx,
+      apiKey: 'test-key',
+      // A full-length first answer alone is $0.32 on Opus.
+      budget: localBudget(0.3, 60_000),
+      budgetUsd: 10,
+      query: (() => (async function* () { calls++; yield result(0.1) })()) as never,
+    })
+    expect(calls).toBe(0)
+    expect(report.jobs.map(j => j.outcome)).toEqual(['skipped_budget'])
   })
 
   it('charges a streamed message once, by its growth', async () => {

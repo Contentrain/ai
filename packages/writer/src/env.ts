@@ -3,6 +3,9 @@
 // key, database URLs and deploy tokens, and none of them may reach `pnpm`,
 // `astro` or anything a project's dependencies run at install or build time.
 
+/** Output tokens one model turn may produce. */
+export const MAX_OUTPUT_TOKENS = 16_000
+
 const PASSED = ['PATH', 'HOME', 'TMPDIR', 'LANG', 'LC_ALL', 'SystemRoot', 'PNPM_HOME', 'XDG_CACHE_HOME', 'XDG_DATA_HOME'] as const
 
 /** What a build, a check or an install sees: the allowlist plus CI settings. No credentials. */
@@ -27,6 +30,8 @@ export function agentEnv(apiKey: string, source: NodeJS.ProcessEnv = process.env
     ANTHROPIC_API_KEY: apiKey,
     // Builds take minutes; an MCP tool call must not time out under them.
     MCP_TOOL_TIMEOUT: '900000',
+    // A turn's output is bounded, so the budget can price the next turn before it starts.
+    CLAUDE_CODE_MAX_OUTPUT_TOKENS: String(MAX_OUTPUT_TOKENS),
     CLAUDE_AGENT_SDK_CLIENT_APP: '@contentrain/writer',
     DISABLE_TELEMETRY: '1',
     DISABLE_AUTOUPDATER: '1',

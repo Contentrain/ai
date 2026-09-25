@@ -7,8 +7,8 @@
 // writer server's, and canUseTool refuses anything else by name.
 
 import { query as sdkQuery, type CanUseTool, type Options, type SDKMessage } from '@anthropic-ai/claude-agent-sdk'
-import { isBudgetExceeded, tokensIn, usdOf, type RunBudget } from '../budget.js'
-import { agentEnv } from '../env.js'
+import { isBudgetExceeded, nextTurnUsd, tokensIn, usdOf, type RunBudget } from '../budget.js'
+import { agentEnv, MAX_OUTPUT_TOKENS } from '../env.js'
 import { SYSTEM_PROMPT } from './prompt.js'
 import { qualifiedToolNames, SERVER_NAME, writerServer, type ToolContext } from './tools.js'
 
@@ -110,6 +110,13 @@ async function runJob(options: RunOptions, job: WriterJob, budgetUsd: number): P
   const opts = jobOptions(options, job, budgetUsd, denied, abort)
   const started = Date.now()
   const report: JobReport = { id: job.id, model: opts.model!, outcome: 'error_during_execution', turns: 0, durationMs: 0, costUsd: 0, usage: {}, denied }
+  // The first turn reads the system prompt and the job (about four characters a token) and may write a full answer.
+  const firstTurn = nextTurnUsd(opts.model!, { input_tokens: Math.ceil((SYSTEM_PROMPT.length + job.prompt.length) / 4) }, MAX_OUTPUT_TOKENS)
+  if (options.budget && !options.budget.canSpend(firstTurn)) {
+    options.signal?.removeEventListener('abort', onAbort)
+    report.outcome = 'skipped_budget'
+    return report
+  }
   const query = options.query ?? sdkQuery
   const stage = job.role === 'write' ? 'writer' : 'repair'
   // A streamed message arrives block by block with its usage so far: charge each message's growth.
@@ -129,6 +136,12 @@ async function runJob(options: RunOptions, job: WriterJob, budgetUsd: number): P
         const before = charged.get(id) ?? 0
         charged.set(id, Math.max(before, usd))
         charge(model, usd - before, { in: before === 0 ? tokensIn(usage) : 0, out: before === 0 ? usage.output_tokens ?? 0 : 0 })
+        // A turn that ends in a tool call leads to another one: stop now if the budget cannot pay for it.
+        if (message.message.stop_reason === 'tool_use' && options.budget && !options.budget.canSpend(nextTurnUsd(model, usage, MAX_OUTPUT_TOKENS))) {
+          report.outcome = 'stopped_budget'
+          abort.abort()
+          break
+        }
         continue
       }
       if (message.type !== 'result') continue
