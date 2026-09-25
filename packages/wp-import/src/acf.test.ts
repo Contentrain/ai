@@ -81,6 +81,8 @@ describe('ACF → Contentrain mapping table', () => {
     // A row typed by another row still drops the field where its own _source says password.
     const def = acfFieldDef('m', [{ title: 'A', door: 'blue' }], { type: 'repeater' })!
     expect(acfValue(def, [{ title: 'A', door: 'blue' }, { title: 'B', door: 'S1', door_source: pw }])).toEqual([{ title: 'A', door: 'blue' }, { title: 'B' }])
+    // …and scrubbing drops it from every row once one row states it: a row without _source keeps nothing either.
+    expect(acfScrub([{ title: 'A', door: 'S5' }, { title: 'B', door: 'S1', door_source: pw }])).toEqual([{ title: 'A' }, { title: 'B' }])
   })
 
   it('infers a type from the value only when the source states none, and says so', () => {

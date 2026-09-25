@@ -85,18 +85,24 @@ const droppedKey = (row: Record<string, unknown>, k: string): boolean => {
  * An ACF value with every secret sub-field removed, at any depth: repeater rows, groups, flexible layouts.
  * A sub-field's `_source` keeps only its type and label — its `formatted_value` repeats the value.
  */
-export function acfScrub(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(acfScrub)
+export function acfScrub(value: unknown, secret: ReadonlySet<string> = new Set()): unknown {
+  if (Array.isArray(value)) {
+    // Rows of one repeater or layout share their sub-fields: a key one row states as secret is secret in every row.
+    const rows = value.filter(isRecord)
+    const shared = new Set([...secret, ...rows.flatMap((r) => Object.keys(r).filter((k) => !k.endsWith(SOURCE) && droppedKey(r, k)))])
+    return value.map((v) => acfScrub(v, shared))
+  }
   if (!isRecord(value)) return value
+  const gone = (k: string) => secret.has(k) || droppedKey(value, k)
   const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(value)) {
     if (k.endsWith(SOURCE) && k.length > SOURCE.length) {
       const base = k.slice(0, -SOURCE.length)
-      if (droppedKey(value, base) || !isRecord(v)) continue
+      if (gone(base) || !isRecord(v)) continue
       out[k] = { ...(typeof v.type === 'string' ? { type: v.type } : {}), ...(typeof v.label === 'string' ? { label: v.label } : {}) }
       continue
     }
-    if (droppedKey(value, k)) continue
+    if (gone(k)) continue
     out[k] = acfScrub(v)
   }
   return out
