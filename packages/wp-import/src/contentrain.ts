@@ -12,6 +12,7 @@
 //    comments intake downstream cannot exist without it.
 
 import type { EntrySourceMap, FieldDef, ModelDefinition, RawIR, RawPost } from '@contentrain/types'
+import { ACF_REFERENCE_TYPES, acfFieldDef, acfRows, acfValue, mergeFieldDef, type AcfReference } from './acf.js'
 import {
   byValue,
   canon,
@@ -85,6 +86,12 @@ function relationOver(targets: string[]): {
   const single = targets.length === 1
   return { model: single ? targets[0]! : targets, ref: (entry) => (single ? entry.ref : entry) }
 }
+
+/** Post, term, user or attachment ids of an ACF reference value: ids, numeric strings or `{ ID }` objects. */
+const idsOf = (v: unknown): number[] =>
+  (Array.isArray(v) ? v : [v])
+    .map((x) => (typeof x === 'number' ? x : typeof x === 'string' && /^\d+$/.test(x) ? Number(x) : x && typeof x === 'object' ? Number((x as { ID?: unknown; id?: unknown; term_id?: unknown }).ID ?? (x as { id?: unknown }).id ?? (x as { term_id?: unknown }).term_id) : Number.NaN))
+    .filter((n) => Number.isSafeInteger(n) && n > 0)
 
 export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): ContentrainResult {
   const updatedBy = opts?.updatedBy ?? '@contentrain/wp-import'
@@ -209,6 +216,65 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     postEntry.set(p.id, { model: mid, ref: hexId(identityOwner.get(key) === canonical ? key : `${mid}:wp:${canonical}`) })
   }
   const mediaRef = (id: number): string | null => (raw.attachments.some((a) => a.id === id) ? hexId(`media:${id}`) : null)
+
+  // ── ACF references: the store entry each id points at ──
+  const termById = new Map(raw.terms.map((t) => [t.id, t]))
+  const authorById = new Map(raw.authors.filter((a) => a.id !== null).map((a) => [a.id!, a]))
+  const refOf = (kind: AcfReference, id: number): { model: string; ref: string } | null => {
+    if (kind === 'post') return postEntry.get(id) ?? null
+    if (kind === 'media') { const m = mediaRef(id); return m ? { model: 'media', ref: m } : null }
+    if (kind === 'user') { const a = authorById.get(id); return a && models.authors ? { model: 'authors', ref: authorId(slugify(a.login)) } : null }
+    if (kind === 'term') { const t = termById.get(id); return t && models[taxModelId(t.taxonomy)] ? { model: taxModelId(t.taxonomy), ref: termId(t.taxonomy, t.slug) } : null }
+    return null
+  }
+  interface AcfFieldPlan { def?: FieldDef; kind?: AcfReference; multiple: boolean; models: Set<string> }
+  /** Every ACF field on these posts: its definition, or — for a reference — its kind and target models. */
+  const acfPlan = (items: RawPost[], taken: (k: string) => boolean): Map<string, AcfFieldPlan> => {
+    const out = new Map<string, AcfFieldPlan>()
+    for (const p of items) {
+      for (const [k, acf] of Object.entries(p.acf ?? {})) {
+        if (taken(k) || acf.value === null || acf.value === undefined || acf.value === '' || acf.value === false && acf.type !== 'true_false') continue
+        const kind = acf.type ? ACF_REFERENCE_TYPES[acf.type] : undefined
+        if (kind === 'address') {
+          const def: FieldDef = Array.isArray(acf.value) ? { type: 'array', items: 'url' } : { type: 'url' }
+          const cur = out.get(k)
+          out.set(k, { def: cur?.def ?? { ...def, ...(acf.label ? { label: strip(acf.label) } : {}) }, kind, multiple: false, models: new Set() })
+          continue
+        }
+        if (kind) {
+          const cur = out.get(k) ?? { kind, multiple: acf.type === 'relationship' || acf.type === 'gallery', models: new Set<string>() }
+          if (Array.isArray(acf.value)) cur.multiple = true
+          for (const id of idsOf(acf.value)) { const r = refOf(kind, id); if (r) cur.models.add(r.model) }
+          out.set(k, cur)
+          continue
+        }
+        const def = acfFieldDef(k, acf.value, { type: acf.type, label: acf.label })
+        if (!def) continue
+        const cur = out.get(k)
+        out.set(k, { def: cur?.def ? mergeFieldDef(cur.def, def) : def, multiple: false, models: new Set() })
+      }
+    }
+    // A reference none of whose targets is in the store has no model to point at: it is left out.
+    for (const [k, plan] of out) if (!plan.def && !plan.models.size) out.delete(k)
+    return out
+  }
+  const acfRefs = (plan: AcfFieldPlan, value: unknown): unknown => {
+    const refs = idsOf(value).map((id) => refOf(plan.kind!, id)).filter((r): r is { model: string; ref: string } => !!r)
+    const missing = idsOf(value).length - refs.length
+    if (missing > 0) report.dropped_relations += missing
+    if (!refs.length) return undefined
+    const poly = plan.models.size > 1
+    const one = (r: { model: string; ref: string }) => (poly ? r : r.ref)
+    return plan.multiple ? refs.map(one) : one(refs[0]!)
+  }
+  // page_link: an id is the address of that post as it is now.
+  // Only a published, unprotected target's address: a draft's `?page_id=` is no address to keep.
+  const addressOf = (v: unknown): unknown => {
+    if (Array.isArray(v)) return v.map(addressOf).filter(Boolean)
+    if (typeof v !== 'number') return v
+    const t = postById.get(v)
+    return t && t.status === 'publish' && !t.password ? (t.link ?? undefined) : undefined
+  }
   const titleOf = (p: RawPost): string => {
     const t = strip(p.title)
     if (t) return t
@@ -395,12 +461,13 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
           report.meta_fields[k] = t
         }
       }
-      for (const [k, acf] of Object.entries(p.acf ?? {})) {
-        if (fields[k]) continue
-        const t = byValue(acf.value) ?? 'string'
-        fields[k] = { type: (t === 'object' ? 'object' : t) as FieldDef['type'], label: k, description: 'ACF', order: (o += 10) }
-        report.acf_fields[k] = t
-      }
+    }
+    // ACF: one field per ACF field, typed by the mapping table (acf.ts); references resolved to store entries.
+    const acfFields = acfPlan(typeItems, (k) => !!fields[k])
+    for (const [k, plan] of acfFields) {
+      const def = plan.def ?? { type: plan.multiple ? 'relations' : 'relation', model: plan.models.size > 1 ? [...plan.models].toSorted() : [...plan.models][0]! } as FieldDef
+      fields[k] = { ...def, ...(def.label ? {} : { label: k }), description: def.description ?? 'ACF', order: (o += 10) }
+      report.acf_fields[k] = plan.def ? plan.def.type : `${def.type}:${[...plan.models].toSorted().join('|')}`
     }
     // The locales this type actually has content in. A partially-translated
     // site — pages in one language, posts in three — used to fail validation on
@@ -461,7 +528,12 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       if (fields.visibility) e.visibility = p.password ? 'password' : p.status === 'private' ? 'private' : 'public'
       if (fields.comments_open) e.comments_open = p.comment_status === 'open'
       for (const k of Object.keys(fields)) if (k in p.meta && !(k in e) && !k.startsWith('_')) e[k] = p.meta[k]
-      for (const [k, acf] of Object.entries(p.acf ?? {})) if (fields[k] && !(k in e)) e[k] = acf.value
+      for (const [k, acf] of Object.entries(p.acf ?? {})) {
+        const plan = acfFields.get(k)
+        if (!plan || k in e) continue
+        const v = plan.def ? acfValue(plan.def, plan.kind === 'address' ? addressOf(acf.value) : acfRows(acf.value)) : acfRefs(plan, acf.value)
+        if (v !== undefined) e[k] = v
+      }
       contentBucket[id] = e
       metaBucket[id] = mapStatus(p)
     }

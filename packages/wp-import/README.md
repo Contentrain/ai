@@ -132,6 +132,57 @@ contains `menus_require_auth` — an empty menu list is never presented as the
 site having none. The `menus` model gains a `locations` field only when the
 source named them.
 
+### ACF fields, custom post types and taxonomies over REST
+
+ACF / Secure Custom Fields values arrive on a post's `acf` key — only for field
+groups set to "Show in REST API" (off by default). Each field is typed by one
+versioned table (`ACF_MAPPING_VERSION`, exported with `ACF_SCALAR_TYPES` and
+`ACF_REFERENCE_TYPES`): the ACF type is read from SCF's `<name>_source.type`
+where the site states it, and inferred from the value's shape only when nothing
+states it (the field description then says so).
+
+| ACF | Contentrain |
+| --- | --- |
+| text, time picker | `string` |
+| textarea | `text` |
+| wysiwyg | `richtext` |
+| email / url, oembed / number, range / true false | `email` / `url` / `number` / `boolean` |
+| date picker / date time picker | `date` / `datetime` (ISO) |
+| color picker / icon picker | `color` / `icon` |
+| select, radio, button group | `select` (its choices) |
+| checkbox, multiple select | `array` of `select` |
+| image / file | `image` / `file` (the URL) |
+| link | `object { url, title, target }` |
+| google map | `object { address, lat, lng, zoom }` |
+| group | `object` of its fields |
+| repeater | `array` of `object` (nested repeaters nest) |
+| flexible content | `array` of `object`: a required `layout` select plus the union of the layouts' fields |
+| post object, relationship | `relation` / `relations` to the entries' models |
+| taxonomy / user / gallery | `relations` to the term model / `authors` / media |
+| page link | `url`: the target's address, only when the target is published and unprotected |
+| tab, accordion, message | nothing (layout only) |
+| password | nothing, ever |
+
+**A password field is never read.** Its value is skipped where the source
+states the type; where it does not, a secret-looking name (`password`, `token`,
+`api_key`, …) is skipped instead. It never reaches `RawIR`, the store, or a
+report.
+
+ACF values follow their post: a draft's fields land in the store with the
+draft (meta `status: draft`), like its body. A reference to an entry the import
+did not read is dropped and counted in `dropped_relations`. The report's
+`acf_fields` lists each field's type. When any post carries an `acf` key, the
+result's `gaps` contains `acf_partial`: groups without REST exposure, options
+pages and fields on post types outside REST are not visible to REST — the
+Bridge reads those.
+
+With an Application Password, post types are read with `context=edit` so their
+`viewable` flag is known: a type that is in REST but not publicly queryable (a
+testimonial post type, say) keeps its content but gets no address (`link` is
+null), so no route or redirect claims a page that does not exist. Custom
+taxonomies in REST are read with their terms, and a post's terms in them become
+its relations.
+
 
 ### Publication and translation identity
 
