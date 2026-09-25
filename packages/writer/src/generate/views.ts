@@ -189,7 +189,9 @@ class View {
     }
     const object = `{\n${[...props].map(([key, expr]) => `  ${prop(key)}: ${expr},`).join('\n')}\n}`
     this.lines.push(tests.length ? `const ${section} = ${tests.join(' && ')} ? ${object} : undefined` : `const ${section} = ${object}`)
-    this.body.push(tests.length ? `{${section} && <${name} {...${section}} />}` : `<${name} {...${section}} />`)
+    // Sections bring their own container; rich text between them is set in the reading column.
+    const element = kit?.id === 'prose' ? `<div class="container-prose py-8"><${name} {...${section}} /></div>` : `<${name} {...${section}} />`
+    this.body.push(tests.length ? `{${section} && ${element}}` : element)
   }
 
   /** Is this a query of the route entry's list, a term archive's `$entry`? */
@@ -346,7 +348,9 @@ export function composedViews(plan: ProjectPlan, catalog: KitCatalog, models: re
       const view = new View(ctx, route)
       route.sections.forEach((s, i) => view.placement(s, i))
       const first = route.sections[0] && ctx.plan.components.find(c => c.id === route.sections[0]!.component)
-      const showTitle = first?.kit?.id !== 'hero'
+      // Block themes print the page title above the content, hero or not; page builders' canvas
+      // templates leave it to the first section.
+      const showTitle = plan.source.builder === 'gutenberg' || plan.source.builder === 'classic' || first?.kit?.id !== 'hero'
       out.views.push({ route: route.id, name, file: `src/views/composed/${name}.astro`, source: view.source(name, showTitle), wpIds })
     } catch (error) {
       if (!(error instanceof CodegenError)) throw error
