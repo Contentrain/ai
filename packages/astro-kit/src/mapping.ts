@@ -18,13 +18,17 @@
 //   img:<selector>        an image as the kit's `ImageInput` (src, alt, width, height)
 //   link:<selector>       a link as `{ label, href }`
 //   html:<selector>       inner markup, kept as Markdown (rich text)
+//   class:<cls>=<a>|<b>   <a> when the element, or an ancestor inside the matched element, has class
+//                         <cls> (`*` matches any run of characters); <b> otherwise. An empty branch
+//                         reads nothing and the prop keeps its default. `class:is-style-outline=ghost|primary`
+//                         is WordPress's outline button as the kit's ghost action.
 
 import type { KitBuilder, KitCatalog, KitComponent } from './catalog.js'
 import { isBuilderElement, KIT_BUILDERS } from './catalog.js'
 
 export const MAPPING_FORMAT = 'astro-kit-mapping@1'
 
-export const MAPPING_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|term:[\w-]+|ui:[\w.-]+|const:(?:true|false|-?\d+(?:\.\d+)?|[a-z][a-z0-9_-]{0,31})|site:[\w-]+|menu:(?:primary|footer)|page:(?:base|current|total|breadcrumb)|attr:[\w.-]+|(?:dom|img|link|html):[^@]*(?:@[\w-]+)?)$/
+export const MAPPING_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|term:[\w-]+|ui:[\w.-]+|const:(?:true|false|-?\d+(?:\.\d+)?|[a-z][a-z0-9_-]{0,31})|site:[\w-]+|menu:(?:primary|footer)|page:(?:base|current|total|breadcrumb)|attr:[\w.-]+|class:[\w*-]+=(?:[a-z][\w-]*)?\|(?:[a-z][\w-]*)?|(?:dom|img|link|html):[^@]*(?:@[\w-]+)?)$/
 
 export interface MappingRule {
   /** Builder element, as the fact pack names it; a `:qualifier` narrows it (`core/template-part:header`). */
@@ -54,6 +58,11 @@ export interface MappingTable {
   version: string
   /** What an element no rule covers becomes when no decision is made: rich text. */
   fallback: 'prose'
+  /**
+   * Attribute values the builder leaves out of its data while they are at their default, per element:
+   * Elementor saves no `video_type` for a YouTube video. `when.attr` and `attr:` read through them.
+   */
+  defaults?: Record<string, Record<string, string | number | boolean>>
   rules: MappingRule[]
 }
 
@@ -63,6 +72,7 @@ export function validateMapping(table: MappingTable, catalog: KitCatalog): strin
   if (table.format !== MAPPING_FORMAT) problems.push(`format is not ${MAPPING_FORMAT}`)
   if (!KIT_BUILDERS.includes(table.builder)) problems.push(`unknown builder ${table.builder}`)
   if (!/^\d+$/.test(table.version)) problems.push('version is not an integer string')
+  for (const element of Object.keys(table.defaults ?? {})) if (!isBuilderElement(table.builder, element)) problems.push(`defaults ${element}: not a ${table.builder} element`)
   const components = new Map(catalog.components.map(c => [c.id, c]))
   const seen = new Set<string>()
   for (const rule of table.rules) {
@@ -74,8 +84,11 @@ export function validateMapping(table: MappingTable, catalog: KitCatalog): strin
     const c = components.get(rule.component)
     if (!c) { problems.push(`${at}: component ${rule.component} is not in the catalog`); continue }
     for (const [axis, value] of Object.entries(rule.variant ?? {})) {
+      // A variant is one option, or a `class:` choice between options read from the element.
+      const choice = /^class:[\w*-]+=([a-z][\w-]*)?\|([a-z][\w-]*)?$/.exec(value)
+      const options = choice ? [choice[1], choice[2]].filter((option): option is string => option !== undefined) : [value]
       if (!c.variants[axis]) problems.push(`${at}: ${c.id} has no variant axis ${axis}`)
-      else if (!c.variants[axis]!.options.includes(value)) problems.push(`${at}: ${c.id}.${axis} has no option ${value}`)
+      else for (const missing of options.filter(option => !c.variants[axis]!.options.includes(option))) problems.push(`${at}: ${c.id}.${axis} has no option ${missing}`)
     }
     for (const [prop, value] of Object.entries({ ...rule.props, ...(rule.into ? {} : rule.item) })) {
       if (!c.props[prop]) problems.push(`${at}: ${c.id} has no prop ${prop}`)
@@ -119,11 +132,16 @@ export interface MappingNode {
   children?: MappingNode[]
 }
 
+/** An element's attributes with the builder's unsaved defaults filled in. */
+export function attrsOf(node: MappingNode, defaults: MappingTable['defaults'] = {}): Record<string, unknown> {
+  return { ...defaults[node.name], ...node.attrs }
+}
+
 /** Whether a rule's `match` (with an optional `:qualifier`) and `when.attr` fit an element. */
-export function ruleMatches(rule: MappingRule, node: MappingNode): boolean {
+export function ruleMatches(rule: MappingRule, node: MappingNode, defaults?: MappingTable['defaults']): boolean {
   const [name, qualifier] = rule.match.split(':')
   if (name !== node.name) return false
-  const attrs = node.attrs ?? {}
+  const attrs = attrsOf(node, defaults)
   // A qualifier names the element's role: a template part's area or slug, or a sub-part the fact pack marks.
   if (qualifier && ![attrs.area, attrs.slug, attrs.tagName, attrs.qualifier].includes(qualifier)) return false
   for (const [key, value] of Object.entries(rule.when?.attr ?? {})) if (attrs[key] !== value) return false
@@ -138,7 +156,7 @@ export function ruleMatches(rule: MappingRule, node: MappingNode): boolean {
 export function claimMatches(nodes: MappingNode[], table: MappingTable, path = '0'): { path: string, node: MappingNode, rule: MappingRule }[] {
   return nodes.flatMap((node, i) => {
     const at = `${path}.${i}`
-    const rule = rulesFor(table, node.name).find(r => ruleMatches(r, node))
+    const rule = rulesFor(table, node.name).find(r => ruleMatches(r, node, table.defaults))
     return rule ? [{ path: at, node, rule }] : claimMatches(node.children ?? [], table, at)
   })
 }

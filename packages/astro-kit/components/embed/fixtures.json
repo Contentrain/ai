@@ -1,0 +1,34 @@
+[
+  {
+    "name": "youtube-poster",
+    "props": { "url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ&t=1m5s", "title": "A walk through the new studio", "caption": "Filmed in spring, four minutes.", "poster": { "src": "/kit-fixtures/photo-2.svg", "alt": "", "width": 1200, "height": 800 } }
+  },
+  {
+    "name": "vimeo-plain-page",
+    "props": { "url": "https://vimeo.com/76979871", "title": "The making of the journal", "width": "page", "aspect": "video" }
+  },
+  {
+    "name": "shorts-auto-portrait",
+    "props": { "url": "https://youtube.com/shorts/aqz-KE-bpKQ", "title": "One-minute tip" }
+  },
+  {
+    "name": "forced-square",
+    "props": { "url": "https://youtu.be/aqz-KE-bpKQ", "title": "Square cut", "aspect": "square" }
+  },
+  {
+    "name": "forced-portrait",
+    "props": { "url": "https://youtu.be/aqz-KE-bpKQ", "title": "Vertical cut", "aspect": "portrait" }
+  },
+  {
+    "name": "map-address",
+    "props": { "address": "Rua Augusta 100, Lisbon", "title": "Our office", "showLabel": "Show map", "aspect": "map" }
+  },
+  {
+    "name": "spotify-strip",
+    "props": { "url": "https://open.spotify.com/embed/episode/7makk4oTQel546B0PZlDM5", "title": "Episode 12 — Slow travel" }
+  },
+  {
+    "name": "unknown-provider-link",
+    "props": { "url": "https://example.com/widget/42", "title": "Booking calendar" }
+  }
+]

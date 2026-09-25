@@ -1,0 +1,32 @@
+{
+  "id": "embed",
+  "name": "Embed",
+  "description": "A video, map or player from another site (YouTube, Vimeo, Google Maps, OpenStreetMap, Spotify, SoundCloud, Calendly, Typeform, Loom, Wistia), loaded only on click: until then a poster link to the provider's page, with no iframe, no third-party request and no cookie (YouTube through youtube-nocookie.com). Unknown providers are never framed; they stay a plain link.",
+  "category": "content",
+  "uses": [],
+  "shared": ["KitImage.astro", "types.ts"],
+  "variants": {
+    "aspect": { "options": ["auto", "video", "portrait", "square", "map"], "default": "auto", "description": "auto: 16:9 for videos, 9:16 for YouTube Shorts, 4:3 (16:9 wide) for maps, a fixed strip for audio players. The others force a ratio." },
+    "width": { "options": ["prose", "page"], "default": "prose", "description": "prose: as wide as the reading column. page: the full page frame." }
+  },
+  "props": {
+    "url": { "type": "url", "description": "A video page (youtube.com/watch, youtu.be, /shorts/, vimeo.com/<id>) or a known provider's embed address (google.com/maps/embed, open.spotify.com/embed, w.soundcloud.com/player, calendly.com, *.typeform.com/to, loom.com/embed, fast.wistia.net/embed)." },
+    "address": { "type": "string", "description": "A place or address shown on a Google map when there is no url (Elementor google_maps address, Divi map address)." },
+    "title": { "type": "string", "description": "What it is: the player's accessible name and the poster's text." },
+    "caption": { "type": "string", "description": "A line under the embed." },
+    "poster": { "type": "object", "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } }, "description": "Local poster image (an ImageInput; its alt is not used, the link names the embed). Without one the poster is a plain dark panel. Never a provider thumbnail URL: that would be a third-party request before the click." },
+    "playLabel": { "type": "string", "description": "Poster action for a video or audio player (ui-strings embed.play)." },
+    "showLabel": { "type": "string", "description": "Poster action for a map or widget (ui-strings embed.show)." },
+    "id": { "type": "string", "description": "Element id." }
+  },
+  "slots": {},
+  "js": "vanilla",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": ["core/embed"],
+    "elementor": ["elementor/video", "elementor/google_maps"],
+    "divi": ["divi/et_pb_video", "divi/et_pb_map"],
+    "classic": ["classic/youtube", "classic/vimeo", "classic/google-maps"]
+  },
+  "a11y": "The poster is one link named '<action>: <title>' that opens the provider's page without script. With script, Enter or a click puts the iframe in its place with the title as its accessible name and moves focus into it. Modified clicks (new tab) keep the link behaviour. The play icon is decorative."
+}

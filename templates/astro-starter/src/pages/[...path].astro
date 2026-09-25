@@ -8,6 +8,7 @@ import { getCollection } from 'astro:content'
 import { authorHref, byId, getPosts, getStrings, pageHref, postHref, termHref, type Page, type Post } from '../lib/content'
 import { pagePath, permalinks, toParam } from '../lib/routes'
 import { siteConfig } from '../site.config'
+import { composedViews } from '../views/composed'
 import ListView from '../views/ListView.astro'
 import PageView from '../views/PageView.astro'
 import PostView from '../views/PostView.astro'
@@ -46,13 +47,18 @@ export const getStaticPaths = (async () => {
       trail.unshift({ title: parent.data.title, href: pageHref(parent, pages) })
     }
     const href = pageHref(page, pages)
+    // The page WordPress uses as the posts page (Settings → Reading) shows the posts, not its own body.
+    if (siteConfig.home.kind === 'page' && href === permalinks.blog) continue
     add(href, { view: 'page', page, trail, isHome: href === '/' })
   }
 
   // The posts index: the front page, or — on a site whose front page is a
   // static page — its own address (WordPress: Settings → Reading).
   const blog = siteConfig.home.kind === 'posts' ? '/' : permalinks.blog
-  paginate(blog, posts, blog === '/' ? {} : { title: t('blog.title') })
+  // The posts page keeps the name and description its editors gave it ("Journal"), as in WordPress.
+  const postsPage = blog === '/' ? undefined : [...pages.values()].find(page => pageHref(page, pages) === blog)
+  const blogDescription = postsPage?.data.seo?.description ?? postsPage?.data.excerpt
+  paginate(blog, posts, blog === '/' ? {} : { title: postsPage?.data.title ?? t('blog.title'), ...(blogDescription ? { description: blogDescription } : {}) })
 
   for (const category of categories.values()) {
     paginate(termHref('category', category, categories), posts.filter(post => post.data.categories.some(ref => ref.id === category.id)), {
@@ -74,7 +80,9 @@ export const getStaticPaths = (async () => {
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>
 const route = Astro.props as Props
+// A page the migration composed from sections has a view of its own.
+const PageRoute = route.view === 'page' ? composedViews[route.page.data.wp_id ?? -1] ?? PageView : PageView
 ---
 {route.view === 'post' && <PostView post={route.post} />}
-{route.view === 'page' && <PageView page={route.page} trail={route.trail} isHome={route.isHome} />}
+{route.view === 'page' && <PageRoute page={route.page} trail={route.trail} isHome={route.isHome} />}
 {route.view === 'list' && <ListView {...route} />}

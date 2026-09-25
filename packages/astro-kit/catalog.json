@@ -12,7 +12,20 @@
     "--container-prose",
     "--container-page",
     "--container-wide",
-    "--radius-card"
+    "--radius-card",
+    "--font-weight-heading",
+    "--font-weight-body",
+    "--text-body",
+    "--leading-body",
+    "--leading-heading",
+    "--radius-control",
+    "--radius-image",
+    "--spacing-gutter",
+    "--text-nav",
+    "--text-heading-1",
+    "--text-heading-2",
+    "--text-heading-3",
+    "--spacing-section"
   ],
   "dependencies": {
     "tailwind-merge": "^3.7.0",
@@ -426,6 +439,114 @@
       ]
     },
     {
+      "id": "embed",
+      "name": "Embed",
+      "description": "A video, map or player from another site (YouTube, Vimeo, Google Maps, OpenStreetMap, Spotify, SoundCloud, Calendly, Typeform, Loom, Wistia), loaded only on click: until then a poster link to the provider's page, with no iframe, no third-party request and no cookie (YouTube through youtube-nocookie.com). Unknown providers are never framed; they stay a plain link.",
+      "category": "content",
+      "uses": [],
+      "shared": [
+        "KitImage.astro",
+        "types.ts"
+      ],
+      "variants": {
+        "aspect": {
+          "options": [
+            "auto",
+            "video",
+            "portrait",
+            "square",
+            "map"
+          ],
+          "default": "auto",
+          "description": "auto: 16:9 for videos, 9:16 for YouTube Shorts, 4:3 (16:9 wide) for maps, a fixed strip for audio players. The others force a ratio."
+        },
+        "width": {
+          "options": [
+            "prose",
+            "page"
+          ],
+          "default": "prose",
+          "description": "prose: as wide as the reading column. page: the full page frame."
+        }
+      },
+      "props": {
+        "url": {
+          "type": "url",
+          "description": "A video page (youtube.com/watch, youtu.be, /shorts/, vimeo.com/<id>) or a known provider's embed address (google.com/maps/embed, open.spotify.com/embed, w.soundcloud.com/player, calendly.com, *.typeform.com/to, loom.com/embed, fast.wistia.net/embed)."
+        },
+        "address": {
+          "type": "string",
+          "description": "A place or address shown on a Google map when there is no url (Elementor google_maps address, Divi map address)."
+        },
+        "title": {
+          "type": "string",
+          "description": "What it is: the player's accessible name and the poster's text."
+        },
+        "caption": {
+          "type": "string",
+          "description": "A line under the embed."
+        },
+        "poster": {
+          "type": "object",
+          "fields": {
+            "src": {
+              "type": "image",
+              "required": true
+            },
+            "alt": {
+              "type": "string",
+              "required": true
+            },
+            "width": {
+              "type": "integer"
+            },
+            "height": {
+              "type": "integer"
+            }
+          },
+          "description": "Local poster image (an ImageInput; its alt is not used, the link names the embed). Without one the poster is a plain dark panel. Never a provider thumbnail URL: that would be a third-party request before the click."
+        },
+        "playLabel": {
+          "type": "string",
+          "description": "Poster action for a video or audio player (ui-strings embed.play)."
+        },
+        "showLabel": {
+          "type": "string",
+          "description": "Poster action for a map or widget (ui-strings embed.show)."
+        },
+        "id": {
+          "type": "string",
+          "description": "Element id."
+        }
+      },
+      "slots": {},
+      "js": "vanilla",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/embed"
+        ],
+        "elementor": [
+          "elementor/video",
+          "elementor/google_maps"
+        ],
+        "divi": [
+          "divi/et_pb_video",
+          "divi/et_pb_map"
+        ],
+        "classic": [
+          "classic/youtube",
+          "classic/vimeo",
+          "classic/google-maps"
+        ]
+      },
+      "a11y": "The poster is one link named '<action>: <title>' that opens the provider's page without script. With script, Enter or a click puts the iframe in its place with the title as its accessible name and moves focus into it. Modified clicks (new tab) keep the link behaviour. The play icon is decorative.",
+      "files": [
+        "Embed.astro",
+        "embed.ts"
+      ]
+    },
+    {
       "id": "faq",
       "name": "FAQ",
       "description": "Questions and answers as native <details> disclosures (no script), in lines or cards; optionally one open at a time, and optionally with FAQPage structured data for search engines and AI answers.",
@@ -438,10 +559,11 @@
         "style": {
           "options": [
             "lines",
-            "cards"
+            "cards",
+            "plain"
           ],
           "default": "lines",
-          "description": "lines: rows divided by rules. cards: each question in a rounded box."
+          "description": "lines: rows divided by rules. cards: each question in a rounded box. plain: the browser's own disclosure triangle without rules or boxes (WordPress's details block)."
         },
         "tone": {
           "options": [
@@ -567,7 +689,11 @@
             "fields": {
               "title": {
                 "type": "string",
-                "required": true
+                "description": "Heading shown above the links; leave out when the source shows none."
+              },
+              "label": {
+                "type": "string",
+                "description": "Accessible name of the column navigation (the menu name); defaults to the title."
               },
               "links": {
                 "type": "array",
@@ -956,6 +1082,14 @@
           ],
           "default": "default",
           "description": "Section background (ignored by cover, which is always light text on the image)."
+        },
+        "align": {
+          "options": [
+            "start",
+            "center"
+          ],
+          "default": "center",
+          "description": "Text position over a cover image (layout cover only): centred, as WordPress covers default to, or at the start edge."
         }
       },
       "props": {
@@ -1131,6 +1265,10 @@
         "id": {
           "type": "string",
           "description": "Unique id when a page renders two navigations."
+        },
+        "part": {
+          "type": "string",
+          "description": "What the navigation is, for checks that find a page's parts (data-cr-part), e.g. \"nav-header\"."
         }
       },
       "slots": {},
@@ -1155,6 +1293,115 @@
       "a11y": "A <nav> landmark with a label; the current page carries aria-current. Submenus open on :focus-within as well as hover. The drawer is a native popover: Escape and light dismiss close it and focus returns to the toggle.",
       "files": [
         "Nav.astro"
+      ]
+    },
+    {
+      "id": "newsletter",
+      "name": "Newsletter sign-up",
+      "description": "A newsletter sign-up that posts straight to the list provider's hosted form endpoint (Mailchimp, Kit, MailerLite, Brevo, Buttondown): a plain HTML form with no script and no server of ours. The provider shows its own confirmation page. The action must be the named provider's endpoint (exact host and path; `other`: https off the site's origin), otherwise nothing renders. WordPress-side sign-up plugins (MC4WP, Divi signup, Jetpack) post through the site and are not mapped here: the plan lists them for review.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "Section.astro"
+      ],
+      "variants": {
+        "layout": {
+          "options": [
+            "inline",
+            "stacked"
+          ],
+          "default": "inline",
+          "description": "inline: copy beside the form on wide screens. stacked: one centred column."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "muted",
+          "description": "Section background."
+        }
+      },
+      "props": {
+        "action": {
+          "type": "url",
+          "required": true,
+          "description": "The provider's hosted form endpoint (Mailchimp *.list-manage.com/subscribe/post, Kit app.kit.com/forms/<n>/subscriptions, MailerLite assets.mailerlite.com/jsonp/<n>/forms/<n>/subscribe, Brevo *.sibforms.com/serve/, Buttondown buttondown.com/api/emails/embed-subscribe/). At migration the engine reads it from the source form element (`dom:form@action`) into the section's content, where it stays editable in Studio; it never passes through the fact pack or a model."
+        },
+        "provider": {
+          "type": "select",
+          "options": [
+            "mailchimp",
+            "kit",
+            "mailerlite",
+            "brevo",
+            "buttondown",
+            "other"
+          ],
+          "default": "mailchimp",
+          "description": "Names the fields the endpoint expects (Mailchimp EMAIL/FNAME + its bot-trap field, Kit email_address, MailerLite fields[email], Brevo EMAIL, Buttondown email)."
+        },
+        "emailName": {
+          "type": "string",
+          "description": "Field name for the address when the provider is other or names it differently."
+        },
+        "askName": {
+          "type": "boolean",
+          "default": false,
+          "description": "Ask for a first name too, when the provider takes one (the source form had a name field)."
+        },
+        "heading": {
+          "type": "string",
+          "description": "Section heading."
+        },
+        "intro": {
+          "type": "text",
+          "description": "A line or two about the newsletter."
+        },
+        "note": {
+          "type": "string",
+          "description": "Small print under the form (privacy, frequency)."
+        },
+        "emailLabel": {
+          "type": "string",
+          "description": "ui-strings newsletter.email."
+        },
+        "nameLabel": {
+          "type": "string",
+          "description": "ui-strings newsletter.name."
+        },
+        "submitLabel": {
+          "type": "string",
+          "description": "ui-strings newsletter.submit."
+        },
+        "newTab": {
+          "type": "boolean",
+          "default": true,
+          "description": "Open the provider's confirmation page in a new tab (the reader keeps the site)."
+        },
+        "id": {
+          "type": "string",
+          "description": "Section id, unique per page (two sign-ups on one page need two ids): the heading gets `<id>-title`, the inputs `<id>-email`/`<id>-name`."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "classic": [
+          "classic/mailchimp",
+          "classic/kit",
+          "classic/mailerlite",
+          "classic/brevo",
+          "classic/buttondown"
+        ]
+      },
+      "a11y": "Every input has a visible label and the address field is type=email, required, with autocomplete=email, so the browser validates it and announces errors without script. The form is named by the section heading (or the submit label). Mailchimp's bot-trap field is aria-hidden, off screen and out of the tab order.",
+      "files": [
+        "Newsletter.astro",
+        "newsletter.ts"
       ]
     },
     {

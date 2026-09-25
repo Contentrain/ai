@@ -26,12 +26,15 @@ export interface SiteConfig {
   /** Menu slugs for the site's navigation areas; a missing menu renders nothing. */
   menus: { primary: string, footer: string }
   /**
-   * Contentrain Studio's public forms and comments API. Without it, forms and
-   * comment threads render nothing — a form that cannot be sent is worse than
-   * no form.
+   * Contentrain Studio's public forms and comments API, from studio.json at the
+   * project root (see astro.config.mjs). Without it, forms and comment threads
+   * render nothing — a form that cannot be sent is worse than no form.
    */
   studio?: { baseUrl: string, projectId: string }
 }
+
+/** The Studio binding astro.config.mjs read from studio.json, or null. */
+declare const __CONTENTRAIN_STUDIO__: { baseUrl: string, projectId: string } | null
 
 export const siteConfig: SiteConfig = {
   permalinks: {
@@ -45,4 +48,5 @@ export const siteConfig: SiteConfig = {
   home: { kind: 'posts' },
   postsPerPage: 10,
   menus: { primary: 'primary', footer: 'footer' },
+  ...(typeof __CONTENTRAIN_STUDIO__ !== 'undefined' && __CONTENTRAIN_STUDIO__ ? { studio: __CONTENTRAIN_STUDIO__ } : {}),
 }

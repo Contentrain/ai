@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "gutenberg",
-  "version": "3",
+  "version": "4",
   "fallback": "prose",
   "rules": [
     {
@@ -114,7 +114,8 @@
       "each": ".wp-block-button__link",
       "item": {
         "label": "dom:",
-        "href": "dom:@href"
+        "href": "dom:@href",
+        "style": "class:is-style-outline=ghost|primary"
       }
     },
     {
@@ -214,7 +215,8 @@
       "match": "core/cover",
       "component": "hero",
       "variant": {
-        "layout": "cover"
+        "layout": "cover",
+        "align": "class:is-position-*-left=start|center"
       },
       "props": {
         "heading": "dom:h1,h2",
@@ -225,12 +227,16 @@
       "each": ".wp-block-button__link",
       "item": {
         "label": "dom:",
-        "href": "dom:@href"
+        "href": "dom:@href",
+        "style": "class:is-style-outline=ghost|primary"
       }
     },
     {
       "match": "core/details",
       "component": "faq",
+      "variant": {
+        "style": "plain"
+      },
       "group": "siblings",
       "into": "items",
       "item": {
@@ -340,6 +346,66 @@
       "component": "prose",
       "props": {
         "html": "html:"
+      }
+    },
+    {
+      "match": "core/embed",
+      "when": {
+        "attr": {
+          "providerNameSlug": "youtube"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:url",
+        "caption": "dom:figcaption",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "core/embed",
+      "when": {
+        "attr": {
+          "providerNameSlug": "vimeo"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:url",
+        "caption": "dom:figcaption",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "core/embed",
+      "when": {
+        "attr": {
+          "providerNameSlug": "spotify"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:url",
+        "caption": "dom:figcaption",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "core/embed",
+      "when": {
+        "attr": {
+          "providerNameSlug": "soundcloud"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:url",
+        "caption": "dom:figcaption",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
       }
     },
     {

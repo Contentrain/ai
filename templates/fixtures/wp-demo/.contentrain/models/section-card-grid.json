@@ -1,0 +1,66 @@
+{
+  "domain": "sections",
+  "fields": {
+    "headingLevel": {
+      "default": 2,
+      "max": 3,
+      "min": 2,
+      "required": false,
+      "type": "integer"
+    },
+    "intro": {
+      "required": false,
+      "type": "text"
+    },
+    "items": {
+      "items": {
+        "fields": {
+          "eyebrow": {
+            "type": "string"
+          },
+          "href": {
+            "type": "url"
+          },
+          "image": {
+            "fields": {
+              "alt": {
+                "required": true,
+                "type": "string"
+              },
+              "height": {
+                "type": "integer"
+              },
+              "src": {
+                "required": true,
+                "type": "image"
+              },
+              "width": {
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "text": {
+            "type": "text"
+          },
+          "title": {
+            "required": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "required": false,
+      "type": "array"
+    },
+    "title": {
+      "required": false,
+      "type": "string"
+    }
+  },
+  "i18n": true,
+  "id": "section-card-grid",
+  "kind": "collection",
+  "name": "Card grid sections",
+  "title_field": "title"
+}

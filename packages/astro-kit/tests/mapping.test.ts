@@ -1,10 +1,11 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { claimMatches, KIT_BUILDERS, rulesFor, unmappedSources, validateMapping, type KitCatalog, type MappingTable } from '../src/index'
+import { attrsOf, claimMatches, KIT_BUILDERS, rulesFor, unmappedSources, validateMapping, type KitCatalog, type MappingTable } from '../src/index'
 
 const ROOT = join(import.meta.dirname, '..')
 const catalog = JSON.parse(await readFile(join(ROOT, 'catalog.json'), 'utf8')) as KitCatalog
+const video = (attrs: Record<string, unknown>) => ({ name: 'elementor/video', attrs })
 const tables = Object.fromEntries(await Promise.all(KIT_BUILDERS.map(async b => [b, JSON.parse(await readFile(join(ROOT, 'mapping', `${b}.json`), 'utf8')) as MappingTable] as const)))
 
 describe('mapping tables', () => {
@@ -20,6 +21,14 @@ describe('mapping tables', () => {
     })
   }
 
+  it('centres a cover\'s text unless WordPress positions it on the left', () => {
+    expect(rulesFor(tables.gutenberg!, 'core/cover')[0]).toMatchObject({ component: 'hero', variant: { layout: 'cover', align: 'class:is-position-*-left=start|center' } })
+  })
+
+  it('maps WordPress\'s details block to the plain FAQ, the browser\'s own disclosure', () => {
+    expect(rulesFor(tables.gutenberg!, 'core/details')[0]).toMatchObject({ component: 'faq', variant: { style: 'plain' } })
+  })
+
   it('catches what a broken rule gets wrong', () => {
     const broken: MappingTable = {
       format: 'astro-kit-mapping@1', builder: 'elementor', version: '1', fallback: 'prose',
@@ -28,8 +37,10 @@ describe('mapping tables', () => {
         { match: 'core/cover', component: 'no-such-component' },
         { match: 'elementor/nav-menu', component: 'nav', props: { items: 'menu:sidebar', label: 'const:Our great studio' } },
       ],
+      defaults: { 'core/video': { autoplay: false } },
     }
     expect(validateMapping(broken, catalog)).toEqual([
+      'defaults core/video: not a elementor element',
       'elementor elementor/icon-box: card-grid.columns has no option 5',
       'elementor elementor/icon-box: card-grid.items[] has no field heading',
       'elementor elementor/icon-box: items[].title = innerHTML is not a mapping value',
@@ -39,6 +50,18 @@ describe('mapping tables', () => {
       'elementor elementor/nav-menu: items = menu:sidebar is not a mapping value',
       'elementor elementor/nav-menu: label = const:Our great studio is not a mapping value',
     ])
+  })
+
+  it('reads a class as a choice between options, for a value or a variant', () => {
+    const table: MappingTable = {
+      format: 'astro-kit-mapping@1', builder: 'gutenberg', version: '1', fallback: 'prose',
+      rules: [
+        { match: 'core/cover', component: 'hero', variant: { layout: 'class:is-style-wide=cover|split' }, props: { heading: 'dom:h2' }, into: 'actions', each: 'a', item: { label: 'dom:', href: 'dom:@href', style: 'class:is-style-outline=ghost|primary' } },
+        { match: 'core/media-text', component: 'hero', variant: { layout: 'class:has-media-*=cover|' }, props: { heading: 'dom:h2' } },
+        { match: 'core/group', component: 'hero', variant: { layout: 'class:is-style-x=wide|split' }, props: { heading: 'dom:h2' } },
+      ],
+    }
+    expect(validateMapping(table, catalog)).toEqual(['gutenberg core/group: hero.layout has no option wide'])
   })
 
   it('finds the most specific rule first', () => {
@@ -60,5 +83,20 @@ describe('mapping tables', () => {
       '0.2 core/template-part:footer -> footer',
     ])
   })
-})
 
+  it('reads an attribute the builder leaves out at its default: an Elementor video without video_type is YouTube', () => {
+    const tree = [
+      video({ youtube_url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ' }),
+      video({ video_type: 'vimeo', vimeo_url: 'https://vimeo.com/76979871' }),
+      video({ video_type: 'hosted' }),
+    ]
+    expect(claimMatches(tree, tables.elementor!).map(m => `${m.path} ${m.rule.component} ${m.rule.props?.url}`)).toEqual([
+      '0.0 embed attr:youtube_url',
+      '0.1 embed attr:vimeo_url',
+    ])
+    expect(attrsOf(tree[0]!, tables.elementor!.defaults).video_type).toBe('youtube')
+    expect(attrsOf(tree[1]!, tables.elementor!.defaults).video_type).toBe('vimeo')
+    // Without the table's defaults the default video matches nothing: the bug this guards.
+    expect(claimMatches(tree, { ...tables.elementor!, defaults: {} })).toHaveLength(1)
+  })
+})

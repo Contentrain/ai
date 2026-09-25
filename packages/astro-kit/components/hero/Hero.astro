@@ -12,10 +12,10 @@ const hero = tv({
     grid: 'grid items-center gap-10',
     copy: 'flex flex-col gap-5',
     eyebrow: 'text-sm font-semibold tracking-wide uppercase opacity-80',
-    heading: 'text-4xl font-bold tracking-tight text-balance md:text-5xl lg:text-6xl',
+    heading: 'text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl lg:text-6xl',
     lead: 'max-w-2xl text-lg text-pretty opacity-85 md:text-xl',
     actions: 'flex flex-wrap gap-3 pt-2',
-    media: 'overflow-hidden rounded-card',
+    media: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
   },
   variants: {
     layout: {
@@ -25,8 +25,13 @@ const hero = tv({
     },
     // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
     tone: { default: {}, muted: {}, inverse: {}, accent: { eyebrow: 'opacity-100', lead: 'opacity-100' } },
+    // Where a cover sets its text over the image. WordPress covers centre it unless told otherwise.
+    align: { start: {}, center: {} },
   },
-  defaultVariants: { layout: 'split', tone: 'default' },
+  compoundVariants: [
+    { layout: 'cover', align: 'center', class: { grid: 'justify-items-center', copy: 'mx-auto items-center text-center', lead: 'mx-auto', actions: 'justify-center' } },
+  ],
+  defaultVariants: { layout: 'split', tone: 'default', align: 'center' },
 })
 
 interface Props {
@@ -38,12 +43,14 @@ interface Props {
   actions?: ActionInput[] | undefined
   image?: ImageInput | undefined
   layout?: 'split' | 'centered' | 'cover' | undefined
+  /** Text position over a cover image; other layouts ignore it. */
+  align?: 'start' | 'center' | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   id?: string | undefined
 }
 
-const { heading, level = 1, eyebrow, lead, actions = [], image, layout = 'split', tone, id } = Astro.props
-const s = hero({ layout, tone })
+const { heading, level = 1, eyebrow, lead, actions = [], image, layout = 'split', align, tone, id } = Astro.props
+const s = hero({ layout, align, tone })
 const Heading = level === 1 ? 'h1' : 'h2'
 const headingId = id ? `${id}-title` : undefined
 const cover = layout === 'cover' && image
@@ -58,7 +65,7 @@ const cover = layout === 'cover' && image
           <div class={s.copy()}>
             {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
             <Heading id={headingId} class={s.heading()}>{heading}</Heading>
-            {lead && <p class={s.lead()}>{lead}</p>}
+            {lead && <p class={s.lead()} data-kit-text>{lead}</p>}
             {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
           </div>
         </div>
@@ -71,7 +78,7 @@ const cover = layout === 'cover' && image
         <div class={s.copy()}>
           {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
           <Heading id={headingId} class={s.heading()}>{heading}</Heading>
-          {lead && <p class={s.lead()}>{lead}</p>}
+          {lead && <p class={s.lead()} data-kit-text>{lead}</p>}
           {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
         </div>
         {image && (

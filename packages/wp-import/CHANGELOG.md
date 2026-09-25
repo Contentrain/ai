@@ -1,5 +1,71 @@
 # @contentrain/wp-import
 
+## 0.8.0
+
+### Minor Changes
+
+- 01c0065: ACF sub-fields of repeaters, groups and flexible layouts are typed from their stated ACF type (SCF's `_source` inside each row) by the same table as top-level fields, instead of from their values. A select or checkbox value outside the field's stated choices is left out and counted in the new `ImportReport.acf_outside_choices`.
+
+  ACF date time picker values carry the site's UTC offset for that moment, DST included (`2025-03-10T09:30:00+03:00`): `fetchRestRawIR` reads `timezone_string` and `gmt_offset` from the `/wp-json/` index into `RawIR.site.timezone` / `gmt_offset`. Without either, the value stays local and `ImportReport.acf_datetime_unzoned` counts it. `acfValue`'s third argument is now a context (`{ timeZone, gmtOffset, dropped, unzoned }`).
+
+  `src/fixtures/acf-parity.json` holds the ACF → Contentrain cases the Contentrain Bridge must map the same way.
+
+  `@contentrain/types`: `RawSite.timezone?` and `RawSite.gmt_offset?`.
+
+- 9121e22: `fetchRestRawIR` and `rawToContentrain` carry ACF / Secure Custom Fields. Values on a post's REST `acf` key are typed by one deterministic, versioned table (`ACF_MAPPING_VERSION`): the ACF type comes from SCF's `<name>_source` where the site states it, else from the value's shape. Repeaters and groups become nested `array`/`object` fields, flexible content an `array` of rows with a required `layout`, link and Google Map fixed-shape objects, post object / relationship / taxonomy / user / gallery fields relations to the store's entries, page link the target's address when that target is public.
+
+  A `password` field is never read, at any depth (repeater rows, groups, flexible layouts): not into `RawIR`, not into the store. Without stated types (plain ACF), secret fields are recognised by whole-word names. ACF values follow their post's status, so a draft's fields land with the draft. When posts carry ACF, `gaps` contains `acf_partial` (groups outside REST, options pages and non-REST post types need the Bridge).
+
+  With an Application Password, post types are read with `context=edit`: a type that is not publicly viewable gets no address. Custom taxonomies in REST are read with their terms and linked from posts.
+
+  `@contentrain/types`: `RawAcfValue.field_key` is optional, and `type?` / `label?` carry the stated ACF type and label.
+
+- aa68347: `fetchRestRawIR` reads inline navigation: a navigation block in a template part that carries its own links (Twenty Twenty-Five's footer columns) becomes a menu of that part's area (`Footer navigation 1`, `2`, …; a navigation's `ariaLabel` names it), with its links in order and nested, and the same fail-closed rule for links to content not proven public. Only template parts a template uses count (`/wp/v2/templates`; without them, the part named after its area): a theme's unused alternatives (`footer-columns`, `header-large-title`) no longer lend locations or menus. A `#` link stays `#`. Inline menus have no WordPress record: they get negative ids and the store claims no `wp_id` for them.
+
+### Patch Changes
+
+- 1436fa6: `rawToContentrain` no longer names a site "Site" when the source gives no title. With neither a REST index name nor a WXR channel title, the `site` entry has no `title` (the field stays required, so the store shows what is missing) and the report's new `site_title_missing` is `true`.
+- Updated dependencies [3eb5832]
+- Updated dependencies [36e5773]
+- Updated dependencies [01c0065]
+- Updated dependencies [9121e22]
+  - @contentrain/types@1.25.0
+
+## 0.7.0
+
+### Minor Changes
+
+- 53505cd: `fetchRestRawIR` reads menus. With an Application Password it fills `RawIR.menus` from classic menus (`/wp/v2/menus`, `/wp/v2/menu-items`) and from a block theme's published `wp_navigation` posts, so a REST import of a block-theme site no longer arrives with an empty header navigation. Each menu carries `locations`: the theme locations a classic menu is assigned to, or the template-part areas (`header`, `footer`) that show a block navigation.
+
+  Only what visitors are proven to see is kept: an item that is a draft, or points at a post this import did not read as published and unprotected, is left out (fail-closed) (its label is often that post's title); its children move up, and `warnings` gives only a count.
+
+  `fetchRestRawIR` also reads the `/wp-json/` index: the site's name and tagline fill `RawIR.site.title` / `description`, so the store's `site` singleton no longer says "Site"; `url` / `home` fill `base_site_url` / `base_blog_url`.
+
+  Menus need `edit_theme_options`. When they cannot be read — no credential, a rejected one, or a user without that right — the new `gaps` field of the result contains `menus_require_auth` instead of the import silently returning no menus.
+
+  `@contentrain/types`: `RawMenu.locations?: string[]` (optional; producers that do not know leave it out). A block navigation's items, which have no WordPress id, carry negative ids.
+
+### Patch Changes
+
+- Updated dependencies [53505cd]
+  - @contentrain/types@1.24.0
+
+## 0.6.0
+
+### Minor Changes
+
+- d87121b: The comments export carries only public discussion. `buildCommentsExport` keeps comments on published, unprotected entries that are approved (`'1'`) or pending (`'0'`, which lands in the receiving service's moderation queue). It leaves out comments on drafts, private, scheduled and password-protected entries, any other status (spam, trash, `post-trashed`, a plugin's own), and comments on entries the import does not hold. An allowlist, so it fails closed. It counts what it leaves out in the new optional `CommentsExport.excluded` (`non_public_entry`, `unknown_entry`, `spam`, `trash`, `other_status`), which `summarizeComments` passes to `HandoffComments.excluded`. `selectComments(raw)` exposes the selection.
+
+### Patch Changes
+
+- a726843: `fetchRestRawIR` returns `credential: { status, fell_back }`, so a caller can tell whether the Application Password was honoured without reading `warnings`. `status` is `none` without `auth`, `accepted` when every listing it unlocks was read with it, and `rejected` when at least one was not; `fell_back` names those listings (`posts`, `pages`, a custom type's REST base, `comments`, `comments:hold`).
+
+  A credential the site rejects outright is now found by one `users/me` request and dropped. WordPress answers a wrong Application Password with 401 on every route, public ones included, and the fallback to the public listing used to resend it, so such an import came back with no posts, no terms and no comments while its provenance said `rest_auth`. It now imports the public site, as `rest_public`. The fallback for a single refused listing is anonymous too.
+
+- Updated dependencies [d87121b]
+- Updated dependencies [90b5049]
+  - @contentrain/types@1.23.0
+
 ## 0.5.7
 
 ### Patch Changes

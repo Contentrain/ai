@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PROJECT_PLAN_FORMAT, validateProjectPlan, type ProjectPlan } from './project-plan.js'
+import { footerMenusOf, PROJECT_PLAN_FORMAT, validateProjectPlan, type ProjectPlan } from './project-plan.js'
 
 /** A small blog with a composed About page — the shape the planner writes for a block-theme site. */
 const plan = (): ProjectPlan => ({
@@ -12,7 +12,7 @@ const plan = (): ProjectPlan => ({
     permalinks: { post: '/:slug/', page: '/:path/', category: '/category/:slug/', tag: '/tag/:slug/', author: '/author/:slug/', blog: '/' },
     home: { kind: 'posts' },
     postsPerPage: 6,
-    menus: { primary: 'primary-menu', footer: 'footer-menu' },
+    menus: { primary: 'primary-menu', footer: ['footer-menu', 'footer-legal'] },
     redirects: { '/old-about/': '/about/', '/gone/': { status: 410, destination: '/' } },
     tokens: { roles: { 'color-accent': '#9dff20', 'color-accent-ink': '#000000', 'font-sans': 'Inter, sans-serif', 'container-prose': '650px' } },
   },
@@ -57,6 +57,12 @@ const plan = (): ProjectPlan => ({
 describe('validateProjectPlan', () => {
   it('accepts a well-formed plan', () => {
     expect(validateProjectPlan(plan())).toEqual({ errors: [], warnings: [] })
+  })
+
+  it('accepts the theme\'s type scale and section rhythm as roles', () => {
+    const p = plan()
+    p.site.tokens.roles = { ...p.site.tokens.roles, 'text-nav': '1.125rem', 'text-heading-1': 'clamp(2rem, 5vw, 3rem)', 'text-heading-2': '2rem', 'text-heading-3': '1.5rem', 'spacing-section': '5rem' }
+    expect(validateProjectPlan(p).errors).toEqual([])
   })
 
   it('catches broken references, permalinks, values and bindings', () => {
@@ -106,6 +112,52 @@ describe('validateProjectPlan', () => {
     expect(errors).toContain('model pages: routes page, page-2 are all catch-alls')
   })
 
+  it('takes up to four distinct footer menus', () => {
+    const p = plan()
+    p.site.menus.footer = ['a', 'b', 'a', '', 'c', 'd']
+    expect(validateProjectPlan(p).errors).toEqual([
+      'site.menus.footer has 6 menus; the footer takes at most 4',
+      'site.menus.footer has an empty menu slug',
+      'site.menus.footer names a menu twice',
+    ])
+    p.site.menus.footer = []
+    expect(validateProjectPlan(p).errors).toEqual([])
+  })
+
+  it('still reads a plan written before footer menus were a list', () => {
+    const p = plan()
+    p.site.menus.footer = 'footer-menu'
+    expect(validateProjectPlan(p).errors).toEqual([])
+    expect(footerMenusOf(p.site)).toEqual(['footer-menu'])
+    p.site.menus.footer = 'none'
+    expect(validateProjectPlan(p).errors).toEqual([])
+    expect(footerMenusOf(p.site)).toEqual([])
+    p.site.menus.footer = ['a', 'b']
+    expect(footerMenusOf(p.site)).toEqual(['a', 'b'])
+  })
+
+  it('checks the post layout and list display a plan copies from the source templates', () => {
+    const p = plan()
+    p.site.post = { header: ['title', 'cover', 'byline'], adjacent: true, more: 4 }
+    p.site.lists = { display: 'full', heading: true }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.post = { header: ['title', 'title'], adjacent: false, more: 30 }
+    p.site.lists = { display: 'grid' as 'cards', heading: false }
+    expect(validateProjectPlan(p).errors).toEqual([
+      'site.post.header lists a part twice or one the starter does not have',
+      'site.post.more is not a count from 0 to 20',
+      'site.lists.display grid is not cards or full',
+    ])
+  })
+
+  it('takes a section width of content or wide', () => {
+    const p = plan()
+    p.routes[1]!.sections[0]!.width = 'content'
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.routes[1]!.sections[0]!.width = 'full' as 'wide'
+    expect(validateProjectPlan(p).errors.some(e => e.endsWith('width full is not content or wide'))).toBe(true)
+  })
+
   it('requires a home route', () => {
     const p = plan()
     p.routes = p.routes.filter(r => r.kind !== 'home')
@@ -130,5 +182,71 @@ describe('validateProjectPlan', () => {
     // about + page on /:path/ split pages by wp_id: no warning (the fixture already has them).
     expect(validateProjectPlan(plan()).warnings).toEqual([])
   })
+
+  it('plans every fact behavior once, with a reason when nothing reproduces it', () => {
+    const p = withContactForm()
+    expect(validateProjectPlan(p)).toEqual({ errors: [], warnings: [] })
+    p.behaviors!.push(
+      { fact: 'form:3fa9c21e', outcome: 'component', component: 'ContactForm', model: 'contact' },
+      { fact: 'embed:1', outcome: 'component' },
+      { fact: 'embed:2', outcome: 'component', component: 'Embed' },
+      { fact: 'search:1', outcome: 'starter', feature: 'comments' as never },
+      { fact: 'popup:1', outcome: 'needs_review' },
+      { fact: 'counter:1', outcome: 'drop', reason: 'no reason given' },
+      { fact: 'form:x', outcome: 'component', component: 'ContactForm', model: 'posts' },
+      { fact: 'form:y', outcome: 'component', component: 'ContactForm', model: 'nope' },
+    )
+    expect(validateProjectPlan(p).errors).toEqual([
+      'behavior form:3fa9c21e is planned twice',
+      'behavior embed:1: outcome component names no component',
+      'behavior embed:2: component Embed is not declared',
+      'behavior search:1: starter feature comments is not one of search',
+      'behavior popup:1: needs_review needs a reason "<code>: <sentence>"',
+      'behavior counter:1: drop needs a reason "<code>: <sentence>"',
+      'behavior form:x: model posts is not a form model',
+      'behavior form:y: model nope is not declared',
+    ])
+  })
+
+  it('keeps a form model a plan collection whose form names its own fields', () => {
+    const p = withContactForm()
+    const contact = p.models.find(m => m.id === 'contact')!
+    contact.form = { ...contact.form!, exposedFields: ['name', 'fax'], requiredOverrides: { phone: true }, captcha: 'recaptcha' as never }
+    p.models.push({ id: 'site', kind: 'singleton', origin: 'import', i18n: false, form: { enabled: true, public: true, exposedFields: [] } })
+    expect(validateProjectPlan(p).errors).toEqual([
+      'model contact: form field fax is not a model field',
+      'model contact: form field phone is not a model field',
+      'model contact: form captcha recaptcha is not turnstile',
+      'model site: a form model must be a plan collection',
+      'model site: form exposes no fields',
+    ])
+  })
+
+  it('keeps a form model out of i18n: Studio writes every submission in the default locale', () => {
+    const p = withContactForm()
+    const contact = p.models.find(m => m.id === 'contact')!
+    delete contact.i18n
+    expect(validateProjectPlan(p).errors).toEqual(['model contact: a form model must be i18n: false (Studio writes submissions in the default locale)'])
+    contact.i18n = true
+    expect(validateProjectPlan(p).errors).toEqual(['model contact: a form model must be i18n: false (Studio writes submissions in the default locale)'])
+  })
 })
 
+/** The fixture plus a CF7 contact form (→ ContactForm + a Studio form model), site search, a YouTube embed in a post, and a popup nobody can reproduce yet. */
+function withContactForm(): ProjectPlan {
+  const p = plan()
+  p.components.push({ id: 'ContactForm', origin: 'kit', kit: { id: 'contact-form' } })
+  p.models.push({
+    id: 'contact', kind: 'collection', origin: 'plan', name: 'Contact', domain: 'forms', i18n: false, title_field: 'name',
+    fields: { name: { type: 'string', required: true }, email: { type: 'email', required: true }, topic: { type: 'select', options: ['Sales', 'Support'] }, message: { type: 'text', required: true } },
+    form: { enabled: true, public: true, exposedFields: ['name', 'email', 'topic', 'message'], honeypot: true, captcha: 'turnstile', notifications: true },
+  })
+  p.routes[0]!.sections.push({ component: 'ContactForm', bind: { kind: 'static', props: { model: 'const:contact' } } })
+  p.behaviors = [
+    { fact: 'form:3fa9c21e', outcome: 'component', component: 'ContactForm', model: 'contact' },
+    { fact: 'search:5b6c7d8e', outcome: 'starter', feature: 'search' },
+    { fact: 'embed:0c1d2e3f', outcome: 'prose' },
+    { fact: 'interactive:9a8b7c6d', outcome: 'needs_review', reason: 'popup: exit-intent popups have no kit counterpart' },
+  ]
+  return p
+}

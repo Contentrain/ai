@@ -14,10 +14,10 @@ export interface FaqItem {
 
 const faq = tv({
   slots: {
-    heading: 'mb-8 text-2xl font-bold tracking-tight text-balance md:text-3xl',
+    heading: 'mb-8 text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
     list: 'flex flex-col',
     item: 'group',
-    summary: 'flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-lg font-semibold [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    summary: 'flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-lg [font-weight:var(--font-weight-heading,600)] [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
     marker: 'size-5 shrink-0 transition-transform duration-200 group-open:rotate-45',
     answer: 'prose-site prose max-w-none pb-5 text-current',
   },
@@ -25,6 +25,8 @@ const faq = tv({
     style: {
       lines: { list: 'divide-y divide-line border-y border-line' },
       cards: { list: 'gap-3', item: 'rounded-card border border-line px-5', summary: 'py-5' },
+      // WordPress's details block: the browser's own disclosure triangle, no rules or box.
+      plain: { list: 'gap-2', summary: 'list-item list-[revert] py-1 text-base [font-weight:inherit] [&::-webkit-details-marker]:inline', marker: 'hidden', answer: 'pt-2 pl-5' },
     },
     tone: { default: {}, muted: { item: 'bg-surface' }, inverse: { answer: 'prose-invert' }, accent: { answer: 'prose-invert' } },
   },
@@ -37,7 +39,7 @@ const faq = tv({
 interface Props {
   items: FaqItem[]
   heading?: string | undefined
-  style?: 'lines' | 'cards' | undefined
+  style?: 'lines' | 'cards' | 'plain' | undefined
   /** One answer open at a time (`<details name>`). */
   exclusive?: boolean | undefined
   /** Open the first answer. */

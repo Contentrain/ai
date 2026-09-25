@@ -27,6 +27,8 @@ They read its design tokens and pass its gates: `astro check` with the
 | `gallery` | Image grid with a popover lightbox | none |
 | `slider` | Carousel on a scroll-snap row | Embla |
 | `contact-form` | Contentrain Studio form in a section | Studio runtime |
+| `newsletter` | Sign-up posting straight to the list provider (Mailchimp, Kit, MailerLite, Brevo, Buttondown) | none |
+| `embed` | Video, map or player loaded on click; a provider link until then (YouTube via nocookie) | a few lines, no dependency |
 | `pagination` | WordPress-style `/page/N/` links | none |
 | `breadcrumb` | Ancestors, then the current page, optional JSON-LD | none |
 
@@ -45,8 +47,29 @@ Components use colour roles and widths, never raw values. A site defines them
 in `@theme` (the starter already does): `--color-surface`,
 `--color-surface-muted`, `--color-ink`, `--color-ink-muted`, `--color-line`,
 `--color-accent`, `--color-accent-ink`, `--font-sans`, `--container-prose`,
-`--container-page`, `--container-wide` and `--radius-card`. The same list is in
-`catalog.json` under `tokens`.
+`--container-page`, `--container-wide` and `--radius-card`.
+
+A migrated site also carries its theme's type and shape, and components read
+these with a fallback to the kit's own values, so a site without them looks
+unchanged:
+- `--font-weight-heading`: section headings fall back to 700, item titles to 600.
+- `--font-weight-body`, `--text-body`, `--leading-body` and `--leading-heading`:
+  the body and rich-text type. These are in the starter's CSS.
+- `--radius-control`: buttons and form controls.
+- `--radius-image`: images, which fall back to `--radius-card`.
+- `--spacing-gutter`: the page frame's side padding, which falls back to 1rem
+  on phones and 2rem from `md` up.
+
+The theme's type scale and rhythm are not read by components. The site's
+theme applies them to the kit's markers, and only when the site sets them:
+- `--text-heading-1` to `--text-heading-3`: headings inside `main`.
+- `--text-body`: `[data-kit-text]`, the lead and body paragraphs of hero, CTA
+  and card grid.
+- `--text-nav`: the header navigation, `[data-cr-part="nav-header"]`.
+- `--spacing-section`: the vertical padding of `[data-kit-section]`, except
+  where `data-kit-spacing="none"`.
+
+The full list is in `catalog.json` under `tokens`.
 
 ## API
 
@@ -71,7 +94,10 @@ rulesFor(gutenberg, 'core/cover') // → the rule that turns a cover block into 
 builder elements to components, with a source for each prop from a small closed
 set of expressions (see `src/mapping.ts`). They are versioned, and an element
 no rule covers stays rich text (`fallback: "prose"`). When one rule matches an
-element, the outermost match owns its subtree.
+element, the outermost match owns its subtree. `defaults` lists attribute
+values a builder leaves out of its data while they are at their default
+(Elementor saves no `video_type` for a YouTube video); `when.attr` and `attr:`
+read through them (`attrsOf`).
 
 ## Development
 

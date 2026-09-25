@@ -1,0 +1,45 @@
+---
+// The frame of a composed page: the same head, breadcrumbs and title as a
+// rich-text page, with the page's sections full width below. Sections bring
+// their own containers; text between them is set in the reading column.
+import Breadcrumb from '../components/kit/breadcrumb/Breadcrumb.astro'
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { getStrings, type Page } from '../lib/content'
+import { breadcrumbLd, summarize } from '../lib/seo'
+
+interface Props {
+  page: Page
+  trail: Array<{ title: string, href: string }>
+  isHome: boolean
+  /** Off when the first section carries the page's heading (a hero). */
+  showTitle?: boolean | undefined
+}
+
+const { page, trail, isHome, showTitle = true } = Astro.props
+const { data } = page
+const t = await getStrings()
+const origin = Astro.site ?? Astro.url
+const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
+---
+<BaseLayout
+  title={data.seo?.title ?? (isHome ? undefined : data.title)}
+  description={data.seo?.description ?? data.excerpt ?? summarize(data.body)}
+  image={data.seo?.image}
+  canonical={data.seo?.canonical}
+  noindex={data.seo?.noindex}
+  nofollow={data.seo?.nofollow}
+  modified={data.modified_at}
+  jsonLd={trail.length > 0 ? [breadcrumbLd(crumbs.map(crumb => ({ name: crumb.title, url: new URL(crumb.href, origin).href })))] : []}
+>
+  {(trail.length > 0 || (showTitle && !isHome)) && (
+    <header class="container-page pt-12 md:pt-16">
+      {trail.length > 0 && (
+        <div class="mb-6">
+          <Breadcrumb items={trail.map(crumb => ({ label: crumb.title, href: crumb.href }))} current={data.title} label={t('nav.breadcrumb')} />
+        </div>
+      )}
+      {showTitle && !isHome && <h1 class="text-4xl leading-tight font-bold tracking-tight text-balance md:text-5xl">{data.title}</h1>}
+    </header>
+  )}
+  <slot />
+</BaseLayout>

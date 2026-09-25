@@ -1,13 +1,15 @@
 // Public/authenticated WordPress REST → RawIR.
 //
-// The lowest rungs of the source-access ladder. What REST cannot see (menus,
-// rest:false CPTs, unregistered meta) is simply absent from the result —
+// The lowest rungs of the source-access ladder. What REST cannot see (rest:false
+// CPTs, unregistered meta; menus without an application password) is absent from the result —
 // absence at a low rung is information, not an error, and the manifest layer
 // decides what to recommend about it.
 
-import type { RawIR, RawAttachment, RawComment, RawLanguagePair, RawPost, RawTerm, RawTermRef, SourceAccessKind } from '@contentrain/types'
+import type { RawAcfValue, RawIR, RawAttachment, RawComment, RawLanguagePair, RawMenu, RawPost, RawTerm, RawTermRef, SourceAccessKind } from '@contentrain/types'
 import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import { strip, SKIP_TYPES, PROTECTED } from './core.js'
+import { acfIsSecret, acfScrub } from './acf.js'
+import { blockMenus, classicMenus, type MenuContext, type RestMenu, type RestMenuItem, type RestNavigation, type RestTemplate, type RestTemplatePart } from './rest-menus.js'
 
 const iso = (gmt: string | undefined): string | null => (gmt ? `${gmt}Z` : null)
 const approvedOf = (status: string | undefined): RawComment['approved'] =>
@@ -53,6 +55,15 @@ export interface RestImportResult {
    * at all for `comments:hold`, which has none.
    */
   credential: { status: 'none' | 'accepted' | 'rejected'; fell_back: string[] }
+  /**
+   * What this rung could not read, as codes a caller can act on (the text is in `warnings`).
+   * `menus_require_auth`: menus and block navigation are only readable with an application password
+   * of a user who may edit theme options — none was given, the site rejected it, or it lacks that right.
+   * `acf_partial`: the site runs ACF / Secure Custom Fields; REST shows only the field groups set to
+   * `show_in_rest` (off by default) and no options page — the Bridge export reads the rest. Where the site
+   * states no field types (plain ACF, no `<name>_source`), a secret field is recognised by its name only.
+   */
+  gaps: string[]
 }
 
 interface RestPost {
@@ -78,6 +89,11 @@ interface RestPost {
   categories?: number[]
   tags?: number[]
   meta?: Record<string, unknown>
+  /**
+   * ACF / SCF fields of the groups shown in REST (`show_in_rest`). SCF adds `<name>_source`
+   * (`{ type, label, formatted_value }`) beside each value; plain ACF sends the value only.
+   */
+  acf?: Record<string, unknown> | unknown[]
   /** Polylang: language slug of the post and its translation group (`{ en: 12, tr: 34 }`, self included). */
   lang?: string
   translations?: Record<string, number>
@@ -91,8 +107,31 @@ export const AUTH_POST_STATUSES = ['publish', 'future', 'draft', 'pending', 'pri
 /** Comment listings for a credential: WP's `status` takes one value, so approved and held are two requests. */
 const AUTH_COMMENT_STATUSES = ['approve', 'hold'] as const
 const DENIED = new Set([400, 401, 403])
+/** REST taxonomies that hold no content: menus, block-pattern categories, multilingual bookkeeping. */
+const NOT_CONTENT_TAXONOMIES = new Set(['category', 'post_tag', 'nav_menu', 'wp_pattern_category', 'post_format', 'language', 'post_translations', 'term_language', 'term_translations'])
 /** A comment listing's name in `credential.fell_back`: `comments` (approved) or `comments:hold`. */
 const commentKey = (status: string): string => (status === 'approve' ? 'comments' : `comments:${status}`)
+
+/**
+ * ACF fields of one REST post. `<name>_source` (SCF) states each field's type and label; a secret — a
+ * `password` field, or, when no type is stated, a field named like one — is never read. ACF answers `[]`
+ * for a post with no field group in REST.
+ */
+function acfOf(acf: RestPost['acf']): { acf?: Record<string, RawAcfValue> } {
+  if (!acf || Array.isArray(acf) || typeof acf !== 'object') return {}
+  const out: Record<string, RawAcfValue> = {}
+  for (const [name, value] of Object.entries(acf)) {
+    if (name.endsWith('_source') && name.slice(0, -'_source'.length) in acf) continue
+    const source = acf[`${name}_source`] as { type?: unknown; label?: unknown } | undefined
+    const type = typeof source?.type === 'string' ? source.type : undefined
+    if (acfIsSecret(name, type)) continue
+    out[name] = { value: acfScrub(value), ...(type ? { type } : {}), ...(typeof source?.label === 'string' && source.label ? { label: source.label } : {}) }
+  }
+  return Object.keys(out).length ? { acf: out } : {}
+}
+
+/** What a visitor can open: published, not behind a post password. */
+const visible = (p: RawPost): boolean => p.status === 'publish' && !p.password
 
 const positiveInteger = (name: string, value: number): number => {
   if (!Number.isSafeInteger(value) || value < 1) throw new RangeError(`${name} must be a positive safe integer`)
@@ -193,13 +232,31 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     return firstPage.concat(...rest)
   }
 
-  interface RestType { slug: string; rest_base?: string }
-  const typesResp = await doFetch(`${origin}/wp-json/wp/v2/types`, { headers })
+  // The site's own name and tagline (`/wp-json/` index, public): without them the store's site singleton says "Site".
+  // Advisory: an index that does not answer leaves them out, as before.
+  const about = await schedule(async () => {
+    try {
+      const index = await doFetch(`${origin}/wp-json/`, { headers })
+      if (!index.ok) { await index.body?.cancel(); return null }
+      return (await index.json()) as { name?: unknown; description?: unknown; url?: unknown; home?: unknown; timezone_string?: unknown; gmt_offset?: unknown } | null
+    } catch { return null }
+  })
+
+  interface RestType { slug: string; rest_base?: string; viewable?: boolean }
+  // `viewable` (has public addresses) is only in the edit context: with a credential, ask for it.
+  let typesResp = await doFetch(`${origin}/wp-json/wp/v2/types${options.auth && !rejected ? '?context=edit' : ''}`, { headers })
+  if (!typesResp.ok && options.auth && !rejected) {
+    await typesResp.body?.cancel()
+    typesResp = await doFetch(`${origin}/wp-json/wp/v2/types`, { headers: anonymous })
+  }
   const types: Record<string, RestType> = typesResp.ok ? ((await typesResp.json()) as Record<string, RestType>) : {}
   if (!typesResp.ok) warnings.push(`types: HTTP ${typesResp.status} — importing posts and pages only`)
   const postTypes = Object.values(types).filter(
     (t) => t.rest_base && !SKIP_TYPES.test(t.slug) && t.slug !== 'attachment',
   )
+  // A type WordPress says has no public address (`viewable: false`, e.g. testimonials used inside pages)
+  // is still content, but its REST `link` is not an address: it is imported without one.
+  const notViewable = new Set(postTypes.filter((t) => t.viewable === false).map((t) => t.slug))
   const bases = postTypes.length ? postTypes.map((t) => ({ slug: t.slug, base: t.rest_base! })) : [
     { slug: 'post', base: 'posts' },
     { slug: 'page', base: 'pages' },
@@ -251,19 +308,37 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     for (const c of lists.flat()) if (!byId.has(c.id)) byId.set(c.id, c)
     return [...byId.values()]
   }
-  const [categories, tags, users, media, restComments, ...postLists] = await Promise.all([
+  // Custom taxonomies in REST (a CPT's `project_type`): their terms and each post's links to them.
+  // Menus, block-pattern categories and multilingual bookkeeping are not content taxonomies.
+  interface RestTaxonomy { slug: string; rest_base?: string }
+  const taxResp = await schedule(async () => {
+    try {
+      const r = await doFetch(`${origin}/wp-json/wp/v2/taxonomies`, { headers })
+      if (!r.ok) { await r.body?.cancel(); return {} }
+      return (await r.json()) as Record<string, RestTaxonomy>
+    } catch { return {} }
+  })
+  const extraTaxonomies = Object.values(taxResp && typeof taxResp === 'object' ? taxResp : {})
+    .filter((t) => t.rest_base && /^[\w-]+$/.test(t.rest_base) && !NOT_CONTENT_TAXONOMIES.has(t.slug))
+    .map((t) => ({ taxonomy: t.slug, base: t.rest_base! }))
+    .toSorted((a, b) => a.taxonomy.localeCompare(b.taxonomy))
+  const [categories, tags, users, media, restComments, ...lists] = await Promise.all([
     getAll<RestTerm>('categories'),
     getAll<RestTerm>('tags'),
     getAll<RestUser>('users'),
     getAll<RestMedia>('media'),
     commentListing(),
+    ...extraTaxonomies.map((t) => getAll<RestTerm>(t.base)),
     ...bases.map((b) => postListing(b.base)),
   ])
+  const extraTerms = lists.slice(0, extraTaxonomies.length) as RestTerm[][]
+  const postLists = lists.slice(extraTaxonomies.length) as RestPost[][]
 
   const termsById = new Map<number, RawTerm>()
   for (const [tax, list] of [
     ['category', categories],
     ['post_tag', tags],
+    ...extraTaxonomies.map((t, i) => [t.taxonomy, extraTerms[i] ?? []] as const),
   ] as const) {
     for (const t of list) {
       termsById.set(t.id, {
@@ -301,7 +376,11 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
   }
   for (const [i, base] of bases.entries()) {
     for (const p of postLists[i] ?? []) {
-      const termRefs: RawTermRef[] = [...(p.categories ?? []), ...(p.tags ?? [])].map((id) => {
+      const custom = extraTaxonomies.flatMap((t) => {
+        const ids = (p as unknown as Record<string, unknown>)[t.base]
+        return Array.isArray(ids) ? ids.filter((id): id is number => typeof id === 'number') : []
+      })
+      const termRefs: RawTermRef[] = [...(p.categories ?? []), ...(p.tags ?? []), ...custom].map((id) => {
         const t = termsById.get(id)
         return t
           ? { taxonomy: t.taxonomy, slug: t.slug, name: t.name, resolved: true }
@@ -319,7 +398,7 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
         status: p.status ?? 'publish',
         slug: p.slug,
         title: p.title?.rendered ?? '',
-        link: p.link ?? null,
+        link: notViewable.has(base.slug) ? null : (p.link ?? null),
         guid: null,
         author,
         date: iso(p.date_gmt),
@@ -334,6 +413,7 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
         ping_status: p.ping_status ?? null,
         terms: termRefs,
         meta,
+        ...acfOf(p.acf),
       })
     }
   }
@@ -352,6 +432,63 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     parent_resolved: m.post ? posts.some((p) => p.id === m.post) : null,
     date: iso(m.date_gmt),
   }))
+
+  // ── menus: classic menus + published block navigation; both need `edit_theme_options` ──
+  const gaps: string[] = []
+  // ACF answers `acf` (at least `[]`) on every post of a type it knows: then REST shows only the field
+  // groups set to `show_in_rest` (off by default) and never an options page. What it hides, only Bridge reads.
+  if (postLists.some((list) => list.some((p) => p.acf !== undefined))) gaps.push('acf_partial')
+  let menus: RawMenu[] = []
+  if (!authed) {
+    // Not a warning: without a working credential this is the rung's known limit, named for the caller in `gaps`.
+    gaps.push('menus_require_auth')
+  } else {
+    const listing = async <T>(path: string): Promise<{ items: T[]; status: number }> => {
+      const url = (page: number) => `${origin}/wp-json/wp/v2/${path}${path.includes('?') ? '&' : '?'}per_page=${perPage}&page=${page}`
+      const first = await schedule(async () => {
+        const r = await doFetch(url(1), { headers })
+        if (!r.ok) { await r.body?.cancel(); return { items: [] as T[], status: r.status, pages: 1 } }
+        const items = await r.json() as T[]
+        return { items: Array.isArray(items) ? items : [], status: r.status, pages: Math.max(1, Number(r.headers.get('x-wp-totalpages') ?? '1') || 1) }
+      })
+      const wanted = maxPages !== undefined ? Math.min(first.pages, maxPages) : first.pages
+      const rest = await Promise.all(Array.from({ length: wanted - 1 }, (_v, i) => schedule(async () => {
+        const r = await doFetch(url(i + 2), { headers })
+        if (!r.ok) { await r.body?.cancel(); warnings.push(`${path.split('?')[0]}: page ${i + 2} HTTP ${r.status} — skipped`); return [] as T[] }
+        const items = await r.json() as T[]
+        return Array.isArray(items) ? items : []
+      })))
+      return { items: first.items.concat(...rest), status: first.status }
+    }
+    const [classic, items, navs, parts, templates] = await Promise.all([
+      listing<RestMenu>('menus?context=edit'),
+      listing<RestMenuItem>('menu-items?context=edit'),
+      listing<RestNavigation>('navigation?context=edit&status=publish'),
+      listing<RestTemplatePart>('template-parts?context=edit'),
+      // Which template parts the pages use: a theme ships alternatives no template shows.
+      listing<RestTemplate>('templates?context=edit&_fields=slug,content'),
+    ])
+    const denied = [classic, items, navs].filter((l) => DENIED.has(l.status))
+    if (denied.length) {
+      gaps.push('menus_require_auth')
+      warnings.push(`menus: HTTP ${denied[0]!.status} with the credential — the user may not edit theme options; menus not read`)
+    }
+    for (const [name, l] of [['menus', classic], ['menu-items', items], ['navigation', navs]] as const) {
+      if (!l.status || (l.status >= 400 && !DENIED.has(l.status) && l.status !== 404)) warnings.push(`${name}: HTTP ${l.status} — skipped`)
+    }
+    const slugOf = new Map(posts.filter(visible).map((p) => [p.id, p.slug]))
+    const ctx: MenuContext = {
+      origin,
+      postSlug: (id) => slugOf.get(id),
+      termSlug: (taxonomy, id) => { const t = termsById.get(id); return t && t.taxonomy === taxonomy ? t.slug : undefined },
+      pages: posts.filter((p) => p.type === 'page' && p.status === 'publish' && !p.password).map((p) => ({ id: p.id, parent: p.parent ?? null, menu_order: p.menu_order ?? 0, title: strip(p.title), link: p.link ?? null, slug: p.slug })),
+    }
+    const dropped = { count: 0 }
+    menus = classicMenus(DENIED.has(classic.status) ? [] : classic.items, DENIED.has(items.status) ? [] : items.items, ctx, dropped)
+    menus.push(...blockMenus(DENIED.has(navs.status) ? [] : navs.items, parts.status < 400 ? parts.items : [], ctx, new Set(menus.map((m) => m.slug)), dropped, templates.status < 400 ? templates.items : []))
+    // A count only: the titles of what was left out are exactly what must not travel.
+    if (dropped.count) warnings.push(`menus: ${dropped.count} item(s) are drafts or point at content not proven public (unpublished, password-protected, or not read by this import) — left out`)
+  }
 
   const postIds = new Set(posts.map((p) => p.id))
   const commentIds = new Set(restComments.map((c) => c.id))
@@ -378,17 +515,28 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
   const raw: RawIR = {
     version: MIGRATION_CONTRACT_VERSION,
     provenance: { kind, tool: options.tool ?? '@contentrain/wp-import' },
-    site: { url: origin },
+    site: {
+      url: origin,
+      ...(typeof about?.name === 'string' && strip(about.name) ? { title: strip(about.name) } : {}),
+      ...(typeof about?.description === 'string' && strip(about.description) ? { description: strip(about.description) } : {}),
+      // Where WordPress is installed and where the site is served, as WXR names them (they differ for a subdirectory install).
+      ...(typeof about?.url === 'string' && about.url ? { base_site_url: about.url } : {}),
+      ...(typeof about?.home === 'string' && about.home ? { base_blog_url: about.home } : {}),
+      // The zone the site's local date-times (ACF date time pickers) are written in.
+      ...(typeof about?.timezone_string === 'string' && about.timezone_string ? { timezone: about.timezone_string } : {}),
+      ...(about?.gmt_offset !== undefined && about.gmt_offset !== null && about.gmt_offset !== '' && Number.isFinite(Number(about.gmt_offset)) ? { gmt_offset: Number(about.gmt_offset) } : {}),
+    },
     authors: users.map((u) => ({ id: u.id, login: u.slug, display_name: strip(u.name) || u.slug, email: null })),
     terms: [...termsById.values()],
     posts,
     attachments,
     comments,
+    ...(menus.length ? { menus } : {}),
     ...(languagePairs.length ? { language_pairs: languagePairs } : {}),
   }
   const credential: RestImportResult['credential'] = {
     status: !options.auth ? 'none' : fellBack.size ? 'rejected' : 'accepted',
     fell_back: [...fellBack].toSorted(),
   }
-  return { raw, warnings, credential }
+  return { raw, warnings, credential, gaps }
 }

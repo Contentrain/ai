@@ -1,5 +1,69 @@
 # @contentrain/types
 
+## 1.25.0
+
+### Minor Changes
+
+- 3eb5832: **Source theme tokens.** `PLAN_TOKEN_ROLES` adds:
+
+  - `font-weight-heading` and `font-weight-body`
+  - `text-body`, `leading-body` and `leading-heading`
+  - `radius-control` and `radius-image`
+  - `spacing-gutter`
+
+  Kit components read them with a fallback to their own values, so a site without them renders as before:
+
+  - headings use `--font-weight-heading`;
+  - buttons and form controls use `--radius-control`;
+  - images use `--radius-image`;
+  - the page frame uses `--spacing-gutter`.
+
+  **Post layout and lists.** `site.post` sets the source single template's header order, previous and next links, and the "more posts" count. `site.lists` switches the post lists between cards and full content, and can show the index heading on the front page. Both are optional; without them the starter keeps its own layout.
+
+  **Section width.** A placement's `width: 'content' | 'wide'` follows the source block's alignment: a block without alignment runs at the theme's contentSize, and the section background still spans the page.
+
+  **Footer menus.** `site.menus.footer` can now be a list of footer menus in the source's order, at most four; an empty list means no footer menu. A single slug or `'none'`, as older plans write it, is still valid, and `footerMenusOf(site)` reads either form as a list. The kit Footer takes a column without a visible title, with `label` as its accessible name.
+
+  **Mapping.** Mapping tables gain `class:<cls>=<a>|<b>`. It picks an option from a class on the element or one of its ancestors: `*` matches within the class name, and an empty branch keeps the prop's default. It works for values and for variants. Gutenberg's outline buttons (`is-style-outline`) become the kit's `ghost` action style.
+
+- 36e5773: `ProjectPlan.behaviors` records what becomes of each behavior the Migrate fact pack found (form, search, embed, accordion, …), one `PlanBehavior` per fact id: `component`, `starter` (site search), `prose`, `drop` or `needs_review`, the last two with a `<code>: <sentence>` reason. None is dropped without a reason. `PlanModel.form` (`PlanFormConfig`, the shape Studio reads from a model's `form` key) turns a plan collection into a Studio form, with Turnstile, honeypot and notifications replacing the WordPress form plugin. Mail recipients and webhooks are never carried over. `validateProjectPlan` checks that behavior ids are unique, that components, starter features and form models resolve, that reasons are present, that a form only exposes its model's own fields, and that a form model is `i18n: false` (Studio writes submissions in the default locale).
+- 01c0065: ACF sub-fields of repeaters, groups and flexible layouts are typed from their stated ACF type (SCF's `_source` inside each row) by the same table as top-level fields, instead of from their values. A select or checkbox value outside the field's stated choices is left out and counted in the new `ImportReport.acf_outside_choices`.
+
+  ACF date time picker values carry the site's UTC offset for that moment, DST included (`2025-03-10T09:30:00+03:00`): `fetchRestRawIR` reads `timezone_string` and `gmt_offset` from the `/wp-json/` index into `RawIR.site.timezone` / `gmt_offset`. Without either, the value stays local and `ImportReport.acf_datetime_unzoned` counts it. `acfValue`'s third argument is now a context (`{ timeZone, gmtOffset, dropped, unzoned }`).
+
+  `src/fixtures/acf-parity.json` holds the ACF → Contentrain cases the Contentrain Bridge must map the same way.
+
+  `@contentrain/types`: `RawSite.timezone?` and `RawSite.gmt_offset?`.
+
+- 9121e22: `fetchRestRawIR` and `rawToContentrain` carry ACF / Secure Custom Fields. Values on a post's REST `acf` key are typed by one deterministic, versioned table (`ACF_MAPPING_VERSION`): the ACF type comes from SCF's `<name>_source` where the site states it, else from the value's shape. Repeaters and groups become nested `array`/`object` fields, flexible content an `array` of rows with a required `layout`, link and Google Map fixed-shape objects, post object / relationship / taxonomy / user / gallery fields relations to the store's entries, page link the target's address when that target is public.
+
+  A `password` field is never read, at any depth (repeater rows, groups, flexible layouts): not into `RawIR`, not into the store. Without stated types (plain ACF), secret fields are recognised by whole-word names. ACF values follow their post's status, so a draft's fields land with the draft. When posts carry ACF, `gaps` contains `acf_partial` (groups outside REST, options pages and non-REST post types need the Bridge).
+
+  With an Application Password, post types are read with `context=edit`: a type that is not publicly viewable gets no address. Custom taxonomies in REST are read with their terms and linked from posts.
+
+  `@contentrain/types`: `RawAcfValue.field_key` is optional, and `type?` / `label?` carry the stated ACF type and label.
+
+## 1.24.0
+
+### Minor Changes
+
+- 53505cd: `fetchRestRawIR` reads menus. With an Application Password it fills `RawIR.menus` from classic menus (`/wp/v2/menus`, `/wp/v2/menu-items`) and from a block theme's published `wp_navigation` posts, so a REST import of a block-theme site no longer arrives with an empty header navigation. Each menu carries `locations`: the theme locations a classic menu is assigned to, or the template-part areas (`header`, `footer`) that show a block navigation.
+
+  Only what visitors are proven to see is kept: an item that is a draft, or points at a post this import did not read as published and unprotected, is left out (fail-closed) (its label is often that post's title); its children move up, and `warnings` gives only a count.
+
+  `fetchRestRawIR` also reads the `/wp-json/` index: the site's name and tagline fill `RawIR.site.title` / `description`, so the store's `site` singleton no longer says "Site"; `url` / `home` fill `base_site_url` / `base_blog_url`.
+
+  Menus need `edit_theme_options`. When they cannot be read — no credential, a rejected one, or a user without that right — the new `gaps` field of the result contains `menus_require_auth` instead of the import silently returning no menus.
+
+  `@contentrain/types`: `RawMenu.locations?: string[]` (optional; producers that do not know leave it out). A block navigation's items, which have no WordPress id, carry negative ids.
+
+## 1.23.0
+
+### Minor Changes
+
+- d87121b: The comments export carries only public discussion. `buildCommentsExport` keeps comments on published, unprotected entries that are approved (`'1'`) or pending (`'0'`, which lands in the receiving service's moderation queue). It leaves out comments on drafts, private, scheduled and password-protected entries, any other status (spam, trash, `post-trashed`, a plugin's own), and comments on entries the import does not hold. An allowlist, so it fails closed. It counts what it leaves out in the new optional `CommentsExport.excluded` (`non_public_entry`, `unknown_entry`, `spam`, `trash`, `other_status`), which `summarizeComments` passes to `HandoffComments.excluded`. `selectComments(raw)` exposes the selection.
+- 90b5049: `ProjectPlan` (`contentrain-project-plan@1`): the migration plan between Migrate's fact pack and the project writer. It holds the site config (mirrors the starter's `site.config.ts`, plus URL, redirects and kit design roles), models (imported, or plan models filled by deterministic extraction from builder elements), components (kit or site-specific), routes and placements whose props are bound to content, never copied, and the decision audit trail. `validateProjectPlan` checks that every reference resolves before anything is written.
+
 ## 1.22.0
 
 ### Minor Changes

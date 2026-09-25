@@ -47,14 +47,30 @@ no server needed).
 - **Addresses are kept.** Permalinks follow WordPress tokens (`:slug`, `:path`,
   `:year`, `:month`, `:day`, `:id`) and the site is built with trailing slashes.
 
-## Studio forms and comments
+## Studio binding: forms, comments and media
 
-Set `studio` in `src/site.config.ts` to the Studio project that serves the
-site's forms and comments:
+`studio.json` at the project root binds the site to its Contentrain Studio
+project. Studio writes it when the site is connected; it is plain JSON, safe
+for tools to write:
 
-```ts
-studio: { baseUrl: 'https://studio.contentrain.io', projectId: '<project id>' },
+```json
+{ "baseUrl": "https://studio.contentrain.io", "projectId": "<project id>" }
 ```
+
+A Studio that serves media from a CDN host of its own adds `"mediaBaseUrl"`,
+the project's delivery base (`https://cdn.example/api/cdn/v1/<project id>`).
+
+`astro.config.mjs` reads it at build time (`CONTENTRAIN_STUDIO_URL` and
+`CONTENTRAIN_STUDIO_PROJECT` override it) and:
+
+- allows the project's media in `image.remotePatterns`
+  (`<mediaBaseUrl>/media/**`, by default `<baseUrl>/api/cdn/v1/<projectId>/media/**`), so images an editor uploads
+  in Studio are resized with a `srcset` like the ones in `public/`;
+- hands the binding to the site as `siteConfig.studio`, which turns on forms
+  and comments.
+
+Without the file the site builds as usual: Studio images are shown as they
+are, and forms and comments render nothing.
 
 A page whose `form` field names a model shows that form under its body; a post
 with `comments_open` shows its thread. Without the binding both render nothing
