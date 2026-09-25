@@ -555,7 +555,7 @@ copied**: a plan names fields, and the engine applies it to every entry.
 
 A placement binds props with a small closed value set: `field:<name>`,
 `media:<field>` (the kit's `ImageInput`), `ref:<field>.<field>`,
-`href:self` / `href:<relation>`, `term:<relation>` (`{ label, href }`), `ui:<key>`, `const:<value>`. It also takes
+`href:self` / `href:<relation>`, `term:<relation>` (`{ label, href }`), `ui:<key>`, `site:<field>`, `menu:primary|footer`, `page:base|current|total|breadcrumb`, `const:<value>`: the builder mapping tables' set without the element expressions. An extraction may name a mapping `rule` to fill a plan model entry from an element. It also takes
 `labels` (prop → `ui-strings` key). A collection binding with `into` fills one
 array prop (`card-grid.items`); without it, the component repeats per entry.
 

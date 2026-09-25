@@ -114,14 +114,19 @@ export interface PlanModel {
  * component variance reported. The engine applies it to every page; the model never retypes content.
  */
 export interface PlanExtraction {
-  /** Builder element (`core/cover`, `elementor/icon-box`) or fact component id (`repeat:1x2y`). */
+  /** Builder element (`core/cover`, `elementor/icon-box`), fact component id (`repeat:1x2y`), or `range:<from>-<to>` (top-level body blocks, for prose runs). */
   from: string
   /** Only on these WordPress entries (ids); all pages when absent. */
   pages?: number[]
   /** Entry id for a matched element: `page-slug`, `page-slug:index`, or a fixed id for a singleton. */
   entryId: string
-  /** Model field → `<path>|<prop>` inside the element (`0.1.0|text`, `0.0|src`) or `attr:<name>`. */
-  fields: Record<string, string>
+  /**
+   * Apply this builder mapping rule (`<builder>:<match>`, astro-kit `mapping/<builder>.json`) to the element:
+   * its props, `into`/`each`/`item` fill the entry's fields of the same names. `fields` then only adds to it.
+   */
+  rule?: string
+  /** Model field → `<path>|<prop>` inside the element (`0.1.0|text`, `0.0|src`), `attr:<name>`, or an element expression (`dom:`, `img:`, `link:`, `html:`). */
+  fields?: Record<string, string>
 }
 
 // ─── Components ───
@@ -186,11 +191,18 @@ export interface PlanPlacement {
  * - `href:self` — the bound entry's own address; `href:<relation field>` — the related entry's, via `site.permalinks`
  * - `term:<relation field>` — a related term as `{ label, href }` (the first of a multi-relation; all of them with `into`)
  * - `ui:<key>` — an interface string of `ui-strings`
- * - `const:<value>` — a fixed value (layout switches, never content)
+ * - `site:<field>` — a field of the `site` singleton (`site:title`, `site:logo`)
+ * - `menu:primary|footer` — the items of the menu `site.menus` names for that area
+ * - `page:base|current|total|breadcrumb` — what the route knows about the page being built
+ * - `const:<value>` — a layout switch, never content: `true`, `false`, a number, or a lowercase identifier
+ *   (`const:contact`); anything that reads like text is refused, so page copy cannot be baked into code
+ *
+ * The builder mapping tables use the same set plus element expressions; one placement can mix them
+ * (a header's `siteName` from `site:title`, its `items` from `menu:primary`).
  */
-export type PlanValue = `field:${string}` | `media:${string}` | `ref:${string}` | `href:${string}` | `term:${string}` | `ui:${string}` | `const:${string}`
+export type PlanValue = `field:${string}` | `media:${string}` | `ref:${string}` | `href:${string}` | `term:${string}` | `ui:${string}` | `site:${string}` | `menu:${string}` | `page:${string}` | `const:${string}`
 
-export const PLAN_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|term:[\w-]+|ui:[\w.-]+|const:.*)$/
+export const PLAN_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|term:[\w-]+|ui:[\w.-]+|site:[\w-]+|menu:(?:primary|footer)|page:(?:base|current|total|breadcrumb)|const:(?:true|false|-?\d+(?:\.\d+)?|[a-z][a-z0-9_-]{0,31}))$/
 
 /** Where a placement's props come from. */
 export type PlanBinding =
@@ -268,9 +280,11 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
       if (!m.extract?.length) warnings.push(`plan model ${m.id} has no extraction — its entries start empty`)
     }
     for (const x of m.extract ?? []) {
-      for (const [field, path] of Object.entries(x.fields)) {
+      if (!x.rule && !x.fields) errors.push(`model ${m.id} extraction from ${x.from} has neither rule nor fields`)
+      if (x.rule && !/^(gutenberg|elementor|divi|classic):[\w./:-]+$/.test(x.rule)) errors.push(`model ${m.id} extraction rule ${x.rule} is not <builder>:<match>`)
+      for (const [field, path] of Object.entries(x.fields ?? {})) {
         if (m.fields && !m.fields[field]) errors.push(`model ${m.id} extraction fills unknown field ${field}`)
-        if (!/^attr:[\w.-]+$|^[\d.]+\|(text|href|src|alt|datetime)$/.test(path)) errors.push(`model ${m.id} field ${field}: path ${path} is not "<path>|<prop>" or "attr:<name>"`)
+        if (!/^attr:[\w.-]+$|^[\d.]+\|(text|href|src|alt|datetime)$|^(?:dom|img|link|html):[^@]*(?:@[\w-]+)?$/.test(path)) errors.push(`model ${m.id} field ${field}: path ${path} is not "<path>|<prop>", "attr:<name>" or an element expression`)
       }
     }
   }
@@ -294,7 +308,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (b.kind === 'entry' && !route?.source) errors.push(`${at}: binds the route entry but ${route ? 'the route has no source' : 'layout has no entry'}`)
     const values: Record<string, PlanValue> = { ...('props' in b ? b.props : {}), ...(b.kind === 'collection' && !b.into ? b.item : {}) }
     for (const [prop, value] of Object.entries({ ...values, ...(b.kind === 'collection' ? b.item : {}) })) {
-      if (!PLAN_VALUE_PATTERN.test(value)) errors.push(`${at}: ${prop} = ${value} is not a plan value (field: media: ref: href: term: ui: const:)`)
+      if (!PLAN_VALUE_PATTERN.test(value)) errors.push(`${at}: ${prop} = ${value} is not a plan value (field: media: ref: href: term: ui: site: menu: page: const:)`)
     }
     // A kit component's props are the catalog's; the caller checks them. A site component's are here.
     if (c.props) {
@@ -318,6 +332,15 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     }
     if (r.body === 'composed' && !r.sections.length) warnings.push(`route ${r.id} is composed but has no sections`)
     r.sections.forEach((s, i) => placement(s, `route ${r.id} section ${i}`, r))
+  }
+  // Two routes on one pattern build one address twice, unless they split one model's entries by `where`.
+  const byPattern = new Map<string, PlanRoute[]>()
+  for (const r of plan.routes ?? []) (byPattern.get(r.pattern) ?? byPattern.set(r.pattern, []).get(r.pattern)!).push(r)
+  for (const [pattern, routes] of byPattern) {
+    if (routes.length < 2) continue
+    const sources = new Set(routes.map(r => r.source?.model ?? ''))
+    const split = sources.size === 1 && !sources.has('') && routes.filter(r => !r.source?.where).length <= 1
+    if (!split) warnings.push(`routes ${routes.map(r => r.id).join(', ')} share the pattern ${pattern}`)
   }
   // One address per entry: routes over one model split it by disjoint wp_id sets plus at most one catch-all.
   for (const [model, routes] of byModel) {

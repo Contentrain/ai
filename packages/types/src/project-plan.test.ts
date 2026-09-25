@@ -17,7 +17,7 @@ const plan = (): ProjectPlan => ({
     tokens: { roles: { 'color-accent': '#9dff20', 'color-accent-ink': '#000000', 'font-sans': 'Inter, sans-serif', 'container-prose': '650px' } },
   },
   layout: {
-    header: { component: 'Header', variant: { layout: 'split' }, bind: { kind: 'menu', menu: 'primary-menu', props: { siteName: 'const:Example' } }, labels: { menuLabel: 'nav.menu' } },
+    header: { component: 'Header', variant: { layout: 'split' }, bind: { kind: 'static', props: { siteName: 'site:title', items: 'menu:primary' } }, labels: { menuLabel: 'nav.menu' } },
   },
   models: [
     { id: 'posts', kind: 'collection', origin: 'import' },
@@ -25,7 +25,10 @@ const plan = (): ProjectPlan => ({
     {
       id: 'about-features', kind: 'collection', origin: 'plan', name: 'About features', domain: 'pages', i18n: true, title_field: 'title',
       fields: { title: { type: 'string', required: true }, body: { type: 'markdown' }, icon: { type: 'image' } },
-      extract: [{ from: 'repeat:1x2y', pages: [11], entryId: 'about:index', fields: { title: '0.1|text', body: '0.2|text', icon: '0.0|src' } }],
+      extract: [
+        { from: 'repeat:1x2y', pages: [11], entryId: 'about:index', fields: { title: '0.1|text', body: '0.2|text', icon: '0.0|src' } },
+        { from: 'core/columns', pages: [12], entryId: 'services:index', rule: 'gutenberg:core/columns', fields: { title: 'dom:h2' } },
+      ],
     },
   ],
   components: [
@@ -65,7 +68,7 @@ describe('validateProjectPlan', () => {
     p.routes[0]!.sections.push({ component: 'Prose', bind: { kind: 'entry', props: { body: 'field:content' } } })
     p.routes[1]!.sections[0] = { component: 'Prose', bind: { kind: 'entry', props: { text: 'content' as never } } }
     p.routes[2]!.sections[0] = { component: 'FeatureGrid', bind: { kind: 'collection', model: 'nope', into: 'items', item: { title: 'field:title' } } }
-    p.models[2]!.extract![0]!.fields.subtitle = '0.3|innerHTML'
+    p.models[2]!.extract![0]!.fields!.subtitle = '0.3|innerHTML'
     const { errors } = validateProjectPlan(p)
     expect(errors).toEqual(expect.arrayContaining([
       'site.permalinks.post must start and end with "/" (/:slug)',
@@ -74,12 +77,12 @@ describe('validateProjectPlan', () => {
       'kit component hero names no kit id',
       'route post section 1: component Missing is not declared',
       'route home section 1: binds the route entry but the route has no source',
-      'route post section 0: text = content is not a plan value (field: media: ref: href: term: ui: const:)',
+      'route post section 0: text = content is not a plan value (field: media: ref: href: term: ui: site: menu: page: const:)',
       'route post section 0: Prose has no prop text',
       'route post section 0: required prop Prose.body is not bound',
       'route about section 0: model nope is not declared',
       'model about-features extraction fills unknown field subtitle',
-      'model about-features field subtitle: path 0.3|innerHTML is not "<path>|<prop>" or "attr:<name>"',
+      'model about-features field subtitle: path 0.3|innerHTML is not "<path>|<prop>", "attr:<name>" or an element expression',
     ]))
   })
 
@@ -108,4 +111,24 @@ describe('validateProjectPlan', () => {
     p.routes = p.routes.filter(r => r.kind !== 'home')
     expect(validateProjectPlan(p).errors).toContain('no home route')
   })
+
+  it('const: takes layout switches only, never text', () => {
+    const p = plan()
+    p.routes[0]!.sections.push({ component: 'Prose', bind: { kind: 'static', props: { body: 'const:Welcome to our studio, we build calm software' } } })
+    p.routes[0]!.sections.push({ component: 'Prose', bind: { kind: 'static', props: { body: 'const:Hello' } } })
+    const bad = validateProjectPlan(p).errors.filter(e => e.includes('is not a plan value'))
+    expect(bad).toHaveLength(2)
+    const ok = plan()
+    ok.layout.header!.bind = { kind: 'static', props: { siteName: 'site:title', items: 'menu:primary', showName: 'const:true', columns: 'const:3', ratio: 'const:1.5', model: 'const:contact-form' } }
+    expect(validateProjectPlan(ok).errors).toEqual([])
+  })
+
+  it('warns when two routes share a pattern without splitting one model', () => {
+    const p = plan()
+    p.routes.push({ id: 'landing', kind: 'custom', pattern: '/:slug/', template: 't9', body: 'rich-text', sections: [] })
+    expect(validateProjectPlan(p).warnings).toContain('routes post, landing share the pattern /:slug/')
+    // about + page on /:path/ split pages by wp_id: no warning (the fixture already has them).
+    expect(validateProjectPlan(plan()).warnings).toEqual([])
+  })
 })
+
