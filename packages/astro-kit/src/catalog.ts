@@ -35,8 +35,8 @@ export function isBuilderElement(builder: KitBuilder, name: string): boolean {
 
 export type KitCategory = 'chrome' | 'section' | 'content' | 'primitive'
 
-/** Client JavaScript a component ships: none, Embla (carousel), Zag.js (accessible widget) or the Studio runtime. */
-export type KitJs = 'none' | 'embla' | 'zag' | 'studio'
+/** Client JavaScript a component ships: none, a few lines of dependency-free script (`vanilla`), Embla (carousel), Zag.js (accessible widget) or the Studio runtime. */
+export type KitJs = 'none' | 'vanilla' | 'embla' | 'zag' | 'studio'
 
 export type KitProp = FieldDef & { description: string }
 

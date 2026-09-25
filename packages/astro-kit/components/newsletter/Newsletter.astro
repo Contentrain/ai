@@ -1,0 +1,105 @@
+---
+// A newsletter sign-up that posts straight to the list provider's hosted form
+// endpoint (Mailchimp, Kit, MailerLite, Brevo, Buttondown): a plain HTML form,
+// no script, no server of ours. The provider shows its own confirmation page,
+// in a new tab by default so the reader keeps the site. Without a usable
+// action (not https) the section renders nothing: a form that cannot deliver
+// must not be shown.
+import { tv } from 'tailwind-variants'
+import Section from '../_shared/Section.astro'
+import { newsletterForm } from './newsletter'
+
+const newsletter = tv({
+  slots: {
+    box: 'flex flex-col gap-6',
+    copy: 'flex flex-col gap-3',
+    heading: 'text-2xl font-bold tracking-tight text-balance md:text-3xl',
+    intro: 'max-w-xl text-pretty opacity-85',
+    form: 'flex flex-col gap-3',
+    field: 'flex min-w-0 flex-col gap-1.5',
+    label: 'text-sm font-semibold',
+    input: 'min-h-11 w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    submit: 'inline-flex min-h-11 items-center justify-center rounded-md px-5 py-2.5 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 bg-accent text-accent-ink hover:bg-ink hover:text-surface',
+    note: 'text-sm opacity-75',
+  },
+  variants: {
+    layout: {
+      inline: { box: 'md:flex-row md:items-end md:justify-between md:gap-12', copy: 'md:max-w-md', form: 'md:flex-row md:items-end md:shrink-0' },
+      stacked: { box: 'mx-auto max-w-xl items-stretch text-center', intro: 'mx-auto', form: 'text-start' },
+    },
+    // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
+    tone: {
+      default: {},
+      muted: {},
+      inverse: { submit: 'hover:bg-surface hover:text-ink' },
+      accent: { intro: 'opacity-100', note: 'opacity-100', submit: 'bg-ink text-surface hover:bg-surface hover:text-ink' },
+    },
+  },
+  defaultVariants: { layout: 'inline', tone: 'muted' },
+})
+
+interface Props {
+  /** The provider's form endpoint (Mailchimp `https://….list-manage.com/subscribe/post?u=…&id=…`, Kit `https://app.kit.com/forms/<id>/subscriptions`, …). */
+  action: string
+  provider?: 'mailchimp' | 'kit' | 'mailerlite' | 'brevo' | 'buttondown' | 'other' | undefined
+  /** Field name for the address when the provider is `other` or names it differently. */
+  emailName?: string | undefined
+  /** Ask for a first name too (when the provider takes one). */
+  askName?: boolean | undefined
+  heading?: string | undefined
+  intro?: string | undefined
+  /** Small print under the form (privacy, frequency). */
+  note?: string | undefined
+  /** ui-strings newsletter.email */
+  emailLabel?: string | undefined
+  /** ui-strings newsletter.name */
+  nameLabel?: string | undefined
+  /** ui-strings newsletter.submit */
+  submitLabel?: string | undefined
+  /** Open the provider's confirmation page in a new tab. */
+  newTab?: boolean | undefined
+  layout?: 'inline' | 'stacked' | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  id?: string | undefined
+}
+
+const {
+  action, provider = 'mailchimp', emailName, askName = false, heading, intro, note,
+  emailLabel = 'Email address', nameLabel = 'First name', submitLabel = 'Subscribe', newTab = true,
+  layout, tone = 'muted', id = 'newsletter',
+} = Astro.props
+const form = newsletterForm(provider, action, { email: emailName })
+const s = newsletter({ layout, tone })
+const headingId = heading ? `${id}-title` : undefined
+---
+{form && (
+  <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+    <div class={s.box()}>
+      {(heading || intro) && (
+        <div class={s.copy()}>
+          {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+          {intro && <p class={s.intro()}>{intro}</p>}
+        </div>
+      )}
+      <div class="flex flex-col gap-2">
+        <form method="post" action={form.action} target={newTab ? '_blank' : undefined} class={s.form()} aria-labelledby={headingId} aria-label={headingId ? undefined : submitLabel}>
+          {askName && form.name && (
+            <div class={s.field()}>
+              <label for={`${id}-name`} class={s.label()}>{nameLabel}</label>
+              <input id={`${id}-name`} name={form.name} type="text" autocomplete="given-name" class={s.input()} />
+            </div>
+          )}
+          <div class={s.field({ class: 'md:min-w-72' })}>
+            <label for={`${id}-email`} class={s.label()}>{emailLabel}</label>
+            <input id={`${id}-email`} name={form.email} type="email" required autocomplete="email" inputmode="email" class={s.input()} />
+          </div>
+          {form.hidden.map(field => (
+            <div aria-hidden="true" class="absolute -left-[5000px]"><input type="text" name={field.name} value={field.value} tabindex="-1" autocomplete="off" /></div>
+          ))}
+          <button type="submit" class={s.submit()}>{submitLabel}</button>
+        </form>
+        {note && <p class={s.note()}>{note}</p>}
+      </div>
+    </div>
+  </Section>
+)}

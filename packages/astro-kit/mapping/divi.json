@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "divi",
-  "version": "3",
+  "version": "4",
   "fallback": "prose",
   "rules": [
     {
@@ -289,6 +289,39 @@
       "component": "prose",
       "props": {
         "html": "html:"
+      }
+    },
+    {
+      "match": "divi/et_pb_video",
+      "component": "embed",
+      "props": {
+        "url": "attr:src",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "divi/et_pb_map",
+      "component": "embed",
+      "variant": {
+        "aspect": "map"
+      },
+      "props": {
+        "address": "attr:address",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "divi/et_pb_signup",
+      "component": "newsletter",
+      "props": {
+        "action": "site:newsletter_action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit",
+        "heading": "attr:title",
+        "intro": "html:.et_pb_newsletter_description_content"
       }
     }
   ]

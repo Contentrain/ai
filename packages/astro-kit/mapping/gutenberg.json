@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "gutenberg",
-  "version": "3",
+  "version": "4",
   "fallback": "prose",
   "rules": [
     {
@@ -344,6 +344,66 @@
     },
     {
       "match": "core/embed",
+      "when": {
+        "attr": {
+          "providerNameSlug": "youtube"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:url",
+        "caption": "dom:figcaption",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "core/embed",
+      "when": {
+        "attr": {
+          "providerNameSlug": "vimeo"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:url",
+        "caption": "dom:figcaption",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "core/embed",
+      "when": {
+        "attr": {
+          "providerNameSlug": "spotify"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:url",
+        "caption": "dom:figcaption",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "core/embed",
+      "when": {
+        "attr": {
+          "providerNameSlug": "soundcloud"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:url",
+        "caption": "dom:figcaption",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "core/embed",
       "component": "prose",
       "props": {
         "html": "html:"
@@ -389,6 +449,26 @@
       "component": "prose",
       "props": {
         "html": "html:"
+      }
+    },
+    {
+      "match": "mailchimp-for-wp/form",
+      "component": "newsletter",
+      "props": {
+        "action": "site:newsletter_action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit"
+      }
+    },
+    {
+      "match": "jetpack/mailchimp",
+      "component": "newsletter",
+      "props": {
+        "action": "site:newsletter_action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit"
       }
     }
   ]
