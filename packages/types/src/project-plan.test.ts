@@ -12,7 +12,7 @@ const plan = (): ProjectPlan => ({
     permalinks: { post: '/:slug/', page: '/:path/', category: '/category/:slug/', tag: '/tag/:slug/', author: '/author/:slug/', blog: '/' },
     home: { kind: 'posts' },
     postsPerPage: 6,
-    menus: { primary: 'primary-menu', footer: 'footer-menu' },
+    menus: { primary: 'primary-menu', footer: ['footer-menu', 'footer-legal'] },
     redirects: { '/old-about/': '/about/', '/gone/': { status: 410, destination: '/' } },
     tokens: { roles: { 'color-accent': '#9dff20', 'color-accent-ink': '#000000', 'font-sans': 'Inter, sans-serif', 'container-prose': '650px' } },
   },
@@ -104,6 +104,18 @@ describe('validateProjectPlan', () => {
     const { errors } = validateProjectPlan(p)
     expect(errors).toContain('model pages: entry 11 is in routes about and landing')
     expect(errors).toContain('model pages: routes page, page-2 are all catch-alls')
+  })
+
+  it('takes up to four distinct footer menus', () => {
+    const p = plan()
+    p.site.menus.footer = ['a', 'b', 'a', '', 'c', 'd']
+    expect(validateProjectPlan(p).errors).toEqual([
+      'site.menus.footer has 6 menus; the footer takes at most 4',
+      'site.menus.footer has an empty menu slug',
+      'site.menus.footer names a menu twice',
+    ])
+    p.site.menus.footer = []
+    expect(validateProjectPlan(p).errors).toEqual([])
   })
 
   it('requires a home route', () => {

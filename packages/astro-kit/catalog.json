@@ -12,7 +12,15 @@
     "--container-prose",
     "--container-page",
     "--container-wide",
-    "--radius-card"
+    "--radius-card",
+    "--font-weight-heading",
+    "--font-weight-body",
+    "--text-body",
+    "--leading-body",
+    "--leading-heading",
+    "--radius-control",
+    "--radius-image",
+    "--spacing-gutter"
   ],
   "dependencies": {
     "tailwind-merge": "^3.7.0",
@@ -675,7 +683,11 @@
             "fields": {
               "title": {
                 "type": "string",
-                "required": true
+                "description": "Heading shown above the links; leave out when the source shows none."
+              },
+              "label": {
+                "type": "string",
+                "description": "Accessible name of the column navigation (the menu name); defaults to the title."
               },
               "links": {
                 "type": "array",

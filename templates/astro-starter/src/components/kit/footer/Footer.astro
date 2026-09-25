@@ -29,7 +29,7 @@ interface Props {
   siteName: string
   tagline?: string | undefined
   /** Link groups for the `columns` layout. */
-  columns?: Array<{ title: string, links: LinkInput[] }> | undefined
+  columns?: Array<{ title?: string | undefined, label?: string | undefined, links: LinkInput[] }> | undefined
   /** A single row of links (the footer menu). */
   links?: LinkInput[] | undefined
   social?: LinkInput[] | undefined
@@ -54,8 +54,8 @@ const line = copyright ?? `© ${new Date().getFullYear()} ${siteName}`
     </div>
     {layout === 'columns'
       ? columns.map(column => (
-        <nav aria-label={column.title}>
-          <p class="mb-3 font-semibold">{column.title}</p>
+        <nav aria-label={column.label ?? column.title}>
+          {column.title && <p class="mb-3 font-semibold">{column.title}</p>}
           <ul class="flex flex-col gap-2">
             {column.links.map(item => <li><a href={item.href} class={link()}>{item.label}</a></li>)}
           </ul>

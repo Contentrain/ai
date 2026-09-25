@@ -25,6 +25,8 @@ export const PROJECT_PLAN_FORMAT = 'contentrain-project-plan@1'
 export const PLAN_TOKEN_ROLES = [
   'color-surface', 'color-surface-muted', 'color-ink', 'color-ink-muted', 'color-line', 'color-accent', 'color-accent-ink',
   'font-sans', 'font-serif', 'font-mono', 'container-prose', 'container-page', 'container-wide', 'radius-card',
+  // The source theme's type and shape (theme.json styles): absent means the kit's own values.
+  'font-weight-heading', 'font-weight-body', 'text-body', 'leading-body', 'leading-heading', 'radius-control', 'radius-image', 'spacing-gutter',
 ] as const
 export type PlanTokenRole = (typeof PLAN_TOKEN_ROLES)[number]
 
@@ -71,8 +73,11 @@ export interface PlanSite {
   permalinks: { post: PlanPermalink, page: PlanPermalink, category: PlanPermalink, tag: PlanPermalink, author: PlanPermalink, blog: PlanPermalink }
   home: { kind: 'posts' } | { kind: 'page', slug: string }
   postsPerPage: number
-  /** Menu slugs (`menus.slug`, as WordPress named them) for the starter's navigation areas — `getMenu(slug)`. */
-  menus: { primary: string, footer: string }
+  /**
+   * Menu slugs (`menus.slug`, as WordPress named them) for the starter's navigation areas — `getMenu(slug)`.
+   * `footer` lists the footer's menus in the source's order, one column each (at most 4); empty for none.
+   */
+  menus: { primary: string, footer: string[] }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
   redirects: Record<string, string | { status: number, destination: string }>
@@ -223,7 +228,7 @@ export interface PlanPlacement {
  * - `term:<relation field>` — a related term as `{ label, href }` (the first of a multi-relation; all of them with `into`)
  * - `ui:<key>` — an interface string of `ui-strings`
  * - `site:<field>` — a field of the `site` singleton (`site:title`, `site:logo`)
- * - `menu:primary|footer` — the items of the menu `site.menus` names for that area
+ * - `menu:primary|footer` — the items of the menu `site.menus` names for that area (the first footer menu)
  * - `page:base|current|total|breadcrumb` — what the route knows about the page being built
  * - `const:<value>` — a layout switch, never content: `true`, `false`, a number, or a lowercase identifier
  *   (`const:contact`); anything that reads like text is refused, so page copy cannot be baked into code
@@ -317,6 +322,13 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (!PERMALINK.test(value)) errors.push(`site.permalinks.${key} must start and end with "/" (${value})`)
   }
   if (!Number.isSafeInteger(site?.postsPerPage) || site.postsPerPage < 1) errors.push('site.postsPerPage is not a positive integer')
+  const footer = site?.menus?.footer
+  if (!Array.isArray(footer)) errors.push('site.menus.footer is not a list of menu slugs')
+  else {
+    if (footer.length > 4) errors.push(`site.menus.footer has ${footer.length} menus; the footer takes at most 4`)
+    if (footer.some(slug => typeof slug !== 'string' || slug === '')) errors.push('site.menus.footer has an empty menu slug')
+    if (new Set(footer).size !== footer.length) errors.push('site.menus.footer names a menu twice')
+  }
   for (const [from, to] of Object.entries(site?.redirects ?? {})) {
     if (!from.startsWith('/')) errors.push(`redirect ${from} does not start with "/"`)
     const status = typeof to === 'string' ? 301 : to.status

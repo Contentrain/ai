@@ -16,13 +16,13 @@ const newsletter = tv({
   slots: {
     box: 'flex flex-col gap-6',
     copy: 'flex flex-col gap-3',
-    heading: 'text-2xl font-bold tracking-tight text-balance md:text-3xl',
+    heading: 'text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
     intro: 'max-w-xl text-pretty opacity-85',
     form: 'flex flex-col gap-3',
     field: 'flex min-w-0 flex-col gap-1.5',
     label: 'text-sm font-semibold',
-    input: 'min-h-11 w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-    submit: 'inline-flex min-h-11 items-center justify-center rounded-md px-5 py-2.5 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 bg-accent text-accent-ink hover:bg-ink hover:text-surface',
+    input: 'min-h-11 w-full rounded-[var(--radius-control,var(--radius-md))] border border-line bg-surface px-3 py-2 text-base text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    submit: 'inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control,var(--radius-md))] px-5 py-2.5 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 bg-accent text-accent-ink hover:bg-ink hover:text-surface',
     note: 'text-sm opacity-75',
   },
   variants: {
