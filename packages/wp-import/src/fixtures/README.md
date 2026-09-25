@@ -32,3 +32,13 @@ the Contentrain field definition and value both importers must write
 (`acf.parity.test.ts` runs wp-import's side). The Bridge copies the file
 unchanged and pins the commit it copied; a mapping change bumps
 `ACF_MAPPING_VERSION` and the file's `mapping_version` together.
+
+# Redirect parity fixture
+
+`redirect-parity.json` is owned here and copied by the Bridge, like the ACF one.
+Its input is the Redirection plugin's own rows (groups, rules, and the site's
+saved options). Each case gives the `RawRedirect` / `RawRedirectExcluded` lists
+both importers must export from them: wp-import over REST
+(`rest-redirects.parity.test.ts`), the Bridge from the tables. A case marked
+`only: 'rest'` applies to wp-import alone. The Bridge copies the file unchanged
+and pins the commit it copied.

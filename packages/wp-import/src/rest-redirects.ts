@@ -103,7 +103,8 @@ export function redirectionRules(items: RestRedirection[], groups: RestRedirecti
       excluded.push({ ...rule, status: code, reason: `not-a-redirect:${actionType}` })
     } else if (matchType !== 'url') {
       // Login, referrer, agent, cookie, header, IP, server…: the target depends on the request.
-      excluded.push({ ...rule, status: code, condition: data ?? null, reason: `conditional-match:${matchType}` })
+      // Its own match type (`login`), as the Bridge states it.
+      excluded.push({ ...rule, match: matchType, status: code, condition: data ?? null, reason: `conditional-match:${matchType}` })
     } else {
       const move = code >= 300 && code < 400
       redirects.push({ ...rule, to: relative(target, origin), status: move ? code : 301, ...(move ? {} : { status_note: `source status ${code} is not a redirect code; 301 assumed` }) })
