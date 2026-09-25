@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "embla-carousel": "^8.6.0"
-  }
+  },
+  "optimizedInDist": [
+    "harbour"
+  ]
 }
