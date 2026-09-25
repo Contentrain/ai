@@ -34,15 +34,17 @@ interface Props {
   density?: 'compact' | 'comfortable' | undefined
   /** Unique per page when a page has two navigations. */
   id?: string | undefined
+  /** What the navigation is, for checks that find a page's parts (`data-cr-part`, e.g. "nav-header"). */
+  part?: string | undefined
 }
 
-const { items, label = 'Main', menuLabel = 'Menu', closeLabel = 'Close', mobile = 'popover', align, density, id = 'site-nav' } = Astro.props
+const { items, label = 'Main', menuLabel = 'Menu', closeLabel = 'Close', mobile = 'popover', align, density, id = 'site-nav', part } = Astro.props
 const { list, link, sub, toggle } = nav({ align, density })
 const current = Astro.url.pathname
 const drawer = `${id}-drawer`
 ---
 {items.length > 0 && (
-  <nav aria-label={label} class="relative">
+  <nav aria-label={label} data-cr-part={part} class="relative">
     <ul class={list()}>
       {items.map(item => (
         <li class="group relative">

@@ -1251,6 +1251,10 @@
         "id": {
           "type": "string",
           "description": "Unique id when a page renders two navigations."
+        },
+        "part": {
+          "type": "string",
+          "description": "What the navigation is, for checks that find a page's parts (data-cr-part), e.g. \"nav-header\"."
         }
       },
       "slots": {},
