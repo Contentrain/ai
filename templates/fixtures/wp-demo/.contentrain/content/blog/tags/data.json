@@ -1,0 +1,22 @@
+{
+  "1f13ff00ff25": {
+    "name": "Astro",
+    "slug": "astro",
+    "wp_id": 10
+  },
+  "2e773194b10d": {
+    "name": "SEO",
+    "slug": "seo",
+    "wp_id": 12
+  },
+  "4bae0be8699e": {
+    "name": "Design",
+    "slug": "design",
+    "wp_id": 13
+  },
+  "de1dd34c99d0": {
+    "name": "Migration",
+    "slug": "migration",
+    "wp_id": 11
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "365b2f3ae753": {
+    "body": "<p>Three people, one shared obsession with page weight.</p>",
+    "menu_order": 2,
+    "parent": "4c3e30091917",
+    "slug": "team",
+    "title": "Team",
+    "wp_id": 301
+  },
+  "4c3e30091917": {
+    "body": "<p class=\"has-large-font-size\">We build calm, fast websites for teams who would rather write than wrestle a CMS.</p><p>Northwind Studio is a small team of designers and engineers. We have moved dozens of WordPress sites to static stacks without losing an address, a ranking or an editor’s formatting.</p>",
+    "menu_order": 1,
+    "slug": "about",
+    "title": "About",
+    "wp_id": 300
+  },
+  "e587e67fb9ed": {
+    "body": "<p>Tell us about your site. We answer within two working days.</p>",
+    "form": "contact-messages",
+    "menu_order": 3,
+    "slug": "contact",
+    "title": "Contact",
+    "wp_id": 302
+  }
+}

@@ -1,0 +1,55 @@
+---
+// Everything a page says about itself to search engines and link previews:
+// title, description, canonical, robots, Open Graph, Twitter, RSS discovery
+// and one JSON-LD graph.
+import { serializeLd } from '../lib/seo'
+
+interface Props {
+  /** The document title as it should appear, site name included. */
+  title: string
+  description?: string | undefined
+  /** Absolute canonical URL. */
+  canonical: string
+  /** Absolute image URL for link previews. */
+  image?: string | undefined
+  type?: 'website' | 'article'
+  noindex?: boolean | undefined
+  nofollow?: boolean | undefined
+  siteName: string
+  locale?: string | undefined
+  published?: Date | undefined
+  modified?: Date | undefined
+  jsonLd?: ReadonlyArray<Record<string, unknown>>
+}
+
+const {
+  title, description, canonical, image, type = 'website', noindex = false, nofollow = false,
+  siteName, locale, published, modified, jsonLd = [],
+} = Astro.props
+
+const robots = [noindex ? 'noindex' : 'index', nofollow ? 'nofollow' : 'follow', 'max-image-preview:large'].join(', ')
+const feed = new URL('rss.xml', Astro.site ?? canonical).href
+---
+<title>{title}</title>
+{description && <meta name="description" content={description} />}
+<link rel="canonical" href={canonical} />
+<meta name="robots" content={robots} />
+<link rel="alternate" type="application/rss+xml" title={siteName} href={feed} />
+<link rel="sitemap" href="/sitemap-index.xml" />
+
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content={siteName} />
+<meta property="og:title" content={title} />
+<meta property="og:url" content={canonical} />
+{description && <meta property="og:description" content={description} />}
+{locale && <meta property="og:locale" content={locale.replace('-', '_')} />}
+{image && <meta property="og:image" content={image} />}
+{published && <meta property="article:published_time" content={published.toISOString()} />}
+{modified && <meta property="article:modified_time" content={modified.toISOString()} />}
+
+<meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
+<meta name="twitter:title" content={title} />
+{description && <meta name="twitter:description" content={description} />}
+{image && <meta name="twitter:image" content={image} />}
+
+{jsonLd.length > 0 && <script type="application/ld+json" is:inline set:html={serializeLd(jsonLd)} />}

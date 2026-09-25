@@ -1,0 +1,21 @@
+---
+// A public form served by Contentrain Studio. The fields, honeypot and captcha
+// come from the model's form settings in Studio, so an editor changes the form
+// without touching code; submissions arrive in Studio for review. Renders
+// nothing — and ships no script — until the site is bound to a Studio project
+// (site.config.ts).
+import { getStringTable } from '../../lib/content'
+import { siteConfig } from '../../site.config'
+import FormMount from './FormMount.astro'
+
+interface Props {
+  /** The model submissions are saved to. */
+  model: string
+  class?: string
+}
+
+const { model, class: className } = Astro.props
+const studio = siteConfig.studio
+const text = studio ? await getStringTable(['common.', 'form.']) : {}
+---
+{studio && <FormMount baseUrl={studio.baseUrl} projectId={studio.projectId} model={model} text={text} class={className} />}

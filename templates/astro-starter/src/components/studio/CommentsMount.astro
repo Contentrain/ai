@@ -1,0 +1,36 @@
+---
+// The client half of StudioComments: the custom element and the script that
+// mounts it. Kept apart so the script ships only on pages that show a thread.
+interface Props {
+  baseUrl: string
+  projectId: string
+  model: string
+  entry: string
+  locale?: string | undefined
+  text: Record<string, string>
+}
+
+const { baseUrl, projectId, model, entry, locale, text } = Astro.props
+---
+<cr-comments
+  class="cr-comments mt-16 block border-t border-line pt-10"
+  data-base-url={baseUrl}
+  data-project={projectId}
+  data-model={model}
+  data-entry={entry}
+  data-locale={locale}
+  data-strings={JSON.stringify(text)}
+>
+  <noscript><p class="cr-noscript">{text['comments.noscript']}</p></noscript>
+</cr-comments>
+
+<script>
+  import { mountComments } from '../../lib/studio/embed'
+
+  class CrComments extends HTMLElement {
+    connectedCallback() {
+      void mountComments(this)
+    }
+  }
+  if (!customElements.get('cr-comments')) customElements.define('cr-comments', CrComments)
+</script>
