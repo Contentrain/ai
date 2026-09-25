@@ -8,6 +8,8 @@
 //   node scripts/starter-gates.mjs --fixture wp-demo    with templates/fixtures/wp-demo laid over it
 //   node scripts/starter-gates.mjs --local-sdk          @contentrain/query from this checkout, not npm
 //   node scripts/starter-gates.mjs --out <dir>          keep the project there (default: a temp dir, removed on success)
+//   node scripts/starter-gates.mjs --frozen             install exactly the starter's lockfile — the published
+//                                                       packages a delivered site gets (no --local-sdk)
 //
 // --local-sdk tests the starter against the SDK at HEAD, so an SDK change
 // that would break delivered sites fails here before it is released.
@@ -24,6 +26,7 @@ const { values } = parseArgs({
   options: {
     fixture: { type: 'string' },
     'local-sdk': { type: 'boolean', default: false },
+    frozen: { type: 'boolean', default: false },
     out: { type: 'string' },
   },
 })
@@ -44,7 +47,8 @@ if (values.fixture) {
   cpSync(join(root, 'templates', 'fixtures', values.fixture), project, { recursive: true })
 }
 
-run('pnpm', ['install', '--no-frozen-lockfile'])
+if (values.frozen && values['local-sdk']) throw new Error('--frozen tests the published packages; --local-sdk replaces one. Pick one.')
+run('pnpm', ['install', values.frozen ? '--frozen-lockfile' : '--no-frozen-lockfile'])
 if (values['local-sdk']) {
   run('pnpm', ['--filter', '@contentrain/types', '--filter', '@contentrain/query', 'build'], root)
   const packDir = mkdtempSync(join(tmpdir(), 'contentrain-query-'))
