@@ -79,7 +79,10 @@ describe('generateProject in place', () => {
     expect(config).toContain(`post: '/:year/:slug/'`)
     expect(config).toContain(`home: { kind: 'page', slug: 'about' }`)
     expect(config).toContain('postsPerPage: 6')
-    expect(await read('astro.config.mjs')).toContain(`const site = 'https://northwind.example'`)
+    const astro = await read('astro.config.mjs')
+    expect(astro).toContain(`const site = 'https://northwind.example'`)
+    // The build never fetches from the source site: its media is in public/.
+    expect(astro).toContain('domains: []')
     expect(JSON.parse(await read('redirects.json'))).toEqual({ '/gone/': { status: 410, destination: '/' }, '/old/': '/about/' })
   })
 

@@ -38,10 +38,15 @@ export function siteConfigSource(starter: string, site: PlanSite, titleTemplate 
   return replaceOnce(starter, /export const siteConfig: SiteConfig = \{[\s\S]*\n\}\n/, literal, 'site.config.ts')
 }
 
+/**
+ * The site's address, and the extra hosts astro:assets may fetch images from. The source site is not
+ * one of them: its media is copied into public/ before the build, and the build never reaches back to
+ * the old origin (which may be switched off, or be this site after the cut-over).
+ */
 export function astroConfigSource(starter: string, site: PlanSite, imageHosts: readonly string[]): string {
   const url = new URL(site.url)
   let out = replaceOnce(starter, /const site = '[^']*'/, `const site = ${sq(url.origin)}`, 'astro.config site')
-  const hosts = [...new Set([url.hostname, ...imageHosts])].toSorted()
+  const hosts = [...new Set(imageHosts)].filter(host => host !== url.hostname).toSorted()
   out = replaceOnce(out, /domains: \[[^\]]*\]/, `domains: [${hosts.map(sq).join(', ')}]`, 'astro.config image.domains')
   return out
 }
