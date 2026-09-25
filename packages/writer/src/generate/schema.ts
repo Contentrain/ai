@@ -17,6 +17,9 @@ export function collectionName(modelId: string): string {
   return modelId.replace(/[-_]+([a-z0-9])/g, (_match, char: string) => char.toUpperCase())
 }
 
+/** A string literal in the generated source's quote style. */
+const sq = (value: string) => `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+
 const STRING_TYPES = new Set(['string', 'text', 'email', 'url', 'slug', 'color', 'phone', 'code', 'icon', 'markdown', 'richtext', 'image', 'video', 'file'])
 const NUMBER_TYPES = new Set(['number', 'decimal', 'percent', 'rating'])
 
@@ -27,10 +30,10 @@ function base(field: FieldDef, known: ReadonlySet<string>): string {
   if (type === 'integer') return 'z.number().int()'
   if (type === 'boolean') return 'z.boolean()'
   if (type === 'date' || type === 'datetime') return 'z.coerce.date()'
-  if (type === 'select') return field.options?.length ? `z.enum(${JSON.stringify(field.options)})` : 'z.string()'
+  if (type === 'select') return field.options?.length ? `z.enum([${field.options.map(sq).join(', ')}])` : 'z.string()'
   if (type === 'relation' || type === 'relations') {
     // A polymorphic relation stores { model, ref }; a single-model one, the target's id.
-    const target = typeof field.model === 'string' && known.has(field.model) ? `reference(${JSON.stringify(collectionName(field.model))})` : 'z.object({ model: z.string(), ref: z.string() })'
+    const target = typeof field.model === 'string' && known.has(field.model) ? `reference(${sq(collectionName(field.model))})` : 'z.object({ model: z.string(), ref: z.string() })'
     return type === 'relation' ? target : `z.array(${target})`
   }
   if (type === 'array') {
@@ -52,7 +55,7 @@ function fieldSchema(field: FieldDef, known: ReadonlySet<string>): string {
 }
 
 function objectSchema(fields: Record<string, FieldDef>, known: ReadonlySet<string>, indent: string): string {
-  const lines = Object.keys(fields).toSorted().map(name => `${indent}  ${/^[a-z_$][\w$]*$/i.test(name) ? name : JSON.stringify(name)}: ${fieldSchema(fields[name]!, known)},`)
+  const lines = Object.keys(fields).toSorted().map(name => `${indent}  ${/^[a-z_$][\w$]*$/i.test(name) ? name : sq(name)}: ${fieldSchema(fields[name]!, known)},`)
   return `z.object({\n${lines.join('\n')}\n${indent}})`
 }
 
@@ -74,7 +77,7 @@ export function contentConfigSource(models: readonly ModelDefinition[]): string 
       || (typeof f.items === 'object' && refers(f.items))
   }))
   const collections = models.toSorted((a, b) => a.id.localeCompare(b.id)).map(model =>
-    `  ${collectionName(model.id)}: defineCollection({\n    loader: loader(${JSON.stringify(model.id)}),\n    schema: ${modelSchema(model, known)},\n  }),`)
+    `  ${collectionName(model.id)}: defineCollection({\n    loader: loader(${sq(model.id)}),\n    schema: ${modelSchema(model, known)},\n  }),`)
   return `// Generated from .contentrain/models by @contentrain/writer — regenerate, do not edit.
 //
 // One collection per Contentrain model, read through @contentrain/query's

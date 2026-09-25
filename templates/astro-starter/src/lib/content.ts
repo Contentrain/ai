@@ -46,7 +46,9 @@ export function pageHref(page: Page, pages: ReadonlyMap<string, Page>): string {
 export function termHref(kind: 'category' | 'tag', term: Term, terms: ReadonlyMap<string, Term>): string {
   const trail: string[] = []
   const seen = new Set<string>()
-  for (let at: Term | undefined = term; at && !seen.has(at.id); at = at.data.parent ? terms.get(at.data.parent.id) : undefined) {
+  // Categories nest; tags have no parent field.
+  const parentOf = (t: Term) => ('parent' in t.data ? t.data.parent : undefined)
+  for (let at: Term | undefined = term; at && !seen.has(at.id); at = parentOf(at) ? terms.get(parentOf(at)!.id) : undefined) {
     seen.add(at.id)
     trail.unshift(at.data.slug)
   }
@@ -80,7 +82,7 @@ export async function getMenu(slug: string): Promise<NavItem[]> {
   const menu = menus[0]
   if (!menu) return []
   const items = await resolve(menu.data.items)
-  const sorted = items.toSorted((a, b) => a.data.order - b.data.order)
+  const sorted = items.toSorted((a, b) => (a.data.order ?? 0) - (b.data.order ?? 0))
   const link = (item: CollectionEntry<'menuItems'>): NavItem => ({
     label: item.data.title,
     href: item.data.url ?? '/',
