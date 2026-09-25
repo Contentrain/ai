@@ -120,6 +120,14 @@ block refers to it; an empty navigation block without a `ref` shows the most
 recent published one, as WordPress does. Block menu items have no WordPress id
 and get negative ids; the store claims no `wp_id` for them.
 
+A navigation block in a template part that carries its own links (an inline
+navigation, as in Twenty Twenty-Five's footer columns) is a menu of that part's
+area: `Footer navigation 1`, `2`, … (its `ariaLabel` names it when set), links
+in order and nested. Only template parts a template uses count — a theme ships
+alternatives (`footer-columns`, `header-large-title`) that no page shows; without
+the templates, the part named after its area (`header`, `footer`). A `#` link
+stays `#`. Inline menus have no WordPress record: negative ids, no `wp_id`.
+
 A menu item that is itself a draft, or whose post target is not proven public
 — a draft, pending, private, scheduled or password-protected post, or one this
 import never read (a type outside REST, a listing past a page cap) — is left

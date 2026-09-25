@@ -594,7 +594,8 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
         name: strip(m.name),
         slug: slugify(m.slug) || `menu-${m.id}`,
         items: m.items.map((i) => itemRef(i.id)),
-        wp_id: m.id,
+        // An inline navigation has no WordPress record (a negative placeholder): none is claimed.
+        ...(m.id !== null && m.id > 0 ? { wp_id: m.id } : {}),
         ...(m.locations?.length ? { locations: m.locations } : {}),
       }
       metas.menus![mid] = importMeta('published')

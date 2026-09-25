@@ -8,10 +8,10 @@ import type { ImageInput, LinkInput } from '../_shared/types'
 const card = tv({
   slots: {
     root: 'group relative flex gap-4',
-    media: 'shrink-0 overflow-hidden rounded-[var(--radius-card)]',
+    media: 'shrink-0 overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
     body: 'flex min-w-0 flex-col gap-2',
     meta: 'flex flex-wrap items-center gap-x-2 text-sm text-ink-muted',
-    title: 'leading-snug font-semibold text-balance text-ink',
+    title: 'leading-snug [font-weight:var(--font-weight-heading,600)] text-balance text-ink',
     excerpt: 'text-ink-muted',
   },
   variants: {
