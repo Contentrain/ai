@@ -1,5 +1,21 @@
 # @contentrain/wp-import
 
+## 0.6.0
+
+### Minor Changes
+
+- d87121b: The comments export carries only public discussion. `buildCommentsExport` keeps comments on published, unprotected entries that are approved (`'1'`) or pending (`'0'`, which lands in the receiving service's moderation queue). It leaves out comments on drafts, private, scheduled and password-protected entries, any other status (spam, trash, `post-trashed`, a plugin's own), and comments on entries the import does not hold. An allowlist, so it fails closed. It counts what it leaves out in the new optional `CommentsExport.excluded` (`non_public_entry`, `unknown_entry`, `spam`, `trash`, `other_status`), which `summarizeComments` passes to `HandoffComments.excluded`. `selectComments(raw)` exposes the selection.
+
+### Patch Changes
+
+- a726843: `fetchRestRawIR` returns `credential: { status, fell_back }`, so a caller can tell whether the Application Password was honoured without reading `warnings`. `status` is `none` without `auth`, `accepted` when every listing it unlocks was read with it, and `rejected` when at least one was not; `fell_back` names those listings (`posts`, `pages`, a custom type's REST base, `comments`, `comments:hold`).
+
+  A credential the site rejects outright is now found by one `users/me` request and dropped. WordPress answers a wrong Application Password with 401 on every route, public ones included, and the fallback to the public listing used to resend it, so such an import came back with no posts, no terms and no comments while its provenance said `rest_auth`. It now imports the public site, as `rest_public`. The fallback for a single refused listing is anonymous too.
+
+- Updated dependencies [d87121b]
+- Updated dependencies [90b5049]
+  - @contentrain/types@1.23.0
+
 ## 0.5.7
 
 ### Patch Changes
