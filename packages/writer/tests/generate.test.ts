@@ -84,11 +84,13 @@ describe('generateProject in place', () => {
     // The build never fetches from the source site: its media is in public/.
     expect(astro).toContain('domains: []')
     // Redirects are content, kept in Studio: the plan's become entries of the redirects collection.
+    // The store already holds some (wp-demo's, as an editor's would be): they stay, and the plan's join them.
     const redirects = Object.values(JSON.parse(await read('.contentrain/content/site/redirects/data.json')) as Record<string, { from: string }>)
-    expect(redirects.toSorted((a, b) => a.from.localeCompare(b.from))).toEqual([
-      { from: '/gone/', status: 410 },
-      { from: '/old/', status: 301, to: '/about/' },
-    ])
+    const byFrom = new Map(redirects.map(r => [r.from, r]))
+    expect(byFrom.get('/old/')).toEqual({ from: '/old/', status: 301, to: '/about/' })
+    expect(byFrom.get('/gone/')).toEqual({ from: '/gone/', status: 410 })
+    expect(byFrom.get('/old-about/')).toEqual({ from: '/old-about/', status: 301, to: '/about/' })
+    expect(redirects).toHaveLength(6)
   })
 
   it('sets the design roles and adds the source scale and presets', async () => {
