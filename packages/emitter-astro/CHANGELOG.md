@@ -1,5 +1,14 @@
 # @contentrain/emitter-astro
 
+## 0.18.1
+
+### Patch Changes
+
+- c659098: The emitted `src/lib/embed.ts` type-checks under `exactOptionalPropertyTypes` (Astro's `strictest` preset): a comments mount without `data-locale` leaves `locale` out of its entry address instead of setting it to `undefined`. Same request on the wire.
+- Updated dependencies [d87121b]
+- Updated dependencies [90b5049]
+  - @contentrain/types@1.23.0
+
 ## 0.18.0
 
 ### Minor Changes
