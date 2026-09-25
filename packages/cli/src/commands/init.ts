@@ -7,6 +7,7 @@ import { ensureDir, pathExists, writeJson } from '@contentrain/mcp/util/fs'
 import { writeModel } from '@contentrain/mcp/core/model-manager'
 import { getTemplate, listTemplates } from '@contentrain/mcp/templates'
 import { createTransaction, buildBranchName } from '@contentrain/mcp/git/transaction'
+import { resolveInitDefaultBranch } from '@contentrain/mcp/git/base-branch'
 import { scanSummary } from '@contentrain/mcp/core/scanner'
 import { resolveProjectRoot, loadProjectContext } from '../utils/context.js'
 import { pc } from '../utils/ui.js'
@@ -244,6 +245,9 @@ async function executeInit(projectRoot: string, opts: InitOptions): Promise<void
     await git.commit('initial commit', { '--allow-empty': null })
   }
 
+  // Record the default branch once, with the resolver MCP writes use (#230).
+  const defaultBranch = await resolveInitDefaultBranch(createGit(projectRoot))
+
   const branch = buildBranchName('new', 'init')
   const tx = await createTransaction(projectRoot, branch)
 
@@ -267,6 +271,7 @@ async function executeInit(projectRoot: string, opts: InitOptions): Promise<void
           supported: opts.locales,
         },
         domains: opts.domains,
+        ...(defaultBranch ? { repository: { default_branch: defaultBranch } } : {}),
       }
       await writeJson(join(wtCrDir, 'config.json'), config)
 
@@ -305,6 +310,11 @@ async function executeInit(projectRoot: string, opts: InitOptions): Promise<void
     await tx.complete()
 
     s.stop('Initialized')
+    if (defaultBranch) {
+      log.info(`Content writes advance ${pc.cyan(defaultBranch)} (${pc.dim('repository.default_branch')})`)
+    } else {
+      log.warning(`Could not tell the default branch from the checked-out one — set ${pc.cyan('repository.default_branch')} in .contentrain/config.json`)
+    }
 
     // Install AI rules for detected IDEs
     await installRules(projectRoot)

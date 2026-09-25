@@ -318,6 +318,19 @@ describe('@contentrain/types', () => {
       }
       expectTypeOf(config).toMatchTypeOf<ContentrainConfig>()
     })
+
+    it('repository may carry default_branch alone — what init writes without a known host (#230)', () => {
+      const config: ContentrainConfig = {
+        version: 1,
+        stack: 'nuxt',
+        workflow: 'auto-merge',
+        repository: { default_branch: 'trunk' },
+        locales: { default: 'en', supported: ['en'] },
+        domains: ['ui'],
+      }
+      expectTypeOf(config).toMatchTypeOf<ContentrainConfig>()
+      expectTypeOf<NonNullable<ContentrainConfig['repository']>['default_branch']>().toEqualTypeOf<string>()
+    })
   })
 
   describe('Metadata types', () => {

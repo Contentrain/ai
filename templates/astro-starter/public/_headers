@@ -1,0 +1,8 @@
+# Response headers for Netlify and Cloudflare Pages.
+#
+# An SVG opened on its own is a document that can run script. The migration's
+# media stage cleans SVGs with an allowlist; this closes whatever it might
+# miss: no script, no loads, sandboxed.
+/media/*.svg
+  Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox
+  X-Content-Type-Options: nosniff

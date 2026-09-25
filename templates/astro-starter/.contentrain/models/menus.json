@@ -7,6 +7,12 @@
       "order": 30,
       "type": "relations"
     },
+    "locations": {
+      "items": "string",
+      "label": "Locations",
+      "order": 50,
+      "type": "array"
+    },
     "name": {
       "label": "Name",
       "order": 10,

@@ -88,7 +88,7 @@
 
 /* Media. */
 .prose .wp-block-image { margin-block: 2em; }
-.prose .wp-block-image img { height: auto; margin: 0; border-radius: 0.5rem; }
+.prose .wp-block-image img { height: auto; margin: 0; border-radius: var(--radius-image, 0.5rem); }
 .prose .wp-block-image.is-style-rounded img { border-radius: 9999px; }
 .prose .wp-block-image figcaption, .prose .wp-block-embed figcaption, .prose .wp-block-video figcaption, .prose .wp-block-table figcaption {
   margin-top: 0.75em;
@@ -137,7 +137,7 @@
   .prose .wp-block-columns:not(.is-not-stacked-on-mobile) > .wp-block-column { flex-basis: 100%; }
 }
 .prose .wp-block-columns.are-vertically-aligned-center { align-items: center; }
-.prose .wp-block-group.has-background, .prose .wp-block-cover { border-radius: var(--radius-card); }
+.prose .wp-block-group.has-background, .prose .wp-block-cover { border-radius: var(--radius-image, var(--radius-card)); }
 .prose .wp-block-group > :first-child { margin-top: 0; }
 .prose .wp-block-group > :last-child { margin-bottom: 0; }
 .prose .is-layout-flex { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wp--style--block-gap); }
@@ -208,6 +208,9 @@
   text-align: center;
 }
 .prose .wp-block-pullquote blockquote { quotes: none; border: 0; margin: 0; padding: 0; font-size: 1.5em; font-style: normal; }
+/* WordPress's quote block is upright and unquoted; Typography's italics and quotation marks are its own. */
+.prose .wp-block-quote { quotes: none; font-style: normal; font-weight: inherit; }
+.prose .wp-block-quote p::before, .prose .wp-block-quote p::after { content: none; }
 .prose .wp-block-quote.is-style-large, .prose .wp-block-quote.is-large { font-size: 1.375em; }
 .prose .wp-block-quote cite, .prose .wp-block-pullquote cite { display: block; margin-top: 0.75em; font-size: 0.875rem; font-style: normal; color: var(--color-ink-muted); }
 .prose .wp-block-separator { border: 0; border-top: 1px solid var(--color-line); margin-block: 3em; }

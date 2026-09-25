@@ -369,6 +369,8 @@ export async function parseWxr(input: string | Readable, opts?: { tool?: string 
       mime: guessMime(r.attachment_url ?? r.guid ?? ''),
       parent: r.parent,
       parent_resolved: r.parent ? byId.has(r.parent) : null,
+      // The attachment page (`<link>`), where the site serves one.
+      link: r.link || null,
       author: r.author,
       date: r.date,
       status: r.status,

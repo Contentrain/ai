@@ -196,6 +196,34 @@ describe('custom links to a plain permalink', () => {
     expect(plainPostId('https://other.example/?p=10', ctx.origin)).toBeUndefined()
     expect(plainPostId('/about/', ctx.origin)).toBeUndefined()
     expect(plainPostId('/?s=bread', ctx.origin)).toBeUndefined()
+    // The same site with or without `www.`, over either scheme (the Bridge reads it the same way).
+    expect(plainPostId('https://www.s.example/?p=10', ctx.origin)).toBe(10)
+    expect(plainPostId('http://S.example/?page_id=11', 'https://www.s.example')).toBe(11)
+    expect(plainPostId('https://www2.s.example/?p=10', ctx.origin)).toBeUndefined()
+  })
+
+  it('point at the post\'s public address, as every link to a public post or term does', () => {
+    const linked: MenuContext = {
+      ...ctx,
+      postLink: (id) => (id === 11 ? 'https://s.example/about-us/' : undefined),
+      termLink: (taxonomy, id) => (taxonomy === 'category' && id === 2 ? 'https://s.example/topics/news/' : undefined),
+    }
+    let n = 0
+    const block = navigationItems(NAV + '<!-- wp:navigation-link {"label":"Typed","url":"https://www.s.example/?page_id=11"} /-->', linked, () => -++n)
+    expect(block.map((i) => [i.title, i.url])).toEqual([
+      ['Blog', 'https://s.example/'],
+      ['About', 'https://s.example/about-us/'],
+      // Proven public, but this context has no public address for it: the block's own address stays.
+      ['Team', 'https://s.example/about/team/'],
+      ['News', 'https://s.example/topics/news/'],
+      ['Typed', 'https://s.example/about-us/'],
+    ])
+    const [classic] = classicMenus([{ id: 1, slug: 'main', name: 'Main' }], [
+      { id: 20, menus: 1, type: 'post_type', object: 'page', object_id: 11, url: 'https://s.example/about/', title: { raw: 'About' }, menu_order: 1 },
+      { id: 21, menus: 1, type: 'custom', url: '/?page_id=11', title: { raw: 'Typed' }, menu_order: 2 },
+      { id: 22, menus: 1, type: 'taxonomy', object: 'category', object_id: 2, url: 'https://s.example/category/news/', title: { raw: 'News' }, menu_order: 3 },
+    ], linked)
+    expect(classic!.items.map((i) => i.url)).toEqual(['https://s.example/about-us/', 'https://s.example/about-us/', 'https://s.example/topics/news/'])
   })
 
   it('are left out when that post is not proven public — block and classic menus alike', () => {
@@ -272,7 +300,7 @@ describe('fetchRestRawIR menus', () => {
   it('reads classic menus and block navigation with a credential, with their locations', async () => {
     const { fetchImpl } = site()
     const { raw, gaps, warnings } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl, auth: { user: 'u', appPassword: 'p' } })
-    expect(gaps).toEqual([])
+    expect(gaps).toEqual(['redirects_partial'])
     // Two left out: the draft page's classic item, and the block link to page 12, which this site never listed.
     expect(warnings).toEqual(['menus: 2 item(s) are drafts or point at content not proven public (unpublished, password-protected, or not read by this import) — left out'])
     expect(JSON.stringify(raw.menus)).not.toMatch(/Secret plan|secret-plan|page_id=14/)
@@ -280,11 +308,29 @@ describe('fetchRestRawIR menus', () => {
     expect(raw.menus![0]!.items[0]!.target).toEqual({ kind: 'post', post_type: 'page', id: 11, slug: 'about', resolved: true })
   })
 
+  it('links public posts and terms at the addresses the site reports for them', async () => {
+    const { fetchImpl: base } = site()
+    const fetchImpl = (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+      const u = String(url)
+      if (u.includes('/categories?')) return json([{ id: 2, slug: 'news', name: 'News', link: 'https://s.example/topics/news/' }])
+      const r = await base(url, init)
+      if (!u.includes('/pages?')) return r
+      const pages = (await r.json()) as Array<Record<string, unknown>>
+      for (const p of pages) if (p.id === 11) p.link = 'https://s.example/about-us/'
+      return json(pages)
+    }) as typeof fetch
+    const { raw } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl, auth: { user: 'u', appPassword: 'p' } })
+    expect(raw.menus!.map((m) => m.items.map((i) => [i.title, i.url]))).toEqual([
+      [['About', 'https://s.example/about-us/']],
+      [['Blog', 'https://s.example/'], ['About', 'https://s.example/about-us/'], ['News', 'https://s.example/topics/news/']],
+    ])
+  })
+
   it('names the gap instead of silently returning no menus without a credential', async () => {
     const { fetchImpl, calls } = site()
     const { raw, gaps, warnings } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl })
     expect(raw.menus).toBeUndefined()
-    expect(gaps).toEqual(['menus_require_auth'])
+    expect(gaps).toEqual(['menus_require_auth', 'redirects_partial'])
     expect(warnings).toEqual([])
     expect(calls.some((c) => /\/(menus|navigation)\?/.test(c))).toBe(false)
   })
@@ -293,7 +339,7 @@ describe('fetchRestRawIR menus', () => {
     const { fetchImpl } = site({ menus: 403 })
     const { raw, gaps, credential } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl, auth: { user: 'u', appPassword: 'p' } })
     expect(raw.menus).toBeUndefined()
-    expect(gaps).toEqual(['menus_require_auth'])
+    expect(gaps).toEqual(['menus_require_auth', 'redirects_partial'])
     // A missing right on menus is not a rejected credential: the content listings were read with it.
     expect(credential.status).toBe('accepted')
   })

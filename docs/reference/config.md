@@ -67,10 +67,10 @@ interface ContentrainConfig {
   stack: StackType         // Framework/stack identifier
   workflow: WorkflowMode   // Content workflow mode
   repository?: {           // Git repository info (optional)
-    provider: 'github' | 'gitlab'  // Git host (Bitbucket coming)
-    owner: string
-    name: string
-    default_branch: string
+    provider?: 'github' | 'gitlab' // Git host (Bitbucket coming)
+    owner?: string
+    name?: string
+    default_branch: string // The base branch; `init` writes it alone when no host is known
   }
   locales: {
     default: string        // Default locale code (e.g., "en")
@@ -122,7 +122,7 @@ interface ContentrainConfig {
 | `platform` | `Platform` | No | Target platform: `web`, `mobile`, `api`, `desktop`, `static`, `other`. Informational — MCP's config reader strips it; only the raw file (read by `generate` and tooling) retains it. |
 | `stack` | `StackType` | Yes | Framework identifier. See [Supported Stacks](#supported-stacks) below. |
 | `workflow` | `WorkflowMode` | Yes | `auto-merge` or `review`. See [Workflow Modes](#workflow-modes). |
-| `repository` | `object` | No | Repository connection details. `repository.default_branch` is **not** informational: it is the [base branch](#base-branch) local writes advance. |
+| `repository` | `object` | No | Repository connection details. `provider`/`owner`/`name` are informational and optional. `repository.default_branch` is **not** informational: it is the [base branch](#base-branch) local writes advance, and `init` writes it. |
 | `locales.default` | `string` | Yes | Default locale code (e.g., `en`). |
 | `locales.supported` | `string[]` | Yes | All supported locale codes. Must include `default`. |
 | `domains` | `string[]` | Yes | Content domain names for organizing models. |
@@ -169,6 +169,14 @@ A local auto-merge merges the base branch into `contentrain` before each write, 
 3. the remote's default branch (`refs/remotes/origin/HEAD`, as `git clone` leaves it), when that branch exists locally;
 4. a local `main`, then a local `master`;
 5. the checked-out branch — only when none of the above exists.
+
+`contentrain init` (CLI and the `contentrain_init` tool) resolves the default branch once, with steps 3–5 above, and writes it as `repository.default_branch` — alone, when the git host is not known:
+
+```json
+{ "repository": { "default_branch": "main" } }
+```
+
+It does not record the `CONTENTRAIN_BRANCH` env (a per-process override is not the project's default), and it records the checked-out branch only when it is the repository's only branch. Run from a feature branch in a repository whose default is neither `main`/`master` nor named by `origin/HEAD`, it records nothing and says so; set the field by hand. Re-running `init` on an initialized project changes nothing, so an existing value is never overwritten.
 
 The checked-out branch is deliberately last. A content write made while a feature branch is checked out lands on `contentrain` and the base branch only: the feature branch is not merged into `contentrain`, not moved, and not pushed, and the developer's working tree and index are left as they are (the response carries a `warning` saying so). Because that tree then falls behind every write, MCP reads `.contentrain/` from the `contentrain` branch while such a branch is checked out: editing the same value twice needs no `git merge`, and `content_list`, `describe`, `status` and `validate` report `content_source` with the ref and commit they read. Source files, scan and normalize keep reading the working tree; the base branch, `contentrain`, `cr/*` branches and a detached HEAD read the working tree as before. Set `repository.default_branch` when your default branch is not `main`/`master` and the remote HEAD is not available.
 

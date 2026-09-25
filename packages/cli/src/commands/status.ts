@@ -4,6 +4,7 @@ import { createGit } from '@contentrain/mcp/git/identity'
 import { readModel, countEntries } from '@contentrain/mcp/core/model-manager'
 import { validateProject } from '@contentrain/mcp/core/validator'
 import { checkBranchHealth, contentBranchRelation } from '@contentrain/mcp/git/branch-lifecycle'
+import { resolveBaseBranch } from '@contentrain/mcp/git/base-branch'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { resolveProjectRoot, loadProjectContext, requireInitialized } from '../utils/context.js'
 import { pc, formatTable, formatPercent, formatCount } from '../utils/ui.js'
@@ -68,8 +69,11 @@ export default defineCommand({
           const contentBranchInfo: Record<string, unknown> = { exists: contentBranchExists }
           if (contentBranchExists) {
             try {
-              const baseBranch = ctx.config?.repository?.default_branch ?? 'main'
+              // The same resolver MCP writes use, so status reports against
+              // the branch a write would actually advance (#231).
+              const baseBranch = await resolveBaseBranch(git, ctx.config, { currentBranch: allLocal.current })
               const relation = await contentBranchRelation(git, baseBranch)
+              contentBranchInfo['base'] = baseBranch
               contentBranchInfo['ahead'] = relation.ahead
               contentBranchInfo['behind'] = relation.behind
               contentBranchInfo['relation'] = relation.relation
@@ -149,7 +153,7 @@ export default defineCommand({
 
       if (contentBranchExists) {
         try {
-          const baseBranch = ctx.config?.repository?.default_branch ?? 'main'
+          const baseBranch = await resolveBaseBranch(git, ctx.config, { currentBranch: allLocal.current })
           const { ahead, behind, relation } = await contentBranchRelation(git, baseBranch)
           if (relation === 'diverged') {
             log.warning(pc.bold(`\nContent branch`))

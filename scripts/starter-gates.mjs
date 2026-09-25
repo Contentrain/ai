@@ -20,7 +20,11 @@
 // A fixture is laid over the starter as files. Its `fixture.json` is not a
 // site file: `dependencies` there are added after install, the way a
 // migration adds what the kit components it copies need (embla-carousel for
-// the slider). `optimizedInDist` names images that must reach dist as
+// the slider). `absentFromDist` lists text no built file may contain: the
+// titles and addresses of the fixture's drafts, which no menu, body link,
+// sitemap or feed may reveal. `distFiles` names built files and text each
+// must contain or must not (the host's redirect rules, a redirect page, the
+// sitemap). `optimizedInDist` names images that must reach dist as
 // resized copies with a srcset, from public/ or from Studio's media host.
 
 import { execFileSync, spawn } from 'node:child_process'
@@ -84,7 +88,7 @@ server.listen(0, '127.0.0.1', () => console.log(server.address().port))`
   studioServer.removeAllListeners('exit')
   studioServer.stdout.destroy()
   studioServer.unref()
-  // The binding as Studio writes it when a site is connected, with media on a CDN host of its own
+  // The binding as Studio writes it when it moves the media (Migration → Media), with media on a CDN host of its own
   // (the stand-in); the API origin is never fetched at build time.
   const studioUrl = `http://127.0.0.1:${port}`
   writeFileSync(join(project, 'studio.json'), `${JSON.stringify({ baseUrl: 'https://studio.invalid', mediaBaseUrl: `${studioUrl}/api/cdn/v1/fixture`, projectId: 'fixture' }, null, 2)}\n`)
@@ -116,6 +120,33 @@ run('pnpm', ['exec', 'astro', 'check'])
 run('pnpm', ['exec', 'knip'])
 run('pnpm', ['run', 'build'])
 run('node', ['scripts/check-dist.mjs'])
+
+const absent = fixture.absentFromDist ?? []
+if (absent.length) {
+  const leaks = []
+  for (const entry of readdirSync(join(project, 'dist'), { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !/\.(?:html|xml|txt|json)$/.test(entry.name)) continue
+    const path = join(entry.parentPath, entry.name)
+    const text = readFileSync(path, 'utf8')
+    for (const needle of absent) if (text.includes(needle)) leaks.push(`${path.slice(project.length + 1)}: ${needle}`)
+  }
+  if (leaks.length) throw new Error(`Unpublished content reached dist:\n${leaks.join('\n')}`)
+  console.log(`\nno unpublished content in dist (${absent.length} markers)`)
+}
+
+const fileChecks = Object.entries(fixture.distFiles ?? {})
+if (fileChecks.length) {
+  const problems = []
+  for (const [file, { contains = [], excludes = [] }] of fileChecks) {
+    const path = join(project, 'dist', file)
+    if (!existsSync(path)) { problems.push(`${file}: not built`); continue }
+    const text = readFileSync(path, 'utf8')
+    for (const needle of contains) if (!text.includes(needle)) problems.push(`${file}: missing ${needle}`)
+    for (const needle of excludes) if (text.includes(needle)) problems.push(`${file}: must not contain ${needle}`)
+  }
+  if (problems.length) throw new Error(`Built files are not as expected:\n${problems.join('\n')}`)
+  console.log(`\n${fileChecks.length} built file(s) as expected`)
+}
 
 const optimized = fixture.optimizedInDist ?? []
 if (optimized.length) {

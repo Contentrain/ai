@@ -1,0 +1,51 @@
+{
+  "name": "@contentrain/writer",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Writes an Astro + Contentrain project from a project plan: deterministic generation, then an agent for site-specific components within a fixed tool surface and budget",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Contentrain/ai.git",
+    "directory": "packages/writer"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist",
+    "starter"
+  ],
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "prepack": "node scripts/bundle-starter.mjs",
+    "postpack": "rm -rf starter"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.282",
+    "@anthropic-ai/sdk": "^0.128.0",
+    "@contentrain/astro-kit": "workspace:*",
+    "@contentrain/types": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "pixelmatch": "^7.2.0",
+    "playwright": "^1.63.0",
+    "pngjs": "^7.0.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsdown": "^0.21.0",
+    "typescript": "^5.7.0",
+    "@types/pngjs": "^6.0.5"
+  }
+}

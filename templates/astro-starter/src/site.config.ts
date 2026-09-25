@@ -21,10 +21,39 @@ export interface SiteConfig {
   }
   /** The front page: the posts index, or one page by slug. */
   home: { kind: 'posts' } | { kind: 'page', slug: string }
+  /**
+   * The document title of a page with a title of its own: `{title}` and `{site}` are filled in.
+   * A migration copies the source's pattern (Yoast's separator, WordPress's en dash); an entry's
+   * SEO title replaces it whole.
+   */
+  titleTemplate: string
   /** Posts per index or archive page (WordPress: Settings → Reading). */
   postsPerPage: number
-  /** Menu slugs for the site's navigation areas; a missing menu renders nothing. */
-  menus: { primary: string, footer: string }
+  /**
+   * Menu slugs for the site's navigation areas; a missing menu renders nothing. The footer takes
+   * its menus in order, one column each (the source theme's footer navigations).
+   */
+  menus: { primary: string, footer: readonly string[] }
+  /**
+   * A single post as the source's single template lays it out: the order of the header parts,
+   * links to the previous and next post, and a list of other posts under it (0 for none).
+   */
+  post: {
+    header: ReadonlyArray<'terms' | 'title' | 'byline' | 'cover'>
+    adjacent: boolean
+    more: number
+  }
+  /**
+   * Post lists (the blog index and archives): cards, or every post in full as a WordPress query
+   * loop that shows the post content does; `heading` shows the index's title on the front page too.
+   */
+  lists: { display: 'cards' | 'full', heading: boolean }
+  /**
+   * The source site's hosts (`site.com`): a link to one of them in migrated content is internal
+   * whatever its scheme, `www.` or letter case, and resolves through the published set. Fixed at
+   * build time, so moving the site to a new domain in Studio does not turn the old links external.
+   */
+  sourceHosts: readonly string[]
   /**
    * Contentrain Studio's public forms and comments API, from studio.json at the
    * project root (see astro.config.mjs). Without it, forms and comment threads
@@ -46,7 +75,11 @@ export const siteConfig: SiteConfig = {
     blog: '/blog/',
   },
   home: { kind: 'posts' },
+  titleTemplate: '{title} – {site}',
   postsPerPage: 10,
-  menus: { primary: 'primary', footer: 'footer' },
+  menus: { primary: 'primary', footer: ['footer'] },
+  post: { header: ['terms', 'title', 'byline', 'cover'], adjacent: false, more: 0 },
+  lists: { display: 'cards', heading: false },
+  sourceHosts: [],
   ...(typeof __CONTENTRAIN_STUDIO__ !== 'undefined' && __CONTENTRAIN_STUDIO__ ? { studio: __CONTENTRAIN_STUDIO__ } : {}),
 }

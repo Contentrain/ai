@@ -1,0 +1,939 @@
+{
+  "format": "contentrain-redirect-parity@1",
+  "origin": "https://example.test",
+  "about": "Redirection (John Godley) rules → RawRedirect / RawRedirectExcluded, as both @contentrain/wp-import (over REST) and the Contentrain Bridge (its tables) export them. Owned by wp-import; the Bridge copies this file unchanged and pins the commit it copied.",
+  "rules": [
+    "`groups` and `items` are Redirection's own rows (its tables' columns; REST items carry the same values). `action_data` is the target URL for a url action, the condition's data otherwise; `match_data` is the rule's own flags or null. `options` is the site's saved redirection_options, or null when never saved. The plugin is active.",
+    "Flags a rule is matched with (Red_Source_Flags): query `exact`, case- and slash-sensitive; options never saved (a fresh install) ignore case and trailing slash; the saved options, then the rule's own `match_data.source`, override. Only valid values count: query exact|ignore|pass|exactorder, case and trailing booleans. A regex rule matches its query exactly; `exactorder` is written `exact`. Every rule, excluded ones too, carries `query`, `case_insensitive` and `trailing_slash`.",
+    "An enabled rule in an enabled group with a url action and url match is served: `to` root-relative when on `origin`, else absolute; a status outside 3xx becomes 301 with a `status_note`. An error action with 410 or 451 is served too, `to` empty. A disabled rule or group, any other action (reason `not-a-redirect:<action>`, with its status) and any other match (reason `conditional-match:<match>`, with its `condition` and status) are excluded, with no `to`. `served_by` names a group's Apache (2) or nginx (3) module.",
+    "`redirects` and `excluded` are each ordered by id as strings (`redirection:10` before `redirection:2`); `rules` is how many the source holds. Keys are compared order-free.",
+    "`options: null` is what the Bridge reads as no saved option; over REST, `redirection/v1/setting` returns the fresh-install values merged the same way, so the expected output is one. A case with `only: 'rest'` (`options: 'unreadable'`: the settings endpoint refused) is wp-import's alone: a rule's flags are written only where the rule states them, a regex rule's query always `exact`. The Bridge always reads its options and skips it."
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "status": "enabled",
+      "module_id": 1
+    },
+    {
+      "id": 2,
+      "status": "enabled",
+      "module_id": 2
+    },
+    {
+      "id": 3,
+      "status": "disabled",
+      "module_id": 1
+    },
+    {
+      "id": 4,
+      "status": "enabled",
+      "module_id": 3
+    }
+  ],
+  "items": [
+    {
+      "id": 1,
+      "url": "/old-1",
+      "regex": false,
+      "group_id": 1,
+      "status": "enabled",
+      "action_type": "url",
+      "action_code": 301,
+      "action_data": "/new-1/",
+      "match_type": "url",
+      "match_data": null
+    },
+    {
+      "id": 2,
+      "url": "/old-2",
+      "regex": false,
+      "group_id": 1,
+      "status": "enabled",
+      "action_type": "url",
+      "action_code": 302,
+      "action_data": "https://example.org/b",
+      "match_type": "url",
+      "match_data": {
+        "source": {
+          "flag_query": "exact",
+          "flag_case": false,
+          "flag_trailing": true
+        }
+      }
+    },
+    {
+      "id": 3,
+      "url": "/old-3",
+      "regex": false,
+      "group_id": 1,
+      "status": "enabled",
+      "action_type": "url",
+      "action_code": 308,
+      "action_data": "https://example.test/new-3/",
+      "match_type": "url",
+      "match_data": null
+    },
+    {
+      "id": 4,
+      "url": "^/legacy/(.*)$",
+      "regex": true,
+      "group_id": 1,
+      "status": "enabled",
+      "action_type": "url",
+      "action_code": 301,
+      "action_data": "/blog/$1",
+      "match_type": "url",
+      "match_data": {
+        "source": {
+          "flag_regex": true,
+          "flag_query": "ignore"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "url": "/old-5",
+      "regex": false,
+      "group_id": 1,
+      "status": "enabled",
+      "action_type": "error",
+      "action_code": 410,
+      "action_data": "",
+      "match_type": "url",
+      "match_data": null
+    },
+    {
+      "id": 6,
+      "url": "/old-6",
+      "regex": false,
+      "group_id": 1,
+      "status": "enabled",
+      "action_type": "error",
+      "action_code": 451,
+      "action_data": "",
+      "match_type": "url",
+      "match_data": null
+    },
+    {
+      "id": 7,
+      "url": "/old-7",
+      "regex": false,
+      "group_id": 1,
+      "status": "enabled",
+      "action_type": "error",
+      "action_code": 404,
+      "action_data": "",
+      "match_type": "url",
+      "match_data": null
+    },
+    {
+      "id": 8,
+      "url": "/old-8",
+      "regex": false,
+      "group_id": 1,
+      "status": "disabled",
+      "action_type": "url",
+      "action_code": 301,
+      "action_data": "/new-8/",
+      "match_type": "url",
+      "match_data": null
+    },
+    {
+      "id": 9,
+      "url": "/old-9",
+      "regex": false,
+      "group_id": 1,
+      "status": "enabled",
+      "action_type": "url",
+      "action_code": 301,
+      "action_data": {
+        "logged_in": "/in/",
+        "logged_out": "/out/"
+      },
+      "match_type": "login",
+      "match_data": null
+    },
+    {
+      "id": 10,
+      "url": "/old-10",
+      "regex": false,
+      "group_id": 2,
+      "status": "enabled",
+      "action_type": "url",
+      "action_code": 301,
+      "action_data": "/new-10/",
+      "match_type": "url",
+      "match_data": null
+    },
+    {
+      "id": 11,
+      "url": "/old-11",
+      "regex": false,
+      "group_id": 3,
+      "status": "enabled",
+      "action_type": "url",
+      "action_code": 301,
+      "action_data": "/new-11/",
+      "match_type": "url",
+      "match_data": null
+    },
+    {
+      "id": 12,
+      "url": "/old-12",
+      "regex": false,
+      "group_id": 1,
+      "status": "enabled",
+      "action_type": "url",
+      "action_code": 200,
+      "action_data": "/new-12/",
+      "match_type": "url",
+      "match_data": null
+    },
+    {
+      "id": 13,
+      "url": "/old-13",
+      "regex": false,
+      "group_id": 1,
+      "status": "enabled",
+      "action_type": "url",
+      "action_code": 301,
+      "action_data": "/new-13/",
+      "match_type": "url",
+      "match_data": {
+        "source": {
+          "flag_query": "pass",
+          "flag_case": "1",
+          "flag_trailing": false
+        }
+      }
+    },
+    {
+      "id": 14,
+      "url": "/old-14",
+      "regex": false,
+      "group_id": 4,
+      "status": "enabled",
+      "action_type": "url",
+      "action_code": 301,
+      "action_data": "/new-14/",
+      "match_type": "url",
+      "match_data": {
+        "source": {
+          "flag_query": "exactorder"
+        }
+      }
+    }
+  ],
+  "cases": [
+    {
+      "name": "Site flags saved: every rule without its own takes them",
+      "options": {
+        "flag_query": "pass",
+        "flag_case": true,
+        "flag_trailing": false,
+        "flag_regex": false
+      },
+      "expect": {
+        "redirects": [
+          {
+            "id": "redirection:1",
+            "from": "/old-1",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "to": "/new-1/",
+            "status": 301
+          },
+          {
+            "id": "redirection:10",
+            "from": "/old-10",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "served_by": "apache",
+            "to": "/new-10/",
+            "status": 301
+          },
+          {
+            "id": "redirection:12",
+            "from": "/old-12",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "to": "/new-12/",
+            "status": 301,
+            "status_note": "source status 200 is not a redirect code; 301 assumed"
+          },
+          {
+            "id": "redirection:13",
+            "from": "/old-13",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "to": "/new-13/",
+            "status": 301
+          },
+          {
+            "id": "redirection:14",
+            "from": "/old-14",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "served_by": "nginx",
+            "to": "/new-14/",
+            "status": 301
+          },
+          {
+            "id": "redirection:2",
+            "from": "/old-2",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "ignore",
+            "to": "https://example.org/b",
+            "status": 302
+          },
+          {
+            "id": "redirection:3",
+            "from": "/old-3",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "to": "/new-3/",
+            "status": 308
+          },
+          {
+            "id": "redirection:4",
+            "from": "^/legacy/(.*)$",
+            "source": "redirection",
+            "match": "url",
+            "regex": true,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "to": "/blog/$1",
+            "status": 301
+          },
+          {
+            "id": "redirection:5",
+            "from": "/old-5",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "to": "",
+            "status": 410
+          },
+          {
+            "id": "redirection:6",
+            "from": "/old-6",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "to": "",
+            "status": 451
+          }
+        ],
+        "excluded": [
+          {
+            "id": "redirection:11",
+            "from": "/old-11",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "reason": "disabled"
+          },
+          {
+            "id": "redirection:7",
+            "from": "/old-7",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "status": 404,
+            "reason": "not-a-redirect:error"
+          },
+          {
+            "id": "redirection:8",
+            "from": "/old-8",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "reason": "disabled"
+          },
+          {
+            "id": "redirection:9",
+            "from": "/old-9",
+            "source": "redirection",
+            "match": "login",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "condition": {
+              "logged_in": "/in/",
+              "logged_out": "/out/"
+            },
+            "status": 301,
+            "reason": "conditional-match:login"
+          }
+        ],
+        "rules": 14
+      }
+    },
+    {
+      "name": "Site flags saved without flag keys: Redirection's base (exact, case- and slash-sensitive)",
+      "options": {
+        "https": false
+      },
+      "expect": {
+        "redirects": [
+          {
+            "id": "redirection:1",
+            "from": "/old-1",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "to": "/new-1/",
+            "status": 301
+          },
+          {
+            "id": "redirection:10",
+            "from": "/old-10",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "served_by": "apache",
+            "to": "/new-10/",
+            "status": 301
+          },
+          {
+            "id": "redirection:12",
+            "from": "/old-12",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "to": "/new-12/",
+            "status": 301,
+            "status_note": "source status 200 is not a redirect code; 301 assumed"
+          },
+          {
+            "id": "redirection:13",
+            "from": "/old-13",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "to": "/new-13/",
+            "status": 301
+          },
+          {
+            "id": "redirection:14",
+            "from": "/old-14",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "served_by": "nginx",
+            "to": "/new-14/",
+            "status": 301
+          },
+          {
+            "id": "redirection:2",
+            "from": "/old-2",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "ignore",
+            "to": "https://example.org/b",
+            "status": 302
+          },
+          {
+            "id": "redirection:3",
+            "from": "/old-3",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "to": "/new-3/",
+            "status": 308
+          },
+          {
+            "id": "redirection:4",
+            "from": "^/legacy/(.*)$",
+            "source": "redirection",
+            "match": "url",
+            "regex": true,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "to": "/blog/$1",
+            "status": 301
+          },
+          {
+            "id": "redirection:5",
+            "from": "/old-5",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "to": "",
+            "status": 410
+          },
+          {
+            "id": "redirection:6",
+            "from": "/old-6",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "to": "",
+            "status": 451
+          }
+        ],
+        "excluded": [
+          {
+            "id": "redirection:11",
+            "from": "/old-11",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "reason": "disabled"
+          },
+          {
+            "id": "redirection:7",
+            "from": "/old-7",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "status": 404,
+            "reason": "not-a-redirect:error"
+          },
+          {
+            "id": "redirection:8",
+            "from": "/old-8",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "reason": "disabled"
+          },
+          {
+            "id": "redirection:9",
+            "from": "/old-9",
+            "source": "redirection",
+            "match": "login",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "exact",
+            "condition": {
+              "logged_in": "/in/",
+              "logged_out": "/out/"
+            },
+            "status": 301,
+            "reason": "conditional-match:login"
+          }
+        ],
+        "rules": 14
+      }
+    },
+    {
+      "name": "Options never saved (a fresh install): case and trailing slash ignored",
+      "options": null,
+      "expect": {
+        "redirects": [
+          {
+            "id": "redirection:1",
+            "from": "/old-1",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "ignore",
+            "to": "/new-1/",
+            "status": 301
+          },
+          {
+            "id": "redirection:10",
+            "from": "/old-10",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "ignore",
+            "served_by": "apache",
+            "to": "/new-10/",
+            "status": 301
+          },
+          {
+            "id": "redirection:12",
+            "from": "/old-12",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "ignore",
+            "to": "/new-12/",
+            "status": 301,
+            "status_note": "source status 200 is not a redirect code; 301 assumed"
+          },
+          {
+            "id": "redirection:13",
+            "from": "/old-13",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "pass",
+            "case_insensitive": true,
+            "trailing_slash": "exact",
+            "to": "/new-13/",
+            "status": 301
+          },
+          {
+            "id": "redirection:14",
+            "from": "/old-14",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "ignore",
+            "served_by": "nginx",
+            "to": "/new-14/",
+            "status": 301
+          },
+          {
+            "id": "redirection:2",
+            "from": "/old-2",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "ignore",
+            "to": "https://example.org/b",
+            "status": 302
+          },
+          {
+            "id": "redirection:3",
+            "from": "/old-3",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "ignore",
+            "to": "/new-3/",
+            "status": 308
+          },
+          {
+            "id": "redirection:4",
+            "from": "^/legacy/(.*)$",
+            "source": "redirection",
+            "match": "url",
+            "regex": true,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "ignore",
+            "to": "/blog/$1",
+            "status": 301
+          },
+          {
+            "id": "redirection:5",
+            "from": "/old-5",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "ignore",
+            "to": "",
+            "status": 410
+          },
+          {
+            "id": "redirection:6",
+            "from": "/old-6",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "ignore",
+            "to": "",
+            "status": 451
+          }
+        ],
+        "excluded": [
+          {
+            "id": "redirection:11",
+            "from": "/old-11",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "ignore",
+            "reason": "disabled"
+          },
+          {
+            "id": "redirection:7",
+            "from": "/old-7",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "ignore",
+            "status": 404,
+            "reason": "not-a-redirect:error"
+          },
+          {
+            "id": "redirection:8",
+            "from": "/old-8",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "ignore",
+            "reason": "disabled"
+          },
+          {
+            "id": "redirection:9",
+            "from": "/old-9",
+            "source": "redirection",
+            "match": "login",
+            "regex": false,
+            "query": "exact",
+            "case_insensitive": true,
+            "trailing_slash": "ignore",
+            "condition": {
+              "logged_in": "/in/",
+              "logged_out": "/out/"
+            },
+            "status": 301,
+            "reason": "conditional-match:login"
+          }
+        ],
+        "rules": 14
+      }
+    },
+    {
+      "name": "REST only: Redirection's settings cannot be read, so a rule's flags are written only where the rule states them",
+      "only": "rest",
+      "options": "unreadable",
+      "expect": {
+        "redirects": [
+          {
+            "id": "redirection:1",
+            "from": "/old-1",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "to": "/new-1/",
+            "status": 301
+          },
+          {
+            "id": "redirection:10",
+            "from": "/old-10",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "served_by": "apache",
+            "to": "/new-10/",
+            "status": 301
+          },
+          {
+            "id": "redirection:12",
+            "from": "/old-12",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "to": "/new-12/",
+            "status": 301,
+            "status_note": "source status 200 is not a redirect code; 301 assumed"
+          },
+          {
+            "id": "redirection:13",
+            "from": "/old-13",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "to": "/new-13/",
+            "status": 301,
+            "query": "pass",
+            "trailing_slash": "exact"
+          },
+          {
+            "id": "redirection:14",
+            "from": "/old-14",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "served_by": "nginx",
+            "to": "/new-14/",
+            "status": 301,
+            "query": "exact"
+          },
+          {
+            "id": "redirection:2",
+            "from": "/old-2",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "to": "https://example.org/b",
+            "status": 302,
+            "query": "exact",
+            "case_insensitive": false,
+            "trailing_slash": "ignore"
+          },
+          {
+            "id": "redirection:3",
+            "from": "/old-3",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "to": "/new-3/",
+            "status": 308
+          },
+          {
+            "id": "redirection:4",
+            "from": "^/legacy/(.*)$",
+            "source": "redirection",
+            "match": "url",
+            "regex": true,
+            "to": "/blog/$1",
+            "status": 301,
+            "query": "exact"
+          },
+          {
+            "id": "redirection:5",
+            "from": "/old-5",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "to": "",
+            "status": 410
+          },
+          {
+            "id": "redirection:6",
+            "from": "/old-6",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "to": "",
+            "status": 451
+          }
+        ],
+        "excluded": [
+          {
+            "id": "redirection:11",
+            "from": "/old-11",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "reason": "disabled"
+          },
+          {
+            "id": "redirection:7",
+            "from": "/old-7",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "status": 404,
+            "reason": "not-a-redirect:error"
+          },
+          {
+            "id": "redirection:8",
+            "from": "/old-8",
+            "source": "redirection",
+            "match": "url",
+            "regex": false,
+            "reason": "disabled"
+          },
+          {
+            "id": "redirection:9",
+            "from": "/old-9",
+            "source": "redirection",
+            "match": "login",
+            "regex": false,
+            "condition": {
+              "logged_in": "/in/",
+              "logged_out": "/out/"
+            },
+            "status": 301,
+            "reason": "conditional-match:login"
+          }
+        ],
+        "rules": 14
+      }
+    }
+  ]
+}

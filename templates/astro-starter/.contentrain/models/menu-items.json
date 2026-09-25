@@ -1,6 +1,17 @@
 {
   "domain": "site",
   "fields": {
+    "classes": {
+      "items": "string",
+      "label": "CSS classes",
+      "order": 90,
+      "type": "array"
+    },
+    "description": {
+      "label": "Description",
+      "order": 100,
+      "type": "text"
+    },
     "menu": {
       "label": "Menu",
       "model": "menus",
@@ -24,11 +35,33 @@
       "order": 40,
       "type": "relation"
     },
+    "target": {
+      "label": "Target",
+      "model": [
+        "posts",
+        "pages",
+        "categories",
+        "tags"
+      ],
+      "order": 70,
+      "type": "relation"
+    },
     "title": {
       "label": "Label",
       "order": 10,
       "required": true,
       "type": "string"
+    },
+    "type": {
+      "label": "Type",
+      "options": [
+        "custom",
+        "post_type",
+        "taxonomy",
+        "post_type_archive"
+      ],
+      "order": 50,
+      "type": "select"
     },
     "url": {
       "label": "URL",

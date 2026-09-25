@@ -55,6 +55,13 @@ export interface MenuContext {
    */
   postSlug: (id: number) => string | undefined
   termSlug: (taxonomy: string, id: number) => string | undefined
+  /**
+   * Public address of such a post or term. A menu item that names one points there, whatever address the item
+   * kept: a block stores the url it had when it was saved (`/old-about/`), and a typed `?page_id=5` is a form the
+   * migrated site cannot serve.
+   */
+  postLink?: (id: number) => string | undefined
+  termLink?: (taxonomy: string, id: number) => string | undefined
   /** Published pages, for `core/page-list` (id, parent, order, title, link). */
   pages: Array<{ id: number; parent: number | null; menu_order: number; title: string; link: string | null; slug: string }>
 }
@@ -74,6 +81,14 @@ const targetOf = (kind: string | undefined, object: string | undefined, id: numb
   return { kind: 'unknown', resolved: false }
 }
 
+/** The public address of the post or term a target names, when it is one this import proved public. */
+const publicLink = (target: RawMenuTarget, ctx: MenuContext): string | undefined => {
+  if (!target.resolved || !('id' in target) || !target.id) return undefined
+  if (target.kind === 'post') return ctx.postLink?.(target.id)
+  if (target.kind === 'term') return ctx.termLink?.(target.taxonomy, target.id)
+  return undefined
+}
+
 /**
  * Items that are left out: a draft item, or one whose post target is not proven visible. Their children move up
  * to the nearest kept ancestor, as WordPress's walker shows them.
@@ -89,15 +104,18 @@ function hiddenItems(items: RestMenuItem[], drop: (i: RestMenuItem) => boolean):
   return { gone: new Set(parentOf.keys()), lift }
 }
 
+/** A host without case or a leading `www.`: example.com and www.example.com are one site (as the Bridge reads it). */
+const bareHost = (u: URL): string => u.hostname.toLowerCase().replace(/^www\./, '')
+
 /**
- * The post a plain permalink names (`/?page_id=14`, `/?p=14`) on this site: a custom link typed by hand carries no
- * post id, but it points at a post all the same, and its label is often that post's title.
+ * The post a plain permalink names (`/?page_id=14`, `/?p=14`) on this site, `www.` or not: a custom link typed by
+ * hand carries no post id, but it points at a post all the same, and its label is often that post's title.
  */
 export function plainPostId(url: string | undefined, origin: string): number | undefined {
   if (!url || !url.includes('?')) return undefined
   try {
     const u = new URL(url, `${origin}/`)
-    if (u.origin !== new URL(origin).origin) return undefined
+    if (bareHost(u) !== bareHost(new URL(origin))) return undefined
     const id = Number(u.searchParams.get('page_id') ?? u.searchParams.get('p'))
     return Number.isSafeInteger(id) && id > 0 ? id : undefined
   } catch { return undefined }
@@ -124,13 +142,15 @@ export function classicMenus(menus: RestMenu[], items: RestMenuItem[], ctx: Menu
       slug: m.slug ?? '',
       name: strip(m.name ?? m.slug ?? ''),
       items: own.map((i) => {
+        const target = targetOf(i.type, i.object, i.object_id, i.url, ctx)
+        const typed = target.kind === 'url' ? plainPostId(i.url, ctx.origin) : undefined
         const item: RawMenuItem = {
           id: i.id,
           title: i.title?.raw || i.title?.rendered || '',
           order: i.menu_order ?? 0,
           parent: lift(i.parent || null),
-          url: i.url || null,
-          target: targetOf(i.type, i.object, i.object_id, i.url, ctx),
+          url: publicLink(target, ctx) ?? (typed !== undefined ? ctx.postLink?.(typed) : undefined) ?? (i.url || null),
+          target,
           target_attr: i.target || null,
           classes: (i.classes ?? []).filter(Boolean),
           description: i.description ?? '',
@@ -197,16 +217,18 @@ export function navigationItems(content: string, ctx: MenuContext, nextId: () =>
 /** Menu items of navigation blocks already parsed (a `wp_navigation` body, or an inline navigation's links). */
 function blockItems(tree: Block[], ctx: MenuContext, nextId: () => number, dropped: { count: number }): RawMenuItem[] {
   const items: RawMenuItem[] = []
-  const push = (b: { title: string; url?: string; kind?: string; object?: string; id?: number; newTab?: boolean; className?: string; description?: string }, parent: number | null): number => {
+  const push = (b: { title: string; url?: string; kind?: string; object?: string; id?: number; typed?: number; newTab?: boolean; className?: string; description?: string }, parent: number | null): number => {
     const id = nextId()
     const url = absolute(b.url, ctx.origin)
+    const target = targetOf(b.kind, b.object, b.id, url, ctx)
     items.push({
       id,
       title: b.title,
       order: items.length + 1,
       parent,
-      url: url ?? null,
-      target: targetOf(b.kind, b.object, b.id, url, ctx),
+      // A public post or term is linked at its public address (see `MenuContext.postLink`).
+      url: publicLink(target, ctx) ?? (b.typed !== undefined ? ctx.postLink?.(b.typed) : undefined) ?? url ?? null,
+      target,
       target_attr: b.newTab ? '_blank' : null,
       classes: (b.className ?? '').split(/\s+/).filter(Boolean),
       description: b.description ?? '',
@@ -235,7 +257,7 @@ function blockItems(tree: Block[], ctx: MenuContext, nextId: () => number, dropp
           walk(b.children, parent)
           continue
         }
-        const id = push({ title: strip(a.label), url: str(a.url), kind, object, id: typeof a.id === 'number' ? a.id : undefined, newTab: a.opensInNewTab === true, className: str(a.className), description: str(a.description) }, parent)
+        const id = push({ title: strip(a.label), url: str(a.url), kind, object, id: typeof a.id === 'number' ? a.id : undefined, typed: kind === 'custom' ? postId : undefined, newTab: a.opensInNewTab === true, className: str(a.className), description: str(a.description) }, parent)
         walk(b.children, id)
       } else if (b.name === 'core/home-link') {
         push({ title: strip(a.label) || 'Home', url: '/', className: str(a.className) }, parent)
