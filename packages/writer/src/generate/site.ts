@@ -120,3 +120,61 @@ export function withPresetsImport(globalCss: string): string {
   if (globalCss.includes("@import './wp-presets.css'")) return globalCss
   return replaceOnce(globalCss, /@import '\.\/wp-blocks\.css';\n/, "@import './wp-blocks.css';\n@import './wp-presets.css';\n", 'global.css wp-blocks import')
 }
+
+type PlanFont = NonNullable<PlanSite['tokens']['fonts']>[number]
+
+/** CSS variable Astro's font API defines for a self-hosted family: `Fira Code` → `--font-site-fira-code`. */
+export const fontVariable = (family: string) => `--font-site-${family.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
+
+/** Faces by family, each file a project-relative path under src/ (the media stage puts them in src/assets/fonts/site/). */
+function familiesOf(fonts: readonly PlanFont[]): Map<string, PlanFont[]> {
+  const families = new Map<string, PlanFont[]>()
+  for (const face of fonts) {
+    for (const file of face.files) {
+      if (!/^src\/[\w./-]+\.(?:woff2|woff|ttf|otf)$/.test(file) || file.includes('..')) throw new Error(`font ${face.family}: "${file}" is not a local font file under src/`)
+    }
+    if (!/^[\w .-]+$/.test(face.family)) throw new Error(`font family "${face.family}" has characters a config cannot carry`)
+    ;(families.get(face.family) ?? families.set(face.family, []).get(face.family)!).push(face)
+  }
+  return families
+}
+
+/** astro.config.mjs with the site's own fonts before the starter's Inter. */
+export function withSiteFonts(astroConfig: string, fonts: readonly PlanFont[]): string {
+  if (!fonts.length) return astroConfig
+  const entries = [...familiesOf(fonts)].map(([family, faces]) => `    {
+      provider: fontProviders.local(),
+      name: ${sq(family)},
+      cssVariable: ${sq(fontVariable(family))},
+      fallbacks: ['ui-sans-serif', 'system-ui', 'sans-serif'],
+      options: {
+        variants: [
+${faces.map(face => `          { src: [${face.files.map(file => sq(`./${file}`)).join(', ')}], weight: ${sq(face.weight)}, style: ${sq(face.style)}${face.unicodeRange ? `, unicodeRange: [${sq(face.unicodeRange)}]` : ''} },`).join('\n')}
+        ],
+      },
+    },`).join('\n')
+  return replaceOnce(astroConfig, /  fonts: \[\n/, `  // The source site's own fonts, self-hosted.\n  fonts: [\n${entries}\n`, 'astro.config fonts')
+}
+
+/** BaseLayout loading the site's fonts beside Inter. */
+export function withSiteFontTags(layout: string, fonts: readonly PlanFont[]): string {
+  if (!fonts.length) return layout
+  const tags = [...familiesOf(fonts).keys()].map(family => `    <Font cssVariable=${JSON.stringify(fontVariable(family))} preload />`).join('\n')
+  return replaceOnce(layout, /    <Font cssVariable="--font-inter" preload \/>\n/, `    <Font cssVariable="--font-inter" preload />\n${tags}\n`, 'BaseLayout font tag')
+}
+
+/**
+ * Font roles pointing at a self-hosted family through its variable: `Manrope, sans-serif` becomes
+ * `var(--font-site-manrope)` (the variable carries the fallbacks). Other values are kept.
+ */
+export function fontRoles(tokens: PlanSite['tokens']): PlanSite['tokens'] {
+  const hosted = new Set((tokens.fonts ?? []).map(face => face.family.toLowerCase()))
+  if (!hosted.size) return tokens
+  const roles = { ...tokens.roles }
+  for (const role of ['font-sans', 'font-serif', 'font-mono'] as const) {
+    const first = roles[role]?.split(',')[0]?.trim().replace(/^["']|["']$/g, '')
+    const family = (tokens.fonts ?? []).find(face => face.family.toLowerCase() === first?.toLowerCase())?.family
+    if (family) roles[role] = `var(${fontVariable(family)})`
+  }
+  return { ...tokens, roles }
+}

@@ -22,7 +22,12 @@ const plan: ProjectPlan = {
     permalinks: { post: '/:year/:slug/', page: '/:path/', category: '/topics/:slug/', tag: '/tag/:slug/', author: '/author/:slug/', blog: '/journal/' },
     home: { kind: 'page', slug: 'about' }, postsPerPage: 6, menus: { primary: 'primary', footer: 'footer' },
     redirects: { '/old/': '/about/', '/gone/': { status: 410, destination: '/' } },
-    tokens: { roles: { 'color-accent': '#503AA8' }, extra: { 'color-brand': '#FFEE58' }, presets: { color: { 'accent-1': '#FFEE58' } } },
+    tokens: {
+      roles: { 'color-accent': '#503AA8', 'font-sans': 'Manrope, sans-serif' },
+      extra: { 'color-brand': '#FFEE58' },
+      presets: { color: { 'accent-1': '#FFEE58' } },
+      fonts: [{ family: 'Manrope', weight: '200 800', style: 'normal', files: ['src/assets/fonts/site/manrope-200-800-normal.woff2'] }],
+    },
   },
   layout: {},
   models: [{
@@ -84,6 +89,15 @@ describe('generateProject in place', () => {
     expect(css).toContain('--color-brand: #FFEE58;')
     expect(css).toContain("@import './wp-presets.css';")
     expect(await read('src/styles/wp-presets.css')).toContain('.has-accent-1-color { color: var(--wp--preset--color--accent-1); }')
+  })
+
+  it('self-hosts the site\'s fonts and points the font role at them', async () => {
+    const config = await read('astro.config.mjs')
+    expect(config).toContain(`name: 'Manrope',`)
+    expect(config).toContain(`cssVariable: '--font-site-manrope',`)
+    expect(config).toContain(`{ src: ['./src/assets/fonts/site/manrope-200-800-normal.woff2'], weight: '200 800', style: 'normal' },`)
+    expect(await read('src/layouts/BaseLayout.astro')).toContain('<Font cssVariable="--font-site-manrope" preload />')
+    expect(await read('src/styles/global.css')).toContain('--font-sans: var(--font-site-manrope);')
   })
 
   it('writes plan models and the content config over every model', async () => {

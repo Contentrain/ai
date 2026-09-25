@@ -10,7 +10,7 @@ import { copyComponents, planCopy, type KitCatalog } from '@contentrain/astro-ki
 import { canonicalStringify, type ModelDefinition, type ProjectPlan } from '@contentrain/types'
 import { configWithDomains, mergeStarterModels, planModelFiles } from './models.js'
 import { contentConfigSource } from './schema.js'
-import { astroConfigSource, presetsSource, redirectsSource, siteConfigSource, themeSource, withPresetsImport } from './site.js'
+import { astroConfigSource, fontRoles, presetsSource, redirectsSource, siteConfigSource, themeSource, withPresetsImport, withSiteFonts, withSiteFontTags } from './site.js'
 import { composedIndexSource, composedViews, type RoutePlanOutcome } from './views.js'
 
 export interface GenerateInput {
@@ -108,9 +108,11 @@ export async function generateProject(input: GenerateInput): Promise<GenerateRep
 
   // 3. Site settings: addresses, redirects, the design tokens and the source theme's presets.
   await write('src/site.config.ts', siteConfigSource(await read('src/site.config.ts'), plan.site))
-  await write('astro.config.mjs', astroConfigSource(await read('astro.config.mjs'), plan.site, []))
+  const fonts = plan.site.tokens.fonts ?? []
+  await write('astro.config.mjs', withSiteFonts(astroConfigSource(await read('astro.config.mjs'), plan.site, []), fonts))
+  if (fonts.length) await write('src/layouts/BaseLayout.astro', withSiteFontTags(await read('src/layouts/BaseLayout.astro'), fonts))
   await write('redirects.json', redirectsSource(plan.site))
-  let globalCss = themeSource(await read('src/styles/global.css'), plan.site.tokens)
+  let globalCss = themeSource(await read('src/styles/global.css'), fontRoles(plan.site.tokens))
   const presets = presetsSource(plan.site.tokens)
   if (presets) {
     await write('src/styles/wp-presets.css', presets)
