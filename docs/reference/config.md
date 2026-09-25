@@ -170,7 +170,7 @@ A local auto-merge merges the base branch into `contentrain` before each write, 
 4. a local `main`, then a local `master`;
 5. the checked-out branch — only when none of the above exists.
 
-The checked-out branch is deliberately last. A content write made while a feature branch is checked out lands on `contentrain` and the base branch only: the feature branch is not merged into `contentrain`, not moved, and not pushed, and the developer's working tree and index are left as they are (the response carries a `warning` saying so). Set `repository.default_branch` when your default branch is not `main`/`master` and the remote HEAD is not available.
+The checked-out branch is deliberately last. A content write made while a feature branch is checked out lands on `contentrain` and the base branch only: the feature branch is not merged into `contentrain`, not moved, and not pushed, and the developer's working tree and index are left as they are (the response carries a `warning` saying so). Because that tree then falls behind every write, MCP reads `.contentrain/` from the `contentrain` branch while such a branch is checked out: editing the same value twice needs no `git merge`, and `content_list`, `describe`, `status` and `validate` report `content_source` with the ref and commit they read. Source files, scan and normalize keep reading the working tree; the base branch, `contentrain`, `cr/*` branches and a detached HEAD read the working tree as before. Set `repository.default_branch` when your default branch is not `main`/`master` and the remote HEAD is not available.
 
 ## context.json
 

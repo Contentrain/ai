@@ -12,7 +12,7 @@ import { checkBranchHealth, cleanupMergedBranches, deleteRemoteBranch, listRemot
 import { isMerged } from '../providers/local/branch-ops.js'
 import { normalizeOperationError } from '../git/errors.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
-import { capabilityError } from './guards.js'
+import { capabilityError, refSource } from './guards.js'
 import { isToolAvailable } from './availability.js'
 import { divergenceNextSteps, gitReport } from './commit-plan.js'
 
@@ -159,8 +159,9 @@ export function registerWorkflowTools(
         // local disk walk when we have a projectRoot (identical behavior to
         // pre-5.5 callers); otherwise drive the reader-based path so remote
         // providers stay supported.
+        const fromRef = await refSource(provider)
         if (!result) {
-          result = projectRoot
+          result = projectRoot && !fromRef
             ? await validateProject(projectRoot, { model: input.model, fix: false })
             : await validateProject(provider, { model: input.model, fix: false })
         }
@@ -183,6 +184,7 @@ export function registerWorkflowTools(
               ? 'All validation checks passed.'
               : `Validation found ${result.summary.errors} error(s) and ${result.summary.warnings} warning(s).`,
             ...result,
+            ...(fromRef ? { content_source: fromRef } : {}),
             next_steps: nextSteps,
           }, null, 2) }],
         }

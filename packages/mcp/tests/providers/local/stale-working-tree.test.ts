@@ -189,6 +189,9 @@ describe('local content_save with a working tree behind contentrain (#226)', () 
     expect(Object.keys(await remoteEntries(CONTENTRAIN_BRANCH))).not.toContain('ffff00000001')
   })
 
+  // #229: content writes do not update a checked-out feature branch's tree
+  // (#227), so there the planner reads `.contentrain/` from the contentrain
+  // ref instead — the tree's lag no longer shows up as a stale plan.
   describe('on a feature branch, which content writes do not sync', () => {
     beforeEach(async () => {
       await createGit(work).raw(['checkout', '-b', 'feat/x'])
@@ -199,23 +202,35 @@ describe('local content_save with a working tree behind contentrain (#226)', () 
       arguments: { model: 'faq', entries: [{ locale: 'en', id: seedId, data }] },
     }))
 
-    it('saves the same entry twice when the second save changes another field', async () => {
-      expect((await save({ question: 'v1?', answer: 'Seed.' }))['error']).toBeUndefined()
-      expect((await save({ question: 'Seed?', answer: 'Second.' }))['error']).toBeUndefined()
-
-      // The tree still said "Seed?" for the question, so the second save did not
-      // change it — the first save's value stays.
-      expect((await remoteEntries(CONTENTRAIN_BRANCH))[seedId]).toEqual({ question: 'v1?', answer: 'Second.' })
-    })
-
-    it('refuses a second edit of the same field, pointing at a merge of the base', async () => {
+    it('edits the same field twice with no merge in between — the second save sees the first', async () => {
       expect((await save({ question: 'v1?', answer: 'Seed.' }))['error']).toBeUndefined()
 
       const second = await save({ question: 'v2?', answer: 'Seed.' })
 
-      expect(second['code']).toBe('CONTENT_WORKING_TREE_STALE')
-      expect(second['developer_action']).toBe(`git merge ${baseBranch}`)
-      expect(String(second['agent_hint'])).toContain(`merge "${baseBranch}"`)
+      expect(second['error']).toBeUndefined()
+      expect((await remoteEntries(CONTENTRAIN_BRANCH))[seedId]).toEqual({ question: 'v2?', answer: 'Seed.' })
+    })
+
+    it('a second save that restates the first save\'s value keeps it', async () => {
+      expect((await save({ question: 'v1?', answer: 'Seed.' }))['error']).toBeUndefined()
+      expect((await save({ question: 'v1?', answer: 'Second.' }))['error']).toBeUndefined()
+
+      expect((await remoteEntries(CONTENTRAIN_BRANCH))[seedId]).toEqual({ question: 'v1?', answer: 'Second.' })
+    })
+
+    it('another writer between the read and the write is still refused — with no git action to take', async () => {
+      // The other writer reaches the remote first: the plan is made from this
+      // clone's contentrain snapshot, the transaction fetches the newer tip,
+      // and the same field differs.
+      await otherWriterPushes((entries) => {
+        entries[seedId] = { ...entries[seedId]!, question: 'Theirs?' }
+      })
+
+      const result = await save({ question: 'Mine?', answer: 'Seed.' })
+
+      expect(result['code']).toBe('CONTENT_WORKING_TREE_STALE')
+      expect(result['developer_action']).toBeUndefined()
+      expect(String(result['agent_hint'])).toContain('Re-read the content and retry')
     })
   })
 })

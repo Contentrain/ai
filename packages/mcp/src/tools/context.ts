@@ -14,6 +14,7 @@ import { createGit } from '../git/identity.js'
 import { resolveBaseBranch } from '../git/base-branch.js'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { TOOL_ANNOTATIONS } from './annotations.js'
+import { refSource } from './guards.js'
 
 export function registerContextTools(
   server: McpServer,
@@ -53,7 +54,8 @@ export function registerContextTools(
       // flows read the committed `.contentrain/context.json` through
       // the provider. Either way, the context block surfaces the last
       // operation + stats that were written alongside the last commit.
-      const context = projectRoot ? await readContext(projectRoot) : await readContext(provider)
+      const fromRef = await refSource(provider)
+      const context = projectRoot && !fromRef ? await readContext(projectRoot) : await readContext(provider)
       const vocabulary = await readVocabulary(provider)
 
       // Stats source depends on the provider:
@@ -98,6 +100,7 @@ export function registerContextTools(
         vocabulary: vocabulary && Object.keys(vocabulary.terms).length > 0
           ? { size: Object.keys(vocabulary.terms).length, terms: vocabulary.terms }
           : { size: 0 },
+        ...(fromRef ? { content_source: fromRef } : {}),
       }
 
       // Branch lifecycle: lazy cleanup + health check. Local-only, uses
@@ -203,6 +206,9 @@ export function registerContextTools(
         fields: modelDef.fields,
         stats: { total_entries: stats.total, locales: stats.locales },
       }
+
+      const fromRef = await refSource(provider)
+      if (fromRef) result['content_source'] = fromRef
 
       if (include_sample) {
         const sample = await getSample(provider, modelDef, effectiveLocale)
