@@ -67,6 +67,27 @@
     }
   },
   {
+    "name": "cover-start",
+    "props": {
+      "heading": "The long way round",
+      "lead": "A year of trains across Europe, one station at a time.",
+      "layout": "cover",
+      "actions": [
+        {
+          "label": "Read the series",
+          "href": "/series/long-way/"
+        }
+      ],
+      "image": {
+        "src": "/kit-fixtures/photo-3.svg",
+        "alt": "",
+        "width": 1600,
+        "height": 900
+      },
+      "align": "start"
+    }
+  },
+  {
     "name": "inverse-text-only",
     "props": {
       "heading": "Contact",
