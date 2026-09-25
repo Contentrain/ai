@@ -125,6 +125,9 @@ function runGit(cwd: string, args: string[], stdin?: string): Promise<Buffer> {
     child.stdout.on('data', (c: Buffer) => chunks.push(c))
     child.stderr.on('data', (c: Buffer) => { stderr += c.toString() })
     child.on('error', reject)
+    // git may exit before reading all of stdin (a bad ref, a missing object): the write then fails
+    // with EPIPE. The exit code below reports that failure; unhandled, it would crash the process.
+    child.stdin.on('error', () => {})
     child.on('close', (code) => {
       if (code === 0) resolve(Buffer.concat(chunks))
       else reject(new Error(`git ${args[0]} exited ${code}: ${stderr.trim()}`))
