@@ -37,6 +37,11 @@ export interface ProjectPlan {
   models: PlanModel[]
   components: PlanComponent[]
   routes: PlanRoute[]
+  /**
+   * What becomes of each behavior the fact pack recorded (form, search, embed, accordion, …), one
+   * record per fact behavior id — so none is dropped without a reason a reviewer can read.
+   */
+  behaviors?: PlanBehavior[]
   /** Every decision the plan rests on, with who made it — the audit trail a reviewer reads. */
   decisions?: PlanDecisionRecord[]
 }
@@ -106,6 +111,32 @@ export interface PlanModel {
   fields?: Record<string, FieldDef>
   /** How entries of a `plan` model are filled from the source, deterministically. */
   extract?: PlanExtraction[]
+  /**
+   * A Studio form: submissions from the site's form are saved as entries of this model (a `plan`
+   * collection whose fields are the source form's fields). Written to the model definition's `form` key.
+   */
+  form?: PlanFormConfig
+}
+
+/**
+ * The form settings Studio reads from a model definition's `form` key (Studio's `FormConfig`, kept here
+ * so the plan does not depend on Studio). Captcha, honeypot and notifications replace what the form
+ * plugin did on WordPress; mail recipients and webhooks are never carried over.
+ */
+export interface PlanFormConfig {
+  enabled: boolean
+  /** Accept submissions from the public site (no Studio session). */
+  public: boolean
+  /** Model fields the public form shows and accepts, in order. */
+  exposedFields: string[]
+  /** Field → required on the form, where it differs from the model field's own `required`. */
+  requiredOverrides?: Record<string, boolean>
+  honeypot?: boolean
+  captcha?: 'turnstile' | null
+  successMessage?: string
+  autoApprove?: boolean
+  /** Email the workspace owner/admins on every submission. */
+  notifications?: boolean
 }
 
 /**
@@ -221,6 +252,38 @@ export type PlanBinding =
   /** Only fixed values and labels. */
   | { kind: 'static', props: Record<string, PlanValue> }
 
+// ─── Behaviors ───
+
+/**
+ * - `component` — a placed component carries it (`component`: a `PlanComponent` id). An element the
+ *   mapping already turned into a section (core/details → faq) points at that section's component; it
+ *   is not placed a second time.
+ * - `starter` — the starter already provides it (`feature`: site search is Pagefind on `/search/`).
+ * - `prose` — it sits in a rich-text body and the prose renderer handles it (an oEmbed in a post).
+ * - `drop` — deliberately not reproduced; `reason` says why.
+ * - `needs_review` — no counterpart yet (an exit-intent popup, a payment form); `reason` says what a person must decide.
+ */
+export type PlanBehaviorOutcome = 'component' | 'starter' | 'prose' | 'drop' | 'needs_review'
+
+export const PLAN_STARTER_FEATURES = ['search'] as const
+export type PlanStarterFeature = (typeof PLAN_STARTER_FEATURES)[number]
+
+export interface PlanBehavior {
+  /** The fact pack's behavior id (`form:3fa9c21e`, `embed:0c1d2e3f`, `nav:t2`). */
+  fact: string
+  outcome: PlanBehaviorOutcome
+  /** `PlanComponent` id, for `component`. */
+  component?: string
+  /** Starter feature, for `starter`. */
+  feature?: PlanStarterFeature
+  /** The model a form's submissions are saved to (a plan model with `form`). */
+  model?: string
+  /** `<code>: <sentence>`, required for `drop` and `needs_review` (`form-feature: Studio forms has no payment step`). */
+  reason?: string
+}
+
+export const PLAN_BEHAVIOR_REASON = /^[a-z][a-z0-9-]*: \S.*$/
+
 // ─── Decisions ───
 
 export interface PlanDecisionRecord {
@@ -277,7 +340,15 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
         else if (!title) errors.push(`plan model ${m.id}: title_field ${m.title_field} is not one of its fields`)
         else if (!isTitleFieldType(title.type)) errors.push(`plan model ${m.id}: title_field ${m.title_field} is ${title.type}, not a text-like type`)
       }
-      if (!m.extract?.length) warnings.push(`plan model ${m.id} has no extraction — its entries start empty`)
+      if (!m.extract?.length && !m.form) warnings.push(`plan model ${m.id} has no extraction — its entries start empty`)
+    }
+    if (m.form) {
+      if (m.origin !== 'plan' || m.kind !== 'collection') errors.push(`model ${m.id}: a form model must be a plan collection`)
+      if (!m.form.exposedFields.length) errors.push(`model ${m.id}: form exposes no fields`)
+      for (const field of [...m.form.exposedFields, ...Object.keys(m.form.requiredOverrides ?? {})]) {
+        if (m.fields && !m.fields[field]) errors.push(`model ${m.id}: form field ${field} is not a model field`)
+      }
+      if (m.form.captcha !== undefined && m.form.captcha !== null && m.form.captcha !== 'turnstile') errors.push(`model ${m.id}: form captcha ${String(m.form.captcha)} is not turnstile`)
     }
     for (const x of m.extract ?? []) {
       if (!x.rule && !x.fields) errors.push(`model ${m.id} extraction from ${x.from} has neither rule nor fields`)
@@ -359,5 +430,23 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     }
   }
   if (!plan.routes?.some(r => r.kind === 'home')) errors.push('no home route')
+
+  const behaviorIds = new Set<string>()
+  for (const b of plan.behaviors ?? []) {
+    const at = `behavior ${b.fact}`
+    if (behaviorIds.has(b.fact)) errors.push(`${at} is planned twice`)
+    behaviorIds.add(b.fact)
+    if (b.outcome === 'component') {
+      if (!b.component) errors.push(`${at}: outcome component names no component`)
+      else if (!components.has(b.component)) errors.push(`${at}: component ${b.component} is not declared`)
+    }
+    if (b.outcome === 'starter' && !(PLAN_STARTER_FEATURES as readonly string[]).includes(b.feature ?? '')) errors.push(`${at}: starter feature ${String(b.feature)} is not one of ${PLAN_STARTER_FEATURES.join(', ')}`)
+    if ((b.outcome === 'drop' || b.outcome === 'needs_review') && !PLAN_BEHAVIOR_REASON.test(b.reason ?? '')) errors.push(`${at}: ${b.outcome} needs a reason "<code>: <sentence>"`)
+    if (b.model) {
+      const m = models.get(b.model)
+      if (!m) errors.push(`${at}: model ${b.model} is not declared`)
+      else if (!m.form) errors.push(`${at}: model ${b.model} is not a form model`)
+    }
+  }
   return { errors, warnings }
 }
