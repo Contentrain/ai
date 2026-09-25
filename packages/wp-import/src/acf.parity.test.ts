@@ -7,8 +7,8 @@ import { ACF_MAPPING_VERSION, acfFieldDef, acfRows, acfScrub, acfValue } from '.
 
 interface SubField { name: string; type: string }
 interface Field { type: string; choices?: string[]; multiple?: boolean; sub_fields?: SubField[]; layouts?: Record<string, SubField[]> }
-interface Case { name: string; field: Field; value: unknown; expect: { def: FieldDef | null; value?: unknown; dropped?: number } }
-const fixture = JSON.parse(readFileSync(new URL('./fixtures/acf-parity.json', import.meta.url), 'utf8')) as { mapping_version: number; cases: Case[] }
+interface Case { name: string; site_timezone?: string; field: Field; value: unknown; expect: { def: FieldDef | null; value?: unknown; dropped?: number } }
+const fixture = JSON.parse(readFileSync(new URL('./fixtures/acf-parity.json', import.meta.url), 'utf8')) as { mapping_version: number; site_timezone: string; cases: Case[] }
 
 /** A row as SCF's REST sends it: each sub-field with `<name>_source` stating its type. */
 const withSources = (row: Record<string, unknown>, subs: SubField[]): Record<string, unknown> => {
@@ -49,7 +49,7 @@ describe('ACF parity fixture (wp-import side)', () => {
     const def = acfFieldDef('field', value, { type: c.field.type, choices: c.field.choices, multiple: c.field.multiple })
     expect(shape(def)).toEqual(c.expect.def)
     let dropped = 0
-    const stored = def ? acfValue(def, acfRows(value), () => dropped++) : undefined
+    const stored = def ? acfValue(def, acfRows(value), { timeZone: c.site_timezone ?? fixture.site_timezone, dropped: () => dropped++ }) : undefined
     if ('value' in c.expect) expect(stored).toEqual(c.expect.value)
     else expect(stored).toBeUndefined()
     expect(dropped).toBe(c.expect.dropped ?? 0)

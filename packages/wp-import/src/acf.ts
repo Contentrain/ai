@@ -113,8 +113,41 @@ const isLink = (v: unknown): v is { url: string; title?: string; target?: string
 const isMap = (v: unknown): boolean => isRecord(v) && typeof v.lat === 'number' && typeof v.lng === 'number'
 /** A date picker's stored value (`Ymd`) → ISO date. */
 const ymd = (v: unknown): string | null => (typeof v === 'string' && /^\d{8}$/.test(v) ? `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}` : null)
-/** `Y-m-d H:i:s` → ISO datetime (site time, no zone: WordPress stores it that way). */
+/** `Y-m-d H:i:s` → ISO local datetime (site time: WordPress stores it without a zone). */
 const dt = (v: unknown): string | null => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(v) ? v.replace(' ', 'T') : null)
+
+const pad = (n: number): string => String(Math.floor(n)).padStart(2, '0')
+/** Minutes east of UTC → `+03:00`. */
+const offsetText = (minutes: number): string => `${minutes < 0 ? '-' : '+'}${pad(Math.abs(minutes) / 60)}:${pad(Math.abs(minutes) % 60)}`
+
+/** The offset of an IANA zone at a wall-clock time there (DST included), in minutes east of UTC; `null` for an unknown zone. */
+function zoneOffset(local: string, timeZone: string): number | null {
+  let fmt: Intl.DateTimeFormat
+  try { fmt = new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) } catch { return null }
+  const wall = Date.parse(`${local}Z`)
+  const at = (utc: number): number => {
+    const p = Object.fromEntries(fmt.formatToParts(new Date(utc)).map((x) => [x.type, x.value]))
+    return (Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), Number(p.hour), Number(p.minute), Number(p.second)) - utc) / 60000
+  }
+  // The offset at the instant the wall time names: guess with the wall time read as UTC, then correct once.
+  const first = at(wall)
+  return at(wall - first * 60000)
+}
+
+/** How a site's local date-times get their zone. */
+export interface AcfZone {
+  /** IANA zone (`timezone_string`); wins over `gmtOffset`. */
+  timeZone?: string | null
+  /** Fixed offset in hours (`gmt_offset`). */
+  gmtOffset?: number | null
+}
+
+/** A local ISO datetime with the site's offset for that moment; the local value when the site's zone is unknown. */
+export function zonedDateTime(local: string, zone: AcfZone = {}): { value: string; zoned: boolean } {
+  const tz = zone.timeZone ? zoneOffset(local, zone.timeZone) : null
+  const minutes = tz ?? (typeof zone.gmtOffset === 'number' && Number.isFinite(zone.gmtOffset) ? Math.round(zone.gmtOffset * 60) : null)
+  return minutes === null ? { value: local, zoned: false } : { value: `${local}${offsetText(minutes)}`, zoned: true }
+}
 
 const LINK_FIELDS: Record<string, FieldDef> = { url: { type: 'url' }, title: { type: 'string' }, target: { type: 'string' } }
 const MAP_FIELDS: Record<string, FieldDef> = { address: { type: 'string' }, lat: { type: 'decimal' }, lng: { type: 'decimal' }, zoom: { type: 'integer' } }
@@ -159,11 +192,15 @@ function rowFields(rows: Record<string, unknown>[]): Record<string, FieldDef> {
   return out
 }
 
-/** Called for a stored value outside its field's stated choices: it is left out, not kept as free text. */
-export type AcfDropped = (value: unknown, options: readonly string[]) => void
+export interface AcfValueContext extends AcfZone {
+  /** Called for a stored value outside its field's stated choices: it is left out, not kept as free text. */
+  dropped?: (value: unknown, options: readonly string[]) => void
+  /** Called for a date-time written without a zone, because the site's zone is unknown. */
+  unzoned?: (value: string) => void
+}
 
 /** A value in the shape its field definition promises; `undefined` = nothing to store. */
-export function acfValue(def: FieldDef, value: unknown, dropped?: AcfDropped): unknown {
+export function acfValue(def: FieldDef, value: unknown, ctx: AcfValueContext = {}): unknown {
   if (value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length)) return undefined
   switch (def.type) {
     case 'image':
@@ -172,8 +209,13 @@ export function acfValue(def: FieldDef, value: unknown, dropped?: AcfDropped): u
       return isAttachment(value) ? value.url : typeof value === 'string' ? value : undefined
     case 'date':
       return ymd(value) ?? (typeof value === 'string' ? value : undefined)
-    case 'datetime':
-      return dt(value) ?? (typeof value === 'string' ? value : undefined)
+    case 'datetime': {
+      const local = dt(value)
+      if (!local) return typeof value === 'string' ? value : undefined
+      const out = zonedDateTime(local, ctx)
+      if (!out.zoned) ctx.unzoned?.(out.value)
+      return out.value
+    }
     case 'boolean':
       return value === true || value === 1 || value === '1'
     case 'number':
@@ -188,7 +230,7 @@ export function acfValue(def: FieldDef, value: unknown, dropped?: AcfDropped): u
       for (const [k, sub] of Object.entries(def.fields ?? {})) {
         // Another row may have typed the name; this one says it is a secret.
         if (droppedKey(value, k)) continue
-        const v = acfValue(sub, value[k], dropped)
+        const v = acfValue(sub, value[k], ctx)
         if (v !== undefined) out[k] = v
       }
       return Object.keys(out).length ? out : undefined
@@ -196,14 +238,14 @@ export function acfValue(def: FieldDef, value: unknown, dropped?: AcfDropped): u
     case 'array': {
       if (!Array.isArray(value)) return undefined
       const item: FieldDef = typeof def.items === 'string' ? { type: def.items as FieldType } : (def.items ?? { type: 'string' })
-      const out = value.map((v) => acfValue(item, v, dropped)).filter((v) => v !== undefined)
+      const out = value.map((v) => acfValue(item, v, ctx)).filter((v) => v !== undefined)
       return out.length ? out : undefined
     }
     case 'select': {
       const v = typeof value === 'string' ? value : typeof value === 'number' ? String(value) : undefined
       // A value the field no longer offers (the choice was removed after it was saved): not a valid select value.
       if (v !== undefined && def.options?.length && !def.options.includes(v)) {
-        dropped?.(v, def.options)
+        ctx.dropped?.(v, def.options)
         return undefined
       }
       return v
