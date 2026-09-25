@@ -1,6 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreFiles": ["src/views/ComposedPage.astro"],
   "ignoreIssues": {
-    "src/lib/studio/embed.ts": ["exports", "types"]
+    "src/lib/studio/embed.ts": ["exports", "types"],
+    "src/components/kit/**": ["types"]
   }
 }
