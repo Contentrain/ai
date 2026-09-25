@@ -23,6 +23,7 @@ import { CONTENTRAIN_BRANCH, LOCAL_CAPABILITIES } from '@contentrain/types'
 import { mergeBranch } from '@contentrain/mcp/git/transaction'
 import { normalizeOperationError } from '@contentrain/mcp/git/errors'
 import { branchDiff, checkBranchHealth, deleteRemoteBranch } from '@contentrain/mcp/git/branch-lifecycle'
+import { resolveBaseBranch } from '@contentrain/mcp/git/base-branch'
 import { readConfig } from '@contentrain/mcp/core/config'
 import {
   BranchActionBodySchema,
@@ -52,15 +53,6 @@ function apiError(error: unknown): { statusCode: number; error: string } {
 export async function createServeApp(options: ServeOptions) {
   const { projectRoot, uiDir } = options
   const crDir = join(projectRoot, '.contentrain')
-
-  function getDefaultBranch(): string {
-    try {
-      const raw = readFileSync(join(crDir, 'config.json'), 'utf-8')
-      const cfg = JSON.parse(raw)
-      if (cfg?.repository?.default_branch) return cfg.repository.default_branch
-    } catch { /* ignore */ }
-    return 'main'
-  }
 
   /**
    * In-memory cache of post-merge sync warnings. Keyed by feature
@@ -237,6 +229,9 @@ export async function createServeApp(options: ServeOptions) {
   router.add('/api/capabilities', defineEventHandler(async () => {
     const config = await readConfig(projectRoot).catch(() => null)
     const health = await checkBranchHealth(projectRoot).catch(() => null)
+    // Resolved per request, like MCP's own status: env, config and refs can
+    // change while serve runs, and a stale base misreports divergence (#231).
+    const defaultBranch = await resolveBaseBranch(createGit(projectRoot), config).catch(() => null)
     return {
       version: 1,
       provider: {
@@ -249,7 +244,7 @@ export async function createServeApp(options: ServeOptions) {
       transport: 'http' as const,
       capabilities: LOCAL_CAPABILITIES,
       contentBranch: CONTENTRAIN_BRANCH,
-      defaultBranch: getDefaultBranch(),
+      defaultBranch,
       branchHealth: health,
     }
   }))

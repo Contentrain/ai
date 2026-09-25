@@ -95,7 +95,7 @@ export interface Capabilities {
     astScan: boolean
   }
   contentBranch: string
-  defaultBranch: string
+  defaultBranch: string | null
   branchHealth: {
     total: number
     merged: number
