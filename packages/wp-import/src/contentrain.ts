@@ -32,6 +32,10 @@ export interface ImportReport {
   title_fallback: number
   meta_fields: Record<string, string>
   acf_fields: Record<string, string>
+  /** ACF select/checkbox values outside their field's stated choices, left out (`field: count`). */
+  acf_outside_choices: Record<string, number>
+  /** ACF date-times written without a zone because the source named none (`timezone_string` / `gmt_offset`). */
+  acf_datetime_unzoned: number
   skipped_types: string[]
   dropped_relations: number
   models: Record<string, { kind: string; domain: string; fields: number; entries: number }>
@@ -142,6 +146,8 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     title_fallback: 0,
     meta_fields: {},
     acf_fields: {},
+    acf_outside_choices: {},
+    acf_datetime_unzoned: 0,
     skipped_types: [],
     dropped_relations: 0,
     models: {},
@@ -537,7 +543,12 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       for (const [k, acf] of Object.entries(p.acf ?? {})) {
         const plan = acfFields.get(k)
         if (!plan || k in e) continue
-        const v = plan.def ? acfValue(plan.def, plan.kind === 'address' ? addressOf(acf.value) : acfRows(acfScrub(acf.value))) : acfRefs(plan, acf.value)
+        const ctx = {
+          timeZone: raw.site.timezone, gmtOffset: raw.site.gmt_offset,
+          dropped: () => { report.acf_outside_choices[k] = (report.acf_outside_choices[k] ?? 0) + 1 },
+          unzoned: () => { report.acf_datetime_unzoned++ },
+        }
+        const v = plan.def ? acfValue(plan.def, plan.kind === 'address' ? addressOf(acf.value) : acfRows(acfScrub(acf.value)), ctx) : acfRefs(plan, acf.value)
         if (v !== undefined) e[k] = v
       }
       contentBucket[id] = e
