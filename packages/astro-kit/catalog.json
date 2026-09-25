@@ -1526,7 +1526,7 @@
           "classic/smart-slider"
         ]
       },
-      "a11y": "WAI-ARIA carousel pattern: a labelled region with aria-roledescription=carousel, slides as labelled groups ('Slide 2 of 5'), labelled previous/next buttons disabled at the ends, and dot buttons marking the current slide. No autoplay. Without JavaScript every slide is reachable by scrolling.",
+      "a11y": "WAI-ARIA carousel pattern: a labelled region with aria-roledescription=carousel, slides as labelled groups ('Slide 2 of 5'), labelled previous/next buttons disabled at the ends, and dot buttons marking the current slide. No autoplay; with prefers-reduced-motion slides change without animation. Without JavaScript every slide is reachable by scrolling.",
       "files": [
         "Slider.astro"
       ]

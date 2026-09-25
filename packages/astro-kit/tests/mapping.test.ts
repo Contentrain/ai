@@ -26,7 +26,7 @@ describe('mapping tables', () => {
       rules: [
         { match: 'elementor/icon-box', component: 'card-grid', variant: { columns: '5' }, into: 'items', item: { heading: 'dom:h3', title: 'innerHTML' } },
         { match: 'core/cover', component: 'no-such-component' },
-        { match: 'elementor/nav-menu', component: 'nav', props: { items: 'menu:sidebar' } },
+        { match: 'elementor/nav-menu', component: 'nav', props: { items: 'menu:sidebar', label: 'const:Our great studio' } },
       ],
     }
     expect(validateMapping(broken, catalog)).toEqual([
@@ -37,6 +37,7 @@ describe('mapping tables', () => {
       'elementor core/cover: not a elementor element',
       'elementor core/cover: component no-such-component is not in the catalog',
       'elementor elementor/nav-menu: items = menu:sidebar is not a mapping value',
+      'elementor elementor/nav-menu: label = const:Our great studio is not a mapping value',
     ])
   })
 
