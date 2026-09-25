@@ -35,6 +35,10 @@ const plan: ProjectPlan = {
     fields: { title: { type: 'string' }, items: { type: 'array', items: { type: 'object', fields: { title: { type: 'string', required: true }, text: { type: 'text' }, href: { type: 'url' } } } } },
   }],
   components: [{ id: 'CardGrid', origin: 'kit', kit: { id: 'card-grid' } }],
+  decisions: [
+    { id: 'unmapped_element:core/post-title', question: 'unmapped_element', answer: 'site-specific', by: 'fallback' },
+    { id: 'unmapped_element:core/latest-comments', question: 'unmapped_element', answer: 'site-specific', by: 'fallback' },
+  ],
   routes: [
     { id: 'post', kind: 'post', pattern: '/:year/:slug/', template: 't1', source: { model: 'posts' }, body: 'rich-text', sections: [] },
     { id: 'page-services', kind: 'page', pattern: '/:path/', template: 't2', source: { model: 'pages', where: { wp_id: [303] } }, body: 'composed', sections: [
@@ -127,6 +131,11 @@ describe('generateProject in place', () => {
     const view = await read('src/views/composed/PageServices.astro')
     expect(view).toContain(`import { publicItems } from '../../lib/links'`)
     expect(view).toContain(`(await publicItems(entry0?.data.items, ['href'], []))`)
+  })
+
+  it('leaves to the agent only the template elements the starter does not render', () => {
+    expect(report.lowConfidence.map(d => d.id)).toEqual(['unmapped_element:core/latest-comments'])
+    expect(report.starterCovered).toEqual(['unmapped_element:core/post-title'])
   })
 
   it('names the package after the site', async () => {

@@ -44,8 +44,47 @@ export interface GenerateReport {
   routes: Omit<RoutePlanOutcome, 'views'> & { views: Array<{ route: string, file: string, wpIds: number[] }> }
   /** Components the plan leaves to the site writer, with their briefs. */
   siteComponents: Array<{ id: string, covers: string[], template?: string }>
-  /** Decisions below the confidence floor or taken by fallback — each a site component, not a kit guess. */
+  /**
+   * Template elements the plan left without a kit component (fallback, site-specific or below the confidence
+   * floor) that the starter does not render either: each is an agent job for a site component.
+   */
   lowConfidence: Array<{ id: string, answer: string, by: string, confidence?: number }>
+  /** Such elements the starter's views render themselves (post parts, lists, navigation, comments…): no job. */
+  starterCovered: string[]
+  /** Design roles the site cannot honour, e.g. a font family the plan names but ships no file for. */
+  unfulfilledRoles: Array<{ role: string, value: string, reason: string }>
+}
+
+/**
+ * Block-theme elements the starter's views render from content and the plan's site settings: post title,
+ * byline, terms, cover and body; previous/next links and the "more posts" list (`site.post`); post lists and
+ * their pagination (`site.lists`); the header and footer navigation; site title and tagline; the comment
+ * thread and form (Studio). Anything else a used template holds needs a component.
+ */
+export const STARTER_COVERED = new Set([
+  'core/post', 'core/post-template', 'core/post-title', 'core/post-date', 'core/post-author', 'core/post-author-name',
+  'core/post-author-biography', 'core/post-terms', 'core/post-featured-image', 'core/post-content', 'core/post-excerpt',
+  'core/post-navigation-link', 'core/query', 'core/query-title', 'core/query-pagination', 'core/query-pagination-next',
+  'core/query-pagination-previous', 'core/query-pagination-numbers', 'query/pagination-next-arrow', 'query/pagination-previous-arrow',
+  'core/navigation', 'core/navigation-link', 'core/navigation-item', 'core/navigation-submenu', 'core/site-title', 'core/site-tagline',
+  'core/site-logo', 'core/comments', 'core/comments-title', 'core/comment-template', 'core/post-comments-form', 'core/template-part',
+  'core/button', 'core/buttons', 'core/search',
+])
+
+/** System and generic families a browser has without a font file. */
+const GENERIC_FAMILIES = /^(?:serif|sans-serif|monospace|cursive|fantasy|system-ui|ui-(?:serif|sans-serif|monospace|rounded)|-apple-system|BlinkMacSystemFont|Arial|Helvetica(?: Neue)?|Georgia|Times(?: New Roman)?|Courier(?: New)?|Menlo|Consolas|Monaco|SFMono-Regular|Segoe UI|Roboto|var\(.*\))$/i
+
+/** Font roles whose first family has no file in the plan: the page would fall back without saying so. */
+export function unfulfilledFontRoles(tokens: ProjectPlan['site']['tokens']): GenerateReport['unfulfilledRoles'] {
+  const shipped = new Set((tokens.fonts ?? []).map(font => font.family.toLowerCase()))
+  const out: GenerateReport['unfulfilledRoles'] = []
+  for (const role of ['font-sans', 'font-serif', 'font-mono'] as const) {
+    const value = tokens.roles[role]
+    const family = value?.split(',')[0]?.trim().replace(/^['"]|['"]$/g, '')
+    if (!value || !family || GENERIC_FAMILIES.test(family) || shipped.has(family.toLowerCase())) continue
+    out.push({ role, value, reason: `no font file for ${family}; the page falls back to the next family` })
+  }
+  return out
 }
 
 const SKIP = /(?:^|\/)(?:node_modules|dist|\.astro|\.lighthouseci)(?:\/|$)/
@@ -62,6 +101,23 @@ export function packageName(plan: ProjectPlan): string {
   let host = ''
   try { host = new URL(plan.site.url).hostname.replace(/^www\./, '') } catch {}
   return slug(plan.site.title) || slug(host) || 'site'
+}
+
+const element = (decision: string) => decision.slice('unmapped_element:'.length)
+
+/** Element decisions the plan could not answer with a kit component, split by whether the starter renders them. */
+function lowConfidenceOf(plan: ProjectPlan, floor: number): Pick<GenerateReport, 'lowConfidence' | 'starterCovered'> {
+  const low = (plan.decisions ?? [])
+    // Only element placement is a kit-or-site choice; field typing has its own fallbacks.
+    .filter(d => d.id.startsWith('unmapped_element:') && (d.by === 'fallback' || d.answer === 'site-specific' || (d.confidence !== undefined && d.confidence < floor)))
+  return {
+    lowConfidence: low.filter(d => !STARTER_COVERED.has(element(d.id))).map((d) => {
+      const entry: GenerateReport['lowConfidence'][number] = { id: d.id, answer: d.answer, by: d.by }
+      if (d.confidence !== undefined) entry.confidence = d.confidence
+      return entry
+    }),
+    starterCovered: low.filter(d => STARTER_COVERED.has(element(d.id))).map(d => d.id),
+  }
 }
 
 export async function generateProject(input: GenerateInput): Promise<GenerateReport> {
@@ -151,7 +207,6 @@ export async function generateProject(input: GenerateInput): Promise<GenerateRep
   for (const view of routes.views) await write(view.file, view.source)
   await write('src/views/composed/index.ts', composedIndexSource(routes.views))
 
-  const floor = input.confidenceFloor ?? 0.8
   return {
     outDir,
     modelsExtended: merged.added,
@@ -164,13 +219,7 @@ export async function generateProject(input: GenerateInput): Promise<GenerateRep
       if (c.brief?.template) entry.template = c.brief.template
       return entry
     }),
-    lowConfidence: (plan.decisions ?? [])
-      // Only element placement is a kit-or-site choice; field typing has its own fallbacks.
-      .filter(d => d.id.startsWith('unmapped_element:') && (d.by === 'fallback' || d.answer === 'site-specific' || (d.confidence !== undefined && d.confidence < floor)))
-      .map((d) => {
-        const entry: GenerateReport['lowConfidence'][number] = { id: d.id, answer: d.answer, by: d.by }
-        if (d.confidence !== undefined) entry.confidence = d.confidence
-        return entry
-      }),
+    ...lowConfidenceOf(plan, input.confidenceFloor ?? 0.8),
+    unfulfilledRoles: unfulfilledFontRoles(plan.site.tokens),
   }
 }

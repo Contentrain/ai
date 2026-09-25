@@ -177,7 +177,8 @@ class View {
       }
       case 'ui': this.needs.add('getStrings'); return `t(${sq(arg)})`
       case 'site': this.needs.add('getSite'); return `site.${arg}`
-      case 'menu': this.needs.add('getMenu'); this.needs.add('siteConfig'); return `await getMenu(siteConfig.menus.${arg})`
+      // `menu:footer` is the footer's first menu; the footer itself shows all of them as columns.
+      case 'menu': this.needs.add('getMenu'); this.needs.add('siteConfig'); return arg === 'footer' ? `await getMenu(siteConfig.menus.footer[0] ?? '')` : `await getMenu(siteConfig.menus.${arg})`
       case 'page':
         if (arg === 'base') return 'Astro.url.pathname'
         if (arg === 'current' || arg === 'total') return '1'

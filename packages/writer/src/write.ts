@@ -63,8 +63,14 @@ export interface WriterReport {
   kitReuse: { kitComponents: number, siteComponents: number }
   /** The source's title pattern and how many entries got its hand-written SEO values. */
   seo?: { titleTemplate: string, entries: number, /** The site name taken from the facts, when the store had none. */ siteTitle?: string }
-  /** unmapped_element decisions below the floor: written as site components, not kit guesses. */
+  /** Template elements neither the kit nor the starter renders: each one an agent job for a site component. */
   lowConfidence: number
+  /** Such elements the starter renders itself (post parts, lists, navigation, comments). */
+  starterCovered: number
+  /** Design roles the site cannot honour (a font named without a file): shown, never silently dropped. */
+  unfulfilledRoles: GenerateReport['unfulfilledRoles']
+  /** Parts that open once the site is bound to Studio (studio.json): comment threads and forms. */
+  pendingStudio: Array<{ part: 'comments' | 'form', model?: string, route?: string }>
 }
 
 /** The starter the package ships (`starter/`), or the monorepo's while developing. */
@@ -97,6 +103,47 @@ const routeJob = (route: string, reason: string, plan: ProjectPlan): WriterJob &
     'Write it under src/views/ from the route\'s placements, binding every prop to content as the placement says, and register a composed page view in src/views/composed/index.ts by the WordPress ids it renders.',
   ].join('\n'),
 })
+
+/** Where a source element appears, from the fact pack: the templates whose pages hold it. */
+function templatesOf(facts: FactsView, element: string): string[] {
+  const components = (facts as unknown as { components?: Array<{ element?: string, instances?: Array<{ page: string }> }> }).components ?? []
+  const pages = new Set(components.filter(c => c.element === element).flatMap(c => (c.instances ?? []).map(i => i.page)))
+  return facts.templates.filter(t => t.pages.some(page => pages.has(page))).map(t => t.id)
+}
+
+const pascal = (element: string) => element.split(/[^a-z0-9]+/i).filter(Boolean).map(part => part[0]!.toUpperCase() + part.slice(1)).join('')
+
+/** A template element neither the kit nor the starter renders: the agent writes a site component for it. */
+const elementJob = (decision: string, facts: FactsView): WriterJob & { reason: string } => {
+  const element = decision.slice('unmapped_element:'.length)
+  const templates = templatesOf(facts, element)
+  const name = pascal(element.replace(/^core\//, ''))
+  return {
+    id: `element:${element}`,
+    role: 'write',
+    reason: 'template element the starter does not render',
+    prompt: [
+      `The source's ${element} element has no kit component and the starter renders nothing for it${templates.length ? ` (templates ${templates.join(', ')})` : ''}.`,
+      `Write a site component at src/components/site/${name}.astro that reproduces it from content (no copied text), and place it in the view that renders those templates, where the source has it.`,
+      'Look at the source at 1280, 768 and 390 first, and compare before you finish.',
+    ].join('\n'),
+  }
+}
+
+/** Parts that open once the site is bound to Studio: comment threads (posts with comments open) and forms. */
+async function pendingStudioOf(projectDir: string, plan: ProjectPlan): Promise<Array<{ part: 'comments' | 'form', model?: string, route?: string }>> {
+  if (plan.site.studio || existsSync(join(projectDir, 'studio.json'))) return []
+  const read = async (model: string) => {
+    try { return Object.values(JSON.parse(await readFile(join(projectDir, `.contentrain/content/${model === 'posts' ? 'blog' : 'site'}/${model}/data.json`), 'utf8')) as Record<string, Record<string, unknown>>) }
+    catch { return [] }
+  }
+  const [posts, pages] = await Promise.all([read('posts'), read('pages')])
+  const out: Array<{ part: 'comments' | 'form', model?: string, route?: string }> = []
+  if (posts.some(post => post.comments_open === true)) out.push({ part: 'comments', model: 'posts' })
+  if (pages.some(page => page.comments_open === true)) out.push({ part: 'comments', model: 'pages' })
+  for (const model of new Set(pages.map(page => page.form).filter((form): form is string => typeof form === 'string' && form !== ''))) out.push({ part: 'form', model })
+  return out
+}
 
 /** Repair jobs: one per failing component or file; failures that name neither share one job. */
 export function repairJobs(feedback: readonly GateFailure[]): Array<WriterJob & { reason: string }> {
@@ -149,7 +196,9 @@ export async function writeProject(input: WriteProjectInput, ctx: WriteContext):
     jobs = [
       ...plan.components.filter(c => c.origin === 'site').map(siteComponentJob),
       ...generated.routes.unsupported.map(u => routeJob(u.route, u.reason, plan)),
+      ...generated.lowConfidence.map(d => elementJob(d.id, input.facts)),
     ]
+    for (const role of generated.unfulfilledRoles) notes.push(`${role.role}: ${role.reason}`)
     ctx.log(`writer: ${generated.written.length} files generated, ${generated.routes.views.length} composed views, ${jobs.length} agent job(s)`)
   }
 
@@ -164,6 +213,9 @@ export async function writeProject(input: WriteProjectInput, ctx: WriteContext):
     agentWritten: [],
     kitReuse,
     lowConfidence: generated?.lowConfidence.length ?? 0,
+    starterCovered: generated?.starterCovered.length ?? 0,
+    unfulfilledRoles: generated?.unfulfilledRoles ?? [],
+    pendingStudio: await pendingStudioOf(projectDir, plan),
   }
   const files = [...(generated?.written ?? [])]
 

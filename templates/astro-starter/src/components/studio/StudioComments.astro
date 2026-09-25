@@ -1,8 +1,8 @@
 ---
 // A post's comment thread, served by Contentrain Studio: approved comments are
 // read from Studio's public API and new ones are posted there for moderation.
-// Renders nothing — and ships no script — until the site is bound to a Studio
-// project (site.config.ts).
+// Until the site is bound to a Studio project (studio.json) it ships no form
+// and no script, only an empty marker that says the thread is waiting for it.
 import { getStringTable } from '../../lib/content'
 import { siteConfig } from '../../site.config'
 import CommentsMount from './CommentsMount.astro'
@@ -18,4 +18,6 @@ const { model, entry, locale } = Astro.props
 const studio = siteConfig.studio
 const text = studio ? await getStringTable(['common.', 'comments.', 'form.']) : {}
 ---
-{studio && <CommentsMount baseUrl={studio.baseUrl} projectId={studio.projectId} model={model} entry={entry} locale={locale} text={text} />}
+{studio
+  ? <div data-cr-part="comments" data-state="ready"><CommentsMount baseUrl={studio.baseUrl} projectId={studio.projectId} model={model} entry={entry} locale={locale} text={text} /></div>
+  : <div data-cr-part="comments" data-state="pending_studio" hidden />}

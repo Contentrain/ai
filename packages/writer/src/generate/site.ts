@@ -17,7 +17,25 @@ function replaceOnce(source: string, pattern: RegExp, replacement: string, what:
   return source.replace(pattern, () => replacement)
 }
 
+type PostPart = 'terms' | 'title' | 'byline' | 'cover'
+/** What the plan may say about layout (`@contentrain/types` ≥ 1.25); older plans say less. */
+interface PlanLayout {
+  menus: { primary: string, footer: string | readonly string[] }
+  post?: { header: readonly PostPart[], adjacent: boolean, more: number }
+  lists?: { display: 'cards' | 'full', heading: boolean }
+}
+
+/** The footer's menus: a list; an older plan's single slug is one, its 'none' is none. */
+export function footerMenus(site: PlanSite): string[] {
+  const footer = (site as unknown as PlanLayout).menus.footer
+  if (typeof footer === 'string') return footer && footer !== 'none' ? [footer] : []
+  return [...footer]
+}
+
 export function siteConfigSource(starter: string, site: PlanSite, titleTemplate = '{title} – {site}'): string {
+  const layout = site as unknown as PlanLayout
+  const post = layout.post ?? { header: ['terms', 'title', 'byline', 'cover'], adjacent: false, more: 0 }
+  const lists = layout.lists ?? { display: 'cards', heading: false }
   const p = site.permalinks
   const home = site.home.kind === 'page' ? `{ kind: 'page', slug: ${sq(site.home.slug)} }` : `{ kind: 'posts' }`
   const studio = site.studio ? `\n  studio: { baseUrl: ${sq(site.studio.baseUrl)}, projectId: ${sq(site.studio.projectId)} },` : ''
@@ -33,7 +51,9 @@ export function siteConfigSource(starter: string, site: PlanSite, titleTemplate 
   home: ${home},
   titleTemplate: ${sq(titleTemplate)},
   postsPerPage: ${site.postsPerPage},
-  menus: { primary: ${sq(site.menus.primary)}, footer: ${sq(site.menus.footer)} },${studio}
+  menus: { primary: ${sq(site.menus.primary)}, footer: [${footerMenus(site).map(sq).join(', ')}] },
+  post: { header: [${post.header.map(sq).join(', ')}], adjacent: ${post.adjacent}, more: ${post.more} },
+  lists: { display: ${sq(lists.display)}, heading: ${lists.heading} },${studio}
 }
 `
   return replaceOnce(starter, /export const siteConfig: SiteConfig = \{[\s\S]*\n\}\n/, literal, 'site.config.ts')
@@ -90,16 +110,22 @@ export function themeSource(starter: string, tokens: PlanSite['tokens']): string
   const block = /@theme \{\n([\s\S]*?)\n\}/.exec(starter)
   if (!block) throw new Error('starter global.css: no @theme block')
   let body = block[1]!
+  const added: string[] = []
   for (const [role, value] of Object.entries(tokens.roles) as Array<[PlanTokenRole, string]>) {
     const line = new RegExp(`(\\n?\\s*--${role}: )[^;]*;`)
-    if (!line.test(body)) throw new Error(`starter global.css: @theme has no --${role}`)
-    body = body.replace(line, (_m, head: string) => `${head}${cssValue(value, `tokens.roles.${role}`)};`)
+    const css = cssValue(value, `tokens.roles.${role}`)
+    // A role the starter leaves to the kit's fallback (heading weight, body size, radii, gutter) is added.
+    if (line.test(body)) body = body.replace(line, (_m, head: string) => `${head}${css};`)
+    else added.push(`  --${role}: ${css};`)
   }
+
   const extra = Object.entries(tokens.extra ?? {}).toSorted(([a], [b]) => a.localeCompare(b))
   if (extra.length) {
     body += `\n\n  /* The source site's own scale (theme.json presets), beside the roles. */\n${extra.map(([name, value]) => `  --${cssName(name, 'tokens.extra')}: ${cssValue(value, `tokens.extra.${name}`)};`).join('\n')}`
   }
-  return `${starter.slice(0, block.index)}@theme {\n${body}\n}${starter.slice(block.index + block[0].length)}`
+  // Outside @theme, which drops variables no utility uses: the kit reads these through var() fallbacks.
+  const root = added.length ? `\n\n/* The source theme's type and shape; without them the kit uses its own values. */\n:root {\n${added.join('\n')}\n}` : ''
+  return `${starter.slice(0, block.index)}@theme {\n${body}\n}${root}${starter.slice(block.index + block[0].length)}`
 }
 
 const PRESET_RULES: Record<string, (slug: string) => string[]> = {

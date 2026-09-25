@@ -29,8 +29,25 @@ export interface SiteConfig {
   titleTemplate: string
   /** Posts per index or archive page (WordPress: Settings → Reading). */
   postsPerPage: number
-  /** Menu slugs for the site's navigation areas; a missing menu renders nothing. */
-  menus: { primary: string, footer: string }
+  /**
+   * Menu slugs for the site's navigation areas; a missing menu renders nothing. The footer takes
+   * its menus in order, one column each (the source theme's footer navigations).
+   */
+  menus: { primary: string, footer: readonly string[] }
+  /**
+   * A single post as the source's single template lays it out: the order of the header parts,
+   * links to the previous and next post, and a list of other posts under it (0 for none).
+   */
+  post: {
+    header: ReadonlyArray<'terms' | 'title' | 'byline' | 'cover'>
+    adjacent: boolean
+    more: number
+  }
+  /**
+   * Post lists (the blog index and archives): cards, or every post in full as a WordPress query
+   * loop that shows the post content does; `heading` shows the index's title on the front page too.
+   */
+  lists: { display: 'cards' | 'full', heading: boolean }
   /**
    * Contentrain Studio's public forms and comments API. Without it, forms and
    * comment threads render nothing — a form that cannot be sent is worse than
@@ -51,5 +68,7 @@ export const siteConfig: SiteConfig = {
   home: { kind: 'posts' },
   titleTemplate: '{title} – {site}',
   postsPerPage: 10,
-  menus: { primary: 'primary', footer: 'footer' },
+  menus: { primary: 'primary', footer: ['footer'] },
+  post: { header: ['terms', 'title', 'byline', 'cover'], adjacent: false, more: 0 },
+  lists: { display: 'cards', heading: false },
 }
