@@ -97,7 +97,9 @@ describe('generateProject in place', () => {
     expect(byFrom.get('/old/')).toEqual({ from: '/old/', status: 301, to: '/about/' })
     expect(byFrom.get('/gone/')).toEqual({ from: '/gone/', status: 410 })
     expect(byFrom.get('/old-about/')).toEqual({ from: '/old-about/', status: 301, to: '/about/' })
-    expect(redirects).toHaveLength(6)
+    const stored = Object.values(JSON.parse(await readFile(join(FIXTURE, 'content', 'site', 'redirects', 'data.json'), 'utf8')) as Record<string, { from: string }>)
+    // Every stored rule, plus the plan's rules for addresses the store does not already have.
+    expect(new Set(redirects.map(r => r.from))).toEqual(new Set([...stored.map(r => r.from), '/old/']))
   })
 
   it('sets the design roles and adds the source scale and presets', async () => {
