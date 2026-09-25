@@ -1,0 +1,30 @@
+{
+  "id": "gallery",
+  "name": "Gallery",
+  "description": "Images in a square grid or in masonry columns, with optional captions. A click shows the image large in a native popover (no script), opens the image file, or does nothing.",
+  "category": "section",
+  "uses": [],
+  "shared": ["KitImage.astro", "Section.astro", "types.ts"],
+  "variants": {
+    "layout": { "options": ["grid", "masonry"], "default": "grid", "description": "grid: square crops in rows. masonry: columns that keep each image's shape." },
+    "columns": { "options": ["2", "3", "4"], "default": "3", "description": "Columns on wide screens; phones show two." },
+    "open": { "options": ["popover", "link", "none"], "default": "popover", "description": "popover: the image opens large in place (Popover API; Escape or a click outside closes it). link: the thumbnail links to the image file (the WordPress 'link to media file'). none: images only." }
+  },
+  "props": {
+    "items": { "type": "array", "required": true, "items": { "type": "object", "fields": { "image": { "type": "object", "required": true, "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } } }, "caption": { "type": "string" } } }, "description": "The images in order (core/gallery inner images, Elementor gallery items, Divi gallery_ids)." },
+    "heading": { "type": "string", "description": "Section heading above the images." },
+    "closeLabel": { "type": "string", "description": "Text of the viewer's close button (ui-strings gallery.close)." },
+    "tone": { "type": "select", "options": ["default", "muted", "inverse", "accent"], "description": "Section background." },
+    "id": { "type": "string", "description": "Section id, unique per page: viewer ids derive from it (`<id>-image-<n>`)." }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": ["core/gallery"],
+    "elementor": ["elementor/image-gallery", "elementor/gallery"],
+    "divi": ["divi/et_pb_gallery"],
+    "classic": ["classic/gallery"]
+  },
+  "a11y": "A list of figures. In popover mode each thumbnail is a <button> named by the image's alt (or caption) that opens the viewer; the viewer has a visible close button, and Escape closes it, returning focus to the thumbnail. Captions are <figcaption>s."
+}

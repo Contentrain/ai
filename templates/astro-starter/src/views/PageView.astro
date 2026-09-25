@@ -2,11 +2,12 @@
 // A single page: breadcrumbs for nested pages, title, body and an optional
 // Studio form under it.
 import { getEntry } from 'astro:content'
-import MediaImage from '../components/MediaImage.astro'
-import Prose from '../components/Prose.astro'
+import Breadcrumb from '../components/kit/breadcrumb/Breadcrumb.astro'
+import KitImage from '../components/kit/_shared/KitImage.astro'
+import Prose from '../components/kit/prose/Prose.astro'
 import StudioForm from '../components/studio/StudioForm.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
-import { getStrings, type Page } from '../lib/content'
+import { getStrings, imageOf, type Page } from '../lib/content'
 import { breadcrumbLd, summarize } from '../lib/seo'
 
 interface Props {
@@ -34,20 +35,12 @@ const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
 >
   <article class="container-prose py-12 md:py-16">
     {trail.length > 0 && (
-      <nav aria-label={t('nav.breadcrumb')} class="mb-6 text-sm text-ink-muted">
-        <ol class="flex flex-wrap items-center gap-2">
-          {trail.map(crumb => (
-            <li class="flex items-center gap-2">
-              <a href={crumb.href} class="text-ink-muted no-underline hover:text-ink">{crumb.title}</a>
-              <span aria-hidden="true">/</span>
-            </li>
-          ))}
-          <li aria-current="page" class="text-ink">{data.title}</li>
-        </ol>
-      </nav>
+      <div class="mb-6">
+        <Breadcrumb items={trail.map(crumb => ({ label: crumb.title, href: crumb.href }))} current={data.title} label={t('nav.breadcrumb')} />
+      </div>
     )}
     {!isHome && <h1 class="mb-10 text-4xl leading-tight font-bold tracking-tight text-balance md:text-5xl">{data.title}</h1>}
-    {cover && <MediaImage media={cover} priority sizes="(min-width: 768px) 768px, 100vw" class="mb-10 w-full rounded-xl" />}
+    {cover && <KitImage image={imageOf(cover)} priority sizes="(min-width: 768px) 768px, 100vw" class="mb-10 w-full rounded-xl" />}
     {data.body && <Prose html={data.body} />}
     {data.form && <StudioForm model={data.form} class="mt-12" />}
   </article>

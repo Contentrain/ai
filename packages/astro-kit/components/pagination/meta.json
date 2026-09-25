@@ -1,0 +1,31 @@
+{
+  "id": "pagination",
+  "name": "Pagination",
+  "description": "Links between the pages of a post list, at WordPress addresses (<base>page/<n>/).",
+  "category": "content",
+  "uses": [],
+  "shared": [],
+  "variants": {
+    "style": { "options": ["numbered", "simple"], "default": "numbered", "description": "Numbered pages with ellipses, or previous/next with 'Page n / m'." },
+    "align": { "options": ["start", "center", "end"], "default": "center", "description": "Alignment of the numbered style." }
+  },
+  "props": {
+    "base": { "type": "string", "required": true, "description": "The list's first-page address, ending in a slash." },
+    "current": { "type": "integer", "required": true, "min": 1, "description": "Current page number." },
+    "total": { "type": "integer", "required": true, "min": 1, "description": "Number of pages; nothing renders when it is 1." },
+    "label": { "type": "string", "description": "Accessible name (ui-strings pagination.label)." },
+    "prevLabel": { "type": "string", "description": "ui-strings pagination.prev." },
+    "nextLabel": { "type": "string", "description": "ui-strings pagination.next." },
+    "pageLabel": { "type": "string", "description": "ui-strings pagination.page." }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": ["core/query-pagination"],
+    "elementor": ["elementor/posts:pagination"],
+    "divi": ["divi/et_pb_blog:pagination"],
+    "classic": ["classic/pagination"]
+  },
+  "a11y": "A labelled <nav>; the current page is aria-current=page; prev/next carry rel. Numbers are prefixed with a visually hidden 'Page'."
+}

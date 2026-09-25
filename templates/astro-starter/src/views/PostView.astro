@@ -2,11 +2,11 @@
 // A single post: header (terms, title, byline, date), cover, body, tags and
 // the comment thread.
 import { getEntry } from 'astro:content'
-import MediaImage from '../components/MediaImage.astro'
-import Prose from '../components/Prose.astro'
+import KitImage from '../components/kit/_shared/KitImage.astro'
+import Prose from '../components/kit/prose/Prose.astro'
 import StudioComments from '../components/studio/StudioComments.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
-import { authorHref, byId, getSite, getStrings, postHref, resolve, termHref, type Post } from '../lib/content'
+import { authorHref, byId, getSite, getStrings, imageOf, postHref, resolve, termHref, type Post } from '../lib/content'
 import { articleLd, summarize } from '../lib/seo'
 
 interface Props {
@@ -73,7 +73,7 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
     </header>
     {cover && (
       <figure class="mb-10 -mx-4 md:-mx-8">
-        <MediaImage media={cover} priority sizes="(min-width: 768px) 768px, 100vw" class="w-full rounded-none md:rounded-xl" />
+        <KitImage image={imageOf(cover)} priority sizes="(min-width: 768px) 768px, 100vw" class="w-full rounded-none md:rounded-xl" />
         {cover.data.caption && <figcaption class="mt-3 px-4 text-center text-sm text-ink-muted">{cover.data.caption}</figcaption>}
       </figure>
     )}

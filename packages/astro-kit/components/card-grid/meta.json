@@ -1,0 +1,123 @@
+{
+  "id": "card-grid",
+  "name": "Card grid",
+  "description": "A grid of cards (features, services, team, linked pages) with an optional section heading and intro. A card with a link is clickable as a whole.",
+  "category": "section",
+  "uses": [],
+  "shared": [
+    "KitImage.astro",
+    "Section.astro",
+    "types.ts"
+  ],
+  "variants": {
+    "columns": {
+      "options": [
+        "2",
+        "3",
+        "4"
+      ],
+      "default": "3",
+      "description": "Columns on wide screens; one on phones, two on tablets."
+    },
+    "style": {
+      "options": [
+        "plain",
+        "bordered",
+        "elevated"
+      ],
+      "default": "plain",
+      "description": "Card chrome: none, a border, or a raised surface."
+    },
+    "align": {
+      "options": [
+        "start",
+        "center"
+      ],
+      "default": "start",
+      "description": "Text alignment inside cards and of the header."
+    },
+    "tone": {
+      "options": [
+        "default",
+        "muted",
+        "inverse",
+        "accent"
+      ],
+      "default": "default",
+      "description": "Section background."
+    }
+  },
+  "props": {
+    "title": {
+      "type": "string",
+      "description": "Section heading."
+    },
+    "intro": {
+      "type": "text",
+      "description": "Paragraph under the heading."
+    },
+    "items": {
+      "type": "array",
+      "required": true,
+      "items": {
+        "type": "object",
+        "fields": {
+          "title": {
+            "type": "string",
+            "required": true
+          },
+          "text": {
+            "type": "text"
+          },
+          "href": {
+            "type": "url"
+          },
+          "image": {
+            "type": "object",
+            "fields": {
+              "src": { "type": "image", "required": true },
+              "alt": { "type": "string", "required": true },
+              "width": { "type": "integer" },
+              "height": { "type": "integer" }
+            }
+          },
+          "eyebrow": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "The cards. image is an ImageInput ({ src, alt, width?, height? })."
+    },
+    "headingLevel": {
+      "type": "integer",
+      "min": 2,
+      "max": 3,
+      "default": 2,
+      "description": "Level of the section heading; card titles are one below."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": [
+      "core/columns",
+      "core/media-text"
+    ],
+    "elementor": [
+      "elementor/icon-box",
+      "elementor/image-box",
+      "elementor/call-to-action",
+      "elementor/posts"
+    ],
+    "divi": [
+      "divi/et_pb_blurb",
+      "divi/et_pb_team_member",
+      "divi/et_pb_pricing_tables"
+    ],
+    "classic": [
+      "classic/widget-area"
+    ]
+  },
+  "a11y": "A list of cards; the whole card is clickable through a stretched link on its title, so screen readers hear one link per card. The section is labelled by its heading."
+}

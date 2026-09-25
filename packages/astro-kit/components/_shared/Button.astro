@@ -1,0 +1,37 @@
+---
+// A link drawn as a button — the kit's call-to-action primitive. Actions in
+// migrated content are links, so this is always an <a>.
+import { tv } from 'tailwind-variants'
+import type { ActionInput } from './types'
+
+const button = tv({
+  base: 'inline-flex items-center justify-center gap-2 rounded-md font-medium no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-2',
+  variants: {
+    style: {
+      primary: 'bg-accent text-accent-ink hover:bg-ink hover:text-surface',
+      secondary: 'bg-ink text-surface hover:bg-accent hover:text-accent-ink',
+      ghost: 'border border-current bg-transparent text-current hover:bg-ink/5',
+    },
+    size: {
+      sm: 'px-3 py-1.5 text-sm',
+      md: 'px-5 py-2.5 text-base',
+      lg: 'px-6 py-3 text-lg',
+    },
+  },
+  defaultVariants: { style: 'primary', size: 'md' },
+})
+
+interface Props {
+  action: ActionInput
+  size?: 'sm' | 'md' | 'lg' | undefined
+  class?: string | undefined
+}
+
+const { action, size, class: className } = Astro.props
+---
+<a
+  href={action.href}
+  target={action.newTab ? '_blank' : undefined}
+  rel={action.newTab ? 'noopener' : undefined}
+  class={button({ style: action.style ?? 'primary', size, class: className })}
+>{action.label}</a>

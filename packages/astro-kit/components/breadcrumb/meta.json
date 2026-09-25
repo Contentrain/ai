@@ -1,0 +1,27 @@
+{
+  "id": "breadcrumb",
+  "name": "Breadcrumb",
+  "description": "The page's ancestors as links followed by the page itself; optionally emits BreadcrumbList JSON-LD.",
+  "category": "content",
+  "uses": [],
+  "shared": ["types.ts"],
+  "variants": {
+    "separator": { "options": ["slash", "chevron", "dot"], "default": "slash", "description": "Mark between items." }
+  },
+  "props": {
+    "items": { "type": "array", "required": true, "items": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true } } }, "description": "Ancestors, root first (pages.parent chain, or Home → category)." },
+    "current": { "type": "string", "required": true, "description": "Current page title." },
+    "label": { "type": "string", "description": "Accessible name (ui-strings nav.breadcrumb)." },
+    "schema": { "type": "boolean", "default": false, "description": "Emit BreadcrumbList JSON-LD (off when the SEO graph has one)." }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": ["yoast-seo/breadcrumbs", "rank-math/breadcrumb"],
+    "elementor": ["elementor/breadcrumbs"],
+    "divi": ["divi/et_pb_breadcrumbs"],
+    "classic": ["classic/yoast-breadcrumb", "classic/rank-math-breadcrumb"]
+  },
+  "a11y": "A labelled <nav> with an ordered list; the current page is aria-current=page and not a link; separators are aria-hidden."
+}

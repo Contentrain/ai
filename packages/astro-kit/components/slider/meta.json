@@ -1,0 +1,32 @@
+{
+  "id": "slider",
+  "name": "Slider",
+  "description": "A carousel of images with optional title, text and button per slide. Without JavaScript it is a snapping horizontal scroller; Embla adds paging, arrows and dots.",
+  "category": "section",
+  "uses": [],
+  "shared": ["Button.astro", "KitImage.astro", "types.ts"],
+  "variants": {
+    "perView": { "options": ["1", "2", "3"], "default": "1", "description": "Slides visible at once on wide screens." },
+    "aspect": { "options": ["wide", "standard", "square"], "default": "wide", "description": "Image aspect ratio: 21:9, 3:2 or 1:1." },
+    "caption": { "options": ["below", "overlay"], "default": "overlay", "description": "Caption under the image, or over its lower edge on a gradient." }
+  },
+  "props": {
+    "slides": { "type": "array", "required": true, "items": { "type": "object", "fields": { "image": { "type": "object", "required": true, "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } } }, "title": { "type": "string" }, "text": { "type": "text" }, "action": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true }, "newTab": { "type": "boolean" }, "style": { "type": "select", "options": ["primary", "secondary", "ghost"] } } } } }, "description": "Slides; image is an ImageInput, action an ActionInput." },
+    "label": { "type": "string", "required": true, "description": "Accessible name of the carousel." },
+    "prevLabel": { "type": "string", "description": "ui-strings slider.prev." },
+    "nextLabel": { "type": "string", "description": "ui-strings slider.next." },
+    "slideLabel": { "type": "string", "description": "ui-strings slider.slide." },
+    "ofLabel": { "type": "string", "description": "ui-strings slider.of." },
+    "loop": { "type": "boolean", "default": false, "description": "Wrap from the last slide to the first." }
+  },
+  "slots": {},
+  "js": "embla",
+  "dependencies": { "embla-carousel": "^8.6.0" },
+  "sources": {
+    "gutenberg": ["core/gallery:carousel"],
+    "elementor": ["elementor/image-carousel", "elementor/slides", "elementor/media-carousel"],
+    "divi": ["divi/et_pb_slider", "divi/et_pb_fullwidth_slider", "divi/et_pb_post_slider"],
+    "classic": ["classic/revslider", "classic/metaslider", "classic/smart-slider"]
+  },
+  "a11y": "WAI-ARIA carousel pattern: a labelled region with aria-roledescription=carousel, slides as labelled groups ('Slide 2 of 5'), labelled previous/next buttons disabled at the ends, and dot buttons marking the current slide. No autoplay; with prefers-reduced-motion slides change without animation. Without JavaScript every slide is reachable by scrolling."
+}

@@ -61,7 +61,7 @@
   --tw-prose-links: var(--color-accent);
   --tw-prose-bold: var(--color-ink);
   --tw-prose-counters: var(--color-ink-muted);
-  --tw-prose-bullets: var(--color-line);
+  --tw-prose-bullets: var(--color-ink-muted);
   --tw-prose-hr: var(--color-line);
   --tw-prose-quotes: var(--color-ink);
   --tw-prose-quote-borders: var(--color-accent);
