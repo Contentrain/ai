@@ -1,0 +1,14 @@
+{
+  "ad60efc636f2": {
+    "description": "Step-by-step walkthroughs.",
+    "name": "Guides",
+    "slug": "guides",
+    "wp_id": 3
+  },
+  "b9009a778471": {
+    "description": "What changed and why it matters.",
+    "name": "News",
+    "slug": "news",
+    "wp_id": 4
+  }
+}

@@ -1,0 +1,30 @@
+---
+// One post in a list: cover, date, title, excerpt.
+import { getEntry } from 'astro:content'
+import { postHref, type Post } from '../lib/content'
+import MediaImage from './MediaImage.astro'
+
+interface Props {
+  post: Post
+  /** The heading level in the surrounding outline. */
+  headingLevel?: 'h2' | 'h3'
+  locale: string
+}
+
+const { post, headingLevel: Heading = 'h2', locale } = Astro.props
+const cover = post.data.cover ? await getEntry(post.data.cover) : undefined
+const date = post.data.published_at
+const href = postHref(post)
+---
+<article class="group flex flex-col gap-3">
+  {cover && (
+    <a href={href} tabindex="-1" aria-hidden="true" class="block overflow-hidden rounded-lg">
+      <MediaImage media={cover} sizes="(min-width: 768px) 360px, 100vw" class="aspect-[16/9] w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
+    </a>
+  )}
+  {date && <time datetime={date.toISOString()} class="text-sm text-ink-muted">{date.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' })}</time>}
+  <Heading class="text-xl leading-snug font-semibold text-balance">
+    <a href={href} class="text-ink no-underline hover:text-accent">{post.data.title}</a>
+  </Heading>
+  {post.data.excerpt && <p class="line-clamp-3 text-ink-muted">{post.data.excerpt}</p>}
+</article>

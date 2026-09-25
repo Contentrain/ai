@@ -1,0 +1,37 @@
+{
+  "name": "contentrain-astro-starter",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && pagefind --site dist",
+    "preview": "astro preview",
+    "check": "astro check",
+    "knip": "knip",
+    "gates": "astro check && knip && pnpm build && node scripts/check-dist.mjs",
+    "lhci": "lhci autorun",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.4",
+    "@contentrain/query": "^7.5.1",
+    "astro": "^7.3.5",
+    "sharp": "^0.35.4"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@lhci/cli": "^0.15.1",
+    "@tailwindcss/typography": "^0.5.20",
+    "@tailwindcss/vite": "^4.3.3",
+    "knip": "^6.38.0",
+    "pagefind": "^1.5.2",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3"
+  }
+}

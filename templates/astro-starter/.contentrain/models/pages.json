@@ -1,0 +1,115 @@
+{
+  "domain": "site",
+  "fields": {
+    "body": {
+      "label": "Body",
+      "order": 50,
+      "type": "richtext"
+    },
+    "cover": {
+      "label": "Cover",
+      "model": "media",
+      "order": 100,
+      "type": "relation"
+    },
+    "excerpt": {
+      "label": "Excerpt",
+      "order": 40,
+      "type": "text"
+    },
+    "form": {
+      "description": "A Studio form shown under the page body — the id of the model its submissions go to.",
+      "label": "Form model",
+      "order": 160,
+      "type": "string"
+    },
+    "link": {
+      "label": "Original permalink",
+      "order": 130,
+      "type": "url"
+    },
+    "menu_order": {
+      "label": "Menu order",
+      "order": 150,
+      "type": "integer"
+    },
+    "modified_at": {
+      "label": "Modified at",
+      "order": 120,
+      "type": "datetime"
+    },
+    "parent": {
+      "label": "Parent",
+      "model": "pages",
+      "order": 140,
+      "type": "relation"
+    },
+    "published_at": {
+      "label": "Published at",
+      "order": 60,
+      "type": "datetime"
+    },
+    "seo": {
+      "fields": {
+        "canonical": {
+          "label": "Canonical URL",
+          "order": 30,
+          "type": "url"
+        },
+        "description": {
+          "label": "Meta description",
+          "max": 320,
+          "order": 20,
+          "type": "text"
+        },
+        "image": {
+          "label": "Social image",
+          "order": 40,
+          "type": "image"
+        },
+        "nofollow": {
+          "label": "Do not follow links",
+          "order": 60,
+          "type": "boolean"
+        },
+        "noindex": {
+          "label": "Hide from search engines",
+          "order": 50,
+          "type": "boolean"
+        },
+        "title": {
+          "label": "SEO title",
+          "order": 10,
+          "type": "string"
+        }
+      },
+      "label": "SEO",
+      "order": 900,
+      "type": "object"
+    },
+    "slug": {
+      "label": "Slug",
+      "order": 20,
+      "required": true,
+      "type": "slug",
+      "unique": true
+    },
+    "title": {
+      "label": "Title",
+      "order": 10,
+      "required": true,
+      "type": "string"
+    },
+    "wp_id": {
+      "label": "WP post ID",
+      "order": 110,
+      "type": "integer",
+      "unique": true
+    }
+  },
+  "i18n": false,
+  "id": "pages",
+  "kind": "collection",
+  "name": "Pages",
+  "title_field": "title"
+}

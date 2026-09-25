@@ -1,0 +1,43 @@
+{
+  "domain": "blog",
+  "fields": {
+    "avatar": {
+      "label": "Avatar",
+      "order": 35,
+      "type": "image"
+    },
+    "bio": {
+      "label": "Biography",
+      "order": 30,
+      "type": "text"
+    },
+    "email": {
+      "label": "Email",
+      "order": 40,
+      "type": "email"
+    },
+    "name": {
+      "label": "Name",
+      "order": 10,
+      "required": true,
+      "type": "string"
+    },
+    "slug": {
+      "label": "Slug",
+      "order": 20,
+      "required": true,
+      "type": "slug",
+      "unique": true
+    },
+    "wp_id": {
+      "label": "WP user ID",
+      "order": 50,
+      "type": "integer"
+    }
+  },
+  "i18n": false,
+  "id": "authors",
+  "kind": "collection",
+  "name": "Authors",
+  "title_field": "name"
+}

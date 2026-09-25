@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreIssues": {
+    "src/lib/studio/embed.ts": ["exports", "types"]
+  }
+}

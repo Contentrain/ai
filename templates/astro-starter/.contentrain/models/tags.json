@@ -1,0 +1,33 @@
+{
+  "domain": "blog",
+  "fields": {
+    "description": {
+      "label": "Description",
+      "order": 30,
+      "type": "text"
+    },
+    "name": {
+      "label": "Name",
+      "order": 10,
+      "required": true,
+      "type": "string"
+    },
+    "slug": {
+      "label": "Slug",
+      "order": 20,
+      "required": true,
+      "type": "slug",
+      "unique": true
+    },
+    "wp_id": {
+      "label": "WP term ID",
+      "order": 50,
+      "type": "integer"
+    }
+  },
+  "i18n": false,
+  "id": "tags",
+  "kind": "collection",
+  "name": "Tags",
+  "title_field": "name"
+}

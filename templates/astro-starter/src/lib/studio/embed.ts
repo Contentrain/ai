@@ -1,12 +1,4 @@
-// The runtime-component client, emitted as `src/lib/embed.ts`.
-//
-// Kept as source text (like the fill runtime in scaffold.ts) so the generated
-// site depends on nothing but Astro. The text is type-checked and executed by
-// this package's tests — `embed.test.ts` writes it to disk and imports it, and
-// `typecheck.test.ts` runs tsc over it with Astro's strict settings — so the
-// code that ships is the code that was tested, escaping included.
-
-export const EMBED_TS = `// Emitted by @contentrain/emitter-astro — the runtime-component client.
+// Emitted by @contentrain/emitter-astro — the runtime-component client.
 //
 // Comments and forms are the two regions of a migrated site that need a live
 // service. This module is the browser side of the provider's PUBLIC API
@@ -31,7 +23,7 @@ export interface EntryRef {
 
 export class EmbedError extends Error {
   status: number
-  /** The API's machine code (\`data.code\`), when the body carries one — e.g. \`payment_required\`. */
+  /** The API's machine code (`data.code`), when the body carries one — e.g. `payment_required`. */
   code?: string
   constructor(status: number, message: string, code?: string) {
     super(message)
@@ -43,7 +35,7 @@ export class EmbedError extends Error {
 
 /**
  * The workspace's subscription is inactive (Studio answers 402
- * \`payment_required\` on the public forms and comments endpoints). Not the
+ * `payment_required` on the public forms and comments endpoints). Not the
  * visitor's problem and not transient: no retry helps until the owner updates
  * billing.
  */
@@ -66,7 +58,7 @@ export function hideUnavailable(host: HTMLElement, what: 'form' | 'comments'): v
 
 /**
  * Visitor-facing text. The component passes the page's text from the site's
- * ui-strings dictionary (\`data-strings\`); these are the defaults it falls
+ * ui-strings dictionary (`data-strings`); these are the defaults it falls
  * back to, key for key.
  */
 export const strings = {
@@ -102,7 +94,7 @@ export const esc = (value: unknown): string =>
 
 // ─── Transport ───
 
-/** \`base\` without a trailing slash, segments URL-encoded, empty query values dropped. */
+/** `base` without a trailing slash, segments URL-encoded, empty query values dropped. */
 export function publicUrl(base: string, segments: string[], query?: Record<string, string | number | undefined>): string {
   const path = segments.map((s) => encodeURIComponent(s)).join('/')
   const params = new URLSearchParams()
@@ -110,7 +102,7 @@ export function publicUrl(base: string, segments: string[], query?: Record<strin
     if (value !== undefined && value !== '') params.set(key, String(value))
   }
   const qs = params.toString()
-  return base.replace(/\\/+$/, '') + '/' + path + (qs ? '?' + qs : '')
+  return base.replace(/\/+$/, '') + '/' + path + (qs ? '?' + qs : '')
 }
 
 async function failure(res: Response): Promise<EmbedError> {
@@ -144,8 +136,8 @@ export async function postJson<T>(url: string, body: unknown): Promise<T> {
   return (await res.json()) as T
 }
 
-export const formsRoot = (rt: Runtime): string => rt.base_url.replace(/\\/+$/, '') + '/api/forms/v1'
-export const commentsRoot = (rt: Runtime): string => rt.base_url.replace(/\\/+$/, '') + '/api/comments/v1'
+export const formsRoot = (rt: Runtime): string => rt.base_url.replace(/\/+$/, '') + '/api/forms/v1'
+export const commentsRoot = (rt: Runtime): string => rt.base_url.replace(/\/+$/, '') + '/api/comments/v1'
 
 /** The hidden input Cloudflare Turnstile adds to the enclosing form. */
 export const CAPTCHA_FIELD = 'cf-turnstile-response'
@@ -185,7 +177,7 @@ export interface FormSubmitResult {
   errors?: FieldError[]
 }
 
-/** The documented request body: values under \`data\`, control fields beside it. */
+/** The documented request body: values under `data`, control fields beside it. */
 export interface FormPayload {
   data: Record<string, unknown>
   captchaToken?: string
@@ -216,8 +208,8 @@ function coerce(def: FieldDef, value: string): unknown {
 }
 
 /**
- * Form entries (\`new FormData(form)\`) → request body. Only exposed fields
- * reach \`data\`; the captcha token and the honeypot value travel beside it, so
+ * Form entries (`new FormData(form)`) → request body. Only exposed fields
+ * reach `data`; the captcha token and the honeypot value travel beside it, so
  * a control field can never collide with a model field. Files are skipped —
  * uploads are not part of the public contract.
  */
@@ -441,10 +433,10 @@ export function commentPayload(entries: Iterable<[string, unknown]>, honeypotFie
 /** Plain text → paragraphs; blank lines separate paragraphs, single newlines break lines. */
 export function bodyHtml(text: string): string {
   return text
-    .split(/\\n{2,}/)
+    .split(/\n{2,}/)
     .map((p) => p.trim())
     .filter(Boolean)
-    .map((p) => '<p>' + esc(p).replace(/\\n/g, '<br />') + '</p>')
+    .map((p) => '<p>' + esc(p).replace(/\n/g, '<br />') + '</p>')
     .join('')
 }
 
@@ -524,7 +516,7 @@ function renderWidget(api: TurnstileApi, el: Element): void {
   widgets.set(el, api.render(el, { sitekey: el.getAttribute('data-sitekey') ?? '' }))
 }
 
-/** Render every \`.cf-turnstile\` under \`root\`, loading the Turnstile script once on first use. */
+/** Render every `.cf-turnstile` under `root`, loading the Turnstile script once on first use. */
 export function renderCaptcha(root: ParentNode): void {
   const els = Array.from(root.querySelectorAll('.cf-turnstile'))
   if (!els.length) return
@@ -556,7 +548,7 @@ export function resetCaptcha(root: ParentNode): void {
 
 // ─── Mounting (the only DOM code) ───
 
-/** ui-strings dictionary key → the \`strings\` entry it sets. */
+/** ui-strings dictionary key → the `strings` entry it sets. */
 export const STRING_KEYS: ReadonlyArray<readonly [string, keyof typeof strings]> = [
   ['common.loading', 'loading'],
   ['common.failed', 'failed'],
@@ -634,7 +626,7 @@ function entriesOf(form: HTMLFormElement): Array<[string, unknown]> {
   return out
 }
 
-/** \`<cr-form data-base-url data-project data-model>\` → fetch the config, render, submit. */
+/** `<cr-form data-base-url data-project data-model>` → fetch the config, render, submit. */
 export async function mountForm(host: HTMLElement): Promise<void> {
   applyStrings(host)
   const rt = runtimeOf(host)
@@ -674,7 +666,7 @@ export async function mountForm(host: HTMLElement): Promise<void> {
   })
 }
 
-/** \`<cr-comments data-base-url data-project data-model data-entry data-locale>\` → thread + form. */
+/** `<cr-comments data-base-url data-project data-model data-entry data-locale>` → thread + form. */
 export async function mountComments(host: HTMLElement): Promise<void> {
   applyStrings(host)
   const rt = runtimeOf(host)
@@ -786,4 +778,3 @@ export async function mountComments(host: HTMLElement): Promise<void> {
     }
   })
 }
-`
