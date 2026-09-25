@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/writer",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "license": "MIT",
   "description": "Writes an Astro + Contentrain project from a project plan: deterministic generation, then an agent for site-specific components within a fixed tool surface and budget",

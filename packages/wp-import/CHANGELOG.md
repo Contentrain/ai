@@ -1,5 +1,20 @@
 # @contentrain/wp-import
 
+## 0.9.0
+
+### Minor Changes
+
+- 2578366: Redirect rules carry what their source says about matching: `RawRedirect.query` (`exact` / `ignore` / `pass`, the Redirection plugin's modes), `case_insensitive` and `trailing_slash`. A rule that answers "gone" (410, 451) is a served rule with an empty `to`. `RawAttachment.link` is the attachment's own page, for its redirect. wp-import over REST reads the Redirection plugin's rules (`redirection/v1`, with a credential that may manage it) into `redirects` and `redirects_excluded`, shaped as the Bridge shapes them. It reads each attachment's page from REST and WXR. New gaps: `redirects_partial` (always over REST: Yoast Premium, Rank Math, Safe Redirect Manager and `.htaccess` are Bridge-only) and `redirects_require_auth`.
+- 09be01c: Menu items that name a public post or term point at its public address (the post's or term's `link`), not the address the block or menu item kept: a block stores the url it had when it was saved, and a typed `?page_id=` is a form the migrated site cannot serve. `MenuContext` gains optional `postLink` / `termLink`. A typed `?page_id=` / `?p=` link counts as this site's with or without a leading `www.`, over either scheme, as the Bridge reads it. `fixtures/menu-parity.json` (`contentrain-menu-parity@1`) is the menu parity fixture the Bridge copies; `rest-menus.parity.test.ts` runs wp-import's side.
+
+### Patch Changes
+
+- 6ea3d21: A conditional Redirection rule keeps its `condition` only when it is a login rule (two addresses). A cookie, header, IP, role or other condition holds the value a visitor must present, so it is no longer exported; the reason still names its type. `RawAttachment.link` is kept only when the attachment has no parent or its parent is proven public, because an attachment page under a draft, private or scheduled post carries that post's slug. Both match the Bridge (#38). The redirect parity fixture gains a cookie rule and a header rule, each without a condition.
+- Updated dependencies [334852f]
+- Updated dependencies [951af8c]
+- Updated dependencies [2578366]
+  - @contentrain/types@1.26.0
+
 ## 0.8.0
 
 ### Minor Changes

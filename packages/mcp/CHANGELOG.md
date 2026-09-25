@@ -1,5 +1,21 @@
 # @contentrain/mcp
 
+## 3.7.0
+
+### Minor Changes
+
+- 4a59306: `contentrain status` and the `contentrain serve` UI now resolve the base branch with the same resolver MCP writes use, exported as `@contentrain/mcp/git/base-branch` (`resolveBaseBranch`): `CONTENTRAIN_BRANCH` env, then `repository.default_branch`, then `origin/HEAD`, then `main`, then `master`, then the checked-out branch. Both used to read `repository.default_branch ?? 'main'`, so in a `master` or `trunk` repository without that config they reported divergence against a branch no write advances. `status --json` now also reports the base as `content_branch.base`, and serve's `/api/capabilities` `defaultBranch` is `null` when it cannot be resolved.
+- 334852f: `contentrain init` and the `contentrain_init` tool record the project's default branch as `repository.default_branch`, so later local writes no longer depend on inference. It is resolved once with the base-branch resolver: `origin/HEAD`, then `main`, then `master`. The `CONTENTRAIN_BRANCH` env is not recorded. The checked-out branch is recorded only when it is the repository's only branch, so running `init` from a feature branch still records the default branch. When the default cannot be told apart from the checkout, nothing is written and the CLI says so. `contentrain_init` returns the value as `default_branch`.
+
+  `ContentrainConfig.repository.provider`, `owner` and `name` are now optional, so `{ "repository": { "default_branch": "main" } }` is a valid config. New exports from `@contentrain/mcp/git/base-branch`: `resolveBaseBranchSource` and `resolveInitDefaultBranch`.
+
+### Patch Changes
+
+- Updated dependencies [334852f]
+- Updated dependencies [951af8c]
+- Updated dependencies [2578366]
+  - @contentrain/types@1.26.0
+
 ## 3.6.8
 
 ### Patch Changes
