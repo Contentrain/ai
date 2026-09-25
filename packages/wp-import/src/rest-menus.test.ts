@@ -315,7 +315,9 @@ describe('fetchRestRawIR menus', () => {
       if (u.includes('/categories?')) return json([{ id: 2, slug: 'news', name: 'News', link: 'https://s.example/topics/news/' }])
       const r = await base(url, init)
       if (!u.includes('/pages?')) return r
-      return json(((await r.json()) as Array<Record<string, unknown>>).map((p) => (p.id === 11 ? { ...p, link: 'https://s.example/about-us/' } : p)))
+      const pages = (await r.json()) as Array<Record<string, unknown>>
+      for (const p of pages) if (p.id === 11) p.link = 'https://s.example/about-us/'
+      return json(pages)
     }) as typeof fetch
     const { raw } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl, auth: { user: 'u', appPassword: 'p' } })
     expect(raw.menus!.map((m) => m.items.map((i) => [i.title, i.url]))).toEqual([
