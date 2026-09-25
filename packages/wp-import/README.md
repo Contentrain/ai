@@ -163,6 +163,13 @@ states it (the field description then says so).
 | tab, accordion, message | nothing (layout only) |
 | password | nothing, ever |
 
+Sub-fields of a repeater, group or flexible layout are typed by the same table
+when the site states their type (SCF's `_source` inside each row); a reference
+inside a row, and a sub-field with no stated type, are typed from the value. A
+select or checkbox value outside the field's stated choices is left out and
+counted in the report's `acf_outside_choices`. `src/fixtures/acf-parity.json`
+holds the cases the Contentrain Bridge must map the same way.
+
 **A password field is never read** — at any depth: a password sub-field of a
 repeater row, a group or a flexible layout is removed with its `_source` before
 the value reaches `RawIR`. Where the source states the type, the type decides;

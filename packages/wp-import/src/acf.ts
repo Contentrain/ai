@@ -136,13 +136,20 @@ function inferDef(value: unknown): FieldDef | null {
   return t ? { type: t as FieldType } : null
 }
 
-/** The union of the fields every row states; a name typed two ways falls back to `string`. */
+/**
+ * The union of the fields every row states; a name typed two ways falls back to `string`. A sub-field whose ACF
+ * type the row states (SCF's `<name>_source`) is typed by the table like a top-level field; a reference inside a
+ * row is not resolved, so it — and any sub-field without a stated type — is typed from its value.
+ */
 function rowFields(rows: Record<string, unknown>[]): Record<string, FieldDef> {
   const out: Record<string, FieldDef> = {}
   for (const row of rows) {
     for (const [k, v] of Object.entries(row)) {
       if (k.endsWith(SOURCE) || droppedKey(row, k)) continue
-      const d = inferDef(v)
+      const stated = statedType(row, k)
+      const source = row[`${k}${SOURCE}`]
+      const label = isRecord(source) && typeof source.label === 'string' ? source.label : undefined
+      const d = stated && !ACF_REFERENCE_TYPES[stated] ? acfFieldDef(k, v, { type: stated, ...(label ? { label } : {}) }) : inferDef(v)
       if (!d) continue
       const seen = out[k]
       if (!seen) out[k] = d
@@ -152,8 +159,11 @@ function rowFields(rows: Record<string, unknown>[]): Record<string, FieldDef> {
   return out
 }
 
+/** Called for a stored value outside its field's stated choices: it is left out, not kept as free text. */
+export type AcfDropped = (value: unknown, options: readonly string[]) => void
+
 /** A value in the shape its field definition promises; `undefined` = nothing to store. */
-export function acfValue(def: FieldDef, value: unknown): unknown {
+export function acfValue(def: FieldDef, value: unknown, dropped?: AcfDropped): unknown {
   if (value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length)) return undefined
   switch (def.type) {
     case 'image':
@@ -178,7 +188,7 @@ export function acfValue(def: FieldDef, value: unknown): unknown {
       for (const [k, sub] of Object.entries(def.fields ?? {})) {
         // Another row may have typed the name; this one says it is a secret.
         if (droppedKey(value, k)) continue
-        const v = acfValue(sub, value[k])
+        const v = acfValue(sub, value[k], dropped)
         if (v !== undefined) out[k] = v
       }
       return Object.keys(out).length ? out : undefined
@@ -186,13 +196,21 @@ export function acfValue(def: FieldDef, value: unknown): unknown {
     case 'array': {
       if (!Array.isArray(value)) return undefined
       const item: FieldDef = typeof def.items === 'string' ? { type: def.items as FieldType } : (def.items ?? { type: 'string' })
-      const out = value.map((v) => acfValue(item, v)).filter((v) => v !== undefined)
+      const out = value.map((v) => acfValue(item, v, dropped)).filter((v) => v !== undefined)
       return out.length ? out : undefined
+    }
+    case 'select': {
+      const v = typeof value === 'string' ? value : typeof value === 'number' ? String(value) : undefined
+      // A value the field no longer offers (the choice was removed after it was saved): not a valid select value.
+      if (v !== undefined && def.options?.length && !def.options.includes(v)) {
+        dropped?.(v, def.options)
+        return undefined
+      }
+      return v
     }
     case 'richtext':
     case 'text':
     case 'string':
-    case 'select':
     case 'url':
     case 'email':
     case 'color':

@@ -1,0 +1,845 @@
+{
+  "format": "contentrain-acf-parity@1",
+  "mapping_version": 1,
+  "about": "ACF field → Contentrain field definition and stored value, as both @contentrain/wp-import (acf.ts) and the Contentrain Bridge write it. Owned by wp-import; the Bridge copies this file unchanged and pins the commit it copied.",
+  "rules": [
+    "`field` is what the site's schema states: the ACF type, and choices, multiple, sub_fields (in schema order) or layouts where the type has them. `value` is the stored value as ACF returns it (image and file with return_format array unless noted).",
+    "`expect.def` compares type, options, fields (by name, order-free), items and required only; labels, descriptions and field order are each side's own. `null` means the field is not written at all.",
+    "`expect.value` is the stored value after conversion; absent means nothing is stored. `expect.dropped` counts values left out because they are outside the stated choices (each side reports them).",
+    "Flexible content: one field, rows in order, each row's layout under `layout`; the layout options are every layout the schema declares, sorted, so each case uses them all.",
+    "A password field is never read, at any depth, whatever its value."
+  ],
+  "not_compared": [
+    "References (post_object, relationship, taxonomy, user, gallery, page_link): resolved against each side's own entry ids.",
+    "Containers deeper than 2, or holding a reference: the Bridge writes a structured fallback, wp-import types from the value.",
+    "Selects inside a repeater, group or layout: REST states no choices for sub-fields.",
+    "Fields with no stated type (plain ACF over REST): wp-import types them from the value; the Bridge always has the schema."
+  ],
+  "cases": [
+    {
+      "name": "text",
+      "field": {
+        "type": "text"
+      },
+      "value": "Harbor Co",
+      "expect": {
+        "def": {
+          "type": "string"
+        },
+        "value": "Harbor Co"
+      }
+    },
+    {
+      "name": "textarea",
+      "field": {
+        "type": "textarea"
+      },
+      "value": "Line one\nLine two",
+      "expect": {
+        "def": {
+          "type": "text"
+        },
+        "value": "Line one\nLine two"
+      }
+    },
+    {
+      "name": "wysiwyg",
+      "field": {
+        "type": "wysiwyg"
+      },
+      "value": "<p>Built <strong>on time</strong>.</p>",
+      "expect": {
+        "def": {
+          "type": "richtext"
+        },
+        "value": "<p>Built <strong>on time</strong>.</p>"
+      }
+    },
+    {
+      "name": "email",
+      "field": {
+        "type": "email"
+      },
+      "value": "hello@harbor.test",
+      "expect": {
+        "def": {
+          "type": "email"
+        },
+        "value": "hello@harbor.test"
+      }
+    },
+    {
+      "name": "url",
+      "field": {
+        "type": "url"
+      },
+      "value": "https://harbor.test/",
+      "expect": {
+        "def": {
+          "type": "url"
+        },
+        "value": "https://harbor.test/"
+      }
+    },
+    {
+      "name": "oembed",
+      "field": {
+        "type": "oembed"
+      },
+      "value": "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+      "expect": {
+        "def": {
+          "type": "url"
+        },
+        "value": "https://www.youtube.com/watch?v=aqz-KE-bpKQ"
+      }
+    },
+    {
+      "name": "number",
+      "field": {
+        "type": "number"
+      },
+      "value": 250000,
+      "expect": {
+        "def": {
+          "type": "number"
+        },
+        "value": 250000
+      }
+    },
+    {
+      "name": "number stored as a string",
+      "field": {
+        "type": "number"
+      },
+      "value": "42",
+      "expect": {
+        "def": {
+          "type": "number"
+        },
+        "value": 42
+      }
+    },
+    {
+      "name": "range",
+      "field": {
+        "type": "range"
+      },
+      "value": 7,
+      "expect": {
+        "def": {
+          "type": "number"
+        },
+        "value": 7
+      }
+    },
+    {
+      "name": "true_false on",
+      "field": {
+        "type": "true_false"
+      },
+      "value": 1,
+      "expect": {
+        "def": {
+          "type": "boolean"
+        },
+        "value": true
+      }
+    },
+    {
+      "name": "true_false off",
+      "field": {
+        "type": "true_false"
+      },
+      "value": 0,
+      "expect": {
+        "def": {
+          "type": "boolean"
+        },
+        "value": false
+      }
+    },
+    {
+      "name": "date_picker (Ymd)",
+      "field": {
+        "type": "date_picker"
+      },
+      "value": "20250310",
+      "expect": {
+        "def": {
+          "type": "date"
+        },
+        "value": "2025-03-10"
+      }
+    },
+    {
+      "name": "date_time_picker",
+      "field": {
+        "type": "date_time_picker"
+      },
+      "value": "2025-03-10 09:30:00",
+      "expect": {
+        "def": {
+          "type": "datetime"
+        },
+        "value": "2025-03-10T09:30:00"
+      }
+    },
+    {
+      "name": "time_picker",
+      "field": {
+        "type": "time_picker"
+      },
+      "value": "09:30:00",
+      "expect": {
+        "def": {
+          "type": "string"
+        },
+        "value": "09:30:00"
+      }
+    },
+    {
+      "name": "color_picker",
+      "field": {
+        "type": "color_picker"
+      },
+      "value": "#1e73be",
+      "expect": {
+        "def": {
+          "type": "color"
+        },
+        "value": "#1e73be"
+      }
+    },
+    {
+      "name": "icon_picker",
+      "field": {
+        "type": "icon_picker"
+      },
+      "value": {
+        "type": "dashicons",
+        "value": "dashicons-admin-site"
+      },
+      "expect": {
+        "def": {
+          "type": "icon"
+        },
+        "value": "dashicons-admin-site"
+      }
+    },
+    {
+      "name": "select",
+      "field": {
+        "type": "select",
+        "choices": [
+          "draft",
+          "done"
+        ]
+      },
+      "value": "done",
+      "expect": {
+        "def": {
+          "type": "select",
+          "options": [
+            "draft",
+            "done"
+          ]
+        },
+        "value": "done"
+      }
+    },
+    {
+      "name": "select, value outside the choices",
+      "field": {
+        "type": "select",
+        "choices": [
+          "draft",
+          "done"
+        ]
+      },
+      "value": "archived",
+      "expect": {
+        "def": {
+          "type": "select",
+          "options": [
+            "draft",
+            "done"
+          ]
+        },
+        "dropped": 1
+      }
+    },
+    {
+      "name": "radio",
+      "field": {
+        "type": "radio",
+        "choices": [
+          "small",
+          "large"
+        ]
+      },
+      "value": "large",
+      "expect": {
+        "def": {
+          "type": "select",
+          "options": [
+            "small",
+            "large"
+          ]
+        },
+        "value": "large"
+      }
+    },
+    {
+      "name": "button_group",
+      "field": {
+        "type": "button_group",
+        "choices": [
+          "gold",
+          "silver"
+        ]
+      },
+      "value": "gold",
+      "expect": {
+        "def": {
+          "type": "select",
+          "options": [
+            "gold",
+            "silver"
+          ]
+        },
+        "value": "gold"
+      }
+    },
+    {
+      "name": "checkbox, one value outside the choices",
+      "field": {
+        "type": "checkbox",
+        "choices": [
+          "design",
+          "build",
+          "operate"
+        ]
+      },
+      "value": [
+        "design",
+        "build",
+        "legacy"
+      ],
+      "expect": {
+        "def": {
+          "type": "array",
+          "items": {
+            "type": "select",
+            "options": [
+              "design",
+              "build",
+              "operate"
+            ]
+          }
+        },
+        "value": [
+          "design",
+          "build"
+        ],
+        "dropped": 1
+      }
+    },
+    {
+      "name": "select, multiple",
+      "field": {
+        "type": "select",
+        "choices": [
+          "web",
+          "ios",
+          "android"
+        ],
+        "multiple": true
+      },
+      "value": [
+        "web",
+        "ios"
+      ],
+      "expect": {
+        "def": {
+          "type": "array",
+          "items": {
+            "type": "select",
+            "options": [
+              "web",
+              "ios",
+              "android"
+            ]
+          }
+        },
+        "value": [
+          "web",
+          "ios"
+        ]
+      }
+    },
+    {
+      "name": "image (array return)",
+      "field": {
+        "type": "image"
+      },
+      "value": {
+        "ID": 85,
+        "id": 85,
+        "url": "https://s.example/wp-content/uploads/harbor.png",
+        "filename": "harbor.png",
+        "mime_type": "image/png"
+      },
+      "expect": {
+        "def": {
+          "type": "image"
+        },
+        "value": "https://s.example/wp-content/uploads/harbor.png"
+      }
+    },
+    {
+      "name": "image (url return)",
+      "field": {
+        "type": "image"
+      },
+      "value": "https://s.example/wp-content/uploads/harbor.png",
+      "expect": {
+        "def": {
+          "type": "image"
+        },
+        "value": "https://s.example/wp-content/uploads/harbor.png"
+      }
+    },
+    {
+      "name": "file",
+      "field": {
+        "type": "file"
+      },
+      "value": {
+        "ID": 86,
+        "id": 86,
+        "url": "https://s.example/wp-content/uploads/brochure.pdf",
+        "filename": "brochure.pdf",
+        "mime_type": "application/pdf"
+      },
+      "expect": {
+        "def": {
+          "type": "file"
+        },
+        "value": "https://s.example/wp-content/uploads/brochure.pdf"
+      }
+    },
+    {
+      "name": "link",
+      "field": {
+        "type": "link"
+      },
+      "value": {
+        "url": "https://harbor.test/contact/",
+        "title": "Start a project",
+        "target": "_blank"
+      },
+      "expect": {
+        "def": {
+          "type": "object",
+          "fields": {
+            "url": {
+              "type": "url"
+            },
+            "title": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            }
+          }
+        },
+        "value": {
+          "url": "https://harbor.test/contact/",
+          "title": "Start a project",
+          "target": "_blank"
+        }
+      }
+    },
+    {
+      "name": "google_map",
+      "field": {
+        "type": "google_map"
+      },
+      "value": {
+        "address": "Galata Bridge, Istanbul",
+        "lat": 41.0201,
+        "lng": 28.9731,
+        "zoom": 14
+      },
+      "expect": {
+        "def": {
+          "type": "object",
+          "fields": {
+            "address": {
+              "type": "string"
+            },
+            "lat": {
+              "type": "decimal"
+            },
+            "lng": {
+              "type": "decimal"
+            },
+            "zoom": {
+              "type": "integer"
+            }
+          }
+        },
+        "value": {
+          "address": "Galata Bridge, Istanbul",
+          "lat": 41.0201,
+          "lng": 28.9731,
+          "zoom": 14
+        }
+      }
+    },
+    {
+      "name": "group",
+      "field": {
+        "type": "group",
+        "sub_fields": [
+          {
+            "name": "label",
+            "type": "text"
+          },
+          {
+            "name": "span",
+            "type": "number"
+          }
+        ]
+      },
+      "value": {
+        "label": "Span",
+        "span": 300
+      },
+      "expect": {
+        "def": {
+          "type": "object",
+          "fields": {
+            "label": {
+              "type": "string"
+            },
+            "span": {
+              "type": "number"
+            }
+          }
+        },
+        "value": {
+          "label": "Span",
+          "span": 300
+        }
+      }
+    },
+    {
+      "name": "repeater",
+      "field": {
+        "type": "repeater",
+        "sub_fields": [
+          {
+            "name": "title",
+            "type": "text"
+          },
+          {
+            "name": "date",
+            "type": "date_picker"
+          },
+          {
+            "name": "done",
+            "type": "true_false"
+          }
+        ]
+      },
+      "value": [
+        {
+          "title": "Design",
+          "date": "20240901",
+          "done": 1
+        },
+        {
+          "title": "Build",
+          "date": "20250115",
+          "done": 0
+        }
+      ],
+      "expect": {
+        "def": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "title": {
+                "type": "string"
+              },
+              "date": {
+                "type": "date"
+              },
+              "done": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "value": [
+          {
+            "title": "Design",
+            "date": "2024-09-01",
+            "done": true
+          },
+          {
+            "title": "Build",
+            "date": "2025-01-15",
+            "done": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "repeater in a repeater (depth 2)",
+      "field": {
+        "type": "repeater",
+        "sub_fields": [
+          {
+            "name": "name",
+            "type": "text"
+          },
+          {
+            "name": "tasks",
+            "type": "repeater",
+            "sub_fields": [
+              {
+                "name": "task",
+                "type": "text"
+              }
+            ]
+          }
+        ]
+      },
+      "value": [
+        {
+          "name": "Phase 1",
+          "tasks": [
+            {
+              "task": "Survey"
+            },
+            {
+              "task": "Permits"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "def": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "name": {
+                "type": "string"
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "fields": {
+                    "task": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "value": [
+          {
+            "name": "Phase 1",
+            "tasks": [
+              {
+                "task": "Survey"
+              },
+              {
+                "task": "Permits"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "flexible_content",
+      "field": {
+        "type": "flexible_content",
+        "layouts": {
+          "cta": [
+            {
+              "name": "heading",
+              "type": "text"
+            },
+            {
+              "name": "link",
+              "type": "link"
+            }
+          ],
+          "quote": [
+            {
+              "name": "text",
+              "type": "textarea"
+            },
+            {
+              "name": "person",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "value": [
+        {
+          "acf_fc_layout": "quote",
+          "text": "On time, on budget.",
+          "person": "Ece Demir"
+        },
+        {
+          "acf_fc_layout": "cta",
+          "heading": "Build yours",
+          "link": {
+            "url": "https://harbor.test/contact/",
+            "title": "Contact",
+            "target": "_self"
+          }
+        }
+      ],
+      "expect": {
+        "def": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "layout": {
+                "type": "select",
+                "options": [
+                  "cta",
+                  "quote"
+                ],
+                "required": true
+              },
+              "heading": {
+                "type": "string"
+              },
+              "link": {
+                "type": "object",
+                "fields": {
+                  "url": {
+                    "type": "url"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string"
+                  }
+                }
+              },
+              "text": {
+                "type": "text"
+              },
+              "person": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "value": [
+          {
+            "layout": "quote",
+            "text": "On time, on budget.",
+            "person": "Ece Demir"
+          },
+          {
+            "layout": "cta",
+            "heading": "Build yours",
+            "link": {
+              "url": "https://harbor.test/contact/",
+              "title": "Contact",
+              "target": "_self"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "password",
+      "field": {
+        "type": "password"
+      },
+      "value": "GOLDEN-ACF-PASSWORD-SECRET",
+      "expect": {
+        "def": null
+      }
+    },
+    {
+      "name": "password inside a repeater",
+      "field": {
+        "type": "repeater",
+        "sub_fields": [
+          {
+            "name": "title",
+            "type": "text"
+          },
+          {
+            "name": "door",
+            "type": "password"
+          }
+        ]
+      },
+      "value": [
+        {
+          "title": "Site A",
+          "door": "GOLDEN-ACF-PASSWORD-SECRET"
+        }
+      ],
+      "expect": {
+        "def": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "title": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "value": [
+          {
+            "title": "Site A"
+          }
+        ]
+      }
+    },
+    {
+      "name": "tab (layout only)",
+      "field": {
+        "type": "tab"
+      },
+      "value": null,
+      "expect": {
+        "def": null
+      }
+    },
+    {
+      "name": "message (layout only)",
+      "field": {
+        "type": "message"
+      },
+      "value": "Fill in the client first.",
+      "expect": {
+        "def": null
+      }
+    }
+  ]
+}
