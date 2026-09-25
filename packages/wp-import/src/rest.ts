@@ -440,7 +440,9 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     mime: m.mime_type ?? null,
     parent: m.post ?? null,
     parent_resolved: m.post ? posts.some((p) => p.id === m.post) : null,
-    link: m.link || null,
+    // The attachment page sits under its parent's address (`/secret-draft/photo/`): kept only when there is no parent or
+    // the parent is proven public, else it would carry a draft's, a private or a scheduled post's slug.
+    link: (!m.post || posts.some((p) => p.id === m.post && visible(p))) ? (m.link || null) : null,
     date: iso(m.date_gmt),
   }))
 

@@ -25,6 +25,7 @@ describe('Redirection rules over REST', () => {
       rule(9, { match_type: 'login', action_data: { logged_in: '/in/', logged_out: '/out/' } as unknown as { url?: string } }),
       rule(10, { group_id: 3 }),
       rule(11, { action_code: 200 }),
+      rule(12, { match_type: 'cookie', action_data: { name: 'session', value: 'COOKIE-SECRET', url_from: '/in/' } as unknown as { url?: string } }),
     ], [{ id: 1, module_id: 1, enabled: true }, { id: 2, module_id: 1, enabled: false }, { id: 3, module_id: 2, enabled: true }], O)
 
     expect(redirects).toEqual([
@@ -38,12 +39,16 @@ describe('Redirection rules over REST', () => {
       { id: 'redirection:5', from: '/old-5/', to: '', status: 451, source: 'redirection', match: 'url', regex: false },
     ])
     expect(excluded.map((x) => [x.id, x.reason])).toEqual([
+      ['redirection:12', 'conditional-match:cookie'],
       ['redirection:6', 'not-a-redirect:error'],
       ['redirection:7', 'disabled'],
       ['redirection:8', 'disabled'],
       ['redirection:9', 'conditional-match:login'],
     ])
     expect(excluded.find((x) => x.id === 'redirection:9')!.condition).toEqual({ logged_in: '/in/', logged_out: '/out/' })
+    // A cookie (header, IP…) condition is the value a visitor must present: its type only, never the value.
+    expect(excluded.find((x) => x.id === 'redirection:12')).not.toHaveProperty('condition')
+    expect(JSON.stringify(excluded)).not.toContain('COOKIE-SECRET')
     expect(excluded.every((x) => !('to' in x))).toBe(true)
   })
 
@@ -95,8 +100,16 @@ function site(opts: { redirection?: boolean; denied?: boolean } = {}): { fetchIm
     }
     if (u.includes('/users/me')) return json({ id: 1 })
     if (u.includes('/types')) return json({ post: { slug: 'post', rest_base: 'posts' } })
-    if (u.includes('/media?')) return json([{ id: 40, slug: 'photo', source_url: `${O}/wp-content/uploads/photo.jpg`, link: `${O}/hello/photo/`, post: 7 }])
-    if (/\/(posts|categories|tags|users|comments|menus|menu-items|navigation|template-parts|templates)\?/.test(u)) return json([])
+    if (u.includes('/media?')) return json([
+      { id: 40, slug: 'photo', source_url: `${O}/wp-content/uploads/photo.jpg`, link: `${O}/hello/photo/`, post: 7 },
+      { id: 41, slug: 'plan', source_url: `${O}/wp-content/uploads/plan.jpg`, link: `${O}/secret-launch/plan/`, post: 8 },
+      { id: 42, slug: 'logo', source_url: `${O}/wp-content/uploads/logo.png`, link: `${O}/logo/`, post: 0 },
+    ])
+    if (u.includes('/posts?')) return json(auth ? [
+      { id: 7, slug: 'hello', status: 'publish', link: `${O}/hello/`, title: { rendered: 'Hello' }, content: { rendered: '' } },
+      { id: 8, slug: 'secret-launch', status: 'draft', link: `${O}/?p=8`, title: { rendered: 'Secret launch' }, content: { rendered: '' } },
+    ] : [])
+    if (/\/(categories|tags|users|comments|menus|menu-items|navigation|template-parts|templates)\?/.test(u)) return json([])
     return new Response('nope', { status: 404 })
   }) as typeof fetch
   return { fetchImpl, calls }
@@ -110,8 +123,9 @@ describe('fetchRestRawIR redirects', () => {
     expect(raw.redirects_excluded).toBeUndefined()
     expect(calls.filter((c) => c.includes('/redirection/v1/redirect')).map((c) => new URL(c.split(' ')[0]!).searchParams.get('page'))).toEqual(['0', '1'])
     expect(gaps).toEqual(['redirects_partial'])
-    // The attachment page, for its redirect.
-    expect(raw.attachments[0]).toMatchObject({ id: 40, url: `${O}/wp-content/uploads/photo.jpg`, link: `${O}/hello/photo/`, parent: 7 })
+    // The attachment page, for its redirect — only under a public parent, or none: under a draft it carries the draft's slug.
+    expect(raw.attachments.map((a) => [a.id, a.link])).toEqual([[40, `${O}/hello/photo/`], [41, null], [42, `${O}/logo/`]])
+    expect(JSON.stringify(raw.attachments)).not.toContain('secret-launch')
   })
 
   it('names the gap without a credential, or when the credential may not manage Redirection', async () => {
