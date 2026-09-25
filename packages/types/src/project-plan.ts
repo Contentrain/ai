@@ -78,6 +78,17 @@ export interface PlanSite {
    * `footer` lists the footer's menus in the source's order, one column each (at most 4); empty for none.
    */
   menus: { primary: string, footer: string[] }
+  /**
+   * A single post as the source's single template lays it out: the header parts in their order, links
+   * to the previous and next post (`core/post-navigation-link`), and how many other posts a list under
+   * it shows (a `core/query` after the content; 0 for none). Absent: the starter's own layout.
+   */
+  post?: { header: Array<'terms' | 'title' | 'byline' | 'cover'>, adjacent: boolean, more: number }
+  /**
+   * Post lists (blog index, archives): `cards`, or `full` when the source's query loop shows each post's
+   * content; `heading` shows the index's title on the front page. Absent: cards without a heading.
+   */
+  lists?: { display: 'cards' | 'full', heading: boolean }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
   redirects: Record<string, string | { status: number, destination: string }>
@@ -322,6 +333,12 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (!PERMALINK.test(value)) errors.push(`site.permalinks.${key} must start and end with "/" (${value})`)
   }
   if (!Number.isSafeInteger(site?.postsPerPage) || site.postsPerPage < 1) errors.push('site.postsPerPage is not a positive integer')
+  if (site?.post) {
+    const parts = site.post.header ?? []
+    if (parts.some(part => !['terms', 'title', 'byline', 'cover'].includes(part)) || new Set(parts).size !== parts.length) errors.push('site.post.header lists a part twice or one the starter does not have')
+    if (!Number.isSafeInteger(site.post.more) || site.post.more < 0 || site.post.more > 20) errors.push('site.post.more is not a count from 0 to 20')
+  }
+  if (site?.lists && !['cards', 'full'].includes(site.lists.display)) errors.push(`site.lists.display ${site.lists.display} is not cards or full`)
   const footer = site?.menus?.footer
   if (!Array.isArray(footer)) errors.push('site.menus.footer is not a list of menu slugs')
   else {

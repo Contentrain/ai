@@ -118,6 +118,20 @@ describe('validateProjectPlan', () => {
     expect(validateProjectPlan(p).errors).toEqual([])
   })
 
+  it('checks the post layout and list display a plan copies from the source templates', () => {
+    const p = plan()
+    p.site.post = { header: ['title', 'cover', 'byline'], adjacent: true, more: 4 }
+    p.site.lists = { display: 'full', heading: true }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.post = { header: ['title', 'title'], adjacent: false, more: 30 }
+    p.site.lists = { display: 'grid' as 'cards', heading: false }
+    expect(validateProjectPlan(p).errors).toEqual([
+      'site.post.header lists a part twice or one the starter does not have',
+      'site.post.more is not a count from 0 to 20',
+      'site.lists.display grid is not cards or full',
+    ])
+  })
+
   it('requires a home route', () => {
     const p = plan()
     p.routes = p.routes.filter(r => r.kind !== 'home')
