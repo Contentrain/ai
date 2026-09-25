@@ -50,8 +50,8 @@ no server needed).
 ## Studio binding: forms, comments and media
 
 `studio.json` at the project root binds the site to its Contentrain Studio
-project. Studio writes it when the site is connected; it is plain JSON, safe
-for tools to write:
+project. Studio writes it when it moves the site's media (Migration → Media);
+you can also write it by hand. It is plain JSON, safe for tools to write:
 
 ```json
 { "baseUrl": "https://studio.contentrain.io", "projectId": "<project id>" }
@@ -61,7 +61,8 @@ A Studio that serves media from a CDN host of its own adds `"mediaBaseUrl"`,
 the project's delivery base (`https://cdn.example/api/cdn/v1/<project id>`).
 
 `astro.config.mjs` reads it at build time (`CONTENTRAIN_STUDIO_URL` and
-`CONTENTRAIN_STUDIO_PROJECT` override it) and:
+`CONTENTRAIN_STUDIO_PROJECT` override it; with either set, the file's
+`mediaBaseUrl` is ignored, since it belongs to the file's project) and:
 
 - allows the project's media in `image.remotePatterns`
   (`<mediaBaseUrl>/media/**`, by default `<baseUrl>/api/cdn/v1/<projectId>/media/**`), so images an editor uploads
