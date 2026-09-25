@@ -1,5 +1,36 @@
 # @contentrain/wp-import
 
+## 0.8.0
+
+### Minor Changes
+
+- 01c0065: ACF sub-fields of repeaters, groups and flexible layouts are typed from their stated ACF type (SCF's `_source` inside each row) by the same table as top-level fields, instead of from their values. A select or checkbox value outside the field's stated choices is left out and counted in the new `ImportReport.acf_outside_choices`.
+
+  ACF date time picker values carry the site's UTC offset for that moment, DST included (`2025-03-10T09:30:00+03:00`): `fetchRestRawIR` reads `timezone_string` and `gmt_offset` from the `/wp-json/` index into `RawIR.site.timezone` / `gmt_offset`. Without either, the value stays local and `ImportReport.acf_datetime_unzoned` counts it. `acfValue`'s third argument is now a context (`{ timeZone, gmtOffset, dropped, unzoned }`).
+
+  `src/fixtures/acf-parity.json` holds the ACF → Contentrain cases the Contentrain Bridge must map the same way.
+
+  `@contentrain/types`: `RawSite.timezone?` and `RawSite.gmt_offset?`.
+
+- 9121e22: `fetchRestRawIR` and `rawToContentrain` carry ACF / Secure Custom Fields. Values on a post's REST `acf` key are typed by one deterministic, versioned table (`ACF_MAPPING_VERSION`): the ACF type comes from SCF's `<name>_source` where the site states it, else from the value's shape. Repeaters and groups become nested `array`/`object` fields, flexible content an `array` of rows with a required `layout`, link and Google Map fixed-shape objects, post object / relationship / taxonomy / user / gallery fields relations to the store's entries, page link the target's address when that target is public.
+
+  A `password` field is never read, at any depth (repeater rows, groups, flexible layouts): not into `RawIR`, not into the store. Without stated types (plain ACF), secret fields are recognised by whole-word names. ACF values follow their post's status, so a draft's fields land with the draft. When posts carry ACF, `gaps` contains `acf_partial` (groups outside REST, options pages and non-REST post types need the Bridge).
+
+  With an Application Password, post types are read with `context=edit`: a type that is not publicly viewable gets no address. Custom taxonomies in REST are read with their terms and linked from posts.
+
+  `@contentrain/types`: `RawAcfValue.field_key` is optional, and `type?` / `label?` carry the stated ACF type and label.
+
+- aa68347: `fetchRestRawIR` reads inline navigation: a navigation block in a template part that carries its own links (Twenty Twenty-Five's footer columns) becomes a menu of that part's area (`Footer navigation 1`, `2`, …; a navigation's `ariaLabel` names it), with its links in order and nested, and the same fail-closed rule for links to content not proven public. Only template parts a template uses count (`/wp/v2/templates`; without them, the part named after its area): a theme's unused alternatives (`footer-columns`, `header-large-title`) no longer lend locations or menus. A `#` link stays `#`. Inline menus have no WordPress record: they get negative ids and the store claims no `wp_id` for them.
+
+### Patch Changes
+
+- 1436fa6: `rawToContentrain` no longer names a site "Site" when the source gives no title. With neither a REST index name nor a WXR channel title, the `site` entry has no `title` (the field stays required, so the store shows what is missing) and the report's new `site_title_missing` is `true`.
+- Updated dependencies [3eb5832]
+- Updated dependencies [36e5773]
+- Updated dependencies [01c0065]
+- Updated dependencies [9121e22]
+  - @contentrain/types@1.25.0
+
 ## 0.7.0
 
 ### Minor Changes
