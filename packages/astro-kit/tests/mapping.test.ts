@@ -44,6 +44,18 @@ describe('mapping tables', () => {
     ])
   })
 
+  it('reads a class as a choice between options, for a value or a variant', () => {
+    const table: MappingTable = {
+      format: 'astro-kit-mapping@1', builder: 'gutenberg', version: '1', fallback: 'prose',
+      rules: [
+        { match: 'core/cover', component: 'hero', variant: { layout: 'class:is-style-wide=cover|split' }, props: { heading: 'dom:h2' }, into: 'actions', each: 'a', item: { label: 'dom:', href: 'dom:@href', style: 'class:is-style-outline=ghost|primary' } },
+        { match: 'core/media-text', component: 'hero', variant: { layout: 'class:has-media-*=cover|' }, props: { heading: 'dom:h2' } },
+        { match: 'core/group', component: 'hero', variant: { layout: 'class:is-style-x=wide|split' }, props: { heading: 'dom:h2' } },
+      ],
+    }
+    expect(validateMapping(table, catalog)).toEqual(['gutenberg core/group: hero.layout has no option wide'])
+  })
+
   it('finds the most specific rule first', () => {
     const rules = rulesFor(tables.gutenberg!, 'core/template-part')
     expect(rules.map(r => r.match)).toEqual(['core/template-part:header', 'core/template-part:footer'])

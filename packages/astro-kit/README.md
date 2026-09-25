@@ -47,8 +47,20 @@ Components use colour roles and widths, never raw values. A site defines them
 in `@theme` (the starter already does): `--color-surface`,
 `--color-surface-muted`, `--color-ink`, `--color-ink-muted`, `--color-line`,
 `--color-accent`, `--color-accent-ink`, `--font-sans`, `--container-prose`,
-`--container-page`, `--container-wide` and `--radius-card`. The same list is in
-`catalog.json` under `tokens`.
+`--container-page`, `--container-wide` and `--radius-card`.
+
+A migrated site also carries its theme's type and shape, and components read
+these with a fallback to the kit's own values, so a site without them looks
+unchanged:
+- `--font-weight-heading`: section headings fall back to 700, item titles to 600.
+- `--font-weight-body`, `--text-body`, `--leading-body` and `--leading-heading`:
+  the body and rich-text type. These are in the starter's CSS.
+- `--radius-control`: buttons and form controls.
+- `--radius-image`: images, which fall back to `--radius-card`.
+- `--spacing-gutter`: the page frame's side padding, which falls back to 1rem
+  on phones and 2rem from `md` up.
+
+The full list is in `catalog.json` under `tokens`.
 
 ## API
 

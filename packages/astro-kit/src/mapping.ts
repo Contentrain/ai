@@ -18,13 +18,17 @@
 //   img:<selector>        an image as the kit's `ImageInput` (src, alt, width, height)
 //   link:<selector>       a link as `{ label, href }`
 //   html:<selector>       inner markup, kept as Markdown (rich text)
+//   class:<cls>=<a>|<b>   <a> when the element, or an ancestor inside the matched element, has class
+//                         <cls> (`*` matches any run of characters); <b> otherwise. An empty branch
+//                         reads nothing and the prop keeps its default. `class:is-style-outline=ghost|primary`
+//                         is WordPress's outline button as the kit's ghost action.
 
 import type { KitBuilder, KitCatalog, KitComponent } from './catalog.js'
 import { isBuilderElement, KIT_BUILDERS } from './catalog.js'
 
 export const MAPPING_FORMAT = 'astro-kit-mapping@1'
 
-export const MAPPING_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|term:[\w-]+|ui:[\w.-]+|const:(?:true|false|-?\d+(?:\.\d+)?|[a-z][a-z0-9_-]{0,31})|site:[\w-]+|menu:(?:primary|footer)|page:(?:base|current|total|breadcrumb)|attr:[\w.-]+|(?:dom|img|link|html):[^@]*(?:@[\w-]+)?)$/
+export const MAPPING_VALUE_PATTERN = /^(?:field:[\w-]+|media:[\w-]+|ref:[\w-]+\.[\w-]+|href:(?:self|[\w-]+)|term:[\w-]+|ui:[\w.-]+|const:(?:true|false|-?\d+(?:\.\d+)?|[a-z][a-z0-9_-]{0,31})|site:[\w-]+|menu:(?:primary|footer)|page:(?:base|current|total|breadcrumb)|attr:[\w.-]+|class:[\w*-]+=(?:[a-z][\w-]*)?\|(?:[a-z][\w-]*)?|(?:dom|img|link|html):[^@]*(?:@[\w-]+)?)$/
 
 export interface MappingRule {
   /** Builder element, as the fact pack names it; a `:qualifier` narrows it (`core/template-part:header`). */
@@ -80,8 +84,11 @@ export function validateMapping(table: MappingTable, catalog: KitCatalog): strin
     const c = components.get(rule.component)
     if (!c) { problems.push(`${at}: component ${rule.component} is not in the catalog`); continue }
     for (const [axis, value] of Object.entries(rule.variant ?? {})) {
+      // A variant is one option, or a `class:` choice between options read from the element.
+      const choice = /^class:[\w*-]+=([a-z][\w-]*)?\|([a-z][\w-]*)?$/.exec(value)
+      const options = choice ? [choice[1], choice[2]].filter((option): option is string => option !== undefined) : [value]
       if (!c.variants[axis]) problems.push(`${at}: ${c.id} has no variant axis ${axis}`)
-      else if (!c.variants[axis]!.options.includes(value)) problems.push(`${at}: ${c.id}.${axis} has no option ${value}`)
+      else for (const missing of options.filter(option => !c.variants[axis]!.options.includes(option))) problems.push(`${at}: ${c.id}.${axis} has no option ${missing}`)
     }
     for (const [prop, value] of Object.entries({ ...rule.props, ...(rule.into ? {} : rule.item) })) {
       if (!c.props[prop]) problems.push(`${at}: ${c.id} has no prop ${prop}`)

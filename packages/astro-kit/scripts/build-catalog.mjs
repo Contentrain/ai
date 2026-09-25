@@ -15,6 +15,8 @@ const NOT_SHIPPED = new Set(['meta.json', 'fixtures.json'])
 const TOKENS = [
   '--color-surface', '--color-surface-muted', '--color-ink', '--color-ink-muted', '--color-line', '--color-accent', '--color-accent-ink',
   '--font-sans', '--container-prose', '--container-page', '--container-wide', '--radius-card',
+  // Optional: read with a fallback to the kit's own value, so they change nothing until a site sets them.
+  '--font-weight-heading', '--font-weight-body', '--text-body', '--leading-body', '--leading-heading', '--radius-control', '--radius-image', '--spacing-gutter',
 ]
 
 const ids = (await readdir(componentsDir, { withFileTypes: true }))

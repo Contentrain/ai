@@ -14,10 +14,10 @@ export interface GalleryItem {
 
 const gallery = tv({
   slots: {
-    heading: 'mb-8 text-2xl font-bold tracking-tight md:text-3xl',
+    heading: 'mb-8 text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight md:text-3xl',
     list: 'gap-3 md:gap-4',
     item: 'm-0',
-    frame: 'block w-full cursor-zoom-in overflow-hidden rounded-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    frame: 'block w-full cursor-zoom-in overflow-hidden rounded-[var(--radius-image,var(--radius-card))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
     thumb: 'h-full w-full object-cover transition-transform duration-300 hover:scale-[1.02]',
     caption: 'mt-2 text-sm opacity-75',
     viewer: 'm-auto max-h-[92vh] max-w-[92vw] bg-transparent p-0 backdrop:bg-ink/85',
@@ -74,7 +74,7 @@ const sizes = columns === '2' ? '50vw' : columns === '4' ? '(min-width: 768px) 2
             {open === 'popover' && (
               <div id={viewer} popover class={s.viewer()}>
                 <figure class="m-0 flex flex-col items-center gap-3">
-                  <KitImage image={item.image} sizes="92vw" class="max-h-[80vh] w-auto rounded-card object-contain" />
+                  <KitImage image={item.image} sizes="92vw" class="max-h-[80vh] w-auto rounded-[var(--radius-image,var(--radius-card))] object-contain" />
                   {item.caption && <figcaption class="text-sm text-surface">{item.caption}</figcaption>}
                   <button type="button" popovertarget={viewer} popovertargetaction="hide" class="rounded-md border border-surface/40 px-4 py-2 text-sm text-surface hover:bg-surface/10">{closeLabel}</button>
                 </figure>

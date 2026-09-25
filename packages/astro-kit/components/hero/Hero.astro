@@ -12,10 +12,10 @@ const hero = tv({
     grid: 'grid items-center gap-10',
     copy: 'flex flex-col gap-5',
     eyebrow: 'text-sm font-semibold tracking-wide uppercase opacity-80',
-    heading: 'text-4xl font-bold tracking-tight text-balance md:text-5xl lg:text-6xl',
+    heading: 'text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl lg:text-6xl',
     lead: 'max-w-2xl text-lg text-pretty opacity-85 md:text-xl',
     actions: 'flex flex-wrap gap-3 pt-2',
-    media: 'overflow-hidden rounded-card',
+    media: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
   },
   variants: {
     layout: {

@@ -9,7 +9,7 @@ import type { RawAcfValue, RawIR, RawAttachment, RawComment, RawLanguagePair, Ra
 import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import { strip, SKIP_TYPES, PROTECTED } from './core.js'
 import { acfIsSecret, acfScrub } from './acf.js'
-import { blockMenus, classicMenus, type MenuContext, type RestMenu, type RestMenuItem, type RestNavigation, type RestTemplatePart } from './rest-menus.js'
+import { blockMenus, classicMenus, type MenuContext, type RestMenu, type RestMenuItem, type RestNavigation, type RestTemplate, type RestTemplatePart } from './rest-menus.js'
 
 const iso = (gmt: string | undefined): string | null => (gmt ? `${gmt}Z` : null)
 const approvedOf = (status: string | undefined): RawComment['approved'] =>
@@ -238,7 +238,7 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     try {
       const index = await doFetch(`${origin}/wp-json/`, { headers })
       if (!index.ok) { await index.body?.cancel(); return null }
-      return (await index.json()) as { name?: unknown; description?: unknown; url?: unknown; home?: unknown } | null
+      return (await index.json()) as { name?: unknown; description?: unknown; url?: unknown; home?: unknown; timezone_string?: unknown; gmt_offset?: unknown } | null
     } catch { return null }
   })
 
@@ -460,11 +460,13 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
       })))
       return { items: first.items.concat(...rest), status: first.status }
     }
-    const [classic, items, navs, parts] = await Promise.all([
+    const [classic, items, navs, parts, templates] = await Promise.all([
       listing<RestMenu>('menus?context=edit'),
       listing<RestMenuItem>('menu-items?context=edit'),
       listing<RestNavigation>('navigation?context=edit&status=publish'),
       listing<RestTemplatePart>('template-parts?context=edit'),
+      // Which template parts the pages use: a theme ships alternatives no template shows.
+      listing<RestTemplate>('templates?context=edit&_fields=slug,content'),
     ])
     const denied = [classic, items, navs].filter((l) => DENIED.has(l.status))
     if (denied.length) {
@@ -483,7 +485,7 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     }
     const dropped = { count: 0 }
     menus = classicMenus(DENIED.has(classic.status) ? [] : classic.items, DENIED.has(items.status) ? [] : items.items, ctx, dropped)
-    menus.push(...blockMenus(DENIED.has(navs.status) ? [] : navs.items, parts.status < 400 ? parts.items : [], ctx, new Set(menus.map((m) => m.slug)), dropped))
+    menus.push(...blockMenus(DENIED.has(navs.status) ? [] : navs.items, parts.status < 400 ? parts.items : [], ctx, new Set(menus.map((m) => m.slug)), dropped, templates.status < 400 ? templates.items : []))
     // A count only: the titles of what was left out are exactly what must not travel.
     if (dropped.count) warnings.push(`menus: ${dropped.count} item(s) are drafts or point at content not proven public (unpublished, password-protected, or not read by this import) — left out`)
   }
@@ -520,6 +522,9 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
       // Where WordPress is installed and where the site is served, as WXR names them (they differ for a subdirectory install).
       ...(typeof about?.url === 'string' && about.url ? { base_site_url: about.url } : {}),
       ...(typeof about?.home === 'string' && about.home ? { base_blog_url: about.home } : {}),
+      // The zone the site's local date-times (ACF date time pickers) are written in.
+      ...(typeof about?.timezone_string === 'string' && about.timezone_string ? { timezone: about.timezone_string } : {}),
+      ...(about?.gmt_offset !== undefined && about.gmt_offset !== null && about.gmt_offset !== '' && Number.isFinite(Number(about.gmt_offset)) ? { gmt_offset: Number(about.gmt_offset) } : {}),
     },
     authors: users.map((u) => ({ id: u.id, login: u.slug, display_name: strip(u.name) || u.slug, email: null })),
     terms: [...termsById.values()],
