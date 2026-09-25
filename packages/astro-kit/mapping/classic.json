@@ -288,17 +288,6 @@
       }
     },
     {
-      "match": "classic/mc4wp",
-      "component": "newsletter",
-      "props": {
-        "action": "dom:form@action",
-        "emailLabel": "ui:newsletter.email",
-        "nameLabel": "ui:newsletter.name",
-        "submitLabel": "ui:newsletter.submit",
-        "heading": "dom:h2,h3"
-      }
-    },
-    {
       "match": "classic/mailchimp",
       "component": "newsletter",
       "props": {
@@ -306,17 +295,55 @@
         "emailLabel": "ui:newsletter.email",
         "nameLabel": "ui:newsletter.name",
         "submitLabel": "ui:newsletter.submit",
+        "provider": "const:mailchimp",
         "heading": "dom:h2,h3"
       }
     },
     {
-      "match": "classic/newsletter",
+      "match": "classic/kit",
       "component": "newsletter",
       "props": {
         "action": "dom:form@action",
         "emailLabel": "ui:newsletter.email",
         "nameLabel": "ui:newsletter.name",
         "submitLabel": "ui:newsletter.submit",
+        "provider": "const:kit",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/mailerlite",
+      "component": "newsletter",
+      "props": {
+        "action": "dom:form@action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit",
+        "provider": "const:mailerlite",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/brevo",
+      "component": "newsletter",
+      "props": {
+        "action": "dom:form@action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit",
+        "provider": "const:brevo",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/buttondown",
+      "component": "newsletter",
+      "props": {
+        "action": "dom:form@action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit",
+        "provider": "const:buttondown",
         "heading": "dom:h2,h3"
       }
     }

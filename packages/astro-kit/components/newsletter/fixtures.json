@@ -1,6 +1,6 @@
 [
-  {"name": "mailchimp-inline-muted", "props": {"action": "https://example.us21.list-manage.com/subscribe/post?u=0a1b2c3d&id=9f8e7d", "heading": "Letters from the field", "intro": "One long read a month, nothing else.", "note": "Unsubscribe any time. We never share your address."}},
-  {"name": "kit-stacked-name", "props": {"action": "https://app.kit.com/forms/1234567/subscriptions", "provider": "kit", "askName": true, "layout": "stacked", "tone": "default", "heading": "Join the journal", "submitLabel": "Sign me up"}},
-  {"name": "brevo-inverse", "props": {"action": "https://sibforms.com/serve/MUIFAB", "provider": "brevo", "tone": "inverse", "heading": "News from the studio"}},
+  {"name": "mailchimp-inline-muted", "props": {"action": "https://example.us21.list-manage.com/subscribe/post?u=0a1b2c3d&id=9f8e7d", "heading": "Letters from the field", "intro": "One long read a month, nothing else.", "note": "Unsubscribe any time. We never share your address.", "id": "newsletter-mailchimp"}},
+  {"name": "kit-stacked-name", "props": {"action": "https://app.kit.com/forms/1234567/subscriptions", "provider": "kit", "askName": true, "layout": "stacked", "tone": "default", "heading": "Join the journal", "submitLabel": "Sign me up", "id": "newsletter-kit"}},
+  {"name": "brevo-inverse", "props": {"action": "https://a1b2c3d4.sibforms.com/serve/MUIFAB", "provider": "brevo", "tone": "inverse", "heading": "News from the studio", "id": "newsletter-brevo"}},
   {"name": "other-accent", "props": {"action": "https://buttondown.com/api/emails/embed-subscribe/journal", "provider": "buttondown", "tone": "accent", "id": "newsletter-accent"}}
 ]

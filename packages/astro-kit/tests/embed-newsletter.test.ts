@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { embedTarget, mapTarget } from '../components/embed/embed'
-import { newsletterForm } from '../components/newsletter/newsletter'
+import { newsletterForm, newsletterProviderOf } from '../components/newsletter/newsletter'
 
 describe('embedTarget', () => {
   it('plays YouTube from youtube-nocookie.com, whatever address form the content used', () => {
@@ -61,6 +61,7 @@ describe('newsletterForm', () => {
       action: 'https://x.us21.list-manage.com/subscribe/post?u=abc&id=def', email: 'EMAIL', name: 'FNAME', hidden: [{ name: 'b_abc_def', value: '' }],
     })
     expect(newsletterForm('kit', 'https://app.kit.com/forms/1/subscriptions')).toMatchObject({ email: 'email_address', name: 'fields[first_name]', hidden: [] })
+    expect(newsletterForm('brevo', 'https://a1b2.sibforms.com/serve/MUIFAB')).toMatchObject({ email: 'EMAIL', name: 'FIRSTNAME' })
     expect(newsletterForm('mailerlite', 'https://assets.mailerlite.com/jsonp/1/forms/2/subscribe')).toMatchObject({ email: 'fields[email]' })
     expect(newsletterForm('buttondown', 'https://buttondown.com/api/emails/embed-subscribe/j')).toMatchObject({ email: 'email', name: null })
     expect(newsletterForm('other', 'https://lists.example.org/subscribe', { email: 'addr' })).toMatchObject({ email: 'addr', name: null })
@@ -70,6 +71,31 @@ describe('newsletterForm', () => {
     expect(newsletterForm('mailchimp', 'http://x.list-manage.com/subscribe/post?u=a&id=b')).toBeNull()
     expect(newsletterForm('other', '/wp-admin/admin-ajax.php')).toBeNull()
     expect(newsletterForm('other', 'javascript:alert(1)')).toBeNull()
+  })
+
+  it('posts only to the named provider\'s hosted endpoint: a WordPress-side handler is dead on a static site (QA-46 B1)', () => {
+    // MC4WP posts to its own page, Divi signup to admin-ajax: https, but the site itself.
+    expect(newsletterForm('mailchimp', 'https://example.com/newsletter/')).toBeNull()
+    expect(newsletterForm('mailchimp', 'https://example.com/wp-admin/admin-ajax.php')).toBeNull()
+    // Look-alikes and wrong paths.
+    expect(newsletterForm('mailchimp', 'https://x.list-manage.com.evil.example/subscribe/post?u=a&id=b')).toBeNull()
+    expect(newsletterForm('mailchimp', 'https://list-manage.com/subscribe/post?u=a&id=b')).toBeNull()
+    expect(newsletterForm('mailchimp', 'https://x.list-manage.com/account/login')).toBeNull()
+    expect(newsletterForm('brevo', 'https://sibforms.com.evil.example/serve/X')).toBeNull()
+    // The right endpoint under the wrong provider: its field names would be wrong.
+    expect(newsletterForm('kit', 'https://x.us21.list-manage.com/subscribe/post?u=a&id=b')).toBeNull()
+    // `other` takes any https address except the site's own origin.
+    expect(newsletterForm('other', 'https://example.com/subscribe', {}, 'https://www.example.com')).toBeNull()
+    expect(newsletterForm('other', 'https://lists.example.org/subscribe', {}, 'https://example.com')).not.toBeNull()
+  })
+
+  it('names the provider an action belongs to, for the migration to choose `provider`', () => {
+    expect(newsletterProviderOf('https://us21.list-manage.com/subscribe/post?u=a&id=b')).toBe('mailchimp')
+    expect(newsletterProviderOf('https://app.convertkit.com/forms/42/subscriptions')).toBe('kit')
+    expect(newsletterProviderOf('https://assets.mailerlite.com/jsonp/1/forms/2/subscribe')).toBe('mailerlite')
+    expect(newsletterProviderOf('https://buttondown.com/api/emails/embed-subscribe/journal')).toBe('buttondown')
+    expect(newsletterProviderOf('https://example.com/?na=s')).toBeNull()
+    expect(newsletterProviderOf('http://us21.list-manage.com/subscribe/post')).toBeNull()
   })
 
   it('leaves out a Mailchimp bot-trap name built from odd query values', () => {

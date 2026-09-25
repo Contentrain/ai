@@ -2,9 +2,12 @@
 // A newsletter sign-up that posts straight to the list provider's hosted form
 // endpoint (Mailchimp, Kit, MailerLite, Brevo, Buttondown): a plain HTML form,
 // no script, no server of ours. The provider shows its own confirmation page,
-// in a new tab by default so the reader keeps the site. Without a usable
-// action (not https) the section renders nothing: a form that cannot deliver
-// must not be shown.
+// in a new tab by default so the reader keeps the site. The action must be
+// the named provider's hosted endpoint (exact host and path) — a WordPress-side
+// handler (MC4WP, Divi signup, Jetpack) is dead on a static site — or, for
+// `other`, an https address off the site's own origin. Otherwise the section
+// renders nothing; the migration plan lists such a sign-up for review instead
+// of placing it.
 import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
 import { newsletterForm } from './newsletter'
@@ -68,9 +71,11 @@ const {
   emailLabel = 'Email address', nameLabel = 'First name', submitLabel = 'Subscribe', newTab = true,
   layout, tone = 'muted', id = 'newsletter',
 } = Astro.props
-const form = newsletterForm(provider, action, { email: emailName })
+const form = newsletterForm(provider, action, { email: emailName }, Astro.site)
 const s = newsletter({ layout, tone })
 const headingId = heading ? `${id}-title` : undefined
+// `rel` on a form is HTML (the provider's page gets no opener and no referrer) but not in Astro's form attribute types.
+const formRel: Record<string, string> = newTab ? { rel: 'noopener noreferrer' } : {}
 ---
 {form && (
   <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
@@ -82,7 +87,7 @@ const headingId = heading ? `${id}-title` : undefined
         </div>
       )}
       <div class="flex flex-col gap-2">
-        <form method="post" action={form.action} target={newTab ? '_blank' : undefined} class={s.form()} aria-labelledby={headingId} aria-label={headingId ? undefined : submitLabel}>
+        <form method="post" action={form.action} target={newTab ? '_blank' : undefined} {...formRel} class={s.form()} aria-labelledby={headingId} aria-label={headingId ? undefined : submitLabel}>
           {askName && form.name && (
             <div class={s.field()}>
               <label for={`${id}-name`} class={s.label()}>{nameLabel}</label>
