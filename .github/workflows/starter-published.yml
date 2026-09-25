@@ -1,0 +1,46 @@
+name: Starter with published packages
+
+# templates/astro-starter as a customer receives it: copied out and installed
+# from its own lockfile, so @contentrain/query and friends come from npm, not
+# from this checkout. CI's starter step tests the SDK at HEAD; this tests what
+# is released. A fix that is merged but not published passes CI and fails
+# here — the 0.16.0 emitter lesson. Migrate consumes the starter only while
+# this is green.
+#
+# Not a pull-request check on purpose: between a merge and the release that
+# publishes it, it is expected to be red, and it must not block other merges.
+
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  starter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Empty starter, published packages
+        run: node scripts/starter-gates.mjs --frozen
+
+      - name: WordPress-shaped demo, published packages
+        run: node scripts/starter-gates.mjs --frozen --fixture wp-demo
