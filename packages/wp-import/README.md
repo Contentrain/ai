@@ -102,6 +102,108 @@ these before claiming a complete migration. ACF field/group records and their
 cross-model parents remain in the content store; route discovery decides which
 records become public pages. Importing configuration does not execute a plugin.
 
+### Site name over REST
+
+`fetchRestRawIR` reads the `/wp-json/` index for the site's name and tagline
+(`RawIR.site.title` / `description`, the store's `site` singleton) and its
+install and public addresses (`base_site_url` / `base_blog_url`). An index that
+does not answer leaves them out.
+
+### Menus over REST
+
+With an Application Password, `fetchRestRawIR` reads the site's menus into
+`RawIR.menus`: classic menus (`/wp/v2/menus` + `/wp/v2/menu-items`, with the
+theme locations each is assigned to) and a block theme's published
+`wp_navigation` posts (links, submenus, page lists, home links). A block menu's
+`locations` are the template-part areas (`header`, `footer`) whose navigation
+block refers to it; an empty navigation block without a `ref` shows the most
+recent published one, as WordPress does. Block menu items have no WordPress id
+and get negative ids; the store claims no `wp_id` for them.
+
+A navigation block in a template part that carries its own links (an inline
+navigation, as in Twenty Twenty-Five's footer columns) is a menu of that part's
+area: `Footer navigation 1`, `2`, … (its `ariaLabel` names it when set), links
+in order and nested. Only template parts a template uses count — a theme ships
+alternatives (`footer-columns`, `header-large-title`) that no page shows; without
+the templates, the part named after its area (`header`, `footer`). A `#` link
+stays `#`. Inline menus have no WordPress record: negative ids, no `wp_id`.
+
+A menu item that is itself a draft, or whose post target is not proven public
+— a draft, pending, private, scheduled or password-protected post, or one this
+import never read (a type outside REST, a listing past a page cap) — is left
+out, fail-closed: its label is often that post's title. Its children move up to the
+nearest kept ancestor; `warnings` gives only the count.
+
+Both need `edit_theme_options`. Without a credential, with a rejected one, or
+with a user who lacks that right, no menus are read and the result's `gaps`
+contains `menus_require_auth` — an empty menu list is never presented as the
+site having none. The `menus` model gains a `locations` field only when the
+source named them.
+
+### ACF fields, custom post types and taxonomies over REST
+
+ACF / Secure Custom Fields values arrive on a post's `acf` key — only for field
+groups set to "Show in REST API" (off by default). Each field is typed by one
+versioned table (`ACF_MAPPING_VERSION`, exported with `ACF_SCALAR_TYPES` and
+`ACF_REFERENCE_TYPES`): the ACF type is read from SCF's `<name>_source.type`
+where the site states it, and inferred from the value's shape only when nothing
+states it (the field description then says so).
+
+| ACF | Contentrain |
+| --- | --- |
+| text, time picker | `string` |
+| textarea | `text` |
+| wysiwyg | `richtext` |
+| email / url, oembed / number, range / true false | `email` / `url` / `number` / `boolean` |
+| date picker / date time picker | `date` / `datetime` (ISO, with the site's offset) |
+| color picker / icon picker | `color` / `icon` |
+| select, radio, button group | `select` (its choices) |
+| checkbox, multiple select | `array` of `select` |
+| image / file | `image` / `file` (the URL) |
+| link | `object { url, title, target }` |
+| google map | `object { address, lat, lng, zoom }` |
+| group | `object` of its fields |
+| repeater | `array` of `object` (nested repeaters nest) |
+| flexible content | `array` of `object`: a required `layout` select plus the union of the layouts' fields |
+| post object, relationship | `relation` / `relations` to the entries' models |
+| taxonomy / user / gallery | `relations` to the term model / `authors` / media |
+| page link | `url`: the target's address, only when the target is published and unprotected |
+| tab, accordion, message | nothing (layout only) |
+| password | nothing, ever |
+
+Sub-fields of a repeater, group or flexible layout are typed by the same table
+when the site states their type (SCF's `_source` inside each row); a reference
+inside a row, and a sub-field with no stated type, are typed from the value. A
+select or checkbox value outside the field's stated choices is left out and
+counted in the report's `acf_outside_choices`. A date time picker's value is written
+with the site's UTC offset for that moment, DST included (the `/wp-json/`
+index's `timezone_string`, else `gmt_offset`); with neither it stays local and
+`acf_datetime_unzoned` counts it. `src/fixtures/acf-parity.json`
+holds the cases the Contentrain Bridge must map the same way.
+
+**A password field is never read** — at any depth: a password sub-field of a
+repeater row, a group or a flexible layout is removed with its `_source` before
+the value reaches `RawIR`. Where the source states the type, the type decides;
+where it does not (plain ACF, no `<name>_source`), a field whose name has a
+secret word in it (`password`, `user_pass`, `apiKey`, `access_token`, …; whole
+words, so `passage` stays) is skipped instead. It never reaches `RawIR`, the
+store, or a report.
+
+ACF values follow their post: a draft's fields land in the store with the
+draft (meta `status: draft`), like its body. A reference to an entry the import
+did not read is dropped and counted in `dropped_relations`. The report's
+`acf_fields` lists each field's type. When any post carries an `acf` key, the
+result's `gaps` contains `acf_partial`: groups without REST exposure, options
+pages and fields on post types outside REST are not visible to REST — the
+Bridge reads those.
+
+With an Application Password, post types are read with `context=edit` so their
+`viewable` flag is known: a type that is in REST but not publicly queryable (a
+testimonial post type, say) keeps its content but gets no address (`link` is
+null), so no route or redirect claims a page that does not exist. Custom
+taxonomies in REST are read with their terms, and a post's terms in them become
+its relations.
+
 
 ### Publication and translation identity
 

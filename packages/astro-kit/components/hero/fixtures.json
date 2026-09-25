@@ -1,0 +1,116 @@
+[
+  {
+    "name": "split",
+    "props": {
+      "eyebrow": "Northwind Journal",
+      "heading": "Field notes on slow travel and good coffee",
+      "lead": "Essays, guides and photographs from twelve years on the road — now in one place, and easier to read.",
+      "actions": [
+        {
+          "label": "Start reading",
+          "href": "/journal/"
+        },
+        {
+          "label": "About the journal",
+          "href": "/about/",
+          "style": "ghost"
+        }
+      ],
+      "image": {
+        "src": "/kit-fixtures/photo-1.svg",
+        "alt": "A café terrace in the morning",
+        "width": 1200,
+        "height": 800
+      }
+    }
+  },
+  {
+    "name": "centered-muted",
+    "props": {
+      "heading": "Plan a calmer trip",
+      "lead": "Our guides pick fewer places and give each one more time.",
+      "layout": "centered",
+      "tone": "muted",
+      "level": 2,
+      "actions": [
+        {
+          "label": "Browse guides",
+          "href": "/category/guides/"
+        }
+      ],
+      "image": {
+        "src": "/kit-fixtures/photo-2.svg",
+        "alt": "",
+        "width": 1600,
+        "height": 700
+      }
+    }
+  },
+  {
+    "name": "cover",
+    "props": {
+      "heading": "The long way round",
+      "lead": "A year of trains across Europe, one station at a time.",
+      "layout": "cover",
+      "actions": [
+        {
+          "label": "Read the series",
+          "href": "/series/long-way/"
+        }
+      ],
+      "image": {
+        "src": "/kit-fixtures/photo-3.svg",
+        "alt": "",
+        "width": 1600,
+        "height": 900
+      }
+    }
+  },
+  {
+    "name": "cover-start",
+    "props": {
+      "heading": "The long way round",
+      "lead": "A year of trains across Europe, one station at a time.",
+      "layout": "cover",
+      "actions": [
+        {
+          "label": "Read the series",
+          "href": "/series/long-way/"
+        }
+      ],
+      "image": {
+        "src": "/kit-fixtures/photo-3.svg",
+        "alt": "",
+        "width": 1600,
+        "height": 900
+      },
+      "align": "start"
+    }
+  },
+  {
+    "name": "inverse-text-only",
+    "props": {
+      "heading": "Contact",
+      "lead": "Questions, corrections and invitations are all welcome.",
+      "tone": "inverse",
+      "level": 2
+    }
+  },
+  {
+    "name": "accent",
+    "props": {
+      "heading": "Spring issue is out",
+      "tone": "accent",
+      "level": 2,
+      "actions": [
+        {
+          "label": "Read it",
+          "href": "/issues/spring/",
+          "style": "secondary"
+        }
+      ],
+      "lead": "Twelve new guides, and the long read on night trains.",
+      "eyebrow": "New"
+    }
+  }
+]

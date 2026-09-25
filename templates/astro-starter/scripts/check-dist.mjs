@@ -4,6 +4,8 @@
 //  - no WordPress runtime: no wp-includes / wp-content / jQuery references
 //  - JavaScript only where a feature needs it (search, Studio forms/comments)
 //  - the files crawlers and readers expect: sitemap, robots.txt, RSS, 404
+//  - wp-query-map.json: WordPress's query addresses (?p=, ?page_id=, …) and
+//    where they lead now — the baseline every host serves, even when empty
 //  - every indexable page has a title, a canonical URL, a language and
 //    well-formed JSON-LD
 //
@@ -40,6 +42,19 @@ async function exists(path) {
 
 for (const required of ['index.html', 'sitemap-index.xml', 'robots.txt', 'rss.xml', '404.html']) {
   if (!await exists(join(dist, required))) fail(required, 'missing')
+}
+
+if (await exists(join(dist, 'wp-query-map.json'))) {
+  try {
+    const map = JSON.parse(await readFile(join(dist, 'wp-query-map.json'), 'utf8'))
+    const valid = map && typeof map === 'object' && !Array.isArray(map)
+      && Object.values(map).every(targets => targets && typeof targets === 'object' && Object.values(targets).every(to => typeof to === 'string' && to.startsWith('/')))
+    if (!valid) fail('wp-query-map.json', 'not a map of parameter → value → site path')
+  } catch {
+    fail('wp-query-map.json', 'does not parse')
+  }
+} else {
+  fail('wp-query-map.json', 'missing')
 }
 
 const WP_RUNTIME = /\/wp-(?:includes|content|json)\/|jquery(?:\.min)?\.js/i

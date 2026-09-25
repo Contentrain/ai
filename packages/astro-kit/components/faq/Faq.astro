@@ -1,0 +1,81 @@
+---
+// Questions and answers as native disclosure widgets (<details>) — no script.
+// `exclusive` groups them by name, so opening one closes the others. With
+// `schema`, the page also carries FAQPage structured data for search engines
+// and AI answers.
+import { tv } from 'tailwind-variants'
+import Section from '../_shared/Section.astro'
+
+export interface FaqItem {
+  question: string
+  /** The answer as HTML (the rich text the question came with). */
+  answer: string
+}
+
+const faq = tv({
+  slots: {
+    heading: 'mb-8 text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
+    list: 'flex flex-col',
+    item: 'group',
+    summary: 'flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-lg [font-weight:var(--font-weight-heading,600)] [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    marker: 'size-5 shrink-0 transition-transform duration-200 group-open:rotate-45',
+    answer: 'prose-site prose max-w-none pb-5 text-current',
+  },
+  variants: {
+    style: {
+      lines: { list: 'divide-y divide-line border-y border-line' },
+      cards: { list: 'gap-3', item: 'rounded-card border border-line px-5', summary: 'py-5' },
+      // WordPress's details block: the browser's own disclosure triangle, no rules or box.
+      plain: { list: 'gap-2', summary: 'list-item list-[revert] py-1 text-base [font-weight:inherit] [&::-webkit-details-marker]:inline', marker: 'hidden', answer: 'pt-2 pl-5' },
+    },
+    tone: { default: {}, muted: { item: 'bg-surface' }, inverse: { answer: 'prose-invert' }, accent: { answer: 'prose-invert' } },
+  },
+  compoundVariants: [
+    { style: 'cards', tone: 'muted', class: { item: 'border-transparent' } },
+  ],
+  defaultVariants: { style: 'lines', tone: 'default' },
+})
+
+interface Props {
+  items: FaqItem[]
+  heading?: string | undefined
+  style?: 'lines' | 'cards' | 'plain' | undefined
+  /** One answer open at a time (`<details name>`). */
+  exclusive?: boolean | undefined
+  /** Open the first answer. */
+  openFirst?: boolean | undefined
+  /** Add FAQPage structured data (JSON-LD). Once per page. */
+  schema?: boolean | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  id?: string | undefined
+}
+
+const { items, heading, style, exclusive = false, openFirst = false, schema = false, tone, id = 'faq' } = Astro.props
+const s = faq({ style, tone })
+const headingId = heading ? `${id}-title` : undefined
+const plain = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
+const structured = schema && items.length > 0
+  ? JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: items.map(item => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: plain(item.answer) } })),
+    }).replace(/</g, '\\u003c')
+  : null
+---
+{items.length > 0 && (
+  <Section tone={tone} spacing="md" width="prose" id={id} aria-labelledby={headingId}>
+    {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+    <div class={s.list()}>
+      {items.map((item, i) => (
+        <details class={s.item()} name={exclusive ? id : undefined} open={openFirst && i === 0}>
+          <summary class={s.summary()}>
+            <span>{item.question}</span>
+            <svg class={s.marker()} viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+          </summary>
+          <div class={s.answer()} set:html={item.answer} />
+        </details>
+      ))}
+    </div>
+    {structured && <script type="application/ld+json" set:html={structured} />}
+  </Section>
+)}

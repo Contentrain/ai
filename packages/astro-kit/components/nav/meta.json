@@ -1,0 +1,103 @@
+{
+  "id": "nav",
+  "name": "Navigation",
+  "description": "Site navigation: an inline list with hover/focus submenus on wide screens and a toggle on narrow ones that opens a native popover drawer or a <details> dropdown. No JavaScript.",
+  "category": "chrome",
+  "uses": [],
+  "shared": [
+    "types.ts"
+  ],
+  "variants": {
+    "mobile": {
+      "options": [
+        "popover",
+        "details"
+      ],
+      "default": "popover",
+      "description": "Narrow-screen menu: a side drawer (Popover API) or a dropdown under the toggle."
+    },
+    "align": {
+      "options": [
+        "start",
+        "end",
+        "center"
+      ],
+      "default": "end",
+      "description": "Horizontal alignment of the inline list."
+    },
+    "density": {
+      "options": [
+        "compact",
+        "comfortable"
+      ],
+      "default": "compact",
+      "description": "Gap and text size of the inline list."
+    }
+  },
+  "props": {
+    "items": {
+      "type": "array",
+      "required": true,
+      "items": {
+        "type": "object",
+        "fields": {
+          "label": {
+            "type": "string",
+            "required": true
+          },
+          "href": {
+            "type": "url",
+            "required": true
+          },
+          "newTab": {
+            "type": "boolean"
+          },
+          "children": {
+            "type": "array"
+          }
+        }
+      },
+      "description": "Menu entries; one level of children is shown."
+    },
+    "label": {
+      "type": "string",
+      "description": "Accessible name of the navigation landmark (ui-strings nav.label)."
+    },
+    "menuLabel": {
+      "type": "string",
+      "description": "Text of the narrow-screen toggle (ui-strings nav.menu)."
+    },
+    "closeLabel": {
+      "type": "string",
+      "description": "Text of the drawer's close button (ui-strings nav.close)."
+    },
+    "id": {
+      "type": "string",
+      "description": "Unique id when a page renders two navigations."
+    },
+    "part": {
+      "type": "string",
+      "description": "What the navigation is, for checks that find a page's parts (data-cr-part), e.g. \"nav-header\"."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": [
+      "core/navigation",
+      "core/page-list"
+    ],
+    "elementor": [
+      "elementor/nav-menu"
+    ],
+    "divi": [
+      "divi/et_pb_menu",
+      "divi/et_pb_fullwidth_menu"
+    ],
+    "classic": [
+      "classic/nav-menu"
+    ]
+  },
+  "a11y": "A <nav> landmark with a label; the current page carries aria-current. Submenus open on :focus-within as well as hover. The drawer is a native popover: Escape and light dismiss close it and focus returns to the toggle."
+}

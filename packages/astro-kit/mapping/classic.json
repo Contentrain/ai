@@ -1,0 +1,351 @@
+{
+  "format": "astro-kit-mapping@1",
+  "builder": "classic",
+  "version": "4",
+  "fallback": "prose",
+  "rules": [
+    {
+      "match": "classic/header",
+      "component": "header",
+      "props": {
+        "siteName": "site:title",
+        "logo": "site:logo",
+        "items": "menu:primary",
+        "navLabel": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "classic/nav-menu",
+      "component": "nav",
+      "props": {
+        "items": "menu:primary",
+        "label": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "classic/footer",
+      "component": "footer",
+      "props": {
+        "siteName": "site:title",
+        "tagline": "site:description",
+        "links": "menu:footer",
+        "copyright": "ui:footer.copyright",
+        "navLabel": "ui:footer.nav"
+      }
+    },
+    {
+      "match": "classic/widget-area",
+      "component": "footer",
+      "props": {
+        "siteName": "site:title"
+      },
+      "into": "columns",
+      "each": ".widget",
+      "item": {
+        "title": "dom:.widget-title,h2,h3"
+      }
+    },
+    {
+      "match": "classic/archive-item",
+      "component": "post-card",
+      "bind": "collection:posts",
+      "item": {
+        "title": "field:title",
+        "href": "href:self",
+        "excerpt": "field:excerpt",
+        "date": "field:date",
+        "image": "media:featured_image",
+        "author": "ref:author.name",
+        "category": "term:categories"
+      }
+    },
+    {
+      "match": "classic/pagination",
+      "component": "pagination",
+      "props": {
+        "base": "page:base",
+        "current": "page:current",
+        "total": "page:total",
+        "label": "ui:pagination.label",
+        "prevLabel": "ui:pagination.prev",
+        "nextLabel": "ui:pagination.next",
+        "pageLabel": "ui:pagination.page"
+      }
+    },
+    {
+      "match": "classic/yoast-breadcrumb",
+      "component": "breadcrumb",
+      "props": {
+        "items": "page:breadcrumb",
+        "current": "field:title",
+        "label": "ui:breadcrumb.label"
+      }
+    },
+    {
+      "match": "classic/rank-math-breadcrumb",
+      "component": "breadcrumb",
+      "props": {
+        "items": "page:breadcrumb",
+        "current": "field:title",
+        "label": "ui:breadcrumb.label"
+      }
+    },
+    {
+      "match": "classic/revslider",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": "rs-slide, .tp-revslider-slidesli",
+      "item": {
+        "image": "img:img",
+        "title": "dom:rs-layer"
+      }
+    },
+    {
+      "match": "classic/metaslider",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".slides > li",
+      "item": {
+        "image": "img:img",
+        "text": "dom:.caption"
+      }
+    },
+    {
+      "match": "classic/smart-slider",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".n2-ss-slide",
+      "item": {
+        "image": "img:img",
+        "title": "dom:.n2-ss-item-content"
+      }
+    },
+    {
+      "match": "classic/hero",
+      "component": "hero",
+      "props": {
+        "heading": "dom:h1,h2",
+        "lead": "dom:p",
+        "image": "img:img"
+      },
+      "into": "actions",
+      "each": "a.button,a.btn,.wp-block-button__link",
+      "item": {
+        "label": "dom:",
+        "href": "dom:@href"
+      }
+    },
+    {
+      "match": "classic/cta",
+      "component": "cta",
+      "props": {
+        "heading": "dom:h2,h3",
+        "body": "dom:p"
+      },
+      "into": "actions",
+      "each": "a",
+      "item": {
+        "label": "dom:",
+        "href": "dom:@href"
+      }
+    },
+    {
+      "match": "classic/faq",
+      "component": "faq",
+      "into": "items",
+      "each": "details, .faq-item",
+      "item": {
+        "question": "dom:summary, .faq-question",
+        "answer": "html:.faq-answer, :scope > :not(summary)"
+      }
+    },
+    {
+      "match": "classic/tabs",
+      "component": "tabs",
+      "into": "items",
+      "each": "[role=tab]",
+      "item": {
+        "label": "dom:",
+        "content": "html:[role=tabpanel]"
+      }
+    },
+    {
+      "match": "classic/testimonial",
+      "component": "testimonial",
+      "group": "siblings",
+      "into": "items",
+      "item": {
+        "quote": "dom:blockquote, .testimonial-text",
+        "name": "dom:cite, .testimonial-name",
+        "avatar": "img:img"
+      }
+    },
+    {
+      "match": "classic/gallery",
+      "component": "gallery",
+      "props": {
+        "closeLabel": "ui:gallery.close"
+      },
+      "into": "items",
+      "each": ".gallery-item",
+      "item": {
+        "image": "img:img",
+        "caption": "dom:.gallery-caption, .wp-caption-text"
+      }
+    },
+    {
+      "match": "classic/contact-form-7",
+      "component": "contact-form",
+      "props": {
+        "model": "const:contact",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/wpforms",
+      "component": "contact-form",
+      "props": {
+        "model": "const:contact",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/gravityforms",
+      "component": "contact-form",
+      "props": {
+        "model": "const:contact",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/ninja-forms",
+      "component": "contact-form",
+      "props": {
+        "model": "const:contact",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/the-content",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "classic/youtube",
+      "component": "embed",
+      "props": {
+        "url": "dom:iframe@src",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "classic/vimeo",
+      "component": "embed",
+      "props": {
+        "url": "dom:iframe@src",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "classic/google-maps",
+      "component": "embed",
+      "variant": {
+        "aspect": "map"
+      },
+      "props": {
+        "url": "dom:iframe@src",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "classic/mailchimp",
+      "component": "newsletter",
+      "props": {
+        "action": "dom:form@action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit",
+        "provider": "const:mailchimp",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/kit",
+      "component": "newsletter",
+      "props": {
+        "action": "dom:form@action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit",
+        "provider": "const:kit",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/mailerlite",
+      "component": "newsletter",
+      "props": {
+        "action": "dom:form@action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit",
+        "provider": "const:mailerlite",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/brevo",
+      "component": "newsletter",
+      "props": {
+        "action": "dom:form@action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit",
+        "provider": "const:brevo",
+        "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/buttondown",
+      "component": "newsletter",
+      "props": {
+        "action": "dom:form@action",
+        "emailLabel": "ui:newsletter.email",
+        "nameLabel": "ui:newsletter.name",
+        "submitLabel": "ui:newsletter.submit",
+        "provider": "const:buttondown",
+        "heading": "dom:h2,h3"
+      }
+    }
+  ]
+}

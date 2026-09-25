@@ -1,80 +1,31 @@
 ---
-// The route table: every content address the site builds — front page, posts,
-// pages, the blog index and the category, tag and author archives with their
-// pagination — from the permalink patterns in site.config.ts. Two entries
-// claiming one address fail the build instead of one silently winning.
+// Every content address the site builds, from the route table in lib/site-routes.ts,
+// and every old address in the redirects collection as an instant redirect page
+// (the host's own 301 rules are in _redirects).
 import type { GetStaticPaths, InferGetStaticPropsType } from 'astro'
-import { getCollection } from 'astro:content'
-import { authorHref, byId, getPosts, getStrings, pageHref, postHref, termHref, type Page, type Post } from '../lib/content'
-import { pagePath, permalinks, toParam } from '../lib/routes'
-import { siteConfig } from '../site.config'
+import { redirectRules, type RedirectStatus } from '../lib/redirects'
+import { toParam } from '../lib/routes'
+import { type Route, routeTable } from '../lib/site-routes'
+import { composedViews } from '../views/composed'
 import ListView from '../views/ListView.astro'
 import PageView from '../views/PageView.astro'
 import PostView from '../views/PostView.astro'
 
-type Route =
-  | { view: 'post', post: Post }
-  | { view: 'page', page: Page, trail: Array<{ title: string, href: string }>, isHome: boolean }
-  | { view: 'list', title?: string, eyebrow?: string, description?: string, posts: Post[], base: string, current: number, total: number }
+type Moved = { view: 'redirect', to: string, status: RedirectStatus }
 
 export const getStaticPaths = (async () => {
-  const [posts, pages, categories, tags, authors, t] = await Promise.all([
-    getPosts(), byId('pages'), byId('categories'), byId('tags'), getCollection('authors'), getStrings(),
-  ])
-  const routes = new Map<string, Route>()
-  const add = (href: string, route: Route) => {
-    if (routes.has(href)) throw new Error(`Two entries claim the address ${href}. Change a slug or a permalink pattern in site.config.ts.`)
-    routes.set(href, route)
-  }
-
-  /** A post list split into pages at `base`, `base/page/2/`, … — page 1 exists even when empty. */
-  const paginate = (base: string, list: Post[], heading: Omit<Extract<Route, { view: 'list' }>, 'view' | 'posts' | 'base' | 'current' | 'total'>) => {
-    const size = siteConfig.postsPerPage
-    const total = Math.max(1, Math.ceil(list.length / size))
-    for (let current = 1; current <= total; current++) {
-      add(pagePath(base, current), { view: 'list', ...heading, posts: list.slice((current - 1) * size, current * size), base, current, total })
-    }
-  }
-
-  for (const post of posts) add(postHref(post), { view: 'post', post })
-
-  for (const page of pages.values()) {
-    const trail: Array<{ title: string, href: string }> = []
-    const seen = new Set([page.id])
-    for (let parent = page.data.parent ? pages.get(page.data.parent.id) : undefined; parent && !seen.has(parent.id); parent = parent.data.parent ? pages.get(parent.data.parent.id) : undefined) {
-      seen.add(parent.id)
-      trail.unshift({ title: parent.data.title, href: pageHref(parent, pages) })
-    }
-    const href = pageHref(page, pages)
-    add(href, { view: 'page', page, trail, isHome: href === '/' })
-  }
-
-  // The posts index: the front page, or — on a site whose front page is a
-  // static page — its own address (WordPress: Settings → Reading).
-  const blog = siteConfig.home.kind === 'posts' ? '/' : permalinks.blog
-  paginate(blog, posts, blog === '/' ? {} : { title: t('blog.title') })
-
-  for (const category of categories.values()) {
-    paginate(termHref('category', category, categories), posts.filter(post => post.data.categories.some(ref => ref.id === category.id)), {
-      title: category.data.name, eyebrow: t('archive.category'), ...(category.data.description ? { description: category.data.description } : {}),
-    })
-  }
-  for (const tag of tags.values()) {
-    paginate(termHref('tag', tag, tags), posts.filter(post => post.data.tags.some(ref => ref.id === tag.id)), {
-      title: tag.data.name, eyebrow: t('archive.tag'), ...(tag.data.description ? { description: tag.data.description } : {}),
-    })
-  }
-  for (const author of authors) {
-    const own = posts.filter(post => post.data.author?.id === author.id)
-    if (own.length > 0) paginate(authorHref(author), own, { title: author.data.name, eyebrow: t('archive.author'), ...(author.data.bio ? { description: author.data.bio } : {}) })
-  }
-
-  return [...routes].map(([href, route]) => ({ params: { path: toParam(href) }, props: route }))
+  const [routes, redirects] = await Promise.all([routeTable(), redirectRules()])
+  // A file address (`/old.pdf`) cannot be a page; the host rules redirect it.
+  const moved = redirects.flatMap(rule => (rule.status !== 410 && rule.from.endsWith('/') ? [[rule.from, { view: 'redirect', to: rule.to, status: rule.status }] as const] : []))
+  return [...routes, ...moved].map(([href, route]: readonly [string, Route | Moved]) => ({ params: { path: toParam(href) }, props: route }))
 }) satisfies GetStaticPaths
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>
 const route = Astro.props as Props
+if (route.view === 'redirect') return Astro.redirect(route.to, route.status)
+// A page the migration composed from sections has a view of its own.
+const PageRoute = route.view === 'page' ? composedViews[route.page.data.wp_id ?? -1] ?? PageView : PageView
 ---
 {route.view === 'post' && <PostView post={route.post} />}
-{route.view === 'page' && <PageView page={route.page} trail={route.trail} isHome={route.isHome} />}
+{route.view === 'page' && <PageRoute page={route.page} trail={route.trail} isHome={route.isHome} />}
 {route.view === 'list' && <ListView {...route} />}

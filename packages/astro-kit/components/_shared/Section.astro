@@ -1,0 +1,43 @@
+---
+// A page section: background tone, vertical rhythm and the page frame. Every
+// section component renders inside one, so sections stack evenly whatever
+// their order.
+import { tv } from 'tailwind-variants'
+
+const section = tv({
+  base: '',
+  variants: {
+    tone: {
+      default: 'bg-surface text-ink',
+      muted: 'bg-surface-muted text-ink',
+      inverse: 'bg-ink text-surface',
+      accent: 'bg-accent text-accent-ink',
+    },
+    spacing: {
+      none: '',
+      sm: 'py-8 md:py-12',
+      md: 'py-12 md:py-20',
+      lg: 'py-16 md:py-28',
+    },
+  },
+  defaultVariants: { tone: 'default', spacing: 'md' },
+})
+
+export type Tone = 'default' | 'muted' | 'inverse' | 'accent'
+
+interface Props {
+  tone?: Tone | undefined
+  spacing?: 'none' | 'sm' | 'md' | 'lg' | undefined
+  /** `page` is the full frame, `prose` the reading column, `none` for full-bleed content. */
+  width?: 'page' | 'prose' | 'none' | undefined
+  as?: 'section' | 'div' | 'aside' | undefined
+  id?: string | undefined
+  class?: string | undefined
+  'aria-labelledby'?: string | undefined
+}
+
+const { tone, spacing, width = 'page', as: Tag = 'section', id, class: className, 'aria-labelledby': labelledBy } = Astro.props
+---
+<Tag id={id} aria-labelledby={labelledBy} class={section({ tone, spacing, class: className })} data-tone={tone ?? 'default'} data-kit-section data-kit-spacing={spacing ?? 'md'}>
+  {width === 'none' ? <slot /> : <div class={width === 'prose' ? 'container-prose' : 'container-page'}><slot /></div>}
+</Tag>

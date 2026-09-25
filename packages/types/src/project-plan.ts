@@ -25,6 +25,10 @@ export const PROJECT_PLAN_FORMAT = 'contentrain-project-plan@1'
 export const PLAN_TOKEN_ROLES = [
   'color-surface', 'color-surface-muted', 'color-ink', 'color-ink-muted', 'color-line', 'color-accent', 'color-accent-ink',
   'font-sans', 'font-serif', 'font-mono', 'container-prose', 'container-page', 'container-wide', 'radius-card',
+  // The source theme's type and shape (theme.json styles): absent means the kit's own values.
+  'font-weight-heading', 'font-weight-body', 'text-body', 'leading-body', 'leading-heading', 'radius-control', 'radius-image', 'spacing-gutter',
+  // The theme's type scale and rhythm: the site's theme applies them on the kit's markers (`data-kit-*`, `data-cr-part`).
+  'text-nav', 'text-heading-1', 'text-heading-2', 'text-heading-3', 'spacing-section',
 ] as const
 export type PlanTokenRole = (typeof PLAN_TOKEN_ROLES)[number]
 
@@ -37,6 +41,11 @@ export interface ProjectPlan {
   models: PlanModel[]
   components: PlanComponent[]
   routes: PlanRoute[]
+  /**
+   * What becomes of each behavior the fact pack recorded (form, search, embed, accordion, …), one
+   * record per fact behavior id — so none is dropped without a reason a reviewer can read.
+   */
+  behaviors?: PlanBehavior[]
   /** Every decision the plan rests on, with who made it — the audit trail a reviewer reads. */
   decisions?: PlanDecisionRecord[]
 }
@@ -66,8 +75,23 @@ export interface PlanSite {
   permalinks: { post: PlanPermalink, page: PlanPermalink, category: PlanPermalink, tag: PlanPermalink, author: PlanPermalink, blog: PlanPermalink }
   home: { kind: 'posts' } | { kind: 'page', slug: string }
   postsPerPage: number
-  /** Menu slugs (`menus.slug`, as WordPress named them) for the starter's navigation areas — `getMenu(slug)`. */
-  menus: { primary: string, footer: string }
+  /**
+   * Menu slugs (`menus.slug`, as WordPress named them) for the starter's navigation areas — `getMenu(slug)`.
+   * `footer` lists the footer's menus in the source's order, one column each (at most 4); empty for none.
+   * A plan written before 1.25 has one slug, or `'none'`: read it through {@link footerMenusOf}.
+   */
+  menus: { primary: string, footer: string | string[] }
+  /**
+   * A single post as the source's single template lays it out: the header parts in their order, links
+   * to the previous and next post (`core/post-navigation-link`), and how many other posts a list under
+   * it shows (a `core/query` after the content; 0 for none). Absent: the starter's own layout.
+   */
+  post?: { header: Array<'terms' | 'title' | 'byline' | 'cover'>, adjacent: boolean, more: number }
+  /**
+   * Post lists (blog index, archives): `cards`, or `full` when the source's query loop shows each post's
+   * content; `heading` shows the index's title on the front page. Absent: cards without a heading.
+   */
+  lists?: { display: 'cards' | 'full', heading: boolean }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
   redirects: Record<string, string | { status: number, destination: string }>
@@ -106,6 +130,32 @@ export interface PlanModel {
   fields?: Record<string, FieldDef>
   /** How entries of a `plan` model are filled from the source, deterministically. */
   extract?: PlanExtraction[]
+  /**
+   * A Studio form: submissions from the site's form are saved as entries of this model (a `plan`
+   * collection with `i18n: false` whose fields are the source form's fields). Written to the model definition's `form` key.
+   */
+  form?: PlanFormConfig
+}
+
+/**
+ * The form settings Studio reads from a model definition's `form` key (Studio's `FormConfig`, kept here
+ * so the plan does not depend on Studio). Captcha, honeypot and notifications replace what the form
+ * plugin did on WordPress; mail recipients and webhooks are never carried over.
+ */
+export interface PlanFormConfig {
+  enabled: boolean
+  /** Accept submissions from the public site (no Studio session). */
+  public: boolean
+  /** Model fields the public form shows and accepts, in order. */
+  exposedFields: string[]
+  /** Field → required on the form, where it differs from the model field's own `required`. */
+  requiredOverrides?: Record<string, boolean>
+  honeypot?: boolean
+  captcha?: 'turnstile' | null
+  successMessage?: string
+  autoApprove?: boolean
+  /** Email the workspace owner/admins on every submission. */
+  notifications?: boolean
 }
 
 /**
@@ -180,6 +230,12 @@ export interface PlanPlacement {
   bind: PlanBinding
   /** Interface strings from `ui-strings`: prop → key (`prevLabel: 'pagination.prev'`). */
   labels?: Record<string, string>
+  /**
+   * How wide the section's content runs, as the source block's alignment: `content` for a block without
+   * one (the theme's contentSize, `container-prose`), `wide` for `alignwide`/`alignfull` (`container-page`).
+   * The section's background spans the page either way. Absent: `wide`.
+   */
+  width?: 'content' | 'wide'
 }
 
 /**
@@ -192,7 +248,7 @@ export interface PlanPlacement {
  * - `term:<relation field>` — a related term as `{ label, href }` (the first of a multi-relation; all of them with `into`)
  * - `ui:<key>` — an interface string of `ui-strings`
  * - `site:<field>` — a field of the `site` singleton (`site:title`, `site:logo`)
- * - `menu:primary|footer` — the items of the menu `site.menus` names for that area
+ * - `menu:primary|footer` — the items of the menu `site.menus` names for that area (the first footer menu)
  * - `page:base|current|total|breadcrumb` — what the route knows about the page being built
  * - `const:<value>` — a layout switch, never content: `true`, `false`, a number, or a lowercase identifier
  *   (`const:contact`); anything that reads like text is refused, so page copy cannot be baked into code
@@ -221,6 +277,38 @@ export type PlanBinding =
   /** Only fixed values and labels. */
   | { kind: 'static', props: Record<string, PlanValue> }
 
+// ─── Behaviors ───
+
+/**
+ * - `component` — a placed component carries it (`component`: a `PlanComponent` id). An element the
+ *   mapping already turned into a section (core/details → faq) points at that section's component; it
+ *   is not placed a second time.
+ * - `starter` — the starter already provides it (`feature`: site search is Pagefind on `/search/`).
+ * - `prose` — it sits in a rich-text body and the prose renderer handles it (an oEmbed in a post).
+ * - `drop` — deliberately not reproduced; `reason` says why.
+ * - `needs_review` — no counterpart yet (an exit-intent popup, a payment form); `reason` says what a person must decide.
+ */
+export type PlanBehaviorOutcome = 'component' | 'starter' | 'prose' | 'drop' | 'needs_review'
+
+export const PLAN_STARTER_FEATURES = ['search'] as const
+export type PlanStarterFeature = (typeof PLAN_STARTER_FEATURES)[number]
+
+export interface PlanBehavior {
+  /** The fact pack's behavior id (`form:3fa9c21e`, `embed:0c1d2e3f`, `nav:t2`). */
+  fact: string
+  outcome: PlanBehaviorOutcome
+  /** `PlanComponent` id, for `component`. */
+  component?: string
+  /** Starter feature, for `starter`. */
+  feature?: PlanStarterFeature
+  /** The model a form's submissions are saved to (a plan model with `form`). */
+  model?: string
+  /** `<code>: <sentence>`, required for `drop` and `needs_review` (`form-feature: Studio forms has no payment step`). */
+  reason?: string
+}
+
+export const PLAN_BEHAVIOR_REASON = /^[a-z][a-z0-9-]*: \S.*$/
+
 // ─── Decisions ───
 
 export interface PlanDecisionRecord {
@@ -244,6 +332,13 @@ const IMPORTED_MODELS = new Set(['posts', 'pages', 'categories', 'tags', 'author
  * their fields. Kit catalog and fact checks (does the kit id exist, does the template exist) belong to
  * the caller, which holds those documents.
  */
+/** The footer's menus as a list: an older plan's single slug is one menu, its `'none'` is none. */
+export function footerMenusOf(site: Pick<PlanSite, 'menus'>): string[] {
+  const footer = site.menus.footer
+  if (typeof footer === 'string') return footer === 'none' || footer === '' ? [] : [footer]
+  return [...footer]
+}
+
 export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   const errors: string[] = []
   const warnings: string[] = []
@@ -254,6 +349,21 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (!PERMALINK.test(value)) errors.push(`site.permalinks.${key} must start and end with "/" (${value})`)
   }
   if (!Number.isSafeInteger(site?.postsPerPage) || site.postsPerPage < 1) errors.push('site.postsPerPage is not a positive integer')
+  if (site?.post) {
+    const parts = site.post.header ?? []
+    if (parts.some(part => !['terms', 'title', 'byline', 'cover'].includes(part)) || new Set(parts).size !== parts.length) errors.push('site.post.header lists a part twice or one the starter does not have')
+    if (!Number.isSafeInteger(site.post.more) || site.post.more < 0 || site.post.more > 20) errors.push('site.post.more is not a count from 0 to 20')
+  }
+  if (site?.lists && !['cards', 'full'].includes(site.lists.display)) errors.push(`site.lists.display ${site.lists.display} is not cards or full`)
+  const footer = site?.menus?.footer
+  if (typeof footer === 'string') {
+    if (footer === '') errors.push('site.menus.footer has an empty menu slug')
+  } else if (!Array.isArray(footer)) errors.push('site.menus.footer is not a menu slug or a list of them')
+  else {
+    if (footer.length > 4) errors.push(`site.menus.footer has ${footer.length} menus; the footer takes at most 4`)
+    if (footer.some(slug => typeof slug !== 'string' || slug === '')) errors.push('site.menus.footer has an empty menu slug')
+    if (new Set(footer).size !== footer.length) errors.push('site.menus.footer names a menu twice')
+  }
   for (const [from, to] of Object.entries(site?.redirects ?? {})) {
     if (!from.startsWith('/')) errors.push(`redirect ${from} does not start with "/"`)
     const status = typeof to === 'string' ? 301 : to.status
@@ -277,7 +387,17 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
         else if (!title) errors.push(`plan model ${m.id}: title_field ${m.title_field} is not one of its fields`)
         else if (!isTitleFieldType(title.type)) errors.push(`plan model ${m.id}: title_field ${m.title_field} is ${title.type}, not a text-like type`)
       }
-      if (!m.extract?.length) warnings.push(`plan model ${m.id} has no extraction — its entries start empty`)
+      if (!m.extract?.length && !m.form) warnings.push(`plan model ${m.id} has no extraction — its entries start empty`)
+    }
+    if (m.form) {
+      if (m.origin !== 'plan' || m.kind !== 'collection') errors.push(`model ${m.id}: a form model must be a plan collection`)
+      // Unset means localized for a Contentrain model; submissions have no locale to be translated into.
+      if (m.i18n !== false) errors.push(`model ${m.id}: a form model must be i18n: false (Studio writes submissions in the default locale)`)
+      if (!m.form.exposedFields.length) errors.push(`model ${m.id}: form exposes no fields`)
+      for (const field of [...m.form.exposedFields, ...Object.keys(m.form.requiredOverrides ?? {})]) {
+        if (m.fields && !m.fields[field]) errors.push(`model ${m.id}: form field ${field} is not a model field`)
+      }
+      if (m.form.captcha !== undefined && m.form.captcha !== null && m.form.captcha !== 'turnstile') errors.push(`model ${m.id}: form captcha ${String(m.form.captcha)} is not turnstile`)
     }
     for (const x of m.extract ?? []) {
       if (!x.rule && !x.fields) errors.push(`model ${m.id} extraction from ${x.from} has neither rule nor fields`)
@@ -301,6 +421,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   }
 
   const placement = (s: PlanPlacement, at: string, route?: PlanRoute) => {
+    if (s.width !== undefined && s.width !== 'content' && s.width !== 'wide') errors.push(`${at}: width ${s.width as string} is not content or wide`)
     const c = components.get(s.component)
     if (!c) { errors.push(`${at}: component ${s.component} is not declared`); return }
     const b = s.bind
@@ -359,5 +480,23 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     }
   }
   if (!plan.routes?.some(r => r.kind === 'home')) errors.push('no home route')
+
+  const behaviorIds = new Set<string>()
+  for (const b of plan.behaviors ?? []) {
+    const at = `behavior ${b.fact}`
+    if (behaviorIds.has(b.fact)) errors.push(`${at} is planned twice`)
+    behaviorIds.add(b.fact)
+    if (b.outcome === 'component') {
+      if (!b.component) errors.push(`${at}: outcome component names no component`)
+      else if (!components.has(b.component)) errors.push(`${at}: component ${b.component} is not declared`)
+    }
+    if (b.outcome === 'starter' && !(PLAN_STARTER_FEATURES as readonly string[]).includes(b.feature ?? '')) errors.push(`${at}: starter feature ${String(b.feature)} is not one of ${PLAN_STARTER_FEATURES.join(', ')}`)
+    if ((b.outcome === 'drop' || b.outcome === 'needs_review') && !PLAN_BEHAVIOR_REASON.test(b.reason ?? '')) errors.push(`${at}: ${b.outcome} needs a reason "<code>: <sentence>"`)
+    if (b.model) {
+      const m = models.get(b.model)
+      if (!m) errors.push(`${at}: model ${b.model} is not declared`)
+      else if (!m.form) errors.push(`${at}: model ${b.model} is not a form model`)
+    }
+  }
   return { errors, warnings }
 }

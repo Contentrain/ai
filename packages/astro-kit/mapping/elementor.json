@@ -1,0 +1,367 @@
+{
+  "format": "astro-kit-mapping@1",
+  "builder": "elementor",
+  "version": "5",
+  "fallback": "prose",
+  "defaults": {
+    "elementor/video": {
+      "video_type": "youtube"
+    }
+  },
+  "rules": [
+    {
+      "match": "elementor/theme-site-logo",
+      "component": "header",
+      "props": {
+        "siteName": "site:title",
+        "logo": "site:logo",
+        "items": "menu:primary",
+        "navLabel": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "elementor/theme-site-title",
+      "component": "header",
+      "props": {
+        "siteName": "site:title",
+        "logo": "site:logo",
+        "items": "menu:primary",
+        "navLabel": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "elementor/nav-menu",
+      "component": "nav",
+      "props": {
+        "items": "menu:primary",
+        "label": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "elementor/social-icons",
+      "component": "footer",
+      "props": {
+        "siteName": "site:title"
+      },
+      "into": "social",
+      "each": ".elementor-social-icon",
+      "item": {
+        "label": "dom:.elementor-screen-only",
+        "href": "dom:@href"
+      }
+    },
+    {
+      "match": "elementor/icon-list",
+      "component": "footer",
+      "props": {
+        "siteName": "site:title"
+      },
+      "into": "links",
+      "each": ".elementor-icon-list-item",
+      "item": {
+        "label": "dom:.elementor-icon-list-text",
+        "href": "dom:a@href"
+      }
+    },
+    {
+      "match": "elementor/icon-box",
+      "component": "card-grid",
+      "group": "siblings",
+      "into": "items",
+      "item": {
+        "title": "dom:.elementor-icon-box-title",
+        "text": "dom:.elementor-icon-box-description",
+        "href": "dom:a@href"
+      }
+    },
+    {
+      "match": "elementor/image-box",
+      "component": "card-grid",
+      "group": "siblings",
+      "into": "items",
+      "item": {
+        "title": "dom:.elementor-image-box-title",
+        "text": "dom:.elementor-image-box-description",
+        "href": "dom:a@href",
+        "image": "img:img"
+      }
+    },
+    {
+      "match": "elementor/call-to-action",
+      "component": "cta",
+      "variant": {
+        "frame": "card"
+      },
+      "props": {
+        "heading": "dom:.elementor-cta__title",
+        "body": "dom:.elementor-cta__description"
+      },
+      "into": "actions",
+      "each": ".elementor-cta__button",
+      "item": {
+        "label": "dom:",
+        "href": "dom:@href"
+      }
+    },
+    {
+      "match": "elementor/posts",
+      "component": "post-card",
+      "bind": "collection:posts",
+      "item": {
+        "title": "field:title",
+        "href": "href:self",
+        "excerpt": "field:excerpt",
+        "date": "field:date",
+        "image": "media:featured_image",
+        "author": "ref:author.name",
+        "category": "term:categories"
+      }
+    },
+    {
+      "match": "elementor/archive-posts",
+      "component": "post-card",
+      "bind": "collection:posts",
+      "item": {
+        "title": "field:title",
+        "href": "href:self",
+        "excerpt": "field:excerpt",
+        "date": "field:date",
+        "image": "media:featured_image",
+        "author": "ref:author.name",
+        "category": "term:categories"
+      }
+    },
+    {
+      "match": "elementor/posts:pagination",
+      "component": "pagination",
+      "props": {
+        "base": "page:base",
+        "current": "page:current",
+        "total": "page:total",
+        "label": "ui:pagination.label",
+        "prevLabel": "ui:pagination.prev",
+        "nextLabel": "ui:pagination.next",
+        "pageLabel": "ui:pagination.page"
+      }
+    },
+    {
+      "match": "elementor/breadcrumbs",
+      "component": "breadcrumb",
+      "props": {
+        "items": "page:breadcrumb",
+        "current": "field:title",
+        "label": "ui:breadcrumb.label"
+      }
+    },
+    {
+      "match": "elementor/image-carousel",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".swiper-slide:not(.swiper-slide-duplicate)",
+      "item": {
+        "image": "img:img",
+        "text": "dom:figcaption"
+      }
+    },
+    {
+      "match": "elementor/media-carousel",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".swiper-slide:not(.swiper-slide-duplicate)",
+      "item": {
+        "image": "img:img"
+      }
+    },
+    {
+      "match": "elementor/slides",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".swiper-slide:not(.swiper-slide-duplicate)",
+      "item": {
+        "title": "dom:.elementor-slide-heading",
+        "text": "dom:.elementor-slide-description",
+        "action": "link:.elementor-slide-button"
+      }
+    },
+    {
+      "match": "elementor/accordion",
+      "component": "faq",
+      "into": "items",
+      "each": ".elementor-accordion-item",
+      "item": {
+        "question": "dom:.elementor-accordion-title",
+        "answer": "html:.elementor-tab-content"
+      }
+    },
+    {
+      "match": "elementor/toggle",
+      "component": "faq",
+      "props": {
+        "exclusive": "const:false"
+      },
+      "into": "items",
+      "each": ".elementor-toggle-item",
+      "item": {
+        "question": "dom:.elementor-toggle-title",
+        "answer": "html:.elementor-tab-content"
+      }
+    },
+    {
+      "match": "elementor/nested-accordion",
+      "component": "faq",
+      "into": "items",
+      "each": "details",
+      "item": {
+        "question": "dom:summary",
+        "answer": "html::scope > :not(summary)"
+      }
+    },
+    {
+      "match": "elementor/tabs",
+      "component": "tabs",
+      "into": "items",
+      "each": ".elementor-tab-desktop-title",
+      "item": {
+        "label": "dom:",
+        "content": "html:.elementor-tab-content"
+      }
+    },
+    {
+      "match": "elementor/nested-tabs",
+      "component": "tabs",
+      "into": "items",
+      "each": ".e-n-tab-title",
+      "item": {
+        "label": "dom:.e-n-tab-title-text",
+        "content": "html:.e-con"
+      }
+    },
+    {
+      "match": "elementor/testimonial",
+      "component": "testimonial",
+      "group": "siblings",
+      "into": "items",
+      "item": {
+        "quote": "dom:.elementor-testimonial-content",
+        "name": "dom:.elementor-testimonial-name",
+        "role": "dom:.elementor-testimonial-job",
+        "avatar": "img:.elementor-testimonial-image img"
+      }
+    },
+    {
+      "match": "elementor/image-gallery",
+      "component": "gallery",
+      "props": {
+        "closeLabel": "ui:gallery.close"
+      },
+      "into": "items",
+      "each": ".gallery-item",
+      "item": {
+        "image": "img:img",
+        "caption": "dom:.gallery-caption"
+      }
+    },
+    {
+      "match": "elementor/gallery",
+      "component": "gallery",
+      "props": {
+        "closeLabel": "ui:gallery.close"
+      },
+      "into": "items",
+      "each": ".e-gallery-item",
+      "item": {
+        "image": "img:img",
+        "caption": "dom:.elementor-gallery-item__title"
+      }
+    },
+    {
+      "match": "elementor/form",
+      "component": "contact-form",
+      "props": {
+        "model": "const:contact",
+        "heading": "attr:form_name"
+      }
+    },
+    {
+      "match": "elementor/text-editor",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "elementor/theme-post-content",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "elementor/video",
+      "when": {
+        "attr": {
+          "video_type": "youtube"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:youtube_url",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "elementor/video",
+      "when": {
+        "attr": {
+          "video_type": "vimeo"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:vimeo_url",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "elementor/google_maps",
+      "component": "embed",
+      "variant": {
+        "aspect": "map"
+      },
+      "props": {
+        "address": "attr:address",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    }
+  ]
+}

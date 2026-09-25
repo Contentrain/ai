@@ -1,0 +1,461 @@
+{
+  "format": "astro-kit-mapping@1",
+  "builder": "gutenberg",
+  "version": "4",
+  "fallback": "prose",
+  "rules": [
+    {
+      "match": "core/template-part:header",
+      "component": "header",
+      "props": {
+        "siteName": "site:title",
+        "logo": "site:logo",
+        "items": "menu:primary",
+        "navLabel": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "core/site-title",
+      "component": "header",
+      "props": {
+        "siteName": "site:title",
+        "logo": "site:logo",
+        "items": "menu:primary",
+        "navLabel": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "core/site-logo",
+      "component": "header",
+      "props": {
+        "siteName": "site:title",
+        "logo": "site:logo",
+        "items": "menu:primary",
+        "navLabel": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "core/navigation",
+      "component": "nav",
+      "props": {
+        "items": "menu:primary",
+        "label": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "core/page-list",
+      "component": "nav",
+      "props": {
+        "items": "menu:primary",
+        "label": "ui:nav.label",
+        "menuLabel": "ui:nav.menu",
+        "closeLabel": "ui:nav.close"
+      }
+    },
+    {
+      "match": "core/template-part:footer",
+      "component": "footer",
+      "props": {
+        "siteName": "site:title",
+        "tagline": "site:description",
+        "links": "menu:footer",
+        "copyright": "ui:footer.copyright",
+        "navLabel": "ui:footer.nav"
+      }
+    },
+    {
+      "match": "core/social-links",
+      "component": "footer",
+      "props": {
+        "siteName": "site:title"
+      },
+      "into": "social",
+      "each": ".wp-block-social-link",
+      "item": {
+        "label": "dom:.wp-block-social-link-label",
+        "href": "dom:a@href"
+      }
+    },
+    {
+      "match": "core/columns",
+      "component": "card-grid",
+      "variant": {
+        "style": "plain"
+      },
+      "into": "items",
+      "each": ".wp-block-column",
+      "item": {
+        "title": "dom:h2,h3,h4",
+        "text": "dom:p",
+        "href": "dom:a@href",
+        "image": "img:img"
+      }
+    },
+    {
+      "match": "core/media-text",
+      "component": "hero",
+      "variant": {
+        "layout": "split"
+      },
+      "props": {
+        "heading": "dom:h1,h2,h3",
+        "lead": "dom:p",
+        "image": "img:.wp-block-media-text__media img"
+      },
+      "into": "actions",
+      "each": ".wp-block-button__link",
+      "item": {
+        "label": "dom:",
+        "href": "dom:@href",
+        "style": "class:is-style-outline=ghost|primary"
+      }
+    },
+    {
+      "match": "core/query",
+      "component": "post-card",
+      "bind": "collection:posts",
+      "item": {
+        "title": "field:title",
+        "href": "href:self",
+        "excerpt": "field:excerpt",
+        "date": "field:date",
+        "image": "media:featured_image",
+        "author": "ref:author.name",
+        "category": "term:categories"
+      }
+    },
+    {
+      "match": "core/post-template",
+      "component": "post-card",
+      "bind": "collection:posts",
+      "item": {
+        "title": "field:title",
+        "href": "href:self",
+        "excerpt": "field:excerpt",
+        "date": "field:date",
+        "image": "media:featured_image",
+        "author": "ref:author.name",
+        "category": "term:categories"
+      }
+    },
+    {
+      "match": "core/latest-posts",
+      "component": "post-card",
+      "bind": "collection:posts",
+      "item": {
+        "title": "field:title",
+        "href": "href:self",
+        "excerpt": "field:excerpt",
+        "date": "field:date",
+        "image": "media:featured_image",
+        "author": "ref:author.name",
+        "category": "term:categories"
+      }
+    },
+    {
+      "match": "core/query-pagination",
+      "component": "pagination",
+      "props": {
+        "base": "page:base",
+        "current": "page:current",
+        "total": "page:total",
+        "label": "ui:pagination.label",
+        "prevLabel": "ui:pagination.prev",
+        "nextLabel": "ui:pagination.next",
+        "pageLabel": "ui:pagination.page"
+      }
+    },
+    {
+      "match": "yoast-seo/breadcrumbs",
+      "component": "breadcrumb",
+      "props": {
+        "items": "page:breadcrumb",
+        "current": "field:title",
+        "label": "ui:breadcrumb.label"
+      }
+    },
+    {
+      "match": "rank-math/breadcrumb",
+      "component": "breadcrumb",
+      "props": {
+        "items": "page:breadcrumb",
+        "current": "field:title",
+        "label": "ui:breadcrumb.label"
+      }
+    },
+    {
+      "match": "core/gallery:carousel",
+      "component": "slider",
+      "when": {
+        "class": "is-style-carousel"
+      },
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": "figure.wp-block-image",
+      "item": {
+        "image": "img:img",
+        "text": "dom:figcaption"
+      }
+    },
+    {
+      "match": "core/cover",
+      "component": "hero",
+      "variant": {
+        "layout": "cover",
+        "align": "class:is-position-*-left=start|center"
+      },
+      "props": {
+        "heading": "dom:h1,h2",
+        "lead": "dom:p",
+        "image": "img:.wp-block-cover__image-background,img"
+      },
+      "into": "actions",
+      "each": ".wp-block-button__link",
+      "item": {
+        "label": "dom:",
+        "href": "dom:@href",
+        "style": "class:is-style-outline=ghost|primary"
+      }
+    },
+    {
+      "match": "core/details",
+      "component": "faq",
+      "variant": {
+        "style": "plain"
+      },
+      "group": "siblings",
+      "into": "items",
+      "item": {
+        "question": "dom:summary",
+        "answer": "html::scope > :not(summary)"
+      }
+    },
+    {
+      "match": "core/gallery",
+      "component": "gallery",
+      "props": {
+        "closeLabel": "ui:gallery.close"
+      },
+      "into": "items",
+      "each": "figure.wp-block-image",
+      "item": {
+        "image": "img:img",
+        "caption": "dom:figcaption"
+      }
+    },
+    {
+      "match": "core/paragraph",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/heading",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/list",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/list-item",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/quote",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/pullquote",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/image",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/table",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/code",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/preformatted",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/verse",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/separator",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/spacer",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/embed",
+      "when": {
+        "attr": {
+          "providerNameSlug": "youtube"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:url",
+        "caption": "dom:figcaption",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "core/embed",
+      "when": {
+        "attr": {
+          "providerNameSlug": "vimeo"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:url",
+        "caption": "dom:figcaption",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "core/embed",
+      "when": {
+        "attr": {
+          "providerNameSlug": "spotify"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:url",
+        "caption": "dom:figcaption",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "core/embed",
+      "when": {
+        "attr": {
+          "providerNameSlug": "soundcloud"
+        }
+      },
+      "component": "embed",
+      "props": {
+        "url": "attr:url",
+        "caption": "dom:figcaption",
+        "playLabel": "ui:embed.play",
+        "showLabel": "ui:embed.show"
+      }
+    },
+    {
+      "match": "core/embed",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/video",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/audio",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/file",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/html",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/freeform",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    },
+    {
+      "match": "core/post-content",
+      "component": "prose",
+      "props": {
+        "html": "html:"
+      }
+    }
+  ]
+}

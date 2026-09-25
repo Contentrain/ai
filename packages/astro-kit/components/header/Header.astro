@@ -1,0 +1,62 @@
+---
+// Site header: brand (logo and/or name), navigation and an optional call to
+// action.
+import { tv } from 'tailwind-variants'
+import Button from '../_shared/Button.astro'
+import KitImage from '../_shared/KitImage.astro'
+import type { ActionInput, ImageInput, NavItem } from '../_shared/types'
+import Nav from '../nav/Nav.astro'
+
+const header = tv({
+  slots: {
+    root: 'z-40 w-full',
+    inner: 'container-page flex items-center gap-6 py-4',
+    brand: 'flex shrink-0 items-center gap-3 text-lg font-semibold tracking-tight text-current no-underline',
+  },
+  variants: {
+    layout: {
+      split: { inner: 'justify-between' },
+      centered: { inner: 'flex-col gap-3 md:gap-4' },
+      'brand-left': { inner: 'justify-start [&>nav]:ml-10' },
+    },
+    tone: {
+      default: { root: 'border-b border-line bg-surface text-ink' },
+      inverse: { root: 'bg-ink text-surface' },
+      transparent: { root: 'absolute inset-x-0 top-0 bg-transparent text-surface' },
+    },
+    position: { static: {}, sticky: { root: 'sticky top-0' } },
+  },
+  defaultVariants: { layout: 'split', tone: 'default', position: 'static' },
+})
+
+interface Props {
+  siteName: string
+  logo?: ImageInput | undefined
+  /** Show the site name next to the logo. */
+  showName?: boolean | undefined
+  homeHref?: string | undefined
+  items: NavItem[]
+  action?: ActionInput | undefined
+  navLabel?: string | undefined
+  menuLabel?: string | undefined
+  closeLabel?: string | undefined
+  layout?: 'split' | 'centered' | 'brand-left' | undefined
+  tone?: 'default' | 'inverse' | 'transparent' | undefined
+  position?: 'static' | 'sticky' | undefined
+}
+
+const { siteName, logo, showName = true, homeHref = '/', items, action, navLabel, menuLabel, closeLabel, layout, tone, position } = Astro.props
+const { root, inner, brand } = header({ layout, tone, position })
+---
+<header class={root()}>
+  <div class={inner()}>
+    <a href={homeHref} class={brand()} aria-label={showName ? undefined : siteName}>
+      {logo && <KitImage image={logo} priority class="h-8 w-auto" sizes="160px" />}
+      {showName && <span>{siteName}</span>}
+    </a>
+    <div class:list={['flex items-center gap-4', layout === 'centered' ? 'justify-center' : 'ml-auto']}>
+      <Nav items={items} label={navLabel} menuLabel={menuLabel} closeLabel={closeLabel} part="nav-header" align={layout === 'centered' ? 'center' : 'end'} />
+      {action && <Button action={action} size="sm" class="hidden md:inline-flex" />}
+    </div>
+  </div>
+</header>

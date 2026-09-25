@@ -1,0 +1,77 @@
+{
+  "dependencies": {
+    "embla-carousel": "^8.6.0"
+  },
+  "absentFromDist": [
+    "Roadmap draft",
+    "/roadmap/",
+    "Unannounced plans",
+    "northwind.example/roadmap/",
+    "Northwind.Example/?page_id=304",
+    "northwind.example/?p=211"
+  ],
+  "distFiles": {
+    "_redirects": {
+      "contains": [
+        "/old-about/ /about/ 301",
+        "/feed/ /rss.xml 301",
+        "/gone/ /404.html 410",
+        "/team/ /about/team/ 301",
+        "/ page_id=302 /contact/ 301",
+        "/ page_id=301 /about/team/ 301",
+        "/ page_id=999 /about/ 301",
+        "/old.php id=3 /contact/ 302"
+      ],
+      "excludes": [
+        "/2019/plans/",
+        "/ page_id=302 /about/",
+        "\n/ /"
+      ]
+    },
+    "old-about/index.html": {
+      "contains": [
+        "http-equiv=\"refresh\"",
+        "/about/"
+      ]
+    },
+    "sitemap-0.xml": {
+      "contains": [
+        "/about/team/</loc>"
+      ],
+      "excludes": [
+        "/old-about/",
+        "/search/"
+      ]
+    },
+    "wp-query-map.json": {
+      "contains": [
+        "\"302\": \"/contact/\"",
+        "\"301\": \"/about/team/\"",
+        "\"999\": \"/about/\""
+      ],
+      "excludes": [
+        "\"304\""
+      ]
+    },
+    "index.html": {
+      "contains": [
+        "location.replace(to)"
+      ]
+    },
+    "_headers": {
+      "contains": [
+        "/media/*.svg",
+        "Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox"
+      ]
+    },
+    "blog/what-a-careful-migration-keeps/index.html": {
+      "contains": [
+        "<a href=\"/blog/shipping-the-first-version/\">the launch post by number</a>",
+        "(or the old roadmap, its short link and"
+      ]
+    }
+  },
+  "optimizedInDist": [
+    "harbour"
+  ]
+}

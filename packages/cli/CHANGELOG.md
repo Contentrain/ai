@@ -1,5 +1,54 @@
 # contentrain
 
+## 0.14.10
+
+### Patch Changes
+
+- Updated dependencies [3eb5832]
+- Updated dependencies [36e5773]
+- Updated dependencies [01c0065]
+- Updated dependencies [9121e22]
+- Updated dependencies [aa68347]
+- Updated dependencies [1436fa6]
+  - @contentrain/types@1.25.0
+  - @contentrain/wp-import@0.8.0
+  - @contentrain/mcp@3.6.8
+  - @contentrain/query@7.6.2
+  - @contentrain/skills@0.9.4
+  - @contentrain/rules@0.7.2
+
+## 0.14.9
+
+### Patch Changes
+
+- Updated dependencies [53505cd]
+  - @contentrain/wp-import@0.7.0
+  - @contentrain/types@1.24.0
+  - @contentrain/skills@0.9.4
+  - @contentrain/mcp@3.6.7
+  - @contentrain/query@7.6.1
+  - @contentrain/rules@0.7.2
+
+## 0.14.8
+
+### Patch Changes
+
+- b015ed4: Public builds can hold back entries that carry no workflow status. `requireStatus: true` on `generate()` and `contentrainLoader()`, or `--require-status` on `contentrain-query generate` and `contentrain generate`, excludes an entry with no meta record or one without `status`. Without it such entries stay visible as legacy content. It implies `publishedOnly`, and published entries still honour their `publish_at` / `expire_at` window. It matches the emitter's `requireStatus`, for projects where every entry is expected to carry a status, such as a WordPress import.
+
+  A dictionary is now gated as one file, like a singleton or document, because its meta is a single record: a draft dictionary no longer ships under `publishedOnly`, and a published one keeps every key under `requireStatus`.
+
+- Updated dependencies [c659098]
+- Updated dependencies [d87121b]
+- Updated dependencies [90b5049]
+- Updated dependencies [b015ed4]
+- Updated dependencies [a726843]
+  - @contentrain/query@7.6.0
+  - @contentrain/wp-import@0.6.0
+  - @contentrain/types@1.23.0
+  - @contentrain/skills@0.9.4
+  - @contentrain/mcp@3.6.6
+  - @contentrain/rules@0.7.2
+
 ## 0.14.7
 
 ### Patch Changes

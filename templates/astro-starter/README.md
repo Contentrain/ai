@@ -19,16 +19,38 @@ pnpm lhci        # Lighthouse CI on the built site
 | `.contentrain/models/` | The content models: `site` (singleton), `posts`, `pages`, `categories`, `tags`, `authors`, `media`, `menus`, `menu-items`, and the `ui-strings` dictionary. |
 | `src/content.config.ts` | One Astro collection per model, loaded with `contentrainLoader` and validated by a schema that mirrors the model. Public builds show published entries only. |
 | `src/site.config.ts` | What is not content: permalink patterns, the front page, posts per page, menu slugs and the Studio binding. |
-| `src/pages/[...path].astro` | The route table. Every content address — posts, pages, the posts index, category/tag/author archives and their `/page/N/` pages — comes from the permalink patterns. Two entries claiming one address fail the build. |
+| `src/lib/site-routes.ts`, `src/pages/[...path].astro` | The route table. Every content address — posts, pages, the posts index, category/tag/author archives and their `/page/N/` pages — comes from the permalink patterns. Two entries claiming one address fail the build. |
+| `src/lib/links.ts` | Links to what the public can see: menu targets, body links and section links resolve through the route table; a link to a draft, a private page or the source site's old address is dropped or rewritten. |
 | `src/views/` | The page templates: `PostView`, `PageView`, `ListView`. |
 | `src/layouts/BaseLayout.astro` | Document shell: SEO head, font, skip link, header, footer. |
 | `src/components/SEO.astro`, `src/lib/seo.ts` | Title, description, canonical, robots, Open Graph, Twitter, RSS discovery and a JSON-LD graph (WebSite, Organization, BlogPosting, BreadcrumbList, CollectionPage). |
 | `src/components/Prose.astro`, `src/styles/wp-blocks.css` | Rich-text bodies: Tailwind Typography plus styles for WordPress block markup (columns, buttons, gallery, cover, media & text, tables, quotes, separators, alignments, preset colors and sizes). |
 | `src/components/studio/` | Studio forms and comment threads. |
 | `src/styles/global.css` | The one stylesheet. Design tokens are in `@theme`. |
-| `redirects.json` | Old address → new address (301), read by `astro.config.mjs`. |
+| `public/_headers` | Response headers (Netlify, Cloudflare Pages): an SVG under `/media/` opened on its own runs no script and loads nothing (CSP `default-src 'none'`, `sandbox`, `nosniff`). |
+| `redirects` model, `src/lib/redirects.ts` | Old address → new address, edited in Studio. Built as a redirect page per old address and as `_redirects` (Netlify, Cloudflare Pages). A rule whose target is not public is left out. |
 
-Also built: `sitemap-index.xml` (`@astrojs/sitemap`), `rss.xml`, `robots.txt`,
+### Old addresses on your host
+
+WordPress answers query addresses — `/?p=12`, `/?page_id=7`, `/?cat=3`,
+`/?tag=news`, `/?author=2` — on every site, and a site with plain permalinks
+has no others. A static page cannot answer a query, so the build covers them
+three ways:
+
+- **`_redirects`** (Netlify): `/ p=12 /hello-world/ 301`, a real 301.
+  Cloudflare Pages reads the same file but cannot match a query; the lines
+  are ignored there.
+- **The home page** carries a small inline map and sends a browser that
+  arrives with one of those queries on with `location.replace` — works on any
+  host, but it is not a 301, so search engines give it less weight than a
+  host rule. Without JavaScript the home page shows as usual.
+- **`/wp-query-map.json`**: the same map, for a host's own rules or a check.
+
+On Vercel, add the rules to `vercel.json` (`has: [{ type: 'query', … }]`)
+from `/wp-query-map.json`; Vercel reads its config before the build, so the
+build cannot write it for you.
+
+Also built: `sitemap-index.xml` (public addresses from the route table, without noindex entries or redirects), `rss.xml`, `robots.txt`,
 `404.html` and `/search/` (Pagefind — the index is built after `astro build`,
 no server needed).
 
@@ -47,14 +69,31 @@ no server needed).
 - **Addresses are kept.** Permalinks follow WordPress tokens (`:slug`, `:path`,
   `:year`, `:month`, `:day`, `:id`) and the site is built with trailing slashes.
 
-## Studio forms and comments
+## Studio binding: forms, comments and media
 
-Set `studio` in `src/site.config.ts` to the Studio project that serves the
-site's forms and comments:
+`studio.json` at the project root binds the site to its Contentrain Studio
+project. Studio writes it when it moves the site's media (Migration → Media);
+you can also write it by hand. It is plain JSON, safe for tools to write:
 
-```ts
-studio: { baseUrl: 'https://studio.contentrain.io', projectId: '<project id>' },
+```json
+{ "baseUrl": "https://studio.contentrain.io", "projectId": "<project id>" }
 ```
+
+A Studio that serves media from a CDN host of its own adds `"mediaBaseUrl"`,
+the project's delivery base (`https://cdn.example/api/cdn/v1/<project id>`).
+
+`astro.config.mjs` reads it at build time (`CONTENTRAIN_STUDIO_URL` and
+`CONTENTRAIN_STUDIO_PROJECT` override it; with either set, the file's
+`mediaBaseUrl` is ignored, since it belongs to the file's project) and:
+
+- allows the project's media in `image.remotePatterns`
+  (`<mediaBaseUrl>/media/**`, by default `<baseUrl>/api/cdn/v1/<projectId>/media/**`), so images an editor uploads
+  in Studio are resized with a `srcset` like the ones in `public/`;
+- hands the binding to the site as `siteConfig.studio`, which turns on forms
+  and comments.
+
+Without the file the site builds as usual: Studio images are shown as they
+are, and forms and comments render nothing.
 
 A page whose `form` field names a model shows that form under its body; a post
 with `comments_open` shows its thread. Without the binding both render nothing

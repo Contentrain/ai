@@ -1,0 +1,28 @@
+{
+  "id": "tabs",
+  "name": "Tabs",
+  "description": "Tabbed panels with the WAI-ARIA tabs pattern from Zag.js (arrow keys, Home/End, roving focus). Without script every panel shows in turn under its own title, so no content is ever hidden from a reader or a crawler.",
+  "category": "content",
+  "uses": [],
+  "shared": ["Section.astro"],
+  "variants": {
+    "style": { "options": ["underline", "pills"], "default": "underline", "description": "underline: a rule under the list, the selected tab underlined in accent. pills: the selected tab filled with accent." },
+    "orientation": { "options": ["horizontal", "vertical"], "default": "horizontal", "description": "vertical: the tab list beside the panel on wide screens (Elementor vertical tabs)." },
+    "tone": { "options": ["default", "muted", "inverse", "accent"], "default": "default", "description": "Section background." }
+  },
+  "props": {
+    "items": { "type": "array", "required": true, "items": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "content": { "type": "richtext", "required": true } } }, "description": "Tabs in order (Elementor tabs tab_title/tab_content, Divi tab title + content)." },
+    "heading": { "type": "string", "description": "Section heading; also names the tab list." },
+    "label": { "type": "string", "description": "Accessible name of the tab list when there is no heading." },
+    "id": { "type": "string", "description": "Section id, unique per page: the tabs machine and its element ids derive from it." }
+  },
+  "slots": {},
+  "js": "zag",
+  "dependencies": { "@zag-js/tabs": "^1.44.0", "@zag-js/vanilla": "^1.44.0" },
+  "sources": {
+    "elementor": ["elementor/tabs", "elementor/nested-tabs"],
+    "divi": ["divi/et_pb_tabs"],
+    "classic": ["classic/tabs"]
+  },
+  "a11y": "Zag.js tabs: role=tablist/tab/tabpanel with aria-selected, aria-controls and aria-labelledby; arrow keys (per orientation), Home and End move between tabs. Before the script runs every panel is visible with its own h3 title; after, the titles become screen-reader-only and the tabs label the panels."
+}

@@ -2,16 +2,21 @@
 // The document shell every page renders in: head (SEO, font, the one
 // stylesheet), skip link, site header, main, site footer.
 import { Font } from 'astro:assets'
+import Footer from '../components/kit/footer/Footer.astro'
+import Header from '../components/kit/header/Header.astro'
 import SEO from '../components/SEO.astro'
-import SiteFooter from '../components/SiteFooter.astro'
-import SiteHeader from '../components/SiteHeader.astro'
 import { getSite, getStrings } from '../lib/content'
+import { getMenu } from '../lib/links'
+import { queryMap } from '../lib/redirects'
 import { organizationLd, websiteLd } from '../lib/seo'
+import { siteConfig } from '../site.config'
 import '../styles/global.css'
 
 interface Props {
-  /** The page's own title; the site name is added unless this is the home page. */
+  /** The page's own title; siteConfig.titleTemplate adds the site name, unless this is the home page. */
   title?: string | undefined
+  /** A complete document title (an SEO override), used as it is. */
+  fullTitle?: string | undefined
   description?: string | undefined
   /** Absolute or site-relative image for link previews. */
   image?: string | undefined
@@ -25,21 +30,39 @@ interface Props {
   jsonLd?: ReadonlyArray<Record<string, unknown>>
 }
 
-const { title, description, image, canonical, type, noindex, nofollow, published, modified, jsonLd = [] } = Astro.props
-const site = await getSite()
-const t = await getStrings()
+const { title, fullTitle: seoTitle, description, image, canonical, type, noindex, nofollow, published, modified, jsonLd = [] } = Astro.props
+const [site, t, primary, footerMenus] = await Promise.all([
+  getSite(), getStrings(), getMenu(siteConfig.menus.primary), Promise.all(siteConfig.menus.footer.map(slug => getMenu(slug))),
+])
 const origin = Astro.site ?? Astro.url
 const home = new URL('/', origin).href
 const identity = { name: site.title, url: home, description: site.tagline, logo: site.logo, sameAs: site.same_as }
 const isHome = Astro.url.pathname === '/'
-const fullTitle = title && !isHome ? `${title} – ${site.title}` : site.tagline ? `${site.title} – ${site.tagline}` : site.title
+const fullTitle = seoTitle ?? (title && !isHome
+  ? siteConfig.titleTemplate.replace('{title}', title).replace('{site}', site.title)
+  : site.tagline ? `${site.title} – ${site.tagline}` : site.title)
 const lang = site.language ?? 'en'
 const shareImage = image ?? site.social_image
+// Two or more footer menus are columns, as the source theme's footer showed them; one is a row of links.
+const footerColumns = footerMenus.filter(menu => menu.length > 0)
+const rss = { label: t('footer.rss'), href: '/rss.xml' }
+// WordPress's query addresses land on the home page of a static host; a host rule (_redirects) answers
+// them with a 301 where the host reads one, and this map sends the browser on everywhere else.
+const wpQueries = isHome ? await queryMap() : {}
 ---
 <!doctype html>
 <html lang={lang}>
   <head>
     <meta charset="utf-8" />
+    {Object.keys(wpQueries).length > 0 && (
+      <script is:inline define:vars={{ wpQueries }}>
+        const query = new URLSearchParams(location.search)
+        for (const [param, targets] of Object.entries(wpQueries)) {
+          const to = query.has(param) ? targets[query.get(param)] : undefined
+          if (to) { location.replace(to); break }
+        }
+      </script>
+    )}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -63,10 +86,25 @@ const shareImage = image ?? site.social_image
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-ink focus:px-4 focus:py-2 focus:text-surface">
       {t('nav.skip')}
     </a>
-    <SiteHeader site={site} t={t} />
+    <Header
+      siteName={site.title}
+      logo={site.logo ? { src: site.logo, alt: '' } : undefined}
+      items={primary}
+      navLabel={t('nav.label')}
+      menuLabel={t('nav.menu')}
+      closeLabel={t('nav.close')}
+    />
     <main id="main" class="flex-1">
       <slot />
     </main>
-    <SiteFooter site={site} t={t} />
+    <Footer
+      siteName={site.organization ?? site.title}
+      tagline={site.tagline}
+      layout={footerColumns.length > 1 ? 'columns' : 'simple'}
+      columns={footerColumns.map((menu, index) => ({ title: '', links: index === footerColumns.length - 1 ? [...menu, rss] : menu }))}
+      links={[...(footerColumns[0] ?? []), rss]}
+      social={site.same_as?.map(url => ({ label: new URL(url).hostname.replace(/^www\./, ''), href: url }))}
+      navLabel={t('nav.footer')}
+    />
   </body>
 </html>

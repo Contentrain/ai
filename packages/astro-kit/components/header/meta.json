@@ -1,0 +1,34 @@
+{
+  "id": "header",
+  "name": "Header",
+  "description": "Site header: brand (logo and/or name), navigation and an optional call-to-action button.",
+  "category": "chrome",
+  "uses": ["nav"],
+  "shared": ["Button.astro", "KitImage.astro", "types.ts"],
+  "variants": {
+    "layout": { "options": ["split", "centered", "brand-left"], "default": "split", "description": "split: brand left, navigation right. centered: brand above centred navigation. brand-left: navigation right after the brand." },
+    "tone": { "options": ["default", "inverse", "transparent"], "default": "default", "description": "Surface with a bottom border, dark (ink) background, or transparent over the hero that follows." },
+    "position": { "options": ["static", "sticky"], "default": "static", "description": "Sticky keeps the header at the top while scrolling." }
+  },
+  "props": {
+    "siteName": { "type": "string", "required": true, "description": "Site title (site.title)." },
+    "logo": { "type": "object", "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } }, "description": "Logo image (site.logo)." },
+    "showName": { "type": "boolean", "default": true, "description": "Show the site name next to the logo." },
+    "homeHref": { "type": "url", "default": "/", "description": "Where the brand links." },
+    "items": { "type": "array", "required": true, "items": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true }, "newTab": { "type": "boolean" }, "children": { "type": "array" } } }, "description": "Primary menu (menus → menu-items)." },
+    "action": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true }, "style": { "type": "select", "options": ["primary", "secondary", "ghost"] } }, "description": "Header button, shown on wide screens." },
+    "navLabel": { "type": "string", "description": "Accessible name of the navigation (ui-strings nav.label)." },
+    "menuLabel": { "type": "string", "description": "Narrow-screen toggle text (ui-strings nav.menu)." },
+    "closeLabel": { "type": "string", "description": "Drawer close text (ui-strings nav.close)." }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": ["core/template-part:header", "core/site-title", "core/site-logo"],
+    "elementor": ["elementor/theme-site-logo", "elementor/theme-site-title"],
+    "divi": ["divi/et_pb_menu"],
+    "classic": ["classic/header"]
+  },
+  "a11y": "One <header> landmark; the brand link is named by the site name when only the logo shows. Navigation as in nav."
+}

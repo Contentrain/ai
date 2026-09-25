@@ -1,0 +1,94 @@
+{
+  "domain": "sections",
+  "fields": {
+    "label": {
+      "required": false,
+      "type": "string"
+    },
+    "loop": {
+      "default": false,
+      "required": false,
+      "type": "boolean"
+    },
+    "nextLabel": {
+      "required": false,
+      "type": "string"
+    },
+    "ofLabel": {
+      "required": false,
+      "type": "string"
+    },
+    "prevLabel": {
+      "required": false,
+      "type": "string"
+    },
+    "slideLabel": {
+      "required": false,
+      "type": "string"
+    },
+    "slides": {
+      "items": {
+        "fields": {
+          "action": {
+            "fields": {
+              "href": {
+                "required": true,
+                "type": "url"
+              },
+              "label": {
+                "required": true,
+                "type": "string"
+              },
+              "newTab": {
+                "type": "boolean"
+              },
+              "style": {
+                "options": [
+                  "primary",
+                  "secondary",
+                  "ghost"
+                ],
+                "type": "select"
+              }
+            },
+            "type": "object"
+          },
+          "image": {
+            "fields": {
+              "alt": {
+                "required": true,
+                "type": "string"
+              },
+              "height": {
+                "type": "integer"
+              },
+              "src": {
+                "required": true,
+                "type": "image"
+              },
+              "width": {
+                "type": "integer"
+              }
+            },
+            "required": true,
+            "type": "object"
+          },
+          "text": {
+            "type": "text"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "required": false,
+      "type": "array"
+    }
+  },
+  "i18n": true,
+  "id": "section-slider",
+  "kind": "collection",
+  "name": "Slider sections",
+  "title_field": "label"
+}

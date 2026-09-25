@@ -1,5 +1,5 @@
 // The posts feed — at /rss.xml, and at WordPress's /feed/ through a redirect
-// in redirects.json when the source site had one.
+// in the redirects collection when the source site had one.
 import rss from '@astrojs/rss'
 import type { APIRoute } from 'astro'
 import { getPosts, getSite, postHref } from '../lib/content'

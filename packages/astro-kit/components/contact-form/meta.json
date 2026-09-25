@@ -1,0 +1,28 @@
+{
+  "id": "contact-form",
+  "name": "Contact form",
+  "description": "The contact section: heading, introduction, contact details (email, phone, address) and a Contentrain Studio form — fields, spam protection and notifications set in Studio, submissions reviewed there. Replaces form plugins; renders the details alone until the site is bound to a Studio project.",
+  "category": "section",
+  "uses": [],
+  "shared": ["Section.astro"],
+  "variants": {
+    "layout": { "options": ["split", "stacked"], "default": "split", "description": "split: details beside the form on wide screens. stacked: one centred column." },
+    "tone": { "options": ["default", "muted", "inverse", "accent"], "default": "default", "description": "Section background; the form always sits on a surface card." }
+  },
+  "props": {
+    "model": { "type": "string", "required": true, "description": "The Studio model submissions are saved to — the form's fields are that model's form settings (from the plugin form's fields at migration)." },
+    "heading": { "type": "string", "description": "Section heading." },
+    "intro": { "type": "text", "description": "A line or two above the details." },
+    "details": { "type": "array", "items": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "value": { "type": "string", "required": true }, "href": { "type": "url" } } }, "description": "Ways to reach you, in order (Email → mailto:, Phone → tel:, Address → map link)." },
+    "id": { "type": "string", "description": "Section id; the heading gets `<id>-title`." }
+  },
+  "slots": {},
+  "js": "studio",
+  "dependencies": {},
+  "sources": {
+    "elementor": ["elementor/form"],
+    "divi": ["divi/et_pb_contact_form"],
+    "classic": ["classic/contact-form-7", "classic/wpforms", "classic/gravityforms", "classic/ninja-forms"]
+  },
+  "a11y": "Contact details are a description list; links say what they open. The form's labels, errors and focus handling are Studio's form runtime (FormMount). The section is labelled by its heading."
+}

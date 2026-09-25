@@ -1,0 +1,41 @@
+{
+  "65a53ff40f1a": {
+    "from": "/?page_id=302",
+    "status": 301,
+    "to": "/about/"
+  },
+  "75200d6cf850": {
+    "from": "/team/",
+    "status": 301,
+    "to": "https://northwind.example/about/team/"
+  },
+  "80a4bc03017d": {
+    "from": "/old-about/",
+    "status": 301,
+    "to": "/about/"
+  },
+  "8bd1245ead5f": {
+    "from": "/?page_id=999",
+    "status": 301,
+    "to": "/about/"
+  },
+  "b8a1634bf238": {
+    "from": "/2019/plans/",
+    "status": 301,
+    "to": "https://northwind.example/roadmap/"
+  },
+  "e553b9bc7657": {
+    "from": "/old.php?id=3",
+    "status": 302,
+    "to": "/contact/"
+  },
+  "f92de45212d6": {
+    "from": "/gone/",
+    "status": 410
+  },
+  "fc39fd6bcca9": {
+    "from": "/feed/",
+    "status": 301,
+    "to": "/rss.xml"
+  }
+}

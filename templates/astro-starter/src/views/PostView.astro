@@ -1,13 +1,16 @@
 ---
-// A single post: header (terms, title, byline, date), cover, body, tags and
-// the comment thread.
+// A single post laid out as the source's single template: the header parts in
+// its order (siteConfig.post.header), body, tags, the previous and next post,
+// the comment thread and a list of more posts.
 import { getEntry } from 'astro:content'
-import MediaImage from '../components/MediaImage.astro'
-import Prose from '../components/Prose.astro'
+import KitImage from '../components/kit/_shared/KitImage.astro'
+import Prose from '../components/kit/prose/Prose.astro'
 import StudioComments from '../components/studio/StudioComments.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
-import { authorHref, byId, getSite, getStrings, postHref, resolve, termHref, type Post } from '../lib/content'
+import { authorHref, byId, getPosts, getSite, getStrings, imageOf, postHref, resolve, termHref, type Post } from '../lib/content'
+import { publicHtml } from '../lib/links'
 import { articleLd, summarize } from '../lib/seo'
+import { siteConfig } from '../site.config'
 
 interface Props {
   post: Post
@@ -15,7 +18,7 @@ interface Props {
 
 const { post } = Astro.props
 const { data } = post
-const [site, t, author, categories, tags, cover, categoryMap, tagMap] = await Promise.all([
+const [site, t, author, categories, tags, cover, categoryMap, tagMap, body, posts] = await Promise.all([
   getSite(),
   getStrings(),
   data.author ? getEntry(data.author) : undefined,
@@ -24,7 +27,15 @@ const [site, t, author, categories, tags, cover, categoryMap, tagMap] = await Pr
   data.cover ? getEntry(data.cover) : undefined,
   byId('categories'),
   byId('tags'),
+  publicHtml(data.body),
+  getPosts(),
 ])
+const layout = siteConfig.post
+// Newest first: the previous post is the older one, the next the newer, as in WordPress.
+const at = posts.findIndex(other => other.id === post.id)
+const previous = layout.adjacent && at >= 0 ? posts[at + 1] : undefined
+const next = layout.adjacent && at > 0 ? posts[at - 1] : undefined
+const more = posts.filter(other => other.id !== post.id).slice(0, layout.more)
 const locale = site.language ?? 'en'
 const url = new URL(postHref(post), Astro.site ?? Astro.url).href
 const description = data.seo?.description ?? data.excerpt ?? summarize(data.body)
@@ -33,7 +44,8 @@ const formatDate = (date: Date) => date.toLocaleDateString(locale, { dateStyle: 
 const updated = data.modified_at && data.published_at && data.modified_at.getTime() - data.published_at.getTime() > 86_400_000
 ---
 <BaseLayout
-  title={data.seo?.title ?? data.title}
+  title={data.title}
+  fullTitle={data.seo?.title}
   description={description}
   image={image}
   canonical={data.seo?.canonical}
@@ -55,35 +67,59 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
   })]}
 >
   <article class="container-prose py-12 md:py-16">
-    <header class="mb-10 flex flex-col gap-4">
-      {categories.length > 0 && (
-        <p class="flex flex-wrap gap-3 text-sm font-medium">
+    {layout.header.map(part => (
+      part === 'terms' ? categories.length > 0 && (
+        <p class="mb-4 flex flex-wrap gap-3 text-sm font-medium">
           {categories.map(category => <a href={termHref('category', category, categoryMap)} class="text-accent no-underline hover:underline">{category.data.name}</a>)}
         </p>
-      )}
-      <h1 class="text-4xl leading-tight font-bold tracking-tight text-balance md:text-5xl">{data.title}</h1>
-      <p class="flex flex-wrap items-center gap-x-2 text-ink-muted">
-        {author && <span>{t('post.by')} <a href={authorHref(author)} class="font-medium text-ink no-underline hover:text-accent">{author.data.name}</a></span>}
-        {author && data.published_at && <span aria-hidden="true">·</span>}
-        {data.published_at && <time datetime={data.published_at.toISOString()}>{formatDate(data.published_at)}</time>}
-        {updated && data.modified_at && (
-          <span class="text-sm">({t('post.updated')} <time datetime={data.modified_at.toISOString()}>{formatDate(data.modified_at)}</time>)</span>
-        )}
-      </p>
-    </header>
-    {cover && (
-      <figure class="mb-10 -mx-4 md:-mx-8">
-        <MediaImage media={cover} priority sizes="(min-width: 768px) 768px, 100vw" class="w-full rounded-none md:rounded-xl" />
-        {cover.data.caption && <figcaption class="mt-3 px-4 text-center text-sm text-ink-muted">{cover.data.caption}</figcaption>}
-      </figure>
-    )}
-    {data.body && <Prose html={data.body} />}
+      )
+      : part === 'title' ? <h1 class="mb-4 text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{data.title}</h1>
+      : part === 'byline' ? (
+        <p class="mb-10 flex flex-wrap items-center gap-x-2 text-ink-muted">
+          {author && <span>{t('post.by')} <a href={authorHref(author)} class="font-medium text-ink no-underline hover:text-accent">{author.data.name}</a></span>}
+          {author && data.published_at && <span aria-hidden="true">·</span>}
+          {data.published_at && <time datetime={data.published_at.toISOString()}>{formatDate(data.published_at)}</time>}
+          {updated && data.modified_at && (
+            <span class="text-sm">({t('post.updated')} <time datetime={data.modified_at.toISOString()}>{formatDate(data.modified_at)}</time>)</span>
+          )}
+          {!layout.header.includes('terms') && categories.length > 0 && (
+            <span>{t('post.in')} {categories.map((category, index) => <>{index > 0 && ', '}<a href={termHref('category', category, categoryMap)} class="text-ink no-underline hover:text-accent">{category.data.name}</a></>)}</span>
+          )}
+        </p>
+      )
+      : cover && (
+        <figure class="mb-10 -mx-4 md:-mx-8">
+          <KitImage image={imageOf(cover)} priority sizes="(min-width: 768px) 768px, 100vw" class="w-full rounded-none md:rounded-[var(--radius-image,0.75rem)]" />
+          {cover.data.caption && <figcaption class="mt-3 px-4 text-center text-sm text-ink-muted">{cover.data.caption}</figcaption>}
+        </figure>
+      )
+    ))}
+    {body && <Prose html={body} />}
     {tags.length > 0 && (
       <footer class="mt-12 flex flex-wrap items-center gap-2 border-t border-line pt-6">
         <span class="text-sm text-ink-muted">{t('post.tags')}:</span>
         {tags.map(tag => <a href={termHref('tag', tag, tagMap)} class="rounded-full border border-line px-3 py-1 text-sm text-ink no-underline hover:border-accent hover:text-accent">{tag.data.name}</a>)}
       </footer>
     )}
+    {(previous || next) && (
+      <nav aria-label={t('post.adjacent')} data-cr-part="post-navigation" class="mt-12 flex flex-wrap justify-between gap-4 border-t border-line pt-6">
+        {previous ? <a href={postHref(previous)} rel="prev" class="text-ink">← {previous.data.title}</a> : <span />}
+        {next && <a href={postHref(next)} rel="next" class="text-ink">{next.data.title} →</a>}
+      </nav>
+    )}
     {data.comments_open && <StudioComments model="posts" entry={post.id} />}
   </article>
+  {more.length > 0 && (
+    <section aria-labelledby="more-posts" data-cr-part="related" class="container-page pb-16">
+      <h2 id="more-posts" class="mb-4 text-sm font-semibold tracking-wide uppercase">{t('post.more')}</h2>
+      <ul class="border-t border-line">
+        {more.map(other => (
+          <li class="flex flex-wrap items-baseline justify-between gap-2 border-b border-line py-3">
+            <a href={postHref(other)} class="text-lg text-ink no-underline hover:underline">{other.data.title}</a>
+            {other.data.published_at && <time datetime={other.data.published_at.toISOString()} class="text-sm text-ink-muted">{formatDate(other.data.published_at)}</time>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
 </BaseLayout>

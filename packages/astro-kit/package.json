@@ -1,0 +1,63 @@
+{
+  "name": "@contentrain/astro-kit",
+  "version": "0.2.0",
+  "license": "MIT",
+  "description": "Copy-in Astro components for Contentrain sites (shadcn model): typed props, tailwind-variants, zero JavaScript by default — with a machine-readable catalog",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Contentrain/ai.git",
+    "directory": "packages/astro-kit"
+  },
+  "homepage": "https://ai.contentrain.io",
+  "bugs": {
+    "url": "https://github.com/Contentrain/ai/issues"
+  },
+  "keywords": [
+    "contentrain",
+    "astro",
+    "components",
+    "tailwindcss",
+    "copy-in",
+    "migration",
+    "wordpress"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./catalog.json": "./catalog.json"
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist",
+    "components",
+    "catalog.json",
+    "mapping"
+  ],
+  "scripts": {
+    "build": "node scripts/build-catalog.mjs && tsdown src/index.ts --format esm --dts",
+    "catalog": "node scripts/build-catalog.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "visual": "node scripts/visual.mjs"
+  },
+  "dependencies": {
+    "@contentrain/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "pixelmatch": "^7.2.0",
+    "playwright": "^1.63.0",
+    "pngjs": "^7.0.0",
+    "tsdown": "^0.21.0",
+    "typescript": "^5.7.0"
+  }
+}
