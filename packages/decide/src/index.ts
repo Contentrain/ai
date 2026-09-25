@@ -25,6 +25,8 @@ export { PUNCH_CLASSES, PUNCH_CLASS_CRITERIA, PUNCH_SEVERITY_CRITERIA, punchItem
 export type { PunchClass, PunchItemInput, PunchItemShaped } from './kinds/punch-item.js'
 export { ELIGIBILITY_CHOICES, NEEDS_HUMAN, eligibilityBand, eligibilityRule, shapeEligibility } from './kinds/eligibility-band.js'
 export type { EligibilityBandInput, EligibilityBandShaped, EligibilityChoice } from './kinds/eligibility-band.js'
+export { FIELD_TYPE_CHOICES, REGION_CHOICES, UNMAPPED_CHOICES, fieldType, fieldTypeRule, regionName, regionRule, shapeFieldType, shapeRegion, shapeUnmapped, unmappedElement, unmappedRule } from './kinds/facts.js'
+export type { FieldTypeChoice, FieldTypeInput, FieldTypeShaped, RegionChoice, RegionInput, RegionShaped, UnmappedChoice, UnmappedInput, UnmappedShaped } from './kinds/facts.js'
 export { scrubSlug, scrubText } from './kinds/shape.js'
 export { createReplayFetch, measurePunchCalibration, stableChoices } from './calibration.js'
 export type { PunchCalibration, PunchLabel, RecordedCase } from './calibration.js'

@@ -60,6 +60,14 @@ describe('generate command', () => {
     expect(infoMock).toHaveBeenCalledWith(expect.stringContaining('#contentrain'))
   })
 
+  it('passes the public-build flags through to generate', async () => {
+    const { generate } = await import('@contentrain/query/generate')
+    const mod = await import('../../src/commands/generate.js')
+    await mod.default.run?.({ args: { root: '/test/project', published: true, at: '2026-10-01T12:00:00Z', requireStatus: true } })
+
+    expect(generate).toHaveBeenCalledWith(expect.objectContaining({ publishedOnly: true, at: '2026-10-01T12:00:00Z', requireStatus: true }))
+  })
+
   it('should watch config.json changes because generation depends on project config', async () => {
     watchMock.mockImplementation(() => ({ close: vi.fn() }))
 

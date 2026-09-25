@@ -97,7 +97,7 @@ Every read command supports `--json` for CI use; write commands surface `--watch
 | `status` | `--json` |
 | `doctor` | `--json`, `--usage` — non-zero exit on failure; includes a remote `cr/*` branch check |
 | `validate` | `--json`, `--fix`, `--interactive`, `--watch`, `--model <id>` |
-| `generate` | `--json`, `--watch`, `--published`, `--at <ISO timestamp>` |
+| `generate` | `--json`, `--watch`, `--published`, `--at <ISO timestamp>`, `--require-status` |
 | `diff` | `--json` |
 | `merge` | `--yes` (skip confirm) |
 | `reconcile` | `--yes` (execute a clean plan without prompting), `--json` (dry-run plan) |
@@ -352,6 +352,8 @@ The command reads the store (`--store`, default: the current directory) and its 
 
 `contentrain generate --published` excludes drafts and content outside its
 `publish_at`/`expire_at` window. `--at 2026-10-01T12:00:00Z` fixes the public build
-clock for reproducible tests and implies `--published`. Without these flags,
+clock for reproducible tests and implies `--published`. `--require-status` also
+excludes entries with no status in meta, for projects where every entry has one
+(a WordPress import); it implies `--published`. Without these flags,
 editorial generation keeps its existing behavior. Watch mode observes metadata
 edits; a scheduled static publication still needs a build/deploy trigger.
