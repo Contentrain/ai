@@ -4,6 +4,11 @@
     "status": 301,
     "to": "/blog/:splat"
   },
+  "5af92fa64bc6": {
+    "from": "/ext/*",
+    "status": 301,
+    "to": "https://elsewhere.example/:splat"
+  },
   "65a53ff40f1a": {
     "from": "/?page_id=302",
     "status": 301,
@@ -14,6 +19,11 @@
     "status": 301,
     "to": "https://northwind.example/about/team/"
   },
+  "78d75abf1fe4": {
+    "from": "/x/*",
+    "status": 301,
+    "to": "/roadmap/:splat"
+  },
   "80a4bc03017d": {
     "from": "/old-about/",
     "status": 301,
@@ -23,6 +33,11 @@
     "from": "/?page_id=999",
     "status": 301,
     "to": "/about/"
+  },
+  "b0574a38799d": {
+    "from": "/y/*",
+    "status": 301,
+    "to": "https://northwind.example/roadmap/"
   },
   "b8a1634bf238": {
     "from": "/2019/plans/",
@@ -37,6 +52,11 @@
   "eba6cf379871": {
     "from": "/old-shop/*",
     "status": 410
+  },
+  "f4caf7b07ab6": {
+    "from": "/news/*",
+    "status": 301,
+    "to": "http://www.northwind.example/blog/:splat"
   },
   "f92de45212d6": {
     "from": "/gone/",

@@ -32,6 +32,29 @@ const inPublic = (path: string) => {
 /** A path as the site builds it: directories end in a slash (trailingSlash: 'always'), files do not. */
 export const sitePath = (path: string): string => (FILE.test(path) || path.endsWith('/') ? path : `${path}/`)
 
+let hosts: Promise<ReadonlySet<string>> | undefined
+
+/** The hosts whose links are this site's: its own, the store's site url and the source's (fixed at build time). */
+function internalHosts(): Promise<ReadonlySet<string>> {
+  hosts ??= getSite().then(site => new Set([BASE, import.meta.env.SITE, site.url, ...siteConfig.sourceHosts].flatMap((url) => {
+    const host = url ? hostOf(url) : undefined
+    return host ? [host] : []
+  })))
+  return hosts
+}
+
+/**
+ * A URL as this site's path when it points at this site (any scheme, `www.` or case), null when it
+ * points elsewhere, undefined when it is no web address. For targets the published set cannot check
+ * whole, such as a prefix redirect's `/b/:splat`.
+ */
+export async function ownPath(url: string): Promise<string | null | undefined> {
+  let parsed: URL
+  try { parsed = new URL(url.trim(), `${BASE}/`) } catch { return undefined }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return undefined
+  return (await internalHosts()).has(bareHost(parsed.hostname)) ? parsed.pathname : null
+}
+
 type Linker = (url: string | undefined) => string | undefined
 let linker: Promise<Linker> | undefined
 
@@ -45,12 +68,7 @@ let linker: Promise<Linker> | undefined
  */
 export function publicLinks(): Promise<Linker> {
   linker ??= (async () => {
-    const [routes, site, redirects] = await Promise.all([routeTable(), getSite(), getCollection('redirects')])
-    // The source's hosts are fixed at build time; the site singleton's url is editable in Studio.
-    const internal = new Set([BASE, import.meta.env.SITE, site.url, ...siteConfig.sourceHosts].flatMap((url) => {
-      const host = url ? hostOf(url) : undefined
-      return host ? [host] : []
-    }))
+    const [routes, internal, redirects] = await Promise.all([routeTable(), internalHosts(), getCollection('redirects')])
     // Keyed by path and query: a rule for `/old.php?id=3` or `/?page_id=5` stands for that address only, not its path.
     const ruleKey = (url: URL) => `${sitePath(url.pathname)}${url.search}`
     const rules = new Map(redirects.filter(entry => !entry.data.from.includes('*')).map(entry => [ruleKey(new URL(entry.data.from, `${BASE}/`)), entry.data]))

@@ -11,7 +11,7 @@
 
 import { getCollection } from 'astro:content'
 import { authorHref, byId, pageHref, termHref } from './content'
-import { publicLinks, sitePath } from './links'
+import { ownPath, publicLinks, sitePath } from './links'
 import { routeTable } from './site-routes'
 
 export type RedirectStatus = 301 | 302 | 303 | 307 | 308
@@ -46,10 +46,14 @@ function collect() {
     const prefixes: PrefixRule[] = []
     for (const { data } of entries) {
       // A prefix covers every address under it, live or not (the host serves a built file first), so it is
-      // only a host rule; its target keeps `:splat` and is written as the source had it.
+      // only a host rule. Its target is checked like any link: a whole target through the published set, a
+      // `:splat` one by its fixed part, which must lead into public addresses. An external target stays.
       if (data.from.includes('*')) {
         if (data.status === 410) prefixes.push({ from: data.from, to: '/404.html', status: 410 })
-        else if (MOVES.has(data.status) && data.to) prefixes.push({ from: data.from, to: data.to, status: data.status as RedirectStatus })
+        else if (MOVES.has(data.status) && data.to) {
+          const target = await prefixTarget(data.to, routes, link)
+          if (target) prefixes.push({ from: data.from, to: target, status: data.status as RedirectStatus })
+        }
         continue
       }
       const url = new URL(data.from, BASE)
@@ -76,6 +80,21 @@ function collect() {
     }
   })()
   return collected
+}
+
+/**
+ * A prefix rule's target, or undefined to drop the rule. Without `:splat` it is one address and must be
+ * public. With it, the part before `:splat` on this site must be the start of at least one public
+ * address (`/blog/:splat` with `/blog/…` built), so the rule cannot reveal a draft's address or send a
+ * moved site back to the old host; on another host it is left as it is.
+ */
+async function prefixTarget(to: string, routes: ReadonlyMap<string, unknown>, link: (url: string | undefined) => string | undefined): Promise<string | undefined> {
+  const at = to.indexOf(':splat')
+  if (at === -1) return link(to)
+  const own = await ownPath(to.slice(0, at))
+  if (own === null) return to
+  if (own === undefined) return undefined
+  return [...routes.keys()].some(href => href.startsWith(own) && href !== own) ? `${own}${to.slice(at)}` : undefined
 }
 
 /** Every redirect of an old path the site serves, sorted by old address. An old address the site still builds is not redirected. */
