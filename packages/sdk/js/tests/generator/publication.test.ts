@@ -26,17 +26,18 @@ async function fixture() {
   await json('content/blog/posts/tr.json', { scheduled: { title: 'Private translation' } })
   await json('meta/posts/en.json', { scheduled: window, draft: { status: 'draft' } })
   await json('meta/posts/tr.json', { scheduled: { status: 'draft' } })
-  await json('content/blog/labels/en.json', { scheduled: 'Visible label', draft: 'Secret label' })
-  await json('meta/labels/en.json', { scheduled: window, draft: { status: 'draft' } })
+  // Dictionary meta is one record for the whole file (MCP writeMeta, Studio).
+  await json('content/blog/labels/en.json', { 'footer.copy': 'Copyright', 'nav.home': 'Home' })
+  await json('meta/labels/en.json', window)
   await json('content/blog/settings/en.json', { title: 'Settings' })
   await json('meta/settings/en.json', window)
   await mkdir(join(root, '.contentrain/content/blog/article/intro'), { recursive: true })
   await writeFile(join(root, '.contentrain/content/blog/article/intro/en.md'), '---\ntitle: Article\n---\nDocument body')
   await json('meta/article/intro/en.json', window)
 }
-async function load(model: string, at: string) {
+async function load(model: string, at?: string, requireStatus?: boolean) {
   const entries: string[] = []
-  await contentrainLoader({ root, model, locale: 'en', at }).load({ store: { clear() {}, set(entry) { entries.push(entry.id) } } })
+  await contentrainLoader({ root, model, locale: 'en', at, requireStatus }).load({ store: { clear() {}, set(entry) { entries.push(entry.id) } } })
   return entries.toSorted()
 }
 afterEach(async () => { if (root) await rm(root, { recursive: true, force: true }) })
@@ -51,8 +52,9 @@ describe('public build publication windows', () => {
       expect(posts.map((p: { id: string }) => p.id)).toEqual(visible ? ['legacy', 'scheduled'] : ['legacy'])
       expect(await load('posts', at)).toEqual(posts.map((p: { id: string }) => p.id))
       expect(await data('posts.tr.mjs')).toEqual([])
-      expect(Object.keys(await data('labels.en.mjs'))).toEqual(visible ? ['scheduled'] : [])
-      expect(await load('labels', at)).toEqual(visible ? ['scheduled'] : [])
+      expect(result.generatedFiles.includes('data/labels.en.mjs')).toBe(visible)
+      if (visible) expect(Object.keys(await data('labels.en.mjs'))).toEqual(['footer.copy', 'nav.home'])
+      expect(await load('labels', at)).toEqual(visible ? ['footer.copy', 'nav.home'] : [])
       expect(result.generatedFiles.includes('data/settings.en.mjs')).toBe(visible)
       expect(await load('settings', at)).toEqual(visible ? ['settings'] : [])
       expect(result.generatedFiles.includes('data/article--intro.en.mjs')).toBe(visible)
@@ -76,5 +78,60 @@ describe('public build publication windows', () => {
     expect(isPublishedAt({ status: 'published', publish_at: 'bad-date' }, Date.parse(start))).toBe(false)
     expect(isPublishedAt({ status: 'published', expire_at: 'bad-date' }, Date.parse(start))).toBe(false)
     expect(isPublishedAt(undefined, Date.parse(start))).toBe(true)
+  })
+
+  it('requireStatus holds back entries without a status in the generator and the Astro loader alike', async () => {
+    await fixture()
+    // A meta record the producer wrote without a status — a broken import.
+    await json('content/blog/posts/en.json', { scheduled: { title: 'Scheduled' }, draft: { title: 'Secret' }, legacy: { title: 'Legacy' }, nostatus: { title: 'No status' } })
+    await json('meta/posts/en.json', { scheduled: window, draft: { status: 'draft' }, nostatus: { source: 'import' } })
+    const ids = async () => (JSON.parse((await readFile(join(root, '.contentrain/client/data/posts.en.mjs'), 'utf8')).replace(/^export default /, '')) as Array<{ id: string }>).map(p => p.id)
+
+    await generate({ projectRoot: root, at: start })
+    expect(await ids()).toEqual(['legacy', 'nostatus', 'scheduled'])
+    expect(await load('posts', start)).toEqual(['legacy', 'nostatus', 'scheduled'])
+
+    await generate({ projectRoot: root, at: start, requireStatus: true })
+    expect(await ids()).toEqual(['scheduled'])
+    expect(await load('posts', start, true)).toEqual(['scheduled'])
+    // A singleton whose meta file is missing is held back too.
+    await rm(join(root, '.contentrain/meta/settings/en.json'))
+    expect(await load('settings', start, true)).toEqual([])
+    expect(await load('settings', start)).toEqual(['settings'])
+  })
+
+  it('a dictionary is gated as one file: published keeps every key under requireStatus, draft drops it', async () => {
+    await fixture()
+    await json('meta/labels/en.json', { status: 'published', source: 'agent', updated_by: 'mcp' })
+    const result = await generate({ projectRoot: root, requireStatus: true })
+    expect(result.generatedFiles).toContain('data/labels.en.mjs')
+    expect(await load('labels', undefined, true)).toEqual(['footer.copy', 'nav.home'])
+
+    await json('meta/labels/en.json', { status: 'draft' })
+    expect((await generate({ projectRoot: root, publishedOnly: true })).generatedFiles).not.toContain('data/labels.en.mjs')
+    expect(await load('labels', undefined, false)).toEqual(['footer.copy', 'nav.home'])
+    const entries: string[] = []
+    await contentrainLoader({ root, model: 'labels', locale: 'en', publishedOnly: true }).load({ store: { clear() {}, set(entry) { entries.push(entry.id) } } })
+    expect(entries).toEqual([])
+  })
+
+  it('requireStatus alone implies a public build', async () => {
+    await fixture()
+    await generate({ projectRoot: root, requireStatus: true })
+    const posts = await readFile(join(root, '.contentrain/client/data/posts.en.mjs'), 'utf8')
+    expect(posts).not.toContain('Secret')
+    expect(posts).not.toContain('Legacy')
+    expect(await load('posts', undefined, true)).toEqual([])
+  })
+
+  it('requireStatus: a missing status fails, a published one still honours its window', () => {
+    const at = Date.parse(start)
+    expect(isPublishedAt(undefined, at, true)).toBe(false)
+    expect(isPublishedAt({}, at, true)).toBe(false)
+    expect(isPublishedAt({ source: 'import', publish_at: start }, at, true)).toBe(false)
+    expect(isPublishedAt({}, at)).toBe(true)
+    expect(isPublishedAt({ status: 'published' }, at, true)).toBe(true)
+    expect(isPublishedAt({ status: 'published', publish_at: end }, at, true)).toBe(false)
+    expect(isPublishedAt({ status: 'draft' }, at, true)).toBe(false)
   })
 })
