@@ -1,6 +1,17 @@
 ---
-// An image through astro:assets when its size is known — optimized and
-// sized, so the layout never shifts — and a plain lazy <img> when it is not.
+// An image through astro:assets, optimized and sized so the layout never
+// shifts, from either place a site's media lives:
+//
+//  - the repository, under public/ (`/media/2026/01/cover.jpg`): the file is
+//    read at build time and gets a srcset of resized copies;
+//  - a media host the site allows (Contentrain Studio's delivery URLs, in
+//    astro.config `image.remotePatterns`): fetched at build time when its
+//    size is known, and resized the same way.
+//
+// Anything else — a vector, a host the site does not allow, a remote image of
+// unknown size — is a plain lazy <img>: nothing is fetched from a host the
+// site did not name.
+import type { ImageMetadata } from 'astro'
 import { Image } from 'astro:assets'
 import type { ImageInput } from './types'
 
@@ -13,9 +24,23 @@ interface Props {
   priority?: boolean | undefined
 }
 
+// Raster files under public/, loaded only when a page shows one.
+const LOCAL = import.meta.glob<ImageMetadata>('/public/**/*.{avif,gif,jpeg,jpg,png,tif,tiff,webp,AVIF,GIF,JPEG,JPG,PNG,TIF,TIFF,WEBP}', { import: 'default' })
+
 const { image, sizes = '100vw', class: className, priority = false } = Astro.props
 const loading = priority ? 'eager' : 'lazy'
+const fetchpriority = priority ? 'high' : 'auto'
+const path = image.src.startsWith('/') && !image.src.startsWith('//') ? image.src.split(/[?#]/)[0]! : undefined
+const load = path === undefined ? undefined : LOCAL[`/public${decodeURI(path)}`]
+const local = load ? await load() : undefined
+// The stored size (WordPress's chosen size of the file), else the file's own.
+const size = image.width && image.height ? { width: image.width, height: image.height } : {}
+// Candidate widths for the srcset, up to the image's own: the browser picks one by `sizes`.
+const STEPS = [320, 640, 960, 1280, 1600, 1920, 2560]
+const widthsUpTo = (max: number) => [...STEPS.filter(step => step < max), max]
 ---
-{image.width && image.height
-  ? <Image src={image.src} alt={image.alt} width={image.width} height={image.height} sizes={sizes} class={className} loading={loading} fetchpriority={priority ? 'high' : 'auto'} />
-  : <img src={image.src} alt={image.alt} class={className} loading={loading} decoding="async" />}
+{local
+  ? <Image src={local} alt={image.alt} {...size} widths={widthsUpTo(image.width ?? local.width)} sizes={sizes} class={className} loading={loading} fetchpriority={fetchpriority} />
+  : image.width && image.height && path === undefined
+    ? <Image src={image.src} alt={image.alt} width={image.width} height={image.height} widths={widthsUpTo(image.width)} sizes={sizes} class={className} loading={loading} fetchpriority={fetchpriority} />
+    : <img src={image.src} alt={image.alt} width={image.width} height={image.height} class={className} loading={loading} fetchpriority={fetchpriority} decoding="async" />}
