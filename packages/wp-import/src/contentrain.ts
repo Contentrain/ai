@@ -477,6 +477,8 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
         slug: { type: 'slug', required: true, unique: true, label: 'Slug', order: 20 },
         items: { type: 'relations', model: 'menu-items', label: 'Items', order: 30 },
         wp_id: { type: 'integer', label: 'WP term ID', order: 40 },
+        // Only when the source said where its menus are shown: stores from sources that do not know stay as they were.
+        ...(menus.some((m) => m.locations?.length) ? { locations: { type: 'array', items: 'string', label: 'Locations', order: 50 } as FieldDef } : {}),
       },
     })
     const toTarget = relationOver([...contentModelIds, ...taxonomies.map(taxModelId)])
@@ -504,6 +506,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
         slug: slugify(m.slug) || `menu-${m.id}`,
         items: m.items.map((i) => itemRef(i.id)),
         wp_id: m.id,
+        ...(m.locations?.length ? { locations: m.locations } : {}),
       }
       metas.menus![mid] = importMeta('published')
       for (const i of m.items) {
@@ -512,7 +515,8 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
           menu: mid,
           order: i.order,
           type: i.target.kind === 'url' ? 'custom' : i.target.kind === 'post' ? 'post_type' : i.target.kind === 'term' ? 'taxonomy' : i.target.kind === 'archive' ? 'post_type_archive' : 'custom',
-          wp_id: i.id,
+          // A block navigation's items have no WordPress id (negative placeholders): none is claimed.
+          ...(i.id > 0 ? { wp_id: i.id } : {}),
           open_in_new_tab: i.target_attr === '_blank',
         }
         if (i.parent && !i.parent_unresolved) e.parent = itemRef(i.parent)
