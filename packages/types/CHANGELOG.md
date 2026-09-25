@@ -1,5 +1,24 @@
 # @contentrain/types
 
+## 1.26.0
+
+### Minor Changes
+
+- 334852f: `contentrain init` and the `contentrain_init` tool record the project's default branch as `repository.default_branch`, so later local writes no longer depend on inference. It is resolved once with the base-branch resolver: `origin/HEAD`, then `main`, then `master`. The `CONTENTRAIN_BRANCH` env is not recorded. The checked-out branch is recorded only when it is the repository's only branch, so running `init` from a feature branch still records the default branch. When the default cannot be told apart from the checkout, nothing is written and the CLI says so. `contentrain_init` returns the value as `default_branch`.
+
+  `ContentrainConfig.repository.provider`, `owner` and `name` are now optional, so `{ "repository": { "default_branch": "main" } }` is a valid config. New exports from `@contentrain/mcp/git/base-branch`: `resolveBaseBranchSource` and `resolveInitDefaultBranch`.
+
+- 951af8c: **Type scale and section rhythm.** `PLAN_TOKEN_ROLES` adds `text-nav`, `text-heading-1`, `text-heading-2`, `text-heading-3` and `spacing-section`. Components do not read them. The site's theme applies them to the kit's markers, and only when the site sets them:
+
+  - `data-kit-section` and `data-kit-spacing` on every section;
+  - `data-kit-text` on the lead and body paragraphs of hero, CTA and card grid.
+
+  **Plain FAQ.** Faq gains `style: 'plain'`, the browser's own disclosure triangle with no rules or boxes. Gutenberg's `core/details` now maps to it.
+
+  **Cover alignment.** Gutenberg covers now choose the Hero's `align`: `start` when WordPress positions the content on the left (`is-position-*-left`), `center` otherwise, which is WordPress's default.
+
+- 2578366: Redirect rules carry what their source says about matching: `RawRedirect.query` (`exact` / `ignore` / `pass`, the Redirection plugin's modes), `case_insensitive` and `trailing_slash`. A rule that answers "gone" (410, 451) is a served rule with an empty `to`. `RawAttachment.link` is the attachment's own page, for its redirect. wp-import over REST reads the Redirection plugin's rules (`redirection/v1`, with a credential that may manage it) into `redirects` and `redirects_excluded`, shaped as the Bridge shapes them. It reads each attachment's page from REST and WXR. New gaps: `redirects_partial` (always over REST: Yoast Premium, Rank Math, Safe Redirect Manager and `.htaccess` are Bridge-only) and `redirects_require_auth`.
+
 ## 1.25.0
 
 ### Minor Changes

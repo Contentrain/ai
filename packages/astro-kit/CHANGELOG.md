@@ -1,5 +1,27 @@
 # @contentrain/astro-kit
 
+## 0.3.0
+
+### Minor Changes
+
+- 7ba9de5: `KitImage` optimizes images from both places a site's media lives: raster files under `public/` (read at build time through a lazy glob, only the ones a page shows) and a media host the site allows in `image.remotePatterns` (the starter allows its Contentrain Studio project's `/api/cdn/v1/<project>/media/**`). Both get a `srcset` of widths up to the image's own. A vector, a host the site does not allow or a remote image of unknown size stays a plain `<img>`: nothing is fetched from a host the site did not name.
+- 951af8c: **Type scale and section rhythm.** `PLAN_TOKEN_ROLES` adds `text-nav`, `text-heading-1`, `text-heading-2`, `text-heading-3` and `spacing-section`. Components do not read them. The site's theme applies them to the kit's markers, and only when the site sets them:
+
+  - `data-kit-section` and `data-kit-spacing` on every section;
+  - `data-kit-text` on the lead and body paragraphs of hero, CTA and card grid.
+
+  **Plain FAQ.** Faq gains `style: 'plain'`, the browser's own disclosure triangle with no rules or boxes. Gutenberg's `core/details` now maps to it.
+
+  **Cover alignment.** Gutenberg covers now choose the Hero's `align`: `start` when WordPress positions the content on the left (`is-position-*-left`), `center` otherwise, which is WordPress's default.
+
+### Patch Changes
+
+- fc3e4f4: `KitImage` no longer fails a page's build on an image path with a malformed percent escape. Such an image stays a plain `<img>`.
+- Updated dependencies [334852f]
+- Updated dependencies [951af8c]
+- Updated dependencies [2578366]
+  - @contentrain/types@1.26.0
+
 ## 0.2.0
 
 ### Minor Changes
