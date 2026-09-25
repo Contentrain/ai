@@ -3,11 +3,32 @@
 // entry addresses (WordPress ids mean nothing after migration), the verbatim
 // comments, and which threads were closed at the source.
 
-import type { CommentsExport, EntrySourceMap, HandoffComments, RawIR } from '@contentrain/types'
+import type { CommentsExport, EntrySourceMap, HandoffComments, RawComment, RawIR } from '@contentrain/types'
 import { COMMENTS_EXPORT_FORMAT, MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
+
+/**
+ * The comments that may leave the source site (see `CommentsExport.comments`): public entries only,
+ * approved or pending; never spam or trash. A comment on a post this RawIR does not hold is kept —
+ * `summarizeComments` reports it as unresolved, as before.
+ */
+export function selectComments(raw: RawIR): { comments: RawComment[]; excluded: NonNullable<CommentsExport['excluded']> } {
+  const posts = new Map(raw.posts.map((p) => [p.id, p]))
+  const excluded: NonNullable<CommentsExport['excluded']> = {}
+  const count = (key: keyof typeof excluded) => { excluded[key] = (excluded[key] ?? 0) + 1 }
+  const comments: RawComment[] = []
+  for (const c of raw.comments ?? []) {
+    const post = posts.get(c.post)
+    if (post && (post.status !== 'publish' || (post.password !== null && post.password !== undefined && post.password !== ''))) { count('non_public_entry'); continue }
+    if (c.approved === 'spam') { count('spam'); continue }
+    if (c.approved === 'trash') { count('trash'); continue }
+    comments.push(c)
+  }
+  return { comments, excluded }
+}
 
 export function buildCommentsExport(raw: RawIR, entries: EntrySourceMap, opts?: { generated_at?: string }): CommentsExport {
   const threadsClosed = raw.posts.filter((p) => p.comment_status && p.comment_status !== 'open').map((p) => p.id)
+  const { comments, excluded } = selectComments(raw)
   return {
     version: MIGRATION_CONTRACT_VERSION,
     format: COMMENTS_EXPORT_FORMAT,
@@ -16,7 +37,8 @@ export function buildCommentsExport(raw: RawIR, entries: EntrySourceMap, opts?: 
     generated_at: opts?.generated_at ?? new Date().toISOString(),
     entries,
     threads_closed: threadsClosed.length ? threadsClosed : undefined,
-    comments: raw.comments ?? [],
+    comments,
+    excluded: Object.keys(excluded).length ? excluded : undefined,
   }
 }
 
@@ -37,5 +59,6 @@ export function summarizeComments(exp: CommentsExport): HandoffComments {
     export: { format: exp.format },
     threads_closed: exp.threads_closed,
     unresolved: unresolved.length ? unresolved : undefined,
+    excluded: exp.excluded,
   }
 }

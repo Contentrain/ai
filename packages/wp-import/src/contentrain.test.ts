@@ -282,6 +282,34 @@ describe('comments export', () => {
     expect(summary.total).toBe(2)
     expect(summary.by_status).toEqual({ '1': 1, '0': 1 })
     expect(summary.unresolved).toBeUndefined()
+    expect(exp.excluded).toBeUndefined()
+  })
+
+  it('carries public, approved or pending comments only; counts what it leaves out', async () => {
+    const { raw, result } = await load()
+    const base = raw.comments![0]!
+    const post = (id: number, over: object) => ({ ...raw.posts.find((p) => p.id === 10)!, id, slug: `p${id}`, ...over })
+    const withMore = {
+      ...raw,
+      posts: [...raw.posts, post(30, { status: 'draft' }), post(31, { status: 'private' }), post(32, { password: '[protected]' }), post(33, { status: 'future' })],
+      comments: [
+        ...raw.comments!,
+        { ...base, id: 900, post: 30, content: 'on a draft' },
+        { ...base, id: 901, post: 31, content: 'on a private post' },
+        { ...base, id: 902, post: 32, content: 'behind a password' },
+        { ...base, id: 903, post: 33, content: 'on a scheduled post' },
+        { ...base, id: 904, post: 10, approved: 'spam', content: 'buy now' },
+        { ...base, id: 905, post: 10, approved: 'trash', content: 'deleted' },
+        { ...base, id: 906, post: 10, approved: '0', content: 'waiting for moderation' },
+      ],
+    }
+    const exp = buildCommentsExport(withMore, result.entry_source_map, { generated_at: '2026-09-25T00:00:00Z' })
+    const ids = exp.comments.map((c) => c.id)
+    expect(ids).toContain(906)
+    expect(ids.filter((id) => id >= 900 && id !== 906)).toEqual([])
+    expect(exp.excluded).toEqual({ non_public_entry: 4, spam: 1, trash: 1 })
+    expect(summarizeComments(exp).excluded).toEqual({ non_public_entry: 4, spam: 1, trash: 1 })
+    expect(JSON.stringify(exp)).not.toMatch(/on a draft|private post|behind a password|scheduled post|buy now|deleted/)
   })
 
   it('a multilingual site becomes an i18n store: content per locale, one entry id per translation group', async () => {

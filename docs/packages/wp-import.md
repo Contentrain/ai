@@ -69,6 +69,8 @@ const commentsExport = buildCommentsExport(raw, entry_source_map)
 
 WXR parsing is streaming (sax): a 100 MB export holds only its records in memory, not the document.
 
+The comments export carries only public discussion: comments on published, unprotected entries that are approved or pending (pending ones land in the receiving service's moderation queue). Comments on drafts, private, scheduled or password-protected entries, and spam and trash, stay behind; `excluded` counts them per reason.
+
 ## What it guarantees
 
 | Guarantee | Why it matters |

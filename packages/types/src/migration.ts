@@ -1245,8 +1245,19 @@ export interface CommentsExport {
   entries: EntrySourceMap
   /** WP post ids whose comment form was closed — the receiving side opens those threads closed. */
   threads_closed?: number[]
-  /** Verbatim `RawComment`s; parents are re-linked via `RawComment.parent` in a second pass. */
+  /**
+   * Verbatim `RawComment`s; parents are re-linked via `RawComment.parent` in a second pass.
+   *
+   * What travels: comments on **public** entries (published, no post password) that are approved
+   * (`approved: '1'`) or waiting for moderation (`'0'` — the receiving side puts them in its
+   * moderation queue, so the site owner's queue survives the move). Never: comments on drafts,
+   * private, scheduled or password-protected entries (their discussion is not public), and spam or
+   * trash (never shown, and only carry bots' and strangers' personal data). A reply whose parent was
+   * left out keeps its `parent` id; the receiver treats a parent it does not have as none.
+   */
   comments: RawComment[]
+  /** What was left out and why, counted — so a smaller export is explained, not suspicious. */
+  excluded?: { non_public_entry?: number; spam?: number; trash?: number }
 }
 
 /**
@@ -1290,6 +1301,8 @@ export interface HandoffComments {
   export?: HandoffCommentsExport
   threads_closed?: number[]
   unresolved?: Array<{ comment_id: number; post: number; reason: string }>
+  /** Comments the export left out on purpose (`CommentsExport.excluded`). */
+  excluded?: { non_public_entry?: number; spam?: number; trash?: number }
 }
 
 /**
