@@ -37,3 +37,31 @@ export function configWithDomains(config: { domains?: string[] } & Record<string
   for (const model of plan.models) if (model.origin === 'plan' && model.domain) domains.add(model.domain)
   return canonicalStringify({ ...config, domains: [...domains].toSorted() })
 }
+
+/**
+ * The imported models with what the starter's code reads added. wp-import writes what WordPress has;
+ * the starter also reads fields a WordPress export does not carry (a page's cover, SEO overrides, the
+ * site's logo) and models it does not import (menus, interface strings). An imported field wins — its
+ * type and constraints describe the imported content; a starter field is added only where the import
+ * has none, optional, so existing entries stay valid.
+ */
+export function mergeStarterModels(starter: readonly ModelDefinition[], imported: readonly ModelDefinition[]): { models: ModelDefinition[], added: Record<string, string[]> } {
+  const byId = new Map(imported.map(m => [m.id, m]))
+  const added: Record<string, string[]> = {}
+  const models: ModelDefinition[] = [...imported]
+  for (const base of starter) {
+    const own = byId.get(base.id)
+    if (!own) {
+      models.push(base)
+      added[base.id] = ['(model)']
+      continue
+    }
+    const extra = Object.entries(base.fields ?? {}).filter(([name]) => !own.fields?.[name])
+    if (!extra.length) continue
+    added[base.id] = extra.map(([name]) => name)
+    const fields = { ...own.fields }
+    for (const [name, def] of extra) fields[name] = { ...def, required: false }
+    models[models.indexOf(own)] = { ...own, fields }
+  }
+  return { models: models.toSorted((a, b) => a.id.localeCompare(b.id)), added }
+}
