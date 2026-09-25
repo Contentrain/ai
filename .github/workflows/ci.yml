@@ -67,10 +67,12 @@ jobs:
       - name: Astro starter passes its gates
         # templates/astro-starter is copied out, installed on its own and
         # checked with the SDK at HEAD: empty, then with a WordPress-shaped
-        # demo site laid over it (astro check, knip, build, built-site checks).
+        # demo site laid over it (astro check, knip, build, built-site checks),
+        # and once more with the demo's media served from a stand-in Studio host.
         run: |
           node scripts/starter-gates.mjs --local-sdk
           node scripts/starter-gates.mjs --local-sdk --fixture wp-demo
+          node scripts/starter-gates.mjs --local-sdk --fixture wp-demo --media studio
 
       - name: Kit components render as their baselines
         # Every fixture of every astro-kit component, in a copy of the starter,

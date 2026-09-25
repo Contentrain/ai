@@ -57,6 +57,14 @@
   }
 }
 
+/*
+ * A section whose source block had no alignment runs at the reading column
+ * (the theme's contentSize); its background still spans the page.
+ */
+.section-content {
+  --container-page: calc(var(--container-prose) + 2 * var(--spacing-gutter, 2rem));
+}
+
 /* Typography for rich-text bodies, bound to the tokens. */
 @utility prose-site {
   --tw-prose-body: var(--color-ink);

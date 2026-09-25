@@ -140,6 +140,12 @@ contains `menus_require_auth` — an empty menu list is never presented as the
 site having none. The `menus` model gains a `locations` field only when the
 source named them.
 
+A menu item that names a public post or term links to that post's or term's
+public address (its REST `link`). The address the item stored is not used: a
+block keeps the URL it had when it was saved, and a hand-typed `?page_id=` is a
+form the migrated site cannot serve. A hand-typed `?page_id=` / `?p=` counts
+as this site's with or without a leading `www.`.
+
 ### Redirects over REST
 
 REST reads one source of redirects: the Redirection plugin (`redirection/v1`).

@@ -214,7 +214,7 @@ onMounted(async () => {
               <DialogTitle>{{ t['branch-detail.confirm-merge'] }}</DialogTitle>
               <DialogDescription>
                 {{ t['branch-detail.this-will-merge'] }} <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{{ branchName }}</code>
-                {{ t['branch-detail.into'] }} <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{{ diff?.base ?? 'main' }}</code>
+                {{ t['branch-detail.into'] }} <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{{ diff?.base }}</code>
                 {{ t['branch-detail.and-delete-the-source'] }}
               </DialogDescription>
             </DialogHeader>

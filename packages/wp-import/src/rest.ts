@@ -267,7 +267,7 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
     { slug: 'page', base: 'pages' },
   ]
 
-  interface RestTerm { id: number; slug: string; name: string; taxonomy?: string; parent?: number; description?: string }
+  interface RestTerm { id: number; slug: string; name: string; taxonomy?: string; parent?: number; description?: string; link?: string }
   interface RestUser { id: number; slug: string; name: string }
   interface RestMedia {
     id: number
@@ -342,12 +342,15 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
   const postLists = lists.slice(extraTaxonomies.length) as RestPost[][]
 
   const termsById = new Map<number, RawTerm>()
+  /** A term's public address, for menu items that name it; RawTerm carries none. */
+  const termLinks = new Map<number, string>()
   for (const [tax, list] of [
     ['category', categories],
     ['post_tag', tags],
     ...extraTaxonomies.map((t, i) => [t.taxonomy, extraTerms[i] ?? []] as const),
   ] as const) {
     for (const t of list) {
+      if (t.link) termLinks.set(t.id, t.link)
       termsById.set(t.id, {
         id: t.id,
         taxonomy: tax,
@@ -485,10 +488,13 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
       if (!l.status || (l.status >= 400 && !DENIED.has(l.status) && l.status !== 404)) warnings.push(`${name}: HTTP ${l.status} — skipped`)
     }
     const slugOf = new Map(posts.filter(visible).map((p) => [p.id, p.slug]))
+    const linkOf = new Map(posts.filter(visible).flatMap((p) => (p.link ? [[p.id, p.link] as const] : [])))
     const ctx: MenuContext = {
       origin,
       postSlug: (id) => slugOf.get(id),
       termSlug: (taxonomy, id) => { const t = termsById.get(id); return t && t.taxonomy === taxonomy ? t.slug : undefined },
+      postLink: (id) => linkOf.get(id),
+      termLink: (taxonomy, id) => (termsById.get(id)?.taxonomy === taxonomy ? termLinks.get(id) : undefined),
       pages: posts.filter((p) => p.type === 'page' && p.status === 'publish' && !p.password).map((p) => ({ id: p.id, parent: p.parent ?? null, menu_order: p.menu_order ?? 0, title: strip(p.title), link: p.link ?? null, slug: p.slug })),
     }
     const dropped = { count: 0 }

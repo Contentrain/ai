@@ -1,0 +1,602 @@
+{
+  "format": "contentrain-menu-parity@1",
+  "origin": "https://example.test",
+  "about": "Block-theme menus (wp_navigation posts and inline navigation in template parts) → RawMenu, as both @contentrain/wp-import (rest-menus.ts) and the Contentrain Bridge (Menus::from_blocks) export them. Owned by wp-import; the Bridge copies this file unchanged and pins the commit it copied.",
+  "rules": [
+    "`origin` is the site's home. Each side runs against its own home and reads it as `origin`: an address on its own home compares as one on `origin`.",
+    "`public` is what the importer read and proved public: published, unprotected posts of any type (with their public `link`) and terms. Anything else (a draft, a private or password-protected post, one never read) is not public. `parts` are all template parts with their area; `templates` are the site's templates; `navigations` are wp_navigation posts, and only `status: publish` ones are menus. `taken` are slugs classic menus already use.",
+    "Only template parts a template uses count; without templates, the part whose slug is its area. A part used inside a part is opened in place, once. A navigation block's `ref` gives that navigation the part's area; an empty one without `ref` shows the most recent published navigation (by `date_gmt`, then id).",
+    "Menus come in this order: navigation posts by id, then inline navigations by area (header, footer, others) and document order. A navigation post's slug is its own, or `navigation-<id>` without one, suffixed `-nav` while taken; an inline menu is named by its `ariaLabel` or `<Area> navigation[ N]`, its slug suffixed `-2`, `-3` while taken.",
+    "A link to a post or term the site states (block `id`, or a same-site `?page_id=` / `?p=` typed by hand, `www.` or not) is checked: not public → left out and counted in `dropped`, its children moving up to its parent. A public one points at its public `link`, whatever address the block kept.",
+    "A page list lists the public pages under `parentPageID` (0 by default) as a tree, by `menu_order` then title. A home link is `<origin>/`, labelled `Home` when it has no label. A site-relative address is made absolute; `#` stays `#`.",
+    "`expect.menus[].items` compares title (tags stripped, entities decoded, whitespace collapsed), url, and `parent` as the titles of its ancestors, outermost first. Ids, order numbers, targets and classes are each side's own. `locations` is absent when a navigation is shown nowhere."
+  ],
+  "public": {
+    "posts": [
+      {
+        "id": 5,
+        "type": "page",
+        "parent": 0,
+        "menu_order": 1,
+        "title": "About",
+        "slug": "about",
+        "link": "https://example.test/about/"
+      },
+      {
+        "id": 6,
+        "type": "page",
+        "parent": 5,
+        "menu_order": 0,
+        "title": "Team",
+        "slug": "team",
+        "link": "https://example.test/about/team/"
+      },
+      {
+        "id": 7,
+        "type": "page",
+        "parent": 0,
+        "menu_order": 2,
+        "title": "Contact",
+        "slug": "contact",
+        "link": "https://example.test/contact/"
+      },
+      {
+        "id": 8,
+        "type": "page",
+        "parent": 0,
+        "menu_order": 1,
+        "title": "Blog",
+        "slug": "blog",
+        "link": "https://example.test/blog/"
+      },
+      {
+        "id": 12,
+        "type": "post",
+        "parent": 0,
+        "menu_order": 0,
+        "title": "Hello world",
+        "slug": "hello-world",
+        "link": "https://example.test/2026/01/hello-world/"
+      }
+    ],
+    "terms": [
+      {
+        "taxonomy": "category",
+        "id": 3,
+        "slug": "news",
+        "link": "https://example.test/category/news/"
+      },
+      {
+        "taxonomy": "post_tag",
+        "id": 4,
+        "slug": "astro",
+        "link": "https://example.test/tag/astro/"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "Twenty Twenty-Five: a referenced header navigation, footer columns inline, an unused alternative part ignored",
+      "templates": [
+        {
+          "slug": "index",
+          "content": "<!-- wp:template-part {\"slug\":\"header\",\"theme\":\"fixture\"} /--><!-- wp:group --><!-- wp:post-content /--><!-- /wp:group --><!-- wp:template-part {\"slug\":\"footer\",\"theme\":\"fixture\"} /-->"
+        },
+        {
+          "slug": "page",
+          "content": "<!-- wp:template-part {\"slug\":\"header\",\"theme\":\"fixture\"} /--><!-- wp:group --><!-- wp:post-content /--><!-- /wp:group --><!-- wp:template-part {\"slug\":\"footer\",\"theme\":\"fixture\"} /-->"
+        }
+      ],
+      "parts": [
+        {
+          "slug": "header",
+          "area": "header",
+          "content": "<!-- wp:group --><!-- wp:navigation {\"ref\":501,\"overlayMenu\":\"mobile\"} /--><!-- /wp:group -->"
+        },
+        {
+          "slug": "footer",
+          "area": "footer",
+          "content": "<!-- wp:group --><!-- wp:columns --><!-- wp:column --><!-- wp:navigation {\"overlayMenu\":\"never\",\"layout\":{\"type\":\"flex\",\"orientation\":\"vertical\"}} --><!-- wp:navigation-link {\"label\":\"Blog\",\"url\":\"/blog/\",\"kind\":\"post-type\",\"type\":\"page\",\"id\":8} /--><!-- wp:navigation-link {\"label\":\"Events\",\"url\":\"https://example.test/events/\"} /--><!-- /wp:navigation --><!-- /wp:column --><!-- wp:column --><!-- wp:navigation {\"ariaLabel\":\"Social\",\"overlayMenu\":\"never\"} --><!-- wp:navigation-link {\"label\":\"Mastodon\",\"url\":\"https://mastodon.example/@site\",\"opensInNewTab\":true} /--><!-- wp:navigation-link {\"label\":\"Soon\",\"url\":\"#\"} /--><!-- /wp:navigation --><!-- /wp:column --><!-- /wp:columns --><!-- /wp:group -->"
+        },
+        {
+          "slug": "footer-columns",
+          "area": "footer",
+          "content": "<!-- wp:navigation {\"overlayMenu\":\"never\"} --><!-- wp:navigation-link {\"label\":\"Unused\",\"url\":\"https://example.test/unused/\"} /--><!-- /wp:navigation -->"
+        }
+      ],
+      "navigations": [
+        {
+          "id": 501,
+          "slug": "navigation",
+          "title": "Navigation",
+          "status": "publish",
+          "date_gmt": "2026-01-01T00:00:00",
+          "content": "<!-- wp:navigation-link {\"label\":\"About\",\"url\":\"https://example.test/about/\",\"kind\":\"post-type\",\"type\":\"page\",\"id\":5} /--><!-- wp:navigation-submenu {\"label\":\"More\",\"url\":\"#\"} --><!-- wp:navigation-link {\"label\":\"Team\",\"url\":\"https://example.test/about/team/\",\"kind\":\"post-type\",\"type\":\"page\",\"id\":6} /--><!-- /wp:navigation-submenu --><!-- wp:home-link /-->"
+        }
+      ],
+      "expect": {
+        "menus": [
+          {
+            "slug": "navigation",
+            "name": "Navigation",
+            "locations": [
+              "header"
+            ],
+            "items": [
+              {
+                "title": "About",
+                "url": "https://example.test/about/",
+                "parent": []
+              },
+              {
+                "title": "More",
+                "url": "#",
+                "parent": []
+              },
+              {
+                "title": "Team",
+                "url": "https://example.test/about/team/",
+                "parent": [
+                  "More"
+                ]
+              },
+              {
+                "title": "Home",
+                "url": "https://example.test/",
+                "parent": []
+              }
+            ]
+          },
+          {
+            "slug": "footer-navigation-1",
+            "name": "Footer navigation 1",
+            "locations": [
+              "footer"
+            ],
+            "items": [
+              {
+                "title": "Blog",
+                "url": "https://example.test/blog/",
+                "parent": []
+              },
+              {
+                "title": "Events",
+                "url": "https://example.test/events/",
+                "parent": []
+              }
+            ]
+          },
+          {
+            "slug": "social",
+            "name": "Social",
+            "locations": [
+              "footer"
+            ],
+            "items": [
+              {
+                "title": "Mastodon",
+                "url": "https://mastodon.example/@site",
+                "parent": []
+              },
+              {
+                "title": "Soon",
+                "url": "#",
+                "parent": []
+              }
+            ]
+          }
+        ],
+        "dropped": 0
+      }
+    },
+    {
+      "name": "An empty navigation block without ref shows the most recent published navigation; a draft navigation is not a menu",
+      "templates": [
+        {
+          "slug": "index",
+          "content": "<!-- wp:template-part {\"slug\":\"header\",\"theme\":\"fixture\"} /-->"
+        }
+      ],
+      "parts": [
+        {
+          "slug": "header",
+          "area": "header",
+          "content": "<!-- wp:navigation /-->"
+        }
+      ],
+      "navigations": [
+        {
+          "id": 510,
+          "slug": "old-menu",
+          "title": "Old menu",
+          "status": "publish",
+          "date_gmt": "2025-06-01T10:00:00",
+          "content": "<!-- wp:navigation-link {\"label\":\"Contact\",\"url\":\"https://example.test/contact/\",\"kind\":\"post-type\",\"type\":\"page\",\"id\":7} /-->"
+        },
+        {
+          "id": 511,
+          "slug": "new-menu",
+          "title": "New menu",
+          "status": "publish",
+          "date_gmt": "2026-02-01T10:00:00",
+          "content": "<!-- wp:navigation-link {\"label\":\"Blog\",\"url\":\"https://example.test/blog/\",\"kind\":\"post-type\",\"type\":\"page\",\"id\":8} /-->"
+        },
+        {
+          "id": 512,
+          "slug": "draft-menu",
+          "title": "Draft menu",
+          "status": "draft",
+          "date_gmt": "2026-03-01T10:00:00",
+          "content": "<!-- wp:navigation-link {\"label\":\"Secret\",\"url\":\"https://example.test/secret/\"} /-->"
+        }
+      ],
+      "expect": {
+        "menus": [
+          {
+            "slug": "old-menu",
+            "name": "Old menu",
+            "items": [
+              {
+                "title": "Contact",
+                "url": "https://example.test/contact/",
+                "parent": []
+              }
+            ]
+          },
+          {
+            "slug": "new-menu",
+            "name": "New menu",
+            "locations": [
+              "header"
+            ],
+            "items": [
+              {
+                "title": "Blog",
+                "url": "https://example.test/blog/",
+                "parent": []
+              }
+            ]
+          }
+        ],
+        "dropped": 0
+      }
+    },
+    {
+      "name": "A part inside a part is opened in place, in the outer area; a part naming itself stops",
+      "templates": [
+        {
+          "slug": "index",
+          "content": "<!-- wp:template-part {\"slug\":\"header\",\"theme\":\"fixture\"} /-->"
+        }
+      ],
+      "parts": [
+        {
+          "slug": "header",
+          "area": "header",
+          "content": "<!-- wp:group --><!-- wp:template-part {\"slug\":\"site-nav\",\"theme\":\"fixture\"} /--><!-- wp:template-part {\"slug\":\"header\",\"theme\":\"fixture\"} /--><!-- /wp:group -->"
+        },
+        {
+          "slug": "site-nav",
+          "area": "uncategorized",
+          "content": "<!-- wp:navigation --><!-- wp:navigation-link {\"label\":\"Contact\",\"url\":\"https://example.test/contact/\",\"kind\":\"post-type\",\"type\":\"page\",\"id\":7} /--><!-- /wp:navigation -->"
+        }
+      ],
+      "navigations": [],
+      "expect": {
+        "menus": [
+          {
+            "slug": "header-navigation",
+            "name": "Header navigation",
+            "locations": [
+              "header"
+            ],
+            "items": [
+              {
+                "title": "Contact",
+                "url": "https://example.test/contact/",
+                "parent": []
+              }
+            ]
+          }
+        ],
+        "dropped": 0
+      }
+    },
+    {
+      "name": "Without templates, the part whose slug is its area",
+      "templates": [],
+      "parts": [
+        {
+          "slug": "header",
+          "area": "header",
+          "content": "<!-- wp:navigation --><!-- wp:navigation-link {\"label\":\"About\",\"url\":\"https://example.test/about/\",\"kind\":\"post-type\",\"type\":\"page\",\"id\":5} /--><!-- /wp:navigation -->"
+        },
+        {
+          "slug": "header-large-title",
+          "area": "header",
+          "content": "<!-- wp:navigation --><!-- wp:navigation-link {\"label\":\"Unused\",\"url\":\"https://example.test/unused/\"} /--><!-- /wp:navigation -->"
+        }
+      ],
+      "navigations": [],
+      "expect": {
+        "menus": [
+          {
+            "slug": "header-navigation",
+            "name": "Header navigation",
+            "locations": [
+              "header"
+            ],
+            "items": [
+              {
+                "title": "About",
+                "url": "https://example.test/about/",
+                "parent": []
+              }
+            ]
+          }
+        ],
+        "dropped": 0
+      }
+    },
+    {
+      "name": "Fail-closed: a link to content not proven public is left out and its children move up; typed ?page_id= / ?p= links are post links",
+      "templates": [
+        {
+          "slug": "index",
+          "content": "<!-- wp:template-part {\"slug\":\"header\",\"theme\":\"fixture\"} /-->"
+        }
+      ],
+      "parts": [
+        {
+          "slug": "header",
+          "area": "header",
+          "content": "<!-- wp:navigation {\"ref\":520} /-->"
+        }
+      ],
+      "navigations": [
+        {
+          "id": 520,
+          "slug": "main",
+          "title": "Main",
+          "status": "publish",
+          "date_gmt": "2026-01-01T00:00:00",
+          "content": "<!-- wp:navigation-submenu {\"label\":\"Draft section\",\"url\":\"https://example.test/?page_id=30\",\"kind\":\"post-type\",\"type\":\"page\",\"id\":30} --><!-- wp:navigation-link {\"label\":\"Contact\",\"url\":\"https://example.test/contact/\",\"kind\":\"post-type\",\"type\":\"page\",\"id\":7} /--><!-- wp:navigation-link {\"label\":\"Private\",\"url\":\"https://example.test/private/\",\"kind\":\"post-type\",\"type\":\"post\",\"id\":31} /--><!-- /wp:navigation-submenu --><!-- wp:navigation-link {\"label\":\"Typed page\",\"url\":\"/?page_id=5\"} /--><!-- wp:navigation-link {\"label\":\"Typed post\",\"url\":\"https://example.test/?p=12\"} /--><!-- wp:navigation-link {\"label\":\"Typed draft\",\"url\":\"/?p=32\"} /--><!-- wp:navigation-link {\"label\":\"Typed draft on www\",\"url\":\"https://www.example.test/?p=33\"} /--><!-- wp:navigation-link {\"label\":\"Elsewhere\",\"url\":\"https://other.example/?page_id=30\"} /-->"
+        }
+      ],
+      "expect": {
+        "menus": [
+          {
+            "slug": "main",
+            "name": "Main",
+            "locations": [
+              "header"
+            ],
+            "items": [
+              {
+                "title": "Contact",
+                "url": "https://example.test/contact/",
+                "parent": []
+              },
+              {
+                "title": "Typed page",
+                "url": "https://example.test/about/",
+                "parent": []
+              },
+              {
+                "title": "Typed post",
+                "url": "https://example.test/2026/01/hello-world/",
+                "parent": []
+              },
+              {
+                "title": "Elsewhere",
+                "url": "https://other.example/?page_id=30",
+                "parent": []
+              }
+            ]
+          }
+        ],
+        "dropped": 4
+      }
+    },
+    {
+      "name": "A page list lists the public pages in their tree, by menu order then title; parentPageID starts below a page",
+      "templates": [
+        {
+          "slug": "index",
+          "content": "<!-- wp:template-part {\"slug\":\"header\",\"theme\":\"fixture\"} /--><!-- wp:group --><!-- wp:post-content /--><!-- /wp:group --><!-- wp:template-part {\"slug\":\"footer\",\"theme\":\"fixture\"} /-->"
+        }
+      ],
+      "parts": [
+        {
+          "slug": "header",
+          "area": "header",
+          "content": "<!-- wp:navigation --><!-- wp:page-list /--><!-- /wp:navigation -->"
+        },
+        {
+          "slug": "footer",
+          "area": "footer",
+          "content": "<!-- wp:navigation --><!-- wp:page-list {\"parentPageID\":5} /--><!-- /wp:navigation -->"
+        }
+      ],
+      "navigations": [],
+      "expect": {
+        "menus": [
+          {
+            "slug": "header-navigation",
+            "name": "Header navigation",
+            "locations": [
+              "header"
+            ],
+            "items": [
+              {
+                "title": "About",
+                "url": "https://example.test/about/",
+                "parent": []
+              },
+              {
+                "title": "Team",
+                "url": "https://example.test/about/team/",
+                "parent": [
+                  "About"
+                ]
+              },
+              {
+                "title": "Blog",
+                "url": "https://example.test/blog/",
+                "parent": []
+              },
+              {
+                "title": "Contact",
+                "url": "https://example.test/contact/",
+                "parent": []
+              }
+            ]
+          },
+          {
+            "slug": "footer-navigation",
+            "name": "Footer navigation",
+            "locations": [
+              "footer"
+            ],
+            "items": [
+              {
+                "title": "Team",
+                "url": "https://example.test/about/team/",
+                "parent": []
+              }
+            ]
+          }
+        ],
+        "dropped": 0
+      }
+    },
+    {
+      "name": "Labels, addresses and slugs: tags and entities stripped, site-relative addresses made absolute, the public address wins, slugs unique against classic menus",
+      "taken": [
+        "primary",
+        "footer-navigation"
+      ],
+      "templates": [
+        {
+          "slug": "index",
+          "content": "<!-- wp:template-part {\"slug\":\"header\",\"theme\":\"fixture\"} /--><!-- wp:group --><!-- wp:post-content /--><!-- /wp:group --><!-- wp:template-part {\"slug\":\"footer\",\"theme\":\"fixture\"} /-->"
+        }
+      ],
+      "parts": [
+        {
+          "slug": "header",
+          "area": "header",
+          "content": "<!-- wp:navigation {\"ref\":530} /-->"
+        },
+        {
+          "slug": "footer",
+          "area": "footer",
+          "content": "<!-- wp:navigation --><!-- wp:navigation-link {\"label\":\"Tips &amp; tricks\",\"url\":\"/tips/\"} /--><!-- wp:navigation-link {\"label\":\"<strong>News</strong>\",\"url\":\"/old-news/\",\"kind\":\"taxonomy\",\"type\":\"category\",\"id\":3} /--><!-- wp:navigation-link {\"label\":\"Astro\",\"url\":\"/tag/astro/\",\"kind\":\"taxonomy\",\"type\":\"tag\",\"id\":4} /--><!-- wp:navigation-link {\"label\":\"About\",\"url\":\"/old-about/\",\"kind\":\"post-type\",\"type\":\"page\",\"id\":5} /--><!-- /wp:navigation -->"
+        }
+      ],
+      "navigations": [
+        {
+          "id": 530,
+          "slug": "primary",
+          "title": "Primary",
+          "status": "publish",
+          "date_gmt": "2026-01-01T00:00:00",
+          "content": "<!-- wp:home-link {\"label\":\"\"} /--><!-- wp:navigation-link {\"label\":\"Rock &#8217;n&#8217; roll\",\"url\":\"https://example.test/rock/\"} /-->"
+        },
+        {
+          "id": 531,
+          "slug": "",
+          "title": "Untitled",
+          "status": "publish",
+          "date_gmt": "2026-01-01T00:00:00",
+          "content": "<!-- wp:navigation-link {\"label\":\"Blog\",\"url\":\"https://example.test/blog/\",\"kind\":\"post-type\",\"type\":\"page\",\"id\":8} /-->"
+        }
+      ],
+      "expect": {
+        "menus": [
+          {
+            "slug": "primary-nav",
+            "name": "Primary",
+            "locations": [
+              "header"
+            ],
+            "items": [
+              {
+                "title": "Home",
+                "url": "https://example.test/",
+                "parent": []
+              },
+              {
+                "title": "Rock ’n’ roll",
+                "url": "https://example.test/rock/",
+                "parent": []
+              }
+            ]
+          },
+          {
+            "slug": "navigation-531",
+            "name": "Untitled",
+            "items": [
+              {
+                "title": "Blog",
+                "url": "https://example.test/blog/",
+                "parent": []
+              }
+            ]
+          },
+          {
+            "slug": "footer-navigation-2",
+            "name": "Footer navigation",
+            "locations": [
+              "footer"
+            ],
+            "items": [
+              {
+                "title": "Tips & tricks",
+                "url": "https://example.test/tips/",
+                "parent": []
+              },
+              {
+                "title": "News",
+                "url": "https://example.test/category/news/",
+                "parent": []
+              },
+              {
+                "title": "Astro",
+                "url": "https://example.test/tag/astro/",
+                "parent": []
+              },
+              {
+                "title": "About",
+                "url": "https://example.test/about/",
+                "parent": []
+              }
+            ]
+          }
+        ],
+        "dropped": 0
+      }
+    },
+    {
+      "name": "An inline navigation whose every link is left out is no menu, but its links are counted",
+      "templates": [
+        {
+          "slug": "index",
+          "content": "<!-- wp:template-part {\"slug\":\"footer\",\"theme\":\"fixture\"} /-->"
+        }
+      ],
+      "parts": [
+        {
+          "slug": "footer",
+          "area": "footer",
+          "content": "<!-- wp:navigation --><!-- wp:navigation-link {\"label\":\"Draft\",\"url\":\"https://example.test/draft/\",\"kind\":\"post-type\",\"type\":\"page\",\"id\":40} /--><!-- /wp:navigation -->"
+        }
+      ],
+      "navigations": [],
+      "expect": {
+        "menus": [],
+        "dropped": 1
+      }
+    }
+  ]
+}

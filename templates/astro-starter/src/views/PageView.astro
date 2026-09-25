@@ -8,6 +8,7 @@ import Prose from '../components/kit/prose/Prose.astro'
 import StudioForm from '../components/studio/StudioForm.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { getStrings, imageOf, type Page } from '../lib/content'
+import { publicHtml } from '../lib/links'
 import { breadcrumbLd, summarize } from '../lib/seo'
 
 interface Props {
@@ -19,12 +20,13 @@ interface Props {
 
 const { page, trail, isHome } = Astro.props
 const { data } = page
-const [cover, t] = await Promise.all([data.cover ? getEntry(data.cover) : undefined, getStrings()])
+const [cover, t, body] = await Promise.all([data.cover ? getEntry(data.cover) : undefined, getStrings(), publicHtml(data.body)])
 const origin = Astro.site ?? Astro.url
 const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
 ---
 <BaseLayout
-  title={data.seo?.title ?? (isHome ? undefined : data.title)}
+  title={isHome ? undefined : data.title}
+  fullTitle={data.seo?.title}
   description={data.seo?.description ?? data.excerpt ?? summarize(data.body)}
   image={data.seo?.image ?? cover?.data.url}
   canonical={data.seo?.canonical}
@@ -39,9 +41,9 @@ const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
         <Breadcrumb items={trail.map(crumb => ({ label: crumb.title, href: crumb.href }))} current={data.title} label={t('nav.breadcrumb')} />
       </div>
     )}
-    {!isHome && <h1 class="mb-10 text-4xl leading-tight font-bold tracking-tight text-balance md:text-5xl">{data.title}</h1>}
+    {!isHome && <h1 class="mb-10 text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{data.title}</h1>}
     {cover && <KitImage image={imageOf(cover)} priority sizes="(min-width: 768px) 768px, 100vw" class="mb-10 w-full rounded-xl" />}
-    {data.body && <Prose html={data.body} />}
+    {body && <Prose html={body} />}
     {data.form && <StudioForm model={data.form} class="mt-12" />}
   </article>
 </BaseLayout>

@@ -33,6 +33,16 @@ the Contentrain field definition and value both importers must write
 unchanged and pins the commit it copied; a mapping change bumps
 `ACF_MAPPING_VERSION` and the file's `mapping_version` together.
 
+# Menu parity fixture
+
+`menu-parity.json` is owned here and copied by the Bridge, like the ACF one.
+Each case is a block theme's templates, template parts and `wp_navigation`
+posts, and the menus both importers must export from them (wp-import's
+`blockMenus`, the Bridge's `Menus::from_blocks`): slug, name, locations and
+each item's title, address and ancestors. `public` is what the importer read
+and proved public; the file's `rules` state what is compared. The Bridge
+copies the file unchanged and pins the commit it copied.
+
 # Redirect parity fixture
 
 `redirect-parity.json` is owned here and copied by the Bridge, like the ACF one.
