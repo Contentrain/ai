@@ -89,12 +89,33 @@ function hiddenItems(items: RestMenuItem[], drop: (i: RestMenuItem) => boolean):
   return { gone: new Set(parentOf.keys()), lift }
 }
 
+/**
+ * The post a plain permalink names (`/?page_id=14`, `/?p=14`) on this site: a custom link typed by hand carries no
+ * post id, but it points at a post all the same, and its label is often that post's title.
+ */
+export function plainPostId(url: string | undefined, origin: string): number | undefined {
+  if (!url || !url.includes('?')) return undefined
+  try {
+    const u = new URL(url, `${origin}/`)
+    if (u.origin !== new URL(origin).origin) return undefined
+    const id = Number(u.searchParams.get('page_id') ?? u.searchParams.get('p'))
+    return Number.isSafeInteger(id) && id > 0 ? id : undefined
+  } catch { return undefined }
+}
+
 /** Classic menus and their items; each menu names the theme locations it is assigned to. `dropped` counts left-out items. */
 export function classicMenus(menus: RestMenu[], items: RestMenuItem[], ctx: MenuContext, dropped = { count: 0 }): RawMenu[] {
   const out: RawMenu[] = []
   for (const m of [...menus].toSorted((a, b) => a.id - b.id)) {
     const all = items.filter((i) => i.menus === m.id).toSorted((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0) || a.id - b.id)
-    const { gone, lift } = hiddenItems(all, (i) => (i.status ?? 'publish') !== 'publish' || (i.type === 'post_type' && !(i.object_id && ctx.postSlug(i.object_id))))
+    const hidden = (i: RestMenuItem): boolean => {
+      if ((i.status ?? 'publish') !== 'publish') return true
+      if (i.type === 'post_type') return !(i.object_id && ctx.postSlug(i.object_id))
+      // A custom link to `?page_id=` / `?p=` names a post: the same proof applies.
+      const id = plainPostId(i.url, ctx.origin)
+      return id !== undefined && !ctx.postSlug(id)
+    }
+    const { gone, lift } = hiddenItems(all, hidden)
     dropped.count += gone.size
     const own = all.filter((i) => !gone.has(i.id))
     const ids = new Set(own.map((i) => i.id))
@@ -206,8 +227,10 @@ function blockItems(tree: Block[], ctx: MenuContext, nextId: () => number, dropp
       if (b.name === 'core/navigation-link' || b.name === 'core/navigation-submenu') {
         const kind = KIND[str(a.kind) ?? ''] ?? (str(a.type) === 'category' || str(a.type) === 'tag' || str(a.type) === 'post_tag' ? 'taxonomy' : a.id ? 'post_type' : 'custom')
         const object = kind === 'taxonomy' && str(a.type) === 'tag' ? 'post_tag' : str(a.type)
-        // A link to a post not proven visible is left out (fail-closed); its children show in its place.
-        if (kind === 'post_type' && typeof a.id === 'number' && !ctx.postSlug(a.id)) {
+        // A link to a post not proven visible is left out (fail-closed); its children show in its place. A custom link
+        // to `?page_id=` / `?p=` names a post too.
+        const postId = kind === 'post_type' && typeof a.id === 'number' ? a.id : kind === 'custom' ? plainPostId(str(a.url), ctx.origin) : undefined
+        if (postId !== undefined && !ctx.postSlug(postId)) {
           dropped.count++
           walk(b.children, parent)
           continue

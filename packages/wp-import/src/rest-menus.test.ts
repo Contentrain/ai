@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { blockMenus, classicMenus, inlineMenus, navigationItems, navigationLocations, parseBlocks, usedParts, type MenuContext } from './rest-menus'
+import { blockMenus, classicMenus, inlineMenus, navigationItems, navigationLocations, parseBlocks, plainPostId, usedParts, type MenuContext } from './rest-menus'
 import { fetchRestRawIR, parseWxr, rawToContentrain } from './index'
 import { FIXTURE } from './wxr.test'
 
@@ -186,6 +186,29 @@ describe('unpublished targets never reach a menu', () => {
     expect(items.map((i) => [i.title, i.parent])).toEqual([['Team', null]])
     expect(dropped.count).toBe(2)
     expect(JSON.stringify(items)).not.toMatch(/Secret|secret-plan/)
+  })
+})
+
+describe('custom links to a plain permalink', () => {
+  it('name the post they point at, on this site only', () => {
+    expect(plainPostId('/?page_id=14', ctx.origin)).toBe(14)
+    expect(plainPostId('https://s.example/?p=10&preview=true', ctx.origin)).toBe(10)
+    expect(plainPostId('https://other.example/?p=10', ctx.origin)).toBeUndefined()
+    expect(plainPostId('/about/', ctx.origin)).toBeUndefined()
+    expect(plainPostId('/?s=bread', ctx.origin)).toBeUndefined()
+  })
+
+  it('are left out when that post is not proven public — block and classic menus alike', () => {
+    let n = 0
+    const dropped = { count: 0 }
+    const block = navigationItems('<!-- wp:navigation-link {"label":"Secret plan","url":"/?page_id=14","kind":"custom"} /--><!-- wp:navigation-link {"label":"About","url":"/?page_id=11","kind":"custom"} /--><!-- wp:navigation-link {"label":"Search","url":"/?s=bread"} /-->', ctx, () => -++n, dropped)
+    expect(block.map((i) => i.title)).toEqual(['About', 'Search'])
+    const classic = classicMenus([{ id: 1, slug: 'main', name: 'Main' }], [
+      { id: 20, menus: 1, type: 'custom', url: 'https://s.example/?p=99', title: { raw: 'Unreleased post' }, menu_order: 1 },
+      { id: 21, menus: 1, type: 'custom', url: 'https://s.example/?p=10', title: { raw: 'One' }, menu_order: 2 },
+    ], ctx, dropped)
+    expect(classic[0]!.items.map((i) => i.title)).toEqual(['One'])
+    expect(dropped.count).toBe(2)
   })
 })
 
