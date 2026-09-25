@@ -46,6 +46,11 @@ export interface ImportReport {
    * put that text on a public site. Publish only after deciding what to show.
    */
   password_protected_drafts: number
+  /**
+   * The source named no site title (no REST index name, no WXR channel title): the `site` entry has no
+   * `title`. The field stays required, so the store says what is missing rather than inventing a name.
+   */
+  site_title_missing: boolean
 }
 
 export interface ContentrainResult {
@@ -143,6 +148,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     locales,
     translation_groups: translationGroups,
     password_protected_drafts: 0,
+    site_title_missing: false,
   }
   const importMeta = (status: string, extra: Partial<Meta> = {}): Meta => ({
     status,
@@ -666,10 +672,11 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     },
   })
   siteEntry = pick(
-    { title: strip(raw.site.title) || 'Site', tagline: raw.site.description, url: raw.site.url, language: raw.site.language },
+    { title: strip(raw.site.title), tagline: raw.site.description, url: raw.site.url, language: raw.site.language },
     new Set(['title', 'tagline', 'url', 'language']),
   )
   siteMeta = importMeta('published')
+  report.site_title_missing = !siteEntry.title
   const vocabTerms: Record<string, Record<string, string>> = {}
   for (const m of menus) {
     for (const i of m.items) {
