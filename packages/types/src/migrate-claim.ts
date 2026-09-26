@@ -275,7 +275,13 @@ export function validateMigrateStudioClaim(input: unknown, options: { now?: numb
   return { ok: true, claim: rest as unknown as MigrateStudioClaim, warnings }
 }
 
-/** Shape-only type guard (no clock check). The signature is the consumer's job. */
+/**
+ * Shape-only type guard (no clock check). The signature is the consumer's job. Stricter than
+ * `validateMigrateStudioClaim`: a claim whose `comments_export` would be dropped is `false` here,
+ * since the guard narrows the input itself, malformed export included. To keep such a claim, use
+ * `result.claim` from `validateMigrateStudioClaim`.
+ */
 export function isMigrateStudioClaim(input: unknown): input is MigrateStudioClaim {
-  return validateMigrateStudioClaim(input).ok
+  const result = validateMigrateStudioClaim(input)
+  return result.ok && !result.warnings
 }
