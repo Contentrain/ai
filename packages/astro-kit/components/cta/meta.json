@@ -11,10 +11,10 @@
     "tone": { "options": ["default", "muted", "inverse", "accent"], "default": "accent", "description": "Background. On accent, primary buttons are drawn in the secondary style so they stay visible." }
   },
   "props": {
-    "heading": { "type": "string", "required": true, "description": "The call's heading (Divi CTA title, Elementor call-to-action title)." },
-    "body": { "type": "text", "description": "One or two sentences under the heading." },
-    "actions": { "type": "array", "required": true, "items": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true }, "newTab": { "type": "boolean" }, "style": { "type": "select", "options": ["primary", "secondary", "ghost"] } } }, "description": "Buttons, in order; usually one." },
-    "id": { "type": "string", "description": "Anchor id of the section; the heading gets `<id>-title`." }
+    "heading": { "type": "string", "label": "Heading", "required": true, "description": "The call's heading (Divi CTA title, Elementor call-to-action title)." },
+    "body": { "type": "text", "label": "Text", "description": "One or two sentences under the heading." },
+    "actions": { "type": "array", "label": "Buttons", "required": true, "items": { "type": "object", "fields": { "label": { "type": "string", "label": "Label", "required": true, "description": "The button text." }, "href": { "type": "url", "label": "Link", "required": true, "description": "Where the button goes: a page on this site or a full address." }, "newTab": { "type": "boolean", "label": "Open in a new tab", "description": "Open the link in a new tab (an external site the reader should not leave for)." }, "style": { "type": "select", "label": "Style", "options": ["primary", "secondary", "ghost"], "description": "primary for the main action, secondary or ghost for the ones beside it." } } }, "description": "Buttons, in order; usually one." },
+    "id": { "type": "string", "content": false, "description": "Anchor id of the section; the heading gets `<id>-title`." }
   },
   "slots": {},
   "js": "none",

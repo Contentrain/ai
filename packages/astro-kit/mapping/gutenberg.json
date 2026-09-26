@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "gutenberg",
-  "version": "4",
+  "version": "5",
   "fallback": "prose",
   "rules": [
     {
@@ -96,7 +96,8 @@
         "title": "dom:h2,h3,h4",
         "text": "dom:p",
         "href": "dom:a@href",
-        "image": "img:img"
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt"
       }
     },
     {
@@ -207,7 +208,8 @@
       "into": "slides",
       "each": "figure.wp-block-image",
       "item": {
-        "image": "img:img",
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
         "text": "dom:figcaption"
       }
     },
@@ -253,7 +255,8 @@
       "into": "items",
       "each": "figure.wp-block-image",
       "item": {
-        "image": "img:img",
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
         "caption": "dom:figcaption"
       }
     },

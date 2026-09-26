@@ -11,11 +11,11 @@
     "open": { "options": ["popover", "link", "none"], "default": "popover", "description": "popover: the image opens large in place (Popover API; Escape or a click outside closes it). link: the thumbnail links to the image file (the WordPress 'link to media file'). none: images only." }
   },
   "props": {
-    "items": { "type": "array", "required": true, "items": { "type": "object", "fields": { "image": { "type": "object", "required": true, "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } } }, "caption": { "type": "string" } } }, "description": "The images in order (core/gallery inner images, Elementor gallery items, Divi gallery_ids)." },
-    "heading": { "type": "string", "description": "Section heading above the images." },
-    "closeLabel": { "type": "string", "description": "Text of the viewer's close button (ui-strings gallery.close)." },
-    "tone": { "type": "select", "options": ["default", "muted", "inverse", "accent"], "description": "Section background." },
-    "id": { "type": "string", "description": "Section id, unique per page: viewer ids derive from it (`<id>-image-<n>`)." }
+    "items": { "type": "array", "label": "Images", "required": true, "items": { "type": "object", "fields": { "image": { "type": "image", "label": "Image", "required": true, "description": "The image." }, "imageAlt": { "type": "string", "label": "Image description", "description": "What the image shows, for readers who cannot see it." }, "caption": { "type": "string", "label": "Caption", "description": "Caption under the enlarged image." } } }, "description": "The images in order (core/gallery inner images, Elementor gallery items, Divi gallery_ids)." },
+    "heading": { "type": "string", "label": "Heading", "description": "Section heading above the images." },
+    "closeLabel": { "type": "string", "content": false, "description": "Text of the viewer's close button (ui-strings gallery.close)." },
+    "tone": { "type": "select", "options": ["default", "muted", "inverse", "accent"], "content": false, "description": "Section background." },
+    "id": { "type": "string", "content": false, "description": "Section id, unique per page: viewer ids derive from it (`<id>-image-<n>`)." }
   },
   "slots": {},
   "js": "none",

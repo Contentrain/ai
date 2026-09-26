@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "elementor",
-  "version": "5",
+  "version": "6",
   "fallback": "prose",
   "defaults": {
     "elementor/video": {
@@ -89,7 +89,8 @@
         "title": "dom:.elementor-image-box-title",
         "text": "dom:.elementor-image-box-description",
         "href": "dom:a@href",
-        "image": "img:img"
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt"
       }
     },
     {
@@ -172,7 +173,8 @@
       "into": "slides",
       "each": ".swiper-slide:not(.swiper-slide-duplicate)",
       "item": {
-        "image": "img:img",
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
         "text": "dom:figcaption"
       }
     },
@@ -189,7 +191,8 @@
       "into": "slides",
       "each": ".swiper-slide:not(.swiper-slide-duplicate)",
       "item": {
-        "image": "img:img"
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt"
       }
     },
     {
@@ -207,7 +210,8 @@
       "item": {
         "title": "dom:.elementor-slide-heading",
         "text": "dom:.elementor-slide-description",
-        "action": "link:.elementor-slide-button"
+        "ctaLabel": "dom:.elementor-slide-button",
+        "ctaHref": "dom:.elementor-slide-button@href"
       }
     },
     {
@@ -272,7 +276,8 @@
         "quote": "dom:.elementor-testimonial-content",
         "name": "dom:.elementor-testimonial-name",
         "role": "dom:.elementor-testimonial-job",
-        "avatar": "img:.elementor-testimonial-image img"
+        "avatar": "img:.elementor-testimonial-image img@src",
+        "avatarAlt": "img:.elementor-testimonial-image img@alt"
       }
     },
     {
@@ -284,7 +289,8 @@
       "into": "items",
       "each": ".gallery-item",
       "item": {
-        "image": "img:img",
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
         "caption": "dom:.gallery-caption"
       }
     },
@@ -297,7 +303,8 @@
       "into": "items",
       "each": ".e-gallery-item",
       "item": {
-        "image": "img:img",
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
         "caption": "dom:.elementor-gallery-item__title"
       }
     },

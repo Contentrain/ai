@@ -272,22 +272,48 @@ describe('validateProjectPlan', () => {
     page.page = 'posts'
     const { errors } = validateProjectPlan(p)
     expect(errors).toEqual(expect.arrayContaining([
-      'route about section 1: rule jew is not <builder>:section:<id>, opus or prose',
+      'route about section 1: rule jew is not <builder>:section:<id>, <builder>:element:<match>, opus or prose',
       'route about section 1: page-about has no field story',
       'route about: section id hero is used twice',
       'model page-about extraction from core/cover fills story, which is not an object field',
-      'route page: page posts is a collection, not a singleton',
-      'route page: a page singleton needs body composed',
+      'route page: page posts is a collection; a page is a singleton, or a collection that is the route\'s source',
+      'route page: a page model needs body composed',
     ]))
   })
 
-  it('keeps a section field at depth 2 and its keys the component\'s props', () => {
+  it('takes fixed props and element rules on a section, and a template route\'s own entry', () => {
+    const p = plan()
+    p.models.push({ id: 'service-pages', kind: 'collection', origin: 'plan', name: 'Service pages', domain: 'pages', title_field: 'title', fields: {
+      title: { type: 'string', required: true },
+      hero: { type: 'object', fields: { heading: { type: 'string', required: true }, image_alt: { type: 'string' } } },
+    }, extract: [{ from: 'elementor/image-box', pages: [21, 22], entryId: 'page-slug', field: 'hero', rule: 'elementor:element:elementor/image-box', fields: { heading: 'dom:h3' } }] })
+    p.components.push({ id: 'Split', origin: 'site', props: { heading: { type: 'string', required: true }, imageAlt: { type: 'string' }, tone: { type: 'string' } }, brief: { template: 't2', regions: ['0.0'] } })
+    p.routes.push({ id: 'service', kind: 'page', pattern: '/services/:slug/', template: 't2', source: { model: 'service-pages' }, page: 'service-pages', body: 'composed', sections: [
+      { id: 'hero', rule: 'elementor:element:elementor/image-box', component: 'Split', bind: { kind: 'section', model: 'service-pages', field: 'hero', props: { tone: 'const:muted' } } },
+    ] })
+    expect(validateProjectPlan(p)).toEqual({ errors: [], warnings: [] })
+
+    const hero = p.routes.at(-1)!.sections[0]!
+    hero.bind = { kind: 'section', model: 'service-pages', field: 'hero', props: { tone: 'muted' as never, width: 'const:wide' } }
+    hero.rule = 'gutenberg:element:core/template-part:header'
+    p.routes.at(-1)!.source = { model: 'pages' }
+    const { errors } = validateProjectPlan(p)
+    expect(errors).toEqual(expect.arrayContaining([
+      'route service section 0: section of service-pages names no entry and service-pages is neither a singleton nor this route\'s page',
+      'route service section 0: tone = muted is not a plan value (field: media: ref: href: term: ui: site: menu: page: const:)',
+      'route service section 0: Split has no prop width',
+      'route service: page service-pages is a collection; a page is a singleton, or a collection that is the route\'s source',
+    ]))
+    expect(errors.join('\n')).not.toContain('rule')
+  })
+
+  it('keeps a section field at depth 2 and its keys the component\'s props in snake_case', () => {
     const p = plan()
     p.models.push({ id: 'page-home', kind: 'singleton', origin: 'plan', name: 'Home', domain: 'pages', fields: {
       services: { type: 'object', fields: { items: { type: 'array', items: { type: 'object', fields: { title: { type: 'string' }, image: { type: 'object', fields: { src: { type: 'image' } } } } } } } },
-      intro: { type: 'object', fields: { text: { type: 'markdown' } } },
+      intro: { type: 'object', fields: { text: { type: 'markdown' }, image_alt: { type: 'string' }, imageAlt: { type: 'string' } } },
     } })
-    p.components.push({ id: 'Intro', origin: 'site', props: { body: { type: 'markdown' } }, brief: { template: 't4', regions: ['0.0'] } })
+    p.components.push({ id: 'Intro', origin: 'site', props: { body: { type: 'markdown' }, imageAlt: { type: 'string' } }, brief: { template: 't4', regions: ['0.0'] } })
     p.routes[0]!.sections.push(
       { id: 'services', component: 'FeatureGrid', bind: { kind: 'section', model: 'page-home', field: 'services' } },
       { id: 'intro', component: 'Intro', bind: { kind: 'section', model: 'page-home', field: 'intro' } },
@@ -295,8 +321,10 @@ describe('validateProjectPlan', () => {
     const { errors } = validateProjectPlan(p)
     expect(errors).toEqual(expect.arrayContaining([
       'route home section 1: page-home.services nests deeper than 2 (an object inside a list item\'s object)',
-      'route home section 2: Intro has no prop text (field page-home.intro.text)',
+      'route home section 2: Intro has no prop for field page-home.intro.text (fields are the props in snake_case)',
+      'route home section 2: Intro has no prop for field page-home.intro.imageAlt (fields are the props in snake_case)',
     ]))
+    expect(errors.join('\n')).not.toContain('intro.image_alt')
   })
 
   it('counts object levels, not lists', () => {

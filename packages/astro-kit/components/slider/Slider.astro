@@ -6,7 +6,7 @@
 import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
 import KitImage from '../_shared/KitImage.astro'
-import type { ActionInput, ImageInput } from '../_shared/types'
+import { imageOf, type ActionInput, type ImageInput, type ImageSource } from '../_shared/types'
 
 const slider = tv({
   slots: {
@@ -36,9 +36,15 @@ const slider = tv({
 })
 
 interface Slide {
-  image: ImageInput
+  /** The image's address (or, until 0.7, an `ImageInput`). */
+  image: ImageSource
+  imageAlt?: string | undefined
   title?: string | undefined
   text?: string | undefined
+  /** The slide's link, flat so a page stays within Contentrain's nesting depth. */
+  ctaLabel?: string | undefined
+  ctaHref?: string | undefined
+  /** Until 0.7: the same link as one object. */
   action?: ActionInput | undefined
 }
 
@@ -58,7 +64,12 @@ interface Props {
   caption?: 'below' | 'overlay' | undefined
 }
 
-const { slides, label, prevLabel = 'Previous slide', nextLabel = 'Next slide', slideLabel = 'Slide', ofLabel = 'of', loop = false, perView = '1', aspect, caption } = Astro.props
+const { slides: given, label, prevLabel = 'Previous slide', nextLabel = 'Next slide', slideLabel = 'Slide', ofLabel = 'of', loop = false, perView = '1', aspect, caption } = Astro.props
+const slides = given.flatMap((slide) => {
+  const image = imageOf(slide.image, slide.imageAlt)
+  const action = slide.action ?? (slide.ctaLabel && slide.ctaHref ? { label: slide.ctaLabel, href: slide.ctaHref } : undefined)
+  return image ? [{ ...slide, image, action }] : []
+}) satisfies Array<{ image: ImageInput, action?: ActionInput | undefined }>
 const slots = slider({ perView, aspect, caption })
 const sizes = perView === '1' ? '(min-width: 1216px) 1152px, 100vw' : perView === '2' ? '(min-width: 640px) 50vw, 85vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 85vw'
 // Arrows from sm up; on phones the carousel is swiped and the dots show the position.

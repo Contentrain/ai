@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "divi",
-  "version": "4",
+  "version": "5",
   "fallback": "prose",
   "rules": [
     {
@@ -48,7 +48,8 @@
         "title": "dom:.et_pb_module_header",
         "text": "dom:.et_pb_blurb_description",
         "href": "dom:.et_pb_module_header a@href",
-        "image": "img:.et_pb_main_blurb_image img"
+        "image": "img:.et_pb_main_blurb_image img@src",
+        "imageAlt": "img:.et_pb_main_blurb_image img@alt"
       }
     },
     {
@@ -60,7 +61,8 @@
         "title": "dom:.et_pb_module_header",
         "eyebrow": "dom:.et_pb_member_position",
         "text": "dom:.et_pb_team_member_description",
-        "image": "img:.et_pb_team_member_image img"
+        "image": "img:.et_pb_team_member_image img@src",
+        "imageAlt": "img:.et_pb_team_member_image img@alt"
       }
     },
     {
@@ -129,8 +131,10 @@
       "item": {
         "title": "dom:.et_pb_slide_title",
         "text": "dom:.et_pb_slide_content",
-        "action": "link:.et_pb_more_button",
-        "image": "img:.et_pb_slide_image img"
+        "ctaLabel": "dom:.et_pb_more_button",
+        "ctaHref": "dom:.et_pb_more_button@href",
+        "image": "img:.et_pb_slide_image img@src",
+        "imageAlt": "img:.et_pb_slide_image img@alt"
       }
     },
     {
@@ -148,8 +152,10 @@
       "item": {
         "title": "dom:.et_pb_slide_title",
         "text": "dom:.et_pb_slide_content",
-        "action": "link:.et_pb_more_button",
-        "image": "img:.et_pb_slide_image img"
+        "ctaLabel": "dom:.et_pb_more_button",
+        "ctaHref": "dom:.et_pb_more_button@href",
+        "image": "img:.et_pb_slide_image img@src",
+        "imageAlt": "img:.et_pb_slide_image img@alt"
       }
     },
     {
@@ -253,7 +259,8 @@
         "quote": "dom:.et_pb_testimonial_content",
         "name": "dom:.et_pb_testimonial_author",
         "role": "dom:.et_pb_testimonial_position",
-        "avatar": "img:.et_pb_testimonial_portrait img"
+        "avatar": "img:.et_pb_testimonial_portrait img@src",
+        "avatarAlt": "img:.et_pb_testimonial_portrait img@alt"
       }
     },
     {
@@ -265,7 +272,8 @@
       "into": "items",
       "each": ".et_pb_gallery_item",
       "item": {
-        "image": "img:img",
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
         "caption": "dom:.et_pb_gallery_caption"
       }
     },

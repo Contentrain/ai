@@ -8,11 +8,14 @@
 //    astro.config `image.remotePatterns`): fetched at build time when its
 //    size is known, and resized the same way.
 //
+// Without a stored size, the one the migration measured (src/lib/media.ts).
+//
 // Anything else — a vector, a host the site does not allow, a remote image of
 // unknown size — is a plain lazy <img>: nothing is fetched from a host the
 // site did not name.
 import type { ImageMetadata } from 'astro'
 import { Image } from 'astro:assets'
+import { mediaSize } from '../../../lib/media'
 import type { ImageInput } from './types'
 
 interface Props {
@@ -27,7 +30,10 @@ interface Props {
 // Raster files under public/, loaded only when a page shows one.
 const LOCAL = import.meta.glob<ImageMetadata>('/public/**/*.{avif,gif,jpeg,jpg,png,tif,tiff,webp,AVIF,GIF,JPEG,JPG,PNG,TIF,TIFF,WEBP}', { import: 'default' })
 
-const { image, sizes = '100vw', class: className, priority = false } = Astro.props
+const { image: given, sizes = '100vw', class: className, priority = false } = Astro.props
+// Content stores an address; the size the migration measured comes from the site's media table.
+const measured = given.width && given.height ? undefined : mediaSize(given.src)
+const image: ImageInput = measured ? { ...given, ...measured } : given
 const loading = priority ? 'eager' : 'lazy'
 const fetchpriority = priority ? 'high' : 'auto'
 const path = image.src.startsWith('/') && !image.src.startsWith('//') ? image.src.split(/[?#]/)[0]! : undefined

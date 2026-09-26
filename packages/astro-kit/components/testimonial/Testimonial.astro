@@ -5,13 +5,15 @@
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
-import type { ImageInput } from '../_shared/types'
+import { imageOf, type ImageSource } from '../_shared/types'
 
 export interface TestimonialItem {
   quote: string
   name: string
   role?: string | undefined
-  avatar?: ImageInput | undefined
+  /** The portrait's address (or, until 0.7, an `ImageInput`). */
+  avatar?: ImageSource | undefined
+  avatarAlt?: string | undefined
 }
 
 const testimonial = tv({
@@ -57,7 +59,7 @@ const headingId = heading && id ? `${id}-title` : undefined
         <figure class={s.card()}>
           <blockquote class={s.quote()}><p>“{item.quote}”</p></blockquote>
           <figcaption class={s.person()}>
-            {item.avatar && <KitImage image={item.avatar} sizes="48px" class="size-12 shrink-0 rounded-full object-cover" />}
+            {imageOf(item.avatar, item.avatarAlt) && <KitImage image={imageOf(item.avatar, item.avatarAlt)!} sizes="48px" class="size-12 shrink-0 rounded-full object-cover" />}
             <span class="flex flex-col text-left">
               <span class={s.name()}>{item.name}</span>
               {item.role && <span class={s.role()}>{item.role}</span>}

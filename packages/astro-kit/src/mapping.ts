@@ -16,6 +16,7 @@
 //   dom:<selector>        text of the first match inside the element (empty selector: the element)
 //   dom:<selector>@<attr> an attribute of it (`dom:a@href`)
 //   img:<selector>        an image as the kit's `ImageInput` (src, alt, width, height)
+//   img:<selector>@src|@alt  one part of that image, for a list item's flat `image` + `imageAlt` fields
 //   link:<selector>       a link as `{ label, href }`
 //   html:<selector>       inner markup, kept as Markdown (rich text)
 //   class:<cls>=<a>|<b>   <a> when the element, or an ancestor inside the matched element, has class

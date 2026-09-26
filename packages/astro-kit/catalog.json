@@ -162,49 +162,51 @@
       "props": {
         "title": {
           "type": "string",
+          "label": "Heading",
           "description": "Section heading."
         },
         "intro": {
           "type": "text",
+          "label": "Introduction",
           "description": "Paragraph under the heading."
         },
         "items": {
           "type": "array",
+          "label": "Cards",
           "required": true,
           "items": {
             "type": "object",
             "fields": {
               "title": {
                 "type": "string",
-                "required": true
+                "label": "Title",
+                "required": true,
+                "description": "The card heading."
               },
               "text": {
-                "type": "text"
+                "type": "text",
+                "label": "Text",
+                "description": "A sentence or two under the heading."
               },
               "href": {
-                "type": "url"
+                "type": "url",
+                "label": "Link",
+                "description": "Makes the whole card a link."
               },
               "image": {
-                "type": "object",
-                "fields": {
-                  "src": {
-                    "type": "image",
-                    "required": true
-                  },
-                  "alt": {
-                    "type": "string",
-                    "required": true
-                  },
-                  "width": {
-                    "type": "integer"
-                  },
-                  "height": {
-                    "type": "integer"
-                  }
-                }
+                "type": "image",
+                "label": "Image",
+                "description": "Image on top of the card."
+              },
+              "imageAlt": {
+                "type": "string",
+                "label": "Image description",
+                "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
               },
               "eyebrow": {
-                "type": "string"
+                "type": "string",
+                "label": "Eyebrow",
+                "description": "Short line above the title (a category, a role, a price)."
               }
             }
           },
@@ -215,6 +217,7 @@
           "min": 2,
           "max": 3,
           "default": 2,
+          "content": false,
           "description": "Level of the section heading; card titles are one below."
         }
       },
@@ -244,7 +247,18 @@
       "a11y": "A list of cards; the whole card is clickable through a stretched link on its title, so screen readers hear one link per card. The section is labelled by its heading.",
       "files": [
         "CardGrid.astro"
-      ]
+      ],
+      "contentFields": {
+        "title": "title",
+        "intro": "intro",
+        "items": "items",
+        "items[].title": "items[].title",
+        "items[].text": "items[].text",
+        "items[].href": "items[].href",
+        "items[].image": "items[].image",
+        "items[].imageAlt": "items[].image_alt",
+        "items[].eyebrow": "items[].eyebrow"
+      }
     },
     {
       "id": "contact-form",
@@ -279,31 +293,41 @@
         "model": {
           "type": "string",
           "required": true,
+          "content": false,
           "description": "The Studio model submissions are saved to — the form's fields are that model's form settings (from the plugin form's fields at migration)."
         },
         "heading": {
           "type": "string",
+          "label": "Heading",
           "description": "Section heading."
         },
         "intro": {
           "type": "text",
+          "label": "Introduction",
           "description": "A line or two above the details."
         },
         "details": {
           "type": "array",
+          "label": "Contact details",
           "items": {
             "type": "object",
             "fields": {
               "label": {
                 "type": "string",
-                "required": true
+                "label": "Label",
+                "required": true,
+                "description": "What the detail is (Phone, Email, Address)."
               },
               "value": {
                 "type": "string",
-                "required": true
+                "label": "Value",
+                "required": true,
+                "description": "The detail as shown."
               },
               "href": {
-                "type": "url"
+                "type": "url",
+                "label": "Link",
+                "description": "A tel:, mailto: or map link for it."
               }
             }
           },
@@ -311,6 +335,7 @@
         },
         "id": {
           "type": "string",
+          "content": false,
           "description": "Section id; the heading gets `<id>-title`."
         }
       },
@@ -334,7 +359,15 @@
       "a11y": "Contact details are a description list; links say what they open. The form's labels, errors and focus handling are Studio's form runtime (FormMount). The section is labelled by its heading.",
       "files": [
         "ContactForm.astro"
-      ]
+      ],
+      "contentFields": {
+        "heading": "heading",
+        "intro": "intro",
+        "details": "details",
+        "details[].label": "details[].label",
+        "details[].value": "details[].value",
+        "details[].href": "details[].href"
+      }
     },
     {
       "id": "cta",
@@ -378,37 +411,48 @@
       "props": {
         "heading": {
           "type": "string",
+          "label": "Heading",
           "required": true,
           "description": "The call's heading (Divi CTA title, Elementor call-to-action title)."
         },
         "body": {
           "type": "text",
+          "label": "Text",
           "description": "One or two sentences under the heading."
         },
         "actions": {
           "type": "array",
+          "label": "Buttons",
           "required": true,
           "items": {
             "type": "object",
             "fields": {
               "label": {
                 "type": "string",
-                "required": true
+                "label": "Label",
+                "required": true,
+                "description": "The button text."
               },
               "href": {
                 "type": "url",
-                "required": true
+                "label": "Link",
+                "required": true,
+                "description": "Where the button goes: a page on this site or a full address."
               },
               "newTab": {
-                "type": "boolean"
+                "type": "boolean",
+                "label": "Open in a new tab",
+                "description": "Open the link in a new tab (an external site the reader should not leave for)."
               },
               "style": {
                 "type": "select",
+                "label": "Style",
                 "options": [
                   "primary",
                   "secondary",
                   "ghost"
-                ]
+                ],
+                "description": "primary for the main action, secondary or ghost for the ones beside it."
               }
             }
           },
@@ -416,6 +460,7 @@
         },
         "id": {
           "type": "string",
+          "content": false,
           "description": "Anchor id of the section; the heading gets `<id>-title`."
         }
       },
@@ -436,7 +481,16 @@
       "a11y": "A labelled region (aria-labelledby its h2). Buttons are links with their own text. Accent tone swaps the primary button style so its contrast holds.",
       "files": [
         "Cta.astro"
-      ]
+      ],
+      "contentFields": {
+        "heading": "heading",
+        "body": "body",
+        "actions": "actions",
+        "actions[].label": "actions[].label",
+        "actions[].href": "actions[].href",
+        "actions[].newTab": "actions[].new_tab",
+        "actions[].style": "actions[].style"
+      }
     },
     {
       "id": "embed",
@@ -579,17 +633,22 @@
       "props": {
         "items": {
           "type": "array",
+          "label": "Questions",
           "required": true,
           "items": {
             "type": "object",
             "fields": {
               "question": {
                 "type": "string",
-                "required": true
+                "label": "Question",
+                "required": true,
+                "description": "The question, as the visitor would ask it."
               },
               "answer": {
                 "type": "richtext",
-                "required": true
+                "label": "Answer",
+                "required": true,
+                "description": "The answer; links and lists allowed."
               }
             }
           },
@@ -597,25 +656,30 @@
         },
         "heading": {
           "type": "string",
+          "label": "Heading",
           "description": "Section heading."
         },
         "exclusive": {
           "type": "boolean",
           "default": false,
+          "content": false,
           "description": "One answer open at a time (Elementor accordion, Divi accordion). Off for toggles."
         },
         "openFirst": {
           "type": "boolean",
           "default": false,
+          "content": false,
           "description": "The first answer starts open (Divi open_toggle, Elementor active item 1)."
         },
         "schema": {
           "type": "boolean",
           "default": false,
+          "content": false,
           "description": "Emit FAQPage JSON-LD built from these items. Use on at most one FAQ per page, and only when the page is really a FAQ."
         },
         "id": {
           "type": "string",
+          "content": false,
           "description": "Section id; also the exclusive group's name."
         }
       },
@@ -642,7 +706,13 @@
       "a11y": "Native <details>/<summary>: keyboard operable and announced as expandable by every screen reader, with no script to fail. The plus icon is decorative. The JSON-LD answer text is the answer with its markup removed.",
       "files": [
         "Faq.astro"
-      ]
+      ],
+      "contentFields": {
+        "items": "items",
+        "items[].question": "items[].question",
+        "items[].answer": "items[].answer",
+        "heading": "heading"
+      }
     },
     {
       "id": "footer",
@@ -813,32 +883,26 @@
       "props": {
         "items": {
           "type": "array",
+          "label": "Images",
           "required": true,
           "items": {
             "type": "object",
             "fields": {
               "image": {
-                "type": "object",
+                "type": "image",
+                "label": "Image",
                 "required": true,
-                "fields": {
-                  "src": {
-                    "type": "image",
-                    "required": true
-                  },
-                  "alt": {
-                    "type": "string",
-                    "required": true
-                  },
-                  "width": {
-                    "type": "integer"
-                  },
-                  "height": {
-                    "type": "integer"
-                  }
-                }
+                "description": "The image."
+              },
+              "imageAlt": {
+                "type": "string",
+                "label": "Image description",
+                "description": "What the image shows, for readers who cannot see it."
               },
               "caption": {
-                "type": "string"
+                "type": "string",
+                "label": "Caption",
+                "description": "Caption under the enlarged image."
               }
             }
           },
@@ -846,10 +910,12 @@
         },
         "heading": {
           "type": "string",
+          "label": "Heading",
           "description": "Section heading above the images."
         },
         "closeLabel": {
           "type": "string",
+          "content": false,
           "description": "Text of the viewer's close button (ui-strings gallery.close)."
         },
         "tone": {
@@ -860,10 +926,12 @@
             "inverse",
             "accent"
           ],
+          "content": false,
           "description": "Section background."
         },
         "id": {
           "type": "string",
+          "content": false,
           "description": "Section id, unique per page: viewer ids derive from it (`<id>-image-<n>`)."
         }
       },
@@ -888,7 +956,14 @@
       "a11y": "A list of figures. In popover mode each thumbnail is a <button> named by the image's alt (or caption) that opens the viewer; the viewer has a visible close button, and Escape closes it, returning focus to the thumbnail. Captions are <figcaption>s.",
       "files": [
         "Gallery.astro"
-      ]
+      ],
+      "contentFields": {
+        "items": "items",
+        "items[].image": "items[].image",
+        "items[].imageAlt": "items[].image_alt",
+        "items[].caption": "items[].caption",
+        "heading": "heading"
+      }
     },
     {
       "id": "header",
@@ -1108,6 +1183,7 @@
       "props": {
         "heading": {
           "type": "string",
+          "label": "Heading",
           "required": true,
           "description": "The main heading (Cover/Group heading, Elementor heading, Divi header title)."
         },
@@ -1118,39 +1194,51 @@
             "2"
           ],
           "default": "1",
+          "content": false,
           "description": "Heading level: 1 when the hero opens the page, 2 when the page already has an h1."
         },
         "eyebrow": {
           "type": "string",
+          "label": "Eyebrow",
           "description": "Short line above the heading."
         },
         "lead": {
           "type": "text",
+          "label": "Lead",
           "description": "Paragraph under the heading."
         },
         "actions": {
           "type": "array",
+          "label": "Buttons",
           "items": {
             "type": "object",
             "fields": {
               "label": {
                 "type": "string",
-                "required": true
+                "label": "Label",
+                "required": true,
+                "description": "The button text."
               },
               "href": {
                 "type": "url",
-                "required": true
+                "label": "Link",
+                "required": true,
+                "description": "Where the button goes: a page on this site or a full address."
               },
               "newTab": {
-                "type": "boolean"
+                "type": "boolean",
+                "label": "Open in a new tab",
+                "description": "Open the link in a new tab (an external site the reader should not leave for)."
               },
               "style": {
                 "type": "select",
+                "label": "Style",
                 "options": [
                   "primary",
                   "secondary",
                   "ghost"
-                ]
+                ],
+                "description": "primary for the main action, secondary or ghost for the ones beside it."
               }
             }
           },
@@ -1158,26 +1246,36 @@
         },
         "image": {
           "type": "object",
+          "label": "Image",
           "fields": {
             "src": {
               "type": "image",
-              "required": true
+              "label": "Image",
+              "required": true,
+              "description": "The image file."
             },
             "alt": {
               "type": "string",
-              "required": true
+              "label": "Image description",
+              "required": true,
+              "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
             },
             "width": {
-              "type": "integer"
+              "type": "integer",
+              "label": "Width",
+              "description": "Width in pixels, as uploaded."
             },
             "height": {
-              "type": "integer"
+              "type": "integer",
+              "label": "Height",
+              "description": "Height in pixels, as uploaded."
             }
           },
           "description": "Hero image; loaded first (the page's largest image)."
         },
         "id": {
           "type": "string",
+          "content": false,
           "description": "Anchor id of the section; the heading gets `<id>-title`."
         }
       },
@@ -1200,7 +1298,22 @@
       "a11y": "A labelled region (aria-labelledby the heading). One h1 by default; `level: 2` inside pages that already have one. The cover image is decorative when its alt is empty; text sits on an ink scrim for contrast.",
       "files": [
         "Hero.astro"
-      ]
+      ],
+      "contentFields": {
+        "heading": "heading",
+        "eyebrow": "eyebrow",
+        "lead": "lead",
+        "actions": "actions",
+        "actions[].label": "actions[].label",
+        "actions[].href": "actions[].href",
+        "actions[].newTab": "actions[].new_tab",
+        "actions[].style": "actions[].style",
+        "image": "image",
+        "image.src": "image.src",
+        "image.alt": "image.alt",
+        "image.width": "image.width",
+        "image.height": "image.height"
+      }
     },
     {
       "id": "nav",
@@ -1340,11 +1453,13 @@
       "props": {
         "action": {
           "type": "url",
+          "label": "Form address",
           "required": true,
           "description": "The provider's hosted form endpoint (Mailchimp *.list-manage.com/subscribe/post, Kit app.kit.com/forms/<n>/subscriptions, MailerLite assets.mailerlite.com/jsonp/<n>/forms/<n>/subscribe, Brevo *.sibforms.com/serve/, Buttondown buttondown.com/api/emails/embed-subscribe/). At migration the engine reads it from the source form element (`dom:form@action`) into the section's content, where it stays editable in Studio; it never passes through the fact pack or a model."
         },
         "provider": {
           "type": "select",
+          "label": "Email provider",
           "options": [
             "mailchimp",
             "kit",
@@ -1358,44 +1473,54 @@
         },
         "emailName": {
           "type": "string",
+          "label": "Email field name",
           "description": "Field name for the address when the provider is other or names it differently."
         },
         "askName": {
           "type": "boolean",
+          "label": "Ask for a name",
           "default": false,
           "description": "Ask for a first name too, when the provider takes one (the source form had a name field)."
         },
         "heading": {
           "type": "string",
+          "label": "Heading",
           "description": "Section heading."
         },
         "intro": {
           "type": "text",
+          "label": "Introduction",
           "description": "A line or two about the newsletter."
         },
         "note": {
           "type": "string",
+          "label": "Note",
           "description": "Small print under the form (privacy, frequency)."
         },
         "emailLabel": {
           "type": "string",
+          "content": false,
           "description": "ui-strings newsletter.email."
         },
         "nameLabel": {
           "type": "string",
+          "content": false,
           "description": "ui-strings newsletter.name."
         },
         "submitLabel": {
           "type": "string",
+          "content": false,
           "description": "ui-strings newsletter.submit."
         },
         "newTab": {
           "type": "boolean",
           "default": true,
+          "content": false,
           "description": "Open the provider's confirmation page in a new tab (the reader keeps the site)."
         },
         "id": {
           "type": "string",
+          "content": false,
           "description": "Section id, unique per page (two sign-ups on one page need two ids): the heading gets `<id>-title`, the inputs `<id>-email`/`<id>-name`."
         }
       },
@@ -1415,7 +1540,16 @@
       "files": [
         "Newsletter.astro",
         "newsletter.ts"
-      ]
+      ],
+      "contentFields": {
+        "action": "action",
+        "provider": "provider",
+        "emailName": "email_name",
+        "askName": "ask_name",
+        "heading": "heading",
+        "intro": "intro",
+        "note": "note"
+      }
     },
     {
       "id": "pagination",
@@ -1734,88 +1868,76 @@
       "props": {
         "slides": {
           "type": "array",
+          "label": "Slides",
           "required": true,
           "items": {
             "type": "object",
             "fields": {
               "image": {
-                "type": "object",
+                "type": "image",
+                "label": "Image",
                 "required": true,
-                "fields": {
-                  "src": {
-                    "type": "image",
-                    "required": true
-                  },
-                  "alt": {
-                    "type": "string",
-                    "required": true
-                  },
-                  "width": {
-                    "type": "integer"
-                  },
-                  "height": {
-                    "type": "integer"
-                  }
-                }
+                "description": "The slide image."
+              },
+              "imageAlt": {
+                "type": "string",
+                "label": "Image description",
+                "description": "What the image shows, for readers who cannot see it."
               },
               "title": {
-                "type": "string"
+                "type": "string",
+                "label": "Title",
+                "description": "Heading over the slide."
               },
               "text": {
-                "type": "text"
+                "type": "text",
+                "label": "Text",
+                "description": "A line or two under the heading."
               },
-              "action": {
-                "type": "object",
-                "fields": {
-                  "label": {
-                    "type": "string",
-                    "required": true
-                  },
-                  "href": {
-                    "type": "url",
-                    "required": true
-                  },
-                  "newTab": {
-                    "type": "boolean"
-                  },
-                  "style": {
-                    "type": "select",
-                    "options": [
-                      "primary",
-                      "secondary",
-                      "ghost"
-                    ]
-                  }
-                }
+              "ctaLabel": {
+                "type": "string",
+                "label": "Button label",
+                "description": "Button text; the slide has no button without it."
+              },
+              "ctaHref": {
+                "type": "url",
+                "label": "Button link",
+                "description": "Where the button goes."
               }
             }
           },
-          "description": "Slides; image is an ImageInput, action an ActionInput."
+          "description": "Slides: the image's address and text, and an optional link (ctaLabel + ctaHref)."
         },
         "label": {
           "type": "string",
           "required": true,
+          "content": false,
           "description": "Accessible name of the carousel."
         },
         "prevLabel": {
           "type": "string",
+          "content": false,
           "description": "ui-strings slider.prev."
         },
         "nextLabel": {
           "type": "string",
+          "content": false,
           "description": "ui-strings slider.next."
         },
         "slideLabel": {
           "type": "string",
+          "content": false,
           "description": "ui-strings slider.slide."
         },
         "ofLabel": {
           "type": "string",
+          "content": false,
           "description": "ui-strings slider.of."
         },
         "loop": {
           "type": "boolean",
           "default": false,
+          "content": false,
           "description": "Wrap from the last slide to the first."
         }
       },
@@ -1847,7 +1969,16 @@
       "a11y": "WAI-ARIA carousel pattern: a labelled region with aria-roledescription=carousel, slides as labelled groups ('Slide 2 of 5'), labelled previous/next buttons disabled at the ends, and dot buttons marking the current slide. No autoplay; with prefers-reduced-motion slides change without animation. Without JavaScript every slide is reachable by scrolling.",
       "files": [
         "Slider.astro"
-      ]
+      ],
+      "contentFields": {
+        "slides": "slides",
+        "slides[].image": "slides[].image",
+        "slides[].imageAlt": "slides[].image_alt",
+        "slides[].title": "slides[].title",
+        "slides[].text": "slides[].text",
+        "slides[].ctaLabel": "slides[].cta_label",
+        "slides[].ctaHref": "slides[].cta_href"
+      }
     },
     {
       "id": "tabs",
@@ -1975,39 +2106,37 @@
       "props": {
         "items": {
           "type": "array",
+          "label": "Testimonials",
           "required": true,
           "items": {
             "type": "object",
             "fields": {
               "quote": {
                 "type": "text",
-                "required": true
+                "label": "Quote",
+                "required": true,
+                "description": "What the person said, in their words."
               },
               "name": {
                 "type": "string",
-                "required": true
+                "label": "Name",
+                "required": true,
+                "description": "Who said it."
               },
               "role": {
-                "type": "string"
+                "type": "string",
+                "label": "Role",
+                "description": "Their role or company."
               },
               "avatar": {
-                "type": "object",
-                "fields": {
-                  "src": {
-                    "type": "image",
-                    "required": true
-                  },
-                  "alt": {
-                    "type": "string",
-                    "required": true
-                  },
-                  "width": {
-                    "type": "integer"
-                  },
-                  "height": {
-                    "type": "integer"
-                  }
-                }
+                "type": "image",
+                "label": "Photo",
+                "description": "Their photo."
+              },
+              "avatarAlt": {
+                "type": "string",
+                "label": "Photo description",
+                "description": "Who the photo shows; usually their name."
               }
             }
           },
@@ -2015,10 +2144,12 @@
         },
         "heading": {
           "type": "string",
+          "label": "Heading",
           "description": "Section heading above the quotes."
         },
         "id": {
           "type": "string",
+          "content": false,
           "description": "Anchor id of the section; the heading gets `<id>-title`."
         }
       },
@@ -2039,7 +2170,16 @@
       "a11y": "Each quote is a <figure> whose <figcaption> names the speaker; the text is in a <blockquote>. Avatars are decorative when their alt is empty. The section is labelled by its heading when it has one.",
       "files": [
         "Testimonial.astro"
-      ]
+      ],
+      "contentFields": {
+        "items": "items",
+        "items[].quote": "items[].quote",
+        "items[].name": "items[].name",
+        "items[].role": "items[].role",
+        "items[].avatar": "items[].avatar",
+        "items[].avatarAlt": "items[].avatar_alt",
+        "heading": "heading"
+      }
     }
   ]
 }

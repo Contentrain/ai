@@ -42,6 +42,7 @@
   "props": {
     "heading": {
       "type": "string",
+      "label": "Heading",
       "required": true,
       "description": "The main heading (Cover/Group heading, Elementor heading, Divi header title)."
     },
@@ -52,39 +53,51 @@
         "2"
       ],
       "default": "1",
+      "content": false,
       "description": "Heading level: 1 when the hero opens the page, 2 when the page already has an h1."
     },
     "eyebrow": {
       "type": "string",
+      "label": "Eyebrow",
       "description": "Short line above the heading."
     },
     "lead": {
       "type": "text",
+      "label": "Lead",
       "description": "Paragraph under the heading."
     },
     "actions": {
       "type": "array",
+      "label": "Buttons",
       "items": {
         "type": "object",
         "fields": {
           "label": {
             "type": "string",
-            "required": true
+            "label": "Label",
+            "required": true,
+            "description": "The button text."
           },
           "href": {
             "type": "url",
-            "required": true
+            "label": "Link",
+            "required": true,
+            "description": "Where the button goes: a page on this site or a full address."
           },
           "newTab": {
-            "type": "boolean"
+            "type": "boolean",
+            "label": "Open in a new tab",
+            "description": "Open the link in a new tab (an external site the reader should not leave for)."
           },
           "style": {
             "type": "select",
+            "label": "Style",
             "options": [
               "primary",
               "secondary",
               "ghost"
-            ]
+            ],
+            "description": "primary for the main action, secondary or ghost for the ones beside it."
           }
         }
       },
@@ -92,26 +105,36 @@
     },
     "image": {
       "type": "object",
+      "label": "Image",
       "fields": {
         "src": {
           "type": "image",
-          "required": true
+          "label": "Image",
+          "required": true,
+          "description": "The image file."
         },
         "alt": {
           "type": "string",
-          "required": true
+          "label": "Image description",
+          "required": true,
+          "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
         },
         "width": {
-          "type": "integer"
+          "type": "integer",
+          "label": "Width",
+          "description": "Width in pixels, as uploaded."
         },
         "height": {
-          "type": "integer"
+          "type": "integer",
+          "label": "Height",
+          "description": "Height in pixels, as uploaded."
         }
       },
       "description": "Hero image; loaded first (the page's largest image)."
     },
     "id": {
       "type": "string",
+      "content": false,
       "description": "Anchor id of the section; the heading gets `<id>-title`."
     }
   },
