@@ -89,6 +89,7 @@ const wpQueries = isHome ? await queryMap() : {}
       logo={site.logo ? { src: site.logo, alt: '' } : undefined}
       tagline={siteConfig.chrome?.tagline ? site.tagline : undefined}
       brandSize={siteConfig.chrome?.brand}
+      linkNav={siteConfig.chrome?.navLinks}
       items={primary?.items ?? []}
       navLabel={primary?.name ?? t('nav.label')}
       menuLabel={t('nav.menu')}

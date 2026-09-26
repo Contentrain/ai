@@ -93,7 +93,7 @@
     },
     "copyright": {
       "type": "string",
-      "description": "Copyright line; defaults to © <year> <siteName>."
+      "description": "Copyright line; {year} is the current year. Defaults to © <year> <siteName>."
     },
     "navLabel": {
       "type": "string",

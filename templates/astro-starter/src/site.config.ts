@@ -52,10 +52,12 @@ export interface SiteConfig {
   /**
    * The header and footer as the source's theme prints them; absent, the starter's own. `brand`:
    * the site title's size in the header. `tagline`: the header shows the tagline under the title.
-   * `copyright`: the footer's line ("All rights reserved"), instead of "© year Site".
-   * `titleLinks`: post titles in lists take the link colour (`--color-link`), as the source's do.
+   * `copyright`: the footer's line ("All rights reserved"; `{year}` is the current year), instead
+   * of "© year Site".
+   * `titleLinks`: post titles in lists take the link colour (`--color-link`), as the source's do;
+   * `navLinks`: so does the header navigation.
    */
-  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean }
+  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean }
   /**
    * The source site's hosts (`site.com`): a link to one of them in migrated content is internal
    * whatever its scheme, `www.` or letter case, and resolves through the published set. Fixed at

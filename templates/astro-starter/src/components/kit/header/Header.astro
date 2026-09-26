@@ -35,6 +35,8 @@ interface Props {
   tagline?: string | undefined
   /** The site name's size, where the source theme sets its own (a CSS length). */
   brandSize?: string | undefined
+  /** The navigation in the site's link colour, as themes that colour every link do (Hello Elementor). */
+  linkNav?: boolean | undefined
   logo?: ImageInput | undefined
   /** Show the site name next to the logo. */
   showName?: boolean | undefined
@@ -49,7 +51,7 @@ interface Props {
   position?: 'static' | 'sticky' | undefined
 }
 
-const { siteName, tagline, brandSize, logo, showName = true, homeHref = '/', items, action, navLabel, menuLabel, closeLabel, layout, tone, position } = Astro.props
+const { siteName, tagline, brandSize, linkNav, logo, showName = true, homeHref = '/', items, action, navLabel, menuLabel, closeLabel, layout, tone, position } = Astro.props
 const { root, inner, brand } = header({ layout, tone, position })
 ---
 <header class={root()}>
@@ -61,7 +63,7 @@ const { root, inner, brand } = header({ layout, tone, position })
             {logo && <KitImage image={logo} priority class="h-8 w-auto" sizes="160px" />}
             {showName && <span>{siteName}</span>}
           </a>
-          <p class="text-sm opacity-75" data-kit-tagline>{tagline}</p>
+          <p class="opacity-75" data-kit-tagline>{tagline}</p>
         </div>
       )
       : (
@@ -70,7 +72,7 @@ const { root, inner, brand } = header({ layout, tone, position })
           {showName && <span>{siteName}</span>}
         </a>
       )}
-    <div class:list={['flex items-center gap-4', layout === 'centered' ? 'justify-center' : 'ml-auto']}>
+    <div class:list={['flex items-center gap-4', layout === 'centered' ? 'justify-center' : 'ml-auto', linkNav && 'text-[color:var(--color-link,var(--color-accent))]']}>
       <Nav items={items} label={navLabel} menuLabel={menuLabel} closeLabel={closeLabel} part="nav-header" align={layout === 'centered' ? 'center' : 'end'} />
       {action && <Button action={action} size="sm" class="hidden md:inline-flex" />}
     </div>

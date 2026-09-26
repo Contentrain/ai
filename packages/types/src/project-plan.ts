@@ -101,10 +101,11 @@ export interface PlanSite {
    * The header and footer as the source's theme prints them, where they differ from the starter's.
    * Every key is optional; absent, the starter's own. `brand`: the site title's size in the header
    * (Hello Elementor: a 2.5rem heading). `tagline`: the header shows the tagline under the title.
-   * `copyright`: the footer's line as the source prints it ("All rights reserved"), instead of
-   * "© year Site". `titleLinks`: post titles in lists take the link colour, as the source's do.
+   * `copyright`: the footer's line as the source prints it ("All rights reserved"; `{year}` for the
+   * current year), instead of "© year Site". `titleLinks`: post titles in lists take the link colour, as the source's do.
+   * `navLinks`: so does the header navigation.
    */
-  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean }
+  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
   redirects: Record<string, string | { status: number, destination: string }>
@@ -376,6 +377,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   if (chrome?.brand !== undefined && !CSS_LENGTH.test(chrome.brand)) errors.push(`site.chrome.brand ${chrome.brand} is not a CSS size`)
   if (chrome?.tagline !== undefined && typeof chrome.tagline !== 'boolean') errors.push('site.chrome.tagline is not a boolean')
   if (chrome?.titleLinks !== undefined && typeof chrome.titleLinks !== 'boolean') errors.push('site.chrome.titleLinks is not a boolean')
+  if (chrome?.navLinks !== undefined && typeof chrome.navLinks !== 'boolean') errors.push('site.chrome.navLinks is not a boolean')
   if (chrome?.copyright !== undefined && (typeof chrome.copyright !== 'string' || !chrome.copyright.trim() || chrome.copyright.length > 200 || /[<>]/.test(chrome.copyright))) errors.push('site.chrome.copyright is not a line of plain text (1–200 characters, no markup)')
   const footer = site?.menus?.footer
   if (typeof footer === 'string') {

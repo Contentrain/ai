@@ -33,7 +33,7 @@ interface Props {
   /** A single row of links (the footer menu). */
   links?: LinkInput[] | undefined
   social?: LinkInput[] | undefined
-  /** The copyright line, e.g. "© 2026 Northwind Studio". */
+  /** The copyright line, e.g. "© 2026 Northwind Studio"; `{year}` is the current year. */
   copyright?: string | undefined
   /** Accessible name of the footer navigation ("Footer"). */
   navLabel?: string | undefined
@@ -43,7 +43,8 @@ interface Props {
 
 const { siteName, tagline, columns = [], links = [], social = [], copyright, navLabel = 'Footer', layout = 'simple', tone } = Astro.props
 const { root, inner, muted, link } = footer({ layout, tone })
-const line = copyright ?? `© ${new Date().getFullYear()} ${siteName}`
+const year = String(new Date().getFullYear())
+const line = copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
 ---
 <footer class={root()}>
   <div class={inner()} style={layout === 'columns' ? `--footer-columns: ${Math.max(columns.length, 1)}` : undefined}>
