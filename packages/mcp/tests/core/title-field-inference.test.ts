@@ -164,6 +164,20 @@ describe('inferTitleField', () => {
       expect(titleFieldOptions('dictionary')).toEqual(['key'])
     })
 
+    it('lists text fields one level into object fields, after the top-level ones', () => {
+      const fields: Fields = {
+        hero: { type: 'object', fields: { heading: f('string'), image: f('image') } },
+        label: f('string'),
+        work: { type: 'array', items: { type: 'object', fields: { caption: f('string') } } },
+      }
+      expect(titleFieldOptions('singleton', fields)).toEqual(['label', 'hero.heading'])
+    })
+
+    it('never infers a nested title', () => {
+      const fields: Fields = { hero: { type: 'object', fields: { heading: f('string', true) } } }
+      expect(inferTitleField('singleton', fields)).toBeNull()
+    })
+
     it('is empty when nothing could be a title', () => {
       expect(titleFieldOptions('collection', { cover: f('image') } as Fields)).toEqual([])
       expect(titleFieldOptions('collection')).toEqual([])

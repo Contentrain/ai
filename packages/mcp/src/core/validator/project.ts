@@ -463,7 +463,7 @@ async function checkModelDefinition(
       model: model.id,
       field: 'title_field',
       message: legal.length > 0
-        ? `Missing "title_field" and no field reads as a title — only ${legal.map(f => `"${f}"`).join(', ')} could legally hold one, and a slug, URL or code field is not inferred. Set title_field explicitly with contentrain_model_save, or add a string field.`
+        ? `Missing "title_field" and no field reads as a title — only ${legal.map(f => `"${f}"`).join(', ')} could legally hold one, and a slug, URL or code field, or a field inside an object, is not inferred. Set title_field explicitly with contentrain_model_save, or add a string field.`
         : `Missing "title_field" and no field can serve as one — add a string or text field, then re-run. A title cannot be an image, relation or number.`,
     })
     return 0

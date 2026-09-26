@@ -114,7 +114,10 @@ export interface ModelDefinition {
    *
    * Must name a field that exists on this model and whose type can render as text
    * (see `isTitleFieldType`). Dictionary models have no fields, so their only legal
-   * value is `DICTIONARY_TITLE_FIELD` — the entry key is the title.
+   * value is `DICTIONARY_TITLE_FIELD` — the entry key is the title. A dotted path
+   * (`hero.heading`) names a field one level inside an `object` field — a page
+   * singleton built from sections is titled by a section's heading
+   * (`titleFieldTarget`, `titleFieldValue`).
    */
   title_field: string
   description?: string
@@ -1087,6 +1090,46 @@ const TITLE_FIELD_TYPE_SET = new Set<FieldType>(TITLE_FIELD_TYPES)
 /** Whether a field of this type may be named as a model's `title_field`. */
 export function isTitleFieldType(type: FieldType): boolean {
   return TITLE_FIELD_TYPE_SET.has(type)
+}
+
+/**
+ * What a `title_field` value points at. A plain name is a top-level field. A dotted
+ * path `hero.heading` reaches one level into an `object` field: a page built from
+ * sections is a singleton whose top level holds only section objects, and its title
+ * is a section's heading — a copied top-level `title` would be a field no page prints.
+ *
+ * - `field`: the field the path names, and the object it sits in for a dotted path
+ * - `missing`: the path names no field (`at` is the segment that failed)
+ * - `not-object`: the first segment names a field that is not an `object`
+ * - `too-deep`: more than one dot — a title reaches at most into one object
+ */
+export type TitleFieldTarget =
+  | { kind: 'field', def: FieldDef, parent?: FieldDef }
+  | { kind: 'missing', at: string }
+  | { kind: 'not-object', at: string, type: FieldType }
+  | { kind: 'too-deep' }
+
+/** Resolve a `title_field` path against a model's fields. */
+export function titleFieldTarget(fields: Record<string, FieldDef> | undefined, path: string): TitleFieldTarget {
+  const segments = path.split('.')
+  if (segments.length > 2) return { kind: 'too-deep' }
+  const [head, leaf] = segments as [string, string | undefined]
+  const def = fields && Object.hasOwn(fields, head) ? fields[head] : undefined
+  if (!def) return { kind: 'missing', at: head }
+  if (leaf === undefined) return { kind: 'field', def }
+  if (def.type !== 'object') return { kind: 'not-object', at: head, type: def.type }
+  const child = def.fields && Object.hasOwn(def.fields, leaf) ? def.fields[leaf] : undefined
+  if (!child) return { kind: 'missing', at: path }
+  return { kind: 'field', def: child, parent: def }
+}
+
+/** An entry's title value: `data[title_field]`, or one level into an object for a dotted path. */
+export function titleFieldValue(data: Record<string, unknown> | null | undefined, path: string): unknown {
+  const [head, leaf, ...rest] = path.split('.')
+  if (!data || head === undefined || rest.length > 0) return undefined
+  const value = data[head]
+  if (leaf === undefined) return value
+  return value !== null && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>)[leaf] : undefined
 }
 
 /** Extensions we can name a MIME type for. Deliberately small — this is a sniff. */

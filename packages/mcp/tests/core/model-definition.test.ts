@@ -256,6 +256,37 @@ describe('validateModelDefinition — title_field', () => {
     })
   })
 
+  // A page singleton built from sections has only section objects at the top;
+  // its title is a section's heading, not a copied top-level field.
+  describe('dotted path', () => {
+    const PAGE = {
+      hero: { type: 'object', required: true, fields: { heading: { type: 'string', required: true }, image: { type: 'image' } } },
+      story: { type: 'object', fields: { heading: { type: 'string', required: true } } },
+      work: { type: 'array', items: { type: 'object', fields: { caption: { type: 'string' } } } },
+    }
+    const page = (title_field: string) => validateModelDefinition({ id: 'page-about', kind: 'singleton', title_field, fields: PAGE })
+
+    it('accepts a text field one level into an object', () => {
+      expect(page('hero.heading')).toEqual({ errors: [], warnings: [] })
+    })
+
+    it('warns when the object holding the title is optional', () => {
+      expect(page('story.heading').warnings).toContain(
+        '"title_field" points at optional field "story.heading" — entries may render with an empty title. Consider required: true on the object and its field.',
+      )
+    })
+
+    it('rejects a leaf that cannot render as a title', () => {
+      expect(page('hero.image').errors.some(e => e.startsWith('Invalid "title_field": field "hero.image" has type "image"'))).toBe(true)
+    })
+
+    it('rejects a path through a non-object, a missing leaf, and a second level', () => {
+      expect(page('work.caption').errors).toContain('Invalid "title_field": "work.caption" goes through "work", which has type "array" — a dotted title reaches into an object field only.')
+      expect(page('hero.title').errors).toContain('Invalid "title_field": field "hero.title" is not defined in fields.')
+      expect(page('hero.heading.text').errors).toContain('Invalid "title_field": "hero.heading.text" reaches more than one level deep. A title is a field, or a field of an object field ("hero.heading").')
+    })
+  })
+
   describe('type', () => {
     it.each(['string', 'text', 'slug', 'email', 'url', 'code', 'markdown', 'richtext'])(
       'accepts %s',

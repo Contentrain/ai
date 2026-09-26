@@ -1,5 +1,5 @@
-import type { FieldType, ModelDefinition, ModelSummary } from '@contentrain/types'
-import { DICTIONARY_TITLE_FIELD, isTitleFieldType, LOCALE_PATTERN, MODEL_FIELD_ORDER, TITLE_FIELD_TYPES } from '@contentrain/types'
+import type { FieldDef, FieldType, ModelDefinition, ModelSummary } from '@contentrain/types'
+import { DICTIONARY_TITLE_FIELD, isTitleFieldType, LOCALE_PATTERN, MODEL_FIELD_ORDER, TITLE_FIELD_TYPES, titleFieldTarget } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { z } from 'zod'
@@ -845,7 +845,14 @@ function byRequired(a: TitleCandidate, b: TitleCandidate): number {
  */
 export function titleFieldOptions(kind: string, fields?: Record<string, unknown>): string[] {
   if (kind === 'dictionary') return [DICTIONARY_TITLE_FIELD]
-  return titleCandidates(fields).map(c => c.field)
+  const top = titleCandidates(fields).map(c => c.field)
+  // One level into object fields: a page singleton built from sections has no
+  // top-level text, and `hero.heading` is its legal title. Never inferred.
+  const nested = Object.entries(fields ?? {}).flatMap(([name, raw]) => {
+    const def = raw as { type?: unknown; fields?: Record<string, unknown> } | null
+    return def?.type === 'object' ? titleCandidates(def.fields).map(c => `${name}.${c.field}`) : []
+  })
+  return [...top, ...nested]
 }
 
 /**
@@ -946,23 +953,32 @@ export function titleFieldIssues(
     }
   } else if (!input.fields || Object.keys(input.fields).length === 0) {
     errors.push(`Invalid "title_field": "${titleField}" cannot resolve — the model declares no fields.`)
-  } else if (!(titleField in input.fields)) {
-    // A non-dictionary model may legitimately own a field named "key" — the
-    // sentinel only collides where there are no fields at all.
-    errors.push(
-      `Invalid "title_field": field "${titleField}" is not defined in fields.`
-      + (titleField === DICTIONARY_TITLE_FIELD ? ` "${DICTIONARY_TITLE_FIELD}" is reserved for dictionary models.` : ''),
-    )
   } else {
-    const def = input.fields[titleField] as { type?: unknown; required?: unknown } | undefined
-    const type = def?.type
-    if (typeof type === 'string' && !isTitleFieldType(type as FieldType)) {
-      errors.push(`Invalid "title_field": field "${titleField}" has type "${type}" — a title must be one of: ${TITLE_FIELD_TYPES.join(', ')}.`)
-    } else if (def?.required !== true) {
-      warnings.push(`"title_field" points at optional field "${titleField}" — entries may render with an empty title. Consider required: true.`)
+    // A dotted path (`hero.heading`) reaches one level into an object field — a
+    // page singleton built from sections is titled by a section's heading.
+    const target = titleFieldTarget(input.fields as Record<string, FieldDef>, titleField)
+    if (target.kind === 'too-deep') {
+      errors.push(`Invalid "title_field": "${titleField}" reaches more than one level deep. A title is a field, or a field of an object field ("hero.heading").`)
+    } else if (target.kind === 'not-object') {
+      errors.push(`Invalid "title_field": "${titleField}" goes through "${target.at}", which has type "${target.type}" — a dotted title reaches into an object field only.`)
+    } else if (target.kind === 'missing') {
+      // A non-dictionary model may legitimately own a field named "key" — the
+      // sentinel only collides where there are no fields at all.
+      errors.push(
+        `Invalid "title_field": field "${titleField}" is not defined in fields.`
+        + (titleField === DICTIONARY_TITLE_FIELD ? ` "${DICTIONARY_TITLE_FIELD}" is reserved for dictionary models.` : ''),
+      )
+    } else {
+      const { def, parent } = target
+      const type: unknown = def.type
+      if (typeof type === 'string' && !isTitleFieldType(type as FieldType)) {
+        errors.push(`Invalid "title_field": field "${titleField}" has type "${type}" — a title must be one of: ${TITLE_FIELD_TYPES.join(', ')}.`)
+      } else if (def.required !== true || (parent && parent.required !== true)) {
+        warnings.push(`"title_field" points at optional field "${titleField}" — entries may render with an empty title. Consider required: true${parent ? ' on the object and its field' : ''}.`)
+      }
+      // A non-string `type` falls through: the per-field loop already reports it,
+      // and repeating it here would double-count one mistake.
     }
-    // A non-string `type` falls through: the per-field loop already reports it,
-    // and repeating it here would double-count one mistake.
   }
 
   return { errors, warnings }
