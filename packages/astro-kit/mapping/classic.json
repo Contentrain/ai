@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "classic",
-  "version": "4",
+  "version": "5",
   "fallback": "prose",
   "rules": [
     {
@@ -107,7 +107,8 @@
       "into": "slides",
       "each": "rs-slide, .tp-revslider-slidesli",
       "item": {
-        "image": "img:img",
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
         "title": "dom:rs-layer"
       }
     },
@@ -124,7 +125,8 @@
       "into": "slides",
       "each": ".slides > li",
       "item": {
-        "image": "img:img",
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
         "text": "dom:.caption"
       }
     },
@@ -141,7 +143,8 @@
       "into": "slides",
       "each": ".n2-ss-slide",
       "item": {
-        "image": "img:img",
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
         "title": "dom:.n2-ss-item-content"
       }
     },
@@ -202,7 +205,8 @@
       "item": {
         "quote": "dom:blockquote, .testimonial-text",
         "name": "dom:cite, .testimonial-name",
-        "avatar": "img:img"
+        "avatar": "img:img@src",
+        "avatarAlt": "img:img@alt"
       }
     },
     {
@@ -214,7 +218,8 @@
       "into": "items",
       "each": ".gallery-item",
       "item": {
-        "image": "img:img",
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
         "caption": "dom:.gallery-caption, .wp-caption-text"
       }
     },
@@ -345,6 +350,46 @@
         "submitLabel": "ui:newsletter.submit",
         "provider": "const:buttondown",
         "heading": "dom:h2,h3"
+      }
+    },
+    {
+      "match": "classic/cookie-notice",
+      "component": "consent",
+      "props": {
+        "message": "dom:#cn-notice-text",
+        "acceptLabel": "dom:#cn-accept-cookie",
+        "declineLabel": "dom:#cn-refuse-cookie",
+        "policyHref": "dom:#cn-more-info@href"
+      }
+    },
+    {
+      "match": "classic/complianz",
+      "component": "consent",
+      "props": {
+        "message": "dom:.cmplz-message",
+        "acceptLabel": "dom:.cmplz-accept",
+        "declineLabel": "dom:.cmplz-deny",
+        "policyHref": "dom:.cmplz-link.cookie-statement@href"
+      }
+    },
+    {
+      "match": "classic/cookieyes",
+      "component": "consent",
+      "props": {
+        "message": "dom:.cky-notice-des",
+        "acceptLabel": "dom:.cky-btn-accept",
+        "declineLabel": "dom:.cky-btn-reject",
+        "policyHref": "dom:.cky-policy@href"
+      }
+    },
+    {
+      "match": "classic/cookiebot",
+      "component": "consent",
+      "props": {
+        "message": "dom:#CybotCookiebotDialogBodyText",
+        "acceptLabel": "dom:#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll",
+        "declineLabel": "dom:#CybotCookiebotDialogBodyButtonDecline",
+        "policyHref": "dom:#CybotCookiebotDialogBodyText a@href"
       }
     }
   ]

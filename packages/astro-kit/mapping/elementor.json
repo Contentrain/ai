@@ -1,11 +1,17 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "elementor",
-  "version": "5",
+  "version": "6",
   "fallback": "prose",
   "defaults": {
     "elementor/video": {
       "video_type": "youtube"
+    },
+    "elementor/icon-box": {
+      "text_align": "center"
+    },
+    "elementor/image-box": {
+      "text_align": "center"
     }
   },
   "rules": [
@@ -89,7 +95,8 @@
         "title": "dom:.elementor-image-box-title",
         "text": "dom:.elementor-image-box-description",
         "href": "dom:a@href",
-        "image": "img:img"
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt"
       }
     },
     {
@@ -172,7 +179,8 @@
       "into": "slides",
       "each": ".swiper-slide:not(.swiper-slide-duplicate)",
       "item": {
-        "image": "img:img",
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
         "text": "dom:figcaption"
       }
     },
@@ -189,7 +197,8 @@
       "into": "slides",
       "each": ".swiper-slide:not(.swiper-slide-duplicate)",
       "item": {
-        "image": "img:img"
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt"
       }
     },
     {
@@ -207,7 +216,8 @@
       "item": {
         "title": "dom:.elementor-slide-heading",
         "text": "dom:.elementor-slide-description",
-        "action": "link:.elementor-slide-button"
+        "ctaLabel": "dom:.elementor-slide-button",
+        "ctaHref": "dom:.elementor-slide-button@href"
       }
     },
     {
@@ -272,7 +282,8 @@
         "quote": "dom:.elementor-testimonial-content",
         "name": "dom:.elementor-testimonial-name",
         "role": "dom:.elementor-testimonial-job",
-        "avatar": "img:.elementor-testimonial-image img"
+        "avatar": "img:.elementor-testimonial-image img@src",
+        "avatarAlt": "img:.elementor-testimonial-image img@alt"
       }
     },
     {
@@ -284,7 +295,8 @@
       "into": "items",
       "each": ".gallery-item",
       "item": {
-        "image": "img:img",
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
         "caption": "dom:.gallery-caption"
       }
     },
@@ -297,7 +309,8 @@
       "into": "items",
       "each": ".e-gallery-item",
       "item": {
-        "image": "img:img",
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
         "caption": "dom:.elementor-gallery-item__title"
       }
     },
@@ -361,6 +374,566 @@
         "address": "attr:address",
         "playLabel": "ui:embed.play",
         "showLabel": "ui:embed.show"
+      }
+    }
+  ],
+  "sections": [
+    {
+      "id": "hero.split",
+      "component": "hero",
+      "variant": {
+        "layout": "split"
+      },
+      "when": {
+        "position": "first",
+        "columns": [
+          1,
+          2
+        ]
+      },
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1,
+          "min": 1,
+          "attr": {
+            "header_size": "h1|h2"
+          }
+        },
+        "lead": {
+          "match": "elementor/text-editor",
+          "max": 1
+        },
+        "button": {
+          "match": "elementor/button",
+          "max": 2
+        },
+        "media": {
+          "match": "elementor/image",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@title attr:title || @title dom:",
+        "lead": "@lead dom:",
+        "image": "@media img:img"
+      },
+      "into": "actions",
+      "each": "@button",
+      "item": {
+        "label": "attr:text || dom:.elementor-button-text",
+        "href": "attr:link.url || dom:a@href"
+      }
+    },
+    {
+      "id": "hero.centered",
+      "component": "hero",
+      "variant": {
+        "layout": "centered"
+      },
+      "when": {
+        "position": "first",
+        "columns": 1
+      },
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1,
+          "min": 1,
+          "attr": {
+            "header_size": "h1|h2"
+          }
+        },
+        "lead": {
+          "match": "elementor/text-editor",
+          "max": 1
+        },
+        "button": {
+          "match": "elementor/button",
+          "max": 2
+        }
+      },
+      "props": {
+        "heading": "@title attr:title || @title dom:",
+        "lead": "@lead dom:"
+      },
+      "into": "actions",
+      "each": "@button",
+      "item": {
+        "label": "attr:text || dom:.elementor-button-text",
+        "href": "attr:link.url || dom:a@href"
+      }
+    },
+    {
+      "id": "announcement.alert",
+      "component": "announcement",
+      "slots": {
+        "alert": {
+          "match": "elementor/alert",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "message": "@alert attr:alert_title || @alert dom:.elementor-alert-title"
+      }
+    },
+    {
+      "id": "split.image-text",
+      "component": "split",
+      "when": {
+        "columns": 2
+      },
+      "slots": {
+        "media": {
+          "match": "elementor/image",
+          "min": 1,
+          "max": 1
+        },
+        "title": {
+          "match": "elementor/heading",
+          "max": 1,
+          "min": 1
+        },
+        "body": {
+          "match": [
+            "elementor/text-editor",
+            "elementor/icon-list"
+          ],
+          "max": 3
+        },
+        "button": {
+          "match": "elementor/button",
+          "max": 2
+        }
+      },
+      "props": {
+        "heading": "@title attr:title || @title dom:",
+        "body": "@body html:",
+        "image": "@media img:img"
+      },
+      "into": "actions",
+      "each": "@button",
+      "item": {
+        "label": "attr:text || dom:.elementor-button-text",
+        "href": "attr:link.url || dom:a@href"
+      }
+    },
+    {
+      "id": "card-grid.icon-box",
+      "component": "card-grid",
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1
+        },
+        "intro": {
+          "match": "elementor/text-editor",
+          "max": 1
+        },
+        "box": {
+          "match": "elementor/icon-box",
+          "min": 2
+        }
+      },
+      "props": {
+        "title": "@title attr:title || @title dom:",
+        "intro": "@intro dom:"
+      },
+      "into": "items",
+      "each": "@box",
+      "item": {
+        "title": "attr:title_text || dom:.elementor-icon-box-title",
+        "text": "attr:description_text || dom:.elementor-icon-box-description",
+        "href": "attr:link.url || dom:a@href"
+      }
+    },
+    {
+      "id": "card-grid.image-box",
+      "component": "card-grid",
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1
+        },
+        "intro": {
+          "match": "elementor/text-editor",
+          "max": 1
+        },
+        "box": {
+          "match": "elementor/image-box",
+          "min": 2
+        }
+      },
+      "props": {
+        "title": "@title attr:title || @title dom:",
+        "intro": "@intro dom:"
+      },
+      "into": "items",
+      "each": "@box",
+      "item": {
+        "title": "attr:title_text || dom:.elementor-image-box-title",
+        "text": "attr:description_text || dom:.elementor-image-box-description",
+        "href": "attr:link.url || dom:a@href",
+        "image": "attr:image.url || img:img@src",
+        "imageAlt": "img:img@alt"
+      }
+    },
+    {
+      "id": "stats.counter",
+      "component": "stats",
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1
+        },
+        "intro": {
+          "match": "elementor/text-editor",
+          "max": 1
+        },
+        "counter": {
+          "match": "elementor/counter",
+          "min": 2
+        }
+      },
+      "props": {
+        "heading": "@title attr:title || @title dom:",
+        "intro": "@intro dom:"
+      },
+      "into": "items",
+      "each": "@counter",
+      "item": {
+        "value": "attr:ending_number || dom:.elementor-counter-number",
+        "label": "attr:title || dom:.elementor-counter-title",
+        "prefix": "attr:prefix || dom:.elementor-counter-number-prefix",
+        "suffix": "attr:suffix || dom:.elementor-counter-number-suffix"
+      }
+    },
+    {
+      "id": "pricing.price-table",
+      "component": "pricing",
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1
+        },
+        "intro": {
+          "match": "elementor/text-editor",
+          "max": 1
+        },
+        "plan": {
+          "match": "elementor/price-table",
+          "min": 1
+        }
+      },
+      "props": {
+        "heading": "@title attr:title || @title dom:",
+        "intro": "@intro dom:"
+      },
+      "into": "plans",
+      "each": "@plan",
+      "item": {
+        "name": "attr:heading || dom:.elementor-price-table__heading",
+        "price": "dom:.elementor-price-table__price || attr:price",
+        "period": "attr:period || dom:.elementor-price-table__period",
+        "description": "attr:sub_heading || dom:.elementor-price-table__subheading",
+        "features": "html:.elementor-price-table__features-list",
+        "ctaLabel": "attr:button_text || dom:.elementor-price-table__button",
+        "ctaHref": "attr:link.url || dom:.elementor-price-table__button@href"
+      }
+    },
+    {
+      "id": "logo-cloud.images",
+      "component": "logo-cloud",
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1
+        },
+        "logo": {
+          "match": "elementor/image",
+          "min": 3
+        }
+      },
+      "props": {
+        "heading": "@title attr:title || @title dom:"
+      },
+      "into": "items",
+      "each": "@logo",
+      "item": {
+        "image": "attr:image.url || img:img@src",
+        "imageAlt": "img:img@alt",
+        "href": "attr:link.url || dom:a@href"
+      }
+    },
+    {
+      "id": "testimonial.quotes",
+      "component": "testimonial",
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1
+        },
+        "quote": {
+          "match": "elementor/testimonial",
+          "min": 1
+        }
+      },
+      "props": {
+        "heading": "@title attr:title || @title dom:"
+      },
+      "into": "items",
+      "each": "@quote",
+      "item": {
+        "quote": "attr:testimonial_content || dom:.elementor-testimonial-content",
+        "name": "attr:testimonial_name || dom:.elementor-testimonial-name",
+        "role": "attr:testimonial_job || dom:.elementor-testimonial-job",
+        "avatar": "attr:testimonial_image.url || img:.elementor-testimonial-image img@src",
+        "avatarAlt": "img:.elementor-testimonial-image img@alt"
+      }
+    },
+    {
+      "id": "faq.accordion",
+      "component": "faq",
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1
+        },
+        "faq": {
+          "match": "elementor/accordion",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@title attr:title || @title dom:"
+      },
+      "into": "items",
+      "each": "@faq .elementor-accordion-item",
+      "item": {
+        "question": "dom:.elementor-accordion-title",
+        "answer": "html:.elementor-tab-content"
+      }
+    },
+    {
+      "id": "faq.toggle",
+      "component": "faq",
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1
+        },
+        "faq": {
+          "match": "elementor/toggle",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@title attr:title || @title dom:",
+        "exclusive": "const:false"
+      },
+      "into": "items",
+      "each": "@faq .elementor-toggle-item",
+      "item": {
+        "question": "dom:.elementor-toggle-title",
+        "answer": "html:.elementor-tab-content"
+      }
+    },
+    {
+      "id": "faq.nested",
+      "component": "faq",
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1
+        },
+        "faq": {
+          "match": "elementor/nested-accordion",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@title attr:title || @title dom:"
+      },
+      "into": "items",
+      "each": "@faq details",
+      "item": {
+        "question": "dom:summary",
+        "answer": "html::scope > :not(summary)"
+      }
+    },
+    {
+      "id": "gallery.image-gallery",
+      "component": "gallery",
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1
+        },
+        "images": {
+          "match": "elementor/image-gallery",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@title attr:title || @title dom:",
+        "closeLabel": "ui:gallery.close"
+      },
+      "into": "items",
+      "each": "@images .gallery-item",
+      "item": {
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
+        "caption": "dom:.gallery-caption"
+      }
+    },
+    {
+      "id": "gallery.pro",
+      "component": "gallery",
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1
+        },
+        "images": {
+          "match": "elementor/gallery",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@title attr:title || @title dom:",
+        "closeLabel": "ui:gallery.close"
+      },
+      "into": "items",
+      "each": "@images .e-gallery-item",
+      "item": {
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
+        "caption": "dom:.elementor-gallery-item__title"
+      }
+    },
+    {
+      "id": "slider.carousel",
+      "component": "slider",
+      "slots": {
+        "slides": {
+          "match": [
+            "elementor/image-carousel",
+            "elementor/media-carousel"
+          ],
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": "@slides .swiper-slide:not(.swiper-slide-duplicate)",
+      "item": {
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
+        "text": "dom:figcaption"
+      }
+    },
+    {
+      "id": "contact-form.form",
+      "component": "contact-form",
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1
+        },
+        "formTitle": {
+          "match": "elementor/heading",
+          "max": 1
+        },
+        "intro": {
+          "match": "elementor/text-editor",
+          "max": 1
+        },
+        "form": {
+          "match": "elementor/form",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "model": "const:contact",
+        "heading": "@title attr:title || @title dom: || @form attr:form_name",
+        "intro": "@intro dom:",
+        "formHeading": "@formTitle attr:title || @formTitle dom:"
+      }
+    },
+    {
+      "id": "cta.text-button",
+      "component": "cta",
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1,
+          "min": 1
+        },
+        "body": {
+          "match": "elementor/text-editor",
+          "max": 1
+        },
+        "button": {
+          "match": "elementor/button",
+          "min": 1,
+          "max": 2
+        }
+      },
+      "props": {
+        "heading": "@title attr:title || @title dom:",
+        "body": "@body dom:"
+      },
+      "into": "actions",
+      "each": "@button",
+      "item": {
+        "label": "attr:text || dom:.elementor-button-text",
+        "href": "attr:link.url || dom:a@href"
+      }
+    },
+    {
+      "id": "feature-list.icon-list",
+      "component": "feature-list",
+      "variant": {
+        "style": "icon"
+      },
+      "slots": {
+        "title": {
+          "match": "elementor/heading",
+          "max": 1
+        },
+        "intro": {
+          "match": "elementor/text-editor",
+          "max": 1
+        },
+        "list": {
+          "match": "elementor/icon-list",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@title attr:title || @title dom:",
+        "intro": "@intro dom:"
+      },
+      "into": "items",
+      "each": "@list .elementor-icon-list-item",
+      "item": {
+        "title": "dom:.elementor-icon-list-text"
       }
     }
   ]

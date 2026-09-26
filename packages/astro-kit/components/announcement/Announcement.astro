@@ -1,0 +1,53 @@
+---
+// A one-line notice above the header (sale, event, opening hours change) with
+// an optional link, which the visitor can close. Replaces Elementor alerts and
+// notification-bar plugins.
+//
+// Closing needs no JS: the bar is an open <details>, and the close button is
+// its <summary>, so a click collapses it natively (keyboard included). The
+// Popover API would need the bar to start as a hidden popover, and an open
+// <details> is the only built-in element that starts visible and hides itself.
+// Dismissal is not remembered; the bar comes back on the next page.
+import { tv } from 'tailwind-variants'
+
+const announcement = tv({
+  slots: {
+    root: 'relative text-sm not-open:hidden',
+    bar: 'mx-auto flex max-w-page items-center justify-center gap-x-3 px-10 py-2 text-center',
+    link: 'font-semibold underline decoration-current/40 underline-offset-4 hover:decoration-current',
+    close: 'absolute inset-y-0 right-2 flex cursor-pointer list-none items-center px-2 [&::-webkit-details-marker]:hidden',
+  },
+  variants: {
+    tone: {
+      default: { root: 'border-b border-line bg-surface text-ink' },
+      muted: { root: 'bg-surface-muted text-ink' },
+      inverse: { root: 'bg-ink text-surface' },
+      accent: { root: 'bg-accent text-accent-ink' },
+    },
+  },
+  defaultVariants: { tone: 'accent' },
+})
+
+interface Props {
+  message: string
+  href?: string | undefined
+  linkLabel?: string | undefined
+  closeLabel?: string | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+}
+
+const { message, href, linkLabel, closeLabel = 'Close announcement', tone } = Astro.props
+const s = announcement({ tone })
+---
+<!--
+  The summary comes first as <details> requires; it is positioned over the end
+  of the bar, so it still reads after the message. Once closed the whole
+  element is display:none (not-open:hidden), leaving no empty strip.
+-->
+<details open class={s.root()}>
+  <summary class={s.close()} aria-label={closeLabel}><span aria-hidden="true">✕</span></summary>
+  <div class={s.bar()}>
+    <p>{message}</p>
+    {href && <a href={href} class={s.link()}>{linkLabel ?? 'Learn more'}</a>}
+  </div>
+</details>

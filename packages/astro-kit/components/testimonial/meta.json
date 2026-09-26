@@ -7,6 +7,7 @@
   "shared": [
     "KitImage.astro",
     "Section.astro",
+    "image.ts",
     "types.ts"
   ],
   "variants": {
@@ -32,39 +33,37 @@
   "props": {
     "items": {
       "type": "array",
+      "label": "Testimonials",
       "required": true,
       "items": {
         "type": "object",
         "fields": {
           "quote": {
             "type": "text",
-            "required": true
+            "label": "Quote",
+            "required": true,
+            "description": "What the person said, in their words."
           },
           "name": {
             "type": "string",
-            "required": true
+            "label": "Name",
+            "required": true,
+            "description": "Who said it."
           },
           "role": {
-            "type": "string"
+            "type": "string",
+            "label": "Role",
+            "description": "Their role or company."
           },
           "avatar": {
-            "type": "object",
-            "fields": {
-              "src": {
-                "type": "image",
-                "required": true
-              },
-              "alt": {
-                "type": "string",
-                "required": true
-              },
-              "width": {
-                "type": "integer"
-              },
-              "height": {
-                "type": "integer"
-              }
-            }
+            "type": "image",
+            "label": "Photo",
+            "description": "Their photo."
+          },
+          "avatarAlt": {
+            "type": "string",
+            "label": "Photo description",
+            "description": "Who the photo shows; usually their name."
           }
         }
       },
@@ -72,10 +71,12 @@
     },
     "heading": {
       "type": "string",
+      "label": "Heading",
       "description": "Section heading above the quotes."
     },
     "id": {
       "type": "string",
+      "content": false,
       "description": "Anchor id of the section; the heading gets `<id>-title`."
     }
   },

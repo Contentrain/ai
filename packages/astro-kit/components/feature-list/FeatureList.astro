@@ -1,0 +1,85 @@
+---
+// A list of short features — a title and a line of text each — marked with
+// the feature's icon or a shared check, under an optional heading and intro.
+import { tv } from 'tailwind-variants'
+import Section, { type Tone } from '../_shared/Section.astro'
+
+const list = tv({
+  slots: {
+    grid: 'grid gap-x-8 gap-y-10 sm:grid-cols-2',
+    item: 'flex gap-4',
+    mark: 'flex size-6 shrink-0 items-center justify-center text-accent',
+    title: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)] text-balance',
+    text: 'mt-1 opacity-80',
+  },
+  variants: {
+    columns: {
+      '2': {},
+      '3': { grid: 'md:grid-cols-3' },
+      '4': { grid: 'lg:grid-cols-4' },
+    },
+    style: {
+      icon: { mark: 'size-10 rounded-[var(--radius-card)] bg-accent/10' },
+      check: {},
+    },
+    // On accent the mark takes the ink colour, and text is never dimmed.
+    tone: { default: {}, muted: {}, inverse: {}, accent: { mark: 'text-current', text: 'opacity-100' } },
+  },
+  defaultVariants: { columns: '3', style: 'icon', tone: 'default' },
+})
+
+// 24×24 stroke paths (Lucide-style); unknown names fall back to check.
+const icons: Record<string, string> = {
+  check: 'M20 6 9 17l-5-5',
+  star: 'm12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z',
+  bolt: 'M13 2 3 14h9l-1 8 10-12h-9z',
+  shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+  heart: 'M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z',
+  globe: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20',
+  clock: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 6v6l4 2',
+  chat: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+}
+
+interface Item {
+  title: string
+  text?: string | undefined
+  /** A kit icon name (check, star, bolt, shield, heart, globe, clock, chat). */
+  icon?: string | undefined
+}
+
+interface Props {
+  heading?: string | undefined
+  intro?: string | undefined
+  items: Item[]
+  columns?: '2' | '3' | '4' | undefined
+  style?: 'icon' | 'check' | undefined
+  tone?: Tone | undefined
+  id?: string | undefined
+}
+
+const { heading, intro, items, columns, style = 'icon', tone, id } = Astro.props
+const s = list({ columns, style, tone })
+const headingId = heading && id ? `${id}-title` : undefined
+const pathOf = (item: Item) => (style === 'icon' && item.icon && icons[item.icon]) || icons.check
+---
+<Section tone={tone} id={id} aria-labelledby={headingId}>
+  {(heading || intro) && (
+    <header class="mb-10 flex max-w-2xl flex-col gap-3">
+      {heading && <h2 id={headingId} class="text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl">{heading}</h2>}
+      {intro && <p class:list={['text-lg', tone === 'accent' ? undefined : 'opacity-80']} data-kit-text>{intro}</p>}
+    </header>
+  )}
+  <ul class={s.grid()}>
+    {items.map(item => (
+      <li class={s.item()}>
+        <span class={s.mark()} aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d={pathOf(item)} /></svg>
+        </span>
+        <div>
+          <h3 class={s.title()}>{item.title}</h3>
+          {item.text && <p class={s.text()} data-kit-text>{item.text}</p>}
+        </div>
+      </li>
+    ))}
+  </ul>
+</Section>

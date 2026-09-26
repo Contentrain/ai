@@ -1,0 +1,116 @@
+{
+  "id": "team",
+  "name": "Team",
+  "description": "The people behind the site: portrait, name, role and a short bio each, as cards or plain entries. A member with a page is clickable as a whole.",
+  "category": "section",
+  "uses": [],
+  "shared": [
+    "KitImage.astro",
+    "Section.astro",
+    "image.ts",
+    "types.ts"
+  ],
+  "variants": {
+    "columns": {
+      "options": [
+        "2",
+        "3",
+        "4"
+      ],
+      "default": "3",
+      "description": "Columns on wide screens; one on phones, two on tablets."
+    },
+    "style": {
+      "options": [
+        "card",
+        "plain"
+      ],
+      "default": "card",
+      "description": "Member chrome: a bordered card with the portrait on top, or none."
+    }
+  },
+  "props": {
+    "heading": {
+      "type": "string",
+      "label": "Heading",
+      "description": "Section heading above the team."
+    },
+    "intro": {
+      "type": "text",
+      "label": "Intro",
+      "description": "A line or two under the heading."
+    },
+    "items": {
+      "type": "array",
+      "label": "Members",
+      "required": true,
+      "items": {
+        "type": "object",
+        "fields": {
+          "name": {
+            "type": "string",
+            "label": "Name",
+            "required": true,
+            "description": "The person's name."
+          },
+          "role": {
+            "type": "string",
+            "label": "Role",
+            "description": "Their title or role."
+          },
+          "bio": {
+            "type": "text",
+            "label": "Bio",
+            "description": "A short biography."
+          },
+          "image": {
+            "type": "image",
+            "label": "Photo",
+            "description": "Their portrait; shown square."
+          },
+          "imageAlt": {
+            "type": "string",
+            "label": "Photo description",
+            "description": "Who the photo shows; defaults to their name."
+          },
+          "href": {
+            "type": "url",
+            "label": "Link",
+            "description": "Their profile page; makes the whole entry a link."
+          }
+        }
+      },
+      "description": "The people, in display order (Divi team member name/position/content/image_url, Elementor image box)."
+    },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Anchor id of the section; the heading gets `<id>-title`."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": [
+      "core/columns"
+    ],
+    "elementor": [
+      "elementor/image-box"
+    ],
+    "divi": [
+      "divi/et_pb_team_member"
+    ]
+  },
+  "a11y": "Members are a <ul>; each name is an <h3>, and a linked member's link text is the name. A portrait's text defaults to the name. The section is labelled by its heading when it has one.",
+  "pattern": {
+    "summary": "repeated person units: portrait + name + role",
+    "signals": [
+      "2+ columns",
+      "1 image per column",
+      "name",
+      "role",
+      "short text"
+    ]
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "id": "contact-details",
+  "name": "Contact details",
+  "description": "The ways to reach a business without a form: email and phone as mailto:/tel: links, the postal address in an <address>, opening hours and a map link, as a list or in columns. Renders nothing when every detail is empty.",
+  "category": "section",
+  "uses": [],
+  "shared": [
+    "Section.astro"
+  ],
+  "variants": {
+    "layout": {
+      "options": [
+        "list",
+        "columns"
+      ],
+      "default": "list",
+      "description": "list: one detail under another. columns: side by side on wide screens (a contact band under a map or above the footer)."
+    }
+  },
+  "props": {
+    "heading": {
+      "type": "string",
+      "label": "Heading",
+      "description": "Section heading."
+    },
+    "email": {
+      "type": "email",
+      "label": "Email",
+      "description": "The address people write to; shown as a mailto: link."
+    },
+    "phone": {
+      "type": "phone",
+      "label": "Phone",
+      "description": "The number as it should be read; the tel: link drops spaces and punctuation."
+    },
+    "address": {
+      "type": "text",
+      "label": "Address",
+      "description": "Postal address, one line per line."
+    },
+    "hours": {
+      "type": "text",
+      "label": "Opening hours",
+      "description": "Opening hours, one line per day or range."
+    },
+    "mapUrl": {
+      "type": "url",
+      "label": "Map link",
+      "description": "A map of the address (Google Maps, OpenStreetMap), shown as a link under it."
+    },
+    "emailLabel": {
+      "type": "string",
+      "default": "Email",
+      "content": false,
+      "description": "Label of the email line (ui:)."
+    },
+    "phoneLabel": {
+      "type": "string",
+      "default": "Phone",
+      "content": false,
+      "description": "Label of the phone line (ui:)."
+    },
+    "addressLabel": {
+      "type": "string",
+      "default": "Address",
+      "content": false,
+      "description": "Label of the address line (ui:)."
+    },
+    "hoursLabel": {
+      "type": "string",
+      "default": "Opening hours",
+      "content": false,
+      "description": "Label of the hours line (ui:)."
+    },
+    "mapLabel": {
+      "type": "string",
+      "default": "View on the map",
+      "content": false,
+      "description": "Text of the map link (ui:)."
+    },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Section id; the heading gets `<id>-title`."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "elementor": [
+      "elementor/icon-list"
+    ]
+  },
+  "a11y": "A description list: each detail is named by its term. Email and phone are real links that say what they are; the address is an <address>. The section is labelled by its heading.",
+  "pattern": {
+    "summary": "email, phone, address and hours listed, no form",
+    "signals": [
+      "mailto: link",
+      "tel: link",
+      "address text",
+      "icon list"
+    ]
+  }
+}

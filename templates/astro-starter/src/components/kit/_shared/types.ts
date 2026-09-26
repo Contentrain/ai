@@ -4,7 +4,8 @@
 /** An image with the text that replaces it. Dimensions let astro:assets size it. */
 export interface ImageInput {
   src: string
-  alt: string
+  /** What the image shows. Empty or absent means decoration: it renders `alt=""`, never invented text. */
+  alt?: string | undefined
   width?: number | undefined
   height?: number | undefined
 }

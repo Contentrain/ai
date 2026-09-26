@@ -1,0 +1,67 @@
+{
+  "id": "consent",
+  "name": "Consent",
+  "description": "Cookie consent bar with accept and decline. Consent is denied by default: until the visitor explicitly accepts, <html data-consent> is \"denied\" (set before first paint) and nothing may start measurement. The choice is stored in localStorage (`kit-consent`), set as <html data-consent=\"granted|denied\"> and dispatched as a `kit:consent` event on document with {granted}; the site-settings analytics gate reads data-consent and loads analytics only when it is \"granted\". The bar shows only while no choice is stored, with no flash on later visits.",
+  "category": "chrome",
+  "uses": [],
+  "shared": [],
+  "variants": {
+    "position": {
+      "options": [
+        "bottom",
+        "corner"
+      ],
+      "default": "bottom",
+      "description": "bottom: a full-width bar along the bottom edge. corner: a small card in the bottom corner."
+    }
+  },
+  "props": {
+    "message": {
+      "type": "text",
+      "required": true,
+      "label": "Message",
+      "description": "What the site stores and why, in a sentence or two."
+    },
+    "acceptLabel": {
+      "type": "string",
+      "required": true,
+      "label": "Accept label",
+      "description": "Text of the accept button."
+    },
+    "declineLabel": {
+      "type": "string",
+      "required": true,
+      "label": "Decline label",
+      "description": "Text of the decline button."
+    },
+    "policyHref": {
+      "type": "url",
+      "label": "Policy link",
+      "description": "Privacy or cookie policy page, linked after the message."
+    },
+    "policyLabel": {
+      "type": "string",
+      "default": "Privacy policy",
+      "content": false,
+      "description": "Text of the policy link (ui:)."
+    },
+    "regionLabel": {
+      "type": "string",
+      "default": "Cookie consent",
+      "content": false,
+      "description": "Accessible name of the bar's region (ui:)."
+    }
+  },
+  "slots": {},
+  "js": "vanilla",
+  "dependencies": {},
+  "sources": {
+    "classic": [
+      "classic/cookie-notice",
+      "classic/complianz",
+      "classic/cookieyes",
+      "classic/cookiebot"
+    ]
+  },
+  "a11y": "A labelled region, not a modal: no focus trap, the page stays usable. Both choices are native buttons in reading order after the message; the policy link is a real link. Once a choice is made the bar is hidden (not just moved off screen)."
+}

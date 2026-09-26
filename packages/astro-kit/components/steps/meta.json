@@ -1,0 +1,105 @@
+{
+  "id": "steps",
+  "name": "Steps",
+  "description": "How it works: an ordered sequence of steps, each a title and a line of text with an optional image, as a vertical list or a row, numbered or plain.",
+  "category": "section",
+  "uses": [],
+  "shared": [
+    "KitImage.astro",
+    "Section.astro",
+    "image.ts",
+    "types.ts"
+  ],
+  "variants": {
+    "layout": {
+      "options": [
+        "list",
+        "row"
+      ],
+      "default": "list",
+      "description": "A vertical list, or one row across the page on wide screens."
+    },
+    "style": {
+      "options": [
+        "numbered",
+        "plain"
+      ],
+      "default": "numbered",
+      "description": "A number badge before each step, or an accent rule beside it."
+    }
+  },
+  "props": {
+    "heading": {
+      "type": "string",
+      "label": "Heading",
+      "description": "Section heading above the steps."
+    },
+    "intro": {
+      "type": "text",
+      "label": "Intro",
+      "description": "A line or two under the heading."
+    },
+    "items": {
+      "type": "array",
+      "label": "Steps",
+      "required": true,
+      "items": {
+        "type": "object",
+        "fields": {
+          "title": {
+            "type": "string",
+            "label": "Title",
+            "required": true,
+            "description": "The step's name."
+          },
+          "text": {
+            "type": "text",
+            "label": "Text",
+            "required": true,
+            "description": "What happens in this step."
+          },
+          "image": {
+            "type": "image",
+            "label": "Image",
+            "description": "An image for the step."
+          },
+          "imageAlt": {
+            "type": "string",
+            "label": "Image description",
+            "description": "What the image shows; empty if decorative."
+          }
+        }
+      },
+      "description": "The steps, in order (Elementor icon boxes, Divi blurbs, Gutenberg columns of heading + text)."
+    },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Anchor id of the section; the heading gets `<id>-title`."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": [
+      "core/columns"
+    ],
+    "elementor": [
+      "elementor/icon-box"
+    ],
+    "divi": [
+      "divi/et_pb_blurb"
+    ]
+  },
+  "a11y": "Steps are an <ol>, so their order and count are announced; the visible numbers are CSS counters, not text. Each title is an <h3>. The section is labelled by its heading when it has one.",
+  "pattern": {
+    "summary": "ordered sequence: numbered title + short text units",
+    "signals": [
+      "3+ repeated units",
+      "number or step label",
+      "title",
+      "short text"
+    ]
+  }
+}

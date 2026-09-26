@@ -7,6 +7,7 @@
   "shared": [
     "KitImage.astro",
     "Section.astro",
+    "image.ts",
     "types.ts"
   ],
   "variants": {
@@ -50,39 +51,51 @@
   "props": {
     "title": {
       "type": "string",
+      "label": "Heading",
       "description": "Section heading."
     },
     "intro": {
       "type": "text",
+      "label": "Introduction",
       "description": "Paragraph under the heading."
     },
     "items": {
       "type": "array",
+      "label": "Cards",
       "required": true,
       "items": {
         "type": "object",
         "fields": {
           "title": {
             "type": "string",
-            "required": true
+            "label": "Title",
+            "required": true,
+            "description": "The card heading."
           },
           "text": {
-            "type": "text"
+            "type": "text",
+            "label": "Text",
+            "description": "A sentence or two under the heading."
           },
           "href": {
-            "type": "url"
+            "type": "url",
+            "label": "Link",
+            "description": "Makes the whole card a link."
           },
           "image": {
-            "type": "object",
-            "fields": {
-              "src": { "type": "image", "required": true },
-              "alt": { "type": "string", "required": true },
-              "width": { "type": "integer" },
-              "height": { "type": "integer" }
-            }
+            "type": "image",
+            "label": "Image",
+            "description": "Image on top of the card."
+          },
+          "imageAlt": {
+            "type": "string",
+            "label": "Image description",
+            "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
           },
           "eyebrow": {
-            "type": "string"
+            "type": "string",
+            "label": "Eyebrow",
+            "description": "Short line above the title (a category, a role, a price)."
           }
         }
       },
@@ -93,6 +106,7 @@
       "min": 2,
       "max": 3,
       "default": 2,
+      "content": false,
       "description": "Level of the section heading; card titles are one below."
     }
   },

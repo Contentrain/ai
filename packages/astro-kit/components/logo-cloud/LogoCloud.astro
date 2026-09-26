@@ -1,0 +1,69 @@
+---
+// A grid of client or partner logos, each optionally linked, under an
+// optional heading.
+import { tv } from 'tailwind-variants'
+import KitImage from '../_shared/KitImage.astro'
+import Section, { type Tone } from '../_shared/Section.astro'
+import { imageOf, type ImageSource } from '../_shared/image'
+
+const cloud = tv({
+  slots: {
+    heading: 'mb-8 text-center text-sm font-semibold tracking-wide uppercase opacity-80',
+    list: 'grid grid-cols-2 items-center gap-x-8 gap-y-10 sm:grid-cols-3',
+    item: 'flex items-center justify-center',
+    logo: 'h-10 w-auto max-w-full object-contain transition duration-200',
+  },
+  variants: {
+    columns: {
+      '2': { list: 'sm:grid-cols-2' },
+      '3': { list: 'md:grid-cols-3' },
+      '4': { list: 'md:grid-cols-4' },
+    },
+    style: {
+      plain: {},
+      // Colour comes back on hover and on keyboard focus of the logo's link.
+      grayscale: { logo: 'opacity-70 grayscale group-hover:opacity-100 group-hover:grayscale-0 group-focus-visible:opacity-100 group-focus-visible:grayscale-0' },
+    },
+    tone: { default: {}, muted: {}, inverse: {}, accent: { heading: 'opacity-100' } },
+  },
+  defaultVariants: { columns: '4', style: 'plain', tone: 'default' },
+})
+
+interface Item {
+  /** The logo's address (or, until 0.7, an `ImageInput`). */
+  image: ImageSource
+  /** The company's name, read in place of the logo. */
+  imageAlt: string
+  href?: string | undefined
+}
+
+interface Props {
+  heading?: string | undefined
+  items: Item[]
+  columns?: '2' | '3' | '4' | undefined
+  style?: 'plain' | 'grayscale' | undefined
+  tone?: Tone | undefined
+  id?: string | undefined
+}
+
+const { heading, items, columns, style, tone, id } = Astro.props
+const s = cloud({ columns, style, tone })
+const headingId = heading && id ? `${id}-title` : undefined
+---
+<Section tone={tone} id={id} aria-labelledby={headingId}>
+  {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+  <ul class={s.list()}>
+    {items.map(item => {
+      const image = imageOf(item.image, item.imageAlt)
+      if (!image) return null
+      const logo = <KitImage image={image} sizes="160px" class={s.logo()} />
+      return (
+        <li class={s.item()}>
+          {item.href
+            ? <a href={item.href} class="group rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4">{logo}</a>
+            : <span class="group">{logo}</span>}
+        </li>
+      )
+    })}
+  </ul>
+</Section>
