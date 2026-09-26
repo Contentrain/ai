@@ -112,6 +112,10 @@ export interface SectionRule {
     /** The section's root element(s): `core/cover`, `core/media-text` (a loose run of blocks is `run`). */
     root?: string | string[]
   }
+  /**
+   * Named leaf groups. Each leaf, in document order, goes to the first declared slot that matches it and
+   * still has room, so declare a specific slot (an `attr` filter) before a general one on the same element.
+   */
   slots: Record<string, SectionSlot>
   props?: Record<string, string>
   /**

@@ -14,5 +14,6 @@
   },
   { "name": "stacked-muted", "props": { "model": "contact-submissions", "heading": "Write to us", "layout": "stacked", "tone": "muted", "id": "write" } },
   { "name": "split-inverse", "props": { "model": "contact-submissions", "heading": "Press", "tone": "inverse", "id": "press", "details": [{ "label": "Press office", "value": "press@northwind.example", "href": "mailto:press@northwind.example" }] } },
-  { "name": "stacked-accent", "props": { "model": "newsletter-requests", "heading": "Request a print copy", "layout": "stacked", "tone": "accent", "id": "print" } }
+  { "name": "stacked-accent", "props": { "model": "newsletter-requests", "heading": "Request a print copy", "layout": "stacked", "tone": "accent", "id": "print" } },
+  { "name": "form-heading", "props": { "model": "contact-submissions", "heading": "Contact", "intro": "Tell us where you are and what you need.", "formHeading": "Tell us about your project", "details": [{ "label": "Address", "value": "12 Harbour Street, Leith" }] } }
 ]

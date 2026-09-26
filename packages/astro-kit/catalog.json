@@ -548,6 +548,11 @@
           "label": "Introduction",
           "description": "A line or two above the details."
         },
+        "formHeading": {
+          "type": "string",
+          "label": "Form heading",
+          "description": "The form's own heading, shown above the form."
+        },
         "details": {
           "type": "array",
           "label": "Contact details",
@@ -605,6 +610,7 @@
       "contentFields": {
         "heading": "heading",
         "intro": "intro",
+        "formHeading": "form_heading",
         "details": "details",
         "details[].label": "details[].label",
         "details[].value": "details[].value",
@@ -1190,6 +1196,10 @@
           "type": "string",
           "description": "Copyright line; {year} is the current year. Defaults to © <year> <siteName>."
         },
+        "consentLabel": {
+          "type": "string",
+          "description": "Label of the cookie settings button after the copyright line; it reopens the consent bar (withdrawal, GDPR 7(3)). Set only when the site has a consent bar."
+        },
         "navLabel": {
           "type": "string",
           "description": "Accessible name of the footer navigation (ui-strings nav.footer)."
@@ -1636,7 +1646,6 @@
             "alt": {
               "type": "string",
               "label": "Image description",
-              "required": true,
               "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
             },
             "width": {
@@ -2733,7 +2742,6 @@
             "alt": {
               "type": "string",
               "label": "Image description",
-              "required": true,
               "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
             },
             "width": {

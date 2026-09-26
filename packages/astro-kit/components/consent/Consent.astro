@@ -3,6 +3,8 @@
 // privacy policy. The choice is kept in localStorage (`kit-consent`), written
 // to <html data-consent="granted|denied"> and announced as a `kit:consent`
 // event on document, which the site-settings analytics gate listens for.
+// Any element with [data-kit-consent-open] (the Footer's cookie settings
+// button) reopens the bar, so consent is withdrawn as easily as it is given.
 // Replaces cookie plugins (Cookie Notice, Complianz, CookieYes, Cookiebot).
 import { tv } from 'tailwind-variants'
 
@@ -67,7 +69,14 @@ const s = consent({ position })
   // One listener for the page; the bar is not a dialog, so focus is left where
   // it is and the page stays usable while it shows.
   document.addEventListener('click', (event) => {
-    const button = (event.target as Element | null)?.closest<HTMLButtonElement>('[data-kit-consent-choice]')
+    const target = event.target as Element | null
+    if (target?.closest('[data-kit-consent-open]')) {
+      document.querySelectorAll<HTMLElement>('[data-kit-consent]').forEach((bar) => { bar.hidden = false })
+      // The visitor asked for it: move focus to the first choice so keyboard users land in the bar.
+      document.querySelector<HTMLButtonElement>('[data-kit-consent] [data-kit-consent-choice]')?.focus()
+      return
+    }
+    const button = target?.closest<HTMLButtonElement>('[data-kit-consent-choice]')
     if (!button) return
     const choice = button.dataset.kitConsentChoice === 'granted' ? 'granted' : 'denied'
     try { localStorage.setItem('kit-consent', choice) } catch {}

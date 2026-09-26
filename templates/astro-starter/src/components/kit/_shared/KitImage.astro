@@ -48,7 +48,7 @@ const STEPS = [320, 640, 960, 1280, 1600, 1920, 2560]
 const widthsUpTo = (max: number) => [...STEPS.filter(step => step < max), max]
 ---
 {local
-  ? <Image src={local} alt={image.alt} {...size} widths={widthsUpTo(image.width ?? local.width)} sizes={sizes} class={className} loading={loading} fetchpriority={fetchpriority} />
+  ? <Image src={local} alt={image.alt ?? ''} {...size} widths={widthsUpTo(image.width ?? local.width)} sizes={sizes} class={className} loading={loading} fetchpriority={fetchpriority} />
   : image.width && image.height && path === undefined
-    ? <Image src={image.src} alt={image.alt} width={image.width} height={image.height} widths={widthsUpTo(image.width)} sizes={sizes} class={className} loading={loading} fetchpriority={fetchpriority} />
-    : <img src={image.src} alt={image.alt} width={image.width} height={image.height} class={className} loading={loading} fetchpriority={fetchpriority} decoding="async" />}
+    ? <Image src={image.src} alt={image.alt ?? ''} width={image.width} height={image.height} widths={widthsUpTo(image.width)} sizes={sizes} class={className} loading={loading} fetchpriority={fetchpriority} />
+    : <img src={image.src} alt={image.alt ?? ''} width={image.width} height={image.height} class={className} loading={loading} fetchpriority={fetchpriority} decoding="async" />}

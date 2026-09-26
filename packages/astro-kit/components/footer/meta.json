@@ -103,6 +103,10 @@
       "type": "string",
       "description": "Copyright line; {year} is the current year. Defaults to © <year> <siteName>."
     },
+    "consentLabel": {
+      "type": "string",
+      "description": "Label of the cookie settings button after the copyright line; it reopens the consent bar (withdrawal, GDPR 7(3)). Set only when the site has a consent bar."
+    },
     "navLabel": {
       "type": "string",
       "description": "Accessible name of the footer navigation (ui-strings nav.footer)."

@@ -8,6 +8,7 @@
 // the prop it feeds are compared type to type.
 
 import type { FieldDef } from '@contentrain/types'
+import { fieldDepth, sectionFieldName } from '@contentrain/types'
 
 export const CATALOG_FORMAT = 'astro-kit-catalog@1'
 
@@ -57,19 +58,11 @@ export const CONTENT_PROP_NAME = /^[a-z][a-z0-9]*(?:[A-Z][a-z0-9]+)*$/
  * The page-singleton field a content prop is stored in (DECISIONS §7b): the prop name in snake_case, as
  * Contentrain field names are (`ctaLabel` → `cta_label`). The view passes each prop from its field.
  */
-export function contentFieldName(prop: string): string {
-  return prop.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`)
-}
+export const contentFieldName: (prop: string) => string = sectionFieldName
 
 /** The props a section's page-singleton field holds: all but the settings. */
 export function contentProps(component: KitComponentMeta): Record<string, KitProp> {
   return Object.fromEntries(Object.entries(component.props).filter(([, prop]) => prop.content !== false))
-}
-
-/** Object levels a field adds (arrays are not a level): Contentrain nests at most two. */
-function objectDepth(field: FieldDef): number {
-  const children = [...Object.values(field.fields ?? {}), ...(typeof field.items === 'object' ? [field.items] : [])]
-  return (field.type === 'object' ? 1 : 0) + Math.max(0, ...children.map(objectDepth))
 }
 
 /** Fields under a field, by dotted path (`items[].imageAlt`). */
@@ -173,7 +166,7 @@ export function validateCatalog(catalog: KitCatalog): string[] {
         if (JSON.stringify(c.contentFields) !== JSON.stringify(expected)) problems.push(`${at}: contentFields is stale — rebuild the catalog`)
       }
       for (const [name, prop] of Object.entries(content)) {
-        if (1 + objectDepth(prop) > 2) problems.push(`${at}: content prop ${name} nests objects deeper than a page singleton allows`)
+        if (1 + fieldDepth(prop) > 2) problems.push(`${at}: content prop ${name} nests objects deeper than a page singleton allows`)
       }
     }
     for (const [builder, names] of Object.entries(c.sources) as Array<[KitBuilder, string[]]>) {

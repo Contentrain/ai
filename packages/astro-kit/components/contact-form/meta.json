@@ -13,6 +13,7 @@
     "model": { "type": "string", "required": true, "content": false, "description": "The Studio model submissions are saved to — the form's fields are that model's form settings (from the plugin form's fields at migration)." },
     "heading": { "type": "string", "label": "Heading", "description": "Section heading." },
     "intro": { "type": "text", "label": "Introduction", "description": "A line or two above the details." },
+    "formHeading": { "type": "string", "label": "Form heading", "description": "The form's own heading, shown above the form." },
     "details": { "type": "array", "label": "Contact details", "items": { "type": "object", "fields": { "label": { "type": "string", "label": "Label", "required": true, "description": "What the detail is (Phone, Email, Address)." }, "value": { "type": "string", "label": "Value", "required": true, "description": "The detail as shown." }, "href": { "type": "url", "label": "Link", "description": "A tel:, mailto: or map link for it." } } }, "description": "Ways to reach you, in order (Email → mailto:, Phone → tel:, Address → map link)." },
     "id": { "type": "string", "content": false, "description": "Section id; the heading gets `<id>-title`." }
   },

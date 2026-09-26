@@ -224,5 +224,10 @@ describe('section rules', () => {
         classify([[h('0.0', 'h1'), w('0.1', 'text-editor'), w('0.2', 'icon-list')]], 0, 1),
       ]).toEqual(['hero.centered', 'card-grid.icon-box', 'contact-form.form', 'hero.centered', 'feature-list.icon-list'])
     })
+    it('a contact section with its own form heading: the second heading is the form heading', () => {
+      const match = classifySection(tables.elementor!, [[h('0.0', 'h1'), w('0.1', 'text-editor'), h('0.2', 'h2'), w('0.3', 'form')]], { index: 0, count: 1 })
+      expect(match?.rule.id).toBe('contact-form.form')
+      expect(match?.match.slots).toMatchObject({ title: ['0.0'], intro: ['0.1'], formTitle: ['0.2'], form: ['0.3'] })
+    })
   })
 })

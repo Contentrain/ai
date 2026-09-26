@@ -854,6 +854,10 @@
           "match": "elementor/heading",
           "max": 1
         },
+        "formTitle": {
+          "match": "elementor/heading",
+          "max": 1
+        },
         "intro": {
           "match": "elementor/text-editor",
           "max": 1
@@ -867,7 +871,8 @@
       "props": {
         "model": "const:contact",
         "heading": "@title attr:title || @title dom: || @form attr:form_name",
-        "intro": "@intro dom:"
+        "intro": "@intro dom:",
+        "formHeading": "@formTitle attr:title || @formTitle dom:"
       }
     },
     {

@@ -39,6 +39,8 @@ interface Props {
   social?: LinkInput[] | undefined
   /** The copyright line, e.g. "© 2026 Northwind Studio"; `{year}` is the current year. */
   copyright?: string | undefined
+  /** Label of the cookie settings link after the copyright line ("Cookie settings"); it reopens the consent bar, so a visitor can withdraw consent as easily as they gave it. Only with a consent bar on the page. */
+  consentLabel?: string | undefined
   /** Accessible name of the footer navigation ("Footer"). */
   navLabel?: string | undefined
   layout?: 'simple' | 'columns' | undefined
@@ -46,17 +48,18 @@ interface Props {
   align?: 'start' | 'center' | undefined
 }
 
-const { siteName, tagline, columns = [], links = [], social = [], copyright, navLabel = 'Footer', layout = 'simple', tone, align } = Astro.props
+const { siteName, tagline, columns = [], links = [], social = [], copyright, consentLabel, navLabel = 'Footer', layout = 'simple', tone, align } = Astro.props
 const { root, inner, muted, link } = footer({ layout, tone, align })
 const year = String(new Date().getFullYear())
 const line = copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
 ---
+<!-- The cookie settings control is a button, not a link: the Consent component's listener reopens its bar on any [data-kit-consent-open]. -->
 <footer class={root()}>
   <div class={inner()} style={layout === 'columns' ? `--footer-columns: ${Math.max(columns.length, 1)}` : undefined}>
     <div class="flex flex-col gap-3">
       <p class="text-base font-semibold" data-kit-brand>{siteName}</p>
       {tagline && <p class={muted()} data-kit-tagline>{tagline}</p>}
-      {layout === 'columns' && <p class:list={[muted(), 'mt-auto pt-6']}>{line}</p>}
+      {layout === 'columns' && <p class:list={[muted(), 'mt-auto pt-6']}>{line}{consentLabel && <> · <button type="button" data-kit-consent-open class={link()}>{consentLabel}</button></>}</p>}
     </div>
     {layout === 'columns'
       ? columns.map(column => (
@@ -81,7 +84,7 @@ const line = copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
               </ul>
             </nav>
           )}
-          <p class={muted()}>{line}</p>
+          <p class={muted()}>{line}{consentLabel && <> · <button type="button" data-kit-consent-open class={link()}>{consentLabel}</button></>}</p>
         </div>
       )}
     {layout === 'columns' && social.length > 0 && (

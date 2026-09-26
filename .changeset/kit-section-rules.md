@@ -13,3 +13,9 @@ Ten new components: `split` (image beside heading, markdown body and actions), `
 The Gutenberg, Elementor and Divi tables ship section rules for heroes (split, centred, cover), splits, card and feature rows, stats, pricing, team, testimonials, FAQs, galleries, sliders, contact forms, calls to action and announcements; the classic table maps cookie-notice plugins to `consent`. A rule's `when.root` names the section's root element (`core/cover`), a value without a slot reads that root, and `each: '@slot <selector>'` repeats over parts of a slot's leaf (an accordion's items). Elementor icon and image boxes default to centred text, as Elementor does.
 
 The footer takes `align: center`, and a header with a tagline keeps it on one line on phones, wrapping the navigation below.
+
+`contact-form` gains `formHeading`, the form's own heading above the form (h3 under a section heading, else h2); the Elementor and Gutenberg contact rules read it from a second heading.
+
+Consent can be withdrawn as easily as it is given (GDPR 7(3)): any `[data-kit-consent-open]` element reopens the bar, and Footer's `consentLabel` renders that cookie settings button after the copyright line.
+
+An image's `alt` is optional (`ImageInput.alt?`, hero and split `image.alt`): empty or absent is decoration and renders `alt=""`, so a migration never has to invent text for a decorative source image.

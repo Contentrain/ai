@@ -783,6 +783,10 @@
           "match": "core/heading",
           "max": 1
         },
+        "formTitle": {
+          "match": "core/heading",
+          "max": 1
+        },
         "intro": {
           "match": "core/paragraph",
           "max": 1
@@ -802,7 +806,8 @@
       "props": {
         "model": "const:contact",
         "heading": "@title dom:",
-        "intro": "@intro dom:"
+        "intro": "@intro dom:",
+        "formHeading": "@formTitle dom:"
       }
     },
     {

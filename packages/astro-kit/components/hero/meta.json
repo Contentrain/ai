@@ -116,7 +116,6 @@
         "alt": {
           "type": "string",
           "label": "Image description",
-          "required": true,
           "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
         },
         "width": {
