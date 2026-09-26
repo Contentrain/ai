@@ -55,7 +55,7 @@ const line = copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
 ---
 <!-- The cookie settings control is a button, not a link: the Consent component's listener reopens its bar on any [data-kit-consent-open]. -->
 <footer class={root()}>
-  <div class={inner()} style={layout === 'columns' ? `--footer-columns: ${Math.max(columns.length, 1)}` : undefined}>
+  <div class={inner()} data-kit-footer style={layout === 'columns' ? `--footer-columns: ${Math.max(columns.length, 1)}` : undefined}>
     <div class="flex flex-col gap-3">
       <p class="text-base font-semibold" data-kit-brand>{siteName}</p>
       {tagline && <p class={muted()} data-kit-tagline>{tagline}</p>}

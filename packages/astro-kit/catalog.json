@@ -22,6 +22,7 @@
     "--radius-image",
     "--spacing-gutter",
     "--text-nav",
+    "--text-footer",
     "--text-heading-1",
     "--text-heading-2",
     "--text-heading-3",
@@ -1853,6 +1854,14 @@
           ],
           "default": "compact",
           "description": "Gap and text size of the inline list."
+        },
+        "color": {
+          "options": [
+            "current",
+            "link"
+          ],
+          "default": "current",
+          "description": "current: the surrounding text, dimmed until hovered. link: the site's link colour (--color-link, else the accent) at full strength."
         }
       },
       "props": {

@@ -66,6 +66,8 @@ theme applies them to the kit's markers, and only when the site sets them:
 - `--text-body`: `[data-kit-text]`, the lead and body paragraphs of hero, CTA
   and card grid.
 - `--text-nav`: the header navigation, `[data-cr-part="nav-header"]`.
+- `--text-footer`: the footer's text and links, `[data-kit-footer]` (the kit's
+  own size is `text-sm`).
 - `--spacing-section`: the distance between two consecutive sections; each
   `[data-kit-section]` gets half of it as vertical padding, except
   where `data-kit-spacing="none"`.

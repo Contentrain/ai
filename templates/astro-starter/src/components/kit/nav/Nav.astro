@@ -8,7 +8,7 @@ import type { NavItem } from '../_shared/types'
 const nav = tv({
   slots: {
     list: 'hidden items-center md:flex',
-    link: 'text-current no-underline opacity-80 hover:opacity-100 aria-[current=page]:font-semibold aria-[current=page]:opacity-100',
+    link: 'no-underline aria-[current=page]:font-semibold',
     // hidden, not invisible: a closed submenu takes no space, so one under the last item cannot widen the page.
     sub: 'absolute top-full z-30 hidden min-w-48 rounded-lg border border-line bg-surface p-2 text-ink shadow-lg group-hover:block group-focus-within:block',
     toggle: 'inline-flex cursor-pointer list-none items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-current/10 md:hidden [&::-webkit-details-marker]:hidden',
@@ -17,8 +17,14 @@ const nav = tv({
     // Submenus open towards the page: leftwards under an end-aligned menu.
     align: { start: { list: 'justify-start', sub: 'left-0' }, end: { list: 'justify-end', sub: 'right-0' }, center: { list: 'justify-center', sub: 'left-0' } },
     density: { compact: { list: 'gap-5 text-sm' }, comfortable: { list: 'gap-8 text-base' } },
+    // current: the surrounding text, dimmed until hovered. link: the site's link colour at full strength, as themes that
+    // colour every link draw their menu; the toggle keeps the surrounding text.
+    color: {
+      current: { link: 'text-current opacity-80 hover:opacity-100 aria-[current=page]:opacity-100' },
+      link: { link: 'text-[color:var(--color-link,var(--color-accent))]' },
+    },
   },
-  defaultVariants: { align: 'end', density: 'compact' },
+  defaultVariants: { align: 'end', density: 'compact', color: 'current' },
 })
 
 interface Props {
@@ -32,14 +38,15 @@ interface Props {
   mobile?: 'popover' | 'details' | undefined
   align?: 'start' | 'end' | 'center' | undefined
   density?: 'compact' | 'comfortable' | undefined
+  color?: 'current' | 'link' | undefined
   /** Unique per page when a page has two navigations. */
   id?: string | undefined
   /** What the navigation is, for checks that find a page's parts (`data-cr-part`, e.g. "nav-header"). */
   part?: string | undefined
 }
 
-const { items, label = 'Main', menuLabel = 'Menu', closeLabel = 'Close', mobile = 'popover', align, density, id = 'site-nav', part } = Astro.props
-const { list, link, sub, toggle } = nav({ align, density })
+const { items, label = 'Main', menuLabel = 'Menu', closeLabel = 'Close', mobile = 'popover', align, density, color, id = 'site-nav', part } = Astro.props
+const { list, link, sub, toggle } = nav({ align, density, color })
 const current = Astro.url.pathname
 const drawer = `${id}-drawer`
 ---

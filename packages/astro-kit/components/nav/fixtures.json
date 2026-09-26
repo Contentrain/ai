@@ -61,6 +61,7 @@
     "props": {
       "id": "fx-nav-c",
       "align": "center",
+      "color": "link",
       "items": [
         {
           "label": "Work",
