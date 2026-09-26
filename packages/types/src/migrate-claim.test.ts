@@ -132,6 +132,12 @@ describe('validateMigrateStudioClaim', () => {
     expect(validateMigrateStudioClaim(claim({ comments_export: old }))).toEqual({ ok: true, claim: claim(), warnings: ['comments_export.token: invalid'] })
   })
 
+  it('the guard does not narrow a claim whose export would be dropped', () => {
+    const bad = claim({ comments_export: 'https://migrate.example/x' })
+    expect(validateMigrateStudioClaim(bad).ok).toBe(true)
+    expect(isMigrateStudioClaim(bad)).toBe(false)
+  })
+
   it('a dropped export does not hide a real error', () => {
     const result = validateMigrateStudioClaim(claim({ email: '', comments_export: 'x' }))
     expect(result.ok).toBe(false)
