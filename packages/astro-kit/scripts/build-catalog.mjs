@@ -17,8 +17,8 @@ const TOKENS = [
   '--font-sans', '--container-prose', '--container-page', '--container-wide', '--radius-card',
   // Optional: read with a fallback to the kit's own value, so they change nothing until a site sets them.
   '--font-weight-heading', '--font-weight-body', '--text-body', '--leading-body', '--leading-heading', '--radius-control', '--radius-image', '--spacing-gutter',
-  // Optional, applied by the site's theme on the kit's markers: data-kit-text, data-kit-section, data-cr-part="nav-header", headings in main.
-  '--text-nav', '--text-heading-1', '--text-heading-2', '--text-heading-3', '--spacing-section',
+  // Optional, applied by the site's theme on the kit's markers: data-kit-text, data-kit-section, data-kit-footer, data-cr-part="nav-header", headings in main.
+  '--text-nav', '--text-footer', '--text-heading-1', '--text-heading-2', '--text-heading-3', '--spacing-section',
 ]
 
 const ids = (await readdir(componentsDir, { withFileTypes: true }))

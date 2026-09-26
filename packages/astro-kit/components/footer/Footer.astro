@@ -47,7 +47,7 @@ const year = String(new Date().getFullYear())
 const line = copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
 ---
 <footer class={root()}>
-  <div class={inner()} style={layout === 'columns' ? `--footer-columns: ${Math.max(columns.length, 1)}` : undefined}>
+  <div class={inner()} data-kit-footer style={layout === 'columns' ? `--footer-columns: ${Math.max(columns.length, 1)}` : undefined}>
     <div class="flex flex-col gap-3">
       <p class="text-base font-semibold" data-kit-brand>{siteName}</p>
       {tagline && <p class={muted()} data-kit-tagline>{tagline}</p>}

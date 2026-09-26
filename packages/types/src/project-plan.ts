@@ -29,7 +29,7 @@ export const PLAN_TOKEN_ROLES = [
   'font-weight-heading', 'font-weight-body', 'text-body', 'leading-body', 'leading-heading', 'radius-control', 'radius-image', 'spacing-gutter',
   // The theme's type scale and rhythm: the site's theme applies them on the kit's markers (`data-kit-*`, `data-cr-part`).
   // `spacing-section` is the distance between two consecutive top-level sections, not a padding: each section gets half.
-  'text-nav', 'text-heading-1', 'text-heading-2', 'text-heading-3', 'spacing-section',
+  'text-nav', 'text-footer', 'text-heading-1', 'text-heading-2', 'text-heading-3', 'spacing-section',
   // The source's link colour where it is not the accent (Hello Elementor: #c36 links, a grey button). Absent: the accent.
   'color-link',
 ] as const
