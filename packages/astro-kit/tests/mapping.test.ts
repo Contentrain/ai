@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { attrsOf, claimMatches, KIT_BUILDERS, rulesFor, unmappedSources, validateMapping, type KitCatalog, type MappingTable } from '../src/index'
+import { attrsOf, claimMatches, classifySection, KIT_BUILDERS, matchSection, rulesFor, sectionRuleId, sectionValueSlots, unmappedSources, validateMapping, type KitCatalog, type MappingTable, type SectionLeaf, type SectionRule } from '../src/index'
 
 const ROOT = join(import.meta.dirname, '..')
 const catalog = JSON.parse(await readFile(join(ROOT, 'catalog.json'), 'utf8')) as KitCatalog
@@ -98,5 +98,83 @@ describe('mapping tables', () => {
     expect(attrsOf(tree[1]!, tables.elementor!.defaults).video_type).toBe('vimeo')
     // Without the table's defaults the default video matches nothing: the bug this guards.
     expect(claimMatches(tree, { ...tables.elementor!, defaults: {} })).toHaveLength(1)
+  })
+})
+
+const leaf = (path: string, name: string, attrs?: Record<string, unknown>): SectionLeaf => ({ name, path, attrs })
+
+describe('section rules', () => {
+  const hero: SectionRule = {
+    id: 'hero.split', component: 'hero', variant: { layout: 'split' },
+    when: { position: 'first', columns: [1, 2] },
+    slots: {
+      title: { match: 'elementor/heading', min: 1, max: 1, attr: { header_size: 'h1|h2' } },
+      lead: { match: 'elementor/text-editor', max: 2 },
+      button: { match: 'elementor/button', min: 1, max: 2 },
+      media: { match: 'elementor/image', max: 1 },
+    },
+    props: { heading: '@title attr:title || @title dom:', image: '@media img:img' },
+    into: 'actions', each: '@button', item: { label: 'attr:text', href: 'attr:link.url' },
+  }
+  const team: SectionRule = {
+    id: 'team.columns', component: 'card-grid', when: { repeat: 'columns' },
+    slots: { photo: { match: 'elementor/image', min: 1, max: 1 }, name: { match: 'elementor/heading', min: 1, max: 1 } },
+    into: 'items', each: 'column', item: { title: '@name attr:title' },
+  }
+  const heroLeaves = [[leaf('0.0.0', 'elementor/heading', { header_size: 'h1' }), leaf('0.0.1', 'elementor/spacer'), leaf('0.0.2', 'elementor/text-editor')], [leaf('0.1.0', 'elementor/button'), leaf('0.1.1', 'elementor/image')]]
+
+  it('claims leaves into slots in document order, skipping layout-only leaves', () => {
+    expect(matchSection(hero, heroLeaves, { index: 0, count: 4 })).toEqual({
+      slots: { title: ['0.0.0'], lead: ['0.0.2'], button: ['0.1.0'], media: ['0.1.1'] },
+    })
+  })
+
+  it('refuses on position, column count, attr, a missing minimum or an unclaimed leaf', () => {
+    expect(matchSection(hero, heroLeaves, { index: 1, count: 4 })).toBeNull()
+    expect(matchSection(hero, [...heroLeaves, []], { index: 0, count: 4 })).toBeNull()
+    expect(matchSection(hero, [[leaf('0', 'elementor/heading', { header_size: 'h3' }), leaf('1', 'elementor/button')]], { index: 0, count: 1 })).toBeNull()
+    expect(matchSection(hero, [[leaf('0', 'elementor/heading', { header_size: 'h1' })]], { index: 0, count: 1 })).toBeNull()
+    expect(matchSection(hero, [[leaf('0', 'elementor/heading', { header_size: 'h1' }), leaf('1', 'elementor/button'), leaf('2', 'elementor/counter')]], { index: 0, count: 1 })).toBeNull()
+    expect(matchSection({ ...hero, when: { ...hero.when, only: false } }, [[leaf('0', 'elementor/heading', { header_size: 'h1' }), leaf('1', 'elementor/button'), leaf('2', 'elementor/counter')]], { index: 0, count: 1 })).not.toBeNull()
+  })
+
+  it('matches each column on its own for a repeated row, and keeps the per-column slots', () => {
+    const cols = [0, 1, 2].map(i => [leaf(`0.${i}.0`, 'elementor/image'), leaf(`0.${i}.1`, 'elementor/heading')])
+    expect(matchSection(team, cols, { index: 2, count: 4 })).toEqual({
+      slots: { photo: ['0.0.0', '0.1.0', '0.2.0'], name: ['0.0.1', '0.1.1', '0.2.1'] },
+      columns: [0, 1, 2].map(i => ({ photo: [`0.${i}.0`], name: [`0.${i}.1`] })),
+    })
+    expect(matchSection(team, [cols[0]!, [leaf('0.1.0', 'elementor/image')]], { index: 2, count: 4 })).toBeNull()
+  })
+
+  it('takes the first rule that fits and names it for the plan', () => {
+    const table: MappingTable = { format: 'astro-kit-mapping@1', builder: 'elementor', version: '1', fallback: 'prose', rules: [], sections: [team, hero] }
+    expect(classifySection(table, heroLeaves, { index: 0, count: 4 })?.rule.id).toBe('hero.split')
+    expect(sectionRuleId('elementor', hero)).toBe('elementor:section:hero.split')
+  })
+
+  it('reads values as optional slot + mapping expression, with || alternatives', () => {
+    expect(sectionValueSlots('@title attr:title || @title dom:')).toEqual(['title', 'title'])
+    expect(sectionValueSlots('site:title')).toEqual([])
+    expect(sectionValueSlots('@title innerHTML')).toBeNull()
+  })
+
+  it('validates section rules against the catalog', () => {
+    const table: MappingTable = { format: 'astro-kit-mapping@1', builder: 'elementor', version: '1', fallback: 'prose', rules: [], sections: [hero, team] }
+    expect(validateMapping(table, catalog)).toEqual([])
+    const broken: MappingTable = { ...table, sections: [
+      { ...hero, variant: { layout: 'diagonal' }, slots: { ...hero.slots, lead: { match: 'core/paragraph', max: 2 } }, props: { heading: '@lead dom:', lead: '@nope html:' } },
+      { ...team, each: '@photo', item: { title: '@name attr:title' } },
+      { ...team },
+    ] }
+    expect(validateMapping(broken, catalog)).toEqual([
+      'elementor section hero.split: hero.layout has no option diagonal',
+      'elementor section hero.split: slot lead matches core/paragraph, not a elementor element',
+      'elementor section hero.split: heading is string but slot lead may hold several leaves (max must be 1)',
+      'elementor section hero.split: lead reads undeclared slot nope',
+      'elementor section team.columns: repeat columns needs each: column',
+      'elementor section team.columns: items[].title reads a slot, but items of each @photo read their own leaf',
+      'elementor section team.columns: listed twice',
+    ])
   })
 })

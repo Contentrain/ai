@@ -22,6 +22,9 @@
 //                         <cls> (`*` matches any run of characters); <b> otherwise. An empty branch
 //                         reads nothing and the prop keeps its default. `class:is-style-outline=ghost|primary`
 //                         is WordPress's outline button as the kit's ghost action.
+//
+// Section rules (`sections`) classify a whole page section by the leaves it holds and fill the component's
+// props from them: the same expressions, read from a named slot's leaf (`@title attr:title`).
 
 import type { KitBuilder, KitCatalog, KitComponent } from './catalog.js'
 import { isBuilderElement, KIT_BUILDERS } from './catalog.js'
@@ -64,6 +67,131 @@ export interface MappingTable {
    */
   defaults?: Record<string, Record<string, string | number | boolean>>
   rules: MappingRule[]
+  /**
+   * Section rules: what a whole section of a page (an Elementor container, a Gutenberg group or columns,
+   * a Divi section — facts `sections[]`) becomes, tried top to bottom before any element rule. The first
+   * that matches wins; a section none matches falls through to the element `rules` inside it.
+   */
+  sections?: SectionRule[]
+}
+
+/**
+ * A named group of a section's leaves: every leaf named `match` (and carrying `attr`) up to `max` of them.
+ * `attr` values may list alternatives with `|` (`{ header_size: 'h1|h2' }`).
+ */
+export interface SectionSlot {
+  match: string | string[]
+  attr?: Record<string, string | number | boolean>
+  /** At least this many leaves (default 0). */
+  min?: number
+  /** At most this many (default unbounded). */
+  max?: number
+}
+
+/**
+ * One section pattern. Values are the table's expressions, prefixed `@<slot> ` to read a slot's leaf
+ * (`@title attr:title`); `a || b` takes the first non-empty (builder data first, rendered markup as fallback).
+ * A slot of several leaves joins their text into a markdown prop; any other prop reads its first leaf.
+ */
+export interface SectionRule {
+  /** Stable id (`hero.split`, `card-grid.icon-box`): plans record `<builder>:section:<id>`; JEW chooses among them. */
+  id: string
+  component: string
+  variant?: Record<string, string>
+  when?: {
+    /** Where on the page: `first` is the page's first section, `last` its last. */
+    position?: 'first' | 'last' | 'any'
+    /** Column count(s) the section must have. */
+    columns?: number | number[]
+    /** Every leaf must fall into a slot (default true); false lets unclaimed leaves be. */
+    only?: boolean
+    /** `columns`: each column must match the slots on its own (a row of team members, price plans). */
+    repeat?: 'columns'
+  }
+  slots: Record<string, SectionSlot>
+  props?: Record<string, string>
+  /** Array prop filled once per `each`: a slot's leaves (`@card`) or the columns (`column`, with `repeat: 'columns'`). */
+  into?: string
+  each?: string
+  /** One array item: relative to the leaf (`each: '@slot'`) or to the column, where `@<slot>` is that column's slot. */
+  item?: Record<string, string>
+}
+
+/** A section leaf as the fact pack gives it: a builder element with its `blocks:` path. */
+export interface SectionLeaf extends MappingNode {
+  path: string
+}
+
+/** Leaf paths per slot; with `repeat: 'columns'`, also per column. */
+export interface SectionMatch {
+  slots: Record<string, string[]>
+  columns?: Record<string, string[]>[]
+}
+
+/** The id a plan records for a section rule. */
+export function sectionRuleId(builder: KitBuilder, rule: Pick<SectionRule, 'id'>): string {
+  return `${builder}:section:${rule.id}`
+}
+
+const SECTION_LAYOUT_LEAVES = new Set(['elementor/spacer', 'elementor/divider', 'core/spacer', 'core/separator', 'divi/et_pb_divider'])
+
+function slotFits(slot: SectionSlot, leaf: SectionLeaf, defaults?: MappingTable['defaults']): boolean {
+  if (![slot.match].flat().includes(leaf.name)) return false
+  const attrs = attrsOf(leaf, defaults)
+  return Object.entries(slot.attr ?? {}).every(([key, want]) => String(want).split('|').includes(String(attrs[key])))
+}
+
+/** Assign leaves to slots in document order, each to the first declared slot with room; null when the rule does not fit. */
+function claimLeaves(rule: SectionRule, leaves: SectionLeaf[], defaults?: MappingTable['defaults']): Record<string, string[]> | null {
+  const claimed: Record<string, string[]> = Object.fromEntries(Object.keys(rule.slots).map(name => [name, []]))
+  for (const leaf of leaves) {
+    if (SECTION_LAYOUT_LEAVES.has(leaf.name)) continue
+    const slot = Object.entries(rule.slots).find(([name, def]) => claimed[name]!.length < (def.max ?? Infinity) && slotFits(def, leaf, defaults))
+    if (slot) claimed[slot[0]]!.push(leaf.path)
+    else if (rule.when?.only !== false) return null
+  }
+  for (const [name, def] of Object.entries(rule.slots)) if (claimed[name]!.length < (def.min ?? 0)) return null
+  return claimed
+}
+
+/**
+ * Whether a section rule fits a section, and which leaves fill which slot. `columns` are the section's
+ * columns left to right, each its leaves in document order (layout containers already opened).
+ */
+export function matchSection(rule: SectionRule, columns: SectionLeaf[][], meta: { index: number, count: number }, defaults?: MappingTable['defaults']): SectionMatch | null {
+  const when = rule.when ?? {}
+  if (when.position === 'first' && meta.index !== 0) return null
+  if (when.position === 'last' && meta.index !== meta.count - 1) return null
+  if (when.columns !== undefined && ![when.columns].flat().includes(columns.length)) return null
+  if (when.repeat === 'columns') {
+    if (columns.length < 2) return null
+    const per = columns.map(leaves => claimLeaves(rule, leaves, defaults))
+    if (per.some(c => !c)) return null
+    const slots: Record<string, string[]> = Object.fromEntries(Object.keys(rule.slots).map(name => [name, per.flatMap(c => c![name]!)]))
+    return { slots, columns: per as Record<string, string[]>[] }
+  }
+  const slots = claimLeaves(rule, columns.flat(), defaults)
+  return slots && { slots }
+}
+
+/** The first section rule of a table that fits, with its match. */
+export function classifySection(table: MappingTable, columns: SectionLeaf[][], meta: { index: number, count: number }): { rule: SectionRule, match: SectionMatch } | null {
+  for (const rule of table.sections ?? []) {
+    const match = matchSection(rule, columns, meta, table.defaults)
+    if (match) return { rule, match }
+  }
+  return null
+}
+
+/** A section value: alternatives joined by ` || `, each an optional `@<slot> ` then a mapping value. Returns the slots it reads, or null when malformed. */
+export function sectionValueSlots(value: string): string[] | null {
+  const slots: string[] = []
+  for (const alternative of value.split(' || ')) {
+    const m = /^(?:@([a-z][\w-]*) )?(.+)$/.exec(alternative)
+    if (!m || !MAPPING_VALUE_PATTERN.test(m[2]!)) return null
+    if (m[1]) slots.push(m[1])
+  }
+  return slots
 }
 
 /** Problems with a mapping table against the catalog, one line each; empty when it is sound. */
@@ -106,6 +234,61 @@ export function validateMapping(table: MappingTable, catalog: KitCatalog): strin
     }
     if (rule.item && !rule.into && !rule.bind) problems.push(`${at}: item without into or bind`)
     const bound = new Set([...Object.keys(rule.props ?? {}), ...(rule.into ? [rule.into] : Object.keys(rule.item ?? {}))])
+    for (const [prop, def] of Object.entries(c.props)) if (def.required && !bound.has(prop)) problems.push(`${at}: required prop ${c.id}.${prop} has no source`)
+  }
+  problems.push(...validateSections(table, components))
+  return problems
+}
+
+function validateSections(table: MappingTable, components: Map<string, KitComponent>): string[] {
+  const problems: string[] = []
+  const seen = new Set<string>()
+  for (const rule of table.sections ?? []) {
+    const at = `${table.builder} section ${rule.id}`
+    if (!/^[a-z][a-z0-9-]*(?:\.[a-z0-9-]+)*$/.test(rule.id)) problems.push(`${at}: id is not dotted kebab-case`)
+    if (seen.has(rule.id)) problems.push(`${at}: listed twice`)
+    seen.add(rule.id)
+    const c = components.get(rule.component)
+    if (!c) { problems.push(`${at}: component ${rule.component} is not in the catalog`); continue }
+    for (const [axis, value] of Object.entries(rule.variant ?? {})) {
+      if (!c.variants[axis]) problems.push(`${at}: ${c.id} has no variant axis ${axis}`)
+      else if (!c.variants[axis]!.options.includes(value)) problems.push(`${at}: ${c.id}.${axis} has no option ${value}`)
+    }
+    if (!Object.keys(rule.slots).length) problems.push(`${at}: no slots`)
+    for (const [name, slot] of Object.entries(rule.slots)) {
+      if (!/^[a-z][\w-]*$/.test(name)) problems.push(`${at}: slot ${name} is not an identifier`)
+      for (const element of [slot.match].flat()) if (!isBuilderElement(table.builder, element)) problems.push(`${at}: slot ${name} matches ${element}, not a ${table.builder} element`)
+      if (slot.min !== undefined && slot.max !== undefined && slot.min > slot.max) problems.push(`${at}: slot ${name} min > max`)
+    }
+    if (rule.when?.repeat === 'columns' && rule.each !== 'column') problems.push(`${at}: repeat columns needs each: column`)
+    if (rule.each === 'column' && rule.when?.repeat !== 'columns') problems.push(`${at}: each column needs when.repeat columns`)
+    const readsSlots = (value: string, where: string, type: string | undefined, slotted: boolean) => {
+      const slots = sectionValueSlots(value)
+      if (!slots) { problems.push(`${at}: ${where} = ${value} is not a section value`); return }
+      if (!slotted && slots.length) problems.push(`${at}: ${where} reads a slot, but items of each ${rule.each} read their own leaf`)
+      for (const slot of slots) {
+        const def = rule.slots[slot]
+        if (!def) problems.push(`${at}: ${where} reads undeclared slot ${slot}`)
+        else if ((type === 'string' || type === 'text') && def.max !== 1) problems.push(`${at}: ${where} is ${type} but slot ${slot} may hold several leaves (max must be 1)`)
+      }
+    }
+    for (const [prop, value] of Object.entries(rule.props ?? {})) {
+      const def = c.props[prop]
+      if (!def) problems.push(`${at}: ${c.id} has no prop ${prop}`)
+      readsSlots(value, prop, def?.type, true)
+    }
+    if (rule.into) {
+      const target = c.props[rule.into]
+      if (!target || target.type !== 'array') problems.push(`${at}: ${c.id}.${rule.into} is not an array prop`)
+      if (!rule.each) problems.push(`${at}: into ${rule.into} needs each`)
+      else if (rule.each !== 'column' && !rule.slots[rule.each.slice(1)]) problems.push(`${at}: each ${rule.each} is not @<declared slot> or column`)
+      const fields = target && typeof target.items === 'object' ? target.items.fields ?? {} : {}
+      for (const [field, value] of Object.entries(rule.item ?? {})) {
+        if (!fields[field]) problems.push(`${at}: ${c.id}.${rule.into}[] has no field ${field}`)
+        readsSlots(value, `${rule.into}[].${field}`, fields[field]?.type, rule.each === 'column')
+      }
+    } else if (rule.item || rule.each) problems.push(`${at}: each/item without into`)
+    const bound = new Set([...Object.keys(rule.props ?? {}), ...(rule.into ? [rule.into] : [])])
     for (const [prop, def] of Object.entries(c.props)) if (def.required && !bound.has(prop)) problems.push(`${at}: required prop ${c.id}.${prop} has no source`)
   }
   return problems
