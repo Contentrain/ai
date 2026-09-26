@@ -526,6 +526,7 @@ A paid Migrate order includes a Studio trial. At delivery, Migrate hands the cus
 | `trial_days` | 1..90 (v1: 60), never taken from the client |
 | `repo` | `{ provider: 'github', owner, name }` of the delivered site |
 | `capabilities` | optional discovery summary for the claim screen |
+| `origin` | optional migrated site as a bare origin (`https://host`; `http:` only for localhost). Studio stores it on the grant and fetches migrated media from it alone |
 
 ```ts
 import { validateMigrateStudioClaim } from '@contentrain/types'

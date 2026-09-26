@@ -95,6 +95,16 @@ describe('validateMigrateStudioClaim', () => {
     expect(validateMigrateStudioClaim(missing)).toEqual({ ok: false, errors: ['plan_evidence: required (may be empty)'] })
   })
 
+  it('accepts a bare origin and rejects anything else', () => {
+    for (const ok of ['https://blog.example.com', 'https://example.com:8443', 'http://localhost:8080', 'http://127.0.0.1']) {
+      expect(validateMigrateStudioClaim(claim({ origin: ok })).ok).toBe(true)
+    }
+    for (const bad of ['https://example.com/', 'https://example.com/blog', 'https://Example.com', 'http://example.com',
+      'ftp://example.com', 'https://example.com:443', 'example.com', '', 42]) {
+      expect(validateMigrateStudioClaim(claim({ origin: bad }))).toEqual({ ok: false, errors: ['origin: invalid'] })
+    }
+  })
+
   it('rejects non-objects', () => {
     expect(validateMigrateStudioClaim(null)).toEqual({ ok: false, errors: ['payload: not an object'] })
     expect(isMigrateStudioClaim('token')).toBe(false)
