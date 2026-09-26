@@ -104,6 +104,7 @@ const wpQueries = isHome ? await queryMap() : {}
       siteName={site.organization ?? site.title}
       tagline={site.tagline}
       copyright={siteConfig.chrome?.copyright}
+      align={siteConfig.chrome?.footerAlign}
       layout={footerColumns.length > 1 ? 'columns' : 'simple'}
       columns={footerColumns.map((menu, index) => ({ label: menu.name, links: index === footerColumns.length - 1 ? [...menu.items, rss] : menu.items }))}
       links={[...(footerColumns[0]?.items ?? []), rss]}

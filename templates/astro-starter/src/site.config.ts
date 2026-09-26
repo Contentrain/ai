@@ -56,9 +56,10 @@ export interface SiteConfig {
    * `copyright`: the footer's line ("All rights reserved"; `{year}` is the current year), instead
    * of "© year Site".
    * `titleLinks`: post titles in lists take the link colour (`--color-link`), as the source's do;
-   * `navLinks`: so does the header navigation.
+   * `navLinks`: so does the header navigation. `footerAlign`: `center` when the source's footer is
+   * one centred column; absent, brand and links to the sides.
    */
-  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean }
+  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean, footerAlign?: 'start' | 'center' }
   /**
    * The source site's hosts (`site.com`): a link to one of them in migrated content is internal
    * whatever its scheme, `www.` or letter case, and resolves through the published set. Fixed at

@@ -13,9 +13,14 @@ interface Props {
   isHome: boolean
   /** Off when the first section carries the page's heading (a hero). */
   showTitle?: boolean | undefined
+  /**
+   * The page's description when its sections hold the text: a page singleton leaves the body
+   * empty, so there is nothing to summarize. Absent: the SEO description, excerpt or body summary.
+   */
+  description?: string | undefined
 }
 
-const { page, trail, isHome, showTitle = true } = Astro.props
+const { page, trail, isHome, showTitle = true, description } = Astro.props
 const { data } = page
 const t = await getStrings()
 const origin = Astro.site ?? Astro.url
@@ -24,7 +29,7 @@ const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
 <BaseLayout
   title={isHome ? undefined : data.title}
   fullTitle={data.seo?.title}
-  description={data.seo?.description ?? data.excerpt ?? summarize(data.body)}
+  description={description ?? data.seo?.description ?? data.excerpt ?? summarize(data.body)}
   image={data.seo?.image}
   canonical={data.seo?.canonical}
   noindex={data.seo?.noindex}
