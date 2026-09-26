@@ -1,5 +1,15 @@
 # @contentrain/astro-kit
 
+## 0.3.1
+
+### Patch Changes
+
+- 9d8eaf7: The site title in Header and Footer now carries `data-kit-brand`, and the Footer tagline carries `data-kit-tagline`. A migrated site's theme uses these markers to size them the way the source theme did. Nothing changes until a site sets those sizes.
+- Updated dependencies [3e6512c]
+- Updated dependencies [64966a9]
+- Updated dependencies [383d7ae]
+  - @contentrain/types@1.27.0
+
 ## 0.3.0
 
 ### Minor Changes

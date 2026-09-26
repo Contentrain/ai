@@ -1,5 +1,15 @@
 # @contentrain/wp-import
 
+## 0.9.1
+
+### Patch Changes
+
+- 472398e: A login redirect rule's `condition` holds only its two addresses (`logged_in`, `logged_out`), never anything else Redirection stores in the rule's data.
+- Updated dependencies [3e6512c]
+- Updated dependencies [64966a9]
+- Updated dependencies [383d7ae]
+  - @contentrain/types@1.27.0
+
 ## 0.9.0
 
 ### Minor Changes
