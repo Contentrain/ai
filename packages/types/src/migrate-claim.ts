@@ -102,6 +102,10 @@ export interface MigrateStudioClaim {
    * lowercase, no path). Signed so Studio can trust it: media import fetches
    * only from this origin, never from an origin named in the repository.
    * Optional; `https:` only, plus `http:` for localhost.
+   *
+   * Must equal `new URL(origin).origin` exactly, so no userinfo, path, query
+   * or fragment, and IDN hosts in punycode. A trailing-dot host is refused, so
+   * one site has one spelling.
    */
   origin?: string
 }
@@ -123,7 +127,7 @@ function isClaimOrigin(x: unknown): x is string {
   let url: URL
   try { url = new URL(x) }
   catch { return false }
-  if (url.origin !== x) return false
+  if (url.origin !== x || url.hostname.endsWith('.')) return false
   return url.protocol === 'https:' || (url.protocol === 'http:' && LOCAL_HOSTS.has(url.hostname))
 }
 

@@ -96,11 +96,14 @@ describe('validateMigrateStudioClaim', () => {
   })
 
   it('accepts a bare origin and rejects anything else', () => {
-    for (const ok of ['https://blog.example.com', 'https://example.com:8443', 'http://localhost:8080', 'http://127.0.0.1']) {
+    for (const ok of ['https://blog.example.com', 'https://example.com:8443', 'http://localhost:8080', 'http://127.0.0.1', 'https://xn--bcher-kva.de', 'http://[::1]:3000']) {
       expect(validateMigrateStudioClaim(claim({ origin: ok })).ok).toBe(true)
     }
     for (const bad of ['https://example.com/', 'https://example.com/blog', 'https://Example.com', 'http://example.com',
-      'ftp://example.com', 'https://example.com:443', 'example.com', '', 42]) {
+      'ftp://example.com', 'https://example.com:443', 'example.com', '', 42,
+      // Edges: userinfo, query, fragment, a raw IDN (punycode is the one spelling), a trailing dot, http on a non-local IP.
+      'https://u:p@example.com', 'https://example.com?x=1', 'https://example.com#top', 'https://bücher.de',
+      'https://example.com.', 'http://10.0.0.1', 'http://[::1]:3000/']) {
       expect(validateMigrateStudioClaim(claim({ origin: bad }))).toEqual({ ok: false, errors: ['origin: invalid'] })
     }
   })
