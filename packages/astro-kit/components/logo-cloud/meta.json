@@ -1,0 +1,107 @@
+{
+  "id": "logo-cloud",
+  "name": "Logo cloud",
+  "description": "A grid of client or partner logos, each optionally linked, under an optional heading (\"Trusted by\").",
+  "category": "section",
+  "uses": [],
+  "shared": [
+    "KitImage.astro",
+    "Section.astro",
+    "image.ts",
+    "types.ts"
+  ],
+  "variants": {
+    "columns": {
+      "options": [
+        "2",
+        "3",
+        "4"
+      ],
+      "default": "4",
+      "description": "Logos per row on wide screens; two on phones, three on tablets."
+    },
+    "style": {
+      "options": [
+        "plain",
+        "grayscale"
+      ],
+      "default": "plain",
+      "description": "plain: logos in their own colours. grayscale: muted grey, full colour on hover or focus."
+    },
+    "tone": {
+      "options": [
+        "default",
+        "muted",
+        "inverse",
+        "accent"
+      ],
+      "default": "default",
+      "description": "Section background."
+    }
+  },
+  "props": {
+    "heading": {
+      "type": "string",
+      "label": "Heading",
+      "description": "Line above the logos (Trusted by, Our partners)."
+    },
+    "items": {
+      "type": "array",
+      "label": "Logos",
+      "required": true,
+      "items": {
+        "type": "object",
+        "fields": {
+          "image": {
+            "type": "image",
+            "label": "Logo",
+            "required": true,
+            "description": "The logo file."
+          },
+          "imageAlt": {
+            "type": "string",
+            "label": "Name",
+            "required": true,
+            "description": "The company's name, read in place of the logo."
+          },
+          "href": {
+            "type": "url",
+            "label": "Link",
+            "description": "The company's site, when the logo links there."
+          }
+        }
+      },
+      "description": "The logos, in order (a Gutenberg gallery or columns of logos, Elementor image carousel/gallery of logos, Divi images)."
+    },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Anchor id of the section; the heading gets `<id>-title`."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": [
+      "core/gallery"
+    ],
+    "elementor": [
+      "elementor/image-gallery",
+      "elementor/image-carousel"
+    ],
+    "divi": [
+      "divi/et_pb_gallery"
+    ]
+  },
+  "a11y": "A list of logos; each logo's text is the company's name, and a linked logo is one link named by it. The section is labelled by its heading.",
+  "pattern": {
+    "summary": "row of small logos, often linked",
+    "signals": [
+      "4+ images",
+      "small images",
+      "little or no text",
+      "optional heading"
+    ]
+  }
+}

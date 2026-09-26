@@ -1,0 +1,118 @@
+{
+  "id": "feature-list",
+  "name": "Feature list",
+  "description": "A list of short features, each a title and a line of text marked with an icon or a check, under an optional heading and intro. Lighter than a card grid: no images, no links.",
+  "category": "section",
+  "uses": [],
+  "shared": [
+    "Section.astro"
+  ],
+  "variants": {
+    "columns": {
+      "options": [
+        "2",
+        "3",
+        "4"
+      ],
+      "default": "3",
+      "description": "Features per row on wide screens; one on phones, two on tablets."
+    },
+    "style": {
+      "options": [
+        "icon",
+        "check"
+      ],
+      "default": "icon",
+      "description": "icon: each feature's own icon in a tinted badge. check: the same check mark before every feature."
+    },
+    "tone": {
+      "options": [
+        "default",
+        "muted",
+        "inverse",
+        "accent"
+      ],
+      "default": "default",
+      "description": "Section background."
+    }
+  },
+  "props": {
+    "heading": {
+      "type": "string",
+      "label": "Heading",
+      "description": "Section heading."
+    },
+    "intro": {
+      "type": "text",
+      "label": "Introduction",
+      "description": "A sentence under the heading."
+    },
+    "items": {
+      "type": "array",
+      "label": "Features",
+      "required": true,
+      "items": {
+        "type": "object",
+        "fields": {
+          "title": {
+            "type": "string",
+            "label": "Title",
+            "required": true,
+            "description": "The feature, in a few words."
+          },
+          "text": {
+            "type": "text",
+            "label": "Text",
+            "description": "A sentence about it."
+          },
+          "icon": {
+            "type": "select",
+            "label": "Icon",
+            "options": [
+              "check",
+              "star",
+              "bolt",
+              "shield",
+              "heart",
+              "globe",
+              "clock",
+              "chat"
+            ],
+            "description": "The kit icon shown with the icon style; check when absent."
+          }
+        }
+      },
+      "description": "The features, in order (Elementor icon list or icon boxes without images, Gutenberg list of features, Divi blurbs with icons)."
+    },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Anchor id of the section; the heading gets `<id>-title`."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": [
+      "core/list"
+    ],
+    "elementor": [
+      "elementor/icon-list",
+      "elementor/icon-box"
+    ],
+    "divi": [
+      "divi/et_pb_blurb"
+    ]
+  },
+  "a11y": "A list; icons are decorative (aria-hidden), the title and text carry the meaning. The section is labelled by its heading.",
+  "pattern": {
+    "summary": "repeated icon + short title + line of text",
+    "signals": [
+      "3+ repeated items",
+      "icons",
+      "no images",
+      "short text"
+    ]
+  }
+}

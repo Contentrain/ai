@@ -26,11 +26,27 @@ const ids = (await readdir(componentsDir, { withFileTypes: true }))
   .map(entry => entry.name)
   .toSorted()
 
+// A section's content props → the page-singleton fields that hold them (DECISIONS §7b): the prop path with
+// each name in snake_case. Same rule as `contentFieldName` in src/catalog.ts, which validateCatalog checks.
+function contentFields(props, prop = '', field = '') {
+  const out = {}
+  for (const [name, def] of Object.entries(props)) {
+    if (def.content === false) continue
+    const p = prop + name
+    const f = field + name.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`)
+    out[p] = f
+    Object.assign(out, contentFields(def.fields ?? {}, `${p}.`, `${f}.`))
+    if (typeof def.items === 'object') Object.assign(out, contentFields(def.items.fields ?? {}, `${p}[].`, `${f}[].`))
+  }
+  return out
+}
+
 const components = await Promise.all(ids.map(async (id) => {
   const meta = JSON.parse(await readFile(join(componentsDir, id, 'meta.json'), 'utf8'))
   if (meta.id !== id) throw new Error(`components/${id}/meta.json says id "${meta.id}"`)
   const files = (await readdir(join(componentsDir, id))).filter(name => !NOT_SHIPPED.has(name)).toSorted()
   meta.files = files
+  if (meta.category === 'section') meta.contentFields = contentFields(meta.props)
   return meta
 }))
 

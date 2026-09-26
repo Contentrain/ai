@@ -44,11 +44,12 @@ export interface SiteConfig {
     more: number
   }
   /**
-   * Post lists (the blog index and archives): cards, or every post in full as a WordPress query
+   * Post lists (the blog index and archives): cards in a grid, cards in one column (`list`, as themes
+   * whose archive is a single stack of posts show it), or every post in full as a WordPress query
    * loop that shows the post content does; `heading` shows the index's title on the front page too.
    * `text`: the size of each post's content in a full list, when the source's loop sets its own.
    */
-  lists: { display: 'cards' | 'full', heading: boolean, text?: string }
+  lists: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string }
   /**
    * The header and footer as the source's theme prints them; absent, the starter's own. `brand`:
    * the site title's size in the header. `tagline`: the header shows the tagline under the title.

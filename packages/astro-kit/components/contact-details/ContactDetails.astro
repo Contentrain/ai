@@ -1,0 +1,74 @@
+---
+// The ways to reach a business, without a form: email and phone as links that
+// open the mail app or dialler, the postal address in an <address>, opening
+// hours and a link to the map. Replaces Elementor icon lists and contact-info
+// widgets that list the same things by hand.
+import { tv } from 'tailwind-variants'
+import Section from '../_shared/Section.astro'
+
+const details = tv({
+  slots: {
+    heading: 'mb-8 text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
+    list: 'grid gap-6',
+    term: 'text-sm font-semibold opacity-75',
+    value: 'mt-1 not-italic whitespace-pre-line',
+    link: 'underline decoration-line underline-offset-4 hover:decoration-current',
+  },
+  variants: {
+    layout: {
+      list: { list: 'max-w-xl' },
+      columns: { list: 'sm:grid-cols-2 lg:grid-cols-4' },
+    },
+  },
+  defaultVariants: { layout: 'list' },
+})
+
+interface Props {
+  heading?: string | undefined
+  email?: string | undefined
+  phone?: string | undefined
+  /** Postal address, one line per line of the address. */
+  address?: string | undefined
+  /** Opening hours, one line per day or range. */
+  hours?: string | undefined
+  /** A map link for the address (Google Maps, OpenStreetMap). */
+  mapUrl?: string | undefined
+  emailLabel?: string | undefined
+  phoneLabel?: string | undefined
+  addressLabel?: string | undefined
+  hoursLabel?: string | undefined
+  mapLabel?: string | undefined
+  layout?: 'list' | 'columns' | undefined
+  id?: string | undefined
+}
+
+const {
+  heading, email, phone, address, hours, mapUrl,
+  emailLabel = 'Email', phoneLabel = 'Phone', addressLabel = 'Address', hoursLabel = 'Opening hours', mapLabel = 'View on the map',
+  layout, id = 'contact-details',
+} = Astro.props
+const s = details({ layout })
+const headingId = heading ? `${id}-title` : undefined
+// A dialler wants the number without spaces, dashes or brackets; the leading + stays.
+const tel = phone ? `tel:${phone.replace(/[^\d+]/g, '')}` : undefined
+const shown = Boolean(email || phone || address || hours || mapUrl)
+---
+{shown && (
+  <Section spacing="md" id={id} aria-labelledby={headingId}>
+    {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+    <dl class={s.list()}>
+      {email && <div><dt class={s.term()}>{emailLabel}</dt><dd class={s.value()}><a href={`mailto:${email}`} class={s.link()}>{email}</a></dd></div>}
+      {phone && <div><dt class={s.term()}>{phoneLabel}</dt><dd class={s.value()}><a href={tel} class={s.link()}>{phone}</a></dd></div>}
+      {(address || mapUrl) && (
+        <div>
+          <dt class={s.term()}>{addressLabel}</dt>
+          <dd class={s.value()}>
+            {address && <address class="not-italic">{address}</address>}
+            {mapUrl && <a href={mapUrl} class:list={[s.link(), address && 'mt-2 inline-block']}>{mapLabel}</a>}
+          </dd>
+        </div>
+      )}
+      {hours && <div><dt class={s.term()}>{hoursLabel}</dt><dd class={s.value()}>{hours}</dd></div>}
+    </dl>
+  </Section>
+)}

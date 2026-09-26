@@ -1,0 +1,113 @@
+{
+  "id": "stats",
+  "name": "Stats",
+  "description": "A row of figures with a short label each (years in business, clients, uptime), with an optional heading and intro. The counter/number section of a landing page; numbers are static text, not animated.",
+  "category": "section",
+  "uses": [],
+  "shared": [
+    "Section.astro"
+  ],
+  "variants": {
+    "columns": {
+      "options": [
+        "2",
+        "3",
+        "4"
+      ],
+      "default": "3",
+      "description": "Figures per row on wide screens; two on phones."
+    },
+    "style": {
+      "options": [
+        "plain",
+        "card"
+      ],
+      "default": "plain",
+      "description": "plain: figures on the section background. card: each figure in its own box."
+    },
+    "tone": {
+      "options": [
+        "default",
+        "muted",
+        "inverse",
+        "accent"
+      ],
+      "default": "default",
+      "description": "Section background."
+    }
+  },
+  "props": {
+    "heading": {
+      "type": "string",
+      "label": "Heading",
+      "description": "Section heading."
+    },
+    "intro": {
+      "type": "text",
+      "label": "Introduction",
+      "description": "A sentence under the heading."
+    },
+    "items": {
+      "type": "array",
+      "label": "Figures",
+      "required": true,
+      "items": {
+        "type": "object",
+        "fields": {
+          "value": {
+            "type": "string",
+            "label": "Figure",
+            "required": true,
+            "description": "The number as shown, without prefix or suffix (`120`, `4.9`, `24/7`)."
+          },
+          "label": {
+            "type": "string",
+            "label": "Label",
+            "required": true,
+            "description": "What the figure counts (Clients, Countries)."
+          },
+          "prefix": {
+            "type": "string",
+            "label": "Prefix",
+            "description": "Printed before the figure (`$`, `~`)."
+          },
+          "suffix": {
+            "type": "string",
+            "label": "Suffix",
+            "description": "Printed after the figure (`+`, `%`, `k`)."
+          }
+        }
+      },
+      "description": "The figures, in order (Elementor counter, Divi number counter, a Gutenberg columns row of big numbers)."
+    },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Anchor id of the section; the heading gets `<id>-title`."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": [
+      "core/columns"
+    ],
+    "elementor": [
+      "elementor/counter"
+    ],
+    "divi": [
+      "divi/et_pb_number_counter",
+      "divi/et_pb_circle_counter"
+    ]
+  },
+  "a11y": "A description list: each label is the term, each figure its value, so a screen reader reads them as pairs. The section is labelled by its heading.",
+  "pattern": {
+    "summary": "row of big numbers with short labels",
+    "signals": [
+      "2–4 columns",
+      "repeated number + label",
+      "no images"
+    ]
+  }
+}

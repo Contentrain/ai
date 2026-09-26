@@ -4,20 +4,20 @@
   "description": "A carousel of images with optional title, text and button per slide. Without JavaScript it is a snapping horizontal scroller; Embla adds paging, arrows and dots.",
   "category": "section",
   "uses": [],
-  "shared": ["Button.astro", "KitImage.astro", "types.ts"],
+  "shared": ["Button.astro", "KitImage.astro", "image.ts", "types.ts"],
   "variants": {
     "perView": { "options": ["1", "2", "3"], "default": "1", "description": "Slides visible at once on wide screens." },
     "aspect": { "options": ["wide", "standard", "square"], "default": "wide", "description": "Image aspect ratio: 21:9, 3:2 or 1:1." },
     "caption": { "options": ["below", "overlay"], "default": "overlay", "description": "Caption under the image, or over its lower edge on a gradient." }
   },
   "props": {
-    "slides": { "type": "array", "required": true, "items": { "type": "object", "fields": { "image": { "type": "object", "required": true, "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } } }, "title": { "type": "string" }, "text": { "type": "text" }, "action": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true }, "newTab": { "type": "boolean" }, "style": { "type": "select", "options": ["primary", "secondary", "ghost"] } } } } }, "description": "Slides; image is an ImageInput, action an ActionInput." },
-    "label": { "type": "string", "required": true, "description": "Accessible name of the carousel." },
-    "prevLabel": { "type": "string", "description": "ui-strings slider.prev." },
-    "nextLabel": { "type": "string", "description": "ui-strings slider.next." },
-    "slideLabel": { "type": "string", "description": "ui-strings slider.slide." },
-    "ofLabel": { "type": "string", "description": "ui-strings slider.of." },
-    "loop": { "type": "boolean", "default": false, "description": "Wrap from the last slide to the first." }
+    "slides": { "type": "array", "label": "Slides", "required": true, "items": { "type": "object", "fields": { "image": { "type": "image", "label": "Image", "required": true, "description": "The slide image." }, "imageAlt": { "type": "string", "label": "Image description", "description": "What the image shows, for readers who cannot see it." }, "title": { "type": "string", "label": "Title", "description": "Heading over the slide." }, "text": { "type": "text", "label": "Text", "description": "A line or two under the heading." }, "ctaLabel": { "type": "string", "label": "Button label", "description": "Button text; the slide has no button without it." }, "ctaHref": { "type": "url", "label": "Button link", "description": "Where the button goes." } } }, "description": "Slides: the image's address and text, and an optional link (ctaLabel + ctaHref)." },
+    "label": { "type": "string", "required": true, "content": false, "description": "Accessible name of the carousel." },
+    "prevLabel": { "type": "string", "content": false, "description": "ui-strings slider.prev." },
+    "nextLabel": { "type": "string", "content": false, "description": "ui-strings slider.next." },
+    "slideLabel": { "type": "string", "content": false, "description": "ui-strings slider.slide." },
+    "ofLabel": { "type": "string", "content": false, "description": "ui-strings slider.of." },
+    "loop": { "type": "boolean", "default": false, "content": false, "description": "Wrap from the last slide to the first." }
   },
   "slots": {},
   "js": "embla",

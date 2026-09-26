@@ -4,7 +4,7 @@
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
-import type { ImageInput } from '../_shared/types'
+import { imageOf, type ImageSource } from '../_shared/image'
 
 const grid = tv({
   slots: {
@@ -34,7 +34,9 @@ interface Item {
   title: string
   text?: string | undefined
   href?: string | undefined
-  image?: ImageInput | undefined
+  /** The image's address (or, until 0.7, an `ImageInput`). */
+  image?: ImageSource | undefined
+  imageAlt?: string | undefined
   eyebrow?: string | undefined
 }
 
@@ -68,7 +70,7 @@ const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-
   <ul class={list()}>
     {items.map(item => (
       <li class={card()}>
-        {item.image && <div class={media()}><KitImage image={item.image} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover transition duration-300 group-hover:scale-[1.02]" /></div>}
+        {imageOf(item.image, item.imageAlt) && <div class={media()}><KitImage image={imageOf(item.image, item.imageAlt)!} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover transition duration-300 group-hover:scale-[1.02]" /></div>}
         {item.eyebrow && <p class="text-sm font-medium text-accent">{item.eyebrow}</p>}
         <CardHeading class={cardTitle()}>
           {item.href

@@ -1,0 +1,53 @@
+{
+  "id": "announcement",
+  "name": "Announcement",
+  "description": "A one-line notice above the header (sale, event, changed hours) with an optional link. The visitor closes it with no JS (an open <details> whose summary is the close button); the dismissal is not remembered across pages.",
+  "category": "chrome",
+  "uses": [],
+  "shared": [],
+  "variants": {
+    "tone": {
+      "options": [
+        "default",
+        "muted",
+        "inverse",
+        "accent"
+      ],
+      "default": "accent",
+      "description": "Background of the bar, from the theme tokens."
+    }
+  },
+  "props": {
+    "message": {
+      "type": "string",
+      "required": true,
+      "label": "Message",
+      "description": "The notice, one short line."
+    },
+    "href": {
+      "type": "url",
+      "label": "Link",
+      "description": "Where the notice points (the sale, the event page)."
+    },
+    "linkLabel": {
+      "type": "string",
+      "label": "Link label",
+      "description": "Text of the link; defaults to \"Learn more\"."
+    },
+    "closeLabel": {
+      "type": "string",
+      "default": "Close announcement",
+      "content": false,
+      "description": "Accessible name of the close control (ui:)."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "elementor": [
+      "elementor/alert"
+    ]
+  },
+  "a11y": "The close control is a native <summary>: focusable, toggled with Enter or Space, and named by closeLabel. The link is a real link. The accent tone keeps full-contrast text."
+}

@@ -1,0 +1,64 @@
+---
+// An image beside a block of text: eyebrow, heading, a markdown body and
+// buttons. The image takes either side on wide screens and stacks above the
+// text on phones.
+import { tv } from 'tailwind-variants'
+import { renderMarkdown } from '../../../lib/markdown'
+import Button from '../_shared/Button.astro'
+import KitImage from '../_shared/KitImage.astro'
+import Section from '../_shared/Section.astro'
+import type { ActionInput, ImageInput } from '../_shared/types'
+
+const split = tv({
+  slots: {
+    grid: 'grid items-center gap-10 md:grid-cols-2 md:gap-16',
+    copy: 'flex flex-col gap-5',
+    eyebrow: 'text-sm font-semibold tracking-wide uppercase opacity-80',
+    heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
+    body: 'prose prose-site max-w-none text-pretty',
+    actions: 'flex flex-wrap gap-3 pt-2',
+    media: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
+  },
+  variants: {
+    // Source order is text first; `start` moves the image before it on wide screens only.
+    imageSide: { start: { media: 'md:order-first' }, end: {} },
+    align: { start: {}, center: { copy: 'items-center text-center', actions: 'justify-center' } },
+    // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
+    tone: { default: {}, muted: {}, inverse: {}, accent: { eyebrow: 'opacity-100' } },
+  },
+  defaultVariants: { imageSide: 'end', align: 'start', tone: 'default' },
+})
+
+interface Props {
+  heading: string
+  eyebrow?: string | undefined
+  /** Markdown, rendered at build time. */
+  body?: string | undefined
+  actions?: ActionInput[] | undefined
+  image?: ImageInput | undefined
+  imageSide?: 'start' | 'end' | undefined
+  align?: 'start' | 'center' | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  id?: string | undefined
+}
+
+const { heading, eyebrow, body, actions = [], image, imageSide, align, tone, id } = Astro.props
+const s = split({ imageSide, align, tone })
+const headingId = id ? `${id}-title` : undefined
+const html = await renderMarkdown(body)
+---
+<Section tone={tone} id={id} aria-labelledby={headingId}>
+  <div class={s.grid()}>
+    <div class={s.copy()}>
+      {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
+      <h2 id={headingId} class={s.heading()}>{heading}</h2>
+      {html && <div class={s.body()} data-kit-text set:html={html} />}
+      {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
+    </div>
+    {image && (
+      <div class={s.media()}>
+        <KitImage image={image} sizes="(min-width: 768px) 50vw, 100vw" class="h-auto w-full object-cover" />
+      </div>
+    )}
+  </div>
+</Section>

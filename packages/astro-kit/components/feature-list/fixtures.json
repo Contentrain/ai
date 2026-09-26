@@ -1,0 +1,129 @@
+[
+  {
+    "name": "three-icon",
+    "props": {
+      "heading": "Why teams switch",
+      "intro": "Everything a small site needs, nothing it doesn't.",
+      "items": [
+        {
+          "title": "Fast by default",
+          "text": "Static pages served from the edge.",
+          "icon": "bolt"
+        },
+        {
+          "title": "Secure",
+          "text": "No database to break into.",
+          "icon": "shield"
+        },
+        {
+          "title": "Global",
+          "text": "Every language your readers speak.",
+          "icon": "globe"
+        },
+        {
+          "title": "Loved by editors",
+          "text": "Review changes before they go live.",
+          "icon": "heart"
+        },
+        {
+          "title": "Always on time",
+          "icon": "clock"
+        },
+        {
+          "title": "Real support",
+          "text": "Talk to the people who built it.",
+          "icon": "chat"
+        }
+      ]
+    }
+  },
+  {
+    "name": "two-check-muted",
+    "props": {
+      "heading": "Included",
+      "items": [
+        {
+          "title": "Fast by default",
+          "text": "Static pages served from the edge.",
+          "icon": "bolt"
+        },
+        {
+          "title": "Secure",
+          "text": "No database to break into.",
+          "icon": "shield"
+        },
+        {
+          "title": "Global",
+          "text": "Every language your readers speak.",
+          "icon": "globe"
+        },
+        {
+          "title": "Loved by editors",
+          "text": "Review changes before they go live.",
+          "icon": "heart"
+        }
+      ],
+      "columns": "2",
+      "style": "check",
+      "tone": "muted"
+    }
+  },
+  {
+    "name": "four-inverse",
+    "props": {
+      "items": [
+        {
+          "title": "Fast by default",
+          "text": "Static pages served from the edge.",
+          "icon": "bolt"
+        },
+        {
+          "title": "Secure",
+          "text": "No database to break into.",
+          "icon": "shield"
+        },
+        {
+          "title": "Global",
+          "text": "Every language your readers speak.",
+          "icon": "globe"
+        },
+        {
+          "title": "Loved by editors",
+          "text": "Review changes before they go live.",
+          "icon": "heart"
+        },
+        {
+          "title": "Unknown icon falls back",
+          "icon": "nope"
+        }
+      ],
+      "columns": "4",
+      "tone": "inverse"
+    }
+  },
+  {
+    "name": "accent-check",
+    "props": {
+      "heading": "What you get",
+      "items": [
+        {
+          "title": "Fast by default",
+          "text": "Static pages served from the edge.",
+          "icon": "bolt"
+        },
+        {
+          "title": "Secure",
+          "text": "No database to break into.",
+          "icon": "shield"
+        },
+        {
+          "title": "Global",
+          "text": "Every language your readers speak.",
+          "icon": "globe"
+        }
+      ],
+      "style": "check",
+      "tone": "accent"
+    }
+  }
+]

@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 import type { FieldDef } from '@contentrain/types'
-import { componentsForSource, planCopy, validateCatalog, type KitCatalog } from '../src/index'
+import { componentsForSource, contentFieldName, contentFieldPath, contentProps, planCopy, validateCatalog, type KitCatalog, type KitComponent } from '../src/index'
 
 const ROOT = join(import.meta.dirname, '..')
 const COMPONENTS = join(ROOT, 'components')
@@ -15,6 +15,9 @@ function propsOf(source: string): string[] {
   return [...body.matchAll(/^ {2}(?:'([^']+)'|(\w+))\??:/gm)].map(match => match[1] ?? match[2]!)
 }
 
+/** A `_shared` import specifier as the file on disk. */
+const sharedFile = (spec: string) => spec.endsWith('.astro') ? spec : `${spec}.ts`
+
 describe('catalog', () => {
   it('is in sync with components/*/meta.json', () => {
     expect(() => execFileSync('node', ['scripts/build-catalog.mjs', '--check'], { cwd: ROOT, stdio: 'pipe' })).not.toThrow()
@@ -22,6 +25,30 @@ describe('catalog', () => {
 
   it('validates', () => {
     expect(validateCatalog(catalog)).toEqual([])
+  })
+
+  it('names each section content field in snake_case, from the camelCase prop (DECISIONS §7b)', () => {
+    expect(contentFieldName('ctaLabel')).toBe('cta_label')
+    expect(contentFieldName('heading')).toBe('heading')
+    expect(contentFieldPath('slides[].imageAlt')).toBe('slides[].image_alt')
+    const slider = catalog.components.find(c => c.id === 'slider')!
+    expect(slider.contentFields).toMatchObject({ 'slides[].ctaHref': 'slides[].cta_href', 'slides[].imageAlt': 'slides[].image_alt' })
+    expect(Object.keys(contentProps(slider))).toEqual(['slides'])
+  })
+
+  it('asks each section content prop for one field name, a label, a description and two object levels at most', () => {
+    const hero = structuredClone(catalog.components.find(c => c.id === 'hero')!) as KitComponent
+    hero.props.imageURL = { type: 'url', label: 'Image address', description: 'x' }
+    hero.props.note = { type: 'string', description: 'x' }
+    hero.props.extra = { type: 'array', label: 'Extra', description: 'x', items: { type: 'object', fields: { media: { type: 'object', label: 'Media', description: 'x', fields: { src: { type: 'image', label: 'File', description: 'x' } } } } } }
+    delete hero.props.level!.content
+    expect(validateCatalog({ ...catalog, components: [hero] })).toEqual([
+      'component hero: content prop level has no label',
+      'component hero: content prop imageURL must be camelCase with one capital per word (or content: false)',
+      'component hero: content prop note has no label',
+      'component hero: contentFields is stale — rebuild the catalog',
+      'component hero: content prop extra nests objects deeper than a page singleton allows',
+    ])
   })
 
   it('names the first fifteen components', () => {
@@ -78,9 +105,18 @@ describe('catalog', () => {
       it('lists the shared files it imports, and they exist', async () => {
         const shared = new Set(await readdir(join(COMPONENTS, '_shared')))
         const source = (await Promise.all(c.files.map(file => readFile(join(COMPONENTS, c.id, file), 'utf8')))).join('\n')
-        const imported = [...source.matchAll(/from '\.\.\/_shared\/([^']+?)'/g)].map(match => match[1]!.endsWith('.astro') ? match[1]! : `${match[1]}.ts`)
+        // A shared file's own imports travel with it: copy.ts copies `shared` as listed.
+        const imported = new Set<string>()
+        const queue = [...source.matchAll(/from '\.\.\/_shared\/([^']+?)'/g)].map(match => sharedFile(match[1]!))
+        for (let file = queue.shift(); file !== undefined; file = queue.shift()) {
+          if (imported.has(file)) continue
+          imported.add(file)
+          if (!shared.has(file)) continue
+          const own = await readFile(join(COMPONENTS, '_shared', file), 'utf8')
+          queue.push(...[...own.matchAll(/from '\.\/([^']+?)'/g)].map(match => sharedFile(match[1]!)))
+        }
         for (const file of c.shared) expect(shared.has(file), file).toBe(true)
-        expect([...new Set(imported)].toSorted()).toEqual([...c.shared].toSorted())
+        expect([...imported].toSorted()).toEqual([...c.shared].toSorted())
       })
 
       it('lists the kit components it renders', async () => {

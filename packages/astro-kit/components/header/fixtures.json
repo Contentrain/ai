@@ -121,5 +121,6 @@
         }
       ]
     }
-  }
+  },
+  { "name": "tagline", "props": { "siteName": "Golden Agency", "tagline": "Websites that sell what you make", "items": [{ "label": "Home", "href": "/" }, { "label": "Services", "href": "/services/" }, { "label": "Contact", "href": "/contact/" }], "menuLabel": "Menu", "closeLabel": "Close" } }
 ]

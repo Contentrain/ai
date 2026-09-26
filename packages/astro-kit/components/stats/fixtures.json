@@ -1,0 +1,98 @@
+[
+  {
+    "name": "three-plain",
+    "props": {
+      "heading": "By the numbers",
+      "intro": "A decade of shipping sites for small teams.",
+      "items": [
+        {
+          "value": "12",
+          "label": "Years in business",
+          "suffix": "+"
+        },
+        {
+          "value": "480",
+          "label": "Clients served"
+        },
+        {
+          "value": "99.9",
+          "label": "Uptime",
+          "suffix": "%"
+        }
+      ]
+    }
+  },
+  {
+    "name": "four-card-muted",
+    "props": {
+      "items": [
+        {
+          "value": "12",
+          "label": "Years in business",
+          "suffix": "+"
+        },
+        {
+          "value": "480",
+          "label": "Clients served"
+        },
+        {
+          "value": "99.9",
+          "label": "Uptime",
+          "suffix": "%"
+        },
+        {
+          "value": "2",
+          "label": "Revenue handled",
+          "prefix": "$",
+          "suffix": "M"
+        }
+      ],
+      "columns": "4",
+      "style": "card",
+      "tone": "muted"
+    }
+  },
+  {
+    "name": "two-inverse",
+    "props": {
+      "heading": "Results",
+      "items": [
+        {
+          "value": "12",
+          "label": "Years in business",
+          "suffix": "+"
+        },
+        {
+          "value": "480",
+          "label": "Clients served"
+        }
+      ],
+      "columns": "2",
+      "tone": "inverse"
+    }
+  },
+  {
+    "name": "card-accent",
+    "props": {
+      "heading": "Our reach",
+      "items": [
+        {
+          "value": "12",
+          "label": "Years in business",
+          "suffix": "+"
+        },
+        {
+          "value": "480",
+          "label": "Clients served"
+        },
+        {
+          "value": "99.9",
+          "label": "Uptime",
+          "suffix": "%"
+        }
+      ],
+      "style": "card",
+      "tone": "accent"
+    }
+  }
+]

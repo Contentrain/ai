@@ -5,10 +5,13 @@
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
-import type { ImageInput } from '../_shared/types'
+import { imageOf, type ImageSource } from '../_shared/image'
+import { type ImageInput } from '../_shared/types'
 
 export interface GalleryItem {
-  image: ImageInput
+  /** The image's address (or, until 0.7, an `ImageInput`). */
+  image: ImageSource
+  imageAlt?: string | undefined
   caption?: string | undefined
 }
 
@@ -50,7 +53,8 @@ interface Props {
   id?: string | undefined
 }
 
-const { items, heading, layout, columns, open = 'popover', closeLabel = 'Close', tone, id = 'gallery' } = Astro.props
+const { items: given, heading, layout, columns, open = 'popover', closeLabel = 'Close', tone, id = 'gallery' } = Astro.props
+const items = given.flatMap(item => { const image = imageOf(item.image, item.imageAlt); return image ? [{ ...item, image }] : [] }) satisfies Array<{ image: ImageInput, caption?: string | undefined }>
 const s = gallery({ layout, columns, open })
 const headingId = heading ? `${id}-title` : undefined
 const sizes = columns === '2' ? '50vw' : columns === '4' ? '(min-width: 768px) 25vw, 50vw' : '(min-width: 768px) 33vw, 50vw'

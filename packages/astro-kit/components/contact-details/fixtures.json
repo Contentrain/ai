@@ -1,0 +1,4 @@
+[
+  {"name": "list", "props": {"heading": "Visit the studio", "email": "hello@example.com", "phone": "+44 20 7946 0958", "address": "12 Harbour Lane\nBristol BS1 4RN\nUnited Kingdom", "hours": "Mon–Fri 9:00–17:30\nSat 10:00–14:00", "mapUrl": "https://www.openstreetmap.org/?mlat=51.45&mlon=-2.59"}},
+  {"name": "columns", "props": {"email": "orders@example.com", "phone": "(555) 010-2030", "address": "400 Market Street, Suite 12\nPortland, OR 97201", "hours": "Every day 8am–6pm", "layout": "columns"}}
+]

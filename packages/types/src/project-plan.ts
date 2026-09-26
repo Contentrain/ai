@@ -136,6 +136,8 @@ export interface PlanModel {
   origin: 'import' | 'plan'
   /** What a `plan` model needs to be a Contentrain model: display name, storage domain (`.contentrain/content/<domain>/<id>`), locales, and the field an entry list shows. */
   name?: string
+  /** What the model holds, for Studio's model list (the model definition's `description`). */
+  description?: string
   domain?: string
   i18n?: boolean
   /** Required for a `plan` collection/document: a text-like field (`validate` refuses a model without one). */
@@ -189,6 +191,11 @@ export interface PlanExtraction {
    * its props, `into`/`each`/`item` fill the entry's fields of the same names. `fields` then only adds to it.
    */
   rule?: string
+  /**
+   * The object field of a page singleton this extraction fills (`hero`, `services`): the element is one
+   * section, and `rule`'s props / `fields` fill that field's keys instead of the entry's top level.
+   */
+  field?: string
   /** Model field → `<path>|<prop>` inside the element (`0.1.0|text`, `0.0|src`), `attr:<name>`, or an element expression (`dom:`, `img:`, `link:`, `html:`). */
   fields?: Record<string, string>
 }
@@ -229,6 +236,12 @@ export interface PlanRoute {
    */
   source?: { model: string, where?: Record<string, unknown>, paginate?: number }
   /**
+   * The page model whose object fields hold this page's sections: a singleton (`page-about`), or, for pages
+   * that share one layout, a collection that is also the route's `source` (one entry per page). The page's
+   * text lives there: the writer does not render the source entry's `body`, and extraction leaves it empty.
+   */
+  page?: string
+  /**
    * `rich-text`: the entry body renders as prose (posts, simple pages).
    * `composed`: the page is the `sections` below, top to bottom.
    */
@@ -240,6 +253,16 @@ export interface PlanRoute {
 export interface PlanPlacement {
   /** `PlanComponent.id`. */
   component: string
+  /**
+   * The section's name on its page (`hero`, `services`, `selected-work`): the page singleton's field for a
+   * `section` binding. Unique within a route.
+   */
+  id?: string
+  /**
+   * What classified the section: a mapping table's section rule (`<builder>:section:<rule id>`, whoever
+   * picked it: rule, cache or JEW), `opus` for a site component written for it, `prose` for the fallback.
+   */
+  rule?: string
   variant?: Record<string, string>
   bind: PlanBinding
   /** Interface strings from `ui-strings`: prop → key (`prevLabel: 'pagination.prev'`). */
@@ -290,6 +313,13 @@ export type PlanBinding =
   | { kind: 'menu', menu: string, into?: string, props?: Record<string, PlanValue> }
   /** Only fixed values and labels. */
   | { kind: 'static', props: Record<string, PlanValue> }
+  /**
+   * A page section: the object field `field` of a singleton (or of entry `entry`, or of the route's own entry
+   * when `model` is the route's template collection) feeds the component. Its keys are the component's
+   * content props in snake_case (`cta_label` → `ctaLabel`, DECISIONS §7b); the view passes each one
+   * explicitly. `props` adds fixed values (a variant-like setting, a label) after the field's.
+   */
+  | { kind: 'section', model: string, entry?: string, field: string, props?: Record<string, PlanValue> }
 
 // ─── Behaviors ───
 
@@ -355,6 +385,27 @@ export function footerMenusOf(site: Pick<PlanSite, 'menus'>): string[] {
 
 /** A font size the starter writes into a style: a length, or a `clamp()`/`calc()`/`min()`/`max()` of lengths (a theme's fluid size). */
 const CSS_LENGTH = /^(?!.*url\()(?:\d+(?:\.\d+)?(?:px|rem|em|%)|(?:clamp|calc|min|max)\([\d\s.,+*/()a-z%-]+\))$/
+
+/**
+ * How many object levels a field nests: 0 for a scalar or a list of scalars, 1 for an object of scalars,
+ * 2 for an object holding a list of objects (`hero.actions[]`). A list adds no level of its own.
+ */
+export function fieldDepth(field: FieldDef): number {
+  const children = [...Object.values(field.fields ?? {}), ...(typeof field.items === 'object' ? [field.items] : [])]
+  return (field.type === 'object' ? 1 : 0) + Math.max(0, ...children.map(fieldDepth))
+}
+
+/**
+ * Placement `rule`: a mapping table's section rule (`elementor:section:hero.split`) or element rule
+ * (`gutenberg:element:core/details`, `gutenberg:element:core/template-part:header`), a site component
+ * (`opus`), or the rich-text fallback.
+ */
+export const PLAN_SECTION_RULE = /^(?:(?:gutenberg|elementor|divi|classic):(?:section:[a-z][\w.-]*|element:[a-z][\w./:-]*)|opus|prose)$/
+
+/** A content prop's field name in a section object: the prop in snake_case (`ctaLabel` → `cta_label`). */
+export function sectionFieldName(prop: string): string {
+  return prop.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`)
+}
 
 export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   const errors: string[] = []
@@ -428,9 +479,11 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     }
     for (const x of m.extract ?? []) {
       if (!x.rule && !x.fields) errors.push(`model ${m.id} extraction from ${x.from} has neither rule nor fields`)
+      if (x.field !== undefined && m.fields && m.fields[x.field]?.type !== 'object') errors.push(`model ${m.id} extraction from ${x.from} fills ${x.field}, which is not an object field`)
       if (x.rule && !/^(gutenberg|elementor|divi|classic):[\w./:-]+$/.test(x.rule)) errors.push(`model ${m.id} extraction rule ${x.rule} is not <builder>:<match>`)
+      const target = x.field !== undefined ? m.fields?.[x.field]?.fields : m.fields
       for (const [field, path] of Object.entries(x.fields ?? {})) {
-        if (m.fields && !m.fields[field]) errors.push(`model ${m.id} extraction fills unknown field ${field}`)
+        if (target && !target[field]) errors.push(`model ${m.id} extraction fills unknown field ${field}`)
         if (!/^attr:[\w.-]+$|^[\d.]+\|(text|href|src|alt|datetime)$|^(?:dom|img|link|html):[^@]*(?:@[\w-]+)?$/.test(path)) errors.push(`model ${m.id} field ${field}: path ${path} is not "<path>|<prop>", "attr:<name>" or an element expression`)
       }
     }
@@ -454,13 +507,29 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     const b = s.bind
     if ('model' in b && !knownModel(b.model)) errors.push(`${at}: model ${b.model} is not declared`)
     if (b.kind === 'entry' && !route?.source) errors.push(`${at}: binds the route entry but ${route ? 'the route has no source' : 'layout has no entry'}`)
+    if (s.id !== undefined && !/^[a-z][a-z0-9-]*$/.test(s.id)) errors.push(`${at}: id ${s.id} is not kebab-case`)
+    if (s.rule !== undefined && !PLAN_SECTION_RULE.test(s.rule)) errors.push(`${at}: rule ${s.rule} is not <builder>:section:<id>, <builder>:element:<match>, opus or prose`)
+    if (b.kind === 'section') {
+      const m = models.get(b.model)
+      const field = m?.fields?.[b.field]
+      // A template route's sections read the route's own entry: its page collection is the route source.
+      const ownEntry = route?.page === b.model && route.source?.model === b.model
+      if (m && m.origin === 'plan' && m.kind !== 'singleton' && b.entry === undefined && !ownEntry) errors.push(`${at}: section of ${b.model} names no entry and ${b.model} is neither a singleton nor this route's page`)
+      if (m?.fields && !field) errors.push(`${at}: ${b.model} has no field ${b.field}`)
+      else if (field && field.type !== 'object') errors.push(`${at}: ${b.model}.${b.field} is ${field.type}, not an object`)
+      else if (field && fieldDepth(field) > 2) errors.push(`${at}: ${b.model}.${b.field} nests deeper than 2 (an object inside a list item's object)`)
+      const fieldOf = new Map(Object.keys(c.props ?? {}).map(prop => [sectionFieldName(prop), prop]))
+      if (c.props && field?.fields) for (const key of Object.keys(field.fields)) if (!fieldOf.has(key)) errors.push(`${at}: ${c.id} has no prop for field ${b.model}.${b.field}.${key} (fields are the props in snake_case)`)
+    }
     const values: Record<string, PlanValue> = { ...('props' in b ? b.props : {}), ...(b.kind === 'collection' && !b.into ? b.item : {}) }
     for (const [prop, value] of Object.entries({ ...values, ...(b.kind === 'collection' ? b.item : {}) })) {
       if (!PLAN_VALUE_PATTERN.test(value)) errors.push(`${at}: ${prop} = ${value} is not a plan value (field: media: ref: href: term: ui: site: menu: page: const:)`)
     }
     // A kit component's props are the catalog's; the caller checks them. A site component's are here.
     if (c.props) {
-      const bound = new Set([...Object.keys(values), ...Object.keys(s.labels ?? {}), ...('into' in b && b.into ? [b.into] : b.kind === 'menu' ? ['items'] : [])])
+      const byField = new Map(Object.keys(c.props).map(prop => [sectionFieldName(prop), prop]))
+      const spread = b.kind === 'section' ? Object.keys(models.get(b.model)?.fields?.[b.field]?.fields ?? {}).flatMap(key => byField.get(key) ?? []) : []
+      const bound = new Set([...Object.keys(values), ...spread, ...Object.keys(s.labels ?? {}), ...('into' in b && b.into ? [b.into] : b.kind === 'menu' ? ['items'] : [])])
       for (const prop of bound) if (!c.props[prop]) errors.push(`${at}: ${c.id} has no prop ${prop}`)
       for (const [prop, def] of Object.entries(c.props)) if (def.required && !bound.has(prop)) errors.push(`${at}: required prop ${c.id}.${prop} is not bound`)
     }
@@ -479,6 +548,19 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
       ;(byModel.get(r.source.model) ?? byModel.set(r.source.model, []).get(r.source.model)!).push(r)
     }
     if (r.body === 'composed' && !r.sections.length) warnings.push(`route ${r.id} is composed but has no sections`)
+    if (r.page !== undefined) {
+      const page = models.get(r.page)
+      if (!page) errors.push(`route ${r.id}: page ${r.page} is not declared`)
+      // A collection of pages sharing one layout is a template route: each entry is one page.
+      else if (page.kind === 'collection' ? r.source?.model !== r.page : page.kind !== 'singleton') errors.push(`route ${r.id}: page ${r.page} is a ${page.kind}; a page is a singleton, or a collection that is the route's source`)
+      if (r.body !== 'composed') errors.push(`route ${r.id}: a page model needs body composed`)
+    }
+    const sectionIds = new Set<string>()
+    for (const s of r.sections) {
+      if (s.id === undefined) continue
+      if (sectionIds.has(s.id)) errors.push(`route ${r.id}: section id ${s.id} is used twice`)
+      sectionIds.add(s.id)
+    }
     r.sections.forEach((s, i) => placement(s, `route ${r.id} section ${i}`, r))
   }
   // Two routes on one pattern build one address twice, unless they split one model's entries by `where`.

@@ -1,0 +1,77 @@
+---
+// How it works: an ordered sequence of steps, each a title and a line of
+// text, optionally with an image — as a vertical list or a row across the
+// page, numbered or plain.
+import { tv } from 'tailwind-variants'
+import KitImage from '../_shared/KitImage.astro'
+import Section from '../_shared/Section.astro'
+import { imageOf, type ImageSource } from '../_shared/image'
+
+const steps = tv({
+  slots: {
+    header: 'mb-10 flex max-w-2xl flex-col gap-3',
+    heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
+    intro: 'text-lg opacity-80',
+    list: 'grid gap-8 [counter-reset:kit-step]',
+    step: 'flex gap-4 [counter-increment:kit-step]',
+    body: 'flex flex-col gap-2',
+    media: 'mb-2 overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
+    title: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)] text-balance',
+    text: 'text-pretty opacity-80',
+  },
+  variants: {
+    layout: {
+      list: { list: 'max-w-3xl' },
+      row: { list: 'sm:grid-cols-2 lg:auto-cols-fr lg:grid-flow-col lg:grid-cols-none', step: 'flex-col' },
+    },
+    // The number is drawn from a CSS counter, so the list stays one <ol> a screen reader counts itself.
+    style: {
+      numbered: { step: "before:flex before:size-10 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-accent before:font-semibold before:text-accent-ink before:content-[counter(kit-step)]" },
+      plain: { step: 'border-l-2 border-accent pl-4' },
+    },
+  },
+  defaultVariants: { layout: 'list', style: 'numbered' },
+})
+
+interface Step {
+  title: string
+  text: string
+  /** The image's address. */
+  image?: ImageSource | undefined
+  imageAlt?: string | undefined
+}
+
+interface Props {
+  heading?: string | undefined
+  intro?: string | undefined
+  items: Step[]
+  layout?: 'list' | 'row' | undefined
+  style?: 'numbered' | 'plain' | undefined
+  id?: string | undefined
+}
+
+const { heading, intro, items, layout, style, id } = Astro.props
+const s = steps({ layout, style })
+const headingId = heading && id ? `${id}-title` : undefined
+---
+{items.length > 0 && (
+  <Section id={id} aria-labelledby={headingId}>
+    {(heading || intro) && (
+      <header class={s.header()}>
+        {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+        {intro && <p class={s.intro()} data-kit-text>{intro}</p>}
+      </header>
+    )}
+    <ol class={s.list()}>
+      {items.map(step => (
+        <li class={s.step()}>
+          <div class={s.body()}>
+            {imageOf(step.image, step.imageAlt) && <div class={s.media()}><KitImage image={imageOf(step.image, step.imageAlt)!} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover" /></div>}
+            <h3 class={s.title()}>{step.title}</h3>
+            <p class={s.text()} data-kit-text>{step.text}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </Section>
+)}

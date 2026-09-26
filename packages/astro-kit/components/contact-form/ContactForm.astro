@@ -29,6 +29,8 @@ const contact = tv({
     details: 'mt-2 flex flex-col gap-4',
     term: 'text-sm font-semibold opacity-75',
     value: 'text-current',
+    formColumn: 'flex flex-col gap-4',
+    formHeading: 'text-xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-2xl',
     form: 'rounded-card',
   },
   variants: {
@@ -47,17 +49,21 @@ interface Props {
   model: string
   heading?: string | undefined
   intro?: string | undefined
+  /** The form's own heading, above the form ("Tell us about your project"). */
+  formHeading?: string | undefined
   details?: ContactDetail[] | undefined
   layout?: 'split' | 'stacked' | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   id?: string | undefined
 }
 
-const { model, heading, intro, details = [], layout, tone, id = 'contact' } = Astro.props
+const { model, heading, intro, formHeading, details = [], layout, tone, id = 'contact' } = Astro.props
 // Nothing to render (Studio not bound yet): a split would leave an empty column — the details stand alone.
 const formShown = formHome(model) !== null
 const s = contact({ layout: formShown ? layout : 'stacked', tone })
 const headingId = heading ? `${id}-title` : undefined
+// One level under the section heading, or the section's heading when there is none.
+const FormHeading = heading ? 'h3' : 'h2'
 ---
 <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
   <div class={s.grid()}>
@@ -77,6 +83,13 @@ const headingId = heading ? `${id}-title` : undefined
         )}
       </div>
     )}
-    {formShown && <StudioForm model={model} class={s.form()} />}
+    {formShown && (formHeading
+      ? (
+          <div class={s.formColumn()}>
+            <FormHeading class={s.formHeading()}>{formHeading}</FormHeading>
+            <StudioForm model={model} class={s.form()} />
+          </div>
+        )
+      : <StudioForm model={model} class={s.form()} />)}
   </div>
 </Section>

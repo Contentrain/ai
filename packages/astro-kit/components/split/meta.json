@@ -1,0 +1,154 @@
+{
+  "id": "split",
+  "name": "Split",
+  "description": "An image beside a block of text — eyebrow, heading, a markdown body and buttons — on either side, stacked on phones. The media-and-text section of a landing page (Gutenberg media-text, a two-column Elementor container with an image, Divi's image + text row).",
+  "category": "section",
+  "uses": [],
+  "shared": [
+    "Button.astro",
+    "KitImage.astro",
+    "Section.astro",
+    "types.ts"
+  ],
+  "variants": {
+    "imageSide": {
+      "options": [
+        "start",
+        "end"
+      ],
+      "default": "end",
+      "description": "Which side the image takes on wide screens: start (left in left-to-right text) or end. Phones always show it after the text."
+    },
+    "align": {
+      "options": [
+        "start",
+        "center"
+      ],
+      "default": "start",
+      "description": "Alignment of the text block."
+    },
+    "tone": {
+      "options": [
+        "default",
+        "muted",
+        "inverse",
+        "accent"
+      ],
+      "default": "default",
+      "description": "Section background."
+    }
+  },
+  "props": {
+    "heading": {
+      "type": "string",
+      "label": "Heading",
+      "required": true,
+      "description": "The section heading."
+    },
+    "eyebrow": {
+      "type": "string",
+      "label": "Eyebrow",
+      "description": "Short line above the heading."
+    },
+    "body": {
+      "type": "markdown",
+      "label": "Text",
+      "description": "The text beside the image, as markdown: paragraphs, emphasis, links, lists."
+    },
+    "actions": {
+      "type": "array",
+      "label": "Buttons",
+      "items": {
+        "type": "object",
+        "fields": {
+          "label": {
+            "type": "string",
+            "label": "Label",
+            "required": true,
+            "description": "The button text."
+          },
+          "href": {
+            "type": "url",
+            "label": "Link",
+            "required": true,
+            "description": "Where the button goes: a page on this site or a full address."
+          },
+          "newTab": {
+            "type": "boolean",
+            "label": "Open in a new tab",
+            "description": "Open the link in a new tab (an external site the reader should not leave for)."
+          },
+          "style": {
+            "type": "select",
+            "label": "Style",
+            "options": [
+              "primary",
+              "secondary",
+              "ghost"
+            ],
+            "description": "primary for the main action, secondary or ghost for the ones beside it."
+          }
+        }
+      },
+      "description": "Buttons under the text, in order (Elementor button, Gutenberg buttons, Divi button)."
+    },
+    "image": {
+      "type": "object",
+      "label": "Image",
+      "fields": {
+        "src": {
+          "type": "image",
+          "label": "Image",
+          "required": true,
+          "description": "The image file."
+        },
+        "alt": {
+          "type": "string",
+          "label": "Image description",
+          "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
+        },
+        "width": {
+          "type": "integer",
+          "label": "Width",
+          "description": "Width in pixels, as uploaded."
+        },
+        "height": {
+          "type": "integer",
+          "label": "Height",
+          "description": "Height in pixels, as uploaded."
+        }
+      },
+      "description": "The image beside the text. Width and height, when known, let the site reserve its space."
+    },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Anchor id of the section; the heading gets `<id>-title`."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": [
+      "core/media-text"
+    ],
+    "elementor": [
+      "elementor/image-box"
+    ],
+    "divi": [
+      "divi/et_pb_image"
+    ]
+  },
+  "a11y": "The section is labelled by its heading. The image is a separate figure in reading order after the text; an empty description marks a decorative one.",
+  "pattern": {
+    "summary": "image beside heading + text",
+    "signals": [
+      "2 columns",
+      "1 image",
+      "heading",
+      "text",
+      "0–2 buttons"
+    ]
+  }
+}

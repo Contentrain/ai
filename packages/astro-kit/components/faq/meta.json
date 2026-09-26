@@ -10,12 +10,12 @@
     "tone": { "options": ["default", "muted", "inverse", "accent"], "default": "default", "description": "Section background." }
   },
   "props": {
-    "items": { "type": "array", "required": true, "items": { "type": "object", "fields": { "question": { "type": "string", "required": true }, "answer": { "type": "richtext", "required": true } } }, "description": "The questions in order (core/details summary + content, Elementor accordion/toggle tabs, Divi accordion/toggle items)." },
-    "heading": { "type": "string", "description": "Section heading." },
-    "exclusive": { "type": "boolean", "default": false, "description": "One answer open at a time (Elementor accordion, Divi accordion). Off for toggles." },
-    "openFirst": { "type": "boolean", "default": false, "description": "The first answer starts open (Divi open_toggle, Elementor active item 1)." },
-    "schema": { "type": "boolean", "default": false, "description": "Emit FAQPage JSON-LD built from these items. Use on at most one FAQ per page, and only when the page is really a FAQ." },
-    "id": { "type": "string", "description": "Section id; also the exclusive group's name." }
+    "items": { "type": "array", "label": "Questions", "required": true, "items": { "type": "object", "fields": { "question": { "type": "string", "label": "Question", "required": true, "description": "The question, as the visitor would ask it." }, "answer": { "type": "richtext", "label": "Answer", "required": true, "description": "The answer; links and lists allowed." } } }, "description": "The questions in order (core/details summary + content, Elementor accordion/toggle tabs, Divi accordion/toggle items)." },
+    "heading": { "type": "string", "label": "Heading", "description": "Section heading." },
+    "exclusive": { "type": "boolean", "default": false, "content": false, "description": "One answer open at a time (Elementor accordion, Divi accordion). Off for toggles." },
+    "openFirst": { "type": "boolean", "default": false, "content": false, "description": "The first answer starts open (Divi open_toggle, Elementor active item 1)." },
+    "schema": { "type": "boolean", "default": false, "content": false, "description": "Emit FAQPage JSON-LD built from these items. Use on at most one FAQ per page, and only when the page is really a FAQ." },
+    "id": { "type": "string", "content": false, "description": "Section id; also the exclusive group's name." }
   },
   "slots": {},
   "js": "none",

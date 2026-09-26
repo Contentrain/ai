@@ -1,0 +1,94 @@
+---
+// Price plans side by side: a name, a price and what it includes, with a
+// button each. The featured plan is raised and carries a badge, so it stands
+// out by more than its colour. Each plan's features are a markdown list,
+// rendered at build time.
+import { tv } from 'tailwind-variants'
+import Button from '../_shared/Button.astro'
+import Section, { type Tone } from '../_shared/Section.astro'
+import { renderMarkdown } from '../../../lib/markdown'
+
+const pricing = tv({
+  slots: {
+    header: 'mx-auto mb-10 flex max-w-2xl flex-col items-center gap-3 text-center',
+    heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
+    intro: 'text-lg opacity-80',
+    list: 'grid items-stretch gap-6 sm:grid-cols-2',
+    plan: 'relative flex flex-col gap-5 rounded-card border border-line bg-surface p-6 text-ink md:p-8',
+    badge: 'absolute -top-3 left-6 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-ink',
+    name: 'text-lg [font-weight:var(--font-weight-heading,600)]',
+    price: 'flex items-baseline gap-1',
+    amount: 'text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight',
+    period: 'text-sm opacity-75',
+    description: 'text-pretty opacity-80',
+    features: 'prose-site prose max-w-none text-current prose-ul:pl-5 prose-li:my-1',
+    action: 'mt-auto pt-2',
+  },
+  variants: {
+    columns: {
+      '2': { list: 'mx-auto max-w-4xl' },
+      '3': { list: 'lg:grid-cols-3' },
+      '4': { list: 'lg:grid-cols-4' },
+    },
+    tone: { default: {}, muted: { plan: 'border-transparent' }, inverse: { plan: 'border-transparent' }, accent: { intro: 'opacity-100', plan: 'border-transparent', badge: 'bg-ink text-surface' } },
+  },
+  defaultVariants: { columns: '3', tone: 'default' },
+})
+
+interface Plan {
+  name: string
+  price: string
+  period?: string | undefined
+  description?: string | undefined
+  /** What the plan includes, as a markdown list. */
+  features?: string | undefined
+  ctaLabel?: string | undefined
+  ctaHref?: string | undefined
+  featured?: boolean | undefined
+}
+
+interface Props {
+  heading?: string | undefined
+  intro?: string | undefined
+  plans: Plan[]
+  /** Badge on the featured plan. */
+  featuredLabel?: string | undefined
+  columns?: '2' | '3' | '4' | undefined
+  tone?: Tone | undefined
+  id?: string | undefined
+}
+
+const { heading, intro, plans, featuredLabel = 'Most popular', columns, tone, id } = Astro.props
+const s = pricing({ columns, tone })
+const headingId = heading && id ? `${id}-title` : undefined
+const features = await Promise.all(plans.map(plan => renderMarkdown(plan.features)))
+---
+{plans.length > 0 && (
+  <Section tone={tone} id={id} aria-labelledby={headingId}>
+    {(heading || intro) && (
+      <header class={s.header()}>
+        {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+        {intro && <p class={s.intro()} data-kit-text>{intro}</p>}
+      </header>
+    )}
+    <ul class={s.list()}>
+      {plans.map((plan, i) => (
+        <li class={s.plan({ class: plan.featured ? 'ring-2 ring-accent shadow-lg md:-my-2 md:py-10' : undefined })}>
+          {plan.featured && <p class={s.badge()}>{featuredLabel}</p>}
+          <h3 class={s.name()}>{plan.name}</h3>
+          <p class={s.price()}>
+            <span class={s.amount()}>{plan.price}</span>
+            {plan.period && <span class={s.period()}>{plan.period}</span>}
+          </p>
+          {plan.description && <p class={s.description()} data-kit-text>{plan.description}</p>}
+          {features[i] && <div class={s.features()} set:html={features[i]} />}
+          {plan.ctaLabel && plan.ctaHref && (
+            <div class={s.action()}>
+              <Button action={{ label: plan.ctaLabel, href: plan.ctaHref, style: plan.featured ? 'primary' : 'ghost' }} class="w-full" />
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
+  </Section>
+)}

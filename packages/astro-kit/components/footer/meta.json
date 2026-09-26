@@ -24,6 +24,14 @@
       ],
       "default": "default",
       "description": "Surface with a top border, muted surface, or dark (ink) background."
+    },
+    "align": {
+      "options": [
+        "start",
+        "center"
+      ],
+      "default": "start",
+      "description": "start: brand and links to the sides (left-aligned on phones). center: everything centred in one column, as themes with a centred footer print it."
     }
   },
   "props": {
@@ -94,6 +102,10 @@
     "copyright": {
       "type": "string",
       "description": "Copyright line; {year} is the current year. Defaults to © <year> <siteName>."
+    },
+    "consentLabel": {
+      "type": "string",
+      "description": "Label of the cookie settings button after the copyright line; it reopens the consent bar (withdrawal, GDPR 7(3)). Set only when the site has a consent bar."
     },
     "navLabel": {
       "type": "string",

@@ -1,6 +1,6 @@
 ---
 // A paginated list of posts: the blog index and the category, tag and author
-// archives — as cards, or each post in full (siteConfig.lists.display), as the
+// archives — as cards (a grid, or one column), or each post in full (siteConfig.lists.display), as the
 // source's query loop showed them.
 import { getEntry } from 'astro:content'
 import KitImage from '../components/kit/_shared/KitImage.astro'
@@ -28,6 +28,7 @@ interface Props {
 const { title, eyebrow, description, posts, base, current, total } = Astro.props
 const [site, t, categories] = await Promise.all([getSite(), getStrings(), byId('categories')])
 const full = siteConfig.lists.display === 'full'
+const column = full || siteConfig.lists.display === 'list'
 const bodies = full ? await Promise.all(posts.map(post => publicHtml(post.data.body))) : []
 const showHeading = Boolean(title) || siteConfig.lists.heading
 const cards = await Promise.all(posts.map(async (post) => {
@@ -51,14 +52,14 @@ const url = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href
   jsonLd={[collectionLd(url, title ?? t('blog.title'))]}
 >
   <div class="container-page py-12 md:py-16">
-    <header class:list={['mb-12 flex flex-col gap-3', full ? 'mx-auto max-w-(--container-prose)' : 'max-w-2xl', !showHeading && 'sr-only']}>
+    <header class:list={['mb-12 flex flex-col gap-3', column ? 'mx-auto max-w-(--container-prose)' : 'max-w-2xl', !showHeading && 'sr-only']}>
       {eyebrow && <p class="text-sm font-medium tracking-wide text-accent uppercase">{eyebrow}</p>}
       <h1 class="text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance">{title ?? (siteConfig.lists.heading ? t('blog.title') : site.title)}</h1>
       {description && <p class="text-lg text-ink-muted">{description}</p>}
     </header>
     {cards.length === 0 && <p class="text-ink-muted">{t('blog.empty')}</p>}
     {cards.length > 0 && !full && (
-      <div class="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+      <div class:list={['grid gap-x-8 gap-y-12', column ? 'mx-auto w-full max-w-(--container-prose)' : 'sm:grid-cols-2 lg:grid-cols-3']}>
         {cards.map(card => <PostCard {...card} locale={site.language ?? 'en'} linkTitle={siteConfig.chrome?.titleLinks} />)}
       </div>
     )}

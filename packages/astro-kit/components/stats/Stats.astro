@@ -1,0 +1,66 @@
+---
+// A row of figures, each with a short label, under an optional heading and
+// intro. Figures are static text: no counting animation.
+import { tv } from 'tailwind-variants'
+import Section, { type Tone } from '../_shared/Section.astro'
+
+const stats = tv({
+  slots: {
+    list: 'grid grid-cols-2 gap-6 md:gap-8',
+    item: 'flex flex-col-reverse gap-1',
+    value: 'text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight tabular-nums md:text-5xl',
+    label: 'text-sm opacity-80',
+  },
+  variants: {
+    columns: {
+      '2': { list: 'md:grid-cols-2' },
+      '3': { list: 'md:grid-cols-3' },
+      '4': { list: 'md:grid-cols-4' },
+    },
+    style: {
+      plain: {},
+      card: { item: 'rounded-[var(--radius-card)] bg-surface p-6 text-ink ring-1 ring-line/60' },
+    },
+    // accent/accent-ink is only ~5:1 — dimming text on it drops it under 4.5:1 (WCAG 1.4.3).
+    tone: { default: {}, muted: {}, inverse: {}, accent: { label: 'opacity-100' } },
+  },
+  defaultVariants: { columns: '3', style: 'plain', tone: 'default' },
+})
+
+interface Item {
+  value: string
+  label: string
+  prefix?: string | undefined
+  suffix?: string | undefined
+}
+
+interface Props {
+  heading?: string | undefined
+  intro?: string | undefined
+  items: Item[]
+  columns?: '2' | '3' | '4' | undefined
+  style?: 'plain' | 'card' | undefined
+  tone?: Tone | undefined
+  id?: string | undefined
+}
+
+const { heading, intro, items, columns, style, tone, id } = Astro.props
+const s = stats({ columns, style, tone })
+const headingId = heading && id ? `${id}-title` : undefined
+---
+<Section tone={tone} id={id} aria-labelledby={headingId}>
+  {(heading || intro) && (
+    <header class="mb-10 flex max-w-2xl flex-col gap-3">
+      {heading && <h2 id={headingId} class="text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl">{heading}</h2>}
+      {intro && <p class:list={['text-lg', tone === 'accent' ? undefined : 'opacity-80']} data-kit-text>{intro}</p>}
+    </header>
+  )}
+  <dl class={s.list()}>
+    {items.map(item => (
+      <div class={s.item()}>
+        <dt class={s.label()}>{item.label}</dt>
+        <dd class={s.value()}>{item.prefix}{item.value}{item.suffix}</dd>
+      </div>
+    ))}
+  </dl>
+</Section>
