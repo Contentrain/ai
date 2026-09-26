@@ -34,7 +34,7 @@ export const GET: APIRoute = async () => {
   const kept = attachmentLines.slice(0, Math.max(0, HOST_RULE_LIMIT - lines.length))
   const out = [...lines, ...kept]
   const note = kept.length < attachmentLines.length ? `# ${attachmentLines.length - kept.length} attachment page redirect(s) left out: over the host's ${HOST_RULE_LIMIT}-rule limit.\n` : ''
-  return new Response(`# Generated at build: the redirects collection (edit in Contentrain Studio), attachment pages, then query addresses.\n${note}${out.join('\n')}\n`, {
+  return new Response(`# Generated at build: the redirects collection (edit in Contentrain Studio), prefixes, then query addresses, then attachment pages.\n${note}${out.join('\n')}\n`, {
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
   })
 }
