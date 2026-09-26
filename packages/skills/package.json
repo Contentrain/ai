@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/skills",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "license": "MIT",
   "description": "AI agent skills for Contentrain — workflow procedures, framework integration guides",
   "type": "module",
