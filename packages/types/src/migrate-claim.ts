@@ -114,18 +114,23 @@ export interface MigrateStudioClaim {
    * commenters' email, IP and avatar already removed). The export never enters
    * the repository, so this is its only way into Studio.
    *
-   * A signed GET on Migrate, per job, valid until `expires_at` (the end of the
-   * grant window, not the claim's 30 minutes); an invalid or expired signature
-   * reads as 404. Studio fetches it server-side only and trusts the host only
-   * when it is on its own Migrate allowlist — never because the token names it.
-   * Absent when the source had no comments.
+   * A GET on Migrate's fixed export address with `token` as
+   * `Authorization: Bearer`. The address carries no secret, so nothing that
+   * logs request lines (proxies, the platform's edge) sees one. The token is
+   * signed per job and valid until `expires_at` (the end of the grant window,
+   * not the claim's 30 minutes); a missing, invalid or expired token reads as
+   * 404. Studio fetches it server-side only and trusts the host only when it is
+   * on its own Migrate allowlist — never because the claim names it. Absent
+   * when the source had no comments.
    */
   comments_export?: MigrateStudioCommentsExport
 }
 
 export interface MigrateStudioCommentsExport {
-  /** `https:` URL (`http:` only for localhost), no userinfo or fragment. */
+  /** `https:` URL (`http:` only for localhost), no userinfo, query or fragment. Carries no secret. */
   url: string
+  /** The export's bearer token: a compact JWS, at most 2048 characters. Sent only as `Authorization: Bearer`. */
+  token: string
   /** When the URL stops serving, seconds since the epoch. After `iat`. */
   expires_at: number
   /** Comments in the export, for the claim screen. */
@@ -133,7 +138,12 @@ export interface MigrateStudioCommentsExport {
 }
 
 export type MigrateStudioClaimResult =
-  | { ok: true, claim: MigrateStudioClaim }
+  /**
+   * `warnings`: optional parts that were dropped rather than failing the claim
+   * (today only `comments_export.*`), as `field: problem` strings; absent when
+   * nothing was dropped. `claim` no longer carries a dropped part.
+   */
+  | { ok: true, claim: MigrateStudioClaim, warnings?: string[] }
   | { ok: false, errors: string[] }
 
 const CAPABILITY_SET: ReadonlySet<string> = new Set(CAPABILITY_KEYS)
@@ -153,13 +163,18 @@ function isClaimOrigin(x: unknown): x is string {
   return url.protocol === 'https:' || (url.protocol === 'http:' && LOCAL_HOSTS.has(url.hostname))
 }
 
-/** A fetchable export address: https (http for localhost), no credentials, no fragment. */
+/** A compact JWS: three base64url segments, the signature non-empty. */
+function isCompactJws(x: unknown): x is string {
+  return typeof x === 'string' && x.length <= 2048 && /^[\w-]+\.[\w-]+\.[\w-]+$/.test(x)
+}
+
+/** A fetchable export address: https (http for localhost), no credentials, query or fragment — nowhere for a secret. */
 function isExportUrl(x: unknown): x is string {
   if (typeof x !== 'string' || x.length > 2048) return false
   let url: URL
   try { url = new URL(x) }
   catch { return false }
-  if (url.username || url.password || url.hash || url.hostname.endsWith('.')) return false
+  if (url.username || url.password || url.search || url.hash || url.hostname.endsWith('.')) return false
   return url.protocol === 'https:' || (url.protocol === 'http:' && LOCAL_HOSTS.has(url.hostname))
 }
 
@@ -168,6 +183,11 @@ function isExportUrl(x: unknown): x is string {
  * `now` (seconds since the epoch) to also check the validity window; without
  * it only the shape and the window's own bounds are checked. Returns every
  * problem found, as stable machine-readable strings (`field: problem`).
+ *
+ * A malformed `comments_export` does not fail the claim: it is an add-on, and
+ * a Migrate still sending an older shape must not stop the trial. It is
+ * dropped from `claim` and reported in `warnings`; Studio then offers the
+ * file upload instead.
  */
 export function validateMigrateStudioClaim(input: unknown, options: { now?: number } = {}): MigrateStudioClaimResult {
   const errors: string[] = []
@@ -234,20 +254,25 @@ export function validateMigrateStudioClaim(input: unknown, options: { now?: numb
 
   if (x.origin !== undefined && !isClaimOrigin(x.origin)) errors.push('origin: invalid')
 
+  const warnings: string[] = []
   if (x.comments_export !== undefined) {
     const ce = x.comments_export
     if (!isObject(ce)) {
-      errors.push('comments_export: invalid')
+      warnings.push('comments_export: invalid')
     }
     else {
-      if (!isExportUrl(ce.url)) errors.push('comments_export.url: invalid')
-      if (!isSeconds(ce.expires_at)) errors.push('comments_export.expires_at: invalid')
-      else if (isSeconds(x.iat) && ce.expires_at <= x.iat) errors.push('comments_export.expires_at: not after iat')
-      if (typeof ce.comments !== 'number' || !Number.isInteger(ce.comments) || ce.comments < 0) errors.push('comments_export.comments: invalid')
+      if (!isExportUrl(ce.url)) warnings.push('comments_export.url: invalid')
+      if (!isCompactJws(ce.token)) warnings.push('comments_export.token: invalid')
+      if (!isSeconds(ce.expires_at)) warnings.push('comments_export.expires_at: invalid')
+      else if (isSeconds(x.iat) && ce.expires_at <= x.iat) warnings.push('comments_export.expires_at: not after iat')
+      if (typeof ce.comments !== 'number' || !Number.isInteger(ce.comments) || ce.comments < 0) warnings.push('comments_export.comments: invalid')
     }
   }
 
-  return errors.length === 0 ? { ok: true, claim: x as unknown as MigrateStudioClaim } : { ok: false, errors }
+  if (errors.length > 0) return { ok: false, errors }
+  if (warnings.length === 0) return { ok: true, claim: x as unknown as MigrateStudioClaim }
+  const { comments_export: _dropped, ...rest } = x
+  return { ok: true, claim: rest as unknown as MigrateStudioClaim, warnings }
 }
 
 /** Shape-only type guard (no clock check). The signature is the consumer's job. */
