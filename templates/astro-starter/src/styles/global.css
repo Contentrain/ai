@@ -70,7 +70,7 @@
   --tw-prose-body: var(--color-ink);
   --tw-prose-headings: var(--color-ink);
   --tw-prose-lead: var(--color-ink-muted);
-  --tw-prose-links: var(--color-accent);
+  --tw-prose-links: var(--color-link, var(--color-accent));
   --tw-prose-bold: var(--color-ink);
   --tw-prose-counters: var(--color-ink-muted);
   --tw-prose-bullets: var(--color-ink-muted);

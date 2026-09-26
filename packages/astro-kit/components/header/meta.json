@@ -12,6 +12,8 @@
   },
   "props": {
     "siteName": { "type": "string", "required": true, "description": "Site title (site.title)." },
+    "tagline": {"type": "string", "description": "A line under the site name, as themes that print the tagline in the header do (site.tagline)."},
+    "brandSize": {"type": "string", "description": "The site name's size where the source theme sets its own (a CSS length)."},
     "logo": { "type": "object", "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } }, "description": "Logo image (site.logo)." },
     "showName": { "type": "boolean", "default": true, "description": "Show the site name next to the logo." },
     "homeHref": { "type": "url", "default": "/", "description": "Where the brand links." },

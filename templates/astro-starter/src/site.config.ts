@@ -46,8 +46,16 @@ export interface SiteConfig {
   /**
    * Post lists (the blog index and archives): cards, or every post in full as a WordPress query
    * loop that shows the post content does; `heading` shows the index's title on the front page too.
+   * `text`: the size of each post's content in a full list, when the source's loop sets its own.
    */
-  lists: { display: 'cards' | 'full', heading: boolean }
+  lists: { display: 'cards' | 'full', heading: boolean, text?: string }
+  /**
+   * The header and footer as the source's theme prints them; absent, the starter's own. `brand`:
+   * the site title's size in the header. `tagline`: the header shows the tagline under the title.
+   * `copyright`: the footer's line ("All rights reserved"), instead of "© year Site".
+   * `titleLinks`: post titles in lists take the link colour (`--color-link`), as the source's do.
+   */
+  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean }
   /**
    * The source site's hosts (`site.com`): a link to one of them in migrated content is internal
    * whatever its scheme, `www.` or letter case, and resolves through the published set. Fixed at

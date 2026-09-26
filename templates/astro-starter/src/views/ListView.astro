@@ -59,15 +59,15 @@ const url = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href
     {cards.length === 0 && <p class="text-ink-muted">{t('blog.empty')}</p>}
     {cards.length > 0 && !full && (
       <div class="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map(card => <PostCard {...card} locale={site.language ?? 'en'} />)}
+        {cards.map(card => <PostCard {...card} locale={site.language ?? 'en'} linkTitle={siteConfig.chrome?.titleLinks} />)}
       </div>
     )}
     {cards.length > 0 && full && (
-      <div class="mx-auto flex max-w-(--container-prose) flex-col gap-24">
+      <div class="mx-auto flex max-w-(--container-prose) flex-col gap-24" style={siteConfig.lists.text ? `--text-body: ${siteConfig.lists.text}` : undefined}>
         {cards.map((card, index) => (
           <article class="flex flex-col gap-6">
             {card.image && <a href={card.href} tabindex="-1" aria-hidden="true"><KitImage image={{ ...card.image, alt: '' }} priority={index === 0} sizes="(min-width: 768px) 46rem, 100vw" class="h-auto w-full rounded-[var(--radius-image,0.75rem)] object-cover" /></a>}
-            <h2 class="text-3xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight"><a href={card.href} class="text-ink no-underline hover:underline">{card.title}</a></h2>
+            <h2 class="text-3xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight"><a href={card.href} class:list={[siteConfig.chrome?.titleLinks ? 'text-[color:var(--color-link,var(--color-accent))]' : 'text-ink', 'no-underline hover:underline']}>{card.title}</a></h2>
             {bodies[index] && <Prose html={bodies[index]} searchable={false} />}
             {card.date && <time datetime={card.date.toISOString()} class="text-sm text-ink-muted">{card.date.toLocaleDateString(site.language ?? 'en', { dateStyle: 'long', timeZone: 'UTC' })}</time>}
           </article>

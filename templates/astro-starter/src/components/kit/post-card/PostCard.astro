@@ -37,9 +37,11 @@ interface Props {
   author?: string | undefined
   headingLevel?: 2 | 3 | undefined
   layout?: 'vertical' | 'horizontal' | 'minimal' | undefined
+  /** The title in the site's link colour, as themes that colour every link do (Hello Elementor). */
+  linkTitle?: boolean | undefined
 }
 
-const { title, href, excerpt, date: rawDate, locale = 'en', image, category, author, headingLevel = 2, layout } = Astro.props
+const { title, href, excerpt, date: rawDate, locale = 'en', image, category, author, headingLevel = 2, layout, linkTitle } = Astro.props
 const date = rawDate === undefined ? undefined : new Date(rawDate)
 const slots = card({ layout })
 const Heading = `h${headingLevel}` as 'h2' | 'h3'
@@ -58,7 +60,7 @@ const Heading = `h${headingLevel}` as 'h2' | 'h3'
         {date && <time datetime={date.toISOString()}>{date.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' })}</time>}
       </p>
     )}
-    <Heading class={slots.title()}>
+    <Heading class={slots.title({ class: linkTitle ? 'text-[color:var(--color-link,var(--color-accent))]' : undefined })}>
       <a href={href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent">{title}</a>
     </Heading>
     {excerpt && <p class={slots.excerpt()}>{excerpt}</p>}

@@ -150,6 +150,21 @@ describe('validateProjectPlan', () => {
     ])
   })
 
+  it('checks the list text size and the header and footer the source theme prints', () => {
+    const p = plan()
+    p.site.lists = { display: 'full', heading: true, text: 'clamp(1rem, 1rem + ((1vw - 0.2rem) * 0.196), 1.125rem)' }
+    p.site.chrome = { brand: '2.5rem', tagline: true, copyright: 'All rights reserved', titleLinks: true }
+    p.site.tokens.roles['color-link'] = '#c36'
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.lists.text = 'red; color: blue'
+    p.site.chrome = { brand: 'clamp(url(x))', copyright: '<b>x</b>' }
+    expect(validateProjectPlan(p).errors).toEqual([
+      'site.lists.text red; color: blue is not a CSS size',
+      'site.chrome.brand clamp(url(x)) is not a CSS size',
+      'site.chrome.copyright is not a line of plain text (1–200 characters, no markup)',
+    ])
+  })
+
   it('takes a section width of content or wide', () => {
     const p = plan()
     p.routes[1]!.sections[0]!.width = 'content'

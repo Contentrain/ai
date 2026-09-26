@@ -937,6 +937,14 @@
           "required": true,
           "description": "Site title (site.title)."
         },
+        "tagline": {
+          "type": "string",
+          "description": "A line under the site name, as themes that print the tagline in the header do (site.tagline)."
+        },
+        "brandSize": {
+          "type": "string",
+          "description": "The site name's size where the source theme sets its own (a CSS length)."
+        },
         "logo": {
           "type": "object",
           "fields": {
@@ -1575,6 +1583,11 @@
           "max": 3,
           "default": 2,
           "description": "Title heading level in the page outline."
+        },
+        "linkTitle": {
+          "type": "boolean",
+          "default": false,
+          "description": "The title in the site's link colour (--color-link), as themes that colour every link do."
         }
       },
       "slots": {},
