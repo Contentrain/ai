@@ -2,8 +2,10 @@
 // The site's analytics, from the site settings (Studio: Site → Analytics). No
 // script loads until the visitor accepts: the consent banner sets
 // `<html data-consent="granted|denied">` and dispatches `kit:consent`
-// (`{ granted }`) on `document`. Without the attribute the answer is "denied" — a visitor who has
-// not been asked is not tracked, whatever the provider's own cookie policy.
+// (`{ granted }`) on `document`. Without the attribute the choice stored on an
+// earlier visit answers; without either it is "denied" — a visitor who has not
+// been asked is not tracked. It needs the consent bar on the site (the kit's
+// Consent section): without one nobody can say yes and nothing ever loads.
 // Withdrawn consent stops it on the same page: the loaded script is switched
 // off through the provider's own opt-out and its cookies are removed.
 import { getSite } from '../lib/content'
@@ -12,14 +14,22 @@ const site = await getSite()
 const provider = site.analytics_provider
 const id = site.analytics_id?.trim()
 const host = site.analytics_host?.replace(/\/+$/, '')
-// Matomo has no hosted default: without its server there is nothing to load.
-const enabled = Boolean(provider && id && (provider !== 'matomo' || host))
+// Matomo has no hosted default: without its server there is nothing to load. A
+// self-hosted server over plain http would be blocked as mixed content.
+const enabled = Boolean(provider && id && (provider !== 'matomo' || host) && (!host || host.startsWith('https://')))
 ---
 {enabled && (
   <script is:inline define:vars={{ provider, id, host }}>
     // define:vars already wraps this script in its own function scope.
     let loaded = false
-    const granted = () => document.documentElement.dataset.consent === 'granted'
+    // The banner may run after this script (it sits in the body): until it has set the attribute, the choice it
+    // stored on an earlier visit answers (`kit-consent`, the Consent component's key).
+    const granted = () => {
+      const answer = document.documentElement.dataset.consent
+      if (answer) return answer === 'granted'
+      try { return localStorage.getItem('kit-consent') === 'granted' }
+      catch { return false }
+    }
     const add = (src, attrs = {}) => {
       const s = document.createElement('script')
       s.async = true
@@ -67,15 +77,16 @@ const enabled = Boolean(provider && id && (provider !== 'matomo' || host))
         add(`${host}/matomo.js`)
       }
     }
-    // Nothing loaded yet: nothing to stop. Loaded: no further hits, and the provider's cookies go.
+    // Loaded: no further hits through the provider's own switch. Either way its cookies go — a migrated site often
+    // still carries the old WordPress site's `_ga` / `_pk_` on the same domain.
     const revoke = () => {
+      clearCookies()
       if (!loaded) return
       if (provider === 'ga4') { window[`ga-disable-${id}`] = true; gtag('consent', 'update', { analytics_storage: 'denied' }) }
       if (provider === 'gtm') gtag('consent', 'update', { analytics_storage: 'denied', ad_storage: 'denied' })
       if (provider === 'plausible') try { localStorage.setItem('plausible_ignore', 'true') } catch {}
       if (provider === 'fathom' && window.fathom) window.fathom.blockTrackingForMe()
       if (provider === 'matomo') window._paq.push(['optUserOut'], ['deleteCookies'])
-      clearCookies()
     }
     // The event's own answer wins (`{ granted }`), so the order in which the banner sets the attribute and
     // dispatches does not matter.

@@ -21,7 +21,7 @@ interface Props {
 const { model, class: className } = Astro.props
 const studio = siteConfig.studio
 const forms = siteConfig.features?.forms
-const home = formHome()
+const home = formHome(model)
 const text = home ? await getStringTable(['common.', 'form.']) : {}
 const wordpress = home === 'wordpress' ? onWordPress(Astro.url.pathname) : undefined
 ---
@@ -29,7 +29,7 @@ const wordpress = home === 'wordpress' ? onWordPress(Astro.url.pathname) : undef
 {home === 'endpoint' && forms?.home === 'endpoint' && <StaticForm model={model} action={forms.action} text={text} class={className} />}
 {home === 'mailto' && forms?.home === 'mailto' && (
   <p class:list={['cr-form-mount', className]} data-cr-part="form" data-state="mailto">
-    {text['form.mailto'] ?? 'Write to us at'} <a href={`mailto:${forms.address}`} class="underline underline-offset-4">{forms.address}</a>
+    {text['form.mailto'] ?? 'Write to us at'} <a href={`mailto:${encodeURI(forms.address)}`} class="underline underline-offset-4">{forms.address}</a>
   </p>
 )}
 {wordpress && (

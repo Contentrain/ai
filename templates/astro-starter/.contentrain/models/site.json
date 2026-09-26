@@ -24,7 +24,7 @@
         "fathom",
         "matomo"
       ],
-      "description": "Loaded only after the visitor accepts cookies (the consent banner sets it)."
+      "description": "Loaded only after the visitor accepts cookies in the site's consent bar. Without a consent bar on the site it never loads."
     },
     "language": {
       "label": "Language",

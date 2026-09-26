@@ -55,7 +55,7 @@ interface Props {
 
 const { model, heading, intro, details = [], layout, tone, id = 'contact' } = Astro.props
 // Nothing to render (Studio not bound yet): a split would leave an empty column — the details stand alone.
-const formShown = formHome() !== null
+const formShown = formHome(model) !== null
 const s = contact({ layout: formShown ? layout : 'stacked', tone })
 const headingId = heading ? `${id}-title` : undefined
 ---

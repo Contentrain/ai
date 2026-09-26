@@ -3,10 +3,10 @@
 // instead of Studio: plain HTML, no script. The fields are the Studio model's
 // public fields (.contentrain/models/<model>.json), the same ones StudioForm
 // shows, so switching to Studio later changes the transport, not the form.
-// The service shows its own confirmation page.
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { fieldControl, labelFor, esc, type FieldDef } from '../../lib/studio/embed'
+// The service shows its own confirmation page. StudioForm renders it only
+// when formHome() says it can (https action, at least one field).
+import { formFields } from '../../lib/features'
+import { fieldControl, labelFor, esc } from '../../lib/studio/embed'
 
 interface Props {
   /** The model whose fields the form shows. */
@@ -19,18 +19,7 @@ interface Props {
 
 const { model, action, text, class: className } = Astro.props
 
-interface ModelFile { fields?: Record<string, FieldDef & { description?: string }>, form?: { exposedFields?: string[] } }
-let definition: ModelFile = {}
-try { definition = JSON.parse(readFileSync(join(process.cwd(), '.contentrain/models', `${model}.json`), 'utf8')) as ModelFile }
-catch { definition = {} }
-const all = definition.fields ?? {}
-const ids = (definition.form?.exposedFields ?? Object.keys(all)).filter(id => all[id])
-// The model keeps the source form's label as the field's description.
-const fields = ids.map((id) => {
-  const def = all[id]!
-  const label = def.label ?? def.description
-  return { id, def: label ? { ...def, label } : def }
-})
+const fields = formFields(model)
 const valid = action.startsWith('https://') && fields.length > 0
 const html = fields.map(({ id, def }) => {
   const control = fieldControl(id, def, 'cr-static')
