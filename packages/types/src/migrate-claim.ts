@@ -114,18 +114,23 @@ export interface MigrateStudioClaim {
    * commenters' email, IP and avatar already removed). The export never enters
    * the repository, so this is its only way into Studio.
    *
-   * A signed GET on Migrate, per job, valid until `expires_at` (the end of the
-   * grant window, not the claim's 30 minutes); an invalid or expired signature
-   * reads as 404. Studio fetches it server-side only and trusts the host only
-   * when it is on its own Migrate allowlist — never because the token names it.
-   * Absent when the source had no comments.
+   * A GET on Migrate's fixed export address with `token` as
+   * `Authorization: Bearer`. The address carries no secret, so nothing that
+   * logs request lines (proxies, the platform's edge) sees one. The token is
+   * signed per job and valid until `expires_at` (the end of the grant window,
+   * not the claim's 30 minutes); a missing, invalid or expired token reads as
+   * 404. Studio fetches it server-side only and trusts the host only when it is
+   * on its own Migrate allowlist — never because the claim names it. Absent
+   * when the source had no comments.
    */
   comments_export?: MigrateStudioCommentsExport
 }
 
 export interface MigrateStudioCommentsExport {
-  /** `https:` URL (`http:` only for localhost), no userinfo or fragment. */
+  /** `https:` URL (`http:` only for localhost), no userinfo, query or fragment. Carries no secret. */
   url: string
+  /** The export's bearer token: a compact JWS, at most 2048 characters. Sent only as `Authorization: Bearer`. */
+  token: string
   /** When the URL stops serving, seconds since the epoch. After `iat`. */
   expires_at: number
   /** Comments in the export, for the claim screen. */
@@ -153,13 +158,18 @@ function isClaimOrigin(x: unknown): x is string {
   return url.protocol === 'https:' || (url.protocol === 'http:' && LOCAL_HOSTS.has(url.hostname))
 }
 
-/** A fetchable export address: https (http for localhost), no credentials, no fragment. */
+/** A compact JWS: three base64url segments, the signature non-empty. */
+function isCompactJws(x: unknown): x is string {
+  return typeof x === 'string' && x.length <= 2048 && /^[\w-]+\.[\w-]+\.[\w-]+$/.test(x)
+}
+
+/** A fetchable export address: https (http for localhost), no credentials, query or fragment — nowhere for a secret. */
 function isExportUrl(x: unknown): x is string {
   if (typeof x !== 'string' || x.length > 2048) return false
   let url: URL
   try { url = new URL(x) }
   catch { return false }
-  if (url.username || url.password || url.hash || url.hostname.endsWith('.')) return false
+  if (url.username || url.password || url.search || url.hash || url.hostname.endsWith('.')) return false
   return url.protocol === 'https:' || (url.protocol === 'http:' && LOCAL_HOSTS.has(url.hostname))
 }
 
@@ -241,6 +251,7 @@ export function validateMigrateStudioClaim(input: unknown, options: { now?: numb
     }
     else {
       if (!isExportUrl(ce.url)) errors.push('comments_export.url: invalid')
+      if (!isCompactJws(ce.token)) errors.push('comments_export.token: invalid')
       if (!isSeconds(ce.expires_at)) errors.push('comments_export.expires_at: invalid')
       else if (isSeconds(x.iat) && ce.expires_at <= x.iat) errors.push('comments_export.expires_at: not after iat')
       if (typeof ce.comments !== 'number' || !Number.isInteger(ce.comments) || ce.comments < 0) errors.push('comments_export.comments: invalid')

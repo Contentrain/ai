@@ -527,7 +527,7 @@ A paid Migrate order includes a Studio trial. At delivery, Migrate hands the cus
 | `repo` | `{ provider: 'github', owner, name }` of the delivered site |
 | `capabilities` | optional discovery summary for the claim screen |
 | `origin` | optional migrated site as a bare origin (`https://host`; `http:` only for localhost). Studio stores it on the grant and fetches migrated media from it alone |
-| `comments_export` | optional `{ url, expires_at, comments }`: a signed GET on Migrate for the order's comment export (PII removed), valid until `expires_at` (end of the grant window; invalid or expired → 404). The export never enters the repository. Studio fetches it server-side only, from hosts on its own Migrate allowlist |
+| `comments_export` | optional `{ url, token, expires_at, comments }`: Migrate's fixed address for the order's comment export (PII removed), fetched with `token` (a per-job signed JWS) as `Authorization: Bearer`, valid until `expires_at` (end of the grant window; missing, invalid or expired → 404). The address carries no secret. The export never enters the repository. Studio fetches it server-side only, from hosts on its own Migrate allowlist |
 
 ```ts
 import { validateMigrateStudioClaim } from '@contentrain/types'

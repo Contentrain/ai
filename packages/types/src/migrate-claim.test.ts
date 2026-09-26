@@ -109,11 +109,13 @@ describe('validateMigrateStudioClaim', () => {
   })
 
   it('accepts a comments export pointer and rejects a malformed one', () => {
-    const exportOf = (o: Record<string, unknown> = {}) => ({ url: 'https://migrate.example/api/exports/abc?sig=x', expires_at: NOW + 30 * 86400, comments: 12, ...o })
+    const exportOf = (o: Record<string, unknown> = {}) => ({ url: 'https://migrate.example/api/exports/comments', token: 'eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJwIn0.c2ln', expires_at: NOW + 30 * 86400, comments: 12, ...o })
     expect(validateMigrateStudioClaim(claim({ comments_export: exportOf() })).ok).toBe(true)
     expect(validateMigrateStudioClaim(claim({ comments_export: exportOf({ url: 'http://localhost:3000/x' }) })).ok).toBe(true)
-    for (const url of ['http://migrate.example/x', 'https://u:p@migrate.example/x', 'https://migrate.example/x#f', 'ftp://migrate.example/x', 'nope', 42])
+    for (const url of ['http://migrate.example/x', 'https://u:p@migrate.example/x', 'https://migrate.example/x#f', 'https://migrate.example/x?sig=s', 'ftp://migrate.example/x', 'nope', 42])
       expect(validateMigrateStudioClaim(claim({ comments_export: exportOf({ url }) }))).toEqual({ ok: false, errors: ['comments_export.url: invalid'] })
+    for (const token of [undefined, '', 'a.b', 'a.b.', 'a.b.c#', `a.b.${'c'.repeat(2048)}`, 42])
+      expect(validateMigrateStudioClaim(claim({ comments_export: exportOf({ token }) }))).toEqual({ ok: false, errors: ['comments_export.token: invalid'] })
     expect(validateMigrateStudioClaim(claim({ comments_export: exportOf({ expires_at: NOW }) }))).toEqual({ ok: false, errors: ['comments_export.expires_at: not after iat'] })
     expect(validateMigrateStudioClaim(claim({ comments_export: exportOf({ expires_at: 1.5 }) }))).toEqual({ ok: false, errors: ['comments_export.expires_at: invalid'] })
     expect(validateMigrateStudioClaim(claim({ comments_export: exportOf({ comments: -1 }) }))).toEqual({ ok: false, errors: ['comments_export.comments: invalid'] })
