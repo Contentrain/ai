@@ -1,0 +1,40 @@
+---
+// A form that posts to the owner's form service (Formspree, Basin, Getform…)
+// instead of Studio: plain HTML, no script. The fields are the Studio model's
+// public fields (.contentrain/models/<model>.json), the same ones StudioForm
+// shows, so switching to Studio later changes the transport, not the form.
+// The service shows its own confirmation page. StudioForm renders it only
+// when formHome() says it can (https action, at least one field).
+import { formFields } from '../../lib/features'
+import { fieldControl, labelFor, esc } from '../../lib/studio/embed'
+
+interface Props {
+  /** The model whose fields the form shows. */
+  model: string
+  /** The form service's https endpoint. */
+  action: string
+  text: Record<string, string>
+  class?: string | undefined
+}
+
+const { model, action, text, class: className } = Astro.props
+
+const fields = formFields(model)
+const valid = action.startsWith('https://') && fields.length > 0
+const html = fields.map(({ id, def }) => {
+  const control = fieldControl(id, def, 'cr-static')
+  const label = `<label for="${esc(`cr-static-${id}`)}">${esc(labelFor(id, def))}${def.required ? ' <span aria-hidden="true">*</span>' : ''}</label>`
+  return `<p class="cr-field cr-field--${esc(def.type)}">${def.type === 'boolean' ? `${control} ${label}` : label + control}</p>`
+}).join('')
+---
+{valid && (
+  <div class:list={['cr-form-mount block', className]} data-cr-part="form" data-state="endpoint">
+    <form class="cr-form" method="post" action={action}>
+      <Fragment set:html={html} />
+      <p class="cr-hp" aria-hidden="true" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden">
+        <label>{text['form.honeypot'] ?? 'Leave this field empty'} <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" /></label>
+      </p>
+      <p class="cr-actions"><button type="submit">{text['form.send'] ?? 'Send'}</button></p>
+    </form>
+  </div>
+)}

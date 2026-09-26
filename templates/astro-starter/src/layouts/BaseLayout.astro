@@ -1,7 +1,8 @@
 ---
 // The document shell every page renders in: head (SEO, font, the one
-// stylesheet), skip link, site header, main, site footer.
+// stylesheet, consent-gated analytics), skip link, site header, main, site footer.
 import { Font } from 'astro:assets'
+import Analytics from '../components/Analytics.astro'
 import Footer from '../components/kit/footer/Footer.astro'
 import Header from '../components/kit/header/Header.astro'
 import SEO from '../components/SEO.astro'
@@ -79,6 +80,7 @@ const wpQueries = isHome ? await queryMap() : {}
       modified={modified}
       jsonLd={isHome ? [websiteLd(identity), organizationLd(identity), ...jsonLd] : jsonLd}
     />
+    <Analytics />
   </head>
   <body class="flex min-h-dvh flex-col bg-surface font-sans text-ink antialiased">
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-ink focus:px-4 focus:py-2 focus:text-surface">

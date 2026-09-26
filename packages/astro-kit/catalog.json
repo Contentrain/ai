@@ -250,7 +250,7 @@
     {
       "id": "contact-form",
       "name": "Contact form",
-      "description": "The contact section: heading, introduction, contact details (email, phone, address) and a Contentrain Studio form — fields, spam protection and notifications set in Studio, submissions reviewed there. Replaces form plugins; renders the details alone until the site is bound to a Studio project.",
+      "description": "The contact section: heading, introduction, contact details (email, phone, address) and a Contentrain Studio form — fields, spam protection and notifications set in Studio, submissions reviewed there. Replaces form plugins; renders the details alone until the site is bound to a Studio project. When the owner chose another home at migration (site.config.ts `features.forms`) the form posts to their form service, or the section shows an address to write to or a link to the form on WordPress.",
       "category": "section",
       "uses": [],
       "shared": [
