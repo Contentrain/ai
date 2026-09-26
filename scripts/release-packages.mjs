@@ -25,6 +25,4 @@ export const PUBLISHABLE_PACKAGES = [
 export const PRIVATE_PACKAGE_JSONS = [
   'docs/package.json',
   'packages/cli/src/serve-ui/package.json',
-  // The migration worker's site writer: private until it is published with the starter bundled (prepack).
-  'packages/writer/package.json',
 ]
