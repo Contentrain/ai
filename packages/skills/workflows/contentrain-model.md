@@ -120,7 +120,9 @@ Example:
 listings, pickers and relation references, and must be a field on this model
 typed `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or
 `richtext`. Dictionary models have no fields, so they use the reserved value
-`"key"` — the entry key is the title.
+`"key"` — the entry key is the title. A singleton made of section objects
+(`hero`, `services`) names a section's heading with a dotted path,
+`"hero.heading"` — one level into an `object` field, never an array.
 
 Choose what a reader uses to tell one entry from another: the headline, the
 name, the question. Not the slug, not the icon, not a relation ID. Consumers

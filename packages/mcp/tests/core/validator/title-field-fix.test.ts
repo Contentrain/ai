@@ -74,6 +74,30 @@ describe('validateProject — title_field', () => {
 
       expect(titleIssues(result.issues)).toEqual([])
     })
+
+    // A page built from sections: only section objects at the top, titled by the hero's heading.
+    it('accepts a page singleton titled by a section heading', async () => {
+      await seed({
+        id: 'page-about', name: 'About page', kind: 'singleton', domain: 'blog', i18n: false, title_field: 'hero.heading',
+        fields: { hero: { type: 'object', required: true, fields: { heading: { type: 'string', required: true }, lead: { type: 'text' } } } },
+      })
+
+      const result = await validateProject(testDir, {})
+
+      expect(titleIssues(result.issues)).toEqual([])
+    })
+
+    it('lists nested choices when a sectioned singleton has no title_field', async () => {
+      await seed({
+        id: 'page-about', name: 'About page', kind: 'singleton', domain: 'blog', i18n: false,
+        fields: { hero: { type: 'object', required: true, fields: { heading: { type: 'string', required: true } } } },
+      })
+
+      const result = await validateProject(testDir, { fix: true })
+
+      expect(result.fixed).toBe(0)
+      expect(titleIssues(result.issues)[0]!.message).toContain('only "hero.heading" could legally hold one')
+    })
   })
 
   describe('fix', () => {
