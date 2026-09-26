@@ -37,7 +37,7 @@ const section1 = entry2 && entry2.data.slides?.length && entry2.data.label !== u
   caption: 'below' as const,
 } : undefined
 ---
-<ComposedPage page={page} trail={trail} isHome={isHome}>
+<ComposedPage page={page} trail={trail} isHome={isHome} description="Composed: what Northwind does, in sections.">
   {section0 && <CardGrid {...section0} />}
   {section1 && <Slider {...section1} />}
 </ComposedPage>

@@ -27,7 +27,32 @@
     "menu_order": 4,
     "slug": "services",
     "title": "Services",
-    "wp_id": 303
+    "wp_id": 303,
+    "seo": {
+      "description": "Yoast: design, build and migration services from Northwind."
+    }
+  },
+  "b3f81c6e2a90": {
+    "menu_order": 6,
+    "slug": "company",
+    "title": "Company",
+    "wp_id": 305
+  },
+  "c47a0d9e15f2": {
+    "body": "<p>We hire slowly and keep people.</p>",
+    "menu_order": 2,
+    "parent": "b3f81c6e2a90",
+    "slug": "careers",
+    "title": "Careers",
+    "wp_id": 306
+  },
+  "d58e2f1a3b64": {
+    "body": "<p>Our office sits by the harbour.</p>",
+    "menu_order": 1,
+    "parent": "b3f81c6e2a90",
+    "slug": "office",
+    "title": "Office",
+    "wp_id": 307
   },
   "e587e67fb9ed": {
     "body": "<p>Tell us about your site. We answer within two working days.</p>",

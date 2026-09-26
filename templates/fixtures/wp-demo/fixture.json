@@ -89,6 +89,28 @@
         "<a href=\"/blog/shipping-the-first-version/\">the launch post by number</a>",
         "(or the old roadmap, its short link and"
       ]
+    },
+    "services/index.html": {
+      "contains": [
+        "<meta name=\"description\" content=\"Yoast: design, build and migration services from Northwind.\">"
+      ],
+      "excludes": [
+        "Composed: what Northwind does"
+      ]
+    },
+    "company/careers/index.html": {
+      "contains": [
+        "<meta name=\"description\" content=\"Careers at Northwind: how we hire and who we look for.\">"
+      ],
+      "excludes": [
+        "<meta name=\"description\" content=\"We hire slowly"
+      ]
+    },
+    "company/index.html": {
+      "contains": [
+        "<li><a href=\"/company/office/\"",
+        ">Office</a></li><li><a href=\"/company/careers/\""
+      ]
     }
   },
   "optimizedInDist": [

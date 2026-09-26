@@ -15,7 +15,8 @@ interface Props {
   showTitle?: boolean | undefined
   /**
    * The page's description when its sections hold the text: a page singleton leaves the body
-   * empty, so there is nothing to summarize. Absent: the SEO description, excerpt or body summary.
+   * empty, so there is nothing to summarize. The page's own SEO description (Yoast, Rank Math)
+   * still comes first; this stands in for the excerpt and the body summary.
    */
   description?: string | undefined
 }
@@ -29,7 +30,7 @@ const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
 <BaseLayout
   title={isHome ? undefined : data.title}
   fullTitle={data.seo?.title}
-  description={description ?? data.seo?.description ?? data.excerpt ?? summarize(data.body)}
+  description={data.seo?.description ?? description ?? data.excerpt ?? summarize(data.body)}
   image={data.seo?.image}
   canonical={data.seo?.canonical}
   noindex={data.seo?.noindex}

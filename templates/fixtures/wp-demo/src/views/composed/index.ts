@@ -3,8 +3,10 @@
 // here; every other page renders its body as rich text (PageView). A composed
 // view takes PageView's props, so the route table treats both alike.
 import type PageView from '../PageView.astro'
+import PageCareers from './PageCareers.astro'
 import PageServices from './PageServices.astro'
 
 export const composedViews: Partial<Record<number, typeof PageView>> = {
   303: PageServices,
+  306: PageCareers,
 }

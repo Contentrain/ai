@@ -12,7 +12,7 @@ import { pagePath, permalinks } from './routes'
 
 export type Route =
   | { view: 'post', post: Post }
-  | { view: 'page', page: Page, trail: Array<{ title: string, href: string }>, isHome: boolean }
+  | { view: 'page', page: Page, trail: Array<{ title: string, href: string }>, isHome: boolean, subpages: Array<{ title: string, href: string }> }
   | { view: 'list', title?: string, eyebrow?: string, description?: string, posts: Post[], base: string, current: number, total: number }
 
 async function buildRoutes(): Promise<Map<string, Route>> {
@@ -46,7 +46,12 @@ async function buildRoutes(): Promise<Map<string, Route>> {
     const href = pageHref(page, pages)
     // The page WordPress uses as the posts page (Settings → Reading) shows the posts, not its own body.
     if (siteConfig.home.kind === 'page' && href === permalinks.blog) continue
-    add(href, { view: 'page', page, trail, isHome: href === '/' })
+    // Its children, in WordPress page order: an empty parent page lists them instead of standing blank.
+    const subpages = [...pages.values()]
+      .filter(child => child.data.parent?.id === page.id)
+      .toSorted((a, b) => (a.data.menu_order ?? 0) - (b.data.menu_order ?? 0) || a.data.title.localeCompare(b.data.title))
+      .map(child => ({ title: child.data.title, href: pageHref(child, pages) }))
+    add(href, { view: 'page', page, trail, isHome: href === '/', subpages })
   }
 
   // The posts index: the front page, or — on a site whose front page is a
