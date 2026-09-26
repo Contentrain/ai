@@ -97,6 +97,13 @@ export interface MigrateStudioClaim {
   repo: MigrateStudioRepo
   /** Discovery summary shown on Studio's claim screen. Optional. */
   capabilities?: MigrateStudioCapability[]
+  /**
+   * The WordPress site the order migrated, as a bare origin (`https://host`,
+   * lowercase, no path). Signed so Studio can trust it: media import fetches
+   * only from this origin, never from an origin named in the repository.
+   * Optional; `https:` only, plus `http:` for localhost.
+   */
+  origin?: string
 }
 
 export type MigrateStudioClaimResult =
@@ -108,6 +115,17 @@ const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'obj
 const isText = (x: unknown): x is string => typeof x === 'string' && x.trim().length > 0
 const isSeconds = (x: unknown): x is number => typeof x === 'number' && Number.isInteger(x) && x > 0
 const isFiniteNonNegative = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x) && x >= 0
+const LOCAL_HOSTS: ReadonlySet<string> = new Set(['localhost', '127.0.0.1', '[::1]'])
+
+/** A bare, canonical origin: `new URL(x).origin` gives it back unchanged. */
+function isClaimOrigin(x: unknown): x is string {
+  if (typeof x !== 'string') return false
+  let url: URL
+  try { url = new URL(x) }
+  catch { return false }
+  if (url.origin !== x) return false
+  return url.protocol === 'https:' || (url.protocol === 'http:' && LOCAL_HOSTS.has(url.hostname))
+}
 
 /**
  * Check a decoded, signature-verified payload against the contract. Pass
@@ -177,6 +195,8 @@ export function validateMigrateStudioClaim(input: unknown, options: { now?: numb
       })
     }
   }
+
+  if (x.origin !== undefined && !isClaimOrigin(x.origin)) errors.push('origin: invalid')
 
   return errors.length === 0 ? { ok: true, claim: x as unknown as MigrateStudioClaim } : { ok: false, errors }
 }
