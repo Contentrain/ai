@@ -1,5 +1,12 @@
 # @contentrain/mcp
 
+## 3.8.1
+
+### Patch Changes
+
+- Updated dependencies [e62e002]
+  - @contentrain/types@1.28.0
+
 ## 3.8.0
 
 ### Minor Changes
