@@ -15,6 +15,9 @@ function propsOf(source: string): string[] {
   return [...body.matchAll(/^ {2}(?:'([^']+)'|(\w+))\??:/gm)].map(match => match[1] ?? match[2]!)
 }
 
+/** A `_shared` import specifier as the file on disk. */
+const sharedFile = (spec: string) => spec.endsWith('.astro') ? spec : `${spec}.ts`
+
 describe('catalog', () => {
   it('is in sync with components/*/meta.json', () => {
     expect(() => execFileSync('node', ['scripts/build-catalog.mjs', '--check'], { cwd: ROOT, stdio: 'pipe' })).not.toThrow()
@@ -102,9 +105,18 @@ describe('catalog', () => {
       it('lists the shared files it imports, and they exist', async () => {
         const shared = new Set(await readdir(join(COMPONENTS, '_shared')))
         const source = (await Promise.all(c.files.map(file => readFile(join(COMPONENTS, c.id, file), 'utf8')))).join('\n')
-        const imported = [...source.matchAll(/from '\.\.\/_shared\/([^']+?)'/g)].map(match => match[1]!.endsWith('.astro') ? match[1]! : `${match[1]}.ts`)
+        // A shared file's own imports travel with it: copy.ts copies `shared` as listed.
+        const imported = new Set<string>()
+        const queue = [...source.matchAll(/from '\.\.\/_shared\/([^']+?)'/g)].map(match => sharedFile(match[1]!))
+        for (let file = queue.shift(); file !== undefined; file = queue.shift()) {
+          if (imported.has(file)) continue
+          imported.add(file)
+          if (!shared.has(file)) continue
+          const own = await readFile(join(COMPONENTS, '_shared', file), 'utf8')
+          queue.push(...[...own.matchAll(/from '\.\/([^']+?)'/g)].map(match => sharedFile(match[1]!)))
+        }
         for (const file of c.shared) expect(shared.has(file), file).toBe(true)
-        expect([...new Set(imported)].toSorted()).toEqual([...c.shared].toSorted())
+        expect([...imported].toSorted()).toEqual([...c.shared].toSorted())
       })
 
       it('lists the kit components it renders', async () => {

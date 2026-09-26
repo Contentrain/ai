@@ -176,6 +176,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "image.ts",
         "types.ts"
       ],
       "variants": {
@@ -1240,6 +1241,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "image.ts",
         "types.ts"
       ],
       "variants": {
@@ -1713,6 +1715,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "image.ts",
         "types.ts"
       ],
       "variants": {
@@ -2275,7 +2278,8 @@
       "uses": [],
       "shared": [
         "Button.astro",
-        "Section.astro"
+        "Section.astro",
+        "types.ts"
       ],
       "variants": {
         "columns": {
@@ -2499,6 +2503,7 @@
       "shared": [
         "Button.astro",
         "KitImage.astro",
+        "image.ts",
         "types.ts"
       ],
       "variants": {
@@ -2950,6 +2955,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "image.ts",
         "types.ts"
       ],
       "variants": {
@@ -3158,6 +3164,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "image.ts",
         "types.ts"
       ],
       "variants": {
@@ -3287,6 +3294,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "image.ts",
         "types.ts"
       ],
       "variants": {

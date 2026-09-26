@@ -6,7 +6,8 @@
   "uses": [],
   "shared": [
     "Button.astro",
-    "Section.astro"
+    "Section.astro",
+    "types.ts"
   ],
   "variants": {
     "columns": {

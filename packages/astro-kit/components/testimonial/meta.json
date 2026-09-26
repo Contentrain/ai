@@ -7,6 +7,7 @@
   "shared": [
     "KitImage.astro",
     "Section.astro",
+    "image.ts",
     "types.ts"
   ],
   "variants": {

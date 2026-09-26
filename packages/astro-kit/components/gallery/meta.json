@@ -4,7 +4,7 @@
   "description": "Images in a square grid or in masonry columns, with optional captions. A click shows the image large in a native popover (no script), opens the image file, or does nothing.",
   "category": "section",
   "uses": [],
-  "shared": ["KitImage.astro", "Section.astro", "types.ts"],
+  "shared": ["KitImage.astro", "Section.astro", "image.ts", "types.ts"],
   "variants": {
     "layout": { "options": ["grid", "masonry"], "default": "grid", "description": "grid: square crops in rows. masonry: columns that keep each image's shape." },
     "columns": { "options": ["2", "3", "4"], "default": "3", "description": "Columns on wide screens; phones show two." },

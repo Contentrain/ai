@@ -4,7 +4,7 @@
   "description": "A carousel of images with optional title, text and button per slide. Without JavaScript it is a snapping horizontal scroller; Embla adds paging, arrows and dots.",
   "category": "section",
   "uses": [],
-  "shared": ["Button.astro", "KitImage.astro", "types.ts"],
+  "shared": ["Button.astro", "KitImage.astro", "image.ts", "types.ts"],
   "variants": {
     "perView": { "options": ["1", "2", "3"], "default": "1", "description": "Slides visible at once on wide screens." },
     "aspect": { "options": ["wide", "standard", "square"], "default": "wide", "description": "Image aspect ratio: 21:9, 3:2 or 1:1." },
