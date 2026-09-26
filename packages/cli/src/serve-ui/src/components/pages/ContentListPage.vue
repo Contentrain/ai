@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, computed, ref, watch } from 'vue'
 import type { FieldDef } from '@contentrain/types'
-import { orderedFieldNames, resolveFieldLabel } from '@contentrain/types'
+import { orderedFieldNames, resolveFieldLabel, titleFieldTarget } from '@contentrain/types'
 import { useRoute } from 'vue-router'
 import { marked } from 'marked'
 import { useContentStore } from '@/stores/content'
@@ -164,7 +164,11 @@ const defaultVisibleNames = computed(() => {
   const desc = store.modelDescription
   if (!desc?.fields) return allFieldNames.value.slice(0, 6)
 
-  const titleField = desc.title_field && desc.title_field in desc.fields ? desc.title_field : null
+  // A dotted title (`hero.heading`) leads with its object field (`hero`).
+  const declared = desc.title_field
+  const titleField = declared && titleFieldTarget(desc.fields as Record<string, FieldDef>, declared).kind === 'field'
+    ? (Object.hasOwn(desc.fields, declared) ? declared : declared.split('.')[0]!)
+    : null
 
   const priorityOrder: Record<string, number> = {
     string: 1, text: 2, email: 3, url: 3, slug: 3, select: 4,

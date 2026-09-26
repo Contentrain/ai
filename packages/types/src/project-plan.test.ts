@@ -103,6 +103,28 @@ describe('validateProjectPlan', () => {
     expect(validateProjectPlan(p).errors).toContain('plan model about-features has no title_field')
   })
 
+  it('titles a page singleton by a section heading, one object deep', () => {
+    const p = plan()
+    const page = {
+      id: 'page-about', kind: 'singleton', origin: 'plan', name: 'About page', domain: 'pages', i18n: true, title_field: 'hero.heading',
+      fields: {
+        hero: { type: 'object', required: true, fields: { heading: { type: 'string', required: true }, image: { type: 'image' } } },
+        work: { type: 'array', items: { type: 'object', fields: { caption: { type: 'string' } } } },
+      },
+    } as (typeof p.models)[number]
+    p.models.push(page)
+    const titleErrors = () => validateProjectPlan(p).errors.filter(e => e.includes('page-about') && e.includes('title_field'))
+    expect(titleErrors()).toEqual([])
+    page.title_field = 'hero.image'
+    expect(titleErrors()).toEqual(['plan model page-about: title_field hero.image is image, not a text-like type'])
+    page.title_field = 'work.caption'
+    expect(titleErrors()).toEqual(['plan model page-about: title_field work.caption goes through work (array), not an object field'])
+    page.title_field = 'hero.heading.text'
+    expect(titleErrors()).toEqual(['plan model page-about: title_field hero.heading.text reaches more than one object deep'])
+    page.title_field = 'hero.title'
+    expect(titleErrors()).toEqual(['plan model page-about: title_field hero.title is not one of its fields'])
+  })
+
   it('gives every entry one address: disjoint wp_id sets and one catch-all per model', () => {
     const p = plan()
     p.routes.push({ id: 'landing', kind: 'page', pattern: '/:path/', template: 't5', source: { model: 'pages', where: { wp_id: [11, 12] } }, body: 'composed', sections: [] })

@@ -3,7 +3,10 @@
 // read from Studio's public API and new ones are posted there for moderation.
 // Until the site is bound to a Studio project (studio.json) it ships no form
 // and no script, only an empty marker that says the thread is waiting for it.
+// When the owner kept comments on WordPress (site.config.ts `features`), it is
+// a link to the same post there.
 import { getStringTable } from '../../lib/content'
+import { commentsHome, onWordPress } from '../../lib/features'
 import { siteConfig } from '../../site.config'
 import CommentsMount from './CommentsMount.astro'
 
@@ -16,8 +19,11 @@ interface Props {
 
 const { model, entry, locale } = Astro.props
 const studio = siteConfig.studio
-const text = studio ? await getStringTable(['common.', 'comments.', 'form.']) : {}
+const wordpress = commentsHome() === 'wordpress' ? onWordPress(Astro.url.pathname) : undefined
+const text = studio || wordpress ? await getStringTable(['common.', 'comments.', 'form.']) : {}
 ---
-{studio
-  ? <div data-cr-part="comments" data-state="ready"><CommentsMount baseUrl={studio.baseUrl} projectId={studio.projectId} model={model} entry={entry} locale={locale} text={text} /></div>
-  : <div data-cr-part="comments" data-state="pending_studio" hidden />}
+{wordpress
+  ? <p class="cr-comments mt-16 border-t border-line pt-10" data-cr-part="comments" data-state="wordpress"><a href={`${wordpress}#comments`} class="underline underline-offset-4">{text['comments.wordpress'] ?? 'Read and join the comments'}</a></p>
+  : studio
+    ? <div data-cr-part="comments" data-state="ready"><CommentsMount baseUrl={studio.baseUrl} projectId={studio.projectId} model={model} entry={entry} locale={locale} text={text} /></div>
+    : <div data-cr-part="comments" data-state="pending_studio" hidden />}

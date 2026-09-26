@@ -1,12 +1,16 @@
 ---
-// A public form served by Contentrain Studio. The fields, honeypot and captcha
-// come from the model's form settings in Studio, so an editor changes the form
-// without touching code; submissions arrive in Studio for review. Renders
-// nothing — and ships no script — until the site is bound to a Studio project
-// (site.config.ts).
+// A public form. By default it is served by Contentrain Studio: the fields,
+// honeypot and captcha come from the model's form settings in Studio, so an
+// editor changes the form without touching code; submissions arrive in Studio
+// for review. Renders nothing — and ships no script — until the site is bound
+// to a Studio project (site.config.ts). When the owner chose another home at
+// migration (site.config.ts `features.forms`), it posts to their form service,
+// shows an address to write to, or links to the form on the WordPress site.
 import { getStringTable } from '../../lib/content'
+import { formHome, onWordPress } from '../../lib/features'
 import { siteConfig } from '../../site.config'
 import FormMount from './FormMount.astro'
+import StaticForm from './StaticForm.astro'
 
 interface Props {
   /** The model submissions are saved to. */
@@ -16,6 +20,20 @@ interface Props {
 
 const { model, class: className } = Astro.props
 const studio = siteConfig.studio
-const text = studio ? await getStringTable(['common.', 'form.']) : {}
+const forms = siteConfig.features?.forms
+const home = formHome(model)
+const text = home ? await getStringTable(['common.', 'form.']) : {}
+const wordpress = home === 'wordpress' ? onWordPress(Astro.url.pathname) : undefined
 ---
-{studio && <FormMount baseUrl={studio.baseUrl} projectId={studio.projectId} model={model} text={text} class={className} />}
+{home === 'studio' && studio && <FormMount baseUrl={studio.baseUrl} projectId={studio.projectId} model={model} text={text} class={className} />}
+{home === 'endpoint' && forms?.home === 'endpoint' && <StaticForm model={model} action={forms.action} text={text} class={className} />}
+{home === 'mailto' && forms?.home === 'mailto' && (
+  <p class:list={['cr-form-mount', className]} data-cr-part="form" data-state="mailto">
+    {text['form.mailto'] ?? 'Write to us at'} <a href={`mailto:${encodeURI(forms.address)}`} class="underline underline-offset-4">{forms.address}</a>
+  </p>
+)}
+{wordpress && (
+  <p class:list={['cr-form-mount', className]} data-cr-part="form" data-state="wordpress">
+    <a href={wordpress} class="underline underline-offset-4">{text['form.wordpress'] ?? 'Open the form'}</a>
+  </p>
+)}

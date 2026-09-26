@@ -157,7 +157,7 @@ Model definitions live at `.contentrain/models/{model-id}.json`. One file per mo
 | `domain` | `string` | Yes | Organizational group (maps to content subdirectory). |
 | `i18n` | `boolean` | Yes | Whether the model supports multiple locales. |
 | `locales` | `string[]` | No | The project locales this model covers — a subset of `config.locales.supported`. Absent (the default) means every supported locale, which is what parity is validated against. Declare it only when the content genuinely exists in a subset, e.g. a partially-translated site. A locale outside `locales.supported` is a validation error; the field has no effect on an `i18n: false` model. |
-| `title_field` | `string` | Yes | Field shown as an entry's title in listings, pickers and relation references. Must name a field declared on this model whose type is `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or `richtext`. Dictionary models have no fields — they use the reserved value `"key"`, meaning the entry key is the title. |
+| `title_field` | `string` | Yes | Field shown as an entry's title in listings, pickers and relation references. Must name a field declared on this model whose type is `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or `richtext`. Dictionary models have no fields — they use the reserved value `"key"`, meaning the entry key is the title. A dotted path (`hero.heading`) names a field one level inside an `object` field. |
 | `description` | `string` | No | Model description for documentation and agent context. |
 | `fields` | `object` | Yes (except dictionary) | Field definitions. Dictionary kind has NO fields. |
 | `content_path` | `string` | No | Framework-relative path for content files (e.g., `"content/blog"`, `"locales"`). When set, content is written here instead of `.contentrain/content/`. |
@@ -169,6 +169,11 @@ Model definitions live at `.contentrain/models/{model-id}.json`. One file per mo
 
 Declare it on create AND keep it correct when renaming or removing fields — a
 `title_field` pointing at a field that no longer exists fails validation.
+
+A singleton built from section objects (`hero`, `services`, …) has no top-level
+text field. Title it by a section's heading with a dotted path: `"hero.heading"`.
+The path reaches one level into an `object` field — never deeper, never into an
+array. Do not add a copied top-level `title` for this: it is a field no page prints.
 
 Pick the field a human would read to tell one entry from another: the headline,
 the name, the question. Not the slug, not the icon, not a relation ID — those are

@@ -388,7 +388,7 @@ Creates or updates a model definition. Key parameters:
 - `id`: kebab-case model ID (e.g., `"blog-post"`).
 - `kind`: one of `singleton`, `collection`, `document`, `dictionary`.
 - `i18n`: whether the model supports localization.
-- `title_field`: **required** — the field shown as an entry's title. Must name a field declared on this model whose type is `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or `richtext`. Dictionary models use the reserved value `"key"`. Set it when creating a model, and keep it correct when renaming or removing fields.
+- `title_field`: **required** — the field shown as an entry's title. Must name a field declared on this model whose type is `string`, `text`, `slug`, `email`, `url`, `code`, `markdown` or `richtext`. Dictionary models use the reserved value `"key"`. A dotted path (`hero.heading`) names a field one level inside an `object` field — for a singleton built from sections. Set it when creating a model, and keep it correct when renaming or removing fields.
 - `locales`: optional subset of `config.locales.supported` naming the project locales this model covers. Omit it and the model covers every supported locale, which is what validation checks parity against. Declare it only when the content genuinely exists in a subset — a partially-translated site. A locale outside `locales.supported` is rejected.
 - `content_path`: optional framework-relative path (e.g., `"content/blog"`, `"locales"`). When set, content is written here instead of `.contentrain/content/`.
 - `locale_strategy`: how locale is encoded in filenames: `"file"` (default), `"suffix"`, `"directory"`, `"none"`.

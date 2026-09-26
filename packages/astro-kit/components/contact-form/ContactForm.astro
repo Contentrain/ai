@@ -4,11 +4,14 @@
 // StudioForm): its fields, spam protection and notifications live in Studio,
 // and submissions arrive there for review — no form plugin, no mail server.
 // Until the site is bound to a Studio project the form renders nothing and the
-// contact details still show.
+// contact details still show. When the owner chose another home for forms at
+// migration (site.config.ts `features.forms`), the same place holds a form
+// that posts to their form service, an address to write to, or a link to the
+// form on WordPress.
 import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
 import StudioForm from '../../studio/StudioForm.astro'
-import { siteConfig } from '../../../site.config'
+import { formHome } from '../../../lib/features'
 
 export interface ContactDetail {
   label: string
@@ -55,8 +58,8 @@ interface Props {
 }
 
 const { model, heading, intro, formHeading, details = [], layout, tone, id = 'contact' } = Astro.props
-// No Studio project bound: no form renders, so a split would leave an empty column — the details stand alone.
-const formShown = Boolean(siteConfig.studio)
+// Nothing to render (Studio not bound yet): a split would leave an empty column — the details stand alone.
+const formShown = formHome(model) !== null
 const s = contact({ layout: formShown ? layout : 'stacked', tone })
 const headingId = heading ? `${id}-title` : undefined
 // One level under the section heading, or the section's heading when there is none.

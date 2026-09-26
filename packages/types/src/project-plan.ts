@@ -17,7 +17,7 @@
 // Addresses the starter owns are not plan routes: `/search/`, `/rss.xml`,
 // `/404`, `robots.txt` and the sitemap. A plan never emits them.
 
-import { isTitleFieldType, type FieldDef, type ModelKind } from './index.js'
+import { isTitleFieldType, titleFieldTarget, type FieldDef, type ModelKind } from './index.js'
 
 export const PROJECT_PLAN_FORMAT = 'contentrain-project-plan@1'
 
@@ -456,11 +456,14 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (m.origin === 'plan') {
       if (!m.fields) errors.push(`plan model ${m.id} has no fields`)
       if (!m.name || !m.domain) errors.push(`plan model ${m.id} needs name and domain`)
-      if (m.kind === 'collection' || m.kind === 'document') {
-        const title = m.title_field ? m.fields?.[m.title_field] : undefined
-        if (!m.title_field) errors.push(`plan model ${m.id} has no title_field`)
-        else if (!title) errors.push(`plan model ${m.id}: title_field ${m.title_field} is not one of its fields`)
-        else if (!isTitleFieldType(title.type)) errors.push(`plan model ${m.id}: title_field ${m.title_field} is ${title.type}, not a text-like type`)
+      // A singleton is titled too when it says so: a page built from sections names a section's heading.
+      if (m.kind === 'collection' || m.kind === 'document' || (m.kind === 'singleton' && m.title_field)) {
+        const title = m.title_field ? titleFieldTarget(m.fields, m.title_field) : undefined
+        if (!m.title_field || !title) errors.push(`plan model ${m.id} has no title_field`)
+        else if (title.kind === 'too-deep') errors.push(`plan model ${m.id}: title_field ${m.title_field} reaches more than one object deep`)
+        else if (title.kind === 'not-object') errors.push(`plan model ${m.id}: title_field ${m.title_field} goes through ${title.at} (${title.type}), not an object field`)
+        else if (title.kind === 'missing') errors.push(`plan model ${m.id}: title_field ${m.title_field} is not one of its fields`)
+        else if (!isTitleFieldType(title.def.type)) errors.push(`plan model ${m.id}: title_field ${m.title_field} is ${title.def.type}, not a text-like type`)
       }
       if (!m.extract?.length && !m.form) warnings.push(`plan model ${m.id} has no extraction — its entries start empty`)
     }

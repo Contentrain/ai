@@ -46,6 +46,8 @@ import {
   DICTIONARY_TITLE_FIELD,
   TITLE_FIELD_TYPES,
   isTitleFieldType,
+  titleFieldTarget,
+  titleFieldValue,
   SECRET_PATTERNS,
   validateSlug,
   validateEntryId,
@@ -291,6 +293,44 @@ describe('@contentrain/types', () => {
       'number', 'integer', 'decimal', 'percent', 'rating', 'boolean', 'relations', 'array', 'object',
     ] as const)('rejects %s', (type) => {
       expect(isTitleFieldType(type)).toBe(false)
+    })
+
+    const PAGE: Record<string, FieldDef> = {
+      hero: { type: 'object', required: true, fields: { heading: { type: 'string', required: true }, image: { type: 'image' } } },
+      slides: { type: 'array', items: { type: 'object', fields: { caption: { type: 'string' } } } },
+      label: { type: 'string' },
+    }
+
+    it('resolves a top-level field and a field one level into an object', () => {
+      expect(titleFieldTarget(PAGE, 'label')).toEqual({ kind: 'field', def: PAGE.label })
+      expect(titleFieldTarget(PAGE, 'hero.heading')).toEqual({ kind: 'field', def: PAGE.hero!.fields!.heading, parent: PAGE.hero })
+    })
+
+    it('says why a path does not resolve', () => {
+      expect(titleFieldTarget(PAGE, 'headline')).toEqual({ kind: 'missing', at: 'headline' })
+      expect(titleFieldTarget(PAGE, 'hero.title')).toEqual({ kind: 'missing', at: 'hero.title' })
+      expect(titleFieldTarget(PAGE, 'slides.caption')).toEqual({ kind: 'not-object', at: 'slides', type: 'array' })
+      expect(titleFieldTarget(PAGE, 'hero.image.src')).toEqual({ kind: 'too-deep' })
+      expect(titleFieldTarget(undefined, 'label')).toEqual({ kind: 'missing', at: 'label' })
+      // An inherited key is not a field.
+      expect(titleFieldTarget(PAGE, 'toString')).toEqual({ kind: 'missing', at: 'toString' })
+    })
+
+    it('reads the title value at the same path', () => {
+      const data = { hero: { heading: 'We build calm software' }, label: 'About', slides: [{ caption: 'x' }] }
+      expect(titleFieldValue(data, 'label')).toBe('About')
+      expect(titleFieldValue(data, 'hero.heading')).toBe('We build calm software')
+      expect(titleFieldValue(data, 'slides.caption')).toBeUndefined()
+      expect(titleFieldValue(data, 'hero.heading.x')).toBeUndefined()
+      expect(titleFieldValue({ hero: null }, 'hero.heading')).toBeUndefined()
+      expect(titleFieldValue(undefined, 'label')).toBeUndefined()
+    })
+
+    it('lets a legacy field whose name holds a dot keep meaning itself', () => {
+      const legacy: Record<string, FieldDef> = { 'seo.title': { type: 'string' }, seo: { type: 'object', fields: { title: { type: 'text' } } } }
+      expect(titleFieldTarget(legacy, 'seo.title')).toEqual({ kind: 'field', def: legacy['seo.title'] })
+      expect(titleFieldValue({ 'seo.title': 'Flat', seo: { title: 'Nested' } }, 'seo.title')).toBe('Flat')
+      expect(titleFieldValue({ seo: { title: 'Nested' } }, 'seo.title')).toBe('Nested')
     })
   })
 
