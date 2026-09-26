@@ -48,8 +48,8 @@ const line = copyright ?? `© ${new Date().getFullYear()} ${siteName}`
 <footer class={root()}>
   <div class={inner()} style={layout === 'columns' ? `--footer-columns: ${Math.max(columns.length, 1)}` : undefined}>
     <div class="flex flex-col gap-3">
-      <p class="text-base font-semibold">{siteName}</p>
-      {tagline && <p class={muted()}>{tagline}</p>}
+      <p class="text-base font-semibold" data-kit-brand>{siteName}</p>
+      {tagline && <p class={muted()} data-kit-tagline>{tagline}</p>}
       {layout === 'columns' && <p class:list={[muted(), 'mt-auto pt-6']}>{line}</p>}
     </div>
     {layout === 'columns'

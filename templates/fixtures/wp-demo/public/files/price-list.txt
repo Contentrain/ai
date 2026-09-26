@@ -1,0 +1,1 @@
+Northwind price list (fixture file for attachment redirects).

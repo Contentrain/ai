@@ -21,7 +21,7 @@ const MOVES = new Set<number>([301, 302, 303, 307, 308])
 const BASE = 'http://link.invalid/'
 
 /** An address WordPress answers by query (`/?p=12`), whatever the permalink structure: one parameter, one value. */
-export interface QueryRule { param: 'p' | 'page_id' | 'cat' | 'tag' | 'author', value: string, to: string, status: RedirectStatus | 410 }
+export interface QueryRule { param: 'p' | 'page_id' | 'cat' | 'tag' | 'author' | 'attachment_id', value: string, to: string, status: RedirectStatus | 410 }
 /** Any other old address with a query (`/old.php?id=3`): only a host rule can answer it. */
 export interface QueriedRule { path: string, query: ReadonlyArray<readonly [string, string]>, to: string, status: RedirectStatus | 410 }
 
@@ -94,7 +94,47 @@ async function prefixTarget(to: string, routes: ReadonlyMap<string, unknown>, li
   const own = await ownPath(to.slice(0, at))
   if (own === null) return to
   if (own === undefined) return undefined
-  return [...routes.keys()].some(href => href.startsWith(own) && href !== own) ? `${own}${to.slice(at)}` : undefined
+  // `/blog/draft-title:splat` must not pass on a public `/blog/draft-title-2/`: the fixed part is a directory.
+  const under = own.endsWith('/') ? own : `${own}/`
+  return [...routes.keys()].some(href => href.startsWith(under) && href !== under) ? `${own}${to.slice(at)}` : undefined
+}
+
+/** An attachment page's old address (`/post/image/`, `/?attachment_id=12`) and where it leads now. */
+export interface AttachmentRule { from: string, to: string, status: 301 }
+
+// WordPress's attachment pages, written by the migration's media stage only when there are any. Not
+// content: editors do not see or edit them. A host rule each, never a page.
+const ATTACHMENT_FILE = import.meta.glob<{ default: ReadonlyArray<{ from: string, to: string, status: number }> }>('/src/data/attachment-redirects.json', { eager: true })
+
+let attached: Promise<{ paths: AttachmentRule[], queries: QueryRule[] }> | undefined
+
+/**
+ * The attachment pages' redirects that lead somewhere public: to the parent entry's address, a file in
+ * public/ or the old site's file. A path the site builds or the redirects collection already answers is
+ * left to them; `/?attachment_id=12` joins the query addresses.
+ */
+export function attachmentRules(): Promise<{ paths: AttachmentRule[], queries: QueryRule[] }> {
+  attached ??= (async () => {
+    const [{ paths: own, wp }, routes, link] = await Promise.all([collect(), routeTable(), publicLinks()])
+    const taken = new Set(own.map(rule => rule.from))
+    const queried = new Set(wp.map(rule => `${rule.param}=${rule.value}`))
+    const paths: AttachmentRule[] = []
+    const queries: QueryRule[] = []
+    for (const entry of Object.values(ATTACHMENT_FILE)[0]?.default ?? []) {
+      const to = link(entry.to)
+      if (to === undefined) continue
+      const url = new URL(entry.from, BASE)
+      const id = url.pathname === '/' ? url.searchParams.get('attachment_id') : null
+      if (id !== null) {
+        if (!queried.has(`attachment_id=${id}`)) queries.push({ param: 'attachment_id', value: id, to, status: 301 })
+        continue
+      }
+      const from = sitePath(url.pathname)
+      if (!url.search && !routes.has(from) && !taken.has(from) && to !== from) paths.push({ from, to, status: 301 })
+    }
+    return { paths: paths.toSorted((a, b) => a.from.localeCompare(b.from)), queries }
+  })()
+  return attached
 }
 
 /** Every redirect of an old path the site serves, sorted by old address. An old address the site still builds is not redirected. */
@@ -143,7 +183,7 @@ export async function queryRules(): Promise<QueryRule[]> {
   }
   // The collection's own query rules (`/?page_id=5`) fill in what the content does not answer; an entry's real address wins.
   const answered = new Set(out.map(rule => `${rule.param}=${rule.value}`))
-  for (const rule of (await collect()).wp) {
+  for (const rule of [...(await collect()).wp, ...(await attachmentRules()).queries]) {
     if (!answered.has(`${rule.param}=${rule.value}`)) out.push(rule)
     answered.add(`${rule.param}=${rule.value}`)
   }

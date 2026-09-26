@@ -90,6 +90,15 @@ describe('themeSource', () => {
     expect(out.indexOf('main h2')).toBeGreaterThan(out.indexOf(':root'))
   })
 
+  it('sizes the site title by where it sits, and the tagline and meta by the theme\'s presets', () => {
+    const out = themeSource(css, { roles: { 'text-body': '1.25rem', 'text-heading-2': '2rem', 'font-weight-body': '300' }, extra: { 'text-medium': '1.1rem', 'text-small': '0.875rem' } } as unknown as PlanSite['tokens'])
+    expect(out).toContain('header [data-kit-brand] { font-size: var(--text-body); }')
+    expect(out).toContain('footer [data-kit-brand] { font-size: var(--text-heading-2); }')
+    expect(out).toContain('[data-kit-meta], [data-kit-meta] a { font-weight: var(--font-weight-body); }')
+    expect(out).toContain('[data-kit-tagline] { font-size: var(--text-medium); }')
+    expect(out).toContain('[data-kit-meta], main figcaption, [data-cr-part="related"] time { font-size: var(--text-small); }')
+  })
+
   it('writes no marker rules for a plan without those roles', () => {
     expect(themeSource(css, { roles: { 'color-accent': '#111111' } } as unknown as PlanSite['tokens'])).not.toContain('Unlayered')
   })

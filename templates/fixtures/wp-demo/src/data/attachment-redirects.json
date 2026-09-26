@@ -1,0 +1,7 @@
+[
+  { "from": "/archive/photo/", "to": "/about/", "status": 301 },
+  { "from": "/?attachment_id=12", "to": "https://northwind.example/files/price-list.txt", "status": 301 },
+  { "from": "/about/", "to": "/contact/", "status": 301 },
+  { "from": "/blog/shipping-the-first-version/harbour/", "to": "https://northwind.example/blog/shipping-the-first-version/", "status": 301 },
+  { "from": "/draft-attachment/", "to": "https://northwind.example/roadmap/", "status": 301 }
+]

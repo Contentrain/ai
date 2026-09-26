@@ -69,6 +69,9 @@ theme applies them to the kit's markers, and only when the site sets them:
 - `--spacing-section`: the distance between two consecutive sections; each
   `[data-kit-section]` gets half of it as vertical padding, except
   where `data-kit-spacing="none"`.
+- `data-kit-brand` (the site title in Header and Footer) and `data-kit-tagline`
+  (Footer) take the theme's own sizes: the title from where it sits (body in
+  the header, a heading in the footer), the tagline from its preset.
 
 The full list is in `catalog.json` under `tokens`.
 
