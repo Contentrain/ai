@@ -1,6 +1,31 @@
 {
   "domain": "site",
   "fields": {
+    "analytics_host": {
+      "label": "Analytics host",
+      "order": 92,
+      "type": "url",
+      "description": "Matomo, or self-hosted Plausible: the server's https address."
+    },
+    "analytics_id": {
+      "label": "Analytics ID",
+      "order": 91,
+      "type": "string",
+      "description": "GA4 G-…, GTM GTM-…, Plausible domain, Fathom site ID or Matomo site number."
+    },
+    "analytics_provider": {
+      "label": "Analytics provider",
+      "order": 90,
+      "type": "select",
+      "options": [
+        "ga4",
+        "gtm",
+        "plausible",
+        "fathom",
+        "matomo"
+      ],
+      "description": "Loaded only after the visitor accepts cookies (the consent banner sets it)."
+    },
     "language": {
       "label": "Language",
       "order": 40,

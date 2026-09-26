@@ -70,6 +70,18 @@ export interface SiteConfig {
    * render nothing — a form that cannot be sent is worse than no form.
    */
   studio?: { baseUrl: string, projectId: string }
+  /**
+   * Where forms and comment threads live when they are not Studio's — the owner's choice at
+   * migration. Absent, both wait for Studio as above. `wordpress`: the WordPress site that stays up
+   * for what was kept on it (`https://…`, no path); a part kept there links to the same page on it.
+   * A form posts to a form service (`endpoint`: its https action), or the page shows an address to
+   * write to (`mailto`), or a link to the form on WordPress. Comments stay on WordPress or go to Studio.
+   */
+  features?: {
+    wordpress?: string
+    forms?: { home: 'studio' } | { home: 'endpoint', action: string } | { home: 'mailto', address: string } | { home: 'wordpress' }
+    comments?: { home: 'studio' } | { home: 'wordpress' }
+  }
 }
 
 /** The Studio binding astro.config.mjs read from studio.json, or null. */
