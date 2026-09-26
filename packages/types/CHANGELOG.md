@@ -1,5 +1,19 @@
 # @contentrain/types
 
+## 1.30.0
+
+### Minor Changes
+
+- fb84397: Plans build a page from its page model. A `section` binding (`{ kind: 'section', model, entry?, field, props? }`) feeds a component from one object field of a page singleton, or of the route's own entry when the page model is the route's template collection. The field's keys are the component's props in snake_case (`sectionFieldName`: `ctaLabel` → `cta_label`); the view passes each one explicitly, and `props` adds fixed values. A placement names its section (`id`) and what classified it (`rule`: `<builder>:section:<id>`, `<builder>:element:<match>`, `opus` or `prose`). `PlanExtraction.field` fills one section field, and `PlanRoute.page` names the route's page model (a singleton, or a collection that is the route's source), so the entry's `body` is no longer rendered. `validateProjectPlan` checks that a section field is an object, nests objects at most 2 deep (`fieldDepth`), and that its keys are a site component's props in snake_case. A plan model may carry a `description`, written to the model definition.
+- 55a0d11: `title_field` can name a field one level inside an `object` field with a dotted path, `hero.heading`. A page built from sections is a singleton whose top level holds only section objects (`hero`, `services`, …). Its title is a section's heading. Before this change, the only way to title it was a copied top-level `title` field that no page prints.
+
+  - **types:** `titleFieldTarget(fields, path)` resolves the path and says why it does not resolve (`missing`, `not-object`, `too-deep`). `titleFieldValue(data, path)` reads the title at the same path. `validateProjectPlan` accepts a dotted `title_field` and checks it on a plan singleton that declares one.
+  - **mcp:** `contentrain_model_save` and `contentrain_validate` accept the path. A path through an array, or more than one level deep, is refused with the reason. An optional object on the path warns like an optional field. `titleFieldOptions` lists the nested choices. Inference (`validate --fix`) never picks a nested field; it names the nested choices instead.
+  - **mcp:** `contentrain_describe_format` describes the dotted path and its limits.
+  - **types:** a field whose own name holds a dot still means itself; the exact key wins over splitting.
+  - **cli:** `contentrain serve` leads the content list with the title's object field (`hero`) for a dotted title.
+  - **rules, skills:** the title_field guidance describes the dotted path.
+
 ## 1.29.0
 
 ### Minor Changes
