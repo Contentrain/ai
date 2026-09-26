@@ -51,7 +51,10 @@ const plan = (): ProjectPlan => ({
       { component: 'Prose', bind: { kind: 'entry', props: { body: 'field:content' } } },
     ] },
   ],
-  decisions: [{ id: 'field_type:repeat:1x2y:0.2|text', answer: 'markdown', by: 'rule' }],
+  decisions: [
+    { id: 'field_type:repeat:1x2y:0.2|text', answer: 'markdown', by: 'rule' },
+    { id: 'plan:architect', answer: '3f2a9c1e7b04d586', by: 'sonnet', model: 'claude-sonnet-5' },
+  ],
 })
 
 describe('validateProjectPlan', () => {

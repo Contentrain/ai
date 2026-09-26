@@ -361,7 +361,9 @@ export interface PlanDecisionRecord {
   /** The fact decision id (`field_type:repeat:1x2y:0.1.0:text`) or a plan-level question. */
   id: string
   answer: string
-  by: 'rule' | 'cache' | 'jew' | 'haiku' | 'opus' | 'fallback' | 'human'
+  by: 'rule' | 'cache' | 'jew' | 'haiku' | 'sonnet' | 'opus' | 'fallback' | 'human'
+  /** The exact model id that decided (`claude-sonnet-5`), when `by` is a model. */
+  model?: string
   confidence?: number
 }
 
