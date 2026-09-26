@@ -33,6 +33,62 @@
   },
   "components": [
     {
+      "id": "announcement",
+      "name": "Announcement",
+      "description": "A one-line notice above the header (sale, event, changed hours) with an optional link. The visitor closes it with no JS (an open <details> whose summary is the close button); the dismissal is not remembered across pages.",
+      "category": "chrome",
+      "uses": [],
+      "shared": [],
+      "variants": {
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "accent",
+          "description": "Background of the bar, from the theme tokens."
+        }
+      },
+      "props": {
+        "message": {
+          "type": "string",
+          "required": true,
+          "label": "Message",
+          "description": "The notice, one short line."
+        },
+        "href": {
+          "type": "url",
+          "label": "Link",
+          "description": "Where the notice points (the sale, the event page)."
+        },
+        "linkLabel": {
+          "type": "string",
+          "label": "Link label",
+          "description": "Text of the link; defaults to \"Learn more\"."
+        },
+        "closeLabel": {
+          "type": "string",
+          "default": "Close announcement",
+          "content": false,
+          "description": "Accessible name of the close control (ui:)."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "elementor": [
+          "elementor/alert"
+        ]
+      },
+      "a11y": "The close control is a native <summary>: focusable, toggled with Enter or Space, and named by closeLabel. The link is a real link. The accent tone keeps full-contrast text.",
+      "files": [
+        "Announcement.astro"
+      ]
+    },
+    {
       "id": "breadcrumb",
       "name": "Breadcrumb",
       "description": "The page's ancestors as links followed by the page itself; optionally emits BreadcrumbList JSON-LD.",
@@ -258,6 +314,192 @@
         "items[].image": "items[].image",
         "items[].imageAlt": "items[].image_alt",
         "items[].eyebrow": "items[].eyebrow"
+      }
+    },
+    {
+      "id": "consent",
+      "name": "Consent",
+      "description": "Cookie consent bar with accept and decline. Consent is denied by default: until the visitor explicitly accepts, <html data-consent> is \"denied\" (set before first paint) and nothing may start measurement. The choice is stored in localStorage (`kit-consent`), set as <html data-consent=\"granted|denied\"> and dispatched as a `kit:consent` event on document with {granted}; the site-settings analytics gate reads data-consent and loads analytics only when it is \"granted\". The bar shows only while no choice is stored, with no flash on later visits.",
+      "category": "chrome",
+      "uses": [],
+      "shared": [],
+      "variants": {
+        "position": {
+          "options": [
+            "bottom",
+            "corner"
+          ],
+          "default": "bottom",
+          "description": "bottom: a full-width bar along the bottom edge. corner: a small card in the bottom corner."
+        }
+      },
+      "props": {
+        "message": {
+          "type": "text",
+          "required": true,
+          "label": "Message",
+          "description": "What the site stores and why, in a sentence or two."
+        },
+        "acceptLabel": {
+          "type": "string",
+          "required": true,
+          "label": "Accept label",
+          "description": "Text of the accept button."
+        },
+        "declineLabel": {
+          "type": "string",
+          "required": true,
+          "label": "Decline label",
+          "description": "Text of the decline button."
+        },
+        "policyHref": {
+          "type": "url",
+          "label": "Policy link",
+          "description": "Privacy or cookie policy page, linked after the message."
+        },
+        "policyLabel": {
+          "type": "string",
+          "default": "Privacy policy",
+          "content": false,
+          "description": "Text of the policy link (ui:)."
+        },
+        "regionLabel": {
+          "type": "string",
+          "default": "Cookie consent",
+          "content": false,
+          "description": "Accessible name of the bar's region (ui:)."
+        }
+      },
+      "slots": {},
+      "js": "vanilla",
+      "dependencies": {},
+      "sources": {
+        "classic": [
+          "classic/cookie-notice",
+          "classic/complianz",
+          "classic/cookieyes",
+          "classic/cookiebot"
+        ]
+      },
+      "a11y": "A labelled region, not a modal: no focus trap, the page stays usable. Both choices are native buttons in reading order after the message; the policy link is a real link. Once a choice is made the bar is hidden (not just moved off screen).",
+      "files": [
+        "Consent.astro"
+      ]
+    },
+    {
+      "id": "contact-details",
+      "name": "Contact details",
+      "description": "The ways to reach a business without a form: email and phone as mailto:/tel: links, the postal address in an <address>, opening hours and a map link, as a list or in columns. Renders nothing when every detail is empty.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "Section.astro"
+      ],
+      "variants": {
+        "layout": {
+          "options": [
+            "list",
+            "columns"
+          ],
+          "default": "list",
+          "description": "list: one detail under another. columns: side by side on wide screens (a contact band under a map or above the footer)."
+        }
+      },
+      "props": {
+        "heading": {
+          "type": "string",
+          "label": "Heading",
+          "description": "Section heading."
+        },
+        "email": {
+          "type": "email",
+          "label": "Email",
+          "description": "The address people write to; shown as a mailto: link."
+        },
+        "phone": {
+          "type": "phone",
+          "label": "Phone",
+          "description": "The number as it should be read; the tel: link drops spaces and punctuation."
+        },
+        "address": {
+          "type": "text",
+          "label": "Address",
+          "description": "Postal address, one line per line."
+        },
+        "hours": {
+          "type": "text",
+          "label": "Opening hours",
+          "description": "Opening hours, one line per day or range."
+        },
+        "mapUrl": {
+          "type": "url",
+          "label": "Map link",
+          "description": "A map of the address (Google Maps, OpenStreetMap), shown as a link under it."
+        },
+        "emailLabel": {
+          "type": "string",
+          "default": "Email",
+          "content": false,
+          "description": "Label of the email line (ui:)."
+        },
+        "phoneLabel": {
+          "type": "string",
+          "default": "Phone",
+          "content": false,
+          "description": "Label of the phone line (ui:)."
+        },
+        "addressLabel": {
+          "type": "string",
+          "default": "Address",
+          "content": false,
+          "description": "Label of the address line (ui:)."
+        },
+        "hoursLabel": {
+          "type": "string",
+          "default": "Opening hours",
+          "content": false,
+          "description": "Label of the hours line (ui:)."
+        },
+        "mapLabel": {
+          "type": "string",
+          "default": "View on the map",
+          "content": false,
+          "description": "Text of the map link (ui:)."
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Section id; the heading gets `<id>-title`."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "elementor": [
+          "elementor/icon-list"
+        ]
+      },
+      "a11y": "A description list: each detail is named by its term. Email and phone are real links that say what they are; the address is an <address>. The section is labelled by its heading.",
+      "pattern": {
+        "summary": "email, phone, address and hours listed, no form",
+        "signals": [
+          "mailto: link",
+          "tel: link",
+          "address text",
+          "icon list"
+        ]
+      },
+      "files": [
+        "ContactDetails.astro"
+      ],
+      "contentFields": {
+        "heading": "heading",
+        "email": "email",
+        "phone": "phone",
+        "address": "address",
+        "hours": "hours",
+        "mapUrl": "map_url"
       }
     },
     {
@@ -715,6 +957,135 @@
       }
     },
     {
+      "id": "feature-list",
+      "name": "Feature list",
+      "description": "A list of short features, each a title and a line of text marked with an icon or a check, under an optional heading and intro. Lighter than a card grid: no images, no links.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "Section.astro"
+      ],
+      "variants": {
+        "columns": {
+          "options": [
+            "2",
+            "3",
+            "4"
+          ],
+          "default": "3",
+          "description": "Features per row on wide screens; one on phones, two on tablets."
+        },
+        "style": {
+          "options": [
+            "icon",
+            "check"
+          ],
+          "default": "icon",
+          "description": "icon: each feature's own icon in a tinted badge. check: the same check mark before every feature."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "default",
+          "description": "Section background."
+        }
+      },
+      "props": {
+        "heading": {
+          "type": "string",
+          "label": "Heading",
+          "description": "Section heading."
+        },
+        "intro": {
+          "type": "text",
+          "label": "Introduction",
+          "description": "A sentence under the heading."
+        },
+        "items": {
+          "type": "array",
+          "label": "Features",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "title": {
+                "type": "string",
+                "label": "Title",
+                "required": true,
+                "description": "The feature, in a few words."
+              },
+              "text": {
+                "type": "text",
+                "label": "Text",
+                "description": "A sentence about it."
+              },
+              "icon": {
+                "type": "select",
+                "label": "Icon",
+                "options": [
+                  "check",
+                  "star",
+                  "bolt",
+                  "shield",
+                  "heart",
+                  "globe",
+                  "clock",
+                  "chat"
+                ],
+                "description": "The kit icon shown with the icon style; check when absent."
+              }
+            }
+          },
+          "description": "The features, in order (Elementor icon list or icon boxes without images, Gutenberg list of features, Divi blurbs with icons)."
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Anchor id of the section; the heading gets `<id>-title`."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/list"
+        ],
+        "elementor": [
+          "elementor/icon-list",
+          "elementor/icon-box"
+        ],
+        "divi": [
+          "divi/et_pb_blurb"
+        ]
+      },
+      "a11y": "A list; icons are decorative (aria-hidden), the title and text carry the meaning. The section is labelled by its heading.",
+      "pattern": {
+        "summary": "repeated icon + short title + line of text",
+        "signals": [
+          "3+ repeated items",
+          "icons",
+          "no images",
+          "short text"
+        ]
+      },
+      "files": [
+        "FeatureList.astro"
+      ],
+      "contentFields": {
+        "heading": "heading",
+        "intro": "intro",
+        "items": "items",
+        "items[].title": "items[].title",
+        "items[].text": "items[].text",
+        "items[].icon": "items[].icon"
+      }
+    },
+    {
       "id": "footer",
       "name": "Footer",
       "description": "Site footer: brand and tagline, link columns or one row of links, social links and the copyright line.",
@@ -740,6 +1111,14 @@
           ],
           "default": "default",
           "description": "Surface with a top border, muted surface, or dark (ink) background."
+        },
+        "align": {
+          "options": [
+            "start",
+            "center"
+          ],
+          "default": "start",
+          "description": "start: brand and links to the sides (left-aligned on phones). center: everything centred in one column, as themes with a centred footer print it."
         }
       },
       "props": {
@@ -1316,6 +1695,122 @@
       }
     },
     {
+      "id": "logo-cloud",
+      "name": "Logo cloud",
+      "description": "A grid of client or partner logos, each optionally linked, under an optional heading (\"Trusted by\").",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "KitImage.astro",
+        "Section.astro",
+        "types.ts"
+      ],
+      "variants": {
+        "columns": {
+          "options": [
+            "2",
+            "3",
+            "4"
+          ],
+          "default": "4",
+          "description": "Logos per row on wide screens; two on phones, three on tablets."
+        },
+        "style": {
+          "options": [
+            "plain",
+            "grayscale"
+          ],
+          "default": "plain",
+          "description": "plain: logos in their own colours. grayscale: muted grey, full colour on hover or focus."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "default",
+          "description": "Section background."
+        }
+      },
+      "props": {
+        "heading": {
+          "type": "string",
+          "label": "Heading",
+          "description": "Line above the logos (Trusted by, Our partners)."
+        },
+        "items": {
+          "type": "array",
+          "label": "Logos",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "image": {
+                "type": "image",
+                "label": "Logo",
+                "required": true,
+                "description": "The logo file."
+              },
+              "imageAlt": {
+                "type": "string",
+                "label": "Name",
+                "required": true,
+                "description": "The company's name, read in place of the logo."
+              },
+              "href": {
+                "type": "url",
+                "label": "Link",
+                "description": "The company's site, when the logo links there."
+              }
+            }
+          },
+          "description": "The logos, in order (a Gutenberg gallery or columns of logos, Elementor image carousel/gallery of logos, Divi images)."
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Anchor id of the section; the heading gets `<id>-title`."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/gallery"
+        ],
+        "elementor": [
+          "elementor/image-gallery",
+          "elementor/image-carousel"
+        ],
+        "divi": [
+          "divi/et_pb_gallery"
+        ]
+      },
+      "a11y": "A list of logos; each logo's text is the company's name, and a linked logo is one link named by it. The section is labelled by its heading.",
+      "pattern": {
+        "summary": "row of small logos, often linked",
+        "signals": [
+          "4+ images",
+          "small images",
+          "little or no text",
+          "optional heading"
+        ]
+      },
+      "files": [
+        "LogoCloud.astro"
+      ],
+      "contentFields": {
+        "heading": "heading",
+        "items": "items",
+        "items[].image": "items[].image",
+        "items[].imageAlt": "items[].image_alt",
+        "items[].href": "items[].href"
+      }
+    },
+    {
       "id": "nav",
       "name": "Navigation",
       "description": "Site navigation: an inline list with hover/focus submenus on wide screens and a toggle on narrow ones that opens a native popover drawer or a <details> dropdown. No JavaScript.",
@@ -1755,6 +2250,154 @@
       ]
     },
     {
+      "id": "pricing",
+      "name": "Pricing",
+      "description": "Price plans side by side: name, price, period, a short description, a feature list and a button each. The featured plan is raised and badged.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "Button.astro",
+        "Section.astro"
+      ],
+      "variants": {
+        "columns": {
+          "options": [
+            "2",
+            "3",
+            "4"
+          ],
+          "default": "3",
+          "description": "Plans per row on wide screens; one on phones, two on tablets."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "default",
+          "description": "Section background."
+        }
+      },
+      "props": {
+        "heading": {
+          "type": "string",
+          "label": "Heading",
+          "description": "Section heading above the plans."
+        },
+        "intro": {
+          "type": "text",
+          "label": "Intro",
+          "description": "A line or two under the heading."
+        },
+        "plans": {
+          "type": "array",
+          "label": "Plans",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "name": {
+                "type": "string",
+                "label": "Name",
+                "required": true,
+                "description": "The plan's name."
+              },
+              "price": {
+                "type": "string",
+                "label": "Price",
+                "required": true,
+                "description": "The price as shown, with its currency (\"$12\", \"Free\", \"On request\")."
+              },
+              "period": {
+                "type": "string",
+                "label": "Period",
+                "description": "What the price is per (\"/month\")."
+              },
+              "description": {
+                "type": "string",
+                "label": "Description",
+                "description": "One line on who the plan is for."
+              },
+              "features": {
+                "type": "markdown",
+                "label": "Features",
+                "description": "What the plan includes, as a markdown list."
+              },
+              "ctaLabel": {
+                "type": "string",
+                "label": "Button label",
+                "description": "The plan's button text."
+              },
+              "ctaHref": {
+                "type": "url",
+                "label": "Button link",
+                "description": "Where the button goes."
+              },
+              "featured": {
+                "type": "boolean",
+                "label": "Featured",
+                "description": "Raises the plan and gives it the badge."
+              }
+            }
+          },
+          "description": "The plans, in display order (Divi pricing tables, Elementor price table)."
+        },
+        "featuredLabel": {
+          "type": "string",
+          "default": "Most popular",
+          "content": false,
+          "description": "Badge text on featured plans."
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Anchor id of the section; the heading gets `<id>-title`."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/columns"
+        ],
+        "elementor": [
+          "elementor/price-table"
+        ],
+        "divi": [
+          "divi/et_pb_pricing_tables"
+        ]
+      },
+      "a11y": "Plans are a <ul>; each name is an <h3>. A featured plan is marked by a text badge and a ring, not colour alone. Buttons are links with their own label.",
+      "pattern": {
+        "summary": "repeated plan units: name + price + feature list + button",
+        "signals": [
+          "2-4 columns",
+          "price text",
+          "list",
+          "1 button per column"
+        ]
+      },
+      "files": [
+        "Pricing.astro"
+      ],
+      "contentFields": {
+        "heading": "heading",
+        "intro": "intro",
+        "plans": "plans",
+        "plans[].name": "plans[].name",
+        "plans[].price": "plans[].price",
+        "plans[].period": "plans[].period",
+        "plans[].description": "plans[].description",
+        "plans[].features": "plans[].features",
+        "plans[].ctaLabel": "plans[].cta_label",
+        "plans[].ctaHref": "plans[].cta_href",
+        "plans[].featured": "plans[].featured"
+      }
+    },
+    {
       "id": "prose",
       "name": "Prose",
       "description": "A rich-text body (post or page content) rendered as the editor wrote it: WordPress block markup kept, styled by Tailwind Typography on the site's tokens and the starter's Gutenberg block styles. The fallback for every builder element no rule maps to a component. Container blocks (core/group, core/columns) are not sources: their children are matched instead. Needs the starter's global.css (prose-site utility, wp-blocks.css).",
@@ -1774,8 +2417,11 @@
       "props": {
         "html": {
           "type": "richtext",
-          "required": true,
-          "description": "Rendered HTML of a richtext field (posts.body, pages.body)."
+          "description": "Rendered HTML of a richtext field (posts.body, pages.body). One of html or markdown is given."
+        },
+        "markdown": {
+          "type": "markdown",
+          "description": "A markdown field (a page section's text, prose.markdown in a page model), rendered at build time with links through the public-link filter. Used when html is absent."
         },
         "searchable": {
           "type": "boolean",
@@ -1981,6 +2627,420 @@
       }
     },
     {
+      "id": "split",
+      "name": "Split",
+      "description": "An image beside a block of text — eyebrow, heading, a markdown body and buttons — on either side, stacked on phones. The media-and-text section of a landing page (Gutenberg media-text, a two-column Elementor container with an image, Divi's image + text row).",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "Button.astro",
+        "KitImage.astro",
+        "Section.astro",
+        "types.ts"
+      ],
+      "variants": {
+        "imageSide": {
+          "options": [
+            "start",
+            "end"
+          ],
+          "default": "end",
+          "description": "Which side the image takes on wide screens: start (left in left-to-right text) or end. Phones always show it after the text."
+        },
+        "align": {
+          "options": [
+            "start",
+            "center"
+          ],
+          "default": "start",
+          "description": "Alignment of the text block."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "default",
+          "description": "Section background."
+        }
+      },
+      "props": {
+        "heading": {
+          "type": "string",
+          "label": "Heading",
+          "required": true,
+          "description": "The section heading."
+        },
+        "eyebrow": {
+          "type": "string",
+          "label": "Eyebrow",
+          "description": "Short line above the heading."
+        },
+        "body": {
+          "type": "markdown",
+          "label": "Text",
+          "description": "The text beside the image, as markdown: paragraphs, emphasis, links, lists."
+        },
+        "actions": {
+          "type": "array",
+          "label": "Buttons",
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "label": "Label",
+                "required": true,
+                "description": "The button text."
+              },
+              "href": {
+                "type": "url",
+                "label": "Link",
+                "required": true,
+                "description": "Where the button goes: a page on this site or a full address."
+              },
+              "newTab": {
+                "type": "boolean",
+                "label": "Open in a new tab",
+                "description": "Open the link in a new tab (an external site the reader should not leave for)."
+              },
+              "style": {
+                "type": "select",
+                "label": "Style",
+                "options": [
+                  "primary",
+                  "secondary",
+                  "ghost"
+                ],
+                "description": "primary for the main action, secondary or ghost for the ones beside it."
+              }
+            }
+          },
+          "description": "Buttons under the text, in order (Elementor button, Gutenberg buttons, Divi button)."
+        },
+        "image": {
+          "type": "object",
+          "label": "Image",
+          "fields": {
+            "src": {
+              "type": "image",
+              "label": "Image",
+              "required": true,
+              "description": "The image file."
+            },
+            "alt": {
+              "type": "string",
+              "label": "Image description",
+              "required": true,
+              "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
+            },
+            "width": {
+              "type": "integer",
+              "label": "Width",
+              "description": "Width in pixels, as uploaded."
+            },
+            "height": {
+              "type": "integer",
+              "label": "Height",
+              "description": "Height in pixels, as uploaded."
+            }
+          },
+          "description": "The image beside the text. Width and height, when known, let the site reserve its space."
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Anchor id of the section; the heading gets `<id>-title`."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/media-text"
+        ],
+        "elementor": [
+          "elementor/image-box"
+        ],
+        "divi": [
+          "divi/et_pb_image"
+        ]
+      },
+      "a11y": "The section is labelled by its heading. The image is a separate figure in reading order after the text; an empty description marks a decorative one.",
+      "pattern": {
+        "summary": "image beside heading + text",
+        "signals": [
+          "2 columns",
+          "1 image",
+          "heading",
+          "text",
+          "0–2 buttons"
+        ]
+      },
+      "files": [
+        "Split.astro"
+      ],
+      "contentFields": {
+        "heading": "heading",
+        "eyebrow": "eyebrow",
+        "body": "body",
+        "actions": "actions",
+        "actions[].label": "actions[].label",
+        "actions[].href": "actions[].href",
+        "actions[].newTab": "actions[].new_tab",
+        "actions[].style": "actions[].style",
+        "image": "image",
+        "image.src": "image.src",
+        "image.alt": "image.alt",
+        "image.width": "image.width",
+        "image.height": "image.height"
+      }
+    },
+    {
+      "id": "stats",
+      "name": "Stats",
+      "description": "A row of figures with a short label each (years in business, clients, uptime), with an optional heading and intro. The counter/number section of a landing page; numbers are static text, not animated.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "Section.astro"
+      ],
+      "variants": {
+        "columns": {
+          "options": [
+            "2",
+            "3",
+            "4"
+          ],
+          "default": "3",
+          "description": "Figures per row on wide screens; two on phones."
+        },
+        "style": {
+          "options": [
+            "plain",
+            "card"
+          ],
+          "default": "plain",
+          "description": "plain: figures on the section background. card: each figure in its own box."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "default",
+          "description": "Section background."
+        }
+      },
+      "props": {
+        "heading": {
+          "type": "string",
+          "label": "Heading",
+          "description": "Section heading."
+        },
+        "intro": {
+          "type": "text",
+          "label": "Introduction",
+          "description": "A sentence under the heading."
+        },
+        "items": {
+          "type": "array",
+          "label": "Figures",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "value": {
+                "type": "string",
+                "label": "Figure",
+                "required": true,
+                "description": "The number as shown, without prefix or suffix (`120`, `4.9`, `24/7`)."
+              },
+              "label": {
+                "type": "string",
+                "label": "Label",
+                "required": true,
+                "description": "What the figure counts (Clients, Countries)."
+              },
+              "prefix": {
+                "type": "string",
+                "label": "Prefix",
+                "description": "Printed before the figure (`$`, `~`)."
+              },
+              "suffix": {
+                "type": "string",
+                "label": "Suffix",
+                "description": "Printed after the figure (`+`, `%`, `k`)."
+              }
+            }
+          },
+          "description": "The figures, in order (Elementor counter, Divi number counter, a Gutenberg columns row of big numbers)."
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Anchor id of the section; the heading gets `<id>-title`."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/columns"
+        ],
+        "elementor": [
+          "elementor/counter"
+        ],
+        "divi": [
+          "divi/et_pb_number_counter",
+          "divi/et_pb_circle_counter"
+        ]
+      },
+      "a11y": "A description list: each label is the term, each figure its value, so a screen reader reads them as pairs. The section is labelled by its heading.",
+      "pattern": {
+        "summary": "row of big numbers with short labels",
+        "signals": [
+          "2–4 columns",
+          "repeated number + label",
+          "no images"
+        ]
+      },
+      "files": [
+        "Stats.astro"
+      ],
+      "contentFields": {
+        "heading": "heading",
+        "intro": "intro",
+        "items": "items",
+        "items[].value": "items[].value",
+        "items[].label": "items[].label",
+        "items[].prefix": "items[].prefix",
+        "items[].suffix": "items[].suffix"
+      }
+    },
+    {
+      "id": "steps",
+      "name": "Steps",
+      "description": "How it works: an ordered sequence of steps, each a title and a line of text with an optional image, as a vertical list or a row, numbered or plain.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "KitImage.astro",
+        "Section.astro",
+        "types.ts"
+      ],
+      "variants": {
+        "layout": {
+          "options": [
+            "list",
+            "row"
+          ],
+          "default": "list",
+          "description": "A vertical list, or one row across the page on wide screens."
+        },
+        "style": {
+          "options": [
+            "numbered",
+            "plain"
+          ],
+          "default": "numbered",
+          "description": "A number badge before each step, or an accent rule beside it."
+        }
+      },
+      "props": {
+        "heading": {
+          "type": "string",
+          "label": "Heading",
+          "description": "Section heading above the steps."
+        },
+        "intro": {
+          "type": "text",
+          "label": "Intro",
+          "description": "A line or two under the heading."
+        },
+        "items": {
+          "type": "array",
+          "label": "Steps",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "title": {
+                "type": "string",
+                "label": "Title",
+                "required": true,
+                "description": "The step's name."
+              },
+              "text": {
+                "type": "text",
+                "label": "Text",
+                "required": true,
+                "description": "What happens in this step."
+              },
+              "image": {
+                "type": "image",
+                "label": "Image",
+                "description": "An image for the step."
+              },
+              "imageAlt": {
+                "type": "string",
+                "label": "Image description",
+                "description": "What the image shows; empty if decorative."
+              }
+            }
+          },
+          "description": "The steps, in order (Elementor icon boxes, Divi blurbs, Gutenberg columns of heading + text)."
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Anchor id of the section; the heading gets `<id>-title`."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/columns"
+        ],
+        "elementor": [
+          "elementor/icon-box"
+        ],
+        "divi": [
+          "divi/et_pb_blurb"
+        ]
+      },
+      "a11y": "Steps are an <ol>, so their order and count are announced; the visible numbers are CSS counters, not text. Each title is an <h3>. The section is labelled by its heading when it has one.",
+      "pattern": {
+        "summary": "ordered sequence: numbered title + short text units",
+        "signals": [
+          "3+ repeated units",
+          "number or step label",
+          "title",
+          "short text"
+        ]
+      },
+      "files": [
+        "Steps.astro"
+      ],
+      "contentFields": {
+        "heading": "heading",
+        "intro": "intro",
+        "items": "items",
+        "items[].title": "items[].title",
+        "items[].text": "items[].text",
+        "items[].image": "items[].image",
+        "items[].imageAlt": "items[].image_alt"
+      }
+    },
+    {
       "id": "tabs",
       "name": "Tabs",
       "description": "Tabbed panels with the WAI-ARIA tabs pattern from Zag.js (arrow keys, Home/End, roving focus). Without script every panel shows in turn under its own title, so no content is ever hidden from a reader or a crawler.",
@@ -2071,6 +3131,135 @@
       "files": [
         "Tabs.astro"
       ]
+    },
+    {
+      "id": "team",
+      "name": "Team",
+      "description": "The people behind the site: portrait, name, role and a short bio each, as cards or plain entries. A member with a page is clickable as a whole.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "KitImage.astro",
+        "Section.astro",
+        "types.ts"
+      ],
+      "variants": {
+        "columns": {
+          "options": [
+            "2",
+            "3",
+            "4"
+          ],
+          "default": "3",
+          "description": "Columns on wide screens; one on phones, two on tablets."
+        },
+        "style": {
+          "options": [
+            "card",
+            "plain"
+          ],
+          "default": "card",
+          "description": "Member chrome: a bordered card with the portrait on top, or none."
+        }
+      },
+      "props": {
+        "heading": {
+          "type": "string",
+          "label": "Heading",
+          "description": "Section heading above the team."
+        },
+        "intro": {
+          "type": "text",
+          "label": "Intro",
+          "description": "A line or two under the heading."
+        },
+        "items": {
+          "type": "array",
+          "label": "Members",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "name": {
+                "type": "string",
+                "label": "Name",
+                "required": true,
+                "description": "The person's name."
+              },
+              "role": {
+                "type": "string",
+                "label": "Role",
+                "description": "Their title or role."
+              },
+              "bio": {
+                "type": "text",
+                "label": "Bio",
+                "description": "A short biography."
+              },
+              "image": {
+                "type": "image",
+                "label": "Photo",
+                "description": "Their portrait; shown square."
+              },
+              "imageAlt": {
+                "type": "string",
+                "label": "Photo description",
+                "description": "Who the photo shows; defaults to their name."
+              },
+              "href": {
+                "type": "url",
+                "label": "Link",
+                "description": "Their profile page; makes the whole entry a link."
+              }
+            }
+          },
+          "description": "The people, in display order (Divi team member name/position/content/image_url, Elementor image box)."
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Anchor id of the section; the heading gets `<id>-title`."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/columns"
+        ],
+        "elementor": [
+          "elementor/image-box"
+        ],
+        "divi": [
+          "divi/et_pb_team_member"
+        ]
+      },
+      "a11y": "Members are a <ul>; each name is an <h3>, and a linked member's link text is the name. A portrait's text defaults to the name. The section is labelled by its heading when it has one.",
+      "pattern": {
+        "summary": "repeated person units: portrait + name + role",
+        "signals": [
+          "2+ columns",
+          "1 image per column",
+          "name",
+          "role",
+          "short text"
+        ]
+      },
+      "files": [
+        "Team.astro"
+      ],
+      "contentFields": {
+        "heading": "heading",
+        "intro": "intro",
+        "items": "items",
+        "items[].name": "items[].name",
+        "items[].role": "items[].role",
+        "items[].bio": "items[].bio",
+        "items[].image": "items[].image",
+        "items[].imageAlt": "items[].image_alt",
+        "items[].href": "items[].href"
+      }
     },
     {
       "id": "testimonial",

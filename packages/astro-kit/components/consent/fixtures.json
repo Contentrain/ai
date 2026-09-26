@@ -1,0 +1,4 @@
+[
+  {"name": "bottom", "frame": "overlay", "props": {"message": "We use cookies to understand how the site is used. Analytics only load if you accept.", "acceptLabel": "Accept", "declineLabel": "Decline", "policyHref": "/privacy"}},
+  {"name": "corner", "frame": "overlay", "props": {"message": "This site uses analytics cookies.", "acceptLabel": "Allow", "declineLabel": "No thanks", "position": "corner"}}
+]

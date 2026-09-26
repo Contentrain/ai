@@ -21,8 +21,12 @@ const footer = tv({
       muted: { root: 'bg-surface-muted text-ink' },
       inverse: { root: 'bg-ink text-surface' },
     },
+    align: { start: {}, center: { inner: 'items-center justify-items-center text-center md:items-center [&_ul]:justify-center' } },
   },
-  defaultVariants: { layout: 'simple', tone: 'default' },
+  compoundVariants: [
+    { layout: 'simple', align: 'center', class: { inner: 'md:flex-col md:justify-center' } },
+  ],
+  defaultVariants: { layout: 'simple', tone: 'default', align: 'start' },
 })
 
 interface Props {
@@ -39,10 +43,11 @@ interface Props {
   navLabel?: string | undefined
   layout?: 'simple' | 'columns' | undefined
   tone?: 'default' | 'muted' | 'inverse' | undefined
+  align?: 'start' | 'center' | undefined
 }
 
-const { siteName, tagline, columns = [], links = [], social = [], copyright, navLabel = 'Footer', layout = 'simple', tone } = Astro.props
-const { root, inner, muted, link } = footer({ layout, tone })
+const { siteName, tagline, columns = [], links = [], social = [], copyright, navLabel = 'Footer', layout = 'simple', tone, align } = Astro.props
+const { root, inner, muted, link } = footer({ layout, tone, align })
 const year = String(new Date().getFullYear())
 const line = copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
 ---
@@ -63,7 +68,7 @@ const line = copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
         </nav>
       ))
       : (
-        <div class="flex flex-col gap-4 md:items-end">
+        <div class:list={['flex flex-col gap-4', align === 'center' ? 'items-center' : 'md:items-end']}>
           {social.length > 0 && (
             <ul class="flex flex-wrap gap-4">
               {social.map(item => <li><a href={item.href} rel="me noopener" target="_blank" class={link()}>{item.label}</a></li>)}

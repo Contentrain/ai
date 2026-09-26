@@ -115,6 +115,11 @@ export interface KitComponentMeta {
   /** How it meets its accessibility pattern. */
   a11y: string
   /**
+   * Sections only: the section's shape in a few words and the signals that show it in a source page, a
+   * closed-set label for the classifier and the migration architect (`image beside heading + text`).
+   */
+  pattern?: { summary: string, signals: string[] }
+  /**
    * Sections only, written by the catalog build: each content prop path (`slides[].ctaLabel`) → the
    * page-singleton field path that holds it (`slides[].cta_label`).
    */

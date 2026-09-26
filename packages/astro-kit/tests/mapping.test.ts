@@ -102,6 +102,7 @@ describe('mapping tables', () => {
 })
 
 const leaf = (path: string, name: string, attrs?: Record<string, unknown>): SectionLeaf => ({ name, path, attrs })
+const sectionTable = (builder: 'gutenberg' | 'elementor', sections: SectionRule[]): MappingTable => ({ format: 'astro-kit-mapping@1', builder, version: '1', fallback: 'prose', rules: [], sections })
 
 describe('section rules', () => {
   const hero: SectionRule = {
@@ -176,5 +177,52 @@ describe('section rules', () => {
       'elementor section team.columns: items[].title reads a slot, but items of each @photo read their own leaf',
       'elementor section team.columns: listed twice',
     ])
+  })
+
+  it('reads an each selector inside the slot, a root value without a slot, and a root element condition', () => {
+    const cover: SectionRule = {
+      id: 'hero.cover', component: 'hero', variant: { layout: 'cover' }, when: { root: 'core/cover' },
+      slots: { title: { match: 'core/heading', min: 1, max: 1 } },
+      props: { heading: '@title dom:', image: 'img:img.wp-block-cover__image-background' },
+    }
+    const faq: SectionRule = {
+      id: 'faq.accordion', component: 'faq', slots: { faq: { match: 'elementor/accordion', min: 1, max: 1 } },
+      into: 'items', each: '@faq .elementor-accordion-item', item: { question: 'dom:.elementor-accordion-title', answer: 'html:.elementor-tab-content' },
+    }
+    expect(validateMapping(sectionTable('gutenberg', [cover]), catalog)).toEqual([])
+    expect(validateMapping(sectionTable('elementor', [faq]), catalog)).toEqual([])
+    const heading = [[leaf('0.0', 'core/heading')]]
+    expect(matchSection(cover, heading, { index: 0, count: 2, root: 'core/cover' })).toEqual({ slots: { title: ['0.0'] } })
+    expect(matchSection(cover, heading, { index: 0, count: 2, root: 'core/group' })).toBeNull()
+    expect(matchSection(cover, heading, { index: 0, count: 2 })).toBeNull()
+    expect(validateMapping(sectionTable('elementor', [{ ...faq, each: '@nope .elementor-accordion-item' }, { ...faq, id: 'faq.rooted', when: { root: 'core/cover' } }]), catalog)).toEqual([
+      'elementor section faq.accordion: each @nope .elementor-accordion-item is not @<declared slot> [selector] or column',
+      'elementor section faq.rooted: root core/cover is not a elementor element or run',
+    ])
+  })
+
+  // The golden Elementor site (migrate fixtures/golden/elementor/setup.php), as facts sections: leaves per column.
+  describe('the golden Elementor pages', () => {
+    const h = (path: string, size: string) => leaf(path, 'elementor/heading', { header_size: size })
+    const w = (path: string, name: string) => leaf(path, `elementor/${name}`)
+    const classify = (columns: SectionLeaf[][], index: number, count: number) => classifySection(tables.elementor!, columns, { index, count })?.rule.id
+    it('home: hero, cards, split, carousel, testimonial', () => {
+      expect([
+        classify([[h('0.0', 'h1'), w('0.1', 'text-editor'), w('0.2', 'button')]], 0, 5),
+        classify([[w('1.0', 'icon-box'), w('1.1', 'icon-box'), w('1.2', 'icon-box')]], 1, 5),
+        classify([[w('2.0', 'image')], [h('2.1.0', 'h2'), w('2.1.1', 'text-editor'), w('2.1.2', 'icon-list')]], 2, 5),
+        classify([[w('3.0', 'image-carousel')]], 3, 5),
+        classify([[w('4.0', 'testimonial')]], 4, 5),
+      ]).toEqual(['hero.centered', 'card-grid.icon-box', 'split.image-text', 'slider.carousel', 'testimonial.quotes'])
+    })
+    it('services, consulting and contact', () => {
+      expect([
+        classify([[h('0.0', 'h1'), w('0.1', 'text-editor')]], 0, 3),
+        classify([[w('1.0', 'icon-box'), w('1.1', 'icon-box'), w('1.2', 'icon-box')]], 1, 3),
+        classify([[h('2.0', 'h2'), w('2.1', 'form')]], 2, 3),
+        classify([[h('0.0', 'h1'), w('0.1', 'text-editor'), w('0.2', 'button')]], 0, 1),
+        classify([[h('0.0', 'h1'), w('0.1', 'text-editor'), w('0.2', 'icon-list')]], 0, 1),
+      ]).toEqual(['hero.centered', 'card-grid.icon-box', 'contact-form.form', 'hero.centered', 'feature-list.icon-list'])
+    })
   })
 })

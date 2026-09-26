@@ -136,6 +136,8 @@ export interface PlanModel {
   origin: 'import' | 'plan'
   /** What a `plan` model needs to be a Contentrain model: display name, storage domain (`.contentrain/content/<domain>/<id>`), locales, and the field an entry list shows. */
   name?: string
+  /** What the model holds, for Studio's model list (the model definition's `description`). */
+  description?: string
   domain?: string
   i18n?: boolean
   /** Required for a `plan` collection/document: a text-like field (`validate` refuses a model without one). */

@@ -1,0 +1,139 @@
+[
+  {
+    "name": "four-plain",
+    "props": {
+      "heading": "Trusted by",
+      "items": [
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 1",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 2"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 3",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 4"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 5",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 6"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 7",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 8"
+        }
+      ]
+    }
+  },
+  {
+    "name": "three-grayscale-muted",
+    "props": {
+      "heading": "Our partners",
+      "items": [
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 1",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 2"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 3",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 4"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 5",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 6"
+        }
+      ],
+      "columns": "3",
+      "style": "grayscale",
+      "tone": "muted"
+    }
+  },
+  {
+    "name": "two-inverse",
+    "props": {
+      "items": [
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 1",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 2"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 3",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 4"
+        }
+      ],
+      "columns": "2",
+      "tone": "inverse"
+    }
+  },
+  {
+    "name": "accent",
+    "props": {
+      "heading": "Featured in",
+      "items": [
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 1",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 2"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 3",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 4"
+        }
+      ],
+      "tone": "accent",
+      "style": "grayscale"
+    }
+  }
+]

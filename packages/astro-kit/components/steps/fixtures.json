@@ -1,0 +1,5 @@
+[
+  {"name": "list-numbered", "props": {"id": "how", "heading": "How it works", "intro": "Three steps from WordPress to a static site.", "items": [{"title": "Connect", "text": "Point us at your site; we read everything it publishes."}, {"title": "Review", "text": "Check the plan: every page, model and redirect."}, {"title": "Launch", "text": "Deploy the new site; every old address still works."}]}},
+  {"name": "row-plain-images", "props": {"layout": "row", "style": "plain", "heading": "Our process", "items": [{"title": "Discover", "text": "We learn the site and its readers.", "image": "/kit-fixtures/photo-1.svg"}, {"title": "Design", "text": "We draw the pages and the system.", "image": "/kit-fixtures/photo-2.svg"}, {"title": "Build", "text": "We ship it, fast and accessible.", "image": "/kit-fixtures/photo-3.svg", "imageAlt": "A laptop showing the finished site"}]}},
+  {"name": "row-numbered", "props": {"layout": "row", "items": [{"title": "Sign up", "text": "One minute, no card."}, {"title": "Import", "text": "Bring your content."}, {"title": "Edit", "text": "Change it in Studio."}, {"title": "Publish", "text": "Push and it is live."}]}}
+]

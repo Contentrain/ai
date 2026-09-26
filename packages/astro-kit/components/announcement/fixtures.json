@@ -1,0 +1,6 @@
+[
+  {"name": "accent", "props": {"message": "Spring sale: 20% off every course until 30 April.", "href": "/sale", "linkLabel": "See the courses"}},
+  {"name": "default", "props": {"message": "We are closed on 1 May.", "tone": "default"}},
+  {"name": "muted", "props": {"message": "New: gift cards are here.", "href": "/gift-cards", "tone": "muted"}},
+  {"name": "inverse", "props": {"message": "Join us at the open studio on 12 June.", "href": "/events/open-studio", "linkLabel": "RSVP", "tone": "inverse"}}
+]

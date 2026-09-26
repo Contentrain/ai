@@ -1,0 +1,132 @@
+{
+  "id": "pricing",
+  "name": "Pricing",
+  "description": "Price plans side by side: name, price, period, a short description, a feature list and a button each. The featured plan is raised and badged.",
+  "category": "section",
+  "uses": [],
+  "shared": [
+    "Button.astro",
+    "Section.astro"
+  ],
+  "variants": {
+    "columns": {
+      "options": [
+        "2",
+        "3",
+        "4"
+      ],
+      "default": "3",
+      "description": "Plans per row on wide screens; one on phones, two on tablets."
+    },
+    "tone": {
+      "options": [
+        "default",
+        "muted",
+        "inverse",
+        "accent"
+      ],
+      "default": "default",
+      "description": "Section background."
+    }
+  },
+  "props": {
+    "heading": {
+      "type": "string",
+      "label": "Heading",
+      "description": "Section heading above the plans."
+    },
+    "intro": {
+      "type": "text",
+      "label": "Intro",
+      "description": "A line or two under the heading."
+    },
+    "plans": {
+      "type": "array",
+      "label": "Plans",
+      "required": true,
+      "items": {
+        "type": "object",
+        "fields": {
+          "name": {
+            "type": "string",
+            "label": "Name",
+            "required": true,
+            "description": "The plan's name."
+          },
+          "price": {
+            "type": "string",
+            "label": "Price",
+            "required": true,
+            "description": "The price as shown, with its currency (\"$12\", \"Free\", \"On request\")."
+          },
+          "period": {
+            "type": "string",
+            "label": "Period",
+            "description": "What the price is per (\"/month\")."
+          },
+          "description": {
+            "type": "string",
+            "label": "Description",
+            "description": "One line on who the plan is for."
+          },
+          "features": {
+            "type": "markdown",
+            "label": "Features",
+            "description": "What the plan includes, as a markdown list."
+          },
+          "ctaLabel": {
+            "type": "string",
+            "label": "Button label",
+            "description": "The plan's button text."
+          },
+          "ctaHref": {
+            "type": "url",
+            "label": "Button link",
+            "description": "Where the button goes."
+          },
+          "featured": {
+            "type": "boolean",
+            "label": "Featured",
+            "description": "Raises the plan and gives it the badge."
+          }
+        }
+      },
+      "description": "The plans, in display order (Divi pricing tables, Elementor price table)."
+    },
+    "featuredLabel": {
+      "type": "string",
+      "default": "Most popular",
+      "content": false,
+      "description": "Badge text on featured plans."
+    },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Anchor id of the section; the heading gets `<id>-title`."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {
+    "gutenberg": [
+      "core/columns"
+    ],
+    "elementor": [
+      "elementor/price-table"
+    ],
+    "divi": [
+      "divi/et_pb_pricing_tables"
+    ]
+  },
+  "a11y": "Plans are a <ul>; each name is an <h3>. A featured plan is marked by a text badge and a ring, not colour alone. Buttons are links with their own label.",
+  "pattern": {
+    "summary": "repeated plan units: name + price + feature list + button",
+    "signals": [
+      "2-4 columns",
+      "price text",
+      "list",
+      "1 button per column"
+    ]
+  }
+}

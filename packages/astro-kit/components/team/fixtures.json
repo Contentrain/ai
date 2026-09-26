@@ -1,0 +1,5 @@
+[
+  {"name": "three-card", "props": {"id": "team", "heading": "The team", "intro": "Small, senior, and in the same room.", "items": [{"name": "Mira Kovač", "role": "Editor", "bio": "Keeps every page honest and every sentence short.", "image": "/kit-fixtures/avatar-1.svg", "href": "/team/mira/"}, {"name": "Jon Ade", "role": "Engineer", "bio": "Builds the sites and keeps them fast.", "image": "/kit-fixtures/avatar-2.svg", "href": "/team/jon/"}, {"name": "Lea Park", "role": "Designer", "bio": "Draws the systems the sites are made of.", "image": "/kit-fixtures/avatar-3.svg"}]}},
+  {"name": "two-plain", "props": {"columns": "2", "style": "plain", "heading": "Founders", "items": [{"name": "Mira Kovač", "role": "Co-founder", "image": "/kit-fixtures/avatar-1.svg", "imageAlt": "Mira Kovač, smiling"}, {"name": "Jon Ade", "role": "Co-founder", "image": "/kit-fixtures/avatar-2.svg"}]}},
+  {"name": "four-card-no-photos", "props": {"columns": "4", "items": [{"name": "Mira Kovač", "role": "Editor"}, {"name": "Jon Ade", "role": "Engineer"}, {"name": "Lea Park", "role": "Designer"}, {"name": "Sam Ortiz", "role": "Producer", "bio": "Keeps the schedule."}]}}
+]

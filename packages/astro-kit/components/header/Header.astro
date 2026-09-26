@@ -53,12 +53,14 @@ interface Props {
 
 const { siteName, tagline, brandSize, linkNav, logo, showName = true, homeHref = '/', items, action, navLabel, menuLabel, closeLabel, layout, tone, position } = Astro.props
 const { root, inner, brand } = header({ layout, tone, position })
+// A tagline under the name keeps its line on a phone, as themes print it: the navigation wraps below.
+const wrap = tagline ? 'flex-wrap md:flex-nowrap' : undefined
 ---
 <header class={root()}>
-  <div class={inner()}>
+  <div class={inner({ class: wrap })}>
     {tagline
       ? (
-        <div class="flex flex-col gap-1">
+        <div class="flex min-w-0 basis-full flex-col gap-1 md:basis-auto">
           <a href={homeHref} class={brand()} aria-label={showName ? undefined : siteName} style={brandSize ? `font-size: ${brandSize}` : undefined} data-kit-brand>
             {logo && <KitImage image={logo} priority class="h-8 w-auto" sizes="160px" />}
             {showName && <span>{siteName}</span>}

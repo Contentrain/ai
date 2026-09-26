@@ -320,5 +320,347 @@
         "showLabel": "ui:embed.show"
       }
     }
+  ],
+  "sections": [
+    {
+      "id": "hero.fullwidth-header",
+      "component": "hero",
+      "variant": {
+        "layout": "centered"
+      },
+      "when": {
+        "position": "first"
+      },
+      "slots": {
+        "header": {
+          "match": "divi/et_pb_fullwidth_header",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@header attr:title || @header dom:h1",
+        "lead": "@header attr:subhead || @header dom:.et_pb_header_content_wrapper"
+      },
+      "into": "actions",
+      "each": "@header .et_pb_button",
+      "item": {
+        "label": "dom:",
+        "href": "dom:@href"
+      }
+    },
+    {
+      "id": "split.image-text",
+      "component": "split",
+      "when": {
+        "columns": 2
+      },
+      "slots": {
+        "media": {
+          "match": "divi/et_pb_image",
+          "min": 1,
+          "max": 1
+        },
+        "text": {
+          "match": "divi/et_pb_text",
+          "max": 1,
+          "min": 1
+        },
+        "button": {
+          "match": "divi/et_pb_button",
+          "max": 2
+        }
+      },
+      "props": {
+        "heading": "@text dom:h1,h2,h3,h4",
+        "body": "@text html:",
+        "image": "@media img:img"
+      },
+      "into": "actions",
+      "each": "@button",
+      "item": {
+        "label": "attr:button_text || dom:",
+        "href": "attr:button_url || dom:@href"
+      }
+    },
+    {
+      "id": "card-grid.blurb",
+      "component": "card-grid",
+      "slots": {
+        "intro": {
+          "match": "divi/et_pb_text",
+          "max": 1
+        },
+        "box": {
+          "match": "divi/et_pb_blurb",
+          "min": 2
+        }
+      },
+      "props": {
+        "title": "@intro dom:h1,h2,h3,h4",
+        "intro": "@intro dom:p"
+      },
+      "into": "items",
+      "each": "@box",
+      "item": {
+        "title": "attr:title || dom:.et_pb_module_header",
+        "text": "dom:.et_pb_blurb_description",
+        "href": "attr:url || dom:.et_pb_module_header a@href",
+        "image": "attr:image || img:.et_pb_main_blurb_image img@src",
+        "imageAlt": "attr:alt || img:.et_pb_main_blurb_image img@alt"
+      }
+    },
+    {
+      "id": "stats.counter",
+      "component": "stats",
+      "slots": {
+        "intro": {
+          "match": "divi/et_pb_text",
+          "max": 1
+        },
+        "counter": {
+          "match": [
+            "divi/et_pb_number_counter",
+            "divi/et_pb_circle_counter"
+          ],
+          "min": 2
+        }
+      },
+      "props": {
+        "heading": "@intro dom:h1,h2,h3,h4",
+        "intro": "@intro dom:p"
+      },
+      "into": "items",
+      "each": "@counter",
+      "item": {
+        "value": "attr:number || dom:.percent-value",
+        "label": "attr:title || dom:h3",
+        "suffix": "dom:.percent-sign"
+      }
+    },
+    {
+      "id": "pricing.tables",
+      "component": "pricing",
+      "slots": {
+        "intro": {
+          "match": "divi/et_pb_text",
+          "max": 1
+        },
+        "tables": {
+          "match": "divi/et_pb_pricing_tables",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@intro dom:h1,h2,h3,h4",
+        "intro": "@intro dom:p"
+      },
+      "into": "plans",
+      "each": "@tables .et_pb_pricing_table",
+      "item": {
+        "name": "dom:.et_pb_pricing_title",
+        "price": "dom:.et_pb_sum",
+        "period": "dom:.et_pb_frequency",
+        "description": "dom:.et_pb_best_value",
+        "features": "html:.et_pb_pricing_content",
+        "ctaLabel": "dom:a.et_pb_pricing_table_button",
+        "ctaHref": "dom:a.et_pb_pricing_table_button@href"
+      }
+    },
+    {
+      "id": "team.members",
+      "component": "team",
+      "slots": {
+        "intro": {
+          "match": "divi/et_pb_text",
+          "max": 1
+        },
+        "member": {
+          "match": "divi/et_pb_team_member",
+          "min": 1
+        }
+      },
+      "props": {
+        "heading": "@intro dom:h1,h2,h3,h4",
+        "intro": "@intro dom:p"
+      },
+      "into": "items",
+      "each": "@member",
+      "item": {
+        "name": "attr:name || dom:.et_pb_module_header",
+        "role": "attr:position || dom:.et_pb_member_position",
+        "bio": "dom:.et_pb_team_member_description > :not(.et_pb_module_header, .et_pb_member_position, .et_pb_member_social_links)",
+        "image": "attr:image_url || img:.et_pb_team_member_image img@src",
+        "imageAlt": "img:.et_pb_team_member_image img@alt"
+      }
+    },
+    {
+      "id": "testimonial.quotes",
+      "component": "testimonial",
+      "slots": {
+        "intro": {
+          "match": "divi/et_pb_text",
+          "max": 1
+        },
+        "quote": {
+          "match": "divi/et_pb_testimonial",
+          "min": 1
+        }
+      },
+      "props": {
+        "heading": "@intro dom:h1,h2,h3,h4"
+      },
+      "into": "items",
+      "each": "@quote",
+      "item": {
+        "quote": "dom:.et_pb_testimonial_content",
+        "name": "attr:author || dom:.et_pb_testimonial_author",
+        "role": "attr:job_title || dom:.et_pb_testimonial_position",
+        "avatar": "attr:portrait_url || img:.et_pb_testimonial_portrait img@src",
+        "avatarAlt": "img:.et_pb_testimonial_portrait img@alt"
+      }
+    },
+    {
+      "id": "faq.accordion",
+      "component": "faq",
+      "slots": {
+        "intro": {
+          "match": "divi/et_pb_text",
+          "max": 1
+        },
+        "faq": {
+          "match": "divi/et_pb_accordion",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@intro dom:h1,h2,h3,h4"
+      },
+      "into": "items",
+      "each": "@faq .et_pb_accordion_item",
+      "item": {
+        "question": "dom:.et_pb_toggle_title",
+        "answer": "html:.et_pb_toggle_content"
+      }
+    },
+    {
+      "id": "faq.toggles",
+      "component": "faq",
+      "slots": {
+        "intro": {
+          "match": "divi/et_pb_text",
+          "max": 1
+        },
+        "faq": {
+          "match": "divi/et_pb_toggle",
+          "min": 2
+        }
+      },
+      "props": {
+        "heading": "@intro dom:h1,h2,h3,h4",
+        "exclusive": "const:false"
+      },
+      "into": "items",
+      "each": "@faq",
+      "item": {
+        "question": "attr:title || dom:.et_pb_toggle_title",
+        "answer": "html:.et_pb_toggle_content"
+      }
+    },
+    {
+      "id": "gallery.grid",
+      "component": "gallery",
+      "slots": {
+        "intro": {
+          "match": "divi/et_pb_text",
+          "max": 1
+        },
+        "images": {
+          "match": "divi/et_pb_gallery",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@intro dom:h1,h2,h3,h4",
+        "closeLabel": "ui:gallery.close"
+      },
+      "into": "items",
+      "each": "@images .et_pb_gallery_item",
+      "item": {
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
+        "caption": "dom:.et_pb_gallery_caption"
+      }
+    },
+    {
+      "id": "contact-form.form",
+      "component": "contact-form",
+      "slots": {
+        "intro": {
+          "match": "divi/et_pb_text",
+          "max": 1
+        },
+        "form": {
+          "match": "divi/et_pb_contact_form",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "model": "const:contact",
+        "heading": "@form attr:title || @intro dom:h1,h2,h3,h4",
+        "intro": "@intro dom:p"
+      }
+    },
+    {
+      "id": "cta.module",
+      "component": "cta",
+      "slots": {
+        "cta": {
+          "match": "divi/et_pb_cta",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@cta attr:title || @cta dom:.et_pb_module_header",
+        "body": "@cta dom:.et_pb_promo_description > :not(.et_pb_module_header)"
+      },
+      "into": "actions",
+      "each": "@cta .et_pb_promo_button",
+      "item": {
+        "label": "dom:",
+        "href": "dom:@href"
+      }
+    },
+    {
+      "id": "cta.text-button",
+      "component": "cta",
+      "slots": {
+        "text": {
+          "match": "divi/et_pb_text",
+          "max": 1,
+          "min": 1
+        },
+        "button": {
+          "match": "divi/et_pb_button",
+          "min": 1,
+          "max": 2
+        }
+      },
+      "props": {
+        "heading": "@text dom:h1,h2,h3,h4",
+        "body": "@text dom:p"
+      },
+      "into": "actions",
+      "each": "@button",
+      "item": {
+        "label": "attr:button_text || dom:",
+        "href": "attr:button_url || dom:@href"
+      }
+    }
   ]
 }

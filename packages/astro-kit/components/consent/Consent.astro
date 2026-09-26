@@ -1,0 +1,78 @@
+---
+// Cookie consent bar: a message, accept and decline, and a link to the
+// privacy policy. The choice is kept in localStorage (`kit-consent`), written
+// to <html data-consent="granted|denied"> and announced as a `kit:consent`
+// event on document, which the site-settings analytics gate listens for.
+// Replaces cookie plugins (Cookie Notice, Complianz, CookieYes, Cookiebot).
+import { tv } from 'tailwind-variants'
+
+const consent = tv({
+  slots: {
+    root: 'fixed z-50 border border-line bg-surface p-4 text-ink shadow-lg sm:p-5',
+    message: 'text-sm whitespace-pre-line',
+    link: 'underline decoration-line underline-offset-4 hover:decoration-current',
+    actions: 'mt-4 flex flex-wrap gap-3',
+    accept: 'rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink hover:opacity-90',
+    decline: 'rounded-md border border-line px-4 py-2 text-sm font-semibold hover:bg-surface-muted',
+  },
+  variants: {
+    position: {
+      bottom: { root: 'inset-x-0 bottom-0 border-x-0 border-b-0 sm:flex sm:items-center sm:justify-between sm:gap-6', actions: 'sm:mt-0 sm:shrink-0' },
+      corner: { root: 'inset-x-4 bottom-4 rounded-lg sm:left-auto sm:max-w-sm' },
+    },
+  },
+  defaultVariants: { position: 'bottom' },
+})
+
+interface Props {
+  message: string
+  acceptLabel: string
+  declineLabel: string
+  /** Privacy or cookie policy page, linked after the message. */
+  policyHref?: string | undefined
+  policyLabel?: string | undefined
+  regionLabel?: string | undefined
+  position?: 'bottom' | 'corner' | undefined
+}
+
+const { message, acceptLabel, declineLabel, policyHref, policyLabel = 'Privacy policy', regionLabel = 'Cookie consent', position } = Astro.props
+const s = consent({ position })
+---
+<!--
+  Rendered hidden: the inline script right after it shows the bar only when no
+  choice is stored, before the first paint, so returning visitors never see it
+  flash. With no stored choice consent is 'denied' until the visitor accepts;
+  without JS the bar stays hidden and nothing that needs consent runs.
+-->
+<div data-kit-consent role="region" aria-label={regionLabel} class={s.root()} hidden>
+  <p class={s.message()}>
+    {message}
+    {policyHref && <> <a href={policyHref} class={s.link()}>{policyLabel}</a></>}
+  </p>
+  <div class={s.actions()}>
+    <button type="button" data-kit-consent-choice="granted" class={s.accept()}>{acceptLabel}</button>
+    <button type="button" data-kit-consent-choice="denied" class={s.decline()}>{declineLabel}</button>
+  </div>
+</div>
+<script is:inline>
+  (() => {
+    let stored = null
+    try { stored = localStorage.getItem('kit-consent') } catch {}
+    // Denied until the visitor accepts: nothing may measure before an explicit yes.
+    document.documentElement.dataset.consent = stored === 'granted' ? 'granted' : 'denied'
+    if (stored !== 'granted' && stored !== 'denied') document.querySelectorAll('[data-kit-consent]').forEach((bar) => { bar.hidden = false })
+  })()
+</script>
+<script>
+  // One listener for the page; the bar is not a dialog, so focus is left where
+  // it is and the page stays usable while it shows.
+  document.addEventListener('click', (event) => {
+    const button = (event.target as Element | null)?.closest<HTMLButtonElement>('[data-kit-consent-choice]')
+    if (!button) return
+    const choice = button.dataset.kitConsentChoice === 'granted' ? 'granted' : 'denied'
+    try { localStorage.setItem('kit-consent', choice) } catch {}
+    document.documentElement.dataset.consent = choice
+    document.querySelectorAll<HTMLElement>('[data-kit-consent]').forEach((bar) => { bar.hidden = true })
+    document.dispatchEvent(new CustomEvent('kit:consent', { detail: { granted: choice === 'granted' } }))
+  })
+</script>

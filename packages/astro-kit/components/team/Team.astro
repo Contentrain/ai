@@ -1,0 +1,82 @@
+---
+// The people behind the site: a portrait, a name, a role and a short bio for
+// each, as a grid of cards or plain entries. A member with a page links to it.
+import { tv } from 'tailwind-variants'
+import KitImage from '../_shared/KitImage.astro'
+import Section from '../_shared/Section.astro'
+import { imageOf, type ImageSource } from '../_shared/types'
+
+const team = tv({
+  slots: {
+    header: 'mb-10 flex max-w-2xl flex-col gap-3',
+    heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
+    intro: 'text-lg opacity-80',
+    list: 'grid gap-6 sm:grid-cols-2 md:gap-8',
+    member: 'group relative flex flex-col gap-3',
+    portrait: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
+    name: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)]',
+    role: 'text-sm font-medium text-accent',
+    bio: 'text-pretty opacity-80',
+  },
+  variants: {
+    columns: {
+      '2': {},
+      '3': { list: 'md:grid-cols-3' },
+      '4': { list: 'lg:grid-cols-4' },
+    },
+    style: {
+      card: { member: 'rounded-card border border-line p-6', portrait: '-mx-6 -mt-6 mb-2 rounded-b-none' },
+      plain: {},
+    },
+  },
+  defaultVariants: { columns: '3', style: 'card' },
+})
+
+interface Member {
+  name: string
+  role?: string | undefined
+  bio?: string | undefined
+  /** The portrait's address. */
+  image?: ImageSource | undefined
+  imageAlt?: string | undefined
+  href?: string | undefined
+}
+
+interface Props {
+  heading?: string | undefined
+  intro?: string | undefined
+  items: Member[]
+  columns?: '2' | '3' | '4' | undefined
+  style?: 'card' | 'plain' | undefined
+  id?: string | undefined
+}
+
+const { heading, intro, items, columns, style, id } = Astro.props
+const s = team({ columns, style })
+const headingId = heading && id ? `${id}-title` : undefined
+---
+{items.length > 0 && (
+  <Section id={id} aria-labelledby={headingId}>
+    {(heading || intro) && (
+      <header class={s.header()}>
+        {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+        {intro && <p class={s.intro()} data-kit-text>{intro}</p>}
+      </header>
+    )}
+    <ul class={s.list()}>
+      {items.map(member => (
+        <li class={s.member()}>
+          {/* The portrait's text defaults to the name: a photo of a named person is not decoration. */}
+          {imageOf(member.image, member.imageAlt ?? member.name) && <div class={s.portrait()}><KitImage image={imageOf(member.image, member.imageAlt ?? member.name)!} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" class="aspect-square w-full object-cover" /></div>}
+          <h3 class={s.name()}>
+            {member.href
+              ? <a href={member.href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent">{member.name}</a>
+              : member.name}
+          </h3>
+          {member.role && <p class={s.role()}>{member.role}</p>}
+          {member.bio && <p class={s.bio()} data-kit-text>{member.bio}</p>}
+        </li>
+      ))}
+    </ul>
+  </Section>
+)}

@@ -7,6 +7,7 @@
 // as HTML. Only post and page bodies carry `data-pagefind-body`, so search
 // indexes content, not chrome.
 import { tv } from 'tailwind-variants'
+import { renderMarkdown } from '../../../lib/markdown'
 
 const prose = tv({
   base: 'prose prose-site max-w-none',
@@ -18,13 +19,16 @@ const prose = tv({
 
 interface Props {
   /** Rendered HTML of a richtext field. */
-  html: string
+  html?: string | undefined
+  /** A markdown field (a page section's text), rendered at build time. Used when `html` is absent. */
+  markdown?: string | undefined
   /** Index this body for site search. */
   searchable?: boolean | undefined
   class?: string | undefined
   size?: 'base' | 'lg' | undefined
 }
 
-const { html, searchable = true, class: className, size } = Astro.props
+const { html, markdown, searchable = true, class: className, size } = Astro.props
+const body = html ?? await renderMarkdown(markdown)
 ---
-<div class={prose({ size, class: className })} data-pagefind-body={searchable ? '' : undefined} set:html={html} />
+{body && <div class={prose({ size, class: className })} data-pagefind-body={searchable ? '' : undefined} set:html={body} />}

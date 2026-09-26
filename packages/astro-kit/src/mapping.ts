@@ -93,6 +93,7 @@ export interface SectionSlot {
  * One section pattern. Values are the table's expressions, prefixed `@<slot> ` to read a slot's leaf
  * (`@title attr:title`); `a || b` takes the first non-empty (builder data first, rendered markup as fallback).
  * A slot of several leaves joins their text into a markdown prop; any other prop reads its first leaf.
+ * A value without a slot reads the section's own root (a cover's background image, a container's setting).
  */
 export interface SectionRule {
   /** Stable id (`hero.split`, `card-grid.icon-box`): plans record `<builder>:section:<id>`; JEW chooses among them. */
@@ -108,10 +109,16 @@ export interface SectionRule {
     only?: boolean
     /** `columns`: each column must match the slots on its own (a row of team members, price plans). */
     repeat?: 'columns'
+    /** The section's root element(s): `core/cover`, `core/media-text` (a loose run of blocks is `run`). */
+    root?: string | string[]
   }
   slots: Record<string, SectionSlot>
   props?: Record<string, string>
-  /** Array prop filled once per `each`: a slot's leaves (`@card`) or the columns (`column`, with `repeat: 'columns'`). */
+  /**
+   * Array prop filled once per `each`: a slot's leaves (`@card`), the parts a selector finds inside them
+   * (`@list figure.wp-block-image`, `@faq .elementor-accordion-item`: a gallery's images, an accordion's
+   * items), or the columns (`column`, with `repeat: 'columns'`).
+   */
   into?: string
   each?: string
   /** One array item: relative to the leaf (`each: '@slot'`) or to the column, where `@<slot>` is that column's slot. */
@@ -121,6 +128,13 @@ export interface SectionRule {
 /** A section leaf as the fact pack gives it: a builder element with its `blocks:` path. */
 export interface SectionLeaf extends MappingNode {
   path: string
+}
+
+/** Where a section sits (facts `index`/`count`) and what it is (`root`: facts `root`). */
+export interface SectionMeta {
+  index: number
+  count: number
+  root?: string | undefined
 }
 
 /** Leaf paths per slot; with `repeat: 'columns'`, also per column. */
@@ -159,8 +173,9 @@ function claimLeaves(rule: SectionRule, leaves: SectionLeaf[], defaults?: Mappin
  * Whether a section rule fits a section, and which leaves fill which slot. `columns` are the section's
  * columns left to right, each its leaves in document order (layout containers already opened).
  */
-export function matchSection(rule: SectionRule, columns: SectionLeaf[][], meta: { index: number, count: number }, defaults?: MappingTable['defaults']): SectionMatch | null {
+export function matchSection(rule: SectionRule, columns: SectionLeaf[][], meta: SectionMeta, defaults?: MappingTable['defaults']): SectionMatch | null {
   const when = rule.when ?? {}
+  if (when.root !== undefined && !(meta.root !== undefined && [when.root].flat().includes(meta.root))) return null
   if (when.position === 'first' && meta.index !== 0) return null
   if (when.position === 'last' && meta.index !== meta.count - 1) return null
   if (when.columns !== undefined && ![when.columns].flat().includes(columns.length)) return null
@@ -176,7 +191,7 @@ export function matchSection(rule: SectionRule, columns: SectionLeaf[][], meta: 
 }
 
 /** The first section rule of a table that fits, with its match. */
-export function classifySection(table: MappingTable, columns: SectionLeaf[][], meta: { index: number, count: number }): { rule: SectionRule, match: SectionMatch } | null {
+export function classifySection(table: MappingTable, columns: SectionLeaf[][], meta: SectionMeta): { rule: SectionRule, match: SectionMatch } | null {
   for (const rule of table.sections ?? []) {
     const match = matchSection(rule, columns, meta, table.defaults)
     if (match) return { rule, match }
@@ -261,6 +276,7 @@ function validateSections(table: MappingTable, components: Map<string, KitCompon
       for (const element of [slot.match].flat()) if (!isBuilderElement(table.builder, element)) problems.push(`${at}: slot ${name} matches ${element}, not a ${table.builder} element`)
       if (slot.min !== undefined && slot.max !== undefined && slot.min > slot.max) problems.push(`${at}: slot ${name} min > max`)
     }
+    for (const root of [rule.when?.root ?? []].flat()) if (root !== 'run' && !isBuilderElement(table.builder, root)) problems.push(`${at}: root ${root} is not a ${table.builder} element or run`)
     if (rule.when?.repeat === 'columns' && rule.each !== 'column') problems.push(`${at}: repeat columns needs each: column`)
     if (rule.each === 'column' && rule.when?.repeat !== 'columns') problems.push(`${at}: each column needs when.repeat columns`)
     const readsSlots = (value: string, where: string, type: string | undefined, slotted: boolean) => {
@@ -282,7 +298,7 @@ function validateSections(table: MappingTable, components: Map<string, KitCompon
       const target = c.props[rule.into]
       if (!target || target.type !== 'array') problems.push(`${at}: ${c.id}.${rule.into} is not an array prop`)
       if (!rule.each) problems.push(`${at}: into ${rule.into} needs each`)
-      else if (rule.each !== 'column' && !rule.slots[rule.each.slice(1)]) problems.push(`${at}: each ${rule.each} is not @<declared slot> or column`)
+      else if (rule.each !== 'column' && !rule.slots[/^@([a-z][\w-]*)(?: \S.*)?$/.exec(rule.each)?.[1] ?? '']) problems.push(`${at}: each ${rule.each} is not @<declared slot> [selector] or column`)
       const fields = target && typeof target.items === 'object' ? target.items.fields ?? {} : {}
       for (const [field, value] of Object.entries(rule.item ?? {})) {
         if (!fields[field]) problems.push(`${at}: ${c.id}.${rule.into}[] has no field ${field}`)
@@ -295,9 +311,9 @@ function validateSections(table: MappingTable, components: Map<string, KitCompon
   return problems
 }
 
-/** Catalog sources of a builder that no rule of its table matches. */
+/** Catalog sources of a builder that no rule of its table matches, as an element rule or a section slot. */
 export function unmappedSources(table: MappingTable, catalog: KitCatalog): string[] {
-  const matched = new Set(table.rules.map(r => r.match))
+  const matched = new Set([...table.rules.map(r => r.match), ...(table.sections ?? []).flatMap(r => Object.values(r.slots).flatMap(s => [s.match].flat()))])
   const sources = catalog.components.flatMap((c: KitComponent) => c.sources[table.builder] ?? [])
   return [...new Set(sources)].filter(s => !matched.has(s)).toSorted()
 }

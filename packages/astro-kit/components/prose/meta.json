@@ -18,8 +18,11 @@
   "props": {
     "html": {
       "type": "richtext",
-      "required": true,
-      "description": "Rendered HTML of a richtext field (posts.body, pages.body)."
+      "description": "Rendered HTML of a richtext field (posts.body, pages.body). One of html or markdown is given."
+    },
+    "markdown": {
+      "type": "markdown",
+      "description": "A markdown field (a page section's text, prose.markdown in a page model), rendered at build time with links through the public-link filter. Used when html is absent."
     },
     "searchable": {
       "type": "boolean",
