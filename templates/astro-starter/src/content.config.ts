@@ -1,4 +1,4 @@
-// Generated from .contentrain/models by @contentrain/writer — regenerate, do not edit.
+// Generated from .contentrain/models by Contentrain Migrate — regenerate, do not edit.
 //
 // One collection per Contentrain model, read through @contentrain/query's
 // loader; each schema mirrors its model. Public builds show published
