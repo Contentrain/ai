@@ -591,7 +591,7 @@ const result = validateMigrateStudioClaim(payload, { now: Math.floor(Date.now() 
 if (!result.ok) throw new Error(result.errors.join('; '))
 ```
 
-`validateMigrateStudioClaim` checks shape, ranges and — with `now` — the validity window (60 s skew). It does no cryptography: the signature, `jti` replay and `order_id` uniqueness are the consumer's job. `isMigrateStudioClaim` is the shape-only type guard.
+`validateMigrateStudioClaim` checks shape, ranges and — with `now` — the validity window (60 s skew). It does no cryptography: the signature, `jti` replay and `order_id` uniqueness are the consumer's job. `isMigrateStudioClaim` is the shape-only type guard. A malformed `comments_export` does not fail the claim: it is dropped from `result.claim` and reported in `result.warnings` (`comments_export.*: …`), and the trial opens without the export.
 
 ## Import Style
 

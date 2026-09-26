@@ -138,7 +138,12 @@ export interface MigrateStudioCommentsExport {
 }
 
 export type MigrateStudioClaimResult =
-  | { ok: true, claim: MigrateStudioClaim }
+  /**
+   * `warnings`: optional parts that were dropped rather than failing the claim
+   * (today only `comments_export.*`), as `field: problem` strings; absent when
+   * nothing was dropped. `claim` no longer carries a dropped part.
+   */
+  | { ok: true, claim: MigrateStudioClaim, warnings?: string[] }
   | { ok: false, errors: string[] }
 
 const CAPABILITY_SET: ReadonlySet<string> = new Set(CAPABILITY_KEYS)
@@ -178,6 +183,11 @@ function isExportUrl(x: unknown): x is string {
  * `now` (seconds since the epoch) to also check the validity window; without
  * it only the shape and the window's own bounds are checked. Returns every
  * problem found, as stable machine-readable strings (`field: problem`).
+ *
+ * A malformed `comments_export` does not fail the claim: it is an add-on, and
+ * a Migrate still sending an older shape must not stop the trial. It is
+ * dropped from `claim` and reported in `warnings`; Studio then offers the
+ * file upload instead.
  */
 export function validateMigrateStudioClaim(input: unknown, options: { now?: number } = {}): MigrateStudioClaimResult {
   const errors: string[] = []
@@ -244,21 +254,25 @@ export function validateMigrateStudioClaim(input: unknown, options: { now?: numb
 
   if (x.origin !== undefined && !isClaimOrigin(x.origin)) errors.push('origin: invalid')
 
+  const warnings: string[] = []
   if (x.comments_export !== undefined) {
     const ce = x.comments_export
     if (!isObject(ce)) {
-      errors.push('comments_export: invalid')
+      warnings.push('comments_export: invalid')
     }
     else {
-      if (!isExportUrl(ce.url)) errors.push('comments_export.url: invalid')
-      if (!isCompactJws(ce.token)) errors.push('comments_export.token: invalid')
-      if (!isSeconds(ce.expires_at)) errors.push('comments_export.expires_at: invalid')
-      else if (isSeconds(x.iat) && ce.expires_at <= x.iat) errors.push('comments_export.expires_at: not after iat')
-      if (typeof ce.comments !== 'number' || !Number.isInteger(ce.comments) || ce.comments < 0) errors.push('comments_export.comments: invalid')
+      if (!isExportUrl(ce.url)) warnings.push('comments_export.url: invalid')
+      if (!isCompactJws(ce.token)) warnings.push('comments_export.token: invalid')
+      if (!isSeconds(ce.expires_at)) warnings.push('comments_export.expires_at: invalid')
+      else if (isSeconds(x.iat) && ce.expires_at <= x.iat) warnings.push('comments_export.expires_at: not after iat')
+      if (typeof ce.comments !== 'number' || !Number.isInteger(ce.comments) || ce.comments < 0) warnings.push('comments_export.comments: invalid')
     }
   }
 
-  return errors.length === 0 ? { ok: true, claim: x as unknown as MigrateStudioClaim } : { ok: false, errors }
+  if (errors.length > 0) return { ok: false, errors }
+  if (warnings.length === 0) return { ok: true, claim: x as unknown as MigrateStudioClaim }
+  const { comments_export: _dropped, ...rest } = x
+  return { ok: true, claim: rest as unknown as MigrateStudioClaim, warnings }
 }
 
 /** Shape-only type guard (no clock check). The signature is the consumer's job. */
