@@ -30,6 +30,8 @@ export const PLAN_TOKEN_ROLES = [
   // The theme's type scale and rhythm: the site's theme applies them on the kit's markers (`data-kit-*`, `data-cr-part`).
   // `spacing-section` is the distance between two consecutive top-level sections, not a padding: each section gets half.
   'text-nav', 'text-heading-1', 'text-heading-2', 'text-heading-3', 'spacing-section',
+  // The source's link colour where it is not the accent (Hello Elementor: #c36 links, a grey button). Absent: the accent.
+  'color-link',
 ] as const
 export type PlanTokenRole = (typeof PLAN_TOKEN_ROLES)[number]
 
@@ -91,8 +93,19 @@ export interface PlanSite {
   /**
    * Post lists (blog index, archives): `cards`, or `full` when the source's query loop shows each post's
    * content; `heading` shows the index's title on the front page. Absent: cards without a heading.
+   * `text`: the size of each post's content in a `full` list, when the source's loop sets its own
+   * (Twenty Twenty-Five: `has-medium-font-size` on the query's post content); absent, the body size.
    */
-  lists?: { display: 'cards' | 'full', heading: boolean }
+  lists?: { display: 'cards' | 'full', heading: boolean, text?: string }
+  /**
+   * The header and footer as the source's theme prints them, where they differ from the starter's.
+   * Every key is optional; absent, the starter's own. `brand`: the site title's size in the header
+   * (Hello Elementor: a 2.5rem heading). `tagline`: the header shows the tagline under the title.
+   * `copyright`: the footer's line as the source prints it ("All rights reserved"; `{year}` for the
+   * current year), instead of "© year Site". `titleLinks`: post titles in lists take the link colour, as the source's do.
+   * `navLinks`: so does the header navigation.
+   */
+  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
   redirects: Record<string, string | { status: number, destination: string }>
@@ -340,6 +353,9 @@ export function footerMenusOf(site: Pick<PlanSite, 'menus'>): string[] {
   return [...footer]
 }
 
+/** A font size the starter writes into a style: a length, or a `clamp()`/`calc()`/`min()`/`max()` of lengths (a theme's fluid size). */
+const CSS_LENGTH = /^(?!.*url\()(?:\d+(?:\.\d+)?(?:px|rem|em|%)|(?:clamp|calc|min|max)\([\d\s.,+*/()a-z%-]+\))$/
+
 export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   const errors: string[] = []
   const warnings: string[] = []
@@ -356,6 +372,13 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (!Number.isSafeInteger(site.post.more) || site.post.more < 0 || site.post.more > 20) errors.push('site.post.more is not a count from 0 to 20')
   }
   if (site?.lists && !['cards', 'full'].includes(site.lists.display)) errors.push(`site.lists.display ${site.lists.display} is not cards or full`)
+  if (site?.lists?.text !== undefined && !CSS_LENGTH.test(site.lists.text)) errors.push(`site.lists.text ${site.lists.text} is not a CSS size`)
+  const chrome = site?.chrome
+  if (chrome?.brand !== undefined && !CSS_LENGTH.test(chrome.brand)) errors.push(`site.chrome.brand ${chrome.brand} is not a CSS size`)
+  if (chrome?.tagline !== undefined && typeof chrome.tagline !== 'boolean') errors.push('site.chrome.tagline is not a boolean')
+  if (chrome?.titleLinks !== undefined && typeof chrome.titleLinks !== 'boolean') errors.push('site.chrome.titleLinks is not a boolean')
+  if (chrome?.navLinks !== undefined && typeof chrome.navLinks !== 'boolean') errors.push('site.chrome.navLinks is not a boolean')
+  if (chrome?.copyright !== undefined && (typeof chrome.copyright !== 'string' || !chrome.copyright.trim() || chrome.copyright.length > 200 || /[<>]/.test(chrome.copyright))) errors.push('site.chrome.copyright is not a line of plain text (1–200 characters, no markup)')
   const footer = site?.menus?.footer
   if (typeof footer === 'string') {
     if (footer === '') errors.push('site.menus.footer has an empty menu slug')

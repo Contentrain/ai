@@ -87,6 +87,9 @@ const wpQueries = isHome ? await queryMap() : {}
     <Header
       siteName={site.title}
       logo={site.logo ? { src: site.logo, alt: '' } : undefined}
+      tagline={siteConfig.chrome?.tagline ? site.tagline : undefined}
+      brandSize={siteConfig.chrome?.brand}
+      linkNav={siteConfig.chrome?.navLinks}
       items={primary?.items ?? []}
       navLabel={primary?.name ?? t('nav.label')}
       menuLabel={t('nav.menu')}
@@ -98,6 +101,7 @@ const wpQueries = isHome ? await queryMap() : {}
     <Footer
       siteName={site.organization ?? site.title}
       tagline={site.tagline}
+      copyright={siteConfig.chrome?.copyright}
       layout={footerColumns.length > 1 ? 'columns' : 'simple'}
       columns={footerColumns.map((menu, index) => ({ label: menu.name, links: index === footerColumns.length - 1 ? [...menu.items, rss] : menu.items }))}
       links={[...(footerColumns[0]?.items ?? []), rss]}

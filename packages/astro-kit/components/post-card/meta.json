@@ -17,7 +17,8 @@
     "image": { "type": "object", "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } }, "description": "Cover (posts.cover → media)." },
     "category": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true } }, "description": "Primary category and its archive." },
     "author": { "type": "string", "description": "Author name (posts.author → authors.name)." },
-    "headingLevel": { "type": "integer", "min": 2, "max": 3, "default": 2, "description": "Title heading level in the page outline." }
+    "headingLevel": { "type": "integer", "min": 2, "max": 3, "default": 2, "description": "Title heading level in the page outline." },
+    "linkTitle": { "type": "boolean", "default": false, "description": "The title in the site's link colour (--color-link), as themes that colour every link do." }
   },
   "slots": {},
   "js": "none",
