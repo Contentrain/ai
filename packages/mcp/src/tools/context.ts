@@ -267,7 +267,7 @@ export function registerContextTools(
             kind: 'One of: singleton, collection, document, dictionary.',
             domain: 'Organizational group; maps to the content subdirectory.',
             i18n: 'Whether the model stores content per locale.',
-            title_field: 'Name of the field shown as an entry title in listings, pickers and relation references. Must name a field declared on this model whose type is one of: string, text, slug, email, url, code, markdown, richtext. Dictionary models have no fields — they use the reserved value "key", meaning the entry key is the title.',
+            title_field: 'Name of the field shown as an entry title in listings, pickers and relation references. Must name a field declared on this model whose type is one of: string, text, slug, email, url, code, markdown, richtext — or a dotted path one level into an object field ("hero.heading"), for a page singleton whose top level holds only section objects. Never through an array, never deeper than one level. Dictionary models have no fields — they use the reserved value "key", meaning the entry key is the title.',
           },
           optional: {
             description: 'Model description for documentation and agent context.',

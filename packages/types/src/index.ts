@@ -1109,8 +1109,10 @@ export type TitleFieldTarget =
   | { kind: 'not-object', at: string, type: FieldType }
   | { kind: 'too-deep' }
 
-/** Resolve a `title_field` path against a model's fields. */
+/** Resolve a `title_field` path against a model's fields. A field named exactly `path` wins over splitting it. */
 export function titleFieldTarget(fields: Record<string, FieldDef> | undefined, path: string): TitleFieldTarget {
+  // A field whose own name holds a dot predates dotted paths; it keeps meaning itself.
+  if (fields && Object.hasOwn(fields, path)) return { kind: 'field', def: fields[path]! }
   const segments = path.split('.')
   if (segments.length > 2) return { kind: 'too-deep' }
   const [head, leaf] = segments as [string, string | undefined]
@@ -1125,6 +1127,7 @@ export function titleFieldTarget(fields: Record<string, FieldDef> | undefined, p
 
 /** An entry's title value: `data[title_field]`, or one level into an object for a dotted path. */
 export function titleFieldValue(data: Record<string, unknown> | null | undefined, path: string): unknown {
+  if (data && Object.hasOwn(data, path)) return data[path]
   const [head, leaf, ...rest] = path.split('.')
   if (!data || head === undefined || rest.length > 0) return undefined
   const value = data[head]

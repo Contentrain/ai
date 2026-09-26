@@ -325,6 +325,13 @@ describe('@contentrain/types', () => {
       expect(titleFieldValue({ hero: null }, 'hero.heading')).toBeUndefined()
       expect(titleFieldValue(undefined, 'label')).toBeUndefined()
     })
+
+    it('lets a legacy field whose name holds a dot keep meaning itself', () => {
+      const legacy: Record<string, FieldDef> = { 'seo.title': { type: 'string' }, seo: { type: 'object', fields: { title: { type: 'text' } } } }
+      expect(titleFieldTarget(legacy, 'seo.title')).toEqual({ kind: 'field', def: legacy['seo.title'] })
+      expect(titleFieldValue({ 'seo.title': 'Flat', seo: { title: 'Nested' } }, 'seo.title')).toBe('Flat')
+      expect(titleFieldValue({ seo: { title: 'Nested' } }, 'seo.title')).toBe('Nested')
+    })
   })
 
   describe('ContentrainConfig', () => {
