@@ -563,7 +563,7 @@
             "plain"
           ],
           "default": "lines",
-          "description": "lines: rows divided by rules. cards: each question in a rounded box. plain: the browser's own disclosure triangle without rules or boxes (WordPress's details block)."
+          "description": "lines: rows divided by rules. cards: each question in a rounded box. plain: the browser's own disclosure triangle without rules or boxes, questions at the body size (WordPress's details block)."
         },
         "tone": {
           "options": [
