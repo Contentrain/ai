@@ -54,6 +54,31 @@ Also built: `sitemap-index.xml` (public addresses from the route table, without 
 `404.html` and `/search/` (Pagefind — the index is built after `astro build`,
 no server needed).
 
+## Publishing: your host and Studio
+
+The site is static: `pnpm build` writes `dist/`, which any static host serves.
+Where it lives is yours to choose; the move sets nothing up on a host.
+
+1. **Connect this repository to your host** — Netlify, Vercel or Cloudflare
+   Pages — and let it build from your default branch with `pnpm build` and
+   `dist` as the output directory. Every push to that branch publishes.
+2. **Changes approved in Studio arrive on that branch.** Studio merges a
+   reviewed change into its `contentrain` branch, then moves your default
+   branch forward, so a host that builds from the repository publishes it
+   without anything more.
+3. **Add a deploy hook in Studio** for what no push announces: a scheduled
+   publish or expiry passing, or a host that does not watch the repository.
+   Create the hook at your host —
+   [Netlify build hooks](https://docs.netlify.com/configure-builds/build-hooks/),
+   [Vercel deploy hooks](https://vercel.com/docs/deploy-hooks),
+   [Cloudflare Pages deploy hooks](https://developers.cloudflare.com/pages/configuration/deploy-hooks/)
+   — then paste its URL in Studio: your project's CDN panel, **Deploy Hook**.
+   Studio calls it after content is published and when a scheduled time
+   passes.
+
+To check it once: approve a small change in Studio and look for it on the
+live site.
+
 ## Conventions
 
 - **Content only through the loader.** No page reads `.contentrain/` files or

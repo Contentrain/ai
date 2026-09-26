@@ -1,0 +1,17 @@
+---
+// A composed view with no sections of its own, standing in for a page singleton:
+// its description comes from the view, since the page has no SEO description or excerpt.
+import type { Page } from '../../lib/content'
+import ComposedPage from '../ComposedPage.astro'
+
+interface Props {
+  page: Page
+  trail: Array<{ title: string, href: string }>
+  isHome: boolean
+}
+
+const { page, trail, isHome } = Astro.props
+---
+<ComposedPage page={page} trail={trail} isHome={isHome} description="Careers at Northwind: how we hire and who we look for.">
+  <p class="container-prose py-12">We hire slowly and keep people.</p>
+</ComposedPage>

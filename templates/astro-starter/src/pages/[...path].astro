@@ -24,8 +24,16 @@ type Props = InferGetStaticPropsType<typeof getStaticPaths>
 const route = Astro.props as Props
 if (route.view === 'redirect') return Astro.redirect(route.to, route.status)
 // A page the migration composed from sections has a view of its own.
-const PageRoute = route.view === 'page' ? composedViews[route.page.data.wp_id ?? -1] ?? PageView : PageView
+const composed = route.view === 'page' ? composedViews[route.page.data.wp_id ?? -1] : undefined
+// A page with no body, form, cover, child pages or composed view would build as a title alone:
+// a composition the move left out, which must stop the build rather than go live empty. An empty
+// parent page (WordPress's usual section landing) lists its children instead.
+const { data: pageData } = route.view === 'page' ? route.page : { data: undefined }
+if (route.view === 'page' && pageData && !composed && !pageData.body?.trim() && !pageData.form && !pageData.cover && route.subpages.length === 0) {
+  throw new Error(`Page "${route.page.data.title}" (${Astro.url.pathname}) has no body and no composed view, so it would build empty. Give it a body, or list its view in src/views/composed/index.ts.`)
+}
+const PageRoute = composed ?? PageView
 ---
 {route.view === 'post' && <PostView post={route.post} />}
-{route.view === 'page' && <PageRoute page={route.page} trail={route.trail} isHome={route.isHome} />}
+{route.view === 'page' && <PageRoute page={route.page} trail={route.trail} isHome={route.isHome} subpages={route.subpages} />}
 {route.view === 'list' && <ListView {...route} />}

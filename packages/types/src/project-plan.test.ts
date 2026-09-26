@@ -163,27 +163,30 @@ describe('validateProjectPlan', () => {
     p.site.post = { header: ['title', 'cover', 'byline'], adjacent: true, more: 4 }
     p.site.lists = { display: 'full', heading: true }
     expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.lists = { display: 'list', heading: false }
+    expect(validateProjectPlan(p).errors).toEqual([])
     p.site.post = { header: ['title', 'title'], adjacent: false, more: 30 }
     p.site.lists = { display: 'grid' as 'cards', heading: false }
     expect(validateProjectPlan(p).errors).toEqual([
       'site.post.header lists a part twice or one the starter does not have',
       'site.post.more is not a count from 0 to 20',
-      'site.lists.display grid is not cards or full',
+      'site.lists.display grid is not cards, list or full',
     ])
   })
 
   it('checks the list text size and the header and footer the source theme prints', () => {
     const p = plan()
     p.site.lists = { display: 'full', heading: true, text: 'clamp(1rem, 1rem + ((1vw - 0.2rem) * 0.196), 1.125rem)' }
-    p.site.chrome = { brand: '2.5rem', tagline: true, copyright: 'All rights reserved', titleLinks: true, navLinks: true }
+    p.site.chrome = { brand: '2.5rem', tagline: true, copyright: 'All rights reserved', titleLinks: true, navLinks: true, footerAlign: 'center' }
     p.site.tokens.roles['color-link'] = '#c36'
     expect(validateProjectPlan(p).errors).toEqual([])
     p.site.lists.text = 'red; color: blue'
-    p.site.chrome = { brand: 'clamp(url(x))', copyright: '<b>x</b>', navLinks: 'yes' as unknown as boolean }
+    p.site.chrome = { brand: 'clamp(url(x))', copyright: '<b>x</b>', navLinks: 'yes' as unknown as boolean, footerAlign: 'middle' as 'center' }
     expect(validateProjectPlan(p).errors).toEqual([
       'site.lists.text red; color: blue is not a CSS size',
       'site.chrome.brand clamp(url(x)) is not a CSS size',
       'site.chrome.navLinks is not a boolean',
+      'site.chrome.footerAlign middle is not start or center',
       'site.chrome.copyright is not a line of plain text (1–200 characters, no markup)',
     ])
   })
