@@ -1,5 +1,17 @@
 # @contentrain/astro-kit
 
+## 0.5.0
+
+### Minor Changes
+
+- 23d1040: Footer marks its text `data-kit-footer`, so a site's theme can size it with `--text-footer` (a new plan token role); the kit's own size stays `text-sm`. Nav takes `color: 'link'`, the site's link colour at full strength, and Header's `linkNav` uses it: the narrow-screen toggle keeps the header's text colour. Header renders the site title once, with or without a tagline.
+
+### Patch Changes
+
+- 307be59: `Faq`'s `plain` style sets its questions at the body size (`--text-body`, 1rem without it) instead of a fixed `text-base`, as WordPress's details block does: a migrated Twenty Twenty-Five FAQ read 16px where the source shows 18.27px.
+- Updated dependencies [23d1040]
+  - @contentrain/types@1.29.0
+
 ## 0.4.0
 
 ### Minor Changes
