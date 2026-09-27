@@ -1,5 +1,19 @@
 # contentrain
 
+## 0.15.5
+
+### Patch Changes
+
+- Updated dependencies [f768505]
+- Updated dependencies [48772c0]
+- Updated dependencies [b09023f]
+  - @contentrain/types@1.31.0
+  - @contentrain/mcp@3.9.1
+  - @contentrain/query@7.6.8
+  - @contentrain/wp-import@0.9.5
+  - @contentrain/rules@0.7.3
+  - @contentrain/skills@0.9.5
+
 ## 0.15.4
 
 ### Patch Changes

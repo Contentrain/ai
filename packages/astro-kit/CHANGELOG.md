@@ -1,5 +1,15 @@
 # @contentrain/astro-kit
 
+## 0.6.1
+
+### Patch Changes
+
+- 174cfb8: The Astro starter keeps measured image sizes in `src/lib/media-sizes.ts` (`MEDIA_SIZES`) instead of `src/data/media-sizes.json`. A migrated site no longer ships a JSON file under `src/` or a JSON import, which the migration's query-only check reports as content living outside `.contentrain`. `mediaSize` and `KitImage` behave as before.
+- Updated dependencies [f768505]
+- Updated dependencies [48772c0]
+- Updated dependencies [b09023f]
+  - @contentrain/types@1.31.0
+
 ## 0.6.0
 
 ### Minor Changes

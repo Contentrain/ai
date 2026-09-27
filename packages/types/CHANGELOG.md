@@ -1,5 +1,21 @@
 # @contentrain/types
 
+## 1.31.0
+
+### Minor Changes
+
+- f768505: Migrate → Studio claim: optional `comments_export` (`{ url, token, expires_at, comments }`): Migrate's fixed address for a migrated site's comment export and the per-job signed token Studio sends as `Authorization: Bearer` — the address carries no secret, so none reaches request logs. The export never enters the repository; `validateMigrateStudioClaim` checks the URL (https, http for localhost; no credentials, query or fragment), the token (compact JWS, at most 2048 characters), that `expires_at` is after `iat`, and the count. A malformed export (an older Migrate's shape included) never fails the claim: it is dropped and reported in the new optional `warnings` of an `ok` result. `isMigrateStudioClaim` returns `false` for such a claim, since it would narrow the malformed export along with it.
+- 48772c0: `PlanDecisionRecord.by` accepts `'sonnet'`, and an optional `model` records the exact model id that made a model decision (`claude-sonnet-5`), so a plan's audit trail says which model decided, not only its tier.
+- b09023f: Project plans can carry two more things the source theme prints. `site.lists.display` accepts `list`, which is cards in one column, as themes show an archive that is a single stack of posts. `site.chrome.footerAlign` (`start` or `center`) carries a footer that is one centred column. `validateProjectPlan` checks both values.
+
+  The Astro starter uses them:
+
+  - `BaseLayout` passes `chrome.footerAlign` to the kit footer.
+  - `ComposedPage` takes a `description` for a page whose sections hold the text, because a page singleton has no body to summarize. The page's own SEO description (Yoast, Rank Math) still comes first.
+  - A parent page with no body lists its child pages in page order.
+  - A page with no body, form, cover, child pages or composed view now fails the build instead of going live as a bare title.
+  - The README explains publishing: connecting a host, how changes approved in Studio reach it, and Studio's deploy hook.
+
 ## 1.30.0
 
 ### Minor Changes
