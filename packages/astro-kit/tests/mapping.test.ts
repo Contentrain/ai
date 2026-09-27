@@ -170,7 +170,7 @@ describe('section rules', () => {
     ] }
     expect(validateMapping(broken, catalog)).toEqual([
       'elementor section hero.split: hero.layout has no option diagonal',
-      'elementor section hero.split: slot lead matches core/paragraph, not a elementor element',
+      'elementor section hero.split: slot lead matches core/paragraph, not a elementor or classic plugin element',
       'elementor section hero.split: heading is string but slot lead may hold several leaves (max must be 1)',
       'elementor section hero.split: lead reads undeclared slot nope',
       'elementor section team.columns: repeat columns needs each: column',
@@ -228,6 +228,15 @@ describe('section rules', () => {
       const match = classifySection(tables.elementor!, [[h('0.0', 'h1'), w('0.1', 'text-editor'), h('0.2', 'h2'), w('0.3', 'form')]], { index: 0, count: 1 })
       expect(match?.rule.id).toBe('contact-form.form')
       expect(match?.match.slots).toMatchObject({ title: ['0.0'], intro: ['0.1'], formTitle: ['0.2'], form: ['0.3'] })
+    })
+    it('a heading and text above a form section, joined: the icon list is the details, a plugin shortcode the form', () => {
+      for (const form of [w('0.4', 'form'), leaf('0.4', 'classic/contact-form-7')]) {
+        const match = classifySection(tables.elementor!, [[h('0.0', 'h1'), w('0.1', 'text-editor'), w('0.2', 'icon-list'), h('0.3', 'h2'), form]], { index: 0, count: 1 })
+        expect(match?.rule.id, form.name).toBe('contact-form.form')
+        expect(match?.match.slots, form.name).toMatchObject({ title: ['0.0'], intro: ['0.1'], details: ['0.2'], formTitle: ['0.3'], form: ['0.4'] })
+      }
+      // A detail keeps its tel:/mailto: link, as the prose it replaced did.
+      expect(tables.elementor!.sections?.find(rule => rule.id === 'contact-form.form')).toMatchObject({ into: 'details', each: '@details .elementor-icon-list-item', item: { value: 'dom:.elementor-icon-list-text', href: 'dom:a@href' } })
     })
   })
 })

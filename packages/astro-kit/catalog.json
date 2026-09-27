@@ -564,8 +564,7 @@
               "label": {
                 "type": "string",
                 "label": "Label",
-                "required": true,
-                "description": "What the detail is (Phone, Email, Address)."
+                "description": "What the detail is (Phone, Email, Address). Without labels the details are a plain list."
               },
               "value": {
                 "type": "string",
@@ -605,7 +604,7 @@
           "classic/ninja-forms"
         ]
       },
-      "a11y": "Contact details are a description list; links say what they open. The form's labels, errors and focus handling are Studio's form runtime (FormMount). The section is labelled by its heading.",
+      "a11y": "Contact details are a description list when every one has a label, a plain list otherwise; links say what they open. The form's labels, errors and focus handling are Studio's form runtime (FormMount). The section is labelled by its heading.",
       "files": [
         "ContactForm.astro"
       ],

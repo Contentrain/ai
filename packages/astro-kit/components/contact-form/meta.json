@@ -14,7 +14,7 @@
     "heading": { "type": "string", "label": "Heading", "description": "Section heading." },
     "intro": { "type": "text", "label": "Introduction", "description": "A line or two above the details." },
     "formHeading": { "type": "string", "label": "Form heading", "description": "The form's own heading, shown above the form." },
-    "details": { "type": "array", "label": "Contact details", "items": { "type": "object", "fields": { "label": { "type": "string", "label": "Label", "required": true, "description": "What the detail is (Phone, Email, Address)." }, "value": { "type": "string", "label": "Value", "required": true, "description": "The detail as shown." }, "href": { "type": "url", "label": "Link", "description": "A tel:, mailto: or map link for it." } } }, "description": "Ways to reach you, in order (Email → mailto:, Phone → tel:, Address → map link)." },
+    "details": { "type": "array", "label": "Contact details", "items": { "type": "object", "fields": { "label": { "type": "string", "label": "Label", "description": "What the detail is (Phone, Email, Address). Without labels the details are a plain list." }, "value": { "type": "string", "label": "Value", "required": true, "description": "The detail as shown." }, "href": { "type": "url", "label": "Link", "description": "A tel:, mailto: or map link for it." } } }, "description": "Ways to reach you, in order (Email → mailto:, Phone → tel:, Address → map link)." },
     "id": { "type": "string", "content": false, "description": "Section id; the heading gets `<id>-title`." }
   },
   "slots": {},
@@ -25,5 +25,5 @@
     "divi": ["divi/et_pb_contact_form"],
     "classic": ["classic/contact-form-7", "classic/wpforms", "classic/gravityforms", "classic/ninja-forms"]
   },
-  "a11y": "Contact details are a description list; links say what they open. The form's labels, errors and focus handling are Studio's form runtime (FormMount). The section is labelled by its heading."
+  "a11y": "Contact details are a description list when every one has a label, a plain list otherwise; links say what they open. The form's labels, errors and focus handling are Studio's form runtime (FormMount). The section is labelled by its heading."
 }

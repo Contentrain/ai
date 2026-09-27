@@ -14,7 +14,8 @@ import StudioForm from '../../studio/StudioForm.astro'
 import { formHome } from '../../../lib/features'
 
 export interface ContactDetail {
-  label: string
+  /** What the detail is (Phone, Email); a source's icon list often has none. */
+  label?: string | undefined
   value: string
   /** `mailto:`, `tel:` or a map link. */
   href?: string | undefined
@@ -62,6 +63,9 @@ const { model, heading, intro, formHeading, details = [], layout, tone, id = 'co
 const formShown = formHome(model) !== null
 const s = contact({ layout: formShown ? layout : 'stacked', tone })
 const headingId = heading ? `${id}-title` : undefined
+// A description list needs a term for every detail; an icon list carried from the source has values only.
+const labelled = details.every(detail => detail.label)
+const LINK = 'underline decoration-line underline-offset-4 hover:decoration-current'
 // One level under the section heading, or the section's heading when there is none.
 const FormHeading = heading ? 'h3' : 'h2'
 ---
@@ -71,16 +75,27 @@ const FormHeading = heading ? 'h3' : 'h2'
       <div class={s.copy()}>
         {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
         {intro && <p class={s.intro()}>{intro}</p>}
-        {details.length > 0 && (
-          <dl class={s.details()}>
-            {details.map(detail => (
-              <div>
-                <dt class={s.term()}>{detail.label}</dt>
-                <dd class={s.value()}>{detail.href ? <a href={detail.href} class="underline decoration-line underline-offset-4 hover:decoration-current">{detail.value}</a> : detail.value}</dd>
-              </div>
+        {details.length > 0 && (labelled
+          ? (
+              <dl class={s.details()}>
+                {details.map(detail => (
+                  <div>
+                    <dt class={s.term()}>{detail.label}</dt>
+                    <dd class={s.value()}>{detail.href ? <a href={detail.href} class={LINK}>{detail.value}</a> : detail.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )
+          : (
+              <ul class={s.details()}>
+                {details.map(detail => (
+                  <li class={s.value()}>
+                    {detail.label && <span class={s.term()}>{detail.label}: </span>}
+                    {detail.href ? <a href={detail.href} class={LINK}>{detail.value}</a> : detail.value}
+                  </li>
+                ))}
+              </ul>
             ))}
-          </dl>
-        )}
       </div>
     )}
     {formShown && (formHeading
