@@ -116,6 +116,22 @@ export interface RawAcfValue {
   label?: string
 }
 
+/**
+ * One ACF Options Page (bridge rung): site-wide fields that belong to no post.
+ * Values are the default language's; a translation plugin's per-language copy
+ * is not read. Secret fields are left out by the exporter, as on a post.
+ */
+export interface RawAcfOptionsPage {
+  /** The page's menu slug, sanitized (`site-settings`). */
+  slug: string
+  /** The page title as the admin menu shows it. */
+  title: string
+  /** ACF storage id the values are read from — `options` unless the page sets its own. */
+  post_id: string
+  /** Field name → value, keyed like `RawPost.acf`. */
+  fields: Record<string, RawAcfValue>
+}
+
 export interface RawPost {
   id: number
   /** WordPress post type — "post", "page", or a custom post type slug. */
@@ -708,6 +724,8 @@ export interface RawIR {
   language_pairs?: RawLanguagePair[]
   /** Site options (bridge rung), verbatim. */
   options?: Record<string, unknown>
+  /** ACF Options Pages (bridge rung): site-wide fields, one entry per page. */
+  acf_options?: RawAcfOptionsPage[]
 }
 
 // ─── CapabilityManifest ───

@@ -3,6 +3,7 @@ import type {
   SourceAccessKind,
   RawIR,
   RawPost,
+  RawAcfOptionsPage,
   RawMenuTarget,
   CapabilityKey,
   CapabilityManifest,
@@ -79,6 +80,9 @@ const rawIr: RawIR = {
   ],
   redirects: [{ from: '/old', to: '/hello/', status: 301, source: 'redirection' }],
   language_pairs: [{ post: 10, translations: { tr: 42 } }],
+  acf_options: [
+    { slug: 'site-settings', title: 'Site settings', post_id: 'options', fields: { phone: { value: '+1 555 0100', field_key: 'field_def456', type: 'text' } } },
+  ],
 }
 
 const manifest: CapabilityManifest = {
@@ -277,6 +281,12 @@ describe('migration contracts', () => {
     const post: RawPost = rawIr.posts[0]!
     expect(post.terms[0]!.resolved).toBe(true)
     expect(post.acf!.subtitle!.field_key).toMatch(/^field_/)
+  })
+
+  it('ACF Options Pages carry site-wide fields shaped like a post\'s ACF', () => {
+    const page: RawAcfOptionsPage = rawIr.acf_options![0]!
+    expect(page.post_id).toBe('options')
+    expect(page.fields.phone!.field_key).toMatch(/^field_/)
   })
 
   it('pagination is a route parameter, never a family', () => {

@@ -472,3 +472,84 @@ describe('site title', () => {
     expect(JSON.parse(files['.contentrain/models/site.json']!).fields.title.required).toBe(true)
   })
 })
+
+describe('ACF Options Pages (bridge rung)', () => {
+  it('land in the site entry, typed like a post\'s ACF; a clashing name takes its page\'s slug', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const post = raw.posts.find((p) => p.type === 'post')!
+    const { files, report } = rawToContentrain({
+      ...raw,
+      acf_options: [
+        { slug: 'site-settings', title: 'Site settings', post_id: 'options', fields: {
+          phone: { value: '+90 212 000 00 00', field_key: 'field_p', type: 'text' },
+          title: { value: 'Options title', field_key: 'field_t', type: 'text' },
+          featured: { value: post.id, field_key: 'field_f', type: 'post_object' },
+          email: { value: 'x', field_key: 'field_e', type: 'password' },
+        } },
+        { slug: 'footer', title: 'Footer', post_id: 'options', fields: {
+          phone: { value: '+90 212 111 11 11', field_key: 'field_p2', type: 'text' },
+          show_social: { value: true, field_key: 'field_s', type: 'true_false' },
+        } },
+      ],
+    })
+    const site = JSON.parse(files['.contentrain/content/site/site/data.json']!)
+    const fields = JSON.parse(files['.contentrain/models/site.json']!).fields
+    // A core field is never overwritten; a name on two pages keeps both.
+    expect(site.title).toBe(raw.site.title)
+    expect(site.site_settings_title).toBe('Options title')
+    expect(site.site_settings_phone).toBe('+90 212 000 00 00')
+    expect(site.footer_phone).toBe('+90 212 111 11 11')
+    expect(site.phone).toBeUndefined()
+    expect(site.show_social).toBe(true)
+    expect(fields.show_social).toMatchObject({ type: 'boolean', description: 'ACF' })
+    // A reference resolves to the store entry.
+    expect(fields.featured).toMatchObject({ type: 'relation', model: 'posts' })
+    expect(site.featured).toBe(hexId(`posts:${post.slug}`))
+    expect(report.acf_options).toMatchObject({ site_settings_phone: 'string', footer_phone: 'string', show_social: 'boolean', featured: 'relation:posts' })
+    // Secret field types stay out, as on a post.
+    expect(JSON.stringify(site)).not.toContain('"email"')
+    expect(storeViolations(files).violations).toEqual([])
+  })
+
+  it('leave ACF\'s default `acf-options-` slug off the prefix', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const { files } = rawToContentrain({
+      ...raw,
+      acf_options: [
+        { slug: 'acf-options-footer', title: 'Footer', post_id: 'options', fields: { phone: { value: 'a', type: 'text' } } },
+        { slug: 'acf-options-contact-details', title: 'Contact details', post_id: 'options', fields: { phone: { value: 'b', type: 'text' } } },
+        { slug: 'acf-options', title: 'Options', post_id: 'options', fields: { phone: { value: 'c', type: 'text' } } },
+      ],
+    })
+    const site = JSON.parse(files['.contentrain/content/site/site/data.json']!)
+    expect(site).toMatchObject({ footer_phone: 'a', contact_details_phone: 'b', acf_options_phone: 'c' })
+    expect(site.acf_options_footer_phone).toBeUndefined()
+  })
+
+  it('never drop a field whose prefixed name is already taken: it gets a counter and a report line', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const { files, report } = rawToContentrain({
+      ...raw,
+      acf_options: [
+        { slug: 'acf-options-footer', title: 'Footer', post_id: 'options', fields: { phone: { value: 'footer page', type: 'text' } } },
+        { slug: 'contact', title: 'Contact', post_id: 'options', fields: {
+          phone: { value: 'contact page', type: 'text' },
+          footer_phone: { value: 'literal', type: 'text' },
+        } },
+      ],
+    })
+    const site = JSON.parse(files['.contentrain/content/site/site/data.json']!)
+    // The literal name keeps it; the prefixed one moves over, and nothing is lost.
+    expect(site).toMatchObject({ footer_phone: 'literal', footer_phone_2: 'footer page', contact_phone: 'contact page' })
+    expect(report.acf_options_renamed).toEqual({ footer_phone_2: 'acf-options-footer.phone' })
+    expect(report.acf_options).toMatchObject({ footer_phone: 'string', footer_phone_2: 'string', contact_phone: 'string' })
+  })
+
+  it('change nothing when the source has none', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const { files, report } = rawToContentrain(raw)
+    expect(Object.keys(JSON.parse(files['.contentrain/models/site.json']!).fields).toSorted()).toEqual(['language', 'tagline', 'title', 'url'])
+    expect(report.acf_options).toEqual({})
+    expect(report.acf_options_renamed).toEqual({})
+  })
+})

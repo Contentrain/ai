@@ -11,7 +11,7 @@
 //    here: this is the one place that knows both sides of the mapping, and the
 //    comments intake downstream cannot exist without it.
 
-import type { EntrySourceMap, FieldDef, ModelDefinition, RawIR, RawPost } from '@contentrain/types'
+import type { EntrySourceMap, FieldDef, ModelDefinition, RawAcfOptionsPage, RawAcfValue, RawIR, RawPost } from '@contentrain/types'
 import { ACF_REFERENCE_TYPES, acfFieldDef, acfRows, acfScrub, acfValue, mergeFieldDef, type AcfReference } from './acf.js'
 import {
   byValue,
@@ -32,6 +32,10 @@ export interface ImportReport {
   title_fallback: number
   meta_fields: Record<string, string>
   acf_fields: Record<string, string>
+  /** ACF Options Page fields written to the `site` entry (`field: type`), prefixed `<page>_` on a name clash. */
+  acf_options: Record<string, string>
+  /** ACF Options Page fields whose name was already taken, written under a counter (`new name: <page slug>.<field>`). */
+  acf_options_renamed: Record<string, string>
   /** ACF select/checkbox values outside their field's stated choices, left out (`field: count`). */
   acf_outside_choices: Record<string, number>
   /** ACF date-times written without a zone because the source named none (`timezone_string` / `gmt_offset`). */
@@ -146,6 +150,8 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     title_fallback: 0,
     meta_fields: {},
     acf_fields: {},
+    acf_options: {},
+    acf_options_renamed: {},
     acf_outside_choices: {},
     acf_datetime_unzoned: 0,
     skipped_types: [],
@@ -286,6 +292,15 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     if (typeof v !== 'number') return v
     const t = postById.get(v)
     return t && t.status === 'publish' && !t.password ? (t.link ?? undefined) : undefined
+  }
+  /** An ACF value as the store holds it: typed by the plan, references resolved; `undefined` = nothing to write. */
+  const acfEntryValue = (k: string, plan: AcfFieldPlan, value: unknown): unknown => {
+    const ctx = {
+      timeZone: raw.site.timezone, gmtOffset: raw.site.gmt_offset,
+      dropped: () => { report.acf_outside_choices[k] = (report.acf_outside_choices[k] ?? 0) + 1 },
+      unzoned: () => { report.acf_datetime_unzoned++ },
+    }
+    return plan.def ? acfValue(plan.def, plan.kind === 'address' ? addressOf(value) : acfRows(acfScrub(value)), ctx) : acfRefs(plan, value)
   }
   const titleOf = (p: RawPost): string => {
     const t = strip(p.title)
@@ -543,12 +558,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       for (const [k, acf] of Object.entries(p.acf ?? {})) {
         const plan = acfFields.get(k)
         if (!plan || k in e) continue
-        const ctx = {
-          timeZone: raw.site.timezone, gmtOffset: raw.site.gmt_offset,
-          dropped: () => { report.acf_outside_choices[k] = (report.acf_outside_choices[k] ?? 0) + 1 },
-          unzoned: () => { report.acf_datetime_unzoned++ },
-        }
-        const v = plan.def ? acfValue(plan.def, plan.kind === 'address' ? addressOf(acf.value) : acfRows(acfScrub(acf.value)), ctx) : acfRefs(plan, acf.value)
+        const v = acfEntryValue(k, plan, acf.value)
         if (v !== undefined) e[k] = v
       }
       contentBucket[id] = e
@@ -674,19 +684,50 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
   }
 
   // ── site singleton + vocabulary ──
-  addModel({
-    id: 'site', name: 'Site', kind: 'singleton', domain: 'site', i18n: false, title_field: 'title',
-    fields: {
-      title: { type: 'string', required: true, label: 'Site title', order: 10 },
-      tagline: { type: 'string', label: 'Tagline', order: 20 },
-      url: { type: 'url', label: 'URL', order: 30 },
-      language: { type: 'string', label: 'Language', order: 40 },
-    },
-  })
+  const siteFields: Record<string, FieldDef> = {
+    title: { type: 'string', required: true, label: 'Site title', order: 10 },
+    tagline: { type: 'string', label: 'Tagline', order: 20 },
+    url: { type: 'url', label: 'URL', order: 30 },
+    language: { type: 'string', label: 'Language', order: 40 },
+  }
+  // ACF Options Pages (Bridge): site-wide fields that belong to no post, typed like a post's ACF. A name that is a
+  // core field or sits on more than one page takes the page's slug as a prefix (ACF's default `acf-options-` left
+  // off), so no page overwrites another. A name still taken after that gets a counter and a line in the report.
+  const optionPages = raw.acf_options ?? []
+  const pagesOf = new Map<string, number>()
+  for (const page of optionPages) for (const k of Object.keys(page.fields)) pagesOf.set(k, (pagesOf.get(k) ?? 0) + 1)
+  const optionFields: Record<string, RawAcfValue> = {}
+  const claim = (page: RawAcfOptionsPage, k: string, want: string) => {
+    let name = want
+    for (let n = 2; siteFields[name] || name in optionFields; n++) name = `${want}_${n}`
+    if (name !== want) report.acf_options_renamed[name] = `${page.slug}.${k}`
+    optionFields[name] = page.fields[k]!
+  }
+  const prefixed: [RawAcfOptionsPage, string][] = []
+  for (const page of optionPages) {
+    for (const k of Object.keys(page.fields)) {
+      if (siteFields[k] || pagesOf.get(k)! > 1) prefixed.push([page, k])
+      else claim(page, k, k)
+    }
+  }
+  // Plain names first: a field literally named `footer_phone` keeps it; the prefixed one takes the counter.
+  for (const [page, k] of prefixed) claim(page, k, `${page.slug.replace(/^acf-options-(?=.)/, '').replace(/-/g, '_')}_${k}`)
+  const optionPlan = acfPlan([{ acf: optionFields } as RawPost], (k) => !!siteFields[k])
+  let so = 40
+  for (const [k, plan] of optionPlan) {
+    const def = plan.def ?? { type: plan.multiple ? 'relations' : 'relation', model: plan.models.size > 1 ? [...plan.models].toSorted() : [...plan.models][0]! } as FieldDef
+    siteFields[k] = { ...def, ...(def.label ? {} : { label: k }), description: def.description ?? 'ACF', order: (so += 10) }
+    report.acf_options[k] = plan.def ? plan.def.type : `${def.type}:${[...plan.models].toSorted().join('|')}`
+  }
+  addModel({ id: 'site', name: 'Site', kind: 'singleton', domain: 'site', i18n: false, title_field: 'title', fields: siteFields })
   siteEntry = pick(
     { title: strip(raw.site.title), tagline: raw.site.description, url: raw.site.url, language: raw.site.language },
     new Set(['title', 'tagline', 'url', 'language']),
   )
+  for (const [k, plan] of optionPlan) {
+    const v = acfEntryValue(k, plan, optionFields[k]!.value)
+    if (v !== undefined) siteEntry[k] = v
+  }
   siteMeta = importMeta('published')
   report.site_title_missing = !siteEntry.title
   const vocabTerms: Record<string, Record<string, string>> = {}
