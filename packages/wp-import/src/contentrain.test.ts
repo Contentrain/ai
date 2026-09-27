@@ -472,3 +472,49 @@ describe('site title', () => {
     expect(JSON.parse(files['.contentrain/models/site.json']!).fields.title.required).toBe(true)
   })
 })
+
+describe('ACF Options Pages (bridge rung)', () => {
+  it('land in the site entry, typed like a post\'s ACF; a clashing name takes its page\'s slug', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const post = raw.posts.find((p) => p.type === 'post')!
+    const { files, report } = rawToContentrain({
+      ...raw,
+      acf_options: [
+        { slug: 'site-settings', title: 'Site settings', post_id: 'options', fields: {
+          phone: { value: '+90 212 000 00 00', field_key: 'field_p', type: 'text' },
+          title: { value: 'Options title', field_key: 'field_t', type: 'text' },
+          featured: { value: post.id, field_key: 'field_f', type: 'post_object' },
+          email: { value: 'x', field_key: 'field_e', type: 'password' },
+        } },
+        { slug: 'footer', title: 'Footer', post_id: 'options', fields: {
+          phone: { value: '+90 212 111 11 11', field_key: 'field_p2', type: 'text' },
+          show_social: { value: true, field_key: 'field_s', type: 'true_false' },
+        } },
+      ],
+    })
+    const site = JSON.parse(files['.contentrain/content/site/site/data.json']!)
+    const fields = JSON.parse(files['.contentrain/models/site.json']!).fields
+    // A core field is never overwritten; a name on two pages keeps both.
+    expect(site.title).toBe(raw.site.title)
+    expect(site.site_settings_title).toBe('Options title')
+    expect(site.site_settings_phone).toBe('+90 212 000 00 00')
+    expect(site.footer_phone).toBe('+90 212 111 11 11')
+    expect(site.phone).toBeUndefined()
+    expect(site.show_social).toBe(true)
+    expect(fields.show_social).toMatchObject({ type: 'boolean', description: 'ACF' })
+    // A reference resolves to the store entry.
+    expect(fields.featured).toMatchObject({ type: 'relation', model: 'posts' })
+    expect(site.featured).toBe(hexId(`posts:${post.slug}`))
+    expect(report.acf_options).toMatchObject({ site_settings_phone: 'string', footer_phone: 'string', show_social: 'boolean', featured: 'relation:posts' })
+    // Secret field types stay out, as on a post.
+    expect(JSON.stringify(site)).not.toContain('"email"')
+    expect(storeViolations(files).violations).toEqual([])
+  })
+
+  it('change nothing when the source has none', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const { files, report } = rawToContentrain(raw)
+    expect(Object.keys(JSON.parse(files['.contentrain/models/site.json']!).fields).toSorted()).toEqual(['language', 'tagline', 'title', 'url'])
+    expect(report.acf_options).toEqual({})
+  })
+})

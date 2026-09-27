@@ -231,6 +231,12 @@ result's `gaps` contains `acf_partial`: groups without REST exposure, options
 pages and fields on post types outside REST are not visible to REST — the
 Bridge reads those.
 
+Options pages arrive from the Bridge as `RawIR.acf_options`. Their fields go to
+the `site` entry, typed and resolved like a post's ACF fields. A name that is a
+core `site` field (`title`, `tagline`, `url`, `language`) or sits on more than
+one options page takes the page's slug as a prefix (`footer_phone`), so no page
+overwrites another. The report's `acf_options` lists each field written.
+
 With an Application Password, post types are read with `context=edit` so their
 `viewable` flag is known: a type that is in REST but not publicly queryable (a
 testimonial post type, say) keeps its content but gets no address (`link` is
