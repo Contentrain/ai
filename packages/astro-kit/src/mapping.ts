@@ -277,7 +277,8 @@ function validateSections(table: MappingTable, components: Map<string, KitCompon
     if (!Object.keys(rule.slots).length) problems.push(`${at}: no slots`)
     for (const [name, slot] of Object.entries(rule.slots)) {
       if (!/^[a-z][\w-]*$/.test(name)) problems.push(`${at}: slot ${name} is not an identifier`)
-      for (const element of [slot.match].flat()) if (!isBuilderElement(table.builder, element)) problems.push(`${at}: slot ${name} matches ${element}, not a ${table.builder} element`)
+      // A form or shortcode plugin (`classic/contact-form-7`) sits inside any builder's section, as the plan reads it from a shortcode.
+      for (const element of [slot.match].flat()) if (!isBuilderElement(table.builder, element) && !isBuilderElement('classic', element)) problems.push(`${at}: slot ${name} matches ${element}, not a ${table.builder} or classic plugin element`)
       if (slot.min !== undefined && slot.max !== undefined && slot.min > slot.max) problems.push(`${at}: slot ${name} min > max`)
     }
     for (const root of [rule.when?.root ?? []].flat()) if (root !== 'run' && !isBuilderElement(table.builder, root)) problems.push(`${at}: root ${root} is not a ${table.builder} element or run`)
