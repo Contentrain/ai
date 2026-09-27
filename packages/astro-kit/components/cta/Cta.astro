@@ -18,13 +18,16 @@ const cta = tv({
     layout: {
       inline: { box: 'md:flex-row md:items-center md:justify-between', actions: 'md:shrink-0' },
       centered: { box: 'items-center text-center', body: 'mx-auto', actions: 'justify-center' },
+      // Heading, text and buttons in one column at the start edge, on every width.
+      stacked: { box: 'items-start text-start' },
     },
     frame: {
       full: {},
       card: { box: 'rounded-card border border-line p-8 md:p-12' },
     },
     // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
-    tone: { default: {}, muted: {}, inverse: {}, accent: { body: 'opacity-100' } },
+    // none: no fill of its own — the page background and text colour show through.
+    tone: { default: {}, muted: {}, inverse: {}, accent: { body: 'opacity-100' }, none: {} },
   },
   compoundVariants: [
     // A card carries the tone itself, on a plain section; a plain card still needs a surface to read as one.
@@ -40,9 +43,9 @@ interface Props {
   heading: string
   body?: string | undefined
   actions: ActionInput[]
-  layout?: 'inline' | 'centered' | undefined
+  layout?: 'inline' | 'centered' | 'stacked' | undefined
   frame?: 'full' | 'card' | undefined
-  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | 'none' | undefined
   id?: string | undefined
 }
 

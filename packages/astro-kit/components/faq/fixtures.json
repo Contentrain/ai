@@ -36,5 +36,9 @@
   {
     "name": "plain",
     "props": { "style": "plain", "id": "faq-plain", "items": [{ "question": "Do you accept guest essays?", "answer": "<p>Yes, send a short pitch first.</p>" }, { "question": "How often do you publish?", "answer": "<p>Two or three pieces a month.</p>" }] }
+  },
+  {
+    "name": "lines-bold",
+    "props": { "heading": "Questions", "questionStyle": "bold", "id": "faq-bold", "items": [{ "question": "Do you ship printed guides abroad?", "answer": "<p>Yes, to every country in the EU and the UK.</p>" }, { "question": "Can I change my route later?", "answer": "<p>Any time before the trip starts.</p>" }] }
   }
 ]

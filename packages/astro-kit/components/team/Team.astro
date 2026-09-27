@@ -28,8 +28,10 @@ const team = tv({
       card: { member: 'rounded-card border border-line p-6', portrait: '-mx-6 -mt-6 mb-2 rounded-b-none' },
       plain: {},
     },
+    // accent: a small accent line. plain: body-size text in the text colour, as a byline.
+    roleStyle: { accent: {}, plain: { role: 'text-[length:var(--text-body,1rem)] font-normal text-current' } },
   },
-  defaultVariants: { columns: '3', style: 'card' },
+  defaultVariants: { columns: '3', style: 'card', roleStyle: 'accent' },
 })
 
 interface Member {
@@ -48,11 +50,12 @@ interface Props {
   items: Member[]
   columns?: '2' | '3' | '4' | undefined
   style?: 'card' | 'plain' | undefined
+  roleStyle?: 'accent' | 'plain' | undefined
   id?: string | undefined
 }
 
-const { heading, intro, items, columns, style, id } = Astro.props
-const s = team({ columns, style })
+const { heading, intro, items, columns, style, roleStyle, id } = Astro.props
+const s = team({ columns, style, roleStyle })
 const headingId = heading && id ? `${id}-title` : undefined
 ---
 {items.length > 0 && (

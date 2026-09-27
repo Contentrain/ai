@@ -633,10 +633,11 @@
         "layout": {
           "options": [
             "inline",
-            "centered"
+            "centered",
+            "stacked"
           ],
           "default": "inline",
-          "description": "inline: text left, buttons right on wide screens. centered: everything centred."
+          "description": "inline: text left, buttons right on wide screens. centered: everything centred. stacked: heading, text and buttons in one column at the start edge on every width."
         },
         "frame": {
           "options": [
@@ -651,10 +652,11 @@
             "default",
             "muted",
             "inverse",
-            "accent"
+            "accent",
+            "none"
           ],
           "default": "accent",
-          "description": "Background. On accent, primary buttons are drawn in the secondary style so they stay visible."
+          "description": "Background. On accent, primary buttons are drawn in the secondary style so they stay visible. none: no fill of its own; the page background shows through (a source colour the palette does not have)."
         }
       },
       "props": {
@@ -877,6 +879,14 @@
           ],
           "default": "default",
           "description": "Section background."
+        },
+        "questionStyle": {
+          "options": [
+            "heading",
+            "bold"
+          ],
+          "default": "heading",
+          "description": "How the questions read. heading: a small heading (lg, heading weight). bold: body size in bold, as accordion and toggle titles often are. The plain style sets its own and ignores this."
         }
       },
       "props": {
@@ -985,10 +995,11 @@
         "style": {
           "options": [
             "icon",
-            "check"
+            "check",
+            "list"
           ],
           "default": "icon",
-          "description": "icon: each feature's own icon in a tinted badge. check: the same check mark before every feature."
+          "description": "icon: each feature's own icon in a tinted badge. check: the same check mark before every feature. list: an icon list — one column of body-size lines, each after its icon, titles as text rather than headings (columns is ignored)."
         },
         "tone": {
           "options": [
@@ -1550,7 +1561,7 @@
             "cover"
           ],
           "default": "split",
-          "description": "split: text and image side by side (stacked on phones). centered: centred text with the image below. cover: the image fills the section behind the text, darkened by a scrim; without an image it falls back to split."
+          "description": "split: text and image side by side (stacked on phones); without an image the text takes the whole row. centered: centred text with the image below. cover: the image fills the section behind the text, darkened by a scrim; without an image it falls back to split."
         },
         "tone": {
           "options": [
@@ -1569,6 +1580,14 @@
           ],
           "default": "center",
           "description": "Text position over a cover image (layout cover only): centred, as WordPress covers default to, or at the start edge."
+        },
+        "leadAlign": {
+          "options": [
+            "inherit",
+            "start"
+          ],
+          "default": "inherit",
+          "description": "The lead's alignment. inherit: as the layout sets it. start: at the start edge and across the column, under a centred heading (a centred heading widget over a left-aligned text editor in one container)."
         }
       },
       "props": {
@@ -2856,6 +2875,15 @@
           ],
           "default": "default",
           "description": "Section background."
+        },
+        "labelSize": {
+          "options": [
+            "sm",
+            "base",
+            "lg"
+          ],
+          "default": "sm",
+          "description": "The label under each figure: sm (small), base (body size) or lg (a counter title set like a subheading)."
         }
       },
       "props": {
@@ -3183,6 +3211,14 @@
           ],
           "default": "card",
           "description": "Member chrome: a bordered card with the portrait on top, or none."
+        },
+        "roleStyle": {
+          "options": [
+            "accent",
+            "plain"
+          ],
+          "default": "accent",
+          "description": "The member's role. accent: a small accent-coloured line. plain: body-size text in the text colour, as a byline."
         }
       },
       "props": {
@@ -3314,6 +3350,16 @@
           ],
           "default": "default",
           "description": "Section background."
+        },
+        "quoteSize": {
+          "options": [
+            "auto",
+            "base",
+            "lg",
+            "xl"
+          ],
+          "default": "auto",
+          "description": "The quote's text size. auto: the layout's own (body size in a grid, 2xl–3xl for a single quote). base, lg, xl: that size on every width."
         }
       },
       "props": {

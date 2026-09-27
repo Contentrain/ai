@@ -21,6 +21,8 @@ const list = tv({
     style: {
       icon: { mark: 'size-10 rounded-[var(--radius-card)] bg-accent/10' },
       check: {},
+      // An icon list: one column of body-size lines, each after its icon. Titles are text here, not headings.
+      list: { grid: 'flex flex-col gap-3', item: 'items-center gap-3', mark: 'size-5', title: 'text-[length:var(--text-body,1rem)] leading-normal [font-weight:inherit] text-pretty', text: 'mt-0' },
     },
     // On accent the mark takes the ink colour, and text is never dimmed.
     tone: { default: {}, muted: {}, inverse: {}, accent: { mark: 'text-current', text: 'opacity-100' } },
@@ -51,8 +53,9 @@ interface Props {
   heading?: string | undefined
   intro?: string | undefined
   items: Item[]
+  /** Ignored by `list`, which is one column. */
   columns?: '2' | '3' | '4' | undefined
-  style?: 'icon' | 'check' | undefined
+  style?: 'icon' | 'check' | 'list' | undefined
   tone?: Tone | undefined
   id?: string | undefined
 }
@@ -60,7 +63,8 @@ interface Props {
 const { heading, intro, items, columns, style = 'icon', tone, id } = Astro.props
 const s = list({ columns, style, tone })
 const headingId = heading && id ? `${id}-title` : undefined
-const pathOf = (item: Item) => (style === 'icon' && item.icon && icons[item.icon]) || icons.check
+const pathOf = (item: Item) => (style !== 'check' && item.icon && icons[item.icon]) || icons.check
+const Title = style === 'list' ? 'span' : 'h3'
 ---
 <Section tone={tone} id={id} aria-labelledby={headingId}>
   {(heading || intro) && (
@@ -76,7 +80,7 @@ const pathOf = (item: Item) => (style === 'icon' && item.icon && icons[item.icon
           <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d={pathOf(item)} /></svg>
         </span>
         <div>
-          <h3 class={s.title()}>{item.title}</h3>
+          <Title class={s.title()}>{item.title}</Title>
           {item.text && <p class={s.text()} data-kit-text>{item.text}</p>}
         </div>
       </li>

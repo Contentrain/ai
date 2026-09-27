@@ -29,17 +29,21 @@ const faq = tv({
       plain: { list: 'gap-2', summary: 'list-item list-[revert] py-1 text-[length:var(--text-body,1rem)] [font-weight:inherit] [&::-webkit-details-marker]:inline', marker: 'hidden', answer: 'pt-2 pl-5' },
     },
     tone: { default: {}, muted: { item: 'bg-surface' }, inverse: { answer: 'prose-invert' }, accent: { answer: 'prose-invert' } },
+    // heading: the question as a small heading. bold: body size in bold, as accordion and toggle titles often are.
+    questionStyle: { heading: {}, bold: { summary: 'text-[length:var(--text-body,1rem)] font-bold' } },
   },
   compoundVariants: [
     { style: 'cards', tone: 'muted', class: { item: 'border-transparent' } },
   ],
-  defaultVariants: { style: 'lines', tone: 'default' },
+  defaultVariants: { style: 'lines', tone: 'default', questionStyle: 'heading' },
 })
 
 interface Props {
   items: FaqItem[]
   heading?: string | undefined
   style?: 'lines' | 'cards' | 'plain' | undefined
+  /** How the questions read; `plain` sets its own and ignores this. */
+  questionStyle?: 'heading' | 'bold' | undefined
   /** One answer open at a time (`<details name>`). */
   exclusive?: boolean | undefined
   /** Open the first answer. */
@@ -50,8 +54,8 @@ interface Props {
   id?: string | undefined
 }
 
-const { items, heading, style, exclusive = false, openFirst = false, schema = false, tone, id = 'faq' } = Astro.props
-const s = faq({ style, tone })
+const { items, heading, style, questionStyle, exclusive = false, openFirst = false, schema = false, tone, id = 'faq' } = Astro.props
+const s = faq({ style, questionStyle: style === 'plain' ? 'heading' : questionStyle, tone })
 const headingId = heading ? `${id}-title` : undefined
 const plain = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
 const structured = schema && items.length > 0

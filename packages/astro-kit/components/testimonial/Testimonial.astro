@@ -32,23 +32,31 @@ const testimonial = tv({
       grid: { list: 'md:grid-cols-2 lg:grid-cols-3', card: 'rounded-card border border-line p-6', quote: 'text-base' },
     },
     tone: { default: {}, muted: { card: 'bg-surface' }, inverse: { card: 'border-surface/20' }, accent: { card: 'border-accent-ink/30', role: 'opacity-100' } },
+    // The quote's size; `auto` is the layout's own (body size in a grid, large for a single quote).
+    quoteSize: {
+      auto: {},
+      base: { quote: 'text-base leading-relaxed md:text-base' },
+      lg: { quote: 'text-lg leading-relaxed md:text-lg' },
+      xl: { quote: 'text-xl leading-snug md:text-xl' },
+    },
   },
   compoundVariants: [
     { layout: 'grid', tone: 'muted', class: { card: 'border-transparent text-ink' } },
   ],
-  defaultVariants: { layout: 'grid', tone: 'default' },
+  defaultVariants: { layout: 'grid', tone: 'default', quoteSize: 'auto' },
 })
 
 interface Props {
   items: TestimonialItem[]
   heading?: string | undefined
   layout?: 'single' | 'grid' | undefined
+  quoteSize?: 'auto' | 'base' | 'lg' | 'xl' | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   id?: string | undefined
 }
 
-const { items, heading, layout, tone, id } = Astro.props
-const s = testimonial({ layout, tone })
+const { items, heading, layout, quoteSize, tone, id } = Astro.props
+const s = testimonial({ layout, quoteSize, tone })
 const headingId = heading && id ? `${id}-title` : undefined
 ---
 {items.length > 0 && (

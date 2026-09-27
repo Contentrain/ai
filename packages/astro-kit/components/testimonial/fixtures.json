@@ -22,5 +22,17 @@
   {
     "name": "single-accent",
     "props": { "layout": "single", "tone": "accent", "items": [{ "quote": "Worth every minute.", "name": "Jonas Weber" }] }
+  },
+  {
+    "name": "grid-quote-xl",
+    "props": { "quoteSize": "xl", "items": [{ "quote": "The guide took us off the main road and into the best week of the year.", "name": "Ada Lindqvist", "role": "Reader since 2019" }, { "quote": "Fewer places, more time. It changed how we travel.", "name": "Tomas Reyes", "role": "Photographer" }] }
+  },
+  {
+    "name": "grid-quote-base",
+    "props": { "quoteSize": "base", "tone": "muted", "items": [{ "quote": "Short, clear and honest.", "name": "Ada Lindqvist" }, { "quote": "The maps alone are worth it.", "name": "Tomas Reyes", "role": "Cyclist" }] }
+  },
+  {
+    "name": "single-quote-lg",
+    "props": { "layout": "single", "quoteSize": "lg", "items": [{ "quote": "We planned less and saw more.", "name": "Jonas Weber", "role": "Reader" }] }
   }
 ]

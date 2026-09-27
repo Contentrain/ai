@@ -28,6 +28,16 @@
       ],
       "default": "default",
       "description": "Section background."
+    },
+    "quoteSize": {
+      "options": [
+        "auto",
+        "base",
+        "lg",
+        "xl"
+      ],
+      "default": "auto",
+      "description": "The quote's text size. auto: the layout's own (body size in a grid, 2xl–3xl for a single quote). base, lg, xl: that size on every width."
     }
   },
   "props": {

@@ -6,9 +6,9 @@
   "uses": [],
   "shared": ["Button.astro", "Section.astro", "types.ts"],
   "variants": {
-    "layout": { "options": ["inline", "centered"], "default": "inline", "description": "inline: text left, buttons right on wide screens. centered: everything centred." },
+    "layout": { "options": ["inline", "centered", "stacked"], "default": "inline", "description": "inline: text left, buttons right on wide screens. centered: everything centred. stacked: heading, text and buttons in one column at the start edge on every width." },
     "frame": { "options": ["full", "card"], "default": "full", "description": "full: the tone fills the section. card: a rounded box in a plain section carries the tone." },
-    "tone": { "options": ["default", "muted", "inverse", "accent"], "default": "accent", "description": "Background. On accent, primary buttons are drawn in the secondary style so they stay visible." }
+    "tone": { "options": ["default", "muted", "inverse", "accent", "none"], "default": "accent", "description": "Background. On accent, primary buttons are drawn in the secondary style so they stay visible. none: no fill of its own; the page background shows through (a source colour the palette does not have)." }
   },
   "props": {
     "heading": { "type": "string", "label": "Heading", "required": true, "description": "The call's heading (Divi CTA title, Elementor call-to-action title)." },
