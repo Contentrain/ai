@@ -511,10 +511,45 @@ describe('ACF Options Pages (bridge rung)', () => {
     expect(storeViolations(files).violations).toEqual([])
   })
 
+  it('leave ACF\'s default `acf-options-` slug off the prefix', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const { files } = rawToContentrain({
+      ...raw,
+      acf_options: [
+        { slug: 'acf-options-footer', title: 'Footer', post_id: 'options', fields: { phone: { value: 'a', type: 'text' } } },
+        { slug: 'acf-options-contact-details', title: 'Contact details', post_id: 'options', fields: { phone: { value: 'b', type: 'text' } } },
+        { slug: 'acf-options', title: 'Options', post_id: 'options', fields: { phone: { value: 'c', type: 'text' } } },
+      ],
+    })
+    const site = JSON.parse(files['.contentrain/content/site/site/data.json']!)
+    expect(site).toMatchObject({ footer_phone: 'a', contact_details_phone: 'b', acf_options_phone: 'c' })
+    expect(site.acf_options_footer_phone).toBeUndefined()
+  })
+
+  it('never drop a field whose prefixed name is already taken: it gets a counter and a report line', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const { files, report } = rawToContentrain({
+      ...raw,
+      acf_options: [
+        { slug: 'acf-options-footer', title: 'Footer', post_id: 'options', fields: { phone: { value: 'footer page', type: 'text' } } },
+        { slug: 'contact', title: 'Contact', post_id: 'options', fields: {
+          phone: { value: 'contact page', type: 'text' },
+          footer_phone: { value: 'literal', type: 'text' },
+        } },
+      ],
+    })
+    const site = JSON.parse(files['.contentrain/content/site/site/data.json']!)
+    // The literal name keeps it; the prefixed one moves over, and nothing is lost.
+    expect(site).toMatchObject({ footer_phone: 'literal', footer_phone_2: 'footer page', contact_phone: 'contact page' })
+    expect(report.acf_options_renamed).toEqual({ footer_phone_2: 'acf-options-footer.phone' })
+    expect(report.acf_options).toMatchObject({ footer_phone: 'string', footer_phone_2: 'string', contact_phone: 'string' })
+  })
+
   it('change nothing when the source has none', async () => {
     const { raw } = await parseWxr(FIXTURE)
     const { files, report } = rawToContentrain(raw)
     expect(Object.keys(JSON.parse(files['.contentrain/models/site.json']!).fields).toSorted()).toEqual(['language', 'tagline', 'title', 'url'])
     expect(report.acf_options).toEqual({})
+    expect(report.acf_options_renamed).toEqual({})
   })
 })

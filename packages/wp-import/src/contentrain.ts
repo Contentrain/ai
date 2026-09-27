@@ -11,7 +11,7 @@
 //    here: this is the one place that knows both sides of the mapping, and the
 //    comments intake downstream cannot exist without it.
 
-import type { EntrySourceMap, FieldDef, ModelDefinition, RawAcfValue, RawIR, RawPost } from '@contentrain/types'
+import type { EntrySourceMap, FieldDef, ModelDefinition, RawAcfOptionsPage, RawAcfValue, RawIR, RawPost } from '@contentrain/types'
 import { ACF_REFERENCE_TYPES, acfFieldDef, acfRows, acfScrub, acfValue, mergeFieldDef, type AcfReference } from './acf.js'
 import {
   byValue,
@@ -34,6 +34,8 @@ export interface ImportReport {
   acf_fields: Record<string, string>
   /** ACF Options Page fields written to the `site` entry (`field: type`), prefixed `<page>_` on a name clash. */
   acf_options: Record<string, string>
+  /** ACF Options Page fields whose name was already taken, written under a counter (`new name: <page slug>.<field>`). */
+  acf_options_renamed: Record<string, string>
   /** ACF select/checkbox values outside their field's stated choices, left out (`field: count`). */
   acf_outside_choices: Record<string, number>
   /** ACF date-times written without a zone because the source named none (`timezone_string` / `gmt_offset`). */
@@ -149,6 +151,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     meta_fields: {},
     acf_fields: {},
     acf_options: {},
+    acf_options_renamed: {},
     acf_outside_choices: {},
     acf_datetime_unzoned: 0,
     skipped_types: [],
@@ -688,17 +691,27 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     language: { type: 'string', label: 'Language', order: 40 },
   }
   // ACF Options Pages (Bridge): site-wide fields that belong to no post, typed like a post's ACF. A name that is a
-  // core field or sits on more than one page takes the page's slug as a prefix, so no page overwrites another.
+  // core field or sits on more than one page takes the page's slug as a prefix (ACF's default `acf-options-` left
+  // off), so no page overwrites another. A name still taken after that gets a counter and a line in the report.
   const optionPages = raw.acf_options ?? []
   const pagesOf = new Map<string, number>()
   for (const page of optionPages) for (const k of Object.keys(page.fields)) pagesOf.set(k, (pagesOf.get(k) ?? 0) + 1)
   const optionFields: Record<string, RawAcfValue> = {}
+  const claim = (page: RawAcfOptionsPage, k: string, want: string) => {
+    let name = want
+    for (let n = 2; siteFields[name] || name in optionFields; n++) name = `${want}_${n}`
+    if (name !== want) report.acf_options_renamed[name] = `${page.slug}.${k}`
+    optionFields[name] = page.fields[k]!
+  }
+  const prefixed: [RawAcfOptionsPage, string][] = []
   for (const page of optionPages) {
-    for (const [k, v] of Object.entries(page.fields)) {
-      const name = siteFields[k] || pagesOf.get(k)! > 1 ? `${page.slug.replace(/-/g, '_')}_${k}` : k
-      if (!siteFields[name] && !(name in optionFields)) optionFields[name] = v
+    for (const k of Object.keys(page.fields)) {
+      if (siteFields[k] || pagesOf.get(k)! > 1) prefixed.push([page, k])
+      else claim(page, k, k)
     }
   }
+  // Plain names first: a field literally named `footer_phone` keeps it; the prefixed one takes the counter.
+  for (const [page, k] of prefixed) claim(page, k, `${page.slug.replace(/^acf-options-(?=.)/, '').replace(/-/g, '_')}_${k}`)
   const optionPlan = acfPlan([{ acf: optionFields } as RawPost], (k) => !!siteFields[k])
   let so = 40
   for (const [k, plan] of optionPlan) {

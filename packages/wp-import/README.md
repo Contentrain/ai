@@ -234,8 +234,12 @@ Bridge reads those.
 Options pages arrive from the Bridge as `RawIR.acf_options`. Their fields go to
 the `site` entry, typed and resolved like a post's ACF fields. A name that is a
 core `site` field (`title`, `tagline`, `url`, `language`) or sits on more than
-one options page takes the page's slug as a prefix (`footer_phone`), so no page
-overwrites another. The report's `acf_options` lists each field written.
+one options page takes the page's slug as a prefix, without ACF's default
+`acf-options-` (`acf-options-footer` gives `footer_phone`), so no page overwrites
+another. A name that is still taken, say a field literally called `footer_phone`
+on another page, gets a counter (`footer_phone_2`) rather than being dropped; the
+report's `acf_options_renamed` lists each one with its page and field. The
+report's `acf_options` lists each field written.
 
 With an Application Password, post types are read with `context=edit` so their
 `viewable` flag is known: a type that is in REST but not publicly queryable (a
