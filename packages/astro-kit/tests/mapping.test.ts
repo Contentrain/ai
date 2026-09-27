@@ -235,6 +235,8 @@ describe('section rules', () => {
         expect(match?.rule.id, form.name).toBe('contact-form.form')
         expect(match?.match.slots, form.name).toMatchObject({ title: ['0.0'], intro: ['0.1'], details: ['0.2'], formTitle: ['0.3'], form: ['0.4'] })
       }
+      // A detail keeps its tel:/mailto: link, as the prose it replaced did.
+      expect(tables.elementor!.sections?.find(rule => rule.id === 'contact-form.form')).toMatchObject({ into: 'details', each: '@details .elementor-icon-list-item', item: { value: 'dom:.elementor-icon-list-text', href: 'dom:a@href' } })
     })
   })
 })

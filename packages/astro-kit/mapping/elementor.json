@@ -887,7 +887,8 @@
       "into": "details",
       "each": "@details .elementor-icon-list-item",
       "item": {
-        "value": "dom:.elementor-icon-list-text"
+        "value": "dom:.elementor-icon-list-text",
+        "href": "dom:a@href"
       }
     },
     {
