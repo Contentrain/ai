@@ -23,8 +23,10 @@ const stats = tv({
     },
     // accent/accent-ink is only ~5:1 — dimming text on it drops it under 4.5:1 (WCAG 1.4.3).
     tone: { default: {}, muted: {}, inverse: {}, accent: { label: 'opacity-100' } },
+    // The label under each figure: small, body size, or large (a counter title set like a subheading).
+    labelSize: { sm: {}, base: { label: 'text-base' }, lg: { label: 'text-lg' } },
   },
-  defaultVariants: { columns: '3', style: 'plain', tone: 'default' },
+  defaultVariants: { columns: '3', style: 'plain', tone: 'default', labelSize: 'sm' },
 })
 
 interface Item {
@@ -40,12 +42,13 @@ interface Props {
   items: Item[]
   columns?: '2' | '3' | '4' | undefined
   style?: 'plain' | 'card' | undefined
+  labelSize?: 'sm' | 'base' | 'lg' | undefined
   tone?: Tone | undefined
   id?: string | undefined
 }
 
-const { heading, intro, items, columns, style, tone, id } = Astro.props
-const s = stats({ columns, style, tone })
+const { heading, intro, items, columns, style, labelSize, tone, id } = Astro.props
+const s = stats({ columns, style, labelSize, tone })
 const headingId = heading && id ? `${id}-title` : undefined
 ---
 <Section tone={tone} id={id} aria-labelledby={headingId}>

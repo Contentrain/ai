@@ -125,5 +125,30 @@
       "style": "check",
       "tone": "accent"
     }
+  },
+  {
+    "name": "list",
+    "props": {
+      "heading": "In the package",
+      "items": [
+        {
+          "title": "Twelve printed guides",
+          "icon": "check"
+        },
+        {
+          "title": "Offline maps for every route",
+          "icon": "globe"
+        },
+        {
+          "title": "A year of member support",
+          "icon": "chat"
+        },
+        {
+          "title": "Free updates when routes change",
+          "icon": "clock"
+        }
+      ],
+      "style": "list"
+    }
   }
 ]

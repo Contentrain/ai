@@ -112,5 +112,15 @@
       "lead": "Twelve new guides, and the long read on night trains.",
       "eyebrow": "New"
     }
+  },
+  {
+    "name": "centered-lead-start",
+    "props": {
+      "heading": "About the studio",
+      "lead": "We are a small team of editors and photographers. This page tells you who we are, how we work and what we will never do with your data.",
+      "layout": "centered",
+      "leadAlign": "start",
+      "level": 2
+    }
   }
 ]

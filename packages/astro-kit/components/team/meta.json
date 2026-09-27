@@ -27,6 +27,14 @@
       ],
       "default": "card",
       "description": "Member chrome: a bordered card with the portrait on top, or none."
+    },
+    "roleStyle": {
+      "options": [
+        "accent",
+        "plain"
+      ],
+      "default": "accent",
+      "description": "The member's role. accent: a small accent-coloured line. plain: body-size text in the text colour, as a byline."
     }
   },
   "props": {

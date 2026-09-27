@@ -94,5 +94,44 @@
       "style": "card",
       "tone": "accent"
     }
+  },
+  {
+    "name": "three-label-lg",
+    "props": {
+      "labelSize": "lg",
+      "items": [
+        {
+          "value": "12",
+          "label": "Years on the road"
+        },
+        {
+          "value": "340",
+          "label": "Guides written"
+        },
+        {
+          "value": "48",
+          "suffix": "k",
+          "label": "Readers a month"
+        }
+      ]
+    }
+  },
+  {
+    "name": "two-label-base",
+    "props": {
+      "columns": "2",
+      "labelSize": "base",
+      "items": [
+        {
+          "value": "98",
+          "suffix": "%",
+          "label": "Trips we would repeat"
+        },
+        {
+          "value": "4.9",
+          "label": "Average reader rating"
+        }
+      ]
+    }
   }
 ]

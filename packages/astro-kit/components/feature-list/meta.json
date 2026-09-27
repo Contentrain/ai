@@ -20,10 +20,11 @@
     "style": {
       "options": [
         "icon",
-        "check"
+        "check",
+        "list"
       ],
       "default": "icon",
-      "description": "icon: each feature's own icon in a tinted badge. check: the same check mark before every feature."
+      "description": "icon: each feature's own icon in a tinted badge. check: the same check mark before every feature. list: an icon list — one column of body-size lines, each after its icon, titles as text rather than headings (columns is ignored)."
     },
     "tone": {
       "options": [

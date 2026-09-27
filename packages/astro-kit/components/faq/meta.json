@@ -7,7 +7,8 @@
   "shared": ["Section.astro"],
   "variants": {
     "style": { "options": ["lines", "cards", "plain"], "default": "lines", "description": "lines: rows divided by rules. cards: each question in a rounded box. plain: the browser's own disclosure triangle without rules or boxes, questions at the body size (WordPress's details block)." },
-    "tone": { "options": ["default", "muted", "inverse", "accent"], "default": "default", "description": "Section background." }
+    "tone": { "options": ["default", "muted", "inverse", "accent"], "default": "default", "description": "Section background." },
+    "questionStyle": { "options": ["heading", "bold"], "default": "heading", "description": "How the questions read. heading: a small heading (lg, heading weight). bold: body size in bold, as accordion and toggle titles often are. The plain style sets its own and ignores this." }
   },
   "props": {
     "items": { "type": "array", "label": "Questions", "required": true, "items": { "type": "object", "fields": { "question": { "type": "string", "label": "Question", "required": true, "description": "The question, as the visitor would ask it." }, "answer": { "type": "richtext", "label": "Answer", "required": true, "description": "The answer; links and lists allowed." } } }, "description": "The questions in order (core/details summary + content, Elementor accordion/toggle tabs, Divi accordion/toggle items)." },

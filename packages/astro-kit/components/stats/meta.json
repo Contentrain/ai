@@ -34,6 +34,15 @@
       ],
       "default": "default",
       "description": "Section background."
+    },
+    "labelSize": {
+      "options": [
+        "sm",
+        "base",
+        "lg"
+      ],
+      "default": "sm",
+      "description": "The label under each figure: sm (small), base (body size) or lg (a counter title set like a subheading)."
     }
   },
   "props": {
