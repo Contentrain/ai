@@ -28,6 +28,11 @@ const cta = tv({
     // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
     // none: no fill of its own — the page background and text colour show through.
     tone: { default: {}, muted: {}, inverse: {}, accent: { body: 'opacity-100' }, none: {} },
+    // The buttons' own alignment: `start` keeps them at the start edge under centred text (a WordPress buttons block
+    // with no justification sits left in a group whose heading and paragraph are centred). The row is the text's
+    // column, as WordPress's content width is, not the whole section. Only centred needs it: inline and stacked
+    // already start them there.
+    actionsAlign: { inherit: {}, start: {} },
   },
   compoundVariants: [
     // A card carries the tone itself, on a plain section; a plain card still needs a surface to read as one.
@@ -35,8 +40,9 @@ const cta = tv({
     { frame: 'card', tone: 'muted', class: { box: 'border-transparent bg-surface-muted text-ink' } },
     { frame: 'card', tone: 'inverse', class: { box: 'border-transparent bg-ink text-surface' } },
     { frame: 'card', tone: 'accent', class: { box: 'border-transparent bg-accent text-accent-ink' } },
+    { layout: 'centered', actionsAlign: 'start', class: { actions: 'w-full max-w-2xl justify-start' } },
   ],
-  defaultVariants: { layout: 'inline', frame: 'full', tone: 'accent' },
+  defaultVariants: { layout: 'inline', frame: 'full', tone: 'accent', actionsAlign: 'inherit' },
 })
 
 interface Props {
@@ -46,11 +52,13 @@ interface Props {
   layout?: 'inline' | 'centered' | 'stacked' | undefined
   frame?: 'full' | 'card' | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | 'none' | undefined
+  /** The buttons' alignment: as the layout sets it, or at the start edge under centred text (layout centered). */
+  actionsAlign?: 'inherit' | 'start' | undefined
   id?: string | undefined
 }
 
-const { heading, body, actions, layout, frame, tone = 'accent', id } = Astro.props
-const s = cta({ layout, frame, tone })
+const { heading, body, actions, layout, frame, tone = 'accent', actionsAlign, id } = Astro.props
+const s = cta({ layout, frame, tone, actionsAlign })
 const headingId = id ? `${id}-title` : undefined
 // On the accent background the primary button (accent) would vanish: it is drawn as the secondary style there.
 const onAccent = (action: ActionInput): ActionInput => ({ label: action.label, href: action.href, newTab: action.newTab, style: 'secondary' })

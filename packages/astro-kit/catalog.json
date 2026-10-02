@@ -657,6 +657,14 @@
           ],
           "default": "accent",
           "description": "Background. On accent, primary buttons are drawn in the secondary style so they stay visible. none: no fill of its own; the page background shows through (a source colour the palette does not have)."
+        },
+        "actionsAlign": {
+          "options": [
+            "inherit",
+            "start"
+          ],
+          "default": "inherit",
+          "description": "The buttons' alignment. inherit: as the layout sets it. start: at the start edge under centred heading and text (layout centered; a WordPress buttons block with no justification in a centred group). inline and stacked ignore it."
         }
       },
       "props": {
