@@ -6,7 +6,10 @@ import {
   MIGRATE_STUDIO_CLAIM_MAX_TRIAL_DAYS,
   MIGRATE_STUDIO_CLAIM_MAX_TTL_SECONDS,
   isMigrateStudioClaim,
+  validateMigrateAccountStateResponse,
   validateMigrateStudioClaim,
+  validateMigrateStudioClaimAny,
+  validateMigrateStudioClaimV2,
 } from './index'
 
 const NOW = 1_790_000_000
@@ -147,5 +150,61 @@ describe('validateMigrateStudioClaim', () => {
   it('rejects non-objects', () => {
     expect(validateMigrateStudioClaim(null)).toEqual({ ok: false, errors: ['payload: not an object'] })
     expect(isMigrateStudioClaim('token')).toBe(false)
+  })
+})
+
+describe('validateMigrateStudioClaimV2', () => {
+  function v2(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+    const { trial_days: _t, ...rest } = claim()
+    return {
+      ...rest,
+      v: 2,
+      github_user_id: '164523886',
+      email_verified: true,
+      return_url: 'https://migrate.contentrain.io/orders/ord_123?studio=done',
+      billing: { migrate_fee_cents: 24900, quoted_total_cents: 31700, currency: 'usd' },
+      ...overrides,
+    }
+  }
+
+  it('accepts a well-formed v2 claim and the Any validator routes by version', () => {
+    expect(validateMigrateStudioClaimV2(v2(), { now: NOW + 60 })).toEqual({ ok: true, claim: v2() })
+    expect(validateMigrateStudioClaimAny(v2())).toEqual({ ok: true, claim: v2() })
+    expect(validateMigrateStudioClaimAny(claim())).toEqual({ ok: true, claim: claim() })
+  })
+
+  it('keeps v1 and v2 apart', () => {
+    expect(validateMigrateStudioClaim(v2())).toEqual({ ok: false, errors: expect.arrayContaining(['v: unsupported version']) })
+    expect(validateMigrateStudioClaimV2(claim())).toEqual({ ok: false, errors: expect.arrayContaining(['v: unsupported version']) })
+  })
+
+  it('refuses a trial in v2 and a missing or malformed identity', () => {
+    const r = validateMigrateStudioClaimV2(v2({ trial_days: 60, github_user_id: 'octocat', email_verified: 'yes' }))
+    expect(r).toEqual({ ok: false, errors: expect.arrayContaining(['trial_days: not part of v2', 'github_user_id: invalid', 'email_verified: required']) })
+  })
+
+  it('checks return_url and billing', () => {
+    for (const return_url of ['ftp://migrate.contentrain.io/x', 'https://u:p@migrate.contentrain.io/', 'https://migrate.contentrain.io/#frag', 42]) {
+      expect(validateMigrateStudioClaimV2(v2({ return_url }))).toEqual({ ok: false, errors: ['return_url: invalid'] })
+    }
+    expect(validateMigrateStudioClaimV2(v2({ return_url: 'http://localhost:3000/orders/1?studio=done' })).ok).toBe(true)
+    for (const billing of [undefined, { migrate_fee_cents: -1, quoted_total_cents: 100, currency: 'usd' }, { migrate_fee_cents: 5000.5, quoted_total_cents: 9000, currency: 'usd' }, { migrate_fee_cents: 5000, quoted_total_cents: 4000, currency: 'usd' }, { migrate_fee_cents: 0, quoted_total_cents: 0, currency: 'usd' }, { migrate_fee_cents: 5000, quoted_total_cents: 9000, currency: 'eur' }]) {
+      expect(validateMigrateStudioClaimV2(v2({ billing }))).toEqual({ ok: false, errors: ['billing: invalid'] })
+    }
+  })
+})
+
+describe('validateMigrateAccountStateResponse', () => {
+  it('accepts the three states', () => {
+    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200 }).ok).toBe(true)
+    expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 0, current_plan: 'pro' }).ok).toBe(true)
+    expect(validateMigrateAccountStateResponse({ state: 'too_small', plan: 'pro', year1_cents: 31400, current_plan: 'starter' }).ok).toBe(true)
+  })
+
+  it('refuses inconsistent answers', () => {
+    expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 100, current_plan: 'pro' })).toEqual({ ok: false, errors: ['year1_cents: must be 0 when covers'] })
+    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 0 })).toEqual({ ok: false, errors: ['year1_cents: must be > 0'] })
+    expect(validateMigrateAccountStateResponse({ state: 'too_small', plan: 'pro', year1_cents: 5 })).toEqual({ ok: false, errors: ['current_plan: required unless none'] })
+    expect(validateMigrateAccountStateResponse({ state: 'maybe', plan: 'x', year1_cents: -1 })).toEqual({ ok: false, errors: expect.arrayContaining(['state: unknown', 'plan: unknown plan', 'year1_cents: invalid']) })
   })
 })

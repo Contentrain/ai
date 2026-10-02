@@ -18,6 +18,13 @@ import { CAPABILITY_KEYS } from './migration.js'
 
 /** Contract version carried in the payload as `v`. */
 export const MIGRATE_STUDIO_CLAIM_VERSION = 1
+/**
+ * v2: "Migrate with Studio". No trial: the Studio year is part of the order's
+ * first invoice (Studio creates that checkout itself, server to server), and
+ * the claim names the customer's GitHub account so Studio can find or create
+ * the user without a sign-in. v1 stays valid for the claim-link flow.
+ */
+export const MIGRATE_STUDIO_CLAIM_VERSION_2 = 2
 /** JWS `alg` header value. */
 export const MIGRATE_STUDIO_CLAIM_ALG = 'EdDSA'
 /** `iss` — who signs. */
@@ -137,6 +144,38 @@ export interface MigrateStudioCommentsExport {
   comments: number
 }
 
+/**
+ * What the customer was quoted, signed so Studio can refuse a checkout whose
+ * price would differ. Studio adds its own Studio-year line to `migrate_fee_cents`
+ * and compares the sum with `quoted_total_cents`.
+ */
+export interface MigrateStudioClaimBilling {
+  /** The Migrate dynamic fee, in cents, before the Studio year. ≥ 0. */
+  migrate_fee_cents: number
+  /** The first invoice the customer saw (Migrate fee + Studio year 1), in cents. > 0. */
+  quoted_total_cents: number
+  currency: 'usd'
+}
+
+/**
+ * The v2 payload ("Migrate with Studio"): a v1 claim without `trial_days`, plus
+ * the identity and billing a server-to-server provision needs.
+ */
+export interface MigrateStudioClaimV2 extends Omit<MigrateStudioClaim, 'v' | 'trial_days'> {
+  v: typeof MIGRATE_STUDIO_CLAIM_VERSION_2
+  /** The customer's GitHub user id (decimal string) from the Migrate sign-in. Studio finds or creates the user by it. */
+  github_user_id: string
+  /** Whether Migrate verified `email`. Studio binds by email only when `true`; never by an unverified one. */
+  email_verified: boolean
+  /** Where Studio sends the customer after paying (Migrate's payment page; it trusts the payment webhook, never this redirect): `https:` (`http:` for localhost), no credentials or fragment. Studio accepts it only for hosts on its own Migrate allowlist. */
+  return_url: string
+  billing: MigrateStudioClaimBilling
+}
+
+export type MigrateStudioClaimV2Result =
+  | { ok: true, claim: MigrateStudioClaimV2, warnings?: string[] }
+  | { ok: false, errors: string[] }
+
 export type MigrateStudioClaimResult =
   /**
    * `warnings`: optional parts that were dropped rather than failing the claim
@@ -151,6 +190,7 @@ const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'obj
 const isText = (x: unknown): x is string => typeof x === 'string' && x.trim().length > 0
 const isSeconds = (x: unknown): x is number => typeof x === 'number' && Number.isInteger(x) && x > 0
 const isFiniteNonNegative = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x) && x >= 0
+const isCents = (x: unknown): x is number => typeof x === 'number' && Number.isInteger(x) && x >= 0 && x <= 100_000_000
 const LOCAL_HOSTS: ReadonlySet<string> = new Set(['localhost', '127.0.0.1', '[::1]'])
 
 /** A bare, canonical origin: `new URL(x).origin` gives it back unchanged. */
@@ -166,6 +206,16 @@ function isClaimOrigin(x: unknown): x is string {
 /** A compact JWS: three base64url segments, the signature non-empty. */
 function isCompactJws(x: unknown): x is string {
   return typeof x === 'string' && x.length <= 2048 && /^[\w-]+\.[\w-]+\.[\w-]+$/.test(x)
+}
+
+/** A post-payment return address: https (http for localhost), no credentials or fragment; a query is fine. */
+function isReturnUrl(x: unknown): x is string {
+  if (typeof x !== 'string' || x.length > 2048) return false
+  let url: URL
+  try { url = new URL(x) }
+  catch { return false }
+  if (url.username || url.password || url.hash || url.hostname.endsWith('.')) return false
+  return url.protocol === 'https:' || (url.protocol === 'http:' && LOCAL_HOSTS.has(url.hostname))
 }
 
 /** A fetchable export address: https (http for localhost), no credentials, query or fragment — nowhere for a secret. */
@@ -190,13 +240,40 @@ function isExportUrl(x: unknown): x is string {
  * file upload instead.
  */
 export function validateMigrateStudioClaim(input: unknown, options: { now?: number } = {}): MigrateStudioClaimResult {
+  return validateClaim(input, options, MIGRATE_STUDIO_CLAIM_VERSION) as MigrateStudioClaimResult
+}
+
+/**
+ * The v2 counterpart of `validateMigrateStudioClaim`: same envelope, plan, repo
+ * and add-on checks, no `trial_days` (a v2 claim that carries one is refused),
+ * plus `github_user_id`, `email_verified`, `return_url` and `billing`.
+ */
+export function validateMigrateStudioClaimV2(input: unknown, options: { now?: number } = {}): MigrateStudioClaimV2Result {
+  return validateClaim(input, options, MIGRATE_STUDIO_CLAIM_VERSION_2) as MigrateStudioClaimV2Result
+}
+
+/** Validate a claim of either version; read `result.claim.v` to tell them apart. */
+export function validateMigrateStudioClaimAny(input: unknown, options: { now?: number } = {}):
+  | { ok: true, claim: MigrateStudioClaim | MigrateStudioClaimV2, warnings?: string[] }
+  | { ok: false, errors: string[] } {
+  const v = isObject(input) ? input.v : undefined
+  return v === MIGRATE_STUDIO_CLAIM_VERSION_2
+    ? validateMigrateStudioClaimV2(input, options)
+    : validateMigrateStudioClaim(input, options)
+}
+
+function validateClaim(
+  input: unknown,
+  options: { now?: number },
+  version: typeof MIGRATE_STUDIO_CLAIM_VERSION | typeof MIGRATE_STUDIO_CLAIM_VERSION_2,
+): MigrateStudioClaimResult | MigrateStudioClaimV2Result {
   const errors: string[] = []
   if (!isObject(input)) return { ok: false, errors: ['payload: not an object'] }
   const x = input
 
   if (x.iss !== MIGRATE_STUDIO_CLAIM_ISSUER) errors.push('iss: unexpected issuer')
   if (x.aud !== MIGRATE_STUDIO_CLAIM_AUDIENCE) errors.push('aud: unexpected audience')
-  if (x.v !== MIGRATE_STUDIO_CLAIM_VERSION) errors.push('v: unsupported version')
+  if (x.v !== version) errors.push('v: unsupported version')
   for (const key of ['sub', 'jti', 'order_id'] as const) {
     if (!isText(x[key])) errors.push(`${key}: required`)
   }
@@ -229,9 +306,22 @@ export function validateMigrateStudioClaim(input: unknown, options: { now?: numb
     })
   }
 
-  if (typeof x.trial_days !== 'number' || !Number.isInteger(x.trial_days)
-    || x.trial_days < 1 || x.trial_days > MIGRATE_STUDIO_CLAIM_MAX_TRIAL_DAYS) {
-    errors.push('trial_days: out of range')
+  if (version === MIGRATE_STUDIO_CLAIM_VERSION) {
+    if (typeof x.trial_days !== 'number' || !Number.isInteger(x.trial_days)
+      || x.trial_days < 1 || x.trial_days > MIGRATE_STUDIO_CLAIM_MAX_TRIAL_DAYS) {
+      errors.push('trial_days: out of range')
+    }
+  }
+  else {
+    if (x.trial_days !== undefined) errors.push('trial_days: not part of v2')
+    if (typeof x.github_user_id !== 'string' || !/^[1-9]\d{0,18}$/.test(x.github_user_id)) errors.push('github_user_id: invalid')
+    if (typeof x.email_verified !== 'boolean') errors.push('email_verified: required')
+    if (!isReturnUrl(x.return_url)) errors.push('return_url: invalid')
+    const b = x.billing
+    if (!isObject(b) || !isCents(b.migrate_fee_cents) || !isCents(b.quoted_total_cents) || b.quoted_total_cents <= 0
+      || b.currency !== 'usd' || b.quoted_total_cents < b.migrate_fee_cents) {
+      errors.push('billing: invalid')
+    }
   }
 
   const repo = x.repo
@@ -270,9 +360,9 @@ export function validateMigrateStudioClaim(input: unknown, options: { now?: numb
   }
 
   if (errors.length > 0) return { ok: false, errors }
-  if (warnings.length === 0) return { ok: true, claim: x as unknown as MigrateStudioClaim }
+  if (warnings.length === 0) return { ok: true, claim: x as never }
   const { comments_export: _dropped, ...rest } = x
-  return { ok: true, claim: rest as unknown as MigrateStudioClaim, warnings }
+  return { ok: true, claim: rest as never, warnings }
 }
 
 /**
@@ -284,4 +374,54 @@ export function validateMigrateStudioClaim(input: unknown, options: { now?: numb
 export function isMigrateStudioClaim(input: unknown): input is MigrateStudioClaim {
   const result = validateMigrateStudioClaim(input)
   return result.ok && !result.warnings
+}
+
+// ─── Account state (Offer sizing) ───
+//
+// Before the Offer, Migrate asks Studio what the customer's GitHub account
+// already has, so the Studio line and its price are right: nothing (`none`:
+// "Migrate with Studio"), a plan that already carries the site (`covers`:
+// "added to your plan, $0"), or one that does not (`too_small`: upgrade).
+// Server to server, signed like a claim (same key, `iss`/`aud`/`jti`/`exp`).
+
+export const MIGRATE_ACCOUNT_STATES = ['none', 'covers', 'too_small'] as const
+export type MigrateAccountStateKind = (typeof MIGRATE_ACCOUNT_STATES)[number]
+
+/** The signed request body Migrate sends. */
+export interface MigrateAccountStateRequest {
+  iss: typeof MIGRATE_STUDIO_CLAIM_ISSUER
+  aud: typeof MIGRATE_STUDIO_CLAIM_AUDIENCE
+  jti: string
+  iat: number
+  exp: number
+  github_user_id: string
+  /** The plan discovery sized (`MigrateStudioPlan`). */
+  plan: MigrateStudioPlan
+}
+
+/** Studio's answer. `year1_cents` is what the Studio line adds to the first invoice (0 when `covers`). */
+export interface MigrateAccountStateResponse {
+  state: MigrateAccountStateKind
+  /** The plan the Studio line sells or keeps: the sized plan, or the account's own when it covers. */
+  plan: MigrateStudioPlan
+  /** Studio part of the first invoice, in cents: year 1 at 20% off (`none`), the plan difference (`too_small`), 0 (`covers`). */
+  year1_cents: number
+  /** The account's current plan, when it has a running one. */
+  current_plan?: MigrateStudioPlan
+}
+
+/** Check Studio's answer. Returns the stable `field: problem` strings the claim validators use. */
+export function validateMigrateAccountStateResponse(input: unknown):
+  | { ok: true, response: MigrateAccountStateResponse }
+  | { ok: false, errors: string[] } {
+  if (!isObject(input)) return { ok: false, errors: ['payload: not an object'] }
+  const errors: string[] = []
+  if (!(MIGRATE_ACCOUNT_STATES as readonly unknown[]).includes(input.state)) errors.push('state: unknown')
+  if (!(MIGRATE_STUDIO_PLANS as readonly unknown[]).includes(input.plan)) errors.push('plan: unknown plan')
+  if (!isCents(input.year1_cents)) errors.push('year1_cents: invalid')
+  else if (input.state === 'covers' && input.year1_cents !== 0) errors.push('year1_cents: must be 0 when covers')
+  else if (input.state !== undefined && input.state !== 'covers' && input.year1_cents === 0) errors.push('year1_cents: must be > 0')
+  if (input.current_plan !== undefined && !(MIGRATE_STUDIO_PLANS as readonly unknown[]).includes(input.current_plan)) errors.push('current_plan: unknown plan')
+  if (input.state !== 'none' && input.current_plan === undefined) errors.push('current_plan: required unless none')
+  return errors.length === 0 ? { ok: true, response: input as unknown as MigrateAccountStateResponse } : { ok: false, errors }
 }
