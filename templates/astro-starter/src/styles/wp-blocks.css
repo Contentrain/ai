@@ -114,6 +114,45 @@
 @media (max-width: 640px) {
   .prose .wp-block-gallery { --gallery-columns: 2; }
 }
+
+/*
+ * Classic editor: the [caption] shortcode's figure and the [gallery] shortcode's
+ * grid. WordPress prints a caption's width inline (style="width: 1024px") and an
+ * image's or embed's size as attributes; on a phone those would scroll the page
+ * sideways (classic golden at 390px: scrollWidth 1044), so they give way to the
+ * column: max-width outranks even an inline width, and a caption that fits keeps
+ * the width WordPress gave it.
+ */
+.prose .wp-caption, .prose figure[style*='width'] { max-width: 100%; }
+.prose img, .prose iframe, .prose video, .prose embed, .prose object { max-width: 100%; }
+.prose img, .prose video { height: auto; }
+.prose .wp-caption { margin-block: 2em; }
+.prose .wp-caption img { margin: 0; border-radius: var(--radius-image, 0.5rem); }
+.prose .wp-caption-text, .prose .gallery-caption {
+  margin-top: 0.75em;
+  text-align: center;
+  font-size: 0.875em;
+  color: var(--color-ink-muted);
+}
+.prose .gallery {
+  display: grid;
+  grid-template-columns: repeat(var(--gallery-columns, 3), minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-block: 2em;
+}
+.prose .gallery-columns-1 { --gallery-columns: 1; }
+.prose .gallery-columns-2 { --gallery-columns: 2; }
+.prose .gallery-columns-4 { --gallery-columns: 4; }
+.prose .gallery-columns-5 { --gallery-columns: 5; }
+.prose .gallery-columns-6 { --gallery-columns: 6; }
+.prose .gallery-columns-7 { --gallery-columns: 7; }
+.prose .gallery-columns-8 { --gallery-columns: 8; }
+.prose .gallery-columns-9 { --gallery-columns: 9; }
+.prose .gallery-item { margin: 0; }
+.prose .gallery-icon img { width: 100%; height: 100%; margin: 0; object-fit: cover; }
+@media (max-width: 640px) {
+  .prose .gallery:not(.gallery-columns-1) { --gallery-columns: 2; }
+}
 .prose .wp-block-embed { margin-block: 2em; }
 .prose .wp-block-embed__wrapper { position: relative; }
 .prose .wp-has-aspect-ratio .wp-block-embed__wrapper::before { content: ''; display: block; padding-top: 56.25%; }
