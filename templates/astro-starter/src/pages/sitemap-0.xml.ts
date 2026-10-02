@@ -10,9 +10,9 @@ export const GET: APIRoute = async ({ site }) => {
   const origin = site ?? new URL('http://localhost/')
   const urls: string[] = []
   for (const [href, route] of await routeTable()) {
-    const entry = route.view === 'post' ? route.post.data : route.view === 'page' ? route.page.data : undefined
-    if (entry?.seo?.noindex) continue
-    const changed = entry ? entry.modified_at ?? entry.published_at : undefined
+    const entry = route.view === 'post' ? route.post.data : route.view === 'page' ? route.page.data : route.view === 'entry' ? route.entry.data : undefined
+    if ((entry?.seo as { noindex?: boolean } | undefined)?.noindex) continue
+    const changed = (entry?.modified_at ?? entry?.published_at) as Date | undefined
     urls.push(`<url><loc>${escape(new URL(href, origin).href)}</loc>${changed ? `<lastmod>${changed.toISOString()}</lastmod>` : ''}</url>`)
   }
   const body = `<?xml version="1.0" encoding="UTF-8"?>

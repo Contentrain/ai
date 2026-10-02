@@ -7,13 +7,17 @@
 
 import { getCollection } from 'astro:content'
 import { siteConfig } from '../site.config'
+import { entriesOf, entryCard, entryHref, newestFirst, refIds, termHref as customTermHref, text, type Card, type TypeEntry } from './custom'
+import { targetsOf, type Targets } from './fields'
 import { authorHref, byId, getPosts, getStrings, pageHref, postHref, termHref, type Page, type Post } from './content'
 import { pagePath, permalinks } from './routes'
+import type { CustomType } from '../site.config'
 
 export type Route =
   | { view: 'post', post: Post }
   | { view: 'page', page: Page, trail: Array<{ title: string, href: string }>, isHome: boolean, subpages: Array<{ title: string, href: string }> }
-  | { view: 'list', title?: string, eyebrow?: string, description?: string, posts: Post[], base: string, current: number, total: number }
+  | { view: 'entry', type: CustomType, entry: TypeEntry, targets: Targets }
+  | { view: 'list', title?: string, eyebrow?: string, description?: string, posts: Post[], cards?: Card[], base: string, current: number, total: number }
 
 async function buildRoutes(): Promise<Map<string, Route>> {
   const [posts, pages, categories, tags, authors, t] = await Promise.all([
@@ -77,7 +81,39 @@ async function buildRoutes(): Promise<Map<string, Route>> {
     if (own.length > 0) paginate(authorHref(author), own, { title: author.data.name, eyebrow: t('archive.author'), ...(author.data.bio ? { description: author.data.bio } : {}) })
   }
 
+  await addTypeRoutes(add)
+
   return routes
+}
+
+/** The custom post types: one page per entry, the archive, and a list per term — through the same pagination as the blog. */
+async function addTypeRoutes(add: (href: string, route: Route) => void): Promise<void> {
+  const types = siteConfig.types ?? []
+  if (types.length === 0) return
+  const names = new Set(types.flatMap(type => [type.collection, ...(type.taxonomies ?? []).map(taxonomy => taxonomy.collection)]))
+  const entries = new Map(await Promise.all([...names].map(async name => [name, await entriesOf(name)] as const)))
+  const targets = targetsOf(types, entries)
+  const terms = new Map([...entries].flatMap(([name, list]) => list.map(entry => [`${name}:${entry.id}`, entry] as const)))
+  const paginateCards = (base: string, cards: Card[], heading: { title: string, eyebrow?: string, description?: string }) => {
+    const size = siteConfig.postsPerPage
+    const total = Math.max(1, Math.ceil(cards.length / size))
+    for (let current = 1; current <= total; current++) {
+      add(pagePath(base, current), { view: 'list', ...heading, posts: [], cards: cards.slice((current - 1) * size, current * size), base, current, total })
+    }
+  }
+  for (const type of types) {
+    const own = newestFirst(entries.get(type.collection) ?? [], type.card.date)
+    for (const entry of own) add(entryHref(type, entry), { view: 'entry', type, entry, targets })
+    const cards = new Map(await Promise.all(own.map(async entry => [entry.id, await entryCard(type, entry, terms)] as const)))
+    if (type.archive) paginateCards(type.archive.pattern, [...cards.values()], { title: type.archive.title })
+    for (const taxonomy of type.taxonomies ?? []) {
+      for (const term of entries.get(taxonomy.collection) ?? []) {
+        const members = own.filter(entry => refIds(entry.data[taxonomy.field]).includes(term.id)).flatMap(entry => cards.get(entry.id) ?? [])
+        const description = text(term.data.description)
+        paginateCards(customTermHref(taxonomy, term), members, { title: text(term.data.name) ?? term.id, eyebrow: taxonomy.title, ...(description ? { description } : {}) })
+      }
+    }
+  }
 }
 
 let table: Promise<Map<string, Route>> | undefined

@@ -9,6 +9,7 @@ import Prose from '../components/kit/prose/Prose.astro'
 import PostCard from '../components/kit/post-card/PostCard.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { byId, getSite, getStrings, imageOf, postHref, termHref, type Post } from '../lib/content'
+import type { Card } from '../lib/custom'
 import { publicHtml } from '../lib/links'
 import { collectionLd } from '../lib/seo'
 import { siteConfig } from '../site.config'
@@ -20,18 +21,20 @@ interface Props {
   eyebrow?: string | undefined
   description?: string | undefined
   posts: Post[]
+  /** A list of another content type (a custom post type): cards already built, in place of `posts`. */
+  cards?: Card[] | undefined
   base: string
   current: number
   total: number
 }
 
-const { title, eyebrow, description, posts, base, current, total } = Astro.props
+const { title, eyebrow, description, posts, cards: given, base, current, total } = Astro.props
 const [site, t, categories] = await Promise.all([getSite(), getStrings(), byId('categories')])
 const full = siteConfig.lists.display === 'full'
 const column = full || siteConfig.lists.display === 'list'
 const bodies = full ? await Promise.all(posts.map(post => publicHtml(post.data.body))) : []
 const showHeading = Boolean(title) || siteConfig.lists.heading
-const cards = await Promise.all(posts.map(async (post) => {
+const cards = given ?? await Promise.all(posts.map(async (post) => {
   const cover = post.data.cover ? await getEntry(post.data.cover) : undefined
   const category = post.data.categories[0] ? categories.get(post.data.categories[0].id) : undefined
   return {
