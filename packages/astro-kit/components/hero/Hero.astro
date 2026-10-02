@@ -30,6 +30,9 @@ const hero = tv({
     // The lead's own alignment: `start` keeps it at the start edge, across the column, under a centred heading
     // (Hello centres the heading widget and leaves the text editor left in the same container).
     leadAlign: { inherit: {}, start: {} },
+    // The buttons' own alignment: `start` keeps them at the start edge under centred text (a WordPress buttons block
+    // with no justification sits left inside a cover whose heading and paragraph are centred).
+    actionsAlign: { inherit: {}, start: {} },
     // How wide a cover runs: the full window, or the reading column — a WordPress cover block that is not
     // alignfull sits in the content column, the page title above it.
     width: { full: {}, content: {} },
@@ -40,8 +43,9 @@ const hero = tv({
     { layout: 'cover', align: 'center', class: { grid: 'justify-items-center', copy: 'mx-auto items-center text-center', lead: 'mx-auto', actions: 'justify-center' } },
     // After the centring rules, so the lead leaves them.
     { leadAlign: 'start', class: { lead: 'mx-0 max-w-none self-stretch text-start' } },
+    { actionsAlign: 'start', class: { actions: 'justify-start self-stretch' } },
   ],
-  defaultVariants: { layout: 'split', tone: 'default', align: 'center', leadAlign: 'inherit', width: 'full' },
+  defaultVariants: { layout: 'split', tone: 'default', align: 'center', leadAlign: 'inherit', actionsAlign: 'inherit', width: 'full' },
 })
 
 interface Props {
@@ -57,14 +61,16 @@ interface Props {
   align?: 'start' | 'center' | undefined
   /** The lead's alignment: as the layout sets it, or at the start edge under a centred heading. */
   leadAlign?: 'inherit' | 'start' | undefined
+  /** The buttons' alignment: as the layout sets it, or at the start edge under centred text. */
+  actionsAlign?: 'inherit' | 'start' | undefined
   /** A cover's width: the full window (the default) or the reading column; other layouts ignore it. */
   width?: 'full' | 'content' | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   id?: string | undefined
 }
 
-const { heading, level = 1, eyebrow, lead, actions = [], image, layout = 'split', align, leadAlign, width = 'full', tone, id } = Astro.props
-const s = hero({ layout, align, leadAlign, width, tone })
+const { heading, level = 1, eyebrow, lead, actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id } = Astro.props
+const s = hero({ layout, align, leadAlign, actionsAlign, width, tone })
 const Heading = level === 1 ? 'h1' : 'h2'
 const headingId = id ? `${id}-title` : undefined
 const cover = layout === 'cover' && image
