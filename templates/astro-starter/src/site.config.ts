@@ -61,6 +61,13 @@ export interface SiteConfig {
    */
   chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean, footerAlign?: 'start' | 'center' }
   /**
+   * The site singleton's fields that hold the contact details, by field name (a migration finds them
+   * in the source's settings: an ACF options page). The footer prints what is set: `address`,
+   * `phone` and `email` as text, `socials` as a list of rows each with a link and a label.
+   * Absent, or a field empty, the footer prints nothing for it.
+   */
+  contact?: { address?: string, phone?: string, email?: string, socials?: string }
+  /**
    * The source site's hosts (`site.com`): a link to one of them in migrated content is internal
    * whatever its scheme, `www.` or letter case, and resolves through the published set. Fixed at
    * build time, so moving the site to a new domain in Studio does not turn the old links external.

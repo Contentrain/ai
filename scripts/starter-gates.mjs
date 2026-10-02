@@ -60,6 +60,13 @@ cpSync(starter, project, {
 const fixtureDir = values.fixture ? join(root, 'templates', 'fixtures', values.fixture) : undefined
 if (fixtureDir) cpSync(fixtureDir, project, { recursive: true, filter: source => source !== join(fixtureDir, 'fixture.json') })
 const fixture = fixtureDir && existsSync(join(fixtureDir, 'fixture.json')) ? JSON.parse(readFileSync(join(fixtureDir, 'fixture.json'), 'utf8')) : {}
+// `siteConfig`: lines of src/site.config.ts the fixture replaces ({ from, to }) — the settings a migration writes there.
+for (const { from, to } of fixture.siteConfig ?? []) {
+  const file = join(project, 'src', 'site.config.ts')
+  const source = readFileSync(file, 'utf8')
+  if (!source.includes(from)) throw new Error(`fixture.siteConfig: ${from} is not in src/site.config.ts`)
+  writeFileSync(file, source.replace(from, to))
+}
 const fixtureDeps = Object.entries(fixture.dependencies ?? {})
 
 // Studio media: the media entries point at `<studio>/api/cdn/v1/<project>/…`, served by a

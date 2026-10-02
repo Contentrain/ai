@@ -37,6 +37,8 @@ interface Props {
   /** A single row of links (the footer menu). */
   links?: LinkInput[] | undefined
   social?: LinkInput[] | undefined
+  /** Contact details printed in an `<address>` block; each is optional, and the block is left out when none is set. */
+  contact?: { address?: string | undefined, phone?: string | undefined, email?: string | undefined } | undefined
   /** The copyright line, e.g. "© 2026 Northwind Studio"; `{year}` is the current year. */
   copyright?: string | undefined
   /** Label of the cookie settings link after the copyright line ("Cookie settings"); it reopens the consent bar, so a visitor can withdraw consent as easily as they gave it. Only with a consent bar on the page. */
@@ -48,9 +50,11 @@ interface Props {
   align?: 'start' | 'center' | undefined
 }
 
-const { siteName, tagline, columns = [], links = [], social = [], copyright, consentLabel, navLabel = 'Footer', layout = 'simple', tone, align } = Astro.props
+const { siteName, tagline, columns = [], links = [], social = [], contact, copyright, consentLabel, navLabel = 'Footer', layout = 'simple', tone, align } = Astro.props
 const { root, inner, muted, link } = footer({ layout, tone, align })
 const year = String(new Date().getFullYear())
+const phoneHref = contact?.phone?.replace(/[^\d+]/g, '')
+const hasContact = Boolean(contact?.address || contact?.phone || contact?.email)
 const line = copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
 ---
 <!-- The cookie settings control is a button, not a link: the Consent component's listener reopens its bar on any [data-kit-consent-open]. -->
@@ -59,6 +63,13 @@ const line = copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
     <div class="flex flex-col gap-3">
       <p class="text-base font-semibold" data-kit-brand>{siteName}</p>
       {tagline && <p class={muted()} data-kit-tagline>{tagline}</p>}
+      {hasContact && (
+        <address class={`${muted()} flex flex-col gap-1 not-italic`} data-kit-contact>
+          {contact?.address && <span class="whitespace-pre-line">{contact.address}</span>}
+          {contact?.phone && <a href={phoneHref ? `tel:${phoneHref}` : undefined} class={link()}>{contact.phone}</a>}
+          {contact?.email && <a href={`mailto:${contact.email}`} class={link()}>{contact.email}</a>}
+        </address>
+      )}
       {layout === 'columns' && <p class:list={[muted(), 'mt-auto pt-6']}>{line}{consentLabel && <> · <button type="button" data-kit-consent-open class={link()}>{consentLabel}</button></>}</p>}
     </div>
     {layout === 'columns'
