@@ -102,6 +102,12 @@ export interface PlanSite {
    */
   lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string }
   /**
+   * What the source's own page for a custom post type showed, by the type's single route id (`type-project`):
+   * `adjacent` = links to the previous and next entry under it. The starter's entry view prints them for that
+   * type only. Absent (or a type left out): none.
+   */
+  entryLayouts?: Record<string, { adjacent: boolean }>
+  /**
    * The header and footer as the source's theme prints them, where they differ from the starter's.
    * Every key is optional; absent, the starter's own. `brand`: the site title's size in the header
    * (Hello Elementor: a 2.5rem heading). `tagline`: the header shows the tagline under the title.
