@@ -45,6 +45,22 @@
       ],
       "default": "inherit",
       "description": "The lead's alignment. inherit: as the layout sets it. start: at the start edge and across the column, under a centred heading (a centred heading widget over a left-aligned text editor in one container)."
+    },
+    "actionsAlign": {
+      "options": [
+        "inherit",
+        "start"
+      ],
+      "default": "inherit",
+      "description": "The buttons' alignment. inherit: as the layout sets it. start: at the start edge, under centred text (a WordPress buttons block with no justification inside a centred cover)."
+    },
+    "width": {
+      "options": [
+        "full",
+        "content"
+      ],
+      "default": "full",
+      "description": "Layout cover only. full: the image runs the full window width. content: the cover sits in the reading column, as a WordPress cover block that is not alignfull does under the page title."
     }
   },
   "props": {
