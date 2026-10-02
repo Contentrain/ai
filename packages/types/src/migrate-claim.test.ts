@@ -204,9 +204,9 @@ describe('validateMigrateAccountStateResponse', () => {
 
   it('refuses inconsistent answers', () => {
     expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 100, current_plan: 'pro' }, { requested: 'pro' })).toEqual({ ok: false, errors: ['year1_cents: must be 0 when covers'] })
-    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 0 }, { requested: 'pro' })).toEqual({ ok: false, errors: ['year1_cents: must be > 0'] })
+    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 0 }, { requested: 'starter' })).toEqual({ ok: false, errors: ['year1_cents: must be > 0'] })
     expect(validateMigrateAccountStateResponse({ state: 'too_small', plan: 'pro', year1_cents: 5 }, { requested: 'pro' })).toEqual({ ok: false, errors: ['current_plan: required unless none'] })
-    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200, current_plan: 'starter' }, { requested: 'pro' })).toEqual({ ok: false, errors: ['current_plan: not allowed when none'] })
+    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200, current_plan: 'starter' }, { requested: 'starter' })).toEqual({ ok: false, errors: ['current_plan: not allowed when none'] })
     expect(validateMigrateAccountStateResponse({ state: 'maybe', plan: 'x', year1_cents: -1 }, { requested: 'pro' })).toEqual({ ok: false, errors: expect.arrayContaining(['state: unknown', 'plan: unknown plan', 'year1_cents: invalid']) })
   })
 })
