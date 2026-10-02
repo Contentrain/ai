@@ -38,6 +38,8 @@ export interface CustomType {
   body?: string
   /** Previous / next links under the entry, newest first as WordPress orders them; only when the source's own page had them. */
   adjacent?: boolean
+  /** A list of this many other entries (newest first) under the entry, as the source's own page had; absent or 0: none. */
+  more?: number
   fields: readonly CustomField[]
 }
 
