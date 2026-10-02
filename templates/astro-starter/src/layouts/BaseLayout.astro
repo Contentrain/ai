@@ -6,6 +6,7 @@ import Analytics from '../components/Analytics.astro'
 import Footer from '../components/kit/footer/Footer.astro'
 import Header from '../components/kit/header/Header.astro'
 import SEO from '../components/SEO.astro'
+import { siteContact } from '../lib/contact'
 import { getSite, getStrings } from '../lib/content'
 import { menusAt } from '../lib/links'
 import { queryMap } from '../lib/redirects'
@@ -33,6 +34,9 @@ interface Props {
 
 const { title, fullTitle: seoTitle, description, image, canonical, type, noindex, nofollow, published, modified, jsonLd = [] } = Astro.props
 const [site, t, [primary], footerMenus] = await Promise.all([getSite(), getStrings(), menusAt('header'), menusAt('footer')])
+const contact = siteContact(site, siteConfig.contact)
+const sameAs = (site.same_as ?? []).map(url => ({ label: new URL(url).hostname.replace(/^www\./, ''), href: url }))
+const social = [...sameAs, ...contact.socials.filter(link => !sameAs.some(known => known.href === link.href))]
 const origin = Astro.site ?? Astro.url
 const home = new URL('/', origin).href
 const identity = { name: site.title, url: home, description: site.tagline, logo: site.logo, sameAs: site.same_as }
@@ -108,7 +112,8 @@ const wpQueries = isHome ? await queryMap() : {}
       layout={footerColumns.length > 1 ? 'columns' : 'simple'}
       columns={footerColumns.map((menu, index) => ({ label: menu.name, links: index === footerColumns.length - 1 ? [...menu.items, rss] : menu.items }))}
       links={[...(footerColumns[0]?.items ?? []), rss]}
-      social={site.same_as?.map(url => ({ label: new URL(url).hostname.replace(/^www\./, ''), href: url }))}
+      social={social}
+      contact={contact}
       navLabel={footerColumns[0]?.name ?? t('nav.footer')}
     />
   </body>

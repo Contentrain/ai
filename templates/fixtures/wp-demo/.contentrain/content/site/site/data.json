@@ -1,8 +1,16 @@
 {
+  "address": "12 Harbour Road\nBristol",
   "language": "en",
   "organization": "Northwind Studio",
+  "phone": "+44 117 000 0000",
   "same_as": [
     "https://github.com/contentrain"
+  ],
+  "socials": [
+    {
+      "label": "LinkedIn",
+      "link": "https://www.linkedin.com/company/northwind-studio"
+    }
   ],
   "tagline": "Field notes on building calm, fast websites",
   "title": "Northwind Journal",

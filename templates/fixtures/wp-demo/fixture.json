@@ -2,6 +2,12 @@
   "dependencies": {
     "embla-carousel": "^8.6.0"
   },
+  "siteConfig": [
+    {
+      "from": "  sourceHosts: [],",
+      "to": "  contact: { address: 'address', phone: 'phone', socials: 'socials' },\n  sourceHosts: [],"
+    }
+  ],
   "absentFromDist": [
     "Roadmap draft",
     "/roadmap/",
@@ -72,7 +78,11 @@
         "aria-label=\"Primary\"",
         "aria-label=\"Footer\" data-cr-part=\"nav-footer\"",
         "aria-label=\"Legal\" data-cr-part=\"nav-footer\"",
-        ">Imprint</a>"
+        ">Imprint</a>",
+        "<address",
+        "tel:+441170000000",
+        "12 Harbour Road",
+        "https://www.linkedin.com/company/northwind-studio\" rel=\"me noopener\""
       ],
       "excludes": [
         "Sidebar only link"

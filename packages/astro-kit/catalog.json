@@ -1204,6 +1204,24 @@
           },
           "description": "Social profile links (site.same_as)."
         },
+        "contact": {
+          "type": "object",
+          "fields": {
+            "address": {
+              "type": "text",
+              "description": "Postal address; line breaks are kept."
+            },
+            "phone": {
+              "type": "string",
+              "description": "Phone number, linked as tel: when it has digits."
+            },
+            "email": {
+              "type": "email",
+              "description": "Email address, linked as mailto:."
+            }
+          },
+          "description": "Contact details printed in an address block under the tagline; the block is left out when none is set."
+        },
         "copyright": {
           "type": "string",
           "description": "Copyright line; {year} is the current year. Defaults to © <year> <siteName>."
