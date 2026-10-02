@@ -91,6 +91,21 @@ describe('the default policy', () => {
     expect(decision.reasons[0]).toContain('change approval')
   })
 
+  it('names the plan\'s own risk, and the rule\'s floor as a floor', () => {
+    // The default rule's floor is low_risk_content; a bulk_content plan climbs past it.
+    expect(evaluate(makePlan()).reasons[0]).toBe(
+      'change approval: 1 more needed (0/1), because the policy requires it at low_risk_content and above (this plan is bulk_content).',
+    )
+    // At the floor the two agree, so it says what the plan is.
+    const atFloor = makePlan({ risk: 'low_risk_content', steps: [{ id: 's1', tool: 'contentrain_save', summary: 'Fix a typo', risk: 'low_risk_content' }] })
+    expect(evaluate(atFloor).reasons[0]).toContain('because the plan is low_risk_content.')
+  })
+
+  it('says the plan is at its class when the default mode steps in', () => {
+    const policy: ApprovalPolicyFile = { version: 1, default_mode: 'single', rules: [{ risk: 'deployment', gate: 'release', mode: 'single' }] }
+    expect(evaluate(makePlan(), { policy }).reasons[0]).toContain('because the plan is bulk_content.')
+  })
+
   it('is used when no policy is supplied at all', () => {
     expect(requiredApprovals(makePlan())).toEqual(requiredApprovals(makePlan(), DEFAULT_APPROVAL_POLICY))
   })
