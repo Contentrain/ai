@@ -445,16 +445,16 @@ export function validateMigrateAccountStateRequest(input: unknown, options: { no
 }
 
 /**
- * Check Studio's answer. Pass the plan that was asked about as `requested` and
- * the answer is also checked against it, which is what Migrate does before it
- * prices an Offer from it:
+ * Check Studio's answer against the plan that was asked about (`requested`,
+ * required: an answer is only meaningful against its question), which is what
+ * Migrate does before it prices an Offer from it:
  * - `none`: no `current_plan`; `plan` is the requested plan.
  * - `too_small`: `plan` is the requested plan and `current_plan` is below it.
  * - `covers`: `current_plan` is at least the requested plan, `plan` is that
  *   current plan, and nothing is added (`year1_cents` 0).
  * Errors are the stable `field: problem` strings the claim validators use.
  */
-export function validateMigrateAccountStateResponse(input: unknown, options: { requested?: MigrateStudioPlan } = {}):
+export function validateMigrateAccountStateResponse(input: unknown, options: { requested: MigrateStudioPlan }):
   | { ok: true, response: MigrateAccountStateResponse }
   | { ok: false, errors: string[] } {
   if (!isObject(input)) return { ok: false, errors: ['payload: not an object'] }
@@ -470,7 +470,7 @@ export function validateMigrateAccountStateResponse(input: unknown, options: { r
   if (input.state === 'none' && input.current_plan !== undefined) errors.push('current_plan: not allowed when none')
   if ((input.state === 'covers' || input.state === 'too_small') && input.current_plan === undefined) errors.push('current_plan: required unless none')
   const asked = options.requested
-  if (asked !== undefined && planOk) {
+  if (planOk) {
     const plan = input.plan as MigrateStudioPlan
     if (input.state === 'covers') {
       if (currentOk && PLAN_RANK[input.current_plan as MigrateStudioPlan] < PLAN_RANK[asked]) errors.push('current_plan: below the requested plan')
