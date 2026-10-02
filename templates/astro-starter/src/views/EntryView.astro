@@ -7,7 +7,7 @@ import Prose from '../components/kit/prose/Prose.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { getEntry } from 'astro:content'
 import { getSite, getStrings, imageOf, type Media } from '../lib/content'
-import { bodyOf, entriesOf, entryHref, entryTitle, newestFirst, refIds, termHref, text, type TypeEntry } from '../lib/custom'
+import { bodyOf, dateOf, entriesOf, entryHref, entryTitle, newestFirst, refIds, termHref, text, type TypeEntry } from '../lib/custom'
 import { shownFields, type Targets } from '../lib/fields'
 import { publicHtml } from '../lib/links'
 import { summarize } from '../lib/seo'
@@ -26,13 +26,15 @@ const [site, t, fields, body, siblings] = await Promise.all([
   getStrings(),
   shownFields(type.fields, data, targets),
   bodyOf(type, entry) ? publicHtml(bodyOf(type, entry)) : undefined,
-  type.adjacent ? entriesOf(type.collection) : [],
+  type.adjacent || type.more ? entriesOf(type.collection) : [],
 ])
 // Newest first: the previous entry is the older one, the next the newer, as in WordPress.
 const ordered = newestFirst(siblings, type.card.date)
 const at = ordered.findIndex(other => other.id === entry.id)
 const previous = at >= 0 ? ordered[at + 1] : undefined
 const next = at > 0 ? ordered[at - 1] : undefined
+const more = type.more ? ordered.filter(other => other.id !== entry.id).slice(0, type.more) : []
+const formatDate = (date: Date) => date.toLocaleDateString(site.language ?? 'en', { dateStyle: 'long', timeZone: 'UTC' })
 const [imageId] = type.card.image ? refIds(data[type.card.image]) : []
 const cover = imageId ? await getEntry('media', imageId) : undefined
 const taxonomy = type.taxonomies?.[0]
@@ -67,4 +69,20 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
       </nav>
     )}
   </article>
+  {more.length > 0 && (
+    <section aria-labelledby="more-entries" data-cr-part="related" class="container-page pb-16">
+      <h2 id="more-entries" class="mb-4 text-sm font-semibold tracking-wide uppercase">{t('post.more')}</h2>
+      <ul class="border-t border-line">
+        {more.map((other) => {
+          const date = dateOf(other.data[type.card.date ?? 'published_at'])
+          return (
+            <li class="flex flex-wrap items-baseline justify-between gap-2 border-b border-line py-3">
+              <a href={entryHref(type, other)} class="text-lg text-ink no-underline hover:underline">{entryTitle(type, other)}</a>
+              {date && <time datetime={date.toISOString()} class="text-sm text-ink-muted">{formatDate(date)}</time>}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )}
 </BaseLayout>

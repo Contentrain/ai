@@ -7,7 +7,7 @@ import Section, { type Tone } from '../_shared/Section.astro'
 const stats = tv({
   slots: {
     list: 'grid grid-cols-2 gap-6 md:gap-8',
-    item: 'flex flex-col-reverse gap-1',
+    item: 'flex gap-1',
     value: 'text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight tabular-nums md:text-5xl',
     label: 'text-sm opacity-80',
   },
@@ -25,8 +25,11 @@ const stats = tv({
     tone: { default: {}, muted: {}, inverse: {}, accent: { label: 'opacity-100' } },
     // The label under each figure: small, body size, or large (a counter title set like a subheading).
     labelSize: { sm: {}, base: { label: 'text-base' }, lg: { label: 'text-lg' } },
+    // Which comes first in the page's text: the source's own order (a Gutenberg figure is a heading over its label, an
+    // Elementor counter names itself first). The figure is drawn on top either way.
+    order: { 'label-first': { item: 'flex-col-reverse' }, 'value-first': { item: 'flex-col' } },
   },
-  defaultVariants: { columns: '3', style: 'plain', tone: 'default', labelSize: 'sm' },
+  defaultVariants: { columns: '3', style: 'plain', tone: 'default', labelSize: 'sm', order: 'label-first' },
 })
 
 interface Item {
@@ -43,13 +46,15 @@ interface Props {
   columns?: '2' | '3' | '4' | undefined
   style?: 'plain' | 'card' | undefined
   labelSize?: 'sm' | 'base' | 'lg' | undefined
+  order?: 'label-first' | 'value-first' | undefined
   tone?: Tone | undefined
   id?: string | undefined
 }
 
-const { heading, intro, items, columns, style, labelSize, tone, id } = Astro.props
-const s = stats({ columns, style, labelSize, tone })
+const { heading, intro, items, columns, style, labelSize, order, tone, id } = Astro.props
+const s = stats({ columns, style, labelSize, order, tone })
 const headingId = heading && id ? `${id}-title` : undefined
+// A <dl> names its term first, so figure-first is a plain list, read in the order it is drawn (WCAG 1.3.2).
 ---
 <Section tone={tone} id={id} aria-labelledby={headingId}>
   {(heading || intro) && (
@@ -58,12 +63,23 @@ const headingId = heading && id ? `${id}-title` : undefined
       {intro && <p class:list={['text-lg', tone === 'accent' ? undefined : 'opacity-80']} data-kit-text>{intro}</p>}
     </header>
   )}
-  <dl class={s.list()}>
-    {items.map(item => (
-      <div class={s.item()}>
-        <dt class={s.label()}>{item.label}</dt>
-        <dd class={s.value()}>{item.prefix}{item.value}{item.suffix}</dd>
-      </div>
-    ))}
-  </dl>
+  {order === 'value-first' ? (
+    <ul class={s.list()} role="list">
+      {items.map(item => (
+        <li class={s.item()}>
+          <p class={s.value()}>{item.prefix}{item.value}{item.suffix}</p>
+          <p class={s.label()}>{item.label}</p>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <dl class={s.list()}>
+      {items.map(item => (
+        <div class={s.item()}>
+          <dt class={s.label()}>{item.label}</dt>
+          <dd class={s.value()}>{item.prefix}{item.value}{item.suffix}</dd>
+        </div>
+      ))}
+    </dl>
+  )}
 </Section>

@@ -413,6 +413,9 @@
     {
       "id": "stats.counter",
       "component": "stats",
+      "variant": {
+        "order": "value-first"
+      },
       "slots": {
         "intro": {
           "match": "divi/et_pb_text",

@@ -6,3 +6,4 @@ Migrate→Studio claim v2 ("Migrate with Studio"). `MigrateStudioClaimV2`, `vali
 
 Also the Offer-time account state: `MigrateAccountStateRequest` / `MigrateAccountStateResponse` (`none` | `covers` | `too_small`, with `year1_cents`) and `validateMigrateAccountStateResponse`.
 Plus `validateMigrateAccountStateRequest`, and `validateMigrateAccountStateResponse(response, { requested })` checks the answer against the plan that was asked.
+`requested` is required on `validateMigrateAccountStateResponse`.

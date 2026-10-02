@@ -2902,6 +2902,14 @@
           ],
           "default": "sm",
           "description": "The label under each figure: sm (small), base (body size) or lg (a counter title set like a subheading)."
+        },
+        "order": {
+          "options": [
+            "label-first",
+            "value-first"
+          ],
+          "default": "label-first",
+          "description": "Which the page's text reads first, as the source does: label-first (an Elementor counter) or value-first (a Gutenberg figure heading over its label). The figure is drawn on top either way."
         }
       },
       "props": {
@@ -3039,6 +3047,11 @@
           "items": {
             "type": "object",
             "fields": {
+              "number": {
+                "type": "string",
+                "label": "Number",
+                "description": "The step's number as the source writes it (01, Step 2); empty: the list counts 1, 2, 3."
+              },
               "title": {
                 "type": "string",
                 "label": "Title",
@@ -3102,6 +3115,7 @@
         "heading": "heading",
         "intro": "intro",
         "items": "items",
+        "items[].number": "items[].number",
         "items[].title": "items[].title",
         "items[].text": "items[].text",
         "items[].image": "items[].image",
