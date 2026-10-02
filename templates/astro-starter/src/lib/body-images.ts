@@ -34,9 +34,14 @@ async function optimize(tag: string): Promise<string> {
     let next = write(tag, 'src', image.src)
     next = write(next, 'srcset', image.srcSet.attribute)
     if (!read(tag, 'sizes') || /^auto\b/.test(read(tag, 'sizes')!)) next = write(next, 'sizes', `(max-width: ${shown}px) 100vw, ${shown}px`)
-    // WordPress writes the size it chose; a tag with none takes the file's own.
-    if (!Number(read(tag, 'width')) || !Number(read(tag, 'height'))) {
-      next = write(write(next, 'width', String(local.width)), 'height', String(local.height))
+    // WordPress writes the size it chose. Only what is missing is written: the other side follows the file's ratio,
+    // and a tag with neither takes the file's own size.
+    const given = { width: Number(read(tag, 'width')) || 0, height: Number(read(tag, 'height')) || 0 }
+    if (!given.width || !given.height) {
+      const width = given.width || (given.height ? Math.round(given.height * local.width / local.height) : local.width)
+      const height = given.height || Math.round(width * local.height / local.width)
+      if (!given.width) next = write(next, 'width', String(width))
+      if (!given.height) next = write(next, 'height', String(height))
     }
     if (read(tag, 'loading') === undefined) next = write(next, 'loading', 'lazy')
     if (read(tag, 'decoding') === undefined) next = write(next, 'decoding', 'async')

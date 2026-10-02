@@ -184,14 +184,18 @@ if (optimized.length) {
 // (webp srcset), size written. A remote image (Studio's media host) is the host's to serve, and a gif or a vector stays.
 {
   const served = []
+  const unsized = []
   for (const entry of readdirSync(join(project, 'dist'), { recursive: true, withFileTypes: true })) {
     if (!entry.isFile() || !entry.name.endsWith('.html')) continue
     for (const tag of readFileSync(join(entry.parentPath, entry.name), 'utf8').match(/<img\b[^>]*>/gi) ?? []) {
-      const src = /\ssrc\s*=\s*"(\/[^"/][^"]*\.(?:png|jpe?g))(?:[?#][^"]*)?"/i.exec(tag)?.[1]
+      const src = /\ssrc\s*=\s*(?:"(\/[^"/][^"]*\.(?:png|jpe?g))(?:[?#][^"]*)?"|'(\/[^'/][^']*\.(?:png|jpe?g))(?:[?#][^']*)?')/i.exec(tag)?.slice(1).find(Boolean)
       if (src) served.push(`${src} (${join(entry.parentPath, entry.name).replace(`${join(project, 'dist')}/`, '')})`)
+      // An optimized body image is sized on both sides: a layout that shifts when it loads is half the fix.
+      else if (/\ssrcset\s*=\s*["']\/_astro\//i.test(tag) && !(/\swidth\s*=\s*["']?\d/i.test(tag) && /\sheight\s*=\s*["']?\d/i.test(tag))) unsized.push(tag.slice(0, 120))
     }
   }
   if (served.length) throw new Error(`Raster originals served as they are:\n  ${[...new Set(served)].join('\n  ')}`)
+  if (unsized.length) throw new Error(`Optimized images without width and height:\n  ${[...new Set(unsized)].join('\n  ')}`)
 }
 
 studioServer?.kill()
