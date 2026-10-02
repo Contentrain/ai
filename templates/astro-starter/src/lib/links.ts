@@ -113,6 +113,8 @@ const IMG_SRC = /\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)')/i
 const WP_IMAGE = /\bwp-image-(\d+)\b/
 /** The attribute's value with its quotes, for a name that stands alone (`alt`, not `data-alt`). */
 const attributeOf = (name: string) => new RegExp(`(\\s${name}\\s*=\\s*)(?:"[^"]*"|'[^']*')`, 'i')
+/** Whether the tag has an `alt` at all: quoted, unquoted or bare (`<img alt>`). */
+const HAS_ALT = /\salt(?=[\s/>=])/i
 const attributeText = (value: string) => encode(value).replaceAll('<', '&lt;').replaceAll('>', '&gt;')
 
 type MediaEntry = CollectionEntry<'media'>
@@ -131,7 +133,8 @@ function media(): Promise<MediaIndex> {
   mediaIndex ??= getCollection('media').then((entries) => {
     const byWpId = new Map<number, MediaEntry>()
     const byPath = new Map<string, MediaEntry>()
-    for (const entry of entries) {
+    // By id, so two library entries for one file (a re-upload) always resolve to the same one.
+    for (const entry of entries.toSorted((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
       if (entry.data.wp_id !== undefined) byWpId.set(entry.data.wp_id, entry)
       const path = originalPath(entry.data.url)
       if (path !== undefined && !byPath.has(path)) byPath.set(path, entry)
@@ -158,7 +161,7 @@ function mediaText(html: string, index: MediaIndex): string {
     if (!entry) return tag
     const { alt, title } = entry.data
     let next = tag
-    if (alt && !attributeOf('alt').test(next)) next = next.replace(/\s*\/?>$/, end => ` alt="${attributeText(alt)}"${end}`)
+    if (alt && !HAS_ALT.test(next)) next = next.replace(/\s*\/?>$/, end => ` alt="${attributeText(alt)}"${end}`)
     const hasTitle = attributeOf('title')
     if (title && hasTitle.test(next)) next = next.replace(hasTitle, `$1"${attributeText(title)}"`)
     return next

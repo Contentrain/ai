@@ -101,13 +101,27 @@ server.listen(0, '127.0.0.1', () => console.log(server.address().port))`
   writeFileSync(join(project, 'studio.json'), `${JSON.stringify({ baseUrl: 'https://studio.invalid', mediaBaseUrl: `${studioUrl}/api/cdn/v1/fixture`, projectId: 'fixture' }, null, 2)}\n`)
   const mediaFile = join(project, '.contentrain', 'content', 'assets', 'media', 'data.json')
   const media = JSON.parse(readFileSync(mediaFile, 'utf8'))
+  const moved = new Map()
   for (const entry of Object.values(media)) {
     if (!entry.url?.startsWith('/')) continue
     // Only the stand-in has the file now: a build that passes fetched it from there.
     rmSync(join(project, 'public', entry.url), { force: true })
-    entry.url = `${studioUrl}/api/cdn/v1/fixture/media/${entry.url.replace(/^\/(?:media\/)?/, '')}`
+    const url = `${studioUrl}/api/cdn/v1/fixture/media/${entry.url.replace(/^\/(?:media\/)?/, '')}`
+    moved.set(entry.url, url)
+    entry.url = url
   }
   writeFileSync(mediaFile, `${JSON.stringify(media, null, 2)}\n`)
+  // Studio's media move rewrites the address wherever content holds it, bodies included: an image in a body points at
+  // the same address as its library entry.
+  const contentDir = join(project, '.contentrain', 'content')
+  for (const rel of readdirSync(contentDir, { recursive: true })) {
+    const file = join(contentDir, String(rel))
+    if (!file.endsWith('.json') || file === mediaFile) continue
+    const before = readFileSync(file, 'utf8')
+    let after = before
+    for (const [from, to] of moved) after = after.replaceAll(`src=\\"${from}\\"`, `src=\\"${to}\\"`)
+    if (after !== before) writeFileSync(file, after)
+  }
 }
 process.on('exit', () => studioServer?.kill())
 

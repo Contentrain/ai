@@ -98,9 +98,9 @@
       "contains": [
         "<a href=\"/blog/shipping-the-first-version/\">the launch post by number</a>",
         "(or the old roadmap, its short link and",
-        "src=\"/demo/cover-2.svg\" width=\"1600\" height=\"900\" alt=\"Green gradient from the media library\"",
+        "alt=\"Green gradient from the media library\"",
         "alt=\"Per-use text\"",
-        "src=\"/media/2026/09/harbour.jpg\" alt=\"\""
+        "alt=\"\""
       ],
       "excludes": [
         "Cover three from the library"
