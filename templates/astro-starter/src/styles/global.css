@@ -124,6 +124,22 @@
     font-size: var(--text-body, 1rem);
     line-height: var(--leading-body, 1.5);
     font-weight: var(--font-weight-body, 400);
+    /* A long word or address wraps instead of pushing the page sideways. */
+    overflow-wrap: break-word;
+  }
+
+  /* Letter spacing is drawn for Latin. It pulls apart joined scripts (Arabic,
+     Syriac, Thaana), splits Indic and Southeast Asian clusters and crowds CJK,
+     and Hebrew is set without it, so in those languages the tracking tokens
+     fall to zero and every tracking-* utility with them. Inter covers Latin,
+     Cyrillic, Greek and Vietnamese (see astro.config.mjs for the rest). */
+  :where(:lang(ar), :lang(arc), :lang(ckb), :lang(dv), :lang(fa), :lang(he), :lang(ps), :lang(sd), :lang(syr), :lang(ug), :lang(ur), :lang(yi), :lang(bn), :lang(gu), :lang(hi), :lang(kn), :lang(ml), :lang(mr), :lang(ne), :lang(pa), :lang(si), :lang(ta), :lang(te), :lang(th), :lang(lo), :lang(km), :lang(my), :lang(ja), :lang(ko), :lang(zh)) {
+    --tracking-tighter: 0;
+    --tracking-tight: 0;
+    --tracking-normal: 0;
+    --tracking-wide: 0;
+    --tracking-wider: 0;
+    --tracking-widest: 0;
   }
 
   :focus-visible {
