@@ -9,6 +9,7 @@ import { join } from 'node:path'
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content'
 import type { NavItem } from '../components/kit/_shared/types'
 import { byId, getSite, pageHref, postHref, resolve, termHref } from './content'
+import { optimizedImages } from './body-images'
 import { siteConfig } from '../site.config'
 import { routeTable } from './site-routes'
 
@@ -170,8 +171,8 @@ function mediaText(html: string, index: MediaIndex): string {
 }
 
 /**
- * Rich text made public: internal links become site paths, links to what is not public become their text, and
- * images without an alt take their media library entry's.
+ * Rich text made public: internal links become site paths, links to what is not public become their text,
+ * images without an alt take their media library entry's, and local raster images are served optimized.
  */
 export async function publicHtml(html: string): Promise<string>
 export async function publicHtml(html: string | undefined): Promise<string | undefined>
@@ -189,7 +190,7 @@ export async function publicHtml(html: string | undefined): Promise<string | und
       return href === stored ? anchor : `<a${attributes.replace(HREF, `href="${encode(href)}"`)}>${inner}</a>`
     })
   }
-  return result.includes('<img') ? mediaText(result, await media()) : result
+  return result.includes('<img') ? optimizedImages(mediaText(result, await media())) : result
 }
 
 /**
