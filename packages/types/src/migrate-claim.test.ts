@@ -6,6 +6,7 @@ import {
   MIGRATE_STUDIO_CLAIM_MAX_TRIAL_DAYS,
   MIGRATE_STUDIO_CLAIM_MAX_TTL_SECONDS,
   isMigrateStudioClaim,
+  validateMigrateAccountStateResponse,
   validateMigrateStudioClaim,
   validateMigrateStudioClaimAny,
   validateMigrateStudioClaimV2,
@@ -182,15 +183,28 @@ describe('validateMigrateStudioClaimV2', () => {
     expect(r).toEqual({ ok: false, errors: expect.arrayContaining(['trial_days: not part of v2', 'github_user_id: invalid', 'email_verified: required']) })
   })
 
-  it('checks return_url, embed_origin and billing', () => {
+  it('checks return_url and billing', () => {
     for (const return_url of ['ftp://migrate.contentrain.io/x', 'https://u:p@migrate.contentrain.io/', 'https://migrate.contentrain.io/#frag', 42]) {
       expect(validateMigrateStudioClaimV2(v2({ return_url }))).toEqual({ ok: false, errors: ['return_url: invalid'] })
     }
     expect(validateMigrateStudioClaimV2(v2({ return_url: 'http://localhost:3000/orders/1?studio=done' })).ok).toBe(true)
-    expect(validateMigrateStudioClaimV2(v2({ embed_origin: 'https://migrate.contentrain.io/path' }))).toEqual({ ok: false, errors: ['embed_origin: invalid'] })
-    expect(validateMigrateStudioClaimV2(v2({ embed_origin: 'https://migrate.contentrain.io' })).ok).toBe(true)
     for (const billing of [undefined, { migrate_fee_cents: -1, quoted_total_cents: 100, currency: 'usd' }, { migrate_fee_cents: 5000.5, quoted_total_cents: 9000, currency: 'usd' }, { migrate_fee_cents: 5000, quoted_total_cents: 4000, currency: 'usd' }, { migrate_fee_cents: 0, quoted_total_cents: 0, currency: 'usd' }, { migrate_fee_cents: 5000, quoted_total_cents: 9000, currency: 'eur' }]) {
       expect(validateMigrateStudioClaimV2(v2({ billing }))).toEqual({ ok: false, errors: ['billing: invalid'] })
     }
+  })
+})
+
+describe('validateMigrateAccountStateResponse', () => {
+  it('accepts the three states', () => {
+    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200 }).ok).toBe(true)
+    expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 0, current_plan: 'pro' }).ok).toBe(true)
+    expect(validateMigrateAccountStateResponse({ state: 'too_small', plan: 'pro', year1_cents: 31400, current_plan: 'starter' }).ok).toBe(true)
+  })
+
+  it('refuses inconsistent answers', () => {
+    expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 100, current_plan: 'pro' })).toEqual({ ok: false, errors: ['year1_cents: must be 0 when covers'] })
+    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 0 })).toEqual({ ok: false, errors: ['year1_cents: must be > 0'] })
+    expect(validateMigrateAccountStateResponse({ state: 'too_small', plan: 'pro', year1_cents: 5 })).toEqual({ ok: false, errors: ['current_plan: required unless none'] })
+    expect(validateMigrateAccountStateResponse({ state: 'maybe', plan: 'x', year1_cents: -1 })).toEqual({ ok: false, errors: expect.arrayContaining(['state: unknown', 'plan: unknown plan', 'year1_cents: invalid']) })
   })
 })

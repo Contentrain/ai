@@ -167,10 +167,8 @@ export interface MigrateStudioClaimV2 extends Omit<MigrateStudioClaim, 'v' | 'tr
   github_user_id: string
   /** Whether Migrate verified `email`. Studio binds by email only when `true`; never by an unverified one. */
   email_verified: boolean
-  /** Where Studio sends the customer after paying: `https:` (`http:` for localhost), no credentials or fragment. Studio accepts it only for hosts on its own Migrate allowlist. */
+  /** Where Studio sends the customer after paying (Migrate's payment page; it trusts the payment webhook, never this redirect): `https:` (`http:` for localhost), no credentials or fragment. Studio accepts it only for hosts on its own Migrate allowlist. */
   return_url: string
-  /** Origin that may embed Studio's checkout (a bare origin, as `origin`). Optional: absent means redirect only. */
-  embed_origin?: string
   billing: MigrateStudioClaimBilling
 }
 
@@ -248,8 +246,7 @@ export function validateMigrateStudioClaim(input: unknown, options: { now?: numb
 /**
  * The v2 counterpart of `validateMigrateStudioClaim`: same envelope, plan, repo
  * and add-on checks, no `trial_days` (a v2 claim that carries one is refused),
- * plus `github_user_id`, `email_verified`, `return_url`, `embed_origin` and
- * `billing`.
+ * plus `github_user_id`, `email_verified`, `return_url` and `billing`.
  */
 export function validateMigrateStudioClaimV2(input: unknown, options: { now?: number } = {}): MigrateStudioClaimV2Result {
   return validateClaim(input, options, MIGRATE_STUDIO_CLAIM_VERSION_2) as MigrateStudioClaimV2Result
@@ -320,7 +317,6 @@ function validateClaim(
     if (typeof x.github_user_id !== 'string' || !/^[1-9]\d{0,18}$/.test(x.github_user_id)) errors.push('github_user_id: invalid')
     if (typeof x.email_verified !== 'boolean') errors.push('email_verified: required')
     if (!isReturnUrl(x.return_url)) errors.push('return_url: invalid')
-    if (x.embed_origin !== undefined && !isClaimOrigin(x.embed_origin)) errors.push('embed_origin: invalid')
     const b = x.billing
     if (!isObject(b) || !isCents(b.migrate_fee_cents) || !isCents(b.quoted_total_cents) || b.quoted_total_cents <= 0
       || b.currency !== 'usd' || b.quoted_total_cents < b.migrate_fee_cents) {
@@ -378,4 +374,54 @@ function validateClaim(
 export function isMigrateStudioClaim(input: unknown): input is MigrateStudioClaim {
   const result = validateMigrateStudioClaim(input)
   return result.ok && !result.warnings
+}
+
+// ─── Account state (Offer sizing) ───
+//
+// Before the Offer, Migrate asks Studio what the customer's GitHub account
+// already has, so the Studio line and its price are right: nothing (`none`:
+// "Migrate with Studio"), a plan that already carries the site (`covers`:
+// "added to your plan, $0"), or one that does not (`too_small`: upgrade).
+// Server to server, signed like a claim (same key, `iss`/`aud`/`jti`/`exp`).
+
+export const MIGRATE_ACCOUNT_STATES = ['none', 'covers', 'too_small'] as const
+export type MigrateAccountStateKind = (typeof MIGRATE_ACCOUNT_STATES)[number]
+
+/** The signed request body Migrate sends. */
+export interface MigrateAccountStateRequest {
+  iss: typeof MIGRATE_STUDIO_CLAIM_ISSUER
+  aud: typeof MIGRATE_STUDIO_CLAIM_AUDIENCE
+  jti: string
+  iat: number
+  exp: number
+  github_user_id: string
+  /** The plan discovery sized (`MigrateStudioPlan`). */
+  plan: MigrateStudioPlan
+}
+
+/** Studio's answer. `year1_cents` is what the Studio line adds to the first invoice (0 when `covers`). */
+export interface MigrateAccountStateResponse {
+  state: MigrateAccountStateKind
+  /** The plan the Studio line sells or keeps: the sized plan, or the account's own when it covers. */
+  plan: MigrateStudioPlan
+  /** Studio part of the first invoice, in cents: year 1 at 20% off (`none`), the plan difference (`too_small`), 0 (`covers`). */
+  year1_cents: number
+  /** The account's current plan, when it has a running one. */
+  current_plan?: MigrateStudioPlan
+}
+
+/** Check Studio's answer. Returns the stable `field: problem` strings the claim validators use. */
+export function validateMigrateAccountStateResponse(input: unknown):
+  | { ok: true, response: MigrateAccountStateResponse }
+  | { ok: false, errors: string[] } {
+  if (!isObject(input)) return { ok: false, errors: ['payload: not an object'] }
+  const errors: string[] = []
+  if (!(MIGRATE_ACCOUNT_STATES as readonly unknown[]).includes(input.state)) errors.push('state: unknown')
+  if (!(MIGRATE_STUDIO_PLANS as readonly unknown[]).includes(input.plan)) errors.push('plan: unknown plan')
+  if (!isCents(input.year1_cents)) errors.push('year1_cents: invalid')
+  else if (input.state === 'covers' && input.year1_cents !== 0) errors.push('year1_cents: must be 0 when covers')
+  else if (input.state !== undefined && input.state !== 'covers' && input.year1_cents === 0) errors.push('year1_cents: must be > 0')
+  if (input.current_plan !== undefined && !(MIGRATE_STUDIO_PLANS as readonly unknown[]).includes(input.current_plan)) errors.push('current_plan: unknown plan')
+  if (input.state !== 'none' && input.current_plan === undefined) errors.push('current_plan: required unless none')
+  return errors.length === 0 ? { ok: true, response: input as unknown as MigrateAccountStateResponse } : { ok: false, errors }
 }
