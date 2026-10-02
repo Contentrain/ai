@@ -180,6 +180,20 @@ if (optimized.length) {
   console.log(`\n${optimized.length} image(s) optimized with a srcset (media: ${values.media})`)
 }
 
+// No page serves a raster file of public/ as it is: a body's `<img>` goes through the same optimizer as the kit's
+// (webp srcset), size written. A remote image (Studio's media host) is the host's to serve, and a gif or a vector stays.
+{
+  const served = []
+  for (const entry of readdirSync(join(project, 'dist'), { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.html')) continue
+    for (const tag of readFileSync(join(entry.parentPath, entry.name), 'utf8').match(/<img\b[^>]*>/gi) ?? []) {
+      const src = /\ssrc\s*=\s*"(\/[^"/][^"]*\.(?:png|jpe?g))(?:[?#][^"]*)?"/i.exec(tag)?.[1]
+      if (src) served.push(`${src} (${join(entry.parentPath, entry.name).replace(`${join(project, 'dist')}/`, '')})`)
+    }
+  }
+  if (served.length) throw new Error(`Raster originals served as they are:\n  ${[...new Set(served)].join('\n  ')}`)
+}
+
 studioServer?.kill()
 console.log(`\nstarter gates passed${values.fixture ? ` (fixture: ${values.fixture})` : ''} — ${project}`)
 if (!values.out) rmSync(project, { recursive: true, force: true })
