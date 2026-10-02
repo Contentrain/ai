@@ -8,6 +8,9 @@ const catalog = JSON.parse(await readFile(join(ROOT, 'catalog.json'), 'utf8')) a
 const video = (attrs: Record<string, unknown>) => ({ name: 'elementor/video', attrs })
 const tables = Object.fromEntries(await Promise.all(KIT_BUILDERS.map(async b => [b, JSON.parse(await readFile(join(ROOT, 'mapping', `${b}.json`), 'utf8')) as MappingTable] as const)))
 
+/** The same leaves as facts that set no flags. */
+const unflagged = (leaves: SectionLeaf[]) => leaves.map(({ numeric: _n, ordinal: _o, portrait: _p, ...rest }) => rest)
+
 describe('mapping tables', () => {
   for (const builder of KIT_BUILDERS) {
     describe(builder, () => {
@@ -346,6 +349,46 @@ describe('section rules', () => {
       }
       // A detail keeps its tel:/mailto: link, as the prose it replaced did.
       expect(tables.elementor!.sections?.find(rule => rule.id === 'contact-form.form')).toMatchObject({ into: 'details', each: '@details .elementor-icon-list-item', item: { value: 'dom:.elementor-icon-list-text', href: 'dom:a@href' } })
+    })
+
+    // Launch and about: a heading above a row of containers, as facts split it (intro + columns) and flag it.
+    describe('rows of steps, plans and people', () => {
+      const f = (path: string, size: string, flags: Partial<SectionLeaf>) => ({ ...h(path, size), ...flags })
+      const row = (columns: SectionLeaf[][], intro: SectionLeaf[] = [h('0.0', 'h2')]) => classifySection(tables.elementor!, columns, { index: 4, count: 9, root: 'elementor/container', intro })
+      const step = (i: number) => [f(`0.1.${i}.0`, 'span', { numeric: true, ordinal: true }), f(`0.1.${i}.1`, 'h3', { numeric: false, ordinal: false }), w(`0.1.${i}.2`, 'text-editor')]
+      const plan = (i: number) => [f(`0.1.${i}.0`, 'h3', { numeric: false }), f(`0.1.${i}.1`, 'div', { numeric: true }), w(`0.1.${i}.2`, 'text-editor'), w(`0.1.${i}.3`, 'icon-list'), w(`0.1.${i}.4`, 'button')]
+      const person = (i: number, flags: Partial<SectionLeaf> = { portrait: true }) => [{ ...w(`0.1.${i}.0`, 'image'), ...flags }, f(`0.1.${i}.1`, 'h3', { numeric: false }), w(`0.1.${i}.2`, 'text-editor')]
+
+      it('numbered columns are steps in a row; the number is the span heading and stays out of the title', () => {
+        const m = row([0, 1, 2].map(step))
+        expect(m?.rule.id).toBe('steps.columns')
+        expect(m?.rule.variant).toEqual({ layout: 'row', style: 'numbered' })
+        expect(m?.match.slots.heading).toEqual(['0.0'])
+        expect(m?.match.columns?.[2]).toEqual({ number: ['0.1.2.0'], title: ['0.1.2.1'], text: ['0.1.2.2'] })
+      })
+
+      it('columns of a name, a figure price, a period, a list and a button are plans', () => {
+        const m = row([0, 1, 2].map(plan))
+        expect(m?.rule.id).toBe('pricing.columns')
+        expect(m?.match.columns?.[0]).toEqual({ name: ['0.1.0.0'], price: ['0.1.0.1'], period: ['0.1.0.2'], features: ['0.1.0.3'], button: ['0.1.0.4'] })
+      })
+
+      it('columns of a portrait, a name and a role are the team; the same columns with any other picture are not', () => {
+        const m = row([0, 1, 2, 3].map(i => person(i)))
+        expect(m?.rule.id).toBe('team.columns')
+        expect(m?.match.columns?.[3]).toEqual({ photo: ['0.1.3.0'], name: ['0.1.3.1'], role: ['0.1.3.2'] })
+        for (const flags of [{}, { small: true }, { portrait: false }]) expect(row([0, 1, 2, 3].map(i => person(i, flags)))?.rule.id).not.toBe('team.columns')
+      })
+
+      it('fires on nothing the facts do not split and flag: today\'s flat column stays as it was', () => {
+        const flat = (cols: SectionLeaf[][]) => classifySection(tables.elementor!, [[h('0.0', 'h2'), ...cols.flat()]], { index: 4, count: 9, root: 'elementor/container' })?.rule.id
+        for (const cols of [[0, 1, 2].map(step), [0, 1, 2].map(plan), [0, 1, 2, 3].map(i => person(i))]) {
+          expect(['steps.columns', 'pricing.columns', 'team.columns']).not.toContain(flat(cols))
+          expect(['steps.columns', 'pricing.columns', 'team.columns']).not.toContain(row(cols.map(unflagged))?.rule.id)
+        }
+        // The logo row is untouched: a heading and images, flags or none.
+        expect(classify([[h('1.0', 'h2'), ...[1, 2, 3, 4, 5].map(i => w(`1.${i}`, 'image'))]], 1, 9)).toBe('logo-cloud.images')
+      })
     })
   })
 })
