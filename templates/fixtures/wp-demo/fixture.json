@@ -98,10 +98,12 @@
       "contains": [
         "<a href=\"/blog/shipping-the-first-version/\">the launch post by number</a>",
         "(or the old roadmap, its short link and",
-        "alt=\"Green gradient from the media library\""
+        "src=\"/demo/cover-2.svg\" width=\"1600\" height=\"900\" alt=\"Green gradient from the media library\"",
+        "alt=\"Per-use text\"",
+        "src=\"/media/2026/09/harbour.jpg\" alt=\"\""
       ],
       "excludes": [
-        "Abstract green gradient"
+        "Cover three from the library"
       ]
     },
     "services/index.html": {

@@ -142,11 +142,12 @@ function media(): Promise<MediaIndex> {
 }
 
 /**
- * An image in a body takes its text from the media library, where an editor changes it: the library is the
- * one place an image's `alt` lives. The entry is found by the `wp-image-<id>` class WordPress puts on the
- * image, else by the address of its file. A library `alt` left empty changes nothing (the text the body was
- * written with stays rather than being blanked); a `title` replaces one the image already carries and is
- * never added, because a library title is a file name, not a tooltip.
+ * An image in a body that carries no `alt` takes the library's: the migration drops an alt that only repeated
+ * the library's, so an edit in Studio's media library reaches every image that inherits it. An `alt` the body
+ * does have is the image's own for this use, and so is an empty one (decorative): neither is touched. The entry
+ * is found by the `wp-image-<id>` class WordPress puts on the image, else by the address of its file. A
+ * `title` replaces one the image already carries and is never added, because a library title is a file name,
+ * not a tooltip.
  */
 function mediaText(html: string, index: MediaIndex): string {
   return html.replace(IMG, (tag) => {
@@ -157,10 +158,7 @@ function mediaText(html: string, index: MediaIndex): string {
     if (!entry) return tag
     const { alt, title } = entry.data
     let next = tag
-    if (alt) {
-      const has = attributeOf('alt')
-      next = has.test(next) ? next.replace(has, `$1"${attributeText(alt)}"`) : next.replace(/\s*\/?>$/, end => ` alt="${attributeText(alt)}"${end}`)
-    }
+    if (alt && !attributeOf('alt').test(next)) next = next.replace(/\s*\/?>$/, end => ` alt="${attributeText(alt)}"${end}`)
     const hasTitle = attributeOf('title')
     if (title && hasTitle.test(next)) next = next.replace(hasTitle, `$1"${attributeText(title)}"`)
     return next
@@ -169,7 +167,7 @@ function mediaText(html: string, index: MediaIndex): string {
 
 /**
  * Rich text made public: internal links become site paths, links to what is not public become their text, and
- * images carry the alt text of their media library entry.
+ * images without an alt take their media library entry's.
  */
 export async function publicHtml(html: string): Promise<string>
 export async function publicHtml(html: string | undefined): Promise<string | undefined>
