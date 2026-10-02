@@ -6,8 +6,8 @@ import KitImage from '../components/kit/_shared/KitImage.astro'
 import Prose from '../components/kit/prose/Prose.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { getEntry } from 'astro:content'
-import { getSite, imageOf, type Media } from '../lib/content'
-import { bodyOf, entriesOf, entryHref, entryTitle, refIds, termHref, text, type TypeEntry } from '../lib/custom'
+import { getSite, getStrings, imageOf, type Media } from '../lib/content'
+import { bodyOf, entriesOf, entryHref, entryTitle, newestFirst, refIds, termHref, text, type TypeEntry } from '../lib/custom'
 import { shownFields, type Targets } from '../lib/fields'
 import { publicHtml } from '../lib/links'
 import { summarize } from '../lib/seo'
@@ -21,11 +21,18 @@ interface Props {
 
 const { type, entry, targets } = Astro.props
 const { data } = entry
-const [site, fields, body] = await Promise.all([
+const [site, t, fields, body, siblings] = await Promise.all([
   getSite(),
+  getStrings(),
   shownFields(type.fields, data, targets),
   bodyOf(type, entry) ? publicHtml(bodyOf(type, entry)) : undefined,
+  type.adjacent ? entriesOf(type.collection) : [],
 ])
+// Newest first: the previous entry is the older one, the next the newer, as in WordPress.
+const ordered = newestFirst(siblings, type.card.date)
+const at = ordered.findIndex(other => other.id === entry.id)
+const previous = at >= 0 ? ordered[at + 1] : undefined
+const next = at > 0 ? ordered[at - 1] : undefined
 const [imageId] = type.card.image ? refIds(data[type.card.image]) : []
 const cover = imageId ? await getEntry('media', imageId) : undefined
 const taxonomy = type.taxonomies?.[0]
@@ -53,5 +60,11 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
     {cover && <figure class="mb-10"><KitImage image={imageOf(cover as Media)} priority sizes="(min-width: 768px) 768px, 100vw" class="w-full rounded-[var(--radius-image,0.75rem)]" /></figure>}
     {body && <Prose html={body} />}
     {fields.length > 0 && <div class="mt-10 border-t border-line pt-8"><FieldList fields={fields} locale={site.language} /></div>}
+    {(previous || next) && (
+      <nav aria-label={t('post.adjacent')} data-cr-part="post-navigation" class="mt-12 flex flex-wrap justify-between gap-4 border-t border-line pt-6">
+        {previous ? <a href={entryHref(type, previous)} rel="prev" class="text-ink">← {entryTitle(type, previous)}</a> : <span />}
+        {next && <a href={entryHref(type, next)} rel="next" class="text-ink">{entryTitle(type, next)} →</a>}
+      </nav>
+    )}
   </article>
 </BaseLayout>

@@ -212,6 +212,13 @@ describe('validateMigrateAccountStateResponse', () => {
 })
 
 describe('account-state against the question asked', () => {
+  it('fails closed when requested is missing or unknown at runtime', () => {
+    const covers = { state: 'covers', plan: 'starter', year1_cents: 0, current_plan: 'starter' }
+    for (const options of [{}, { requested: 'team' }, undefined]) {
+      expect(validateMigrateAccountStateResponse(covers, options as never)).toEqual({ ok: false, errors: ['requested: unknown plan'] })
+    }
+  })
+
   it('checks none / too_small / covers against the requested plan', () => {
     const ok = (r: Record<string, unknown>, requested: 'starter' | 'pro') => validateMigrateAccountStateResponse(r, { requested }).ok
     expect(ok({ state: 'none', plan: 'pro', year1_cents: 39200 }, 'pro')).toBe(true)

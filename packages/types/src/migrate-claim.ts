@@ -469,8 +469,10 @@ export function validateMigrateAccountStateResponse(input: unknown, options: { r
   if (input.current_plan !== undefined && !currentOk) errors.push('current_plan: unknown plan')
   if (input.state === 'none' && input.current_plan !== undefined) errors.push('current_plan: not allowed when none')
   if ((input.state === 'covers' || input.state === 'too_small') && input.current_plan === undefined) errors.push('current_plan: required unless none')
-  const asked = options.requested
-  if (planOk) {
+  const asked = (options as { requested?: unknown } | undefined)?.requested as MigrateStudioPlan
+  // Fail closed: a missing or unknown `requested` (a caller bypassing the types) can never pass.
+  if (!(MIGRATE_STUDIO_PLANS as readonly unknown[]).includes(asked)) errors.push('requested: unknown plan')
+  else if (planOk) {
     const plan = input.plan as MigrateStudioPlan
     if (input.state === 'covers') {
       if (currentOk && PLAN_RANK[input.current_plan as MigrateStudioPlan] < PLAN_RANK[asked]) errors.push('current_plan: below the requested plan')
