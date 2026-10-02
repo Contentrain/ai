@@ -108,20 +108,86 @@ const HREF = /\bhref\s*=\s*(?:"([^"]*)"|'([^']*)')/i
 const decode = (value: string) => value.replaceAll('&amp;', '&').replaceAll('&#038;', '&').replaceAll('&quot;', '"')
 const encode = (value: string) => value.replaceAll('&', '&amp;').replaceAll('"', '&quot;')
 
-/** Rich text with its links made public: internal links become site paths, links to what is not public become their text. */
+const IMG = /<img\b[^>]*>/gi
+const IMG_SRC = /\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)')/i
+const WP_IMAGE = /\bwp-image-(\d+)\b/
+/** The attribute's value with its quotes, for a name that stands alone (`alt`, not `data-alt`). */
+const attributeOf = (name: string) => new RegExp(`(\\s${name}\\s*=\\s*)(?:"[^"]*"|'[^']*')`, 'i')
+const attributeText = (value: string) => encode(value).replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+
+type MediaEntry = CollectionEntry<'media'>
+interface MediaIndex { byWpId: ReadonlyMap<number, MediaEntry>, byPath: ReadonlyMap<string, MediaEntry> }
+let mediaIndex: Promise<MediaIndex> | undefined
+
+/** A file's address without WordPress's size suffix (`harbour-1024x683.jpg`, `harbour-scaled.jpg` are `harbour.jpg`). */
+function originalPath(src: string): string | undefined {
+  let path: string
+  try { path = decodeURI(new URL(src, `${BASE}/`).pathname) } catch { return undefined }
+  return path.replace(/-(?:\d+x\d+|scaled)(?=\.[a-z\d]+$)/i, '')
+}
+
+/** The media library by WordPress id and by the address of the file, read once per build. */
+function media(): Promise<MediaIndex> {
+  mediaIndex ??= getCollection('media').then((entries) => {
+    const byWpId = new Map<number, MediaEntry>()
+    const byPath = new Map<string, MediaEntry>()
+    for (const entry of entries) {
+      if (entry.data.wp_id !== undefined) byWpId.set(entry.data.wp_id, entry)
+      const path = originalPath(entry.data.url)
+      if (path !== undefined && !byPath.has(path)) byPath.set(path, entry)
+    }
+    return { byWpId, byPath }
+  })
+  return mediaIndex
+}
+
+/**
+ * An image in a body takes its text from the media library, where an editor changes it: the library is the
+ * one place an image's `alt` lives. The entry is found by the `wp-image-<id>` class WordPress puts on the
+ * image, else by the address of its file. A library `alt` left empty changes nothing (the text the body was
+ * written with stays rather than being blanked); a `title` replaces one the image already carries and is
+ * never added, because a library title is a file name, not a tooltip.
+ */
+function mediaText(html: string, index: MediaIndex): string {
+  return html.replace(IMG, (tag) => {
+    const id = WP_IMAGE.exec(tag)?.[1]
+    const src = IMG_SRC.exec(tag)
+    const path = originalPath(decode(src?.[1] ?? src?.[2] ?? ''))
+    const entry = (id === undefined ? undefined : index.byWpId.get(Number(id))) ?? (path === undefined ? undefined : index.byPath.get(path))
+    if (!entry) return tag
+    const { alt, title } = entry.data
+    let next = tag
+    if (alt) {
+      const has = attributeOf('alt')
+      next = has.test(next) ? next.replace(has, `$1"${attributeText(alt)}"`) : next.replace(/\s*\/?>$/, end => ` alt="${attributeText(alt)}"${end}`)
+    }
+    const hasTitle = attributeOf('title')
+    if (title && hasTitle.test(next)) next = next.replace(hasTitle, `$1"${attributeText(title)}"`)
+    return next
+  })
+}
+
+/**
+ * Rich text made public: internal links become site paths, links to what is not public become their text, and
+ * images carry the alt text of their media library entry.
+ */
 export async function publicHtml(html: string): Promise<string>
 export async function publicHtml(html: string | undefined): Promise<string | undefined>
 export async function publicHtml(html: string | undefined): Promise<string | undefined> {
-  if (!html?.includes('<a')) return html
-  const link = await publicLinks()
-  return html.replace(ANCHOR, (anchor, attributes: string, inner: string) => {
-    const match = HREF.exec(attributes)
-    if (!match) return anchor
-    const stored = decode(match[1] ?? match[2] ?? '')
-    const href = link(stored)
-    if (href === undefined) return inner
-    return href === stored ? anchor : `<a${attributes.replace(HREF, `href="${encode(href)}"`)}>${inner}</a>`
-  })
+  if (!html) return html
+  let result = html
+  if (result.includes('<a')) {
+    const link = await publicLinks()
+    result = result.replace(ANCHOR, (anchor, attributes: string, inner: string) => {
+      const match = HREF.exec(attributes)
+      if (!match) return anchor
+      const stored = decode(match[1] ?? match[2] ?? '')
+      const href = link(stored)
+      if (href === undefined) return inner
+      return href === stored ? anchor : `<a${attributes.replace(HREF, `href="${encode(href)}"`)}>${inner}</a>`
+    })
+  }
+  return result.includes('<img') ? mediaText(result, await media()) : result
 }
 
 /**
