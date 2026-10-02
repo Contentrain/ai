@@ -87,6 +87,17 @@ export interface SectionSlot {
   min?: number
   /** At most this many (default unbounded). */
   max?: number
+  /** The leaf is a figure (`1,200`, `2018`, `$29`, `01`): its facts say so. `true` requires it, `false` rules it out. */
+  numeric?: boolean
+  /** The leaf is a step's ordinal (`1`, `01`, `Step 2` — at most two digits): its facts say so. A year or a count is a figure, not an ordinal. */
+  ordinal?: boolean
+  /** The image is logo-sized (small as displayed): its facts say so. Photos and banners are not. */
+  small?: boolean
+  /**
+   * `intro`: the slot holds the leaves above the repeated columns (a section's heading and lead line), not the
+   * columns' own. Only with `when.repeat: 'columns'`; every other slot of such a rule reads inside a column.
+   */
+  scope?: 'intro'
 }
 
 /**
@@ -107,7 +118,10 @@ export interface SectionRule {
     columns?: number | number[]
     /** Every leaf must fall into a slot (default true); false lets unclaimed leaves be. */
     only?: boolean
-    /** `columns`: each column must match the slots on its own (a row of team members, price plans). */
+    /**
+     * `columns`: each column must match the slots on its own (a row of team members, price plans); the leaves above
+     * the row (`SectionMeta.intro`) go to the slots with `scope: 'intro'`.
+     */
     repeat?: 'columns'
     /** The section's root element(s): `core/cover`, `core/media-text` (a loose run of blocks is `run`). */
     root?: string | string[]
@@ -132,6 +146,12 @@ export interface SectionRule {
 /** A section leaf as the fact pack gives it: a builder element with its `blocks:` path. */
 export interface SectionLeaf extends MappingNode {
   path: string
+  /** Facts' flag: the leaf's text is a figure (a number, an amount, a step number) — not the text itself. */
+  numeric?: boolean
+  /** Facts' flag: the leaf's text is an ordinal — one or two digits, nothing else. */
+  ordinal?: boolean
+  /** Facts' flag: the image is logo-sized as displayed. */
+  small?: boolean
 }
 
 /** Where a section sits (facts `index`/`count`) and what it is (`root`: facts `root`). */
@@ -139,6 +159,8 @@ export interface SectionMeta {
   index: number
   count: number
   root?: string | undefined
+  /** The leaves above a row of columns, in the same wrapper (`Who we are` over its people): see `when.repeat`. */
+  intro?: SectionLeaf[] | undefined
 }
 
 /** Leaf paths per slot; with `repeat: 'columns'`, also per column. */
@@ -156,20 +178,29 @@ const SECTION_LAYOUT_LEAVES = new Set(['elementor/spacer', 'elementor/divider', 
 
 function slotFits(slot: SectionSlot, leaf: SectionLeaf, defaults?: MappingTable['defaults']): boolean {
   if (![slot.match].flat().includes(leaf.name)) return false
+  // A flag the facts do not set reads as "no": a rule that asks for one never fires on facts that predate it.
+  if (slot.numeric !== undefined && slot.numeric !== (leaf.numeric === true)) return false
+  if (slot.ordinal !== undefined && slot.ordinal !== (leaf.ordinal === true)) return false
+  if (slot.small !== undefined && slot.small !== (leaf.small === true)) return false
   const attrs = attrsOf(leaf, defaults)
   return Object.entries(slot.attr ?? {}).every(([key, want]) => String(want).split('|').includes(String(attrs[key])))
 }
 
-/** Assign leaves to slots in document order, each to the first declared slot with room; null when the rule does not fit. */
-function claimLeaves(rule: SectionRule, leaves: SectionLeaf[], defaults?: MappingTable['defaults']): Record<string, string[]> | null {
-  const claimed: Record<string, string[]> = Object.fromEntries(Object.keys(rule.slots).map(name => [name, []]))
+/**
+ * Assign leaves to slots in document order, each to the first declared slot with room; null when the rule does not fit.
+ * `scope` picks the slots in play: a repeated row's columns read the column slots, the leaves above it the intro slots;
+ * any other section reads them all.
+ */
+function claimLeaves(rule: SectionRule, leaves: SectionLeaf[], defaults?: MappingTable['defaults'], scope: 'all' | 'column' | 'intro' = 'all'): Record<string, string[]> | null {
+  const slots = Object.entries(rule.slots).filter(([, def]) => scope === 'all' || (def.scope === 'intro') === (scope === 'intro'))
+  const claimed: Record<string, string[]> = Object.fromEntries(slots.map(([name]) => [name, []]))
   for (const leaf of leaves) {
     if (SECTION_LAYOUT_LEAVES.has(leaf.name)) continue
-    const slot = Object.entries(rule.slots).find(([name, def]) => claimed[name]!.length < (def.max ?? Infinity) && slotFits(def, leaf, defaults))
+    const slot = slots.find(([name, def]) => claimed[name]!.length < (def.max ?? Infinity) && slotFits(def, leaf, defaults))
     if (slot) claimed[slot[0]]!.push(leaf.path)
     else if (rule.when?.only !== false) return null
   }
-  for (const [name, def] of Object.entries(rule.slots)) if (claimed[name]!.length < (def.min ?? 0)) return null
+  for (const [name, def] of slots) if (claimed[name]!.length < (def.min ?? 0)) return null
   return claimed
 }
 
@@ -185,12 +216,16 @@ export function matchSection(rule: SectionRule, columns: SectionLeaf[][], meta: 
   if (when.columns !== undefined && ![when.columns].flat().includes(columns.length)) return null
   if (when.repeat === 'columns') {
     if (columns.length < 2) return null
-    const per = columns.map(leaves => claimLeaves(rule, leaves, defaults))
+    const intro = claimLeaves(rule, meta.intro ?? [], defaults, 'intro')
+    if (!intro) return null
+    const per = columns.map(leaves => claimLeaves(rule, leaves, defaults, 'column'))
     if (per.some(c => !c)) return null
-    const slots: Record<string, string[]> = Object.fromEntries(Object.keys(rule.slots).map(name => [name, per.flatMap(c => c![name]!)]))
+    const slots: Record<string, string[]> = { ...intro }
+    for (const [name, def] of Object.entries(rule.slots)) if (def.scope !== 'intro') slots[name] = per.flatMap(c => c![name]!)
     return { slots, columns: per as Record<string, string[]>[] }
   }
-  const slots = claimLeaves(rule, columns.flat(), defaults)
+  // Without a repeat the leaves above the row are simply the section's first leaves, as before the facts split them off.
+  const slots = claimLeaves(rule, [...(meta.intro ?? []), ...columns.flat()], defaults)
   return slots && { slots }
 }
 
@@ -284,7 +319,8 @@ function validateSections(table: MappingTable, components: Map<string, KitCompon
     for (const root of [rule.when?.root ?? []].flat()) if (root !== 'run' && !isBuilderElement(table.builder, root)) problems.push(`${at}: root ${root} is not a ${table.builder} element or run`)
     if (rule.when?.repeat === 'columns' && rule.each !== 'column') problems.push(`${at}: repeat columns needs each: column`)
     if (rule.each === 'column' && rule.when?.repeat !== 'columns') problems.push(`${at}: each column needs when.repeat columns`)
-    const readsSlots = (value: string, where: string, type: string | undefined, slotted: boolean) => {
+    for (const [name, slot] of Object.entries(rule.slots)) if (slot.scope === 'intro' && rule.when?.repeat !== 'columns') problems.push(`${at}: slot ${name} is scope intro, which needs when.repeat columns`)
+    const readsSlots = (value: string, where: string, type: string | undefined, slotted: boolean, item = false) => {
       const slots = sectionValueSlots(value)
       if (!slots) { problems.push(`${at}: ${where} = ${value} is not a section value`); return }
       if (!slotted && slots.length) problems.push(`${at}: ${where} reads a slot, but items of each ${rule.each} read their own leaf`)
@@ -292,6 +328,7 @@ function validateSections(table: MappingTable, components: Map<string, KitCompon
         const def = rule.slots[slot]
         if (!def) problems.push(`${at}: ${where} reads undeclared slot ${slot}`)
         else if ((type === 'string' || type === 'text') && def.max !== 1) problems.push(`${at}: ${where} is ${type} but slot ${slot} may hold several leaves (max must be 1)`)
+        else if (item && def.scope === 'intro') problems.push(`${at}: ${where} reads intro slot ${slot}, but the items of each column read their own column`)
       }
     }
     for (const [prop, value] of Object.entries(rule.props ?? {})) {
@@ -307,7 +344,7 @@ function validateSections(table: MappingTable, components: Map<string, KitCompon
       const fields = target && typeof target.items === 'object' ? target.items.fields ?? {} : {}
       for (const [field, value] of Object.entries(rule.item ?? {})) {
         if (!fields[field]) problems.push(`${at}: ${c.id}.${rule.into}[] has no field ${field}`)
-        readsSlots(value, `${rule.into}[].${field}`, fields[field]?.type, rule.each === 'column')
+        readsSlots(value, `${rule.into}[].${field}`, fields[field]?.type, rule.each === 'column', true)
       }
     } else if (rule.item || rule.each) problems.push(`${at}: each/item without into`)
     const bound = new Set([...Object.keys(rule.props ?? {}), ...(rule.into ? [rule.into] : [])])

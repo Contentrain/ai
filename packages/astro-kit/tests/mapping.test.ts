@@ -102,6 +102,7 @@ describe('mapping tables', () => {
 })
 
 const leaf = (path: string, name: string, attrs?: Record<string, unknown>): SectionLeaf => ({ name, path, attrs })
+const figureSlot = (numeric: boolean): SectionRule => ({ id: 'n.one', component: 'stats', slots: { v: { match: 'core/heading', numeric } }, into: 'items', each: '@v', item: { value: 'dom:' } })
 const sectionTable = (builder: 'gutenberg' | 'elementor', sections: SectionRule[]): MappingTable => ({ format: 'astro-kit-mapping@1', builder, version: '1', fallback: 'prose', rules: [], sections })
 
 describe('section rules', () => {
@@ -199,6 +200,114 @@ describe('section rules', () => {
       'elementor section faq.accordion: each @nope .elementor-accordion-item is not @<declared slot> [selector] or column',
       'elementor section faq.rooted: root core/cover is not a elementor element or run',
     ])
+  })
+
+  it('reads the leaves above a repeated row as the section\'s own slots, and the columns as items', () => {
+    const rule: SectionRule = {
+      id: 'x.columns', component: 'card-grid', when: { repeat: 'columns' },
+      slots: { heading: { match: 'core/heading', max: 1, scope: 'intro' }, title: { match: 'core/heading', min: 1, max: 1 } },
+      into: 'items', each: 'column', item: { title: '@title dom:' },
+    }
+    const cols = [0, 1].map(i => [leaf(`0.1.${i}.0`, 'core/heading')])
+    expect(matchSection(rule, cols, { index: 0, count: 1, intro: [leaf('0.0', 'core/heading')] })).toEqual({
+      slots: { heading: ['0.0'], title: ['0.1.0.0', '0.1.1.0'] },
+      columns: [{ title: ['0.1.0.0'] }, { title: ['0.1.1.0'] }],
+    })
+    // Nothing above the row: the intro slot is simply empty. A leaf above that no intro slot takes refuses the rule.
+    expect(matchSection(rule, cols, { index: 0, count: 1 })?.slots.heading).toEqual([])
+    expect(matchSection(rule, cols, { index: 0, count: 1, intro: [leaf('0.0', 'core/heading'), leaf('0.0b', 'core/heading')] })).toBeNull()
+    // Without a repeat the intro leaves are the section's first leaves.
+    const single: SectionRule = { id: 'y.list', component: 'faq', slots: { title: { match: 'core/heading', max: 1 }, faq: { match: 'core/details', min: 2 } }, into: 'items', each: '@faq', item: { question: 'dom:summary', answer: 'dom:p' } }
+    expect(matchSection(single, [[leaf('0.1', 'core/details'), leaf('0.2', 'core/details')]], { index: 0, count: 1, intro: [leaf('0.0', 'core/heading')] })?.slots).toEqual({ title: ['0.0'], faq: ['0.1', '0.2'] })
+  })
+
+  it('tells a figure from a word by the facts\' numeric flag, and rules a figure out the same way', () => {
+    const figure = { ...leaf('0.0', 'core/heading'), numeric: true }
+    expect(matchSection(figureSlot(true), [[figure]], { index: 0, count: 1 })).not.toBeNull()
+    expect(matchSection(figureSlot(true), [[leaf('0.0', 'core/heading')]], { index: 0, count: 1 })).toBeNull()
+    expect(matchSection(figureSlot(false), [[figure]], { index: 0, count: 1 })).toBeNull()
+    expect(matchSection(figureSlot(false), [[leaf('0.0', 'core/heading')]], { index: 0, count: 1 })).not.toBeNull()
+  })
+
+  it('catches an intro slot that cannot work: no repeat, or a column item reading it', () => {
+    const bad: MappingTable = sectionTable('gutenberg', [
+      { id: 'a.intro', component: 'faq', slots: { title: { match: 'core/heading', max: 1, scope: 'intro' }, faq: { match: 'core/details', min: 2 } }, props: { heading: '@title dom:' }, into: 'items', each: '@faq', item: { question: 'dom:summary', answer: 'dom:p' } },
+      { id: 'a.reads', component: 'card-grid', when: { repeat: 'columns' }, slots: { heading: { match: 'core/heading', max: 1, scope: 'intro' }, title: { match: 'core/heading', min: 1, max: 1 } }, into: 'items', each: 'column', item: { title: '@heading dom:' } },
+    ])
+    expect(validateMapping(bad, catalog)).toEqual([
+      'gutenberg section a.intro: slot title is scope intro, which needs when.repeat columns',
+      'gutenberg section a.reads: items[].title reads intro slot heading, but the items of each column read their own column',
+    ])
+  })
+
+  // The Gutenberg section idioms of WordPress's own pattern library, as facts leaves (tt5 launch and company).
+  describe('Gutenberg figures, steps, plans, logos and quotes', () => {
+    const g = (path: string, name: string, extra: Partial<SectionLeaf> = {}): SectionLeaf => ({ ...leaf(path, name), ...extra })
+    const classify = (columns: SectionLeaf[][], meta: { index?: number, count?: number, root?: string, intro?: SectionLeaf[] } = {}) => classifySection(tables.gutenberg!, columns, { index: 1, count: 5, ...meta })
+    const figure = (i: number) => [g(`0.${i}.0`, 'core/heading', { numeric: true }), g(`0.${i}.1`, 'core/paragraph')]
+
+    it('a row of figures is stats, ahead of the card grid that has the same leaves', () => {
+      expect(classify([0, 1, 2].map(figure), { root: 'core/columns' })?.rule.id).toBe('stats.columns')
+      // The same row with words for headings is a card grid.
+      const words = [0, 1, 2].map(i => [g(`0.${i}.0`, 'core/heading'), g(`0.${i}.1`, 'core/paragraph')])
+      expect(classify(words, { root: 'core/columns' })?.rule.id).toBe('card-grid.columns')
+    })
+
+    it('a figures row under its own heading keeps the heading: stats with a title', () => {
+      const m = classify([0, 1].map(i => figure(i + 1)), { root: 'core/group', intro: [g('0.0', 'core/heading'), g('0.0b', 'core/paragraph')] })
+      expect(m?.rule.id).toBe('stats.columns')
+      expect(m?.match.slots).toMatchObject({ heading: ['0.0'], lead: ['0.0b'], figure: ['0.1.0', '0.2.0'], label: ['0.1.1', '0.2.1'] })
+    })
+
+    it('numbered columns of heading and text are steps; the number is the paragraph, not the heading', () => {
+      const step = (i: number) => [g(`0.${i}.0`, 'core/paragraph', { numeric: true, ordinal: true }), g(`0.${i}.1`, 'core/heading'), g(`0.${i}.2`, 'core/paragraph')]
+      const m = classify([1, 2, 3].map(step), { root: 'core/group', intro: [g('0.0', 'core/heading')] })
+      expect(m?.rule.id).toBe('steps.columns')
+      expect(m?.match.columns?.[0]).toMatchObject({ number: ['0.1.0'], title: ['0.1.1'], text: ['0.1.2'] })
+    })
+
+    it('columns with a name, a figure price, a period, a list and a button are pricing plans', () => {
+      const plan = (i: number) => [g(`0.${i}.0`, 'core/heading'), g(`0.${i}.1`, 'core/paragraph', { numeric: true }), g(`0.${i}.2`, 'core/paragraph'), g(`0.${i}.3`, 'core/list'), g(`0.${i}.4`, 'core/button')]
+      const m = classify([1, 2, 3].map(plan), { root: 'core/group', intro: [g('0.0', 'core/heading')] })
+      expect(m?.rule.id).toBe('pricing.columns')
+      expect(m?.match.columns?.[1]).toMatchObject({ name: ['0.2.0'], price: ['0.2.1'], period: ['0.2.2'], features: ['0.2.3'], button: ['0.2.4'] })
+      // A plan lists what it includes, and a price is a figure: without either the same columns are not plans.
+      expect(classify([1, 2].map(i => [g(`0.${i}.0`, 'core/heading'), g(`0.${i}.1`, 'core/paragraph'), g(`0.${i}.2`, 'core/paragraph'), g(`0.${i}.3`, 'core/list')]), { root: 'core/group' })?.rule.id).not.toBe('pricing.columns')
+    })
+
+    it('a heading and four or more logo-sized pictures and nothing else are logos', () => {
+      const logos = [g('0.0', 'core/heading'), ...[1, 2, 3, 4, 5].map(i => g(`0.${i}`, 'core/image', { small: true }))]
+      expect(classify([logos], { root: 'core/group' })?.rule.id).toBe('logo-cloud.images')
+      expect(classify([logos.slice(0, 4)], { root: 'core/group' })?.rule.id).not.toBe('logo-cloud.images')
+      // A picture with words beside it is not a logo row.
+      expect(classify([[...logos, g('0.9', 'core/paragraph')]], { root: 'core/group' })?.rule.id).not.toBe('logo-cloud.images')
+      // Photos, and images whose size the facts did not state, are not logos.
+      const photos = [g('0.0', 'core/heading'), ...[1, 2, 3, 4, 5].map(i => g(`0.${i}`, 'core/image'))]
+      expect(classify([photos], { root: 'core/group' })?.rule.id).not.toBe('logo-cloud.images')
+    })
+
+    it('a timeline whose first paragraph is a year is not steps: the year stays in the text', () => {
+      const entry = (i: number) => [g(`0.${i}.0`, 'core/paragraph', { numeric: true }), g(`0.${i}.1`, 'core/heading'), g(`0.${i}.2`, 'core/paragraph')]
+      const m = classify([1, 2, 3].map(entry), { root: 'core/group', intro: [g('0.0', 'core/heading')] })
+      expect(m?.rule.id).not.toBe('steps.columns')
+      // Facts that predate the flags set neither: no new rule fires on them.
+      const old = classify([1, 2, 3].map(i => [g(`0.${i}.0`, 'core/paragraph'), g(`0.${i}.1`, 'core/heading'), g(`0.${i}.2`, 'core/paragraph')]), { root: 'core/group' })
+      expect(old?.rule.id).not.toBe('steps.columns')
+    })
+
+    it('columns of a picture and a quote are testimonials with their portraits', () => {
+      const m = classify([0, 1].map(i => [g(`0.${i}.0`, 'core/image'), g(`0.${i}.1`, 'core/quote')]), { root: 'core/columns' })
+      expect(m?.rule.id).toBe('testimonial.columns')
+      expect(m?.match.columns?.[1]).toMatchObject({ avatar: ['0.1.0'], quote: ['0.1.1'] })
+      expect(tables.gutenberg!.sections?.find(r => r.id === 'testimonial.columns')?.item).toMatchObject({ avatar: '@avatar img:img@src', avatarAlt: '@avatar img:img@alt', name: '@quote dom:cite' })
+    })
+
+    it('a titled card grid inside a group is a card grid with that title', () => {
+      const cards = [0, 1, 2].map(i => [g(`0.${i + 1}.0`, 'core/heading'), g(`0.${i + 1}.1`, 'core/paragraph')])
+      const m = classify(cards, { root: 'core/group', intro: [g('0.0', 'core/heading')] })
+      expect(m?.rule.id).toBe('card-grid.columns')
+      expect(m?.match.slots.heading).toEqual(['0.0'])
+    })
   })
 
   // The golden Elementor site (migrate fixtures/golden/elementor/setup.php), as facts sections: leaves per column.

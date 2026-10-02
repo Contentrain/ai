@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "gutenberg",
-  "version": "5",
+  "version": "6",
   "fallback": "prose",
   "rules": [
     {
@@ -660,6 +660,226 @@
       }
     },
     {
+      "id": "stats.columns",
+      "component": "stats",
+      "when": {
+        "columns": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "repeat": "columns",
+        "root": [
+          "core/columns",
+          "core/group"
+        ]
+      },
+      "slots": {
+        "heading": {
+          "match": "core/heading",
+          "max": 1,
+          "scope": "intro"
+        },
+        "lead": {
+          "match": "core/paragraph",
+          "max": 1,
+          "scope": "intro"
+        },
+        "figure": {
+          "match": "core/heading",
+          "min": 1,
+          "max": 1,
+          "numeric": true
+        },
+        "label": {
+          "match": "core/paragraph",
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@heading dom:",
+        "intro": "@lead dom:"
+      },
+      "into": "items",
+      "each": "column",
+      "item": {
+        "value": "@figure dom:",
+        "label": "@label dom:"
+      }
+    },
+    {
+      "id": "pricing.columns",
+      "component": "pricing",
+      "when": {
+        "columns": [
+          2,
+          3,
+          4
+        ],
+        "repeat": "columns",
+        "root": [
+          "core/columns",
+          "core/group"
+        ]
+      },
+      "slots": {
+        "heading": {
+          "match": "core/heading",
+          "max": 1,
+          "scope": "intro"
+        },
+        "lead": {
+          "match": "core/paragraph",
+          "max": 1,
+          "scope": "intro"
+        },
+        "name": {
+          "match": "core/heading",
+          "min": 1,
+          "max": 1,
+          "numeric": false
+        },
+        "price": {
+          "match": "core/paragraph",
+          "min": 1,
+          "max": 1,
+          "numeric": true
+        },
+        "period": {
+          "match": "core/paragraph",
+          "max": 1
+        },
+        "features": {
+          "match": "core/list",
+          "max": 1,
+          "min": 1
+        },
+        "button": {
+          "match": "core/button",
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@heading dom:",
+        "intro": "@lead dom:"
+      },
+      "into": "plans",
+      "each": "column",
+      "item": {
+        "name": "@name dom:",
+        "price": "@price dom:",
+        "period": "@period dom:",
+        "features": "@features html:",
+        "ctaLabel": "@button dom:",
+        "ctaHref": "@button dom:a@href"
+      }
+    },
+    {
+      "id": "steps.columns",
+      "component": "steps",
+      "when": {
+        "columns": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "repeat": "columns",
+        "root": [
+          "core/columns",
+          "core/group"
+        ]
+      },
+      "slots": {
+        "heading": {
+          "match": "core/heading",
+          "max": 1,
+          "scope": "intro"
+        },
+        "lead": {
+          "match": "core/paragraph",
+          "max": 1,
+          "scope": "intro"
+        },
+        "number": {
+          "match": "core/paragraph",
+          "min": 1,
+          "max": 1,
+          "ordinal": true
+        },
+        "title": {
+          "match": "core/heading",
+          "min": 1,
+          "max": 1,
+          "numeric": false
+        },
+        "text": {
+          "match": "core/paragraph",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@heading dom:",
+        "intro": "@lead dom:"
+      },
+      "into": "items",
+      "each": "column",
+      "item": {
+        "title": "@title dom:",
+        "text": "@text dom:"
+      }
+    },
+    {
+      "id": "testimonial.columns",
+      "component": "testimonial",
+      "when": {
+        "columns": [
+          2,
+          3,
+          4
+        ],
+        "repeat": "columns",
+        "root": [
+          "core/columns",
+          "core/group"
+        ]
+      },
+      "slots": {
+        "heading": {
+          "match": "core/heading",
+          "max": 1,
+          "scope": "intro"
+        },
+        "avatar": {
+          "match": "core/image",
+          "max": 1
+        },
+        "quote": {
+          "match": [
+            "core/quote",
+            "core/pullquote"
+          ],
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@heading dom:"
+      },
+      "into": "items",
+      "each": "column",
+      "item": {
+        "quote": "@quote dom:p",
+        "name": "@quote dom:cite",
+        "avatar": "@avatar img:img@src",
+        "avatarAlt": "@avatar img:img@alt"
+      }
+    },
+    {
       "id": "card-grid.columns",
       "component": "card-grid",
       "when": {
@@ -669,9 +889,22 @@
           4
         ],
         "repeat": "columns",
-        "root": "core/columns"
+        "root": [
+          "core/columns",
+          "core/group"
+        ]
       },
       "slots": {
+        "heading": {
+          "match": "core/heading",
+          "max": 1,
+          "scope": "intro"
+        },
+        "lead": {
+          "match": "core/paragraph",
+          "max": 1,
+          "scope": "intro"
+        },
         "media": {
           "match": "core/image",
           "max": 1
@@ -698,6 +931,36 @@
         "image": "@media img:img@src",
         "imageAlt": "@media img:img@alt",
         "href": "@button dom:a@href"
+      },
+      "props": {
+        "title": "@heading dom:",
+        "intro": "@lead dom:"
+      }
+    },
+    {
+      "id": "logo-cloud.images",
+      "component": "logo-cloud",
+      "when": {},
+      "slots": {
+        "title": {
+          "match": "core/heading",
+          "max": 1
+        },
+        "logo": {
+          "match": "core/image",
+          "min": 4,
+          "small": true
+        }
+      },
+      "props": {
+        "heading": "@title dom:"
+      },
+      "into": "items",
+      "each": "@logo",
+      "item": {
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
+        "href": "dom:a@href"
       }
     },
     {
