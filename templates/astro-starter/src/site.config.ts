@@ -36,6 +36,8 @@ export interface CustomType {
   card: { title: string, excerpt?: string, image?: string, date?: string }
   /** The rich-text field holding the entry's body. */
   body?: string
+  /** Previous / next links under the entry, newest first as WordPress orders them; only when the source's own page had them. */
+  adjacent?: boolean
   fields: readonly CustomField[]
 }
 
