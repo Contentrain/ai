@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "elementor",
-  "version": "7",
+  "version": "8",
   "fallback": "prose",
   "defaults": {
     "elementor/video": {
@@ -477,6 +477,182 @@
       },
       "props": {
         "message": "@alert attr:alert_title || @alert dom:.elementor-alert-title"
+      }
+    },
+    {
+      "id": "steps.columns",
+      "component": "steps",
+      "variant": {
+        "layout": "row",
+        "style": "numbered"
+      },
+      "when": {
+        "columns": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "repeat": "columns",
+        "root": "elementor/container"
+      },
+      "slots": {
+        "heading": {
+          "match": "elementor/heading",
+          "max": 1,
+          "scope": "intro"
+        },
+        "lead": {
+          "match": "elementor/text-editor",
+          "max": 1,
+          "scope": "intro"
+        },
+        "number": {
+          "match": "elementor/heading",
+          "min": 1,
+          "max": 1,
+          "ordinal": true
+        },
+        "title": {
+          "match": "elementor/heading",
+          "min": 1,
+          "max": 1,
+          "numeric": false
+        },
+        "text": {
+          "match": "elementor/text-editor",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@heading attr:title || @heading dom:",
+        "intro": "@lead dom:"
+      },
+      "into": "items",
+      "each": "column",
+      "item": {
+        "title": "@title attr:title || @title dom:",
+        "text": "@text dom:"
+      }
+    },
+    {
+      "id": "pricing.columns",
+      "component": "pricing",
+      "when": {
+        "columns": [
+          2,
+          3,
+          4
+        ],
+        "repeat": "columns",
+        "root": "elementor/container"
+      },
+      "slots": {
+        "heading": {
+          "match": "elementor/heading",
+          "max": 1,
+          "scope": "intro"
+        },
+        "lead": {
+          "match": "elementor/text-editor",
+          "max": 1,
+          "scope": "intro"
+        },
+        "name": {
+          "match": "elementor/heading",
+          "min": 1,
+          "max": 1,
+          "numeric": false
+        },
+        "price": {
+          "match": "elementor/heading",
+          "min": 1,
+          "max": 1,
+          "numeric": true
+        },
+        "period": {
+          "match": "elementor/text-editor",
+          "max": 1
+        },
+        "features": {
+          "match": "elementor/icon-list",
+          "min": 1,
+          "max": 1
+        },
+        "button": {
+          "match": "elementor/button",
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@heading attr:title || @heading dom:",
+        "intro": "@lead dom:"
+      },
+      "into": "plans",
+      "each": "column",
+      "item": {
+        "name": "@name attr:title || @name dom:",
+        "price": "@price attr:title || @price dom:",
+        "period": "@period dom:",
+        "features": "@features html:",
+        "ctaLabel": "@button attr:text || @button dom:.elementor-button-text",
+        "ctaHref": "@button attr:link.url || @button dom:a@href"
+      }
+    },
+    {
+      "id": "team.columns",
+      "component": "team",
+      "when": {
+        "columns": [
+          2,
+          3,
+          4
+        ],
+        "repeat": "columns",
+        "root": "elementor/container"
+      },
+      "slots": {
+        "heading": {
+          "match": "elementor/heading",
+          "max": 1,
+          "scope": "intro"
+        },
+        "lead": {
+          "match": "elementor/text-editor",
+          "max": 1,
+          "scope": "intro"
+        },
+        "photo": {
+          "match": "elementor/image",
+          "min": 1,
+          "max": 1,
+          "portrait": true
+        },
+        "name": {
+          "match": "elementor/heading",
+          "min": 1,
+          "max": 1,
+          "numeric": false
+        },
+        "role": {
+          "match": "elementor/text-editor",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@heading attr:title || @heading dom:",
+        "intro": "@lead dom:"
+      },
+      "into": "items",
+      "each": "column",
+      "item": {
+        "name": "@name attr:title || @name dom:",
+        "role": "@role dom:",
+        "image": "@photo attr:image.url || @photo img:img@src",
+        "imageAlt": "@photo img:img@alt"
       }
     },
     {
