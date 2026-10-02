@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "divi",
-  "version": "5",
+  "version": "6",
   "fallback": "prose",
   "rules": [
     {

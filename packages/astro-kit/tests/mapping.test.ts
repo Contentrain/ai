@@ -232,6 +232,17 @@ describe('section rules', () => {
     expect(matchSection(figureSlot(false), [[leaf('0.0', 'core/heading')]], { index: 0, count: 1 })).not.toBeNull()
   })
 
+  it('catches a when.order that cannot work: a name that is no slot, or an intro slot against a column slot', () => {
+    const bad: MappingTable = sectionTable('gutenberg', [
+      { id: 'o.name', component: 'stats', when: { order: ['figure', 'caption'] }, slots: { figure: { match: 'core/heading' } }, into: 'items', each: '@figure', item: { value: 'dom:' } },
+      { id: 'o.scope', component: 'stats', when: { repeat: 'columns', order: ['title', 'figure'] }, slots: { title: { match: 'core/heading', max: 1, scope: 'intro' }, figure: { match: 'core/heading', min: 1, max: 1 } }, into: 'items', each: 'column', item: { value: '@figure dom:' } },
+    ])
+    expect(validateMapping(bad, catalog)).toEqual([
+      'gutenberg section o.name: when.order names caption, which is not a slot',
+      'gutenberg section o.scope: when.order compares an intro slot with a column slot',
+    ])
+  })
+
   it('catches an intro slot that cannot work: no repeat, or a column item reading it', () => {
     const bad: MappingTable = sectionTable('gutenberg', [
       { id: 'a.intro', component: 'faq', slots: { title: { match: 'core/heading', max: 1, scope: 'intro' }, faq: { match: 'core/details', min: 2 } }, props: { heading: '@title dom:' }, into: 'items', each: '@faq', item: { question: 'dom:summary', answer: 'dom:p' } },
@@ -256,6 +267,18 @@ describe('section rules', () => {
       // The same row with words for headings is a card grid.
       const words = [0, 1, 2].map(i => [g(`0.${i}.0`, 'core/heading'), g(`0.${i}.1`, 'core/paragraph')])
       expect(classify(words, { root: 'core/columns' })?.rule.id).toBe('card-grid.columns')
+    })
+
+    it('a row of figures under their labels is stats in the source order: the label first, the kit\'s default', () => {
+      const labelled = (i: number) => [g(`0.${i}.0`, 'core/paragraph'), g(`0.${i}.1`, 'core/heading', { numeric: true })]
+      const m = classify([0, 1, 2].map(labelled), { root: 'core/columns' })
+      expect(m?.rule.id).toBe('stats.columns-label-first')
+      expect(m?.rule.variant).toBeUndefined()
+      // A figure with no label reads the same either way: the first rule takes it.
+      expect(classify([0, 1, 2].map(i => [g(`0.${i}.0`, 'core/heading', { numeric: true })]), { root: 'core/columns' })?.rule.id).toBe('stats.columns')
+      // A row that mixes the two orders is neither: no section of it reads its source in order.
+      const mixed = [figure(0), labelled(1), figure(2)]
+      expect(classify(mixed, { root: 'core/columns' })?.rule.component).not.toBe('stats')
     })
 
     it('a figures row under its own heading keeps the heading: stats with a title', () => {
@@ -406,6 +429,7 @@ describe('the page reads a section in the source order (G-text)', () => {
   const statsRule = (builder: string) => tables[builder]!.sections?.find(r => r.component === 'stats')
   it('figures first where the source writes the figure first, the counter title first where Elementor does', () => {
     expect(statsRule('gutenberg')?.variant).toEqual({ order: 'value-first' })
+    expect(statsRule('gutenberg')?.when?.order).toEqual(['figure', 'label'])
     expect(statsRule('divi')?.variant).toEqual({ order: 'value-first' })
     // The Elementor counter names itself before its number: the kit's default.
     expect(statsRule('elementor')?.variant?.order).toBeUndefined()
