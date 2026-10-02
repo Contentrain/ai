@@ -1,5 +1,17 @@
 # @contentrain/astro-kit
 
+## 0.15.0
+
+### Minor Changes
+
+- 68090df: Right-to-left support: components use logical utilities (`ms-`/`ps-`/`start-`/`end-`/`border-s`/`text-start`) instead of left/right, the slider runs right to left on an RTL page (Embla `direction`), and pagination and slider arrows mirror under `dir="rtl"`. Left-to-right rendering is unchanged.
+
+## 0.14.0
+
+### Minor Changes
+
+- 879f2bb: hero: a `width` variant for the cover layout — `full` (the default, unchanged) or `content`, the cover in the reading column as a WordPress cover block that is not alignfull sits under the page title. The gutenberg `core/cover` rule reads it off `alignfull`. An `actionsAlign` variant (`inherit` default, unchanged, or `start`) keeps the buttons at the start edge under centred text, as a WordPress buttons block with no justification sits inside a centred cover. The starter's ComposedPage takes `showTitle` on the home page too (default unchanged: off on home).
+
 ## 0.13.0
 
 ### Minor Changes
