@@ -71,7 +71,7 @@ const quoted = (text: string) => /^\s*["'“‘„«‹「『]/.test(text)
           <blockquote class={s.quote()}><p class:list={[!quoted(item.quote) && "before:content-[open-quote] after:content-[close-quote]"]}>{item.quote}</p></blockquote>
           <figcaption class={s.person()}>
             {imageOf(item.avatar, item.avatarAlt) && <KitImage image={imageOf(item.avatar, item.avatarAlt)!} sizes="48px" class="size-12 shrink-0 rounded-full object-cover" />}
-            <span class="flex flex-col text-left">
+            <span class="flex flex-col text-start">
               <span class={s.name()}>{item.name}</span>
               {item.role && <span class={s.role()}>{item.role}</span>}
             </span>

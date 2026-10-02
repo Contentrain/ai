@@ -17,7 +17,7 @@ const header = tv({
     layout: {
       split: { inner: 'justify-between' },
       centered: { inner: 'flex-col gap-3 md:gap-4' },
-      'brand-left': { inner: 'justify-start [&>nav]:ml-10' },
+      'brand-left': { inner: 'justify-start [&>nav]:ms-10' },
     },
     tone: {
       default: { root: 'border-b border-line bg-surface text-ink' },
@@ -74,7 +74,7 @@ const wrap = tagline ? 'flex-wrap md:flex-nowrap' : undefined
           {showName && <span>{siteName}</span>}
         </a>
       )}
-    <div class:list={['flex items-center gap-4', layout === 'centered' ? 'justify-center' : 'ml-auto']}>
+    <div class:list={['flex items-center gap-4', layout === 'centered' ? 'justify-center' : 'ms-auto']}>
       <Nav items={items} label={navLabel} menuLabel={menuLabel} closeLabel={closeLabel} part="nav-header" color={linkNav ? 'link' : 'current'} align={layout === 'centered' ? 'center' : 'end'} />
       {action && <Button action={action} size="sm" class="hidden md:inline-flex" />}
     </div>

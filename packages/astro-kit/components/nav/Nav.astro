@@ -15,7 +15,7 @@ const nav = tv({
   },
   variants: {
     // Submenus open towards the page: leftwards under an end-aligned menu.
-    align: { start: { list: 'justify-start', sub: 'left-0' }, end: { list: 'justify-end', sub: 'right-0' }, center: { list: 'justify-center', sub: 'left-0' } },
+    align: { start: { list: 'justify-start', sub: 'start-0' }, end: { list: 'justify-end', sub: 'end-0' }, center: { list: 'justify-center', sub: 'start-0' } },
     density: { compact: { list: 'gap-5 text-sm' }, comfortable: { list: 'gap-8 text-base' } },
     // current: the surrounding text, dimmed until hovered. link: the site's link colour at full strength, as themes that
     // colour every link draw their menu; the toggle keeps the surrounding text.
@@ -74,8 +74,8 @@ const drawer = `${id}-drawer`
             <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
             {menuLabel}
           </button>
-          <div id={drawer} popover class="m-0 ml-auto h-dvh max-h-none w-80 max-w-[85vw] border-l border-line bg-surface p-6 text-ink shadow-xl backdrop:bg-ink/40">
-            <button type="button" popovertarget={drawer} popovertargetaction="hide" class="mb-6 ml-auto flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-surface-muted">
+          <div id={drawer} popover class="m-0 ms-auto h-dvh max-h-none w-80 max-w-[85vw] border-s border-line bg-surface p-6 text-ink shadow-xl backdrop:bg-ink/40">
+            <button type="button" popovertarget={drawer} popovertargetaction="hide" class="mb-6 ms-auto flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-surface-muted">
               <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18" /></svg>
               {closeLabel}
             </button>
@@ -84,7 +84,7 @@ const drawer = `${id}-drawer`
                 <li>
                   <a href={item.href} aria-current={item.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-ink no-underline hover:bg-surface-muted aria-[current=page]:font-semibold">{item.label}</a>
                   {item.children && item.children.length > 0 && (
-                    <ul class="ml-3 border-l border-line pl-3">
+                    <ul class="ms-3 border-s border-line ps-3">
                       {item.children.map(child => <li><a href={child.href} class="block rounded-md px-3 py-1.5 text-sm text-ink-muted no-underline hover:text-ink">{child.label}</a></li>)}
                     </ul>
                   )}
@@ -100,7 +100,7 @@ const drawer = `${id}-drawer`
             <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
             {menuLabel}
           </summary>
-          <ul class="absolute right-0 z-30 mt-2 flex w-64 flex-col gap-1 rounded-lg border border-line bg-surface p-3 text-ink shadow-lg">
+          <ul class="absolute end-0 z-30 mt-2 flex w-64 flex-col gap-1 rounded-lg border border-line bg-surface p-3 text-ink shadow-lg">
             {items.flatMap(item => [item, ...(item.children ?? [])]).map(item => (
               <li><a href={item.href} aria-current={item.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-sm text-ink no-underline hover:bg-surface-muted">{item.label}</a></li>
             ))}
