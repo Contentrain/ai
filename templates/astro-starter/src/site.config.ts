@@ -101,9 +101,9 @@ export interface SiteConfig {
    * `phone` and `email` as text, `socials` as a list of rows each with a link and a label.
    * Absent, or a field empty, the footer prints nothing for it.
    */
+  contact?: { address?: string, phone?: string, email?: string, socials?: string }
   /** Custom post types: each gets its single pages, archive and term lists. */
   types?: readonly CustomType[]
-  contact?: { address?: string, phone?: string, email?: string, socials?: string }
   /**
    * The source site's hosts (`site.com`): a link to one of them in migrated content is internal
    * whatever its scheme, `www.` or letter case, and resolves through the published set. Fixed at

@@ -23,7 +23,13 @@ export interface ShownField {
 }
 
 const LINKED = new Set(['url', 'email', 'phone'])
-const hrefOf = (type: string, value: string) => (type === 'email' ? `mailto:${value}` : type === 'phone' ? `tel:${value.replace(/[^\d+]/g, '')}` : value)
+/** Only addresses a visitor can follow safely become links: http(s) and site paths; `javascript:` or `data:` stay text. */
+const safeHref = (value: string): string | undefined => (/^https?:\/\//i.test(value) || /^\/(?!\/)/.test(value) ? value : undefined)
+
+function linked(type: string, value: string): Shown {
+  const href = type === 'email' ? `mailto:${value}` : type === 'phone' ? `tel:${value.replace(/[^\d+]/g, '')}` : safeHref(value)
+  return href ? { kind: 'link', text: value, href } : { kind: 'text', text: value }
+}
 
 /** Where each custom entry and term lives, by `collection:id`, for relations between them. */
 export type Targets = ReadonlyMap<string, { href: string, title: string }>
@@ -62,7 +68,8 @@ async function show(field: CustomField, value: unknown, targets: Targets, depth:
   }
   if (type === 'richtext' || type === 'markdown') return typeof value === 'string' ? { kind: 'html', html: value } : undefined
   if (type === 'date' || type === 'datetime') return value instanceof Date ? { kind: 'time', value, dateOnly: type === 'date' } : undefined
-  if (type === 'boolean') return value === true ? { kind: 'text', text: field.label } : undefined
+  // The label is the row's term; a true value is its mark.
+  if (type === 'boolean') return value === true ? { kind: 'text', text: '✓' } : undefined
   if (type === 'object' && depth < 2) {
     const rows = await shownFields(field.fields ?? [], value as Record<string, unknown>, targets, depth + 1)
     return rows.length > 0 ? { kind: 'group', rows } : undefined
@@ -79,7 +86,7 @@ async function show(field: CustomField, value: unknown, targets: Targets, depth:
   if (typeof value === 'number') return { kind: 'text', text: String(value) }
   const str = text(value)
   if (!str) return undefined
-  return LINKED.has(type) ? { kind: 'link', text: str, href: hrefOf(type, str) } : { kind: 'text', text: str }
+  return LINKED.has(type) ? linked(type, str) : { kind: 'text', text: str }
 }
 
 export async function shownFields(fields: readonly CustomField[], data: Record<string, unknown>, targets: Targets, depth = 0): Promise<ShownField[]> {

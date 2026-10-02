@@ -163,11 +163,13 @@
     "projects/grid-monitor/index.html": {
       "contains": [
         "Grid Monitor",
-        "Grid Energy"
+        "Grid Energy",
+        "javascript:alert(1)</span>"
       ],
       "excludes": [
         "Featured project",
-        "Launch date"
+        "Launch date",
+        "href=\"javascript:"
       ]
     },
     "project-type/infrastructure/index.html": {
