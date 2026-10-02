@@ -165,6 +165,8 @@ describe('validateProjectPlan', () => {
     const p = plan()
     p.site.entryLayouts = { 'type-project': { adjacent: true } }
     expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.entryLayouts = { 'type-project': { adjacent: 'yes' as unknown as boolean } }
+    expect(validateProjectPlan(p).errors).toEqual(['site.entryLayouts.type-project.adjacent is not true or false'])
     p.site.entryLayouts = { 'type-project': { adjacent: false, more: 3 } }
     expect(validateProjectPlan(p).errors).toEqual([])
     p.site.entryLayouts = { 'type-project': { adjacent: false, more: 21 } }

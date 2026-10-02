@@ -453,6 +453,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   if (site?.lists && !['cards', 'list', 'full'].includes(site.lists.display)) errors.push(`site.lists.display ${site.lists.display} is not cards, list or full`)
   if (site?.lists?.text !== undefined && !CSS_LENGTH.test(site.lists.text)) errors.push(`site.lists.text ${site.lists.text} is not a CSS size`)
   for (const [route, layout] of Object.entries(site?.entryLayouts ?? {})) {
+    if (typeof layout?.adjacent !== 'boolean') errors.push(`site.entryLayouts.${route}.adjacent is not true or false`)
     if (layout?.more !== undefined && (!Number.isSafeInteger(layout.more) || layout.more < 0 || layout.more > 20)) errors.push(`site.entryLayouts.${route}.more is not a count from 0 to 20`)
   }
   const chrome = site?.chrome
