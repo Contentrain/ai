@@ -83,7 +83,7 @@ export function imageOf(media: Media): ImageInput {
 
 /**
  * Interface text from the `ui-strings` dictionary: the entry in the site's own tag (`tr-TR`) wins, then
- * the same language (`tr`), then any other locale's entry (the starter's English) fills what is missing.
+ * the same language (`tr`), then English, then any other locale's entry fills what is missing.
  * A key no locale has shows the key itself.
  */
 export async function getStrings(): Promise<(key: string) => string> {

@@ -22,10 +22,11 @@ export function siteLanguage(stored: string | null | undefined): string {
   return language
 }
 
-/** How close a string's locale is to the site's: the same tag (2), the same language (1), another (0). */
+/** How close a string's locale is to the site's: the same tag (3), the same language (2), English (1: what fills a gap), another (0). */
 export function localeRank(locale: string | undefined, language: string): number {
   const tag = normalizeLanguage(locale)
   if (!tag) return 0
-  if (tag === language) return 2
-  return tag.split('-')[0] === language.split('-')[0] ? 1 : 0
+  if (tag === language) return 3
+  if (tag.split('-')[0] === language.split('-')[0]) return 2
+  return tag === 'en' ? 1 : 0
 }
