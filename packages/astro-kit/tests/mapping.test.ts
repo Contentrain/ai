@@ -9,7 +9,7 @@ const video = (attrs: Record<string, unknown>) => ({ name: 'elementor/video', at
 const tables = Object.fromEntries(await Promise.all(KIT_BUILDERS.map(async b => [b, JSON.parse(await readFile(join(ROOT, 'mapping', `${b}.json`), 'utf8')) as MappingTable] as const)))
 
 /** The same leaves as facts that set no flags. */
-const unflagged = (leaves: SectionLeaf[]) => leaves.map(({ numeric: _n, ordinal: _o, portrait: _p, ...rest }) => rest)
+const unflagged = (leaves: SectionLeaf[]) => leaves.map(({ numeric: _n, ordinal: _o, portrait: _p, short: _s, ...rest }) => rest)
 
 describe('mapping tables', () => {
   for (const builder of KIT_BUILDERS) {
@@ -357,7 +357,7 @@ describe('section rules', () => {
       const row = (columns: SectionLeaf[][], intro: SectionLeaf[] = [h('0.0', 'h2')]) => classifySection(tables.elementor!, columns, { index: 4, count: 9, root: 'elementor/container', intro })
       const step = (i: number) => [f(`0.1.${i}.0`, 'span', { numeric: true, ordinal: true }), f(`0.1.${i}.1`, 'h3', { numeric: false, ordinal: false }), w(`0.1.${i}.2`, 'text-editor')]
       const plan = (i: number) => [f(`0.1.${i}.0`, 'h3', { numeric: false }), f(`0.1.${i}.1`, 'div', { numeric: true }), w(`0.1.${i}.2`, 'text-editor'), w(`0.1.${i}.3`, 'icon-list'), w(`0.1.${i}.4`, 'button')]
-      const person = (i: number, flags: Partial<SectionLeaf> = { portrait: true }) => [{ ...w(`0.1.${i}.0`, 'image'), ...flags }, f(`0.1.${i}.1`, 'h3', { numeric: false }), w(`0.1.${i}.2`, 'text-editor')]
+      const person = (i: number, flags: Partial<SectionLeaf> = { portrait: true }, role: Partial<SectionLeaf> = { short: true }) => [{ ...w(`0.1.${i}.0`, 'image'), ...flags }, f(`0.1.${i}.1`, 'h3', { numeric: false }), { ...w(`0.1.${i}.2`, 'text-editor'), ...role }]
 
       it('numbered columns are steps in a row; the number is the span heading and stays out of the title', () => {
         const m = row([0, 1, 2].map(step))
@@ -378,6 +378,10 @@ describe('section rules', () => {
         expect(m?.rule.id).toBe('team.columns')
         expect(m?.match.columns?.[3]).toEqual({ photo: ['0.1.3.0'], name: ['0.1.3.1'], role: ['0.1.3.2'] })
         for (const flags of [{}, { small: true }, { portrait: false }]) expect(row([0, 1, 2, 3].map(i => person(i, flags)))?.rule.id).not.toBe('team.columns')
+      })
+
+      it('a square photo over a title and a description is not the team: the role is one short line (t6, #234)', () => {
+        for (const role of [{}, { short: false }]) expect(row([0, 1, 2, 3].map(i => person(i, { portrait: true }, role)))?.rule.id).not.toBe('team.columns')
       })
 
       it('fires on nothing the facts do not split and flag: today\'s flat column stays as it was', () => {
