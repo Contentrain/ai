@@ -49,11 +49,11 @@ const { values } = parseArgs({
 
 const starter = join(root, 'templates', 'astro-starter')
 
+const placeholders = text => (String(text).match(/\{[^}]+\}/g) ?? []).toSorted().join(',')
 // The bundled interface-string tables: every language has exactly English's keys and keeps its {placeholders}, so a
 // table can never ship a gap or a broken template.
 {
   const dir = join(starter, '.contentrain', 'content', 'site', 'ui-strings')
-  const placeholders = text => (String(text).match(/\{[^}]+\}/g) ?? []).toSorted().join(',')
   const english = JSON.parse(readFileSync(join(dir, 'en.json'), 'utf8'))
   const problems = []
   for (const file of readdirSync(dir).filter(name => name.endsWith('.json') && name !== 'en.json')) {
