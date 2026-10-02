@@ -95,11 +95,11 @@ const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-cente
   </div>
   {slides.length > 1 && (
     <>
-      <button type="button" class:list={[arrow, 'left-6 md:left-10']} aria-label={prevLabel} data-prev>
-        <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" /></svg>
+      <button type="button" class:list={[arrow, 'start-6 md:start-10']} aria-label={prevLabel} data-prev>
+        <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" /></svg>
       </button>
-      <button type="button" class:list={[arrow, 'right-6 md:right-10']} aria-label={nextLabel} data-next>
-        <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg>
+      <button type="button" class:list={[arrow, 'end-6 md:end-10']} aria-label={nextLabel} data-next>
+        <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg>
       </button>
       <div class="mt-4 hidden justify-center group-data-[ready]:flex" data-dots></div>
     </>
@@ -115,7 +115,9 @@ const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-cente
     root.dataset.ready = ''
     // Reduced motion: slides change instantly instead of gliding.
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
-    const embla = EmblaCarousel(viewport, { loop: root.dataset.loop !== undefined, align: 'start', containScroll: 'trimSnaps', duration: reduce ? 0 : 25 })
+    // A right-to-left page runs the row from the right: the first slide at the start edge, "next" towards the end.
+    const direction = getComputedStyle(root).direction === 'rtl' ? 'rtl' : 'ltr'
+    const embla = EmblaCarousel(viewport, { loop: root.dataset.loop !== undefined, align: 'start', containScroll: 'trimSnaps', duration: reduce ? 0 : 25, direction })
     const prev = root.querySelector<HTMLButtonElement>('[data-prev]')
     const next = root.querySelector<HTMLButtonElement>('[data-next]')
     const dots = root.querySelector<HTMLElement>('[data-dots]')

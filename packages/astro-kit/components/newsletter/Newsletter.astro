@@ -99,7 +99,7 @@ const formRel: Record<string, string> = newTab ? { rel: 'noopener noreferrer' } 
             <input id={`${id}-email`} name={form.email} type="email" required autocomplete="email" inputmode="email" class={s.input()} />
           </div>
           {form.hidden.map(field => (
-            <div aria-hidden="true" class="absolute -left-[5000px]"><input type="text" name={field.name} value={field.value} tabindex="-1" autocomplete="off" /></div>
+            <div aria-hidden="true" class="absolute -start-[5000px]"><input type="text" name={field.name} value={field.value} tabindex="-1" autocomplete="off" /></div>
           ))}
           <button type="submit" class={s.submit()}>{submitLabel}</button>
         </form>
