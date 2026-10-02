@@ -1,0 +1,22 @@
+---
+// A custom post type's fields as a definition list: one row per field with a label (see lib/fields.ts).
+import type { ShownField } from '../lib/fields'
+import ShownValue from './ShownValue.astro'
+
+interface Props {
+  fields: ShownField[]
+  locale?: string | undefined
+}
+
+const { fields, locale } = Astro.props
+---
+{fields.length > 0 && (
+  <dl class="grid gap-x-8 gap-y-4 sm:grid-cols-[minmax(8rem,1fr)_3fr]" data-kit-fields>
+    {fields.map(field => (
+      <>
+        <dt class="text-sm font-medium text-ink-muted">{field.label}</dt>
+        <dd class="m-0"><ShownValue value={field.value} locale={locale} /></dd>
+      </>
+    ))}
+  </dl>
+)}

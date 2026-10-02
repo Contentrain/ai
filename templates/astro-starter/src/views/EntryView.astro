@@ -1,0 +1,57 @@
+---
+// One entry of a custom post type: title, image, rich-text body, the terms it is filed under and its typed
+// fields (siteConfig.types), each labelled as the editor knows it.
+import FieldList from '../components/FieldList.astro'
+import KitImage from '../components/kit/_shared/KitImage.astro'
+import Prose from '../components/kit/prose/Prose.astro'
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { getEntry } from 'astro:content'
+import { getSite, imageOf, type Media } from '../lib/content'
+import { bodyOf, entriesOf, entryHref, entryTitle, refIds, termHref, text, type TypeEntry } from '../lib/custom'
+import { shownFields, type Targets } from '../lib/fields'
+import { publicHtml } from '../lib/links'
+import { summarize } from '../lib/seo'
+import type { CustomType } from '../site.config'
+
+interface Props {
+  type: CustomType
+  entry: TypeEntry
+  targets: Targets
+}
+
+const { type, entry, targets } = Astro.props
+const { data } = entry
+const [site, fields, body] = await Promise.all([
+  getSite(),
+  shownFields(type.fields, data, targets),
+  bodyOf(type, entry) ? publicHtml(bodyOf(type, entry)) : undefined,
+])
+const [imageId] = type.card.image ? refIds(data[type.card.image]) : []
+const cover = imageId ? await getEntry('media', imageId) : undefined
+const taxonomy = type.taxonomies?.[0]
+const terms = taxonomy ? (await entriesOf(taxonomy.collection)).filter(term => refIds(data[taxonomy.field]).includes(term.id)) : []
+const title = entryTitle(type, entry)
+const seo = data.seo as { title?: string, description?: string, noindex?: boolean, nofollow?: boolean, canonical?: string } | undefined
+const description = seo?.description ?? (type.card.excerpt ? text(data[type.card.excerpt]) : undefined) ?? summarize(body)
+---
+<BaseLayout
+  title={title}
+  fullTitle={seo?.title}
+  description={description}
+  image={cover ? imageOf(cover as Media).src : undefined}
+  canonical={seo?.canonical ?? new URL(entryHref(type, entry), Astro.site ?? Astro.url).href}
+  noindex={seo?.noindex}
+  nofollow={seo?.nofollow}
+>
+  <article class="container-prose py-12 md:py-16" data-kit-entry>
+    {taxonomy && terms.length > 0 && (
+      <p class="mb-4 flex flex-wrap gap-3 text-sm font-medium" data-kit-meta>
+        {terms.map(term => <a href={termHref(taxonomy, term)} class="text-accent no-underline hover:underline">{text(term.data.name) ?? term.id}</a>)}
+      </p>
+    )}
+    <h1 class="mb-6 text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{title}</h1>
+    {cover && <figure class="mb-10"><KitImage image={imageOf(cover as Media)} priority sizes="(min-width: 768px) 768px, 100vw" class="w-full rounded-[var(--radius-image,0.75rem)]" /></figure>}
+    {body && <Prose html={body} />}
+    {fields.length > 0 && <div class="mt-10 border-t border-line pt-8"><FieldList fields={fields} locale={site.language} /></div>}
+  </article>
+</BaseLayout>

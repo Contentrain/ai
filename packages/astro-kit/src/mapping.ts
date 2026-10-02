@@ -93,6 +93,8 @@ export interface SectionSlot {
   ordinal?: boolean
   /** The image is logo-sized (small as displayed): its facts say so. Photos and banners are not. */
   small?: boolean
+  /** The image is a portrait: a square-ish photo at least 200px across (a team member's face). Logos and banners are not. */
+  portrait?: boolean
   /**
    * `intro`: the slot holds the leaves above the repeated columns (a section's heading and lead line), not the
    * columns' own. Only with `when.repeat: 'columns'`; every other slot of such a rule reads inside a column.
@@ -152,6 +154,8 @@ export interface SectionLeaf extends MappingNode {
   ordinal?: boolean
   /** Facts' flag: the image is logo-sized as displayed. */
   small?: boolean
+  /** Facts' flag: the image is a square-ish photo, at least 200px across. */
+  portrait?: boolean
 }
 
 /** Where a section sits (facts `index`/`count`) and what it is (`root`: facts `root`). */
@@ -182,6 +186,7 @@ function slotFits(slot: SectionSlot, leaf: SectionLeaf, defaults?: MappingTable[
   if (slot.numeric !== undefined && slot.numeric !== (leaf.numeric === true)) return false
   if (slot.ordinal !== undefined && slot.ordinal !== (leaf.ordinal === true)) return false
   if (slot.small !== undefined && slot.small !== (leaf.small === true)) return false
+  if (slot.portrait !== undefined && slot.portrait !== (leaf.portrait === true)) return false
   const attrs = attrsOf(leaf, defaults)
   return Object.entries(slot.attr ?? {}).every(([key, want]) => String(want).split('|').includes(String(attrs[key])))
 }

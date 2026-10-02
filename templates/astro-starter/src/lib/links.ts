@@ -77,6 +77,7 @@ export function publicLinks(): Promise<Linker> {
     for (const [href, route] of routes) {
       if (route.view === 'post' && route.post.data.wp_id !== undefined) byWpId.set(route.post.data.wp_id, href)
       if (route.view === 'page' && route.page.data.wp_id !== undefined) byWpId.set(route.page.data.wp_id, href)
+      if (route.view === 'entry' && typeof route.entry.data.wp_id === 'number') byWpId.set(route.entry.data.wp_id, href)
     }
     const link = (url: string | undefined, followed: ReadonlySet<string>): string | undefined => {
       const raw = url?.trim()

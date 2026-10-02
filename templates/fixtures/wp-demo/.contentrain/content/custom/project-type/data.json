@@ -1,0 +1,13 @@
+{
+  "a1b2c3d4e5f6": {
+    "name": "Infrastructure",
+    "slug": "infrastructure",
+    "description": "Bridges, ports and grids.",
+    "wp_id": 21
+  },
+  "b2c3d4e5f6a1": {
+    "name": "Software",
+    "slug": "software",
+    "wp_id": 22
+  }
+}

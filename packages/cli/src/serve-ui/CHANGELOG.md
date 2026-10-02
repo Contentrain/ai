@@ -1,5 +1,12 @@
 # @contentrain/serve-ui
 
+## 0.0.38
+
+### Patch Changes
+
+- Updated dependencies [ff6400d]
+  - @contentrain/types@1.33.0
+
 ## 0.0.37
 
 ### Patch Changes

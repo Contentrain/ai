@@ -1,5 +1,12 @@
 # @contentrain/mcp
 
+## 3.9.4
+
+### Patch Changes
+
+- Updated dependencies [ff6400d]
+  - @contentrain/types@1.33.0
+
 ## 3.9.3
 
 ### Patch Changes

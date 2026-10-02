@@ -68,6 +68,9 @@ export interface PlanSource {
 /** WordPress-style address pattern: `/blog/:slug/`, `/:path/`; tokens `:slug :path :year :month :day :id`. */
 export type PlanPermalink = string
 
+/** From `min` px of viewport width up, a column `width` px wide, centred. */
+export interface ChromeFrameStep { min: number, width: number }
+
 export interface PlanSite {
   /** Public URL the site is built for (`astro.config` `site`). */
   url: string
@@ -105,9 +108,21 @@ export interface PlanSite {
    * `copyright`: the footer's line as the source prints it ("All rights reserved"; `{year}` for the
    * current year), instead of "© year Site". `titleLinks`: post titles in lists take the link colour, as the source's do.
    * `navLinks`: so does the header navigation. `footerAlign`: `center` when the source's footer is
-   * one centred column; absent, brand and links to the sides.
+   * one centred column; absent, brand and links to the sides. `frame`: the width the header's and footer's
+   * content is held to where the theme boxes it, read from the source's renders: from `min` px of viewport
+   * up it is `width` px wide and centred (Hello Elementor: 768 → 600, 1280 → 1140); below the first step,
+   * and absent, the starter's own fluid frame. `listFrame`: the same for the post lists' main column.
    */
-  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean, footerAlign?: 'start' | 'center' }
+  chrome?: {
+    brand?: string
+    tagline?: boolean
+    copyright?: string
+    titleLinks?: boolean
+    navLinks?: boolean
+    footerAlign?: 'start' | 'center'
+    frame?: ChromeFrameStep[]
+    listFrame?: ChromeFrameStep[]
+  }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
   redirects: Record<string, string | { status: number, destination: string }>
@@ -434,6 +449,12 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   if (chrome?.titleLinks !== undefined && typeof chrome.titleLinks !== 'boolean') errors.push('site.chrome.titleLinks is not a boolean')
   if (chrome?.navLinks !== undefined && typeof chrome.navLinks !== 'boolean') errors.push('site.chrome.navLinks is not a boolean')
   if (chrome?.footerAlign !== undefined && !['start', 'center'].includes(chrome.footerAlign)) errors.push(`site.chrome.footerAlign ${chrome.footerAlign} is not start or center`)
+  for (const key of ['frame', 'listFrame'] as const) {
+    const steps = chrome?.[key]
+    if (steps === undefined) continue
+    if (!Array.isArray(steps) || steps.length === 0 || steps.length > 8) errors.push(`site.chrome.${key} is not a list of 1–8 steps`)
+    else if (steps.some((step, i) => !Number.isSafeInteger(step?.min) || !Number.isSafeInteger(step?.width) || step.min < 1 || step.width < 1 || step.min > 10_000 || step.width > 10_000 || (i > 0 && step.min <= steps[i - 1]!.min))) errors.push(`site.chrome.${key} steps are not whole pixel widths in ascending order of min`)
+  }
   if (chrome?.copyright !== undefined && (typeof chrome.copyright !== 'string' || !chrome.copyright.trim() || chrome.copyright.length > 200 || /[<>]/.test(chrome.copyright))) errors.push('site.chrome.copyright is not a line of plain text (1–200 characters, no markup)')
   const footer = site?.menus?.footer
   if (typeof footer === 'string') {

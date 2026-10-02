@@ -1,0 +1,17 @@
+{
+  "c3d4e5f6a1b2": {
+    "source": "import",
+    "status": "published",
+    "updated_by": "wp-import"
+  },
+  "d4e5f6a1b2c3": {
+    "source": "import",
+    "status": "published",
+    "updated_by": "wp-import"
+  },
+  "e5f6a1b2c3d4": {
+    "source": "import",
+    "status": "draft",
+    "updated_by": "wp-import"
+  }
+}
