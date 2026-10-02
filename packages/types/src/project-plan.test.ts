@@ -161,6 +161,12 @@ describe('validateProjectPlan', () => {
     expect(footerMenusOf(p.site)).toEqual(['a', 'b'])
   })
 
+  it('accepts the layouts a plan carries for custom post types, by their single route id', () => {
+    const p = plan()
+    p.site.entryLayouts = { 'type-project': { adjacent: true } }
+    expect(validateProjectPlan(p).errors).toEqual([])
+  })
+
   it('checks the post layout and list display a plan copies from the source templates', () => {
     const p = plan()
     p.site.post = { header: ['title', 'cover', 'byline'], adjacent: true, more: 4 }
