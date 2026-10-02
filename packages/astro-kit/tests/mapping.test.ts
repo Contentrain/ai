@@ -260,7 +260,7 @@ describe('section rules', () => {
     })
 
     it('numbered columns of heading and text are steps; the number is the paragraph, not the heading', () => {
-      const step = (i: number) => [g(`0.${i}.0`, 'core/paragraph', { numeric: true }), g(`0.${i}.1`, 'core/heading'), g(`0.${i}.2`, 'core/paragraph')]
+      const step = (i: number) => [g(`0.${i}.0`, 'core/paragraph', { numeric: true, ordinal: true }), g(`0.${i}.1`, 'core/heading'), g(`0.${i}.2`, 'core/paragraph')]
       const m = classify([1, 2, 3].map(step), { root: 'core/group', intro: [g('0.0', 'core/heading')] })
       expect(m?.rule.id).toBe('steps.columns')
       expect(m?.match.columns?.[0]).toMatchObject({ number: ['0.1.0'], title: ['0.1.1'], text: ['0.1.2'] })
@@ -275,12 +275,24 @@ describe('section rules', () => {
       expect(classify([1, 2].map(i => [g(`0.${i}.0`, 'core/heading'), g(`0.${i}.1`, 'core/paragraph'), g(`0.${i}.2`, 'core/paragraph'), g(`0.${i}.3`, 'core/list')]), { root: 'core/group' })?.rule.id).not.toBe('pricing.columns')
     })
 
-    it('a heading and three or more pictures and nothing else are logos', () => {
-      const logos = [g('0.0', 'core/heading'), ...[1, 2, 3, 4, 5].map(i => g(`0.${i}`, 'core/image'))]
+    it('a heading and four or more logo-sized pictures and nothing else are logos', () => {
+      const logos = [g('0.0', 'core/heading'), ...[1, 2, 3, 4, 5].map(i => g(`0.${i}`, 'core/image', { small: true }))]
       expect(classify([logos], { root: 'core/group' })?.rule.id).toBe('logo-cloud.images')
-      expect(classify([logos.slice(0, 3)], { root: 'core/group' })?.rule.id).not.toBe('logo-cloud.images')
+      expect(classify([logos.slice(0, 4)], { root: 'core/group' })?.rule.id).not.toBe('logo-cloud.images')
       // A picture with words beside it is not a logo row.
       expect(classify([[...logos, g('0.9', 'core/paragraph')]], { root: 'core/group' })?.rule.id).not.toBe('logo-cloud.images')
+      // Photos, and images whose size the facts did not state, are not logos.
+      const photos = [g('0.0', 'core/heading'), ...[1, 2, 3, 4, 5].map(i => g(`0.${i}`, 'core/image'))]
+      expect(classify([photos], { root: 'core/group' })?.rule.id).not.toBe('logo-cloud.images')
+    })
+
+    it('a timeline whose first paragraph is a year is not steps: the year stays in the text', () => {
+      const entry = (i: number) => [g(`0.${i}.0`, 'core/paragraph', { numeric: true }), g(`0.${i}.1`, 'core/heading'), g(`0.${i}.2`, 'core/paragraph')]
+      const m = classify([1, 2, 3].map(entry), { root: 'core/group', intro: [g('0.0', 'core/heading')] })
+      expect(m?.rule.id).not.toBe('steps.columns')
+      // Facts that predate the flags set neither: no new rule fires on them.
+      const old = classify([1, 2, 3].map(i => [g(`0.${i}.0`, 'core/paragraph'), g(`0.${i}.1`, 'core/heading'), g(`0.${i}.2`, 'core/paragraph')]), { root: 'core/group' })
+      expect(old?.rule.id).not.toBe('steps.columns')
     })
 
     it('columns of a picture and a quote are testimonials with their portraits', () => {

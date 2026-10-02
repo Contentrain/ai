@@ -89,6 +89,10 @@ export interface SectionSlot {
   max?: number
   /** The leaf is a figure (`1,200`, `2018`, `$29`, `01`): its facts say so. `true` requires it, `false` rules it out. */
   numeric?: boolean
+  /** The leaf is a step's ordinal (`1`, `01`, `Step 2` — at most two digits): its facts say so. A year or a count is a figure, not an ordinal. */
+  ordinal?: boolean
+  /** The image is logo-sized (small as displayed): its facts say so. Photos and banners are not. */
+  small?: boolean
   /**
    * `intro`: the slot holds the leaves above the repeated columns (a section's heading and lead line), not the
    * columns' own. Only with `when.repeat: 'columns'`; every other slot of such a rule reads inside a column.
@@ -144,6 +148,10 @@ export interface SectionLeaf extends MappingNode {
   path: string
   /** Facts' flag: the leaf's text is a figure (a number, an amount, a step number) — not the text itself. */
   numeric?: boolean
+  /** Facts' flag: the leaf's text is an ordinal — one or two digits, nothing else. */
+  ordinal?: boolean
+  /** Facts' flag: the image is logo-sized as displayed. */
+  small?: boolean
 }
 
 /** Where a section sits (facts `index`/`count`) and what it is (`root`: facts `root`). */
@@ -170,7 +178,10 @@ const SECTION_LAYOUT_LEAVES = new Set(['elementor/spacer', 'elementor/divider', 
 
 function slotFits(slot: SectionSlot, leaf: SectionLeaf, defaults?: MappingTable['defaults']): boolean {
   if (![slot.match].flat().includes(leaf.name)) return false
+  // A flag the facts do not set reads as "no": a rule that asks for one never fires on facts that predate it.
   if (slot.numeric !== undefined && slot.numeric !== (leaf.numeric === true)) return false
+  if (slot.ordinal !== undefined && slot.ordinal !== (leaf.ordinal === true)) return false
+  if (slot.small !== undefined && slot.small !== (leaf.small === true)) return false
   const attrs = attrsOf(leaf, defaults)
   return Object.entries(slot.attr ?? {}).every(([key, want]) => String(want).split('|').includes(String(attrs[key])))
 }
