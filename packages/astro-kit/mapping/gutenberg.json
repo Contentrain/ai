@@ -662,6 +662,9 @@
     {
       "id": "stats.columns",
       "component": "stats",
+      "variant": {
+        "order": "value-first"
+      },
       "when": {
         "columns": [
           2,
@@ -829,6 +832,7 @@
       "into": "items",
       "each": "column",
       "item": {
+        "number": "@number dom:",
         "title": "@title dom:",
         "text": "@text dom:"
       }

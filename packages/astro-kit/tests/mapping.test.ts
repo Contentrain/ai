@@ -251,6 +251,8 @@ describe('section rules', () => {
 
     it('a row of figures is stats, ahead of the card grid that has the same leaves', () => {
       expect(classify([0, 1, 2].map(figure), { root: 'core/columns' })?.rule.id).toBe('stats.columns')
+      // A Gutenberg figure is a heading over its label: the page reads the figure first, as the source does.
+      expect(classify([0, 1, 2].map(figure), { root: 'core/columns' })?.rule.variant).toEqual({ order: 'value-first' })
       // The same row with words for headings is a card grid.
       const words = [0, 1, 2].map(i => [g(`0.${i}.0`, 'core/heading'), g(`0.${i}.1`, 'core/paragraph')])
       expect(classify(words, { root: 'core/columns' })?.rule.id).toBe('card-grid.columns')
@@ -267,6 +269,8 @@ describe('section rules', () => {
       const m = classify([1, 2, 3].map(step), { root: 'core/group', intro: [g('0.0', 'core/heading')] })
       expect(m?.rule.id).toBe('steps.columns')
       expect(m?.match.columns?.[0]).toMatchObject({ number: ['0.1.0'], title: ['0.1.1'], text: ['0.1.2'] })
+      // The source's "01" is the page's words: it is carried into the item, not redrawn by the list's counter.
+      expect(m?.rule.item).toMatchObject({ number: '@number dom:' })
     })
 
     it('columns with a name, a figure price, a period, a list and a button are pricing plans', () => {
@@ -365,6 +369,7 @@ describe('section rules', () => {
         expect(m?.rule.variant).toEqual({ layout: 'row', style: 'numbered' })
         expect(m?.match.slots.heading).toEqual(['0.0'])
         expect(m?.match.columns?.[2]).toEqual({ number: ['0.1.2.0'], title: ['0.1.2.1'], text: ['0.1.2.2'] })
+        expect(m?.rule.item).toMatchObject({ number: '@number attr:title || @number dom:' })
       })
 
       it('columns of a name, a figure price, a period, a list and a button are plans', () => {
@@ -394,5 +399,15 @@ describe('section rules', () => {
         expect(classify([[h('1.0', 'h2'), ...[1, 2, 3, 4, 5].map(i => w(`1.${i}`, 'image'))]], 1, 9)).toBe('logo-cloud.images')
       })
     })
+  })
+})
+
+describe('the page reads a section in the source order (G-text)', () => {
+  const statsRule = (builder: string) => tables[builder]!.sections?.find(r => r.component === 'stats')
+  it('figures first where the source writes the figure first, the counter title first where Elementor does', () => {
+    expect(statsRule('gutenberg')?.variant).toEqual({ order: 'value-first' })
+    expect(statsRule('divi')?.variant).toEqual({ order: 'value-first' })
+    // The Elementor counter names itself before its number: the kit's default.
+    expect(statsRule('elementor')?.variant?.order).toBeUndefined()
   })
 })

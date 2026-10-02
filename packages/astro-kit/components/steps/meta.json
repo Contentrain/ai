@@ -46,6 +46,11 @@
       "items": {
         "type": "object",
         "fields": {
+          "number": {
+            "type": "string",
+            "label": "Number",
+            "description": "The step's number as the source writes it (01, Step 2); empty: the list counts 1, 2, 3."
+          },
           "title": {
             "type": "string",
             "label": "Title",

@@ -15,6 +15,7 @@ const steps = tv({
     list: 'grid gap-8 [counter-reset:kit-step]',
     step: 'flex gap-4 [counter-increment:kit-step]',
     body: 'flex flex-col gap-2',
+    badge: 'shrink-0',
     media: 'mb-2 overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
     title: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)] text-balance',
     text: 'text-pretty opacity-80',
@@ -24,16 +25,22 @@ const steps = tv({
       list: { list: 'max-w-3xl' },
       row: { list: 'sm:grid-cols-2 lg:auto-cols-fr lg:grid-flow-col lg:grid-cols-none', step: 'flex-col' },
     },
-    // The number is drawn from a CSS counter, so the list stays one <ol> a screen reader counts itself.
+    // The number is drawn from a CSS counter, so the list stays one <ol> a screen reader counts itself. A number the
+    // source wrote (`01`) is the page's text and is shown as written, hidden from the screen reader that already counts.
     style: {
-      numbered: { step: "before:flex before:size-10 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-accent before:font-semibold before:text-accent-ink before:content-[counter(kit-step)]" },
-      plain: { step: 'border-l-2 border-accent pl-4' },
+      numbered: {
+        step: "before:flex before:size-10 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-accent before:font-semibold before:text-accent-ink before:content-[counter(kit-step)]",
+        badge: 'flex h-10 min-w-10 items-center justify-center self-start rounded-full bg-accent px-2 font-semibold text-accent-ink',
+      },
+      plain: { step: 'border-l-2 border-accent pl-4', badge: 'font-semibold tabular-nums' },
     },
   },
   defaultVariants: { layout: 'list', style: 'numbered' },
 })
 
 interface Step {
+  /** The number as the source writes it (`01`, `Step 2`); without it the list counts itself. */
+  number?: string | undefined
   title: string
   text: string
   /** The image's address. */
@@ -64,7 +71,8 @@ const headingId = heading && id ? `${id}-title` : undefined
     )}
     <ol class={s.list()}>
       {items.map(step => (
-        <li class={s.step()}>
+        <li class={s.step({ class: step.number ? 'before:hidden' : undefined })}>
+          {step.number && <span class={s.badge()} aria-hidden="true">{step.number}</span>}
           <div class={s.body()}>
             {imageOf(step.image, step.imageAlt) && <div class={s.media()}><KitImage image={imageOf(step.image, step.imageAlt)!} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover" /></div>}
             <h3 class={s.title()}>{step.title}</h3>
