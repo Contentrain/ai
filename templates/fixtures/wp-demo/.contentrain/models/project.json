@@ -1,0 +1,123 @@
+{
+  "domain": "custom",
+  "fields": {
+    "title": {
+      "label": "Title",
+      "order": 10,
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "label": "Slug",
+      "order": 20,
+      "type": "slug",
+      "required": true,
+      "unique": true
+    },
+    "summary": {
+      "label": "Summary",
+      "order": 30,
+      "type": "text"
+    },
+    "body": {
+      "label": "Body",
+      "order": 40,
+      "type": "richtext"
+    },
+    "cover": {
+      "label": "Cover",
+      "order": 50,
+      "type": "relation",
+      "model": "media"
+    },
+    "project-type": {
+      "label": "Project type",
+      "order": 55,
+      "type": "relations",
+      "model": "project-type"
+    },
+    "client": {
+      "label": "Client",
+      "order": 60,
+      "type": "string"
+    },
+    "website": {
+      "label": "Website",
+      "order": 70,
+      "type": "url"
+    },
+    "contact_email": {
+      "label": "Contact email",
+      "order": 80,
+      "type": "email"
+    },
+    "launch_date": {
+      "label": "Launch date",
+      "order": 90,
+      "type": "date"
+    },
+    "featured": {
+      "label": "Featured project",
+      "order": 100,
+      "type": "boolean"
+    },
+    "platforms": {
+      "label": "Platforms",
+      "order": 110,
+      "type": "array",
+      "items": "string"
+    },
+    "location": {
+      "label": "Location",
+      "order": 120,
+      "type": "object",
+      "fields": {
+        "address": {
+          "label": "Address",
+          "order": 10,
+          "type": "text"
+        },
+        "city": {
+          "label": "City",
+          "order": 20,
+          "type": "string"
+        }
+      }
+    },
+    "milestones": {
+      "label": "Milestones",
+      "order": 130,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "fields": {
+          "date": {
+            "label": "Date",
+            "order": 10,
+            "type": "date"
+          },
+          "name": {
+            "label": "Name",
+            "order": 20,
+            "type": "string"
+          }
+        }
+      }
+    },
+    "published_at": {
+      "label": "Published",
+      "order": 140,
+      "type": "datetime"
+    },
+    "wp_id": {
+      "label": "WP post ID",
+      "order": 150,
+      "type": "integer"
+    }
+  },
+  "i18n": false,
+  "id": "project",
+  "kind": "collection",
+  "name": "Projects",
+  "title_field": "title"
+}

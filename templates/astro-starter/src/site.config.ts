@@ -4,6 +4,41 @@
 // (permalink structure, posts per page, front page) so every address the old
 // site had is built at the same place.
 
+/**
+ * A field of a custom post type as its single page prints it: the label an editor sees (never a key), the
+ * Contentrain field type, and for containers the fields of one row (`fields`) or the type of a scalar list (`of`).
+ * A relation names the collection it points at.
+ */
+export interface CustomField {
+  name: string
+  label: string
+  type: string
+  collection?: string
+  fields?: readonly CustomField[]
+  of?: string
+}
+
+/**
+ * A custom post type (WordPress: a registered post type with its own archive and taxonomies) as the route table builds it.
+ * Everything is a field or collection name the migration found in the project's models; the page reads it through
+ * Contentrain queries. `fields` is the typed list the single page prints in schema order, already without what has
+ * no label to show.
+ */
+export interface CustomType {
+  /** The content collection (`projectType`, not the model id `project-type`). */
+  collection: string
+  /** Address of one entry: `/projects/:slug/`. */
+  single: string
+  archive?: { pattern: string, title: string }
+  /** Term lists: the entries whose `field` (a `relations` field) holds the term, at `pattern` (`/project-type/:slug/`). */
+  taxonomies?: ReadonlyArray<{ collection: string, pattern: string, field: string, title: string }>
+  /** What a card in a list shows; only `title` is required. */
+  card: { title: string, excerpt?: string, image?: string, date?: string }
+  /** The rich-text field holding the entry's body. */
+  body?: string
+  fields: readonly CustomField[]
+}
+
 export interface SiteConfig {
   /**
    * Address patterns, WordPress-style. Tokens: `:slug`, `:path` (a page with
@@ -66,6 +101,8 @@ export interface SiteConfig {
    * `phone` and `email` as text, `socials` as a list of rows each with a link and a label.
    * Absent, or a field empty, the footer prints nothing for it.
    */
+  /** Custom post types: each gets its single pages, archive and term lists. */
+  types?: readonly CustomType[]
   contact?: { address?: string, phone?: string, email?: string, socials?: string }
   /**
    * The source site's hosts (`site.com`): a link to one of them in migrated content is internal

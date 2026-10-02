@@ -6,6 +6,10 @@
     {
       "from": "  sourceHosts: [],",
       "to": "  contact: { address: 'address', phone: 'phone', socials: 'socials' },\n  sourceHosts: [],"
+    },
+    {
+      "from": "  sourceHosts: [],",
+      "to": "  types: [{\n    collection: 'project',\n    single: '/projects/:slug/',\n    archive: { pattern: '/projects/', title: 'Projects' },\n    taxonomies: [{ collection: 'projectType', pattern: '/project-type/:slug/', field: 'project-type', title: 'Project type' }],\n    card: { title: 'title', excerpt: 'summary', image: 'cover', date: 'published_at' },\n    body: 'body',\n    fields: [\n      { name: 'client', label: 'Client', type: 'string' },\n      { name: 'website', label: 'Website', type: 'url' },\n      { name: 'contact_email', label: 'Contact email', type: 'email' },\n      { name: 'launch_date', label: 'Launch date', type: 'date' },\n      { name: 'featured', label: 'Featured project', type: 'boolean' },\n      { name: 'platforms', label: 'Platforms', type: 'array', of: 'string' },\n      { name: 'location', label: 'Location', type: 'object', fields: [{ name: 'address', label: 'Address', type: 'text' }, { name: 'city', label: 'City', type: 'string' }] },\n      { name: 'milestones', label: 'Milestones', type: 'array', fields: [{ name: 'date', label: 'Date', type: 'date' }, { name: 'name', label: 'Name', type: 'string' }] },\n      { name: 'project-type', label: 'Project type', type: 'relations', collection: 'projectType' },\n    ],\n  }],\n  sourceHosts: [],"
     }
   ],
   "absentFromDist": [
@@ -19,7 +23,9 @@
     "/y/*",
     "/roadmap/:splat",
     "/draft-attachment/",
-    "/launch/*"
+    "/launch/*",
+    "Unannounced Tunnel",
+    "unannounced-tunnel"
   ],
   "distFiles": {
     "_redirects": {
@@ -54,11 +60,13 @@
     },
     "sitemap-0.xml": {
       "contains": [
-        "/about/team/</loc>"
+        "/about/team/</loc>",
+        "/projects/harbour-bridge/</loc>"
       ],
       "excludes": [
         "/old-about/",
-        "/search/"
+        "/search/",
+        "unannounced-tunnel"
       ]
     },
     "wp-query-map.json": {
@@ -66,7 +74,8 @@
         "\"302\": \"/contact/\"",
         "\"301\": \"/about/team/\"",
         "\"999\": \"/about/\"",
-        "\"12\": \"/files/price-list.txt\""
+        "\"12\": \"/files/price-list.txt\"",
+        "\"402\": \"/projects/harbour-bridge/\""
       ],
       "excludes": [
         "\"304\""
@@ -120,6 +129,60 @@
       "contains": [
         "<li><a href=\"/company/office/\"",
         ">Office</a></li><li><a href=\"/company/careers/\""
+      ]
+    },
+    "projects/index.html": {
+      "contains": [
+        "Harbour Bridge",
+        "Grid Monitor",
+        "/projects/harbour-bridge/",
+        "Infrastructure"
+      ],
+      "excludes": [
+        "Unannounced Tunnel"
+      ]
+    },
+    "projects/harbour-bridge/index.html": {
+      "contains": [
+        "<h1",
+        "Harbour Bridge",
+        "The harbour bridge links the quay",
+        "<dt",
+        "Client",
+        "Port Authority",
+        "href=\"mailto:bridge@harbour.example\"",
+        "Featured project",
+        "12 Quay Street",
+        "Steel delivered",
+        "/project-type/infrastructure/"
+      ],
+      "excludes": [
+        "field_"
+      ]
+    },
+    "projects/grid-monitor/index.html": {
+      "contains": [
+        "Grid Monitor",
+        "Grid Energy"
+      ],
+      "excludes": [
+        "Featured project",
+        "Launch date"
+      ]
+    },
+    "project-type/infrastructure/index.html": {
+      "contains": [
+        "Infrastructure",
+        "Harbour Bridge",
+        "Grid Monitor"
+      ]
+    },
+    "project-type/software/index.html": {
+      "contains": [
+        "Grid Monitor"
+      ],
+      "excludes": [
+        "Harbour Bridge"
       ]
     }
   },

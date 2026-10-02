@@ -191,6 +191,38 @@ export const collections = {
     })).optional(),
     }),
   }),
+  project: defineCollection({
+    loader: loader('project'),
+    schema: z.object({
+      id: z.string(),
+      body: z.string().optional(),
+      client: z.string().optional(),
+      contact_email: z.string().optional(),
+      cover: reference('media').optional(),
+      featured: z.boolean().optional(),
+      launch_date: z.coerce.date().optional(),
+      location: z.object({ address: z.string().optional(), city: z.string().optional() }).optional(),
+      milestones: z.array(z.object({ date: z.coerce.date().optional(), name: z.string().optional() })).optional(),
+      platforms: z.array(z.string()).optional(),
+      'project-type': z.array(reference('projectType')).default([]),
+      published_at: z.coerce.date().optional(),
+      slug: z.string(),
+      summary: z.string().optional(),
+      title: z.string(),
+      website: z.string().optional(),
+      wp_id: z.number().int().optional(),
+    }),
+  }),
+  projectType: defineCollection({
+    loader: loader('project-type'),
+    schema: z.object({
+      id: z.string(),
+      description: z.string().optional(),
+      name: z.string(),
+      slug: z.string(),
+      wp_id: z.number().int().optional(),
+    }),
+  }),
   site: defineCollection({
     loader: loader('site'),
     schema: z.object({

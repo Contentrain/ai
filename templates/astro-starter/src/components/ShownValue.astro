@@ -1,0 +1,26 @@
+---
+// One field value of a custom post type, as its kind says (see lib/fields.ts); groups and lists nest.
+import type { Shown } from '../lib/fields'
+import KitImage from './kit/_shared/KitImage.astro'
+import Prose from './kit/prose/Prose.astro'
+import FieldList from './FieldList.astro'
+
+interface Props {
+  value: Shown
+  locale?: string | undefined
+}
+
+const { value, locale = 'en' } = Astro.props
+const external = (href: string) => /^https?:/.test(href)
+---
+{value.kind === 'text' && <span class="whitespace-pre-line">{value.text}</span>}
+{value.kind === 'link' && <a href={value.href} rel={external(value.href) ? 'noopener' : undefined}>{value.text}</a>}
+{value.kind === 'time' && <time datetime={value.value.toISOString()}>{value.value.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' })}</time>}
+{value.kind === 'html' && <Prose html={value.html} searchable={false} />}
+{value.kind === 'image' && <KitImage image={value.image} sizes="(min-width: 768px) 768px, 100vw" class="h-auto max-w-full rounded-[var(--radius-image,0.75rem)]" />}
+{value.kind === 'group' && <FieldList fields={value.rows} locale={locale} />}
+{value.kind === 'list' && (
+  <ul class="flex flex-col gap-2">
+    {value.items.map(item => <li><Astro.self value={item} locale={locale} /></li>)}
+  </ul>
+)}

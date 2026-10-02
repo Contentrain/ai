@@ -163,6 +163,7 @@ export async function queryRules(): Promise<QueryRule[]> {
   const out: QueryRule[] = []
   for (const [href, route] of routes) {
     if (route.view === 'post' && route.post.data.wp_id !== undefined) out.push({ param: 'p', value: String(route.post.data.wp_id), to: href, status: 301 })
+    if (route.view === 'entry' && typeof route.entry.data.wp_id === 'number') out.push({ param: 'p', value: String(route.entry.data.wp_id), to: href, status: 301 })
   }
   // By page, not by route: the posts page (Settings → Reading) is not a page route but lives at the blog address.
   for (const page of pages.values()) {

@@ -2,6 +2,7 @@
   "domains": [
     "assets",
     "blog",
+    "custom",
     "sections",
     "site"
   ],

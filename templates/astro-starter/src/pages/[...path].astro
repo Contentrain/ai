@@ -7,6 +7,7 @@ import { redirectRules, type RedirectStatus } from '../lib/redirects'
 import { toParam } from '../lib/routes'
 import { type Route, routeTable } from '../lib/site-routes'
 import { composedViews } from '../views/composed'
+import EntryView from '../views/EntryView.astro'
 import ListView from '../views/ListView.astro'
 import PageView from '../views/PageView.astro'
 import PostView from '../views/PostView.astro'
@@ -36,4 +37,5 @@ const PageRoute = composed ?? PageView
 ---
 {route.view === 'post' && <PostView post={route.post} />}
 {route.view === 'page' && <PageRoute page={route.page} trail={route.trail} isHome={route.isHome} subpages={route.subpages} />}
+{route.view === 'entry' && <EntryView type={route.type} entry={route.entry} targets={route.targets} />}
 {route.view === 'list' && <ListView {...route} />}
