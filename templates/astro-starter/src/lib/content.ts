@@ -4,6 +4,7 @@
 import { getCollection, getEntry, type CollectionEntry, type CollectionKey } from 'astro:content'
 import type { ImageInput } from '../components/kit/_shared/types'
 import { siteConfig } from '../site.config'
+import { siteLanguage, localeRank } from './language'
 import { dateParams, fillPattern, permalinks } from './routes'
 
 export type Post = CollectionEntry<'posts'>
@@ -12,10 +13,13 @@ export type Term = CollectionEntry<'categories'> | CollectionEntry<'tags'>
 export type Author = CollectionEntry<'authors'>
 export type Media = CollectionEntry<'media'>
 
-export async function getSite(): Promise<CollectionEntry<'site'>['data']> {
+type Site = Omit<CollectionEntry<'site'>['data'], 'language'> & { language: string }
+
+/** The site singleton with its language settled (`siteLanguage`): never empty. */
+export async function getSite(): Promise<Site> {
   const site = await getEntry('site', 'site')
   if (!site) throw new Error('The site singleton (.contentrain/content/site/site/data.json) is missing.')
-  return site.data
+  return { ...site.data, language: siteLanguage(site.data.language) }
 }
 
 /** Newest first; sticky posts lead, as on a WordPress front page. */
@@ -78,15 +82,15 @@ export function imageOf(media: Media): ImageInput {
 }
 
 /**
- * Interface text from the `ui-strings` dictionary in the site's language, the
- * project's default locale filling gaps. A missing key shows the key itself,
- * so a gap is visible instead of silently English.
+ * Interface text from the `ui-strings` dictionary: the entry in the site's own tag (`tr-TR`) wins, then
+ * the same language (`tr`), then any other locale's entry (the starter's English) fills what is missing.
+ * A key no locale has shows the key itself.
  */
 export async function getStrings(): Promise<(key: string) => string> {
   const [entries, site] = await Promise.all([getCollection('uiStrings'), getSite()])
-  const language = site.language ?? 'en'
+  const { language } = site
   const text = new Map<string, string>()
-  for (const entry of entries.toSorted((a, b) => Number(a.data.locale === language) - Number(b.data.locale === language))) {
+  for (const entry of entries.toSorted((a, b) => localeRank(a.data.locale, language) - localeRank(b.data.locale, language))) {
     text.set(entry.data.key, entry.data.value)
   }
   return key => text.get(key) ?? key

@@ -34,7 +34,7 @@ const at = ordered.findIndex(other => other.id === entry.id)
 const previous = at >= 0 ? ordered[at + 1] : undefined
 const next = at > 0 ? ordered[at - 1] : undefined
 const more = type.more ? ordered.filter(other => other.id !== entry.id).slice(0, type.more) : []
-const formatDate = (date: Date) => date.toLocaleDateString(site.language ?? 'en', { dateStyle: 'long', timeZone: 'UTC' })
+const formatDate = (date: Date) => date.toLocaleDateString(site.language, { dateStyle: 'long', timeZone: 'UTC' })
 const [imageId] = type.card.image ? refIds(data[type.card.image]) : []
 const cover = imageId ? await getEntry('media', imageId) : undefined
 const taxonomy = type.taxonomies?.[0]

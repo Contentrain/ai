@@ -45,7 +45,7 @@ const isHome = Astro.url.pathname === '/'
 const fullTitle = seoTitle ?? (title && !isHome
   ? siteConfig.titleTemplate.replace('{title}', title).replace('{site}', site.title)
   : site.tagline ? `${site.title} – ${site.tagline}` : site.title)
-const lang = site.language ?? 'en'
+const lang = site.language
 const shareImage = image ?? site.social_image
 // Two or more footer menus are columns, as the source theme's footer showed them; one is a row of links.
 const footerColumns = footerMenus.filter(menu => menu.items.length > 0)

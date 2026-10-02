@@ -76,6 +76,8 @@ jobs:
           node scripts/starter-gates.mjs --local-sdk --fixture wp-demo
           node scripts/starter-gates.mjs --local-sdk --fixture wp-demo --media studio
           node scripts/starter-gates.mjs --local-sdk --fixture tr-site
+          node scripts/starter-gates.mjs --local-sdk --fixture tr-site-implicit
+          node scripts/starter-gates.mjs --local-sdk --fixture tr-site-wp
           node scripts/starter-gates.mjs --local-sdk --fixture ar-site
 
       - name: Kit components render as their baselines
