@@ -1,5 +1,19 @@
 # @contentrain/types
 
+## 1.34.0
+
+### Minor Changes
+
+- 27f0bcf: `site.entryLayouts[type].more`: a count (0 to 20) of other entries listed under a custom post type's entry, as the source's own page had.
+- 8a6bacd: Migrate→Studio claim v2 ("Migrate with Studio"). `MigrateStudioClaimV2`, `validateMigrateStudioClaimV2` and `validateMigrateStudioClaimAny` (routes by `v`). v2 drops `trial_days` and adds `github_user_id`, `email_verified`, `return_url` and a signed `billing` quote (`migrate_fee_cents`, `quoted_total_cents`, `currency`) so Studio can create the first-invoice checkout server to server and refuse a price mismatch. v1 and its validator are unchanged.
+
+  Also the Offer-time account state: `MigrateAccountStateRequest` / `MigrateAccountStateResponse` (`none` | `covers` | `too_small`, with `year1_cents`) and `validateMigrateAccountStateResponse`.
+  Plus `validateMigrateAccountStateRequest`, and `validateMigrateAccountStateResponse(response, { requested })` checks the answer against the plan that was asked.
+  `requested` is required on `validateMigrateAccountStateResponse`.
+
+- ac09d5d: `PlanSite.entryLayouts`: what the source's own page for a custom post type showed, by the type's single route id (`adjacent`: previous/next links under the entry).
+- 4f2f8cb: `site.chrome.postFrame`: the width a single post's reading column is held to where the source theme reads narrower than its frame (Astra: 630px in a 1200px frame), as `{ min, width }` steps like `frame` and `listFrame`, validated the same way. The starter's PostView article carries `data-cr-post` for the rule.
+
 ## 1.33.0
 
 ### Minor Changes
