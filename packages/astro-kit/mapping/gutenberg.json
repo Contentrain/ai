@@ -218,7 +218,8 @@
       "component": "hero",
       "variant": {
         "layout": "cover",
-        "align": "class:is-position-*-left=start|center"
+        "align": "class:is-position-*-left=start|center",
+        "width": "class:alignfull=full|content"
       },
       "props": {
         "heading": "dom:h1,h2",

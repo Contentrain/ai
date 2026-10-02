@@ -11,7 +11,11 @@ interface Props {
   page: Page
   trail: Array<{ title: string, href: string }>
   isHome: boolean
-  /** Off when the first section carries the page's heading (a hero). */
+  /**
+   * Whether the frame prints the page title as the h1. Off by default on the home page and when the first
+   * section carries the page's heading (a hero); on for a home page whose source theme prints its title
+   * above the content (a block theme's front page).
+   */
   showTitle?: boolean | undefined
   /**
    * The page's description when its sections hold the text: a page singleton leaves the body
@@ -21,7 +25,7 @@ interface Props {
   description?: string | undefined
 }
 
-const { page, trail, isHome, showTitle = true, description } = Astro.props
+const { page, trail, isHome, showTitle = !isHome, description } = Astro.props
 const { data } = page
 const t = await getStrings()
 const origin = Astro.site ?? Astro.url
@@ -38,14 +42,14 @@ const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
   modified={data.modified_at}
   jsonLd={trail.length > 0 ? [breadcrumbLd(crumbs.map(crumb => ({ name: crumb.title, url: new URL(crumb.href, origin).href })))] : []}
 >
-  {(trail.length > 0 || (showTitle && !isHome)) && (
+  {(trail.length > 0 || showTitle) && (
     <header class="container-prose pt-12 md:pt-16">
       {trail.length > 0 && (
         <div class="mb-6">
           <Breadcrumb items={trail.map(crumb => ({ label: crumb.title, href: crumb.href }))} current={data.title} label={t('nav.breadcrumb')} />
         </div>
       )}
-      {showTitle && !isHome && <h1 class="text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{data.title}</h1>}
+      {showTitle && <h1 class="text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{data.title}</h1>}
     </header>
   )}
   <slot />

@@ -25,7 +25,7 @@ describe('mapping tables', () => {
   }
 
   it('centres a cover\'s text unless WordPress positions it on the left', () => {
-    expect(rulesFor(tables.gutenberg!, 'core/cover')[0]).toMatchObject({ component: 'hero', variant: { layout: 'cover', align: 'class:is-position-*-left=start|center' } })
+    expect(rulesFor(tables.gutenberg!, 'core/cover')[0]).toMatchObject({ component: 'hero', variant: { layout: 'cover', align: 'class:is-position-*-left=start|center', width: 'class:alignfull=full|content' } })
   })
 
   it('maps WordPress\'s details block to the plain FAQ, the browser\'s own disclosure', () => {
