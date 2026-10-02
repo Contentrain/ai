@@ -1,5 +1,12 @@
 # @contentrain/decide
 
+## 0.2.11
+
+### Patch Changes
+
+- Updated dependencies [ff6400d]
+  - @contentrain/types@1.33.0
+
 ## 0.2.10
 
 ### Patch Changes
