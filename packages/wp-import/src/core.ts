@@ -8,13 +8,28 @@ import type { FieldDef } from '@contentrain/types'
 
 export const norm = (s: unknown): string => String(s ?? '').replace(/\s+/g, ' ').trim()
 
-export const strip = (s: unknown): string =>
-  norm(
-    String(s ?? '')
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/&#(\d+);/g, (_m, d: string) => String.fromCodePoint(Number(d)))
-      .replace(/&amp;/g, '&'),
-  )
+// The same table as the starter's summarize() (templates/astro-starter/src/lib/seo.ts);
+// kept here because a package cannot depend on a template.
+const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', hellip: '…', mdash: '—', ndash: '–', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“' }
+
+/**
+ * Decode character references once: `&amp;lt;` is `&lt;`, not `<`. A plain-text field
+ * is escaped where it is printed (Astro's text escaping), so a reference left in it
+ * would print as `&amp;hellip;`. An unknown name or a code point out of range stays.
+ */
+export const decodeEntities = (s: string): string =>
+  s.replace(/&(?:#(\d+)|#x([0-9a-f]+)|([a-z]+));/gi, (m, dec?: string, hex?: string, name?: string) => {
+    if (name !== undefined) return ENTITIES[name] ?? ENTITIES[name.toLowerCase()] ?? m
+    const code = dec !== undefined ? Number(dec) : Number.parseInt(hex!, 16)
+    try {
+      return String.fromCodePoint(code)
+    } catch {
+      return m
+    }
+  })
+
+/** Plain text from markup: tags out first (so `&lt;b&gt;` survives as text), then references decoded. */
+export const strip = (s: unknown): string => norm(decodeEntities(String(s ?? '').replace(/<[^>]*>/g, ' ')))
 
 /** Entry id: deterministic hex from a stable key (model:slug style). */
 export const hexId = (s: string): string => createHash('sha1').update(s).digest('hex').slice(0, 24)

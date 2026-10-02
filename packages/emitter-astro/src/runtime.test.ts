@@ -129,6 +129,18 @@ describe('emitted template runtime', () => {
     expect(marks.term_name).toBe('News') // producer extras win
   })
 
+  it('a plain excerpt is text: without its own _html it is escaped there, and a mark escapes quotes for attributes', () => {
+    // wp-import decodes `&lt;script&gt;` in a plain-text field to `<script>`; it is printed as text, never as markup.
+    const marks = rt.postMarks({ slug: 's', title: 'Say "hi" <b>', excerpt: '<script>alert(1)</script> & co' })
+    expect(marks.excerpt_html).toBe('&lt;script&gt;alert(1)&lt;/script&gt; &amp; co')
+    expect(rt.renderTemplate('<p>@@excerpt@@</p><p>@@excerpt_html@@</p>', marks)).toBe(
+      '<p>&lt;script&gt;alert(1)&lt;/script&gt; &amp; co</p><p>&lt;script&gt;alert(1)&lt;/script&gt; &amp; co</p>',
+    )
+    expect(rt.renderTemplate('<meta content="@@title@@">', marks)).toBe('<meta content="Say &quot;hi&quot; &lt;b&gt;">')
+    // A producer's own excerpt markup still goes in as markup.
+    expect(rt.postMarks({ slug: 's', title: 't', excerpt: 'x', excerpt_html: '<em>x</em>' }).excerpt_html).toBe('<em>x</em>')
+  })
+
   it('an array used as a plain mark joins instead of leaving stray separators', () => {
     expect(rt.fillMarks('<p>@@terms@@</p>', { terms: ['a', 'b'] })).toBe('<p>a, b</p>')
   })
