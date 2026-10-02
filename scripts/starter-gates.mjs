@@ -6,6 +6,7 @@
 //
 //   node scripts/starter-gates.mjs                      the empty starter
 //   node scripts/starter-gates.mjs --fixture wp-demo    with templates/fixtures/wp-demo laid over it
+//   node scripts/starter-gates.mjs --fixture tr-site    a Turkish-only site: config default locale tr, site.language tr (endpopcorn)
 //   node scripts/starter-gates.mjs --local-sdk          @contentrain/query from this checkout, not npm
 //   node scripts/starter-gates.mjs --out <dir>          keep the project there (default: a temp dir, removed on success)
 //   node scripts/starter-gates.mjs --fixture wp-demo --media studio

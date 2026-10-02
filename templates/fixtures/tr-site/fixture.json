@@ -1,0 +1,14 @@
+{
+  "distFiles": {
+    "index.html": {
+      "contains": [
+        "<html lang=\"tr\"",
+        "Bağımsız Sinema",
+        "og:locale\" content=\"tr"
+      ],
+      "excludes": [
+        "<html lang=\"en\""
+      ]
+    }
+  }
+}
