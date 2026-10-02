@@ -102,6 +102,12 @@ export interface PlanSite {
    */
   lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string }
   /**
+   * What the source's own page for a custom post type showed, by the type's single route id (`type-project`):
+   * `adjacent` = links to the previous and next entry under it. The starter's entry view prints them for that
+   * type only. Absent (or a type left out): none.
+   */
+  entryLayouts?: Record<string, { adjacent: boolean }>
+  /**
    * The header and footer as the source's theme prints them, where they differ from the starter's.
    * Every key is optional; absent, the starter's own. `brand`: the site title's size in the header
    * (Hello Elementor: a 2.5rem heading). `tagline`: the header shows the tagline under the title.
@@ -112,6 +118,8 @@ export interface PlanSite {
    * content is held to where the theme boxes it, read from the source's renders: from `min` px of viewport
    * up it is `width` px wide and centred (Hello Elementor: 768 → 600, 1280 → 1140); below the first step,
    * and absent, the starter's own fluid frame. `listFrame`: the same for the post lists' main column.
+   * `postFrame`: the same for a single post's reading column, where the theme reads narrower than its frame
+   * (Astra: 630 in a 1200 frame).
    */
   chrome?: {
     brand?: string
@@ -122,6 +130,7 @@ export interface PlanSite {
     footerAlign?: 'start' | 'center'
     frame?: ChromeFrameStep[]
     listFrame?: ChromeFrameStep[]
+    postFrame?: ChromeFrameStep[]
   }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
@@ -449,7 +458,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   if (chrome?.titleLinks !== undefined && typeof chrome.titleLinks !== 'boolean') errors.push('site.chrome.titleLinks is not a boolean')
   if (chrome?.navLinks !== undefined && typeof chrome.navLinks !== 'boolean') errors.push('site.chrome.navLinks is not a boolean')
   if (chrome?.footerAlign !== undefined && !['start', 'center'].includes(chrome.footerAlign)) errors.push(`site.chrome.footerAlign ${chrome.footerAlign} is not start or center`)
-  for (const key of ['frame', 'listFrame'] as const) {
+  for (const key of ['frame', 'listFrame', 'postFrame'] as const) {
     const steps = chrome?.[key]
     if (steps === undefined) continue
     if (!Array.isArray(steps) || steps.length === 0 || steps.length > 8) errors.push(`site.chrome.${key} is not a list of 1–8 steps`)
