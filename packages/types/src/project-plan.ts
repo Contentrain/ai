@@ -70,6 +70,8 @@ export type PlanPermalink = string
 
 /** From `min` px of viewport width up, a column `width` px wide, centred. */
 export interface ChromeFrameStep { min: number, width: number }
+/** From `min` px of viewport up, the post cards run in `columns` columns. */
+export interface ChromeColumnStep { min: number, columns: number }
 
 export interface PlanSite {
   /** Public URL the site is built for (`astro.config` `site`). */
@@ -119,7 +121,8 @@ export interface PlanSite {
    * up it is `width` px wide and centred (Hello Elementor: 768 → 600, 1280 → 1140); below the first step,
    * and absent, the starter's own fluid frame. `listFrame`: the same for the post lists' main column.
    * `postFrame`: the same for a single post's reading column, where the theme reads narrower than its frame
-   * (Astra: 630 in a 1200 frame).
+   * (Astra: 630 in a 1200 frame). `listColumns`: how many columns the post cards run in from `min` px of viewport up,
+   * as the source's lists show them (Astra: one column at 768, three at 1280); absent, the starter's own grid.
    */
   chrome?: {
     brand?: string
@@ -131,6 +134,7 @@ export interface PlanSite {
     frame?: ChromeFrameStep[]
     listFrame?: ChromeFrameStep[]
     postFrame?: ChromeFrameStep[]
+    listColumns?: ChromeColumnStep[]
   }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
@@ -467,6 +471,11 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (steps === undefined) continue
     if (!Array.isArray(steps) || steps.length === 0 || steps.length > 8) errors.push(`site.chrome.${key} is not a list of 1–8 steps`)
     else if (steps.some((step, i) => !Number.isSafeInteger(step?.min) || !Number.isSafeInteger(step?.width) || step.min < 1 || step.width < 1 || step.min > 10_000 || step.width > 10_000 || (i > 0 && step.min <= steps[i - 1]!.min))) errors.push(`site.chrome.${key} steps are not whole pixel widths in ascending order of min`)
+  }
+  if (chrome?.listColumns !== undefined) {
+    const steps = chrome.listColumns
+    if (!Array.isArray(steps) || steps.length === 0 || steps.length > 8) errors.push('site.chrome.listColumns is not a list of 1–8 steps')
+    else if (steps.some((step, i) => !Number.isSafeInteger(step?.min) || !Number.isSafeInteger(step?.columns) || step.min < 1 || step.min > 10_000 || step.columns < 1 || step.columns > 6 || (i > 0 && step.min <= steps[i - 1]!.min))) errors.push('site.chrome.listColumns steps are not a whole pixel min in ascending order and 1–6 columns')
   }
   if (chrome?.copyright !== undefined && (typeof chrome.copyright !== 'string' || !chrome.copyright.trim() || chrome.copyright.length > 200 || /[<>]/.test(chrome.copyright))) errors.push('site.chrome.copyright is not a line of plain text (1–200 characters, no markup)')
   const footer = site?.menus?.footer

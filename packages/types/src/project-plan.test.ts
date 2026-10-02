@@ -217,6 +217,10 @@ describe('validateProjectPlan', () => {
     ])
     p.site.chrome = { postFrame: [{ min: 1024, width: 630 }, { min: 1024, width: 700 }] }
     expect(validateProjectPlan(p).errors).toEqual(['site.chrome.postFrame steps are not whole pixel widths in ascending order of min'])
+    p.site.chrome = { listColumns: [{ min: 390, columns: 1 }, { min: 1280, columns: 3 }] }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.chrome = { listColumns: [{ min: 768, columns: 0 }] }
+    expect(validateProjectPlan(p).errors).toEqual(['site.chrome.listColumns steps are not a whole pixel min in ascending order and 1–6 columns'])
     p.site.chrome = { frame: [{ min: 768, width: 0 }] }
     expect(validateProjectPlan(p).errors).toEqual(['site.chrome.frame steps are not whole pixel widths in ascending order of min'])
   })
