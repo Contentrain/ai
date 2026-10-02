@@ -1,5 +1,11 @@
 # @contentrain/astro-kit
 
+## 0.9.0
+
+### Minor Changes
+
+- f3551b6: Footer: optional `contact` prop (address, phone, email) printed in an `<address>` block with `tel:` and `mailto:` links; nothing is printed when it is empty.
+
 ## 0.8.1
 
 ### Patch Changes
