@@ -133,5 +133,28 @@
         }
       ]
     }
+  },
+  {
+    "name": "value-first",
+    "props": {
+      "heading": "Launch in numbers",
+      "order": "value-first",
+      "items": [
+        {
+          "value": "1,200",
+          "label": "Teams using Calm Status"
+        },
+        {
+          "value": "99.99",
+          "suffix": "%",
+          "label": "Uptime last year"
+        },
+        {
+          "value": "4",
+          "suffix": " min",
+          "label": "Median time to first update"
+        }
+      ]
+    }
   }
 ]

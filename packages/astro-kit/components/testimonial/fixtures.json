@@ -34,5 +34,9 @@
   {
     "name": "single-quote-lg",
     "props": { "layout": "single", "quoteSize": "lg", "items": [{ "quote": "We planned less and saw more.", "name": "Jonas Weber", "role": "Reader" }] }
+  },
+  {
+    "name": "grid-source-quoted",
+    "props": { "items": [{ "quote": "“We set it up before lunch.”", "name": "Grace Lin", "role": "Head of Support, Fernhill" }, { "quote": "People just read the page.", "name": "Omar Haddad", "role": "Support lead" }] }
   }
 ]

@@ -533,6 +533,7 @@
       "into": "items",
       "each": "column",
       "item": {
+        "number": "@number attr:title || @number dom:",
         "title": "@title attr:title || @title dom:",
         "text": "@text dom:"
       }

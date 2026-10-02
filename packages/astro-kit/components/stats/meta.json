@@ -43,6 +43,14 @@
       ],
       "default": "sm",
       "description": "The label under each figure: sm (small), base (body size) or lg (a counter title set like a subheading)."
+    },
+    "order": {
+      "options": [
+        "label-first",
+        "value-first"
+      ],
+      "default": "label-first",
+      "description": "Which the page's text reads first, as the source does: label-first (an Elementor counter) or value-first (a Gutenberg figure heading over its label). The figure is drawn on top either way."
     }
   },
   "props": {
