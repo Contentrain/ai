@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "gutenberg",
-  "version": "6",
+  "version": "7",
   "fallback": "prose",
   "rules": [
     {
@@ -677,6 +677,64 @@
         "root": [
           "core/columns",
           "core/group"
+        ],
+        "order": [
+          "figure",
+          "label"
+        ]
+      },
+      "slots": {
+        "heading": {
+          "match": "core/heading",
+          "max": 1,
+          "scope": "intro"
+        },
+        "lead": {
+          "match": "core/paragraph",
+          "max": 1,
+          "scope": "intro"
+        },
+        "figure": {
+          "match": "core/heading",
+          "min": 1,
+          "max": 1,
+          "numeric": true
+        },
+        "label": {
+          "match": "core/paragraph",
+          "max": 1
+        }
+      },
+      "props": {
+        "heading": "@heading dom:",
+        "intro": "@lead dom:"
+      },
+      "into": "items",
+      "each": "column",
+      "item": {
+        "value": "@figure dom:",
+        "label": "@label dom:"
+      }
+    },
+    {
+      "id": "stats.columns-label-first",
+      "component": "stats",
+      "when": {
+        "columns": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "repeat": "columns",
+        "root": [
+          "core/columns",
+          "core/group"
+        ],
+        "order": [
+          "label",
+          "figure"
         ]
       },
       "slots": {

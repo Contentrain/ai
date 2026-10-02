@@ -129,6 +129,13 @@ export interface SectionRule {
     repeat?: 'columns'
     /** The section's root element(s): `core/cover`, `core/media-text` (a loose run of blocks is `run`). */
     root?: string | string[]
+    /**
+     * Two slots in the order the source writes them: where both hold a leaf (in each column, with `repeat`), the first
+     * leaf of the one must come before the first of the other. `['figure', 'label']` is a figure written above its
+     * label, so a rule can pick the variant the source's reading order needs (G-text) and leave the other order to the
+     * next rule.
+     */
+    order?: [string, string]
   }
   /**
    * Named leaf groups. Each leaf, in document order, goes to the first declared slot that matches it and
@@ -211,6 +218,13 @@ function claimLeaves(rule: SectionRule, leaves: SectionLeaf[], defaults?: Mappin
     else if (rule.when?.only !== false) return null
   }
   for (const [name, def] of slots) if (claimed[name]!.length < (def.min ?? 0)) return null
+  const [first, then] = rule.when?.order ?? []
+  const a = first ? claimed[first]?.[0] : undefined
+  const b = then ? claimed[then]?.[0] : undefined
+  if (a && b) {
+    const at = (path: string) => leaves.findIndex(l => l.path === path)
+    if (at(a) > at(b)) return null
+  }
   return claimed
 }
 
@@ -330,6 +344,8 @@ function validateSections(table: MappingTable, components: Map<string, KitCompon
     if (rule.when?.repeat === 'columns' && rule.each !== 'column') problems.push(`${at}: repeat columns needs each: column`)
     if (rule.each === 'column' && rule.when?.repeat !== 'columns') problems.push(`${at}: each column needs when.repeat columns`)
     for (const [name, slot] of Object.entries(rule.slots)) if (slot.scope === 'intro' && rule.when?.repeat !== 'columns') problems.push(`${at}: slot ${name} is scope intro, which needs when.repeat columns`)
+    for (const name of rule.when?.order ?? []) if (!rule.slots[name]) problems.push(`${at}: when.order names ${name}, which is not a slot`)
+    if (rule.when?.order && (rule.slots[rule.when.order[0]]?.scope === 'intro') !== (rule.slots[rule.when.order[1]]?.scope === 'intro')) problems.push(`${at}: when.order compares an intro slot with a column slot`)
     const readsSlots = (value: string, where: string, type: string | undefined, slotted: boolean, item = false) => {
       const slots = sectionValueSlots(value)
       if (!slots) { problems.push(`${at}: ${where} = ${value} is not a section value`); return }
