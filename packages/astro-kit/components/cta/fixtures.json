@@ -3,5 +3,6 @@
   { "name": "centered-inverse", "props": { "heading": "Planning a trip?", "body": "Start with the guides readers use most.", "layout": "centered", "tone": "inverse", "actions": [{ "label": "Popular guides", "href": "/guides/" }, { "label": "Ask a question", "href": "/contact/", "style": "ghost" }] } },
   { "name": "card-default", "props": { "heading": "Write for the journal", "body": "We publish reader essays every season.", "frame": "card", "tone": "default", "actions": [{ "label": "Pitch an essay", "href": "/pitch/" }] } },
   { "name": "card-muted", "props": { "heading": "Support independent travel writing", "frame": "card", "tone": "muted", "layout": "centered", "actions": [{ "label": "Become a member", "href": "/members/" }] } },
-  { "name": "stacked-none", "props": { "heading": "Ready when you are", "body": "Tell us where you want to go and we will send a first plan within a week.", "layout": "stacked", "tone": "none", "actions": [{ "label": "Start planning", "href": "/contact/" }] } }
+  { "name": "stacked-none", "props": { "heading": "Ready when you are", "body": "Tell us where you want to go and we will send a first plan within a week.", "layout": "stacked", "tone": "none", "actions": [{ "label": "Start planning", "href": "/contact/" }] } },
+  { "name": "centered-actions-start", "props": { "heading": "See what is on this week", "body": "New films every Thursday, and a late show on Saturdays.", "layout": "centered", "tone": "inverse", "actionsAlign": "start", "actions": [{ "label": "Programme", "href": "/programme/" }] } }
 ]
