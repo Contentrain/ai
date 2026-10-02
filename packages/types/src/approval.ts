@@ -307,9 +307,14 @@ export function evaluateApproval(input: ApprovalEvaluation): ApprovalDecision {
   for (const requirement of outstanding) {
     const who = requirement.roles ? ` from ${requirement.roles.join(' or ')}` : ''
     const have = requirement.approvers.length
+    // `because` is the matching rule's risk class: a floor the plan climbed
+    // past, not the plan's own risk. Say "the plan is X" only when they agree.
+    const cause = requirement.because === risk
+      ? `the plan is ${risk}`
+      : `the policy requires it at ${requirement.because} and above (this plan is ${risk})`
     reasons.push(
       `${requirement.gate} approval: ${requirement.remaining} more${who} needed `
-      + `(${have}/${requirement.min_approvals}), because the plan is ${requirement.because}.`,
+      + `(${have}/${requirement.min_approvals}), because ${cause}.`,
     )
   }
 

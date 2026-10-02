@@ -184,7 +184,11 @@ export interface ApprovalRequirement {
   /** Distinct approvers still needed; 0 once satisfied. */
   min_approvals: number
   roles?: string[]
-  /** The risk class of the rule that produced this requirement. */
+  /**
+   * The risk class of the rule that produced this requirement: the rule's floor, which a heavier plan
+   * climbs past, not the plan's own risk (that is `ApprovalDecision.risk`). When the policy's default mode
+   * produced it, the plan's class.
+   */
   because: RiskClass
 }
 
