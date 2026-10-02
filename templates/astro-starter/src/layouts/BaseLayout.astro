@@ -69,7 +69,7 @@ const wpQueries = isHome ? await queryMap() : {}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <Font cssVariable="--font-inter" preload />
+    <Font cssVariable="--font-inter" preload={[{ subset: 'latin' }, { subset: 'latin-ext' }]} />
     <SEO
       title={fullTitle}
       description={description ?? (isHome ? site.tagline : undefined)}
