@@ -87,6 +87,11 @@
 .prose::after { content: ''; display: table; clear: both; }
 
 /* Media. */
+/* Classic editor media: a caption shortcode writes its width as an inline style, an old embed as a width attribute;
+   neither may be wider than the column (a phone-width page must not scroll sideways). */
+.prose .wp-caption, .prose figure[style*='width'] { max-width: 100%; width: auto !important; }
+.prose img, .prose iframe, .prose video, .prose embed, .prose object { max-width: 100%; }
+.prose img, .prose video { height: auto; }
 .prose .wp-block-image { margin-block: 2em; }
 .prose .wp-block-image img { height: auto; margin: 0; border-radius: var(--radius-image, 0.5rem); }
 .prose .wp-block-image.is-style-rounded img { border-radius: 9999px; }
