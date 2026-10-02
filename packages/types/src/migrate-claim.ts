@@ -410,18 +410,76 @@ export interface MigrateAccountStateResponse {
   current_plan?: MigrateStudioPlan
 }
 
-/** Check Studio's answer. Returns the stable `field: problem` strings the claim validators use. */
-export function validateMigrateAccountStateResponse(input: unknown):
+/** Plans in ascending order; a higher index carries more. */
+const PLAN_RANK: Record<MigrateStudioPlan, number> = { starter: 0, pro: 1 }
+
+/**
+ * Check the signed request Studio receives. Pass `now` (seconds since the
+ * epoch) to also check the validity window. It does no cryptography, and it
+ * does not remember `jti`: Studio keeps a replay record for account-state
+ * requests, as it does for claims (a repeated `jti` is refused).
+ */
+export function validateMigrateAccountStateRequest(input: unknown, options: { now?: number } = {}):
+  | { ok: true, request: MigrateAccountStateRequest }
+  | { ok: false, errors: string[] } {
+  if (!isObject(input)) return { ok: false, errors: ['payload: not an object'] }
+  const x = input
+  const errors: string[] = []
+  if (x.iss !== MIGRATE_STUDIO_CLAIM_ISSUER) errors.push('iss: unexpected issuer')
+  if (x.aud !== MIGRATE_STUDIO_CLAIM_AUDIENCE) errors.push('aud: unexpected audience')
+  if (!isText(x.jti)) errors.push('jti: required')
+  if (!isSeconds(x.iat)) errors.push('iat: invalid')
+  if (!isSeconds(x.exp)) errors.push('exp: invalid')
+  if (isSeconds(x.iat) && isSeconds(x.exp)) {
+    const ttl = x.exp - x.iat
+    if (ttl <= 0) errors.push('exp: not after iat')
+    else if (ttl > MIGRATE_STUDIO_CLAIM_MAX_TTL_SECONDS) errors.push('exp: lifetime too long')
+    if (options.now !== undefined) {
+      if (options.now >= x.exp + MIGRATE_STUDIO_CLAIM_CLOCK_SKEW_SECONDS) errors.push('exp: expired')
+      if (x.iat > options.now + MIGRATE_STUDIO_CLAIM_CLOCK_SKEW_SECONDS) errors.push('iat: in the future')
+    }
+  }
+  if (typeof x.github_user_id !== 'string' || !/^[1-9]\d{0,18}$/.test(x.github_user_id)) errors.push('github_user_id: invalid')
+  if (!(MIGRATE_STUDIO_PLANS as readonly unknown[]).includes(x.plan)) errors.push('plan: unknown plan')
+  return errors.length === 0 ? { ok: true, request: x as unknown as MigrateAccountStateRequest } : { ok: false, errors }
+}
+
+/**
+ * Check Studio's answer. Pass the plan that was asked about as `requested` and
+ * the answer is also checked against it, which is what Migrate does before it
+ * prices an Offer from it:
+ * - `none`: no `current_plan`; `plan` is the requested plan.
+ * - `too_small`: `plan` is the requested plan and `current_plan` is below it.
+ * - `covers`: `current_plan` is at least the requested plan, `plan` is that
+ *   current plan, and nothing is added (`year1_cents` 0).
+ * Errors are the stable `field: problem` strings the claim validators use.
+ */
+export function validateMigrateAccountStateResponse(input: unknown, options: { requested?: MigrateStudioPlan } = {}):
   | { ok: true, response: MigrateAccountStateResponse }
   | { ok: false, errors: string[] } {
   if (!isObject(input)) return { ok: false, errors: ['payload: not an object'] }
   const errors: string[] = []
+  const planOk = (MIGRATE_STUDIO_PLANS as readonly unknown[]).includes(input.plan)
+  const currentOk = (MIGRATE_STUDIO_PLANS as readonly unknown[]).includes(input.current_plan)
   if (!(MIGRATE_ACCOUNT_STATES as readonly unknown[]).includes(input.state)) errors.push('state: unknown')
-  if (!(MIGRATE_STUDIO_PLANS as readonly unknown[]).includes(input.plan)) errors.push('plan: unknown plan')
+  if (!planOk) errors.push('plan: unknown plan')
   if (!isCents(input.year1_cents)) errors.push('year1_cents: invalid')
   else if (input.state === 'covers' && input.year1_cents !== 0) errors.push('year1_cents: must be 0 when covers')
   else if (input.state !== undefined && input.state !== 'covers' && input.year1_cents === 0) errors.push('year1_cents: must be > 0')
-  if (input.current_plan !== undefined && !(MIGRATE_STUDIO_PLANS as readonly unknown[]).includes(input.current_plan)) errors.push('current_plan: unknown plan')
-  if (input.state !== 'none' && input.current_plan === undefined) errors.push('current_plan: required unless none')
+  if (input.current_plan !== undefined && !currentOk) errors.push('current_plan: unknown plan')
+  if (input.state === 'none' && input.current_plan !== undefined) errors.push('current_plan: not allowed when none')
+  if ((input.state === 'covers' || input.state === 'too_small') && input.current_plan === undefined) errors.push('current_plan: required unless none')
+  const asked = options.requested
+  if (asked !== undefined && planOk) {
+    const plan = input.plan as MigrateStudioPlan
+    if (input.state === 'covers') {
+      if (currentOk && PLAN_RANK[input.current_plan as MigrateStudioPlan] < PLAN_RANK[asked]) errors.push('current_plan: below the requested plan')
+      if (currentOk && plan !== input.current_plan) errors.push('plan: must be the current plan when covers')
+    }
+    else if (input.state === 'none' || input.state === 'too_small') {
+      if (plan !== asked) errors.push('plan: not the requested plan')
+      if (input.state === 'too_small' && currentOk && PLAN_RANK[input.current_plan as MigrateStudioPlan] >= PLAN_RANK[asked]) errors.push('current_plan: not below the requested plan')
+    }
+  }
   return errors.length === 0 ? { ok: true, response: input as unknown as MigrateAccountStateResponse } : { ok: false, errors }
 }

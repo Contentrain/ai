@@ -6,6 +6,7 @@ import {
   MIGRATE_STUDIO_CLAIM_MAX_TRIAL_DAYS,
   MIGRATE_STUDIO_CLAIM_MAX_TTL_SECONDS,
   isMigrateStudioClaim,
+  validateMigrateAccountStateRequest,
   validateMigrateAccountStateResponse,
   validateMigrateStudioClaim,
   validateMigrateStudioClaimAny,
@@ -205,6 +206,33 @@ describe('validateMigrateAccountStateResponse', () => {
     expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 100, current_plan: 'pro' })).toEqual({ ok: false, errors: ['year1_cents: must be 0 when covers'] })
     expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 0 })).toEqual({ ok: false, errors: ['year1_cents: must be > 0'] })
     expect(validateMigrateAccountStateResponse({ state: 'too_small', plan: 'pro', year1_cents: 5 })).toEqual({ ok: false, errors: ['current_plan: required unless none'] })
+    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200, current_plan: 'starter' })).toEqual({ ok: false, errors: ['current_plan: not allowed when none'] })
     expect(validateMigrateAccountStateResponse({ state: 'maybe', plan: 'x', year1_cents: -1 })).toEqual({ ok: false, errors: expect.arrayContaining(['state: unknown', 'plan: unknown plan', 'year1_cents: invalid']) })
+  })
+})
+
+describe('account-state against the question asked', () => {
+  it('checks none / too_small / covers against the requested plan', () => {
+    const ok = (r: Record<string, unknown>, requested: 'starter' | 'pro') => validateMigrateAccountStateResponse(r, { requested }).ok
+    expect(ok({ state: 'none', plan: 'pro', year1_cents: 39200 }, 'pro')).toBe(true)
+    expect(ok({ state: 'none', plan: 'starter', year1_cents: 7200 }, 'pro')).toBe(false)
+    expect(ok({ state: 'too_small', plan: 'pro', year1_cents: 31400, current_plan: 'starter' }, 'pro')).toBe(true)
+    expect(ok({ state: 'too_small', plan: 'pro', year1_cents: 100, current_plan: 'pro' }, 'pro')).toBe(false)
+    expect(ok({ state: 'covers', plan: 'pro', year1_cents: 0, current_plan: 'pro' }, 'starter')).toBe(true)
+    expect(ok({ state: 'covers', plan: 'starter', year1_cents: 0, current_plan: 'starter' }, 'pro')).toBe(false)
+    expect(ok({ state: 'covers', plan: 'starter', year1_cents: 0, current_plan: 'pro' }, 'starter')).toBe(false)
+  })
+})
+
+describe('validateMigrateAccountStateRequest', () => {
+  const req = (o: Record<string, unknown> = {}) => ({
+    iss: MIGRATE_STUDIO_CLAIM_ISSUER, aud: MIGRATE_STUDIO_CLAIM_AUDIENCE, jti: 'j-1', iat: NOW, exp: NOW + 600, github_user_id: '164523886', plan: 'pro', ...o,
+  })
+
+  it('accepts a good request inside its window and refuses the rest', () => {
+    expect(validateMigrateAccountStateRequest(req(), { now: NOW + 5 })).toEqual({ ok: true, request: req() })
+    expect(validateMigrateAccountStateRequest(req({ github_user_id: 'octocat', plan: 'team', jti: '' }))).toEqual({ ok: false, errors: expect.arrayContaining(['github_user_id: invalid', 'plan: unknown plan', 'jti: required']) })
+    expect(validateMigrateAccountStateRequest(req({ exp: NOW + 5000 }))).toEqual({ ok: false, errors: ['exp: lifetime too long'] })
+    expect(validateMigrateAccountStateRequest(req(), { now: NOW + 5000 })).toEqual({ ok: false, errors: ['exp: expired'] })
   })
 })
