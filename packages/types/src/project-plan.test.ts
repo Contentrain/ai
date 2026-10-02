@@ -204,13 +204,15 @@ describe('validateProjectPlan', () => {
 
   it('checks the frames the header, footer and lists are held to', () => {
     const p = plan()
-    p.site.chrome = { frame: [{ min: 768, width: 600 }, { min: 1280, width: 1140 }], listFrame: [{ min: 768, width: 600 }] }
+    p.site.chrome = { frame: [{ min: 768, width: 600 }, { min: 1280, width: 1140 }], listFrame: [{ min: 768, width: 600 }], postFrame: [{ min: 1024, width: 630 }] }
     expect(validateProjectPlan(p).errors).toEqual([])
     p.site.chrome = { frame: [{ min: 1280, width: 1140 }, { min: 768, width: 600 }], listFrame: [] }
     expect(validateProjectPlan(p).errors).toEqual([
       'site.chrome.frame steps are not whole pixel widths in ascending order of min',
       'site.chrome.listFrame is not a list of 1–8 steps',
     ])
+    p.site.chrome = { postFrame: [{ min: 1024, width: 630 }, { min: 1024, width: 700 }] }
+    expect(validateProjectPlan(p).errors).toEqual(['site.chrome.postFrame steps are not whole pixel widths in ascending order of min'])
     p.site.chrome = { frame: [{ min: 768, width: 0 }] }
     expect(validateProjectPlan(p).errors).toEqual(['site.chrome.frame steps are not whole pixel widths in ascending order of min'])
   })

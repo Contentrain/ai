@@ -118,6 +118,8 @@ export interface PlanSite {
    * content is held to where the theme boxes it, read from the source's renders: from `min` px of viewport
    * up it is `width` px wide and centred (Hello Elementor: 768 → 600, 1280 → 1140); below the first step,
    * and absent, the starter's own fluid frame. `listFrame`: the same for the post lists' main column.
+   * `postFrame`: the same for a single post's reading column, where the theme reads narrower than its frame
+   * (Astra: 630 in a 1200 frame).
    */
   chrome?: {
     brand?: string
@@ -128,6 +130,7 @@ export interface PlanSite {
     footerAlign?: 'start' | 'center'
     frame?: ChromeFrameStep[]
     listFrame?: ChromeFrameStep[]
+    postFrame?: ChromeFrameStep[]
   }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
@@ -458,7 +461,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   if (chrome?.titleLinks !== undefined && typeof chrome.titleLinks !== 'boolean') errors.push('site.chrome.titleLinks is not a boolean')
   if (chrome?.navLinks !== undefined && typeof chrome.navLinks !== 'boolean') errors.push('site.chrome.navLinks is not a boolean')
   if (chrome?.footerAlign !== undefined && !['start', 'center'].includes(chrome.footerAlign)) errors.push(`site.chrome.footerAlign ${chrome.footerAlign} is not start or center`)
-  for (const key of ['frame', 'listFrame'] as const) {
+  for (const key of ['frame', 'listFrame', 'postFrame'] as const) {
     const steps = chrome?.[key]
     if (steps === undefined) continue
     if (!Array.isArray(steps) || steps.length === 0 || steps.length > 8) errors.push(`site.chrome.${key} is not a list of 1–8 steps`)
