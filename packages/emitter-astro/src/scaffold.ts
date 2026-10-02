@@ -161,7 +161,7 @@ const MARK_RE = /@@([a-z0-9_]+)@@/gi
 export type Values = Record<string, unknown>
 
 export const esc = (value: unknown): string =>
-  String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 const isFilled = (value: unknown): boolean =>
   Array.isArray(value) ? value.length > 0 : value !== undefined && value !== null && value !== ''
@@ -829,7 +829,8 @@ export function postMarks(post: MarkablePost): Values {
     author_first: post.author_first ?? '',
     author_last: post.author_last ?? '',
     excerpt: post.excerpt ?? '',
-    excerpt_html: post.excerpt_html ?? post.excerpt ?? '',
+    // The plain excerpt is text: escaped here, or a decoded \`<script>\` in it would print as markup.
+    excerpt_html: post.excerpt_html ?? esc(post.excerpt ?? ''),
     body_html: post.body ?? '',
     slug: post.slug,
     feat: post.featured?.[0] ?? '',
