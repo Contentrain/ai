@@ -1,0 +1,14 @@
+{
+  "distFiles": {
+    "index.html": {
+      "contains": [
+        "<html lang=\"ar\" dir=\"rtl\"",
+        "سينما مستقلة",
+        "og:locale\" content=\"ar"
+      ],
+      "excludes": [
+        "dir=\"ltr\""
+      ]
+    }
+  }
+}

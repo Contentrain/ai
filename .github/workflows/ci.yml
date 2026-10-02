@@ -69,12 +69,14 @@ jobs:
         # checked with the SDK at HEAD: empty, then with a WordPress-shaped
         # demo site laid over it (astro check, knip, build, built-site checks),
         # and once more with the demo's media served from a stand-in Studio host,
-        # and a Turkish-only site (config default locale tr, site.language tr).
+        # a Turkish-only site (config default locale tr, site.language tr)
+        # and an Arabic one (right to left: <html lang="ar" dir="rtl">).
         run: |
           node scripts/starter-gates.mjs --local-sdk
           node scripts/starter-gates.mjs --local-sdk --fixture wp-demo
           node scripts/starter-gates.mjs --local-sdk --fixture wp-demo --media studio
           node scripts/starter-gates.mjs --local-sdk --fixture tr-site
+          node scripts/starter-gates.mjs --local-sdk --fixture ar-site
 
       - name: Kit components render as their baselines
         # Every fixture of every astro-kit component, in a copy of the starter,
