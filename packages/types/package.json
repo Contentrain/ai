@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/types",
-  "version": "1.32.1",
+  "version": "1.33.0",
   "license": "MIT",
   "description": "Shared TypeScript types for Contentrain ecosystem",
   "type": "module",
