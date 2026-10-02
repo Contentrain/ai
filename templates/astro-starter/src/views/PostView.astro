@@ -36,7 +36,7 @@ const at = posts.findIndex(other => other.id === post.id)
 const previous = layout.adjacent && at >= 0 ? posts[at + 1] : undefined
 const next = layout.adjacent && at > 0 ? posts[at - 1] : undefined
 const more = posts.filter(other => other.id !== post.id).slice(0, layout.more)
-const locale = site.language ?? 'en'
+const locale = site.language
 const url = new URL(postHref(post), Astro.site ?? Astro.url).href
 const description = data.seo?.description ?? data.excerpt ?? summarize(data.body)
 const image = data.seo?.image ?? cover?.data.url

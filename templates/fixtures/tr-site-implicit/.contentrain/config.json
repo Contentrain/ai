@@ -1,0 +1,18 @@
+{
+  "domains": [
+    "assets",
+    "blog",
+    "site"
+  ],
+  "locales": {
+    "default": "tr",
+    "supported": [
+      "tr",
+      "en"
+    ]
+  },
+  "platform": "web",
+  "stack": "astro",
+  "version": 1,
+  "workflow": "review"
+}
