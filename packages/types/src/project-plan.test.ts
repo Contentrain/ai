@@ -165,6 +165,10 @@ describe('validateProjectPlan', () => {
     const p = plan()
     p.site.entryLayouts = { 'type-project': { adjacent: true } }
     expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.entryLayouts = { 'type-project': { adjacent: false, more: 3 } }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.entryLayouts = { 'type-project': { adjacent: false, more: 21 } }
+    expect(validateProjectPlan(p).errors).toEqual(['site.entryLayouts.type-project.more is not a count from 0 to 20'])
   })
 
   it('checks the post layout and list display a plan copies from the source templates', () => {

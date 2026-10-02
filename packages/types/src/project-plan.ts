@@ -104,9 +104,9 @@ export interface PlanSite {
   /**
    * What the source's own page for a custom post type showed, by the type's single route id (`type-project`):
    * `adjacent` = links to the previous and next entry under it. The starter's entry view prints them for that
-   * type only. Absent (or a type left out): none.
+   * type only. `more` = a list of that many other entries under it (0 to 20). Absent (or a type left out): none.
    */
-  entryLayouts?: Record<string, { adjacent: boolean }>
+  entryLayouts?: Record<string, { adjacent: boolean, more?: number }>
   /**
    * The header and footer as the source's theme prints them, where they differ from the starter's.
    * Every key is optional; absent, the starter's own. `brand`: the site title's size in the header
@@ -452,6 +452,9 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   }
   if (site?.lists && !['cards', 'list', 'full'].includes(site.lists.display)) errors.push(`site.lists.display ${site.lists.display} is not cards, list or full`)
   if (site?.lists?.text !== undefined && !CSS_LENGTH.test(site.lists.text)) errors.push(`site.lists.text ${site.lists.text} is not a CSS size`)
+  for (const [route, layout] of Object.entries(site?.entryLayouts ?? {})) {
+    if (layout?.more !== undefined && (!Number.isSafeInteger(layout.more) || layout.more < 0 || layout.more > 20)) errors.push(`site.entryLayouts.${route}.more is not a count from 0 to 20`)
+  }
   const chrome = site?.chrome
   if (chrome?.brand !== undefined && !CSS_LENGTH.test(chrome.brand)) errors.push(`site.chrome.brand ${chrome.brand} is not a CSS size`)
   if (chrome?.tagline !== undefined && typeof chrome.tagline !== 'boolean') errors.push('site.chrome.tagline is not a boolean')
