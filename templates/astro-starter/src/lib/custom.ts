@@ -13,7 +13,7 @@ export type Taxonomy = NonNullable<CustomType['taxonomies']>[number]
 
 export const text = (value: unknown): string | undefined => (typeof value === 'string' && value.trim() ? value : undefined)
 
-const dateOf = (value: unknown): Date | undefined => (value instanceof Date ? value : undefined)
+export const dateOf = (value: unknown): Date | undefined => (value instanceof Date ? value : undefined)
 
 /** The entries of a collection named by configuration; the content layer validated them against the project's schema. */
 export async function entriesOf(collection: string): Promise<TypeEntry[]> {
