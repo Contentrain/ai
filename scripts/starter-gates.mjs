@@ -48,6 +48,25 @@ const { values } = parseArgs({
 })
 
 const starter = join(root, 'templates', 'astro-starter')
+
+const placeholders = text => (String(text).match(/\{[^}]+\}/g) ?? []).toSorted().join(',')
+// The bundled interface-string tables: every language has exactly English's keys and keeps its {placeholders}, so a
+// table can never ship a gap or a broken template.
+{
+  const dir = join(starter, '.contentrain', 'content', 'site', 'ui-strings')
+  const english = JSON.parse(readFileSync(join(dir, 'en.json'), 'utf8'))
+  const problems = []
+  for (const file of readdirSync(dir).filter(name => name.endsWith('.json') && name !== 'en.json')) {
+    const table = JSON.parse(readFileSync(join(dir, file), 'utf8'))
+    for (const key of Object.keys(english)) {
+      if (typeof table[key] !== 'string' || !table[key].trim()) problems.push(`${file}: ${key} is missing`)
+      else if (placeholders(table[key]) !== placeholders(english[key])) problems.push(`${file}: ${key} changes the placeholders of "${english[key]}"`)
+    }
+    for (const key of Object.keys(table)) if (!(key in english)) problems.push(`${file}: ${key} is not an English key`)
+  }
+  if (problems.length) throw new Error(`ui-strings tables disagree with en.json:\n${problems.join('\n')}`)
+}
+
 const project = values.out ? resolve(values.out) : mkdtempSync(join(tmpdir(), 'astro-starter-'))
 const run = (command, args, cwd = project) => {
   console.log(`\n$ ${command} ${args.join(' ')}`)
