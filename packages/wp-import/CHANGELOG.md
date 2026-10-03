@@ -1,5 +1,14 @@
 # @contentrain/wp-import
 
+## 0.10.5
+
+### Patch Changes
+
+- cfeb0f8: A menu item that points at a post type's archive keeps its address. It has no entry to target, so before it was written with neither a target nor a URL and a public site left it out of the menu.
+- Updated dependencies [0ec7222]
+- Updated dependencies [30da8d4]
+  - @contentrain/types@1.36.0
+
 ## 0.10.4
 
 ### Patch Changes
