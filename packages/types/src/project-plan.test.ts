@@ -68,6 +68,21 @@ describe('validateProjectPlan', () => {
     expect(validateProjectPlan(p).errors).toEqual([])
   })
 
+  it('accepts the space under the title and the page frame\'s inset as roles', () => {
+    const p = plan()
+    p.site.tokens.roles = { ...p.site.tokens.roles, 'spacing-title': '43.57px', 'container-inset': '2.5rem' }
+    expect(validateProjectPlan(p).errors).toEqual([])
+  })
+
+  it('refuses a title spacing or frame inset that is not a CSS size', () => {
+    const p = plan()
+    p.site.tokens.roles = { ...p.site.tokens.roles, 'spacing-title': 'url(//evil.test/x)', 'container-inset': '1rem; } body { display: none' }
+    expect(validateProjectPlan(p).errors).toEqual(expect.arrayContaining([
+      'tokens.roles.spacing-title url(//evil.test/x) is not a CSS size',
+      'tokens.roles.container-inset 1rem; } body { display: none is not a CSS size',
+    ]))
+  })
+
   it('catches broken references, permalinks, values and bindings', () => {
     const p = plan()
     p.site.permalinks.post = '/:slug'
