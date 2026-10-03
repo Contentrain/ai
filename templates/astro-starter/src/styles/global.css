@@ -20,6 +20,8 @@
   --color-line: #e5e7eb;
   --color-accent: #2563eb;
   --color-accent-ink: #ffffff;
+  --color-brand: var(--color-accent);
+  --color-brand-ink: var(--color-accent-ink);
 
   /* Type. --font-inter is defined by Astro's font API (astro.config.mjs). */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;

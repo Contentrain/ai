@@ -35,6 +35,9 @@ export const PLAN_TOKEN_ROLES = [
   // The page behind the content and the card on it, where the source tints one and floats the other (Astra: a blue-grey
   // page, white shadowed cards). Absent: both are the surface. `shadow-card` is a box-shadow, `spacing-card` the card's padding.
   'color-page', 'color-card', 'shadow-card', 'spacing-card',
+  // The brand colour a page builder declares and paints on a band of its own (Elementor's secondary on a call to action),
+  // where it is not the accent the buttons paint; `color-brand-ink` is the text on it. Absent: the accent and its ink.
+  'color-brand', 'color-brand-ink',
 ] as const
 export type PlanTokenRole = (typeof PLAN_TOKEN_ROLES)[number]
 

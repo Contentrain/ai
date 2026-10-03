@@ -71,7 +71,7 @@ describe('validateProjectPlan', () => {
   it('catches broken references, permalinks, values and bindings', () => {
     const p = plan()
     p.site.permalinks.post = '/:slug'
-    p.site.tokens.roles = { ...p.site.tokens.roles, 'color-brand': '#fff' } as never
+    p.site.tokens.roles = { ...p.site.tokens.roles, 'color-sparkle': '#fff' } as never
     p.components.push({ id: 'hero', origin: 'kit' })
     p.routes[1]!.sections.push({ component: 'Missing', bind: { kind: 'static', props: {} } })
     p.routes[0]!.sections.push({ component: 'Prose', bind: { kind: 'entry', props: { body: 'field:content' } } })
@@ -81,7 +81,7 @@ describe('validateProjectPlan', () => {
     const { errors } = validateProjectPlan(p)
     expect(errors).toEqual(expect.arrayContaining([
       'site.permalinks.post must start and end with "/" (/:slug)',
-      'tokens.roles.color-brand is not a kit role',
+      'tokens.roles.color-sparkle is not a kit role',
       'component hero is not a PascalCase name',
       'kit component hero names no kit id',
       'route post section 1: component Missing is not declared',
@@ -197,7 +197,7 @@ describe('validateProjectPlan', () => {
     p.site.lists = { display: 'list', heading: false }
     expect(validateProjectPlan(p).errors).toEqual([])
     p.site.lists = { display: 'cards', heading: false, surface: true, byline: true }
-    p.site.tokens.roles = { 'color-page': 'rgb(240, 245, 250)', 'color-card': 'rgb(255, 255, 255)', 'shadow-card': 'rgba(16, 24, 40, 0.05) 0px 6px 15px -2px', 'spacing-card': '24px' }
+    p.site.tokens.roles = { 'color-page': 'rgb(240, 245, 250)', 'color-card': 'rgb(255, 255, 255)', 'shadow-card': 'rgba(16, 24, 40, 0.05) 0px 6px 15px -2px', 'spacing-card': '24px', 'color-brand': '#E67828', 'color-brand-ink': 'rgb(51, 51, 51)' }
     expect(validateProjectPlan(p).errors).toEqual([])
     p.site.post = { header: ['title', 'title'], adjacent: false, more: 30 }
     p.site.lists = { display: 'grid' as 'cards', heading: false }
