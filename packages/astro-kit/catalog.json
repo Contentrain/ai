@@ -1771,6 +1771,18 @@
           "type": "string",
           "content": false,
           "description": "Anchor id of the section; the heading gets `<id>-title`."
+        },
+        "minHeight": {
+          "type": "string",
+          "default": "",
+          "content": false,
+          "description": "Layout cover only: the cover's own height as the source sets it (a CSS size such as 520px or 60vh); empty, the layout's default. Anything that is not a plain size is ignored."
+        },
+        "headingSize": {
+          "type": "string",
+          "default": "",
+          "content": false,
+          "description": "The heading's size as the source sets it (a CSS size such as 58px or clamp(2.15rem, 4vw, 3.6rem), line height 1.2); empty, the layout's own type scale. Anything that is not a plain size is ignored."
         }
       },
       "slots": {},
@@ -1791,7 +1803,8 @@
       },
       "a11y": "A labelled region (aria-labelledby the heading). One h1 by default; `level: 2` inside pages that already have one. The cover image is decorative when its alt is empty; text sits on an ink scrim for contrast.",
       "files": [
-        "Hero.astro"
+        "Hero.astro",
+        "hero.ts"
       ],
       "contentFields": {
         "heading": "heading",
