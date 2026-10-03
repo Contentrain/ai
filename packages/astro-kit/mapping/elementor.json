@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "elementor",
-  "version": "10",
+  "version": "11",
   "fallback": "prose",
   "defaults": {
     "elementor/video": {
@@ -276,6 +276,9 @@
     {
       "match": "elementor/testimonial",
       "component": "testimonial",
+      "variant": {
+        "frame": "plain"
+      },
       "group": "siblings",
       "into": "items",
       "item": {
@@ -855,7 +858,8 @@
       "id": "testimonial.quotes",
       "component": "testimonial",
       "variant": {
-        "quoteSize": "xl"
+        "quoteSize": "xl",
+        "frame": "plain"
       },
       "slots": {
         "title": {

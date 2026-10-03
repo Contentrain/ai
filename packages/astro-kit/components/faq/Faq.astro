@@ -29,8 +29,10 @@ const faq = tv({
       plain: { list: 'gap-2', summary: 'list-item list-[revert] py-1 text-[length:var(--text-body,1rem)] [font-weight:inherit] [&::-webkit-details-marker]:inline', marker: 'hidden', answer: 'pt-2 ps-5' },
     },
     tone: { default: {}, muted: { item: 'bg-surface' }, inverse: { answer: 'prose-invert' }, accent: { answer: 'prose-invert' } },
-    // heading: the question as a small heading. bold: body size in bold, as accordion and toggle titles often are.
-    questionStyle: { heading: {}, bold: { summary: 'text-[length:var(--text-body,1rem)] font-bold' } },
+    // heading: the question as a small heading. bold: body size in bold, as accordion and toggle titles often are. The
+    // weight is an arbitrary property like the summary's own: twMerge replaces one only with another, and a `font-bold`
+    // beside it lost in the CSS (IP-4 elementor G9: the question stayed at the heading weight).
+    questionStyle: { heading: {}, bold: { summary: 'text-[length:var(--text-body,1rem)] [font-weight:700]' } },
   },
   compoundVariants: [
     { style: 'cards', tone: 'muted', class: { item: 'border-transparent' } },

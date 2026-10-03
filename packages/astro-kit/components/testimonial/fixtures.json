@@ -36,6 +36,14 @@
     "props": { "layout": "single", "quoteSize": "lg", "items": [{ "quote": "We planned less and saw more.", "name": "Jonas Weber", "role": "Reader" }] }
   },
   {
+    "name": "grid-plain",
+    "props": { "frame": "plain", "quoteSize": "xl", "items": [{ "quote": "We sold out our first kiln batch on launch day.", "name": "Ruth Adeyemi", "role": "Potter" }, { "quote": "Six weeks, one price, and they answered every email.", "name": "Daniel Okafor", "role": "Leatherworker" }] }
+  },
+  {
+    "name": "single-plain-muted",
+    "props": { "layout": "single", "frame": "plain", "tone": "muted", "items": [{ "quote": "Calm pages and a fast checkout.", "name": "Ruth Adeyemi" }] }
+  },
+  {
     "name": "grid-source-quoted",
     "props": { "items": [{ "quote": "“We set it up before lunch.”", "name": "Grace Lin", "role": "Head of Support, Fernhill" }, { "quote": "People just read the page.", "name": "Omar Haddad", "role": "Support lead" }] }
   }
