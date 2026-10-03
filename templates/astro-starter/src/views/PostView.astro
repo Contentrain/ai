@@ -8,6 +8,7 @@ import Prose from '../components/kit/prose/Prose.astro'
 import StudioComments from '../components/studio/StudioComments.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { authorHref, byId, getPosts, getSite, getStrings, imageOf, postHref, resolve, termHref, type Post } from '../lib/content'
+import { cssSize } from '../lib/css-size'
 import { publicHtml } from '../lib/links'
 import { articleLd, summarize } from '../lib/seo'
 import { siteConfig } from '../site.config'
@@ -102,7 +103,7 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
       </footer>
     )}
     {(previous || next) && (
-      <nav aria-label={t('post.adjacent')} data-cr-part="post-navigation" class="mt-12 flex flex-wrap justify-between gap-4 border-t border-line pt-6" style={layout.adjacentText ? `font-size: ${layout.adjacentText}` : undefined}>
+      <nav aria-label={t('post.adjacent')} data-cr-part="post-navigation" class="mt-12 flex flex-wrap justify-between gap-4 border-t border-line pt-6" style={cssSize(layout.adjacentText)}>
         {previous ? <a href={postHref(previous)} rel="prev" class="text-ink"><span aria-hidden="true" class="inline-block rtl:-scale-x-100">←</span> {previous.data.title}</a> : <span />}
         {next && <a href={postHref(next)} rel="next" class="text-ink">{next.data.title} <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
       </nav>
@@ -115,7 +116,7 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
       <ul class:list={['border-t border-line', siteConfig.lists.tone === 'muted' && 'text-ink-muted']}>
         {more.map(other => (
           <li class="flex flex-wrap items-baseline justify-between gap-2 border-b border-line py-3">
-            <a href={postHref(other)} class="text-lg text-ink no-underline hover:underline" style={layout.moreText ? `font-size: ${layout.moreText}` : undefined}>{other.data.title}</a>
+            <a href={postHref(other)} class="text-lg text-ink no-underline hover:underline" style={cssSize(layout.moreText)}>{other.data.title}</a>
             {other.data.published_at && <time datetime={other.data.published_at.toISOString()} class="text-sm text-ink-muted">{formatDate(other.data.published_at)}</time>}
           </li>
         ))}

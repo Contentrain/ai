@@ -11,6 +11,7 @@ import { bodyOf, dateOf, entriesOf, entryHref, entryTitle, newestFirst, refIds, 
 import { shownFields, type Targets } from '../lib/fields'
 import { publicHtml } from '../lib/links'
 import { siteConfig } from '../site.config'
+import { cssSize } from '../lib/css-size'
 import { summarize } from '../lib/seo'
 import type { CustomType } from '../site.config'
 
@@ -82,7 +83,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
       <ul class:list={['border-t border-line', siteConfig.lists.tone === 'muted' && 'text-ink-muted']}>
         {more.map(other => (
           <li class="flex flex-wrap items-baseline justify-between gap-2 border-b border-line py-3">
-            <a href={other.href} class="text-lg text-ink no-underline hover:underline" style={type.moreText ? `font-size: ${type.moreText}` : undefined}>{other.title}</a>
+            <a href={other.href} class="text-lg text-ink no-underline hover:underline" style={cssSize(type.moreText)}>{other.title}</a>
             {other.date && <time datetime={other.date.toISOString()} class="text-sm text-ink-muted">{formatDate(other.date)}</time>}
           </li>
         ))}

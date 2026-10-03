@@ -216,6 +216,16 @@ describe('validateProjectPlan', () => {
     ])
   })
 
+  it('accepts and checks the size the previous/next links print at (it goes into a style attribute)', () => {
+    const p = plan()
+    p.site.post = { header: ['title'], adjacent: true, adjacentText: 'clamp(1rem, 1rem + ((1vw - 0.2rem) * 0.196), 1.125rem)', more: 0 }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    for (const bad of ['medium', 'url(x)', '1rem;background:url(//evil/x)', '1rem} a{color:red', 'calc(1rem + url(x))']) {
+      p.site.post = { header: ['title'], adjacent: true, adjacentText: bad, more: 0 }
+      expect(validateProjectPlan(p).errors).toEqual([`site.post.adjacentText ${bad} is not a CSS size`])
+    }
+  })
+
   it('accepts and checks the list details copied from the source: the current post in "more", the muted tone', () => {
     const p = plan()
     p.site.post = { header: ['title'], adjacent: false, more: 2, moreIncludesCurrent: true }
