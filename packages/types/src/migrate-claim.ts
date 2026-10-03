@@ -495,7 +495,7 @@ export function validateMigrateAccountStateResponse(input: unknown, options: { r
 // order is the key: Studio keeps one grant per `order_id`, and an order Studio
 // has no grant for is a 404 there, not a state.
 
-export const MIGRATE_GRANT_STATES = ['claimed', 'bound', 'redeemed'] as const
+export const MIGRATE_GRANT_STATES = ['claimed', 'bound', 'redeemed', 'revoked'] as const
 /**
  * Where the order's Studio grant stands:
  * - `claimed`: provisioned, the Studio year not started (checkout not completed).
@@ -503,6 +503,8 @@ export const MIGRATE_GRANT_STATES = ['claimed', 'bound', 'redeemed'] as const
  *   (checkout open or its webhook late).
  * - `redeemed`: the subscription is running (trial or paid). Only now may the
  *   customer connect GitHub, or Studio could not open a project (402).
+ * - `revoked`: the grant was withdrawn (by the founder, or after a refund).
+ *   Never installed; Migrate shows it as "not ready", like an unknown state.
  */
 export type MigrateGrantState = (typeof MIGRATE_GRANT_STATES)[number]
 

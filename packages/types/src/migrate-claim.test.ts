@@ -266,13 +266,15 @@ describe('grant status and install-url requests', () => {
 })
 
 describe('validateMigrateGrantStatusResponse', () => {
-  it('takes the three states and never an install before the subscription runs', () => {
+  it('takes the four states and never an install before the subscription runs', () => {
     for (const state of ['claimed', 'bound'])
       expect(validateMigrateGrantStatusResponse({ state, installed: false }).ok).toBe(true)
     expect(validateMigrateGrantStatusResponse({ state: 'redeemed', installed: false }).ok).toBe(true)
     expect(validateMigrateGrantStatusResponse({ state: 'redeemed', installed: true }).ok).toBe(true)
     expect(validateMigrateGrantStatusResponse({ state: 'bound', installed: true })).toEqual({ ok: false, errors: ['installed: only once redeemed'] })
-    expect(validateMigrateGrantStatusResponse({ state: 'revoked', installed: 'yes' })).toEqual({ ok: false, errors: ['state: unknown', 'installed: required'] })
+    expect(validateMigrateGrantStatusResponse({ state: 'revoked', installed: false }).ok).toBe(true)
+    expect(validateMigrateGrantStatusResponse({ state: 'revoked', installed: true })).toEqual({ ok: false, errors: ['installed: only once redeemed'] })
+    expect(validateMigrateGrantStatusResponse({ state: 'gone', installed: 'yes' })).toEqual({ ok: false, errors: ['state: unknown', 'installed: required'] })
   })
 })
 
