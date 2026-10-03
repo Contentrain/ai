@@ -520,7 +520,15 @@
             "stacked"
           ],
           "default": "split",
-          "description": "split: details beside the form on wide screens. stacked: one centred column."
+          "description": "split: details beside the form on wide screens. stacked: one column (see align)."
+        },
+        "align": {
+          "options": [
+            "center",
+            "start"
+          ],
+          "default": "center",
+          "description": "Stacked only, and the details alone before a Studio form. center: one centred column at a reading width. start: the section's whole column from the start edge, as a page builder's container whose text sets no alignment."
         },
         "tone": {
           "options": [
