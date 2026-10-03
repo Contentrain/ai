@@ -117,6 +117,12 @@ export interface PlanSite {
    */
   lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean }
   /**
+   * The interface text the source theme itself printed (its "Read more" link, skip link, search placeholder, the
+   * previous and next labels), by the `site/ui-strings` key it answers (`blog.read_more`, `nav.skip`): written over the
+   * site's bundled table, because the source's wording is what its visitors saw. Plain text, no markup; at most 100.
+   */
+  uiStrings?: Record<string, string>
+  /**
    * What the source's own page for a custom post type showed, by the type's single route id (`type-project`):
    * `adjacent` = links to the previous and next entry under it. The starter's entry view prints them for that
    * type only. `more` = a list of that many other entries under it (0 to 20); `moreIncludesCurrent`: the list also
@@ -488,6 +494,11 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (site.post.moreIncludesCurrent !== undefined && typeof site.post.moreIncludesCurrent !== 'boolean') errors.push('site.post.moreIncludesCurrent is not true or false')
     if (site.post.moreText !== undefined && !CSS_LENGTH.test(site.post.moreText)) errors.push(`site.post.moreText ${site.post.moreText} is not a CSS size`)
   }
+  for (const [key, value] of Object.entries(site?.uiStrings ?? {})) {
+    if (!/^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9_]*)+$/.test(key)) errors.push(`site.uiStrings key ${key} is not a ui-strings key`)
+    else if (typeof value !== 'string' || !value.trim() || value.length > 200 || /[<>]/.test(value)) errors.push(`site.uiStrings.${key} is not a plain text of 1 to 200 characters`)
+  }
+  if (Object.keys(site?.uiStrings ?? {}).length > 100) errors.push('site.uiStrings holds more than 100 strings')
   if (site?.lists && !['cards', 'list', 'full'].includes(site.lists.display)) errors.push(`site.lists.display ${site.lists.display} is not cards, list or full`)
   if (site?.lists?.tone !== undefined && site.lists.tone !== 'muted') errors.push(`site.lists.tone ${String(site.lists.tone)} is not muted`)
   if (site?.lists?.text !== undefined && !CSS_LENGTH.test(site.lists.text)) errors.push(`site.lists.text ${site.lists.text} is not a CSS size`)
