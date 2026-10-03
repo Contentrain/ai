@@ -49,7 +49,7 @@ const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
           <Breadcrumb items={trail.map(crumb => ({ label: crumb.title, href: crumb.href }))} current={data.title} label={t('nav.breadcrumb')} />
         </div>
       )}
-      {showTitle && <h1 class="text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{data.title}</h1>}
+      {showTitle && <h1 class="[margin-bottom:var(--spacing-title,0px)] text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{data.title}</h1>}
     </header>
   )}
   <slot />
