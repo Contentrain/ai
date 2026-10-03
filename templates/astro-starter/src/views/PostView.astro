@@ -74,7 +74,7 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
           {categories.map(category => <a href={termHref('category', category, categoryMap)} class="text-accent no-underline hover:underline">{category.data.name}</a>)}
         </p>
       )
-      : part === 'title' ? <h1 class="mb-4 text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{data.title}</h1>
+      : part === 'title' ? <h1 class="[margin-bottom:var(--spacing-title,1rem)] text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{data.title}</h1>
       : part === 'byline' ? (
         <p class="mb-10 flex flex-wrap items-center gap-x-2 text-ink-muted" data-kit-meta>
           {author && <span>{t('post.by')} <a href={authorHref(author)} class="font-medium text-ink no-underline hover:text-accent">{author.data.name}</a></span>}

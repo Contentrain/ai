@@ -66,7 +66,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
         {terms.map(term => <a href={termHref(taxonomy, term)} class="text-accent no-underline hover:underline">{text(term.data.name) ?? term.id}</a>)}
       </p>
     )}
-    <h1 class="mb-6 text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{title}</h1>
+    <h1 class="[margin-bottom:var(--spacing-title,1.5rem)] text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{title}</h1>
     {cover && <figure class="mb-10"><KitImage image={imageOf(cover as Media)} priority sizes="(min-width: 768px) 768px, 100vw" class="w-full rounded-[var(--radius-image,0.75rem)]" /></figure>}
     {body && <Prose html={body} />}
     {fields.length > 0 && <div class="mt-10 border-t border-line pt-8"><FieldList fields={fields} locale={site.language} /></div>}
