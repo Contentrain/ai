@@ -131,6 +131,17 @@ describe('rawToContentrain', () => {
     expect(vocab.terms.home).toEqual({ en: 'Home' })
   })
 
+  it('an archive menu item keeps its address (it has no entry to target), so the site can serve it', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const [menu] = raw.menus ?? []
+    const base = menu!.items[0]!
+    const archive = { ...base, id: 9001, title: 'Projects', url: 'https://s.example/projects/', target: { kind: 'archive' as const, post_type: 'project', resolved: true as const } }
+    const result = rawToContentrain({ ...raw, menus: [{ ...menu!, items: [...menu!.items, archive] }] }, { updatedBy: 'test' })
+    const items = JSON.parse(result.files['.contentrain/content/site/menu-items/data.json']!) as Record<string, { title: string, type: string, url?: string, target?: unknown }>
+    expect(Object.values(items).find(item => item.title === 'Projects')).toMatchObject({ type: 'post_type_archive', url: 'https://s.example/projects/' })
+    expect(Object.values(items).find(item => item.title === 'Projects')).not.toHaveProperty('target')
+  })
+
   it('is deterministic', async () => {
     const { raw } = await parseWxr(FIXTURE)
     const a = rawToContentrain(raw, { updatedBy: 'test' })
