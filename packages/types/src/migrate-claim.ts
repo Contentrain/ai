@@ -634,6 +634,62 @@ function isGithubInstallUrl(x: unknown): x is string {
     && /^\/apps\/[\w-]+\/installations\/new(\/permissions)?\/?$/.test(url.pathname)
 }
 
+// ─── Revoke (refund or failed delivery withdraws the Studio side) ───
+//
+// `POST /api/migrate/grants/revoke`. Migrate asks Studio, server to server, to withdraw an order's
+// grant: the Studio year that rode on the bundle's checkout is cancelled (no renewal) and the grant
+// becomes `revoked`. It is Migrate's half of a refund: the money itself is refunded in Polar by an
+// operator; this call only stops Studio from continuing a year nobody pays for. Idempotent: revoking a
+// revoked grant answers the same `revoked` state. The request is signed and single-use by `jti` under
+// its own purpose, like the status and install-url requests.
+
+export const MIGRATE_REVOKE_REASONS = ['refund_before_delivery', 'refund_after_delivery', 'delivery_failed', 'ops'] as const
+/**
+ * Why the grant is withdrawn (kept on the grant for support):
+ * - `refund_before_delivery`: the customer was refunded in full before the site was delivered.
+ * - `refund_after_delivery`: the customer asked within the refund window after delivery (Studio's share refunded pro rata).
+ * - `delivery_failed`: the move could not be delivered and the order is refunded.
+ * - `ops`: an operator withdrew it for another reason.
+ */
+export type MigrateRevokeReason = (typeof MIGRATE_REVOKE_REASONS)[number]
+
+/** `POST /api/migrate/grants/revoke`. */
+export interface MigrateRevokeRequest extends MigrateS2sEnvelope {
+  reason: MigrateRevokeReason
+}
+
+/** Studio's answer: the grant is `revoked`, and whether its subscription was cancelled by this call. */
+export interface MigrateRevokeResponse {
+  state: 'revoked'
+  /** Studio's GitHub App is installed for the grant's workspace (an install made earlier is not undone). */
+  installed: boolean
+  /** The Studio subscription was cancelled now. `false` when there was none (never paid) or it had already ended. */
+  subscription_canceled: boolean
+}
+
+/** Check the signed revoke request Studio receives. The envelope rules of the status request, plus a known `reason`. */
+export function validateMigrateRevokeRequest(input: unknown, options: { now?: number } = {}):
+  | { ok: true, request: MigrateRevokeRequest }
+  | { ok: false, errors: string[] } {
+  const base = checkS2sEnvelope(input, options)
+  const errors = base.ok ? [] : [...base.errors]
+  const reason = isObject(input) ? input.reason : undefined
+  if (!(MIGRATE_REVOKE_REASONS as readonly unknown[]).includes(reason)) errors.push('reason: unknown')
+  return errors.length === 0 ? { ok: true, request: input as unknown as MigrateRevokeRequest } : { ok: false, errors }
+}
+
+/** Check Studio's revoke answer: it must say `revoked` and carry both flags. */
+export function validateMigrateRevokeResponse(input: unknown):
+  | { ok: true, response: MigrateRevokeResponse }
+  | { ok: false, errors: string[] } {
+  if (!isObject(input)) return { ok: false, errors: ['payload: not an object'] }
+  const errors: string[] = []
+  if (input.state !== 'revoked') errors.push('state: must be revoked')
+  if (typeof input.installed !== 'boolean') errors.push('installed: required')
+  if (typeof input.subscription_canceled !== 'boolean') errors.push('subscription_canceled: required')
+  return errors.length === 0 ? { ok: true, response: input as unknown as MigrateRevokeResponse } : { ok: false, errors }
+}
+
 // ─── Provision (Migrate with Studio: one checkout for the move and the Studio year) ───
 //
 // `POST /api/migrate/provision`. Migrate asks Studio, server to server, to set up the
