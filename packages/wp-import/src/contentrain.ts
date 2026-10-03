@@ -620,7 +620,8 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
           open_in_new_tab: i.target_attr === '_blank',
         }
         if (i.parent && !i.parent_unresolved) e.parent = itemRef(i.parent)
-        if (i.target.kind === 'url' && i.url) e.url = i.url
+        // An archive has no entry to point at: its address is all the store can keep, and the site serves it only when the type has one.
+        if ((i.target.kind === 'url' || i.target.kind === 'archive') && i.url) e.url = i.url
         if (i.target.kind === 'post' && i.target.resolved && i.target.id != null) {
           const pe = postEntry.get(i.target.id)
           if (pe) e.target = toTarget.ref(pe)
