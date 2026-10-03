@@ -103,6 +103,13 @@ export interface SiteConfig {
    */
   lists: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean }
   /**
+   * The footer as the source prints it (a migration reads each off the rendered footer); a key absent keeps the
+   * starter's own. `feed`: the "RSS feed" link in the last column (`/rss.xml` itself is always served). `border`: a
+   * border on the footer's top side. `copyright`: the line, or `false` for none; the "Powered by WordPress" credit is
+   * platform chrome and is never printed.
+   */
+  footer?: { feed?: boolean, border?: boolean, copyright?: string | false }
+  /**
    * The header and footer as the source's theme prints them; absent, the starter's own. `brand`:
    * the site title's size in the header. `tagline`: the header shows the tagline under the title.
    * `copyright`: the footer's line ("All rights reserved"; `{year}` is the current year), instead

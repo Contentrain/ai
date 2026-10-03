@@ -49,7 +49,8 @@ const lang = site.language
 const shareImage = image ?? site.social_image
 // Two or more footer menus are columns, as the source theme's footer showed them; one is a row of links.
 const footerColumns = footerMenus.filter(menu => menu.items.length > 0)
-const rss = { label: t('footer.rss'), href: '/rss.xml' }
+// The "RSS feed" link is the source's only where its footer has one (the feed file is served either way).
+const rss = siteConfig.footer?.feed === false ? undefined : { label: t('footer.rss'), href: '/rss.xml' }
 // WordPress's query addresses land on the home page of a static host; a host rule (_redirects) answers
 // them with a 301 where the host reads one, and this map sends the browser on everywhere else.
 const wpQueries = isHome ? await queryMap() : {}
@@ -108,11 +109,12 @@ const wpQueries = isHome ? await queryMap() : {}
     <Footer
       siteName={site.organization ?? site.title}
       tagline={site.tagline}
-      copyright={siteConfig.chrome?.copyright}
+      copyright={siteConfig.footer?.copyright ?? siteConfig.chrome?.copyright}
+      border={siteConfig.footer?.border}
       align={siteConfig.chrome?.footerAlign}
       layout={footerColumns.length > 1 ? 'columns' : 'simple'}
-      columns={footerColumns.map((menu, index) => ({ label: menu.name, links: index === footerColumns.length - 1 ? [...menu.items, rss] : menu.items }))}
-      links={[...(footerColumns[0]?.items ?? []), rss]}
+      columns={footerColumns.map((menu, index) => ({ label: menu.name, links: index === footerColumns.length - 1 && rss ? [...menu.items, rss] : menu.items }))}
+      links={[...(footerColumns[0]?.items ?? []), ...(rss ? [rss] : [])]}
       social={social}
       contact={contact}
       navLabel={footerColumns[0]?.name ?? t('nav.footer')}
