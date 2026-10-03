@@ -701,14 +701,18 @@ export function validateMigrateRevokeResponse(input: unknown):
 // Studio line (`MigrateAccountStateResponse`) and refuses a quote it does not agree with.
 // The customer then pays at `checkout_url`; Migrate learns of the payment from its own webhook.
 
-/** Studio's answer to a provision request. */
-export interface MigrateProvisionResponse {
+/** What every provision answer carries. */
+interface MigrateProvisionBase {
   /** The Studio grant for the order (one per order; a repeated provision returns the same one). */
   grant_id: string
-  /** `claimed` on a fresh provision; a repeat may find the grant further along. */
-  state: MigrateGrantState
   /** The plan the Studio line sells or keeps (`MigrateAccountStateResponse.plan`). */
   plan: MigrateStudioPlan
+}
+
+/** A Studio line to pay: the customer follows `checkout_url` for the whole bundle. */
+export interface MigrateProvisionCheckout extends MigrateProvisionBase {
+  /** `claimed` on a fresh provision; a repeat may find the grant further along (never `redeemed`: that is `MigrateProvisionCovered`). */
+  state: Exclude<MigrateGrantState, 'redeemed'>
   /** The Studio workspace the grant is tied to, when it already is (an existing subscriber's, or after binding). */
   workspace_slug?: string
   /** Polar's checkout page for the bundle: `https://polar.sh/...` or `https://sandbox.polar.sh/...`, no credentials or fragment. Opened by the customer's browser. */
@@ -720,9 +724,28 @@ export interface MigrateProvisionResponse {
 }
 
 /**
+ * Nothing for Studio to charge: the account already runs a plan that covers the sized one, and the
+ * grant is tied to that plan's workspace (`covers`). There is no checkout and no Studio amount; the
+ * request's quote is Migrate's own fee.
+ */
+export interface MigrateProvisionCovered extends MigrateProvisionBase {
+  state: 'redeemed'
+  /** The workspace of the running plan the delivered site joins. */
+  workspace_slug: string
+  checkout_url?: undefined
+  amount_cents?: undefined
+  checkout_expires_at?: undefined
+}
+
+/** Studio's answer to a provision request. */
+export type MigrateProvisionResponse = MigrateProvisionCheckout | MigrateProvisionCovered
+
+/**
  * Check Studio's provision answer before Migrate redirects a browser to it. `quoted_total_cents` is the
  * request's quote (required, like `requested` in the account-state check: an answer only means something
  * against its question); a different amount is refused, and so is an expired checkout when `now` is given.
+ * A `redeemed` answer (the account's running plan covers the order) is the other shape: it must name the
+ * workspace and carry no checkout, amount or expiry, so a browser is never sent anywhere to pay Studio.
  */
 export function validateMigrateProvisionResponse(input: unknown, options: { quoted_total_cents: number, now?: number }):
   | { ok: true, response: MigrateProvisionResponse }
@@ -733,6 +756,13 @@ export function validateMigrateProvisionResponse(input: unknown, options: { quot
   if (!(MIGRATE_GRANT_STATES as readonly unknown[]).includes(input.state)) errors.push('state: unknown')
   if (!(MIGRATE_STUDIO_PLANS as readonly unknown[]).includes(input.plan)) errors.push('plan: unknown plan')
   if (input.workspace_slug !== undefined && (typeof input.workspace_slug !== 'string' || !/^[a-z0-9][a-z0-9-]{0,62}$/.test(input.workspace_slug))) errors.push('workspace_slug: invalid')
+  if (input.state === 'redeemed') {
+    // Covered by a running plan: nothing to pay at Studio, so nothing to follow or to compare with the quote.
+    if (typeof input.workspace_slug !== 'string') errors.push('workspace_slug: required when the plan covers the order')
+    for (const key of ['checkout_url', 'amount_cents', 'checkout_expires_at'] as const)
+      if (input[key] !== undefined) errors.push(`${key}: not allowed when the plan covers the order`)
+    return errors.length === 0 ? { ok: true, response: input as unknown as MigrateProvisionResponse } : { ok: false, errors }
+  }
   if (!isPolarCheckoutUrl(input.checkout_url)) errors.push('checkout_url: not a Polar checkout address')
   const quoted = (options as { quoted_total_cents?: unknown } | undefined)?.quoted_total_cents
   if (!isCents(input.amount_cents) || input.amount_cents === 0) errors.push('amount_cents: invalid')
