@@ -115,7 +115,7 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
       <ul class:list={['border-t border-line', siteConfig.lists.tone === 'muted' && 'text-ink-muted']}>
         {more.map(other => (
           <li class="flex flex-wrap items-baseline justify-between gap-2 border-b border-line py-3">
-            <a href={postHref(other)} class="text-lg text-ink no-underline hover:underline">{other.data.title}</a>
+            <a href={postHref(other)} class="text-lg text-ink no-underline hover:underline" style={layout.moreText ? `font-size: ${layout.moreText}` : undefined}>{other.data.title}</a>
             {other.data.published_at && <time datetime={other.data.published_at.toISOString()} class="text-sm text-ink-muted">{formatDate(other.data.published_at)}</time>}
           </li>
         ))}

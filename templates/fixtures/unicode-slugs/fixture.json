@@ -1,0 +1,32 @@
+{
+  "distFiles": {
+    "blog/日本語/index.html": {
+      "contains": [
+        "日本語の投稿",
+        "<link rel=\"canonical\" href=\"https://example.com/blog/%E6%97%A5%E6%9C%AC%E8%AA%9E/\">"
+      ]
+    },
+    "blog/مرحبا-بالعالم/index.html": {
+      "contains": ["مرحبا بالعالم"]
+    },
+    "blog/ışık-var/index.html": {
+      "contains": ["Işık var"]
+    },
+    "blog/straße-über-uns/index.html": {
+      "contains": ["Straße über uns"]
+    },
+    "blog/hello-world/index.html": {
+      "contains": ["Hello world"]
+    },
+    "sitemap-0.xml": {
+      "contains": [
+        "https://example.com/blog/%E6%97%A5%E6%9C%AC%E8%AA%9E/",
+        "https://example.com/blog/%D9%85%D8%B1%D8%AD%D8%A8%D8%A7-%D8%A8%D8%A7%D9%84%D8%B9%D8%A7%D9%84%D9%85/",
+        "https://example.com/blog/%C4%B1%C5%9F%C4%B1k-var/",
+        "https://example.com/blog/stra%C3%9Fe-%C3%BCber-uns/",
+        "https://example.com/blog/hello-world/"
+      ],
+      "excludes": ["post-"]
+    }
+  }
+}

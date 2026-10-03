@@ -33,7 +33,7 @@ const [site, t, categories, authors] = await Promise.all([getSite(), getStrings(
 const full = siteConfig.lists.display === 'full'
 const column = full || siteConfig.lists.display === 'list'
 const showHeading = Boolean(title) || siteConfig.lists.heading
-const cards = given ?? await Promise.all(posts.map(async (post) => {
+const cards: Card[] = given ?? await Promise.all(posts.map(async (post) => {
   const cover = post.data.cover ? await getEntry(post.data.cover) : undefined
   const category = post.data.categories[0] ? categories.get(post.data.categories[0].id) : undefined
   return {

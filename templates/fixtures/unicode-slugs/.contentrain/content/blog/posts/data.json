@@ -1,0 +1,42 @@
+{
+  "3ae6f102ef30efefa9717d18": {
+    "body": "<p>Die deutsche Adresse bleibt, wie sie ist.</p>",
+    "excerpt": "Die deutsche Adresse bleibt, wie sie ist.",
+    "published_at": "2026-09-05T09:00:00Z",
+    "slug": "straße-über-uns",
+    "title": "Straße über uns",
+    "wp_id": 104
+  },
+  "94768abda0018ce9d3efc0dd": {
+    "body": "<p>Türkçe adres olduğu gibi kalır.</p>",
+    "excerpt": "Türkçe adres olduğu gibi kalır.",
+    "published_at": "2026-09-04T09:00:00Z",
+    "slug": "ışık-var",
+    "title": "Işık var",
+    "wp_id": 103
+  },
+  "a30a9a7a4e5dae84251c121d": {
+    "body": "<p>يبقى العنوان العربي كما هو.</p>",
+    "excerpt": "يبقى العنوان العربي كما هو.",
+    "published_at": "2026-09-03T09:00:00Z",
+    "slug": "مرحبا-بالعالم",
+    "title": "مرحبا بالعالم",
+    "wp_id": 102
+  },
+  "b380123d257357237978c46d": {
+    "body": "<p>日本語のアドレスはそのまま残ります。</p>",
+    "excerpt": "日本語のアドレスはそのまま残ります。",
+    "published_at": "2026-09-02T09:00:00Z",
+    "slug": "日本語",
+    "title": "日本語の投稿",
+    "wp_id": 101
+  },
+  "ea57adba8964010ea8ac0178": {
+    "body": "<p>English stays as it is.</p>",
+    "excerpt": "English stays as it is.",
+    "published_at": "2026-09-01T09:00:00Z",
+    "slug": "hello-world",
+    "title": "Hello world",
+    "wp_id": 100
+  }
+}

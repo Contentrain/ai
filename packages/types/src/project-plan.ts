@@ -99,10 +99,11 @@ export interface PlanSite {
    * A single post as the source's single template lays it out: the header parts in their order, links
    * to the previous and next post (`core/post-navigation-link`), and how many other posts a list under
    * it shows (a `core/query` after the content; 0 for none). `moreIncludesCurrent`: that list also shows the post
-   * being read, as the source's query does (it does not exclude the current post); absent, the post is left out.
+   * being read, as the source's query does (it does not exclude the current post); absent, the post is left out. `moreText`: the size that list prints its
+   * titles at (a CSS size: the theme's `large` preset on `core/post-title`); absent, the starter's own.
    * Absent: the starter's own layout.
    */
-  post?: { header: Array<'terms' | 'title' | 'byline' | 'cover'>, adjacent: boolean, more: number, moreIncludesCurrent?: boolean }
+  post?: { header: Array<'terms' | 'title' | 'byline' | 'cover'>, adjacent: boolean, more: number, moreIncludesCurrent?: boolean, moreText?: string }
   /**
    * Post lists (blog index, archives): `cards`, or `full` when the source's query loop shows each post's
    * content; `list` is cards in one column, as themes whose archive is a single stack of posts show
@@ -120,9 +121,9 @@ export interface PlanSite {
    * `adjacent` = links to the previous and next entry under it. The starter's entry view prints them for that
    * type only. `more` = a list of that many other entries under it (0 to 20); `moreIncludesCurrent`: the list also
    * shows the entry being read, as the source's query does; `moreOf: 'posts'`: the list holds the newest blog posts, as a
-   * theme's single template does whatever the type, not other entries of the same type. Absent (or a type left out): none.
+   * theme's single template does whatever the type, not other entries of the same type; `moreText`: the size it prints its titles at (a CSS size). Absent (or a type left out): none.
    */
-  entryLayouts?: Record<string, { adjacent: boolean, more?: number, moreIncludesCurrent?: boolean, moreOf?: 'posts' }>
+  entryLayouts?: Record<string, { adjacent: boolean, more?: number, moreIncludesCurrent?: boolean, moreOf?: 'posts', moreText?: string }>
   /**
    * The header and footer as the source's theme prints them, where they differ from the starter's.
    * Every key is optional; absent, the starter's own. `brand`: the site title's size in the header
@@ -468,6 +469,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (parts.some(part => !['terms', 'title', 'byline', 'cover'].includes(part)) || new Set(parts).size !== parts.length) errors.push('site.post.header lists a part twice or one the starter does not have')
     if (!Number.isSafeInteger(site.post.more) || site.post.more < 0 || site.post.more > 20) errors.push('site.post.more is not a count from 0 to 20')
     if (site.post.moreIncludesCurrent !== undefined && typeof site.post.moreIncludesCurrent !== 'boolean') errors.push('site.post.moreIncludesCurrent is not true or false')
+    if (site.post.moreText !== undefined && !CSS_LENGTH.test(site.post.moreText)) errors.push(`site.post.moreText ${site.post.moreText} is not a CSS size`)
   }
   if (site?.lists && !['cards', 'list', 'full'].includes(site.lists.display)) errors.push(`site.lists.display ${site.lists.display} is not cards, list or full`)
   if (site?.lists?.tone !== undefined && site.lists.tone !== 'muted') errors.push(`site.lists.tone ${String(site.lists.tone)} is not muted`)
@@ -477,6 +479,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (layout?.more !== undefined && (!Number.isSafeInteger(layout.more) || layout.more < 0 || layout.more > 20)) errors.push(`site.entryLayouts.${route}.more is not a count from 0 to 20`)
     if (layout?.moreIncludesCurrent !== undefined && typeof layout.moreIncludesCurrent !== 'boolean') errors.push(`site.entryLayouts.${route}.moreIncludesCurrent is not true or false`)
     if (layout?.moreOf !== undefined && layout.moreOf !== 'posts') errors.push(`site.entryLayouts.${route}.moreOf ${String(layout.moreOf)} is not posts`)
+    if (layout?.moreText !== undefined && !CSS_LENGTH.test(layout.moreText)) errors.push(`site.entryLayouts.${route}.moreText ${layout.moreText} is not a CSS size`)
   }
   const chrome = site?.chrome
   if (chrome?.brand !== undefined && !CSS_LENGTH.test(chrome.brand)) errors.push(`site.chrome.brand ${chrome.brand} is not a CSS size`)

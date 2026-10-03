@@ -173,6 +173,19 @@ describe('validateProjectPlan', () => {
     expect(validateProjectPlan(p).errors).toEqual(['site.entryLayouts.type-project.more is not a count from 0 to 20'])
   })
 
+  it('accepts and checks the size the "more" list prints its titles at', () => {
+    const p = plan()
+    p.site.post = { header: ['title'], adjacent: false, more: 2, moreText: '21.7632px' }
+    p.site.entryLayouts = { 'type-project': { adjacent: false, more: 2, moreText: 'clamp(1.5rem, 2vw, 2rem)' } }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.post = { header: ['title'], adjacent: false, more: 2, moreText: 'large' }
+    p.site.entryLayouts = { 'type-project': { adjacent: false, more: 2, moreText: 'url(x)' } }
+    expect(validateProjectPlan(p).errors).toEqual([
+      'site.post.moreText large is not a CSS size',
+      'site.entryLayouts.type-project.moreText url(x) is not a CSS size',
+    ])
+  })
+
   it('accepts and checks the list details copied from the source: the current post in "more", the muted tone', () => {
     const p = plan()
     p.site.post = { header: ['title'], adjacent: false, more: 2, moreIncludesCurrent: true }
