@@ -1,5 +1,12 @@
 # @contentrain/types
 
+## 1.44.0
+
+### Minor Changes
+
+- 97e19e3: Migrate-Studio claim v2: `repo` is optional. A provision request is signed before payment, when the delivery repository does not exist yet, so it carries none (a placeholder would be a false signed claim). A v2 claim that does carry a `repo` must still be valid; v1 still requires it.
+- 472d914: Two new design roles, each with the starter's own value as the default. `spacing-title` is the space under a page's or post's title (the prose h1 `margin-bottom`, default the kit's own, 0.8888889em at the base size and 0.8333333em at the large one). `container-inset` is what the `container-page` frame adds on each side when the source's wide size is a content width (default 0px, so the starter's frame is unchanged).
+
 ## 1.43.0
 
 ### Minor Changes
