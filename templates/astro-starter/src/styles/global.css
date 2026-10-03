@@ -46,7 +46,7 @@
 @utility container-page {
   margin-inline: auto;
   width: 100%;
-  max-width: var(--container-page);
+  max-width: calc(var(--container-page) + 2 * var(--container-inset, 0px));
   padding-inline: var(--spacing-gutter, 1rem);
   @variant md {
     padding-inline: var(--spacing-gutter, 2rem);
@@ -70,6 +70,7 @@
  */
 .section-content {
   --container-page: calc(var(--container-prose) + 2 * var(--spacing-gutter, 2rem));
+  --container-inset: 0px;
 }
 
 /* Typography for rich-text bodies, bound to the tokens. */
@@ -95,7 +96,7 @@
 /*
  * The source theme's body and heading type, when a migration wrote it
  * (--text-body, --leading-body, --font-weight-body, --font-weight-heading,
- * --leading-heading).
+ * --leading-heading, --spacing-title: the space under the h1).
  * Every fallback is Tailwind Typography's own value, so a site without them
  * looks as it always did.
  */
@@ -111,6 +112,8 @@
   .prose-site.prose :where(h1):not(:where([class~='not-prose'], [class~='not-prose'] *)) { font-weight: var(--font-weight-heading, 800); }
   .prose-site.prose :where(h2):not(:where([class~='not-prose'], [class~='not-prose'] *)) { font-weight: var(--font-weight-heading, 700); }
   .prose-site.prose :where(h3, h4):not(:where([class~='not-prose'], [class~='not-prose'] *)) { font-weight: var(--font-weight-heading, 600); }
+  .prose-site.prose-base :where(h1):not(:where([class~='not-prose'], [class~='not-prose'] *)) { margin-bottom: var(--spacing-title, 0.8888889em); }
+  .prose-site.prose-lg :where(h1):not(:where([class~='not-prose'], [class~='not-prose'] *)) { margin-bottom: var(--spacing-title, 0.8333333em); }
   .prose-site.prose-base :where(h1):not(:where([class~='not-prose'], [class~='not-prose'] *)) { line-height: var(--leading-heading, 1.1111111); }
   .prose-site.prose-base :where(h2):not(:where([class~='not-prose'], [class~='not-prose'] *)) { line-height: var(--leading-heading, 1.3333333); }
   .prose-site.prose-base :where(h3):not(:where([class~='not-prose'], [class~='not-prose'] *)) { line-height: var(--leading-heading, 1.6); }
