@@ -1,5 +1,17 @@
 # @contentrain/astro-kit
 
+## 0.23.0
+
+### Minor Changes
+
+- 6422dd8: The header takes what the source's header does differently, each only where it does: `Header` gains `bordered` (no line under the bar), `brandWeight` and `brandTracking` (the site name), `offsetTop`, `padTop` and `padBottom` (the space above and inside the bar). `site.chrome.header` carries them in the plan, validated (weights, letter-spacings and CSS lengths only; never `url()`); without it the starter's header is exactly as before.
+
+### Patch Changes
+
+- Updated dependencies [6422dd8]
+- Updated dependencies [1db3d17]
+  - @contentrain/types@1.42.0
+
 ## 0.22.0
 
 ### Minor Changes
