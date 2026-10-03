@@ -1,5 +1,14 @@
 # @contentrain/types
 
+## 1.37.0
+
+### Minor Changes
+
+- 231c089: A `brand` colour role (`color-brand`, `color-brand-ink`, defaulting to the accent and its ink) and a `brand` tone on the call to action: a band the source paints in the page builder's own colour (Elementor's secondary on a call to action) can keep it while the buttons stay in the accent.
+- a45bb41: A custom type's list under an entry can hold the newest blog posts (`site.entryLayouts[route].moreOf: 'posts'`), as a theme's single template shows them whatever the type, and a post list shown in full prints the body a custom type's card carries (its archive in full, as a block theme's index shows it).
+- fb49db1: `site.post.moreText` and `site.entryLayouts.<type>.moreText`: the size the "more posts" list under a single post prints its titles at, as the source theme's did (a theme's `large` preset on the query's post titles). The starter's post and entry views apply it; absent, their own size.
+- 2d8e7c8: A slug is the page's address, so it keeps its script. `SLUG_PATTERN` / `validateSlug` accept lowercase letters, digits and combining marks of any language (NFC, at most 200 bytes, hyphens between words); ASCII slugs are exactly what they were. `@contentrain/wp-import` writes a post's or term's WordPress `post_name` as the source site served it — Japanese, Arabic, Turkish `ış`, German `ß`/`ü` — instead of dropping non-ASCII letters and falling back to `post-<id>`. A slug that leaves no word, or collides, still falls back (the suffix is fitted inside the 200-byte limit), and the report's new `slug_moves` names each such post's old address (`from`) so a 301 can be written; a slug rewritten for characters outside the alphabet (ZWNJ/ZWJ, `・`, NFD) is reported the same way, as `rewritten`. ASCII slugs import byte-identically (an accented Latin slug now keeps its accent, as the source served it). Entry ids of posts that used to fall back to `post-<id>` change with their slug.
+
 ## 1.36.0
 
 ### Minor Changes

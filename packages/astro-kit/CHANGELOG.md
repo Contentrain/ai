@@ -1,5 +1,20 @@
 # @contentrain/astro-kit
 
+## 0.19.0
+
+### Minor Changes
+
+- 231c089: A `brand` colour role (`color-brand`, `color-brand-ink`, defaulting to the accent and its ink) and a `brand` tone on the call to action: a band the source paints in the page builder's own colour (Elementor's secondary on a call to action) can keep it while the buttons stay in the accent.
+- 437c36f: **ContactForm: new `align` axis (`center` | `start`).** `center`, the default, is unchanged: the stacked column, and the details alone before a Studio form, sit centred at a reading width. `start` gives them the section's whole column from its start edge. This is how a page builder's container lays out text that sets no alignment of its own (IP-4 Elementor contact: G9 at 1280 went from .585 to .897).
+
+### Patch Changes
+
+- Updated dependencies [231c089]
+- Updated dependencies [a45bb41]
+- Updated dependencies [fb49db1]
+- Updated dependencies [2d8e7c8]
+  - @contentrain/types@1.37.0
+
 ## 0.18.0
 
 ### Minor Changes
