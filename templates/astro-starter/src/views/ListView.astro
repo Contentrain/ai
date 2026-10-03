@@ -32,7 +32,6 @@ const { title, eyebrow, description, posts, cards: given, base, current, total }
 const [site, t, categories, authors] = await Promise.all([getSite(), getStrings(), byId('categories'), siteConfig.lists.byline ? byId('authors') : undefined])
 const full = siteConfig.lists.display === 'full'
 const column = full || siteConfig.lists.display === 'list'
-const bodies = full ? await Promise.all(posts.map(post => publicHtml(post.data.body))) : []
 const showHeading = Boolean(title) || siteConfig.lists.heading
 const cards = given ?? await Promise.all(posts.map(async (post) => {
   const cover = post.data.cover ? await getEntry(post.data.cover) : undefined
@@ -47,6 +46,8 @@ const cards = given ?? await Promise.all(posts.map(async (post) => {
     category: category ? { label: category.data.name, href: termHref('category', category, categories) } : undefined,
   }
 }))
+// A full list prints each card's content: a post's body, or the body a custom type's card carries.
+const bodies = full ? await Promise.all(cards.map((card, index) => card.body ? publicHtml(card.body) : posts[index] ? publicHtml(posts[index].data.body) : undefined)) : []
 const pageSuffix = current > 1 ? ` – ${t('pagination.page')} ${current}` : ''
 const url = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href
 ---
@@ -74,7 +75,6 @@ const url = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href
             {card.image && <a href={card.href} tabindex="-1" aria-hidden="true"><KitImage image={{ ...card.image, alt: '' }} priority={index === 0} sizes="(min-width: 768px) 46rem, 100vw" class="h-auto w-full rounded-[var(--radius-image,0.75rem)] object-cover" /></a>}
             <h2 class="text-3xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight"><a href={card.href} class:list={[siteConfig.chrome?.titleLinks ? 'text-[color:var(--color-link,var(--color-accent))]' : 'text-ink', 'no-underline hover:underline']}>{card.title}</a></h2>
             {bodies[index] && <Prose html={bodies[index]} searchable={false} />}
-            {!bodies[index] && card.excerpt && <p class="text-body">{card.excerpt}</p>}
             {card.date && <time datetime={card.date.toISOString()} class="text-sm text-ink-muted">{card.date.toLocaleDateString(site.language, { dateStyle: 'long', timeZone: 'UTC' })}</time>}
           </article>
         ))}
