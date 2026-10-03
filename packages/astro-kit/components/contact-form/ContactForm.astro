@@ -4,7 +4,8 @@
 // StudioForm): its fields, spam protection and notifications live in Studio,
 // and submissions arrive there for review — no form plugin, no mail server.
 // Until the site is bound to a Studio project the form renders nothing and the
-// contact details still show. When the owner chose another home for forms at
+// contact details still show — and a section left with its heading alone is not
+// drawn (a heading over a form that is not there). When the owner chose another home for forms at
 // migration (site.config.ts `features.forms`), the same place holds a form
 // that posts to their form service, an address to write to, or a link to the
 // form on WordPress.
@@ -12,6 +13,7 @@ import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
 import StudioForm from '../../studio/StudioForm.astro'
 import { formHome } from '../../../lib/features'
+import { contactSectionBare } from './contact-form'
 
 export interface ContactDetail {
   /** What the detail is (Phone, Email); a source's icon list often has none. */
@@ -69,6 +71,7 @@ interface Props {
 const { model, heading, intro, formHeading, details = [], layout, align, tone, id = 'contact' } = Astro.props
 // Nothing to render (Studio not bound yet): a split would leave an empty column — the details stand alone.
 const formShown = formHome(model) !== null
+const bare = contactSectionBare({ formShown, intro, details })
 const s = contact({ layout: formShown ? layout : 'stacked', align, tone })
 const headingId = heading ? `${id}-title` : undefined
 // A description list needs a term for every detail; an icon list carried from the source has values only.
@@ -77,6 +80,7 @@ const LINK = 'underline decoration-line underline-offset-4 hover:decoration-curr
 // One level under the section heading, or the section's heading when there is none.
 const FormHeading = heading ? 'h3' : 'h2'
 ---
+{!bare && (
 <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
   <div class={s.grid()}>
     {(heading || intro || details.length > 0) && (
@@ -116,3 +120,4 @@ const FormHeading = heading ? 'h3' : 'h2'
       : <StudioForm model={model} class={s.form()} />)}
   </div>
 </Section>
+)}

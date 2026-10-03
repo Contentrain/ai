@@ -12,9 +12,9 @@
       ]
     }
   },
-  { "name": "stacked-muted", "props": { "model": "contact-submissions", "heading": "Write to us", "layout": "stacked", "tone": "muted", "id": "write" } },
+  { "name": "stacked-muted", "props": { "model": "contact-submissions", "heading": "Write to us", "intro": "We read every message and answer within two working days.", "layout": "stacked", "tone": "muted", "id": "write" } },
   { "name": "stacked-start", "props": { "model": "contact-submissions", "intro": "Tell us what you make and when you want to launch.", "details": [{ "value": "Studio 4, Harbour Lane" }], "layout": "stacked", "align": "start", "id": "start" } },
   { "name": "split-inverse", "props": { "model": "contact-submissions", "heading": "Press", "tone": "inverse", "id": "press", "details": [{ "label": "Press office", "value": "press@northwind.example", "href": "mailto:press@northwind.example" }] } },
-  { "name": "stacked-accent", "props": { "model": "newsletter-requests", "heading": "Request a print copy", "layout": "stacked", "tone": "accent", "id": "print" } },
+  { "name": "stacked-accent", "props": { "model": "newsletter-requests", "heading": "Request a print copy", "intro": "Print copies ship in the first week of each quarter.", "layout": "stacked", "tone": "accent", "id": "print" } },
   { "name": "form-heading", "props": { "model": "contact-submissions", "heading": "Contact", "intro": "Tell us where you are and what you need.", "formHeading": "Tell us about your project", "details": [{ "label": "Address", "value": "12 Harbour Street, Leith" }] } }
 ]
