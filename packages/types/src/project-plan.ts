@@ -120,9 +120,10 @@ export interface PlanSite {
    * What the source's own page for a custom post type showed, by the type's single route id (`type-project`):
    * `adjacent` = links to the previous and next entry under it. The starter's entry view prints them for that
    * type only. `more` = a list of that many other entries under it (0 to 20); `moreIncludesCurrent`: the list also
-   * shows the entry being read, as the source's query does; `moreText`: the size it prints its titles at (a CSS size). Absent (or a type left out): none.
+   * shows the entry being read, as the source's query does; `moreOf: 'posts'`: the list holds the newest blog posts, as a
+   * theme's single template does whatever the type, not other entries of the same type; `moreText`: the size it prints its titles at (a CSS size). Absent (or a type left out): none.
    */
-  entryLayouts?: Record<string, { adjacent: boolean, more?: number, moreIncludesCurrent?: boolean, moreText?: string }>
+  entryLayouts?: Record<string, { adjacent: boolean, more?: number, moreIncludesCurrent?: boolean, moreOf?: 'posts', moreText?: string }>
   /**
    * The header and footer as the source's theme prints them, where they differ from the starter's.
    * Every key is optional; absent, the starter's own. `brand`: the site title's size in the header
@@ -477,6 +478,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (typeof layout?.adjacent !== 'boolean') errors.push(`site.entryLayouts.${route}.adjacent is not true or false`)
     if (layout?.more !== undefined && (!Number.isSafeInteger(layout.more) || layout.more < 0 || layout.more > 20)) errors.push(`site.entryLayouts.${route}.more is not a count from 0 to 20`)
     if (layout?.moreIncludesCurrent !== undefined && typeof layout.moreIncludesCurrent !== 'boolean') errors.push(`site.entryLayouts.${route}.moreIncludesCurrent is not true or false`)
+    if (layout?.moreOf !== undefined && layout.moreOf !== 'posts') errors.push(`site.entryLayouts.${route}.moreOf ${String(layout.moreOf)} is not posts`)
     if (layout?.moreText !== undefined && !CSS_LENGTH.test(layout.moreText)) errors.push(`site.entryLayouts.${route}.moreText ${layout.moreText} is not a CSS size`)
   }
   const chrome = site?.chrome

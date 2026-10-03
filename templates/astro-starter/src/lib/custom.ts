@@ -59,6 +59,8 @@ export interface Card {
   title: string
   href: string
   excerpt?: string | undefined
+  /** The entry's rich-text body, for a list that shows each entry in full. */
+  body?: string | undefined
   date?: Date | undefined
   image?: ImageInput | undefined
   category?: { label: string, href: string } | undefined
@@ -75,6 +77,7 @@ export async function entryCard(type: CustomType, entry: TypeEntry, terms: Reado
     title: entryTitle(type, entry),
     href: entryHref(type, entry),
     excerpt: card.excerpt ? text(entry.data[card.excerpt]) : undefined,
+    body: bodyOf(type, entry),
     date: card.date ? dateOf(entry.data[card.date]) : undefined,
     image: media ? imageOf(media as Media) : undefined,
     category: taxonomy && term ? { label: text(term.data.name) ?? term.id, href: termHref(taxonomy, term) } : undefined,
