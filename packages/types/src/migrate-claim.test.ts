@@ -8,6 +8,10 @@ import {
   isMigrateStudioClaim,
   validateMigrateAccountStateRequest,
   validateMigrateAccountStateResponse,
+  validateMigrateGrantStatusRequest,
+  validateMigrateGrantStatusResponse,
+  validateMigrateInstallUrlRequest,
+  validateMigrateInstallUrlResponse,
   validateMigrateStudioClaim,
   validateMigrateStudioClaimAny,
   validateMigrateStudioClaimV2,
@@ -241,5 +245,55 @@ describe('validateMigrateAccountStateRequest', () => {
     expect(validateMigrateAccountStateRequest(req({ github_user_id: 'octocat', plan: 'team', jti: '' }))).toEqual({ ok: false, errors: expect.arrayContaining(['github_user_id: invalid', 'plan: unknown plan', 'jti: required']) })
     expect(validateMigrateAccountStateRequest(req({ exp: NOW + 5000 }))).toEqual({ ok: false, errors: ['exp: lifetime too long'] })
     expect(validateMigrateAccountStateRequest(req(), { now: NOW + 5000 })).toEqual({ ok: false, errors: ['exp: expired'] })
+  })
+})
+
+describe('grant status and install-url requests', () => {
+  const req = (o: Record<string, unknown> = {}) => ({
+    iss: MIGRATE_STUDIO_CLAIM_ISSUER, aud: MIGRATE_STUDIO_CLAIM_AUDIENCE, jti: 'j-2', iat: NOW, exp: NOW + 600, order_id: 'ord_123', ...o,
+  })
+
+  it('accept a good request inside its window and refuse the rest, the same way for both', () => {
+    for (const validate of [validateMigrateGrantStatusRequest, validateMigrateInstallUrlRequest]) {
+      expect(validate(req(), { now: NOW + 5 })).toEqual({ ok: true, request: req() })
+      expect(validate(req({ order_id: ' ', jti: '' }))).toEqual({ ok: false, errors: expect.arrayContaining(['order_id: required', 'jti: required']) })
+      expect(validate(req({ iss: 'someone', aud: 'else' }))).toEqual({ ok: false, errors: ['iss: unexpected issuer', 'aud: unexpected audience'] })
+      expect(validate(req({ exp: NOW + 5000 }))).toEqual({ ok: false, errors: ['exp: lifetime too long'] })
+      expect(validate(req(), { now: NOW + 5000 })).toEqual({ ok: false, errors: ['exp: expired'] })
+      expect(validate('token')).toEqual({ ok: false, errors: ['payload: not an object'] })
+    }
+  })
+})
+
+describe('validateMigrateGrantStatusResponse', () => {
+  it('takes the four states and never an install before the subscription runs', () => {
+    for (const state of ['claimed', 'bound'])
+      expect(validateMigrateGrantStatusResponse({ state, installed: false }).ok).toBe(true)
+    expect(validateMigrateGrantStatusResponse({ state: 'redeemed', installed: false }).ok).toBe(true)
+    expect(validateMigrateGrantStatusResponse({ state: 'redeemed', installed: true }).ok).toBe(true)
+    expect(validateMigrateGrantStatusResponse({ state: 'bound', installed: true })).toEqual({ ok: false, errors: ['installed: only once redeemed'] })
+    expect(validateMigrateGrantStatusResponse({ state: 'revoked', installed: false }).ok).toBe(true)
+    expect(validateMigrateGrantStatusResponse({ state: 'revoked', installed: true }).ok).toBe(true)
+    expect(validateMigrateGrantStatusResponse({ state: 'claimed', installed: true })).toEqual({ ok: false, errors: ['installed: only once redeemed'] })
+    expect(validateMigrateGrantStatusResponse({ state: 'gone', installed: 'yes' })).toEqual({ ok: false, errors: ['state: unknown', 'installed: required'] })
+  })
+})
+
+describe('validateMigrateInstallUrlResponse', () => {
+  const url = 'https://github.com/apps/contentrain-studio/installations/new?state=eyJhbGciOiJFZERTQSJ9.e30.c2ln'
+  it('hands a browser only GitHub\'s own App install page, and not a stale one', () => {
+    expect(validateMigrateInstallUrlResponse({ url, expires_at: NOW + 600 }, { now: NOW }).ok).toBe(true)
+    expect(validateMigrateInstallUrlResponse({ url, expires_at: NOW + 600 }).ok).toBe(true)
+    for (const bad of [
+      'http://github.com/apps/contentrain-studio/installations/new',
+      'https://github.com.evil.test/apps/contentrain-studio/installations/new',
+      'https://user:pw@github.com/apps/contentrain-studio/installations/new',
+      'https://github.com/login/oauth/authorize',
+      'https://github.com/apps/contentrain-studio/installations/new#x',
+      'javascript:alert(1)',
+      'not a url',
+    ]) expect(validateMigrateInstallUrlResponse({ url: bad, expires_at: NOW + 600 }), bad).toEqual({ ok: false, errors: ['url: not a GitHub App install address'] })
+    expect(validateMigrateInstallUrlResponse({ url, expires_at: NOW - 1 }, { now: NOW })).toEqual({ ok: false, errors: ['expires_at: expired'] })
+    expect(validateMigrateInstallUrlResponse({ url })).toEqual({ ok: false, errors: ['expires_at: invalid'] })
   })
 })

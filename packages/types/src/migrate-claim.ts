@@ -485,3 +485,135 @@ export function validateMigrateAccountStateResponse(input: unknown, options: { r
   }
   return errors.length === 0 ? { ok: true, response: input as unknown as MigrateAccountStateResponse } : { ok: false, errors }
 }
+
+// ─── Grant status and install URL (Studio setup beside the live move) ───
+//
+// While the move runs, the Migrate page can show a Studio card: is the trial
+// running, and may the customer connect Studio's GitHub App yet? Both are
+// asked of Studio, server to server, signed like the account-state request
+// (same key, `iss`/`aud`/`jti`/`exp`, the token POSTed as `{ token }`). The
+// order is the key: Studio keeps one grant per `order_id`, and an order Studio
+// has no grant for is a 404 there, not a state.
+
+export const MIGRATE_GRANT_STATES = ['claimed', 'bound', 'redeemed', 'revoked'] as const
+/**
+ * Where the order's Studio grant stands:
+ * - `claimed`: provisioned, the Studio year not started (checkout not completed).
+ * - `bound`: tied to a Studio workspace, the subscription not running yet
+ *   (checkout open or its webhook late).
+ * - `redeemed`: the subscription is running (trial or paid). Only now may the
+ *   customer connect GitHub, or Studio could not open a project (402).
+ * - `revoked`: the grant was withdrawn (by the founder, or after a refund).
+ *   It may still be `installed` (withdrawn after the App was installed); Migrate
+ *   shows it as "not ready", like an unknown state.
+ */
+export type MigrateGrantState = (typeof MIGRATE_GRANT_STATES)[number]
+
+/** The signed envelope every Migrate → Studio request after provisioning carries. */
+interface MigrateS2sEnvelope {
+  iss: typeof MIGRATE_STUDIO_CLAIM_ISSUER
+  aud: typeof MIGRATE_STUDIO_CLAIM_AUDIENCE
+  jti: string
+  iat: number
+  exp: number
+  /** The Migrate order whose grant is asked about. */
+  order_id: string
+}
+
+/** `POST /api/migrate/grants/status`: where does this order's grant stand? */
+export type MigrateGrantStatusRequest = MigrateS2sEnvelope
+
+/** `POST /api/migrate/grants/install-url`: where may the customer install Studio's GitHub App? */
+export type MigrateInstallUrlRequest = MigrateS2sEnvelope
+
+export interface MigrateGrantStatusResponse {
+  state: MigrateGrantState
+  /** Studio's GitHub App is installed for the grant's workspace. Only possible once `redeemed` (and after, if `revoked`). */
+  installed: boolean
+}
+
+export interface MigrateInstallUrlResponse {
+  /**
+   * The GitHub App install page, `https://github.com/apps/<slug>/installations/new?state=<signed>`.
+   * It carries Studio's own signed `state` (grant, workspace, return address), and no repository:
+   * during the move the delivery repository does not exist yet. Opened by the customer's browser.
+   */
+  url: string
+  /** When `url` stops being useful (its `state` expires), seconds since the epoch. */
+  expires_at: number
+}
+
+function checkS2sEnvelope(input: unknown, options: { now?: number }):
+  | { ok: true, request: MigrateS2sEnvelope }
+  | { ok: false, errors: string[] } {
+  if (!isObject(input)) return { ok: false, errors: ['payload: not an object'] }
+  const x = input
+  const errors: string[] = []
+  if (x.iss !== MIGRATE_STUDIO_CLAIM_ISSUER) errors.push('iss: unexpected issuer')
+  if (x.aud !== MIGRATE_STUDIO_CLAIM_AUDIENCE) errors.push('aud: unexpected audience')
+  if (!isText(x.jti)) errors.push('jti: required')
+  if (!isText(x.order_id)) errors.push('order_id: required')
+  if (!isSeconds(x.iat)) errors.push('iat: invalid')
+  if (!isSeconds(x.exp)) errors.push('exp: invalid')
+  if (isSeconds(x.iat) && isSeconds(x.exp)) {
+    const ttl = x.exp - x.iat
+    if (ttl <= 0) errors.push('exp: not after iat')
+    else if (ttl > MIGRATE_STUDIO_CLAIM_MAX_TTL_SECONDS) errors.push('exp: lifetime too long')
+    if (options.now !== undefined) {
+      if (options.now >= x.exp + MIGRATE_STUDIO_CLAIM_CLOCK_SKEW_SECONDS) errors.push('exp: expired')
+      if (x.iat > options.now + MIGRATE_STUDIO_CLAIM_CLOCK_SKEW_SECONDS) errors.push('iat: in the future')
+    }
+  }
+  return errors.length === 0 ? { ok: true, request: x as unknown as MigrateS2sEnvelope } : { ok: false, errors }
+}
+
+/** Check the signed status request Studio receives. Same rules as `validateMigrateAccountStateRequest`; the signature and `jti` replay are the consumer's. */
+export function validateMigrateGrantStatusRequest(input: unknown, options: { now?: number } = {}):
+  | { ok: true, request: MigrateGrantStatusRequest }
+  | { ok: false, errors: string[] } {
+  return checkS2sEnvelope(input, options)
+}
+
+/** Check the signed install-URL request Studio receives. Same rules as the status request. */
+export function validateMigrateInstallUrlRequest(input: unknown, options: { now?: number } = {}):
+  | { ok: true, request: MigrateInstallUrlRequest }
+  | { ok: false, errors: string[] } {
+  return checkS2sEnvelope(input, options)
+}
+
+/** Check Studio's status answer. `installed` is refused before `redeemed`: an install can only follow a running subscription (a `revoked` grant may keep an install made earlier). */
+export function validateMigrateGrantStatusResponse(input: unknown):
+  | { ok: true, response: MigrateGrantStatusResponse }
+  | { ok: false, errors: string[] } {
+  if (!isObject(input)) return { ok: false, errors: ['payload: not an object'] }
+  const errors: string[] = []
+  if (!(MIGRATE_GRANT_STATES as readonly unknown[]).includes(input.state)) errors.push('state: unknown')
+  if (typeof input.installed !== 'boolean') errors.push('installed: required')
+  else if (input.installed && input.state !== 'redeemed' && input.state !== 'revoked') errors.push('installed: only once redeemed')
+  return errors.length === 0 ? { ok: true, response: input as unknown as MigrateGrantStatusResponse } : { ok: false, errors }
+}
+
+/**
+ * Check Studio's install-URL answer before Migrate hands it to a browser: the
+ * address must be GitHub's own install page for an App (`https://github.com/apps/<slug>/installations/new`,
+ * no credentials, no fragment), and must not already be expired when `now` is given.
+ */
+export function validateMigrateInstallUrlResponse(input: unknown, options: { now?: number } = {}):
+  | { ok: true, response: MigrateInstallUrlResponse }
+  | { ok: false, errors: string[] } {
+  if (!isObject(input)) return { ok: false, errors: ['payload: not an object'] }
+  const errors: string[] = []
+  if (!isGithubInstallUrl(input.url)) errors.push('url: not a GitHub App install address')
+  if (!isSeconds(input.expires_at)) errors.push('expires_at: invalid')
+  else if (options.now !== undefined && input.expires_at <= options.now) errors.push('expires_at: expired')
+  return errors.length === 0 ? { ok: true, response: input as unknown as MigrateInstallUrlResponse } : { ok: false, errors }
+}
+
+function isGithubInstallUrl(x: unknown): x is string {
+  if (typeof x !== 'string' || x.length > 4096) return false
+  let url: URL
+  try { url = new URL(x) }
+  catch { return false }
+  return url.protocol === 'https:' && url.hostname === 'github.com' && !url.port && !url.username && !url.password && !url.hash
+    && /^\/apps\/[\w-]+\/installations\/new(\/permissions)?\/?$/.test(url.pathname)
+}
