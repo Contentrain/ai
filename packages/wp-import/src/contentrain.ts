@@ -21,14 +21,29 @@ import {
   hexId,
   PLUGIN_META,
   SKIP_TYPES,
+  addressSlug,
   slugify,
   strip,
   taxModelId,
 } from './core.js'
 
+/** A post whose imported slug is not the address it was served at: it gets a 301 from `from`. */
+export interface SlugMove {
+  wp_id: number
+  type: string
+  /** The path the source site served it at (its `link`), when the source named one. */
+  from: string | null
+  /** The slug the entry was written under. */
+  slug: string
+  /** `empty`: the source slug left no word, `collision`: another entry of the same type already holds it. */
+  reason: 'empty' | 'collision'
+}
+
 export interface ImportReport {
   slug_rewritten: number
   slug_fallback: number
+  /** Posts whose address changed (empty or colliding slug): each needs a 301 from its old address. */
+  slug_moves: SlugMove[]
   title_fallback: number
   meta_fields: Record<string, string>
   acf_fields: Record<string, string>
@@ -147,6 +162,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
   const report: ImportReport = {
     slug_rewritten: 0,
     slug_fallback: 0,
+    slug_moves: [],
     title_fallback: 0,
     meta_fields: {},
     acf_fields: {},
@@ -197,17 +213,27 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
   const termId = (tax: string, slug: string): string => hexId(`${tax}:${slug}`)
   const usedSlugs = new Map<string, number>()
   const postSlug = (p: RawPost): string => {
-    let s = slugify(decodeSlug(p.slug))
+    // The slug is the page's address: kept as the source served it (any script), not transliterated.
+    let s = addressSlug(p.slug)
+    const moved = (reason: SlugMove['reason'], slug: string): void => {
+      let from: string | null = null
+      try { from = p.link ? new URL(p.link).pathname : null } catch { from = null }
+      report.slug_moves.push({ wp_id: p.id, type: p.type, from, slug, reason })
+    }
+    let empty = false
     if (!s) {
       s = `${p.type}-${p.id}`
+      empty = true
       report.slug_fallback++
-    } else if (s !== p.slug) report.slug_rewritten++
+    } else if (s !== decodeSlug(p.slug)) report.slug_rewritten++
     // Slugs are unique per type — and per locale on a multilingual site, where
     // `/about/` and `/tr/about/` are different entries with the same slug.
     const key = multilingual ? `${p.type}:${postLocale(p)}:${s}` : `${p.type}:${s}`
     const n = usedSlugs.get(key) ?? 0
     usedSlugs.set(key, n + 1)
-    return n ? `${s}-${p.id}` : s
+    if (n) { moved('collision', `${s}-${p.id}`); return `${s}-${p.id}` }
+    if (empty) moved('empty', s)
+    return s
   }
   const slugOf = new Map<number, string>()
   const postEntry = new Map<number, { model: string; ref: string }>()
@@ -355,7 +381,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       contents[mid]![id] = pick(
         {
           name: strip(t.name),
-          slug: slugify(decodeSlug(t.slug)) || `term-${t.id}`,
+          slug: addressSlug(t.slug) || `term-${t.id}`,
           description: strip(t.description),
           parent: t.parent && t.parent_resolved ? termId(tax, t.parent) : null,
           wp_id: t.id,
@@ -372,7 +398,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       const mid = taxModelId(t.taxonomy)
       if (!models[mid]) continue
       const id = termId(t.taxonomy, t.slug)
-      contents[mid]![id] ??= { name: strip(t.name), slug: slugify(t.slug) }
+      contents[mid]![id] ??= { name: strip(t.name), slug: addressSlug(t.slug) || `term-${hexId(`${t.taxonomy}:${t.slug}`).slice(0, 8)}` }
       metas[mid]![id] ??= importMeta('published')
     }
   }
