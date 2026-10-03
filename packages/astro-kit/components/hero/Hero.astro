@@ -6,6 +6,7 @@ import Button from '../_shared/Button.astro'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
 import type { ActionInput, ImageInput } from '../_shared/types'
+import { size } from './hero'
 
 const hero = tv({
   slots: {
@@ -67,13 +68,20 @@ interface Props {
   width?: 'full' | 'content' | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   id?: string | undefined
+  /** A cover's own height as the source sets it (`520px`, `60vh`); absent, the layout's default. Layout cover only. */
+  minHeight?: string | undefined
+  /** The heading's size as the source sets it (`58px`, `clamp(2.15rem, 4vw, 3.6rem)`); absent, the layout's own scale. */
+  headingSize?: string | undefined
 }
 
-const { heading, level = 1, eyebrow, lead, actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id } = Astro.props
+
+const { heading, level = 1, eyebrow, lead, actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id, minHeight, headingSize } = Astro.props
 const s = hero({ layout, align, leadAlign, actionsAlign, width, tone })
 const Heading = level === 1 ? 'h1' : 'h2'
 const headingId = id ? `${id}-title` : undefined
 const cover = layout === 'cover' && image
+const coverHeight = cover ? size(minHeight) : undefined
+const headingStyle = size(headingSize) ? `font-size: ${size(headingSize)}; line-height: 1.2` : undefined
 ---
 {cover && width === 'content'
   ? (
@@ -82,10 +90,10 @@ const cover = layout === 'cover' && image
         <KitImage image={image} priority sizes="(min-width: 768px) 46rem, 100vw" class="absolute inset-0 -z-10 h-full w-full object-cover" />
         <div class="absolute inset-0 -z-10 bg-ink/60" aria-hidden="true" />
         <div class="px-6 py-10 md:px-10">
-          <div class={s.grid()}>
+          <div class={s.grid()} style={coverHeight ? `min-height: ${coverHeight}` : undefined}>
             <div class={s.copy()}>
               {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
-              <Heading id={headingId} class={s.heading()}>{heading}</Heading>
+              <Heading id={headingId} class={s.heading()} style={headingStyle}>{heading}</Heading>
               {lead && <p class={s.lead()} data-kit-text>{lead}</p>}
               {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
             </div>
@@ -100,10 +108,10 @@ const cover = layout === 'cover' && image
       <KitImage image={image} priority sizes="100vw" class="absolute inset-0 -z-10 h-full w-full object-cover" />
       <div class="absolute inset-0 -z-10 bg-ink/60" aria-hidden="true" />
       <div class="container-page py-16 md:py-28">
-        <div class={s.grid()}>
+        <div class={s.grid()} style={coverHeight ? `min-height: ${coverHeight}` : undefined}>
           <div class={s.copy()}>
             {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
-            <Heading id={headingId} class={s.heading()}>{heading}</Heading>
+            <Heading id={headingId} class={s.heading()} style={headingStyle}>{heading}</Heading>
             {lead && <p class={s.lead()} data-kit-text>{lead}</p>}
             {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
           </div>
@@ -117,7 +125,7 @@ const cover = layout === 'cover' && image
       <div class={s.grid({ class: image ? undefined : 'md:grid-cols-1' })}>
         <div class={s.copy()}>
           {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
-          <Heading id={headingId} class={s.heading()}>{heading}</Heading>
+          <Heading id={headingId} class={s.heading()} style={headingStyle}>{heading}</Heading>
           {lead && <p class={s.lead()} data-kit-text>{lead}</p>}
           {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
         </div>
