@@ -109,9 +109,9 @@ export interface SiteConfig {
    * of "© year Site".
    * `titleLinks`: post titles in lists take the link colour (`--color-link`), as the source's do;
    * `navLinks`: so does the header navigation. `footerAlign`: `center` when the source's footer is
-   * one centred column; absent, brand and links to the sides.
+   * one centred column; absent, brand and links to the sides. `footerColumns`: the link columns packed at the end edge, `gap` px apart, links `size` px, side by side below 768 at `narrowGap` px (absent: stacked); absent, they share the footer's width.
    */
-  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean, footerAlign?: 'start' | 'center' }
+  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean, footerAlign?: 'start' | 'center', footerColumns?: { gap: number, size?: number, narrowGap?: number } }
   /**
    * The site singleton's fields that hold the contact details, by field name (a migration finds them
    * in the source's settings: an ACF options page). The footer prints what is set: `address`,

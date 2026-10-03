@@ -138,6 +138,10 @@ export interface PlanSite {
    * `postFrame`: the same for a single post's reading column, where the theme reads narrower than its frame
    * (Astra: 630 in a 1200 frame). `listColumns`: how many columns the post cards run in from `min` px of viewport up,
    * as the source's lists show them (Astra: one column at 768, three at 1280); absent, the starter's own grid.
+   * `footerColumns`: the footer's link columns packed at the end edge at their own width, as the source's are (a theme's
+   * footer is the brand left and two menus on the right, not a grid spread from the centre): `gap` px between the
+   * columns, the links `size` px, and `narrowGap` px when the columns stay side by side below 768 (absent: they stack).
+   * Absent, the starter's own: the columns share the footer's width.
    */
   chrome?: {
     brand?: string
@@ -150,6 +154,7 @@ export interface PlanSite {
     listFrame?: ChromeFrameStep[]
     postFrame?: ChromeFrameStep[]
     listColumns?: ChromeColumnStep[]
+    footerColumns?: { gap: number, size?: number, narrowGap?: number }
   }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
@@ -449,6 +454,9 @@ export function fieldDepth(field: FieldDef): number {
  */
 export const PLAN_SECTION_RULE = /^(?:(?:gutenberg|elementor|divi|classic):(?:section:[a-z][\w.-]*|element:[a-z][\w./:-]*)|opus|prose)$/
 
+/** A pixel measure: a finite number from 0 to `max`. */
+const pxWithin = (v: unknown, max: number): boolean => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= max
+
 /** A content prop's field name in a section object: the prop in snake_case (`ctaLabel` → `cta_label`). */
 export function sectionFieldName(prop: string): string {
   return prop.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`)
@@ -497,6 +505,10 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     const steps = chrome.listColumns
     if (!Array.isArray(steps) || steps.length === 0 || steps.length > 8) errors.push('site.chrome.listColumns is not a list of 1–8 steps')
     else if (steps.some((step, i) => !Number.isSafeInteger(step?.min) || !Number.isSafeInteger(step?.columns) || step.min < 1 || step.min > 10_000 || step.columns < 1 || step.columns > 6 || (i > 0 && step.min <= steps[i - 1]!.min))) errors.push('site.chrome.listColumns steps are not a whole pixel min in ascending order and 1–6 columns')
+  }
+  if (chrome?.footerColumns !== undefined) {
+    const { gap, size, narrowGap } = chrome.footerColumns
+    if (!pxWithin(gap, 400) || (size !== undefined && !(pxWithin(size, 100) && size > 0)) || (narrowGap !== undefined && !pxWithin(narrowGap, 400))) errors.push('site.chrome.footerColumns is not a gap (0–400 px), a link size (1–100 px) and a narrow gap (0–400 px)')
   }
   if (chrome?.copyright !== undefined && (typeof chrome.copyright !== 'string' || !chrome.copyright.trim() || chrome.copyright.length > 200 || /[<>]/.test(chrome.copyright))) errors.push('site.chrome.copyright is not a line of plain text (1–200 characters, no markup)')
   const footer = site?.menus?.footer
