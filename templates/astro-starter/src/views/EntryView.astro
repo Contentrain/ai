@@ -10,6 +10,7 @@ import { getSite, getStrings, imageOf, type Media } from '../lib/content'
 import { bodyOf, dateOf, entriesOf, entryHref, entryTitle, newestFirst, refIds, termHref, text, type TypeEntry } from '../lib/custom'
 import { shownFields, type Targets } from '../lib/fields'
 import { publicHtml } from '../lib/links'
+import { siteConfig } from '../site.config'
 import { summarize } from '../lib/seo'
 import type { CustomType } from '../site.config'
 
@@ -33,7 +34,7 @@ const ordered = newestFirst(siblings, type.card.date)
 const at = ordered.findIndex(other => other.id === entry.id)
 const previous = at >= 0 ? ordered[at + 1] : undefined
 const next = at > 0 ? ordered[at - 1] : undefined
-const more = type.more ? ordered.filter(other => other.id !== entry.id).slice(0, type.more) : []
+const more = type.more ? ordered.filter(other => type.moreIncludesCurrent || other.id !== entry.id).slice(0, type.more) : []
 const formatDate = (date: Date) => date.toLocaleDateString(site.language, { dateStyle: 'long', timeZone: 'UTC' })
 const [imageId] = type.card.image ? refIds(data[type.card.image]) : []
 const cover = imageId ? await getEntry('media', imageId) : undefined
@@ -72,7 +73,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
   {more.length > 0 && (
     <section aria-labelledby="more-entries" data-cr-part="related" class="container-page pb-16">
       <h2 id="more-entries" class="mb-4 text-sm font-semibold tracking-wide uppercase">{t('post.more')}</h2>
-      <ul class="border-t border-line">
+      <ul class:list={['border-t border-line', siteConfig.lists.tone === 'muted' && 'text-ink-muted']}>
         {more.map((other) => {
           const date = dateOf(other.data[type.card.date ?? 'published_at'])
           return (
