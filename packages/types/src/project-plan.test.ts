@@ -177,15 +177,16 @@ describe('validateProjectPlan', () => {
     const p = plan()
     p.site.post = { header: ['title'], adjacent: false, more: 2, moreIncludesCurrent: true }
     p.site.lists = { display: 'cards', heading: false, tone: 'muted' }
-    p.site.entryLayouts = { 'type-project': { adjacent: false, more: 2, moreIncludesCurrent: true } }
+    p.site.entryLayouts = { 'type-project': { adjacent: false, more: 2, moreIncludesCurrent: true, moreOf: 'posts' } }
     expect(validateProjectPlan(p).errors).toEqual([])
     p.site.post = { header: ['title'], adjacent: false, more: 2, moreIncludesCurrent: 'yes' as unknown as boolean }
     p.site.lists = { display: 'cards', heading: false, tone: 'loud' as 'muted' }
-    p.site.entryLayouts = { 'type-project': { adjacent: false, moreIncludesCurrent: 1 as unknown as boolean } }
+    p.site.entryLayouts = { 'type-project': { adjacent: false, moreIncludesCurrent: 1 as unknown as boolean, moreOf: 'pages' as 'posts' } }
     expect(validateProjectPlan(p).errors).toEqual([
       'site.post.moreIncludesCurrent is not true or false',
       'site.lists.tone loud is not muted',
       'site.entryLayouts.type-project.moreIncludesCurrent is not true or false',
+      'site.entryLayouts.type-project.moreOf pages is not posts',
     ])
   })
 

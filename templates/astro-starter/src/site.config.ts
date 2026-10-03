@@ -42,6 +42,8 @@ export interface CustomType {
   more?: number
   /** The list also shows the entry being read, as the source's query did; absent, the entry is left out. */
   moreIncludesCurrent?: boolean
+  /** The list holds the newest blog posts, as the source's single template showed, not other entries of this type. */
+  moreOf?: 'posts'
   fields: readonly CustomField[]
 }
 
