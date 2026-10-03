@@ -1,5 +1,17 @@
 # @contentrain/astro-kit
 
+## 0.22.0
+
+### Minor Changes
+
+- 0ca875a: Hero takes the source's own cover height and heading size. `minHeight` (a cover's height in pixels as the source sets it, `520`; a number, so a plan can bind it) and the `headingScale` variant (`theme`: the heading takes the site's size for its level, `--text-heading-1` for the page-opening hero, as the source's own `h1` does under a block theme). Unset, the layout's own heights and type scale are unchanged.
+
+### Patch Changes
+
+- 38ed8ed: ContactForm no longer draws a section that is left with only its heading. Until the form has a home (Studio bound, the WordPress page known, an https service address) the section stands on its introduction and details; with neither, the heading alone titled a form that was not there ("Tell us about your project" over empty space on a delivery without Studio). The section appears with its form once the form has a home.
+- Updated dependencies [0fd08de]
+  - @contentrain/types@1.41.0
+
 ## 0.21.1
 
 ### Patch Changes
