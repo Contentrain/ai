@@ -1,5 +1,12 @@
 # @contentrain/types
 
+## 1.42.0
+
+### Minor Changes
+
+- 6422dd8: The header takes what the source's header does differently, each only where it does: `Header` gains `bordered` (no line under the bar), `brandWeight` and `brandTracking` (the site name), `offsetTop`, `padTop` and `padBottom` (the space above and inside the bar). `site.chrome.header` carries them in the plan, validated (weights, letter-spacings and CSS lengths only; never `url()`); without it the starter's header is exactly as before.
+- 1db3d17: Migrate→Studio server-to-server contract for the Studio card beside the live move. `MigrateGrantStatusRequest` / `MigrateGrantStatusResponse` (`claimed` | `bound` | `redeemed` | `revoked`, plus whether Studio's GitHub App is `installed`) and `MigrateInstallUrlRequest` / `MigrateInstallUrlResponse` (GitHub App install address with Studio's signed `state`, and when it expires), with a validator for each side. Requests are signed like the account-state request and keyed by `order_id`; the install-URL validator only lets through GitHub's own App install page.
+
 ## 1.41.0
 
 ### Minor Changes
