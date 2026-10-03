@@ -35,8 +35,26 @@ export interface SlugMove {
   from: string | null
   /** The slug the entry was written under. */
   slug: string
-  /** `empty`: the source slug left no word, `collision`: another entry of the same type already holds it. */
-  reason: 'empty' | 'collision'
+  /**
+   * `empty`: the source slug left no word, `collision`: another entry of the same type already holds it,
+   * `rewritten`: characters outside the slug alphabet (ZWNJ/ZWJ, `・`, an NFD spelling...) were changed.
+   */
+  reason: 'empty' | 'collision' | 'rewritten'
+}
+
+const utf8Length = (s: string): number => new TextEncoder().encode(s).length
+
+/** `s` cut on a code-point boundary to at most `max` UTF-8 bytes, without a trailing hyphen. */
+const fitBytes = (s: string, max: number): string => {
+  let out = ''
+  let bytes = 0
+  for (const ch of s) {
+    const n = utf8Length(ch)
+    if (bytes + n > max) break
+    out += ch
+    bytes += n
+  }
+  return out.replace(/-+$/, '')
 }
 
 export interface ImportReport {
@@ -221,18 +239,29 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       report.slug_moves.push({ wp_id: p.id, type: p.type, from, slug, reason })
     }
     let empty = false
+    let rewritten = false
     if (!s) {
       s = `${p.type}-${p.id}`
       empty = true
       report.slug_fallback++
-    } else if (s !== decodeSlug(p.slug)) report.slug_rewritten++
+    } else if (s !== decodeSlug(p.slug)) {
+      report.slug_rewritten++
+      // Case alone is not a move (WP serves post_name lowercase); anything else changes the address.
+      rewritten = s !== decodeSlug(p.slug).toLowerCase()
+    }
     // Slugs are unique per type — and per locale on a multilingual site, where
     // `/about/` and `/tr/about/` are different entries with the same slug.
     const key = multilingual ? `${p.type}:${postLocale(p)}:${s}` : `${p.type}:${s}`
     const n = usedSlugs.get(key) ?? 0
     usedSlugs.set(key, n + 1)
-    if (n) { moved('collision', `${s}-${p.id}`); return `${s}-${p.id}` }
+    if (n) {
+      const suffix = `-${p.id}`
+      const unique = `${fitBytes(s, 200 - utf8Length(suffix))}${suffix}`
+      moved('collision', unique)
+      return unique
+    }
     if (empty) moved('empty', s)
+    else if (rewritten) moved('rewritten', s)
     return s
   }
   const slugOf = new Map<number, string>()
