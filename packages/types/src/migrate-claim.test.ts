@@ -211,23 +211,26 @@ describe('validateMigrateStudioClaimV2', () => {
 
 describe('validateMigrateAccountStateResponse', () => {
   it('accepts the three states', () => {
-    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200 }, { requested: 'starter' }).ok).toBe(true)
-    expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 0, current_plan: 'pro' }, { requested: 'pro' }).ok).toBe(true)
-    expect(validateMigrateAccountStateResponse({ state: 'too_small', plan: 'pro', year1_cents: 31400, current_plan: 'starter' }, { requested: 'pro' }).ok).toBe(true)
+    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200, renewal_cents: 9000 }, { requested: 'starter' }).ok).toBe(true)
+    expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 0, renewal_cents: 0, current_plan: 'pro' }, { requested: 'pro' }).ok).toBe(true)
+    expect(validateMigrateAccountStateResponse({ state: 'too_small', plan: 'pro', year1_cents: 31400, renewal_cents: 9000, current_plan: 'starter' }, { requested: 'pro' }).ok).toBe(true)
   })
 
   it('refuses inconsistent answers', () => {
-    expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 100, current_plan: 'pro' }, { requested: 'pro' })).toEqual({ ok: false, errors: ['year1_cents: must be 0 when covers'] })
-    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 0 }, { requested: 'starter' })).toEqual({ ok: false, errors: ['year1_cents: must be > 0'] })
-    expect(validateMigrateAccountStateResponse({ state: 'too_small', plan: 'pro', year1_cents: 5 }, { requested: 'pro' })).toEqual({ ok: false, errors: ['current_plan: required unless none'] })
-    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200, current_plan: 'starter' }, { requested: 'starter' })).toEqual({ ok: false, errors: ['current_plan: not allowed when none'] })
+    expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 100, renewal_cents: 0, current_plan: 'pro' }, { requested: 'pro' })).toEqual({ ok: false, errors: ['year1_cents: must be 0 when covers'] })
+    expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 0, renewal_cents: 9000, current_plan: 'pro' }, { requested: 'pro' })).toEqual({ ok: false, errors: ['renewal_cents: must be 0 when covers'] })
+    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200 }, { requested: 'starter' })).toEqual({ ok: false, errors: ['renewal_cents: invalid'] })
+    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200, renewal_cents: 0 }, { requested: 'starter' })).toEqual({ ok: false, errors: ['renewal_cents: must be > 0'] })
+    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 0, renewal_cents: 9000 }, { requested: 'starter' })).toEqual({ ok: false, errors: ['year1_cents: must be > 0'] })
+    expect(validateMigrateAccountStateResponse({ state: 'too_small', plan: 'pro', year1_cents: 5, renewal_cents: 9000 }, { requested: 'pro' })).toEqual({ ok: false, errors: ['current_plan: required unless none'] })
+    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200, renewal_cents: 9000, current_plan: 'starter' }, { requested: 'starter' })).toEqual({ ok: false, errors: ['current_plan: not allowed when none'] })
     expect(validateMigrateAccountStateResponse({ state: 'maybe', plan: 'x', year1_cents: -1 }, { requested: 'pro' })).toEqual({ ok: false, errors: expect.arrayContaining(['state: unknown', 'plan: unknown plan', 'year1_cents: invalid']) })
   })
 })
 
 describe('account-state against the question asked', () => {
   it('fails closed when requested is missing or unknown at runtime', () => {
-    const covers = { state: 'covers', plan: 'starter', year1_cents: 0, current_plan: 'starter' }
+    const covers = { state: 'covers', plan: 'starter', year1_cents: 0, renewal_cents: 0, current_plan: 'starter' }
     for (const options of [{}, { requested: 'team' }, undefined]) {
       expect(validateMigrateAccountStateResponse(covers, options as never)).toEqual({ ok: false, errors: ['requested: unknown plan'] })
     }
@@ -235,13 +238,13 @@ describe('account-state against the question asked', () => {
 
   it('checks none / too_small / covers against the requested plan', () => {
     const ok = (r: Record<string, unknown>, requested: 'starter' | 'pro') => validateMigrateAccountStateResponse(r, { requested }).ok
-    expect(ok({ state: 'none', plan: 'pro', year1_cents: 39200 }, 'pro')).toBe(true)
-    expect(ok({ state: 'none', plan: 'starter', year1_cents: 7200 }, 'pro')).toBe(false)
-    expect(ok({ state: 'too_small', plan: 'pro', year1_cents: 31400, current_plan: 'starter' }, 'pro')).toBe(true)
-    expect(ok({ state: 'too_small', plan: 'pro', year1_cents: 100, current_plan: 'pro' }, 'pro')).toBe(false)
-    expect(ok({ state: 'covers', plan: 'pro', year1_cents: 0, current_plan: 'pro' }, 'starter')).toBe(true)
-    expect(ok({ state: 'covers', plan: 'starter', year1_cents: 0, current_plan: 'starter' }, 'pro')).toBe(false)
-    expect(ok({ state: 'covers', plan: 'starter', year1_cents: 0, current_plan: 'pro' }, 'starter')).toBe(false)
+    expect(ok({ state: 'none', plan: 'pro', year1_cents: 39200, renewal_cents: 9000 }, 'pro')).toBe(true)
+    expect(ok({ state: 'none', plan: 'starter', year1_cents: 7200, renewal_cents: 9000 }, 'pro')).toBe(false)
+    expect(ok({ state: 'too_small', plan: 'pro', year1_cents: 31400, renewal_cents: 9000, current_plan: 'starter' }, 'pro')).toBe(true)
+    expect(ok({ state: 'too_small', plan: 'pro', year1_cents: 100, renewal_cents: 9000, current_plan: 'pro' }, 'pro')).toBe(false)
+    expect(ok({ state: 'covers', plan: 'pro', year1_cents: 0, renewal_cents: 0, current_plan: 'pro' }, 'starter')).toBe(true)
+    expect(ok({ state: 'covers', plan: 'starter', year1_cents: 0, renewal_cents: 0, current_plan: 'starter' }, 'pro')).toBe(false)
+    expect(ok({ state: 'covers', plan: 'starter', year1_cents: 0, renewal_cents: 0, current_plan: 'pro' }, 'starter')).toBe(false)
   })
 })
 
