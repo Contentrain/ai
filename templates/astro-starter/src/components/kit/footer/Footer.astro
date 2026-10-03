@@ -17,10 +17,12 @@ const footer = tv({
       columns: { inner: 'grid gap-10 md:grid-cols-[2fr_repeat(var(--footer-columns),1fr)] md:py-16' },
     },
     tone: {
-      default: { root: 'border-t border-line bg-surface text-ink' },
+      default: { root: 'bg-surface text-ink' },
       muted: { root: 'bg-surface-muted text-ink' },
       inverse: { root: 'bg-ink text-surface' },
     },
+    // The border on the footer's top side: the default tone's own unless `border` says otherwise.
+    border: { on: { root: 'border-t border-line' }, off: {} },
     align: { start: {}, center: { inner: 'items-center justify-items-center text-center md:items-center [&_ul]:justify-center' } },
     // The `columns` layout's link columns: spread from the brand column over the footer's width, or packed at the end
     // edge at their own width (a theme whose footer is the brand left and its menus on the right).
@@ -33,7 +35,7 @@ const footer = tv({
     { layout: 'columns', pack: 'end', class: { inner: 'md:grid-cols-[1fr_repeat(var(--footer-columns),auto)] md:gap-x-[var(--footer-gap,2.5rem)] md:[&>div:first-child]:col-span-1' } },
     { layout: 'columns', pack: 'end', narrow: 'row', class: { inner: '[&>div:first-child]:col-span-full' } },
   ],
-  defaultVariants: { layout: 'simple', tone: 'default', align: 'start', pack: 'spread', narrow: 'stack' },
+  defaultVariants: { layout: 'simple', tone: 'default', align: 'start', pack: 'spread', narrow: 'stack', border: 'off' },
 })
 
 interface Props {
@@ -46,8 +48,8 @@ interface Props {
   social?: LinkInput[] | undefined
   /** Contact details printed in an `<address>` block; each is optional, and the block is left out when none is set. */
   contact?: { address?: string | undefined, phone?: string | undefined, email?: string | undefined } | undefined
-  /** The copyright line, e.g. "© 2026 Northwind Studio"; `{year}` is the current year. */
-  copyright?: string | undefined
+  /** The copyright line, e.g. "© 2026 Northwind Studio"; `{year}` is the current year; `false` prints none. Absent: "© year Site". */
+  copyright?: string | false | undefined
   /** Label of the cookie settings link after the copyright line ("Cookie settings"); it reopens the consent bar, so a visitor can withdraw consent as easily as they gave it. Only with a consent bar on the page. */
   consentLabel?: string | undefined
   /** Accessible name of the footer navigation ("Footer"). */
@@ -65,16 +67,20 @@ interface Props {
   packGapNarrow?: string | undefined
   /** The links' font size, a CSS length (`17.88px`); absent, the footer's own. */
   linkSize?: string | undefined
+  /** A border on the footer's top side: absent, the default tone has one and the others do not. */
+  border?: boolean | undefined
 }
 
-const { siteName, tagline, columns = [], links = [], social = [], contact, copyright, consentLabel, navLabel = 'Footer', layout = 'simple', tone, align, pack, packGap, narrow, packGapNarrow, linkSize } = Astro.props
-const { root, inner, muted, link } = footer({ layout, tone, align, pack: layout === 'columns' ? pack : undefined, narrow: layout === 'columns' && pack === 'end' ? narrow : undefined })
+const { siteName, tagline, columns = [], links = [], social = [], contact, copyright, consentLabel, navLabel = 'Footer', layout = 'simple', tone, align, pack, packGap, narrow, packGapNarrow, linkSize, border } = Astro.props
+const { root, inner, muted, link } = footer({ layout, tone, align, pack: layout === 'columns' ? pack : undefined, narrow: layout === 'columns' && pack === 'end' ? narrow : undefined, border: (border ?? (tone ?? 'default') === 'default') ? 'on' : 'off' })
 // Custom properties the packed columns and sized links read; none when none is set.
 const vars = [layout === 'columns' ? `--footer-columns: ${Math.max(columns.length, 1)}` : '', layout === 'columns' && pack === 'end' && packGap ? `--footer-gap: ${packGap}` : '', layout === 'columns' && pack === 'end' && narrow === 'row' && packGapNarrow ? `--footer-gap-narrow: ${packGapNarrow}` : '', linkSize ? `--footer-link-size: ${linkSize}` : ''].filter(Boolean).join('; ')
 const year = String(new Date().getFullYear())
 const phoneHref = contact?.phone?.replace(/[^\d+]/g, '')
 const hasContact = Boolean(contact?.address || contact?.phone || contact?.email)
-const line = copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
+const line = copyright === false ? undefined : copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
+// The line and the cookie settings control share one paragraph; neither: no paragraph.
+const hasBottom = Boolean(line || consentLabel)
 ---
 <!-- The cookie settings control is a button, not a link: the Consent component's listener reopens its bar on any [data-kit-consent-open]. -->
 <footer class={root()}>
@@ -89,7 +95,7 @@ const line = copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
           {contact?.email && <a href={`mailto:${contact.email}`} class={link()}>{contact.email}</a>}
         </address>
       )}
-      {layout === 'columns' && <p class:list={[muted(), 'mt-auto pt-6']}>{line}{consentLabel && <> · <button type="button" data-kit-consent-open class={link()}>{consentLabel}</button></>}</p>}
+      {layout === 'columns' && hasBottom && <p class:list={[muted(), 'mt-auto pt-6']}>{line}{consentLabel && <>{line && ' · '}<button type="button" data-kit-consent-open class={link()}>{consentLabel}</button></>}</p>}
     </div>
     {layout === 'columns'
       ? columns.map(column => (
@@ -114,7 +120,7 @@ const line = copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
               </ul>
             </nav>
           )}
-          <p class={muted()}>{line}{consentLabel && <> · <button type="button" data-kit-consent-open class={link()}>{consentLabel}</button></>}</p>
+          {hasBottom && <p class={muted()}>{line}{consentLabel && <>{line && ' · '}<button type="button" data-kit-consent-open class={link()}>{consentLabel}</button></>}</p>}
         </div>
       )}
     {layout === 'columns' && social.length > 0 && (

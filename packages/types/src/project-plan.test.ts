@@ -173,6 +173,22 @@ describe('validateProjectPlan', () => {
     expect(validateProjectPlan(p).errors).toEqual(['site.entryLayouts.type-project.more is not a count from 0 to 20'])
   })
 
+  it('accepts and checks the footer the source prints: feed link, top border, copyright line or none', () => {
+    const p = plan()
+    p.site.footer = { feed: false, border: true, copyright: false }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.footer = { feed: true, border: false, copyright: '© {year} Golden Hearth Bakery' }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.footer = { feed: 'yes' as unknown as boolean, border: 1 as unknown as boolean, copyright: '<b>x</b>' }
+    expect(validateProjectPlan(p).errors).toEqual([
+      'site.footer.feed is not a boolean',
+      'site.footer.border is not a boolean',
+      'site.footer.copyright is not false or a line of plain text (1–200 characters, no markup)',
+    ])
+    p.site.footer = { copyright: true as unknown as false }
+    expect(validateProjectPlan(p).errors).toEqual(['site.footer.copyright is not false or a line of plain text (1–200 characters, no markup)'])
+  })
+
   it('accepts and checks the size the "more" list prints its titles at', () => {
     const p = plan()
     p.site.post = { header: ['title'], adjacent: false, more: 2, moreText: '21.7632px' }

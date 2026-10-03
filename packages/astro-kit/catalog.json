@@ -1257,7 +1257,7 @@
         },
         "copyright": {
           "type": "string",
-          "description": "Copyright line; {year} is the current year. Defaults to © <year> <siteName>."
+          "description": "Copyright line; {year} is the current year. Defaults to © <year> <siteName>; the component also takes false for no line (the cookie settings control stays)."
         },
         "consentLabel": {
           "type": "string",
@@ -1278,6 +1278,11 @@
         "linkSize": {
           "type": "string",
           "description": "Font size of the footer's links, a CSS length such as 17.88px; absent, the footer's own."
+        },
+        "border": {
+          "type": "boolean",
+          "content": false,
+          "description": "A border on the footer's top side; absent, the default tone has one and the others do not."
         }
       },
       "slots": {},

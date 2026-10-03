@@ -125,6 +125,15 @@ export interface PlanSite {
    */
   entryLayouts?: Record<string, { adjacent: boolean, more?: number, moreIncludesCurrent?: boolean, moreOf?: 'posts', moreText?: string }>
   /**
+   * What the source's footer prints of the three things the starter's footer prints by default, each only when the
+   * source does (a migration reads them off the rendered footer). `feed`: a visible "RSS feed" link in the last
+   * column (the feed file itself, `/rss.xml`, is always kept for SEO). `border`: a border on the footer's top side.
+   * `copyright`: the line it prints (`{year}` for the current year), or `false` when it prints none. The "Powered by
+   * WordPress" credit is platform chrome and is never carried. Absent, or a key absent: the starter's own (the link,
+   * the border on the default tone, "© year Site"). `chrome.copyright` is the older place for the line.
+   */
+  footer?: { feed?: boolean, border?: boolean, copyright?: string | false }
+  /**
    * The header and footer as the source's theme prints them, where they differ from the starter's.
    * Every key is optional; absent, the starter's own. `brand`: the site title's size in the header
    * (Hello Elementor: a 2.5rem heading). `tagline`: the header shows the tagline under the title.
@@ -489,6 +498,10 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (layout?.moreOf !== undefined && layout.moreOf !== 'posts') errors.push(`site.entryLayouts.${route}.moreOf ${String(layout.moreOf)} is not posts`)
     if (layout?.moreText !== undefined && !CSS_LENGTH.test(layout.moreText)) errors.push(`site.entryLayouts.${route}.moreText ${layout.moreText} is not a CSS size`)
   }
+  const printed = site?.footer
+  if (printed?.feed !== undefined && typeof printed.feed !== 'boolean') errors.push('site.footer.feed is not a boolean')
+  if (printed?.border !== undefined && typeof printed.border !== 'boolean') errors.push('site.footer.border is not a boolean')
+  if (printed?.copyright !== undefined && printed.copyright !== false && (typeof printed.copyright !== 'string' || !printed.copyright.trim() || printed.copyright.length > 200 || /[<>]/.test(printed.copyright))) errors.push('site.footer.copyright is not false or a line of plain text (1–200 characters, no markup)')
   const chrome = site?.chrome
   if (chrome?.brand !== undefined && !CSS_LENGTH.test(chrome.brand)) errors.push(`site.chrome.brand ${chrome.brand} is not a CSS size`)
   if (chrome?.tagline !== undefined && typeof chrome.tagline !== 'boolean') errors.push('site.chrome.tagline is not a boolean')
