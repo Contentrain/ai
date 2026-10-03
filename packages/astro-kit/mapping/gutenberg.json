@@ -552,7 +552,11 @@
       },
       "when": {
         "position": "first",
-        "columns": 1
+        "columns": 1,
+        "order": [
+          "title",
+          "media"
+        ]
       },
       "slots": {
         "title": {
@@ -567,11 +571,16 @@
         "button": {
           "match": "core/button",
           "max": 2
+        },
+        "media": {
+          "match": "core/image",
+          "max": 1
         }
       },
       "props": {
         "heading": "@title dom:",
-        "lead": "@lead dom:"
+        "lead": "@lead dom:",
+        "image": "@media img:img"
       },
       "into": "actions",
       "each": "@button",
