@@ -1,5 +1,11 @@
 # @contentrain/types
 
+## 1.47.0
+
+### Minor Changes
+
+- 728c228: `MigrateProvisionResponse` is now `MigrateProvisionCheckout | MigrateProvisionCovered`. When the account already runs a plan that covers the sized one, Studio answers `state: 'redeemed'` with the workspace and no checkout: `checkout_url`, `amount_cents` and `checkout_expires_at` are forbidden then, and still required for every other state. `validateMigrateProvisionResponse` checks both directions.
+
 ## 1.46.0
 
 ### Minor Changes
