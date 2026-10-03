@@ -87,6 +87,8 @@
     },
     "index.html": {
       "contains": [
+        "href=\"/rss.xml\"",
+        "©",
         "location.replace(to)",
         "aria-label=\"Primary\"",
         "aria-label=\"Footer\" data-cr-part=\"nav-footer\"",

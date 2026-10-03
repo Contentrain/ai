@@ -1,4 +1,10 @@
 {
+  "siteConfig": [
+    {
+      "from": "  sourceHosts: [],",
+      "to": "  footer: { feed: false, border: false, copyright: false },\n  sourceHosts: [],"
+    }
+  ],
   "distFiles": {
     "index.html": {
       "contains": [
@@ -7,7 +13,9 @@
         "og:locale\" content=\"tr"
       ],
       "excludes": [
-        "<html lang=\"en\""
+        "<html lang=\"en\"",
+        "href=\"/rss.xml\"",
+        "©"
       ]
     }
   }

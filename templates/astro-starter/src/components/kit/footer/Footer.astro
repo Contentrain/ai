@@ -24,11 +24,18 @@ const footer = tv({
     // The border on the footer's top side: the default tone's own unless `border` says otherwise.
     border: { on: { root: 'border-t border-line' }, off: {} },
     align: { start: {}, center: { inner: 'items-center justify-items-center text-center md:items-center [&_ul]:justify-center' } },
+    // The `columns` layout's link columns: spread from the brand column over the footer's width, or packed at the end
+    // edge at their own width (a theme whose footer is the brand left and its menus on the right).
+    pack: { spread: {}, end: {} },
+    // Packed columns below `md`: stacked, or still side by side from the start edge under the brand.
+    narrow: { stack: {}, row: { inner: 'grid-cols-[repeat(var(--footer-columns),auto)] justify-start gap-x-[var(--footer-gap-narrow,1.5rem)]' } },
   },
   compoundVariants: [
     { layout: 'simple', align: 'center', class: { inner: 'md:flex-col md:justify-center' } },
+    { layout: 'columns', pack: 'end', class: { inner: 'md:grid-cols-[1fr_repeat(var(--footer-columns),auto)] md:gap-x-[var(--footer-gap,2.5rem)] md:[&>div:first-child]:col-span-1' } },
+    { layout: 'columns', pack: 'end', narrow: 'row', class: { inner: '[&>div:first-child]:col-span-full' } },
   ],
-  defaultVariants: { layout: 'simple', tone: 'default', align: 'start', border: 'off' },
+  defaultVariants: { layout: 'simple', tone: 'default', align: 'start', pack: 'spread', narrow: 'stack', border: 'off' },
 })
 
 interface Props {
@@ -50,12 +57,24 @@ interface Props {
   layout?: 'simple' | 'columns' | undefined
   tone?: 'default' | 'muted' | 'inverse' | undefined
   align?: 'start' | 'center' | undefined
+  /** `columns` layout only: `end` packs the link columns at the end edge, right-aligned, instead of spreading them. */
+  pack?: 'spread' | 'end' | undefined
+  /** Packed columns only: the space between columns, a CSS length (`98px`). */
+  packGap?: string | undefined
+  /** Packed columns only: below `md`, `stack` (one column) or `row` (still side by side from the start edge, under the brand). */
+  narrow?: 'stack' | 'row' | undefined
+  /** Packed columns in a `row` only: the space between them below `md`, a CSS length. */
+  packGapNarrow?: string | undefined
+  /** The links' font size, a CSS length (`17.88px`); absent, the footer's own. */
+  linkSize?: string | undefined
   /** A border on the footer's top side: absent, the default tone has one and the others do not. */
   border?: boolean | undefined
 }
 
-const { siteName, tagline, columns = [], links = [], social = [], contact, copyright, consentLabel, navLabel = 'Footer', layout = 'simple', tone, align, border } = Astro.props
-const { root, inner, muted, link } = footer({ layout, tone, align, border: (border ?? (tone ?? 'default') === 'default') ? 'on' : 'off' })
+const { siteName, tagline, columns = [], links = [], social = [], contact, copyright, consentLabel, navLabel = 'Footer', layout = 'simple', tone, align, pack, packGap, narrow, packGapNarrow, linkSize, border } = Astro.props
+const { root, inner, muted, link } = footer({ layout, tone, align, pack: layout === 'columns' ? pack : undefined, narrow: layout === 'columns' && pack === 'end' ? narrow : undefined, border: (border ?? (tone ?? 'default') === 'default') ? 'on' : 'off' })
+// Custom properties the packed columns and sized links read; none when none is set.
+const vars = [layout === 'columns' ? `--footer-columns: ${Math.max(columns.length, 1)}` : '', layout === 'columns' && pack === 'end' && packGap ? `--footer-gap: ${packGap}` : '', layout === 'columns' && pack === 'end' && narrow === 'row' && packGapNarrow ? `--footer-gap-narrow: ${packGapNarrow}` : '', linkSize ? `--footer-link-size: ${linkSize}` : ''].filter(Boolean).join('; ')
 const year = String(new Date().getFullYear())
 const phoneHref = contact?.phone?.replace(/[^\d+]/g, '')
 const hasContact = Boolean(contact?.address || contact?.phone || contact?.email)
@@ -65,7 +84,7 @@ const hasBottom = Boolean(line || consentLabel)
 ---
 <!-- The cookie settings control is a button, not a link: the Consent component's listener reopens its bar on any [data-kit-consent-open]. -->
 <footer class={root()}>
-  <div class={inner()} data-kit-footer style={layout === 'columns' ? `--footer-columns: ${Math.max(columns.length, 1)}` : undefined}>
+  <div class:list={[inner(), linkSize && '[&_nav_a]:text-[length:var(--footer-link-size)]']} data-kit-footer style={vars || undefined}>
     <div class="flex flex-col gap-3">
       <p class="text-base font-semibold" data-kit-brand>{siteName}</p>
       {tagline && <p class={muted()} data-kit-tagline>{tagline}</p>}
