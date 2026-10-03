@@ -1,5 +1,17 @@
 # @contentrain/astro-kit
 
+## 0.20.0
+
+### Minor Changes
+
+- 9992660: **Footer: link columns packed at the end edge.** A theme's footer is often the brand on the left and its menus in a block on the right, each column as wide as its links. The plan's `site.chrome.footerColumns` (`gap` px between the columns, links `size` px, and `narrowGap` px when the columns stay side by side below 768) now carries it, and the Footer's new `pack` (`spread` | `end`), `narrow` (`stack` | `row`), `packGap`, `packGapNarrow` and `linkSize` honour it; the starter wires `site.config.ts` to them. Absent, nothing changes: the columns share the footer's width as before.
+- c28d16b: Gutenberg mapping: the centred hero (`hero.centered`, a first section of one column) takes an optional picture under its text as its image (`media` slot, `core/image`, at most one). A home hero of heading, lead, picture and button in one column was no section before: the picture was a leaf no slot claimed. The same section without a picture maps as before; a picture above the heading is not the centred hero, which prints its image under the text.
+
+### Patch Changes
+
+- Updated dependencies [9992660]
+  - @contentrain/types@1.38.0
+
 ## 0.19.0
 
 ### Minor Changes
