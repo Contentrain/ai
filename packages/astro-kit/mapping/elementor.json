@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "elementor",
-  "version": "9",
+  "version": "10",
   "fallback": "prose",
   "defaults": {
     "elementor/video": {
@@ -605,6 +605,9 @@
     {
       "id": "team.columns",
       "component": "team",
+      "variant": {
+        "roleStyle": "plain"
+      },
       "when": {
         "columns": [
           2,
@@ -761,6 +764,9 @@
     {
       "id": "stats.counter",
       "component": "stats",
+      "variant": {
+        "labelSize": "lg"
+      },
       "slots": {
         "title": {
           "match": "elementor/heading",
@@ -848,6 +854,9 @@
     {
       "id": "testimonial.quotes",
       "component": "testimonial",
+      "variant": {
+        "quoteSize": "xl"
+      },
       "slots": {
         "title": {
           "match": "elementor/heading",
@@ -874,6 +883,9 @@
     {
       "id": "faq.accordion",
       "component": "faq",
+      "variant": {
+        "questionStyle": "bold"
+      },
       "slots": {
         "title": {
           "match": "elementor/heading",
@@ -898,6 +910,9 @@
     {
       "id": "faq.toggle",
       "component": "faq",
+      "variant": {
+        "questionStyle": "bold"
+      },
       "slots": {
         "title": {
           "match": "elementor/heading",
@@ -1103,7 +1118,7 @@
       "id": "feature-list.icon-list",
       "component": "feature-list",
       "variant": {
-        "style": "icon"
+        "style": "list"
       },
       "slots": {
         "title": {

@@ -58,6 +58,8 @@ interface Props {
 const { items, heading, layout, quoteSize, tone, id } = Astro.props
 const s = testimonial({ layout, quoteSize, tone })
 const headingId = heading && id ? `${id}-title` : undefined
+// Two quotes share the row: a third column would stand empty beside them and narrow both (IP-4 elementor launch G9).
+const list = s.list(items.length === 2 && (layout ?? 'grid') === 'grid' ? { class: 'lg:grid-cols-2' } : {})
 // The quotation marks are drawn, not written: the quote's text is the source's words, read once. A quote the source
 // already wrote inside marks keeps its own.
 const quoted = (text: string) => /^\s*["'“‘„«‹「『]/.test(text)
@@ -65,7 +67,7 @@ const quoted = (text: string) => /^\s*["'“‘„«‹「『]/.test(text)
 {items.length > 0 && (
   <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
     {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
-    <div class={s.list()}>
+    <div class={list}>
       {items.map(item => (
         <figure class={s.card()}>
           <blockquote class={s.quote()}><p class:list={[!quoted(item.quote) && "before:content-[open-quote] after:content-[close-quote]"]}>{item.quote}</p></blockquote>
