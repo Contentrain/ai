@@ -219,7 +219,8 @@ describe('validateMigrateAccountStateResponse', () => {
   it('refuses inconsistent answers', () => {
     expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 100, renewal_cents: 0, current_plan: 'pro' }, { requested: 'pro' })).toEqual({ ok: false, errors: ['year1_cents: must be 0 when covers'] })
     expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 0, renewal_cents: 9000, current_plan: 'pro' }, { requested: 'pro' })).toEqual({ ok: false, errors: ['renewal_cents: must be 0 when covers'] })
-    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200 }, { requested: 'starter' })).toEqual({ ok: false, errors: ['renewal_cents: invalid'] })
+    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200 }, { requested: 'starter' }).ok).toBe(true)
+    expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200, renewal_cents: -1 }, { requested: 'starter' })).toEqual({ ok: false, errors: ['renewal_cents: invalid'] })
     expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200, renewal_cents: 0 }, { requested: 'starter' })).toEqual({ ok: false, errors: ['renewal_cents: must be > 0'] })
     expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 0, renewal_cents: 9000 }, { requested: 'starter' })).toEqual({ ok: false, errors: ['year1_cents: must be > 0'] })
     expect(validateMigrateAccountStateResponse({ state: 'too_small', plan: 'pro', year1_cents: 5, renewal_cents: 9000 }, { requested: 'pro' })).toEqual({ ok: false, errors: ['current_plan: required unless none'] })

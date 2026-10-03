@@ -416,8 +416,8 @@ export interface MigrateAccountStateResponse {
   plan: MigrateStudioPlan
   /** Studio part of the first invoice, in cents: year 1 at 20% off (`none`), the plan difference (`too_small`), 0 (`covers`). */
   year1_cents: number
-  /** What the subscription renews at after year 1, in cents: the yearly list price of `plan` (0 when `covers`). Migrate shows it and never computes it. */
-  renewal_cents: number
+  /** What the subscription renews at after year 1, in cents: the yearly list price of `plan` (0 when `covers`). Migrate shows it and never computes it; absent from a Studio that predates it (the cart then omits the renewal line). */
+  renewal_cents?: number
   /** The account's current plan, when it has a running one. */
   current_plan?: MigrateStudioPlan
 }
@@ -478,7 +478,8 @@ export function validateMigrateAccountStateResponse(input: unknown, options: { r
   if (!isCents(input.year1_cents)) errors.push('year1_cents: invalid')
   else if (input.state === 'covers' && input.year1_cents !== 0) errors.push('year1_cents: must be 0 when covers')
   else if (input.state !== undefined && input.state !== 'covers' && input.year1_cents === 0) errors.push('year1_cents: must be > 0')
-  if (!isCents(input.renewal_cents)) errors.push('renewal_cents: invalid')
+  if (input.renewal_cents === undefined) { /* optional: an older Studio does not send it */ }
+  else if (!isCents(input.renewal_cents)) errors.push('renewal_cents: invalid')
   else if (input.state === 'covers' && input.renewal_cents !== 0) errors.push('renewal_cents: must be 0 when covers')
   else if (input.state !== undefined && input.state !== 'covers' && input.renewal_cents === 0) errors.push('renewal_cents: must be > 0')
   if (input.current_plan !== undefined && !currentOk) errors.push('current_plan: unknown plan')
