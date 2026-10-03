@@ -61,6 +61,14 @@
       ],
       "default": "full",
       "description": "Layout cover only. full: the image runs the full window width. content: the cover sits in the reading column, as a WordPress cover block that is not alignfull does under the page title."
+    },
+    "headingScale": {
+      "options": [
+        "default",
+        "theme"
+      ],
+      "default": "default",
+      "description": "default: the layout's own type scale. theme: the heading takes the site's size for its level (`--text-heading-1` for the page-opening hero, `-2` otherwise), as the source's own h1 does under a block theme."
     }
   },
   "props": {
@@ -161,16 +169,11 @@
       "description": "Anchor id of the section; the heading gets `<id>-title`."
     },
     "minHeight": {
-      "type": "string",
-      "default": "",
+      "type": "integer",
       "content": false,
-      "description": "Layout cover only: the cover's own height as the source sets it (a CSS size such as 520px or 60vh); empty, the layout's default. Anything that is not a plain size is ignored."
-    },
-    "headingSize": {
-      "type": "string",
-      "default": "",
-      "content": false,
-      "description": "The heading's size as the source sets it (a CSS size such as 58px or clamp(2.15rem, 4vw, 3.6rem), line height 1.2); empty, the layout's own type scale. Anything that is not a plain size is ignored."
+      "min": 100,
+      "max": 2000,
+      "description": "Layout cover only: the cover's own height in pixels, as the source sets it (520); absent, the layout's default."
     }
   },
   "slots": {},
