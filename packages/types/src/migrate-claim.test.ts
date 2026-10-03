@@ -333,6 +333,30 @@ describe('validateMigrateProvisionResponse', () => {
     ]) expect(check({ checkout_url: bad }), bad).toEqual({ ok: false, errors: ['checkout_url: not a Polar checkout address'] })
   })
 
+  it('accepts a covered order as a redeemed answer with the workspace and no checkout', () => {
+    const covered = { grant_id: 'g_1', state: 'redeemed', plan: 'pro', workspace_slug: 'acme' }
+    expect(validateMigrateProvisionResponse(covered, { quoted_total_cents: 20_000, now: NOW })).toEqual({ ok: true, response: covered })
+  })
+
+  it('refuses a covered answer that names no workspace, or still carries a checkout, amount or expiry', () => {
+    const covered = { grant_id: 'g_1', state: 'redeemed', plan: 'pro', workspace_slug: 'acme' }
+    const run = (over: Record<string, unknown>) => validateMigrateProvisionResponse({ ...covered, ...over }, { quoted_total_cents: 20_000, now: NOW })
+    expect(run({ workspace_slug: undefined })).toEqual({ ok: false, errors: ['workspace_slug: required when the plan covers the order'] })
+    expect(run({ checkout_url: 'https://polar.sh/checkout/x' })).toEqual({ ok: false, errors: ['checkout_url: not allowed when the plan covers the order'] })
+    expect(run({ amount_cents: 20_000 })).toEqual({ ok: false, errors: ['amount_cents: not allowed when the plan covers the order'] })
+    expect(run({ checkout_expires_at: NOW + 60 })).toEqual({ ok: false, errors: ['checkout_expires_at: not allowed when the plan covers the order'] })
+  })
+
+  it('still requires a checkout, the amount and the expiry for every state that is not redeemed', () => {
+    for (const state of ['claimed', 'bound']) {
+      const answer = { grant_id: 'g_1', state, plan: 'pro' }
+      expect(validateMigrateProvisionResponse(answer, { quoted_total_cents: 29_900, now: NOW })).toEqual({
+        ok: false,
+        errors: ['checkout_url: not a Polar checkout address', 'amount_cents: invalid', 'checkout_expires_at: invalid'],
+      })
+    }
+  })
+
   it('refuses another amount than the quote, a missing quote, and an expired checkout', () => {
     expect(check({ amount_cents: 100 })).toEqual({ ok: false, errors: ['amount_cents: not the quoted total'] })
     expect(check({ amount_cents: 0 })).toEqual({ ok: false, errors: ['amount_cents: invalid'] })
