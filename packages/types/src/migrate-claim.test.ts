@@ -13,6 +13,8 @@ import {
   validateMigrateInstallUrlRequest,
   validateMigrateInstallUrlResponse,
   validateMigrateProvisionResponse,
+  validateMigrateRevokeRequest,
+  validateMigrateRevokeResponse,
   validateMigrateStudioClaim,
   validateMigrateStudioClaimAny,
   validateMigrateStudioClaimV2,
@@ -344,5 +346,29 @@ describe('validateMigrateProvisionResponse', () => {
     expect(check({ plan: 'max' })).toEqual({ ok: false, errors: ['plan: unknown plan'] })
     expect(check({ workspace_slug: 'Bad Slug' })).toEqual({ ok: false, errors: ['workspace_slug: invalid'] })
     expect(validateMigrateProvisionResponse('x', { quoted_total_cents: 1 })).toEqual({ ok: false, errors: ['payload: not an object'] })
+  })
+})
+
+describe('revoke request and response', () => {
+  const req = (o: Record<string, unknown> = {}) => ({
+    iss: MIGRATE_STUDIO_CLAIM_ISSUER, aud: MIGRATE_STUDIO_CLAIM_AUDIENCE, jti: 'j-3', iat: NOW, exp: NOW + 600, order_id: 'ord_123', reason: 'refund_before_delivery', ...o,
+  })
+
+  it('accepts a good request, and refuses a missing or unknown reason and every envelope fault', () => {
+    expect(validateMigrateRevokeRequest(req(), { now: NOW + 5 })).toEqual({ ok: true, request: req() })
+    for (const reason of ['refund_after_delivery', 'delivery_failed', 'ops'])
+      expect(validateMigrateRevokeRequest(req({ reason })).ok).toBe(true)
+    expect(validateMigrateRevokeRequest(req({ reason: 'because' }))).toEqual({ ok: false, errors: ['reason: unknown'] })
+    expect(validateMigrateRevokeRequest(req({ reason: undefined }))).toEqual({ ok: false, errors: ['reason: unknown'] })
+    expect(validateMigrateRevokeRequest(req({ jti: '', reason: 'x' }))).toEqual({ ok: false, errors: ['jti: required', 'reason: unknown'] })
+    expect(validateMigrateRevokeRequest(req(), { now: NOW + 5000 })).toEqual({ ok: false, errors: ['exp: expired'] })
+    expect(validateMigrateRevokeRequest('token')).toEqual({ ok: false, errors: ['payload: not an object', 'reason: unknown'] })
+  })
+
+  it('takes only a revoked answer with both flags', () => {
+    expect(validateMigrateRevokeResponse({ state: 'revoked', installed: true, subscription_canceled: false }).ok).toBe(true)
+    expect(validateMigrateRevokeResponse({ state: 'redeemed', installed: false, subscription_canceled: true })).toEqual({ ok: false, errors: ['state: must be revoked'] })
+    expect(validateMigrateRevokeResponse({ state: 'revoked' })).toEqual({ ok: false, errors: ['installed: required', 'subscription_canceled: required'] })
+    expect(validateMigrateRevokeResponse(null)).toEqual({ ok: false, errors: ['payload: not an object'] })
   })
 })
