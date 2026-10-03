@@ -44,7 +44,7 @@ interface Props {
   title?: string | undefined
   intro?: string | undefined
   items: Item[]
-  /** Heading level of the section title; card titles are one level below. */
+  /** Heading level of the section title; card titles are one level below, or at this level when there is no title. */
   headingLevel?: 2 | 3 | undefined
   columns?: '2' | '3' | '4' | undefined
   style?: 'plain' | 'bordered' | 'elevated' | undefined
@@ -57,7 +57,8 @@ const { list, card, media, title: cardTitle, text } = grid({ columns, style, ali
 // Accent backgrounds have the least contrast headroom: text on them is never dimmed.
 const dim = tone === 'accent' ? 'opacity-100' : undefined
 const Heading = `h${headingLevel}` as 'h2' | 'h3'
-const CardHeading = `h${headingLevel + 1}` as 'h3' | 'h4'
+// One level under the section title, or the title's level when there is none.
+const CardHeading = `h${title ? headingLevel + 1 : headingLevel}` as 'h2' | 'h3' | 'h4'
 const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : undefined
 ---
 <Section tone={tone} aria-labelledby={headingId}>

@@ -276,7 +276,7 @@
           "max": 3,
           "default": 2,
           "content": false,
-          "description": "Level of the section heading; card titles are one below."
+          "description": "Level of the section heading; card titles are one below, or at this level when there is no title."
         }
       },
       "slots": {},
@@ -1098,7 +1098,7 @@
           "divi/et_pb_blurb"
         ]
       },
-      "a11y": "A list; icons are decorative (aria-hidden), the title and text carry the meaning. The section is labelled by its heading.",
+      "a11y": "A list; icons are decorative (aria-hidden), the title and text carry the meaning. Each title is an <h3> under the section's <h2>, or an <h2> when the section has no heading (the list style's are plain text). The section is labelled by its heading.",
       "pattern": {
         "summary": "repeated icon + short title + line of text",
         "signals": [
@@ -2510,7 +2510,7 @@
           "divi/et_pb_pricing_tables"
         ]
       },
-      "a11y": "Plans are a <ul>; each name is an <h3>. A featured plan is marked by a text badge and a ring, not colour alone. Buttons are links with their own label.",
+      "a11y": "Plans are a <ul>; each name is an <h3> under the section's <h2>, or an <h2> when the section has no heading. A featured plan is marked by a text badge and a ring, not colour alone. Buttons are links with their own label.",
       "pattern": {
         "summary": "repeated plan units: name + price + feature list + button",
         "signals": [
@@ -3180,7 +3180,7 @@
           "divi/et_pb_blurb"
         ]
       },
-      "a11y": "Steps are an <ol>, so their order and count are announced; the visible numbers are CSS counters, not text. Each title is an <h3>. The section is labelled by its heading when it has one.",
+      "a11y": "Steps are an <ol>, so their order and count are announced; the visible numbers are CSS counters, not text. Each title is an <h3> under the section's <h2>, or an <h2> when the section has no heading. The section is labelled by its heading when it has one.",
       "pattern": {
         "summary": "ordered sequence: numbered title + short text units",
         "signals": [
@@ -3291,7 +3291,7 @@
           "classic/tabs"
         ]
       },
-      "a11y": "Zag.js tabs: role=tablist/tab/tabpanel with aria-selected, aria-controls and aria-labelledby; arrow keys (per orientation), Home and End move between tabs. Before the script runs every panel is visible with its own h3 title; after, the titles become screen-reader-only and the tabs label the panels.",
+      "a11y": "Zag.js tabs: role=tablist/tab/tabpanel with aria-selected, aria-controls and aria-labelledby; arrow keys (per orientation), Home and End move between tabs. Before the script runs every panel is visible with its own title (an h3 under the section's h2, an h2 when there is no heading); after, the titles become screen-reader-only and the tabs label the panels.",
       "files": [
         "Tabs.astro"
       ]
@@ -3408,7 +3408,7 @@
           "divi/et_pb_team_member"
         ]
       },
-      "a11y": "Members are a <ul>; each name is an <h3>, and a linked member's link text is the name. A portrait's text defaults to the name. The section is labelled by its heading when it has one.",
+      "a11y": "Members are a <ul>; each name is an <h3> under the section's <h2> (an <h2> when the section has no heading), and a linked member's link text is the name. A portrait's text defaults to the name. The section is labelled by its heading when it has one.",
       "pattern": {
         "summary": "repeated person units: portrait + name + role",
         "signals": [

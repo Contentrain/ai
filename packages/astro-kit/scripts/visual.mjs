@@ -10,6 +10,10 @@
 //    visual/<platform>/<id>/<fixture>-<width>.png (pixelmatch). Baselines are
 //    per platform because font rendering differs between macOS and Linux.
 //
+// 4. Checks every fixture's heading outline: it opens at the component's own
+//    level (`level` or `headingLevel`, else h2) or above, and never skips one
+//    on the way down (h2 → h4), with or without a section heading.
+//
 //   node scripts/visual.mjs                 compare (a missing baseline is written and reported)
 //   node scripts/visual.mjs --update        rewrite every baseline
 //   node scripts/visual.mjs --only hero     one component
@@ -111,6 +115,8 @@ const server = createServer((req, res) => {
 await new Promise(done => server.listen(0, done))
 const origin = `http://localhost:${server.address().port}`
 
+const fixturesOf = new Map(components.map(c => [c.id, new Map(JSON.parse(readFileSync(join(kitRoot, 'components', c.id, 'fixtures.json'), 'utf8')).map(f => [f.name, f.props]))]))
+const outline = []
 const browser = await chromium.launch(process.platform === 'darwin' ? { channel: 'chrome' } : {})
 const failures = []
 const written = []
@@ -127,6 +133,13 @@ try {
       await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 300)))))
       for (const element of await page.locator('[data-fixture]').all()) {
         const name = await element.getAttribute('data-fixture')
+        if (width === WIDTHS[0]) {
+          const levels = await element.evaluate(el => [...el.querySelectorAll('h1, h2, h3, h4, h5, h6')].map(h => Number(h.tagName[1])))
+          const props = fixturesOf.get(c.id).get(name) ?? {}
+          const opens = Number(props.level ?? props.headingLevel ?? 2)
+          const skip = levels.findIndex((level, i) => level > (i === 0 ? opens : levels[i - 1] + 1))
+          if (skip >= 0) outline.push(`${c.id}/${name}: h${levels.join(' h')} (${skip === 0 ? `opens below h${opens}` : `h${levels[skip - 1]} → h${levels[skip]}`})`)
+        }
         const shot = PNG.sync.read(await element.screenshot({ animations: 'disabled' }))
         const file = join(baselineDir, c.id, `${name}-${width}.png`)
         if (values.update || !existsSync(file)) {
@@ -157,10 +170,12 @@ try {
   server.close()
 }
 
+if (outline.length) console.error(`visual: ${outline.length} fixture(s) skip a heading level:\n${outline.map(line => `  ✗ ${line}`).join('\n')}`)
 if (written.length) console.log(`visual: wrote ${written.length} baseline(s) under ${baselineDir}`)
 if (failures.length) {
   console.error(`visual: ${failures.length} fixture(s) changed:\n${failures.map(line => `  ✗ ${line}`).join('\n')}`)
   process.exit(1)
 }
+if (outline.length) process.exit(1)
 console.log(`visual: ${components.length} component(s) × ${WIDTHS.length} widths match`)
 if (!values.out) rmSync(site, { recursive: true, force: true })

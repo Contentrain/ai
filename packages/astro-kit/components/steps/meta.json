@@ -97,7 +97,7 @@
       "divi/et_pb_blurb"
     ]
   },
-  "a11y": "Steps are an <ol>, so their order and count are announced; the visible numbers are CSS counters, not text. Each title is an <h3>. The section is labelled by its heading when it has one.",
+  "a11y": "Steps are an <ol>, so their order and count are announced; the visible numbers are CSS counters, not text. Each title is an <h3> under the section's <h2>, or an <h2> when the section has no heading. The section is labelled by its heading when it has one.",
   "pattern": {
     "summary": "ordered sequence: numbered title + short text units",
     "signals": [
