@@ -167,5 +167,29 @@
       "level": 2,
       "actionsAlign": "start"
     }
+  },
+  {
+    "name": "cover-content-theme-size",
+    "props": {
+      "heading": "Independent cinema, a neighbourhood hall",
+      "lead": "A hundred and twenty seats, fresh popcorn.",
+      "layout": "cover",
+      "actions": [
+        {
+          "label": "This week's programme",
+          "href": "/programme/"
+        }
+      ],
+      "image": {
+        "src": "/kit-fixtures/photo-1.svg",
+        "alt": "",
+        "width": 1600,
+        "height": 900
+      },
+      "width": "content",
+      "level": 2,
+      "minHeight": 520,
+      "headingScale": "theme"
+    }
   }
 ]

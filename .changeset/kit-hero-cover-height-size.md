@@ -2,4 +2,4 @@
 '@contentrain/astro-kit': minor
 ---
 
-Hero takes the source's own cover height and heading size. `minHeight` (a cover's height as the source sets it, `520px`, `60vh`) and `headingSize` (`58px`, `clamp(2.15rem, 4vw, 3.6rem)`, with a 1.2 line height) are non-content props: a migration reads them from the source's computed styles, so a cover is as tall and its heading as large as the original's. Only a plain CSS size reaches the style attribute; anything else is ignored. Unset, the layout's own heights and type scale are unchanged.
+Hero takes the source's own cover height and heading size. `minHeight` (a cover's height in pixels as the source sets it, `520`; a number, so a plan can bind it) and the `headingScale` variant (`theme`: the heading takes the site's size for its level, `--text-heading-1` for the page-opening hero, as the source's own `h1` does under a block theme). Unset, the layout's own heights and type scale are unchanged.
