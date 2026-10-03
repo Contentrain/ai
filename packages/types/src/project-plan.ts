@@ -157,6 +157,10 @@ export interface PlanSite {
    * footer is the brand left and two menus on the right, not a grid spread from the centre): `gap` px between the
    * columns, the links `size` px, and `narrowGap` px when the columns stay side by side below 768 (absent: they stack).
    * Absent, the starter's own: the columns share the footer's width.
+   * `header`: what the source's header does differently from the starter's, each key only where it does (computed styles):
+   * `border: false` draws no line under the bar; `brandWeight` and `brandTracking` set the site name's weight and
+   * letter-spacing; `offsetTop` is the space above the bar and `padTop`/`padBottom` the space inside it above and below
+   * its content (CSS lengths, a fluid theme's as a `clamp()`). A key absent: the starter's own.
    */
   chrome?: {
     brand?: string
@@ -170,6 +174,7 @@ export interface PlanSite {
     postFrame?: ChromeFrameStep[]
     listColumns?: ChromeColumnStep[]
     footerColumns?: { gap: number, size?: number, narrowGap?: number }
+    header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string }
   }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
@@ -450,6 +455,9 @@ export function footerMenusOf(site: Pick<PlanSite, 'menus'>): string[] {
   return [...footer]
 }
 
+/** A letter-spacing the starter writes into a style: `normal`, or a signed length. */
+const LETTER_SPACING = /^(?:normal|-?\d+(?:\.\d+)?(?:px|rem|em))$/
+
 /** A font size the starter writes into a style: a length, or a `clamp()`/`calc()`/`min()`/`max()` of lengths (a theme's fluid size). */
 const CSS_LENGTH = /^(?!.*url\()(?:\d+(?:\.\d+)?(?:px|rem|em|%)|(?:clamp|calc|min|max)\([\d\s.,+*/()a-z%-]+\))$/
 
@@ -519,6 +527,18 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   if (chrome?.tagline !== undefined && typeof chrome.tagline !== 'boolean') errors.push('site.chrome.tagline is not a boolean')
   if (chrome?.titleLinks !== undefined && typeof chrome.titleLinks !== 'boolean') errors.push('site.chrome.titleLinks is not a boolean')
   if (chrome?.navLinks !== undefined && typeof chrome.navLinks !== 'boolean') errors.push('site.chrome.navLinks is not a boolean')
+  const header = chrome?.header
+  if (header !== undefined) {
+    if (header === null || typeof header !== 'object' || Array.isArray(header)) errors.push('site.chrome.header is not an object')
+    else {
+      if (header.border !== undefined && header.border !== false) errors.push('site.chrome.header.border is not false')
+      if (header.brandWeight !== undefined && !/^[1-9]00$/.test(header.brandWeight)) errors.push(`site.chrome.header.brandWeight ${header.brandWeight} is not a font weight`)
+      if (header.brandTracking !== undefined && !LETTER_SPACING.test(header.brandTracking)) errors.push(`site.chrome.header.brandTracking ${header.brandTracking} is not a letter spacing`)
+      for (const key of ['offsetTop', 'padTop', 'padBottom'] as const) {
+        if (header[key] !== undefined && !CSS_LENGTH.test(header[key]!)) errors.push(`site.chrome.header.${key} ${header[key]} is not a CSS size`)
+      }
+    }
+  }
   if (chrome?.footerAlign !== undefined && !['start', 'center'].includes(chrome.footerAlign)) errors.push(`site.chrome.footerAlign ${chrome.footerAlign} is not start or center`)
   for (const key of ['frame', 'listFrame', 'postFrame'] as const) {
     const steps = chrome?.[key]
