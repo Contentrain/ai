@@ -305,6 +305,21 @@ describe('section rules', () => {
       expect(classify([1, 2].map(i => [g(`0.${i}.0`, 'core/heading'), g(`0.${i}.1`, 'core/paragraph'), g(`0.${i}.2`, 'core/paragraph'), g(`0.${i}.3`, 'core/list')]), { root: 'core/group' })?.rule.id).not.toBe('pricing.columns')
     })
 
+    it('a first section of one column with a picture under its text is the centred hero with its image (acf home)', () => {
+      const text = [g('0.0', 'core/heading'), g('0.1', 'core/paragraph')]
+      const pictured = classify([[...text, g('0.2', 'core/image'), g('0.3', 'core/button')]], { index: 0, root: 'core/group' })
+      expect(pictured?.rule.id).toBe('hero.centered')
+      expect(pictured?.match.slots).toEqual({ title: ['0.0'], lead: ['0.1'], button: ['0.3'], media: ['0.2'] })
+      expect(pictured?.rule.props).toMatchObject({ image: '@media img:img' })
+      // Without a picture the same hero, the same leaves: the media slot stays empty.
+      const plain = classify([[...text, g('0.2', 'core/button')]], { index: 0, root: 'core/group' })
+      expect(plain?.rule.id).toBe('hero.centered')
+      expect(plain?.match.slots).toEqual({ title: ['0.0'], lead: ['0.1'], button: ['0.2'], media: [] })
+      // The centred hero prints its image under the text: a picture above the heading is not it, nor are two pictures.
+      expect(classify([[g('0.0', 'core/image'), ...text.map((l, i) => ({ ...l, path: `0.${i + 1}` }))]], { index: 0, root: 'core/group' })?.rule.id).not.toBe('hero.centered')
+      expect(classify([[...text, g('0.2', 'core/image'), g('0.3', 'core/image')]], { index: 0, root: 'core/group' })?.rule.id).not.toBe('hero.centered')
+    })
+
     it('a heading and four or more logo-sized pictures and nothing else are logos', () => {
       const logos = [g('0.0', 'core/heading'), ...[1, 2, 3, 4, 5].map(i => g(`0.${i}`, 'core/image', { small: true }))]
       expect(classify([logos], { root: 'core/group' })?.rule.id).toBe('logo-cloud.images')
