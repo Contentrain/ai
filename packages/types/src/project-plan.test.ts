@@ -196,6 +196,9 @@ describe('validateProjectPlan', () => {
     expect(validateProjectPlan(p).errors).toEqual([])
     p.site.lists = { display: 'list', heading: false }
     expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.lists = { display: 'cards', heading: false, surface: true, byline: true }
+    p.site.tokens.roles = { 'color-page': 'rgb(240, 245, 250)', 'color-card': 'rgb(255, 255, 255)', 'shadow-card': 'rgba(16, 24, 40, 0.05) 0px 6px 15px -2px', 'spacing-card': '24px' }
+    expect(validateProjectPlan(p).errors).toEqual([])
     p.site.post = { header: ['title', 'title'], adjacent: false, more: 30 }
     p.site.lists = { display: 'grid' as 'cards', heading: false }
     expect(validateProjectPlan(p).errors).toEqual([

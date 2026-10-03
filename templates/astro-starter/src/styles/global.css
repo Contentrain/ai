@@ -11,6 +11,9 @@
 @theme {
   /* Color roles. Components use roles, never raw palette values. */
   --color-surface: #ffffff;
+  /* The page behind the content and a card on it: both the surface unless the source's theme tints one. */
+  --color-page: var(--color-surface);
+  --color-card: var(--color-surface);
   --color-surface-muted: #f6f7f9;
   --color-ink: #111827;
   --color-ink-muted: #4b5563;
@@ -29,6 +32,8 @@
   --container-wide: 64rem;
 
   --radius-card: 0.75rem;
+  --shadow-card: none;
+  --spacing-card: 1.5rem;
 }
 
 /*

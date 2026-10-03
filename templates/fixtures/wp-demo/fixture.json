@@ -10,6 +10,10 @@
     {
       "from": "  sourceHosts: [],",
       "to": "  types: [{\n    collection: 'project',\n    single: '/projects/:slug/',\n    archive: { pattern: '/projects/', title: 'Projects' },\n    taxonomies: [{ collection: 'projectType', pattern: '/project-type/:slug/', field: 'project-type', title: 'Project type' }],\n    card: { title: 'title', excerpt: 'summary', image: 'cover', date: 'published_at' },\n    body: 'body',\n    adjacent: true,\n    more: 2,\n    fields: [\n      { name: 'client', label: 'Client', type: 'string' },\n      { name: 'website', label: 'Website', type: 'url' },\n      { name: 'contact_email', label: 'Contact email', type: 'email' },\n      { name: 'launch_date', label: 'Launch date', type: 'date' },\n      { name: 'featured', label: 'Featured project', type: 'boolean' },\n      { name: 'platforms', label: 'Platforms', type: 'array', of: 'string' },\n      { name: 'location', label: 'Location', type: 'object', fields: [{ name: 'address', label: 'Address', type: 'text' }, { name: 'city', label: 'City', type: 'string' }] },\n      { name: 'milestones', label: 'Milestones', type: 'array', fields: [{ name: 'date', label: 'Date', type: 'date' }, { name: 'name', label: 'Name', type: 'string' }] },\n      { name: 'project-type', label: 'Project type', type: 'relations', collection: 'projectType' },\n    ],\n  }],\n  sourceHosts: [],"
+    },
+    {
+      "from": "  lists: { display: 'cards', heading: false },",
+      "to": "  lists: { display: 'cards', heading: false, surface: true, byline: true },"
     }
   ],
   "absentFromDist": [
@@ -94,7 +98,9 @@
    "<address",
         "tel:+441170000000",
         "12 Harbour Road",
-        "https://www.linkedin.com/company/northwind-studio\" rel=\"me noopener\""
+        "https://www.linkedin.com/company/northwind-studio\" rel=\"me noopener\"",
+        "bg-card",
+        "aria-hidden=\"true\">/</span>"
       ],
       "excludes": [
         "Sidebar only link"

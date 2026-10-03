@@ -92,8 +92,10 @@ export interface SiteConfig {
    * loop that shows the post content does; `heading` shows the index's title on the front page too.
    * `text`: the size of each post's content in a full list, when the source's loop sets its own.
    * `tone`: `muted` when the source's loop sets the muted text colour on the list itself; titles keep their own colour.
+   * `surface`: a card is a surface of its own (`--color-card`, `--shadow-card`, `--spacing-card`) on a page that may be
+   * tinted (`--color-page`). `byline`: the category above the title, `author / date` under it.
    */
-  lists: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted' }
+  lists: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean }
   /**
    * The header and footer as the source's theme prints them; absent, the starter's own. `brand`:
    * the site title's size in the header. `tagline`: the header shows the tagline under the title.

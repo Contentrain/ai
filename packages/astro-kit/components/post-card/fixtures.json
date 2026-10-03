@@ -50,5 +50,28 @@
         "href": "/category/news/"
       }
     }
+  },
+  {
+    "name": "card-byline",
+    "props": {
+      "surface": "card",
+      "byline": "below",
+      "title": "Laminating dough without a sheeter",
+      "href": "/recipes/laminating/",
+      "excerpt": "Laminating dough without a sheeter — the short version first.",
+      "date": "2026-02-10T09:00:00Z",
+      "category": {
+        "label": "Recipes",
+        "href": "/category/recipes/"
+      },
+      "author": "admin",
+      "image": {
+        "src": "/kit-fixtures/photo-1.svg",
+        "alt": "",
+        "width": 1200,
+        "height": 800
+      }
+    },
+    "frame": "narrow"
   }
 ]

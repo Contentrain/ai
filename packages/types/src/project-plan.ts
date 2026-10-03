@@ -32,6 +32,9 @@ export const PLAN_TOKEN_ROLES = [
   'text-nav', 'text-footer', 'text-heading-1', 'text-heading-2', 'text-heading-3', 'spacing-section',
   // The source's link colour where it is not the accent (Hello Elementor: #c36 links, a grey button). Absent: the accent.
   'color-link',
+  // The page behind the content and the card on it, where the source tints one and floats the other (Astra: a blue-grey
+  // page, white shadowed cards). Absent: both are the surface. `shadow-card` is a box-shadow, `spacing-card` the card's padding.
+  'color-page', 'color-card', 'shadow-card', 'spacing-card',
 ] as const
 export type PlanTokenRole = (typeof PLAN_TOKEN_ROLES)[number]
 
@@ -105,8 +108,10 @@ export interface PlanSite {
    * (Twenty Twenty-Five: `has-medium-font-size` on the query's post content); absent, the body size.
    * `tone`: `muted` when the source's query loop sets its own text colour to the theme's muted one (its titles
    * carry their own colour, so only the meta text follows); absent, the body colour.
+   * `surface`: cards are floating cards (the `color-card`, `radius-card`, `shadow-card` and `spacing-card` roles), not
+   * bare. `byline`: each card prints its author and date below the title, the category above it, as the source's do.
    */
-  lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted' }
+  lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean }
   /**
    * What the source's own page for a custom post type showed, by the type's single route id (`type-project`):
    * `adjacent` = links to the previous and next entry under it. The starter's entry view prints them for that
