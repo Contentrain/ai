@@ -556,6 +556,17 @@ describe('@contentrain/types', () => {
       expect(LOCALE_PATTERN.test('english')).toBe(false)
     })
 
+    it('slugs keep their script: any language\'s lowercase letters and digits, marks included; ASCII unchanged', () => {
+      for (const slug of ['hello-world', 'a1', '日本語', '東京-タワー', 'مرحبا-بالعالم', 'ışık-var', 'straße', 'über-uns', 'हिन्दी', 'ไทย-ภาษา', 'привет-мир', 'καλημέρα', 'post-12'])
+        expect(validateSlug(slug), slug).toBeNull()
+      for (const slug of ['', 'Hello', 'a--b', '-a', 'a-', 'a b', 'a/b', 'a.b', '../x', 'a%20b', 'a_b', 'İstanbul', 'x\u200By', 'cafe\u0301'.normalize('NFD') + '-é'.normalize('NFD')])
+        expect(validateSlug(slug), slug).not.toBeNull()
+      // NFD of a precomposed letter is the same address spelled differently: refused, the NFC spelling is the slug.
+      expect(validateSlug('caf\u0065\u0301')).toMatch(/NFC/)
+      expect(validateSlug('caf\u00e9')).toBeNull()
+      expect(validateSlug('あ'.repeat(70))).toMatch(/200 bytes/)
+    })
+
     it('CANONICAL_JSON has serialization rules', () => {
       expect(CANONICAL_JSON.indent).toBe(2)
       expect(CANONICAL_JSON.trailingNewline).toBe(true)

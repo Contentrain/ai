@@ -99,6 +99,22 @@ export const slugify = (s: unknown): string =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 
+/**
+ * A WordPress `post_name` as the address it is: percent-encoded UTF-8 decoded, NFC, lowercase, anything outside letters,
+ * digits and marks (the contract's slug alphabet) a hyphen. Nothing is transliterated: `日本語`, `ışık` and `straße`
+ * stay what the source site served, because the slug is the page's address. ASCII comes out exactly as `slugify`
+ * gives it. Empty when nothing of a word is left, or when the slug would not fit a file name (200 bytes).
+ */
+export const addressSlug = (raw: string): string => {
+  const slug = decodeSlug(raw)
+    .normalize('NFC')
+    .toLowerCase()
+    .normalize('NFC')
+    .replace(/[^\p{Ll}\p{Lo}\p{Lm}\p{N}\p{M}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+  return new TextEncoder().encode(slug).length > 200 ? '' : slug
+}
+
 export const decodeSlug = (s: string): string => {
   try {
     return decodeURIComponent(s)

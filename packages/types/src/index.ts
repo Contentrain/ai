@@ -397,8 +397,13 @@ export function isReservedPath(path: string): boolean {
 
 // ─── Validation Patterns ───
 
-/** Slug: lowercase alphanumeric with hyphens */
-export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+/**
+ * Slug: lowercase letters and digits of any script, joined by single hyphens. A letter's combining marks belong to
+ * it (Hindi, Thai and Arabic words carry them), so `\p{M}` is part of a word. ASCII slugs are exactly what they were;
+ * `validateSlug` also requires NFC, so one address has one spelling. A slug is the address of a page: it is kept as
+ * the source wrote it, not transliterated.
+ */
+export const SLUG_PATTERN = /^[\p{Ll}\p{Lo}\p{Lm}\p{N}\p{M}]+(?:-[\p{Ll}\p{Lo}\p{Lm}\p{N}\p{M}]+)*$/u
 /** Entry ID: alphanumeric, 1-40 chars, starts with alphanumeric */
 export const ENTRY_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,39}$/
 /** Locale: ISO 639-1 with optional region code */
@@ -664,7 +669,10 @@ export const SECRET_PATTERNS: ReadonlyArray<RegExp> = [
 /** Validate a slug — returns error message or null if valid */
 export function validateSlug(slug: string): string | null {
   if (!slug) return 'Slug is required'
-  if (!SLUG_PATTERN.test(slug)) return `Invalid slug "${slug}": must be kebab-case alphanumeric (a-z, 0-9, hyphens)`
+  if (!SLUG_PATTERN.test(slug)) return `Invalid slug "${slug}": must be kebab-case letters and digits (lowercase, hyphens between words)`
+  if (slug !== slug.normalize('NFC')) return `Invalid slug "${slug}": must be Unicode NFC`
+  // A slug is also a file name (`<slug>.md`): keep it within what file systems take (255 bytes, with the extension).
+  if (new TextEncoder().encode(slug).length > 200) return `Invalid slug "${slug}": longer than 200 bytes`
   if (slug.startsWith('.') || slug.includes('..')) return `Invalid slug "${slug}": path traversal not allowed`
   return null
 }
