@@ -435,7 +435,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
   const mediaSlugs = new Set<string>()
   for (const a of raw.attachments) {
     const id = hexId(`media:${a.id}`)
-    let slug = slugify(decodeSlug(a.slug)) || `media-${a.id}`
+    let slug = addressSlug(a.slug) || `media-${a.id}`
     if (mediaSlugs.has(slug)) slug = `${slug}-${a.id}`
     mediaSlugs.add(slug)
     const target = a.parent ? postEntry.get(a.parent) : undefined
@@ -628,7 +628,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       const mid = hexId(`menus:${m.slug}`)
       contents.menus![mid] = {
         name: strip(m.name),
-        slug: slugify(m.slug) || `menu-${m.id}`,
+        slug: addressSlug(m.slug) || `menu-${m.id}`,
         items: m.items.map((i) => itemRef(i.id)),
         // An inline navigation has no WordPress record (a negative placeholder): none is claimed.
         ...(m.id !== null && m.id > 0 ? { wp_id: m.id } : {}),
