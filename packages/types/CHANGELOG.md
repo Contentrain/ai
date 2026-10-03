@@ -1,5 +1,11 @@
 # @contentrain/types
 
+## 1.41.0
+
+### Minor Changes
+
+- 0fd08de: `site.post.adjacentText`: the size the post's previous/next links print at (a CSS size, validated like `moreText`: lengths and `clamp()`/`calc()`/`min()`/`max()` of lengths, never `url()`, because the value goes into a style attribute).
+
 ## 1.40.0
 
 ### Minor Changes
