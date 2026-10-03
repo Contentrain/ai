@@ -86,6 +86,8 @@ export interface SiteConfig {
   post: {
     header: ReadonlyArray<'terms' | 'title' | 'byline' | 'cover'>
     adjacent: boolean
+    /** The size the previous/next links print at (a CSS size), as the source's did; absent, the starter's own. */
+    adjacentText?: string
     more: number
     /** The list also shows the post being read, as the source's query did; absent, the post is left out. */
     moreIncludesCurrent?: boolean

@@ -102,7 +102,7 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
       </footer>
     )}
     {(previous || next) && (
-      <nav aria-label={t('post.adjacent')} data-cr-part="post-navigation" class="mt-12 flex flex-wrap justify-between gap-4 border-t border-line pt-6">
+      <nav aria-label={t('post.adjacent')} data-cr-part="post-navigation" class="mt-12 flex flex-wrap justify-between gap-4 border-t border-line pt-6" style={layout.adjacentText ? `font-size: ${layout.adjacentText}` : undefined}>
         {previous ? <a href={postHref(previous)} rel="prev" class="text-ink"><span aria-hidden="true" class="inline-block rtl:-scale-x-100">←</span> {previous.data.title}</a> : <span />}
         {next && <a href={postHref(next)} rel="next" class="text-ink">{next.data.title} <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
       </nav>
