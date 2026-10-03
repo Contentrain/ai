@@ -38,6 +38,14 @@
       ],
       "default": "auto",
       "description": "The quote's text size. auto: the layout's own (body size in a grid, 2xl–3xl for a single quote). base, lg, xl: that size on every width."
+    },
+    "frame": {
+      "options": [
+        "card",
+        "plain"
+      ],
+      "default": "card",
+      "description": "card: each quote in its box (a bordered, padded card in the grid; the surface colour in a muted section). plain: the quote and who said it straight on the section, across the column, with no box, as Elementor's testimonial widget draws them."
     }
   },
   "props": {

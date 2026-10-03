@@ -39,11 +39,15 @@ const testimonial = tv({
       lg: { quote: 'text-lg leading-relaxed md:text-lg' },
       xl: { quote: 'text-xl leading-snug md:text-xl' },
     },
+    // card: a quote in its box (the grid's border and padding, a muted section's surface). plain: the quote and who said
+    // it on the section itself, across the column, as Elementor's testimonial widget draws them.
+    frame: { card: {}, plain: {} },
   },
   compoundVariants: [
     { layout: 'grid', tone: 'muted', class: { card: 'border-transparent text-ink' } },
+    { frame: 'plain', class: { card: 'rounded-none border-0 bg-transparent p-0' } },
   ],
-  defaultVariants: { layout: 'grid', tone: 'default', quoteSize: 'auto' },
+  defaultVariants: { layout: 'grid', tone: 'default', quoteSize: 'auto', frame: 'card' },
 })
 
 interface Props {
@@ -51,12 +55,13 @@ interface Props {
   heading?: string | undefined
   layout?: 'single' | 'grid' | undefined
   quoteSize?: 'auto' | 'base' | 'lg' | 'xl' | undefined
+  frame?: 'card' | 'plain' | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   id?: string | undefined
 }
 
-const { items, heading, layout, quoteSize, tone, id } = Astro.props
-const s = testimonial({ layout, quoteSize, tone })
+const { items, heading, layout, quoteSize, frame, tone, id } = Astro.props
+const s = testimonial({ layout, quoteSize, frame, tone })
 const headingId = heading && id ? `${id}-title` : undefined
 // Two quotes share the row: a third column would stand empty beside them and narrow both (IP-4 elementor launch G9).
 const list = s.list(items.length === 2 && (layout ?? 'grid') === 'grid' ? { class: 'lg:grid-cols-2' } : {})
