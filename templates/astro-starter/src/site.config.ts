@@ -42,6 +42,8 @@ export interface CustomType {
   more?: number
   /** The list also shows the entry being read, as the source's query did; absent, the entry is left out. */
   moreIncludesCurrent?: boolean
+  /** The size the list prints its titles at (a CSS size), as the source's did; absent, the starter's own. */
+  moreText?: string
   fields: readonly CustomField[]
 }
 
@@ -85,6 +87,8 @@ export interface SiteConfig {
     more: number
     /** The list also shows the post being read, as the source's query did; absent, the post is left out. */
     moreIncludesCurrent?: boolean
+    /** The size the list prints its titles at (a CSS size), as the source's did; absent, the starter's own. */
+    moreText?: string
   }
   /**
    * Post lists (the blog index and archives): cards in a grid, cards in one column (`list`, as themes

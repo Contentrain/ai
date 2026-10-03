@@ -78,7 +78,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
           const date = dateOf(other.data[type.card.date ?? 'published_at'])
           return (
             <li class="flex flex-wrap items-baseline justify-between gap-2 border-b border-line py-3">
-              <a href={entryHref(type, other)} class="text-lg text-ink no-underline hover:underline">{entryTitle(type, other)}</a>
+              <a href={entryHref(type, other)} class="text-lg text-ink no-underline hover:underline" style={type.moreText ? `font-size: ${type.moreText}` : undefined}>{entryTitle(type, other)}</a>
               {date && <time datetime={date.toISOString()} class="text-sm text-ink-muted">{formatDate(date)}</time>}
             </li>
           )
