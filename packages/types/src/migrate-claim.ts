@@ -504,7 +504,8 @@ export const MIGRATE_GRANT_STATES = ['claimed', 'bound', 'redeemed', 'revoked'] 
  * - `redeemed`: the subscription is running (trial or paid). Only now may the
  *   customer connect GitHub, or Studio could not open a project (402).
  * - `revoked`: the grant was withdrawn (by the founder, or after a refund).
- *   Never installed; Migrate shows it as "not ready", like an unknown state.
+ *   It may still be `installed` (withdrawn after the App was installed); Migrate
+ *   shows it as "not ready", like an unknown state.
  */
 export type MigrateGrantState = (typeof MIGRATE_GRANT_STATES)[number]
 
@@ -527,7 +528,7 @@ export type MigrateInstallUrlRequest = MigrateS2sEnvelope
 
 export interface MigrateGrantStatusResponse {
   state: MigrateGrantState
-  /** Studio's GitHub App is installed for the grant's workspace. Only possible once `redeemed`. */
+  /** Studio's GitHub App is installed for the grant's workspace. Only possible once `redeemed` (and after, if `revoked`). */
   installed: boolean
 }
 
@@ -580,7 +581,7 @@ export function validateMigrateInstallUrlRequest(input: unknown, options: { now?
   return checkS2sEnvelope(input, options)
 }
 
-/** Check Studio's status answer. `installed` without `redeemed` is refused: an install can only follow a running subscription. */
+/** Check Studio's status answer. `installed` is refused before `redeemed`: an install can only follow a running subscription (a `revoked` grant may keep an install made earlier). */
 export function validateMigrateGrantStatusResponse(input: unknown):
   | { ok: true, response: MigrateGrantStatusResponse }
   | { ok: false, errors: string[] } {
@@ -588,7 +589,7 @@ export function validateMigrateGrantStatusResponse(input: unknown):
   const errors: string[] = []
   if (!(MIGRATE_GRANT_STATES as readonly unknown[]).includes(input.state)) errors.push('state: unknown')
   if (typeof input.installed !== 'boolean') errors.push('installed: required')
-  else if (input.installed && input.state !== 'redeemed') errors.push('installed: only once redeemed')
+  else if (input.installed && input.state !== 'redeemed' && input.state !== 'revoked') errors.push('installed: only once redeemed')
   return errors.length === 0 ? { ok: true, response: input as unknown as MigrateGrantStatusResponse } : { ok: false, errors }
 }
 
