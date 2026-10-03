@@ -99,11 +99,11 @@ export interface PlanSite {
    * A single post as the source's single template lays it out: the header parts in their order, links
    * to the previous and next post (`core/post-navigation-link`), and how many other posts a list under
    * it shows (a `core/query` after the content; 0 for none). `moreIncludesCurrent`: that list also shows the post
-   * being read, as the source's query does (it does not exclude the current post); absent, the post is left out. `moreText`: the size that list prints its
+   * being read, as the source's query does (it does not exclude the current post); absent, the post is left out. `adjacentText`: the size the previous/next links print at (a CSS size: the theme's preset on `core/post-navigation-link`); absent, the starter's own. `moreText`: the size that list prints its
    * titles at (a CSS size: the theme's `large` preset on `core/post-title`); absent, the starter's own.
    * Absent: the starter's own layout.
    */
-  post?: { header: Array<'terms' | 'title' | 'byline' | 'cover'>, adjacent: boolean, more: number, moreIncludesCurrent?: boolean, moreText?: string }
+  post?: { header: Array<'terms' | 'title' | 'byline' | 'cover'>, adjacent: boolean, adjacentText?: string, more: number, moreIncludesCurrent?: boolean, moreText?: string }
   /**
    * Post lists (blog index, archives): `cards`, or `full` when the source's query loop shows each post's
    * content; `list` is cards in one column, as themes whose archive is a single stack of posts show
@@ -492,6 +492,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (parts.some(part => !['terms', 'title', 'byline', 'cover'].includes(part)) || new Set(parts).size !== parts.length) errors.push('site.post.header lists a part twice or one the starter does not have')
     if (!Number.isSafeInteger(site.post.more) || site.post.more < 0 || site.post.more > 20) errors.push('site.post.more is not a count from 0 to 20')
     if (site.post.moreIncludesCurrent !== undefined && typeof site.post.moreIncludesCurrent !== 'boolean') errors.push('site.post.moreIncludesCurrent is not true or false')
+    if (site.post.adjacentText !== undefined && !CSS_LENGTH.test(site.post.adjacentText)) errors.push(`site.post.adjacentText ${site.post.adjacentText} is not a CSS size`)
     if (site.post.moreText !== undefined && !CSS_LENGTH.test(site.post.moreText)) errors.push(`site.post.moreText ${site.post.moreText} is not a CSS size`)
   }
   for (const [key, value] of Object.entries(site?.uiStrings ?? {})) {
