@@ -12,6 +12,7 @@ import {
   validateMigrateGrantStatusResponse,
   validateMigrateInstallUrlRequest,
   validateMigrateInstallUrlResponse,
+  validateMigrateProvisionResponse,
   validateMigrateStudioClaim,
   validateMigrateStudioClaimAny,
   validateMigrateStudioClaimV2,
@@ -295,5 +296,40 @@ describe('validateMigrateInstallUrlResponse', () => {
     ]) expect(validateMigrateInstallUrlResponse({ url: bad, expires_at: NOW + 600 }), bad).toEqual({ ok: false, errors: ['url: not a GitHub App install address'] })
     expect(validateMigrateInstallUrlResponse({ url, expires_at: NOW - 1 }, { now: NOW })).toEqual({ ok: false, errors: ['expires_at: expired'] })
     expect(validateMigrateInstallUrlResponse({ url })).toEqual({ ok: false, errors: ['expires_at: invalid'] })
+  })
+})
+
+describe('validateMigrateProvisionResponse', () => {
+  const ok = { grant_id: 'g_1', state: 'claimed', plan: 'pro', checkout_url: 'https://sandbox.polar.sh/checkout/polar_c_abc', amount_cents: 29_900, checkout_expires_at: NOW + 3600 }
+  const check = (over: Record<string, unknown> = {}, opts: { quoted_total_cents: number, now?: number } = { quoted_total_cents: 29_900, now: NOW }) =>
+    validateMigrateProvisionResponse({ ...ok, ...over }, opts)
+
+  it('accepts an answer that matches the quote and hands a browser only a Polar checkout', () => {
+    expect(check().ok).toBe(true)
+    expect(check({ workspace_slug: 'acme', state: 'bound', checkout_url: 'https://polar.sh/checkout/x' }).ok).toBe(true)
+    for (const bad of [
+      'http://polar.sh/checkout/x',
+      'https://polar.sh.evil.test/checkout/x',
+      'https://user:pw@polar.sh/checkout/x',
+      'https://polar.sh/login',
+      'https://polar.sh/checkout/x#frag',
+      'javascript:alert(1)',
+      'not a url',
+    ]) expect(check({ checkout_url: bad }), bad).toEqual({ ok: false, errors: ['checkout_url: not a Polar checkout address'] })
+  })
+
+  it('refuses another amount than the quote, a missing quote, and an expired checkout', () => {
+    expect(check({ amount_cents: 100 })).toEqual({ ok: false, errors: ['amount_cents: not the quoted total'] })
+    expect(check({ amount_cents: 0 })).toEqual({ ok: false, errors: ['amount_cents: invalid'] })
+    expect(check({}, { quoted_total_cents: Number.NaN, now: NOW })).toEqual({ ok: false, errors: ['amount_cents: not the quoted total'] })
+    expect(check({ checkout_expires_at: NOW - 1 })).toEqual({ ok: false, errors: ['checkout_expires_at: expired'] })
+  })
+
+  it('refuses unknown state or plan, a bad slug and a non-object', () => {
+    expect(check({ state: 'gone', plan: 'max', workspace_slug: 'Bad Slug', grant_id: '' }).ok).toBe(false)
+    expect(check({ state: 'gone' })).toEqual({ ok: false, errors: ['state: unknown'] })
+    expect(check({ plan: 'max' })).toEqual({ ok: false, errors: ['plan: unknown plan'] })
+    expect(check({ workspace_slug: 'Bad Slug' })).toEqual({ ok: false, errors: ['workspace_slug: invalid'] })
+    expect(validateMigrateProvisionResponse('x', { quoted_total_cents: 1 })).toEqual({ ok: false, errors: ['payload: not an object'] })
   })
 })

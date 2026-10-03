@@ -617,3 +617,65 @@ function isGithubInstallUrl(x: unknown): x is string {
   return url.protocol === 'https:' && url.hostname === 'github.com' && !url.port && !url.username && !url.password && !url.hash
     && /^\/apps\/[\w-]+\/installations\/new(\/permissions)?\/?$/.test(url.pathname)
 }
+
+// ─── Provision (Migrate with Studio: one checkout for the move and the Studio year) ───
+//
+// `POST /api/migrate/provision`. Migrate asks Studio, server to server, to set up the
+// customer's Studio side before they pay: find or create the user by GitHub id, record the
+// grant, and open ONE Polar checkout whose first invoice is the whole bundle
+// (`billing.quoted_total_cents`: Migrate fee + Studio year 1). The request is the signed
+// `MigrateStudioClaimV2` itself, POSTed as `{ token }` and single-use by `jti` under its own
+// purpose, so a provision token cannot also be replayed as a claim link. Studio recomputes the
+// Studio line (`MigrateAccountStateResponse`) and refuses a quote it does not agree with.
+// The customer then pays at `checkout_url`; Migrate learns of the payment from its own webhook.
+
+/** Studio's answer to a provision request. */
+export interface MigrateProvisionResponse {
+  /** The Studio grant for the order (one per order; a repeated provision returns the same one). */
+  grant_id: string
+  /** `claimed` on a fresh provision; a repeat may find the grant further along. */
+  state: MigrateGrantState
+  /** The plan the Studio line sells or keeps (`MigrateAccountStateResponse.plan`). */
+  plan: MigrateStudioPlan
+  /** The Studio workspace the grant is tied to, when it already is (an existing subscriber's, or after binding). */
+  workspace_slug?: string
+  /** Polar's checkout page for the bundle: `https://polar.sh/...` or `https://sandbox.polar.sh/...`, no credentials or fragment. Opened by the customer's browser. */
+  checkout_url: string
+  /** The first invoice Studio put on the checkout, in cents. Must equal the request's `billing.quoted_total_cents`. */
+  amount_cents: number
+  /** When `checkout_url` stops being payable, seconds since the epoch. */
+  checkout_expires_at: number
+}
+
+/**
+ * Check Studio's provision answer before Migrate redirects a browser to it. `quoted_total_cents` is the
+ * request's quote (required, like `requested` in the account-state check: an answer only means something
+ * against its question); a different amount is refused, and so is an expired checkout when `now` is given.
+ */
+export function validateMigrateProvisionResponse(input: unknown, options: { quoted_total_cents: number, now?: number }):
+  | { ok: true, response: MigrateProvisionResponse }
+  | { ok: false, errors: string[] } {
+  if (!isObject(input)) return { ok: false, errors: ['payload: not an object'] }
+  const errors: string[] = []
+  if (!isText(input.grant_id) || input.grant_id.length > 128) errors.push('grant_id: required')
+  if (!(MIGRATE_GRANT_STATES as readonly unknown[]).includes(input.state)) errors.push('state: unknown')
+  if (!(MIGRATE_STUDIO_PLANS as readonly unknown[]).includes(input.plan)) errors.push('plan: unknown plan')
+  if (input.workspace_slug !== undefined && (typeof input.workspace_slug !== 'string' || !/^[a-z0-9][a-z0-9-]{0,62}$/.test(input.workspace_slug))) errors.push('workspace_slug: invalid')
+  if (!isPolarCheckoutUrl(input.checkout_url)) errors.push('checkout_url: not a Polar checkout address')
+  const quoted = (options as { quoted_total_cents?: unknown } | undefined)?.quoted_total_cents
+  if (!isCents(input.amount_cents) || input.amount_cents === 0) errors.push('amount_cents: invalid')
+  // Fail closed: a missing or invalid quote (a caller bypassing the types) can never pass.
+  else if (!isCents(quoted) || quoted === 0 || input.amount_cents !== quoted) errors.push('amount_cents: not the quoted total')
+  if (!isSeconds(input.checkout_expires_at)) errors.push('checkout_expires_at: invalid')
+  else if (options.now !== undefined && input.checkout_expires_at <= options.now) errors.push('checkout_expires_at: expired')
+  return errors.length === 0 ? { ok: true, response: input as unknown as MigrateProvisionResponse } : { ok: false, errors }
+}
+
+function isPolarCheckoutUrl(x: unknown): x is string {
+  if (typeof x !== 'string' || x.length > 4096) return false
+  let url: URL
+  try { url = new URL(x) }
+  catch { return false }
+  return url.protocol === 'https:' && (url.hostname === 'polar.sh' || url.hostname === 'sandbox.polar.sh') && !url.port && !url.username && !url.password && !url.hash
+    && url.pathname.startsWith('/checkout/')
+}
