@@ -29,7 +29,7 @@ interface Props {
 }
 
 const { title, eyebrow, description, posts, cards: given, base, current, total } = Astro.props
-const [site, t, categories] = await Promise.all([getSite(), getStrings(), byId('categories')])
+const [site, t, categories, authors] = await Promise.all([getSite(), getStrings(), byId('categories'), siteConfig.lists.byline ? byId('authors') : undefined])
 const full = siteConfig.lists.display === 'full'
 const column = full || siteConfig.lists.display === 'list'
 const bodies = full ? await Promise.all(posts.map(post => publicHtml(post.data.body))) : []
@@ -42,6 +42,7 @@ const cards = given ?? await Promise.all(posts.map(async (post) => {
     href: postHref(post),
     excerpt: post.data.excerpt,
     date: post.data.published_at,
+    author: post.data.author ? authors?.get(post.data.author.id)?.data.name : undefined,
     image: cover ? imageOf(cover) : undefined,
     category: category ? { label: category.data.name, href: termHref('category', category, categories) } : undefined,
   }
@@ -63,7 +64,7 @@ const url = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href
     {cards.length === 0 && <p class="text-ink-muted">{t('blog.empty')}</p>}
     {cards.length > 0 && !full && (
       <div data-cr-grid class:list={['grid gap-x-8 gap-y-12', column ? 'mx-auto w-full max-w-(--container-prose)' : 'sm:grid-cols-2 lg:grid-cols-3']}>
-        {cards.map(card => <PostCard {...card} locale={site.language} linkTitle={siteConfig.chrome?.titleLinks} />)}
+        {cards.map(card => <PostCard {...card} locale={site.language} linkTitle={siteConfig.chrome?.titleLinks} surface={siteConfig.lists.surface ? 'card' : 'plain'} byline={siteConfig.lists.byline ? 'below' : 'inline'} />)}
       </div>
     )}
     {cards.length > 0 && full && (

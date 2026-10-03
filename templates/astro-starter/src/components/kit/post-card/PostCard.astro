@@ -1,6 +1,9 @@
 ---
 // One post in a list: image, category, date, title, excerpt and author. The
-// whole card is clickable through its title link.
+// whole card is clickable through its title link. `surface: card` makes it a
+// card of its own (background, radius, shadow, padded text, image flush);
+// `byline: below` prints the category above the title and `author / date`
+// under it, as card themes do.
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import type { ImageInput, LinkInput } from '../_shared/types'
@@ -20,8 +23,16 @@ const card = tv({
       horizontal: { root: 'flex-col sm:flex-row sm:items-start', media: 'w-full sm:w-64', title: 'text-xl', excerpt: 'line-clamp-2' },
       minimal: { root: 'flex-col border-b border-line pb-5', media: 'hidden', title: 'text-lg', excerpt: 'line-clamp-2' },
     },
+    surface: {
+      plain: {},
+      card: { root: 'gap-0 overflow-hidden rounded-[var(--radius-card)] bg-card shadow-[var(--shadow-card,none)]', media: 'rounded-none', body: 'gap-3 p-[var(--spacing-card,1.5rem)]' },
+    },
+    byline: {
+      inline: {},
+      below: { meta: 'text-xs font-semibold text-accent' },
+    },
   },
-  defaultVariants: { layout: 'vertical' },
+  defaultVariants: { layout: 'vertical', surface: 'plain', byline: 'inline' },
 })
 
 interface Props {
@@ -37,13 +48,17 @@ interface Props {
   author?: string | undefined
   headingLevel?: 2 | 3 | undefined
   layout?: 'vertical' | 'horizontal' | 'minimal' | undefined
+  surface?: 'plain' | 'card' | undefined
+  byline?: 'inline' | 'below' | undefined
   /** The title in the site's link colour, as themes that colour every link do (Hello Elementor). */
   linkTitle?: boolean | undefined
 }
 
-const { title, href, excerpt, date: rawDate, locale = 'en', image, category, author, headingLevel = 2, layout, linkTitle } = Astro.props
+const { title, href, excerpt, date: rawDate, locale = 'en', image, category, author, headingLevel = 2, layout, surface, byline, linkTitle } = Astro.props
 const date = rawDate === undefined ? undefined : new Date(rawDate)
-const slots = card({ layout })
+const slots = card({ layout, surface, byline })
+const below = byline === 'below'
+const shown = date?.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' })
 const Heading = `h${headingLevel}` as 'h2' | 'h3'
 ---
 <article class={slots.root()}>
@@ -53,17 +68,29 @@ const Heading = `h${headingLevel}` as 'h2' | 'h3'
     </div>
   )}
   <div class={slots.body()}>
-    {(category || date) && (
+    {below && category && (
+      <p class={slots.meta()}>
+        <a href={category.href} class="relative z-10 no-underline hover:underline">{category.label}</a>
+      </p>
+    )}
+    {!below && (category || date) && (
       <p class={slots.meta()}>
         {category && <a href={category.href} class="relative z-10 font-medium text-accent no-underline hover:underline">{category.label}</a>}
         {category && date && <span aria-hidden="true">·</span>}
-        {date && <time datetime={date.toISOString()}>{date.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' })}</time>}
+        {date && <time datetime={date.toISOString()}>{shown}</time>}
       </p>
     )}
     <Heading class={slots.title({ class: linkTitle ? 'text-[color:var(--color-link,var(--color-accent))]' : undefined })}>
       <a href={href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent">{title}</a>
     </Heading>
+    {below && (author || date) && (
+      <p class={slots.meta()}>
+        {author && <span>{author}</span>}
+        {author && date && <span aria-hidden="true">/</span>}
+        {date && <time datetime={date.toISOString()}>{shown}</time>}
+      </p>
+    )}
     {excerpt && <p class={slots.excerpt()}>{excerpt}</p>}
-    {author && <p class="text-sm text-ink-muted">{author}</p>}
+    {!below && author && <p class="text-sm text-ink-muted">{author}</p>}
   </div>
 </article>

@@ -2229,6 +2229,22 @@
           ],
           "default": "vertical",
           "description": "Image on top, image beside the text, or text only with a divider."
+        },
+        "surface": {
+          "options": [
+            "plain",
+            "card"
+          ],
+          "default": "plain",
+          "description": "plain: no surface. card: its own background (--color-card), radius and shadow (--shadow-card), the text padded (--spacing-card) and the image flush at the edge, as theme cards are drawn on a tinted page."
+        },
+        "byline": {
+          "options": [
+            "inline",
+            "below"
+          ],
+          "default": "inline",
+          "description": "inline: category · date above the title. below: the category above the title and author / date under it, both in the accent colour, small and semibold."
         }
       },
       "props": {
