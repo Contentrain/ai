@@ -184,6 +184,15 @@ describe('validateMigrateStudioClaimV2', () => {
     expect(validateMigrateStudioClaimV2(claim())).toEqual({ ok: false, errors: expect.arrayContaining(['v: unsupported version']) })
   })
 
+  it('takes a v2 claim without a repository (signed before payment), but never a malformed one; v1 still needs it', () => {
+    const { repo: _r, ...noRepo } = v2()
+    expect(validateMigrateStudioClaimV2(noRepo)).toEqual({ ok: true, claim: noRepo })
+    expect(validateMigrateStudioClaimV2(v2({ repo: { provider: 'github', owner: 'acme/x', name: 'site' } }))).toEqual({ ok: false, errors: ['repo: invalid'] })
+    expect(validateMigrateStudioClaimV2(v2({ repo: null }))).toEqual({ ok: false, errors: ['repo: invalid'] })
+    const { repo: _r1, ...v1NoRepo } = claim()
+    expect(validateMigrateStudioClaim(v1NoRepo)).toEqual({ ok: false, errors: ['repo: invalid'] })
+  })
+
   it('refuses a trial in v2 and a missing or malformed identity', () => {
     const r = validateMigrateStudioClaimV2(v2({ trial_days: 60, github_user_id: 'octocat', email_verified: 'yes' }))
     expect(r).toEqual({ ok: false, errors: expect.arrayContaining(['trial_days: not part of v2', 'github_user_id: invalid', 'email_verified: required']) })

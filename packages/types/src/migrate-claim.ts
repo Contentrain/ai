@@ -161,8 +161,14 @@ export interface MigrateStudioClaimBilling {
  * The v2 payload ("Migrate with Studio"): a v1 claim without `trial_days`, plus
  * the identity and billing a server-to-server provision needs.
  */
-export interface MigrateStudioClaimV2 extends Omit<MigrateStudioClaim, 'v' | 'trial_days'> {
+export interface MigrateStudioClaimV2 extends Omit<MigrateStudioClaim, 'v' | 'trial_days' | 'repo'> {
   v: typeof MIGRATE_STUDIO_CLAIM_VERSION_2
+  /**
+   * The delivered repository. Absent in a provision request: it is signed before payment, when the
+   * delivery repository does not exist yet (it reaches Studio at the install-url / claim step). Present
+   * means valid; never a placeholder.
+   */
+  repo?: MigrateStudioRepo
   /** The customer's GitHub user id (decimal string) from the Migrate sign-in. Studio finds or creates the user by it. */
   github_user_id: string
   /** Whether Migrate verified `email`. Studio binds by email only when `true`; never by an unverified one. */
@@ -324,10 +330,14 @@ function validateClaim(
     }
   }
 
+  // v2 is signed before payment, when no delivery repository exists yet: `repo` is absent then, and
+  // a placeholder would be a false signed claim. A v2 claim that carries one still has to be valid.
   const repo = x.repo
-  if (!isObject(repo) || repo.provider !== 'github' || !isText(repo.owner) || !isText(repo.name)
-    || repo.owner.includes('/') || repo.name.includes('/')) {
-    errors.push('repo: invalid')
+  if (repo !== undefined || version === MIGRATE_STUDIO_CLAIM_VERSION) {
+    if (!isObject(repo) || repo.provider !== 'github' || !isText(repo.owner) || !isText(repo.name)
+      || repo.owner.includes('/') || repo.name.includes('/')) {
+      errors.push('repo: invalid')
+    }
   }
 
   if (x.capabilities !== undefined) {
