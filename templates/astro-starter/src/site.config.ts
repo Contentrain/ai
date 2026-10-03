@@ -40,6 +40,8 @@ export interface CustomType {
   adjacent?: boolean
   /** A list of this many other entries (newest first) under the entry, as the source's own page had; absent or 0: none. */
   more?: number
+  /** The list also shows the entry being read, as the source's query did; absent, the entry is left out. */
+  moreIncludesCurrent?: boolean
   fields: readonly CustomField[]
 }
 
@@ -81,16 +83,19 @@ export interface SiteConfig {
     header: ReadonlyArray<'terms' | 'title' | 'byline' | 'cover'>
     adjacent: boolean
     more: number
+    /** The list also shows the post being read, as the source's query did; absent, the post is left out. */
+    moreIncludesCurrent?: boolean
   }
   /**
    * Post lists (the blog index and archives): cards in a grid, cards in one column (`list`, as themes
    * whose archive is a single stack of posts show it), or every post in full as a WordPress query
    * loop that shows the post content does; `heading` shows the index's title on the front page too.
    * `text`: the size of each post's content in a full list, when the source's loop sets its own.
+   * `tone`: `muted` when the source's loop sets the muted text colour on the list itself; titles keep their own colour.
    * `surface`: a card is a surface of its own (`--color-card`, `--shadow-card`, `--spacing-card`) on a page that may be
    * tinted (`--color-page`). `byline`: the category above the title, `author / date` under it.
    */
-  lists: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, surface?: boolean, byline?: boolean }
+  lists: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean }
   /**
    * The header and footer as the source's theme prints them; absent, the starter's own. `brand`:
    * the site title's size in the header. `tagline`: the header shows the tagline under the title.

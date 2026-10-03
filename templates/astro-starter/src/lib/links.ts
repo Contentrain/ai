@@ -10,6 +10,7 @@ import { getCollection, getEntry, type CollectionEntry } from 'astro:content'
 import type { NavItem } from '../components/kit/_shared/types'
 import { byId, getSite, pageHref, postHref, resolve, termHref } from './content'
 import { optimizedImages } from './body-images'
+import { entryById, entryHref, termHref as customTermHref } from './custom'
 import { siteConfig } from '../site.config'
 import { routeTable } from './site-routes'
 
@@ -236,10 +237,28 @@ async function itemHref(item: MenuItem, link: (url: string | undefined) => strin
       const term = terms.get(target.ref)
       return term ? link(termHref(target.model === 'categories' ? 'category' : 'tag', term, terms)) : undefined
     }
-    default:
+    default: {
+      // A custom post type's entry or one of its taxonomy's terms: through the type the site was configured with, so
+      // the address is the one the route table serves (an entry or term that is not published has none).
+      const collection = collectionOf(target.model)
+      for (const type of siteConfig.types ?? []) {
+        if (type.collection === collection) {
+          const entry = await entryById(collection, target.ref)
+          return entry ? link(entryHref(type, entry)) : undefined
+        }
+        const taxonomy = type.taxonomies?.find(candidate => candidate.collection === collection)
+        if (taxonomy) {
+          const term = await entryById(collection, target.ref)
+          return term ? link(customTermHref(taxonomy, term)) : undefined
+        }
+      }
       return undefined
+    }
   }
 }
+
+/** The collection a model id is read from: `project-type` → `projectType` (a model id is kebab-case, its collection camelCase). */
+const collectionOf = (model: string): string => model.replace(/[-_]([a-z\d])/g, (_, char: string) => char.toUpperCase())
 
 /**
  * A menu as a tree, ordered as the editor ordered it. An item whose target is not public — a draft,

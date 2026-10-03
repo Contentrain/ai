@@ -173,6 +173,22 @@ describe('validateProjectPlan', () => {
     expect(validateProjectPlan(p).errors).toEqual(['site.entryLayouts.type-project.more is not a count from 0 to 20'])
   })
 
+  it('accepts and checks the list details copied from the source: the current post in "more", the muted tone', () => {
+    const p = plan()
+    p.site.post = { header: ['title'], adjacent: false, more: 2, moreIncludesCurrent: true }
+    p.site.lists = { display: 'cards', heading: false, tone: 'muted' }
+    p.site.entryLayouts = { 'type-project': { adjacent: false, more: 2, moreIncludesCurrent: true } }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.post = { header: ['title'], adjacent: false, more: 2, moreIncludesCurrent: 'yes' as unknown as boolean }
+    p.site.lists = { display: 'cards', heading: false, tone: 'loud' as 'muted' }
+    p.site.entryLayouts = { 'type-project': { adjacent: false, moreIncludesCurrent: 1 as unknown as boolean } }
+    expect(validateProjectPlan(p).errors).toEqual([
+      'site.post.moreIncludesCurrent is not true or false',
+      'site.lists.tone loud is not muted',
+      'site.entryLayouts.type-project.moreIncludesCurrent is not true or false',
+    ])
+  })
+
   it('checks the post layout and list display a plan copies from the source templates', () => {
     const p = plan()
     p.site.post = { header: ['title', 'cover', 'byline'], adjacent: true, more: 4 }

@@ -79,6 +79,47 @@
     "title": "Team",
     "url": "/about/team/"
   },
+  "f1a2b3c4d5e6": {
+    "menu": "5e27e5dd7d41",
+    "open_in_new_tab": false,
+    "order": 6,
+    "target": {
+      "model": "project",
+      "ref": "c3d4e5f6a1b2"
+    },
+    "title": "Our showcase",
+    "type": "post_type"
+  },
+  "f2a3b4c5d6e7": {
+    "menu": "5e27e5dd7d41",
+    "open_in_new_tab": false,
+    "order": 7,
+    "target": {
+      "model": "project-type",
+      "ref": "b2c3d4e5f6a1"
+    },
+    "title": "Software",
+    "type": "taxonomy"
+  },
+  "f3a4b5c6d7e8": {
+    "menu": "5e27e5dd7d41",
+    "open_in_new_tab": false,
+    "order": 8,
+    "title": "Projects",
+    "type": "post_type_archive",
+    "url": "https://northwind.example/projects/"
+  },
+  "f4a5b6c7d8e9": {
+    "menu": "5e27e5dd7d41",
+    "open_in_new_tab": false,
+    "order": 9,
+    "target": {
+      "model": "project",
+      "ref": "e5f6a1b2c3d4"
+    },
+    "title": "Unannounced Tunnel",
+    "type": "post_type"
+  },
   "f6e5d4c3b2a1": {
     "menu": "a1b2c3d4e5f6",
     "open_in_new_tab": false,
