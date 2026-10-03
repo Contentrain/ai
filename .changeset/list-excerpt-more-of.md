@@ -1,5 +1,4 @@
 ---
-"@contentrain/astro-kit": minor
 "@contentrain/types": minor
 ---
 
