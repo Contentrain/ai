@@ -52,6 +52,8 @@ interface Props {
 const { items, heading, label, style, orientation = 'horizontal', tone, id = 'tabs' } = Astro.props
 const s = tabs({ style, orientation, tone })
 const headingId = heading ? `${id}-title` : undefined
+// One level under the section heading, or the section's heading when there is none.
+const PanelHeading = heading ? 'h3' : 'h2'
 const value = (i: number) => `tab-${i + 1}`
 ---
 {items.length > 0 && (
@@ -63,7 +65,7 @@ const value = (i: number) => `tab-${i + 1}`
       </div>
       {items.map((item, i) => (
         <div data-part="content" data-value={value(i)} class="min-w-0 flex-1">
-          <h3 class={s.title()}>{item.label}</h3>
+          <PanelHeading class={s.title()}>{item.label}</PanelHeading>
           <div class={s.panel()} set:html={item.content} />
         </div>
       ))}

@@ -57,6 +57,8 @@ interface Props {
 const { heading, intro, items, columns, style, roleStyle, id } = Astro.props
 const s = team({ columns, style, roleStyle })
 const headingId = heading && id ? `${id}-title` : undefined
+// One level under the section heading, or the section's heading when there is none.
+const NameHeading = heading ? 'h3' : 'h2'
 ---
 {items.length > 0 && (
   <Section id={id} aria-labelledby={headingId}>
@@ -71,11 +73,11 @@ const headingId = heading && id ? `${id}-title` : undefined
         <li class={s.member()}>
           {/* The portrait's text defaults to the name: a photo of a named person is not decoration. */}
           {imageOf(member.image, member.imageAlt ?? member.name) && <div class={s.portrait()}><KitImage image={imageOf(member.image, member.imageAlt ?? member.name)!} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" class="aspect-square w-full object-cover" /></div>}
-          <h3 class={s.name()}>
+          <NameHeading class={s.name()}>
             {member.href
               ? <a href={member.href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent">{member.name}</a>
               : member.name}
-          </h3>
+          </NameHeading>
           {member.role && <p class={s.role()}>{member.role}</p>}
           {member.bio && <p class={s.bio()} data-kit-text>{member.bio}</p>}
         </li>

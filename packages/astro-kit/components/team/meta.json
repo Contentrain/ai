@@ -110,7 +110,7 @@
       "divi/et_pb_team_member"
     ]
   },
-  "a11y": "Members are a <ul>; each name is an <h3>, and a linked member's link text is the name. A portrait's text defaults to the name. The section is labelled by its heading when it has one.",
+  "a11y": "Members are a <ul>; each name is an <h3> under the section's <h2> (an <h2> when the section has no heading), and a linked member's link text is the name. A portrait's text defaults to the name. The section is labelled by its heading when it has one.",
   "pattern": {
     "summary": "repeated person units: portrait + name + role",
     "signals": [

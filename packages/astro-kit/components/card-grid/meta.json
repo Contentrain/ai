@@ -107,7 +107,7 @@
       "max": 3,
       "default": 2,
       "content": false,
-      "description": "Level of the section heading; card titles are one below."
+      "description": "Level of the section heading; card titles are one below, or at this level when there is no title."
     }
   },
   "slots": {},

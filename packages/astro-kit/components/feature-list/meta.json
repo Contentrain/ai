@@ -106,7 +106,7 @@
       "divi/et_pb_blurb"
     ]
   },
-  "a11y": "A list; icons are decorative (aria-hidden), the title and text carry the meaning. The section is labelled by its heading.",
+  "a11y": "A list; icons are decorative (aria-hidden), the title and text carry the meaning. Each title is an <h3> under the section's <h2>, or an <h2> when the section has no heading (the list style's are plain text). The section is labelled by its heading.",
   "pattern": {
     "summary": "repeated icon + short title + line of text",
     "signals": [

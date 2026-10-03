@@ -24,5 +24,5 @@
     "divi": ["divi/et_pb_tabs"],
     "classic": ["classic/tabs"]
   },
-  "a11y": "Zag.js tabs: role=tablist/tab/tabpanel with aria-selected, aria-controls and aria-labelledby; arrow keys (per orientation), Home and End move between tabs. Before the script runs every panel is visible with its own h3 title; after, the titles become screen-reader-only and the tabs label the panels."
+  "a11y": "Zag.js tabs: role=tablist/tab/tabpanel with aria-selected, aria-controls and aria-labelledby; arrow keys (per orientation), Home and End move between tabs. Before the script runs every panel is visible with its own title (an h3 under the section's h2, an h2 when there is no heading); after, the titles become screen-reader-only and the tabs label the panels."
 }
