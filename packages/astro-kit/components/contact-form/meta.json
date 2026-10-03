@@ -1,7 +1,7 @@
 {
   "id": "contact-form",
   "name": "Contact form",
-  "description": "The contact section: heading, introduction, contact details (email, phone, address) and a Contentrain Studio form — fields, spam protection and notifications set in Studio, submissions reviewed there. Replaces form plugins; renders the details alone until the site is bound to a Studio project. When the owner chose another home at migration (site.config.ts `features.forms`) the form posts to their form service, or the section shows an address to write to or a link to the form on WordPress.",
+  "description": "The contact section: heading, introduction, contact details (email, phone, address) and a Contentrain Studio form — fields, spam protection and notifications set in Studio, submissions reviewed there. Replaces form plugins; renders the details alone until the site is bound to a Studio project (a section left with only its heading is not drawn: the heading would title a form that is not there). When the owner chose another home at migration (site.config.ts `features.forms`) the form posts to their form service, or the section shows an address to write to or a link to the form on WordPress.",
   "category": "section",
   "uses": [],
   "shared": ["Section.astro"],
@@ -26,5 +26,5 @@
     "divi": ["divi/et_pb_contact_form"],
     "classic": ["classic/contact-form-7", "classic/wpforms", "classic/gravityforms", "classic/ninja-forms"]
   },
-  "a11y": "Contact details are a description list when every one has a label, a plain list otherwise; links say what they open. The form's labels, errors and focus handling are Studio's form runtime (FormMount). The section is labelled by its heading."
+  "a11y": "Contact details are a description list when every one has a label, a plain list otherwise; links say what they open. The form's labels, errors and focus handling are Studio's form runtime (FormMount). The section is labelled by its heading. Without a form to show and with no introduction or details, the section is not drawn at all."
 }
