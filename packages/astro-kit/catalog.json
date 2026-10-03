@@ -1491,6 +1491,31 @@
           "type": "string",
           "description": "The site name's size where the source theme sets its own (a CSS length)."
         },
+        "bordered": {
+          "type": "boolean",
+          "default": true,
+          "description": "The line under the bar on the default tone; false where the source's header draws none."
+        },
+        "brandWeight": {
+          "type": "string",
+          "description": "The site name's weight where the source theme sets its own (a CSS font-weight)."
+        },
+        "brandTracking": {
+          "type": "string",
+          "description": "The site name's letter-spacing where the source theme sets its own (a CSS length, or normal)."
+        },
+        "offsetTop": {
+          "type": "string",
+          "description": "Space above the bar where the source's header has its own (a CSS length)."
+        },
+        "padTop": {
+          "type": "string",
+          "description": "Space inside the bar above its content where the source's header has its own (a CSS length)."
+        },
+        "padBottom": {
+          "type": "string",
+          "description": "Space inside the bar below its content where the source's header has its own (a CSS length)."
+        },
         "linkNav": {
           "type": "boolean",
           "default": false,

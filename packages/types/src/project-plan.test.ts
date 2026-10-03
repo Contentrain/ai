@@ -216,6 +216,23 @@ describe('validateProjectPlan', () => {
     ])
   })
 
+  it('accepts and checks what the source header does differently (it goes into style attributes)', () => {
+    const p = plan()
+    p.site.chrome = { header: { border: false, brandWeight: '400', brandTracking: '-0.5px', offsetTop: 'clamp(20px, calc(20px + (43.6px - 20px) * ((100vw - 390px) / 890)), 43.6px)', padTop: '0px', padBottom: '43px' } }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.chrome = { header: { brandTracking: 'normal' } }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.chrome = { header: { border: true as never, brandWeight: 'bold', brandTracking: '1px;x:y', offsetTop: 'url(x)', padTop: '1rem;background:red', padBottom: '-4px' } }
+    expect(validateProjectPlan(p).errors).toEqual([
+      'site.chrome.header.border is not false',
+      'site.chrome.header.brandWeight bold is not a font weight',
+      'site.chrome.header.brandTracking 1px;x:y is not a letter spacing',
+      'site.chrome.header.offsetTop url(x) is not a CSS size',
+      'site.chrome.header.padTop 1rem;background:red is not a CSS size',
+      'site.chrome.header.padBottom -4px is not a CSS size',
+    ])
+  })
+
   it('accepts and checks the size the previous/next links print at (it goes into a style attribute)', () => {
     const p = plan()
     p.site.post = { header: ['title'], adjacent: true, adjacentText: 'clamp(1rem, 1rem + ((1vw - 0.2rem) * 0.196), 1.125rem)', more: 0 }

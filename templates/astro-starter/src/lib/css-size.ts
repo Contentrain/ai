@@ -8,3 +8,11 @@ const CSS_SIZE = /^(?!.*url\()(?:\d+(?:\.\d+)?(?:px|rem|em|%)|(?:clamp|calc|min|
 export function cssSize(value: string | undefined): string | undefined {
   return value && CSS_SIZE.test(value) ? `font-size: ${value}` : undefined
 }
+
+/** The same guard for the header's other values (a weight, a letter-spacing, a length): the value, or nothing. */
+const WEIGHT = /^[1-9]00$/
+const SPACING = /^(?:normal|-?\d+(?:\.\d+)?(?:px|rem|em))$/
+
+export const cssLength = (value: string | undefined): string | undefined => (value && CSS_SIZE.test(value) ? value : undefined)
+export const cssWeight = (value: string | undefined): string | undefined => (value && WEIGHT.test(value) ? value : undefined)
+export const cssSpacing = (value: string | undefined): string | undefined => (value && SPACING.test(value) ? value : undefined)

@@ -7,6 +7,7 @@ import Footer from '../components/kit/footer/Footer.astro'
 import Header from '../components/kit/header/Header.astro'
 import SEO from '../components/SEO.astro'
 import { siteContact } from '../lib/contact'
+import { cssLength, cssSpacing, cssWeight } from '../lib/css-size'
 import { textDirection } from '../lib/direction'
 import { getSite, getStrings } from '../lib/content'
 import { menusAt } from '../lib/links'
@@ -97,6 +98,12 @@ const wpQueries = isHome ? await queryMap() : {}
       logo={site.logo ? { src: site.logo, alt: '' } : undefined}
       tagline={siteConfig.chrome?.tagline ? site.tagline : undefined}
       brandSize={siteConfig.chrome?.brand}
+      bordered={siteConfig.chrome?.header?.border === false ? false : undefined}
+      brandWeight={cssWeight(siteConfig.chrome?.header?.brandWeight)}
+      brandTracking={cssSpacing(siteConfig.chrome?.header?.brandTracking)}
+      offsetTop={cssLength(siteConfig.chrome?.header?.offsetTop)}
+      padTop={cssLength(siteConfig.chrome?.header?.padTop)}
+      padBottom={cssLength(siteConfig.chrome?.header?.padBottom)}
       linkNav={siteConfig.chrome?.navLinks}
       items={primary?.items ?? []}
       navLabel={primary?.name ?? t('nav.label')}
