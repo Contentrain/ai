@@ -577,6 +577,10 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   for (const role of Object.keys(site?.tokens?.roles ?? {})) {
     if (!(PLAN_TOKEN_ROLES as readonly string[]).includes(role)) errors.push(`tokens.roles.${role} is not a kit role`)
   }
+  for (const role of ['spacing-title', 'container-inset'] as const) {
+    const value = site?.tokens?.roles?.[role]
+    if (value !== undefined && !CSS_LENGTH.test(value)) errors.push(`tokens.roles.${role} ${value} is not a CSS size`)
+  }
 
   const models = new Map<string, PlanModel>()
   for (const m of plan.models ?? []) {
