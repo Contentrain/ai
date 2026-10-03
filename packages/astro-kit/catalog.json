@@ -653,10 +653,11 @@
             "muted",
             "inverse",
             "accent",
+            "brand",
             "none"
           ],
           "default": "accent",
-          "description": "Background. On accent, primary buttons are drawn in the secondary style so they stay visible. none: no fill of its own; the page background shows through (a source colour the palette does not have)."
+          "description": "Background. On accent, primary buttons are drawn in the secondary style so they stay visible. brand: the site's brand colour role (`--color-brand`, the builder's own colour on a band) with its ink; buttons keep their style. none: no fill of its own; the page background shows through (a source colour the palette does not have)."
         },
         "actionsAlign": {
           "options": [

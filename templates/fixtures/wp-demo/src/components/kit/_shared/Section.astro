@@ -12,6 +12,8 @@ const section = tv({
       muted: 'bg-surface-muted text-ink',
       inverse: 'bg-ink text-surface',
       accent: 'bg-accent text-accent-ink',
+      // The site's brand colour where it is not the accent (a band the source paints in the builder's own colour).
+      brand: 'bg-brand text-brand-ink',
       // No fill of its own: the page's background and text colour show through.
       none: '',
     },
@@ -28,7 +30,7 @@ const section = tv({
 export type Tone = 'default' | 'muted' | 'inverse' | 'accent'
 
 interface Props {
-  tone?: Tone | 'none' | undefined
+  tone?: Tone | 'brand' | 'none' | undefined
   spacing?: 'none' | 'sm' | 'md' | 'lg' | undefined
   /** `page` is the full frame, `prose` the reading column, `none` for full-bleed content. */
   width?: 'page' | 'prose' | 'none' | undefined
