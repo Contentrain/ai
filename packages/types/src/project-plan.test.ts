@@ -225,6 +225,18 @@ describe('validateProjectPlan', () => {
     ])
   })
 
+  it('checks the footer columns packed at the end edge', () => {
+    const p = plan()
+    p.site.chrome = { footerColumns: { gap: 128, size: 17.88, narrowGap: 63 } }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.chrome = { footerColumns: { gap: 128 } }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    for (const footerColumns of [{ gap: -1 }, { gap: 128, size: 0 }, { gap: 128, narrowGap: 9999 }, { gap: Number.NaN }, { size: 16 } as unknown as { gap: number }]) {
+      p.site.chrome = { footerColumns }
+      expect(validateProjectPlan(p).errors, JSON.stringify(footerColumns)).toEqual(['site.chrome.footerColumns is not a gap (0–400 px), a link size (1–100 px) and a narrow gap (0–400 px)'])
+    }
+  })
+
   it('checks the frames the header, footer and lists are held to', () => {
     const p = plan()
     p.site.chrome = { frame: [{ min: 768, width: 600 }, { min: 1280, width: 1140 }], listFrame: [{ min: 768, width: 600 }], postFrame: [{ min: 1024, width: 630 }] }

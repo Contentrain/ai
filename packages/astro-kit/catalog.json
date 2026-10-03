@@ -1146,6 +1146,22 @@
           ],
           "default": "start",
           "description": "start: brand and links to the sides (left-aligned on phones). center: everything centred in one column, as themes with a centred footer print it."
+        },
+        "pack": {
+          "options": [
+            "spread",
+            "end"
+          ],
+          "default": "spread",
+          "description": "columns layout only. spread: the link columns share the footer's width after the brand column. end: they are packed at the end edge at their own width, as a theme whose footer is the brand left and its menus on the right."
+        },
+        "narrow": {
+          "options": [
+            "stack",
+            "row"
+          ],
+          "default": "stack",
+          "description": "Packed columns only, below the md breakpoint. stack: one column. row: still side by side from the start edge, under the brand."
         }
       },
       "props": {
@@ -1242,6 +1258,18 @@
         "navLabel": {
           "type": "string",
           "description": "Accessible name of the footer navigation (ui-strings nav.footer)."
+        },
+        "packGap": {
+          "type": "string",
+          "description": "Packed columns only: the space between columns, a CSS length such as 98px."
+        },
+        "packGapNarrow": {
+          "type": "string",
+          "description": "Packed columns in a row only: the space between them below the md breakpoint, a CSS length."
+        },
+        "linkSize": {
+          "type": "string",
+          "description": "Font size of the footer's links, a CSS length such as 17.88px; absent, the footer's own."
         }
       },
       "slots": {},

@@ -110,6 +110,11 @@ const wpQueries = isHome ? await queryMap() : {}
       tagline={site.tagline}
       copyright={siteConfig.chrome?.copyright}
       align={siteConfig.chrome?.footerAlign}
+      pack={siteConfig.chrome?.footerColumns ? 'end' : undefined}
+      packGap={siteConfig.chrome?.footerColumns ? `${siteConfig.chrome.footerColumns.gap}px` : undefined}
+      narrow={siteConfig.chrome?.footerColumns?.narrowGap !== undefined ? 'row' : undefined}
+      packGapNarrow={siteConfig.chrome?.footerColumns?.narrowGap !== undefined ? `${siteConfig.chrome.footerColumns.narrowGap}px` : undefined}
+      linkSize={siteConfig.chrome?.footerColumns?.size ? `${siteConfig.chrome.footerColumns.size}px` : undefined}
       layout={footerColumns.length > 1 ? 'columns' : 'simple'}
       columns={footerColumns.map((menu, index) => ({ label: menu.name, links: index === footerColumns.length - 1 ? [...menu.items, rss] : menu.items }))}
       links={[...(footerColumns[0]?.items ?? []), rss]}
