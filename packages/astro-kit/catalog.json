@@ -539,6 +539,14 @@
           ],
           "default": "default",
           "description": "Section background; the form always sits on a surface card."
+        },
+        "headingPlace": {
+          "options": [
+            "top",
+            "after"
+          ],
+          "default": "top",
+          "description": "Where the heading sits. top: above the introduction and details. after: after them, as a source that writes its lead line and contact buttons first has it; beside a form it titles the form, without one it follows the details."
         }
       },
       "props": {
