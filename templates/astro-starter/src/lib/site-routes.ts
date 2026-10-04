@@ -29,12 +29,18 @@ async function buildRoutes(): Promise<Map<string, Route>> {
     routes.set(href, route)
   }
 
-  /** A post list split into pages at `base`, `base/page/2/`, … — page 1 exists even when empty. */
-  const paginate = (base: string, list: Post[], heading: Omit<Extract<Route, { view: 'list' }>, 'view' | 'posts' | 'base' | 'current' | 'total'>) => {
+  /**
+   * A post list split into pages at `base`, `base/page/2/`, … — page 1 exists even when empty. `leading`: posts the first
+   * page shows on top, as WordPress does for sticky posts on the posts page — those inside the first chunk move up, those
+   * outside it are added, so the page is longer than `postsPerPage`. Later pages are plain chronological chunks (a sticky
+   * post shows again at its date) and the page count ignores `leading`.
+   */
+  const paginate = (base: string, list: Post[], heading: Omit<Extract<Route, { view: 'list' }>, 'view' | 'posts' | 'base' | 'current' | 'total'>, leading: Post[] = []) => {
     const size = siteConfig.postsPerPage
     const total = Math.max(1, Math.ceil(list.length / size))
     for (let current = 1; current <= total; current++) {
-      add(pagePath(base, current), { view: 'list', ...heading, posts: list.slice((current - 1) * size, current * size), base, current, total })
+      const chunk = list.slice((current - 1) * size, current * size)
+      add(pagePath(base, current), { view: 'list', ...heading, posts: current === 1 && leading.length ? [...leading, ...chunk.filter(post => !leading.includes(post))] : chunk, base, current, total })
     }
   }
 
@@ -64,7 +70,7 @@ async function buildRoutes(): Promise<Map<string, Route>> {
   // The posts page keeps the name and description its editors gave it ("Journal"), as in WordPress.
   const postsPage = blog === '/' ? undefined : [...pages.values()].find(page => pageHref(page, pages) === blog)
   const blogDescription = postsPage?.data.seo?.description ?? postsPage?.data.excerpt
-  paginate(blog, posts, blog === '/' ? {} : { title: postsPage?.data.title ?? t('blog.title'), ...(blogDescription ? { description: blogDescription } : {}) })
+  paginate(blog, posts, blog === '/' ? {} : { title: postsPage?.data.title ?? t('blog.title'), ...(blogDescription ? { description: blogDescription } : {}) }, posts.filter(post => post.data.sticky))
 
   for (const category of categories.values()) {
     paginate(termHref('category', category, categories), posts.filter(post => post.data.categories.some(ref => ref.id === category.id)), {

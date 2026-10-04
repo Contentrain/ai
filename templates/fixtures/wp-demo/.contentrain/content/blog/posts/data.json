@@ -10,7 +10,7 @@
     "excerpt": "Shipping the first version: notes from moving a real WordPress site to Astro and Contentrain without losing a single address.",
     "published_at": "2026-08-06T09:00:00Z",
     "slug": "shipping-the-first-version",
-    "sticky": false,
+    "sticky": true,
     "tags": [
       "4bae0be8699e",
       "1f13ff00ff25"

@@ -23,14 +23,14 @@ export async function getSite(): Promise<Site> {
 }
 
 /**
- * Newest first; sticky posts lead, as on a WordPress front page. Posts published at the same moment
- * keep WordPress's order, the higher ID first, so the previous and next post and lists match the source.
+ * Newest first — WordPress's own order, which previous and next post, the feed and "more" lists follow. Posts published
+ * at the same moment keep WordPress's order, the higher ID first, so they match the source. Sticky posts are not moved
+ * here: they lead the posts page's first page only (`leading` in site-routes).
  */
 export async function getPosts(): Promise<Post[]> {
   const posts = await getCollection('posts')
   return posts.toSorted((a, b) =>
-    Number(b.data.sticky) - Number(a.data.sticky)
-    || (b.data.published_at?.getTime() ?? 0) - (a.data.published_at?.getTime() ?? 0)
+    (b.data.published_at?.getTime() ?? 0) - (a.data.published_at?.getTime() ?? 0)
     || (b.data.wp_id ?? 0) - (a.data.wp_id ?? 0)
     || a.data.title.localeCompare(b.data.title))
 }
