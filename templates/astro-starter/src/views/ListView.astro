@@ -33,6 +33,8 @@ const [site, t, categories, authors] = await Promise.all([getSite(), getStrings(
 const full = siteConfig.lists.display === 'full'
 const column = full || siteConfig.lists.display === 'list'
 const showHeading = Boolean(title) || siteConfig.lists.heading
+// The source printed one heading, "Label: Name" (siteConfig.lists.prefixed), not the label above the name.
+const prefixed = Boolean(siteConfig.lists.prefixed && title && eyebrow)
 const cards: Card[] = given ?? await Promise.all(posts.map(async (post) => {
   const cover = post.data.cover ? await getEntry(post.data.cover) : undefined
   const category = post.data.categories[0] ? categories.get(post.data.categories[0].id) : undefined
@@ -58,8 +60,8 @@ const url = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href
 >
   <div class="container-page py-12 md:py-16" data-cr-list>
     <header class:list={['mb-12 flex flex-col gap-3', column ? 'mx-auto max-w-(--container-prose)' : 'max-w-2xl', !showHeading && 'sr-only']}>
-      {eyebrow && <p class="text-sm font-medium tracking-wide text-accent uppercase">{eyebrow}</p>}
-      <h1 class="text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance">{title ?? (siteConfig.lists.heading ? t('blog.title') : site.title)}</h1>
+      {eyebrow && !prefixed && <p class="text-sm font-medium tracking-wide text-accent uppercase">{eyebrow}</p>}
+      <h1 class="text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance">{prefixed ? `${eyebrow}: ${title}` : title ?? (siteConfig.lists.heading ? t('blog.title') : site.title)}</h1>
       {description && <p class="text-lg text-ink-muted">{description}</p>}
     </header>
     {cards.length === 0 && <p class="text-ink-muted">{t('blog.empty')}</p>}

@@ -294,6 +294,17 @@ describe('validateProjectPlan', () => {
     ])
   })
 
+  it('checks an archive route\'s label (the word before the name in the source\'s archive title) and accepts lists.prefixed', () => {
+    const p = plan()
+    p.site.lists = { display: 'cards', heading: false, prefixed: true }
+    p.routes[0]!.label = 'Departments'
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.routes[0]!.label = 'two\nlines'
+    expect(validateProjectPlan(p).errors).toEqual([`route ${p.routes[0]!.id}: label must be one short line of text`])
+    p.routes[0]!.label = ' '
+    expect(validateProjectPlan(p).errors).toHaveLength(1)
+  })
+
   it('checks the list text size and the header and footer the source theme prints', () => {
     const p = plan()
     p.site.lists = { display: 'full', heading: true, text: 'clamp(1rem, 1rem + ((1vw - 0.2rem) * 0.196), 1.125rem)' }
