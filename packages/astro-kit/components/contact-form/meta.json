@@ -8,7 +8,8 @@
   "variants": {
     "layout": { "options": ["split", "stacked"], "default": "split", "description": "split: details beside the form on wide screens. stacked: one column (see align)." },
     "align": { "options": ["center", "start"], "default": "center", "description": "Stacked only, and the details alone before a Studio form. center: one centred column at a reading width. start: the section's whole column from the start edge, as a page builder's container whose text sets no alignment." },
-    "tone": { "options": ["default", "muted", "inverse", "accent"], "default": "default", "description": "Section background; the form always sits on a surface card." }
+    "tone": { "options": ["default", "muted", "inverse", "accent"], "default": "default", "description": "Section background; the form always sits on a surface card." },
+    "headingPlace": { "options": ["top", "after"], "default": "top", "description": "Where the heading sits. top: above the introduction and details. after: after them, as a source that writes its lead line and contact buttons first has it; beside a form it titles the form, without one it follows the details." }
   },
   "props": {
     "model": { "type": "string", "required": true, "content": false, "description": "The Studio model submissions are saved to — the form's fields are that model's form settings (from the plugin form's fields at migration)." },

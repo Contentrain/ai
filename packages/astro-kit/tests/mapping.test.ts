@@ -370,7 +370,8 @@ describe('section rules', () => {
 
       it('intro, a button, the form heading and the form are one contact section; the button is a detail with its link', () => {
         const m = classify([[g('0.0', 'core/paragraph'), g('0.1', 'core/button'), g('0.2', 'core/heading'), g('0.3', FORM)]], { index: 0, count: 1 })
-        expect(m?.rule.id).toBe('contact-form.form')
+        // The heading follows the intro in the source, so the section is the intro-first rule (heading placed after the details).
+        expect(m?.rule.id).toBe('contact-form.intro-first')
         expect(m?.match.slots).toMatchObject({ intro: ['0.0'], details: ['0.1'], title: ['0.2'], form: ['0.3'] })
         expect(contact()).toMatchObject({ into: 'details', each: '@details', item: { value: 'dom:a', href: 'dom:a@href' } })
       })
@@ -390,6 +391,35 @@ describe('section rules', () => {
           expect(filled(now?.match.slots)).toEqual(filled(was?.match.slots))
           expect(now?.match.slots.details).toEqual([])
         }
+      })
+
+      it('a heading written AFTER the intro puts the section in source order (heading after the details); a heading first keeps the heading on top', () => {
+        const after = classify([[g('0.0', 'core/paragraph'), g('0.1', 'core/button'), g('0.2', 'core/heading'), g('0.3', FORM)]], { index: 0, count: 1 })
+        expect(after?.rule.id).toBe('contact-form.intro-first')
+        expect(after?.rule.variant).toEqual({ headingPlace: 'after' })
+        expect(after?.match.slots).toMatchObject({ intro: ['0.0'], details: ['0.1'], title: ['0.2'], form: ['0.3'] })
+        for (const columns of [
+          [[g('0.0', 'core/heading'), g('0.1', 'core/paragraph'), g('0.2', 'core/button'), g('0.3', FORM)]],
+          [[g('0.0', 'core/heading'), g('0.1', FORM)]],
+          [[g('0.0', 'core/paragraph'), g('0.1', FORM)]],
+        ]) {
+          const top = classify(columns, { index: 0, count: 1 })
+          expect(top?.rule.id).toBe('contact-form.form')
+          expect(top?.rule.variant).toBeUndefined()
+        }
+      })
+
+      it('the intro-first rule reads the same props as the heading-first rule: only the variant and the order differ', () => {
+        const rules = tables.gutenberg!.sections!
+        const first = rules.find(r => r.id === 'contact-form.intro-first')!
+        const top = contact()
+        expect(rules.indexOf(first)).toBeLessThan(rules.indexOf(top))
+        const { id: _a, variant: _b, when: _c, slots: slotsFirst, ...restFirst } = first
+        const { id: _d, variant: _e, when: _f, slots: slotsTop, ...restTop } = top
+        expect(restFirst).toEqual(restTop)
+        expect(slotsFirst.formTitle).toEqual(slotsTop.formTitle)
+        expect(slotsFirst.details).toEqual(slotsTop.details)
+        expect(slotsFirst.form).toEqual(slotsTop.form)
       })
 
       it('at most three buttons are details; a fourth leaves the section unmatched, a button with no form is no contact section', () => {
