@@ -106,7 +106,9 @@
         "12 Harbour Road",
         "https://www.linkedin.com/company/northwind-studio\" rel=\"me noopener\"",
         "bg-card",
-        "aria-hidden=\"true\">/</span>"
+        "aria-hidden=\"true\">/</span>",
+        "/blog/shipping-the-first-version/",
+        "/blog/search-without-a-server/"
       ],
       "excludes": [
         "Sidebar only link"
@@ -246,6 +248,12 @@
       "contains": [
         "<a href=\"/blog/designing-with-fewer-requests/\" rel=\"prev\"",
         "<a href=\"/blog/what-a-careful-migration-keeps/\" rel=\"next\""
+      ]
+    },
+    "page/2/index.html": {
+      "contains": [
+        "/blog/shipping-the-first-version/",
+        "/blog/forms-and-comments-the-static-way/"
       ]
     }
   },
