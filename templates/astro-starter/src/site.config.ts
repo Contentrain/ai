@@ -43,6 +43,8 @@ export interface CustomType {
   body?: string
   /** Previous / next links under the entry, newest first as WordPress orders them; only when the source's own page had them. */
   adjacent?: boolean
+  /** The size the previous/next links print at (a CSS size), as the source's did; absent, the starter's own. */
+  adjacentText?: string
   /** A list of this many other entries (newest first) under the entry, as the source's own page had; absent or 0: none. */
   more?: number
   /** The list also shows the entry being read, as the source's query did; absent, the entry is left out. */

@@ -231,6 +231,14 @@ describe('validateProjectPlan', () => {
     ])
   })
 
+  it('accepts and checks the size a custom post type\'s previous/next links print at', () => {
+    const p = plan()
+    p.site.entryLayouts = { 'type-project': { adjacent: true, adjacentText: 'clamp(1rem, 1rem + ((1vw - 0.2rem) * 0.196), 1.125rem)' } }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.entryLayouts = { 'type-project': { adjacent: true, adjacentText: '1rem; color: red' } }
+    expect(validateProjectPlan(p).errors).toEqual(['site.entryLayouts.type-project.adjacentText 1rem; color: red is not a CSS size'])
+  })
+
   it('accepts and checks what the source header does differently (it goes into style attributes)', () => {
     const p = plan()
     p.site.chrome = { header: { border: false, brandWeight: '400', brandTracking: '-0.5px', offsetTop: 'clamp(20px, calc(20px + (43.6px - 20px) * ((100vw - 390px) / 890)), 43.6px)', padTop: '0px', padBottom: '43px' } }
