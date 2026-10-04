@@ -27,9 +27,10 @@ export async function entryById(collection: string, id: string): Promise<TypeEnt
   return entry ? { id: entry.id, data: entry.data as Record<string, unknown> } : undefined
 }
 
-/** Newest first, as WordPress lists a post type; entries without a date keep their title order after the dated ones. */
+/** Newest first, as WordPress lists a post type; entries of one date: the higher WordPress id first; entries without a date keep their title order after the dated ones. */
 export function newestFirst(entries: readonly TypeEntry[], dateField = 'published_at'): TypeEntry[] {
   return entries.toSorted((a, b) => (dateOf(b.data[dateField])?.getTime() ?? 0) - (dateOf(a.data[dateField])?.getTime() ?? 0)
+    || (Number(b.data.wp_id) || 0) - (Number(a.data.wp_id) || 0)
     || (text(a.data.title) ?? text(a.data.name) ?? a.id).localeCompare(text(b.data.title) ?? text(b.data.name) ?? b.id))
 }
 
