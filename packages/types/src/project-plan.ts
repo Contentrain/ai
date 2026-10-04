@@ -134,9 +134,9 @@ export interface PlanSite {
    * `adjacent` = links to the previous and next entry under it. The starter's entry view prints them for that
    * type only. `more` = a list of that many other entries under it (0 to 20); `moreIncludesCurrent`: the list also
    * shows the entry being read, as the source's query does; `moreOf: 'posts'`: the list holds the newest blog posts, as a
-   * theme's single template does whatever the type, not other entries of the same type; `moreText`: the size it prints its titles at (a CSS size). Absent (or a type left out): none.
+   * theme's single template does whatever the type, not other entries of the same type; `moreText`: the size it prints its titles at (a CSS size); `adjacentText`: the size the previous/next links print at (a CSS size). Absent (or a type left out): none.
    */
-  entryLayouts?: Record<string, { adjacent: boolean, more?: number, moreIncludesCurrent?: boolean, moreOf?: 'posts', moreText?: string }>
+  entryLayouts?: Record<string, { adjacent: boolean, adjacentText?: string, more?: number, moreIncludesCurrent?: boolean, moreOf?: 'posts', moreText?: string }>
   /**
    * What the source's footer prints of the three things the starter's footer prints by default, each only when the
    * source does (a migration reads them off the rendered footer). `feed`: a visible "RSS feed" link in the last
@@ -534,6 +534,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (layout?.moreIncludesCurrent !== undefined && typeof layout.moreIncludesCurrent !== 'boolean') errors.push(`site.entryLayouts.${route}.moreIncludesCurrent is not true or false`)
     if (layout?.moreOf !== undefined && layout.moreOf !== 'posts') errors.push(`site.entryLayouts.${route}.moreOf ${String(layout.moreOf)} is not posts`)
     if (layout?.moreText !== undefined && !CSS_LENGTH.test(layout.moreText)) errors.push(`site.entryLayouts.${route}.moreText ${layout.moreText} is not a CSS size`)
+    if (layout?.adjacentText !== undefined && !CSS_LENGTH.test(layout.adjacentText)) errors.push(`site.entryLayouts.${route}.adjacentText ${layout.adjacentText} is not a CSS size`)
   }
   const printed = site?.footer
   if (printed?.feed !== undefined && typeof printed.feed !== 'boolean') errors.push('site.footer.feed is not a boolean')

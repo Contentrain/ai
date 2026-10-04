@@ -72,7 +72,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
     {body && <Prose html={body} />}
     {!type.fieldsFirst && fields.length > 0 && <div class="mt-10 border-t border-line pt-8"><FieldList fields={fields} locale={site.language} /></div>}
     {(previous || next) && (
-      <nav aria-label={t('post.adjacent')} data-cr-part="post-navigation" class="mt-12 flex flex-wrap justify-between gap-4 border-t border-line pt-6">
+      <nav aria-label={t('post.adjacent')} data-cr-part="post-navigation" class="mt-12 flex flex-wrap justify-between gap-4 border-t border-line pt-6" style={cssSize(type.adjacentText)}>
         {previous ? <a href={entryHref(type, previous)} rel="prev" class="text-ink"><span aria-hidden="true" class="inline-block rtl:-scale-x-100">←</span> {entryTitle(type, previous)}</a> : <span />}
         {next && <a href={entryHref(type, next)} rel="next" class="text-ink">{entryTitle(type, next)} <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
       </nav>
