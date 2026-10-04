@@ -39,6 +39,8 @@ const hero = tv({
     width: { full: {}, content: {} },
     // The heading's size: the layout's own scale, or the site's size for its level (set inline, see ./hero).
     headingScale: { default: {}, theme: {} },
+    // The level whose site size the heading takes when it is not the level it is written at (set inline, see ./hero).
+    headingSize: { own: {}, h1: {}, h2: {} },
   },
   compoundVariants: [
     // After the layout's own heights, so a boxed cover keeps WordPress's 430px default.
@@ -48,7 +50,7 @@ const hero = tv({
     { leadAlign: 'start', class: { lead: 'mx-0 max-w-none self-stretch text-start' } },
     { actionsAlign: 'start', class: { actions: 'justify-start self-stretch' } },
   ],
-  defaultVariants: { layout: 'split', tone: 'default', align: 'center', leadAlign: 'inherit', actionsAlign: 'inherit', width: 'full', headingScale: 'default' },
+  defaultVariants: { layout: 'split', tone: 'default', align: 'center', leadAlign: 'inherit', actionsAlign: 'inherit', width: 'full', headingScale: 'default', headingSize: 'own' },
 })
 
 interface Props {
@@ -74,16 +76,18 @@ interface Props {
   minHeight?: number | undefined
   /** `theme`: the heading takes the site's size for its level (the source's own `h1` size), not the layout's scale. */
   headingScale?: 'default' | 'theme' | undefined
+  /** The level whose site size the heading takes, when it is not the level it is written at (`h1` size on an `h2`: a page keeps one `h1`). `own` (absent): the heading's own level under `theme`, as before. */
+  headingSize?: 'own' | 'h1' | 'h2' | undefined
 }
 
 
-const { heading, level = 1, eyebrow, lead, actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id, minHeight, headingScale } = Astro.props
-const s = hero({ layout, align, leadAlign, actionsAlign, width, tone, headingScale })
+const { heading, level = 1, eyebrow, lead, actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id, minHeight, headingScale, headingSize } = Astro.props
+const s = hero({ layout, align, leadAlign, actionsAlign, width, tone, headingScale, headingSize })
 const Heading = level === 1 ? 'h1' : 'h2'
 const headingId = id ? `${id}-title` : undefined
 const cover = layout === 'cover' && image
 const coverHeight = cover ? heightOf(minHeight) : undefined
-const headingStyle = styleOf(headingScale, level)
+const headingStyle = styleOf(headingScale, level, headingSize)
 ---
 {cover && width === 'content'
   ? (

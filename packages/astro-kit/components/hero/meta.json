@@ -69,6 +69,15 @@
       ],
       "default": "default",
       "description": "default: the layout's own type scale. theme: the heading takes the site's size for its level (`--text-heading-1` for the page-opening hero, `-2` otherwise), as the source's own h1 does under a block theme."
+    },
+    "headingSize": {
+      "options": [
+        "own",
+        "h1",
+        "h2"
+      ],
+      "default": "own",
+      "description": "The level whose site size the heading takes when it is not the level it is written at: h1 on an h2 heading keeps a source's second h1 at the h1 size under a page that keeps one h1. own: the heading's own level under headingScale theme, nothing otherwise. Any other value than own sets the size by itself."
     }
   },
   "props": {
