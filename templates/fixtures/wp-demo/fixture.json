@@ -14,6 +14,10 @@
     {
       "from": "  lists: { display: 'cards', heading: false },",
       "to": "  lists: { display: 'cards', heading: false, surface: true, byline: true },"
+    },
+    {
+      "from": "  post: { header: ['terms', 'title', 'byline', 'cover'], adjacent: false, more: 0 },",
+      "to": "  post: { header: ['terms', 'title', 'byline', 'cover'], adjacent: true, more: 3 },"
     }
   ],
   "absentFromDist": [
@@ -120,7 +124,8 @@
         "(or the old roadmap, its short link and",
         "alt=\"Green gradient from the media library\"",
         "alt=\"Per-use text\"",
-        "alt=\"\""
+        "alt=\"\"",
+        "Typography that survives a redesign</a><time datetime=\"2026-09-26T09:00:00.000Z\" class=\"text-sm text-ink-muted\">September 26, 2026</time></li><li class=\"flex flex-wrap items-baseline justify-between gap-2 border-b border-line py-3\"><a href=\"/blog/designing-with-fewer-requests/\""
       ],
       "excludes": [
         "Cover three from the library"
@@ -174,7 +179,7 @@
         "/project-type/infrastructure/",
         "data-cr-part=\"post-navigation\"",
         "data-cr-part=\"related\"",
-        "rel=\"next\"",
+        "<a href=\"/projects/grid-monitor/\" rel=\"prev\"",
         "/projects/grid-monitor/",
         "<ol class=\"flex list-decimal flex-col gap-2 pl-5\">",
         "<details class=\"group",
@@ -192,7 +197,7 @@
         "Grid Monitor",
         "Grid Energy",
         "javascript:alert(1)</span>",
-        "rel=\"prev\"",
+        "<a href=\"/projects/harbour-bridge/\" rel=\"next\"",
         "/projects/harbour-bridge/"
       ],
       "excludes": [
@@ -231,6 +236,12 @@
         "<dt class=\"text-sm font-medium text-ink-muted\">Url</dt>",
         "<dt class=\"text-sm font-medium text-ink-muted\">Social</dt>",
         "border-line pt-8\"><dl"
+      ]
+    },
+    "blog/typography-that-survives-a-redesign/index.html": {
+      "contains": [
+        "<a href=\"/blog/designing-with-fewer-requests/\" rel=\"prev\"",
+        "<a href=\"/blog/what-a-careful-migration-keeps/\" rel=\"next\""
       ]
     }
   },
