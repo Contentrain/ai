@@ -1526,6 +1526,18 @@ export interface MigrationHandoff {
   site_url: string
   /** ISO 8601 UTC. */
   generated_at: string
+  /**
+   * Identity of the run that wrote this document (16 lowercase hex characters, the producer's plan hash).
+   * With `order_id` it lets a reader tie a handoff to the delivery it was given for, and notice a stale
+   * one — a handoff left in the repository by an earlier delivery. Absent on older documents: a reader
+   * treats that as "unknown", never as "stale".
+   */
+  plan_hash?: string
+  /**
+   * The order this handoff was delivered for, as the producer's order identifier (`ord_` + 24 lowercase
+   * hex characters). Absent on older documents, and for a run that no order paid for.
+   */
+  order_id?: string
   repository?: {
     provider: 'github' | 'gitlab'
     owner: string
