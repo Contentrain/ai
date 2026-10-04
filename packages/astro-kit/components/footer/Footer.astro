@@ -28,8 +28,10 @@ const footer = tv({
     // The `columns` layout's link columns: spread from the brand column over the footer's width, or packed at the end
     // edge at their own width (a theme whose footer is the brand left and its menus on the right).
     pack: { spread: {}, end: {} },
-    // Packed columns below `md`: stacked, or still side by side from the start edge under the brand.
-    narrow: { stack: {}, row: { inner: 'grid-cols-[repeat(var(--footer-columns),auto)] justify-start gap-x-[var(--footer-gap-narrow,1.5rem)]' } },
+    // Packed columns below `md`: stacked, or still side by side from the start edge under the brand. The trailing `1fr` track is
+    // the room the brand block spans too: a spanning item that crossed only the `auto` tracks would grow them to its own
+    // max-content (menus as wide as the brand's longest line); with a flexible track under it, it does not.
+    narrow: { stack: {}, row: { inner: 'grid-cols-[repeat(var(--footer-columns),auto)_1fr] justify-start gap-x-[var(--footer-gap-narrow,1.5rem)]' } },
   },
   compoundVariants: [
     { layout: 'simple', align: 'center', class: { inner: 'md:flex-col md:justify-center' } },

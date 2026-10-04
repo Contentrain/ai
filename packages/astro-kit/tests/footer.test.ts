@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { footerLinkSizeClasses, footerVars } from '../components/footer/footer'
 
 const packed = { layout: 'columns', columnCount: 2, pack: 'end', narrow: 'row', packGap: '128px', packGapNarrow: '70px', linkSize: '17.88px' } as const
@@ -22,5 +23,19 @@ describe('footerVars', () => {
 
   it('the simple layout carries no column properties', () => {
     expect(footerVars({ layout: 'simple', columnCount: 1, packGap: '128px' })).toBe('')
+  })
+})
+
+describe('packed columns kept in a row below md', () => {
+  const source = readFileSync(new URL('../components/footer/Footer.astro', import.meta.url), 'utf8')
+
+  it('end the grid with a flexible track, so the spanning brand block does not grow the auto columns', () => {
+    expect(source).toContain("row: { inner: 'grid-cols-[repeat(var(--footer-columns),auto)_1fr] justify-start gap-x-[var(--footer-gap-narrow,1.5rem)]' }")
+    expect(source).toContain("{ layout: 'columns', pack: 'end', narrow: 'row', class: { inner: '[&>div:first-child]:col-span-full' } }")
+  })
+
+  it('leave every md-and-up class as it was: the wide footer is byte-identical', () => {
+    expect(source).toContain("columns: { inner: 'grid gap-10 md:grid-cols-[2fr_repeat(var(--footer-columns),1fr)] md:py-16' }")
+    expect(source).toContain("class: { inner: 'md:grid-cols-[1fr_repeat(var(--footer-columns),auto)] md:gap-x-[var(--footer-gap,2.5rem)] md:[&>div:first-child]:col-span-1' }")
   })
 })
