@@ -9,11 +9,15 @@
     },
     {
       "from": "  sourceHosts: [],",
-      "to": "  types: [{\n    collection: 'project',\n    single: '/projects/:slug/',\n    archive: { pattern: '/projects/', title: 'Projects', label: 'Archives' },\n    taxonomies: [{ collection: 'projectType', pattern: '/project-type/:slug/', field: 'project-type', title: 'Project type' }],\n    card: { title: 'title', excerpt: 'summary', image: 'cover', date: 'published_at' },\n    body: 'body',\n    adjacent: true,\n    more: 2,\n    fields: [\n      { name: 'client', label: 'Client', type: 'string' },\n      { name: 'website', label: 'Website', type: 'url' },\n      { name: 'contact_email', label: 'Contact email', type: 'email' },\n      { name: 'launch_date', label: 'Launch date', type: 'date' },\n      { name: 'featured', label: 'Featured project', type: 'boolean' },\n      { name: 'platforms', label: 'Platforms', type: 'array', of: 'string' },\n      { name: 'location', label: 'Location', type: 'object', fields: [{ name: 'address', label: 'Address', type: 'text' }, { name: 'city', label: 'City', type: 'string' }] },\n      { name: 'milestones', label: 'Milestones', type: 'array', fields: [{ name: 'date', label: 'Date', type: 'date' }, { name: 'name', label: 'Name', type: 'string' }], markup: 'ol' },\n      { name: 'faq', label: 'FAQ', type: 'array', fields: [{ name: 'question', label: 'Question', type: 'string' }, { name: 'answer', label: 'Answer', type: 'richtext' }], markup: 'details' },\n      { name: 'project-type', label: 'Project type', type: 'relations', collection: 'projectType' },\n    ],\n  }],\n  sourceHosts: [],"
+      "to": "  types: [{\n    collection: 'project',\n    single: '/projects/:slug/',\n    archive: { pattern: '/projects/', title: 'Projects', label: 'Archives' },\n    taxonomies: [{ collection: 'projectType', pattern: '/project-type/:slug/', field: 'project-type', title: 'Project type' }],\n    card: { title: 'title', excerpt: 'summary', image: 'cover', date: 'published_at' },\n    body: 'body',\n    adjacent: true,\n    more: 2,\n    fields: [\n      { name: 'client', label: 'Client', type: 'string' },\n      { name: 'website', label: 'Website', type: 'url' },\n      { name: 'contact_email', label: 'Contact email', type: 'email' },\n      { name: 'launch_date', label: 'Launch date', type: 'date' },\n      { name: 'featured', label: 'Featured project', type: 'boolean' },\n      { name: 'platforms', label: 'Platforms', type: 'array', of: 'string' },\n      { name: 'location', label: 'Location', type: 'object', fields: [{ name: 'address', label: 'Address', type: 'text' }, { name: 'city', label: 'City', type: 'string' }] },\n      { name: 'milestones', label: 'Milestones', type: 'array', fields: [{ name: 'date', label: 'Date', type: 'date' }, { name: 'name', label: 'Name', type: 'string' }], markup: 'ol' },\n      { name: 'faq', label: 'FAQ', type: 'array', fields: [{ name: 'question', label: 'Question', type: 'string' }, { name: 'answer', label: 'Answer', type: 'richtext' }], markup: 'details' },\n      { name: 'project-type', label: 'Project type', type: 'relations', collection: 'projectType' },\n    ],\n  }, {\n    collection: 'teamMember',\n    single: '/team/:slug/',\n    card: { title: 'title' },\n    body: 'body',\n    fieldsFirst: true,\n    fields: [\n      { name: 'role', label: 'Role', type: 'string', hideLabel: true },\n      { name: 'social', label: 'Social', type: 'array', hideLabel: true, fields: [{ name: 'network', label: 'Network', type: 'string', hideLabel: true }, { name: 'url', label: 'Url', type: 'url', hideLabel: true }] },\n      { name: 'department', label: 'Department', type: 'string' },\n    ],\n  }],\n  sourceHosts: [],"
     },
     {
       "from": "  lists: { display: 'cards', heading: false },",
       "to": "  lists: { display: 'cards', heading: false, surface: true, byline: true, prefixed: true },"
+    },
+    {
+      "from": "  post: { header: ['terms', 'title', 'byline', 'cover'], adjacent: false, more: 0 },",
+      "to": "  post: { header: ['terms', 'title', 'byline', 'cover'], adjacent: true, more: 3 },"
     }
   ],
   "absentFromDist": [
@@ -120,7 +124,8 @@
         "(or the old roadmap, its short link and",
         "alt=\"Green gradient from the media library\"",
         "alt=\"Per-use text\"",
-        "alt=\"\""
+        "alt=\"\"",
+        "Typography that survives a redesign</a><time datetime=\"2026-09-26T09:00:00.000Z\" class=\"text-sm text-ink-muted\">September 26, 2026</time></li><li class=\"flex flex-wrap items-baseline justify-between gap-2 border-b border-line py-3\"><a href=\"/blog/designing-with-fewer-requests/\""
       ],
       "excludes": [
         "Cover three from the library"
@@ -176,13 +181,14 @@
         "/project-type/infrastructure/",
         "data-cr-part=\"post-navigation\"",
         "data-cr-part=\"related\"",
-        "rel=\"next\"",
+        "<a href=\"/projects/grid-monitor/\" rel=\"prev\"",
         "/projects/grid-monitor/",
         "<ol class=\"flex list-decimal flex-col gap-2 pl-5\">",
         "<details class=\"group",
         "<summary class=\"cursor-pointer font-medium\"><span class=\"whitespace-pre-line\">How long did the bridge take?",
         "Eight months.",
-        "<ul class=\"flex flex-col gap-2\"><li><span class=\"whitespace-pre-line\">web</span></li>"
+        "<ul class=\"flex flex-col gap-2\"><li><span class=\"whitespace-pre-line\">web</span></li>",
+        "</p></div><div class=\"mt-10 border-t border-line pt-8\"><dl class=\"grid"
       ],
       "excludes": [
         "field_"
@@ -193,7 +199,7 @@
         "Grid Monitor",
         "Grid Energy",
         "javascript:alert(1)</span>",
-        "rel=\"prev\"",
+        "<a href=\"/projects/harbour-bridge/\" rel=\"next\"",
         "/projects/harbour-bridge/"
       ],
       "excludes": [
@@ -217,6 +223,29 @@
       "excludes": [
         "Harbour Bridge",
         "text-accent uppercase"
+      ]
+    },
+    "team/ada-kaya/index.html": {
+      "contains": [
+        "Ada Kaya",
+        "Principal engineer",
+        "https://github.com/ada-kaya",
+        "<dt class=\"text-sm font-medium text-ink-muted\">Department</dt>",
+        "<div class=\"mb-10\"><dl class=\"grid",
+        "</dl></div><div class=\"prose"
+      ],
+      "excludes": [
+        "<dt class=\"text-sm font-medium text-ink-muted\">Role</dt>",
+        "<dt class=\"text-sm font-medium text-ink-muted\">Network</dt>",
+        "<dt class=\"text-sm font-medium text-ink-muted\">Url</dt>",
+        "<dt class=\"text-sm font-medium text-ink-muted\">Social</dt>",
+        "border-line pt-8\"><dl"
+      ]
+    },
+    "blog/typography-that-survives-a-redesign/index.html": {
+      "contains": [
+        "<a href=\"/blog/designing-with-fewer-requests/\" rel=\"prev\"",
+        "<a href=\"/blog/what-a-careful-migration-keeps/\" rel=\"next\""
       ]
     }
   },

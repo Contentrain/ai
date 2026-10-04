@@ -224,6 +224,19 @@ export const collections = {
       wp_id: z.number().int().optional(),
     }),
   }),
+  teamMember: defineCollection({
+    loader: loader('team-member'),
+    schema: z.object({
+      id: z.string(),
+      body: z.string().optional(),
+      department: z.string().optional(),
+      role: z.string().optional(),
+      slug: z.string(),
+      social: z.array(z.object({ network: z.string().optional(), url: z.string().optional() })).optional(),
+      title: z.string(),
+      wp_id: z.number().int().optional(),
+    }),
+  }),
   site: defineCollection({
     loader: loader('site'),
     schema: z.object({

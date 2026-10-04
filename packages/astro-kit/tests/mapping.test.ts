@@ -108,6 +108,9 @@ const leaf = (path: string, name: string, attrs?: Record<string, unknown>): Sect
 const figureSlot = (numeric: boolean): SectionRule => ({ id: 'n.one', component: 'stats', slots: { v: { match: 'core/heading', numeric } }, into: 'items', each: '@v', item: { value: 'dom:' } })
 const sectionTable = (builder: 'gutenberg' | 'elementor', sections: SectionRule[]): MappingTable => ({ format: 'astro-kit-mapping@1', builder, version: '1', fallback: 'prose', rules: [], sections })
 
+/** A section match's slots without the empty ones: an empty slot is a key with no leaves (`intro: []`), only the filled ones say what the section reads. */
+const filled = (slots: Record<string, string[]> | undefined) => Object.fromEntries(Object.entries(slots ?? {}).filter(([, paths]) => paths.length))
+
 describe('section rules', () => {
   const hero: SectionRule = {
     id: 'hero.split', component: 'hero', variant: { layout: 'split' },
@@ -352,6 +355,49 @@ describe('section rules', () => {
       const m = classify(cards, { root: 'core/group', intro: [g('0.0', 'core/heading')] })
       expect(m?.rule.id).toBe('card-grid.columns')
       expect(m?.match.slots.heading).toEqual(['0.0'])
+    })
+
+    describe('a contact section keeps a button as a contact detail (tt5 contact: text and a mailto button above the form)', () => {
+      const FORM = 'wpforms/form-selector'
+      const contact = () => tables.gutenberg!.sections!.find(r => r.id === 'contact-form.form')!
+      /** The rule as it was before the `details` slot: the output without a button must not move. */
+      const before = () => {
+        const { details: _details, ...slots } = contact().slots
+        const { into: _into, each: _each, item: _item, ...rest } = contact()
+        const old: SectionRule = { ...rest, slots }
+        return { ...tables.gutenberg!, sections: tables.gutenberg!.sections!.map(r => (r.id === old.id ? old : r)) }
+      }
+
+      it('intro, a button, the form heading and the form are one contact section; the button is a detail with its link', () => {
+        const m = classify([[g('0.0', 'core/paragraph'), g('0.1', 'core/button'), g('0.2', 'core/heading'), g('0.3', FORM)]], { index: 0, count: 1 })
+        expect(m?.rule.id).toBe('contact-form.form')
+        expect(m?.match.slots).toMatchObject({ intro: ['0.0'], details: ['0.1'], title: ['0.2'], form: ['0.3'] })
+        expect(contact()).toMatchObject({ into: 'details', each: '@details', item: { value: 'dom:a', href: 'dom:a@href' } })
+      })
+
+      it('without a button the match is the one the rule gave before: same rule, same filled slots, no details leaf', () => {
+        const cases: SectionLeaf[][][] = [
+          [[g('0.0', 'core/heading'), g(`0.1`, FORM)]],
+          [[g('0.0', 'core/heading'), g('0.1', 'core/paragraph'), g('0.2', FORM)]],
+          [[g('0.0', 'core/heading'), g('0.1', 'core/paragraph'), g('0.2', 'core/heading'), g('0.3', FORM)]],
+          [[g('0.0', 'core/paragraph'), g('0.1', FORM)]],
+          [[g('0.0', FORM)]],
+        ]
+        for (const columns of cases) {
+          const now = classify(columns, { index: 0, count: 1 })
+          const was = classifySection(before(), columns, { index: 0, count: 1 })
+          expect(now?.rule.id).toBe('contact-form.form')
+          expect(filled(now?.match.slots)).toEqual(filled(was?.match.slots))
+          expect(now?.match.slots.details).toEqual([])
+        }
+      })
+
+      it('at most three buttons are details; a fourth leaves the section unmatched, a button with no form is no contact section', () => {
+        const buttons = (n: number) => Array.from({ length: n }, (_, i) => g(`0.${i + 1}`, 'core/button'))
+        expect(classify([[g('0.0', 'core/paragraph'), ...buttons(3), g('0.4', FORM)]], { index: 0, count: 1 })?.match.slots.details).toEqual(['0.1', '0.2', '0.3'])
+        expect(classify([[g('0.0', 'core/paragraph'), ...buttons(4), g('0.5', FORM)]], { index: 0, count: 1 })?.rule.id).not.toBe('contact-form.form')
+        expect(classify([[g('0.0', 'core/heading'), g('0.1', 'core/paragraph'), g('0.2', 'core/button')]], { index: 0, count: 1 })?.rule.id).not.toBe('contact-form.form')
+      })
     })
   })
 

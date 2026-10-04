@@ -13,10 +13,14 @@ const { fields, locale } = Astro.props
 {fields.length > 0 && (
   <dl class="grid gap-x-8 gap-y-4 sm:grid-cols-[minmax(8rem,1fr)_3fr]" data-kit-fields>
     {fields.map(field => (
-      <>
-        <dt class="text-sm font-medium text-ink-muted">{field.label}</dt>
-        <dd class="m-0"><ShownValue value={field.value} locale={locale} /></dd>
-      </>
+      field.hideLabel
+        ? <dd class="m-0 sm:col-span-full"><ShownValue value={field.value} locale={locale} /></dd>
+        : (
+          <>
+            <dt class="text-sm font-medium text-ink-muted">{field.label}</dt>
+            <dd class="m-0"><ShownValue value={field.value} locale={locale} /></dd>
+          </>
+        )
     ))}
   </dl>
 )}
