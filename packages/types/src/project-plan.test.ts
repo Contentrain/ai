@@ -313,13 +313,13 @@ describe('validateProjectPlan', () => {
 
   it('checks the footer columns packed at the end edge', () => {
     const p = plan()
-    p.site.chrome = { footerColumns: { gap: 128, size: 17.88, narrowGap: 63 } }
+    p.site.chrome = { footerColumns: { gap: 128, size: 17.88, narrowGap: 63, narrowSize: 16.4 } }
     expect(validateProjectPlan(p).errors).toEqual([])
     p.site.chrome = { footerColumns: { gap: 128 } }
     expect(validateProjectPlan(p).errors).toEqual([])
-    for (const footerColumns of [{ gap: -1 }, { gap: 128, size: 0 }, { gap: 128, narrowGap: 9999 }, { gap: Number.NaN }, { size: 16 } as unknown as { gap: number }]) {
+    for (const footerColumns of [{ gap: -1 }, { gap: 128, size: 0 }, { gap: 128, narrowGap: 9999 }, { gap: 128, narrowSize: 0 }, { gap: 128, narrowSize: 101 }, { gap: Number.NaN }, { size: 16 } as unknown as { gap: number }]) {
       p.site.chrome = { footerColumns }
-      expect(validateProjectPlan(p).errors, JSON.stringify(footerColumns)).toEqual(['site.chrome.footerColumns is not a gap (0–400 px), a link size (1–100 px) and a narrow gap (0–400 px)'])
+      expect(validateProjectPlan(p).errors, JSON.stringify(footerColumns)).toEqual(['site.chrome.footerColumns is not a gap (0–400 px), a link size (1–100 px), a narrow gap (0–400 px) and a narrow link size (1–100 px)'])
     }
   })
 
