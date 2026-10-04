@@ -179,7 +179,7 @@
         "/project-type/infrastructure/",
         "data-cr-part=\"post-navigation\"",
         "data-cr-part=\"related\"",
-        "rel=\"next\"",
+        "<a href=\"/projects/grid-monitor/\" rel=\"prev\"",
         "/projects/grid-monitor/",
         "<ol class=\"flex list-decimal flex-col gap-2 pl-5\">",
         "<details class=\"group",
@@ -196,7 +196,7 @@
         "Grid Monitor",
         "Grid Energy",
         "javascript:alert(1)</span>",
-        "rel=\"prev\"",
+        "<a href=\"/projects/harbour-bridge/\" rel=\"next\"",
         "/projects/harbour-bridge/"
       ],
       "excludes": [
