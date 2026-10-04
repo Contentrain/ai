@@ -1,0 +1,20 @@
+{
+  "f1a2b3c4d5e6": {
+    "title": "Ada Kaya",
+    "slug": "ada-kaya",
+    "body": "<p>Bio of Ada Kaya.</p>",
+    "role": "Principal engineer",
+    "social": [
+      {
+        "network": "linkedin",
+        "url": "https://www.linkedin.com/in/ada-kaya"
+      },
+      {
+        "network": "github",
+        "url": "https://github.com/ada-kaya"
+      }
+    ],
+    "department": "Platform",
+    "wp_id": 95
+  }
+}
