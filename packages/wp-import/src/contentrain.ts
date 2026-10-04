@@ -304,6 +304,9 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
   /** Every ACF field on these posts: its definition, or — for a reference — its kind and target models. */
   const acfPlan = (items: RawPost[], taken: (k: string) => boolean): Map<string, AcfFieldPlan> => {
     const out = new Map<string, AcfFieldPlan>()
+    // An untyped field (the source states no ACF type: a Bridge export, WXR meta) whose every value is an attachment id is
+    // an image or file field the value's shape cannot show — a bare number reads as one. Tracked per field below.
+    const untyped = new Map<string, { values: unknown[]; typed: boolean }>()
     for (const p of items) {
       for (const [k, acf] of Object.entries(p.acf ?? {})) {
         if (taken(k) || acf.value === null || acf.value === undefined || acf.value === '' || acf.value === false && acf.type !== 'true_false') continue
@@ -321,11 +324,23 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
           out.set(k, cur)
           continue
         }
+        const seen = untyped.get(k) ?? untyped.set(k, { values: [], typed: false }).get(k)!
+        if (acf.type) seen.typed = true
+        else seen.values.push(acf.value)
         const def = acfFieldDef(k, acfScrub(acf.value), { type: acf.type, label: acf.label })
         if (!def) continue
         const cur = out.get(k)
         out.set(k, { def: cur?.def ? mergeFieldDef(cur.def, def) : def, multiple: false, models: new Set() })
       }
+    }
+    // Every non-empty value an id in the media library (and at least one value): a media reference, not a number. One value
+    // that is not (a count that happens to match an id) keeps the field what its values say.
+    const isMediaId = (v: unknown): boolean => (typeof v === 'number' ? Number.isSafeInteger(v) && v > 0 : typeof v === 'string' && /^\d+$/.test(v)) && mediaRef(Number(v)) !== null
+    for (const [k, seen] of untyped) {
+      const plan = out.get(k)
+      if (!plan?.def || seen.typed || !seen.values.length) continue
+      const all = seen.values.every((v) => (Array.isArray(v) ? v.length > 0 && v.every(isMediaId) : isMediaId(v)))
+      if (all) out.set(k, { kind: 'media', multiple: seen.values.some(Array.isArray), models: new Set(['media']) })
     }
     // A reference none of whose targets is in the store has no model to point at: it is left out.
     for (const [k, plan] of out) if (!plan.def && !plan.models.size) out.delete(k)
