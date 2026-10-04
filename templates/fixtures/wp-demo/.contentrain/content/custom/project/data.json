@@ -32,7 +32,13 @@
       }
     ],
     "published_at": "2026-01-22T10:00:00Z",
-    "wp_id": 402
+    "wp_id": 402,
+    "faq": [
+      {
+        "question": "How long did the bridge take?",
+        "answer": "<p>Eight months.</p>"
+      }
+    ]
   },
   "d4e5f6a1b2c3": {
     "title": "Grid Monitor",

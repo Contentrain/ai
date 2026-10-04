@@ -19,7 +19,22 @@ const external = (href: string) => /^https?:/.test(href)
 {value.kind === 'html' && <Prose html={value.html} searchable={false} />}
 {value.kind === 'image' && <KitImage image={value.image} sizes="(min-width: 768px) 768px, 100vw" class="h-auto max-w-full rounded-[var(--radius-image,0.75rem)]" />}
 {value.kind === 'group' && <FieldList fields={value.rows} locale={locale} />}
-{value.kind === 'list' && (
+{value.kind === 'list' && value.markup === 'details' && value.items.every(item => item.kind === 'group') && (
+  <div class="flex flex-col gap-2">
+    {value.items.map(item => item.kind === 'group' && (
+      <details class="group rounded-lg border border-line px-4 py-3">
+        <summary class="cursor-pointer font-medium">{item.rows[0] && <Astro.self value={item.rows[0].value} locale={locale} />}</summary>
+        <div class="mt-2 flex flex-col gap-2">{item.rows.slice(1).map(row => <Astro.self value={row.value} locale={locale} />)}</div>
+      </details>
+    ))}
+  </div>
+)}
+{value.kind === 'list' && value.markup === 'ol' && (
+  <ol class="flex list-decimal flex-col gap-2 pl-5">
+    {value.items.map(item => <li><Astro.self value={item} locale={locale} /></li>)}
+  </ol>
+)}
+{value.kind === 'list' && !(value.markup === 'ol' || (value.markup === 'details' && value.items.every(item => item.kind === 'group'))) && (
   <ul class="flex flex-col gap-2">
     {value.items.map(item => <li><Astro.self value={item} locale={locale} /></li>)}
   </ul>
