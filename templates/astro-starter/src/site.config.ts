@@ -33,7 +33,8 @@ export interface CustomType {
   collection: string
   /** Address of one entry: `/projects/:slug/`. */
   single: string
-  archive?: { pattern: string, title: string }
+  /** `label`: the word the source's archive title prints before the name ("Archives: Projects"), where `lists.prefixed`. */
+  archive?: { pattern: string, title: string, label?: string }
   /** Term lists: the entries whose `field` (a `relations` field) holds the term, at `pattern` (`/project-type/:slug/`). */
   taxonomies?: ReadonlyArray<{ collection: string, pattern: string, field: string, title: string }>
   /** What a card in a list shows; only `title` is required. */
@@ -109,7 +110,7 @@ export interface SiteConfig {
    * `surface`: a card is a surface of its own (`--color-card`, `--shadow-card`, `--spacing-card`) on a page that may be
    * tinted (`--color-page`). `byline`: the category above the title, `author / date` under it.
    */
-  lists: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean }
+  lists: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean }
   /**
    * The footer as the source prints it (a migration reads each off the rendered footer); a key absent keeps the
    * starter's own. `feed`: the "RSS feed" link in the last column (`/rss.xml` itself is always served). `border`: a

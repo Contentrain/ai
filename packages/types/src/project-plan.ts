@@ -118,8 +118,11 @@ export interface PlanSite {
    * carry their own colour, so only the meta text follows); absent, the body colour.
    * `surface`: cards are floating cards (the `color-card`, `radius-card`, `shadow-card` and `spacing-card` roles), not
    * bare. `byline`: each card prints its author and date below the title, the category above it, as the source's do.
+   * `prefixed`: an archive's title is ONE heading, `Label: Name` (WordPress's `get_the_archive_title`, a block theme's
+   * `core/query-title`), not the label above a heading with the name; the label is the archive route's `label`, or the
+   * starter's own for a category, tag and author. Absent: the label above, the name as the heading.
    */
-  lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean }
+  lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean }
   /**
    * The interface text the source theme itself printed (its "Read more" link, skip link, search placeholder, the
    * previous and next labels), by the `site/ui-strings` key it answers (`blog.read_more`, `nav.skip`): written over the
@@ -326,6 +329,12 @@ export interface PlanRoute {
   body: 'rich-text' | 'composed'
   /** The page body, in document order (chrome is `layout`'s). */
   sections: PlanPlacement[]
+  /**
+   * An archive route (a custom post type's, a custom taxonomy's term list): the word the source's archive title prints
+   * before the name (`Departments: Design` → `Departments`, `Archives: Projects` → `Archives`), where `site.lists.prefixed`.
+   * Absent: the starter's own label for the taxonomy, none for a post type.
+   */
+  label?: string
 }
 
 export interface PlanPlacement {
@@ -682,6 +691,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (routeIds.has(r.id)) errors.push(`route ${r.id} is declared twice`)
     routeIds.add(r.id)
     if (!PERMALINK.test(r.pattern)) errors.push(`route ${r.id}: pattern ${r.pattern} must start and end with "/"`)
+    if (r.label !== undefined && (typeof r.label !== 'string' || !r.label.trim() || r.label.length > 60 || /[\r\n]/.test(r.label))) errors.push(`route ${r.id}: label must be one short line of text`)
     if (r.source) {
       if (!knownModel(r.source.model)) errors.push(`route ${r.id}: source model ${r.source.model} is not declared`)
       ;(byModel.get(r.source.model) ?? byModel.set(r.source.model, []).get(r.source.model)!).push(r)
