@@ -3,6 +3,7 @@
 // links and the copyright line.
 import { tv } from 'tailwind-variants'
 import type { LinkInput } from '../_shared/types'
+import { footerLinkSizeClasses, footerVars } from './footer'
 
 const footer = tv({
   slots: {
@@ -67,14 +68,16 @@ interface Props {
   packGapNarrow?: string | undefined
   /** The links' font size, a CSS length (`17.88px`); absent, the footer's own. */
   linkSize?: string | undefined
+  /** The links' font size below `md`, a CSS length; absent, `linkSize` holds at every width. */
+  linkSizeNarrow?: string | undefined
   /** A border on the footer's top side: absent, the default tone has one and the others do not. */
   border?: boolean | undefined
 }
 
-const { siteName, tagline, columns = [], links = [], social = [], contact, copyright, consentLabel, navLabel = 'Footer', layout = 'simple', tone, align, pack, packGap, narrow, packGapNarrow, linkSize, border } = Astro.props
+const { siteName, tagline, columns = [], links = [], social = [], contact, copyright, consentLabel, navLabel = 'Footer', layout = 'simple', tone, align, pack, packGap, narrow, packGapNarrow, linkSize, linkSizeNarrow, border } = Astro.props
 const { root, inner, muted, link } = footer({ layout, tone, align, pack: layout === 'columns' ? pack : undefined, narrow: layout === 'columns' && pack === 'end' ? narrow : undefined, border: (border ?? (tone ?? 'default') === 'default') ? 'on' : 'off' })
 // Custom properties the packed columns and sized links read; none when none is set.
-const vars = [layout === 'columns' ? `--footer-columns: ${Math.max(columns.length, 1)}` : '', layout === 'columns' && pack === 'end' && packGap ? `--footer-gap: ${packGap}` : '', layout === 'columns' && pack === 'end' && narrow === 'row' && packGapNarrow ? `--footer-gap-narrow: ${packGapNarrow}` : '', linkSize ? `--footer-link-size: ${linkSize}` : ''].filter(Boolean).join('; ')
+const vars = footerVars({ layout, columnCount: columns.length, pack, narrow, packGap, packGapNarrow, linkSize, linkSizeNarrow })
 const year = String(new Date().getFullYear())
 const phoneHref = contact?.phone?.replace(/[^\d+]/g, '')
 const hasContact = Boolean(contact?.address || contact?.phone || contact?.email)
@@ -84,7 +87,7 @@ const hasBottom = Boolean(line || consentLabel)
 ---
 <!-- The cookie settings control is a button, not a link: the Consent component's listener reopens its bar on any [data-kit-consent-open]. -->
 <footer class={root()}>
-  <div class:list={[inner(), linkSize && '[&_nav_a]:text-[length:var(--footer-link-size)]']} data-kit-footer style={vars || undefined}>
+  <div class:list={[inner(), ...footerLinkSizeClasses({ linkSize, linkSizeNarrow })]} data-kit-footer style={vars || undefined}>
     <div class="flex flex-col gap-3">
       <p class="text-base font-semibold" data-kit-brand>{siteName}</p>
       {tagline && <p class={muted()} data-kit-tagline>{tagline}</p>}

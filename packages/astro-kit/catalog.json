@@ -1280,6 +1280,10 @@
           "type": "string",
           "description": "Font size of the footer's links, a CSS length such as 17.88px; absent, the footer's own."
         },
+        "linkSizeNarrow": {
+          "type": "string",
+          "description": "Font size of the footer's links below the md breakpoint, a CSS length such as 16.4px; absent, linkSize holds at every width."
+        },
         "border": {
           "type": "boolean",
           "content": false,
@@ -1308,7 +1312,8 @@
       },
       "a11y": "One <footer> landmark; each link group is a <nav> named by its title. Social links open in a new tab with rel=me.",
       "files": [
-        "Footer.astro"
+        "Footer.astro",
+        "footer.ts"
       ]
     },
     {

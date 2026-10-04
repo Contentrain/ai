@@ -148,6 +148,10 @@
       "type": "string",
       "description": "Font size of the footer's links, a CSS length such as 17.88px; absent, the footer's own."
     },
+    "linkSizeNarrow": {
+      "type": "string",
+      "description": "Font size of the footer's links below the md breakpoint, a CSS length such as 16.4px; absent, linkSize holds at every width."
+    },
     "border": {
       "type": "boolean",
       "content": false,
