@@ -201,6 +201,7 @@ export const collections = {
       cover: reference('media').optional(),
       featured: z.boolean().optional(),
       launch_date: z.coerce.date().optional(),
+      faq: z.array(z.object({ answer: z.string().optional(), question: z.string().optional() })).optional(),
       location: z.object({ address: z.string().optional(), city: z.string().optional() }).optional(),
       milestones: z.array(z.object({ date: z.coerce.date().optional(), name: z.string().optional() })).optional(),
       platforms: z.array(z.string()).optional(),

@@ -16,6 +16,8 @@ export interface CustomField {
   collection?: string
   fields?: readonly CustomField[]
   of?: string
+  /** How an array prints, as the source page did: an ordered list, or one disclosure per row (first value the summary). Absent: a plain list. */
+  markup?: 'ol' | 'details'
 }
 
 /**

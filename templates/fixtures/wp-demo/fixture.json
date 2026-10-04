@@ -9,7 +9,7 @@
     },
     {
       "from": "  sourceHosts: [],",
-      "to": "  types: [{\n    collection: 'project',\n    single: '/projects/:slug/',\n    archive: { pattern: '/projects/', title: 'Projects' },\n    taxonomies: [{ collection: 'projectType', pattern: '/project-type/:slug/', field: 'project-type', title: 'Project type' }],\n    card: { title: 'title', excerpt: 'summary', image: 'cover', date: 'published_at' },\n    body: 'body',\n    adjacent: true,\n    more: 2,\n    fields: [\n      { name: 'client', label: 'Client', type: 'string' },\n      { name: 'website', label: 'Website', type: 'url' },\n      { name: 'contact_email', label: 'Contact email', type: 'email' },\n      { name: 'launch_date', label: 'Launch date', type: 'date' },\n      { name: 'featured', label: 'Featured project', type: 'boolean' },\n      { name: 'platforms', label: 'Platforms', type: 'array', of: 'string' },\n      { name: 'location', label: 'Location', type: 'object', fields: [{ name: 'address', label: 'Address', type: 'text' }, { name: 'city', label: 'City', type: 'string' }] },\n      { name: 'milestones', label: 'Milestones', type: 'array', fields: [{ name: 'date', label: 'Date', type: 'date' }, { name: 'name', label: 'Name', type: 'string' }] },\n      { name: 'project-type', label: 'Project type', type: 'relations', collection: 'projectType' },\n    ],\n  }],\n  sourceHosts: [],"
+      "to": "  types: [{\n    collection: 'project',\n    single: '/projects/:slug/',\n    archive: { pattern: '/projects/', title: 'Projects' },\n    taxonomies: [{ collection: 'projectType', pattern: '/project-type/:slug/', field: 'project-type', title: 'Project type' }],\n    card: { title: 'title', excerpt: 'summary', image: 'cover', date: 'published_at' },\n    body: 'body',\n    adjacent: true,\n    more: 2,\n    fields: [\n      { name: 'client', label: 'Client', type: 'string' },\n      { name: 'website', label: 'Website', type: 'url' },\n      { name: 'contact_email', label: 'Contact email', type: 'email' },\n      { name: 'launch_date', label: 'Launch date', type: 'date' },\n      { name: 'featured', label: 'Featured project', type: 'boolean' },\n      { name: 'platforms', label: 'Platforms', type: 'array', of: 'string' },\n      { name: 'location', label: 'Location', type: 'object', fields: [{ name: 'address', label: 'Address', type: 'text' }, { name: 'city', label: 'City', type: 'string' }] },\n      { name: 'milestones', label: 'Milestones', type: 'array', fields: [{ name: 'date', label: 'Date', type: 'date' }, { name: 'name', label: 'Name', type: 'string' }], markup: 'ol' },\n      { name: 'faq', label: 'FAQ', type: 'array', fields: [{ name: 'question', label: 'Question', type: 'string' }, { name: 'answer', label: 'Answer', type: 'richtext' }], markup: 'details' },\n      { name: 'project-type', label: 'Project type', type: 'relations', collection: 'projectType' },\n    ],\n  }],\n  sourceHosts: [],"
     },
     {
       "from": "  lists: { display: 'cards', heading: false },",
@@ -95,9 +95,9 @@
         "aria-label=\"Legal\" data-cr-part=\"nav-footer\"",
         ">Imprint</a>",
         "href=\"/projects/harbour-bridge/\"",
-   "href=\"/project-type/software/\"",
-   "href=\"/projects/\"",
-   "<address",
+        "href=\"/project-type/software/\"",
+        "href=\"/projects/\"",
+        "<address",
         "tel:+441170000000",
         "12 Harbour Road",
         "https://www.linkedin.com/company/northwind-studio\" rel=\"me noopener\"",
@@ -175,7 +175,12 @@
         "data-cr-part=\"post-navigation\"",
         "data-cr-part=\"related\"",
         "rel=\"next\"",
-        "/projects/grid-monitor/"
+        "/projects/grid-monitor/",
+        "<ol class=\"flex list-decimal flex-col gap-2 pl-5\">",
+        "<details class=\"group",
+        "<summary class=\"cursor-pointer font-medium\"><span class=\"whitespace-pre-line\">How long did the bridge take?",
+        "Eight months.",
+        "<ul class=\"flex flex-col gap-2\"><li><span class=\"whitespace-pre-line\">web</span></li>"
       ],
       "excludes": [
         "field_"

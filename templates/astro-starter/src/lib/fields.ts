@@ -14,7 +14,7 @@ export type Shown =
   | { kind: 'time', value: Date, dateOnly: boolean }
   | { kind: 'html', html: string }
   | { kind: 'image', image: ImageInput }
-  | { kind: 'list', items: Shown[] }
+  | { kind: 'list', items: Shown[], markup?: 'ol' | 'details' }
   | { kind: 'group', rows: ShownField[] }
 
 export interface ShownField {
@@ -78,10 +78,10 @@ async function show(field: CustomField, value: unknown, targets: Targets, depth:
     if (field.fields && depth < 2) {
       const groups = (await Promise.all(value.map(async row => (typeof row === 'object' && row !== null ? { kind: 'group' as const, rows: await shownFields(field.fields ?? [], row as Record<string, unknown>, targets, depth + 1) } : undefined))))
         .filter((group): group is Extract<Shown, { kind: 'group' }> => group !== undefined && group.rows.length > 0)
-      return groups.length > 0 ? { kind: 'list', items: groups } : undefined
+      return groups.length > 0 ? { kind: 'list', items: groups, ...(field.markup ? { markup: field.markup } : {}) } : undefined
     }
     const items = (await Promise.all(value.map(item => show({ name: field.name, label: field.label, type: field.of ?? 'string' }, item, targets, depth + 1)))).filter((item): item is Shown => item !== undefined)
-    return items.length > 0 ? { kind: 'list', items } : undefined
+    return items.length > 0 ? { kind: 'list', items, ...(field.markup === 'ol' ? { markup: 'ol' as const } : {}) } : undefined
   }
   if (typeof value === 'number') return { kind: 'text', text: String(value) }
   const str = text(value)

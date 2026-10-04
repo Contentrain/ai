@@ -113,6 +113,26 @@
       "label": "WP post ID",
       "order": 150,
       "type": "integer"
+    },
+    "faq": {
+      "label": "FAQ",
+      "order": 135,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "fields": {
+          "question": {
+            "label": "Question",
+            "order": 10,
+            "type": "string"
+          },
+          "answer": {
+            "label": "Answer",
+            "order": 20,
+            "type": "richtext"
+          }
+        }
+      }
     }
   },
   "i18n": false,
