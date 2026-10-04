@@ -1,5 +1,11 @@
 # @contentrain/types
 
+## 1.48.0
+
+### Minor Changes
+
+- 54024da: `site.chrome.footerColumns.narrowSize`: the footer links' size in px below 768 (1–100), validated like `size`. Absent, `size` holds at every width.
+
 ## 1.47.0
 
 ### Minor Changes

@@ -1,5 +1,16 @@
 # @contentrain/astro-kit
 
+## 0.24.0
+
+### Minor Changes
+
+- 54024da: Footer: `linkSizeNarrow`, the links' font size below `md`. A source's footer links are often smaller on a phone than on a desktop (acf: 17.88px wide, ~16.4px at 390), and the one `linkSize` made the packed block wider there than the source's. The class overrides `linkSize` below `md`, stacked or in a row; absent, `linkSize` holds at every width as before. The starter reads it from `site.chrome.footerColumns.narrowSize`.
+
+### Patch Changes
+
+- Updated dependencies [54024da]
+  - @contentrain/types@1.48.0
+
 ## 0.23.6
 
 ### Patch Changes
