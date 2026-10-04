@@ -4,8 +4,7 @@
 // StudioForm): its fields, spam protection and notifications live in Studio,
 // and submissions arrive there for review — no form plugin, no mail server.
 // Until the site is bound to a Studio project the form renders nothing and the
-// contact details still show — and a section left with its heading alone is not
-// drawn (a heading over a form that is not there). When the owner chose another home for forms at
+// contact details still show, and so do the section's heading and introduction (only the form goes). When the owner chose another home for forms at
 // migration (site.config.ts `features.forms`), the same place holds a form
 // that posts to their form service, an address to write to, or a link to the
 // form on WordPress.
@@ -71,7 +70,7 @@ interface Props {
 const { model, heading, intro, formHeading, details = [], layout, align, tone, id = 'contact' } = Astro.props
 // Nothing to render (Studio not bound yet): a split would leave an empty column — the details stand alone.
 const formShown = formHome(model) !== null
-const bare = contactSectionBare({ formShown, intro, details })
+const bare = contactSectionBare({ formShown, heading, intro, details })
 const s = contact({ layout: formShown ? layout : 'stacked', align, tone })
 const headingId = heading ? `${id}-title` : undefined
 // A description list needs a term for every detail; an icon list carried from the source has values only.
