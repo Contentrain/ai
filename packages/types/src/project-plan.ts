@@ -165,8 +165,12 @@ export interface PlanSite {
    * `border: false` draws no line under the bar; `brandWeight` and `brandTracking` set the site name's weight and
    * letter-spacing; `offsetTop` is the space above the bar and `padTop`/`padBottom` the space inside it above and below
    * its content (CSS lengths, a fluid theme's as a `clamp()`). A key absent: the starter's own.
+   * `parts: true`: the header and footer are a block theme's template parts (Twenty Twenty-Five), sized by the theme's
+   * presets (the footer's site title at the h2 size) the way a classic theme's are read off its render. Absent, a plan
+   * with `chrome` is read as a classic theme's and one without as a block theme's (plans before 1.50).
    */
   chrome?: {
+    parts?: true
     brand?: string
     tagline?: boolean
     copyright?: string
@@ -531,6 +535,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   if (chrome?.tagline !== undefined && typeof chrome.tagline !== 'boolean') errors.push('site.chrome.tagline is not a boolean')
   if (chrome?.titleLinks !== undefined && typeof chrome.titleLinks !== 'boolean') errors.push('site.chrome.titleLinks is not a boolean')
   if (chrome?.navLinks !== undefined && typeof chrome.navLinks !== 'boolean') errors.push('site.chrome.navLinks is not a boolean')
+  if (chrome?.parts !== undefined && chrome.parts !== true) errors.push('site.chrome.parts is not true')
   const header = chrome?.header
   if (header !== undefined) {
     if (header === null || typeof header !== 'object' || Array.isArray(header)) errors.push('site.chrome.header is not an object')

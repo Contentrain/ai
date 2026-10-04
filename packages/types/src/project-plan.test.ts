@@ -311,6 +311,16 @@ describe('validateProjectPlan', () => {
     ])
   })
 
+  it('checks that the header and footer are template parts only as true', () => {
+    const p = plan()
+    p.site.chrome = { parts: true, footerColumns: { gap: 128 } }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    for (const parts of [false, 'yes', 1]) {
+      p.site.chrome = { parts: parts as unknown as true }
+      expect(validateProjectPlan(p).errors, JSON.stringify(parts)).toEqual(['site.chrome.parts is not true'])
+    }
+  })
+
   it('checks the footer columns packed at the end edge', () => {
     const p = plan()
     p.site.chrome = { footerColumns: { gap: 128, size: 17.88, narrowGap: 63, narrowSize: 16.4 } }
