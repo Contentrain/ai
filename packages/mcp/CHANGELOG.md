@@ -1,5 +1,12 @@
 # @contentrain/mcp
 
+## 3.9.18
+
+### Patch Changes
+
+- Updated dependencies [728c228]
+  - @contentrain/types@1.47.0
+
 ## 3.9.17
 
 ### Patch Changes
