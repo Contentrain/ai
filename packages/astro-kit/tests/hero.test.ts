@@ -24,3 +24,20 @@ describe('hero heading scale', () => {
     expect(headingStyle(undefined, 1)).toBeUndefined()
   })
 })
+
+describe('hero heading size', () => {
+  it('names the level whose site size an h2 takes (a second h1 written as an h2 keeps the h1 size), with or without theme', () => {
+    expect(headingStyle('theme', 2, 'h1')).toBe(headingStyle('theme', 1))
+    expect(headingStyle('default', 2, 'h1')).toBe(headingStyle('theme', 1))
+    expect(headingStyle(undefined, 1, 'h2')).toContain('var(--text-heading-2,')
+  })
+
+  it('own, or none, changes nothing: the output is byte-identical to before', () => {
+    for (const scale of ['default', 'theme', undefined] as const) for (const level of [1, 2] as const) {
+      expect(headingStyle(scale, level, 'own')).toBe(headingStyle(scale, level))
+      expect(headingStyle(scale, level, undefined)).toBe(headingStyle(scale, level))
+    }
+    expect(headingStyle('theme', 2, 'own')).toContain('var(--text-heading-2,')
+    expect(headingStyle('default', 1, 'own')).toBeUndefined()
+  })
+})

@@ -191,5 +191,53 @@
       "minHeight": 520,
       "headingScale": "theme"
     }
+  },
+  {
+    "name": "cover-content-size-h1",
+    "props": {
+      "heading": "Independent cinema, a neighbourhood hall",
+      "lead": "A hundred and twenty seats, fresh popcorn.",
+      "layout": "cover",
+      "actions": [
+        {
+          "label": "This week's programme",
+          "href": "/programme/"
+        }
+      ],
+      "image": {
+        "src": "/kit-fixtures/photo-1.svg",
+        "alt": "",
+        "width": 1600,
+        "height": 900
+      },
+      "width": "content",
+      "level": 2,
+      "minHeight": 520,
+      "headingScale": "theme",
+      "headingSize": "h1"
+    }
+  },
+  {
+    "name": "centered-size-h2",
+    "props": {
+      "heading": "Plan a calmer trip",
+      "lead": "Our guides pick fewer places and give each one more time.",
+      "layout": "centered",
+      "tone": "muted",
+      "level": 2,
+      "actions": [
+        {
+          "label": "Browse guides",
+          "href": "/category/guides/"
+        }
+      ],
+      "image": {
+        "src": "/kit-fixtures/photo-2.svg",
+        "alt": "",
+        "width": 1600,
+        "height": 700
+      },
+      "headingSize": "h2"
+    }
   }
 ]
