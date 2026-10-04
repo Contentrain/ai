@@ -495,3 +495,39 @@ describe('the access ladder', () => {
     expectTypeOf<SourceAccessKind>().not.toEqualTypeOf<SourceAccessKind | null>()
   })
 })
+
+import { MIGRATION_HANDOFF_GOLDEN } from './index'
+
+describe('the golden handoff (published for the producer and every reader)', () => {
+  const golden = MIGRATION_HANDOFF_GOLDEN
+
+  it('is a document of the current contract version', () => {
+    expect(golden.version).toBe(MIGRATION_CONTRACT_VERSION)
+  })
+
+  it('identifies its run and order in the formats the producer writes', () => {
+    expect(golden.plan_hash).toMatch(/^[0-9a-f]{16}$/)
+    expect(golden.order_id).toMatch(/^ord_[0-9a-f]{24}$/)
+  })
+
+  it('names only capabilities and offers the contract knows, each capability once', () => {
+    const known = new Set<string>(CAPABILITY_KEYS)
+    const keys = golden.capabilities.map((c) => c.key)
+    expect(keys.length).toBeGreaterThan(0)
+    for (const key of keys) expect(known.has(key), key).toBe(true)
+    for (const offer of golden.offers ?? []) expect(known.has(offer.capability), offer.capability).toBe(true)
+    expect(new Set(keys).size).toBe(keys.length)
+  })
+
+  it('carries a delivery stamp and is plain data', () => {
+    expect(golden.repository).toEqual({ provider: 'github', owner: 'acme', name: 'site', default_branch: 'main' })
+    expect(Number.isNaN(Date.parse(golden.generated_at))).toBe(false)
+    expect(JSON.parse(JSON.stringify(golden))).toEqual(golden)
+  })
+
+  it('an older document without the identity fields is still a valid handoff', () => {
+    const { plan_hash: _plan, order_id: _order, ...older } = golden
+    const asOlder: MigrationHandoff = older
+    expect(asOlder.plan_hash).toBeUndefined()
+  })
+})

@@ -1667,6 +1667,7 @@ export function serializeMarkdownFrontmatter(data: Record<string, unknown>, body
 // ─── Migration contracts ───
 
 export * from './migration.js'
+export * from './migration-golden.js'
 
 // ─── Execution, approval and source-delta contracts ───
 
