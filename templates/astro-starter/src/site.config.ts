@@ -18,6 +18,8 @@ export interface CustomField {
   of?: string
   /** How an array prints, as the source page did: an ordered list, or one disclosure per row (first value the summary). Absent: a plain list. */
   markup?: 'ol' | 'details'
+  /** The source page printed the value without this field's name (a link row, a bare role): the starter prints the value alone. Absent: the label shows. */
+  hideLabel?: boolean
 }
 
 /**
@@ -48,6 +50,8 @@ export interface CustomType {
   moreOf?: 'posts'
   /** The size the list prints its titles at (a CSS size), as the source's did; absent, the starter's own. */
   moreText?: string
+  /** The source page printed the fields above its body text (a role and links before a bio); absent, the body comes first. */
+  fieldsFirst?: boolean
   fields: readonly CustomField[]
 }
 

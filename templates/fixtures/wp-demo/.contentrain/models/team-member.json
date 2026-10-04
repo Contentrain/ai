@@ -1,0 +1,63 @@
+{
+  "domain": "custom",
+  "fields": {
+    "title": {
+      "label": "Title",
+      "order": 10,
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "label": "Slug",
+      "order": 20,
+      "type": "slug",
+      "required": true,
+      "unique": true
+    },
+    "body": {
+      "label": "Body",
+      "order": 30,
+      "type": "richtext"
+    },
+    "role": {
+      "label": "Role",
+      "order": 40,
+      "type": "string"
+    },
+    "social": {
+      "label": "Social",
+      "order": 50,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "fields": {
+          "network": {
+            "label": "Network",
+            "order": 10,
+            "type": "string"
+          },
+          "url": {
+            "label": "Url",
+            "order": 20,
+            "type": "url"
+          }
+        }
+      }
+    },
+    "department": {
+      "label": "Department",
+      "order": 60,
+      "type": "string"
+    },
+    "wp_id": {
+      "label": "WP post ID",
+      "order": 70,
+      "type": "integer"
+    }
+  },
+  "i18n": false,
+  "id": "team-member",
+  "kind": "collection",
+  "name": "Team members",
+  "title_field": "title"
+}

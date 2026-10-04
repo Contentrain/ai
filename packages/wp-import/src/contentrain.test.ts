@@ -564,3 +564,44 @@ describe('ACF Options Pages (bridge rung)', () => {
     expect(report.acf_options_renamed).toEqual({})
   })
 })
+
+describe('an untyped ACF field of attachment ids', () => {
+  const build = async (fields: Array<Record<string, unknown>>, ids: number[]) => {
+    const { raw: base } = await parseWxr(FIXTURE)
+    const hello = base.posts.find((p) => p.slug === 'hello-world')!
+    const media = ids.map((id) => ({ ...base.attachments[0]!, id }))
+    const raw: RawIR = {
+      ...base,
+      provenance: { kind: 'bridge', tool: 'contentrain-bridge' },
+      attachments: media,
+      posts: [...base.posts.filter((p) => p.type !== 'team_member'), ...fields.map((acf, i) => ({ ...hello, id: 500 + i, slug: `member-${i}`, type: 'team_member', acf: Object.fromEntries(Object.entries(acf).map(([k, value]) => [k, { value }])) }))],
+    }
+    const { files, report } = rawToContentrain(raw, { updatedBy: 'test' })
+    return { files, report, model: JSON.parse(files['.contentrain/models/team-member.json']!), entries: Object.values(JSON.parse(files['.contentrain/content/custom/team-member/data.json']!)) as Array<Record<string, unknown>> }
+  }
+
+  it('becomes a media relation when every value is an attachment id, and the id never stays a text', async () => {
+    const { model, entries } = await build([{ photo: '84' }, { photo: 85 }], [84, 85])
+    expect(model.fields.photo).toMatchObject({ type: 'relation', model: 'media' })
+    for (const entry of entries) expect(['84', '85']).not.toContain(entry.photo)
+    expect(entries.map((e) => e.photo).toSorted()).toEqual([hexId('media:84'), hexId('media:85')].toSorted())
+  })
+
+  it('stays what its values say when a number only coincides with an attachment id', async () => {
+    // 85 is a media id, 14 is not: the field is a count, not a photo.
+    const { model, entries } = await build([{ team_size: 85 }, { team_size: 14 }], [84, 85])
+    expect(model.fields.team_size.type).not.toBe('relation')
+    expect(entries.map((e) => e.team_size).toSorted()).toEqual([14, 85])
+    // A lone value that happens to be an id counts too: one entry is all the evidence there is, so it is a media field.
+    const lone = await build([{ team_size: 85 }], [84, 85])
+    expect(lone.model.fields.team_size).toMatchObject({ type: 'relation', model: 'media' })
+  })
+
+  it('keeps a typed field typed, even when its values are attachment ids', async () => {
+    const { raw: base } = await parseWxr(FIXTURE)
+    const hello = base.posts.find((p) => p.slug === 'hello-world')!
+    const raw: RawIR = { ...base, attachments: [{ ...base.attachments[0]!, id: 84 }], posts: [{ ...hello, id: 600, slug: 'm', type: 'team_member', acf: { badge: { value: 84, type: 'number' } } }] }
+    const { files } = rawToContentrain(raw, { updatedBy: 'test' })
+    expect(JSON.parse(files['.contentrain/models/team-member.json']!).fields.badge.type).toBe('number')
+  })
+})

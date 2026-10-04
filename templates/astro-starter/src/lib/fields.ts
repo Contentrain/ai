@@ -20,6 +20,8 @@ export type Shown =
 export interface ShownField {
   label: string
   value: Shown
+  /** Print the value without its label. */
+  hideLabel?: true
 }
 
 const LINKED = new Set(['url', 'email', 'phone'])
@@ -91,5 +93,5 @@ async function show(field: CustomField, value: unknown, targets: Targets, depth:
 
 export async function shownFields(fields: readonly CustomField[], data: Record<string, unknown>, targets: Targets, depth = 0): Promise<ShownField[]> {
   const shown = await Promise.all(fields.map(async field => ({ field, value: await show(field, data[field.name], targets, depth) })))
-  return shown.flatMap(({ field, value }) => (value ? [{ label: field.label, value }] : []))
+  return shown.flatMap(({ field, value }) => (value ? [{ label: field.label, value, ...(field.hideLabel ? { hideLabel: true as const } : {}) }] : []))
 }
