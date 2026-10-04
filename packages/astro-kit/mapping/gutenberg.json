@@ -1126,6 +1126,10 @@
           "match": "core/paragraph",
           "max": 1
         },
+        "details": {
+          "match": "core/button",
+          "max": 3
+        },
         "form": {
           "match": [
             "contact-form-7/contact-form-selector",
@@ -1143,6 +1147,12 @@
         "heading": "@title dom:",
         "intro": "@intro dom:",
         "formHeading": "@formTitle dom:"
+      },
+      "into": "details",
+      "each": "@details",
+      "item": {
+        "value": "dom:a",
+        "href": "dom:a@href"
       }
     },
     {
