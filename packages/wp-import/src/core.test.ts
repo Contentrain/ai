@@ -11,6 +11,10 @@ describe('strip decodes character references once', () => {
     expect(strip('[&hellip;]')).toBe('[…]')
     expect(strip('[&#8230;]')).toBe('[…]')
     expect(strip('It&#8217;s')).toBe('It’s')
+    // A tag cut short at the end goes; text with a less-than sign stays (formchickens' Wikimedia captions, B69).
+    expect(strip('Karadeniz kökenli Gerze horozu. Fotoğraf: <a href="//commons.wikimedia.org/w/index.php?title=User:X&action=edit&redlink=1" class="new" title, CC BY-SA 4.0 (Wikimedia Commons)')).toBe('Karadeniz kökenli Gerze horozu. Fotoğraf:')
+    expect(strip('a < b and 1<2')).toBe('a < b and 1<2')
+    expect(strip('<p>Whole <b>tag</b></p>')).toBe('Whole tag')
     expect(strip('It&#x2019;s')).toBe('It’s')
     expect(strip('It&rsquo;s')).toBe('It’s')
     expect(strip('&ldquo;Q&rdquo; &lsquo;q&rsquo; a&mdash;b a&ndash;b')).toBe('“Q” ‘q’ a—b a–b')

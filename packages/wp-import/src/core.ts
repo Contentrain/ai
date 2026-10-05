@@ -28,8 +28,12 @@ export const decodeEntities = (s: string): string =>
     }
   })
 
-/** Plain text from markup: tags out first (so `&lt;b&gt;` survives as text), then references decoded. */
-export const strip = (s: unknown): string => norm(decodeEntities(String(s ?? '').replace(/<[^>]*>/g, ' ')))
+/**
+ * Plain text from markup: tags out first (so `&lt;b&gt;` survives as text), then references decoded. A tag left open
+ * at the end (markup cut short: `Photo: <a href="…" class="new" title, CC BY-SA` with no `>`) goes too; it would
+ * otherwise stay as markup in a plain-text field. `a < b` and `1<2` are text: a tag starts with a letter, `/` or `!`.
+ */
+export const strip = (s: unknown): string => norm(decodeEntities(String(s ?? '').replace(/<[^>]*>/g, ' ').replace(/<[a-z/!][^<>]*$/i, ' ')))
 
 /** Entry id: deterministic hex from a stable key (model:slug style). */
 export const hexId = (s: string): string => createHash('sha1').update(s).digest('hex').slice(0, 24)
