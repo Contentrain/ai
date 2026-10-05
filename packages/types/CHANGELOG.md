@@ -1,5 +1,11 @@
 # @contentrain/types
 
+## 1.53.0
+
+### Minor Changes
+
+- c35dcec: `PlanSite.lists.columns`: the cards' column count from 600px up, as the source's grid prints it (a block theme's post template `columns-3`). The validator accepts a whole number from 1 to 6.
+
 ## 1.52.0
 
 ### Minor Changes
