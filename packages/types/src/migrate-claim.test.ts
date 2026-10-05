@@ -289,6 +289,24 @@ describe('grant status and install-url requests', () => {
   })
 })
 
+describe('validateMigrateGrantStatusResponse: kind and plan state', () => {
+  const base = { state: 'redeemed', installed: false }
+  it('takes the optional fields for every kind, and none of them', () => {
+    expect(validateMigrateGrantStatusResponse(base).ok).toBe(true)
+    expect(validateMigrateGrantStatusResponse({ ...base, kind: 'trial', plan: 'pro', trial_days: 60, ends_at: 1_800_000_000 }).ok).toBe(true)
+    expect(validateMigrateGrantStatusResponse({ ...base, kind: 'bundle', plan: 'starter', ends_at: 1_800_000_000 }).ok).toBe(true)
+    expect(validateMigrateGrantStatusResponse({ ...base, kind: 'covered', plan: 'pro', ended: true, notice: 'Your Studio plan has ended.' }).ok).toBe(true)
+  })
+  it('refuses a value that cannot be shown', () => {
+    expect(validateMigrateGrantStatusResponse({ ...base, kind: 'free' })).toEqual({ ok: false, errors: ['kind: unknown'] })
+    expect(validateMigrateGrantStatusResponse({ ...base, plan: 'enterprise' })).toEqual({ ok: false, errors: ['plan: unknown'] })
+    expect(validateMigrateGrantStatusResponse({ ...base, kind: 'covered', trial_days: 60 })).toEqual({ ok: false, errors: ['trial_days: only for a trial'] })
+    expect(validateMigrateGrantStatusResponse({ ...base, ends_at: 1.5 })).toEqual({ ok: false, errors: ['ends_at: invalid'] })
+    expect(validateMigrateGrantStatusResponse({ ...base, ended: false })).toEqual({ ok: false, errors: ['ended: only true when present'] })
+    expect(validateMigrateGrantStatusResponse({ ...base, notice: 'x' })).toEqual({ ok: false, errors: ['notice: only with ended'] })
+  })
+})
+
 describe('validateMigrateGrantStatusResponse', () => {
   it('takes the four states and never an install before the subscription runs', () => {
     for (const state of ['claimed', 'bound'])
