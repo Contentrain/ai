@@ -1,9 +1,10 @@
 ---
 // One entry of a custom post type: title, image, rich-text body, the terms it is filed under and its typed
-// fields (siteConfig.types), each labelled as the editor knows it.
+// fields (siteConfig.types), each labelled as the editor knows it; its comment thread when comments are open, as a post's.
 import FieldList from '../components/FieldList.astro'
 import KitImage from '../components/kit/_shared/KitImage.astro'
 import Prose from '../components/kit/prose/Prose.astro'
+import StudioComments from '../components/studio/StudioComments.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { getEntry } from 'astro:content'
 import { getPosts, getSite, getStrings, imageOf, postHref, type Media } from '../lib/content'
@@ -77,6 +78,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
         {next && <a href={entryHref(type, next)} rel="next" class="text-ink">{entryTitle(type, next)} <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
       </nav>
     )}
+    {type.model && data.comments_open === true && <StudioComments model={type.model} entry={entry.id} />}
   </article>
   {more.length > 0 && (
     <section aria-labelledby="more-entries" data-cr-part="related" class="container-page pb-16">

@@ -444,6 +444,20 @@ export function hasMore(thread: CommentThread): boolean {
   return thread.page * thread.limit < thread.total
 }
 
+/** A word's first character (a whole code point, so an emoji or an accented letter stays intact). */
+function firstChar(word: string | undefined): string {
+  return word ? Array.from(word)[0] ?? '' : ''
+}
+
+/**
+ * Up to two initials of a name, for the comment's monogram. The provider sends
+ * no avatar (no email hash leaves it), so a letter mark stands in for one.
+ */
+export function initials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  return (firstChar(words[0]) + (words.length > 1 ? firstChar(words[words.length - 1]) : '')).toLocaleUpperCase()
+}
+
 /** One comment with its replies. A reply button appears only while the thread is open and depth allows it. */
 export function commentHtml(c: PublicComment, config: { closed: boolean; maxDepth: number }): string {
   const author = c.author.url
@@ -460,7 +474,8 @@ export function commentHtml(c: PublicComment, config: { closed: boolean; maxDept
     : ''
   return (
     '<li class="cr-comment cr-comment--' + esc(c.type) + '" id="cr-comment-' + esc(c.id) + '" data-depth="' + esc(c.depth) + '">' +
-    '<div class="cr-comment-meta"><span class="cr-comment-author">' + author + '</span>' + badge + ' ' + date + '</div>' +
+    '<div class="cr-comment-meta"><span class="cr-avatar" aria-hidden="true">' + esc(initials(c.author.name)) + '</span>' +
+    '<span class="cr-comment-author">' + author + '</span>' + badge + ' ' + date + '</div>' +
     '<div class="cr-comment-body">' + bodyHtml(c.body) + '</div>' +
     (reply ? '<div class="cr-comment-actions">' + reply + '</div>' : '') +
     replies +
