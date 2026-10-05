@@ -1,6 +1,8 @@
 // Queries the pages share. Everything here reads the content layer, which the
 // Contentrain loader fills from `.contentrain` — no page reads files itself.
 
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { getCollection, getEntry, type CollectionEntry, type CollectionKey } from 'astro:content'
 import type { ImageInput } from '../components/kit/_shared/types'
 import { siteConfig } from '../site.config'
@@ -106,4 +108,20 @@ export async function getStringTable(prefixes: readonly string[]): Promise<Recor
   const entries = await getCollection('uiStrings')
   const keys = new Set(entries.map(entry => entry.data.key).filter(key => prefixes.some(prefix => key.startsWith(prefix))))
   return Object.fromEntries([...keys].toSorted().map(key => [key, t(key)]))
+}
+
+/**
+ * The redirects collection, or none without reading it when no redirect is written
+ * (.contentrain/content/<domain>/redirects/data.json): a site with none is the common case, and Astro warns that an
+ * empty collection "does not exist or is empty" on every build that asks for it.
+ */
+export async function getRedirects(): Promise<Array<CollectionEntry<'redirects'>>> {
+  let written = false
+  try {
+    const root = join(process.cwd(), '.contentrain')
+    const { domain } = JSON.parse(readFileSync(join(root, 'models', 'redirects.json'), 'utf8')) as { domain: string }
+    written = Object.keys(JSON.parse(readFileSync(join(root, 'content', domain, 'redirects', 'data.json'), 'utf8')) as object).length > 0
+  }
+  catch { written = false }
+  return written ? getCollection('redirects') : []
 }

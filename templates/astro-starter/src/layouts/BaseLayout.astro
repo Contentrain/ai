@@ -12,7 +12,7 @@ import { textDirection } from '../lib/direction'
 import { getSite, getStrings } from '../lib/content'
 import { menusAt } from '../lib/links'
 import { queryMap } from '../lib/redirects'
-import { organizationLd, websiteLd } from '../lib/seo'
+import { describePage, organizationLd, websiteLd } from '../lib/seo'
 import { siteConfig } from '../site.config'
 import '../styles/global.css'
 
@@ -75,7 +75,7 @@ const wpQueries = isHome ? await queryMap() : {}
     <Font cssVariable="--font-inter" preload={[{ subset: 'latin' }, { subset: 'latin-ext' }]} />
     <SEO
       title={fullTitle}
-      description={description ?? (isHome ? site.tagline : undefined)}
+      description={describePage({ own: description, label: isHome ? undefined : title, site: site.title, tagline: site.tagline })}
       canonical={canonical ?? new URL(Astro.url.pathname, origin).href}
       image={shareImage ? new URL(shareImage, origin).href : undefined}
       type={type ?? 'website'}

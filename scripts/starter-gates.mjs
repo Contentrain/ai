@@ -163,6 +163,36 @@ run('pnpm', ['exec', 'knip'])
 run('pnpm', ['run', 'build'])
 run('node', ['scripts/check-dist.mjs'])
 
+// Every indexable page has a meta description (the site's CI asserts Lighthouse SEO at 1): check-dist must catch a page
+// without one, and no two list pages share one — a later page of a list says its number.
+{
+  const dist = join(project, 'dist')
+  const pages = readdirSync(dist, { recursive: true, withFileTypes: true }).filter(entry => entry.isFile() && entry.name.endsWith('.html'))
+  const lists = new Map()
+  const repeated = []
+  for (const entry of pages) {
+    const html = readFileSync(join(entry.parentPath, entry.name), 'utf8')
+    if (!html.includes('data-cr-list') || /<meta name="robots" content="noindex/.test(html)) continue
+    const description = /<meta name="description" content="([^"]*)"/.exec(html)?.[1]
+    const file = join(entry.parentPath, entry.name).slice(dist.length + 1)
+    if (description && lists.has(description)) repeated.push(`${file} and ${lists.get(description)}: ${description}`)
+    else if (description) lists.set(description, file)
+  }
+  if (repeated.length) throw new Error(`List pages share a meta description:\n${repeated.join('\n')}`)
+  const described = pages.map(entry => join(entry.parentPath, entry.name)).find(path => /<meta name="description" content="[^"]+"/.test(readFileSync(path, 'utf8')) && !/content="noindex/.test(readFileSync(path, 'utf8')))
+  if (!described) throw new Error('No built page has a meta description')
+  const broken = mkdtempSync(join(tmpdir(), 'starter-dist-'))
+  cpSync(dist, broken, { recursive: true })
+  const target = join(broken, described.slice(dist.length + 1))
+  writeFileSync(target, readFileSync(target, 'utf8').replace(/<meta name="description" content="[^"]*"\s*\/?>/, ''))
+  let caught = false
+  try { execFileSync('node', ['scripts/check-dist.mjs', broken], { cwd: project, stdio: 'pipe' }) }
+  catch (error) { caught = String(error.stderr).includes(`${described.slice(dist.length + 1)}: no meta description`) }
+  rmSync(broken, { recursive: true, force: true })
+  if (!caught) throw new Error(`check-dist did not fail a page without a meta description (${described.slice(dist.length + 1)})`)
+  console.log(`\n${lists.size} list page(s), each with a description no other list page has; check-dist fails a page without one`)
+}
+
 const absent = fixture.absentFromDist ?? []
 if (absent.length) {
   const leaks = []
