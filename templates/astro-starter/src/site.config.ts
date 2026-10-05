@@ -116,9 +116,10 @@ export interface SiteConfig {
    * `text`: the size of each post's content in a full list, when the source's loop sets its own.
    * `tone`: `muted` when the source's loop sets the muted text colour on the list itself; titles keep their own colour.
    * `surface`: a card is a surface of its own (`--color-card`, `--shadow-card`, `--spacing-card`) on a page that may be
-   * tinted (`--color-page`). `byline`: the category above the title, `author / date` under it.
+   * tinted (`--color-page`). `byline`: the category above the title, `author / date` under it. `columns`: the cards'
+   * column count from 600px up, as the source's grid prints it; absent, two then three.
    */
-  lists: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean }
+  lists: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean, columns?: number }
   /**
    * The footer as the source prints it (a migration reads each off the rendered footer); a key absent keeps the
    * starter's own. `feed`: the "RSS feed" link in the last column (`/rss.xml` itself is always served). `border`: a
