@@ -57,7 +57,7 @@ const plan = (): ProjectPlan => ({
   ],
 })
 
-const metaMessage = (at: string) => `${at}.meta is not 1-4 columns of 1-6 rows of 1-8 tokens, each { text } (plain, 1-100 characters) or { part: date | author | terms | tags }`
+const metaMessage = (at: string) => `${at}.meta is not 1-4 columns of 1-6 rows of 1-8 tokens, each { text } or { part: date | author | terms | tags, prefix?, suffix? } (words plain, 1-100 characters)`
 
 describe('validateProjectPlan', () => {
   it('accepts a well-formed plan', () => {
@@ -272,7 +272,7 @@ describe('validateProjectPlan', () => {
     const p = plan()
     const meta: PostMeta = [
       [[{ text: 'Yayımlandı' }, { part: 'date' }, { text: 'kategorisi' }, { part: 'terms' }], [{ text: 'yazarı:' }, { part: 'author' }]],
-      [[{ text: 'Etiketler:' }, { part: 'tags' }]],
+      [[{ text: 'Etiketler:' }, { part: 'tags' }], [{ part: 'tags', prefix: 'Tags: ', suffix: '.' }]],
     ]
     p.site.post = { header: ['cover', 'title'], adjacent: false, more: 0, meta }
     p.site.entryLayouts = { 'type-tavuk': { adjacent: false, meta: [[[{ text: 'Yayımlandı' }, { part: 'date' }, { text: 'kategorisi' }], [{ text: 'yazarı:' }]], [[{ text: 'Etiketler:' }]]] } }
@@ -282,7 +282,7 @@ describe('validateProjectPlan', () => {
     const column6: PostMeta[number] = [row8, ...Array.from({ length: 5 }, () => [{ part: 'tags' as const }])]
     p.site.post = { header: ['title'], adjacent: false, more: 0, meta: [column6, column6, column6, column6] }
     expect(validateProjectPlan(p).errors).toEqual([])
-    for (const bad of [[], [[]], [[[]]], [[[{ part: 'title' }]]], [[[{ text: '<b>x</b>' }]]], [[[{ text: ' ' }]]], [[[{ text: 'a', part: 'date' }]]],
+    for (const bad of [[], [[]], [[[]]], [[[{ part: 'title' }]]], [[[{ text: '<b>x</b>' }]]], [[[{ text: ' ' }]]], [[[{ text: 'a', part: 'date' }]]], [[[{ part: 'tags', prefix: '<b>' }]]], [[[{ part: 'tags', prefix: ' ' }]]], [[[{ part: 'tags', label: 'x' }]]],
       // Each bound one past: 5 columns, 7 rows, 9 tokens, a 101-character word.
       Array.from({ length: 5 }, () => [[{ part: 'date' }]]),
       [Array.from({ length: 7 }, () => [{ part: 'date' }])],

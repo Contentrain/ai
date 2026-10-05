@@ -22,8 +22,11 @@ export interface CustomField {
   hideLabel?: boolean
 }
 
-/** One piece of a post-meta row: the source's own words (in the site's language) or a part of the entry. */
-type PostMetaToken = { text: string } | { part: 'date' | 'author' | 'terms' | 'tags' }
+/**
+ * One piece of a post-meta row: the source's own words (in the site's language) or a part of the entry. A theme's
+ * paragraph words always print; a part's own `prefix` / `suffix` (a post-terms block's "Tags: ") only with the part.
+ */
+type PostMetaToken = { text: string } | { part: 'date' | 'author' | 'terms' | 'tags', prefix?: string, suffix?: string }
 /**
  * The block the source's single template prints after the content (Twenty Twenty-Five's post meta: "Published
  * <date> in <categories>", "by <author>", "Tags: …" in the theme's own words), as columns of rows of tokens.

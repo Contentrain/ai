@@ -505,8 +505,12 @@ export function sectionFieldName(prop: string): string {
   return prop.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`)
 }
 
-/** One piece of a post-meta row: the source's own words (in the site's language, never translated) or a part of the entry. */
-export type PostMetaToken = { text: string } | { part: 'date' | 'author' | 'terms' | 'tags' }
+/**
+ * One piece of a post-meta row: the source's own words (in the site's language, never translated) or a part of the
+ * entry. Words a theme prints as a paragraph (`{ text }`) always print; words a block carries itself (a post-terms
+ * block's prefix "Tags: " and suffix) print only with the part, as WordPress prints nothing for an untagged post.
+ */
+export type PostMetaToken = { text: string } | { part: 'date' | 'author' | 'terms' | 'tags', prefix?: string, suffix?: string }
 /**
  * The block a single template prints after the content (Twenty Twenty-Five's post meta: "Yayımlandı 4 Ekim 2026
  * kategorisi …", "yazarı: admin", "Etiketler: …"), as columns of rows, each row its tokens in the source's order.
@@ -515,17 +519,18 @@ export type PostMetaToken = { text: string } | { part: 'date' | 'author' | 'term
 export type PostMeta = Array<Array<Array<PostMetaToken>>>
 
 const META_PARTS = new Set(['date', 'author', 'terms', 'tags'])
+/** Plain words of a post-meta block: 1 to 100 characters, not only spaces, no markup. */
+const metaWords = (v: unknown): boolean => typeof v === 'string' && v.trim() !== '' && v.length <= 100 && !/[<>]/.test(v)
 /** What is wrong with a post-meta block, `at` its plan address; none when it is well formed. */
 function postMetaErrors(meta: unknown, at: string): string[] {
   const shape = Array.isArray(meta) && meta.length >= 1 && meta.length <= 4 && meta.every(column => Array.isArray(column) && column.length >= 1 && column.length <= 6
     && column.every(row => Array.isArray(row) && row.length >= 1 && row.length <= 8 && row.every((token) => {
       if (!token || typeof token !== 'object') return false
       const t = token as Record<string, unknown>
-      if (Object.keys(t).length !== 1) return false
-      if ('part' in t) return META_PARTS.has(String(t.part))
-      return typeof t.text === 'string' && t.text.trim() !== '' && t.text.length <= 100 && !/[<>]/.test(t.text)
+      if ('part' in t) return META_PARTS.has(String(t.part)) && Object.keys(t).every(k => k === 'part' || ((k === 'prefix' || k === 'suffix') && metaWords(t[k])))
+      return Object.keys(t).length === 1 && metaWords(t.text)
     })))
-  return shape ? [] : [`${at}.meta is not 1-4 columns of 1-6 rows of 1-8 tokens, each { text } (plain, 1-100 characters) or { part: date | author | terms | tags }`]
+  return shape ? [] : [`${at}.meta is not 1-4 columns of 1-6 rows of 1-8 tokens, each { text } or { part: date | author | terms | tags, prefix?, suffix? } (words plain, 1-100 characters)`]
 }
 
 export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
