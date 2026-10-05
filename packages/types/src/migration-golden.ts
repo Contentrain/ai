@@ -29,12 +29,12 @@ export const MIGRATION_HANDOFF_GOLDEN: MigrationHandoff = {
     {
       key: 'forms',
       disposition: 'needs_runtime',
-      detail: "Studio'ya bağlanınca yeni sitede çalışır; bağlanana dek yeni sitede form görünmez (contact-form-7)",
+      detail: 'works on the new site once connected to Studio; until then no form shows on the new site (contact-form-7)',
     },
     {
       key: 'comments',
       disposition: 'needs_runtime',
-      detail: "Studio'ya bağlanınca yeni sitede çalışır; bağlanana dek yeni sitede yorum görünmez",
+      detail: 'works on the new site once connected to Studio; until then no comments show on the new site',
       counts: {
         total: 2,
         mapped: 1,
@@ -44,7 +44,7 @@ export const MIGRATION_HANDOFF_GOLDEN: MigrationHandoff = {
     {
       key: 'i18n',
       disposition: 'migrated_static',
-      detail: "dil başına aile, route'larda locale (polylang)",
+      detail: 'one family per language, the locale on routes (polylang)',
       counts: {
         locales: 1,
       },
@@ -52,7 +52,7 @@ export const MIGRATION_HANDOFF_GOLDEN: MigrationHandoff = {
     {
       key: 'ecommerce',
       disposition: 'needs_runtime',
-      detail: 'mağaza taşımaya dahil değil; WordPress sunucusunda kalır (woocommerce)',
+      detail: 'the shop is not part of the move; it stays on the WordPress server (woocommerce)',
     },
   ],
   comments: {
@@ -84,7 +84,7 @@ export const MIGRATION_HANDOFF_GOLDEN: MigrationHandoff = {
     {
       capability: 'comments',
       provider: 'keep_wordpress',
-      warning: "yorumlar WordPress'te kalırsa eski sunucu canlı kalır — bakım, güvenlik ve barındırma maliyeti sürer",
+      warning: 'if comments stay on WordPress the old server stays live — its maintenance, security and hosting costs continue',
     },
     {
       capability: 'forms',
@@ -93,12 +93,12 @@ export const MIGRATION_HANDOFF_GOLDEN: MigrationHandoff = {
     {
       capability: 'forms',
       provider: 'keep_wordpress',
-      warning: "formlar WordPress'te kalırsa gönderimler eski sunucuya gider; sunucu ve form eklentisi canlı kalır",
+      warning: 'if forms stay on WordPress submissions go to the old server; the server and the form plugin stay live',
     },
     {
       capability: 'ecommerce',
       provider: 'keep_wordpress',
-      warning: "mağaza WordPress'te kalırsa WooCommerce ve ödeme altyapısı eski sunucuda çalışmaya devam eder",
+      warning: 'if the shop stays on WordPress, WooCommerce and the payment setup keep running on the old server',
     },
   ],
   runtime: {
@@ -106,18 +106,18 @@ export const MIGRATION_HANDOFF_GOLDEN: MigrationHandoff = {
     project_id: 'p1',
   },
   notes: [
-    'derleme başarılı · kalite kapısı geçti',
-    'görsel sadakat: yazı medyanı 97.6 (1280 px)',
-    '6 aile · 7 route · 120 yazı · 9 sayfa',
-    'içerik mağazası: 4 model · 131 kayıt (.contentrain, @contentrain/wp-import) · KESİLDİ: media 3/12',
-    'çalışma zamanı adresleri: 128 route bağlandı · 1 BAĞLANAMADI',
-    'mağaza medyası: 12 URL yerel yola çevrildi · 300 eski-origin URL kaldı (medya taşıma: Studio)',
-    "form modeli: contact (4 alan, cf7) — Studio'da form bloğu açılınca gönderim alır",
-    "düzenlenebilirlik: 5/7 route içeriği veriden · 2 route DÜZENLENEMEZ (içerik chrome'a pişmiş) · 2 alan veride taşınıyor ama basılmıyor",
-    'aile genelliği: 3/5 aile canlıya karşı kanıtlandı · kanıtlanmayan: category (weak), page-solo-0 (single-sample)',
-    "bileşen mount noktaları: c-comments (comments, 1 aile) · c-contact (form, 1 aile) · Studio'ya bağlı: https://studio.test / p1",
-    'yorumlar: 2 (onaylı 1 · bekleyen 1) · dışa aktarım satır içi · 1 kapalı thread · 1 eşlenmeyen',
-    "yorum dışa aktarımı Git'e girmez — yorumlar teslim paketinde (makbuz), Studio'ya Migrate üzerinden aktarılır",
+    'build passed · quality gate passed',
+    'visual fidelity: post median 97.6 (1280 px)',
+    '6 families · 7 routes · 120 posts · 9 pages',
+    'content store: 4 models · 131 entries (.contentrain, @contentrain/wp-import) · TRUNCATED: media 3/12',
+    'runtime addresses: 128 routes bound · 1 COULD NOT BE BOUND',
+    'store media: 12 URLs rewritten to local paths · 300 old-origin URLs remain (media move: Studio)',
+    'form model: contact (4 fields, cf7) — takes submissions once the form block is opened in Studio',
+    'editability: 5/7 routes render their content from data · 2 routes NOT EDITABLE (content baked into the chrome) · 2 fields are carried in the data but not rendered',
+    'family generality: 3/5 families proven against the live site · not proven: category (weak), page-solo-0 (single-sample)',
+    'component mount points: c-comments (comments, 1 family) · c-contact (form, 1 family) · bound to Studio: https://studio.test / p1',
+    'comments: 2 (approved 1 · pending 1) · export inline · 1 closed thread · 1 unmatched',
+    'comments export: stays out of Git — the comments are in the delivery package (receipt) and move to Studio through Migrate',
   ],
   repository: {
     provider: 'github',
