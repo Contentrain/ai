@@ -221,6 +221,7 @@ export const collections = {
       id: z.string(),
       description: z.string().optional(),
       name: z.string(),
+      parent: reference('projectType').optional(),
       slug: z.string(),
       wp_id: z.number().int().optional(),
     }),

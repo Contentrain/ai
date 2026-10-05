@@ -3,7 +3,7 @@
 // Only known providers get an iframe; anything else stays a link, so a page
 // can never frame an arbitrary address that came in with the content.
 
-export type EmbedProvider = 'youtube' | 'vimeo' | 'google-maps' | 'openstreetmap' | 'spotify' | 'soundcloud' | 'calendly' | 'typeform' | 'loom' | 'wistia'
+export type EmbedProvider = 'youtube' | 'vimeo' | 'google-maps' | 'openstreetmap' | 'spotify' | 'soundcloud' | 'calendly' | 'typeform' | 'google-forms' | 'loom' | 'wistia'
 
 export interface EmbedTarget {
   provider: EmbedProvider
@@ -76,12 +76,15 @@ const GOOGLE = new Set(['www.google.com', 'google.com'])
 /** Framed as given: the host is known to serve an embeddable page at that address. */
 const FRAMED: Array<[EmbedProvider, EmbedTarget['kind'], (url: URL) => boolean]> = [
   // Exact hosts only: a pattern over Google's country domains also admits look-alikes (`google.com.evil.example`).
-  ['google-maps', 'map', u => (GOOGLE.has(u.hostname) && u.pathname.startsWith('/maps/embed')) || (u.hostname === 'maps.google.com' && u.searchParams.get('output') === 'embed')],
+  // A hand-pasted "embed a map" iframe is `google.com/maps?q=…&output=embed` as much as `/maps/embed?pb=…` (what `mapTarget` writes too).
+  ['google-maps', 'map', u => (GOOGLE.has(u.hostname) && (u.pathname.startsWith('/maps/embed') || (u.pathname === '/maps' && u.searchParams.get('output') === 'embed'))) || (u.hostname === 'maps.google.com' && u.searchParams.get('output') === 'embed')],
   ['openstreetmap', 'map', u => u.hostname === 'www.openstreetmap.org' && u.pathname === '/export/embed.html'],
   ['spotify', 'audio', u => u.hostname === 'open.spotify.com' && u.pathname.startsWith('/embed/')],
   ['soundcloud', 'audio', u => u.hostname === 'w.soundcloud.com' && u.pathname.startsWith('/player')],
   ['calendly', 'widget', u => u.hostname === 'calendly.com'],
   ['typeform', 'widget', u => /^[\w-]+\.typeform\.com$/.test(u.hostname) && u.pathname.startsWith('/to/')],
+  // A Google Form's own embed address (`/forms/d/e/<id>/viewform?embedded=true`): the form, not the rest of Google Docs.
+  ['google-forms', 'widget', u => u.hostname === 'docs.google.com' && /^\/forms\/d\/(?:e\/)?[\w-]+\/viewform$/.test(u.pathname)],
   ['loom', 'video', u => /^(?:www\.)?loom\.com$/.test(u.hostname) && u.pathname.startsWith('/embed/')],
   ['wistia', 'video', u => u.hostname === 'fast.wistia.net' && u.pathname.startsWith('/embed/')],
 ]

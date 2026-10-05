@@ -116,7 +116,7 @@ async function addTypeRoutes(add: (href: string, route: Route) => void): Promise
       for (const term of entries.get(taxonomy.collection) ?? []) {
         const members = own.filter(entry => refIds(entry.data[taxonomy.field]).includes(term.id)).flatMap(entry => cards.get(entry.id) ?? [])
         const description = text(term.data.description)
-        paginateCards(customTermHref(taxonomy, term), members, { title: text(term.data.name) ?? term.id, eyebrow: taxonomy.title, ...(description ? { description } : {}) })
+        paginateCards(customTermHref(taxonomy, term, terms), members, { title: text(term.data.name) ?? term.id, eyebrow: taxonomy.title, ...(description ? { description } : {}) })
       }
     }
   }
