@@ -207,7 +207,7 @@
     padding: 0.625rem 0.75rem;
     font: inherit;
   }
-  .cr-form button[type='submit'], .cr-comment-form button[type='submit'], .cr-load-more {
+  .cr-form button[type='submit'], .cr-comment-form button[type='submit'], .cr-load-more, .cr-form-link {
     justify-self: start;
     border-radius: 0.5rem;
     background: var(--color-ink);
@@ -215,6 +215,10 @@
     font-weight: 500;
     color: var(--color-surface);
     cursor: pointer;
+  }
+  .cr-form-link {
+    display: inline-block;
+    text-decoration: none;
   }
   .cr-form button:disabled, .cr-comment-form button:disabled {
     opacity: 0.6;
