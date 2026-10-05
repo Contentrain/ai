@@ -551,6 +551,20 @@ export interface MigrateGrantStatusResponse {
   state: MigrateGrantState
   /** Studio's GitHub App is installed for the grant's workspace. Only possible once `redeemed` (and after, if `revoked`). */
   installed: boolean
+  /**
+   * What kind of Studio the order has: `trial` (included days), `bundle` (a Studio year paid with the order) or
+   * `covered` (the order was covered by a plan the account already had: no subscription of its own).
+   */
+  kind?: 'trial' | 'bundle' | 'covered'
+  plan?: MigrateStudioPlan
+  /** Included days. Trial only. */
+  trial_days?: number
+  /** Seconds since the epoch: the trial's end, or the end of the running period of the plan the site lives on. */
+  ends_at?: number
+  /** The plan the site lives on has ended (the workspace has no running subscription). Absent otherwise. */
+  ended?: true
+  /** Studio's own text for the ended plan; Migrate shows it as is. Only with `ended`. */
+  notice?: string
 }
 
 export interface MigrateInstallUrlResponse {
@@ -611,6 +625,14 @@ export function validateMigrateGrantStatusResponse(input: unknown):
   if (!(MIGRATE_GRANT_STATES as readonly unknown[]).includes(input.state)) errors.push('state: unknown')
   if (typeof input.installed !== 'boolean') errors.push('installed: required')
   else if (input.installed && input.state !== 'redeemed' && input.state !== 'revoked') errors.push('installed: only once redeemed')
+  if (input.kind !== undefined && input.kind !== 'trial' && input.kind !== 'bundle' && input.kind !== 'covered') errors.push('kind: unknown')
+  if (input.plan !== undefined && input.plan !== 'starter' && input.plan !== 'pro') errors.push('plan: unknown')
+  if (input.trial_days !== undefined && !(typeof input.trial_days === 'number' && Number.isInteger(input.trial_days) && input.trial_days > 0)) errors.push('trial_days: invalid')
+  if (input.trial_days !== undefined && input.kind !== undefined && input.kind !== 'trial') errors.push('trial_days: only for a trial')
+  if (input.ends_at !== undefined && !isSeconds(input.ends_at)) errors.push('ends_at: invalid')
+  if (input.ended !== undefined && input.ended !== true) errors.push('ended: only true when present')
+  if (input.notice !== undefined && !isText(input.notice)) errors.push('notice: invalid')
+  if (input.notice !== undefined && input.ended !== true) errors.push('notice: only with ended')
   return errors.length === 0 ? { ok: true, response: input as unknown as MigrateGrantStatusResponse } : { ok: false, errors }
 }
 
