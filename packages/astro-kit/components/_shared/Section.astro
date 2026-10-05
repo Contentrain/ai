@@ -10,7 +10,8 @@ const section = tv({
     tone: {
       default: 'bg-surface text-ink',
       muted: 'bg-surface-muted text-ink',
-      inverse: 'bg-ink text-surface',
+      // A dark band reads the accent's text colour made for it (`--color-accent-text-inverse`).
+      inverse: 'bg-ink text-surface [--color-accent-text:var(--color-accent-text-inverse)]',
       accent: 'bg-accent text-accent-ink',
       // The site's brand colour where it is not the accent (a band the source paints in the builder's own colour).
       brand: 'bg-brand text-brand-ink',

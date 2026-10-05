@@ -29,7 +29,7 @@ const card = tv({
     },
     byline: {
       inline: {},
-      below: { meta: 'text-xs font-semibold text-accent' },
+      below: { meta: 'text-xs font-semibold text-accent-text' },
     },
   },
   defaultVariants: { layout: 'vertical', surface: 'plain', byline: 'inline' },
@@ -75,13 +75,13 @@ const Heading = `h${headingLevel}` as 'h2' | 'h3'
     )}
     {!below && (category || date) && (
       <p class={slots.meta()}>
-        {category && <a href={category.href} class="relative z-10 font-medium text-accent no-underline hover:underline">{category.label}</a>}
+        {category && <a href={category.href} class="relative z-10 font-medium text-accent-text no-underline hover:underline">{category.label}</a>}
         {category && date && <span aria-hidden="true">·</span>}
         {date && <time datetime={date.toISOString()}>{shown}</time>}
       </p>
     )}
     <Heading class={slots.title({ class: linkTitle ? 'text-[color:var(--color-link,var(--color-accent))]' : undefined })}>
-      <a href={href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent">{title}</a>
+      <a href={href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{title}</a>
     </Heading>
     {below && (author || date) && (
       <p class={slots.meta()}>

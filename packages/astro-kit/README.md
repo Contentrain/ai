@@ -46,8 +46,15 @@ Each component lives in `components/<id>/`:
 Components use colour roles and widths, never raw values. A site defines them
 in `@theme` (the starter already does): `--color-surface`,
 `--color-surface-muted`, `--color-ink`, `--color-ink-muted`, `--color-line`,
-`--color-accent`, `--color-accent-ink`, `--font-sans`, `--container-prose`,
+`--color-accent`, `--color-accent-ink`, `--color-accent-text`,
+`--color-accent-text-inverse`, `--font-sans`, `--container-prose`,
 `--container-page`, `--container-wide` and `--radius-card`.
+
+Text in the accent (an eyebrow, a category link) reads `--color-accent-text`, never
+`--color-accent`: an accent picked for fills can be too light for text on the page.
+The starter sets it to the accent; a site whose accent does not reach 4.5:1 on its
+surface sets a readable one. A dark section (`tone="inverse"`) reads
+`--color-accent-text-inverse` in its place.
 
 A migrated site also carries its theme's type and shape, and components read
 these with a fallback to the kit's own values, so a site without them looks

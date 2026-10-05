@@ -8,6 +8,8 @@
     "--color-line",
     "--color-accent",
     "--color-accent-ink",
+    "--color-accent-text",
+    "--color-accent-text-inverse",
     "--font-sans",
     "--container-prose",
     "--container-page",

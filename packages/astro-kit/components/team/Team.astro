@@ -15,7 +15,7 @@ const team = tv({
     member: 'group relative flex flex-col gap-3',
     portrait: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
     name: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)]',
-    role: 'text-sm font-medium text-accent',
+    role: 'text-sm font-medium text-accent-text',
     bio: 'text-pretty opacity-80',
   },
   variants: {
@@ -75,7 +75,7 @@ const NameHeading = heading ? 'h3' : 'h2'
           {imageOf(member.image, member.imageAlt ?? member.name) && <div class={s.portrait()}><KitImage image={imageOf(member.image, member.imageAlt ?? member.name)!} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" class="aspect-square w-full object-cover" /></div>}
           <NameHeading class={s.name()}>
             {member.href
-              ? <a href={member.href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent">{member.name}</a>
+              ? <a href={member.href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{member.name}</a>
               : member.name}
           </NameHeading>
           {member.role && <p class={s.role()}>{member.role}</p>}
