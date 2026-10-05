@@ -5,7 +5,7 @@
 import { getEntry, type CollectionKey } from 'astro:content'
 import type { ImageInput } from '../components/kit/_shared/types'
 import type { CustomField, CustomType } from '../site.config'
-import { entryHref, refIds, termHref, text, type TypeEntry } from './custom'
+import { entryHref, refIds, termHref, termsById, text, type TypeEntry } from './custom'
 import { imageOf, type Media } from './content'
 
 export type Shown =
@@ -42,7 +42,8 @@ export function targetsOf(types: readonly CustomType[], entries: ReadonlyMap<str
   for (const type of types) {
     for (const entry of entries.get(type.collection) ?? []) out.set(`${type.collection}:${entry.id}`, { href: entryHref(type, entry), title: titleOf(entry, type.card.title) })
     for (const taxonomy of type.taxonomies ?? []) {
-      for (const term of entries.get(taxonomy.collection) ?? []) out.set(`${taxonomy.collection}:${term.id}`, { href: termHref(taxonomy, term), title: titleOf(term, 'name') })
+      const terms = termsById(taxonomy.collection, entries.get(taxonomy.collection) ?? [])
+      for (const term of terms.values()) out.set(`${taxonomy.collection}:${term.id}`, { href: termHref(taxonomy, term, terms), title: titleOf(term, 'name') })
     }
   }
   return out

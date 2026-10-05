@@ -37,10 +37,13 @@ describe('embedTarget', () => {
     expect(embedTarget('https://w.soundcloud.com/player/?url=x')?.provider).toBe('soundcloud')
     expect(embedTarget('https://calendly.com/someone/30min')?.provider).toBe('calendly')
     expect(embedTarget('https://acme.typeform.com/to/AbC123')?.provider).toBe('typeform')
+    // A Google Form's embed address, and the hand-pasted map iframe (`google.com/maps?q=…&output=embed`, migrate B49).
+    expect(embedTarget('https://docs.google.com/forms/d/e/1FAIpQLSf-x_Y/viewform?embedded=true')).toMatchObject({ provider: 'google-forms', kind: 'widget' })
+    expect(embedTarget('https://www.google.com/maps?q=Denizli&output=embed')).toMatchObject({ provider: 'google-maps', kind: 'map' })
   })
 
   it('never frames an unknown host, a look-alike, or a non-web scheme', () => {
-    for (const url of ['https://example.com/widget/42', 'https://google.com.evil.example/maps/embed', 'https://www.google.evil/maps/embed', 'https://calendly.com.evil.example/x', 'https://www.google.com/search?q=maps', 'https://open.spotify.com/track/1', 'javascript:alert(1)', 'data:text/html,hi', 'not a url', '']) {
+    for (const url of ['https://example.com/widget/42', 'https://google.com.evil.example/maps/embed', 'https://www.google.evil/maps/embed', 'https://calendly.com.evil.example/x', 'https://www.google.com/search?q=maps', 'https://open.spotify.com/track/1', 'https://docs.google.com/document/d/abc/edit', 'https://docs.google.com/forms/d/e/x/viewform/../../../../document', 'https://docs.google.com.evil.example/forms/d/e/x/viewform', 'https://www.google.com/maps?q=Denizli', 'javascript:alert(1)', 'data:text/html,hi', 'not a url', '']) {
       expect(embedTarget(url), url).toBeNull()
     }
   })

@@ -9,7 +9,7 @@ import StudioComments from '../components/studio/StudioComments.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { getEntry } from 'astro:content'
 import { authorHref, getPosts, getSite, getStrings, imageOf, postHref, type Media } from '../lib/content'
-import { bodyOf, dateOf, entriesOf, entryHref, entryTitle, newestFirst, refIds, termHref, text, type TypeEntry } from '../lib/custom'
+import { bodyOf, dateOf, entriesOf, entryHref, entryTitle, newestFirst, refIds, termHref, termsById, text, type TypeEntry } from '../lib/custom'
 import { shownFields, type Targets } from '../lib/fields'
 import { publicHtml } from '../lib/links'
 import { siteConfig } from '../site.config'
@@ -48,7 +48,8 @@ const formatDate = (date: Date) => date.toLocaleDateString(site.language, { date
 const [imageId] = type.card.image ? refIds(data[type.card.image]) : []
 const cover = imageId ? await getEntry('media', imageId) : undefined
 const taxonomy = type.taxonomies?.[0]
-const terms = taxonomy ? (await entriesOf(taxonomy.collection)).filter(term => refIds(data[taxonomy.field]).includes(term.id)) : []
+const allTerms = taxonomy ? termsById(taxonomy.collection, await entriesOf(taxonomy.collection)) : new Map<string, TypeEntry>()
+const terms = taxonomy ? [...allTerms.values()].filter(term => refIds(data[taxonomy.field]).includes(term.id)) : []
 // The post-meta block names the entry's author, as a post's does (an imported type keeps WordPress's author relation).
 const [authorId] = type.meta ? refIds(data.author) : []
 const author = authorId ? await getEntry('authors', authorId) : undefined
@@ -68,7 +69,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
   <article class="container-prose py-12 md:py-16" data-kit-entry>
     {taxonomy && terms.length > 0 && (
       <p class="mb-4 flex flex-wrap gap-3 text-sm font-medium" data-kit-meta>
-        {terms.map(term => <a href={termHref(taxonomy, term)} class="text-accent-text no-underline hover:underline">{text(term.data.name) ?? term.id}</a>)}
+        {terms.map(term => <a href={termHref(taxonomy, term, allTerms)} class="text-accent-text no-underline hover:underline">{text(term.data.name) ?? term.id}</a>)}
       </p>
     )}
     <h1 class="[margin-bottom:var(--spacing-title,1.5rem)] text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{title}</h1>
@@ -81,7 +82,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
         meta={type.meta}
         date={dateOf(data[type.card.date ?? 'published_at'])}
         author={author ? { label: author.data.name, href: authorHref(author) } : undefined}
-        terms={taxonomy ? terms.map(term => ({ label: text(term.data.name) ?? term.id, href: termHref(taxonomy, term) })) : []}
+        terms={taxonomy ? terms.map(term => ({ label: text(term.data.name) ?? term.id, href: termHref(taxonomy, term, allTerms) })) : []}
         locale={site.language}
       />
     )}

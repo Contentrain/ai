@@ -774,7 +774,7 @@
     {
       "id": "embed",
       "name": "Embed",
-      "description": "A video, map or player from another site (YouTube, Vimeo, Google Maps, OpenStreetMap, Spotify, SoundCloud, Calendly, Typeform, Loom, Wistia), loaded only on click: until then a poster link to the provider's page, with no iframe, no third-party request and no cookie (YouTube through youtube-nocookie.com). Unknown providers are never framed; they stay a plain link.",
+      "description": "A video, map or player from another site (YouTube, Vimeo, Google Maps, OpenStreetMap, Spotify, SoundCloud, Calendly, Typeform, Google Forms, Loom, Wistia), loaded only on click: until then a poster link to the provider's page, with no iframe, no third-party request and no cookie (YouTube through youtube-nocookie.com). Unknown providers are never framed; they stay a plain link.",
       "category": "content",
       "uses": [],
       "shared": [
@@ -805,7 +805,7 @@
       "props": {
         "url": {
           "type": "url",
-          "description": "A video page (youtube.com/watch, youtu.be, /shorts/, vimeo.com/<id>) or a known provider's embed address (google.com/maps/embed, open.spotify.com/embed, w.soundcloud.com/player, calendly.com, *.typeform.com/to, loom.com/embed, fast.wistia.net/embed)."
+          "description": "A video page (youtube.com/watch, youtu.be, /shorts/, vimeo.com/<id>) or a known provider's embed address (google.com/maps/embed, open.spotify.com/embed, w.soundcloud.com/player, calendly.com, *.typeform.com/to, docs.google.com/forms/…/viewform, loom.com/embed, fast.wistia.net/embed)."
         },
         "address": {
           "type": "string",

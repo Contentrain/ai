@@ -45,8 +45,24 @@ export function entryHref(type: CustomType, entry: TypeEntry): string {
   return fillPattern(type.single, { slug, id: typeof wpId === 'number' ? String(wpId) : entry.id, ...dateParams(dateOf(entry.data.published_at)) })
 }
 
-export function termHref(taxonomy: Taxonomy, term: TypeEntry): string {
-  return fillPattern(taxonomy.pattern, { slug: text(term.data.slug) ?? term.id })
+/** A taxonomy's terms by `collection:id`, the key `termHref` reads a term's parents under. */
+export const termsById = (collection: string, terms: readonly TypeEntry[]): Map<string, TypeEntry> => new Map(terms.map(term => [`${collection}:${term.id}`, term]))
+
+/**
+ * A term's address. A taxonomy whose terms nest serves a child at `/<base>/<parent>/<child>/` (WordPress, a hierarchical
+ * taxonomy): its pattern carries `:path`, filled from the term's `parent` chain in `terms` (by `collection:id`), as a
+ * category's is. Without `:path` the slug alone.
+ */
+export function termHref(taxonomy: Taxonomy, term: TypeEntry, terms?: ReadonlyMap<string, TypeEntry>): string {
+  const slug = text(term.data.slug) ?? term.id
+  if (!taxonomy.pattern.includes(':path')) return fillPattern(taxonomy.pattern, { slug })
+  const trail: string[] = []
+  const seen = new Set<string>()
+  for (let at: TypeEntry | undefined = term; at && !seen.has(at.id); at = terms?.get(`${taxonomy.collection}:${refIds(at.data.parent)[0] ?? ''}`)) {
+    seen.add(at.id)
+    trail.unshift(text(at.data.slug) ?? at.id)
+  }
+  return fillPattern(taxonomy.pattern, { slug, path: trail.join('/') })
 }
 
 /** The ids a `relations` (or `relation`) value points at. */
@@ -86,6 +102,6 @@ export async function entryCard(type: CustomType, entry: TypeEntry, terms: Reado
     body: bodyOf(type, entry),
     date: card.date ? dateOf(entry.data[card.date]) : undefined,
     image: media ? imageOf(media as Media) : undefined,
-    category: taxonomy && term ? { label: text(term.data.name) ?? term.id, href: termHref(taxonomy, term) } : undefined,
+    category: taxonomy && term ? { label: text(term.data.name) ?? term.id, href: termHref(taxonomy, term, terms) } : undefined,
   }
 }

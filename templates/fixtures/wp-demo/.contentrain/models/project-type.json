@@ -23,6 +23,12 @@
       "label": "WP term ID",
       "order": 50,
       "type": "integer"
+    },
+    "parent": {
+      "label": "Parent",
+      "model": "project-type",
+      "order": 40,
+      "type": "relation"
     }
   },
   "i18n": false,

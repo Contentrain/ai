@@ -10,7 +10,7 @@ import { getCollection, getEntry, type CollectionEntry } from 'astro:content'
 import type { NavItem } from '../components/kit/_shared/types'
 import { byId, getSite, pageHref, postHref, resolve, termHref } from './content'
 import { optimizedImages } from './body-images'
-import { entryById, entryHref, termHref as customTermHref } from './custom'
+import { entriesOf, entryById, entryHref, termHref as customTermHref, termsById } from './custom'
 import { siteConfig } from '../site.config'
 import { routeTable } from './site-routes'
 
@@ -248,8 +248,10 @@ async function itemHref(item: MenuItem, link: (url: string | undefined) => strin
         }
         const taxonomy = type.taxonomies?.find(candidate => candidate.collection === collection)
         if (taxonomy) {
-          const term = await entryById(collection, target.ref)
-          return term ? link(customTermHref(taxonomy, term)) : undefined
+          // A nested term's address carries its parents: the taxonomy's terms are read for the chain.
+          const terms = taxonomy.pattern.includes(':path') ? termsById(collection, await entriesOf(collection)) : undefined
+          const term = terms?.get(`${collection}:${target.ref}`) ?? await entryById(collection, target.ref)
+          return term ? link(customTermHref(taxonomy, term, terms)) : undefined
         }
       }
       return undefined
