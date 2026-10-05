@@ -444,14 +444,18 @@ export function hasMore(thread: CommentThread): boolean {
   return thread.page * thread.limit < thread.total
 }
 
+/** A word's first character (a whole code point, so an emoji or an accented letter stays intact). */
+function firstChar(word: string | undefined): string {
+  return word ? Array.from(word)[0] ?? '' : ''
+}
+
 /**
  * Up to two initials of a name, for the comment's monogram. The provider sends
  * no avatar (no email hash leaves it), so a letter mark stands in for one.
  */
 export function initials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean)
-  const first = (word: string | undefined): string => (word ? Array.from(word)[0] ?? '' : '')
-  return (first(words[0]) + (words.length > 1 ? first(words[words.length - 1]) : '')).toLocaleUpperCase()
+  return (firstChar(words[0]) + (words.length > 1 ? firstChar(words[words.length - 1]) : '')).toLocaleUpperCase()
 }
 
 /** One comment with its replies. A reply button appears only while the thread is open and depth allows it. */
