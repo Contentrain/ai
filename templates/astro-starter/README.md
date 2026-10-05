@@ -133,7 +133,10 @@ Astro's font API, split into latin and latin-ext subsets. Media entries with
 known dimensions render through `astro:assets`; add remote image hosts to
 `image.domains` in `astro.config.mjs` to have them optimized at build time.
 Entries with neither an SEO description nor an excerpt get a description cut
-from their body text.
+from their body text; a page with none of these — an archive, a posts page,
+an empty page — gets one from its name and the site's name and tagline
+("Author: Ada – Northwind. Fresh bread daily."), with its number on a later
+page of a list.
 
 ## Gates
 
@@ -144,7 +147,10 @@ from their body text.
 3. `astro build` + Pagefind.
 4. `scripts/check-dist.mjs` — one stylesheet per page, no WordPress runtime,
    JavaScript only where a feature needs it, the SEO files present, and every
-   page with a title, language, absolute canonical and valid JSON-LD.
-5. Lighthouse CI (`lighthouserc.json`) — performance ≥ 0.95, accessibility,
-   best practices and SEO at 1 (SEO is not asserted on the `noindex` 404 and
-   search pages).
+   indexable page with a title, meta description, language, absolute canonical
+   and valid JSON-LD.
+5. Lighthouse CI (`lighthouserc.json`, three runs per page, the median
+   counts) — accessibility, best practices and SEO at 1 (SEO is not asserted
+   on the `noindex` 404 and search pages); performance under 0.95 is a
+   warning, not a failure: a shared CI runner's timing varies from run to run,
+   and a red check should mean the site has a fault.

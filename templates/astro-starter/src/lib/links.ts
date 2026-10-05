@@ -8,7 +8,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content'
 import type { NavItem } from '../components/kit/_shared/types'
-import { byId, getSite, pageHref, postHref, resolve, termHref } from './content'
+import { byId, getRedirects, getSite, pageHref, postHref, resolve, termHref } from './content'
 import { optimizedImages } from './body-images'
 import { entriesOf, entryById, entryHref, termHref as customTermHref, termsById } from './custom'
 import { siteConfig } from '../site.config'
@@ -70,7 +70,7 @@ let linker: Promise<Linker> | undefined
  */
 export function publicLinks(): Promise<Linker> {
   linker ??= (async () => {
-    const [routes, internal, redirects] = await Promise.all([routeTable(), internalHosts(), getCollection('redirects')])
+    const [routes, internal, redirects] = await Promise.all([routeTable(), internalHosts(), getRedirects()])
     // Keyed by path and query: a rule for `/old.php?id=3` or `/?page_id=5` stands for that address only, not its path.
     const ruleKey = (url: URL) => `${sitePath(url.pathname)}${url.search}`
     const rules = new Map(redirects.filter(entry => !entry.data.from.includes('*')).map(entry => [ruleKey(new URL(entry.data.from, `${BASE}/`)), entry.data]))

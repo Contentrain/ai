@@ -112,3 +112,27 @@ export function summarize(html: string | undefined, max = 160): string | undefin
   const cut = text.slice(0, max - 1)
   return `${cut.slice(0, cut.lastIndexOf(' ') > max / 2 ? cut.lastIndexOf(' ') : cut.length).replace(/[\s,;:.–—-]+$/, '')}…`
 }
+
+/**
+ * A page's meta description: the source's own when it has one, else what the page is in the site's own words —
+ * "Author: Ada – Northwind. Fresh bread daily." — so no indexable page goes without one (an archive in WordPress often
+ * has none, and the site's CI asserts Lighthouse SEO at 1). The front page keeps the tagline, as WordPress does. A later
+ * page of a list names its number, so no two pages of a list share a description. At most `max` characters.
+ */
+export function describePage(input: { own?: string | undefined, label?: string | undefined, site: string, tagline?: string | undefined, page?: string | undefined }, max = 160): string | undefined {
+  const own = input.own?.trim()
+  const tagline = input.tagline?.trim()
+  const what = [input.label, input.site.trim()].filter(Boolean).join(' – ')
+  const base = own || (input.label ? `${what}${tagline ? `. ${tagline}` : ''}` : tagline || what)
+  if (!base) return undefined
+  const page = input.page ? ` – ${input.page}` : ''
+  return `${shorten(base, max - page.length)}${page}`
+}
+
+/** Text cut at a word boundary to at most `max` characters, with an ellipsis when cut. */
+function shorten(text: string, max: number): string {
+  const flat = text.replace(/\s+/g, ' ').trim()
+  if (flat.length <= max) return flat
+  const cut = flat.slice(0, max - 1)
+  return `${cut.slice(0, cut.lastIndexOf(' ') > max / 2 ? cut.lastIndexOf(' ') : cut.length).replace(/[\s,;:.–—-]+$/, '')}…`
+}

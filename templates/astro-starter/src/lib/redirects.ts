@@ -10,7 +10,7 @@
 // unpublished one.
 
 import { getCollection } from 'astro:content'
-import { authorHref, byId, pageHref, termHref } from './content'
+import { authorHref, byId, getRedirects, pageHref, termHref } from './content'
 import { ownPath, publicLinks, sitePath } from './links'
 import { routeTable } from './site-routes'
 
@@ -39,7 +39,7 @@ let collected: Promise<{ paths: RedirectRule[], prefixes: PrefixRule[], wp: Quer
  */
 function collect() {
   collected ??= (async () => {
-    const [entries, routes, link] = await Promise.all([getCollection('redirects'), routeTable(), publicLinks()])
+    const [entries, routes, link] = await Promise.all([getRedirects(), routeTable(), publicLinks()])
     const paths = new Map<string, RedirectRule>()
     const wp: QueryRule[] = []
     const queried: QueriedRule[] = []

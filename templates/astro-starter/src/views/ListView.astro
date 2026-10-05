@@ -11,7 +11,7 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import { byId, getSite, getStrings, imageOf, postHref, termHref, type Post } from '../lib/content'
 import type { Card } from '../lib/custom'
 import { publicHtml } from '../lib/links'
-import { collectionLd } from '../lib/seo'
+import { collectionLd, describePage } from '../lib/seo'
 import { siteConfig } from '../site.config'
 
 interface Props {
@@ -52,13 +52,22 @@ const cards: Card[] = given ?? await Promise.all(posts.map(async (post) => {
 const bodies = full ? await Promise.all(cards.map((card, index) => card.body ? publicHtml(card.body) : posts[index] ? publicHtml(posts[index].data.body) : undefined)) : []
 const pageSuffix = current > 1 ? ` – ${t('pagination.page')} ${current}` : ''
 const url = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href
+// The archive's own description, else one that says what the page is (a later page with its number).
+const metaDescription = describePage({
+  own: description,
+  label: title ? (eyebrow ? `${eyebrow}: ${title}` : title) : current > 1 ? t('blog.title') : undefined,
+  site: site.title,
+  tagline: site.tagline,
+  page: current > 1 ? `${t('pagination.page')} ${current}` : undefined,
+})
 ---
 <BaseLayout
   title={title ? `${title}${pageSuffix}` : current > 1 ? `${t('blog.title')}${pageSuffix}` : undefined}
-  description={description}
+  description={metaDescription}
   jsonLd={[collectionLd(url, title ?? t('blog.title'))]}
 >
-  <div class="container-page py-12 md:py-16" data-cr-list>
+  {/* data-cr-described: the description is the site's own words for the page, not the source's — counted for the owner. */}
+  <div class="container-page py-12 md:py-16" data-cr-list data-cr-described={description?.trim() ? undefined : 'generated'}>
     <header class:list={['mb-12 flex flex-col gap-3', column ? 'mx-auto max-w-(--container-prose)' : 'max-w-2xl', !showHeading && 'sr-only']}>
       {eyebrow && !prefixed && <p class="text-sm font-medium tracking-wide text-accent-text uppercase">{eyebrow}</p>}
       <h1 class="text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance">{prefixed ? `${eyebrow}: ${title}` : title ?? (siteConfig.lists.heading ? t('blog.title') : site.title)}</h1>

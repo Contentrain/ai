@@ -6,8 +6,9 @@
 //  - the files crawlers and readers expect: sitemap, robots.txt, RSS, 404
 //  - wp-query-map.json: WordPress's query addresses (?p=, ?page_id=, …) and
 //    where they lead now — the baseline every host serves, even when empty
-//  - every indexable page has a title, a canonical URL, a language and
-//    well-formed JSON-LD
+//  - every indexable page has a title, a meta description, a canonical URL, a
+//    language and well-formed JSON-LD — Lighthouse's SEO audits, which the
+//    site's CI asserts at 1
 //
 // Usage: node scripts/check-dist.mjs [dist]   — exits 1 on any failure.
 
@@ -81,6 +82,8 @@ for (const path of pages) {
   if (!/<title>[^<]+<\/title>/.test(html)) fail(file, 'no <title>')
   const noindex = /<meta name="robots" content="noindex/.test(html)
   if (!noindex && !/<link rel="canonical" href="https?:\/\/[^"]+"/.test(html)) fail(file, 'no absolute canonical URL')
+  const description = /<meta name="description" content="([^"]*)"/.exec(html)?.[1]?.trim()
+  if (!noindex && !description) fail(file, 'no meta description')
 
   for (const match of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
     try {
