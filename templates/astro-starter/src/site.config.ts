@@ -31,6 +31,12 @@ export interface CustomField {
 export interface CustomType {
   /** The content collection (`projectType`, not the model id `project-type`). */
   collection: string
+  /**
+   * The model id (`project-type`): the key the entry's comment thread is kept under in Studio, as `posts` is for a
+   * post. A collection name cannot be turned back into it (`a_b` and `a-b` are both `aB`), so it is said here.
+   * Absent: the type's pages show no thread.
+   */
+  model?: string
   /** Address of one entry: `/projects/:slug/`. */
   single: string
   /** `label`: the word the source's archive title prints before the name ("Archives: Projects"), where `lists.prefixed`. */

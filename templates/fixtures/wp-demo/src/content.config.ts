@@ -197,6 +197,7 @@ export const collections = {
       id: z.string(),
       body: z.string().optional(),
       client: z.string().optional(),
+      comments_open: z.boolean().default(false),
       contact_email: z.string().optional(),
       cover: reference('media').optional(),
       featured: z.boolean().optional(),

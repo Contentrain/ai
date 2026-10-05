@@ -133,6 +133,11 @@
           }
         }
       }
+    },
+    "comments_open": {
+      "label": "Comments open",
+      "order": 145,
+      "type": "boolean"
     }
   },
   "i18n": false,
