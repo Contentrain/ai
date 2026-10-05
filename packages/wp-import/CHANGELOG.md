@@ -1,5 +1,11 @@
 # @contentrain/wp-import
 
+## 0.11.19
+
+### Patch Changes
+
+- abb8f12: `strip()` also removes a tag left open at the end of a string (markup cut short, no closing `>`), so a plain-text field such as an attachment caption never keeps raw markup. Text with a less-than sign (`a < b`, `1<2`) is kept.
+
 ## 0.11.18
 
 ### Patch Changes
