@@ -163,6 +163,9 @@ run('pnpm', ['exec', 'knip'])
 run('pnpm', ['run', 'build'])
 run('node', ['scripts/check-dist.mjs'])
 
+/** An attribute value as written in HTML, read back as text. */
+const unescape = text => text.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+
 // Every indexable page has a meta description (the site's CI asserts Lighthouse SEO at 1): check-dist must catch a page
 // without one, and no two list pages share one — a later page of a list says its number.
 {
@@ -179,6 +182,23 @@ run('node', ['scripts/check-dist.mjs'])
     else if (description) lists.set(description, file)
   }
   if (repeated.length) throw new Error(`List pages share a meta description:\n${repeated.join('\n')}`)
+  // The source's own description is moved as it was written, whatever its length: only a composed one is held to 160
+  // characters. Every description in the content longer than that must reach a built page whole.
+  const built = new Set(pages.map(entry => /<meta name="description" content="([^"]*)"/.exec(readFileSync(join(entry.parentPath, entry.name), 'utf8'))?.[1]).filter(Boolean).map(unescape))
+  const long = []
+  const collect = value => {
+    if (Array.isArray(value)) value.forEach(collect)
+    else if (value && typeof value === 'object') {
+      for (const [key, inner] of Object.entries(value)) {
+        if (key === 'description' && typeof inner === 'string' && inner.trim().length > 160) long.push(inner)
+        else collect(inner)
+      }
+    }
+  }
+  const contentDir = join(project, '.contentrain', 'content')
+  if (existsSync(contentDir)) for (const entry of readdirSync(contentDir, { recursive: true, withFileTypes: true })) if (entry.isFile() && entry.name.endsWith('.json')) collect(JSON.parse(readFileSync(join(entry.parentPath, entry.name), 'utf8')))
+  const cut = long.filter(text => !built.has(text))
+  if (cut.length) throw new Error(`A source description longer than 160 characters did not reach its page whole:\n${cut.join('\n')}`)
   const described = pages.map(entry => join(entry.parentPath, entry.name)).find(path => /<meta name="description" content="[^"]+"/.test(readFileSync(path, 'utf8')) && !/content="noindex/.test(readFileSync(path, 'utf8')))
   if (!described) throw new Error('No built page has a meta description')
   const broken = mkdtempSync(join(tmpdir(), 'starter-dist-'))
@@ -190,7 +210,7 @@ run('node', ['scripts/check-dist.mjs'])
   catch (error) { caught = String(error.stderr).includes(`${described.slice(dist.length + 1)}: no meta description`) }
   rmSync(broken, { recursive: true, force: true })
   if (!caught) throw new Error(`check-dist did not fail a page without a meta description (${described.slice(dist.length + 1)})`)
-  console.log(`\n${lists.size} list page(s), each with a description no other list page has; check-dist fails a page without one`)
+  console.log(`\n${lists.size} list page(s), each with a description no other list page has; ${long.length} source description(s) over 160 characters kept whole; check-dist fails a page without one`)
 }
 
 const absent = fixture.absentFromDist ?? []
