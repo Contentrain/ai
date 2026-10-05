@@ -1,5 +1,11 @@
 # @contentrain/types
 
+## 1.56.0
+
+### Minor Changes
+
+- f37d3be: `MigrateGrantStatusResponse` gains optional `kind` (`trial` | `bundle` | `covered`), `plan`, `trial_days`, `ends_at`, `ended` and `notice`: what kind of Studio an order has and, when the plan the site lives on has ended, Studio's own text for it. Additive; `validateMigrateGrantStatusResponse` checks them when present.
+
 ## 1.55.0
 
 ### Minor Changes
