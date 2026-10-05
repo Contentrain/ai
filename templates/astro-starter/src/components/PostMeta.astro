@@ -1,0 +1,38 @@
+---
+// The block a source's single template prints after the content (siteConfig.post.meta, a custom type's meta): its
+// columns of rows, each row the theme's own words and the entry's parts in the source's order — "Yayımlandı 4 Ekim
+// 2026 kategorisi Tavuk Bakımı", "yazarı: admin", "Etiketler: kümes". The words print as the source printed them; a
+// part prints when the entry has it, as a WordPress block prints nothing for an empty one.
+import type { PostMeta } from '../site.config'
+
+interface Link { label: string, href: string }
+
+interface Props {
+  meta: PostMeta
+  date?: Date | undefined
+  author?: Link | undefined
+  terms?: readonly Link[]
+  tags?: readonly Link[]
+  locale: string
+}
+
+const { meta, date, author, terms = [], tags = [], locale } = Astro.props
+const formatDate = (value: Date) => value.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' })
+const links = (list: readonly Link[]) => list.map((link, index) => ({ ...link, comma: index > 0 }))
+---
+<footer data-cr-part="post-meta" class="mt-12 flex flex-col gap-4 border-t border-line pt-6 text-sm md:flex-row md:gap-12">
+  {meta.map(column => (
+    <div class="flex flex-col gap-2">
+      {column.map(row => (
+        <p class="flex flex-wrap items-baseline gap-x-1.5">
+          {row.map(token => 'text' in token ? <span>{token.text}</span>
+            : token.part === 'date' ? date && <time datetime={date.toISOString()}>{formatDate(date)}</time>
+            : token.part === 'author' ? author && <a href={author.href} class="text-ink no-underline hover:underline">{author.label}</a>
+            : (token.part === 'terms' ? terms : tags).length > 0 && (
+              <span>{links(token.part === 'terms' ? terms : tags).map(link => <>{link.comma && ', '}<a href={link.href} class="text-ink no-underline hover:underline">{link.label}</a></>)}</span>
+            ))}
+        </p>
+      ))}
+    </div>
+  ))}
+</footer>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fieldDepth, footerMenusOf, PROJECT_PLAN_FORMAT, validateProjectPlan, type ProjectPlan } from './project-plan.js'
+import { fieldDepth, footerMenusOf, PROJECT_PLAN_FORMAT, validateProjectPlan, type PostMeta, type ProjectPlan } from './project-plan.js'
 
 /** A small blog with a composed About page — the shape the planner writes for a block-theme site. */
 const plan = (): ProjectPlan => ({
@@ -263,6 +263,33 @@ describe('validateProjectPlan', () => {
     for (const bad of ['medium', 'url(x)', '1rem;background:url(//evil/x)', '1rem} a{color:red', 'calc(1rem + url(x))']) {
       p.site.post = { header: ['title'], adjacent: true, adjacentText: bad, more: 0 }
       expect(validateProjectPlan(p).errors).toEqual([`site.post.adjacentText ${bad} is not a CSS size`])
+    }
+  })
+
+  it('accepts the post-meta block as the source prints it (tt5, Turkish) and refuses a malformed one', () => {
+    const p = plan()
+    const meta: PostMeta = [
+      [[{ text: 'Yayımlandı' }, { part: 'date' }, { text: 'kategorisi' }, { part: 'terms' }], [{ text: 'yazarı:' }, { part: 'author' }]],
+      [[{ text: 'Etiketler:' }, { part: 'tags' }]],
+    ]
+    p.site.post = { header: ['cover', 'title'], adjacent: false, more: 0, meta }
+    p.site.entryLayouts = { 'type-tavuk': { adjacent: false, meta: [[[{ text: 'Yayımlandı' }, { part: 'date' }, { text: 'kategorisi' }], [{ text: 'yazarı:' }]], [[{ text: 'Etiketler:' }]]] } }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    // Each bound itself: 4 columns, 6 rows, 8 tokens, a 100-character word.
+    const row8: PostMeta[number][number] = [...Array.from({ length: 7 }, () => ({ text: 'a' })), { text: 'b'.repeat(100) }]
+    const column6: PostMeta[number] = [row8, ...Array.from({ length: 5 }, () => [{ part: 'tags' as const }])]
+    p.site.post = { header: ['title'], adjacent: false, more: 0, meta: [column6, column6, column6, column6] }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    const message = (at: string) => `${at}.meta is not 1-4 columns of 1-6 rows of 1-8 tokens, each { text } (plain, 1-100 characters) or { part: date | author | terms | tags }`
+    for (const bad of [[], [[]], [[[]]], [[[{ part: 'title' }]]], [[[{ text: '<b>x</b>' }]]], [[[{ text: ' ' }]]], [[[{ text: 'a', part: 'date' }]]],
+      // Each bound one past: 5 columns, 7 rows, 9 tokens, a 101-character word.
+      Array.from({ length: 5 }, () => [[{ part: 'date' }]]),
+      [Array.from({ length: 7 }, () => [{ part: 'date' }])],
+      [[Array.from({ length: 9 }, () => ({ text: 'a' }))]],
+      [[[{ text: 'a'.repeat(101) }]]]] as unknown[]) {
+      p.site.post = { header: ['title'], adjacent: false, more: 0, meta: bad as PostMeta }
+      p.site.entryLayouts = { 'type-tavuk': { adjacent: false, meta: bad as PostMeta } }
+      expect(validateProjectPlan(p).errors).toEqual([message('site.post'), message('site.entryLayouts.type-tavuk')])
     }
   })
 

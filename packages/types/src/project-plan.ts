@@ -105,9 +105,10 @@ export interface PlanSite {
    * it shows (a `core/query` after the content; 0 for none). `moreIncludesCurrent`: that list also shows the post
    * being read, as the source's query does (it does not exclude the current post); absent, the post is left out. `adjacentText`: the size the previous/next links print at (a CSS size: the theme's preset on `core/post-navigation-link`); absent, the starter's own. `moreText`: the size that list prints its
    * titles at (a CSS size: the theme's `large` preset on `core/post-title`); absent, the starter's own.
+   * `meta`: the block the source prints after the content (`PostMeta`); absent, the starter's tags row.
    * Absent: the starter's own layout.
    */
-  post?: { header: Array<'terms' | 'title' | 'byline' | 'cover'>, adjacent: boolean, adjacentText?: string, more: number, moreIncludesCurrent?: boolean, moreText?: string }
+  post?: { header: Array<'terms' | 'title' | 'byline' | 'cover'>, adjacent: boolean, adjacentText?: string, more: number, moreIncludesCurrent?: boolean, moreText?: string, meta?: PostMeta }
   /**
    * Post lists (blog index, archives): `cards`, or `full` when the source's query loop shows each post's
    * content; `list` is cards in one column, as themes whose archive is a single stack of posts show
@@ -136,9 +137,9 @@ export interface PlanSite {
    * `adjacent` = links to the previous and next entry under it. The starter's entry view prints them for that
    * type only. `more` = a list of that many other entries under it (0 to 20); `moreIncludesCurrent`: the list also
    * shows the entry being read, as the source's query does; `moreOf: 'posts'`: the list holds the newest blog posts, as a
-   * theme's single template does whatever the type, not other entries of the same type; `moreText`: the size it prints its titles at (a CSS size); `adjacentText`: the size the previous/next links print at (a CSS size). Absent (or a type left out): none.
+   * theme's single template does whatever the type, not other entries of the same type; `moreText`: the size it prints its titles at (a CSS size); `adjacentText`: the size the previous/next links print at (a CSS size). `meta`: the block it prints after the content (`PostMeta`; `terms` are the type's own taxonomy's). Absent (or a type left out): none.
    */
-  entryLayouts?: Record<string, { adjacent: boolean, adjacentText?: string, more?: number, moreIncludesCurrent?: boolean, moreOf?: 'posts', moreText?: string }>
+  entryLayouts?: Record<string, { adjacent: boolean, adjacentText?: string, more?: number, moreIncludesCurrent?: boolean, moreOf?: 'posts', moreText?: string, meta?: PostMeta }>
   /**
    * What the source's footer prints of the three things the starter's footer prints by default, each only when the
    * source does (a migration reads them off the rendered footer). `feed`: a visible "RSS feed" link in the last
@@ -504,6 +505,29 @@ export function sectionFieldName(prop: string): string {
   return prop.replace(/[A-Z]/g, c => `_${c.toLowerCase()}`)
 }
 
+/** One piece of a post-meta row: the source's own words (in the site's language, never translated) or a part of the entry. */
+export type PostMetaToken = { text: string } | { part: 'date' | 'author' | 'terms' | 'tags' }
+/**
+ * The block a single template prints after the content (Twenty Twenty-Five's post meta: "Yayımlandı 4 Ekim 2026
+ * kategorisi …", "yazarı: admin", "Etiketler: …"), as columns of rows, each row its tokens in the source's order.
+ * The words print as written; a part prints when the entry has it (a date, an author, its terms or tags).
+ */
+export type PostMeta = Array<Array<Array<PostMetaToken>>>
+
+const META_PARTS = new Set(['date', 'author', 'terms', 'tags'])
+/** What is wrong with a post-meta block, `at` its plan address; none when it is well formed. */
+function postMetaErrors(meta: unknown, at: string): string[] {
+  const shape = Array.isArray(meta) && meta.length >= 1 && meta.length <= 4 && meta.every(column => Array.isArray(column) && column.length >= 1 && column.length <= 6
+    && column.every(row => Array.isArray(row) && row.length >= 1 && row.length <= 8 && row.every((token) => {
+      if (!token || typeof token !== 'object') return false
+      const t = token as Record<string, unknown>
+      if (Object.keys(t).length !== 1) return false
+      if ('part' in t) return META_PARTS.has(String(t.part))
+      return typeof t.text === 'string' && t.text.trim() !== '' && t.text.length <= 100 && !/[<>]/.test(t.text)
+    })))
+  return shape ? [] : [`${at}.meta is not 1-4 columns of 1-6 rows of 1-8 tokens, each { text } (plain, 1-100 characters) or { part: date | author | terms | tags }`]
+}
+
 export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   const errors: string[] = []
   const warnings: string[] = []
@@ -521,6 +545,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (site.post.moreIncludesCurrent !== undefined && typeof site.post.moreIncludesCurrent !== 'boolean') errors.push('site.post.moreIncludesCurrent is not true or false')
     if (site.post.adjacentText !== undefined && !CSS_LENGTH.test(site.post.adjacentText)) errors.push(`site.post.adjacentText ${site.post.adjacentText} is not a CSS size`)
     if (site.post.moreText !== undefined && !CSS_LENGTH.test(site.post.moreText)) errors.push(`site.post.moreText ${site.post.moreText} is not a CSS size`)
+    if (site.post.meta !== undefined) errors.push(...postMetaErrors(site.post.meta, 'site.post'))
   }
   for (const [key, value] of Object.entries(site?.uiStrings ?? {})) {
     if (!/^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9_]*)+$/.test(key)) errors.push(`site.uiStrings key ${key} is not a ui-strings key`)
@@ -538,6 +563,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (layout?.moreOf !== undefined && layout.moreOf !== 'posts') errors.push(`site.entryLayouts.${route}.moreOf ${String(layout.moreOf)} is not posts`)
     if (layout?.moreText !== undefined && !CSS_LENGTH.test(layout.moreText)) errors.push(`site.entryLayouts.${route}.moreText ${layout.moreText} is not a CSS size`)
     if (layout?.adjacentText !== undefined && !CSS_LENGTH.test(layout.adjacentText)) errors.push(`site.entryLayouts.${route}.adjacentText ${layout.adjacentText} is not a CSS size`)
+    if (layout?.meta !== undefined) errors.push(...postMetaErrors(layout.meta, `site.entryLayouts.${route}`))
   }
   const printed = site?.footer
   if (printed?.feed !== undefined && typeof printed.feed !== 'boolean') errors.push('site.footer.feed is not a boolean')
