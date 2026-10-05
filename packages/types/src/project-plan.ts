@@ -121,8 +121,10 @@ export interface PlanSite {
    * `prefixed`: an archive's title is ONE heading, `Label: Name` (WordPress's `get_the_archive_title`, a block theme's
    * `core/query-title`), not the label above a heading with the name; the label is the archive route's `label`, or the
    * starter's own for a category, tag and author. Absent: the label above, the name as the heading.
+   * `columns`: the cards' column count, from 600px up, as the source's grid prints it (a block theme's post template
+   * `columns-3`: WordPress keeps the count from 600px and stacks below). Absent: the starter's own (2, then 3).
    */
-  lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean }
+  lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean, columns?: number }
   /**
    * The interface text the source theme itself printed (its "Read more" link, skip link, search placeholder, the
    * previous and next labels), by the `site/ui-strings` key it answers (`blog.read_more`, `nav.skip`): written over the
@@ -527,6 +529,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   if (Object.keys(site?.uiStrings ?? {}).length > 100) errors.push('site.uiStrings holds more than 100 strings')
   if (site?.lists && !['cards', 'list', 'full'].includes(site.lists.display)) errors.push(`site.lists.display ${site.lists.display} is not cards, list or full`)
   if (site?.lists?.tone !== undefined && site.lists.tone !== 'muted') errors.push(`site.lists.tone ${String(site.lists.tone)} is not muted`)
+  if (site?.lists?.columns !== undefined && (!Number.isInteger(site.lists.columns) || site.lists.columns < 1 || site.lists.columns > 6)) errors.push(`site.lists.columns ${String(site.lists.columns)} is not a whole number from 1 to 6`)
   if (site?.lists?.text !== undefined && !CSS_LENGTH.test(site.lists.text)) errors.push(`site.lists.text ${site.lists.text} is not a CSS size`)
   for (const [route, layout] of Object.entries(site?.entryLayouts ?? {})) {
     if (typeof layout?.adjacent !== 'boolean') errors.push(`site.entryLayouts.${route}.adjacent is not true or false`)

@@ -291,6 +291,12 @@ describe('validateProjectPlan', () => {
     p.site.lists = { display: 'list', heading: false }
     expect(validateProjectPlan(p).errors).toEqual([])
     p.site.lists = { display: 'cards', heading: false, surface: true, byline: true }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.lists = { display: 'cards', heading: false, columns: 3 }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.lists = { display: 'cards', heading: false, columns: 2.5 }
+    expect(validateProjectPlan(p).errors).toContain('site.lists.columns 2.5 is not a whole number from 1 to 6')
+    p.site.lists = { display: 'cards', heading: false, surface: true, byline: true }
     p.site.tokens.roles = { 'color-page': 'rgb(240, 245, 250)', 'color-card': 'rgb(255, 255, 255)', 'shadow-card': 'rgba(16, 24, 40, 0.05) 0px 6px 15px -2px', 'spacing-card': '24px', 'color-brand': '#E67828', 'color-brand-ink': 'rgb(51, 51, 51)' }
     expect(validateProjectPlan(p).errors).toEqual([])
     p.site.post = { header: ['title', 'title'], adjacent: false, more: 30 }
