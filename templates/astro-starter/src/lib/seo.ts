@@ -117,15 +117,17 @@ export function summarize(html: string | undefined, max = 160): string | undefin
  * A page's meta description: the source's own when it has one, else what the page is in the site's own words —
  * "Author: Ada – Northwind. Fresh bread daily." — so no indexable page goes without one (an archive in WordPress often
  * has none, and the site's CI asserts Lighthouse SEO at 1). The front page keeps the tagline, as WordPress does. A later
- * page of a list names its number, so no two pages of a list share a description. At most `max` characters.
+ * page of a list names its number, so no two pages of a list share a description. The source's own text is kept as
+ * it was written, whatever its length — the migration moves it, it does not rewrite it; only a composed description is
+ * held to `max` characters.
  */
 export function describePage(input: { own?: string | undefined, label?: string | undefined, site: string, tagline?: string | undefined, page?: string | undefined }, max = 160): string | undefined {
-  const own = input.own?.trim()
+  const page = input.page ? ` – ${input.page}` : ''
+  if (input.own?.trim()) return `${input.own}${page}`
   const tagline = input.tagline?.trim()
   const what = [input.label, input.site.trim()].filter(Boolean).join(' – ')
-  const base = own || (input.label ? `${what}${tagline ? `. ${tagline}` : ''}` : tagline || what)
+  const base = input.label ? `${what}${tagline ? `. ${tagline}` : ''}` : tagline || what
   if (!base) return undefined
-  const page = input.page ? ` – ${input.page}` : ''
   return `${shorten(base, max - page.length)}${page}`
 }
 
