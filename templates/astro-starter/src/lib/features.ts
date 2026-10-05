@@ -34,12 +34,27 @@ export function formFields(model: string): Array<{ id: string, def: FieldDef }> 
 }
 
 /**
- * How the form for `model` renders here, or null when nothing can: Studio not bound yet, the WordPress address
- * unknown, a service address that is not https, a model with no public fields, an address that is not an email.
+ * Where a Studio form goes while the site is not bound to Studio yet: the same form on the WordPress site that stays
+ * up, else the address the source site published to write to, else nowhere. Binding Studio replaces it, no edit needed.
+ */
+function unboundHome(): FormHome | null {
+  if (siteConfig.features?.wordpress) return 'wordpress'
+  return EMAIL.test(siteConfig.features?.email ?? '') ? 'mailto' : null
+}
+
+/** The address a `mailto` form shows: the chosen one, or the fallback a Studio form uses until Studio is bound. */
+export function formAddress(): string | undefined {
+  const forms = siteConfig.features?.forms
+  return forms?.home === 'mailto' ? forms.address : siteConfig.features?.email
+}
+
+/**
+ * How the form for `model` renders here, or null when nothing can: Studio not bound and no fallback, the WordPress
+ * address unknown, a service address that is not https, a model with no public fields, an address that is not an email.
  */
 export function formHome(model: string): FormHome | null {
   const forms = siteConfig.features?.forms ?? { home: 'studio' as const }
-  if (forms.home === 'studio') return siteConfig.studio ? 'studio' : null
+  if (forms.home === 'studio') return siteConfig.studio ? 'studio' : unboundHome()
   if (forms.home === 'wordpress') return siteConfig.features?.wordpress ? 'wordpress' : null
   if (forms.home === 'mailto') return EMAIL.test(forms.address) ? 'mailto' : null
   return forms.action.startsWith('https://') && formFields(model).length > 0 ? 'endpoint' : null

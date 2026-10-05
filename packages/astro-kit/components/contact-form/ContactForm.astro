@@ -3,8 +3,9 @@
 // and the form. The form is a Contentrain Studio form (the starter's
 // StudioForm): its fields, spam protection and notifications live in Studio,
 // and submissions arrive there for review — no form plugin, no mail server.
-// Until the site is bound to a Studio project the form renders nothing and the
-// contact details still show, and so do the section's heading and introduction (only the form goes). When the owner chose another home for forms at
+// Until the site is bound to a Studio project the form's place links to the
+// form on WordPress or shows an address to write to (the starter's formHome); with
+// neither it renders nothing and the contact details still show, and so do the section's heading and introduction (only the form goes). When the owner chose another home for forms at
 // migration (site.config.ts `features.forms`), the same place holds a form
 // that posts to their form service, an address to write to, or a link to the
 // form on WordPress.
@@ -74,7 +75,7 @@ interface Props {
 }
 
 const { model, heading, intro, formHeading, details = [], layout, align, tone, headingPlace = 'top', id = 'contact' } = Astro.props
-// Nothing to render (Studio not bound yet): a split would leave an empty column — the details stand alone.
+// Nothing to render (Studio not bound and no fallback): a split would leave an empty column — the details stand alone.
 const formShown = formHome(model) !== null
 const bare = contactSectionBare({ formShown, heading, intro, details })
 const s = contact({ layout: formShown ? layout : 'stacked', align, tone })
