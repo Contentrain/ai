@@ -182,6 +182,18 @@
     font-size: 0.875rem;
     font-weight: 500;
   }
+  /* A comment field's label holds only its text (the control is its sibling): one line, not a grid. */
+  .cr-comment-form .cr-field {
+    display: grid;
+    gap: 0.375rem;
+  }
+  .cr-comment-form label {
+    display: block;
+  }
+  .cr-comment-form label small {
+    font-weight: 400;
+    color: var(--color-ink-muted);
+  }
   .cr-form :is(input:not([type='checkbox'], [type='radio']), select, textarea),
   .cr-comment-form :is(input, textarea) {
     width: 100%;
@@ -214,6 +226,10 @@
     font-size: 1.5rem;
     font-weight: 700;
   }
+  .cr-count {
+    font-weight: 400;
+    color: var(--color-ink-muted);
+  }
   .cr-comment-list, .cr-replies {
     display: grid;
     gap: 1.5rem;
@@ -221,8 +237,107 @@
   }
   .cr-replies {
     margin-top: 1.5rem;
-    margin-inline-start: 1.5rem;
+    margin-bottom: 0;
+    margin-inline-start: 1rem;
     border-inline-start: 2px solid var(--color-line);
     padding-inline-start: 1.25rem;
+  }
+
+  /*
+   * One comment: a monogram, then name · badge · date on one row, with the body,
+   * the reply control and the replies aligned under the name. Colors are role
+   * tokens only, so a thread follows the site's palette, light or dark.
+   */
+  .cr-comment {
+    --cr-avatar: 2.25rem;
+    --cr-avatar-gap: 0.75rem;
+  }
+  .cr-comment > :not(.cr-comment-meta) {
+    margin-inline-start: calc(var(--cr-avatar) + var(--cr-avatar-gap));
+  }
+  .cr-comment-meta {
+    display: grid;
+    grid-template-columns: var(--cr-avatar) auto 1fr;
+    align-items: center;
+    column-gap: var(--cr-avatar-gap);
+  }
+  .cr-avatar {
+    display: grid;
+    flex: none;
+    place-items: center;
+    grid-row: 1 / span 2;
+    width: var(--cr-avatar);
+    height: var(--cr-avatar);
+    border-radius: 9999px;
+    background: color-mix(in oklab, var(--color-accent) 14%, var(--color-surface));
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--color-accent);
+    user-select: none;
+  }
+  .cr-comment-author {
+    grid-column: 2;
+    line-height: 1.3;
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+  .cr-comment-author a {
+    color: inherit;
+  }
+  .cr-comment-author a:hover {
+    color: var(--color-accent);
+  }
+  .cr-moderator {
+    grid-column: 3;
+    justify-self: start;
+    margin-inline-start: -0.25rem;
+    border-radius: 9999px;
+    background: var(--color-surface-muted);
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-ink-muted);
+  }
+  .cr-comment-meta time {
+    grid-column: 2 / -1;
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    color: var(--color-ink-muted);
+  }
+  .cr-comment-body {
+    margin-top: 0.375rem;
+    overflow-wrap: anywhere;
+  }
+  .cr-comment-body p + p {
+    margin-top: 0.75rem;
+  }
+  .cr-comment-actions {
+    margin-top: 0.5rem;
+  }
+  .cr-reply {
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-accent);
+    cursor: pointer;
+  }
+  .cr-reply:hover {
+    text-decoration: underline;
+  }
+  .cr-comment > .cr-comment-form {
+    margin-top: 1rem;
+  }
+  .cr-replying {
+    font-size: 0.875rem;
+    color: var(--color-ink-muted);
+  }
+  .cr-cancel-reply {
+    color: var(--color-accent);
+    cursor: pointer;
+  }
+  .cr-empty, .cr-closed, .cr-loading {
+    margin-bottom: 2rem;
+    color: var(--color-ink-muted);
   }
 }

@@ -207,6 +207,19 @@ describe('emitted embed runtime — comments', () => {
     expect(em.commentHtml(hostile, thread.config)).toContain('<p>x &lt;b&gt;y&lt;/b&gt; &amp; &quot;z&quot;</p>')
   })
 
+  it('each comment carries a letter monogram from its author name, never an avatar URL', async () => {
+    const thread = await fixture('comments.read.response')
+    const html: string = em.threadHtml(thread)
+    expect(html).toContain('<div class="cr-comment-meta"><span class="cr-avatar" aria-hidden="true">A</span><span class="cr-comment-author">')
+    expect(html).toContain('<span class="cr-avatar" aria-hidden="true">SE</span><span class="cr-comment-author">Site editor</span>')
+    expect(html).not.toMatch(/gravatar|<img/)
+    expect(em.initials('  ada   lovelace byron ')).toBe('AB')
+    expect(em.initials('Ömer')).toBe('Ö')
+    expect(em.initials('')).toBe('')
+    expect(em.commentHtml({ ...thread.comments[0], author: { ...thread.comments[0].author, name: '<b>x' }, replies: [] }, thread.config))
+      .toContain('<span class="cr-avatar" aria-hidden="true">&lt;</span>')
+  })
+
   it('reply buttons disappear on a closed thread and at the depth cap', async () => {
     const thread = await fixture('comments.read.response')
     expect(em.threadHtml({ ...thread, config: { ...thread.config, closed: true } })).not.toContain('cr-reply')
