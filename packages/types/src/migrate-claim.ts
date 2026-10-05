@@ -486,7 +486,7 @@ export function validateMigrateAccountStateResponse(input: unknown, options: { r
   else if (input.state !== undefined && input.state !== 'covers' && input.renewal_cents === 0) errors.push('renewal_cents: must be > 0')
   if (input.monthly_list_cents === undefined) { /* optional: an older Studio does not send it */ }
   else if (!isCents(input.monthly_list_cents)) errors.push('monthly_list_cents: invalid')
-  else if (input.monthly_list_cents === 0) errors.push('monthly_list_cents: must be > 0')
+  else if (input.state !== undefined && input.state !== 'covers' && input.monthly_list_cents === 0) errors.push('monthly_list_cents: must be > 0')
   if (input.current_plan !== undefined && !currentOk) errors.push('current_plan: unknown plan')
   if (input.state === 'none' && input.current_plan !== undefined) errors.push('current_plan: not allowed when none')
   if ((input.state === 'covers' || input.state === 'too_small') && input.current_plan === undefined) errors.push('current_plan: required unless none')

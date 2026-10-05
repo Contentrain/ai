@@ -227,6 +227,9 @@ describe('validateMigrateAccountStateResponse', () => {
     expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 0, renewal_cents: 0, monthly_list_cents: 10800, current_plan: 'pro' }, { requested: 'starter' }).ok).toBe(true)
     expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200, monthly_list_cents: -1 }, { requested: 'starter' })).toEqual({ ok: false, errors: ['monthly_list_cents: invalid'] })
     expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200, monthly_list_cents: 0 }, { requested: 'starter' })).toEqual({ ok: false, errors: ['monthly_list_cents: must be > 0'] })
+    // The covered answer Studio sends today: zeros on year 1 and renewal, no monthly key or a zero one.
+    expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 0, renewal_cents: 0, current_plan: 'pro' }, { requested: 'pro' }).ok).toBe(true)
+    expect(validateMigrateAccountStateResponse({ state: 'covers', plan: 'pro', year1_cents: 0, renewal_cents: 0, monthly_list_cents: 0, current_plan: 'pro' }, { requested: 'pro' }).ok).toBe(true)
     expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200, monthly_list_cents: '10800' }, { requested: 'starter' })).toEqual({ ok: false, errors: ['monthly_list_cents: invalid'] })
     expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 7200, renewal_cents: 0 }, { requested: 'starter' })).toEqual({ ok: false, errors: ['renewal_cents: must be > 0'] })
     expect(validateMigrateAccountStateResponse({ state: 'none', plan: 'starter', year1_cents: 0, renewal_cents: 9000 }, { requested: 'starter' })).toEqual({ ok: false, errors: ['year1_cents: must be > 0'] })
