@@ -49,6 +49,16 @@ describe('fetchRestRawIR', () => {
     expect(result.warnings).toContain('posts: page 2 HTTP 503 — skipped')
   })
 
+  it('anonymous REST: a post marked content.protected (no password field) is a protected post, never public (migrate B55)', async () => {
+    const base = stubFetch([])
+    const fetchImpl = (async (url, init) => (String(url).includes('/pages?')
+      ? json([post(11, 'about', { featured_media: 0, categories: [] }), post(68, 'abonelere-ozel', { featured_media: 0, categories: [], content: { rendered: '', protected: true } })], { 'x-wp-totalpages': '1' })
+      : base(url, init))) as typeof fetch
+    const { raw } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl })
+    expect(raw.posts.find((p) => p.id === 68)!.password).toBe('[protected]')
+    expect(raw.posts.find((p) => p.id === 11)!.password).toBeNull()
+  })
+
   it('an index that fails at the network leaves the site name out and the import runs', async () => {
     const base = stubFetch([])
     const fetchImpl = (async (url, init) => (String(url).endsWith('/wp-json/') ? Promise.reject(new TypeError('fetch failed')) : base(url, init))) as typeof fetch

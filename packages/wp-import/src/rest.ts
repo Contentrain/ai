@@ -78,7 +78,8 @@ interface RestPost {
   type?: string
   link?: string
   title?: { rendered?: string }
-  content?: { rendered?: string }
+  /** `protected`: the post has a password; anonymous REST sends no `password` field, only this flag. */
+  content?: { rendered?: string, protected?: boolean }
   excerpt?: { rendered?: string }
   date_gmt?: string
   modified_gmt?: string
@@ -418,7 +419,9 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
         parent: p.parent || null,
         menu_order: p.menu_order ?? 0,
         sticky: p.sticky ?? false,
-        password: p.password ? PROTECTED : null,
+        // Anonymous REST sends no `password` field for a password-protected post, only `content.protected: true`: read
+        // alone, the post came in as public (an empty page, a list card; migrate B55/B61).
+        password: p.password || p.content?.protected === true ? PROTECTED : null,
         comment_status: p.comment_status ?? null,
         ping_status: p.ping_status ?? null,
         terms: termRefs,
