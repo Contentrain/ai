@@ -4,6 +4,8 @@
 //  - no WordPress runtime: no wp-includes / wp-content / jQuery references
 //  - JavaScript only where a feature needs it (search, Studio forms/comments)
 //  - the files crawlers and readers expect: sitemap, robots.txt, RSS, 404
+//  - llms.txt when the site has an address (robots.txt names the sitemap): the
+//    llmstxt.org shape, every link on the site's own origin and built here
 //  - wp-query-map.json: WordPress's query addresses (?p=, ?page_id=, …) and
 //    where they lead now — the baseline every host serves, even when empty
 //  - every indexable page has a title, a canonical URL, a language and
@@ -42,6 +44,27 @@ async function exists(path) {
 
 for (const required of ['index.html', 'sitemap-index.xml', 'robots.txt', 'rss.xml', '404.html']) {
   if (!await exists(join(dist, required))) fail(required, 'missing')
+}
+
+// llms.txt: a migrated site is promised one. With an address (robots.txt names the sitemap absolutely) it must
+// exist, open with the site's name, and every link must be on the site's origin and lead to a page this build wrote.
+const robots = await readFile(join(dist, 'robots.txt'), 'utf8').catch(() => '')
+const sitemapUrl = robots.match(/^Sitemap: (\S+)$/m)?.[1]
+if (sitemapUrl) {
+  const llms = await readFile(join(dist, 'llms.txt'), 'utf8').catch(() => null)
+  if (llms === null) fail('llms.txt', 'missing (the site has an address)')
+  else {
+    if (!/^# \S/.test(llms)) fail('llms.txt', 'does not open with "# <site name>"')
+    const origin = new URL(sitemapUrl).origin
+    for (const [, href] of llms.matchAll(/^- \[(?:[^\]\\]|\\.)*\]\(([^)\s]+)\)/gm)) {
+      let url
+      try { url = new URL(href) } catch { fail('llms.txt', `not an absolute link: ${href}`); continue }
+      if (url.origin !== origin) { fail('llms.txt', `link off the site's origin: ${href}`); continue }
+      const path = decodeURIComponent(url.pathname)
+      const built = path.endsWith('/') ? join(dist, path, 'index.html') : join(dist, path)
+      if (!await exists(built) && !await exists(join(dist, path, 'index.html'))) fail('llms.txt', `broken link: ${href}`)
+    }
+  }
 }
 
 if (await exists(join(dist, 'wp-query-map.json'))) {

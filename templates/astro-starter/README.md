@@ -51,6 +51,7 @@ from `/wp-query-map.json`; Vercel reads its config before the build, so the
 build cannot write it for you.
 
 Also built: `sitemap-index.xml` (public addresses from the route table, without noindex entries or redirects), `rss.xml`, `robots.txt`,
+`llms.txt` (llmstxt.org: the site's name, tagline and newest pages of each kind, absolute links, no noindex entries; only with a `site` address),
 `404.html` and `/search/` (Pagefind — the index is built after `astro build`,
 no server needed).
 
