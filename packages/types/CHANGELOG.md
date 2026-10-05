@@ -1,5 +1,11 @@
 # @contentrain/types
 
+## 1.55.0
+
+### Minor Changes
+
+- 44ccf82: `MigrateAccountStateResponse` types `renewal_cents` (already sent by Studio) next to a new optional `monthly_list_cents`: the sized plan's monthly list price × 12, in cents, which the Migrate offer shows as the struck-through price. `validateMigrateAccountStateResponse` checks it (an integer in cents when present, positive unless the state is `covers`); both stay optional, so an answer from a Studio that predates them is still valid.
+
 ## 1.54.0
 
 ### Minor Changes
