@@ -57,6 +57,8 @@ const plan = (): ProjectPlan => ({
   ],
 })
 
+const metaMessage = (at: string) => `${at}.meta is not 1-4 columns of 1-6 rows of 1-8 tokens, each { text } (plain, 1-100 characters) or { part: date | author | terms | tags }`
+
 describe('validateProjectPlan', () => {
   it('accepts a well-formed plan', () => {
     expect(validateProjectPlan(plan())).toEqual({ errors: [], warnings: [] })
@@ -280,7 +282,6 @@ describe('validateProjectPlan', () => {
     const column6: PostMeta[number] = [row8, ...Array.from({ length: 5 }, () => [{ part: 'tags' as const }])]
     p.site.post = { header: ['title'], adjacent: false, more: 0, meta: [column6, column6, column6, column6] }
     expect(validateProjectPlan(p).errors).toEqual([])
-    const message = (at: string) => `${at}.meta is not 1-4 columns of 1-6 rows of 1-8 tokens, each { text } (plain, 1-100 characters) or { part: date | author | terms | tags }`
     for (const bad of [[], [[]], [[[]]], [[[{ part: 'title' }]]], [[[{ text: '<b>x</b>' }]]], [[[{ text: ' ' }]]], [[[{ text: 'a', part: 'date' }]]],
       // Each bound one past: 5 columns, 7 rows, 9 tokens, a 101-character word.
       Array.from({ length: 5 }, () => [[{ part: 'date' }]]),
@@ -289,7 +290,7 @@ describe('validateProjectPlan', () => {
       [[[{ text: 'a'.repeat(101) }]]]] as unknown[]) {
       p.site.post = { header: ['title'], adjacent: false, more: 0, meta: bad as PostMeta }
       p.site.entryLayouts = { 'type-tavuk': { adjacent: false, meta: bad as PostMeta } }
-      expect(validateProjectPlan(p).errors).toEqual([message('site.post'), message('site.entryLayouts.type-tavuk')])
+      expect(validateProjectPlan(p).errors).toEqual([metaMessage('site.post'), metaMessage('site.entryLayouts.type-tavuk')])
     }
   })
 
