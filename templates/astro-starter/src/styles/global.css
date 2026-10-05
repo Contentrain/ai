@@ -20,6 +20,10 @@
   --color-line: #e5e7eb;
   --color-accent: #2563eb;
   --color-accent-ink: #ffffff;
+  /* Text in the accent (a category link, an eyebrow): the accent itself unless a site sets a readable one — an accent
+     made for fills can be too light for text on the page (lime on white). The inverse twin is the one on a dark band. */
+  --color-accent-text: var(--color-accent);
+  --color-accent-text-inverse: var(--color-accent);
   --color-brand: var(--color-accent);
   --color-brand-ink: var(--color-accent-ink);
 
@@ -78,7 +82,7 @@
   --tw-prose-body: var(--color-ink);
   --tw-prose-headings: var(--color-ink);
   --tw-prose-lead: var(--color-ink-muted);
-  --tw-prose-links: var(--color-link, var(--color-accent));
+  --tw-prose-links: var(--color-link, var(--color-accent-text));
   --tw-prose-bold: var(--color-ink);
   --tw-prose-counters: var(--color-ink-muted);
   --tw-prose-bullets: var(--color-ink-muted);
@@ -273,7 +277,7 @@
     font-size: 0.8125rem;
     font-weight: 600;
     line-height: 1;
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     user-select: none;
   }
   .cr-comment-author {
@@ -286,7 +290,7 @@
     color: inherit;
   }
   .cr-comment-author a:hover {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
   }
   .cr-moderator {
     grid-column: 3;
@@ -319,7 +323,7 @@
     border-radius: 0.25rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     cursor: pointer;
   }
   .cr-reply:hover {
@@ -333,7 +337,7 @@
     color: var(--color-ink-muted);
   }
   .cr-cancel-reply {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     cursor: pointer;
   }
   .cr-empty, .cr-closed, .cr-loading {

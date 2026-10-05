@@ -14,6 +14,8 @@ const NOT_SHIPPED = new Set(['meta.json', 'fixtures.json'])
 /** Tokens every kit component may read — the starter's @theme roles. */
 const TOKENS = [
   '--color-surface', '--color-surface-muted', '--color-ink', '--color-ink-muted', '--color-line', '--color-accent', '--color-accent-ink',
+  // Text in the accent; the starter sets both to the accent, a site to a readable one (inverse: on a dark band).
+  '--color-accent-text', '--color-accent-text-inverse',
   '--font-sans', '--container-prose', '--container-page', '--container-wide', '--radius-card',
   // Optional: read with a fallback to the kit's own value, so they change nothing until a site sets them.
   '--font-weight-heading', '--font-weight-body', '--text-body', '--leading-body', '--leading-heading', '--radius-control', '--radius-image', '--spacing-gutter',

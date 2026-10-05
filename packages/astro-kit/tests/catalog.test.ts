@@ -185,3 +185,24 @@ describe('templates/astro-starter', () => {
     }
   })
 })
+
+/** Text (or its underline) painted in the fill accent, in any variant. */
+const ACCENT_AS_TEXT = /(?<![\w-])(?:[a-z-]+:)*(?:text|decoration)-accent(?![-\w])/
+
+describe('text in the accent', () => {
+  it('reads --color-accent-text (text-accent-text), never the fill accent: a light accent stays readable as text', async () => {
+    const walk = async (at: string): Promise<string[]> => (await Promise.all((await readdir(at, { withFileTypes: true })).map(entry =>
+      entry.isDirectory() ? walk(join(at, entry.name)) : Promise.resolve(entry.name.endsWith('.astro') ? [join(at, entry.name)] : []),
+    ))).flat()
+    const offenders: string[] = []
+    for (const file of await walk(COMPONENTS)) {
+      if (ACCENT_AS_TEXT.test(await readFile(file, 'utf8'))) offenders.push(file.slice(COMPONENTS.length + 1))
+    }
+    expect(offenders).toEqual([])
+    // The guard sees every form a class can take: variants, prose modifiers, an underline's colour.
+    for (const used of ['text-accent', 'hover:text-accent', 'group-hover:text-accent', 'prose-a:text-accent', 'decoration-accent', "'text-accent'"]) expect(ACCENT_AS_TEXT.test(used), used).toBe(true)
+    for (const fine of ['text-accent-text', 'hover:text-accent-text', 'text-accent-ink', 'bg-accent', 'border-accent']) expect(ACCENT_AS_TEXT.test(fine), fine).toBe(false)
+    const section = await readFile(join(COMPONENTS, '_shared', 'Section.astro'), 'utf8')
+    expect(section).toContain("inverse: 'bg-ink text-surface [--color-accent-text:var(--color-accent-text-inverse)]'")
+  })
+})

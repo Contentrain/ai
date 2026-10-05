@@ -72,10 +72,10 @@ const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-
     {items.map(item => (
       <li class={card()}>
         {imageOf(item.image, item.imageAlt) && <div class={media()}><KitImage image={imageOf(item.image, item.imageAlt)!} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover transition duration-300 group-hover:scale-[1.02]" /></div>}
-        {item.eyebrow && <p class="text-sm font-medium text-accent">{item.eyebrow}</p>}
+        {item.eyebrow && <p class="text-sm font-medium text-accent-text">{item.eyebrow}</p>}
         <CardHeading class={cardTitle()}>
           {item.href
-            ? <a href={item.href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent">{item.title}</a>
+            ? <a href={item.href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{item.title}</a>
             : item.title}
         </CardHeading>
         {item.text && <p class={text({ class: dim })} data-kit-text>{item.text}</p>}

@@ -71,20 +71,20 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
     {layout.header.map(part => (
       part === 'terms' ? categories.length > 0 && (
         <p class="mb-4 flex flex-wrap gap-3 text-sm font-medium" data-kit-meta>
-          {categories.map(category => <a href={termHref('category', category, categoryMap)} class="text-accent no-underline hover:underline">{category.data.name}</a>)}
+          {categories.map(category => <a href={termHref('category', category, categoryMap)} class="text-accent-text no-underline hover:underline">{category.data.name}</a>)}
         </p>
       )
       : part === 'title' ? <h1 class="[margin-bottom:var(--spacing-title,1rem)] text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{data.title}</h1>
       : part === 'byline' ? (
         <p class="mb-10 flex flex-wrap items-center gap-x-2 text-ink-muted" data-kit-meta>
-          {author && <span>{t('post.by')} <a href={authorHref(author)} class="font-medium text-ink no-underline hover:text-accent">{author.data.name}</a></span>}
+          {author && <span>{t('post.by')} <a href={authorHref(author)} class="font-medium text-ink no-underline hover:text-accent-text">{author.data.name}</a></span>}
           {author && data.published_at && <span aria-hidden="true">·</span>}
           {data.published_at && <time datetime={data.published_at.toISOString()}>{formatDate(data.published_at)}</time>}
           {updated && data.modified_at && (
             <span class="text-sm">({t('post.updated')} <time datetime={data.modified_at.toISOString()}>{formatDate(data.modified_at)}</time>)</span>
           )}
           {!layout.header.includes('terms') && categories.length > 0 && (
-            <span>{t('post.in')} {categories.map((category, index) => <>{index > 0 && ', '}<a href={termHref('category', category, categoryMap)} class="text-ink no-underline hover:text-accent">{category.data.name}</a></>)}</span>
+            <span>{t('post.in')} {categories.map((category, index) => <>{index > 0 && ', '}<a href={termHref('category', category, categoryMap)} class="text-ink no-underline hover:text-accent-text">{category.data.name}</a></>)}</span>
           )}
         </p>
       )
@@ -99,7 +99,7 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
     {tags.length > 0 && (
       <footer class="mt-12 flex flex-wrap items-center gap-2 border-t border-line pt-6">
         <span class="text-sm text-ink-muted">{t('post.tags')}:</span>
-        {tags.map(tag => <a href={termHref('tag', tag, tagMap)} class="rounded-full border border-line px-3 py-1 text-sm text-ink no-underline hover:border-accent hover:text-accent">{tag.data.name}</a>)}
+        {tags.map(tag => <a href={termHref('tag', tag, tagMap)} class="rounded-full border border-line px-3 py-1 text-sm text-ink no-underline hover:border-accent hover:text-accent-text">{tag.data.name}</a>)}
       </footer>
     )}
     {(previous || next) && (

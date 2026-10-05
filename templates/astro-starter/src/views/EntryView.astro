@@ -64,7 +64,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
   <article class="container-prose py-12 md:py-16" data-kit-entry>
     {taxonomy && terms.length > 0 && (
       <p class="mb-4 flex flex-wrap gap-3 text-sm font-medium" data-kit-meta>
-        {terms.map(term => <a href={termHref(taxonomy, term)} class="text-accent no-underline hover:underline">{text(term.data.name) ?? term.id}</a>)}
+        {terms.map(term => <a href={termHref(taxonomy, term)} class="text-accent-text no-underline hover:underline">{text(term.data.name) ?? term.id}</a>)}
       </p>
     )}
     <h1 class="[margin-bottom:var(--spacing-title,1.5rem)] text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{title}</h1>
