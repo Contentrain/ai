@@ -23,6 +23,17 @@ export interface CustomField {
 }
 
 /**
+ * One piece of a post-meta row: the source's own words (in the site's language) or a part of the entry. A theme's
+ * paragraph words always print; a part's own `prefix` / `suffix` (a post-terms block's "Tags: ") only with the part.
+ */
+type PostMetaToken = { text: string } | { part: 'date' | 'author' | 'terms' | 'tags', prefix?: string, suffix?: string }
+/**
+ * The block the source's single template prints after the content (Twenty Twenty-Five's post meta: "Published
+ * <date> in <categories>", "by <author>", "Tags: …" in the theme's own words), as columns of rows of tokens.
+ */
+export type PostMeta = ReadonlyArray<ReadonlyArray<ReadonlyArray<PostMetaToken>>>
+
+/**
  * A custom post type (WordPress: a registered post type with its own archive and taxonomies) as the route table builds it.
  * Everything is a field or collection name the migration found in the project's models; the page reads it through
  * Contentrain queries. `fields` is the typed list the single page prints in schema order, already without what has
@@ -59,6 +70,8 @@ export interface CustomType {
   moreOf?: 'posts'
   /** The size the list prints its titles at (a CSS size), as the source's did; absent, the starter's own. */
   moreText?: string
+  /** The block the source's page prints after the content (`terms`: this type's first taxonomy); absent, none. */
+  meta?: PostMeta
   /** The source page printed the fields above its body text (a role and links before a bio); absent, the body comes first. */
   fieldsFirst?: boolean
   fields: readonly CustomField[]
@@ -108,6 +121,8 @@ export interface SiteConfig {
     moreIncludesCurrent?: boolean
     /** The size the list prints its titles at (a CSS size), as the source's did; absent, the starter's own. */
     moreText?: string
+    /** The block the source prints after the content; absent, the tags row. */
+    meta?: PostMeta
   }
   /**
    * Post lists (the blog index and archives): cards in a grid, cards in one column (`list`, as themes

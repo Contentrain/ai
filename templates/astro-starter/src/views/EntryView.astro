@@ -3,11 +3,12 @@
 // fields (siteConfig.types), each labelled as the editor knows it; its comment thread when comments are open, as a post's.
 import FieldList from '../components/FieldList.astro'
 import KitImage from '../components/kit/_shared/KitImage.astro'
+import PostMeta from '../components/PostMeta.astro'
 import Prose from '../components/kit/prose/Prose.astro'
 import StudioComments from '../components/studio/StudioComments.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { getEntry } from 'astro:content'
-import { getPosts, getSite, getStrings, imageOf, postHref, type Media } from '../lib/content'
+import { authorHref, getPosts, getSite, getStrings, imageOf, postHref, type Media } from '../lib/content'
 import { bodyOf, dateOf, entriesOf, entryHref, entryTitle, newestFirst, refIds, termHref, text, type TypeEntry } from '../lib/custom'
 import { shownFields, type Targets } from '../lib/fields'
 import { publicHtml } from '../lib/links'
@@ -48,6 +49,9 @@ const [imageId] = type.card.image ? refIds(data[type.card.image]) : []
 const cover = imageId ? await getEntry('media', imageId) : undefined
 const taxonomy = type.taxonomies?.[0]
 const terms = taxonomy ? (await entriesOf(taxonomy.collection)).filter(term => refIds(data[taxonomy.field]).includes(term.id)) : []
+// The post-meta block names the entry's author, as a post's does (an imported type keeps WordPress's author relation).
+const [authorId] = type.meta ? refIds(data.author) : []
+const author = authorId ? await getEntry('authors', authorId) : undefined
 const title = entryTitle(type, entry)
 const seo = data.seo as { title?: string, description?: string, noindex?: boolean, nofollow?: boolean, canonical?: string } | undefined
 const description = seo?.description ?? (type.card.excerpt ? text(data[type.card.excerpt]) : undefined) ?? summarize(body)
@@ -72,6 +76,15 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
     {type.fieldsFirst && fields.length > 0 && <div class="mb-10"><FieldList fields={fields} locale={site.language} /></div>}
     {body && <Prose html={body} />}
     {!type.fieldsFirst && fields.length > 0 && <div class="mt-10 border-t border-line pt-8"><FieldList fields={fields} locale={site.language} /></div>}
+    {type.meta && (
+      <PostMeta
+        meta={type.meta}
+        date={dateOf(data[type.card.date ?? 'published_at'])}
+        author={author ? { label: author.data.name, href: authorHref(author) } : undefined}
+        terms={taxonomy ? terms.map(term => ({ label: text(term.data.name) ?? term.id, href: termHref(taxonomy, term) })) : []}
+        locale={site.language}
+      />
+    )}
     {(previous || next) && (
       <nav aria-label={t('post.adjacent')} data-cr-part="post-navigation" class="mt-12 flex flex-wrap justify-between gap-4 border-t border-line pt-6" style={cssSize(type.adjacentText)}>
         {previous ? <a href={entryHref(type, previous)} rel="prev" class="text-ink"><span aria-hidden="true" class="inline-block rtl:-scale-x-100">←</span> {entryTitle(type, previous)}</a> : <span />}
