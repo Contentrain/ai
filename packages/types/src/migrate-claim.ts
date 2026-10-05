@@ -418,6 +418,8 @@ export interface MigrateAccountStateResponse {
   year1_cents: number
   /** What the subscription renews at after year 1, in cents: the yearly list price of `plan` (0 when `covers`). Migrate shows it and never computes it; absent from a Studio that predates it (the cart then omits the renewal line). */
   renewal_cents?: number
+  /** A year of the sized plan paid month by month, in cents: its monthly list price × 12. Migrate shows it as the struck-through price next to year 1 and never computes it; it is the same in every state (also `covers`) and absent from a Studio that predates it (the offer then omits the saving). */
+  monthly_list_cents?: number
   /** The account's current plan, when it has a running one. */
   current_plan?: MigrateStudioPlan
 }
@@ -482,6 +484,9 @@ export function validateMigrateAccountStateResponse(input: unknown, options: { r
   else if (!isCents(input.renewal_cents)) errors.push('renewal_cents: invalid')
   else if (input.state === 'covers' && input.renewal_cents !== 0) errors.push('renewal_cents: must be 0 when covers')
   else if (input.state !== undefined && input.state !== 'covers' && input.renewal_cents === 0) errors.push('renewal_cents: must be > 0')
+  if (input.monthly_list_cents === undefined) { /* optional: an older Studio does not send it */ }
+  else if (!isCents(input.monthly_list_cents)) errors.push('monthly_list_cents: invalid')
+  else if (input.state !== undefined && input.state !== 'covers' && input.monthly_list_cents === 0) errors.push('monthly_list_cents: must be > 0')
   if (input.current_plan !== undefined && !currentOk) errors.push('current_plan: unknown plan')
   if (input.state === 'none' && input.current_plan !== undefined) errors.push('current_plan: not allowed when none')
   if ((input.state === 'covers' || input.state === 'too_small') && input.current_plan === undefined) errors.push('current_plan: required unless none')
