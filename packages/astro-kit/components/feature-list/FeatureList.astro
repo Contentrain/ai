@@ -3,6 +3,8 @@
 // the feature's icon or a shared check, under an optional heading and intro.
 import { tv } from 'tailwind-variants'
 import Section, { type Tone } from '../_shared/Section.astro'
+import { measuredGrid } from '../_shared/measured'
+import type { MeasuredStyle } from '../_shared/types'
 
 const list = tv({
   slots: {
@@ -58,23 +60,25 @@ interface Props {
   style?: 'icon' | 'check' | 'list' | undefined
   tone?: Tone | undefined
   id?: string | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
 }
 
-const { heading, intro, items, columns, style = 'icon', tone, id } = Astro.props
+const { heading, intro, items, columns, style = 'icon', tone, id, measured } = Astro.props
 const s = list({ columns, style, tone })
 const headingId = heading && id ? `${id}-title` : undefined
 const pathOf = (item: Item) => (style !== 'check' && item.icon && icons[item.icon]) || icons.check
 // A plain list's items are not headings; otherwise one level under the section heading, or the section's when there is none.
 const Title = style === 'list' ? 'span' : heading ? 'h3' : 'h2'
 ---
-<Section tone={tone} id={id} aria-labelledby={headingId}>
+<Section measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
   {(heading || intro) && (
     <header class="mb-10 flex max-w-2xl flex-col gap-3">
       {heading && <h2 id={headingId} class="text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl">{heading}</h2>}
       {intro && <p class:list={['text-lg', tone === 'accent' ? undefined : 'opacity-80']} data-kit-text>{intro}</p>}
     </header>
   )}
-  <ul class={s.grid()}>
+  <ul class={s.grid({ class: measuredGrid(measured) })}>
     {items.map(item => (
       <li class={s.item()}>
         <span class={s.mark()} aria-hidden="true">

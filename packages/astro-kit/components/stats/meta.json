@@ -5,7 +5,9 @@
   "category": "section",
   "uses": [],
   "shared": [
-    "Section.astro"
+    "Section.astro",
+    "measured.ts",
+    "types.ts"
   ],
   "variants": {
     "columns": {

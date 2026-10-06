@@ -74,7 +74,8 @@ describe('catalog', () => {
   })
 
   it('says for every component which builder elements feed it', () => {
-    for (const c of catalog.components) expect(Object.values(c.sources).flat().length, c.id).toBeGreaterThan(0)
+    // The band stands in for no builder element: the migration's plan picks it for a section nothing closer fits.
+    for (const c of catalog.components.filter(component => component.id !== 'band')) expect(Object.values(c.sources).flat().length, c.id).toBeGreaterThan(0)
   })
 
   for (const c of catalog.components) {
