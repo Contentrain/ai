@@ -38,6 +38,8 @@
   "form.sending": "שולח…",
   "form.wordpress": "פתיחת הטופס",
   "gallery.close": "סגירה",
+  "gallery.enlarge": "הגדלה",
+  "gallery.images": "תמונות",
   "nav.breadcrumb": "נתיב ניווט",
   "nav.close": "סגירה",
   "nav.footer": "כותרת תחתונה",
@@ -61,6 +63,12 @@
   "post.more": "פוסטים נוספים",
   "post.tags": "תגיות",
   "post.updated": "עודכן",
+  "pricing.billing_alt": "שנתי",
+  "pricing.billing_legend": "תקופת חיוב",
+  "pricing.billing_main": "חודשי",
+  "pricing.featured": "הפופולרי ביותר",
+  "pricing.included": "כלול",
+  "pricing.not_included": "לא כלול",
   "search.noscript": "החיפוש דורש JavaScript.",
   "search.placeholder": "חיפוש באתר",
   "search.title": "חיפוש",
@@ -68,5 +76,8 @@
   "slider.next": "השקופית הבאה",
   "slider.of": "מתוך",
   "slider.prev": "השקופית הקודמת",
-  "slider.slide": "שקופית"
+  "slider.slide": "שקופית",
+  "steps.current": "נוכחי",
+  "team.read_more": "קרא עוד",
+  "team.social": "{name} ב-{network}"
 }

@@ -38,6 +38,8 @@
   "form.sending": "送信中…",
   "form.wordpress": "フォームを開く",
   "gallery.close": "閉じる",
+  "gallery.enlarge": "拡大",
+  "gallery.images": "画像",
   "nav.breadcrumb": "パンくずリスト",
   "nav.close": "閉じる",
   "nav.footer": "フッター",
@@ -61,6 +63,12 @@
   "post.more": "その他の投稿",
   "post.tags": "タグ",
   "post.updated": "更新",
+  "pricing.billing_alt": "年払い",
+  "pricing.billing_legend": "請求期間",
+  "pricing.billing_main": "月払い",
+  "pricing.featured": "一番人気",
+  "pricing.included": "含まれる",
+  "pricing.not_included": "含まれない",
   "search.noscript": "検索にはJavaScriptが必要です。",
   "search.placeholder": "サイト内を検索",
   "search.title": "検索",
@@ -68,5 +76,8 @@
   "slider.next": "次のスライド",
   "slider.of": "/",
   "slider.prev": "前のスライド",
-  "slider.slide": "スライド"
+  "slider.slide": "スライド",
+  "steps.current": "現在",
+  "team.read_more": "続きを読む",
+  "team.social": "{network}の{name}"
 }

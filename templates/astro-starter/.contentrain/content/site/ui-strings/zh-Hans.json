@@ -38,6 +38,8 @@
   "form.sending": "发送中…",
   "form.wordpress": "打开表单",
   "gallery.close": "关闭",
+  "gallery.enlarge": "放大",
+  "gallery.images": "图片",
   "nav.breadcrumb": "面包屑导航",
   "nav.close": "关闭",
   "nav.footer": "页脚",
@@ -61,6 +63,12 @@
   "post.more": "更多文章",
   "post.tags": "标签",
   "post.updated": "更新于",
+  "pricing.billing_alt": "按年",
+  "pricing.billing_legend": "计费周期",
+  "pricing.billing_main": "按月",
+  "pricing.featured": "最受欢迎",
+  "pricing.included": "包含",
+  "pricing.not_included": "不包含",
   "search.noscript": "搜索需要 JavaScript。",
   "search.placeholder": "搜索本站",
   "search.title": "搜索",
@@ -68,5 +76,8 @@
   "slider.next": "下一张幻灯片",
   "slider.of": "/",
   "slider.prev": "上一张幻灯片",
-  "slider.slide": "幻灯片"
+  "slider.slide": "幻灯片",
+  "steps.current": "当前",
+  "team.read_more": "阅读更多",
+  "team.social": "{name}的{network}"
 }

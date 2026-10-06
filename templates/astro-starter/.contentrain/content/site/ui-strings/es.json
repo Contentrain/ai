@@ -38,6 +38,8 @@
   "form.sending": "Enviando…",
   "form.wordpress": "Abrir el formulario",
   "gallery.close": "Cerrar",
+  "gallery.enlarge": "Ampliar",
+  "gallery.images": "Imágenes",
   "nav.breadcrumb": "Ruta de navegación",
   "nav.close": "Cerrar",
   "nav.footer": "Pie de página",
@@ -61,6 +63,12 @@
   "post.more": "Más entradas",
   "post.tags": "Etiquetas",
   "post.updated": "Actualizado",
+  "pricing.billing_alt": "Anual",
+  "pricing.billing_legend": "Período de facturación",
+  "pricing.billing_main": "Mensual",
+  "pricing.featured": "Más popular",
+  "pricing.included": "Incluido",
+  "pricing.not_included": "No incluido",
   "search.noscript": "La búsqueda necesita JavaScript.",
   "search.placeholder": "Buscar en este sitio",
   "search.title": "Buscar",
@@ -68,5 +76,8 @@
   "slider.next": "Diapositiva siguiente",
   "slider.of": "de",
   "slider.prev": "Diapositiva anterior",
-  "slider.slide": "Diapositiva"
+  "slider.slide": "Diapositiva",
+  "steps.current": "Actual",
+  "team.read_more": "Leer más",
+  "team.social": "{name} en {network}"
 }

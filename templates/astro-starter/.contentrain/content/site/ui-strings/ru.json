@@ -38,6 +38,8 @@
   "form.sending": "Отправка…",
   "form.wordpress": "Открыть форму",
   "gallery.close": "Закрыть",
+  "gallery.enlarge": "Увеличить",
+  "gallery.images": "Изображения",
   "nav.breadcrumb": "Навигационная цепочка",
   "nav.close": "Закрыть",
   "nav.footer": "Подвал",
@@ -61,6 +63,12 @@
   "post.more": "Другие записи",
   "post.tags": "Метки",
   "post.updated": "Обновлено",
+  "pricing.billing_alt": "Годовая",
+  "pricing.billing_legend": "Период оплаты",
+  "pricing.billing_main": "Месячная",
+  "pricing.featured": "Самый популярный",
+  "pricing.included": "Включено",
+  "pricing.not_included": "Не включено",
   "search.noscript": "Для поиска нужен JavaScript.",
   "search.placeholder": "Поиск по сайту",
   "search.title": "Поиск",
@@ -68,5 +76,8 @@
   "slider.next": "Следующий слайд",
   "slider.of": "из",
   "slider.prev": "Предыдущий слайд",
-  "slider.slide": "Слайд"
+  "slider.slide": "Слайд",
+  "steps.current": "Текущий",
+  "team.read_more": "Читать далее",
+  "team.social": "{name} в {network}"
 }

@@ -38,6 +38,8 @@
   "form.sending": "جارٍ الإرسال…",
   "form.wordpress": "فتح النموذج",
   "gallery.close": "إغلاق",
+  "gallery.enlarge": "تكبير",
+  "gallery.images": "الصور",
   "nav.breadcrumb": "مسار التنقل",
   "nav.close": "إغلاق",
   "nav.footer": "التذييل",
@@ -61,6 +63,12 @@
   "post.more": "المزيد من المقالات",
   "post.tags": "الوسوم",
   "post.updated": "تم التحديث",
+  "pricing.billing_alt": "سنوي",
+  "pricing.billing_legend": "فترة الفوترة",
+  "pricing.billing_main": "شهري",
+  "pricing.featured": "الأكثر شيوعًا",
+  "pricing.included": "مشمول",
+  "pricing.not_included": "غير مشمول",
   "search.noscript": "البحث يحتاج إلى JavaScript.",
   "search.placeholder": "ابحث في هذا الموقع",
   "search.title": "بحث",
@@ -68,5 +76,8 @@
   "slider.next": "الشريحة التالية",
   "slider.of": "من",
   "slider.prev": "الشريحة السابقة",
-  "slider.slide": "شريحة"
+  "slider.slide": "شريحة",
+  "steps.current": "الحالي",
+  "team.read_more": "اقرأ المزيد",
+  "team.social": "{name} على {network}"
 }

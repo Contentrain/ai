@@ -38,6 +38,8 @@
   "form.sending": "A enviar…",
   "form.wordpress": "Abrir o formulário",
   "gallery.close": "Fechar",
+  "gallery.enlarge": "Ampliar",
+  "gallery.images": "Imagens",
   "nav.breadcrumb": "Caminho de navegação",
   "nav.close": "Fechar",
   "nav.footer": "Rodapé",
@@ -61,6 +63,12 @@
   "post.more": "Mais publicações",
   "post.tags": "Etiquetas",
   "post.updated": "Atualizado",
+  "pricing.billing_alt": "Anual",
+  "pricing.billing_legend": "Período de cobrança",
+  "pricing.billing_main": "Mensal",
+  "pricing.featured": "Mais popular",
+  "pricing.included": "Incluído",
+  "pricing.not_included": "Não incluído",
   "search.noscript": "A pesquisa precisa de JavaScript.",
   "search.placeholder": "Pesquisar neste site",
   "search.title": "Pesquisa",
@@ -68,5 +76,8 @@
   "slider.next": "Diapositivo seguinte",
   "slider.of": "de",
   "slider.prev": "Diapositivo anterior",
-  "slider.slide": "Diapositivo"
+  "slider.slide": "Diapositivo",
+  "steps.current": "Atual",
+  "team.read_more": "Ler mais",
+  "team.social": "{name} no {network}"
 }

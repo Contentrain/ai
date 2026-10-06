@@ -38,6 +38,8 @@
   "form.sending": "Verzenden…",
   "form.wordpress": "Het formulier openen",
   "gallery.close": "Sluiten",
+  "gallery.enlarge": "Vergroten",
+  "gallery.images": "Afbeeldingen",
   "nav.breadcrumb": "Kruimelpad",
   "nav.close": "Sluiten",
   "nav.footer": "Voettekst",
@@ -61,6 +63,12 @@
   "post.more": "Meer berichten",
   "post.tags": "Labels",
   "post.updated": "Bijgewerkt",
+  "pricing.billing_alt": "Jaarlijks",
+  "pricing.billing_legend": "Factureringsperiode",
+  "pricing.billing_main": "Maandelijks",
+  "pricing.featured": "Meest gekozen",
+  "pricing.included": "Inbegrepen",
+  "pricing.not_included": "Niet inbegrepen",
   "search.noscript": "Zoeken vereist JavaScript.",
   "search.placeholder": "Doorzoek deze site",
   "search.title": "Zoeken",
@@ -68,5 +76,8 @@
   "slider.next": "Volgende dia",
   "slider.of": "van",
   "slider.prev": "Vorige dia",
-  "slider.slide": "Dia"
+  "slider.slide": "Dia",
+  "steps.current": "Huidig",
+  "team.read_more": "Lees meer",
+  "team.social": "{name} op {network}"
 }
