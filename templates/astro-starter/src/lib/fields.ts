@@ -10,7 +10,7 @@ import { imageOf, type Media } from './content'
 
 export type Shown =
   | { kind: 'text', text: string }
-  | { kind: 'link', text: string, href: string }
+  | { kind: 'link', text: string, href: string, download?: true }
   | { kind: 'time', value: Date, dateOnly: boolean }
   | { kind: 'html', html: string }
   | { kind: 'image', image: ImageInput }
@@ -27,6 +27,12 @@ export interface ShownField {
 const LINKED = new Set(['url', 'email', 'phone'])
 /** Only addresses a visitor can follow safely become links: http(s) and site paths; `javascript:` or `data:` stay text. */
 const safeHref = (value: string): string | undefined => (/^https?:\/\//i.test(value) || /^\/(?!\/)/.test(value) ? value : undefined)
+
+/** The file's own name with its extension, from the last path segment of its address. */
+const fileName = (href: string): string => {
+  const last = href.split(/[?#]/)[0]!.split('/').findLast(Boolean) ?? href
+  try { return decodeURIComponent(last) } catch { return last }
+}
 
 function linked(type: string, value: string): Shown {
   const href = type === 'email' ? `mailto:${value}` : type === 'phone' ? `tel:${value.replace(/[^\d+]/g, '')}` : safeHref(value)
@@ -89,6 +95,12 @@ async function show(field: CustomField, value: unknown, targets: Targets, depth:
   if (typeof value === 'number') return { kind: 'text', text: String(value) }
   const str = text(value)
   if (!str) return undefined
+  // An address a migration stored for an image or file field; anything that is not a safe address stays text.
+  if (type === 'image' || type === 'file') {
+    const src = safeHref(str)
+    if (src && type === 'image') return { kind: 'image', image: { src, alt: field.label } }
+    if (src) return { kind: 'link', text: fileName(src), href: src, download: true }
+  }
   return LINKED.has(type) ? linked(type, str) : { kind: 'text', text: str }
 }
 

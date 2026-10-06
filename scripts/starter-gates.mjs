@@ -133,14 +133,17 @@ server.listen(0, '127.0.0.1', () => console.log(server.address().port))`
   }
   writeFileSync(mediaFile, `${JSON.stringify(media, null, 2)}\n`)
   // Studio's media move rewrites the address wherever content holds it, bodies included: an image in a body points at
-  // the same address as its library entry.
+  // the same address as its library entry. So does a media field (an image or file field holds the address as its value).
   const contentDir = join(project, '.contentrain', 'content')
   for (const rel of readdirSync(contentDir, { recursive: true })) {
     const file = join(contentDir, String(rel))
     if (!file.endsWith('.json') || file === mediaFile) continue
     const before = readFileSync(file, 'utf8')
     let after = before
-    for (const [from, to] of moved) after = after.replaceAll(`src=\\"${from}\\"`, `src=\\"${to}\\"`)
+    for (const [from, to] of moved) {
+      after = after.replaceAll(`src=\\"${from}\\"`, `src=\\"${to}\\"`)
+      after = after.replaceAll(`"${from}"`, `"${to}"`)
+    }
     if (after !== before) writeFileSync(file, after)
   }
 }
