@@ -1,5 +1,11 @@
 # @contentrain/types
 
+## 1.57.0
+
+### Minor Changes
+
+- 9eb2e6d: `MigrateGrantStatusResponse` gains optional `workspace_github_account` (`{ login, type: 'User' | 'Organization' }`): the GitHub account the grant's workspace has Studio's GitHub App installed on, so Migrate's delivery can default to it. Absent when there is no installation. Additive; `validateMigrateGrantStatusResponse` checks it when present.
+
 ## 1.56.1
 
 ### Patch Changes
