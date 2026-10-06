@@ -135,5 +135,191 @@
       "tone": "accent",
       "style": "grayscale"
     }
+  },
+  {
+    "name": "row-start-large",
+    "props": {
+      "heading": "Trusted by",
+      "items": [
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 1",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 2"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 3",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 4"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 5",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 6"
+        }
+      ],
+      "layout": "row",
+      "align": "start",
+      "logoHeight": "lg"
+    }
+  },
+  {
+    "name": "row-small-mono-inverse",
+    "props": {
+      "heading": "Trusted by",
+      "items": [
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 1",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 2"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 3",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 4"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 5",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 6"
+        }
+      ],
+      "layout": "row",
+      "logoHeight": "sm",
+      "style": "mono-light",
+      "tone": "inverse"
+    }
+  },
+  {
+    "name": "marquee",
+    "props": {
+      "heading": "Trusted by",
+      "items": [
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 1",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 2"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 3",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 4"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 5",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 6"
+        }
+      ],
+      "layout": "marquee",
+      "tone": "muted"
+    }
+  },
+  {
+    "name": "five-columns",
+    "props": {
+      "heading": "Trusted by",
+      "items": [
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 1",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 2"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 3",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 4"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 5",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 6"
+        }
+      ],
+      "columns": "5"
+    }
+  },
+  {
+    "name": "six-columns",
+    "props": {
+      "heading": "Trusted by",
+      "items": [
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 1",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 2"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 3",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 4"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 5",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 6"
+        }
+      ],
+      "columns": "6"
+    }
   }
 ]

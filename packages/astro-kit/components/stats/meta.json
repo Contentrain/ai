@@ -5,25 +5,57 @@
   "category": "section",
   "uses": [],
   "shared": [
-    "Section.astro"
+    "KitImage.astro",
+    "Section.astro",
+    "image.ts",
+    "types.ts"
   ],
   "variants": {
+    "layout": {
+      "options": [
+        "grid",
+        "inline"
+      ],
+      "default": "grid",
+      "description": "grid: figures in columns. inline: one line that wraps, for two to four short figures."
+    },
     "columns": {
       "options": [
         "2",
         "3",
-        "4"
+        "4",
+        "5",
+        "6"
       ],
       "default": "3",
-      "description": "Figures per row on wide screens; two on phones."
+      "description": "Figures per row on wide screens (grid layout); two on phones."
     },
     "style": {
       "options": [
         "plain",
-        "card"
+        "card",
+        "divided"
       ],
       "default": "plain",
-      "description": "plain: figures on the section background. card: each figure in its own box."
+      "description": "plain: figures on the section background. card: each figure in its own box. divided: a hairline at each figure's leading edge, no box."
+    },
+    "align": {
+      "options": [
+        "start",
+        "center"
+      ],
+      "default": "start",
+      "description": "Alignment of each figure and its label."
+    },
+    "valueSize": {
+      "options": [
+        "md",
+        "lg",
+        "xl",
+        "display"
+      ],
+      "default": "lg",
+      "description": "The figure's size: md, lg, xl or a display-size number."
     },
     "tone": {
       "options": [
@@ -92,6 +124,11 @@
             "type": "string",
             "label": "Suffix",
             "description": "Printed after the figure (`+`, `%`, `k`)."
+          },
+          "icon": {
+            "type": "image",
+            "label": "Icon",
+            "description": "A small picture above the figure; decorative."
           }
         }
       },

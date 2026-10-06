@@ -4,26 +4,159 @@
   "description": "A call to action: a short heading, an optional line of text and one or two buttons — across the whole section, or as a card inside it.",
   "category": "section",
   "uses": [],
-  "shared": ["Button.astro", "Section.astro", "types.ts"],
+  "shared": [
+    "Button.astro",
+    "KitImage.astro",
+    "Section.astro",
+    "types.ts"
+  ],
   "variants": {
-    "layout": { "options": ["inline", "centered", "stacked"], "default": "inline", "description": "inline: text left, buttons right on wide screens. centered: everything centred. stacked: heading, text and buttons in one column at the start edge on every width." },
-    "frame": { "options": ["full", "card"], "default": "full", "description": "full: the tone fills the section. card: a rounded box in a plain section carries the tone." },
-    "tone": { "options": ["default", "muted", "inverse", "accent", "brand", "none"], "default": "accent", "description": "Background. On accent, primary buttons are drawn in the secondary style so they stay visible. brand: the site's brand colour role (`--color-brand`, the builder's own colour on a band) with its ink; buttons keep their style. none: no fill of its own; the page background shows through (a source colour the palette does not have)." },
-    "actionsAlign": { "options": ["inherit", "start"], "default": "inherit", "description": "The buttons' alignment. inherit: as the layout sets it. start: at the start edge under centred heading and text (layout centered; a WordPress buttons block with no justification in a centred group). inline and stacked ignore it." }
+    "layout": {
+      "options": [
+        "inline",
+        "centered",
+        "stacked"
+      ],
+      "default": "inline",
+      "description": "inline: text left, buttons right on wide screens. centered: everything centred. stacked: heading, text and buttons in one column at the start edge on every width."
+    },
+    "frame": {
+      "options": [
+        "full",
+        "card"
+      ],
+      "default": "full",
+      "description": "full: the tone fills the section. card: a rounded box in a plain section carries the tone."
+    },
+    "tone": {
+      "options": [
+        "default",
+        "muted",
+        "inverse",
+        "accent",
+        "brand",
+        "none"
+      ],
+      "default": "accent",
+      "description": "Background. On accent, primary buttons are drawn in the secondary style so they stay visible. brand: the site's brand colour role (`--color-brand`, the builder's own colour on a band) with its ink; buttons keep their style. none: no fill of its own; the page background shows through (a source colour the palette does not have)."
+    },
+    "actionsAlign": {
+      "options": [
+        "inherit",
+        "start"
+      ],
+      "default": "inherit",
+      "description": "The buttons' alignment. inherit: as the layout sets it. start: at the start edge under centred heading and text (layout centered; a WordPress buttons block with no justification in a centred group). inline and stacked ignore it."
+    },
+    "size": {
+      "options": [
+        "md",
+        "lg"
+      ],
+      "default": "md",
+      "description": "md: the usual band. lg: a larger heading and more room above and below."
+    },
+    "align": {
+      "options": [
+        "start",
+        "center"
+      ],
+      "default": "start",
+      "description": "Alignment of the heading and text (the centred layout already centres them)."
+    },
+    "mediaSide": {
+      "options": [
+        "end",
+        "start"
+      ],
+      "default": "end",
+      "description": "With a picture: the side it takes on wide screens."
+    }
   },
   "props": {
-    "heading": { "type": "string", "label": "Heading", "required": true, "description": "The call's heading (Divi CTA title, Elementor call-to-action title)." },
-    "body": { "type": "text", "label": "Text", "description": "One or two sentences under the heading." },
-    "actions": { "type": "array", "label": "Buttons", "required": true, "items": { "type": "object", "fields": { "label": { "type": "string", "label": "Label", "required": true, "description": "The button text." }, "href": { "type": "url", "label": "Link", "required": true, "description": "Where the button goes: a page on this site or a full address." }, "newTab": { "type": "boolean", "label": "Open in a new tab", "description": "Open the link in a new tab (an external site the reader should not leave for)." }, "style": { "type": "select", "label": "Style", "options": ["primary", "secondary", "ghost"], "description": "primary for the main action, secondary or ghost for the ones beside it." } } }, "description": "Buttons, in order; usually one." },
-    "id": { "type": "string", "content": false, "description": "Anchor id of the section; the heading gets `<id>-title`." }
+    "heading": {
+      "type": "string",
+      "label": "Heading",
+      "required": true,
+      "description": "The call's heading (Divi CTA title, Elementor call-to-action title)."
+    },
+    "eyebrow": {
+      "type": "string",
+      "label": "Eyebrow",
+      "description": "A short line above the heading."
+    },
+    "body": {
+      "type": "text",
+      "label": "Text",
+      "description": "One or two sentences under the heading."
+    },
+    "note": {
+      "type": "string",
+      "label": "Small print",
+      "description": "A line under the buttons (No credit card required)."
+    },
+    "image": {
+      "type": "image",
+      "label": "Image",
+      "description": "A small picture beside the text; a large one belongs in a split section."
+    },
+    "actions": {
+      "type": "array",
+      "label": "Buttons",
+      "required": true,
+      "items": {
+        "type": "object",
+        "fields": {
+          "label": {
+            "type": "string",
+            "label": "Label",
+            "required": true,
+            "description": "The button text."
+          },
+          "href": {
+            "type": "url",
+            "label": "Link",
+            "required": true,
+            "description": "Where the button goes: a page on this site or a full address."
+          },
+          "newTab": {
+            "type": "boolean",
+            "label": "Open in a new tab",
+            "description": "Open the link in a new tab (an external site the reader should not leave for)."
+          },
+          "style": {
+            "type": "select",
+            "label": "Style",
+            "options": [
+              "primary",
+              "secondary",
+              "ghost"
+            ],
+            "description": "primary for the main action, secondary or ghost for the ones beside it."
+          }
+        }
+      },
+      "description": "Buttons, in order; usually one."
+    },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Anchor id of the section; the heading gets `<id>-title`."
+    }
   },
   "slots": {},
   "js": "none",
   "dependencies": {},
   "sources": {
-    "elementor": ["elementor/call-to-action"],
-    "divi": ["divi/et_pb_cta"],
-    "classic": ["classic/cta"]
+    "elementor": [
+      "elementor/call-to-action"
+    ],
+    "divi": [
+      "divi/et_pb_cta"
+    ],
+    "classic": [
+      "classic/cta"
+    ]
   },
   "a11y": "A labelled region (aria-labelledby its h2). Buttons are links with their own text. Accent tone swaps the primary button style so its contrast holds."
 }

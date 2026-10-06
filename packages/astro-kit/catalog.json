@@ -645,6 +645,7 @@
       "uses": [],
       "shared": [
         "Button.astro",
+        "KitImage.astro",
         "Section.astro",
         "types.ts"
       ],
@@ -685,6 +686,30 @@
           ],
           "default": "inherit",
           "description": "The buttons' alignment. inherit: as the layout sets it. start: at the start edge under centred heading and text (layout centered; a WordPress buttons block with no justification in a centred group). inline and stacked ignore it."
+        },
+        "size": {
+          "options": [
+            "md",
+            "lg"
+          ],
+          "default": "md",
+          "description": "md: the usual band. lg: a larger heading and more room above and below."
+        },
+        "align": {
+          "options": [
+            "start",
+            "center"
+          ],
+          "default": "start",
+          "description": "Alignment of the heading and text (the centred layout already centres them)."
+        },
+        "mediaSide": {
+          "options": [
+            "end",
+            "start"
+          ],
+          "default": "end",
+          "description": "With a picture: the side it takes on wide screens."
         }
       },
       "props": {
@@ -694,10 +719,25 @@
           "required": true,
           "description": "The call's heading (Divi CTA title, Elementor call-to-action title)."
         },
+        "eyebrow": {
+          "type": "string",
+          "label": "Eyebrow",
+          "description": "A short line above the heading."
+        },
         "body": {
           "type": "text",
           "label": "Text",
           "description": "One or two sentences under the heading."
+        },
+        "note": {
+          "type": "string",
+          "label": "Small print",
+          "description": "A line under the buttons (No credit card required)."
+        },
+        "image": {
+          "type": "image",
+          "label": "Image",
+          "description": "A small picture beside the text; a large one belongs in a split section."
         },
         "actions": {
           "type": "array",
@@ -763,7 +803,10 @@
       ],
       "contentFields": {
         "heading": "heading",
+        "eyebrow": "eyebrow",
         "body": "body",
+        "note": "note",
+        "image": "image",
         "actions": "actions",
         "actions[].label": "actions[].label",
         "actions[].href": "actions[].href",
@@ -889,6 +932,30 @@
         "Section.astro"
       ],
       "variants": {
+        "layout": {
+          "options": [
+            "single",
+            "split"
+          ],
+          "default": "single",
+          "description": "single: the heading above one column. split: the heading and introduction stay in a left column beside the list; stacks on a phone."
+        },
+        "columns": {
+          "options": [
+            "1",
+            "2"
+          ],
+          "default": "1",
+          "description": "Columns of questions on wide screens."
+        },
+        "icon": {
+          "options": [
+            "plus",
+            "chevron"
+          ],
+          "default": "plus",
+          "description": "The marker in each question's row: a plus that turns into a cross, or a chevron that turns over."
+        },
         "style": {
           "options": [
             "lines",
@@ -946,6 +1013,11 @@
           "label": "Heading",
           "description": "Section heading."
         },
+        "intro": {
+          "type": "text",
+          "label": "Introduction",
+          "description": "A sentence under the heading."
+        },
         "exclusive": {
           "type": "boolean",
           "default": false,
@@ -968,6 +1040,12 @@
           "type": "string",
           "content": false,
           "description": "Section id; also the exclusive group's name."
+        },
+        "numbered": {
+          "type": "boolean",
+          "default": false,
+          "content": false,
+          "description": "Count the questions with a leading number, drawn by the page's style rather than written into the text."
         }
       },
       "slots": {},
@@ -998,7 +1076,8 @@
         "items": "items",
         "items[].question": "items[].question",
         "items[].answer": "items[].answer",
-        "heading": "heading"
+        "heading": "heading",
+        "intro": "intro"
       }
     },
     {
@@ -1092,6 +1171,12 @@
           "type": "string",
           "content": false,
           "description": "Anchor id of the section; the heading gets `<id>-title`."
+        },
+        "bare": {
+          "type": "boolean",
+          "default": false,
+          "content": false,
+          "description": "Only the list, with no section of its own; a split section uses it under its text."
         }
       },
       "slots": {},
@@ -1877,7 +1962,7 @@
     {
       "id": "logo-cloud",
       "name": "Logo cloud",
-      "description": "A grid of client or partner logos, each optionally linked, under an optional heading (\"Trusted by\").",
+      "description": "A grid, a row or an endless strip of client or partner logos, each optionally linked, under an optional heading (\"Trusted by\").",
       "category": "section",
       "uses": [],
       "shared": [
@@ -1887,22 +1972,51 @@
         "types.ts"
       ],
       "variants": {
+        "layout": {
+          "options": [
+            "grid",
+            "row",
+            "marquee"
+          ],
+          "default": "grid",
+          "description": "grid: logos in columns. row: one line that wraps. marquee: an endless CSS-only strip that stands still for reduced motion."
+        },
         "columns": {
           "options": [
             "2",
             "3",
-            "4"
+            "4",
+            "5",
+            "6"
           ],
           "default": "4",
-          "description": "Logos per row on wide screens; two on phones, three on tablets."
+          "description": "Logos per row on wide screens (grid layout); two on phones, three on tablets."
+        },
+        "logoHeight": {
+          "options": [
+            "sm",
+            "md",
+            "lg"
+          ],
+          "default": "md",
+          "description": "Height of every logo (the width follows): small, medium or large."
         },
         "style": {
           "options": [
             "plain",
-            "grayscale"
+            "grayscale",
+            "mono-light"
           ],
           "default": "plain",
-          "description": "plain: logos in their own colours. grayscale: muted grey, full colour on hover or focus."
+          "description": "plain: logos in their own colours. grayscale: muted grey, full colour on hover or focus. mono-light: drawn white, for a dark band."
+        },
+        "align": {
+          "options": [
+            "center",
+            "start"
+          ],
+          "default": "center",
+          "description": "Alignment of the heading and of the logos in a row."
         },
         "tone": {
           "options": [
@@ -2850,7 +2964,10 @@
       "name": "Split",
       "description": "An image beside a block of text — eyebrow, heading, a markdown body and buttons — on either side, stacked on phones. The media-and-text section of a landing page (Gutenberg media-text, a two-column Elementor container with an image, Divi's image + text row).",
       "category": "section",
-      "uses": [],
+      "uses": [
+        "embed",
+        "feature-list"
+      ],
       "shared": [
         "Button.astro",
         "KitImage.astro",
@@ -2866,6 +2983,64 @@
           "default": "end",
           "description": "Which side the image takes on wide screens: start (left in left-to-right text) or end. Phones always show it after the text."
         },
+        "ratio": {
+          "options": [
+            "1:1",
+            "5:7",
+            "7:5"
+          ],
+          "default": "1:1",
+          "description": "The text column's share against the image's: equal, text 5 to image 7, or text 7 to image 5."
+        },
+        "imageFit": {
+          "options": [
+            "contain",
+            "cover"
+          ],
+          "default": "contain",
+          "description": "contain: the image at its own proportions. cover: it fills the column's height."
+        },
+        "imageShape": {
+          "options": [
+            "none",
+            "rounded",
+            "circle"
+          ],
+          "default": "rounded",
+          "description": "The image's corners: square, the theme's rounding, or a circle."
+        },
+        "imageBleed": {
+          "options": [
+            "none",
+            "edge"
+          ],
+          "default": "none",
+          "description": "edge: the image runs on to the edge of the screen on its side (wide screens)."
+        },
+        "mediaKind": {
+          "options": [
+            "image",
+            "video"
+          ],
+          "default": "image",
+          "description": "image: the picture. video: the picture is the poster of a video that loads only when played."
+        },
+        "featureStyle": {
+          "options": [
+            "check",
+            "icon"
+          ],
+          "default": "check",
+          "description": "The marks of the points under the text: a check, or each point's own icon."
+        },
+        "stackOrder": {
+          "options": [
+            "text-first",
+            "media-first"
+          ],
+          "default": "text-first",
+          "description": "On a phone: the text first, or the picture first."
+        },
         "align": {
           "options": [
             "start",
@@ -2879,10 +3054,12 @@
             "default",
             "muted",
             "inverse",
-            "accent"
+            "accent",
+            "brand",
+            "none"
           ],
           "default": "default",
-          "description": "Section background."
+          "description": "Section background (brand: the site's brand colour; none: the page's own)."
         }
       },
       "props": {
@@ -2891,6 +3068,12 @@
           "label": "Heading",
           "required": true,
           "description": "The section heading."
+        },
+        "headingLevel": {
+          "type": "integer",
+          "default": 2,
+          "content": false,
+          "description": "The heading's level: 2 under the page title; 3 or 4 when the section sits inside another."
         },
         "eyebrow": {
           "type": "string",
@@ -2967,10 +3150,52 @@
           },
           "description": "The image beside the text. Width and height, when known, let the site reserve its space."
         },
+        "features": {
+          "type": "array",
+          "label": "Points",
+          "items": {
+            "type": "object",
+            "fields": {
+              "title": {
+                "type": "string",
+                "label": "Title",
+                "required": true,
+                "description": "The point, in a few words."
+              },
+              "text": {
+                "type": "string",
+                "label": "Text",
+                "description": "A line about it."
+              },
+              "icon": {
+                "type": "string",
+                "label": "Icon",
+                "description": "A kit icon name (check, star, bolt, shield, heart, globe, clock, chat)."
+              }
+            }
+          },
+          "description": "Short points under the text (an Elementor icon list or icon box, a Gutenberg list), each with a title and a line."
+        },
+        "videoUrl": {
+          "type": "url",
+          "label": "Video",
+          "description": "A video page (YouTube, Vimeo); the image is its poster and nothing loads from the provider until it is played."
+        },
+        "playLabel": {
+          "type": "string",
+          "content": false,
+          "description": "The play button's text (ui-strings embed.play)."
+        },
         "id": {
           "type": "string",
           "content": false,
           "description": "Anchor id of the section; the heading gets `<id>-title`."
+        },
+        "sticky": {
+          "type": "boolean",
+          "default": false,
+          "content": false,
+          "description": "The picture stays in view while a long text scrolls past it (wide screens)."
         }
       },
       "slots": {},
@@ -3014,7 +3239,12 @@
         "image.src": "image.src",
         "image.alt": "image.alt",
         "image.width": "image.width",
-        "image.height": "image.height"
+        "image.height": "image.height",
+        "features": "features",
+        "features[].title": "features[].title",
+        "features[].text": "features[].text",
+        "features[].icon": "features[].icon",
+        "videoUrl": "video_url"
       }
     },
     {
@@ -3024,25 +3254,57 @@
       "category": "section",
       "uses": [],
       "shared": [
-        "Section.astro"
+        "KitImage.astro",
+        "Section.astro",
+        "image.ts",
+        "types.ts"
       ],
       "variants": {
+        "layout": {
+          "options": [
+            "grid",
+            "inline"
+          ],
+          "default": "grid",
+          "description": "grid: figures in columns. inline: one line that wraps, for two to four short figures."
+        },
         "columns": {
           "options": [
             "2",
             "3",
-            "4"
+            "4",
+            "5",
+            "6"
           ],
           "default": "3",
-          "description": "Figures per row on wide screens; two on phones."
+          "description": "Figures per row on wide screens (grid layout); two on phones."
         },
         "style": {
           "options": [
             "plain",
-            "card"
+            "card",
+            "divided"
           ],
           "default": "plain",
-          "description": "plain: figures on the section background. card: each figure in its own box."
+          "description": "plain: figures on the section background. card: each figure in its own box. divided: a hairline at each figure's leading edge, no box."
+        },
+        "align": {
+          "options": [
+            "start",
+            "center"
+          ],
+          "default": "start",
+          "description": "Alignment of each figure and its label."
+        },
+        "valueSize": {
+          "options": [
+            "md",
+            "lg",
+            "xl",
+            "display"
+          ],
+          "default": "lg",
+          "description": "The figure's size: md, lg, xl or a display-size number."
         },
         "tone": {
           "options": [
@@ -3111,6 +3373,11 @@
                 "type": "string",
                 "label": "Suffix",
                 "description": "Printed after the figure (`+`, `%`, `k`)."
+              },
+              "icon": {
+                "type": "image",
+                "label": "Icon",
+                "description": "A small picture above the figure; decorative."
               }
             }
           },
@@ -3156,7 +3423,8 @@
         "items[].value": "items[].value",
         "items[].label": "items[].label",
         "items[].prefix": "items[].prefix",
-        "items[].suffix": "items[].suffix"
+        "items[].suffix": "items[].suffix",
+        "items[].icon": "items[].icon"
       }
     },
     {
@@ -3528,10 +3796,12 @@
         "layout": {
           "options": [
             "single",
-            "grid"
+            "grid",
+            "row",
+            "masonry"
           ],
           "default": "grid",
-          "description": "single: one large centred quote (the first item stands alone; more items stack). grid: cards, up to three per row."
+          "description": "single: one large centred quote (the first item stands alone; more items stack). grid: cards, up to three per row. row: a horizontal strip that scrolls and snaps, no script. masonry: columns of quotes of different lengths."
         },
         "tone": {
           "options": [
@@ -3560,6 +3830,32 @@
           ],
           "default": "card",
           "description": "card: each quote in its box (a bordered, padded card in the grid; the surface colour in a muted section). plain: the quote and who said it straight on the section, across the column, with no box, as Elementor's testimonial widget draws them."
+        },
+        "avatarSize": {
+          "options": [
+            "sm",
+            "md",
+            "lg"
+          ],
+          "default": "md",
+          "description": "The portrait's size: small, medium or large."
+        },
+        "avatarPlace": {
+          "options": [
+            "start",
+            "top"
+          ],
+          "default": "start",
+          "description": "start: the portrait beside the name. top: above the quote."
+        },
+        "quoteMark": {
+          "options": [
+            "marks",
+            "glyph",
+            "none"
+          ],
+          "default": "marks",
+          "description": "marks: quotation marks around the text. glyph: one large decorative mark above. none: no marks."
         }
       },
       "props": {
@@ -3596,6 +3892,21 @@
                 "type": "string",
                 "label": "Photo description",
                 "description": "Who the photo shows; usually their name."
+              },
+              "rating": {
+                "type": "number",
+                "label": "Rating",
+                "description": "Stars out of 5; leave empty for none."
+              },
+              "logo": {
+                "type": "image",
+                "label": "Company logo",
+                "description": "The company's logo beside the name."
+              },
+              "logoAlt": {
+                "type": "string",
+                "label": "Company name",
+                "description": "The company the logo stands for."
               }
             }
           },
@@ -3610,6 +3921,11 @@
           "type": "string",
           "content": false,
           "description": "Anchor id of the section; the heading gets `<id>-title`."
+        },
+        "ratingLabel": {
+          "type": "string",
+          "content": false,
+          "description": "The stars' spoken text; `{rating}` stands for the number (\"{rating} out of 5 stars\")."
         }
       },
       "slots": {},
@@ -3637,6 +3953,9 @@
         "items[].role": "items[].role",
         "items[].avatar": "items[].avatar",
         "items[].avatarAlt": "items[].avatar_alt",
+        "items[].rating": "items[].rating",
+        "items[].logo": "items[].logo",
+        "items[].logoAlt": "items[].logo_alt",
         "heading": "heading"
       }
     }

@@ -89,6 +89,12 @@
       "type": "string",
       "content": false,
       "description": "Anchor id of the section; the heading gets `<id>-title`."
+    },
+    "bare": {
+      "type": "boolean",
+      "default": false,
+      "content": false,
+      "description": "Only the list, with no section of its own; a split section uses it under its text."
     }
   },
   "slots": {},

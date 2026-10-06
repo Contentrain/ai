@@ -5,46 +5,414 @@
       "heading": "What readers say",
       "id": "readers",
       "items": [
-        { "quote": "The only travel site I read to the end. Every guide feels written by someone who stayed.", "name": "Ayşe Demir", "role": "Reader since 2019", "avatar": { "src": "/kit-fixtures/avatar-1.svg", "alt": "", "width": 96, "height": 96 } },
-        { "quote": "Their Lisbon guide saved our trip.", "name": "Tom Becker", "avatar": { "src": "/kit-fixtures/avatar-2.svg", "alt": "", "width": 96, "height": 96 } },
-        { "quote": "Honest, slow, and beautifully photographed. I recommend it to every friend who asks where to go next.", "name": "Mei Tanaka", "role": "Photographer", "avatar": { "src": "/kit-fixtures/avatar-3.svg", "alt": "", "width": 96, "height": 96 } }
+        {
+          "quote": "The only travel site I read to the end. Every guide feels written by someone who stayed.",
+          "name": "Ayşe Demir",
+          "role": "Reader since 2019",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-1.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          }
+        },
+        {
+          "quote": "Their Lisbon guide saved our trip.",
+          "name": "Tom Becker",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-2.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          }
+        },
+        {
+          "quote": "Honest, slow, and beautifully photographed. I recommend it to every friend who asks where to go next.",
+          "name": "Mei Tanaka",
+          "role": "Photographer",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-3.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          }
+        }
       ]
     }
   },
   {
     "name": "single-muted",
-    "props": { "layout": "single", "tone": "muted", "items": [{ "quote": "A journal that made me want to travel less, and better.", "name": "Ayşe Demir", "role": "Editor, Slow Places", "avatar": { "src": "/kit-fixtures/avatar-1.svg", "alt": "", "width": 96, "height": 96 } }] }
+    "props": {
+      "layout": "single",
+      "tone": "muted",
+      "items": [
+        {
+          "quote": "A journal that made me want to travel less, and better.",
+          "name": "Ayşe Demir",
+          "role": "Editor, Slow Places",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-1.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          }
+        }
+      ]
+    }
   },
   {
     "name": "grid-inverse",
-    "props": { "tone": "inverse", "items": [{ "quote": "Clear, kind and useful.", "name": "Tom Becker" }, { "quote": "Finally, guides without a hundred ads.", "name": "Mei Tanaka", "role": "Reader" }] }
+    "props": {
+      "tone": "inverse",
+      "items": [
+        {
+          "quote": "Clear, kind and useful.",
+          "name": "Tom Becker"
+        },
+        {
+          "quote": "Finally, guides without a hundred ads.",
+          "name": "Mei Tanaka",
+          "role": "Reader"
+        }
+      ]
+    }
   },
   {
     "name": "single-accent",
-    "props": { "layout": "single", "tone": "accent", "items": [{ "quote": "Worth every minute.", "name": "Jonas Weber" }] }
+    "props": {
+      "layout": "single",
+      "tone": "accent",
+      "items": [
+        {
+          "quote": "Worth every minute.",
+          "name": "Jonas Weber"
+        }
+      ]
+    }
   },
   {
     "name": "grid-quote-xl",
-    "props": { "quoteSize": "xl", "items": [{ "quote": "The guide took us off the main road and into the best week of the year.", "name": "Ada Lindqvist", "role": "Reader since 2019" }, { "quote": "Fewer places, more time. It changed how we travel.", "name": "Tomas Reyes", "role": "Photographer" }] }
+    "props": {
+      "quoteSize": "xl",
+      "items": [
+        {
+          "quote": "The guide took us off the main road and into the best week of the year.",
+          "name": "Ada Lindqvist",
+          "role": "Reader since 2019"
+        },
+        {
+          "quote": "Fewer places, more time. It changed how we travel.",
+          "name": "Tomas Reyes",
+          "role": "Photographer"
+        }
+      ]
+    }
   },
   {
     "name": "grid-quote-base",
-    "props": { "quoteSize": "base", "tone": "muted", "items": [{ "quote": "Short, clear and honest.", "name": "Ada Lindqvist" }, { "quote": "The maps alone are worth it.", "name": "Tomas Reyes", "role": "Cyclist" }] }
+    "props": {
+      "quoteSize": "base",
+      "tone": "muted",
+      "items": [
+        {
+          "quote": "Short, clear and honest.",
+          "name": "Ada Lindqvist"
+        },
+        {
+          "quote": "The maps alone are worth it.",
+          "name": "Tomas Reyes",
+          "role": "Cyclist"
+        }
+      ]
+    }
   },
   {
     "name": "single-quote-lg",
-    "props": { "layout": "single", "quoteSize": "lg", "items": [{ "quote": "We planned less and saw more.", "name": "Jonas Weber", "role": "Reader" }] }
+    "props": {
+      "layout": "single",
+      "quoteSize": "lg",
+      "items": [
+        {
+          "quote": "We planned less and saw more.",
+          "name": "Jonas Weber",
+          "role": "Reader"
+        }
+      ]
+    }
   },
   {
     "name": "grid-plain",
-    "props": { "frame": "plain", "quoteSize": "xl", "items": [{ "quote": "We sold out our first kiln batch on launch day.", "name": "Ruth Adeyemi", "role": "Potter" }, { "quote": "Six weeks, one price, and they answered every email.", "name": "Daniel Okafor", "role": "Leatherworker" }] }
+    "props": {
+      "frame": "plain",
+      "quoteSize": "xl",
+      "items": [
+        {
+          "quote": "We sold out our first kiln batch on launch day.",
+          "name": "Ruth Adeyemi",
+          "role": "Potter"
+        },
+        {
+          "quote": "Six weeks, one price, and they answered every email.",
+          "name": "Daniel Okafor",
+          "role": "Leatherworker"
+        }
+      ]
+    }
   },
   {
     "name": "single-plain-muted",
-    "props": { "layout": "single", "frame": "plain", "tone": "muted", "items": [{ "quote": "Calm pages and a fast checkout.", "name": "Ruth Adeyemi" }] }
+    "props": {
+      "layout": "single",
+      "frame": "plain",
+      "tone": "muted",
+      "items": [
+        {
+          "quote": "Calm pages and a fast checkout.",
+          "name": "Ruth Adeyemi"
+        }
+      ]
+    }
   },
   {
     "name": "grid-source-quoted",
-    "props": { "items": [{ "quote": "“We set it up before lunch.”", "name": "Grace Lin", "role": "Head of Support, Fernhill" }, { "quote": "People just read the page.", "name": "Omar Haddad", "role": "Support lead" }] }
+    "props": {
+      "items": [
+        {
+          "quote": "“We set it up before lunch.”",
+          "name": "Grace Lin",
+          "role": "Head of Support, Fernhill"
+        },
+        {
+          "quote": "People just read the page.",
+          "name": "Omar Haddad",
+          "role": "Support lead"
+        }
+      ]
+    }
+  },
+  {
+    "name": "row",
+    "props": {
+      "heading": "Kind words",
+      "items": [
+        {
+          "quote": "The only travel site I read to the end. Every guide feels written by someone who stayed.",
+          "name": "Ayşe Demir",
+          "role": "Reader since 2019",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-1.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          },
+          "rating": 5
+        },
+        {
+          "quote": "Their Lisbon guide saved our trip.",
+          "name": "Tom Becker",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-2.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          },
+          "rating": 4
+        },
+        {
+          "quote": "Honest, slow, and beautifully photographed. I recommend it to every friend who asks where to go next.",
+          "name": "Mei Tanaka",
+          "role": "Photographer",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-3.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          },
+          "rating": 3
+        },
+        {
+          "quote": "The only travel site I read to the end. Every guide feels written by someone who stayed.",
+          "name": "Ayşe Demir",
+          "role": "Reader since 2019",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-1.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          },
+          "rating": 5
+        },
+        {
+          "quote": "Their Lisbon guide saved our trip.",
+          "name": "Tom Becker",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-2.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          },
+          "rating": 4
+        },
+        {
+          "quote": "Honest, slow, and beautifully photographed. I recommend it to every friend who asks where to go next.",
+          "name": "Mei Tanaka",
+          "role": "Photographer",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-3.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          },
+          "rating": 3
+        }
+      ],
+      "layout": "row"
+    }
+  },
+  {
+    "name": "masonry-sm-top",
+    "props": {
+      "heading": "Kind words",
+      "items": [
+        {
+          "quote": "The only travel site I read to the end. Every guide feels written by someone who stayed.",
+          "name": "Ayşe Demir",
+          "role": "Reader since 2019",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-1.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          }
+        },
+        {
+          "quote": "Their Lisbon guide saved our trip.",
+          "name": "Tom Becker",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-2.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          }
+        },
+        {
+          "quote": "Honest, slow, and beautifully photographed. I recommend it to every friend who asks where to go next.",
+          "name": "Mei Tanaka",
+          "role": "Photographer",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-3.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          }
+        },
+        {
+          "quote": "The only travel site I read to the end. Every guide feels written by someone who stayed.",
+          "name": "Ayşe Demir",
+          "role": "Reader since 2019",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-1.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          }
+        },
+        {
+          "quote": "Their Lisbon guide saved our trip.",
+          "name": "Tom Becker",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-2.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          }
+        },
+        {
+          "quote": "Honest, slow, and beautifully photographed. I recommend it to every friend who asks where to go next.",
+          "name": "Mei Tanaka",
+          "role": "Photographer",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-3.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          }
+        }
+      ],
+      "layout": "masonry",
+      "avatarSize": "sm",
+      "avatarPlace": "top"
+    }
+  },
+  {
+    "name": "glyph-large-rated",
+    "props": {
+      "heading": "Kind words",
+      "items": [
+        {
+          "quote": "The only travel site I read to the end. Every guide feels written by someone who stayed.",
+          "name": "Ayşe Demir",
+          "role": "Reader since 2019",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-1.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          },
+          "rating": 5
+        }
+      ],
+      "layout": "single",
+      "quoteMark": "glyph",
+      "avatarSize": "lg"
+    }
+  },
+  {
+    "name": "grid-none-logos",
+    "props": {
+      "heading": "Kind words",
+      "items": [
+        {
+          "quote": "The only travel site I read to the end. Every guide feels written by someone who stayed.",
+          "name": "Ayşe Demir",
+          "role": "Reader since 2019",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-1.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          },
+          "logo": "/kit-fixtures/logo.svg",
+          "logoAlt": "Acme"
+        },
+        {
+          "quote": "Their Lisbon guide saved our trip.",
+          "name": "Tom Becker",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-2.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          },
+          "logo": "/kit-fixtures/logo.svg",
+          "logoAlt": "Acme"
+        },
+        {
+          "quote": "Honest, slow, and beautifully photographed. I recommend it to every friend who asks where to go next.",
+          "name": "Mei Tanaka",
+          "role": "Photographer",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-3.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          },
+          "logo": "/kit-fixtures/logo.svg",
+          "logoAlt": "Acme"
+        }
+      ],
+      "quoteMark": "none",
+      "tone": "muted"
+    }
   }
 ]

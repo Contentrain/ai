@@ -14,10 +14,12 @@
     "layout": {
       "options": [
         "single",
-        "grid"
+        "grid",
+        "row",
+        "masonry"
       ],
       "default": "grid",
-      "description": "single: one large centred quote (the first item stands alone; more items stack). grid: cards, up to three per row."
+      "description": "single: one large centred quote (the first item stands alone; more items stack). grid: cards, up to three per row. row: a horizontal strip that scrolls and snaps, no script. masonry: columns of quotes of different lengths."
     },
     "tone": {
       "options": [
@@ -46,6 +48,32 @@
       ],
       "default": "card",
       "description": "card: each quote in its box (a bordered, padded card in the grid; the surface colour in a muted section). plain: the quote and who said it straight on the section, across the column, with no box, as Elementor's testimonial widget draws them."
+    },
+    "avatarSize": {
+      "options": [
+        "sm",
+        "md",
+        "lg"
+      ],
+      "default": "md",
+      "description": "The portrait's size: small, medium or large."
+    },
+    "avatarPlace": {
+      "options": [
+        "start",
+        "top"
+      ],
+      "default": "start",
+      "description": "start: the portrait beside the name. top: above the quote."
+    },
+    "quoteMark": {
+      "options": [
+        "marks",
+        "glyph",
+        "none"
+      ],
+      "default": "marks",
+      "description": "marks: quotation marks around the text. glyph: one large decorative mark above. none: no marks."
     }
   },
   "props": {
@@ -82,6 +110,21 @@
             "type": "string",
             "label": "Photo description",
             "description": "Who the photo shows; usually their name."
+          },
+          "rating": {
+            "type": "number",
+            "label": "Rating",
+            "description": "Stars out of 5; leave empty for none."
+          },
+          "logo": {
+            "type": "image",
+            "label": "Company logo",
+            "description": "The company's logo beside the name."
+          },
+          "logoAlt": {
+            "type": "string",
+            "label": "Company name",
+            "description": "The company the logo stands for."
           }
         }
       },
@@ -96,6 +139,11 @@
       "type": "string",
       "content": false,
       "description": "Anchor id of the section; the heading gets `<id>-title`."
+    },
+    "ratingLabel": {
+      "type": "string",
+      "content": false,
+      "description": "The stars' spoken text; `{rating}` stands for the number (\"{rating} out of 5 stars\")."
     }
   },
   "slots": {},

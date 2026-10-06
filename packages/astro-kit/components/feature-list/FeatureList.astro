@@ -26,8 +26,10 @@ const list = tv({
     },
     // On accent the mark takes the ink colour, and text is never dimmed.
     tone: { default: {}, muted: {}, inverse: {}, accent: { mark: 'text-current', text: 'opacity-100' } },
+    // A list inside another section's column: one column, tighter, no section around it.
+    bare: { true: { grid: 'sm:grid-cols-1 gap-y-5' }, false: {} },
   },
-  defaultVariants: { columns: '3', style: 'icon', tone: 'default' },
+  defaultVariants: { columns: '3', style: 'icon', tone: 'default', bare: false },
 })
 
 // 24×24 stroke paths (Lucide-style); unknown names fall back to check.
@@ -57,16 +59,35 @@ interface Props {
   columns?: '2' | '3' | '4' | undefined
   style?: 'icon' | 'check' | 'list' | undefined
   tone?: Tone | undefined
+  /** Only the list, with no section of its own, for use inside another section's column. */
+  bare?: boolean | undefined
   id?: string | undefined
 }
 
-const { heading, intro, items, columns, style = 'icon', tone, id } = Astro.props
-const s = list({ columns, style, tone })
+const { heading, intro, items, columns, style = 'icon', tone, bare = false, id } = Astro.props
+const s = list({ columns, style, tone, bare })
 const headingId = heading && id ? `${id}-title` : undefined
 const pathOf = (item: Item) => (style !== 'check' && item.icon && icons[item.icon]) || icons.check
 // A plain list's items are not headings; otherwise one level under the section heading, or the section's when there is none.
-const Title = style === 'list' ? 'span' : heading ? 'h3' : 'h2'
+const Title = style === 'list' ? 'span' : heading || bare ? 'h3' : 'h2'
 ---
+{bare
+  ? (
+    <ul class={s.grid()}>
+      {items.map(item => (
+        <li class={s.item()}>
+          <span class={s.mark()} aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d={pathOf(item)} /></svg>
+          </span>
+          <div>
+            <Title class={s.title()}>{item.title}</Title>
+            {item.text && <p class={s.text()} data-kit-text>{item.text}</p>}
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
+  : (
 <Section tone={tone} id={id} aria-labelledby={headingId}>
   {(heading || intro) && (
     <header class="mb-10 flex max-w-2xl flex-col gap-3">
@@ -88,3 +109,4 @@ const Title = style === 'list' ? 'span' : heading ? 'h3' : 'h2'
     ))}
   </ul>
 </Section>
+  )}

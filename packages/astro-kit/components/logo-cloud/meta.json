@@ -1,7 +1,7 @@
 {
   "id": "logo-cloud",
   "name": "Logo cloud",
-  "description": "A grid of client or partner logos, each optionally linked, under an optional heading (\"Trusted by\").",
+  "description": "A grid, a row or an endless strip of client or partner logos, each optionally linked, under an optional heading (\"Trusted by\").",
   "category": "section",
   "uses": [],
   "shared": [
@@ -11,22 +11,51 @@
     "types.ts"
   ],
   "variants": {
+    "layout": {
+      "options": [
+        "grid",
+        "row",
+        "marquee"
+      ],
+      "default": "grid",
+      "description": "grid: logos in columns. row: one line that wraps. marquee: an endless CSS-only strip that stands still for reduced motion."
+    },
     "columns": {
       "options": [
         "2",
         "3",
-        "4"
+        "4",
+        "5",
+        "6"
       ],
       "default": "4",
-      "description": "Logos per row on wide screens; two on phones, three on tablets."
+      "description": "Logos per row on wide screens (grid layout); two on phones, three on tablets."
+    },
+    "logoHeight": {
+      "options": [
+        "sm",
+        "md",
+        "lg"
+      ],
+      "default": "md",
+      "description": "Height of every logo (the width follows): small, medium or large."
     },
     "style": {
       "options": [
         "plain",
-        "grayscale"
+        "grayscale",
+        "mono-light"
       ],
       "default": "plain",
-      "description": "plain: logos in their own colours. grayscale: muted grey, full colour on hover or focus."
+      "description": "plain: logos in their own colours. grayscale: muted grey, full colour on hover or focus. mono-light: drawn white, for a dark band."
+    },
+    "align": {
+      "options": [
+        "center",
+        "start"
+      ],
+      "default": "center",
+      "description": "Alignment of the heading and of the logos in a row."
     },
     "tone": {
       "options": [

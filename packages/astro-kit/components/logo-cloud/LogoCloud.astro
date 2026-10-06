@@ -1,6 +1,7 @@
 ---
-// A grid of client or partner logos, each optionally linked, under an
-// optional heading.
+// A grid, a row or an endless strip of client or partner logos, each
+// optionally linked, under an optional heading. The strip is CSS only and
+// stands still for visitors who ask for reduced motion.
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
@@ -8,25 +9,48 @@ import { imageOf, type ImageSource } from '../_shared/image'
 
 const cloud = tv({
   slots: {
-    heading: 'mb-8 text-center text-sm font-semibold tracking-wide uppercase opacity-80',
+    heading: 'mb-8 text-sm font-semibold tracking-wide uppercase opacity-80',
     list: 'grid grid-cols-2 items-center gap-x-8 gap-y-10 sm:grid-cols-3',
     item: 'flex items-center justify-center',
     logo: 'h-10 w-auto max-w-full object-contain transition duration-200',
   },
   variants: {
+    layout: {
+      grid: {},
+      // One line of logos that wraps on a narrow screen; the logos keep their own widths.
+      row: { list: 'flex flex-wrap items-center gap-x-10 gap-y-6', item: 'shrink-0' },
+      // Two copies of the list side by side, moved by one keyframe; see the style block below.
+      marquee: { list: 'kit-marquee-track flex w-max items-center gap-x-12', item: 'shrink-0' },
+    },
     columns: {
       '2': { list: 'sm:grid-cols-2' },
       '3': { list: 'md:grid-cols-3' },
       '4': { list: 'md:grid-cols-4' },
+      '5': { list: 'md:grid-cols-3 lg:grid-cols-5' },
+      '6': { list: 'md:grid-cols-3 lg:grid-cols-6' },
+    },
+    // A fixed height, the width follows: logos come in every aspect ratio.
+    logoHeight: {
+      sm: { logo: 'h-8' },
+      md: {},
+      lg: { logo: 'h-14' },
     },
     style: {
       plain: {},
       // Colour comes back on hover and on keyboard focus of the logo's link.
       grayscale: { logo: 'opacity-70 grayscale group-hover:opacity-100 group-hover:grayscale-0 group-focus-visible:opacity-100 group-focus-visible:grayscale-0' },
+      // Dark logos on a dark band: drawn white, full strength.
+      'mono-light': { logo: 'brightness-0 invert' },
     },
+    align: { center: { heading: 'text-center' }, start: { heading: 'text-start' } },
     tone: { default: {}, muted: {}, inverse: {}, accent: { heading: 'opacity-100' } },
   },
-  defaultVariants: { columns: '4', style: 'plain', tone: 'default' },
+  compoundVariants: [
+    { layout: 'row', align: 'center', class: { list: 'justify-center' } },
+    { layout: 'row', align: 'start', class: { list: 'justify-start' } },
+    { layout: 'grid', align: 'start', class: { item: 'justify-start' } },
+  ],
+  defaultVariants: { layout: 'grid', columns: '4', logoHeight: 'md', style: 'plain', align: 'center', tone: 'default' },
 })
 
 interface Item {
@@ -40,30 +64,64 @@ interface Item {
 interface Props {
   heading?: string | undefined
   items: Item[]
-  columns?: '2' | '3' | '4' | undefined
-  style?: 'plain' | 'grayscale' | undefined
+  layout?: 'grid' | 'row' | 'marquee' | undefined
+  columns?: '2' | '3' | '4' | '5' | '6' | undefined
+  logoHeight?: 'sm' | 'md' | 'lg' | undefined
+  style?: 'plain' | 'grayscale' | 'mono-light' | undefined
+  align?: 'center' | 'start' | undefined
   tone?: Tone | undefined
   id?: string | undefined
 }
 
-const { heading, items, columns, style, tone, id } = Astro.props
-const s = cloud({ columns, style, tone })
+const { heading, items, layout, columns, logoHeight, style, align, tone, id } = Astro.props
+const s = cloud({ layout, columns, logoHeight, style, align, tone })
 const headingId = heading && id ? `${id}-title` : undefined
+const marquee = layout === 'marquee'
+// A linked logo with no name is read as the site it goes to, never as a made-up word.
+const hostOf = (href: string) => {
+  try { return new URL(href, 'https://x.invalid').host.replace(/^www\./, '').replace(/^x\.invalid$/, '') } catch { return '' }
+}
+const shown = items.flatMap((item) => {
+  const image = imageOf(item.image, item.imageAlt || (item.href ? hostOf(item.href) : ''))
+  return image ? [{ image, href: item.href }] : []
+})
+// About four seconds a logo: the strip reads at a pace, whatever its length.
+const duration = `${Math.max(20, shown.length * 4)}s`
 ---
 <Section tone={tone} id={id} aria-labelledby={headingId}>
   {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
-  <ul class={s.list()}>
-    {items.map(item => {
-      const image = imageOf(item.image, item.imageAlt)
-      if (!image) return null
-      const logo = <KitImage image={image} sizes="160px" class={s.logo()} />
-      return (
+  <div class:list={[marquee && 'kit-marquee overflow-hidden']} style={marquee ? `--kit-marquee-duration:${duration}` : undefined}>
+    <ul class={s.list()}>
+      {shown.map(({ image, href }) => (
         <li class={s.item()}>
-          {item.href
-            ? <a href={item.href} class="group rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4">{logo}</a>
-            : <span class="group">{logo}</span>}
+          {href
+            ? <a href={href} class="group rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4"><KitImage image={image} sizes="160px" class={s.logo()} /></a>
+            : <span class="group"><KitImage image={image} sizes="160px" class={s.logo()} /></span>}
         </li>
-      )
-    })}
-  </ul>
+      ))}
+    </ul>
+    {marquee && (
+      // The second copy exists only to close the loop: hidden from assistive technology and from the tab order.
+      <ul class={`${s.list()} kit-marquee-copy`} aria-hidden="true" inert>
+        {shown.map(({ image }) => (
+          <li class={s.item()}><span class="group"><KitImage image={image} sizes="160px" class={s.logo()} /></span></li>
+        ))}
+      </ul>
+    )}
+  </div>
 </Section>
+<style>
+  /* Reduced motion (the default here): one wrapped row, no copy. */
+  .kit-marquee .kit-marquee-track { width: auto; flex-wrap: wrap; justify-content: center; }
+  .kit-marquee .kit-marquee-copy { display: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    .kit-marquee { display: flex; width: 100%; mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent); }
+    .kit-marquee .kit-marquee-track,
+    .kit-marquee .kit-marquee-copy { display: flex; flex-wrap: nowrap; width: max-content; flex-shrink: 0; justify-content: flex-start; padding-inline-end: 3rem; animation: kit-marquee var(--kit-marquee-duration, 40s) linear infinite; }
+    .kit-marquee:hover .kit-marquee-track,
+    .kit-marquee:hover .kit-marquee-copy,
+    .kit-marquee:focus-within .kit-marquee-track,
+    .kit-marquee:focus-within .kit-marquee-copy { animation-play-state: paused; }
+  }
+  @keyframes kit-marquee { to { transform: translateX(-100%); } }
+</style>

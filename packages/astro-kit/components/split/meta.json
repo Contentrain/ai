@@ -3,7 +3,10 @@
   "name": "Split",
   "description": "An image beside a block of text — eyebrow, heading, a markdown body and buttons — on either side, stacked on phones. The media-and-text section of a landing page (Gutenberg media-text, a two-column Elementor container with an image, Divi's image + text row).",
   "category": "section",
-  "uses": [],
+  "uses": [
+    "embed",
+    "feature-list"
+  ],
   "shared": [
     "Button.astro",
     "KitImage.astro",
@@ -19,6 +22,64 @@
       "default": "end",
       "description": "Which side the image takes on wide screens: start (left in left-to-right text) or end. Phones always show it after the text."
     },
+    "ratio": {
+      "options": [
+        "1:1",
+        "5:7",
+        "7:5"
+      ],
+      "default": "1:1",
+      "description": "The text column's share against the image's: equal, text 5 to image 7, or text 7 to image 5."
+    },
+    "imageFit": {
+      "options": [
+        "contain",
+        "cover"
+      ],
+      "default": "contain",
+      "description": "contain: the image at its own proportions. cover: it fills the column's height."
+    },
+    "imageShape": {
+      "options": [
+        "none",
+        "rounded",
+        "circle"
+      ],
+      "default": "rounded",
+      "description": "The image's corners: square, the theme's rounding, or a circle."
+    },
+    "imageBleed": {
+      "options": [
+        "none",
+        "edge"
+      ],
+      "default": "none",
+      "description": "edge: the image runs on to the edge of the screen on its side (wide screens)."
+    },
+    "mediaKind": {
+      "options": [
+        "image",
+        "video"
+      ],
+      "default": "image",
+      "description": "image: the picture. video: the picture is the poster of a video that loads only when played."
+    },
+    "featureStyle": {
+      "options": [
+        "check",
+        "icon"
+      ],
+      "default": "check",
+      "description": "The marks of the points under the text: a check, or each point's own icon."
+    },
+    "stackOrder": {
+      "options": [
+        "text-first",
+        "media-first"
+      ],
+      "default": "text-first",
+      "description": "On a phone: the text first, or the picture first."
+    },
     "align": {
       "options": [
         "start",
@@ -32,10 +93,12 @@
         "default",
         "muted",
         "inverse",
-        "accent"
+        "accent",
+        "brand",
+        "none"
       ],
       "default": "default",
-      "description": "Section background."
+      "description": "Section background (brand: the site's brand colour; none: the page's own)."
     }
   },
   "props": {
@@ -44,6 +107,12 @@
       "label": "Heading",
       "required": true,
       "description": "The section heading."
+    },
+    "headingLevel": {
+      "type": "integer",
+      "default": 2,
+      "content": false,
+      "description": "The heading's level: 2 under the page title; 3 or 4 when the section sits inside another."
     },
     "eyebrow": {
       "type": "string",
@@ -120,10 +189,52 @@
       },
       "description": "The image beside the text. Width and height, when known, let the site reserve its space."
     },
+    "features": {
+      "type": "array",
+      "label": "Points",
+      "items": {
+        "type": "object",
+        "fields": {
+          "title": {
+            "type": "string",
+            "label": "Title",
+            "required": true,
+            "description": "The point, in a few words."
+          },
+          "text": {
+            "type": "string",
+            "label": "Text",
+            "description": "A line about it."
+          },
+          "icon": {
+            "type": "string",
+            "label": "Icon",
+            "description": "A kit icon name (check, star, bolt, shield, heart, globe, clock, chat)."
+          }
+        }
+      },
+      "description": "Short points under the text (an Elementor icon list or icon box, a Gutenberg list), each with a title and a line."
+    },
+    "videoUrl": {
+      "type": "url",
+      "label": "Video",
+      "description": "A video page (YouTube, Vimeo); the image is its poster and nothing loads from the provider until it is played."
+    },
+    "playLabel": {
+      "type": "string",
+      "content": false,
+      "description": "The play button's text (ui-strings embed.play)."
+    },
     "id": {
       "type": "string",
       "content": false,
       "description": "Anchor id of the section; the heading gets `<id>-title`."
+    },
+    "sticky": {
+      "type": "boolean",
+      "default": false,
+      "content": false,
+      "description": "The picture stays in view while a long text scrolls past it (wide screens)."
     }
   },
   "slots": {},
