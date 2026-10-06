@@ -55,8 +55,14 @@ const table = (defs: Record<string, RegionSlotDef>): string[] => Object.entries(
 const untyped = (spec: RegionSpec, patch: Record<string, unknown>): RegionSpec => ({ ...spec, ...patch }) as RegionSpec
 
 describe('validateBands', () => {
-  it('accepts bands whose node ranges ascend with the order', () => {
+  it('accepts bands whose node ranges do not overlap', () => {
     expect(validateBands(bands())).toEqual([])
+  })
+
+  it('does not bind the rendered order to document order: a footer that comes first in the markup is still last', () => {
+    const [a, b, c, d] = bands() as [Band, Band, Band, Band]
+    expect(validateBands([a, b, c, { ...d, nodes: { first: 1, last: 2 } }])).toEqual([])
+    expect(validateBands([a, b, { ...c, order: 1 }]).map(issue => issue.message)).toEqual([`Bands ${b.id} and ${c.id} share an order.`])
   })
 
   it('rejects a duplicate id, an id with "#", a missing reference box and a reversed range', () => {
@@ -71,6 +77,13 @@ describe('validateBands', () => {
     const overlapping = { ...b, nodes: { first: 40, last: 68 } }
     expect(validateBands([a, overlapping]).map(issue => issue.message)).toEqual([`The node range overlaps band ${a.id}'s.`])
     expect(validateBands([a, { ...overlapping, template: 'post' }])).toEqual([])
+  })
+
+  it('takes settled states from the closed list only', () => {
+    const [a, b] = bands() as [Band, Band, Band, Band]
+    expect(validateBands([a, { ...b, settled: ['lazy-bg', 'slide0'] }])).toEqual([])
+    const issues = validateBands([a, { ...b, settled: ['lazy-bg', 'parallax-off'] } as unknown as Band])
+    expect(issues.map(issue => issue.message)).toEqual(['settled is a list of: slide0, counter-final, lazy-bg, preloader-off, panels-open.'])
   })
 
   it('rejects a box keyed by a width the engine does not render', () => {
@@ -172,14 +185,17 @@ describe('validateRegionSpecs', () => {
   })
 
   it('lets a band carry on a region of an earlier band of the same template only', () => {
+    const intro: RegionSpec = { band: 'home:02', part: 0, archetype: 'text', confidence: 0.9, ungrounded: [], slots: { heading: { node: 70 } } }
     const carried: RegionSpec = { ...footer(), continues: 'home:02#0' }
-    expect(validateRegionSpecs([cards(), carried], bands())).toEqual([])
+    expect(validateRegionSpecs([intro, carried], bands())).toEqual([])
+    expect(validateRegionSpecs([{ ...intro, archetype: 'footer' }, carried], bands())).toEqual([])
+    expect(validateRegionSpecs([cards(), carried], bands()).map(issue => issue.message)).toEqual(['continues joins regions of one archetype, or carries on a text introduction.'])
     const forward: RegionSpec = { ...hero(), continues: 'home:02#0' }
     const missing: RegionSpec = { ...footer(), continues: 'home:07#0' }
     expect(codes(validateRegionSpecs([forward, cards(), missing], bands()))).toEqual(['bad_continues', 'bad_continues'])
     const elsewhere = bands()
     elsewhere[3]!.template = 'post'
-    expect(codes(validateRegionSpecs([cards(), carried], elsewhere))).toEqual(['bad_continues'])
+    expect(codes(validateRegionSpecs([intro, carried], elsewhere))).toEqual(['bad_continues'])
   })
 
   it('only reports codes it declares', () => {

@@ -583,6 +583,9 @@ three stages to one file (`understand.ts`):
 
 The contract names no source system and no target framework. What a source
 knows beyond the render travels in `Band.hints`, and nothing may depend on it.
+What the capture itself did to a band (a slider held at its first slide, a lazy
+background loaded) is a typed fact, `Band.settled`, because a gate reads it to
+tell a loss of state from a loss of design.
 
 **A region spec holds node ids, never content.** A `SlotRef` is
 `{ node, background? }`, where `node` is the pre-order index of the element in
@@ -601,7 +604,7 @@ declare const bands: Band[]
 declare const answered: RegionSpec[]
 declare function nodeHolds(node: number, kind: 'text' | 'image' | 'link' | 'icon', background: boolean): boolean
 
-validateBands(bands) // [] when ids are unique and node ranges ascend with the order
+validateBands(bands) // [] when ids are unique and node ranges do not overlap
 
 const issues = validateRegionSpecs(answered, bands, {
   // The outline lives with the engine: it says whether a node holds what the slot's kind needs.
@@ -616,7 +619,10 @@ const fallback = specs.filter(needsFallback) // 'other' or confidence < 0.5 → 
 or archetype, a slot outside the vocabulary, a ref outside its band's node
 range, a node that holds nothing of the slot's kind (`slot_unresolved`), a
 `background` on a non-image slot, an item archetype without items, and a
-`sameAs` or `continues` that does not point where it may. A rejected region is
+`sameAs` or `continues` that does not point where it may (`continues` joins a
+band to an earlier region of the same archetype, or to the `text` introduction
+above it: one section, list slots joined in band order, the earlier region's
+ref kept where both hold the same single slot). A rejected region is
 recorded in `UnderstandRun.issues` and never reaches the plan; a band left
 without a region is built as the styled fallback section.
 

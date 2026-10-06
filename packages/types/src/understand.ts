@@ -74,6 +74,14 @@ export const BAND_LANDMARKS = ['header', 'nav', 'main', 'footer'] as const
 export type BandLandmark = (typeof BAND_LANDMARKS)[number]
 
 /**
+ * What the capture did to a band before measuring it, so the still shows a settled state: a slider held at its first
+ * slide, a counter at its final value, a lazy background loaded, a preloader removed, closed panels (accordion, tabs)
+ * opened. A difference from the live page in such a band is a difference of state, and is reported as one.
+ */
+export const SETTLED_STATES = ['slide0', 'counter-final', 'lazy-bg', 'preloader-off', 'panels-open'] as const
+export type SettledState = (typeof SETTLED_STATES)[number]
+
+/**
  * One horizontal band of a template's representative page: a full-width slice
  * found by geometry (background changes, vertical gaps, landmarks), not by any
  * builder's markup. Deterministic: the same render gives the same bands.
@@ -83,7 +91,7 @@ export interface Band {
   id: string
   /** Template family key. */
   template: string
-  /** Position down the page, from 0. */
+  /** Position down the page as rendered, from 0. Usually document order, but not bound to it (a bar placed by CSS). */
   order: number
   /** The landmark element the band is, or lies inside. */
   landmark?: BandLandmark
@@ -91,10 +99,12 @@ export interface Band {
   boxes: Partial<Record<Width, Box>>
   /**
    * The band's nodes as an inclusive range of node ids (see `SlotRef.node`). A band is one subtree or a run of sibling
-   * subtrees, so the range is contiguous, and the ranges of a template's bands ascend with `order` and never overlap.
+   * subtrees, so the range is contiguous, and the ranges of a template's bands never overlap: no band lies inside another.
    */
   nodes: { first: number, last: number }
   style: MeasuredStyle
+  /** What the capture settled in this band; absent when it changed nothing. A fact of the engine, where `RegionSpec.dynamic` is what the model saw. */
+  settled?: SettledState[]
   /** Source-specific signals (builder widget types, block names). Optional reading aid; nothing may depend on it. */
   hints?: Record<string, unknown>
 }
@@ -181,8 +191,9 @@ export interface RegionSlots {
   media?: SlotRef
   items?: RegionItem[]
   actions?: SlotRef[]
-  /** Header and footer. `nav` names the top-level entries as shown; the menu tree itself comes from the facts. */
+  /** Header and footer. `logo` is the site's mark, and the only slot it goes in (never `media`). */
   logo?: SlotRef
+  /** The top-level entries as shown; the menu tree itself comes from the facts. */
   nav?: SlotRef[]
   /** Secondary links of a header or footer bar (phone, email, legal). */
   utility?: SlotRef[]
@@ -254,7 +265,12 @@ export interface RegionSpec {
   dynamic?: DynamicState[]
   /** Region id (`regionId`) of a region with the same structure: both share one component. Points at a region that has no `sameAs` itself. */
   sameAs?: string
-  /** Region id of the region in an earlier band of the same template that this one carries on (a footer in three bands). */
+  /**
+   * Region id of the region in an earlier band of the same template that this one carries on. The two are one
+   * section whose archetype is this region's: list slots join in band order, and where both hold the same single
+   * slot the earlier region's ref stands. The earlier region has the same archetype (a footer in three bands) or is
+   * a `text` introduction (a heading and lead above their grid).
+   */
   continues?: string
 }
 
@@ -346,8 +362,8 @@ function isBox(value: unknown): value is Box {
 }
 
 /**
- * Checks the facts side of the contract: unique ids, a box at the reference width, and node ranges that ascend with
- * the order inside a template. Empty result: the bands are safe to hand to the understanding stage.
+ * Checks the facts side of the contract: unique ids, a box at the reference width, one order per band and node ranges
+ * that do not overlap inside a template. Empty result: the bands are safe to hand to the understanding stage.
  */
 export function validateBands(bands: readonly Band[]): UnderstandIssue[] {
   const issues: UnderstandIssue[] = []
@@ -368,14 +384,21 @@ export function validateBands(bands: readonly Band[]): UnderstandIssue[] {
       continue
     }
     if (!isRecord(band.style)) bad(id, 'A band carries its measured style (an empty object when nothing was measured).')
+    if (band.settled !== undefined && !(Array.isArray(band.settled) && band.settled.every(state => (SETTLED_STATES as readonly string[]).includes(state)))) bad(id, `settled is a list of: ${SETTLED_STATES.join(', ')}.`)
     byTemplate.set(band.template, [...(byTemplate.get(band.template) ?? []), band])
   }
   for (const group of byTemplate.values()) {
-    const ordered = group.toSorted((a, b) => a.order - b.order)
-    for (let i = 1; i < ordered.length; i++) {
-      const [prev, band] = [ordered[i - 1]!, ordered[i]!]
-      if (band.order === prev.order) bad(band.id, `Bands ${prev.id} and ${band.id} share an order.`)
-      else if (band.nodes.first <= prev.nodes.last) bad(band.id, `The node range overlaps band ${prev.id}'s.`)
+    const orders = new Map<number, Band>()
+    for (const band of group) {
+      const same = orders.get(band.order)
+      if (same) bad(band.id, `Bands ${same.id} and ${band.id} share an order.`)
+      else orders.set(band.order, band)
+    }
+    // Order is the rendered position and node ids are document order: the two need not agree, so overlap is checked on its own.
+    const byNodes = group.toSorted((a, b) => a.nodes.first - b.nodes.first)
+    for (let i = 1; i < byNodes.length; i++) {
+      const [prev, band] = [byNodes[i - 1]!, byNodes[i]!]
+      if (band.nodes.first <= prev.nodes.last) bad(band.id, `The node range overlaps band ${prev.id}'s.`)
     }
   }
   return issues
@@ -527,8 +550,9 @@ export function validateRegionSpecs(specs: readonly RegionSpec[], bands: readonl
     if (spec.continues !== undefined) {
       const target = specById.get(spec.continues)
       const targetBand = target && bandById.get(target.band)
-      if (!targetBand) add('bad_continues', 'continues names another region of the run.')
+      if (!target || !targetBand) add('bad_continues', 'continues names another region of the run.')
       else if (targetBand.template !== band.template || !(targetBand.order < band.order)) add('bad_continues', 'continues points at a region in an earlier band of the same template.')
+      else if (target.archetype !== spec.archetype && target.archetype !== 'text') add('bad_continues', 'continues joins regions of one archetype, or carries on a text introduction.')
     }
   }
   return issues
