@@ -3,6 +3,7 @@
 //  - one stylesheet: every page links at most one site stylesheet
 //  - no WordPress runtime: no wp-includes / wp-content / jQuery references
 //  - JavaScript only where a feature needs it (search, Studio forms/comments)
+//  - the search index (dist/pagefind/) wherever the search page loads it
 //  - the files crawlers and readers expect: sitemap, robots.txt, RSS, 404
 //  - llms.txt when the site has an address (robots.txt names the sitemap): the
 //    llmstxt.org shape, every link on the site's own origin and built here
@@ -45,6 +46,13 @@ async function exists(path) {
 
 for (const required of ['index.html', 'sitemap-index.xml', 'robots.txt', 'rss.xml', '404.html']) {
   if (!await exists(join(dist, required))) fail(required, 'missing')
+}
+
+// Search: the page loads the pagefind UI from /pagefind/; a build that stopped at `astro build` (no `pagefind --site dist`
+// after it) leaves those files out and the page logs a 404 per asset (Lighthouse best-practices fails on it).
+const searchPage = await readFile(join(dist, 'search', 'index.html'), 'utf8').catch(() => null)
+if (searchPage?.includes('/pagefind/') && !await exists(join(dist, 'pagefind', 'pagefind.js'))) {
+  fail('search/index.html', 'loads /pagefind/ but dist/pagefind/pagefind.js is missing (run `pagefind --site dist` after `astro build`)')
 }
 
 // llms.txt: a migrated site is promised one. With an address (robots.txt names the sitemap absolutely) it must

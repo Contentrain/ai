@@ -124,8 +124,12 @@ export interface PlanSite {
    * starter's own for a category, tag and author. Absent: the label above, the name as the heading.
    * `columns`: the cards' column count, from 600px up, as the source's grid prints it (a block theme's post template
    * `columns-3`: WordPress keeps the count from 600px and stacks below). Absent: the starter's own (2, then 3).
+   * `image`: the card image block as the source sets it: its `height` (a CSS length or `clamp()`, the picture cropped to
+   * fit), or `aspect` (`16 / 9`) where the source uses an aspect ratio; absent, 16 / 9. `gap`: the grid's column gap
+   * (a CSS length). `headingWidth`: the archive title box's width (a CSS length). `tieOrder`: how posts of the same
+   * moment are ordered as the source's database returned them (`asc`: the lower ID first); absent, `desc`.
    */
-  lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean, columns?: number }
+  lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean, columns?: number, image?: { height?: string, aspect?: string }, gap?: string, headingWidth?: string, tieOrder?: 'asc' | 'desc' }
   /**
    * The interface text the source theme itself printed (its "Read more" link, skip link, search placeholder, the
    * previous and next labels), by the `site/ui-strings` key it answers (`blog.read_more`, `nav.skip`): written over the
@@ -561,6 +565,13 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   if (site?.lists?.tone !== undefined && site.lists.tone !== 'muted') errors.push(`site.lists.tone ${String(site.lists.tone)} is not muted`)
   if (site?.lists?.columns !== undefined && (!Number.isInteger(site.lists.columns) || site.lists.columns < 1 || site.lists.columns > 6)) errors.push(`site.lists.columns ${String(site.lists.columns)} is not a whole number from 1 to 6`)
   if (site?.lists?.text !== undefined && !CSS_LENGTH.test(site.lists.text)) errors.push(`site.lists.text ${site.lists.text} is not a CSS size`)
+  for (const key of ['gap', 'headingWidth'] as const) {
+    const value = site?.lists?.[key]
+    if (value !== undefined && !CSS_LENGTH.test(value)) errors.push(`site.lists.${key} ${value} is not a CSS size`)
+  }
+  if (site?.lists?.image?.height !== undefined && !CSS_LENGTH.test(site.lists.image.height)) errors.push(`site.lists.image.height ${site.lists.image.height} is not a CSS size`)
+  if (site?.lists?.image?.aspect !== undefined && !/^\d+(?:\.\d+)?\s*\/\s*\d+(?:\.\d+)?$/.test(site.lists.image.aspect)) errors.push(`site.lists.image.aspect ${site.lists.image.aspect} is not a ratio like 16 / 9`)
+  if (site?.lists?.tieOrder !== undefined && site.lists.tieOrder !== 'asc' && site.lists.tieOrder !== 'desc') errors.push(`site.lists.tieOrder ${String(site.lists.tieOrder)} is not asc or desc`)
   for (const [route, layout] of Object.entries(site?.entryLayouts ?? {})) {
     if (typeof layout?.adjacent !== 'boolean') errors.push(`site.entryLayouts.${route}.adjacent is not true or false`)
     if (layout?.more !== undefined && (!Number.isSafeInteger(layout.more) || layout.more < 0 || layout.more > 20)) errors.push(`site.entryLayouts.${route}.more is not a count from 0 to 20`)

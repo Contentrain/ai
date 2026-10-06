@@ -2427,6 +2427,18 @@
           "type": "boolean",
           "default": false,
           "description": "The title in the site's link colour (--color-link), as themes that colour every link do."
+        },
+        "sizes": {
+          "type": "string",
+          "description": "The image's `sizes` hint; absent, the card's own guess. A list passes the slot its columns give."
+        },
+        "imageHeight": {
+          "type": "string",
+          "description": "The image block's height as the source sets it (a CSS length or clamp()), cropped to fit; wins over imageAspect."
+        },
+        "imageAspect": {
+          "type": "string",
+          "description": "The image block's aspect ratio (16 / 9) where the source sets an aspect ratio; absent, 16 / 9."
         }
       },
       "slots": {},

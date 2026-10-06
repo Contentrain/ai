@@ -50,6 +50,10 @@ const cards: Card[] = given ?? await Promise.all(posts.map(async (post) => {
 }))
 // A full list prints each card's content: a post's body, or the body a custom type's card carries.
 const bodies = full ? await Promise.all(cards.map((card, index) => card.body ? publicHtml(card.body) : posts[index] ? publicHtml(posts[index].data.body) : undefined)) : []
+// The card image's slot, from the columns the grid prints (the container is 1200px wide at most), so the browser does not pick a smaller copy.
+const columns = siteConfig.lists.columns
+const imageSizes = columns ? `(min-width: 1200px) ${Math.ceil(1200 / columns)}px, (min-width: 600px) ${Math.ceil(100 / columns)}vw, 100vw` : undefined
+const listImage = siteConfig.lists.image
 const pageSuffix = current > 1 ? ` – ${t('pagination.page')} ${current}` : ''
 const url = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href
 // The archive's own description, else one that says what the page is (a later page with its number).
@@ -68,15 +72,15 @@ const metaDescription = describePage({
 >
   {/* data-cr-described: the description is the site's own words for the page, not the source's — counted for the owner. */}
   <div class="container-page py-12 md:py-16" data-cr-list data-cr-described={description?.trim() ? undefined : 'generated'}>
-    <header class:list={['mb-12 flex flex-col gap-3', column ? 'mx-auto max-w-(--container-prose)' : 'max-w-2xl', !showHeading && 'sr-only']}>
+    <header class:list={['mb-12 flex flex-col gap-3', column ? 'mx-auto max-w-(--container-prose)' : !siteConfig.lists.headingWidth && 'max-w-2xl', !showHeading && 'sr-only']} style={!column && siteConfig.lists.headingWidth ? `max-width:${siteConfig.lists.headingWidth}` : undefined}>
       {eyebrow && !prefixed && <p class="text-sm font-medium tracking-wide text-accent-text uppercase">{eyebrow}</p>}
       <h1 class="text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance">{prefixed ? `${eyebrow}: ${title}` : title ?? (siteConfig.lists.heading ? t('blog.title') : site.title)}</h1>
       {description && <p class="text-lg text-ink-muted">{description}</p>}
     </header>
     {cards.length === 0 && <p class="text-ink-muted">{t('blog.empty')}</p>}
     {cards.length > 0 && !full && (
-      <div data-cr-grid class:list={['grid gap-x-8 gap-y-12', siteConfig.lists.tone === 'muted' && 'text-ink-muted', column ? 'mx-auto w-full max-w-(--container-prose)' : siteConfig.lists.columns ? 'min-[600px]:grid-cols-(--cr-list-columns)' : 'sm:grid-cols-2 lg:grid-cols-3']} style={!column && siteConfig.lists.columns ? `--cr-list-columns: repeat(${siteConfig.lists.columns}, minmax(0, 1fr))` : undefined}>
-        {cards.map(card => <PostCard {...card} locale={site.language} linkTitle={siteConfig.chrome?.titleLinks} surface={siteConfig.lists.surface ? 'card' : 'plain'} byline={siteConfig.lists.byline ? 'below' : 'inline'} />)}
+      <div data-cr-grid class:list={['grid gap-y-12', !siteConfig.lists.gap && 'gap-x-8', siteConfig.lists.tone === 'muted' && 'text-ink-muted', column ? 'mx-auto w-full max-w-(--container-prose)' : siteConfig.lists.columns ? 'min-[600px]:grid-cols-(--cr-list-columns)' : 'sm:grid-cols-2 lg:grid-cols-3']} style={[!column && siteConfig.lists.columns ? `--cr-list-columns: repeat(${siteConfig.lists.columns}, minmax(0, 1fr))` : '', siteConfig.lists.gap ? `column-gap:${siteConfig.lists.gap}` : ''].filter(Boolean).join(';') || undefined}>
+        {cards.map(card => <PostCard {...card} locale={site.language} linkTitle={siteConfig.chrome?.titleLinks} surface={siteConfig.lists.surface ? 'card' : 'plain'} byline={siteConfig.lists.byline ? 'below' : 'inline'} sizes={column ? undefined : imageSizes} imageHeight={listImage?.height} imageAspect={listImage?.aspect} />)}
       </div>
     )}
     {cards.length > 0 && full && (

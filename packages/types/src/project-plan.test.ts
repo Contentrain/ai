@@ -353,6 +353,18 @@ describe('validateProjectPlan', () => {
     p.site.chrome = { brand: '2.5rem', tagline: true, copyright: 'All rights reserved', titleLinks: true, navLinks: true, footerAlign: 'center' }
     p.site.tokens.roles['color-link'] = '#c36'
     expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.lists = { ...p.site.lists, image: { height: 'clamp(15vw,30vh,400px)' }, gap: '22px', headingWidth: '1200px', tieOrder: 'asc' }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.lists = { ...p.site.lists, image: { aspect: '1.95 / 1' } }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.lists = { ...p.site.lists, image: { height: 'url(x)', aspect: 'wide' }, gap: '1px; x', tieOrder: 'up' as 'asc' }
+    expect(validateProjectPlan(p).errors).toEqual([
+      'site.lists.gap 1px; x is not a CSS size',
+      'site.lists.image.height url(x) is not a CSS size',
+      'site.lists.image.aspect wide is not a ratio like 16 / 9',
+      'site.lists.tieOrder up is not asc or desc',
+    ])
+    p.site.lists = { display: p.site.lists.display, heading: p.site.lists.heading }
     p.site.lists.text = 'red; color: blue'
     p.site.chrome = { brand: 'clamp(url(x))', copyright: '<b>x</b>', navLinks: 'yes' as unknown as boolean, footerAlign: 'middle' as 'center' }
     expect(validateProjectPlan(p).errors).toEqual([

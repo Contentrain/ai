@@ -23,6 +23,8 @@ interface Props {
   /** Rendered width in the layout, for srcset selection. */
   sizes?: string | undefined
   class?: string | undefined
+  /** Inline style, for a size the source sets (a card image's height). */
+  style?: string | undefined
   /** The page's largest image: load it first. */
   priority?: boolean | undefined
 }
@@ -30,7 +32,7 @@ interface Props {
 // Raster files under public/, loaded only when a page shows one.
 const LOCAL = import.meta.glob<ImageMetadata>('/public/**/*.{avif,gif,jpeg,jpg,png,tif,tiff,webp,AVIF,GIF,JPEG,JPG,PNG,TIF,TIFF,WEBP}', { import: 'default' })
 
-const { image: given, sizes = '100vw', class: className, priority = false } = Astro.props
+const { image: given, sizes = '100vw', class: className, style, priority = false } = Astro.props
 // Content stores an address; the size the migration measured comes from the site's media table.
 const measured = given.width && given.height ? undefined : mediaSize(given.src)
 const image: ImageInput = measured ? { ...given, ...measured } : given
@@ -48,7 +50,7 @@ const STEPS = [320, 640, 960, 1280, 1600, 1920, 2560]
 const widthsUpTo = (max: number) => [...STEPS.filter(step => step < max), max]
 ---
 {local
-  ? <Image src={local} alt={image.alt ?? ''} {...size} widths={widthsUpTo(image.width ?? local.width)} sizes={sizes} class={className} loading={loading} fetchpriority={fetchpriority} />
+  ? <Image src={local} alt={image.alt ?? ''} {...size} widths={widthsUpTo(image.width ?? local.width)} sizes={sizes} class={className} style={style} loading={loading} fetchpriority={fetchpriority} />
   : image.width && image.height && path === undefined
-    ? <Image src={image.src} alt={image.alt ?? ''} width={image.width} height={image.height} widths={widthsUpTo(image.width)} sizes={sizes} class={className} loading={loading} fetchpriority={fetchpriority} />
-    : <img src={image.src} alt={image.alt ?? ''} width={image.width} height={image.height} class={className} loading={loading} fetchpriority={fetchpriority} decoding="async" />}
+    ? <Image src={image.src} alt={image.alt ?? ''} width={image.width} height={image.height} widths={widthsUpTo(image.width)} sizes={sizes} class={className} style={style} loading={loading} fetchpriority={fetchpriority} />
+    : <img src={image.src} alt={image.alt ?? ''} width={image.width} height={image.height} class={className} style={style} loading={loading} fetchpriority={fetchpriority} decoding="async" />}

@@ -13,7 +13,7 @@
     },
     {
       "from": "  lists: { display: 'cards', heading: false },",
-      "to": "  lists: { display: 'cards', heading: false, surface: true, byline: true, prefixed: true, columns: 3 },"
+      "to": "  lists: { display: 'cards', heading: false, surface: true, byline: true, prefixed: true, columns: 3, image: { height: 'clamp(15vw,30vh,400px)' }, gap: '22px', headingWidth: '1200px' },"
     },
     {
       "from": "  post: { header: ['terms', 'title', 'byline', 'cover'], adjacent: false, more: 0 },",
@@ -91,6 +91,10 @@
     },
     "index.html": {
       "contains": [
+        "column-gap:22px",
+        "max-width:1200px",
+        "aria-haspopup=\"true\"",
+        ">Our team</a>",
         "href=\"/rss.xml\"",
         "©",
         "location.replace(to)",

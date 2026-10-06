@@ -4,7 +4,7 @@
 
 import { getCollection, getEntry, type CollectionKey } from 'astro:content'
 import type { ImageInput } from '../components/kit/_shared/types'
-import type { CustomType } from '../site.config'
+import { siteConfig, type CustomType } from '../site.config'
 import { imageOf, type Media } from './content'
 import { dateParams, fillPattern } from './routes'
 
@@ -34,8 +34,9 @@ const wordpressId = (entry: TypeEntry) => typeof entry.data.wp_id === 'number' ?
  * them; entries without a date keep their title order after the dated ones.
  */
 export function newestFirst(entries: readonly TypeEntry[], dateField = 'published_at'): TypeEntry[] {
+  const tie = siteConfig.lists.tieOrder === 'asc' ? -1 : 1
   return entries.toSorted((a, b) => (dateOf(b.data[dateField])?.getTime() ?? 0) - (dateOf(a.data[dateField])?.getTime() ?? 0)
-    || wordpressId(b) - wordpressId(a)
+    || tie * (wordpressId(b) - wordpressId(a))
     || (text(a.data.title) ?? text(a.data.name) ?? a.id).localeCompare(text(b.data.title) ?? text(b.data.name) ?? b.id))
 }
 

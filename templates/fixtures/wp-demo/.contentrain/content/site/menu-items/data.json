@@ -126,5 +126,13 @@
     "order": 1,
     "title": "Imprint",
     "url": "/contact/"
+  },
+  "f5b6c7d8e9a0": {
+    "menu": "5e27e5dd7d41",
+    "open_in_new_tab": false,
+    "order": 10,
+    "parent": "9e3f026a359e",
+    "title": "Our team",
+    "url": "/about/team/"
   }
 }
