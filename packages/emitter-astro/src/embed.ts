@@ -663,7 +663,7 @@ export async function mountForm(host: HTMLElement): Promise<void> {
     config = await fetchFormConfig(rt, model)
   } catch (error) {
     if (isPaymentRequired(error)) return hideUnavailable(host, 'form')
-    const message = '<p class="cr-error">' + esc(error instanceof Error ? error.message : strings.failed) + '</p>'
+    const message = '<p class="cr-error" role="alert">' + esc(error instanceof Error ? error.message : strings.failed) + '</p>'
     if (drawn) drawn.insertAdjacentHTML('beforeend', message)
     else host.innerHTML = message
     return
@@ -705,7 +705,7 @@ export async function mountComments(host: HTMLElement): Promise<void> {
     thread = await fetchThread(rt, entry)
   } catch (error) {
     if (isPaymentRequired(error)) return hideUnavailable(host, 'comments')
-    host.innerHTML = '<p class="cr-error">' + esc(error instanceof Error ? error.message : strings.failed) + '</p>'
+    host.innerHTML = '<p class="cr-error" role="alert">' + esc(error instanceof Error ? error.message : strings.failed) + '</p>'
     return
   }
 
