@@ -9,7 +9,7 @@
     },
     {
       "from": "  sourceHosts: [],",
-      "to": "  types: [{\n    collection: 'project',\n    model: 'project',\n    single: '/projects/:slug/',\n    archive: { pattern: '/projects/', title: 'Projects', label: 'Archives' },\n    taxonomies: [{ collection: 'projectType', pattern: '/project-type/:path/', field: 'project-type', title: 'Project type' }],\n    card: { title: 'title', excerpt: 'summary', image: 'cover', date: 'published_at' },\n    body: 'body',\n    adjacent: true,\n    adjacentText: '1.0625rem',\n    more: 2,\n    meta: [[[{ part: 'terms', prefix: 'Filed under ' }], [{ text: 'Notes:' }]]],\n    fields: [\n      { name: 'client', label: 'Client', type: 'string' },\n      { name: 'website', label: 'Website', type: 'url' },\n      { name: 'contact_email', label: 'Contact email', type: 'email' },\n      { name: 'launch_date', label: 'Launch date', type: 'date' },\n      { name: 'featured', label: 'Featured project', type: 'boolean' },\n      { name: 'platforms', label: 'Platforms', type: 'array', of: 'string' },\n      { name: 'location', label: 'Location', type: 'object', fields: [{ name: 'address', label: 'Address', type: 'text' }, { name: 'city', label: 'City', type: 'string' }] },\n      { name: 'milestones', label: 'Milestones', type: 'array', fields: [{ name: 'date', label: 'Date', type: 'date' }, { name: 'name', label: 'Name', type: 'string' }], markup: 'ol' },\n      { name: 'faq', label: 'FAQ', type: 'array', fields: [{ name: 'question', label: 'Question', type: 'string' }, { name: 'answer', label: 'Answer', type: 'richtext' }], markup: 'details' },\n      { name: 'project-type', label: 'Project type', type: 'relations', collection: 'projectType' },\n    ],\n  }, {\n    collection: 'teamMember',\n    single: '/team/:slug/',\n    card: { title: 'title' },\n    body: 'body',\n    fieldsFirst: true,\n    fields: [\n      { name: 'role', label: 'Role', type: 'string', hideLabel: true },\n      { name: 'social', label: 'Social', type: 'array', hideLabel: true, fields: [{ name: 'network', label: 'Network', type: 'string', hideLabel: true }, { name: 'url', label: 'Url', type: 'url', hideLabel: true }] },\n      { name: 'department', label: 'Department', type: 'string' },\n    ],\n  }],\n  sourceHosts: [],"
+      "to": "  types: [{\n    collection: 'project',\n    model: 'project',\n    single: '/projects/:slug/',\n    archive: { pattern: '/projects/', title: 'Projects', label: 'Archives' },\n    taxonomies: [{ collection: 'projectType', pattern: '/project-type/:path/', field: 'project-type', title: 'Project type' }],\n    card: { title: 'title', excerpt: 'summary', image: 'cover', date: 'published_at' },\n    body: 'body',\n    adjacent: true,\n    adjacentText: '1.0625rem',\n    more: 2,\n    meta: [[[{ part: 'terms', prefix: 'Filed under ' }], [{ text: 'Notes:' }]]],\n    fields: [\n      { name: 'client', label: 'Client', type: 'string' },\n      { name: 'website', label: 'Website', type: 'url' },\n      { name: 'contact_email', label: 'Contact email', type: 'email' },\n      { name: 'launch_date', label: 'Launch date', type: 'date' },\n      { name: 'featured', label: 'Featured project', type: 'boolean' },\n      { name: 'platforms', label: 'Platforms', type: 'array', of: 'string' },\n      { name: 'location', label: 'Location', type: 'object', fields: [{ name: 'address', label: 'Address', type: 'text' }, { name: 'city', label: 'City', type: 'string' }] },\n      { name: 'milestones', label: 'Milestones', type: 'array', fields: [{ name: 'date', label: 'Date', type: 'date' }, { name: 'name', label: 'Name', type: 'string' }], markup: 'ol' },\n      { name: 'faq', label: 'FAQ', type: 'array', fields: [{ name: 'question', label: 'Question', type: 'string' }, { name: 'answer', label: 'Answer', type: 'richtext' }], markup: 'details' },\n      { name: 'blueprint', label: 'Blueprint', type: 'image' },\n      { name: 'brochure', label: 'Brochure', type: 'file' },\n      { name: 'legacy_plan', label: 'Legacy plan', type: 'image' },\n      { name: 'project-type', label: 'Project type', type: 'relations', collection: 'projectType' },\n    ],\n  }, {\n    collection: 'teamMember',\n    single: '/team/:slug/',\n    card: { title: 'title' },\n    body: 'body',\n    fieldsFirst: true,\n    fields: [\n      { name: 'role', label: 'Role', type: 'string', hideLabel: true },\n      { name: 'social', label: 'Social', type: 'array', hideLabel: true, fields: [{ name: 'network', label: 'Network', type: 'string', hideLabel: true }, { name: 'url', label: 'Url', type: 'url', hideLabel: true }] },\n      { name: 'department', label: 'Department', type: 'string' },\n    ],\n  }],\n  sourceHosts: [],"
     },
     {
       "from": "  lists: { display: 'cards', heading: false },",
@@ -202,10 +202,18 @@
         "data-cr-part=\"post-meta\"",
         "Filed under <a href=\"/project-type/infrastructure/\"",
         "<span>Notes:</span>",
-        "/project-type/infrastructure/bridges/"
+        "/project-type/infrastructure/bridges/",
+        "Blueprint",
+        "src=\"/_astro/harbour.",
+        "alt=\"Blueprint\"",
+        "Brochure",
+        "href=\"/files/price-list.txt\" download>price-list.txt</a>",
+        "javascript:plan()"
       ],
       "excludes": [
-        "field_"
+        "field_",
+        "href=\"javascript:",
+        "src=\"javascript:"
       ]
     },
     "projects/grid-monitor/index.html": {

@@ -84,6 +84,21 @@
         }
       }
     },
+    "blueprint": {
+      "label": "Blueprint",
+      "order": 125,
+      "type": "image"
+    },
+    "brochure": {
+      "label": "Brochure",
+      "order": 126,
+      "type": "file"
+    },
+    "legacy_plan": {
+      "label": "Legacy plan",
+      "order": 127,
+      "type": "image"
+    },
     "milestones": {
       "label": "Milestones",
       "order": 130,

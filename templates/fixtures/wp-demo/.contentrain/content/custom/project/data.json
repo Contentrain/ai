@@ -40,7 +40,10 @@
         "question": "How long did the bridge take?",
         "answer": "<p>Eight months.</p>"
       }
-    ]
+    ],
+    "blueprint": "/media/2026/09/harbour.jpg",
+    "brochure": "/files/price-list.txt",
+    "legacy_plan": "javascript:plan()"
   },
   "d4e5f6a1b2c3": {
     "title": "Grid Monitor",
