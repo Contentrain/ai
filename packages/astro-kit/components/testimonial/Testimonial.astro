@@ -79,11 +79,13 @@ interface Props {
   quoteMark?: 'marks' | 'glyph' | 'none' | undefined
   /** The stars' spoken text; `{rating}` stands for the number. */
   ratingLabel?: string | undefined
+  /** The scrolling row's name for assistive technology, when there is no heading to name it (layout row). */
+  label?: string | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   id?: string | undefined
 }
 
-const { items, heading, layout, quoteSize, frame, avatarSize, avatarPlace, quoteMark = 'marks', ratingLabel = '{rating} out of 5 stars', tone, id } = Astro.props
+const { items, heading, layout, quoteSize, frame, avatarSize, avatarPlace, quoteMark = 'marks', ratingLabel = '{rating} out of 5 stars', label = 'Testimonials', tone, id } = Astro.props
 const s = testimonial({ layout, quoteSize, frame, avatarSize, avatarPlace, quoteMark, tone })
 const headingId = heading && id ? `${id}-title` : undefined
 // Two quotes share the row: a third column would stand empty beside them and narrow both (IP-4 elementor launch G9).
@@ -91,14 +93,16 @@ const list = s.list(items.length === 2 && (layout ?? 'grid') === 'grid' ? { clas
 // The quotation marks are drawn, not written: the quote's text is the source's words, read once. A quote the source
 // already wrote inside marks keeps its own.
 const quoted = (text: string) => /^\s*["'“‘„«‹「『]/.test(text)
-const stars = (item: TestimonialItem) => Math.min(5, Math.max(0, Math.round(item.rating ?? 0)))
+// The real number is what is said ("4.8 out of 5"); the stars drawn follow it in halves.
+const stars = (item: TestimonialItem) => Math.min(5, Math.max(0, item.rating ?? 0))
+const spoken = (rating: number) => String(Math.round(rating * 10) / 10)
 // A row scrolls: its box is focusable and named, so a keyboard reaches the cards beyond the edge.
 const scrolls = layout === 'row'
 ---
 {items.length > 0 && (
   <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
     {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
-    <div class={list} tabindex={scrolls ? 0 : undefined} role={scrolls && heading ? 'region' : undefined} aria-labelledby={scrolls && heading ? headingId : undefined}>
+    <div class={list} tabindex={scrolls ? 0 : undefined} role={scrolls ? 'region' : undefined} aria-labelledby={scrolls && heading ? headingId : undefined} aria-label={scrolls && !heading ? label : undefined}>
       {items.map((item) => {
         const avatar = imageOf(item.avatar, item.avatarAlt)
         const logo = imageOf(item.logo, item.logoAlt)
@@ -107,9 +111,9 @@ const scrolls = layout === 'row'
           <figure class={s.card()}>
             {avatar && avatarPlace === 'top' && <KitImage image={avatar} sizes="64px" class={s.avatar()} />}
             {rating > 0 && (
-              <span class={s.stars()} role="img" aria-label={ratingLabel.replace('{rating}', String(rating))}>
+              <span class={s.stars()} role="img" aria-label={ratingLabel.replace('{rating}', spoken(rating))}>
                 {[1, 2, 3, 4, 5].map(n => (
-                  <svg viewBox="0 0 24 24" class:list={['size-5', n > rating && 'opacity-25']} fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z" /></svg>
+                  <svg viewBox="0 0 24 24" class:list={['size-5', rating < n && (rating >= n - 0.5 ? 'opacity-60' : 'opacity-25')]} fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z" /></svg>
                 ))}
               </span>
             )}

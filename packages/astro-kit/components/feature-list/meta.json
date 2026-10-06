@@ -95,6 +95,12 @@
       "default": false,
       "content": false,
       "description": "Only the list, with no section of its own; a split section uses it under its text."
+    },
+    "titleLevel": {
+      "type": "integer",
+      "default": 3,
+      "content": false,
+      "description": "With `bare`: the item titles' heading level (the section's plus one)."
     }
   },
   "slots": {},

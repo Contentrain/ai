@@ -1177,6 +1177,12 @@
           "default": false,
           "content": false,
           "description": "Only the list, with no section of its own; a split section uses it under its text."
+        },
+        "titleLevel": {
+          "type": "integer",
+          "default": 3,
+          "content": false,
+          "description": "With `bare`: the item titles' heading level (the section's plus one)."
         }
       },
       "slots": {},
@@ -3212,7 +3218,7 @@
           "divi/et_pb_image"
         ]
       },
-      "a11y": "The section is labelled by its heading. The image is a separate figure in reading order after the text; an empty description marks a decorative one.",
+      "a11y": "The section is labelled by its heading. The image is a separate figure in reading order after the text; an empty description marks a decorative one. With stackOrder media-first the picture comes first on a phone by CSS order only: the DOM and so the reading order stay text first, which is right when the picture is decoration; give the picture an empty description then.",
       "pattern": {
         "summary": "image beside heading + text",
         "signals": [
@@ -3286,7 +3292,7 @@
             "divided"
           ],
           "default": "plain",
-          "description": "plain: figures on the section background. card: each figure in its own box. divided: a hairline at each figure's leading edge, no box."
+          "description": "plain: figures on the section background. card: each figure in its own box. divided: hairlines between the figures (across on a wide screen, above each on a phone), no box; for a single row."
         },
         "align": {
           "options": [
@@ -3926,6 +3932,11 @@
           "type": "string",
           "content": false,
           "description": "The stars' spoken text; `{rating}` stands for the number (\"{rating} out of 5 stars\")."
+        },
+        "label": {
+          "type": "string",
+          "content": false,
+          "description": "The scrolling row's name for assistive technology when there is no heading (\"Testimonials\")."
         }
       },
       "slots": {},
@@ -3942,7 +3953,7 @@
           "classic/testimonial"
         ]
       },
-      "a11y": "Each quote is a <figure> whose <figcaption> names the speaker; the text is in a <blockquote>. Avatars are decorative when their alt is empty. The section is labelled by its heading when it has one.",
+      "a11y": "Each quote is a <figure> whose <figcaption> names the speaker; the text is in a <blockquote>. Avatars are decorative when their alt is empty. The section is labelled by its heading when it has one. Stars are one image named by the real rating (\"4.8 out of 5 stars\"); the row layout is a focusable named region.",
       "files": [
         "Testimonial.astro"
       ],

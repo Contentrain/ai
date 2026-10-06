@@ -37,7 +37,7 @@
         "divided"
       ],
       "default": "plain",
-      "description": "plain: figures on the section background. card: each figure in its own box. divided: a hairline at each figure's leading edge, no box."
+      "description": "plain: figures on the section background. card: each figure in its own box. divided: hairlines between the figures (across on a wide screen, above each on a phone), no box; for a single row."
     },
     "align": {
       "options": [

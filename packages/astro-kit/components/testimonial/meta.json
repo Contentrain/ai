@@ -144,6 +144,11 @@
       "type": "string",
       "content": false,
       "description": "The stars' spoken text; `{rating}` stands for the number (\"{rating} out of 5 stars\")."
+    },
+    "label": {
+      "type": "string",
+      "content": false,
+      "description": "The scrolling row's name for assistive technology when there is no heading (\"Testimonials\")."
     }
   },
   "slots": {},
@@ -160,5 +165,5 @@
       "classic/testimonial"
     ]
   },
-  "a11y": "Each quote is a <figure> whose <figcaption> names the speaker; the text is in a <blockquote>. Avatars are decorative when their alt is empty. The section is labelled by its heading when it has one."
+  "a11y": "Each quote is a <figure> whose <figcaption> names the speaker; the text is in a <blockquote>. Avatars are decorative when their alt is empty. The section is labelled by its heading when it has one. Stars are one image named by the real rating (\"4.8 out of 5 stars\"); the row layout is a focusable named region."
 }

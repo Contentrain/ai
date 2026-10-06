@@ -30,8 +30,9 @@ const stats = tv({
     style: {
       plain: {},
       card: { item: 'rounded-[var(--radius-card)] bg-surface p-6 text-ink ring-1 ring-line/60' },
-      // A hairline at each figure's leading edge, no box.
-      divided: { item: 'border-s border-line ps-6' },
+      // Hairlines between the figures, none before the first, no box: across on a wide screen, above each on a phone.
+      // Meant for a single row (figures no more than the columns); a wrapped row starts with a line.
+      divided: { item: 'border-t border-line pt-6 first:border-t-0 first:pt-0 md:border-t-0 md:pt-0 md:border-s md:ps-6 md:first:border-s-0 md:first:ps-0' },
     },
     align: { start: {}, center: { item: 'items-center text-center', icon: 'mx-auto' } },
     // The figure's size: md, lg (the default), xl, or a display number.

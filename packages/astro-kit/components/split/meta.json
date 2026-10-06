@@ -251,7 +251,7 @@
       "divi/et_pb_image"
     ]
   },
-  "a11y": "The section is labelled by its heading. The image is a separate figure in reading order after the text; an empty description marks a decorative one.",
+  "a11y": "The section is labelled by its heading. The image is a separate figure in reading order after the text; an empty description marks a decorative one. With stackOrder media-first the picture comes first on a phone by CSS order only: the DOM and so the reading order stay text first, which is right when the picture is decoration; give the picture an empty description then.",
   "pattern": {
     "summary": "image beside heading + text",
     "signals": [

@@ -61,15 +61,17 @@ interface Props {
   tone?: Tone | undefined
   /** Only the list, with no section of its own, for use inside another section's column. */
   bare?: boolean | undefined
+  /** The level of the item titles when `bare` (the section's heading level plus one). */
+  titleLevel?: 3 | 4 | 5 | undefined
   id?: string | undefined
 }
 
-const { heading, intro, items, columns, style = 'icon', tone, bare = false, id } = Astro.props
+const { heading, intro, items, columns, style = 'icon', tone, bare = false, titleLevel = 3, id } = Astro.props
 const s = list({ columns, style, tone, bare })
 const headingId = heading && id ? `${id}-title` : undefined
 const pathOf = (item: Item) => (style !== 'check' && item.icon && icons[item.icon]) || icons.check
 // A plain list's items are not headings; otherwise one level under the section heading, or the section's when there is none.
-const Title = style === 'list' ? 'span' : heading || bare ? 'h3' : 'h2'
+const Title = style === 'list' ? 'span' : bare ? `h${titleLevel}` as 'h3' : heading ? 'h3' : 'h2'
 ---
 {bare
   ? (

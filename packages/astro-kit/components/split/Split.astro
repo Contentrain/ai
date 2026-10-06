@@ -110,7 +110,7 @@ const html = await renderMarkdown(body)
       {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
       <Heading id={headingId} class={s.heading()}>{heading}</Heading>
       {html && <div class={s.body()} data-kit-text set:html={html} />}
-      {features.length > 0 && <FeatureList items={features} columns="2" style={featureStyle} tone={tone === 'brand' || tone === 'none' ? undefined : tone} bare />}
+      {features.length > 0 && <FeatureList items={features} columns="2" style={featureStyle} tone={tone === 'brand' || tone === 'none' ? undefined : tone} bare titleLevel={Math.min(5, headingLevel + 1) as 3 | 4 | 5} />}
       {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
     </div>
     {(video || image) && (
