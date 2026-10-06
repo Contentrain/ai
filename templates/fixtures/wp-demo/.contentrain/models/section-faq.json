@@ -1,0 +1,31 @@
+{
+  "domain": "sections",
+  "fields": {
+    "heading": {
+      "required": false,
+      "type": "string"
+    },
+    "items": {
+      "items": {
+        "fields": {
+          "answer": {
+            "required": true,
+            "type": "richtext"
+          },
+          "question": {
+            "required": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "required": false,
+      "type": "array"
+    }
+  },
+  "i18n": true,
+  "id": "section-faq",
+  "kind": "collection",
+  "name": "FAQ sections",
+  "title_field": "heading"
+}

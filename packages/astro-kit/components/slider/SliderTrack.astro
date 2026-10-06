@@ -1,0 +1,178 @@
+---
+// A carousel of images with optional captions. Without JavaScript it is a
+// horizontally scrolling, snapping row — every slide is reachable. With it,
+// Embla turns the row into a paged carousel with previous/next buttons and
+// slide dots. Slider.astro frames it (the section's own look, when a measured
+// style is given); the markup and the script are here.
+import { tv } from 'tailwind-variants'
+import Button from '../_shared/Button.astro'
+import KitImage from '../_shared/KitImage.astro'
+import SectionHeader from '../_shared/SectionHeader.astro'
+import { imageOf, type ImageSource } from '../_shared/image'
+import { measuredSlides } from '../_shared/measured'
+import { type ActionInput, type ImageInput, type MeasuredStyle } from '../_shared/types'
+
+const slider = tv({
+  slots: {
+    viewport: 'flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth group-data-[ready]:snap-none group-data-[ready]:overflow-hidden [scrollbar-width:none] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    slide: 'relative min-w-0 shrink-0 snap-start overflow-hidden',
+    image: 'w-full object-cover',
+    caption: 'flex flex-col items-start gap-2',
+  },
+  variants: {
+    perView: {
+      '1': { slide: 'basis-full' },
+      '2': { slide: 'basis-[85%] sm:basis-[calc(50%-0.5rem)]' },
+      '3': { slide: 'basis-[85%] sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33.333%-0.667rem)]' },
+    },
+    aspect: {
+      wide: { image: 'aspect-[4/3] md:aspect-[21/9]' },
+      standard: { image: 'aspect-[3/2]' },
+      square: { image: 'aspect-square' },
+    },
+    caption: {
+      below: { image: 'rounded-[var(--radius-image,var(--radius-card))]', caption: 'pt-4' },
+      // Over the image on wide screens; under it on phones, where the image is too short to hold text.
+      overlay: { image: 'rounded-[var(--radius-image,var(--radius-card))] md:rounded-none', slide: 'md:rounded-[var(--radius-image,var(--radius-card))]', caption: 'pt-4 md:absolute md:inset-x-0 md:bottom-0 md:bg-gradient-to-t md:from-ink/80 md:to-transparent md:p-6 md:pt-16 md:text-surface' },
+    },
+  },
+  defaultVariants: { perView: '1', aspect: 'wide', caption: 'overlay' },
+})
+
+interface Slide {
+  /** The image's address (or, until 0.7, an `ImageInput`). */
+  image: ImageSource
+  imageAlt?: string | undefined
+  title?: string | undefined
+  text?: string | undefined
+  /** The slide's link, flat so a page stays within Contentrain's nesting depth. */
+  ctaLabel?: string | undefined
+  ctaHref?: string | undefined
+  /** Until 0.7: the same link as one object. */
+  action?: ActionInput | undefined
+}
+
+interface Props {
+  slides: Slide[]
+  /** The section's head, drawn above the carousel; none of these given, nothing is drawn. */
+  heading?: string | undefined
+  intro?: string | undefined
+  eyebrow?: string | undefined
+  actions?: ActionInput[] | undefined
+  /** Accessible name of the carousel ("Featured projects"). */
+  label: string
+  prevLabel?: string | undefined
+  nextLabel?: string | undefined
+  /** Word before a slide number in dot labels and slide names ("Slide"). */
+  slideLabel?: string | undefined
+  /** Word between a slide number and the count ("of"). */
+  ofLabel?: string | undefined
+  loop?: boolean | undefined
+  perView?: '1' | '2' | '3' | undefined
+  aspect?: 'wide' | 'standard' | 'square' | undefined
+  caption?: 'below' | 'overlay' | undefined
+  /** The source section's measured style (`MeasuredStyle`): columns per width become the slides in view, gap their spacing. */
+  measured?: MeasuredStyle | undefined
+  /** Names the track for the buttons' `aria-controls`; unique on the page. */
+  id?: string | undefined
+  /** Draw the section's own frame and spacing (when Slider.astro has no Section around it). */
+  framed?: boolean | undefined
+}
+
+const { slides: given, label, prevLabel = 'Previous slide', nextLabel = 'Next slide', slideLabel = 'Slide', ofLabel = 'of', loop = false, perView = '1', aspect, caption, heading, intro, eyebrow, actions, measured, id = 'slider', framed = true } = Astro.props
+const slides = given.flatMap((slide) => {
+  const image = imageOf(slide.image, slide.imageAlt)
+  const action = slide.action ?? (slide.ctaLabel && slide.ctaHref ? { label: slide.ctaLabel, href: slide.ctaHref } : undefined)
+  return image ? [{ ...slide, image, action }] : []
+}) satisfies Array<{ image: ImageInput, action?: ActionInput | undefined }>
+const measuredRow = measuredSlides(measured)
+// A measured row sets the slides in view itself, so the variant's own widths step aside.
+const slots = slider({ perView: measuredRow ? '1' : perView, aspect, caption })
+const trackId = `${id}-track`
+const sizes = measuredRow ? '(min-width: 1216px) 1152px, 100vw' : perView === '1' ? '(min-width: 1216px) 1152px, 100vw' : perView === '2' ? '(min-width: 640px) 50vw, 85vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 85vw'
+// Arrows from sm up; on phones the carousel is swiped and the dots show the position.
+const Root = framed ? 'section' : 'div'
+const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md ring-1 ring-line hover:bg-surface disabled:opacity-40 sm:group-data-[ready]:flex'
+---
+<Root class:list={['group relative', framed && 'container-page py-8']} role={framed ? undefined : 'region'} aria-roledescription="carousel" aria-label={label} data-kit-slider data-loop={loop ? '' : undefined} data-slide-label={slideLabel}>
+  <SectionHeader heading={heading} intro={intro} eyebrow={eyebrow} actions={actions} />
+  <div class={slots.viewport()} data-viewport tabindex="0" role="group" aria-label={label}>
+    <div class:list={['flex gap-4 [&>*]:shrink-0 group-data-[ready]:[&>*]:snap-align-none', measuredRow?.track]} id={trackId} data-container>
+      {slides.map((slide, index) => (
+        <div class={slots.slide({ class: measuredRow?.slide })} role="group" aria-roledescription="slide" aria-label={`${slideLabel} ${index + 1} ${ofLabel} ${slides.length}`}>
+          <KitImage image={slide.image} sizes={sizes} priority={index === 0} class={slots.image()} />
+          {(slide.title || slide.text || slide.action) && (
+            <div class={slots.caption()}>
+              {slide.title && <p class="text-xl [font-weight:var(--font-weight-heading,600)] text-balance">{slide.title}</p>}
+              {slide.text && <p class="opacity-85">{slide.text}</p>}
+              {slide.action && <Button action={slide.action} size="sm" class="mt-2" />}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+  {slides.length > 1 && (
+    <>
+      <button type="button" class:list={[arrow, 'start-6 md:start-10']} aria-label={prevLabel} aria-controls={trackId} data-prev>
+        <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" /></svg>
+      </button>
+      <button type="button" class:list={[arrow, 'end-6 md:end-10']} aria-label={nextLabel} aria-controls={trackId} data-next>
+        <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg>
+      </button>
+      <div class="mt-4 hidden justify-center group-data-[ready]:flex" data-dots></div>
+    </>
+  )}
+</Root>
+
+<script>
+  import EmblaCarousel from 'embla-carousel'
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-kit-slider]')) {
+    const viewport = root.querySelector<HTMLElement>('[data-viewport]')
+    if (!viewport || root.dataset.ready !== undefined) continue
+    root.dataset.ready = ''
+    // Reduced motion: slides change instantly instead of gliding.
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+    // A right-to-left page runs the row from the right: the first slide at the start edge, "next" towards the end.
+    const direction = getComputedStyle(root).direction === 'rtl' ? 'rtl' : 'ltr'
+    const embla = EmblaCarousel(viewport, { loop: root.dataset.loop !== undefined, align: 'start', containScroll: 'trimSnaps', duration: reduce ? 0 : 25, direction })
+    const prev = root.querySelector<HTMLButtonElement>('[data-prev]')
+    const next = root.querySelector<HTMLButtonElement>('[data-next]')
+    const dots = root.querySelector<HTMLElement>('[data-dots]')
+    prev?.addEventListener('click', () => embla.scrollPrev())
+    next?.addEventListener('click', () => embla.scrollNext())
+    // The row takes focus (the buttons are hidden on phones): the arrow keys page it, and a slide change is announced.
+    viewport.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+      event.preventDefault()
+      if ((event.key === 'ArrowRight') === (direction === 'ltr')) embla.scrollNext()
+      else embla.scrollPrev()
+    })
+    // No autoplay: the carousel only moves when asked, so a polite announcement of the slide is right.
+    root.querySelector('[data-container]')?.setAttribute('aria-live', 'polite')
+
+    const label = root.dataset.slideLabel ?? 'Slide'
+    const buttons = embla.scrollSnapList().map((_, index) => {
+      const dot = document.createElement('button')
+      dot.type = 'button'
+      // A 24px target around a 10px dot (WCAG 2.5.8): on phones the dots are the only controls.
+      dot.className = 'group/dot grid size-6 place-items-center rounded-full'
+      const mark = document.createElement('span')
+      mark.className = 'size-2.5 rounded-full bg-ink/25 group-aria-[current=true]/dot:bg-ink'
+      dot.append(mark)
+      dot.setAttribute('aria-label', `${label} ${index + 1}`)
+      dot.addEventListener('click', () => embla.scrollTo(index))
+      dots?.append(dot)
+      return dot
+    })
+    const sync = () => {
+      const selected = embla.selectedScrollSnap()
+      buttons.forEach((dot, index) => dot.setAttribute('aria-current', String(index === selected)))
+      if (prev) prev.disabled = !embla.canScrollPrev()
+      if (next) next.disabled = !embla.canScrollNext()
+    }
+    embla.on('select', sync).on('reInit', sync)
+    sync()
+  }
+</script>

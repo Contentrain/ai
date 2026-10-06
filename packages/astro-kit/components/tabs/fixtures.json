@@ -33,5 +33,9 @@
   {
     "name": "pills-accent",
     "props": { "style": "pills", "tone": "accent", "label": "Formats", "id": "formats", "items": [{ "label": "Online", "content": "<p>Read on the site.</p>" }, { "label": "Print", "content": "<p>Delivered each season.</p>" }] }
+  },
+  {
+    "name": "four-measured",
+    "props": { "eyebrow": "Plans", "heading": "The plan", "intro": "What each part of the plan includes.", "actions": [{ "label": "Compare plans", "href": "/plans/" }], "id": "plan", "items": [{ "label": "Overview", "content": "<p>What the plan covers.</p>" }, { "label": "Pricing", "content": "<p>What it costs each month.</p>" }, { "label": "Security", "content": "<p>How data is kept safe.</p>" }, { "label": "Support", "content": "<p>How to reach a person.</p>" }], "measured": { "padY": 40, "containerPx": 880 } }
   }
 ]

@@ -115,5 +115,9 @@
         "tone": "dark"
       }
     }
+  },
+  {
+    "name": "six-measured-columns",
+    "props": { "heading": "Six questions", "id": "six", "style": "lines", "items": [{ "question": "Question 1?", "answer": "<p>Answer 1, in a sentence or two.</p>" }, { "question": "Question 2?", "answer": "<p>Answer 2, in a sentence or two.</p>" }, { "question": "Question 3?", "answer": "<p>Answer 3, in a sentence or two.</p>" }, { "question": "Question 4?", "answer": "<p>Answer 4, in a sentence or two.</p>" }, { "question": "Question 5?", "answer": "<p>Answer 5, in a sentence or two.</p>" }, { "question": "Question 6?", "answer": "<p>Answer 6, in a sentence or two.</p>" }], "measured": { "columns": { "390": 1, "768": 2, "1280": 3 }, "gap": 32, "padY": 48 } }
   }
 ]

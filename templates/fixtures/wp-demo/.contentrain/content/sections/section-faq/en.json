@@ -1,0 +1,31 @@
+{
+  "services-3": {
+    "heading": "Questions we hear",
+    "items": [
+      {
+        "answer": "<p>Yes, and the redirects keep every old address working.</p>",
+        "question": "Do you keep our URLs?"
+      },
+      {
+        "answer": "<p>Usually two to four weeks.</p>",
+        "question": "How long does a move take?"
+      },
+      {
+        "answer": "<p>The page that exists today, in the new site.</p>",
+        "question": "Is the content copied or rewritten?"
+      },
+      {
+        "answer": "<p>No: the site is static files.</p>",
+        "question": "Do we need a server?"
+      },
+      {
+        "answer": "<p>Studio holds the content; editors never touch code.</p>",
+        "question": "How do editors work?"
+      },
+      {
+        "answer": "<p>Yes, every language the source site had.</p>",
+        "question": "Are translations kept?"
+      }
+    ]
+  }
+}

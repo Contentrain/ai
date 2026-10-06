@@ -167,6 +167,8 @@ export const collections = {
     schema: z.object({
       id: z.string(),
       locale: z.string().optional(),
+      heading: z.string().optional(),
+      intro: z.string().optional(),
       label: z.string().optional(),
       loop: z.boolean().default(false),
       nextLabel: z.string().optional(),
@@ -188,6 +190,31 @@ export const collections = {
     }),
       text: z.string().optional(),
       title: z.string().optional(),
+    })).optional(),
+    }),
+  }),
+  sectionTabs: defineCollection({
+    loader: loader('section-tabs'),
+    schema: z.object({
+      id: z.string(),
+      locale: z.string().optional(),
+      heading: z.string().optional(),
+      items: z.array(z.object({
+      content: z.string(),
+      label: z.string(),
+    })).optional(),
+      label: z.string().optional(),
+    }),
+  }),
+  sectionFaq: defineCollection({
+    loader: loader('section-faq'),
+    schema: z.object({
+      id: z.string(),
+      locale: z.string().optional(),
+      heading: z.string().optional(),
+      items: z.array(z.object({
+      answer: z.string(),
+      question: z.string(),
     })).optional(),
     }),
   }),

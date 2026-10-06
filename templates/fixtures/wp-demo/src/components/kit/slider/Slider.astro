@@ -2,39 +2,12 @@
 // A carousel of images with optional captions. Without JavaScript it is a
 // horizontally scrolling, snapping row — every slide is reachable. With it,
 // Embla turns the row into a paged carousel with previous/next buttons and
-// slide dots.
-import { tv } from 'tailwind-variants'
-import Button from '../_shared/Button.astro'
-import KitImage from '../_shared/KitImage.astro'
-import { imageOf, type ImageSource } from '../_shared/image'
-import { type ActionInput, type ImageInput } from '../_shared/types'
-
-const slider = tv({
-  slots: {
-    viewport: 'flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth group-data-[ready]:snap-none group-data-[ready]:overflow-hidden [scrollbar-width:none]',
-    slide: 'relative min-w-0 shrink-0 snap-start overflow-hidden',
-    image: 'w-full object-cover',
-    caption: 'flex flex-col items-start gap-2',
-  },
-  variants: {
-    perView: {
-      '1': { slide: 'basis-full' },
-      '2': { slide: 'basis-[85%] sm:basis-[calc(50%-0.5rem)]' },
-      '3': { slide: 'basis-[85%] sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33.333%-0.667rem)]' },
-    },
-    aspect: {
-      wide: { image: 'aspect-[4/3] md:aspect-[21/9]' },
-      standard: { image: 'aspect-[3/2]' },
-      square: { image: 'aspect-square' },
-    },
-    caption: {
-      below: { image: 'rounded-[var(--radius-image,var(--radius-card))]', caption: 'pt-4' },
-      // Over the image on wide screens; under it on phones, where the image is too short to hold text.
-      overlay: { image: 'rounded-[var(--radius-image,var(--radius-card))] md:rounded-none', slide: 'md:rounded-[var(--radius-image,var(--radius-card))]', caption: 'pt-4 md:absolute md:inset-x-0 md:bottom-0 md:bg-gradient-to-t md:from-ink/80 md:to-transparent md:p-6 md:pt-16 md:text-surface' },
-    },
-  },
-  defaultVariants: { perView: '1', aspect: 'wide', caption: 'overlay' },
-})
+// slide dots. The markup and the script are in SliderTrack.astro; given a
+// measured style, this wraps it in the section's own frame.
+import Section from '../_shared/Section.astro'
+import type { ImageSource } from '../_shared/image'
+import type { ActionInput, MeasuredStyle } from '../_shared/types'
+import SliderTrack from './SliderTrack.astro'
 
 interface Slide {
   /** The image's address (or, until 0.7, an `ImageInput`). */
@@ -51,6 +24,11 @@ interface Slide {
 
 interface Props {
   slides: Slide[]
+  /** The section's head, drawn above the carousel; none of these given, nothing is drawn. */
+  heading?: string | undefined
+  intro?: string | undefined
+  eyebrow?: string | undefined
+  actions?: ActionInput[] | undefined
   /** Accessible name of the carousel ("Featured projects"). */
   label: string
   prevLabel?: string | undefined
@@ -63,88 +41,14 @@ interface Props {
   perView?: '1' | '2' | '3' | undefined
   aspect?: 'wide' | 'standard' | 'square' | undefined
   caption?: 'below' | 'overlay' | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width (the slides in view), gap. Absent, the site's tokens; present, it wins over `perView`. */
+  measured?: MeasuredStyle | undefined
+  /** Unique on the page: names the track the buttons control. */
+  id?: string | undefined
 }
 
-const { slides: given, label, prevLabel = 'Previous slide', nextLabel = 'Next slide', slideLabel = 'Slide', ofLabel = 'of', loop = false, perView = '1', aspect, caption } = Astro.props
-const slides = given.flatMap((slide) => {
-  const image = imageOf(slide.image, slide.imageAlt)
-  const action = slide.action ?? (slide.ctaLabel && slide.ctaHref ? { label: slide.ctaLabel, href: slide.ctaHref } : undefined)
-  return image ? [{ ...slide, image, action }] : []
-}) satisfies Array<{ image: ImageInput, action?: ActionInput | undefined }>
-const slots = slider({ perView, aspect, caption })
-const sizes = perView === '1' ? '(min-width: 1216px) 1152px, 100vw' : perView === '2' ? '(min-width: 640px) 50vw, 85vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 85vw'
-// Arrows from sm up; on phones the carousel is swiped and the dots show the position.
-const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md ring-1 ring-line hover:bg-surface disabled:opacity-40 sm:group-data-[ready]:flex'
+const props = Astro.props
 ---
-<section class="group container-page relative py-8" aria-roledescription="carousel" aria-label={label} data-kit-slider data-loop={loop ? '' : undefined} data-slide-label={slideLabel}>
-  <div class={slots.viewport()} data-viewport>
-    <div class="flex gap-4 [&>*]:shrink-0 group-data-[ready]:[&>*]:snap-align-none" data-container>
-      {slides.map((slide, index) => (
-        <div class={slots.slide()} role="group" aria-roledescription="slide" aria-label={`${slideLabel} ${index + 1} ${ofLabel} ${slides.length}`}>
-          <KitImage image={slide.image} sizes={sizes} priority={index === 0} class={slots.image()} />
-          {(slide.title || slide.text || slide.action) && (
-            <div class={slots.caption()}>
-              {slide.title && <p class="text-xl [font-weight:var(--font-weight-heading,600)] text-balance">{slide.title}</p>}
-              {slide.text && <p class="opacity-85">{slide.text}</p>}
-              {slide.action && <Button action={slide.action} size="sm" class="mt-2" />}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  </div>
-  {slides.length > 1 && (
-    <>
-      <button type="button" class:list={[arrow, 'start-6 md:start-10']} aria-label={prevLabel} data-prev>
-        <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" /></svg>
-      </button>
-      <button type="button" class:list={[arrow, 'end-6 md:end-10']} aria-label={nextLabel} data-next>
-        <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg>
-      </button>
-      <div class="mt-4 hidden justify-center group-data-[ready]:flex" data-dots></div>
-    </>
-  )}
-</section>
-
-<script>
-  import EmblaCarousel from 'embla-carousel'
-
-  for (const root of document.querySelectorAll<HTMLElement>('[data-kit-slider]')) {
-    const viewport = root.querySelector<HTMLElement>('[data-viewport]')
-    if (!viewport || root.dataset.ready !== undefined) continue
-    root.dataset.ready = ''
-    // Reduced motion: slides change instantly instead of gliding.
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
-    // A right-to-left page runs the row from the right: the first slide at the start edge, "next" towards the end.
-    const direction = getComputedStyle(root).direction === 'rtl' ? 'rtl' : 'ltr'
-    const embla = EmblaCarousel(viewport, { loop: root.dataset.loop !== undefined, align: 'start', containScroll: 'trimSnaps', duration: reduce ? 0 : 25, direction })
-    const prev = root.querySelector<HTMLButtonElement>('[data-prev]')
-    const next = root.querySelector<HTMLButtonElement>('[data-next]')
-    const dots = root.querySelector<HTMLElement>('[data-dots]')
-    prev?.addEventListener('click', () => embla.scrollPrev())
-    next?.addEventListener('click', () => embla.scrollNext())
-
-    const label = root.dataset.slideLabel ?? 'Slide'
-    const buttons = embla.scrollSnapList().map((_, index) => {
-      const dot = document.createElement('button')
-      dot.type = 'button'
-      // A 24px target around a 10px dot (WCAG 2.5.8): on phones the dots are the only controls.
-      dot.className = 'group/dot grid size-6 place-items-center rounded-full'
-      const mark = document.createElement('span')
-      mark.className = 'size-2.5 rounded-full bg-ink/25 group-aria-[current=true]/dot:bg-ink'
-      dot.append(mark)
-      dot.setAttribute('aria-label', `${label} ${index + 1}`)
-      dot.addEventListener('click', () => embla.scrollTo(index))
-      dots?.append(dot)
-      return dot
-    })
-    const sync = () => {
-      const selected = embla.selectedScrollSnap()
-      buttons.forEach((dot, index) => dot.setAttribute('aria-current', String(index === selected)))
-      if (prev) prev.disabled = !embla.canScrollPrev()
-      if (next) next.disabled = !embla.canScrollNext()
-    }
-    embla.on('select', sync).on('reInit', sync)
-    sync()
-  }
-</script>
+{props.measured
+  ? <Section measured={props.measured} tone="none" spacing="sm" id={props.id}><SliderTrack {...props} id={props.id ?? 'slider'} framed={false} /></Section>
+  : <SliderTrack {...props} />}

@@ -1,0 +1,35 @@
+{
+  "domain": "sections",
+  "fields": {
+    "heading": {
+      "required": false,
+      "type": "string"
+    },
+    "items": {
+      "items": {
+        "fields": {
+          "content": {
+            "required": true,
+            "type": "richtext"
+          },
+          "label": {
+            "required": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "required": false,
+      "type": "array"
+    },
+    "label": {
+      "required": false,
+      "type": "string"
+    }
+  },
+  "i18n": true,
+  "id": "section-tabs",
+  "kind": "collection",
+  "name": "Tabs sections",
+  "title_field": "heading"
+}

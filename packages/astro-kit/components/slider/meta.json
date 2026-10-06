@@ -4,7 +4,7 @@
   "description": "A carousel of images with optional title, text and button per slide. Without JavaScript it is a snapping horizontal scroller; Embla adds paging, arrows and dots.",
   "category": "section",
   "uses": [],
-  "shared": ["Button.astro", "KitImage.astro", "image.ts", "types.ts"],
+  "shared": ["Button.astro", "KitImage.astro", "Section.astro", "SectionHeader.astro", "image.ts", "measured.ts", "types.ts"],
   "variants": {
     "perView": { "options": ["1", "2", "3"], "default": "1", "description": "Slides visible at once on wide screens." },
     "aspect": { "options": ["wide", "standard", "square"], "default": "wide", "description": "Image aspect ratio: 21:9, 3:2 or 1:1." },
@@ -17,16 +17,22 @@
     "nextLabel": { "type": "string", "content": false, "description": "ui-strings slider.next." },
     "slideLabel": { "type": "string", "content": false, "description": "ui-strings slider.slide." },
     "ofLabel": { "type": "string", "content": false, "description": "ui-strings slider.of." },
-    "loop": { "type": "boolean", "default": false, "content": false, "description": "Wrap from the last slide to the first." }
+    "loop": { "type": "boolean", "default": false, "content": false, "description": "Wrap from the last slide to the first." },
+    "id": { "type": "string", "default": "slider", "content": false, "description": "Unique on the page: names the track that the previous/next buttons control (aria-controls)." },
+    "heading": {"type": "string", "label": "Heading", "description": "The section heading."},
+    "intro": {"type": "text", "label": "Introduction", "description": "A sentence under the heading."},
+    "eyebrow": {"type": "string", "label": "Eyebrow", "description": "A short line above the heading."},
+    "actions": {"type": "array", "label": "Buttons", "required": false, "items": {"type": "object", "fields": {"label": {"type": "string", "label": "Label", "required": true, "description": "The button text."}, "href": {"type": "url", "label": "Link", "required": true, "description": "Where the button goes: a page on this site or a full address."}, "newTab": {"type": "boolean", "label": "Open in a new tab", "description": "Open the link in a new tab (an external site the reader should not leave for)."}, "style": {"type": "select", "label": "Style", "options": ["primary", "secondary", "ghost"], "description": "primary for the main action, secondary or ghost for the ones beside it."}}}, "description": "Buttons under the intro, in order; none by default."},
+    "measured": {"type": "object", "content": false, "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.", "fields": {"containerPx": {"type": "integer", "min": 0, "max": 2560, "description": "The frame's content width."}, "padY": {"type": "integer", "min": 0, "max": 400, "description": "Top and bottom padding."}, "padX": {"type": "integer", "min": 0, "max": 200, "description": "The frame's side padding (gutter)."}, "bg": {"type": "object", "description": "The section's background.", "fields": {"color": {"type": "string", "description": "Fill colour: hex, rgb(a) or hsl(a)."}, "image": {"type": "string", "description": "Background image address (http(s) or root-relative), drawn behind the content."}, "overlay": {"type": "string", "description": "Colour or linear/radial gradient laid over the image or the fill."}, "size": {"type": "string", "description": "cover, contain or auto; anything else draws as cover."}, "position": {"type": "string", "description": "One or two of center/top/bottom/left/right or percentages."}}}, "columns": {"type": "object", "description": "Slides in view at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one. Wins over perView.", "fields": {"390": {"type": "integer", "min": 1, "max": 6, "description": "Phone."}, "768": {"type": "integer", "min": 1, "max": 6, "description": "Tablet."}, "1280": {"type": "integer", "min": 1, "max": 6, "description": "Desktop."}}}, "gap": {"type": "integer", "min": 0, "max": 200, "description": "Gap between slides."}, "tone": {"type": "select", "options": ["light", "dark"], "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."}, "align": {"type": "select", "options": ["start", "center", "end"], "description": "Where the heading and lead sit; read by a component whose own align is not set."}, "radius": {"type": "integer", "min": 0, "max": 200, "description": "Card and item corner radius."}, "minHeight": {"type": "integer", "min": 0, "max": 2000, "description": "The section's minimum height."}}}
   },
   "slots": {},
   "js": "embla",
   "dependencies": { "embla-carousel": "^8.6.0" },
   "sources": {
     "gutenberg": ["core/gallery:carousel"],
-    "elementor": ["elementor/image-carousel", "elementor/slides", "elementor/media-carousel"],
+    "elementor": ["elementor/image-carousel", "elementor/slides", "elementor/media-carousel", "elementor/nested-carousel", "elementor/loop-carousel"],
     "divi": ["divi/et_pb_slider", "divi/et_pb_fullwidth_slider", "divi/et_pb_post_slider"],
-    "classic": ["classic/revslider", "classic/metaslider", "classic/smart-slider"]
+    "classic": ["classic/revslider", "classic/metaslider", "classic/smart-slider", "classic/swiper", "classic/slick", "classic/splide", "classic/owl"]
   },
-  "a11y": "WAI-ARIA carousel pattern: a labelled region with aria-roledescription=carousel, slides as labelled groups ('Slide 2 of 5'), labelled previous/next buttons disabled at the ends, and dot buttons marking the current slide. No autoplay; with prefers-reduced-motion slides change without animation. Without JavaScript every slide is reachable by scrolling."
+  "a11y": "WAI-ARIA carousel pattern: a labelled region with aria-roledescription=carousel, slides as labelled groups ('Slide 2 of 5'), labelled previous/next buttons disabled at the ends, and dot buttons marking the current slide. The track and the buttons are tied by aria-controls, the row takes focus (arrow keys page it, polite live announcement). There is no autoplay, so nothing moves unasked; with prefers-reduced-motion slides change without animation. Without JavaScript every slide is reachable by scrolling."
 }

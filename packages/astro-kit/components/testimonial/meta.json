@@ -266,9 +266,7 @@
   "js": "none",
   "dependencies": {},
   "sources": {
-    "elementor": [
-      "elementor/testimonial"
-    ],
+    "elementor": ["elementor/testimonial", "elementor/testimonial-carousel", "elementor/reviews"],
     "divi": [
       "divi/et_pb_testimonial"
     ],
