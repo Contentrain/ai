@@ -76,7 +76,7 @@ Open `import-report.json` and tell the user what it says. These fields decide wh
 | `title_fallback` | Entries that had no title | They exist but are unlabelled; worth a pass |
 | `acf_fields` / `meta_fields` | Custom fields found and their inferred types | Verify the types match intent before content is edited |
 
-**Known gap:** post bodies carry Gutenberg block comments and shortcodes verbatim. They render as-is in HTML but they are WordPress syntax, not portable content. Say so — do not present the import as clean markup when it is not.
+**Known gap:** post bodies carry shortcodes (`[gallery]`) verbatim: WordPress syntax, not portable content. Gutenberg block delimiters are stripped (the markup stays); self-closing server-rendered blocks (`wp:latest-posts`, `wp:block`) leave nothing and are counted in `blocks_dynamic_dropped`. Say so — do not present the import as clean markup when shortcodes remain.
 
 ### 4. Validate
 

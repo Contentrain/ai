@@ -90,6 +90,6 @@ A relation whose target was not part of the import (a comment on a skipped post 
 
 ## Known gaps
 
-- **Gutenberg and shortcodes** stay verbatim in `body`. `<!-- wp:paragraph -->` and `[gallery]` render as-is in HTML but they are WordPress syntax; converting them is a separate pass.
+- **Gutenberg block delimiters** (`<!-- wp:… -->`, `<!-- /wp:… -->`) are stripped from `body`; the markup inside every block stays. Self-closing, server-rendered blocks (`wp:latest-posts`, `wp:block`, `wp:query`) hold no markup and disappear: `blocks_dynamic_dropped` in the report counts them by name. **Shortcodes** (`[gallery]`) stay verbatim in `body`; converting them is a separate pass.
 - **Media files** stay on the old host until moved.
 - **Redirects** are not generated. `slug_rewritten` + `slug_fallback` in the report say how many URLs changed.
