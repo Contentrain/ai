@@ -133,8 +133,13 @@ export interface SiteConfig {
    * `surface`: a card is a surface of its own (`--color-card`, `--shadow-card`, `--spacing-card`) on a page that may be
    * tinted (`--color-page`). `byline`: the category above the title, `author / date` under it. `columns`: the cards'
    * column count from 600px up, as the source's grid prints it; absent, two then three.
+   * `image`: the card image block as the source sets it: its `height` (a CSS length or `clamp()`, the picture cropped to
+   * fit) or, where the source uses one, its `aspect` (`16 / 9`); absent, 16 / 9. `gap`: the grid's column gap (a CSS
+   * length); absent, 2rem. `headingWidth`: the width of the archive title's box (a CSS length); absent, 42rem.
+   * `tieOrder`: how posts of the same moment are ordered, as the source's database returned them (`asc` the lower ID first);
+   * absent, `desc`.
    */
-  lists: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean, columns?: number }
+  lists: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean, columns?: number, image?: { height?: string, aspect?: string }, gap?: string, headingWidth?: string, tieOrder?: 'asc' | 'desc' }
   /**
    * The footer as the source prints it (a migration reads each off the rendered footer); a key absent keeps the
    * starter's own. `feed`: the "RSS feed" link in the last column (`/rss.xml` itself is always served). `border`: a

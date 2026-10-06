@@ -52,19 +52,26 @@ interface Props {
   byline?: 'inline' | 'below' | undefined
   /** The title in the site's link colour, as themes that colour every link do (Hello Elementor). */
   linkTitle?: boolean | undefined
+  /** The image's `sizes` hint; absent, the card's own guess. A list passes the slot its columns give. */
+  sizes?: string | undefined
+  /** The image block's height as the source sets it (a CSS length or `clamp()`), cropped to fit; wins over `imageAspect`. */
+  imageHeight?: string | undefined
+  /** The image block's aspect ratio (`16 / 9`) where the source sets an aspect ratio; absent, 16 / 9. */
+  imageAspect?: string | undefined
 }
 
-const { title, href, excerpt, date: rawDate, locale = 'en', image, category, author, headingLevel = 2, layout, surface, byline, linkTitle } = Astro.props
+const { title, href, excerpt, date: rawDate, locale = 'en', image, category, author, headingLevel = 2, layout, surface, byline, linkTitle, sizes, imageHeight, imageAspect } = Astro.props
 const date = rawDate === undefined ? undefined : new Date(rawDate)
 const slots = card({ layout, surface, byline })
 const below = byline === 'below'
 const shown = date?.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' })
+const imageStyle = imageHeight ? `height:${imageHeight}` : imageAspect ? `aspect-ratio:${imageAspect}` : undefined
 const Heading = `h${headingLevel}` as 'h2' | 'h3'
 ---
 <article class={slots.root()}>
   {image && layout !== 'minimal' && (
     <div class={slots.media()}>
-      <KitImage image={image} sizes={layout === 'horizontal' ? '256px' : '(min-width: 1024px) 360px, 100vw'} class="aspect-[16/9] w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
+      <KitImage image={image} sizes={sizes ?? (layout === 'horizontal' ? '256px' : '(min-width: 1024px) 360px, 100vw')} class:list={['w-full object-cover transition duration-300 group-hover:scale-[1.02]', !imageStyle && 'aspect-[16/9]']} style={imageStyle} />
     </div>
   )}
   <div class={slots.body()}>

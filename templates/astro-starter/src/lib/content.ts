@@ -26,14 +26,15 @@ export async function getSite(): Promise<Site> {
 
 /**
  * Newest first — WordPress's own order, which previous and next post, the feed and "more" lists follow. Posts published
- * at the same moment keep WordPress's order, the higher ID first, so they match the source. Sticky posts are not moved
+ * at the same moment keep WordPress's order, the higher ID first (`lists.tieOrder` where the source's database returned the lower first), so they match the source. Sticky posts are not moved
  * here: they lead the posts page's first page only (`leading` in site-routes).
  */
 export async function getPosts(): Promise<Post[]> {
   const posts = await getCollection('posts')
+  const tie = siteConfig.lists.tieOrder === 'asc' ? -1 : 1
   return posts.toSorted((a, b) =>
     (b.data.published_at?.getTime() ?? 0) - (a.data.published_at?.getTime() ?? 0)
-    || (b.data.wp_id ?? 0) - (a.data.wp_id ?? 0)
+    || tie * ((b.data.wp_id ?? 0) - (a.data.wp_id ?? 0))
     || a.data.title.localeCompare(b.data.title))
 }
 
