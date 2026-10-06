@@ -1,5 +1,13 @@
 # contentrain
 
+## 0.15.38
+
+### Patch Changes
+
+- Updated dependencies [cd9b458]
+  - @contentrain/wp-import@0.11.26
+  - @contentrain/skills@0.9.5
+
 ## 0.15.37
 
 ### Patch Changes
