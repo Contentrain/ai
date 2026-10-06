@@ -1,0 +1,27 @@
+---
+// The head of a section: an optional eyebrow, heading, intro and buttons, in the order a reader meets them. The
+// section components that have no header of their own use it; with none of the four given it draws nothing.
+import Button from './Button.astro'
+import type { ActionInput } from './types'
+
+interface Props {
+  heading?: string | undefined
+  intro?: string | undefined
+  eyebrow?: string | undefined
+  actions?: ActionInput[] | undefined
+  /** The heading's `id`, for the section's `aria-labelledby`. */
+  headingId?: string | undefined
+  headingLevel?: 2 | 3 | undefined
+}
+
+const { heading, intro, eyebrow, actions = [], headingId, headingLevel = 2 } = Astro.props
+const Heading = `h${headingLevel}` as 'h2' | 'h3'
+---
+{(heading || intro || eyebrow || actions.length > 0) && (
+  <header class="mb-10 flex max-w-2xl flex-col gap-3">
+    {eyebrow && <p class="text-sm font-semibold tracking-wide uppercase opacity-80">{eyebrow}</p>}
+    {heading && <Heading id={headingId} class="text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl">{heading}</Heading>}
+    {intro && <p class="text-lg opacity-80" data-kit-text>{intro}</p>}
+    {actions.length > 0 && <div class="mt-2 flex flex-wrap gap-3">{actions.map(action => <Button action={action} />)}</div>}
+  </header>
+)}

@@ -33,7 +33,7 @@ describe('catalog', () => {
     expect(contentFieldPath('slides[].imageAlt')).toBe('slides[].image_alt')
     const slider = catalog.components.find(c => c.id === 'slider')!
     expect(slider.contentFields).toMatchObject({ 'slides[].ctaHref': 'slides[].cta_href', 'slides[].imageAlt': 'slides[].image_alt' })
-    expect(Object.keys(contentProps(slider))).toEqual(['slides'])
+    expect(Object.keys(contentProps(slider))).toEqual(['slides', 'heading', 'intro', 'eyebrow', 'actions'])
   })
 
   it('asks each section content prop for one field name, a label, a description and two object levels at most', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { measuredColumns, measuredFrame, measuredGrid } from '../components/_shared/measured'
+import { measuredColumns, measuredFrame, measuredGrid, measuredSlides } from '../components/_shared/measured'
 
 // The grammar is tested through what Section receives: only measuredFrame and measuredGrid leave the module, so a
 // delivered site's knip sees no unused export.
@@ -97,5 +97,15 @@ describe('the frame Section draws', () => {
     expect(measuredColumns({ columns: { 390: 1 } })).not.toContain('gap-x')
     expect(measuredColumns({ gap: 24 })).toBeUndefined()
     expect(measuredColumns(undefined)).toBeUndefined()
+  })
+
+  it('gives a slide row the measured slides in view and gap, and nothing without columns', () => {
+    const row = measuredSlides({ columns: { 390: 1, 768: 2, 1280: 3 }, gap: 20 })
+    expect(row?.slide).toContain('basis-[calc((100%-(var(--kit-cols-390)-1)*var(--kit-gap,1rem))/var(--kit-cols-390))]')
+    expect(row?.slide).toContain('lg:basis-[calc((100%-(var(--kit-cols-1280)-1)*var(--kit-gap,1rem))/var(--kit-cols-1280))]')
+    expect(row?.track).toBe('gap-[var(--kit-gap)]')
+    expect(measuredSlides({ columns: { 1280: 2 } })?.track).toBe('')
+    expect(measuredSlides({ gap: 20 })).toBeUndefined()
+    expect(measuredSlides(undefined)).toBeUndefined()
   })
 })

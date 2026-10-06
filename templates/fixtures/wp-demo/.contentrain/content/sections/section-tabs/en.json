@@ -1,0 +1,23 @@
+{
+  "services-2": {
+    "heading": "Planning a visit",
+    "items": [
+      {
+        "content": "<p>The night train from Madrid arrives at 7:40.</p>",
+        "label": "By train"
+      },
+      {
+        "content": "<p>The airport is 20 minutes from the centre by metro.</p>",
+        "label": "By air"
+      },
+      {
+        "content": "<p>Use the park-and-ride at <strong>Campo Grande</strong>.</p>",
+        "label": "By car"
+      },
+      {
+        "content": "<p>The coastal path starts at the harbour.</p>",
+        "label": "On foot"
+      }
+    ]
+  }
+}

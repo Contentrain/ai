@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "classic",
-  "version": "6",
+  "version": "7",
   "fallback": "prose",
   "rules": [
     {
@@ -190,11 +190,27 @@
     {
       "match": "classic/tabs",
       "component": "tabs",
+      "props": {
+        "label": "ui:tabs.label"
+      },
       "into": "items",
       "each": "[role=tab]",
       "item": {
         "label": "dom:",
-        "content": "html:[role=tabpanel]"
+        "content": "html@root:[role=tabpanel]"
+      }
+    },
+    {
+      "match": "classic/aria-tabs",
+      "component": "tabs",
+      "props": {
+        "label": "ui:tabs.label"
+      },
+      "into": "items",
+      "each": "[role=tab]",
+      "item": {
+        "label": "dom:",
+        "content": "html@root:[role=tabpanel]"
       }
     },
     {
@@ -405,6 +421,92 @@
         "acceptLabel": "dom:#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll",
         "declineLabel": "dom:#CybotCookiebotDialogBodyButtonDecline",
         "policyHref": "dom:#CybotCookiebotDialogBodyText a@href"
+      }
+    },
+    {
+      "match": "classic/swiper",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".swiper-slide:not(.swiper-slide-duplicate)",
+      "item": {
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
+        "title": "dom:h1, h2, h3, h4",
+        "text": "dom:p, figcaption"
+      }
+    },
+    {
+      "match": "classic/slick",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".slick-slide:not(.slick-cloned)",
+      "item": {
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
+        "title": "dom:h1, h2, h3, h4",
+        "text": "dom:p, figcaption"
+      }
+    },
+    {
+      "match": "classic/splide",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".splide__slide:not(.splide__slide--clone)",
+      "item": {
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
+        "title": "dom:h1, h2, h3, h4",
+        "text": "dom:p, figcaption"
+      }
+    },
+    {
+      "match": "classic/owl",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".owl-item:not(.cloned)",
+      "item": {
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
+        "title": "dom:h1, h2, h3, h4",
+        "text": "dom:p, figcaption"
+      }
+    },
+    {
+      "match": "classic/details",
+      "component": "faq",
+      "into": "items",
+      "each": "details",
+      "item": {
+        "question": "dom:summary",
+        "answer": "html::scope > :not(summary)"
       }
     }
   ]
