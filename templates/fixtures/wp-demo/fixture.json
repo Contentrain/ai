@@ -51,7 +51,9 @@
     "about/index.html": {
       "excludes": [
         "SliderTrack.astro_astro_type_script",
-        "Tabs.astro_astro_type_script"
+        "Tabs.astro_astro_type_script",
+        "data-cr-part=\"breadcrumb\"",
+        "BreadcrumbList"
       ]
     },
     "services/index.html": {
@@ -193,7 +195,9 @@
     },
     "company/careers/index.html": {
       "contains": [
-        "<meta name=\"description\" content=\"Careers at Northwind: how we hire and who we look for.\">"
+        "<meta name=\"description\" content=\"Careers at Northwind: how we hire and who we look for.\">",
+        "<li aria-current=\"page\" class=\"text-ink\">Careers</li>",
+        "\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Company\""
       ],
       "excludes": [
         "<meta name=\"description\" content=\"We hire slowly"
@@ -203,6 +207,10 @@
       "contains": [
         "<li><a href=\"/company/office/\"",
         ">Office</a></li><li><a href=\"/company/careers/\""
+      ],
+      "excludes": [
+        "data-cr-part=\"breadcrumb\"",
+        "BreadcrumbList"
       ]
     },
     "projects/index.html": {
