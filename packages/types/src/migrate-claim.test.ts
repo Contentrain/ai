@@ -305,6 +305,12 @@ describe('validateMigrateGrantStatusResponse: kind and plan state', () => {
     expect(validateMigrateGrantStatusResponse({ ...base, ended: false })).toEqual({ ok: false, errors: ['ended: only true when present'] })
     expect(validateMigrateGrantStatusResponse({ ...base, notice: 'x' })).toEqual({ ok: false, errors: ['notice: only with ended'] })
   })
+  it('takes the workspace GitHub account when present, and refuses a malformed one', () => {
+    expect(validateMigrateGrantStatusResponse({ ...base, installed: true, workspace_github_account: { login: 'ABB65', type: 'User' } }).ok).toBe(true)
+    expect(validateMigrateGrantStatusResponse({ ...base, workspace_github_account: { login: 'Lanista-Software', type: 'Organization' } }).ok).toBe(true)
+    for (const bad of [null, 'ABB65', {}, { login: '', type: 'User' }, { login: 'x', type: 'Bot' }])
+      expect(validateMigrateGrantStatusResponse({ ...base, workspace_github_account: bad })).toEqual({ ok: false, errors: ['workspace_github_account: invalid'] })
+  })
 })
 
 describe('validateMigrateGrantStatusResponse', () => {
