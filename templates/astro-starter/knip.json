@@ -3,6 +3,7 @@
   "ignoreFiles": ["src/views/ComposedPage.astro"],
   "ignoreIssues": {
     "src/lib/studio/embed.ts": ["exports", "types"],
-    "src/components/kit/**": ["types"]
+    "src/components/kit/**": ["types"],
+    "src/components/kit/_shared/measured.ts": ["exports"]
   }
 }
