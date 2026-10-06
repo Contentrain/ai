@@ -570,6 +570,66 @@ props are bound, that plan models are valid Contentrain models (a text-like
 `title_field`), and that routes over one model give each entry exactly one
 address. Kit catalog and fact checks belong to the caller.
 
+## Understand contract
+
+Migrate's render-first pipeline, "AI understands, the engine executes", binds
+three stages to one file (`understand.ts`):
+
+| Stage | Output | Made by |
+|---|---|---|
+| facts | `Band[]`: horizontal bands of a template's page, cut by geometry, each with its box per width, its node range and a `MeasuredStyle` | measurement, no model |
+| understand | `RegionSpec[]`: what each band is (`Archetype`, confidence) and which outline nodes hold its content (`slots`) | one model reading per template |
+| plan | placements: archetype → kit component, measured values as parameters by `Fidelity` | deterministic |
+
+The contract names no source system and no target framework. What a source
+knows beyond the render travels in `Band.hints`, and nothing may depend on it.
+What the capture itself did to a band (a slider held at its first slide, a lazy
+background loaded) is a typed fact, `Band.settled`, because a gate reads it to
+tell a loss of state from a loss of design.
+
+**A region spec holds node ids, never content.** A `SlotRef` is
+`{ node, background? }`, where `node` is the pre-order index of the element in
+the template's outline at 1280 px (root = 0). Text, image addresses, link
+targets and icons are read from that node by the engine. The model returns no
+colour, size or layout value either: those are measured.
+
+The slot vocabulary is closed and exported as data (`REGION_SLOT_DEFS`,
+`REGION_ITEM_SLOT_DEFS`, `REGION_GROUP_SLOT_DEFS`: slot name → kind and
+one-or-list), so a prompt, a schema and the validator read the same table.
+
+```ts
+import { needsFallback, validateBands, validateRegionSpecs, type Band, type RegionSpec } from '@contentrain/types'
+
+declare const bands: Band[]
+declare const answered: RegionSpec[]
+declare function nodeHolds(node: number, kind: 'text' | 'image' | 'link' | 'icon', background: boolean): boolean
+
+validateBands(bands) // [] when ids are unique and node ranges do not overlap
+
+const issues = validateRegionSpecs(answered, bands, {
+  // The outline lives with the engine: it says whether a node holds what the slot's kind needs.
+  resolves: (ref, kind) => nodeHolds(ref.node, kind, ref.background === true),
+})
+const rejected = new Set(issues.map(issue => `${issue.band}#${issue.part}`))
+const specs = answered.filter(spec => !rejected.has(`${spec.band}#${spec.part}`))
+const fallback = specs.filter(needsFallback) // 'other' or confidence < 0.5 → the styled fallback section
+```
+
+`validateRegionSpecs` rejects, with a code and a slot path each: an unknown band
+or archetype, a slot outside the vocabulary, a ref outside its band's node
+range, a node that holds nothing of the slot's kind (`slot_unresolved`), a
+`background` on a non-image slot, an item archetype without items, and a
+`sameAs` or `continues` that does not point where it may (`continues` joins a
+band to an earlier region of the same archetype, or to the `text` introduction
+above it: one section, list slots joined in band order, the earlier region's
+ref kept where both hold the same single slot). A rejected region is
+recorded in `UnderstandRun.issues` and never reaches the plan; a band left
+without a region is built as the styled fallback section.
+
+`UnderstandRun` also carries the ledger: one `UnderstandCall` per reading with
+its `promptHash` (the key a stored response is replayed by), token counts, cost
+and whether it was replayed.
+
 ## Frontmatter round trip
 
 A document's fields live in YAML frontmatter, and two readers open them: the
