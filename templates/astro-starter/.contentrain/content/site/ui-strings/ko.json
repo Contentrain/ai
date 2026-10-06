@@ -69,5 +69,7 @@
   "slider.next": "다음 슬라이드",
   "slider.of": "/",
   "slider.prev": "이전 슬라이드",
-  "slider.slide": "슬라이드"
+  "slider.slide": "슬라이드",
+  "testimonial.label": "고객 후기",
+  "testimonial.rating": "별 5개 중 {rating}개"
 }

@@ -908,6 +908,10 @@
     {
       "id": "testimonial.columns",
       "component": "testimonial",
+      "props": {
+        "ratingLabel": "ui:testimonial.rating",
+        "label": "ui:testimonial.label"
+      },
       "when": {
         "columns": [
           2,
@@ -1087,6 +1091,10 @@
     {
       "id": "testimonial.quotes",
       "component": "testimonial",
+      "props": {
+        "ratingLabel": "ui:testimonial.rating",
+        "label": "ui:testimonial.label"
+      },
       "slots": {
         "title": {
           "match": "core/heading",

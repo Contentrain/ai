@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { measuredFrame, measuredGrid } from '../components/_shared/measured'
+import { measuredColumns, measuredFrame, measuredGrid } from '../components/_shared/measured'
 
 // The grammar is tested through what Section receives: only measuredFrame and measuredGrid leave the module, so a
 // delivered site's knip sees no unused export.
@@ -90,5 +90,12 @@ describe('the frame Section draws', () => {
     expect(measuredGrid({ columns: { 1280: 3 }, gap: 24 })).toBe('grid-cols-[repeat(var(--kit-cols-390),minmax(0,1fr))] md:grid-cols-[repeat(var(--kit-cols-768),minmax(0,1fr))] lg:grid-cols-[repeat(var(--kit-cols-1280),minmax(0,1fr))] gap-[var(--kit-gap)] md:gap-[var(--kit-gap)]')
     expect(measuredGrid({ gap: 24 })).toBe('gap-[var(--kit-gap)] md:gap-[var(--kit-gap)]')
     expect(measuredGrid({ padY: 10 })).toBeUndefined()
+  })
+
+  it('gives a column-flowed list the measured columns, and nothing without them', () => {
+    expect(measuredColumns({ columns: { 1280: 3 }, gap: 24 })).toBe('block columns-[var(--kit-cols-390)] md:columns-[var(--kit-cols-768)] lg:columns-[var(--kit-cols-1280)] gap-x-[var(--kit-gap)]')
+    expect(measuredColumns({ columns: { 390: 1 } })).not.toContain('gap-x')
+    expect(measuredColumns({ gap: 24 })).toBeUndefined()
+    expect(measuredColumns(undefined)).toBeUndefined()
   })
 })

@@ -1222,6 +1222,7 @@
       "uses": [],
       "shared": [
         "Button.astro",
+        "KitImage.astro",
         "Section.astro",
         "measured.ts",
         "types.ts"
@@ -1263,6 +1264,30 @@
           ],
           "default": "inherit",
           "description": "The buttons' alignment. inherit: as the layout sets it. start: at the start edge under centred heading and text (layout centered; a WordPress buttons block with no justification in a centred group). inline and stacked ignore it."
+        },
+        "size": {
+          "options": [
+            "md",
+            "lg"
+          ],
+          "default": "md",
+          "description": "md: the usual band. lg: a larger heading and more room above and below."
+        },
+        "align": {
+          "options": [
+            "start",
+            "center"
+          ],
+          "default": "start",
+          "description": "Alignment of the heading and text (the centred layout already centres them)."
+        },
+        "mediaSide": {
+          "options": [
+            "end",
+            "start"
+          ],
+          "default": "end",
+          "description": "With a picture: the side it takes on wide screens."
         }
       },
       "props": {
@@ -1272,10 +1297,35 @@
           "required": true,
           "description": "The call's heading (Divi CTA title, Elementor call-to-action title)."
         },
+        "eyebrow": {
+          "type": "string",
+          "label": "Eyebrow",
+          "description": "A short line above the heading."
+        },
         "body": {
           "type": "text",
           "label": "Text",
           "description": "One or two sentences under the heading."
+        },
+        "note": {
+          "type": "string",
+          "label": "Small print",
+          "description": "A line under the buttons (No credit card required)."
+        },
+        "image": {
+          "type": "image",
+          "label": "Image",
+          "description": "A small picture beside the text; a large one belongs in a split section."
+        },
+        "bgImage": {
+          "type": "image",
+          "label": "Background image",
+          "description": "A picture behind the band; the text turns light and an overlay keeps it readable."
+        },
+        "bgOverlay": {
+          "type": "string",
+          "content": false,
+          "description": "The colour laid over the background image (a hex or rgb colour); default black at 55 %."
         },
         "actions": {
           "type": "array",
@@ -1315,6 +1365,116 @@
           },
           "description": "Buttons, in order; usually one."
         },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
+        },
         "id": {
           "type": "string",
           "content": false,
@@ -1341,7 +1501,11 @@
       ],
       "contentFields": {
         "heading": "heading",
+        "eyebrow": "eyebrow",
         "body": "body",
+        "note": "note",
+        "image": "image",
+        "bgImage": "bg_image",
         "actions": "actions",
         "actions[].label": "actions[].label",
         "actions[].href": "actions[].href",
@@ -1469,6 +1633,30 @@
         "types.ts"
       ],
       "variants": {
+        "layout": {
+          "options": [
+            "single",
+            "split"
+          ],
+          "default": "single",
+          "description": "single: the heading above one column. split: the heading and introduction stay in a left column beside the list; stacks on a phone."
+        },
+        "columns": {
+          "options": [
+            "1",
+            "2"
+          ],
+          "default": "1",
+          "description": "Columns of questions on wide screens."
+        },
+        "icon": {
+          "options": [
+            "plus",
+            "chevron"
+          ],
+          "default": "plus",
+          "description": "The marker in each question's row: a plus that turns into a cross, or a chevron that turns over."
+        },
         "style": {
           "options": [
             "lines",
@@ -1526,6 +1714,11 @@
           "label": "Heading",
           "description": "Section heading."
         },
+        "intro": {
+          "type": "text",
+          "label": "Introduction",
+          "description": "A sentence under the heading."
+        },
         "exclusive": {
           "type": "boolean",
           "default": false,
@@ -1543,137 +1736,6 @@
           "default": false,
           "content": false,
           "description": "Emit FAQPage JSON-LD built from these items. Use on at most one FAQ per page, and only when the page is really a FAQ."
-        },
-        "id": {
-          "type": "string",
-          "content": false,
-          "description": "Section id; also the exclusive group's name."
-        }
-      },
-      "slots": {},
-      "js": "none",
-      "dependencies": {},
-      "sources": {
-        "gutenberg": [
-          "core/details"
-        ],
-        "elementor": [
-          "elementor/accordion",
-          "elementor/toggle",
-          "elementor/nested-accordion"
-        ],
-        "divi": [
-          "divi/et_pb_accordion",
-          "divi/et_pb_toggle"
-        ],
-        "classic": [
-          "classic/faq"
-        ]
-      },
-      "a11y": "Native <details>/<summary>: keyboard operable and announced as expandable by every screen reader, with no script to fail. The plus icon is decorative. The JSON-LD answer text is the answer with its markup removed.",
-      "files": [
-        "Faq.astro"
-      ],
-      "contentFields": {
-        "items": "items",
-        "items[].question": "items[].question",
-        "items[].answer": "items[].answer",
-        "heading": "heading"
-      }
-    },
-    {
-      "id": "feature-list",
-      "name": "Feature list",
-      "description": "A list of short features, each a title and a line of text marked with an icon or a check, under an optional heading and intro. Lighter than a card grid: no images, no links.",
-      "category": "section",
-      "uses": [],
-      "shared": [
-        "Section.astro",
-        "measured.ts",
-        "types.ts"
-      ],
-      "variants": {
-        "columns": {
-          "options": [
-            "2",
-            "3",
-            "4"
-          ],
-          "default": "3",
-          "description": "Features per row on wide screens; one on phones, two on tablets."
-        },
-        "style": {
-          "options": [
-            "icon",
-            "check",
-            "list"
-          ],
-          "default": "icon",
-          "description": "icon: each feature's own icon in a tinted badge. check: the same check mark before every feature. list: an icon list — one column of body-size lines, each after its icon, titles as text rather than headings (columns is ignored)."
-        },
-        "tone": {
-          "options": [
-            "default",
-            "muted",
-            "inverse",
-            "accent"
-          ],
-          "default": "default",
-          "description": "Section background."
-        }
-      },
-      "props": {
-        "heading": {
-          "type": "string",
-          "label": "Heading",
-          "description": "Section heading."
-        },
-        "intro": {
-          "type": "text",
-          "label": "Introduction",
-          "description": "A sentence under the heading."
-        },
-        "items": {
-          "type": "array",
-          "label": "Features",
-          "required": true,
-          "items": {
-            "type": "object",
-            "fields": {
-              "title": {
-                "type": "string",
-                "label": "Title",
-                "required": true,
-                "description": "The feature, in a few words."
-              },
-              "text": {
-                "type": "text",
-                "label": "Text",
-                "description": "A sentence about it."
-              },
-              "icon": {
-                "type": "select",
-                "label": "Icon",
-                "options": [
-                  "check",
-                  "star",
-                  "bolt",
-                  "shield",
-                  "heart",
-                  "globe",
-                  "clock",
-                  "chat"
-                ],
-                "description": "The kit icon shown with the icon style; check when absent."
-              }
-            }
-          },
-          "description": "The features, in order (Elementor icon list or icon boxes without images, Gutenberg list of features, Divi blurbs with icons)."
-        },
-        "id": {
-          "type": "string",
-          "content": false,
-          "description": "Anchor id of the section; the heading gets `<id>-title`."
         },
         "measured": {
           "type": "object",
@@ -1784,6 +1846,266 @@
               "description": "The section's minimum height."
             }
           }
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Section id; also the exclusive group's name."
+        },
+        "numbered": {
+          "type": "boolean",
+          "default": false,
+          "content": false,
+          "description": "Count the questions with a leading number, drawn by the page's style rather than written into the text."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/details"
+        ],
+        "elementor": [
+          "elementor/accordion",
+          "elementor/toggle",
+          "elementor/nested-accordion"
+        ],
+        "divi": [
+          "divi/et_pb_accordion",
+          "divi/et_pb_toggle"
+        ],
+        "classic": [
+          "classic/faq"
+        ]
+      },
+      "a11y": "Native <details>/<summary>: keyboard operable and announced as expandable by every screen reader, with no script to fail. The plus icon is decorative. The JSON-LD answer text is the answer with its markup removed.",
+      "files": [
+        "Faq.astro"
+      ],
+      "contentFields": {
+        "items": "items",
+        "items[].question": "items[].question",
+        "items[].answer": "items[].answer",
+        "heading": "heading",
+        "intro": "intro"
+      }
+    },
+    {
+      "id": "feature-list",
+      "name": "Feature list",
+      "description": "A list of short features, each a title and a line of text marked with an icon or a check, under an optional heading and intro. Lighter than a card grid: no images, no links.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "Section.astro",
+        "measured.ts",
+        "types.ts"
+      ],
+      "variants": {
+        "columns": {
+          "options": [
+            "2",
+            "3",
+            "4"
+          ],
+          "default": "3",
+          "description": "Features per row on wide screens; one on phones, two on tablets."
+        },
+        "style": {
+          "options": [
+            "icon",
+            "check",
+            "list"
+          ],
+          "default": "icon",
+          "description": "icon: each feature's own icon in a tinted badge. check: the same check mark before every feature. list: an icon list — one column of body-size lines, each after its icon, titles as text rather than headings (columns is ignored)."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "default",
+          "description": "Section background."
+        }
+      },
+      "props": {
+        "heading": {
+          "type": "string",
+          "label": "Heading",
+          "description": "Section heading."
+        },
+        "intro": {
+          "type": "text",
+          "label": "Introduction",
+          "description": "A sentence under the heading."
+        },
+        "items": {
+          "type": "array",
+          "label": "Features",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "title": {
+                "type": "string",
+                "label": "Title",
+                "required": true,
+                "description": "The feature, in a few words."
+              },
+              "text": {
+                "type": "text",
+                "label": "Text",
+                "description": "A sentence about it."
+              },
+              "icon": {
+                "type": "select",
+                "label": "Icon",
+                "options": [
+                  "check",
+                  "star",
+                  "bolt",
+                  "shield",
+                  "heart",
+                  "globe",
+                  "clock",
+                  "chat"
+                ],
+                "description": "The kit icon shown with the icon style; check when absent."
+              }
+            }
+          },
+          "description": "The features, in order (Elementor icon list or icon boxes without images, Gutenberg list of features, Divi blurbs with icons)."
+        },
+        "bare": {
+          "type": "boolean",
+          "default": false,
+          "content": false,
+          "description": "Only the list, with no section of its own; a split section uses it under its text."
+        },
+        "titleLevel": {
+          "type": "integer",
+          "default": 3,
+          "content": false,
+          "description": "With `bare`: the item titles' heading level (the section's plus one)."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Anchor id of the section; the heading gets `<id>-title`."
         }
       },
       "slots": {},
@@ -2681,7 +3003,7 @@
     {
       "id": "logo-cloud",
       "name": "Logo cloud",
-      "description": "A grid of client or partner logos, each optionally linked, under an optional heading (\"Trusted by\").",
+      "description": "A grid, a row or an endless strip of client or partner logos, each optionally linked, under an optional heading (\"Trusted by\").",
       "category": "section",
       "uses": [],
       "shared": [
@@ -2692,22 +3014,51 @@
         "types.ts"
       ],
       "variants": {
+        "layout": {
+          "options": [
+            "grid",
+            "row",
+            "marquee"
+          ],
+          "default": "grid",
+          "description": "grid: logos in columns. row: one line that wraps. marquee: an endless CSS-only strip that stands still for reduced motion."
+        },
         "columns": {
           "options": [
             "2",
             "3",
-            "4"
+            "4",
+            "5",
+            "6"
           ],
           "default": "4",
-          "description": "Logos per row on wide screens; two on phones, three on tablets."
+          "description": "Logos per row on wide screens (grid layout); two on phones, three on tablets."
+        },
+        "logoHeight": {
+          "options": [
+            "sm",
+            "md",
+            "lg"
+          ],
+          "default": "md",
+          "description": "Height of every logo (the width follows): small, medium or large."
         },
         "style": {
           "options": [
             "plain",
-            "grayscale"
+            "grayscale",
+            "mono-light"
           ],
           "default": "plain",
-          "description": "plain: logos in their own colours. grayscale: muted grey, full colour on hover or focus."
+          "description": "plain: logos in their own colours. grayscale: muted grey, full colour on hover or focus. mono-light: drawn white, for a dark band."
+        },
+        "align": {
+          "options": [
+            "center",
+            "start"
+          ],
+          "default": "center",
+          "description": "Alignment of the heading and of the logos in a row."
         },
         "tone": {
           "options": [
@@ -2753,6 +3104,116 @@
             }
           },
           "description": "The logos, in order (a Gutenberg gallery or columns of logos, Elementor image carousel/gallery of logos, Divi images)."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
         },
         "id": {
           "type": "string",
@@ -3768,7 +4229,10 @@
       "name": "Split",
       "description": "An image beside a block of text — eyebrow, heading, a markdown body and buttons — on either side, stacked on phones. The media-and-text section of a landing page (Gutenberg media-text, a two-column Elementor container with an image, Divi's image + text row).",
       "category": "section",
-      "uses": [],
+      "uses": [
+        "embed",
+        "feature-list"
+      ],
       "shared": [
         "Button.astro",
         "KitImage.astro",
@@ -3785,6 +4249,64 @@
           "default": "end",
           "description": "Which side the image takes on wide screens: start (left in left-to-right text) or end. Phones always show it after the text."
         },
+        "ratio": {
+          "options": [
+            "1:1",
+            "5:7",
+            "7:5"
+          ],
+          "default": "1:1",
+          "description": "The text column's share against the image's: equal, text 5 to image 7, or text 7 to image 5."
+        },
+        "imageFit": {
+          "options": [
+            "contain",
+            "cover"
+          ],
+          "default": "contain",
+          "description": "contain: the image at its own proportions. cover: it fills the column's height."
+        },
+        "imageShape": {
+          "options": [
+            "none",
+            "rounded",
+            "circle"
+          ],
+          "default": "rounded",
+          "description": "The image's corners: square, the theme's rounding, or a circle."
+        },
+        "imageBleed": {
+          "options": [
+            "none",
+            "edge"
+          ],
+          "default": "none",
+          "description": "edge: the image runs on to the edge of the screen on its side (wide screens)."
+        },
+        "mediaKind": {
+          "options": [
+            "image",
+            "video"
+          ],
+          "default": "image",
+          "description": "image: the picture. video: the picture is the poster of a video that loads only when played."
+        },
+        "featureStyle": {
+          "options": [
+            "check",
+            "icon"
+          ],
+          "default": "check",
+          "description": "The marks of the points under the text: a check, or each point's own icon."
+        },
+        "stackOrder": {
+          "options": [
+            "text-first",
+            "media-first"
+          ],
+          "default": "text-first",
+          "description": "On a phone: the text first, or the picture first."
+        },
         "align": {
           "options": [
             "start",
@@ -3798,10 +4320,12 @@
             "default",
             "muted",
             "inverse",
-            "accent"
+            "accent",
+            "brand",
+            "none"
           ],
           "default": "default",
-          "description": "Section background."
+          "description": "Section background (brand: the site's brand colour; none: the page's own)."
         }
       },
       "props": {
@@ -3810,6 +4334,12 @@
           "label": "Heading",
           "required": true,
           "description": "The section heading."
+        },
+        "headingLevel": {
+          "type": "integer",
+          "default": 2,
+          "content": false,
+          "description": "The heading's level: 2 under the page title; 3 or 4 when the section sits inside another."
         },
         "eyebrow": {
           "type": "string",
@@ -3886,10 +4416,162 @@
           },
           "description": "The image beside the text. Width and height, when known, let the site reserve its space."
         },
+        "features": {
+          "type": "array",
+          "label": "Points",
+          "items": {
+            "type": "object",
+            "fields": {
+              "title": {
+                "type": "string",
+                "label": "Title",
+                "required": true,
+                "description": "The point, in a few words."
+              },
+              "text": {
+                "type": "string",
+                "label": "Text",
+                "description": "A line about it."
+              },
+              "icon": {
+                "type": "string",
+                "label": "Icon",
+                "description": "A kit icon name (check, star, bolt, shield, heart, globe, clock, chat)."
+              }
+            }
+          },
+          "description": "Short points under the text (an Elementor icon list or icon box, a Gutenberg list), each with a title and a line."
+        },
+        "videoUrl": {
+          "type": "url",
+          "label": "Video",
+          "description": "A video page (YouTube, Vimeo); the image is its poster and nothing loads from the provider until it is played."
+        },
+        "playLabel": {
+          "type": "string",
+          "content": false,
+          "description": "The play button's text (ui-strings embed.play)."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
+        },
         "id": {
           "type": "string",
           "content": false,
           "description": "Anchor id of the section; the heading gets `<id>-title`."
+        },
+        "sticky": {
+          "type": "boolean",
+          "default": false,
+          "content": false,
+          "description": "The picture stays in view while a long text scrolls past it (wide screens)."
         }
       },
       "slots": {},
@@ -3906,7 +4588,7 @@
           "divi/et_pb_image"
         ]
       },
-      "a11y": "The section is labelled by its heading. The image is a separate figure in reading order after the text; an empty description marks a decorative one.",
+      "a11y": "The section is labelled by its heading. The image is a separate figure in reading order after the text; an empty description marks a decorative one. With stackOrder media-first the picture comes first on a phone by CSS order only: the DOM and so the reading order stay text first, which is right when the picture is decoration; give the picture an empty description then.",
       "pattern": {
         "summary": "image beside heading + text",
         "signals": [
@@ -3933,7 +4615,12 @@
         "image.src": "image.src",
         "image.alt": "image.alt",
         "image.width": "image.width",
-        "image.height": "image.height"
+        "image.height": "image.height",
+        "features": "features",
+        "features[].title": "features[].title",
+        "features[].text": "features[].text",
+        "features[].icon": "features[].icon",
+        "videoUrl": "video_url"
       }
     },
     {
@@ -3943,27 +4630,58 @@
       "category": "section",
       "uses": [],
       "shared": [
+        "KitImage.astro",
         "Section.astro",
+        "image.ts",
         "measured.ts",
         "types.ts"
       ],
       "variants": {
+        "layout": {
+          "options": [
+            "grid",
+            "inline"
+          ],
+          "default": "grid",
+          "description": "grid: figures in columns. inline: one line that wraps, for two to four short figures."
+        },
         "columns": {
           "options": [
             "2",
             "3",
-            "4"
+            "4",
+            "5",
+            "6"
           ],
           "default": "3",
-          "description": "Figures per row on wide screens; two on phones."
+          "description": "Figures per row on wide screens (grid layout); two on phones."
         },
         "style": {
           "options": [
             "plain",
-            "card"
+            "card",
+            "divided"
           ],
           "default": "plain",
-          "description": "plain: figures on the section background. card: each figure in its own box."
+          "description": "plain: figures on the section background. card: each figure in its own box. divided: hairlines between the figures (across on a wide screen, above each on a phone), no box; for a single row."
+        },
+        "align": {
+          "options": [
+            "start",
+            "center"
+          ],
+          "default": "start",
+          "description": "Alignment of each figure and its label."
+        },
+        "valueSize": {
+          "options": [
+            "md",
+            "lg",
+            "xl",
+            "display"
+          ],
+          "default": "lg",
+          "description": "The figure's size: md, lg, xl or a display-size number."
         },
         "tone": {
           "options": [
@@ -4032,10 +4750,125 @@
                 "type": "string",
                 "label": "Suffix",
                 "description": "Printed after the figure (`+`, `%`, `k`)."
+              },
+              "icon": {
+                "type": "image",
+                "label": "Icon",
+                "description": "A small picture above the figure; decorative."
               }
             }
           },
           "description": "The figures, in order (Elementor counter, Divi number counter, a Gutenberg columns row of big numbers)."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
         },
         "id": {
           "type": "string",
@@ -4077,7 +4910,8 @@
         "items[].value": "items[].value",
         "items[].label": "items[].label",
         "items[].prefix": "items[].prefix",
-        "items[].suffix": "items[].suffix"
+        "items[].suffix": "items[].suffix",
+        "items[].icon": "items[].icon"
       }
     },
     {
@@ -4564,10 +5398,12 @@
         "layout": {
           "options": [
             "single",
-            "grid"
+            "grid",
+            "row",
+            "masonry"
           ],
           "default": "grid",
-          "description": "single: one large centred quote (the first item stands alone; more items stack). grid: cards, up to three per row."
+          "description": "single: one large centred quote (the first item stands alone; more items stack). grid: cards, up to three per row. row: a horizontal strip that scrolls and snaps, no script. masonry: columns of quotes of different lengths."
         },
         "tone": {
           "options": [
@@ -4596,6 +5432,32 @@
           ],
           "default": "card",
           "description": "card: each quote in its box (a bordered, padded card in the grid; the surface colour in a muted section). plain: the quote and who said it straight on the section, across the column, with no box, as Elementor's testimonial widget draws them."
+        },
+        "avatarSize": {
+          "options": [
+            "sm",
+            "md",
+            "lg"
+          ],
+          "default": "md",
+          "description": "The portrait's size: small, medium or large."
+        },
+        "avatarPlace": {
+          "options": [
+            "start",
+            "top"
+          ],
+          "default": "start",
+          "description": "start: the portrait beside the name. top: above the quote."
+        },
+        "quoteMark": {
+          "options": [
+            "marks",
+            "glyph",
+            "none"
+          ],
+          "default": "marks",
+          "description": "marks: quotation marks around the text. glyph: one large decorative mark above. none: no marks."
         }
       },
       "props": {
@@ -4632,6 +5494,21 @@
                 "type": "string",
                 "label": "Photo description",
                 "description": "Who the photo shows; usually their name."
+              },
+              "rating": {
+                "type": "number",
+                "label": "Rating",
+                "description": "Stars out of 5; leave empty for none."
+              },
+              "logo": {
+                "type": "image",
+                "label": "Company logo",
+                "description": "The company's logo beside the name."
+              },
+              "logoAlt": {
+                "type": "string",
+                "label": "Company name",
+                "description": "The company the logo stands for."
               }
             }
           },
@@ -4642,10 +5519,130 @@
           "label": "Heading",
           "description": "Section heading above the quotes."
         },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
+        },
         "id": {
           "type": "string",
           "content": false,
           "description": "Anchor id of the section; the heading gets `<id>-title`."
+        },
+        "ratingLabel": {
+          "type": "string",
+          "content": false,
+          "description": "The stars' spoken text; `{rating}` stands for the number (\"{rating} out of 5 stars\")."
+        },
+        "label": {
+          "type": "string",
+          "content": false,
+          "description": "The scrolling row's name for assistive technology when there is no heading (\"Testimonials\")."
         }
       },
       "slots": {},
@@ -4662,7 +5659,7 @@
           "classic/testimonial"
         ]
       },
-      "a11y": "Each quote is a <figure> whose <figcaption> names the speaker; the text is in a <blockquote>. Avatars are decorative when their alt is empty. The section is labelled by its heading when it has one.",
+      "a11y": "Each quote is a <figure> whose <figcaption> names the speaker; the text is in a <blockquote>. Avatars are decorative when their alt is empty. The section is labelled by its heading when it has one. Stars are one image named by the real rating (\"4.8 out of 5 stars\"); the row layout is a focusable named region.",
       "files": [
         "Testimonial.astro"
       ],
@@ -4673,6 +5670,9 @@
         "items[].role": "items[].role",
         "items[].avatar": "items[].avatar",
         "items[].avatarAlt": "items[].avatar_alt",
+        "items[].rating": "items[].rating",
+        "items[].logo": "items[].logo",
+        "items[].logoAlt": "items[].logo_alt",
         "heading": "heading"
       }
     }

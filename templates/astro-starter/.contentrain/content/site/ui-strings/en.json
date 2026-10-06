@@ -69,5 +69,7 @@
   "slider.next": "Next slide",
   "slider.of": "of",
   "slider.prev": "Previous slide",
-  "slider.slide": "Slide"
+  "slider.slide": "Slide",
+  "testimonial.label": "Testimonials",
+  "testimonial.rating": "{rating} out of 5 stars"
 }

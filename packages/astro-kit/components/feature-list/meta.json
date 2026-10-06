@@ -87,10 +87,17 @@
       },
       "description": "The features, in order (Elementor icon list or icon boxes without images, Gutenberg list of features, Divi blurbs with icons)."
     },
-    "id": {
-      "type": "string",
+    "bare": {
+      "type": "boolean",
+      "default": false,
       "content": false,
-      "description": "Anchor id of the section; the heading gets `<id>-title`."
+      "description": "Only the list, with no section of its own; a split section uses it under its text."
+    },
+    "titleLevel": {
+      "type": "integer",
+      "default": 3,
+      "content": false,
+      "description": "With `bare`: the item titles' heading level (the section's plus one)."
     },
     "measured": {
       "type": "object",
@@ -201,6 +208,11 @@
           "description": "The section's minimum height."
         }
       }
+    },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Anchor id of the section; the heading gets `<id>-title`."
     }
   },
   "slots": {},

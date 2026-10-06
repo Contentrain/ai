@@ -69,5 +69,7 @@
   "slider.next": "下一张幻灯片",
   "slider.of": "/",
   "slider.prev": "上一张幻灯片",
-  "slider.slide": "幻灯片"
+  "slider.slide": "幻灯片",
+  "testimonial.label": "客户评价",
+  "testimonial.rating": "5 星中的 {rating} 星"
 }

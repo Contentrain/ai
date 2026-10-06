@@ -69,5 +69,7 @@
   "slider.next": "次のスライド",
   "slider.of": "/",
   "slider.prev": "前のスライド",
-  "slider.slide": "スライド"
+  "slider.slide": "スライド",
+  "testimonial.label": "お客様の声",
+  "testimonial.rating": "5つ星のうち{rating}"
 }

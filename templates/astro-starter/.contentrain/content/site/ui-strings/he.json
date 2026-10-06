@@ -69,5 +69,7 @@
   "slider.next": "השקופית הבאה",
   "slider.of": "מתוך",
   "slider.prev": "השקופית הקודמת",
-  "slider.slide": "שקופית"
+  "slider.slide": "שקופית",
+  "testimonial.label": "המלצות",
+  "testimonial.rating": "{rating} מתוך 5 כוכבים"
 }

@@ -69,5 +69,7 @@
   "slider.next": "Diapositivo seguinte",
   "slider.of": "de",
   "slider.prev": "Diapositivo anterior",
-  "slider.slide": "Diapositivo"
+  "slider.slide": "Diapositivo",
+  "testimonial.label": "Depoimentos",
+  "testimonial.rating": "{rating} de 5 estrelas"
 }

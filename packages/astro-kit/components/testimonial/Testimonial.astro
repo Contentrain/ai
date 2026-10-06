@@ -6,6 +6,8 @@ import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
 import { imageOf, type ImageSource } from '../_shared/image'
+import { measuredGrid } from '../_shared/measured'
+import type { MeasuredStyle } from '../_shared/types'
 
 export interface TestimonialItem {
   quote: string
@@ -14,6 +16,11 @@ export interface TestimonialItem {
   /** The portrait's address (or, until 0.7, an `ImageInput`). */
   avatar?: ImageSource | undefined
   avatarAlt?: string | undefined
+  /** Stars out of 5 (0 or absent: none shown). */
+  rating?: number | undefined
+  /** A company logo beside the name. */
+  logo?: ImageSource | undefined
+  logoAlt?: string | undefined
 }
 
 const testimonial = tv({
@@ -23,6 +30,10 @@ const testimonial = tv({
     card: 'flex h-full flex-col gap-6',
     quote: 'text-pretty',
     person: 'mt-auto flex items-center gap-3 not-italic',
+    stars: 'flex gap-0.5 text-accent-text',
+    glyph: 'block text-5xl leading-none opacity-40 select-none',
+    avatar: 'size-12 shrink-0 rounded-full object-cover',
+    logo: 'ms-auto h-6 w-auto max-w-24 object-contain opacity-80',
     name: 'font-semibold',
     role: 'text-sm opacity-75',
   },
@@ -30,8 +41,17 @@ const testimonial = tv({
     layout: {
       single: { heading: 'text-center', list: 'mx-auto max-w-3xl', card: 'items-center text-center', quote: 'text-2xl leading-snug font-medium md:text-3xl', person: 'mt-0' },
       grid: { list: 'md:grid-cols-2 lg:grid-cols-3', card: 'rounded-card border border-line p-6', quote: 'text-base' },
+      // Native horizontal scroll with snap points; the next card peeks at the edge. No buttons, no script.
+      row: { list: 'flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-ps-4 pb-4 focus-visible:outline-2 focus-visible:outline-offset-4', card: 'w-[85%] shrink-0 snap-start rounded-card border border-line p-6 sm:w-[45%] lg:w-[30%]', quote: 'text-base' },
+      // CSS columns for four or more quotes of different lengths.
+      masonry: { list: 'block columns-1 gap-6 space-y-0 md:columns-2 lg:columns-3', card: 'mb-6 h-full break-inside-avoid rounded-card border border-line p-6', quote: 'text-base' },
     },
-    tone: { default: {}, muted: { card: 'bg-surface' }, inverse: { card: 'border-surface/20' }, accent: { card: 'border-accent-ink/30', role: 'opacity-100' } },
+    avatarSize: { sm: { avatar: 'size-9' }, md: {}, lg: { avatar: 'size-16' } },
+    // start: the portrait before the name. top: above the quote.
+    avatarPlace: { start: {}, top: {} },
+    // marks: the quotation marks around the text, as the source writes it. glyph: one large decorative mark above.
+    quoteMark: { marks: {}, glyph: {}, none: {} },
+    tone: { default: {}, muted: { card: 'bg-surface' }, inverse: { card: 'border-surface/20' }, accent: { card: 'border-accent-ink/30', role: 'opacity-100', logo: 'opacity-100' } },
     // The quote's size; `auto` is the layout's own (body size in a grid, large for a single quote).
     quoteSize: {
       auto: {},
@@ -44,47 +64,77 @@ const testimonial = tv({
     frame: { card: {}, plain: {} },
   },
   compoundVariants: [
-    { layout: 'grid', tone: 'muted', class: { card: 'border-transparent text-ink' } },
+    { layout: ['grid', 'row', 'masonry'], tone: 'muted', class: { card: 'border-transparent text-ink' } },
     { frame: 'plain', class: { card: 'rounded-none border-0 bg-transparent p-0' } },
   ],
-  defaultVariants: { layout: 'grid', tone: 'default', quoteSize: 'auto', frame: 'card' },
+  defaultVariants: { layout: 'grid', tone: 'default', quoteSize: 'auto', frame: 'card', avatarSize: 'md', avatarPlace: 'start', quoteMark: 'marks' },
 })
 
 interface Props {
   items: TestimonialItem[]
   heading?: string | undefined
-  layout?: 'single' | 'grid' | undefined
+  layout?: 'single' | 'grid' | 'row' | 'masonry' | undefined
   quoteSize?: 'auto' | 'base' | 'lg' | 'xl' | undefined
   frame?: 'card' | 'plain' | undefined
+  avatarSize?: 'sm' | 'md' | 'lg' | undefined
+  avatarPlace?: 'start' | 'top' | undefined
+  quoteMark?: 'marks' | 'glyph' | 'none' | undefined
+  /** The stars' spoken text; `{rating}` stands for the number. */
+  ratingLabel?: string | undefined
+  /** The scrolling row's name for assistive technology, when there is no heading to name it (layout row). */
+  label?: string | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   id?: string | undefined
 }
 
-const { items, heading, layout, quoteSize, frame, tone, id } = Astro.props
-const s = testimonial({ layout, quoteSize, frame, tone })
+const { items, heading, layout, quoteSize, frame, avatarSize, avatarPlace, quoteMark = 'marks', ratingLabel = '{rating} out of 5 stars', label = 'Testimonials', tone, measured, id } = Astro.props
+const s = testimonial({ layout, quoteSize, frame, avatarSize, avatarPlace, quoteMark, tone })
 const headingId = heading && id ? `${id}-title` : undefined
 // Two quotes share the row: a third column would stand empty beside them and narrow both (IP-4 elementor launch G9).
-const list = s.list(items.length === 2 && (layout ?? 'grid') === 'grid' ? { class: 'lg:grid-cols-2' } : {})
+const measuredList = (layout ?? 'grid') === 'grid' ? measuredGrid(measured) : undefined
+const list = s.list({ class: measuredList ?? (items.length === 2 && (layout ?? 'grid') === 'grid' ? 'lg:grid-cols-2' : undefined) })
 // The quotation marks are drawn, not written: the quote's text is the source's words, read once. A quote the source
 // already wrote inside marks keeps its own.
 const quoted = (text: string) => /^\s*["'“‘„«‹「『]/.test(text)
+// The real number is what is said ("4.8 out of 5"); the stars drawn follow it in halves.
+const stars = (item: TestimonialItem) => Math.min(5, Math.max(0, item.rating ?? 0))
+const spoken = (rating: number) => String(Math.round(rating * 10) / 10)
+// A row scrolls: its box is focusable and named, so a keyboard reaches the cards beyond the edge.
+const scrolls = layout === 'row'
 ---
 {items.length > 0 && (
-  <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+  <Section measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
     {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
-    <div class={list}>
-      {items.map(item => (
-        <figure class={s.card()}>
-          <blockquote class={s.quote()}><p class:list={[!quoted(item.quote) && "before:content-[open-quote] after:content-[close-quote]"]}>{item.quote}</p></blockquote>
-          <figcaption class={s.person()}>
-            {imageOf(item.avatar, item.avatarAlt) && <KitImage image={imageOf(item.avatar, item.avatarAlt)!} sizes="48px" class="size-12 shrink-0 rounded-full object-cover" />}
-            <span class="flex flex-col text-start">
-              <span class={s.name()}>{item.name}</span>
-              {item.role && <span class={s.role()}>{item.role}</span>}
-            </span>
-          </figcaption>
-        </figure>
-      ))}
+    <div class={list} tabindex={scrolls ? 0 : undefined} role={scrolls ? 'region' : undefined} aria-labelledby={scrolls && heading ? headingId : undefined} aria-label={scrolls && !heading ? label : undefined}>
+      {items.map((item) => {
+        const avatar = imageOf(item.avatar, item.avatarAlt)
+        const logo = imageOf(item.logo, item.logoAlt)
+        const rating = stars(item)
+        return (
+          <figure class={s.card()}>
+            {avatar && avatarPlace === 'top' && <KitImage image={avatar} sizes="64px" class={s.avatar()} />}
+            {rating > 0 && (
+              <span class={s.stars()} role="img" aria-label={ratingLabel.replace('{rating}', spoken(rating))}>
+                {[1, 2, 3, 4, 5].map(n => (
+                  <svg viewBox="0 0 24 24" class:list={['size-5', rating < n && (rating >= n - 0.5 ? 'opacity-60' : 'opacity-25')]} fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z" /></svg>
+                ))}
+              </span>
+            )}
+            {quoteMark === 'glyph' && <span class:list={[s.glyph(), "before:content-['“']"]} aria-hidden="true"></span>}
+            <blockquote class={s.quote()}><p class:list={[quoteMark === 'marks' && !quoted(item.quote) && "before:content-[open-quote] after:content-[close-quote]"]}>{item.quote}</p></blockquote>
+            <figcaption class={s.person()}>
+              {avatar && avatarPlace !== 'top' && <KitImage image={avatar} sizes="64px" class={s.avatar()} />}
+              <span class="flex flex-col text-start">
+                <span class={s.name()}>{item.name}</span>
+                {item.role && <span class={s.role()}>{item.role}</span>}
+              </span>
+              {logo && <KitImage image={logo} sizes="96px" class={s.logo()} />}
+            </figcaption>
+          </figure>
+        )
+      })}
     </div>
   </Section>
 )}

@@ -69,5 +69,7 @@
   "slider.next": "Volgende dia",
   "slider.of": "van",
   "slider.prev": "Vorige dia",
-  "slider.slide": "Dia"
+  "slider.slide": "Dia",
+  "testimonial.label": "Ervaringen",
+  "testimonial.rating": "{rating} van de 5 sterren"
 }

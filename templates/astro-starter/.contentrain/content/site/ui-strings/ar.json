@@ -69,5 +69,7 @@
   "slider.next": "الشريحة التالية",
   "slider.of": "من",
   "slider.prev": "الشريحة السابقة",
-  "slider.slide": "شريحة"
+  "slider.slide": "شريحة",
+  "testimonial.label": "آراء العملاء",
+  "testimonial.rating": "{rating} من 5 نجوم"
 }

@@ -69,5 +69,7 @@
   "slider.next": "Nächste Folie",
   "slider.of": "von",
   "slider.prev": "Vorherige Folie",
-  "slider.slide": "Folie"
+  "slider.slide": "Folie",
+  "testimonial.label": "Kundenstimmen",
+  "testimonial.rating": "{rating} von 5 Sternen"
 }

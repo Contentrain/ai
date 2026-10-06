@@ -276,6 +276,10 @@
     {
       "match": "elementor/testimonial",
       "component": "testimonial",
+      "props": {
+        "ratingLabel": "ui:testimonial.rating",
+        "label": "ui:testimonial.label"
+      },
       "variant": {
         "frame": "plain"
       },
@@ -857,6 +861,10 @@
     {
       "id": "testimonial.quotes",
       "component": "testimonial",
+      "props": {
+        "ratingLabel": "ui:testimonial.rating",
+        "label": "ui:testimonial.label"
+      },
       "variant": {
         "quoteSize": "xl",
         "frame": "plain"
