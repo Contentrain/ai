@@ -80,6 +80,12 @@ Where it lives is yours to choose; the move sets nothing up on a host.
 To check it once: approve a small change in Studio and look for it on the
 live site.
 
+To build part of the site, list its addresses in `CONTENTRAIN_ROUTES`
+(`CONTENTRAIN_ROUTES=/,/about/ pnpm build`): only those content pages are
+built, while redirects, the feeds, the sitemap and search stay as they are.
+An address the site does not have stops the build. This is meant for a
+preview; a site you publish builds without it.
+
 ## Conventions
 
 - **Content only through the loader.** No page reads `.contentrain/` files or
