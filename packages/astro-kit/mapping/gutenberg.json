@@ -251,7 +251,9 @@
       "match": "core/gallery",
       "component": "gallery",
       "props": {
-        "closeLabel": "ui:gallery.close"
+        "closeLabel": "ui:gallery.close",
+        "enlargeLabel": "ui:gallery.enlarge",
+        "regionLabel": "ui:gallery.images"
       },
       "into": "items",
       "each": "figure.wp-block-image",
@@ -834,7 +836,10 @@
       },
       "props": {
         "heading": "@heading dom:",
-        "intro": "@lead dom:"
+        "intro": "@lead dom:",
+        "featuredLabel": "ui:pricing.featured",
+        "includedLabel": "ui:pricing.included",
+        "notIncludedLabel": "ui:pricing.not_included"
       },
       "into": "plans",
       "each": "column",
@@ -895,7 +900,8 @@
       },
       "props": {
         "heading": "@heading dom:",
-        "intro": "@lead dom:"
+        "intro": "@lead dom:",
+        "currentLabel": "ui:steps.current"
       },
       "into": "items",
       "each": "column",
@@ -1055,7 +1061,9 @@
       },
       "props": {
         "heading": "@title dom:",
-        "closeLabel": "ui:gallery.close"
+        "closeLabel": "ui:gallery.close",
+        "enlargeLabel": "ui:gallery.enlarge",
+        "regionLabel": "ui:gallery.images"
       },
       "into": "items",
       "each": "@images figure.wp-block-image",
