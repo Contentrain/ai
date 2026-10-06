@@ -654,13 +654,18 @@ export async function mountForm(host: HTMLElement): Promise<void> {
   applyStrings(host)
   const rt = runtimeOf(host)
   const model = host.dataset.model ?? ''
-  host.innerHTML = '<p class="cr-loading">' + esc(strings.loading) + '</p>'
+  // The page's own copy of the form (its fields as HTML) stays in view while Studio's form loads; without one, a
+  // loading line holds the place.
+  const drawn = host.querySelector('form')
+  if (!drawn) host.innerHTML = '<p class="cr-loading">' + esc(strings.loading) + '</p>'
   let config: FormConfig
   try {
     config = await fetchFormConfig(rt, model)
   } catch (error) {
     if (isPaymentRequired(error)) return hideUnavailable(host, 'form')
-    host.innerHTML = '<p class="cr-error">' + esc(error instanceof Error ? error.message : strings.failed) + '</p>'
+    const message = '<p class="cr-error">' + esc(error instanceof Error ? error.message : strings.failed) + '</p>'
+    if (drawn) drawn.insertAdjacentHTML('beforeend', message)
+    else host.innerHTML = message
     return
   }
   host.innerHTML = formHtml(config)
