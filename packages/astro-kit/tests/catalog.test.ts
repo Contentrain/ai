@@ -141,7 +141,7 @@ describe('catalog', () => {
 describe('planCopy', () => {
   it('brings along the components and shared files a component renders', () => {
     const plan = planCopy(catalog, ['header'])
-    expect(plan.components).toEqual(['header', 'nav'])
+    expect(plan.components).toEqual(['header', 'nav', 'search-box'])
     expect(plan.files['src/components/kit/nav/Nav.astro']).toBe('nav/Nav.astro')
     expect(plan.files['src/components/kit/_shared/Button.astro']).toBe('_shared/Button.astro')
     expect(plan.dependencies['tailwind-variants']).toBeDefined()

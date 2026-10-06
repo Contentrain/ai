@@ -3409,7 +3409,6 @@
       "props": {
         "languages": {
           "type": "array",
-          "required": true,
           "items": {
             "type": "object",
             "fields": {
@@ -3440,7 +3439,11 @@
       "slots": {},
       "js": "none",
       "dependencies": {},
-      "sources": {},
+      "sources": {
+        "gutenberg": [
+          "polylang/language-switcher"
+        ]
+      },
       "a11y": "List layout: a labelled <nav>; menu layout: a native <details> whose summary carries the label for assistive technology and the current language visibly. Every link has lang and hreflang, so screen readers pronounce each name in its language; the current one is aria-current=true. Fewer than two languages draw nothing.",
       "files": [
         "LanguageSwitcher.astro"
@@ -5339,7 +5342,17 @@
       "slots": {},
       "js": "none",
       "dependencies": {},
-      "sources": {},
+      "sources": {
+        "gutenberg": [
+          "core/social-links"
+        ],
+        "elementor": [
+          "elementor/social-icons"
+        ],
+        "divi": [
+          "divi/et_pb_social_media_follow"
+        ]
+      },
       "a11y": "A labelled list of links; each link's accessible name is \"{name} on {network}\" and always contains the visible text; marks are aria-hidden; links open in a new tab with rel=me noopener; every target is at least 32 px.",
       "files": [
         "SocialLinks.astro"

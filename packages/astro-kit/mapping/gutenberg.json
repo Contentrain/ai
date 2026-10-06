@@ -94,6 +94,13 @@
       }
     },
     {
+      "match": "polylang/language-switcher",
+      "component": "language-switcher",
+      "props": {
+        "label": "ui:language.label"
+      }
+    },
+    {
       "match": "core/columns",
       "component": "card-grid",
       "variant": {

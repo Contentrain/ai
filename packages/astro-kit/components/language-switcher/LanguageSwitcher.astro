@@ -22,8 +22,8 @@ const switcher = tv({
 })
 
 interface Props {
-  /** The languages, `lang` a BCP 47 code ("de", "pt-BR"); `label` the language's own name ("Deutsch"). */
-  languages: Array<{ lang: string, label: string, href: string, current?: boolean | undefined }>
+  /** The languages (none: nothing is drawn), `lang` a BCP 47 code ("de", "pt-BR"); `label` the language's own name ("Deutsch"). */
+  languages?: Array<{ lang: string, label: string, href: string, current?: boolean | undefined }> | undefined
   /** Accessible name ("Language"). */
   label?: string | undefined
   layout?: 'list' | 'menu' | undefined
@@ -31,7 +31,7 @@ interface Props {
   labelStyle?: 'name' | 'code' | undefined
 }
 
-const { languages, label = 'Language', layout, align, labelStyle } = Astro.props
+const { languages = [], label = 'Language', layout, align, labelStyle } = Astro.props
 const s = switcher({ layout, align, labelStyle })
 const shown = languages.filter(language => language.href)
 const current = shown.find(language => language.current)

@@ -34,7 +34,6 @@
   "props": {
     "languages": {
       "type": "array",
-      "required": true,
       "items": {
         "type": "object",
         "fields": {
@@ -65,6 +64,10 @@
   "slots": {},
   "js": "none",
   "dependencies": {},
-  "sources": {},
+  "sources": {
+    "gutenberg": [
+      "polylang/language-switcher"
+    ]
+  },
   "a11y": "List layout: a labelled <nav>; menu layout: a native <details> whose summary carries the label for assistive technology and the current language visibly. Every link has lang and hreflang, so screen readers pronounce each name in its language; the current one is aria-current=true. Fewer than two languages draw nothing."
 }
