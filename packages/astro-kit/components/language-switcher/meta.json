@@ -1,0 +1,70 @@
+{
+  "id": "language-switcher",
+  "name": "LanguageSwitcher",
+  "description": "Links to the same page in the site's other languages, each with hreflang and its own lang; the current one is marked aria-current. A plain list or a native <details> menu; no JavaScript. The addresses are the page's equivalents in each language, supplied by the caller.",
+  "category": "chrome",
+  "uses": [],
+  "shared": [],
+  "variants": {
+    "layout": {
+      "options": [
+        "list",
+        "menu"
+      ],
+      "default": "list",
+      "description": "A row of links, or a menu that shows the current language and opens on click."
+    },
+    "align": {
+      "options": [
+        "start",
+        "end"
+      ],
+      "default": "start",
+      "description": "Which edge the menu panel lines up with."
+    },
+    "labelStyle": {
+      "options": [
+        "name",
+        "code"
+      ],
+      "default": "name",
+      "description": "The language's own name (\"Deutsch\") or its code (\"DE\")."
+    }
+  },
+  "props": {
+    "languages": {
+      "type": "array",
+      "required": true,
+      "items": {
+        "type": "object",
+        "fields": {
+          "lang": {
+            "type": "string",
+            "required": true
+          },
+          "label": {
+            "type": "string",
+            "required": true
+          },
+          "href": {
+            "type": "url",
+            "required": true
+          },
+          "current": {
+            "type": "boolean"
+          }
+        }
+      },
+      "description": "The languages: BCP 47 code, the language's own name, the page's address in it, and whether it is the page being read."
+    },
+    "label": {
+      "type": "string",
+      "description": "Accessible name (ui-strings language.label)."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {},
+  "a11y": "List layout: a labelled <nav>; menu layout: a native <details> whose summary carries the label for assistive technology and the current language visibly. Every link has lang and hreflang, so screen readers pronounce each name in its language; the current one is aria-current=true. Fewer than two languages draw nothing."
+}

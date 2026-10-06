@@ -1,0 +1,83 @@
+{
+  "id": "social-links",
+  "name": "SocialLinks",
+  "description": "Links to the site's profiles on other networks as marks, names or both. The network is read from each address's host (the table Team uses), so a link carries only its address; an unknown host is shown as itself. Stands alone in a header, top bar, contact section or author box.",
+  "category": "chrome",
+  "uses": [],
+  "shared": [
+    "social.ts"
+  ],
+  "variants": {
+    "display": {
+      "options": [
+        "icons",
+        "text",
+        "both"
+      ],
+      "default": "icons",
+      "description": "Mark only (named for assistive technology), the network's name, or both."
+    },
+    "size": {
+      "options": [
+        "sm",
+        "md",
+        "lg"
+      ],
+      "default": "md",
+      "description": "Mark and touch target size (32, 40 and 48 px minimum)."
+    },
+    "align": {
+      "options": [
+        "start",
+        "center",
+        "end"
+      ],
+      "default": "start",
+      "description": "Where the row sits in its container."
+    },
+    "shape": {
+      "options": [
+        "plain",
+        "circle"
+      ],
+      "default": "plain",
+      "description": "Bare marks, or each in a ringed circle."
+    }
+  },
+  "props": {
+    "links": {
+      "type": "array",
+      "required": true,
+      "items": {
+        "type": "object",
+        "fields": {
+          "href": {
+            "type": "url",
+            "required": true
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "The profiles; `label` only for a link whose host names no network (a personal site, \"Newsletter\")."
+    },
+    "name": {
+      "type": "string",
+      "description": "Whose profiles these are, for \"{name} on {network}\"."
+    },
+    "label": {
+      "type": "string",
+      "description": "Accessible name of the list (ui-strings social.label)."
+    },
+    "profileLabel": {
+      "type": "string",
+      "description": "How each link announces itself; {name} and {network} are replaced (ui-strings social.profile)."
+    }
+  },
+  "slots": {},
+  "js": "none",
+  "dependencies": {},
+  "sources": {},
+  "a11y": "A labelled list of links; each link's accessible name is \"{name} on {network}\" and always contains the visible text; marks are aria-hidden; links open in a new tab with rel=me noopener; every target is at least 32 px."
+}

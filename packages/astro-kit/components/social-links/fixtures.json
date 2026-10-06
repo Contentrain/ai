@@ -1,0 +1,67 @@
+[
+  {
+    "name": "icons",
+    "props": {
+      "name": "Northlight Studio",
+      "links": [
+        {
+          "href": "https://www.linkedin.com/company/northlight"
+        },
+        {
+          "href": "https://github.com/northlight"
+        },
+        {
+          "href": "https://x.com/northlight"
+        },
+        {
+          "href": "https://www.instagram.com/northlight/"
+        },
+        {
+          "href": "https://www.youtube.com/@northlight"
+        }
+      ]
+    }
+  },
+  {
+    "name": "text-small-end",
+    "props": {
+      "display": "text",
+      "size": "sm",
+      "align": "end",
+      "links": [
+        {
+          "href": "https://www.facebook.com/northlight"
+        },
+        {
+          "href": "https://northlight.example/newsletter",
+          "label": "Newsletter"
+        },
+        {
+          "href": "mailto:hello@northlight.example",
+          "label": "Email"
+        }
+      ]
+    }
+  },
+  {
+    "name": "both-large-centered-circle",
+    "props": {
+      "display": "both",
+      "size": "lg",
+      "align": "center",
+      "shape": "circle",
+      "name": "Ada Reyes",
+      "links": [
+        {
+          "href": "https://dribbble.com/ada"
+        },
+        {
+          "href": "https://www.behance.net/ada"
+        },
+        {
+          "href": "https://ada.example/about"
+        }
+      ]
+    }
+  }
+]

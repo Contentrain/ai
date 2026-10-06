@@ -1,0 +1,51 @@
+[
+  {
+    "name": "list",
+    "props": {
+      "languages": [
+        {
+          "lang": "en",
+          "label": "English",
+          "href": "/about/",
+          "current": true
+        },
+        {
+          "lang": "de",
+          "label": "Deutsch",
+          "href": "/de/ueber-uns/"
+        },
+        {
+          "lang": "tr",
+          "label": "Türkçe",
+          "href": "/tr/hakkimizda/"
+        }
+      ]
+    }
+  },
+  {
+    "name": "menu-end-code",
+    "props": {
+      "layout": "menu",
+      "align": "end",
+      "labelStyle": "code",
+      "languages": [
+        {
+          "lang": "en",
+          "label": "English",
+          "href": "/",
+          "current": true
+        },
+        {
+          "lang": "pt-BR",
+          "label": "Português",
+          "href": "/pt/"
+        },
+        {
+          "lang": "ar",
+          "label": "العربية",
+          "href": "/ar/"
+        }
+      ]
+    }
+  }
+]

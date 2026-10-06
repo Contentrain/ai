@@ -1,0 +1,69 @@
+---
+// Links to the site's profiles on other networks: a row of marks, names, or both. The network is read from each
+// address's host (`linkedin.com` → LinkedIn), so a link carries only its address; an address of no known network
+// is shown as its host. Stands alone (header, top bar, contact, author) or beside the footer's own row.
+import { tv } from 'tailwind-variants'
+import { addressLabel, NETWORK_MARKS, networkOf } from '../_shared/social'
+
+const social = tv({
+  slots: {
+    list: 'flex flex-wrap items-center',
+    link: 'inline-flex items-center justify-center gap-2 text-current no-underline opacity-85 hover:opacity-100 focus-visible:opacity-100',
+    mark: 'shrink-0',
+  },
+  variants: {
+    display: { icons: {}, text: {}, both: {} },
+    size: {
+      sm: { list: 'gap-2', link: 'min-h-8 min-w-8 text-sm', mark: 'size-4' },
+      md: { list: 'gap-3', link: 'min-h-10 min-w-10 text-base', mark: 'size-5' },
+      lg: { list: 'gap-4', link: 'min-h-12 min-w-12 text-lg', mark: 'size-6' },
+    },
+    align: { start: { list: 'justify-start' }, center: { list: 'justify-center' }, end: { list: 'justify-end' } },
+    shape: { plain: {}, circle: { link: 'rounded-full border border-line' } },
+  },
+  defaultVariants: { display: 'icons', size: 'md', align: 'start', shape: 'plain' },
+})
+
+interface Props {
+  /** The profiles, by address; a `label` names a link the host does not (a personal site, "Newsletter"). */
+  links: Array<{ href: string, label?: string | undefined }>
+  /** Whose profiles these are: the site or person's name, for "{name} on {network}". */
+  name?: string | undefined
+  /** Accessible name of the list ("Social media"). */
+  label?: string | undefined
+  /** How a link announces itself; `{name}` and `{network}` are replaced ("{name} on {network}"). Without a `name`, the network alone. */
+  profileLabel?: string | undefined
+  display?: 'icons' | 'text' | 'both' | undefined
+  size?: 'sm' | 'md' | 'lg' | undefined
+  align?: 'start' | 'center' | 'end' | undefined
+  shape?: 'plain' | 'circle' | undefined
+}
+
+const { links, name, label = 'Social media', profileLabel = '{name} on {network}', display, size, align, shape } = Astro.props
+const s = social({ display, size, align, shape })
+const entries = links.map(link => {
+  const network = networkOf(link.href)
+  const shown = link.label ?? network?.label ?? addressLabel(link.href)
+  const mark = network ? NETWORK_MARKS[network.key] : undefined
+  // The accessible name always contains the visible text; a mark alone is named by the network.
+  const accessible = name ? profileLabel.replace('{name}', name).replace('{network}', shown) : shown
+  return { href: link.href, shown, mark, accessible }
+})
+---
+{entries.length > 0 && (
+  <ul class={s.list()} aria-label={label} data-cr-part="social-links">
+    {entries.map(entry => {
+      // No mark (an unknown network), or the owner asked for names: the text is shown, never an empty link.
+      const text = display === 'text' || display === 'both' || !entry.mark
+      const mark = display !== 'text' && entry.mark
+      return (
+        <li>
+          <a href={entry.href} rel="me noopener" target="_blank" aria-label={entry.accessible} class={s.link()}>
+            {mark && <svg class={s.mark()} viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d={entry.mark} /></svg>}
+            {text && <span>{entry.shown}</span>}
+          </a>
+        </li>
+      )
+    })}
+  </ul>
+)}
