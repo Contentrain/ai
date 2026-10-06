@@ -37,6 +37,7 @@
   "form.send": "Send",
   "form.sending": "Sending…",
   "form.wordpress": "Open the form",
+  "form.wordpress_note": "This form is sent on {site}.",
   "gallery.close": "Close",
   "nav.breadcrumb": "Breadcrumb",
   "nav.close": "Close",

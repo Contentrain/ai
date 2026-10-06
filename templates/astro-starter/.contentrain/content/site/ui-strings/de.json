@@ -37,6 +37,7 @@
   "form.send": "Senden",
   "form.sending": "Wird gesendet …",
   "form.wordpress": "Formular öffnen",
+  "form.wordpress_note": "Dieses Formular wird auf {site} gesendet.",
   "gallery.close": "Schließen",
   "nav.breadcrumb": "Brotkrumen-Navigation",
   "nav.close": "Schließen",

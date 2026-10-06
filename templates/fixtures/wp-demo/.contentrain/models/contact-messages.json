@@ -1,0 +1,40 @@
+{
+  "domain": "custom",
+  "fields": {
+    "name": {
+      "label": "Your name",
+      "order": 10,
+      "type": "string",
+      "required": true
+    },
+    "email": {
+      "label": "Email",
+      "order": 20,
+      "type": "email",
+      "required": true
+    },
+    "topic": {
+      "label": "What is it about",
+      "order": 30,
+      "type": "select",
+      "options": ["A new site", "A redesign", "Something else"]
+    },
+    "message": {
+      "label": "Message",
+      "order": 40,
+      "type": "text",
+      "required": true
+    }
+  },
+  "form": {
+    "enabled": true,
+    "public": true,
+    "exposedFields": ["name", "email", "topic", "message"],
+    "honeypot": true
+  },
+  "i18n": false,
+  "id": "contact-messages",
+  "kind": "collection",
+  "name": "Contact messages",
+  "title_field": "name"
+}

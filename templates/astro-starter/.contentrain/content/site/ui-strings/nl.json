@@ -37,6 +37,7 @@
   "form.send": "Verzenden",
   "form.sending": "Verzenden…",
   "form.wordpress": "Het formulier openen",
+  "form.wordpress_note": "Dit formulier wordt verzonden op {site}.",
   "gallery.close": "Sluiten",
   "nav.breadcrumb": "Kruimelpad",
   "nav.close": "Sluiten",

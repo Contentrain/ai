@@ -18,6 +18,10 @@
     {
       "from": "  post: { header: ['terms', 'title', 'byline', 'cover'], adjacent: false, more: 0 },",
       "to": "  post: { header: ['terms', 'title', 'byline', 'cover'], adjacent: true, more: 3, meta: [[[{ text: 'Posted' }, { part: 'date' }, { text: 'in' }, { part: 'terms' }], [{ part: 'author', prefix: 'by ' }]], [[{ part: 'tags', prefix: 'Tagged: ', suffix: '.' }]]] },"
+    },
+    {
+      "from": "  sourceHosts: [],",
+      "to": "  features: { wordpress: 'https://northwind.example' },\n  sourceHosts: [],"
     }
   ],
   "absentFromDist": [
@@ -296,9 +300,42 @@
       "excludes": [
         "Grid Monitor"
       ]
+    },
+    "contact/index.html": {
+      "contains": [
+        "<label for=\"cr-field-topic\">What is it about</label>",
+        "<option value=\"A redesign\">A redesign</option>",
+        "<label for=\"cr-field-message\">Message <span aria-hidden=\"true\">*</span></label>"
+      ]
     }
   },
   "optimizedInDist": [
     "harbour"
-  ]
+  ],
+  "distFilesByMedia": {
+    "local": {
+      "contact/index.html": {
+        "contains": [
+          "data-state=\"wordpress\"",
+          "This form is sent on northwind.example.",
+          "<a href=\"https://northwind.example/contact/\" class=\"cr-form-link\">Open the form</a>",
+          "<fieldset class=\"cr-fields\" disabled>"
+        ],
+        "excludes": [
+          "<cr-form"
+        ]
+      }
+    },
+    "studio": {
+      "contact/index.html": {
+        "contains": [
+          "<cr-form",
+          "data-model=\"contact-messages\""
+        ],
+        "excludes": [
+          "data-state=\"wordpress\""
+        ]
+      }
+    }
+  }
 }
