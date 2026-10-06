@@ -76,6 +76,8 @@ export interface ImportReport {
   acf_datetime_unzoned: number
   /** ACF image/file values that were an attachment id the export does not hold, left out (`field: count`). */
   acf_media_unknown: Record<string, number>
+  /** Self-closing (server-rendered) Gutenberg blocks dropped from post bodies with nothing to keep: `block name: count`. */
+  blocks_dynamic_dropped: Record<string, number>
   skipped_types: string[]
   dropped_relations: number
   models: Record<string, { kind: string; domain: string; fields: number; entries: number }>
@@ -192,6 +194,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     acf_outside_choices: {},
     acf_datetime_unzoned: 0,
     acf_media_unknown: {},
+    blocks_dynamic_dropped: {},
     skipped_types: [],
     dropped_relations: 0,
     models: {},
@@ -601,7 +604,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       const metaBucket = multilingual ? ((localeMetas[mid] ??= {})[loc] ??= {}) : metas[mid]!
       const e: Entry = { title: titleOf(p), slug: slugOf.get(p.id), wp_id: p.id }
       if (fields.excerpt) e.excerpt = strip(p.excerpt)
-      if (fields.body) e.body = stripBlockDelimiters(p.content) // block delimiters out, markup inside kept; shortcodes verbatim (known gap)
+      if (fields.body) e.body = stripBlockDelimiters(p.content, (name) => { report.blocks_dynamic_dropped[name] = (report.blocks_dynamic_dropped[name] ?? 0) + 1 }) // block delimiters out, markup inside kept; shortcodes verbatim (known gap)
       if (fields.published_at && p.date) e.published_at = p.date
       if (p.modified) e.modified_at = p.modified
       if (p.link) e.link = p.link

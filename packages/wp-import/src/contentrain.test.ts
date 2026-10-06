@@ -653,6 +653,13 @@ describe('post bodies and Gutenberg block delimiters', () => {
     expect(stripBlockDelimiters(body)).toBe('<p>Hello</p>\n\n<figure><img src="a.jpg"/></figure>\n<!-- keep me -->')
   })
 
+  it('tells which self-closing (server-rendered) blocks left nothing behind', () => {
+    const seen: string[] = []
+    const out = stripBlockDelimiters('<!-- wp:latest-posts {"postsToShow":3} /-->\n<!-- wp:block {"ref":12} /-->\n<!-- wp:acme/map /-->\n<!-- wp:paragraph --><p>x</p><!-- /wp:paragraph -->', (n) => seen.push(n))
+    expect(out).toBe('<p>x</p>')
+    expect(seen).toEqual(['latest-posts', 'block', 'acme/map'])
+  })
+
   it('leaves a body with no blocks alone', () => {
     expect(stripBlockDelimiters('<p>Classic</p>')).toBe('<p>Classic</p>')
   })
