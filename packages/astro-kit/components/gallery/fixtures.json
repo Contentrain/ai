@@ -187,5 +187,280 @@
         }
       ]
     }
+  },
+  {
+    "name": "row",
+    "props": {
+      "layout": "row",
+      "heading": "Strip",
+      "id": "strip",
+      "items": [
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-1.svg",
+            "alt": "Photo 1",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Porto at dawn"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-2.svg",
+            "alt": "Photo 2",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Train to Coimbra"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-3.svg",
+            "alt": "Photo 3",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Market day"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-4.svg",
+            "alt": "Photo 4",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Harbour"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-5.svg",
+            "alt": "Photo 5",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Old town"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-6.svg",
+            "alt": "Photo 6",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Last light"
+        }
+      ]
+    }
+  },
+  {
+    "name": "mosaic-wide-overlay",
+    "props": {
+      "layout": "mosaic",
+      "aspect": "16:9",
+      "captionStyle": "overlay",
+      "columns": "4",
+      "items": [
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-1.svg",
+            "alt": "Photo 1",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Porto at dawn"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-2.svg",
+            "alt": "Photo 2",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Train to Coimbra"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-3.svg",
+            "alt": "Photo 3",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Market day"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-4.svg",
+            "alt": "Photo 4",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Harbour"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-5.svg",
+            "alt": "Photo 5",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Old town"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-6.svg",
+            "alt": "Photo 6",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Last light"
+        }
+      ]
+    }
+  },
+  {
+    "name": "aspect-43-zoom",
+    "props": {
+      "aspect": "4:3",
+      "hoverEffect": "zoom",
+      "gap": "lg",
+      "columns": "5",
+      "items": [
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-1.svg",
+            "alt": "Photo 1",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Porto at dawn"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-2.svg",
+            "alt": "Photo 2",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Train to Coimbra"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-3.svg",
+            "alt": "Photo 3",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Market day"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-4.svg",
+            "alt": "Photo 4",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Harbour"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-5.svg",
+            "alt": "Photo 5",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Old town"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-6.svg",
+            "alt": "Photo 6",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Last light"
+        }
+      ]
+    }
+  },
+  {
+    "name": "gap-small-auto",
+    "props": {
+      "aspect": "auto",
+      "gap": "sm",
+      "columns": "6",
+      "open": "link",
+      "items": [
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-1.svg",
+            "alt": "Photo 1",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Porto at dawn"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-2.svg",
+            "alt": "Photo 2",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Train to Coimbra"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-3.svg",
+            "alt": "Photo 3",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Market day"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-4.svg",
+            "alt": "Photo 4",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Harbour"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-5.svg",
+            "alt": "Photo 5",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Old town"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-6.svg",
+            "alt": "Photo 6",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Last light"
+        }
+      ]
+    }
+  },
+  {
+    "name": "single",
+    "props": {
+      "items": [
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-1.svg",
+            "alt": "Photo 1",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Porto at dawn"
+        }
+      ]
+    }
   }
 ]

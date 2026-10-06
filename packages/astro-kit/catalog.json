@@ -1086,7 +1086,9 @@
       "name": "Contact form",
       "description": "The contact section: heading, introduction, contact details (email, phone, address) and a Contentrain Studio form — fields, spam protection and notifications set in Studio, submissions reviewed there. Replaces form plugins; renders the details alone until the site is bound to a Studio project (a section left with only its heading is not drawn: the heading would title a form that is not there). When the owner chose another home at migration (site.config.ts `features.forms`) the form posts to their form service, or the section shows an address to write to or a link to the form on WordPress.",
       "category": "section",
-      "uses": [],
+      "uses": [
+        "embed"
+      ],
       "shared": [
         "Section.astro",
         "measured.ts",
@@ -1096,10 +1098,11 @@
         "layout": {
           "options": [
             "split",
-            "stacked"
+            "stacked",
+            "form-only"
           ],
           "default": "split",
-          "description": "split: details beside the form on wide screens. stacked: one column (see align)."
+          "description": "split: details beside the form on wide screens. stacked: one column (see align). form-only: only the form under its heading; details, hours and map are left out."
         },
         "align": {
           "options": [
@@ -1126,6 +1129,22 @@
           ],
           "default": "top",
           "description": "Where the heading sits. top: above the introduction and details. after: after them, as a source that writes its lead line and contact buttons first has it; beside a form it titles the form, without one it follows the details."
+        },
+        "detailsStyle": {
+          "options": [
+            "list",
+            "cards"
+          ],
+          "default": "list",
+          "description": "The ways to reach you: a plain list, or a card each (label over value)."
+        },
+        "panel": {
+          "options": [
+            "card",
+            "none"
+          ],
+          "default": "card",
+          "description": "card: the form on its own surface. none: flush on the section's background."
         }
       },
       "props": {
@@ -1180,6 +1199,166 @@
           "type": "string",
           "content": false,
           "description": "Section id; the heading gets `<id>-title`."
+        },
+        "hours": {
+          "type": "text",
+          "label": "Opening hours",
+          "description": "Opening hours as written; line breaks are kept."
+        },
+        "socials": {
+          "type": "array",
+          "label": "Profile links",
+          "description": "Social or profile links, shown as a row under the details.",
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "label": "Label",
+                "required": true,
+                "description": "Visible text of the link."
+              },
+              "href": {
+                "type": "url",
+                "label": "Link",
+                "required": true,
+                "description": "The profile address."
+              }
+            }
+          }
+        },
+        "map": {
+          "type": "object",
+          "label": "Map",
+          "description": "A map of the address, loaded only when the reader asks (no iframe on load); the address is printed under it.",
+          "fields": {
+            "address": {
+              "type": "string",
+              "label": "Address",
+              "description": "The place shown on the map."
+            },
+            "url": {
+              "type": "url",
+              "label": "Map address",
+              "description": "A Google Maps embed address, when the source has one."
+            },
+            "title": {
+              "type": "string",
+              "label": "Map title",
+              "required": true,
+              "description": "What the map is (\"Our studio\"): its accessible name."
+            }
+          }
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
         }
       },
       "slots": {},
@@ -1211,7 +1390,15 @@
         "details": "details",
         "details[].label": "details[].label",
         "details[].value": "details[].value",
-        "details[].href": "details[].href"
+        "details[].href": "details[].href",
+        "hours": "hours",
+        "socials": "socials",
+        "socials[].label": "socials[].label",
+        "socials[].href": "socials[].href",
+        "map": "map",
+        "map.address": "map.address",
+        "map.url": "map.url",
+        "map.title": "map.title"
       }
     },
     {
@@ -2357,19 +2544,23 @@
         "layout": {
           "options": [
             "grid",
-            "masonry"
+            "masonry",
+            "row",
+            "mosaic"
           ],
           "default": "grid",
-          "description": "grid: square crops in rows. masonry: columns that keep each image's shape."
+          "description": "grid: equal tiles. masonry: columns keeping each image's height. row: a scroll-snap strip (a focusable region). mosaic: the first tile spans 2×2."
         },
         "columns": {
           "options": [
             "2",
             "3",
-            "4"
+            "4",
+            "5",
+            "6"
           ],
           "default": "3",
-          "description": "Columns on wide screens; phones show two."
+          "description": "Images per row on wide screens; two on phones."
         },
         "open": {
           "options": [
@@ -2379,6 +2570,41 @@
           ],
           "default": "popover",
           "description": "popover: the image opens large in place (Popover API; Escape or a click outside closes it). link: the thumbnail links to the image file (the WordPress 'link to media file'). none: images only."
+        },
+        "aspect": {
+          "options": [
+            "square",
+            "4:3",
+            "16:9",
+            "auto"
+          ],
+          "default": "square",
+          "description": "Tile shape (a masonry keeps each image's own)."
+        },
+        "gap": {
+          "options": [
+            "sm",
+            "md",
+            "lg"
+          ],
+          "default": "md",
+          "description": "Space between tiles."
+        },
+        "captionStyle": {
+          "options": [
+            "below",
+            "overlay"
+          ],
+          "default": "below",
+          "description": "below: caption under the image. overlay: over the image foot on hover and keyboard focus, always shown below md."
+        },
+        "hoverEffect": {
+          "options": [
+            "none",
+            "zoom"
+          ],
+          "default": "none",
+          "description": "zoom: a slight scale on hover, only where reduced motion is not requested."
         }
       },
       "props": {
@@ -2404,6 +2630,11 @@
                 "type": "string",
                 "label": "Caption",
                 "description": "Caption under the enlarged image."
+              },
+              "full": {
+                "type": "image",
+                "label": "Full-size image",
+                "description": "The original file the viewer shows large, where the source links to it; otherwise the image itself."
               }
             }
           },
@@ -2434,6 +2665,128 @@
           "type": "string",
           "content": false,
           "description": "Section id, unique per page: viewer ids derive from it (`<id>-image-<n>`)."
+        },
+        "enlargeLabel": {
+          "type": "string",
+          "default": "Enlarge",
+          "content": false,
+          "description": "Prefix of each thumbnail button's name for screen readers (\"Enlarge: <description>\")."
+        },
+        "regionLabel": {
+          "type": "string",
+          "default": "Images",
+          "content": false,
+          "description": "Name of the scrolling row's region when the gallery has no heading."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
         }
       },
       "slots": {},
@@ -2454,7 +2807,7 @@
           "classic/gallery"
         ]
       },
-      "a11y": "A list of figures. In popover mode each thumbnail is a <button> named by the image's alt (or caption) that opens the viewer; the viewer has a visible close button, and Escape closes it, returning focus to the thumbnail. Captions are <figcaption>s.",
+      "a11y": "A list of figures. In popover mode each thumbnail is a <button> named by the image's alt (or caption) that opens the viewer; the viewer has a visible close button, and Escape closes it, returning focus to the thumbnail. Captions are <figcaption>s. A scrolling row is a labelled region with tabindex 0 so the keyboard can scroll it; thumbnail buttons are named \"Enlarge: …\". The viewer has no next/previous (it would need script).",
       "files": [
         "Gallery.astro"
       ],
@@ -2463,6 +2816,7 @@
         "items[].image": "items[].image",
         "items[].imageAlt": "items[].image_alt",
         "items[].caption": "items[].caption",
+        "items[].full": "items[].full",
         "heading": "heading"
       }
     },
@@ -3817,6 +4171,13 @@
         "imageAspect": {
           "type": "string",
           "description": "The image block's aspect ratio (16 / 9) where the source sets an aspect ratio; absent, 16 / 9."
+        },
+        "excerptLines": {
+          "type": "integer",
+          "min": 2,
+          "max": 4,
+          "content": false,
+          "description": "Clamp the excerpt to this many lines; absent, the layout's own (3 vertical, 2 otherwise)."
         }
       },
       "slots": {},
@@ -3843,6 +4204,321 @@
       "files": [
         "PostCard.astro"
       ]
+    },
+    {
+      "id": "post-list",
+      "name": "Post list",
+      "description": "A list of posts as cards: a grid, stacked rows, a featured first post over a grid, or a compact title-and-date list. The posts come from the site's own collection; the switches decide which parts of a card show.",
+      "category": "section",
+      "uses": [
+        "post-card"
+      ],
+      "shared": [
+        "Section.astro",
+        "measured.ts",
+        "types.ts"
+      ],
+      "variants": {
+        "layout": {
+          "options": [
+            "grid",
+            "list",
+            "featured",
+            "compact"
+          ],
+          "default": "grid",
+          "description": "grid: cards in columns. list: stacked horizontal cards. featured: the first post large over a grid. compact: title and date only."
+        },
+        "columns": {
+          "options": [
+            "2",
+            "3",
+            "4"
+          ],
+          "default": "3",
+          "description": "Cards per row on wide screens (grid and featured)."
+        }
+      },
+      "props": {
+        "heading": {
+          "type": "string",
+          "label": "Heading",
+          "description": "Section heading above the posts."
+        },
+        "intro": {
+          "type": "text",
+          "label": "Intro",
+          "description": "A line or two under the heading."
+        },
+        "posts": {
+          "type": "array",
+          "label": "Posts",
+          "required": true,
+          "content": false,
+          "description": "The posts to show, newest first: from the posts collection (the query SDK), never copied from a page.",
+          "items": {
+            "type": "object",
+            "fields": {
+              "title": {
+                "type": "string",
+                "required": true
+              },
+              "href": {
+                "type": "url",
+                "required": true
+              },
+              "excerpt": {
+                "type": "text"
+              },
+              "date": {
+                "type": "datetime"
+              },
+              "image": {
+                "type": "object",
+                "fields": {
+                  "src": {
+                    "type": "image",
+                    "required": true
+                  },
+                  "alt": {
+                    "type": "string",
+                    "required": true
+                  },
+                  "width": {
+                    "type": "integer"
+                  },
+                  "height": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "category": {
+                "type": "object",
+                "fields": {
+                  "label": {
+                    "type": "string",
+                    "required": true
+                  },
+                  "href": {
+                    "type": "url",
+                    "required": true
+                  }
+                }
+              },
+              "author": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "showImage": {
+          "type": "boolean",
+          "default": true,
+          "content": false,
+          "description": "Show each post's cover."
+        },
+        "showExcerpt": {
+          "type": "boolean",
+          "default": true,
+          "content": false,
+          "description": "Show each post's excerpt."
+        },
+        "showAuthor": {
+          "type": "boolean",
+          "default": true,
+          "content": false,
+          "description": "Show each post's author."
+        },
+        "showCategory": {
+          "type": "boolean",
+          "default": true,
+          "content": false,
+          "description": "Show each post's category."
+        },
+        "excerptLines": {
+          "type": "integer",
+          "min": 2,
+          "max": 4,
+          "content": false,
+          "description": "Clamp each excerpt to this many lines."
+        },
+        "locale": {
+          "type": "string",
+          "content": false,
+          "description": "BCP 47 locale the dates are written in (site.language)."
+        },
+        "surface": {
+          "type": "string",
+          "content": false,
+          "description": "plain or card: whether each post is a card of its own (post-card surface)."
+        },
+        "moreHref": {
+          "type": "url",
+          "content": false,
+          "description": "Where the full archive lives; with moreLabel a link follows the list."
+        },
+        "moreLabel": {
+          "type": "string",
+          "content": false,
+          "description": "Text of the archive link."
+        },
+        "tone": {
+          "type": "string",
+          "content": false,
+          "description": "Section background: default, muted, inverse or accent."
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Anchor id of the section; the heading gets `<id>-title`."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/query",
+          "core/latest-posts"
+        ],
+        "elementor": [
+          "elementor/posts",
+          "elementor/archive-posts"
+        ],
+        "divi": [
+          "divi/et_pb_blog"
+        ],
+        "classic": [
+          "classic/archive-item"
+        ]
+      },
+      "a11y": "A <ul> of cards, each an <article> with one link (the title, stretched over the card) and a <time datetime>. Cards sit one heading level under the section heading, or at h2 when there is none. Images are decorative next to their title; the featured card keeps reading order.",
+      "pattern": {
+        "summary": "a repeated post card: image + title + excerpt + date, as a grid, rows or a featured first post",
+        "signals": [
+          "2-4 columns",
+          "date text",
+          "one link per card",
+          "repeated card structure"
+        ]
+      },
+      "files": [
+        "PostList.astro"
+      ],
+      "contentFields": {
+        "heading": "heading",
+        "intro": "intro"
+      }
     },
     {
       "id": "pricing",
@@ -3875,6 +4551,31 @@
           ],
           "default": "default",
           "description": "Section background."
+        },
+        "layout": {
+          "options": [
+            "cards",
+            "table"
+          ],
+          "default": "cards",
+          "description": "cards: plans side by side. table: one comparison table, plans as columns and features as rows (for more than four plans)."
+        },
+        "featureStyle": {
+          "options": [
+            "check",
+            "dot",
+            "plain"
+          ],
+          "default": "plain",
+          "description": "The mark before each feature in the cards: a check, a dot, or the list's own bullets."
+        },
+        "billingToggle": {
+          "options": [
+            "none",
+            "radio"
+          ],
+          "default": "none",
+          "description": "radio: two labelled radios swap each plan's price for its priceAlt (monthly / yearly), with no script. The radio group is named from the section id, or a hash of the plans without one, so two toggles on a page stay independent."
         }
       },
       "props": {
@@ -3936,6 +4637,21 @@
                 "type": "boolean",
                 "label": "Featured",
                 "description": "Raises the plan and gives it the badge."
+              },
+              "badge": {
+                "type": "string",
+                "label": "Badge",
+                "description": "A badge text on the plan (\"Best value\"); a featured plan without one reads the section's featuredLabel."
+              },
+              "priceAlt": {
+                "type": "string",
+                "label": "Price, other period",
+                "description": "The price for the other billing period (\"€150\"), shown when the toggle is on its second option."
+              },
+              "periodAlt": {
+                "type": "string",
+                "label": "Period, other period",
+                "description": "What the other price is per (\"/year\")."
               }
             }
           },
@@ -3951,6 +4667,152 @@
           "type": "string",
           "content": false,
           "description": "Anchor id of the section; the heading gets `<id>-title`."
+        },
+        "compact": {
+          "type": "boolean",
+          "default": false,
+          "content": false,
+          "description": "A denser card: smaller padding, gap and price."
+        },
+        "includedLabel": {
+          "type": "string",
+          "default": "Included",
+          "content": false,
+          "description": "Table cell text for readers where a plan has the feature."
+        },
+        "notIncludedLabel": {
+          "type": "string",
+          "default": "Not included",
+          "content": false,
+          "description": "Table cell text for readers where a plan lacks the feature."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
+        },
+        "billingMainLabel": {
+          "type": "string",
+          "default": "Monthly",
+          "content": false,
+          "description": "First option of the billing toggle."
+        },
+        "billingAltLabel": {
+          "type": "string",
+          "default": "Yearly",
+          "content": false,
+          "description": "Second option of the billing toggle (the plans' priceAlt)."
+        },
+        "billingLegend": {
+          "type": "string",
+          "default": "Billing period",
+          "content": false,
+          "description": "Legend of the toggle, read to screen readers."
         }
       },
       "slots": {},
@@ -3967,7 +4829,7 @@
           "divi/et_pb_pricing_tables"
         ]
       },
-      "a11y": "Plans are a <ul>; each name is an <h3> under the section's <h2>, or an <h2> when the section has no heading. A featured plan is marked by a text badge and a ring, not colour alone. Buttons are links with their own label.",
+      "a11y": "Plans are a <ul>; each name is an <h3> under the section's <h2>, or an <h2> when the section has no heading. A featured plan is marked by a text badge and a ring, not colour alone. Buttons are links with their own label. The table layout is a real <table> with a caption, column and row headers, and Included / Not included text in every cell; the billing toggle is a fieldset with a legend and labelled radios.",
       "pattern": {
         "summary": "repeated plan units: name + price + feature list + button",
         "signals": [
@@ -3991,7 +4853,10 @@
         "plans[].features": "plans[].features",
         "plans[].ctaLabel": "plans[].cta_label",
         "plans[].ctaHref": "plans[].cta_href",
-        "plans[].featured": "plans[].featured"
+        "plans[].featured": "plans[].featured",
+        "plans[].badge": "plans[].badge",
+        "plans[].priceAlt": "plans[].price_alt",
+        "plans[].periodAlt": "plans[].period_alt"
       }
     },
     {
@@ -4931,10 +5796,12 @@
         "layout": {
           "options": [
             "list",
-            "row"
+            "row",
+            "rail",
+            "alternate"
           ],
           "default": "list",
-          "description": "A vertical list, or one row across the page on wide screens."
+          "description": "list: a vertical list. row: across the page. rail: one rail on the start side. alternate: items alternate either side of a centre rail from md (one rail on phones); DOM order stays chronological."
         },
         "style": {
           "options": [
@@ -4943,6 +5810,31 @@
           ],
           "default": "numbered",
           "description": "A number badge before each step, or an accent rule beside it."
+        },
+        "kind": {
+          "options": [
+            "steps",
+            "timeline"
+          ],
+          "default": "steps",
+          "description": "steps: a numbered sequence. timeline: a date per item on a vertical rail (the rail layouts below; without a layout it uses rail)."
+        },
+        "marker": {
+          "options": [
+            "number",
+            "dot"
+          ],
+          "default": "number",
+          "description": "What sits on the rail: the style's number badge, or a plain dot (the timeline default). Not yet: icon and date markers, and a visual emphasis for the current item (it has aria-current and a hidden label only)."
+        },
+        "connector": {
+          "options": [
+            "none",
+            "line",
+            "dashed"
+          ],
+          "default": "line",
+          "description": "The rail between items on the rail layouts."
         }
       },
       "props": {
@@ -4989,6 +5881,16 @@
                 "type": "string",
                 "label": "Image description",
                 "description": "What the image shows; empty if decorative."
+              },
+              "date": {
+                "type": "string",
+                "label": "Date",
+                "description": "A timeline's date as written (\"2019\", \"Mar 2021\"); marked up as a <time> only when it is an ISO date or a year."
+              },
+              "current": {
+                "type": "boolean",
+                "label": "Current",
+                "description": "Marks the latest item (aria-current=\"step\" and a hidden \"Current\")."
               }
             }
           },
@@ -4998,6 +5900,122 @@
           "type": "string",
           "content": false,
           "description": "Anchor id of the section; the heading gets `<id>-title`."
+        },
+        "currentLabel": {
+          "type": "string",
+          "default": "Current",
+          "content": false,
+          "description": "Visually hidden text on the current item, so it is not shown by colour alone."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
         }
       },
       "slots": {},
@@ -5014,7 +6032,7 @@
           "divi/et_pb_blurb"
         ]
       },
-      "a11y": "Steps are an <ol>, so their order and count are announced; the visible numbers are CSS counters, not text. Each title is an <h3> under the section's <h2>, or an <h2> when the section has no heading. The section is labelled by its heading when it has one.",
+      "a11y": "Steps are an <ol>, so their order and count are announced; the visible numbers are CSS counters, not text. Each title is an <h3> under the section's <h2>, or an <h2> when the section has no heading. The section is labelled by its heading when it has one. A timeline is the same <ol>; a date is a <time datetime> only when machine-readable; the rail and dots are CSS and not in the accessibility tree.",
       "pattern": {
         "summary": "ordered sequence: numbered title + short text units",
         "signals": [
@@ -5035,7 +6053,9 @@
         "items[].title": "items[].title",
         "items[].text": "items[].text",
         "items[].image": "items[].image",
-        "items[].imageAlt": "items[].image_alt"
+        "items[].imageAlt": "items[].image_alt",
+        "items[].date": "items[].date",
+        "items[].current": "items[].current"
       }
     },
     {
@@ -5260,10 +6280,11 @@
           "options": [
             "2",
             "3",
-            "4"
+            "4",
+            "5"
           ],
           "default": "3",
-          "description": "Columns on wide screens; one on phones, two on tablets."
+          "description": "Members per row on wide screens; one on phones, two on tablets."
         },
         "style": {
           "options": [
@@ -5280,6 +6301,32 @@
           ],
           "default": "accent",
           "description": "The member's role. accent: a small accent-coloured line. plain: body-size text in the text colour, as a byline."
+        },
+        "layout": {
+          "options": [
+            "grid",
+            "list",
+            "featured"
+          ],
+          "default": "grid",
+          "description": "grid: cards in columns. list: one row each, photo beside text. featured: the first member large over a grid."
+        },
+        "imageShape": {
+          "options": [
+            "square",
+            "rounded",
+            "circle"
+          ],
+          "default": "square",
+          "description": "Shape of the portrait."
+        },
+        "align": {
+          "options": [
+            "start",
+            "center"
+          ],
+          "default": "start",
+          "description": "Text and socials from the start edge, or centred."
         }
       },
       "props": {
@@ -5330,6 +6377,14 @@
                 "type": "url",
                 "label": "Link",
                 "description": "Their profile page; makes the whole entry a link."
+              },
+              "links": {
+                "type": "array",
+                "label": "Profile links",
+                "description": "Addresses of the member's social profiles, in order; each is labelled by the network its host names (LinkedIn, GitHub, …).",
+                "items": {
+                  "type": "url"
+                }
               }
             }
           },
@@ -5339,6 +6394,135 @@
           "type": "string",
           "content": false,
           "description": "Anchor id of the section; the heading gets `<id>-title`."
+        },
+        "bioClamp": {
+          "type": "integer",
+          "min": 2,
+          "max": 4,
+          "content": false,
+          "description": "Clamp a long bio to this many lines; the full text opens in a native <details> (\"Read more\"), no script."
+        },
+        "readMoreLabel": {
+          "type": "string",
+          "default": "Read more",
+          "content": false,
+          "description": "Text of the bio disclosure."
+        },
+        "socialLabel": {
+          "type": "string",
+          "default": "{name} on {network}",
+          "content": false,
+          "description": "Accessible name of a profile link; {name} and {network} are replaced."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
         }
       },
       "slots": {},
@@ -5355,7 +6539,7 @@
           "divi/et_pb_team_member"
         ]
       },
-      "a11y": "Members are a <ul>; each name is an <h3> under the section's <h2> (an <h2> when the section has no heading), and a linked member's link text is the name. A portrait's text defaults to the name. The section is labelled by its heading when it has one.",
+      "a11y": "Members are a <ul>; each name is an <h3> under the section's <h2> (an <h2> when the section has no heading), and a linked member's link text is the name. A portrait's text defaults to the name. The section is labelled by its heading when it has one. A member with socials keeps the name link and the social links apart (no nested links); a clamped bio opens in a <details> with the whole text.",
       "pattern": {
         "summary": "repeated person units: portrait + name + role",
         "signals": [
@@ -5367,7 +6551,8 @@
         ]
       },
       "files": [
-        "Team.astro"
+        "Team.astro",
+        "team.ts"
       ],
       "contentFields": {
         "heading": "heading",
@@ -5378,7 +6563,8 @@
         "items[].bio": "items[].bio",
         "items[].image": "items[].image",
         "items[].imageAlt": "items[].image_alt",
-        "items[].href": "items[].href"
+        "items[].href": "items[].href",
+        "items[].links": "items[].links"
       }
     },
     {

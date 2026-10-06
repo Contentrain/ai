@@ -297,7 +297,9 @@
       "match": "elementor/image-gallery",
       "component": "gallery",
       "props": {
-        "closeLabel": "ui:gallery.close"
+        "closeLabel": "ui:gallery.close",
+        "enlargeLabel": "ui:gallery.enlarge",
+        "regionLabel": "ui:gallery.images"
       },
       "into": "items",
       "each": ".gallery-item",
@@ -311,7 +313,9 @@
       "match": "elementor/gallery",
       "component": "gallery",
       "props": {
-        "closeLabel": "ui:gallery.close"
+        "closeLabel": "ui:gallery.close",
+        "enlargeLabel": "ui:gallery.enlarge",
+        "regionLabel": "ui:gallery.images"
       },
       "into": "items",
       "each": ".e-gallery-item",
@@ -535,7 +539,8 @@
       },
       "props": {
         "heading": "@heading attr:title || @heading dom:",
-        "intro": "@lead dom:"
+        "intro": "@lead dom:",
+        "currentLabel": "ui:steps.current"
       },
       "into": "items",
       "each": "column",
@@ -596,7 +601,10 @@
       },
       "props": {
         "heading": "@heading attr:title || @heading dom:",
-        "intro": "@lead dom:"
+        "intro": "@lead dom:",
+        "featuredLabel": "ui:pricing.featured",
+        "includedLabel": "ui:pricing.included",
+        "notIncludedLabel": "ui:pricing.not_included"
       },
       "into": "plans",
       "each": "column",
@@ -656,7 +664,9 @@
       },
       "props": {
         "heading": "@heading attr:title || @heading dom:",
-        "intro": "@lead dom:"
+        "intro": "@lead dom:",
+        "readMoreLabel": "ui:team.read_more",
+        "socialLabel": "ui:team.social"
       },
       "into": "items",
       "each": "column",
@@ -820,7 +830,10 @@
       },
       "props": {
         "heading": "@title attr:title || @title dom:",
-        "intro": "@intro dom:"
+        "intro": "@intro dom:",
+        "featuredLabel": "ui:pricing.featured",
+        "includedLabel": "ui:pricing.included",
+        "notIncludedLabel": "ui:pricing.not_included"
       },
       "into": "plans",
       "each": "@plan",
@@ -987,7 +1000,9 @@
       },
       "props": {
         "heading": "@title attr:title || @title dom:",
-        "closeLabel": "ui:gallery.close"
+        "closeLabel": "ui:gallery.close",
+        "enlargeLabel": "ui:gallery.enlarge",
+        "regionLabel": "ui:gallery.images"
       },
       "into": "items",
       "each": "@images .gallery-item",
@@ -1013,7 +1028,9 @@
       },
       "props": {
         "heading": "@title attr:title || @title dom:",
-        "closeLabel": "ui:gallery.close"
+        "closeLabel": "ui:gallery.close",
+        "enlargeLabel": "ui:gallery.enlarge",
+        "regionLabel": "ui:gallery.images"
       },
       "into": "items",
       "each": "@images .e-gallery-item",

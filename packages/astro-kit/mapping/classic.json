@@ -217,7 +217,9 @@
       "match": "classic/gallery",
       "component": "gallery",
       "props": {
-        "closeLabel": "ui:gallery.close"
+        "closeLabel": "ui:gallery.close",
+        "enlargeLabel": "ui:gallery.enlarge",
+        "regionLabel": "ui:gallery.images"
       },
       "into": "items",
       "each": ".gallery-item",

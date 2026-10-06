@@ -271,7 +271,9 @@
       "match": "divi/et_pb_gallery",
       "component": "gallery",
       "props": {
-        "closeLabel": "ui:gallery.close"
+        "closeLabel": "ui:gallery.close",
+        "enlargeLabel": "ui:gallery.enlarge",
+        "regionLabel": "ui:gallery.images"
       },
       "into": "items",
       "each": ".et_pb_gallery_item",
@@ -461,7 +463,10 @@
       },
       "props": {
         "heading": "@intro dom:h1,h2,h3,h4",
-        "intro": "@intro dom:p"
+        "intro": "@intro dom:p",
+        "featuredLabel": "ui:pricing.featured",
+        "includedLabel": "ui:pricing.included",
+        "notIncludedLabel": "ui:pricing.not_included"
       },
       "into": "plans",
       "each": "@tables .et_pb_pricing_table",
@@ -490,7 +495,9 @@
       },
       "props": {
         "heading": "@intro dom:h1,h2,h3,h4",
-        "intro": "@intro dom:p"
+        "intro": "@intro dom:p",
+        "readMoreLabel": "ui:team.read_more",
+        "socialLabel": "ui:team.social"
       },
       "into": "items",
       "each": "@member",
@@ -596,7 +603,9 @@
       },
       "props": {
         "heading": "@intro dom:h1,h2,h3,h4",
-        "closeLabel": "ui:gallery.close"
+        "closeLabel": "ui:gallery.close",
+        "enlargeLabel": "ui:gallery.enlarge",
+        "regionLabel": "ui:gallery.images"
       },
       "into": "items",
       "each": "@images .et_pb_gallery_item",

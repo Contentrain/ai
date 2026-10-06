@@ -1,10 +1,13 @@
 ---
 // How it works: an ordered sequence of steps, each a title and a line of
 // text, optionally with an image — as a vertical list or a row across the
-// page, numbered or plain.
+// page, numbered or plain. `kind="timeline"` is the dated variant: a date per
+// item on a vertical rail, optionally alternating left and right of it.
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
+import { measuredGrid } from '../_shared/measured'
+import type { MeasuredStyle } from '../_shared/types'
 import { imageOf, type ImageSource } from '../_shared/image'
 
 const steps = tv({
@@ -14,6 +17,7 @@ const steps = tv({
     intro: 'text-lg opacity-80',
     list: 'grid gap-8 [counter-reset:kit-step]',
     step: 'flex gap-4 [counter-increment:kit-step]',
+    date: 'text-sm font-semibold tabular-nums text-accent-text',
     body: 'flex flex-col gap-2',
     badge: 'shrink-0',
     media: 'mb-2 overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
@@ -24,7 +28,14 @@ const steps = tv({
     layout: {
       list: { list: 'max-w-3xl' },
       row: { list: 'sm:grid-cols-2 lg:auto-cols-fr lg:grid-flow-col lg:grid-cols-none', step: 'flex-col' },
+      // One rail on the inline-start side (the item's own side is the rail's, mirrored in RTL by the logical `ps-`/`border-s`).
+      rail: { list: 'max-w-3xl gap-0', step: 'relative border-s-2 border-line pb-8 ps-6 last:pb-0' },
+      // Items alternate either side of a centre rail from `md`; the DOM stays chronological, one rail on the start side on phones.
+      alternate: { list: 'gap-0 md:grid-cols-2', step: 'relative border-s-2 border-line pb-8 ps-6 md:[&:nth-child(even)]:col-start-2 md:[&:nth-child(odd)]:col-start-1 md:[&:nth-child(odd)]:border-s-0 md:[&:nth-child(odd)]:border-e-2 md:[&:nth-child(odd)]:pe-6 md:[&:nth-child(odd)]:ps-0 md:[&:nth-child(odd)]:text-end md:[&:nth-child(odd)]:flex-row-reverse md:[&:nth-child(even)]:-ms-px md:[&:nth-child(odd)]:after:start-auto md:[&:nth-child(odd)]:after:-end-[7px]' },
     },
+    // What sits on the rail: the number, a plain dot, or the date (the timeline's own marker). The number marker is `style`'s.
+    marker: { number: {}, dot: { step: 'before:hidden after:absolute after:top-1.5 after:-start-[7px] after:size-3 after:rounded-full after:bg-accent after:content-[""]' } },
+    connector: { none: {}, line: {}, dashed: { step: 'border-dashed' } },
     // The number is drawn from a CSS counter, so the list stays one <ol> a screen reader counts itself. A number the
     // source wrote (`01`) is the page's text and is shown as written, hidden from the screen reader that already counts.
     style: {
@@ -35,7 +46,7 @@ const steps = tv({
       plain: { step: 'border-s-2 border-accent ps-4', badge: 'font-semibold tabular-nums' },
     },
   },
-  defaultVariants: { layout: 'list', style: 'numbered' },
+  defaultVariants: { layout: 'list', marker: 'number', connector: 'line', style: 'numbered' },
 })
 
 interface Step {
@@ -43,6 +54,10 @@ interface Step {
   number?: string | undefined
   title: string
   text: string
+  /** A timeline's date as the source writes it (`2019`, `Mar 2021`); `datetime` only when it parses as an ISO date or year. */
+  date?: string | undefined
+  /** Marks the latest item: a visually hidden "Current" is added for readers. */
+  current?: boolean | undefined
   /** The image's address. */
   image?: ImageSource | undefined
   imageAlt?: string | undefined
@@ -52,30 +67,43 @@ interface Props {
   heading?: string | undefined
   intro?: string | undefined
   items: Step[]
-  layout?: 'list' | 'row' | undefined
+  /** `steps` numbers a sequence; `timeline` carries a date per item (the rail layouts below). */
+  kind?: 'steps' | 'timeline' | undefined
+  layout?: 'list' | 'row' | 'rail' | 'alternate' | undefined
+  marker?: 'number' | 'dot' | undefined
+  connector?: 'none' | 'line' | 'dashed' | undefined
+  currentLabel?: string | undefined
   style?: 'numbered' | 'plain' | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   id?: string | undefined
 }
 
-const { heading, intro, items, layout, style, id } = Astro.props
-const s = steps({ layout, style })
+const { heading, intro, items, kind = 'steps', layout: givenLayout, marker, connector, currentLabel = 'Current', style, measured, id } = Astro.props
+// A timeline defaults to the rail layout and, without numbers, to the plain dot marker.
+const layout = givenLayout ?? (kind === 'timeline' ? 'rail' : 'list')
+const s = steps({ layout, marker: marker ?? (kind === 'timeline' ? 'dot' : 'number'), connector, style })
+// A bare year or an ISO date is machine-readable; anything else ("Spring 2021") stays text.
+const isoDate = (date: string) => /^\d{4}(-\d{2}(-\d{2})?)?$/.test(date.trim()) ? date.trim() : undefined
 const headingId = heading && id ? `${id}-title` : undefined
 // One level under the section heading, or the section's heading when there is none.
 const StepHeading = heading ? 'h3' : 'h2'
 ---
 {items.length > 0 && (
-  <Section id={id} aria-labelledby={headingId}>
+  <Section measured={measured} id={id} aria-labelledby={headingId}>
     {(heading || intro) && (
       <header class={s.header()}>
         {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
         {intro && <p class={s.intro()} data-kit-text>{intro}</p>}
       </header>
     )}
-    <ol class={s.list()}>
+    <ol class={s.list({ class: layout === 'row' ? measuredGrid(measured) : undefined })}>
       {items.map(step => (
-        <li class={s.step({ class: step.number ? 'before:hidden' : undefined })}>
+        <li class={s.step({ class: step.number || kind === 'timeline' ? 'before:hidden' : undefined })} aria-current={step.current ? 'step' : undefined}>
           {step.number && <span class={s.badge()} aria-hidden="true">{step.number}</span>}
           <div class={s.body()}>
+            {kind === 'timeline' && step.date && (isoDate(step.date) ? <time class={s.date()} datetime={isoDate(step.date)}>{step.date}</time> : <p class={s.date()}>{step.date}</p>)}
+            {step.current && <span class="sr-only">{currentLabel}</span>}
             {imageOf(step.image, step.imageAlt) && <div class={s.media()}><KitImage image={imageOf(step.image, step.imageAlt)!} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover" /></div>}
             <StepHeading class={s.title()}>{step.title}</StepHeading>
             <p class={s.text()} data-kit-text>{step.text}</p>
