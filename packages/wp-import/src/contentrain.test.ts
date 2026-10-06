@@ -3,6 +3,7 @@ import type { FieldDef, RawIR } from '@contentrain/types'
 import { validateFieldValue } from '@contentrain/types'
 import { parseWxr, rawToContentrain, buildCommentsExport, summarizeComments, hexId } from './index'
 import { FIXTURE } from './wxr.test'
+import { stripBlockDelimiters } from './blocks'
 
 const load = async () => {
   const { raw } = await parseWxr(FIXTURE)
@@ -603,5 +604,56 @@ describe('an untyped ACF field of attachment ids', () => {
     const raw: RawIR = { ...base, attachments: [{ ...base.attachments[0]!, id: 84 }], posts: [{ ...hello, id: 600, slug: 'm', type: 'team_member', acf: { badge: { value: 84, type: 'number' } } }] }
     const { files } = rawToContentrain(raw, { updatedBy: 'test' })
     expect(JSON.parse(files['.contentrain/models/team-member.json']!).fields.badge.type).toBe('number')
+  })
+})
+
+describe('ACF image, file and gallery fields that return ids', () => {
+  const build = async (acf: Record<string, { value: unknown, type: string }>, ids: number[]) => {
+    const { raw: base } = await parseWxr(FIXTURE)
+    const hello = base.posts.find((p) => p.slug === 'hello-world')!
+    const attachments = ids.map((id) => ({ ...base.attachments[0]!, id, url: `https://example.test/wp-content/uploads/${id}.jpg` }))
+    const raw: RawIR = {
+      ...base,
+      attachments,
+      posts: [...base.posts.filter((p) => p.type !== 'team_member'), { ...hello, id: 700, slug: 'member', type: 'team_member', acf }],
+    }
+    const { files, report } = rawToContentrain(raw, { updatedBy: 'test' })
+    return { report, model: JSON.parse(files['.contentrain/models/team-member.json']!), entry: Object.values(JSON.parse(files['.contentrain/content/custom/team-member/data.json']!))[0] as Record<string, unknown> }
+  }
+
+  it('image and file resolve the id to the attachment address, never keeping the id as text', async () => {
+    const { model, entry } = await build({ photo: { value: '35', type: 'image' }, cv: { value: 36, type: 'file' } }, [35, 36])
+    expect(model.fields.photo.type).toBe('image')
+    expect(entry.photo).toBe('https://example.test/wp-content/uploads/35.jpg')
+    expect(entry.cv).toBe('https://example.test/wp-content/uploads/36.jpg')
+  })
+
+  it('an id the export does not hold is left out and counted in the report', async () => {
+    const { entry, report } = await build({ photo: { value: '999', type: 'image' } }, [35])
+    expect(entry).not.toHaveProperty('photo')
+    expect(report.acf_media_unknown).toEqual({ photo: 1 })
+  })
+
+  it('an address, or an attachment object, still passes as before', async () => {
+    const { entry } = await build({ photo: { value: 'https://cdn.test/a.jpg', type: 'image' }, cv: { value: { ID: 36, url: 'https://cdn.test/cv.pdf', filename: 'cv.pdf' }, type: 'file' } }, [36])
+    expect(entry.photo).toBe('https://cdn.test/a.jpg')
+    expect(entry.cv).toBe('https://cdn.test/cv.pdf')
+  })
+
+  it('a gallery of ids becomes media references; an unknown id is dropped and counted', async () => {
+    const { entry, report } = await build({ pics: { value: [35, 36, 999], type: 'gallery' } }, [35, 36])
+    expect(entry.pics).toEqual([hexId('media:35'), hexId('media:36')])
+    expect(report.dropped_relations).toBeGreaterThanOrEqual(1)
+  })
+})
+
+describe('post bodies and Gutenberg block delimiters', () => {
+  it('strips only the delimiters; the markup inside and other comments stay', () => {
+    const body = '<!-- wp:paragraph -->\n<p>Hello</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:image {"id":35,"sizeSlug":"large"} -->\n<figure><img src="a.jpg"/></figure>\n<!-- /wp:image -->\n<!-- wp:separator /-->\n<!-- keep me -->'
+    expect(stripBlockDelimiters(body)).toBe('<p>Hello</p>\n\n<figure><img src="a.jpg"/></figure>\n<!-- keep me -->')
+  })
+
+  it('leaves a body with no blocks alone', () => {
+    expect(stripBlockDelimiters('<p>Classic</p>')).toBe('<p>Classic</p>')
   })
 })

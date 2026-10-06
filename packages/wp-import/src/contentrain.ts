@@ -12,6 +12,7 @@
 //    comments intake downstream cannot exist without it.
 
 import type { EntrySourceMap, FieldDef, ModelDefinition, RawAcfOptionsPage, RawAcfValue, RawIR, RawPost } from '@contentrain/types'
+import { stripBlockDelimiters } from './blocks.js'
 import { ACF_REFERENCE_TYPES, acfFieldDef, acfRows, acfScrub, acfValue, mergeFieldDef, type AcfReference } from './acf.js'
 import {
   byValue,
@@ -73,6 +74,8 @@ export interface ImportReport {
   acf_outside_choices: Record<string, number>
   /** ACF date-times written without a zone because the source named none (`timezone_string` / `gmt_offset`). */
   acf_datetime_unzoned: number
+  /** ACF image/file values that were an attachment id the export does not hold, left out (`field: count`). */
+  acf_media_unknown: Record<string, number>
   skipped_types: string[]
   dropped_relations: number
   models: Record<string, { kind: string; domain: string; fields: number; entries: number }>
@@ -188,6 +191,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     acf_options_renamed: {},
     acf_outside_choices: {},
     acf_datetime_unzoned: 0,
+    acf_media_unknown: {},
     skipped_types: [],
     dropped_relations: 0,
     models: {},
@@ -288,6 +292,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
     const key = `${mid}:${slugOf.get(canonical) ?? slugOf.get(p.id)!}`
     postEntry.set(p.id, { model: mid, ref: hexId(identityOwner.get(key) === canonical ? key : `${mid}:wp:${canonical}`) })
   }
+  const attachmentUrl = new Map(raw.attachments.map((a) => [a.id, a.url]))
   const mediaRef = (id: number): string | null => (raw.attachments.some((a) => a.id === id) ? hexId(`media:${id}`) : null)
 
   // ── ACF references: the store entry each id points at ──
@@ -369,6 +374,8 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       timeZone: raw.site.timezone, gmtOffset: raw.site.gmt_offset,
       dropped: () => { report.acf_outside_choices[k] = (report.acf_outside_choices[k] ?? 0) + 1 },
       unzoned: () => { report.acf_datetime_unzoned++ },
+      mediaUrl: (id: number) => attachmentUrl.get(id) ?? undefined,
+      unknownMedia: () => { report.acf_media_unknown[k] = (report.acf_media_unknown[k] ?? 0) + 1 },
     }
     return plan.def ? acfValue(plan.def, plan.kind === 'address' ? addressOf(value) : acfRows(acfScrub(value)), ctx) : acfRefs(plan, value)
   }
@@ -594,7 +601,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       const metaBucket = multilingual ? ((localeMetas[mid] ??= {})[loc] ??= {}) : metas[mid]!
       const e: Entry = { title: titleOf(p), slug: slugOf.get(p.id), wp_id: p.id }
       if (fields.excerpt) e.excerpt = strip(p.excerpt)
-      if (fields.body) e.body = p.content // Gutenberg comments and shortcodes verbatim (known gap)
+      if (fields.body) e.body = stripBlockDelimiters(p.content) // block delimiters out, markup inside kept; shortcodes verbatim (known gap)
       if (fields.published_at && p.date) e.published_at = p.date
       if (p.modified) e.modified_at = p.modified
       if (p.link) e.link = p.link

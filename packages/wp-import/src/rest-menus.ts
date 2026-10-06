@@ -172,7 +172,7 @@ export function classicMenus(menus: RestMenu[], items: RestMenuItem[], ctx: Menu
 interface Block { name: string; attrs: Record<string, unknown>; children: Block[] }
 
 /** Serialized block comments (`<!-- wp:name {attrs} /-->`, `<!-- /wp:name -->`). Same grammar as the facts builder parser. */
-const BLOCK_TOKEN = /<!--\s+(\/)?wp:([a-z][a-z0-9_-]*\/)?([a-z][a-z0-9_-]*)\s+({(?:(?!}\s+\/?-->)[\s\S])*?}\s+)?(\/)?-->/g
+export const BLOCK_TOKEN = /<!--\s+(\/)?wp:([a-z][a-z0-9_-]*\/)?([a-z][a-z0-9_-]*)\s+({(?:(?!}\s+\/?-->)[\s\S])*?}\s+)?(\/)?-->/g
 
 export function parseBlocks(content: string): Block[] {
   const root: Block = { name: 'root', attrs: {}, children: [] }

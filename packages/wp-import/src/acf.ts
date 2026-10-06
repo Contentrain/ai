@@ -197,6 +197,10 @@ export interface AcfValueContext extends AcfZone {
   dropped?: (value: unknown, options: readonly string[]) => void
   /** Called for a date-time written without a zone, because the site's zone is unknown. */
   unzoned?: (value: string) => void
+  /** The address of an attachment by its id (an image/file field set to return the id); `undefined` = not in the export. */
+  mediaUrl?: (id: number) => string | undefined
+  /** Called for an attachment id that has no address (not in the export): the field is left out, not kept as "35". */
+  unknownMedia?: (value: unknown) => void
 }
 
 /** A value in the shape its field definition promises; `undefined` = nothing to store. */
@@ -206,7 +210,17 @@ export function acfValue(def: FieldDef, value: unknown, ctx: AcfValueContext = {
     case 'image':
     case 'file':
     case 'video':
-      return isAttachment(value) ? value.url : typeof value === 'string' ? value : undefined
+    {
+      if (isAttachment(value)) return value.url
+      // The "id" return format: a number is the attachment's id, never an address.
+      const id = typeof value === 'number' ? value : typeof value === 'string' && /^\d+$/.test(value.trim()) ? Number(value) : null
+      if (id !== null) {
+        const url = ctx.mediaUrl?.(id)
+        if (!url) ctx.unknownMedia?.(value)
+        return url
+      }
+      return typeof value === 'string' ? value : undefined
+    }
     case 'date':
       return ymd(value) ?? (typeof value === 'string' ? value : undefined)
     case 'datetime': {
