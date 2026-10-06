@@ -1,5 +1,16 @@
 # @contentrain/astro-kit
 
+## 0.30.0
+
+### Minor Changes
+
+- 164bb92: The starter's lists carry the source's card image rule (`lists.image`), grid gap, archive-title width and same-moment order (`lists.tieOrder`); a submenu has a chevron handle; check-dist fails a build that left out `/pagefind/`.
+
+### Patch Changes
+
+- Updated dependencies [164bb92]
+  - @contentrain/types@1.58.0
+
 ## 0.29.4
 
 ### Patch Changes
