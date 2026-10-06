@@ -1696,6 +1696,14 @@ export * from './migrate-claim.js'
 
 export * from './project-plan.js'
 
+// ─── Understand contract ───
+//
+// Migrate, render-first: measured bands (facts) → grounded region specs (one
+// model reading per template) → a deterministic plan. Source- and
+// target-neutral; a region spec holds node ids, never content.
+
+export * from './understand.js'
+
 // ─── Repository provider contracts ───
 //
 // Provider-agnostic engine contracts used by @contentrain/mcp. Exposed from
