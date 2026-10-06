@@ -152,22 +152,6 @@
       "content": false,
       "description": "A denser card: smaller padding, gap and price."
     },
-    "billingLabels": {
-      "type": "object",
-      "content": false,
-      "fields": {
-        "main": {
-          "type": "string"
-        },
-        "alt": {
-          "type": "string"
-        },
-        "legend": {
-          "type": "string"
-        }
-      },
-      "description": "Texts of the billing toggle: its two options and the legend read to screen readers."
-    },
     "includedLabel": {
       "type": "string",
       "default": "Included",
@@ -289,6 +273,24 @@
           "description": "The section's minimum height."
         }
       }
+    },
+    "billingMainLabel": {
+      "type": "string",
+      "default": "Monthly",
+      "content": false,
+      "description": "First option of the billing toggle."
+    },
+    "billingAltLabel": {
+      "type": "string",
+      "default": "Yearly",
+      "content": false,
+      "description": "Second option of the billing toggle (the plans' priceAlt)."
+    },
+    "billingLegend": {
+      "type": "string",
+      "default": "Billing period",
+      "content": false,
+      "description": "Legend of the toggle, read to screen readers."
     }
   },
   "slots": {},

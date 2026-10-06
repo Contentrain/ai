@@ -241,11 +241,6 @@
       "heading": "Billing",
       "billingToggle": "radio",
       "columns": "2",
-      "billingLabels": {
-        "main": "Monthly",
-        "alt": "Yearly",
-        "legend": "Billing period"
-      },
       "plans": [
         {
           "name": "Basic",
@@ -268,7 +263,10 @@
           "ctaHref": "/buy/plus/",
           "badge": "Best value"
         }
-      ]
+      ],
+      "billingMainLabel": "Monthly",
+      "billingAltLabel": "Yearly",
+      "billingLegend": "Billing period"
     }
   },
   {

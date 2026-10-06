@@ -82,8 +82,10 @@ interface Props {
   compact?: boolean | undefined
   /** `radio`: two labelled radios swap each plan's price for its `priceAlt` — no script. */
   billingToggle?: 'none' | 'radio' | undefined
-  /** Labels of the toggle's two options, and its legend for screen readers. */
-  billingLabels?: { main: string, alt: string, legend: string } | undefined
+  /** Texts of the toggle: its two options and the legend read to screen readers. */
+  billingMainLabel?: string | undefined
+  billingAltLabel?: string | undefined
+  billingLegend?: string | undefined
   /** Table cell texts for screen readers. */
   includedLabel?: string | undefined
   notIncludedLabel?: string | undefined
@@ -93,7 +95,7 @@ interface Props {
   id?: string | undefined
 }
 
-const { heading, intro, plans, featuredLabel = 'Most popular', columns, layout = 'cards', featureStyle, compact, billingToggle = 'none', billingLabels = { main: 'Monthly', alt: 'Yearly', legend: 'Billing period' }, includedLabel = 'Included', notIncludedLabel = 'Not included', tone, measured, id } = Astro.props
+const { heading, intro, plans, featuredLabel = 'Most popular', columns, layout = 'cards', featureStyle, compact, billingToggle = 'none', billingMainLabel = 'Monthly', billingAltLabel = 'Yearly', billingLegend = 'Billing period', includedLabel = 'Included', notIncludedLabel = 'Not included', tone, measured, id } = Astro.props
 const s = pricing({ columns, featureStyle, compact: compact ?? false, tone })
 // The radio group's name must be unique on the page: the section's id, or a hash of its plans when it has none.
 const group = id ?? `pricing-${[...JSON.stringify(plans)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36)}`
@@ -162,9 +164,9 @@ const features = await Promise.all(plans.map(plan => renderMarkdown(plan.feature
       <div class={toggled ? '[&:has(input[value=alt]:checked)_[data-price=main]]:hidden [&:not(:has(input[value=alt]:checked))_[data-price=alt]]:hidden' : undefined}>
         {toggled && (
           <fieldset class={s.toggle()}>
-            <legend class="sr-only">{billingLabels.legend}</legend>
-            <label class={s.toggleOption()}><input type="radio" name={`${group}-billing`} value="main" checked class="sr-only" />{billingLabels.main}</label>
-            <label class={s.toggleOption()}><input type="radio" name={`${group}-billing`} value="alt" class="sr-only" />{billingLabels.alt}</label>
+            <legend class="sr-only">{billingLegend}</legend>
+            <label class={s.toggleOption()}><input type="radio" name={`${group}-billing`} value="main" checked class="sr-only" />{billingMainLabel}</label>
+            <label class={s.toggleOption()}><input type="radio" name={`${group}-billing`} value="alt" class="sr-only" />{billingAltLabel}</label>
           </fieldset>
         )}
         <ul class={s.list({ class: measuredGrid(measured) })}>
