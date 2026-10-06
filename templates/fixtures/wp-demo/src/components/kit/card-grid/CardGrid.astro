@@ -4,6 +4,8 @@
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
+import { measuredGrid } from '../_shared/measured'
+import type { MeasuredStyle } from '../_shared/types'
 import { imageOf, type ImageSource } from '../_shared/image'
 
 const grid = tv({
@@ -50,9 +52,11 @@ interface Props {
   style?: 'plain' | 'bordered' | 'elevated' | undefined
   align?: 'start' | 'center' | undefined
   tone?: Tone | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
 }
 
-const { title, intro, items, headingLevel = 2, columns, style, align, tone } = Astro.props
+const { title, intro, items, headingLevel = 2, columns, style, align, tone, measured } = Astro.props
 const { list, card, media, title: cardTitle, text } = grid({ columns, style, align })
 // Accent backgrounds have the least contrast headroom: text on them is never dimmed.
 const dim = tone === 'accent' ? 'opacity-100' : undefined
@@ -61,14 +65,14 @@ const Heading = `h${headingLevel}` as 'h2' | 'h3'
 const CardHeading = `h${title ? headingLevel + 1 : headingLevel}` as 'h2' | 'h3' | 'h4'
 const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : undefined
 ---
-<Section tone={tone} aria-labelledby={headingId}>
+<Section measured={measured} tone={tone} aria-labelledby={headingId}>
   {(title || intro) && (
     <header class:list={['mb-10 flex max-w-2xl flex-col gap-3', align === 'center' && 'mx-auto items-center text-center']}>
       {title && <Heading id={headingId} class="text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl">{title}</Heading>}
       {intro && <p class:list={['text-lg', tone === 'accent' ? undefined : 'opacity-80']}>{intro}</p>}
     </header>
   )}
-  <ul class={list()}>
+  <ul class={list({ class: measuredGrid(measured) })}>
     {items.map(item => (
       <li class={card()}>
         {imageOf(item.image, item.imageAlt) && <div class={media()}><KitImage image={imageOf(item.image, item.imageAlt)!} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover transition duration-300 group-hover:scale-[1.02]" /></div>}

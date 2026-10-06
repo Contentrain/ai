@@ -150,5 +150,6 @@
       ],
       "style": "list"
     }
-  }
+  },
+  {"name": "measured-gap", "props": {"heading": "Why us", "measured": {"columns": {"390": 1, "768": 2, "1280": 3}, "gap": 16}, "items": [{"title": "Fast", "text": "Static HTML."}, {"title": "Kept", "text": "Every address survives."}, {"title": "Editable", "text": "Content in Studio."}]}}
 ]

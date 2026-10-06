@@ -5,6 +5,8 @@
 // widgets that list the same things by hand.
 import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
+import { measuredGrid } from '../_shared/measured'
+import type { MeasuredStyle } from '../_shared/types'
 
 const details = tv({
   slots: {
@@ -40,12 +42,15 @@ interface Props {
   mapLabel?: string | undefined
   layout?: 'list' | 'columns' | undefined
   id?: string | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
 }
 
 const {
   heading, email, phone, address, hours, mapUrl,
   emailLabel = 'Email', phoneLabel = 'Phone', addressLabel = 'Address', hoursLabel = 'Opening hours', mapLabel = 'View on the map',
   layout, id = 'contact-details',
+  measured,
 } = Astro.props
 const s = details({ layout })
 const headingId = heading ? `${id}-title` : undefined
@@ -54,9 +59,9 @@ const tel = phone ? `tel:${phone.replace(/[^\d+]/g, '')}` : undefined
 const shown = Boolean(email || phone || address || hours || mapUrl)
 ---
 {shown && (
-  <Section spacing="md" id={id} aria-labelledby={headingId}>
+  <Section measured={measured} spacing="md" id={id} aria-labelledby={headingId}>
     {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
-    <dl class={s.list()}>
+    <dl class={s.list({ class: measuredGrid(measured) })}>
       {email && <div><dt class={s.term()}>{emailLabel}</dt><dd class={s.value()}><a href={`mailto:${email}`} class={s.link()}>{email}</a></dd></div>}
       {phone && <div><dt class={s.term()}>{phoneLabel}</dt><dd class={s.value()}><a href={tel} class={s.link()}>{phone}</a></dd></div>}
       {(address || mapUrl) && (

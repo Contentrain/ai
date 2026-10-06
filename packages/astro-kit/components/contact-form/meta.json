@@ -4,7 +4,7 @@
   "description": "The contact section: heading, introduction, contact details (email, phone, address) and a Contentrain Studio form — fields, spam protection and notifications set in Studio, submissions reviewed there. Replaces form plugins; renders the details alone until the site is bound to a Studio project (a section left with only its heading is not drawn: the heading would title a form that is not there). When the owner chose another home at migration (site.config.ts `features.forms`) the form posts to their form service, or the section shows an address to write to or a link to the form on WordPress.",
   "category": "section",
   "uses": [],
-  "shared": ["Section.astro"],
+  "shared": ["Section.astro", "measured.ts", "types.ts"],
   "variants": {
     "layout": { "options": ["split", "stacked"], "default": "split", "description": "split: details beside the form on wide screens. stacked: one column (see align)." },
     "align": { "options": ["center", "start"], "default": "center", "description": "Stacked only, and the details alone before a Studio form. center: one centred column at a reading width. start: the section's whole column from the start edge, as a page builder's container whose text sets no alignment." },

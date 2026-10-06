@@ -31,6 +31,7 @@ They read its design tokens and pass its gates: `astro check` with the
 | `embed` | Video, map or player loaded on click; a provider link until then (YouTube via nocookie) | a few lines, no dependency |
 | `pagination` | WordPress-style `/page/N/` links | none |
 | `breadcrumb` | Ancestors, then the current page, optional JSON-LD | none |
+| `band` | The styled fallback section: heading, lead, image, a grid of items (figure, title, detail, text, points, link) and buttons, in the measured frame | none |
 
 Each component lives in `components/<id>/`:
 
@@ -38,8 +39,30 @@ Each component lives in `components/<id>/`:
 - `meta.json`: its catalog entry. Props are Contentrain `FieldDef`s with a description; the entry also lists variants, slots, JavaScript, npm dependencies, `sources` (the builder elements it replaces) and accessibility notes.
 - `fixtures.json`: the visual-regression cases. Every variant option is covered.
 
-`components/_shared/` holds `Section`, `Button`, `KitImage` and the value types
-(`ImageInput`, `LinkInput`, `ActionInput`, `NavItem`).
+`components/_shared/` holds `Section`, `Button`, `KitImage`, `measured.ts` and the value types
+(`ImageInput`, `LinkInput`, `ActionInput`, `NavItem`, `MeasuredStyle`).
+
+## Measured style
+
+A migration can hand a section the style it measured on the source page:
+`measured: MeasuredStyle` (the same fields as `MeasuredStyle` in
+`@contentrain/types`): the frame's width (`containerPx`), padding (`padY`,
+`padX`), the background (`bg.color`, `bg.image` with `overlay`, `size`,
+`position`), item columns at 390, 768 and 1280 px (the kit's base, `md` and
+`lg`; a missing width follows the narrower one), the item `gap`, the text
+`tone` (`dark` = light text on a dark band; without it a fill's own lightness
+decides), the card `radius` and a `minHeight`.
+
+Absent, a section takes the site's tokens as before. Present, it wins over
+the `tone` and `columns` variants. `Section` turns it into inline custom
+properties (`--kit-cols-390/768/1280`, `--kit-gap`, `--radius-card`,
+`--container-page`, `--spacing-gutter`) and the section's own padding,
+height and fill; a component's item grid reads them through
+`measuredGrid(measured)`. Every value is checked first
+(`components/_shared/measured.ts`): a number out of range, a colour that is
+not hex, rgb(a) or hsl(a), an image address that is not http(s) or
+root-relative, or a position outside its keywords is dropped, never written
+into a style attribute.
 
 ## Tokens
 

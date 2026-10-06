@@ -5,6 +5,7 @@
 // the same markup into tabs.
 import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
+import type { MeasuredStyle } from '../_shared/types'
 
 export interface TabItem {
   label: string
@@ -47,9 +48,11 @@ interface Props {
   orientation?: 'horizontal' | 'vertical' | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   id?: string | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
 }
 
-const { items, heading, label, style, orientation = 'horizontal', tone, id = 'tabs' } = Astro.props
+const { items, heading, label, style, orientation = 'horizontal', tone, id = 'tabs', measured } = Astro.props
 const s = tabs({ style, orientation, tone })
 const headingId = heading ? `${id}-title` : undefined
 // One level under the section heading, or the section's heading when there is none.
@@ -57,7 +60,7 @@ const PanelHeading = heading ? 'h3' : 'h2'
 const value = (i: number) => `tab-${i + 1}`
 ---
 {items.length > 0 && (
-  <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+  <Section measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
     {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
     <div class={s.root()} data-kit-tabs={id} data-orientation={orientation} data-label={label ?? heading ?? undefined}>
       <div class={s.list()} data-part="list">

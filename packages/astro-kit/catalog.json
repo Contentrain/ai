@@ -92,6 +92,358 @@
       ]
     },
     {
+      "id": "band",
+      "name": "Band",
+      "description": "The styled fallback section: an optional heading, lead, image, a grid of items and buttons, in the section's measured frame and fill. Used where no closer component fits (an unrecognised or low-confidence section), so it still reads as a designed section, never bare text.",
+      "category": "section",
+      "uses": [],
+      "shared": [
+        "Button.astro",
+        "KitImage.astro",
+        "Section.astro",
+        "measured.ts",
+        "types.ts"
+      ],
+      "variants": {
+        "layout": {
+          "options": [
+            "stack",
+            "split"
+          ],
+          "default": "stack",
+          "description": "stack: one column. split: the copy beside the image on wide screens (only with an image)."
+        },
+        "columns": {
+          "options": [
+            "1",
+            "2",
+            "3",
+            "4"
+          ],
+          "default": "3",
+          "description": "Item columns on wide screens when nothing is measured; one on phones, two on tablets."
+        },
+        "align": {
+          "options": [
+            "start",
+            "center"
+          ],
+          "default": "start",
+          "description": "Alignment of the copy and the items."
+        },
+        "tone": {
+          "options": [
+            "default",
+            "muted",
+            "inverse",
+            "accent"
+          ],
+          "default": "default",
+          "description": "Section background when nothing is measured."
+        }
+      },
+      "props": {
+        "heading": {
+          "type": "string",
+          "label": "Heading",
+          "description": "Section heading."
+        },
+        "eyebrow": {
+          "type": "string",
+          "label": "Eyebrow",
+          "description": "Short line above the heading."
+        },
+        "lead": {
+          "type": "text",
+          "label": "Lead",
+          "description": "Paragraph under the heading."
+        },
+        "media": {
+          "type": "object",
+          "label": "Image",
+          "fields": {
+            "src": {
+              "type": "image",
+              "label": "Image",
+              "required": true,
+              "description": "The image file."
+            },
+            "alt": {
+              "type": "string",
+              "label": "Image description",
+              "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
+            },
+            "width": {
+              "type": "integer",
+              "label": "Width",
+              "description": "Width in pixels, as uploaded."
+            },
+            "height": {
+              "type": "integer",
+              "label": "Height",
+              "description": "Height in pixels, as uploaded."
+            }
+          },
+          "description": "The section's image, under or beside the copy."
+        },
+        "items": {
+          "type": "array",
+          "label": "Items",
+          "items": {
+            "type": "object",
+            "fields": {
+              "value": {
+                "type": "string",
+                "label": "Figure",
+                "description": "A figure drawn large above the title (a stat with its prefix or suffix, a price)."
+              },
+              "title": {
+                "type": "string",
+                "label": "Title",
+                "description": "The item heading."
+              },
+              "meta": {
+                "type": "string",
+                "label": "Detail",
+                "description": "A short line under the title (a role, a date, a period)."
+              },
+              "text": {
+                "type": "text",
+                "label": "Text",
+                "description": "A sentence or two under the title."
+              },
+              "href": {
+                "type": "url",
+                "label": "Link",
+                "description": "Where the item goes; without a link text the whole item is the link."
+              },
+              "linkLabel": {
+                "type": "string",
+                "label": "Link text",
+                "description": "The link's own text, shown under the item."
+              },
+              "media": {
+                "type": "image",
+                "label": "Image",
+                "description": "Image on top of the item."
+              },
+              "mediaAlt": {
+                "type": "string",
+                "label": "Image description",
+                "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
+              },
+              "icon": {
+                "type": "image",
+                "label": "Icon",
+                "description": "A small image above the title (decoration)."
+              },
+              "points": {
+                "type": "array",
+                "label": "Points",
+                "items": "string",
+                "description": "A short list under the text (features, facts)."
+              }
+            }
+          },
+          "description": "Items in a grid (cards, features, logos), in order."
+        },
+        "actions": {
+          "type": "array",
+          "label": "Buttons",
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "label": "Label",
+                "required": true,
+                "description": "The button text."
+              },
+              "href": {
+                "type": "url",
+                "label": "Link",
+                "required": true,
+                "description": "Where the button goes: a page on this site or a full address."
+              },
+              "newTab": {
+                "type": "boolean",
+                "label": "Open in a new tab",
+                "description": "Open the link in a new tab (an external site the reader should not leave for)."
+              },
+              "style": {
+                "type": "select",
+                "label": "Style",
+                "options": [
+                  "primary",
+                  "secondary",
+                  "ghost"
+                ],
+                "description": "primary for the main action, secondary or ghost for the ones beside it."
+              }
+            }
+          },
+          "description": "Buttons, in order."
+        },
+        "headingLevel": {
+          "type": "integer",
+          "min": 2,
+          "max": 3,
+          "default": 2,
+          "content": false,
+          "description": "Level of the section heading; item titles are one below, or at this level when there is no heading."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Anchor id of the section; the heading gets `<id>-title`."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {},
+      "a11y": "A labelled region (aria-labelledby its heading) when it has one. Item titles sit one level under the heading. An item with a link and no link text is clickable as a whole through its title's link; icons are decoration (alt=\"\").",
+      "files": [
+        "Band.astro"
+      ],
+      "contentFields": {
+        "heading": "heading",
+        "eyebrow": "eyebrow",
+        "lead": "lead",
+        "media": "media",
+        "media.src": "media.src",
+        "media.alt": "media.alt",
+        "media.width": "media.width",
+        "media.height": "media.height",
+        "items": "items",
+        "items[].value": "items[].value",
+        "items[].title": "items[].title",
+        "items[].meta": "items[].meta",
+        "items[].text": "items[].text",
+        "items[].href": "items[].href",
+        "items[].linkLabel": "items[].link_label",
+        "items[].media": "items[].media",
+        "items[].mediaAlt": "items[].media_alt",
+        "items[].icon": "items[].icon",
+        "items[].points": "items[].points",
+        "actions": "actions",
+        "actions[].label": "actions[].label",
+        "actions[].href": "actions[].href",
+        "actions[].newTab": "actions[].new_tab",
+        "actions[].style": "actions[].style"
+      }
+    },
+    {
       "id": "breadcrumb",
       "name": "Breadcrumb",
       "description": "The page's ancestors as links followed by the page itself; optionally emits BreadcrumbList JSON-LD.",
@@ -179,6 +531,7 @@
         "KitImage.astro",
         "Section.astro",
         "image.ts",
+        "measured.ts",
         "types.ts"
       ],
       "variants": {
@@ -279,6 +632,116 @@
           "default": 2,
           "content": false,
           "description": "Level of the section heading; card titles are one below, or at this level when there is no title."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
         }
       },
       "slots": {},
@@ -397,7 +860,9 @@
       "category": "section",
       "uses": [],
       "shared": [
-        "Section.astro"
+        "Section.astro",
+        "measured.ts",
+        "types.ts"
       ],
       "variants": {
         "layout": {
@@ -474,6 +939,116 @@
           "type": "string",
           "content": false,
           "description": "Section id; the heading gets `<id>-title`."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
         }
       },
       "slots": {},
@@ -513,7 +1088,9 @@
       "category": "section",
       "uses": [],
       "shared": [
-        "Section.astro"
+        "Section.astro",
+        "measured.ts",
+        "types.ts"
       ],
       "variants": {
         "layout": {
@@ -647,6 +1224,7 @@
         "Button.astro",
         "KitImage.astro",
         "Section.astro",
+        "measured.ts",
         "types.ts"
       ],
       "variants": {
@@ -824,16 +1402,11 @@
                 },
                 "overlay": {
                   "type": "string",
-                  "description": "Colour laid over the image, with its alpha."
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
                 },
                 "size": {
-                  "type": "select",
-                  "options": [
-                    "cover",
-                    "contain",
-                    "auto"
-                  ],
-                  "description": "How the image fills the section."
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
                 },
                 "position": {
                   "type": "string",
@@ -878,6 +1451,15 @@
                 "dark"
               ],
               "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
             },
             "radius": {
               "type": "integer",
@@ -1046,7 +1628,9 @@
       "category": "section",
       "uses": [],
       "shared": [
-        "Section.astro"
+        "Section.astro",
+        "measured.ts",
+        "types.ts"
       ],
       "variants": {
         "layout": {
@@ -1190,16 +1774,11 @@
                 },
                 "overlay": {
                   "type": "string",
-                  "description": "Colour laid over the image, with its alpha."
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
                 },
                 "size": {
-                  "type": "select",
-                  "options": [
-                    "cover",
-                    "contain",
-                    "auto"
-                  ],
-                  "description": "How the image fills the section."
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
                 },
                 "position": {
                   "type": "string",
@@ -1244,6 +1823,15 @@
                 "dark"
               ],
               "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
             },
             "radius": {
               "type": "integer",
@@ -1310,7 +1898,9 @@
       "category": "section",
       "uses": [],
       "shared": [
-        "Section.astro"
+        "Section.astro",
+        "measured.ts",
+        "types.ts"
       ],
       "variants": {
         "columns": {
@@ -1390,11 +1980,6 @@
           },
           "description": "The features, in order (Elementor icon list or icon boxes without images, Gutenberg list of features, Divi blurbs with icons)."
         },
-        "id": {
-          "type": "string",
-          "content": false,
-          "description": "Anchor id of the section; the heading gets `<id>-title`."
-        },
         "bare": {
           "type": "boolean",
           "default": false,
@@ -1406,6 +1991,121 @@
           "default": 3,
           "content": false,
           "description": "With `bare`: the item titles' heading level (the section's plus one)."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Anchor id of the section; the heading gets `<id>-title`."
         }
       },
       "slots": {},
@@ -1650,6 +2350,7 @@
         "KitImage.astro",
         "Section.astro",
         "image.ts",
+        "measured.ts",
         "types.ts"
       ],
       "variants": {
@@ -1974,6 +2675,7 @@
         "Button.astro",
         "KitImage.astro",
         "Section.astro",
+        "measured.ts",
         "types.ts"
       ],
       "variants": {
@@ -2149,6 +2851,116 @@
           "min": 100,
           "max": 2000,
           "description": "Layout cover only: the cover's own height in pixels, as the source sets it (520); absent, the layout's default."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
         }
       },
       "slots": {},
@@ -2198,6 +3010,7 @@
         "KitImage.astro",
         "Section.astro",
         "image.ts",
+        "measured.ts",
         "types.ts"
       ],
       "variants": {
@@ -2329,16 +3142,11 @@
                 },
                 "overlay": {
                   "type": "string",
-                  "description": "Colour laid over the image, with its alpha."
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
                 },
                 "size": {
-                  "type": "select",
-                  "options": [
-                    "cover",
-                    "contain",
-                    "auto"
-                  ],
-                  "description": "How the image fills the section."
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
                 },
                 "position": {
                   "type": "string",
@@ -2383,6 +3191,15 @@
                 "dark"
               ],
               "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
             },
             "radius": {
               "type": "integer",
@@ -2561,7 +3378,9 @@
       "category": "section",
       "uses": [],
       "shared": [
-        "Section.astro"
+        "Section.astro",
+        "measured.ts",
+        "types.ts"
       ],
       "variants": {
         "layout": {
@@ -2655,6 +3474,116 @@
           "type": "string",
           "content": false,
           "description": "Section id, unique per page (two sign-ups on one page need two ids): the heading gets `<id>-title`, the inputs `<id>-email`/`<id>-name`."
+        },
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
         }
       },
       "slots": {},
@@ -2924,6 +3853,7 @@
       "shared": [
         "Button.astro",
         "Section.astro",
+        "measured.ts",
         "types.ts"
       ],
       "variants": {
@@ -3307,6 +4237,7 @@
         "Button.astro",
         "KitImage.astro",
         "Section.astro",
+        "measured.ts",
         "types.ts"
       ],
       "variants": {
@@ -3558,16 +4489,11 @@
                 },
                 "overlay": {
                   "type": "string",
-                  "description": "Colour laid over the image, with its alpha."
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
                 },
                 "size": {
-                  "type": "select",
-                  "options": [
-                    "cover",
-                    "contain",
-                    "auto"
-                  ],
-                  "description": "How the image fills the section."
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
                 },
                 "position": {
                   "type": "string",
@@ -3612,6 +4538,15 @@
                 "dark"
               ],
               "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
             },
             "radius": {
               "type": "integer",
@@ -3698,6 +4633,7 @@
         "KitImage.astro",
         "Section.astro",
         "image.ts",
+        "measured.ts",
         "types.ts"
       ],
       "variants": {
@@ -3861,16 +4797,11 @@
                 },
                 "overlay": {
                   "type": "string",
-                  "description": "Colour laid over the image, with its alpha."
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
                 },
                 "size": {
-                  "type": "select",
-                  "options": [
-                    "cover",
-                    "contain",
-                    "auto"
-                  ],
-                  "description": "How the image fills the section."
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
                 },
                 "position": {
                   "type": "string",
@@ -3915,6 +4846,15 @@
                 "dark"
               ],
               "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
             },
             "radius": {
               "type": "integer",
@@ -3984,6 +4924,7 @@
         "KitImage.astro",
         "Section.astro",
         "image.ts",
+        "measured.ts",
         "types.ts"
       ],
       "variants": {
@@ -4104,7 +5045,9 @@
       "category": "content",
       "uses": [],
       "shared": [
-        "Section.astro"
+        "Section.astro",
+        "measured.ts",
+        "types.ts"
       ],
       "variants": {
         "style": {
@@ -4135,6 +5078,116 @@
         }
       },
       "props": {
+        "measured": {
+          "type": "object",
+          "content": false,
+          "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+          "fields": {
+            "containerPx": {
+              "type": "integer",
+              "min": 0,
+              "max": 2560,
+              "description": "The frame's content width."
+            },
+            "padY": {
+              "type": "integer",
+              "min": 0,
+              "max": 400,
+              "description": "Top and bottom padding."
+            },
+            "padX": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "The frame's side padding (gutter)."
+            },
+            "bg": {
+              "type": "object",
+              "description": "The section's background.",
+              "fields": {
+                "color": {
+                  "type": "string",
+                  "description": "Fill colour: hex, rgb(a) or hsl(a)."
+                },
+                "image": {
+                  "type": "string",
+                  "description": "Background image address (http(s) or root-relative), drawn behind the content."
+                },
+                "overlay": {
+                  "type": "string",
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
+                },
+                "size": {
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
+                },
+                "position": {
+                  "type": "string",
+                  "description": "One or two of center/top/bottom/left/right or percentages."
+                }
+              }
+            },
+            "columns": {
+              "type": "object",
+              "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+              "fields": {
+                "390": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Phone."
+                },
+                "768": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Tablet."
+                },
+                "1280": {
+                  "type": "integer",
+                  "min": 1,
+                  "max": 6,
+                  "description": "Desktop."
+                }
+              }
+            },
+            "gap": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Gap between items."
+            },
+            "tone": {
+              "type": "select",
+              "options": [
+                "light",
+                "dark"
+              ],
+              "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
+            },
+            "radius": {
+              "type": "integer",
+              "min": 0,
+              "max": 200,
+              "description": "Card and item corner radius."
+            },
+            "minHeight": {
+              "type": "integer",
+              "min": 0,
+              "max": 2000,
+              "description": "The section's minimum height."
+            }
+          }
+        },
         "items": {
           "type": "array",
           "required": true,
@@ -4199,6 +5252,7 @@
         "KitImage.astro",
         "Section.astro",
         "image.ts",
+        "measured.ts",
         "types.ts"
       ],
       "variants": {
@@ -4337,6 +5391,7 @@
         "KitImage.astro",
         "Section.astro",
         "image.ts",
+        "measured.ts",
         "types.ts"
       ],
       "variants": {
@@ -4501,16 +5556,11 @@
                 },
                 "overlay": {
                   "type": "string",
-                  "description": "Colour laid over the image, with its alpha."
+                  "description": "Colour or linear/radial gradient laid over the image or the fill."
                 },
                 "size": {
-                  "type": "select",
-                  "options": [
-                    "cover",
-                    "contain",
-                    "auto"
-                  ],
-                  "description": "How the image fills the section."
+                  "type": "string",
+                  "description": "cover, contain or auto; anything else draws as cover."
                 },
                 "position": {
                   "type": "string",
@@ -4555,6 +5605,15 @@
                 "dark"
               ],
               "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+            },
+            "align": {
+              "type": "select",
+              "options": [
+                "start",
+                "center",
+                "end"
+              ],
+              "description": "Where the heading and lead sit; read by a component whose own align is not set."
             },
             "radius": {
               "type": "integer",
