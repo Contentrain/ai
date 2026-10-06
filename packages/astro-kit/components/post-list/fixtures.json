@@ -1,0 +1,387 @@
+[
+  {
+    "name": "grid-3",
+    "props": {
+      "id": "posts",
+      "heading": "Latest posts",
+      "posts": [
+        {
+          "title": "What a careful migration keeps",
+          "href": "/blog/post-1/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-21T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-1.svg",
+            "alt": "Photo 1",
+            "width": 1200,
+            "height": 800
+          }
+        },
+        {
+          "title": "Designing for a hundred pages",
+          "href": "/blog/post-2/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-22T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-2.svg",
+            "alt": "Photo 2",
+            "width": 1200,
+            "height": 800
+          }
+        },
+        {
+          "title": "Redirects, one by one",
+          "href": "/blog/post-3/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-23T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-3.svg",
+            "alt": "Photo 3",
+            "width": 1200,
+            "height": 800
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "list",
+    "props": {
+      "layout": "list",
+      "posts": [
+        {
+          "title": "What a careful migration keeps",
+          "href": "/blog/post-1/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-21T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-1.svg",
+            "alt": "Photo 1",
+            "width": 1200,
+            "height": 800
+          }
+        },
+        {
+          "title": "Designing for a hundred pages",
+          "href": "/blog/post-2/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-22T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-2.svg",
+            "alt": "Photo 2",
+            "width": 1200,
+            "height": 800
+          }
+        },
+        {
+          "title": "Redirects, one by one",
+          "href": "/blog/post-3/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-23T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-3.svg",
+            "alt": "Photo 3",
+            "width": 1200,
+            "height": 800
+          }
+        }
+      ],
+      "excerptLines": 2
+    }
+  },
+  {
+    "name": "featured-4",
+    "props": {
+      "layout": "featured",
+      "columns": "4",
+      "heading": "Journal",
+      "intro": "Notes from the studio.",
+      "posts": [
+        {
+          "title": "What a careful migration keeps",
+          "href": "/blog/post-1/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-21T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-1.svg",
+            "alt": "Photo 1",
+            "width": 1200,
+            "height": 800
+          }
+        },
+        {
+          "title": "Designing for a hundred pages",
+          "href": "/blog/post-2/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-22T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-2.svg",
+            "alt": "Photo 2",
+            "width": 1200,
+            "height": 800
+          }
+        },
+        {
+          "title": "Redirects, one by one",
+          "href": "/blog/post-3/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-23T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-3.svg",
+            "alt": "Photo 3",
+            "width": 1200,
+            "height": 800
+          }
+        },
+        {
+          "title": "A very long title that keeps going well past one line to prove the card wraps it without clipping",
+          "href": "/blog/post-4/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-24T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-4.svg",
+            "alt": "Photo 4",
+            "width": 1200,
+            "height": 800
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "compact",
+    "props": {
+      "layout": "compact",
+      "heading": "Recent",
+      "posts": [
+        {
+          "title": "What a careful migration keeps",
+          "href": "/blog/post-1/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-21T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-1.svg",
+            "alt": "Photo 1",
+            "width": 1200,
+            "height": 800
+          }
+        },
+        {
+          "title": "Designing for a hundred pages",
+          "href": "/blog/post-2/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-22T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-2.svg",
+            "alt": "Photo 2",
+            "width": 1200,
+            "height": 800
+          }
+        },
+        {
+          "title": "Redirects, one by one",
+          "href": "/blog/post-3/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-23T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-3.svg",
+            "alt": "Photo 3",
+            "width": 1200,
+            "height": 800
+          }
+        },
+        {
+          "title": "A very long title that keeps going well past one line to prove the card wraps it without clipping",
+          "href": "/blog/post-4/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-24T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-4.svg",
+            "alt": "Photo 4",
+            "width": 1200,
+            "height": 800
+          }
+        }
+      ],
+      "moreHref": "/blog/",
+      "moreLabel": "All posts"
+    }
+  },
+  {
+    "name": "grid-2-no-parts",
+    "props": {
+      "columns": "2",
+      "showImage": false,
+      "showAuthor": false,
+      "showCategory": false,
+      "posts": [
+        {
+          "title": "What a careful migration keeps",
+          "href": "/blog/post-1/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-21T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-1.svg",
+            "alt": "Photo 1",
+            "width": 1200,
+            "height": 800
+          }
+        },
+        {
+          "title": "Designing for a hundred pages",
+          "href": "/blog/post-2/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-22T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-2.svg",
+            "alt": "Photo 2",
+            "width": 1200,
+            "height": 800
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing-image-excerpt",
+    "props": {
+      "surface": "card",
+      "posts": [
+        {
+          "title": "What a careful migration keeps",
+          "href": "/blog/post-1/",
+          "date": "2026-09-21T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač"
+        },
+        {
+          "title": "Designing for a hundred pages",
+          "href": "/blog/post-2/",
+          "date": "2026-09-22T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač"
+        },
+        {
+          "title": "Redirects, one by one",
+          "href": "/blog/post-3/",
+          "date": "2026-09-23T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač"
+        }
+      ]
+    }
+  },
+  {
+    "name": "single-post",
+    "props": {
+      "posts": [
+        {
+          "title": "What a careful migration keeps",
+          "href": "/blog/post-1/",
+          "excerpt": "What a careful migration keeps: addresses, formatting and rankings, block by block.",
+          "date": "2026-09-21T09:00:00Z",
+          "category": {
+            "label": "Guides",
+            "href": "/category/guides/"
+          },
+          "author": "Mira Kovač",
+          "image": {
+            "src": "/kit-fixtures/photo-1.svg",
+            "alt": "Photo 1",
+            "width": 1200,
+            "height": 800
+          }
+        }
+      ]
+    }
+  }
+]

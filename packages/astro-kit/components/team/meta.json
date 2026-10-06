@@ -15,10 +15,11 @@
       "options": [
         "2",
         "3",
-        "4"
+        "4",
+        "5"
       ],
       "default": "3",
-      "description": "Columns on wide screens; one on phones, two on tablets."
+      "description": "Members per row on wide screens; one on phones, two on tablets."
     },
     "style": {
       "options": [
@@ -35,6 +36,32 @@
       ],
       "default": "accent",
       "description": "The member's role. accent: a small accent-coloured line. plain: body-size text in the text colour, as a byline."
+    },
+    "layout": {
+      "options": [
+        "grid",
+        "list",
+        "featured"
+      ],
+      "default": "grid",
+      "description": "grid: cards in columns. list: one row each, photo beside text. featured: the first member large over a grid."
+    },
+    "imageShape": {
+      "options": [
+        "square",
+        "rounded",
+        "circle"
+      ],
+      "default": "square",
+      "description": "Shape of the portrait."
+    },
+    "align": {
+      "options": [
+        "start",
+        "center"
+      ],
+      "default": "start",
+      "description": "Text and socials from the start edge, or centred."
     }
   },
   "props": {
@@ -85,6 +112,14 @@
             "type": "url",
             "label": "Link",
             "description": "Their profile page; makes the whole entry a link."
+          },
+          "links": {
+            "type": "array",
+            "label": "Profile links",
+            "description": "Addresses of the member's social profiles, in order; each is labelled by the network its host names (LinkedIn, GitHub, …).",
+            "items": {
+              "type": "url"
+            }
           }
         }
       },
@@ -94,6 +129,19 @@
       "type": "string",
       "content": false,
       "description": "Anchor id of the section; the heading gets `<id>-title`."
+    },
+    "bioClamp": {
+      "type": "integer",
+      "min": 2,
+      "max": 4,
+      "content": false,
+      "description": "Clamp a long bio to this many lines; the full text opens in a native <details> (\"Read more\"), no script."
+    },
+    "readMoreLabel": {
+      "type": "string",
+      "default": "Read more",
+      "content": false,
+      "description": "Text of the bio disclosure."
     }
   },
   "slots": {},
@@ -110,7 +158,7 @@
       "divi/et_pb_team_member"
     ]
   },
-  "a11y": "Members are a <ul>; each name is an <h3> under the section's <h2> (an <h2> when the section has no heading), and a linked member's link text is the name. A portrait's text defaults to the name. The section is labelled by its heading when it has one.",
+  "a11y": "Members are a <ul>; each name is an <h3> under the section's <h2> (an <h2> when the section has no heading), and a linked member's link text is the name. A portrait's text defaults to the name. The section is labelled by its heading when it has one. A member with socials keeps the name link and the social links apart (no nested links); a clamped bio opens in a <details> with the whole text.",
   "pattern": {
     "summary": "repeated person units: portrait + name + role",
     "signals": [

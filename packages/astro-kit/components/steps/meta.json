@@ -14,10 +14,12 @@
     "layout": {
       "options": [
         "list",
-        "row"
+        "row",
+        "rail",
+        "alternate"
       ],
       "default": "list",
-      "description": "A vertical list, or one row across the page on wide screens."
+      "description": "list: a vertical list. row: across the page. rail: one rail on the start side. alternate: items alternate either side of a centre rail from md (one rail on phones); DOM order stays chronological."
     },
     "style": {
       "options": [
@@ -26,6 +28,31 @@
       ],
       "default": "numbered",
       "description": "A number badge before each step, or an accent rule beside it."
+    },
+    "kind": {
+      "options": [
+        "steps",
+        "timeline"
+      ],
+      "default": "steps",
+      "description": "steps: a numbered sequence. timeline: a date per item on a vertical rail (the rail layouts below; without a layout it uses rail)."
+    },
+    "marker": {
+      "options": [
+        "number",
+        "dot"
+      ],
+      "default": "number",
+      "description": "What sits on the rail: the style's number badge, or a plain dot (the timeline default)."
+    },
+    "connector": {
+      "options": [
+        "none",
+        "line",
+        "dashed"
+      ],
+      "default": "line",
+      "description": "The rail between items on the rail layouts."
     }
   },
   "props": {
@@ -72,6 +99,16 @@
             "type": "string",
             "label": "Image description",
             "description": "What the image shows; empty if decorative."
+          },
+          "date": {
+            "type": "string",
+            "label": "Date",
+            "description": "A timeline's date as written (\"2019\", \"Mar 2021\"); marked up as a <time> only when it is an ISO date or a year."
+          },
+          "current": {
+            "type": "boolean",
+            "label": "Current",
+            "description": "Marks the latest item (aria-current=\"step\" and a hidden \"Current\")."
           }
         }
       },
@@ -81,6 +118,12 @@
       "type": "string",
       "content": false,
       "description": "Anchor id of the section; the heading gets `<id>-title`."
+    },
+    "currentLabel": {
+      "type": "string",
+      "default": "Current",
+      "content": false,
+      "description": "Visually hidden text on the current item, so it is not shown by colour alone."
     }
   },
   "slots": {},
@@ -97,7 +140,7 @@
       "divi/et_pb_blurb"
     ]
   },
-  "a11y": "Steps are an <ol>, so their order and count are announced; the visible numbers are CSS counters, not text. Each title is an <h3> under the section's <h2>, or an <h2> when the section has no heading. The section is labelled by its heading when it has one.",
+  "a11y": "Steps are an <ol>, so their order and count are announced; the visible numbers are CSS counters, not text. Each title is an <h3> under the section's <h2>, or an <h2> when the section has no heading. The section is labelled by its heading when it has one. A timeline is the same <ol>; a date is a <time datetime> only when machine-readable; the rail and dots are CSS and not in the accessibility tree.",
   "pattern": {
     "summary": "ordered sequence: numbered title + short text units",
     "signals": [

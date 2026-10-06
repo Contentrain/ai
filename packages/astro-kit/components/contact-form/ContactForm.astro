@@ -11,6 +11,7 @@
 // form on WordPress.
 import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
+import Embed from '../embed/Embed.astro'
 import StudioForm from '../../studio/StudioForm.astro'
 import { formHome } from '../../../lib/features'
 import { contactSectionBare } from './contact-form'
@@ -35,12 +36,21 @@ const contact = tv({
     formColumn: 'flex flex-col gap-4',
     formHeading: 'text-xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-2xl',
     form: 'rounded-card',
+    card: 'flex flex-col gap-1 rounded-card border border-line p-4',
+    hours: 'mt-2 whitespace-pre-line text-sm opacity-85',
+    socials: 'mt-2 flex flex-wrap gap-4 text-sm',
   },
   variants: {
     layout: {
       split: { grid: 'md:grid-cols-[2fr_3fr] md:items-start' },
       stacked: {},
+      // Only the form (under its heading): the details, hours and map are left to other sections.
+      'form-only': { grid: 'mx-auto max-w-2xl' },
     },
+    // How the ways to reach you are drawn: a plain list, or a card each (label over value).
+    detailsStyle: { list: {}, cards: { details: 'mt-2 grid gap-3 sm:grid-cols-2' } },
+    // The form on its own surface (the default), or flush on the section's background.
+    panel: { card: {}, none: {} },
     // The stacked column: centred in a reading width, or the section's whole column from its start edge (a page
     // builder's container whose text has no alignment of its own sits left, full width).
     align: { center: {}, start: {} },
@@ -54,7 +64,7 @@ const contact = tv({
   compoundVariants: [
     { layout: 'stacked', align: 'center', class: { grid: 'mx-auto max-w-2xl' } },
   ],
-  defaultVariants: { layout: 'split', tone: 'default', align: 'center' },
+  defaultVariants: { layout: 'split', tone: 'default', align: 'center', detailsStyle: 'list', panel: 'card' },
 })
 
 interface Props {
@@ -65,7 +75,15 @@ interface Props {
   /** The form's own heading, above the form ("Tell us about your project"). */
   formHeading?: string | undefined
   details?: ContactDetail[] | undefined
-  layout?: 'split' | 'stacked' | undefined
+  layout?: 'split' | 'stacked' | 'form-only' | undefined
+  detailsStyle?: 'list' | 'cards' | undefined
+  panel?: 'card' | 'none' | undefined
+  /** Opening hours, as written (line breaks kept). */
+  hours?: string | undefined
+  /** Profile links shown as a row under the details. */
+  socials?: Array<{ label: string, href: string }> | undefined
+  /** A map of the address, loaded only on a click (`Embed`); `address` is also printed so it is never the only way to find you. */
+  map?: { address?: string | undefined, url?: string | undefined, title: string } | undefined
   /** Stacked only (and the details alone, before a Studio form): a centred column, or the whole column from the start edge. */
   align?: 'center' | 'start' | undefined
   /** `after`: the heading follows the introduction and the details (as the source wrote them), titling the form when there is one. */
@@ -74,16 +92,19 @@ interface Props {
   id?: string | undefined
 }
 
-const { model, heading, intro, formHeading, details = [], layout, align, tone, headingPlace = 'top', id = 'contact' } = Astro.props
+const { model, heading, intro, formHeading, details = [], layout, detailsStyle, panel, hours, socials = [], map, align, tone, headingPlace = 'top', id = 'contact' } = Astro.props
 // Nothing to render (Studio not bound and no fallback): a split would leave an empty column — the details stand alone.
 const formShown = formHome(model) !== null
 const bare = contactSectionBare({ formShown, heading, intro, details })
-const s = contact({ layout: formShown ? layout : 'stacked', align, tone })
+// Without a form there is nothing for `form-only` to show: the section falls back to its stacked copy.
+const formOnly = layout === 'form-only' && formShown
+const s = contact({ layout: formShown ? layout : 'stacked', align, tone, detailsStyle, panel })
+const formClass = s.form({ class: panel === 'none' ? 'border-0 bg-transparent p-0 text-current' : undefined })
 const headingId = heading ? `${id}-title` : undefined
 // `after`: the heading goes with the form when there is one, else it follows the details in the copy column.
 const headingTop = headingPlace !== 'after'
-const headingInCopy = Boolean(heading) && (headingTop || !formShown)
-const headingInForm = Boolean(heading) && !headingTop && formShown
+const headingInCopy = Boolean(heading) && !formOnly && (headingTop || !formShown)
+const headingInForm = Boolean(heading) && (formOnly || (!headingTop && formShown))
 // A description list needs a term for every detail; an icon list carried from the source has values only.
 const labelled = details.every(detail => detail.label)
 const LINK = 'underline decoration-line underline-offset-4 hover:decoration-current'
@@ -93,7 +114,7 @@ const FormHeading = heading ? 'h3' : 'h2'
 {!bare && (
 <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
   <div class={s.grid()}>
-    {(heading || intro || details.length > 0) && !(headingInForm && !intro && details.length === 0) && (
+    {!formOnly && (heading || intro || details.length > 0 || hours || socials.length > 0 || map) && !(headingInForm && !hours && socials.length === 0 && !map && !intro && details.length === 0) && (
       <div class={s.copy()}>
         {headingTop && heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
         {intro && <p class={s.intro()}>{intro}</p>}
@@ -101,7 +122,7 @@ const FormHeading = heading ? 'h3' : 'h2'
           ? (
               <dl class={s.details()}>
                 {details.map(detail => (
-                  <div>
+                  <div class={detailsStyle === 'cards' ? s.card() : undefined}>
                     <dt class={s.term()}>{detail.label}</dt>
                     <dd class={s.value()}>{detail.href ? <a href={detail.href} class={LINK}>{detail.value}</a> : detail.value}</dd>
                   </div>
@@ -111,13 +132,25 @@ const FormHeading = heading ? 'h3' : 'h2'
           : (
               <ul class={s.details()}>
                 {details.map(detail => (
-                  <li class={s.value()}>
+                  <li class={s.value({ class: detailsStyle === 'cards' ? s.card() : undefined })}>
                     {detail.label && <span class={s.term()}>{detail.label}: </span>}
                     {detail.href ? <a href={detail.href} class={LINK}>{detail.value}</a> : detail.value}
                   </li>
                 ))}
               </ul>
             ))}
+        {hours && <p class={s.hours()}>{hours}</p>}
+        {socials.length > 0 && (
+          <ul class={s.socials()}>
+            {socials.map(link => <li><a href={link.href} class={LINK}>{link.label}</a></li>)}
+          </ul>
+        )}
+        {map && (
+          <div>
+            <Embed address={map.address} url={map.url} title={map.title} aspect="map" width="page" />
+            {map.address && <p class="text-sm opacity-85">{map.address}</p>}
+          </div>
+        )}
         {!headingTop && headingInCopy && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
       </div>
     )}
@@ -126,10 +159,10 @@ const FormHeading = heading ? 'h3' : 'h2'
           <div class={s.formColumn()}>
             {headingInForm && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
             {formHeading && <FormHeading class={s.formHeading()}>{formHeading}</FormHeading>}
-            <StudioForm model={model} class={s.form()} />
+            <StudioForm model={model} class={formClass} />
           </div>
         )
-      : <StudioForm model={model} class={s.form()} />)}
+      : <StudioForm model={model} class={formClass} />)}
   </div>
 </Section>
 )}

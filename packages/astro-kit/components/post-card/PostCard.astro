@@ -50,6 +50,8 @@ interface Props {
   layout?: 'vertical' | 'horizontal' | 'minimal' | undefined
   surface?: 'plain' | 'card' | undefined
   byline?: 'inline' | 'below' | undefined
+  /** Clamp the excerpt to this many lines; absent, the layout's own (3 vertical, 2 otherwise). */
+  excerptLines?: 2 | 3 | 4 | undefined
   /** The title in the site's link colour, as themes that colour every link do (Hello Elementor). */
   linkTitle?: boolean | undefined
   /** The image's `sizes` hint; absent, the card's own guess. A list passes the slot its columns give. */
@@ -60,7 +62,7 @@ interface Props {
   imageAspect?: string | undefined
 }
 
-const { title, href, excerpt, date: rawDate, locale = 'en', image, category, author, headingLevel = 2, layout, surface, byline, linkTitle, sizes, imageHeight, imageAspect } = Astro.props
+const { title, href, excerpt, date: rawDate, locale = 'en', image, category, author, headingLevel = 2, layout, surface, byline, linkTitle, excerptLines, sizes, imageHeight, imageAspect } = Astro.props
 const date = rawDate === undefined ? undefined : new Date(rawDate)
 const slots = card({ layout, surface, byline })
 const below = byline === 'below'
@@ -97,7 +99,7 @@ const Heading = `h${headingLevel}` as 'h2' | 'h3'
         {date && <time datetime={date.toISOString()}>{shown}</time>}
       </p>
     )}
-    {excerpt && <p class={slots.excerpt()}>{excerpt}</p>}
+    {excerpt && <p class={slots.excerpt({ class: excerptLines ? { 2: 'line-clamp-2', 3: 'line-clamp-3', 4: 'line-clamp-4' }[excerptLines] : undefined })}>{excerpt}</p>}
     {!below && author && <p class="text-sm text-ink-muted">{author}</p>}
   </div>
 </article>

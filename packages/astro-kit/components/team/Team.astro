@@ -12,6 +12,9 @@ const team = tv({
     heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
     intro: 'text-lg opacity-80',
     list: 'grid gap-6 sm:grid-cols-2 md:gap-8',
+    socials: 'relative z-10 mt-1 flex flex-wrap gap-3 text-sm',
+    social: 'rounded text-accent-text underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    more: 'text-pretty opacity-80 [&>summary]:cursor-pointer [&>summary]:text-sm [&>summary]:font-medium [&>summary]:text-accent-text',
     member: 'group relative flex flex-col gap-3',
     portrait: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
     name: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)]',
@@ -23,7 +26,16 @@ const team = tv({
       '2': {},
       '3': { list: 'md:grid-cols-3' },
       '4': { list: 'lg:grid-cols-4' },
+      '5': { list: 'md:grid-cols-3 lg:grid-cols-5' },
     },
+    // How the members are laid out: a grid, one stacked row each (photo beside text), or the first member large over a grid.
+    layout: {
+      grid: {},
+      list: { list: 'grid-cols-1 sm:grid-cols-1', member: 'sm:flex-row sm:items-start sm:gap-6', portrait: 'sm:w-48 sm:shrink-0' },
+      featured: { list: '[&>li:first-child]:col-span-full [&>li:first-child]:sm:flex-row [&>li:first-child]:sm:gap-8 [&>li:first-child_.kit-portrait]:sm:w-1/2' },
+    },
+    imageShape: { square: {}, rounded: { portrait: 'rounded-2xl' }, circle: { portrait: 'rounded-full' } },
+    align: { start: {}, center: { member: 'items-center text-center', socials: 'justify-center' } },
     style: {
       card: { member: 'rounded-card border border-line p-6', portrait: '-mx-6 -mt-6 mb-2 rounded-b-none' },
       plain: {},
@@ -31,7 +43,7 @@ const team = tv({
     // accent: a small accent line. plain: body-size text in the text colour, as a byline.
     roleStyle: { accent: {}, plain: { role: 'text-[length:var(--text-body,1rem)] font-normal text-current' } },
   },
-  defaultVariants: { columns: '3', style: 'card', roleStyle: 'accent' },
+  defaultVariants: { columns: '3', layout: 'grid', imageShape: 'square', align: 'start', style: 'card', roleStyle: 'accent' },
 })
 
 interface Member {
@@ -42,20 +54,38 @@ interface Member {
   image?: ImageSource | undefined
   imageAlt?: string | undefined
   href?: string | undefined
+  /** Profile addresses (the contract's `links[]`); each is labelled by the network its host names, never an invented one. */
+  links?: string[] | undefined
 }
 
 interface Props {
   heading?: string | undefined
   intro?: string | undefined
   items: Member[]
-  columns?: '2' | '3' | '4' | undefined
+  columns?: '2' | '3' | '4' | '5' | undefined
+  layout?: 'grid' | 'list' | 'featured' | undefined
+  imageShape?: 'square' | 'rounded' | 'circle' | undefined
+  align?: 'start' | 'center' | undefined
+  /** Clamp a long bio to this many lines with the rest in a native `<details>` ("Read more"). */
+  bioClamp?: 2 | 3 | 4 | undefined
+  readMoreLabel?: string | undefined
   style?: 'card' | 'plain' | undefined
   roleStyle?: 'accent' | 'plain' | undefined
   id?: string | undefined
 }
 
-const { heading, intro, items, columns, style, roleStyle, id } = Astro.props
-const s = team({ columns, style, roleStyle })
+const { heading, intro, items, columns, layout, imageShape, align, bioClamp, readMoreLabel = 'Read more', style, roleStyle, id } = Astro.props
+const s = team({ columns, layout, imageShape, align, style, roleStyle })
+// The network a profile address belongs to, read from its host (`linkedin.com` → LinkedIn); an unknown host is shown as itself.
+const NETWORKS: Record<string, string> = { 'linkedin.com': 'LinkedIn', 'github.com': 'GitHub', 'x.com': 'X', 'twitter.com': 'X', 'instagram.com': 'Instagram', 'facebook.com': 'Facebook', 'youtube.com': 'YouTube', 'dribbble.com': 'Dribbble', 'behance.net': 'Behance', 'medium.com': 'Medium' }
+const profile = (href: string) => {
+  let host = href
+  try { host = new URL(href).hostname.replace(/^www\./, '') } catch { /* a relative or mailto address keeps its own text */ }
+  return { href, label: NETWORKS[host] ?? host }
+}
+const clamp = { 2: 'line-clamp-2', 3: 'line-clamp-3', 4: 'line-clamp-4' } as const
+// A bio that fits the clamp needs no disclosure: short means about 160 characters per two lines, a rough, build-time guess.
+const longBio = (bio: string) => bioClamp !== undefined && bio.length > bioClamp * 80
 const headingId = heading && id ? `${id}-title` : undefined
 // One level under the section heading, or the section's heading when there is none.
 const NameHeading = heading ? 'h3' : 'h2'
@@ -72,14 +102,23 @@ const NameHeading = heading ? 'h3' : 'h2'
       {items.map(member => (
         <li class={s.member()}>
           {/* The portrait's text defaults to the name: a photo of a named person is not decoration. */}
-          {imageOf(member.image, member.imageAlt ?? member.name) && <div class={s.portrait()}><KitImage image={imageOf(member.image, member.imageAlt ?? member.name)!} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" class="aspect-square w-full object-cover" /></div>}
+          {imageOf(member.image, member.imageAlt ?? member.name) && <div class={`${s.portrait()} kit-portrait`}><KitImage image={imageOf(member.image, member.imageAlt ?? member.name)!} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" class="aspect-square w-full object-cover" /></div>}
           <NameHeading class={s.name()}>
             {member.href
               ? <a href={member.href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{member.name}</a>
               : member.name}
           </NameHeading>
           {member.role && <p class={s.role()}>{member.role}</p>}
-          {member.bio && <p class={s.bio()} data-kit-text>{member.bio}</p>}
+          {member.bio && (longBio(member.bio)
+            ? <details class={`${s.more()} group/bio`}><summary class="list-none"><span class={`${s.bio()} ${clamp[bioClamp!]} group-open/bio:hidden`} data-kit-text>{member.bio}</span><span class="block">{readMoreLabel}</span></summary><p class={s.bio()} data-kit-text>{member.bio}</p></details>
+            : <p class={s.bio()} data-kit-text>{member.bio}</p>)}
+          {member.links && member.links.length > 0 && (
+            <ul class={s.socials()}>
+              {member.links.map(profile).map(link => (
+                <li><a href={link.href} class={s.social()} aria-label={`${member.name} on ${link.label}`}>{link.label}</a></li>
+              ))}
+            </ul>
+          )}
         </li>
       ))}
     </ul>

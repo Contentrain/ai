@@ -6,16 +6,176 @@
       "heading": "Get in touch",
       "intro": "Questions, corrections and invitations are all welcome. We answer within two working days.",
       "details": [
-        { "label": "Email", "value": "hello@northwind.example", "href": "mailto:hello@northwind.example" },
-        { "label": "Phone", "value": "+351 21 000 0000", "href": "tel:+351210000000" },
-        { "label": "Studio", "value": "Rua das Flores 12, Lisbon" }
+        {
+          "label": "Email",
+          "value": "hello@northwind.example",
+          "href": "mailto:hello@northwind.example"
+        },
+        {
+          "label": "Phone",
+          "value": "+351 21 000 0000",
+          "href": "tel:+351210000000"
+        },
+        {
+          "label": "Studio",
+          "value": "Rua das Flores 12, Lisbon"
+        }
       ]
     }
   },
-  { "name": "stacked-muted", "props": { "model": "contact-submissions", "heading": "Write to us", "intro": "We read every message and answer within two working days.", "layout": "stacked", "tone": "muted", "id": "write" } },
-  { "name": "stacked-start", "props": { "model": "contact-submissions", "intro": "Tell us what you make and when you want to launch.", "details": [{ "value": "Studio 4, Harbour Lane" }], "layout": "stacked", "align": "start", "id": "start" } },
-  { "name": "split-inverse", "props": { "model": "contact-submissions", "heading": "Press", "tone": "inverse", "id": "press", "details": [{ "label": "Press office", "value": "press@northwind.example", "href": "mailto:press@northwind.example" }] } },
-  { "name": "stacked-accent", "props": { "model": "newsletter-requests", "heading": "Request a print copy", "intro": "Print copies ship in the first week of each quarter.", "layout": "stacked", "tone": "accent", "id": "print" } },
-  { "name": "form-heading", "props": { "model": "contact-submissions", "heading": "Contact", "intro": "Tell us where you are and what you need.", "formHeading": "Tell us about your project", "details": [{ "label": "Address", "value": "12 Harbour Street, Leith" }] } },
-  { "name": "heading-after", "props": { "model": "contact-submissions", "heading": "Tell us about your project", "intro": "Write to us and we answer within two working days.", "details": [{"value": "Email the studio", "href": "mailto:hello@northwind.example"}], "headingPlace": "after"} }
+  {
+    "name": "stacked-muted",
+    "props": {
+      "model": "contact-submissions",
+      "heading": "Write to us",
+      "intro": "We read every message and answer within two working days.",
+      "layout": "stacked",
+      "tone": "muted",
+      "id": "write"
+    }
+  },
+  {
+    "name": "stacked-start",
+    "props": {
+      "model": "contact-submissions",
+      "intro": "Tell us what you make and when you want to launch.",
+      "details": [
+        {
+          "value": "Studio 4, Harbour Lane"
+        }
+      ],
+      "layout": "stacked",
+      "align": "start",
+      "id": "start"
+    }
+  },
+  {
+    "name": "split-inverse",
+    "props": {
+      "model": "contact-submissions",
+      "heading": "Press",
+      "tone": "inverse",
+      "id": "press",
+      "details": [
+        {
+          "label": "Press office",
+          "value": "press@northwind.example",
+          "href": "mailto:press@northwind.example"
+        }
+      ]
+    }
+  },
+  {
+    "name": "stacked-accent",
+    "props": {
+      "model": "newsletter-requests",
+      "heading": "Request a print copy",
+      "intro": "Print copies ship in the first week of each quarter.",
+      "layout": "stacked",
+      "tone": "accent",
+      "id": "print"
+    }
+  },
+  {
+    "name": "form-heading",
+    "props": {
+      "model": "contact-submissions",
+      "heading": "Contact",
+      "intro": "Tell us where you are and what you need.",
+      "formHeading": "Tell us about your project",
+      "details": [
+        {
+          "label": "Address",
+          "value": "12 Harbour Street, Leith"
+        }
+      ]
+    }
+  },
+  {
+    "name": "heading-after",
+    "props": {
+      "model": "contact-submissions",
+      "heading": "Tell us about your project",
+      "intro": "Write to us and we answer within two working days.",
+      "details": [
+        {
+          "value": "Email the studio",
+          "href": "mailto:hello@northwind.example"
+        }
+      ],
+      "headingPlace": "after"
+    }
+  },
+  {
+    "name": "form-only",
+    "props": {
+      "model": "contact-submissions",
+      "heading": "Write to us",
+      "layout": "form-only",
+      "panel": "none"
+    }
+  },
+  {
+    "name": "cards-hours-socials",
+    "props": {
+      "model": "contact-submissions",
+      "heading": "Find us",
+      "detailsStyle": "cards",
+      "details": [
+        {
+          "label": "Email",
+          "value": "hello@northwind.example",
+          "href": "mailto:hello@northwind.example"
+        },
+        {
+          "label": "Phone",
+          "value": "+351 21 000 0000",
+          "href": "tel:+351210000000"
+        },
+        {
+          "label": "Studio",
+          "value": "Rua das Flores 12, Lisbon"
+        }
+      ],
+      "hours": "Mon–Fri 9:00–18:00\nSat 10:00–14:00",
+      "socials": [
+        {
+          "label": "Instagram",
+          "href": "https://instagram.com/northwind"
+        },
+        {
+          "label": "LinkedIn",
+          "href": "https://linkedin.com/company/northwind"
+        }
+      ]
+    }
+  },
+  {
+    "name": "map-click-to-load",
+    "props": {
+      "model": "contact-submissions",
+      "heading": "Visit",
+      "layout": "stacked",
+      "details": [
+        {
+          "label": "Email",
+          "value": "hello@northwind.example",
+          "href": "mailto:hello@northwind.example"
+        },
+        {
+          "label": "Phone",
+          "value": "+351 21 000 0000",
+          "href": "tel:+351210000000"
+        },
+        {
+          "label": "Studio",
+          "value": "Rua das Flores 12, Lisbon"
+        }
+      ],
+      "map": {
+        "address": "Rua das Flores 12, Lisbon",
+        "title": "Our studio"
+      }
+    }
+  }
 ]

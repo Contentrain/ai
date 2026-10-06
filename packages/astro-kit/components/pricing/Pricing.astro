@@ -2,7 +2,9 @@
 // Price plans side by side: a name, a price and what it includes, with a
 // button each. The featured plan is raised and carries a badge, so it stands
 // out by more than its colour. Each plan's features are a markdown list,
-// rendered at build time.
+// rendered at build time. Variants: `layout="table"` is a comparison table
+// (plan columns, feature rows); `billingToggle="radio"` swaps monthly and yearly
+// prices with two radio inputs and CSS `:has()` — no script.
 import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
@@ -14,6 +16,12 @@ const pricing = tv({
     heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
     intro: 'text-lg opacity-80',
     list: 'grid items-stretch gap-6 sm:grid-cols-2',
+    toggle: 'mx-auto mb-8 flex w-fit rounded-full border border-line p-1',
+    toggleOption: 'rounded-full px-4 py-1.5 text-sm font-medium has-[:checked]:bg-accent has-[:checked]:text-accent-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent',
+    tableWrap: 'overflow-x-auto',
+    table: 'w-full min-w-[32rem] border-collapse text-start',
+    cell: 'border-b border-line px-4 py-3 text-center align-top',
+    rowHead: 'border-b border-line px-4 py-3 text-start font-normal',
     plan: 'relative flex flex-col gap-5 rounded-card border border-line bg-surface p-6 text-ink md:p-8',
     badge: 'absolute -top-3 start-6 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-ink',
     name: 'text-lg [font-weight:var(--font-weight-heading,600)]',
@@ -30,9 +38,16 @@ const pricing = tv({
       '3': { list: 'lg:grid-cols-3' },
       '4': { list: 'lg:grid-cols-4' },
     },
+    // Which mark leads each feature in the cards: a check, a dot or none (the markdown list's own bullets).
+    featureStyle: {
+      check: { features: '[&_ul]:list-none [&_ul]:ps-0 [&_li]:flex [&_li]:gap-2 [&_li]:before:shrink-0 [&_li]:before:font-semibold [&_li]:before:text-accent-text [&_li]:before:content-["✓"]' },
+      dot: { features: '[&_ul]:list-none [&_ul]:ps-0 [&_li]:flex [&_li]:gap-2 [&_li]:before:mt-2 [&_li]:before:size-1.5 [&_li]:before:shrink-0 [&_li]:before:rounded-full [&_li]:before:bg-accent [&_li]:before:content-[""]' },
+      plain: {},
+    },
+    compact: { true: { list: 'gap-4', plan: 'gap-3 p-4 md:p-5', amount: 'text-3xl' }, false: {} },
     tone: { default: {}, muted: { plan: 'border-transparent' }, inverse: { plan: 'border-transparent' }, accent: { intro: 'opacity-100', plan: 'border-transparent', badge: 'bg-ink text-surface' } },
   },
-  defaultVariants: { columns: '3', tone: 'default' },
+  defaultVariants: { columns: '3', featureStyle: 'plain', compact: false, tone: 'default' },
 })
 
 interface Plan {
@@ -45,6 +60,11 @@ interface Plan {
   ctaLabel?: string | undefined
   ctaHref?: string | undefined
   featured?: boolean | undefined
+  /** A free-text badge ("Best value"); a featured plan without one reads `featuredLabel`. */
+  badge?: string | undefined
+  /** The other billing period's price and period (`billingToggle="radio"`). */
+  priceAlt?: string | undefined
+  periodAlt?: string | undefined
 }
 
 interface Props {
@@ -54,12 +74,28 @@ interface Props {
   /** Badge on the featured plan. */
   featuredLabel?: string | undefined
   columns?: '2' | '3' | '4' | undefined
+  /** `cards` side by side, or one comparison `table` (plans as columns, features as rows). */
+  layout?: 'cards' | 'table' | undefined
+  featureStyle?: 'check' | 'dot' | 'plain' | undefined
+  compact?: boolean | undefined
+  /** `radio`: two labelled radios swap each plan's price for its `priceAlt` — no script. */
+  billingToggle?: 'none' | 'radio' | undefined
+  /** Labels of the toggle's two options, and its legend for screen readers. */
+  billingLabels?: { main: string, alt: string, legend: string } | undefined
+  /** Table cell texts for screen readers. */
+  includedLabel?: string | undefined
+  notIncludedLabel?: string | undefined
   tone?: Tone | undefined
   id?: string | undefined
 }
 
-const { heading, intro, plans, featuredLabel = 'Most popular', columns, tone, id } = Astro.props
-const s = pricing({ columns, tone })
+const { heading, intro, plans, featuredLabel = 'Most popular', columns, layout = 'cards', featureStyle, compact, billingToggle = 'none', billingLabels = { main: 'Monthly', alt: 'Yearly', legend: 'Billing period' }, includedLabel = 'Included', notIncludedLabel = 'Not included', tone, id = 'pricing' } = Astro.props
+const s = pricing({ columns, featureStyle, compact: compact ?? false, tone })
+const toggled = billingToggle === 'radio' && plans.some(plan => plan.priceAlt)
+// The cards' list items, as plain strings, for the table's feature rows (the markdown list's `- ` / `* ` lines).
+const itemsOf = (md?: string) => (md ?? '').split('\n').flatMap((line) => { const m = /^\s*[-*]\s+(.*\S)/.exec(line); return m ? [m[1]!.replace(/[*_`]/g, '')] : [] })
+const rows = layout === 'table' ? [...new Set(plans.flatMap(plan => itemsOf(plan.features)))] : []
+const included = plans.map(plan => new Set(itemsOf(plan.features)))
 const headingId = heading && id ? `${id}-title` : undefined
 // One level under the section heading, or the section's heading when there is none.
 const PlanHeading = heading ? 'h3' : 'h2'
@@ -73,24 +109,84 @@ const features = await Promise.all(plans.map(plan => renderMarkdown(plan.feature
         {intro && <p class={s.intro()} data-kit-text>{intro}</p>}
       </header>
     )}
-    <ul class={s.list()}>
-      {plans.map((plan, i) => (
-        <li class={s.plan({ class: plan.featured ? 'ring-2 ring-accent shadow-lg md:-my-2 md:py-10' : undefined })}>
-          {plan.featured && <p class={s.badge()}>{featuredLabel}</p>}
-          <PlanHeading class={s.name()}>{plan.name}</PlanHeading>
-          <p class={s.price()}>
-            <span class={s.amount()}>{plan.price}</span>
-            {plan.period && <span class={s.period()}>{plan.period}</span>}
-          </p>
-          {plan.description && <p class={s.description()} data-kit-text>{plan.description}</p>}
-          {features[i] && <div class={s.features()} set:html={features[i]} />}
-          {plan.ctaLabel && plan.ctaHref && (
-            <div class={s.action()}>
-              <Button action={{ label: plan.ctaLabel, href: plan.ctaHref, style: plan.featured ? 'primary' : 'ghost' }} class="w-full" />
-            </div>
-          )}
-        </li>
-      ))}
-    </ul>
+    {layout === 'table' ? (
+      <div class={s.tableWrap()} tabindex="0" role="region" aria-labelledby={headingId} aria-label={headingId ? undefined : plans.map(plan => plan.name).join(', ')}>
+        <table class={s.table()}>
+          <caption class="sr-only">{heading ?? plans.map(plan => plan.name).join(', ')}</caption>
+          <thead>
+            <tr>
+              <td class={s.cell()} />
+              {plans.map(plan => (
+                <th scope="col" class={s.cell({ class: plan.featured ? 'bg-surface-muted' : undefined })}>
+                  <span class="block text-lg [font-weight:var(--font-weight-heading,600)]">{plan.name}</span>
+                  <span class="block text-2xl [font-weight:var(--font-weight-heading,700)]">{plan.price}</span>
+                  {plan.period && <span class="block text-sm opacity-75">{plan.period}</span>}
+                  {(plan.badge ?? (plan.featured ? featuredLabel : undefined)) && <span class="mt-1 inline-block rounded-full bg-accent px-3 py-0.5 text-xs font-semibold text-accent-ink">{plan.badge ?? featuredLabel}</span>}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(row => (
+              <tr>
+                <th scope="row" class={s.rowHead()}>{row}</th>
+                {plans.map((plan, i) => (
+                  <td class={s.cell({ class: plan.featured ? 'bg-surface-muted' : undefined })}>
+                    {included[i]!.has(row)
+                      ? <><span aria-hidden="true">✓</span><span class="sr-only">{includedLabel}</span></>
+                      : <><span aria-hidden="true" class="opacity-50">–</span><span class="sr-only">{notIncludedLabel}</span></>}
+                  </td>
+                ))}
+              </tr>
+            ))}
+            {plans.some(plan => plan.ctaLabel && plan.ctaHref) && (
+              <tr>
+                <td class={s.cell()} />
+                {plans.map(plan => (
+                  <td class={s.cell({ class: plan.featured ? 'bg-surface-muted' : undefined })}>
+                    {plan.ctaLabel && plan.ctaHref && <Button action={{ label: plan.ctaLabel, href: plan.ctaHref, style: plan.featured ? 'primary' : 'ghost' }} />}
+                  </td>
+                ))}
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div class={toggled ? '[&:has(input[value=alt]:checked)_[data-price=main]]:hidden [&:not(:has(input[value=alt]:checked))_[data-price=alt]]:hidden' : undefined}>
+        {toggled && (
+          <fieldset class={s.toggle()}>
+            <legend class="sr-only">{billingLabels.legend}</legend>
+            <label class={s.toggleOption()}><input type="radio" name={`${id}-billing`} value="main" checked class="sr-only" />{billingLabels.main}</label>
+            <label class={s.toggleOption()}><input type="radio" name={`${id}-billing`} value="alt" class="sr-only" />{billingLabels.alt}</label>
+          </fieldset>
+        )}
+        <ul class={s.list()}>
+          {plans.map((plan, i) => (
+            <li class={s.plan({ class: plan.featured ? 'ring-2 ring-accent shadow-lg md:-my-2 md:py-10' : undefined })}>
+              {(plan.badge ?? (plan.featured ? featuredLabel : undefined)) && <p class={s.badge()}>{plan.badge ?? featuredLabel}</p>}
+              <PlanHeading class={s.name()}>{plan.name}</PlanHeading>
+              <p class={s.price()} data-price="main">
+                <span class={s.amount()}>{plan.price}</span>
+                {plan.period && <span class={s.period()}>{plan.period}</span>}
+              </p>
+              {toggled && plan.priceAlt && (
+                <p class={s.price()} data-price="alt">
+                  <span class={s.amount()}>{plan.priceAlt}</span>
+                  {plan.periodAlt && <span class={s.period()}>{plan.periodAlt}</span>}
+                </p>
+              )}
+              {plan.description && <p class={s.description()} data-kit-text>{plan.description}</p>}
+              {features[i] && <div class={s.features()} set:html={features[i]} />}
+              {plan.ctaLabel && plan.ctaHref && (
+                <div class={s.action()}>
+                  <Button action={{ label: plan.ctaLabel, href: plan.ctaHref, style: plan.featured ? 'primary' : 'ghost' }} class="w-full" />
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
   </Section>
 )}

@@ -1,0 +1,110 @@
+---
+// A list of posts as cards: a grid, stacked rows, a featured first post over a
+// grid, or a compact title-and-date list. The posts are the site's own — fed
+// by the Contentrain query SDK, never copied from a page — and the `show*`
+// switches decide which parts of each card the design displays.
+import { tv } from 'tailwind-variants'
+import Section from '../_shared/Section.astro'
+import PostCard from '../post-card/PostCard.astro'
+import type { ImageInput, LinkInput } from '../_shared/types'
+
+export interface PostItem {
+  title: string
+  href: string
+  excerpt?: string | undefined
+  date?: Date | string | undefined
+  image?: ImageInput | undefined
+  category?: LinkInput | undefined
+  author?: string | undefined
+}
+
+const list = tv({
+  slots: {
+    header: 'mb-10 flex max-w-2xl flex-col gap-3',
+    heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
+    intro: 'text-lg opacity-80',
+    items: 'grid gap-8',
+    more: 'mt-10',
+  },
+  variants: {
+    layout: {
+      grid: { items: 'sm:grid-cols-2' },
+      list: { items: 'gap-6' },
+      // The first post spans the whole row, image beside text; the others fill the grid under it.
+      featured: { items: 'sm:grid-cols-2 [&>li:first-child]:sm:col-span-2' },
+      compact: { items: 'gap-4' },
+    },
+    columns: { '2': {}, '3': {}, '4': {} },
+  },
+  compoundVariants: [
+    { layout: ['grid', 'featured'], columns: '3', class: { items: 'lg:grid-cols-3 [&>li:first-child]:lg:col-span-3' } },
+    { layout: ['grid', 'featured'], columns: '4', class: { items: 'md:grid-cols-2 lg:grid-cols-4 [&>li:first-child]:lg:col-span-4' } },
+  ],
+  defaultVariants: { layout: 'grid', columns: '3' },
+})
+
+interface Props {
+  heading?: string | undefined
+  intro?: string | undefined
+  posts: PostItem[]
+  layout?: 'grid' | 'list' | 'featured' | 'compact' | undefined
+  /** Cards per row on wide screens (grid and featured). */
+  columns?: '2' | '3' | '4' | undefined
+  /** Which parts of a card the design shows. */
+  showImage?: boolean | undefined
+  showExcerpt?: boolean | undefined
+  showAuthor?: boolean | undefined
+  showCategory?: boolean | undefined
+  excerptLines?: 2 | 3 | 4 | undefined
+  /** BCP 47 locale the dates are written in. */
+  locale?: string | undefined
+  /** Card surface: none, or each post its own card. */
+  surface?: 'plain' | 'card' | undefined
+  /** Where the full archive lives; with `moreLabel` a link follows the list. */
+  moreHref?: string | undefined
+  moreLabel?: string | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  id?: string | undefined
+}
+
+const { heading, intro, posts, layout = 'grid', columns, showImage = true, showExcerpt = true, showAuthor = true, showCategory = true, excerptLines, locale, surface, moreHref, moreLabel, tone, id = 'posts' } = Astro.props
+const s = list({ layout, columns })
+const headingId = heading ? `${id}-title` : undefined
+// Cards sit one heading level under the section's; with no section heading they are the page's h2s.
+const headingLevel = heading ? 3 : 2
+const sizes = layout === 'list' || layout === 'compact' ? '256px' : columns === '4' ? '(min-width: 1024px) 25vw, 50vw' : columns === '2' ? '(min-width: 640px) 50vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'
+// A featured first post is read as a horizontal card; the rest take the grid's vertical one.
+const cardLayout = (i: number) => layout === 'compact' ? 'minimal' : layout === 'list' || (layout === 'featured' && i === 0) ? 'horizontal' : 'vertical'
+---
+{posts.length > 0 && (
+  <Section tone={tone} id={id} aria-labelledby={headingId}>
+    {(heading || intro) && (
+      <header class={s.header()}>
+        {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+        {intro && <p class={s.intro()} data-kit-text>{intro}</p>}
+      </header>
+    )}
+    <ul class={s.items()}>
+      {posts.map((post, i) => (
+        <li>
+          <PostCard
+            title={post.title}
+            href={post.href}
+            excerpt={showExcerpt && layout !== 'compact' ? post.excerpt : undefined}
+            date={post.date}
+            locale={locale}
+            image={showImage && layout !== 'compact' ? post.image : undefined}
+            category={showCategory && layout !== 'compact' ? post.category : undefined}
+            author={showAuthor && layout !== 'compact' ? post.author : undefined}
+            headingLevel={headingLevel}
+            layout={cardLayout(i)}
+            surface={surface}
+            excerptLines={excerptLines}
+            sizes={sizes}
+          />
+        </li>
+      ))}
+    </ul>
+    {moreHref && moreLabel && <p class={s.more()}><a href={moreHref} class="font-medium text-accent-text underline underline-offset-4">{moreLabel}</a></p>}
+  </Section>
+)}

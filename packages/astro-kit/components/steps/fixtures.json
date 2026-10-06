@@ -1,7 +1,219 @@
 [
-  {"name": "list-numbered", "props": {"id": "how", "heading": "How it works", "intro": "Three steps from WordPress to a static site.", "items": [{"title": "Connect", "text": "Point us at your site; we read everything it publishes."}, {"title": "Review", "text": "Check the plan: every page, model and redirect."}, {"title": "Launch", "text": "Deploy the new site; every old address still works."}]}},
-  {"name": "row-plain-images", "props": {"layout": "row", "style": "plain", "heading": "Our process", "items": [{"title": "Discover", "text": "We learn the site and its readers.", "image": "/kit-fixtures/photo-1.svg"}, {"title": "Design", "text": "We draw the pages and the system.", "image": "/kit-fixtures/photo-2.svg"}, {"title": "Build", "text": "We ship it, fast and accessible.", "image": "/kit-fixtures/photo-3.svg", "imageAlt": "A laptop showing the finished site"}]}},
-  {"name": "row-numbered", "props": {"layout": "row", "items": [{"title": "Sign up", "text": "One minute, no card."}, {"title": "Import", "text": "Bring your content."}, {"title": "Edit", "text": "Change it in Studio."}, {"title": "Publish", "text": "Push and it is live."}]}},
-  {"name": "source-numbers", "props": {"heading": "Getting started", "items": [{"number": "01", "title": "Connect", "text": "Point Calm Status at the services you already monitor."}, {"number": "02", "title": "Write", "text": "Pick the words customers see for each kind of problem."}, {"number": "03", "title": "Publish", "text": "Put the page live on your own domain."}]}},
-  {"name": "row-plain-source-numbers", "props": {"layout": "row", "style": "plain", "items": [{"number": "Step 1", "title": "Call", "text": "We learn what you make and who buys it."}, {"number": "Step 2", "title": "Design and build", "text": "Four weeks of weekly previews."}, {"number": "Step 3", "title": "Launch", "text": "We switch it on together."}]}}
+  {
+    "name": "list-numbered",
+    "props": {
+      "id": "how",
+      "heading": "How it works",
+      "intro": "Three steps from WordPress to a static site.",
+      "items": [
+        {
+          "title": "Connect",
+          "text": "Point us at your site; we read everything it publishes."
+        },
+        {
+          "title": "Review",
+          "text": "Check the plan: every page, model and redirect."
+        },
+        {
+          "title": "Launch",
+          "text": "Deploy the new site; every old address still works."
+        }
+      ]
+    }
+  },
+  {
+    "name": "row-plain-images",
+    "props": {
+      "layout": "row",
+      "style": "plain",
+      "heading": "Our process",
+      "items": [
+        {
+          "title": "Discover",
+          "text": "We learn the site and its readers.",
+          "image": "/kit-fixtures/photo-1.svg"
+        },
+        {
+          "title": "Design",
+          "text": "We draw the pages and the system.",
+          "image": "/kit-fixtures/photo-2.svg"
+        },
+        {
+          "title": "Build",
+          "text": "We ship it, fast and accessible.",
+          "image": "/kit-fixtures/photo-3.svg",
+          "imageAlt": "A laptop showing the finished site"
+        }
+      ]
+    }
+  },
+  {
+    "name": "row-numbered",
+    "props": {
+      "layout": "row",
+      "items": [
+        {
+          "title": "Sign up",
+          "text": "One minute, no card."
+        },
+        {
+          "title": "Import",
+          "text": "Bring your content."
+        },
+        {
+          "title": "Edit",
+          "text": "Change it in Studio."
+        },
+        {
+          "title": "Publish",
+          "text": "Push and it is live."
+        }
+      ]
+    }
+  },
+  {
+    "name": "source-numbers",
+    "props": {
+      "heading": "Getting started",
+      "items": [
+        {
+          "number": "01",
+          "title": "Connect",
+          "text": "Point Calm Status at the services you already monitor."
+        },
+        {
+          "number": "02",
+          "title": "Write",
+          "text": "Pick the words customers see for each kind of problem."
+        },
+        {
+          "number": "03",
+          "title": "Publish",
+          "text": "Put the page live on your own domain."
+        }
+      ]
+    }
+  },
+  {
+    "name": "row-plain-source-numbers",
+    "props": {
+      "layout": "row",
+      "style": "plain",
+      "items": [
+        {
+          "number": "Step 1",
+          "title": "Call",
+          "text": "We learn what you make and who buys it."
+        },
+        {
+          "number": "Step 2",
+          "title": "Design and build",
+          "text": "Four weeks of weekly previews."
+        },
+        {
+          "number": "Step 3",
+          "title": "Launch",
+          "text": "We switch it on together."
+        }
+      ]
+    }
+  },
+  {
+    "name": "timeline-rail",
+    "props": {
+      "id": "history",
+      "heading": "Our story",
+      "kind": "timeline",
+      "marker": "dot",
+      "items": [
+        {
+          "date": "2019",
+          "title": "Founded",
+          "text": "Two people and a shared desk."
+        },
+        {
+          "date": "Mar 2021",
+          "title": "First customers",
+          "text": "The first twenty sites moved over."
+        },
+        {
+          "date": "2024",
+          "title": "Open source",
+          "text": "The toolkit went public.",
+          "current": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "timeline-alternate-dashed",
+    "props": {
+      "kind": "timeline",
+      "layout": "alternate",
+      "connector": "dashed",
+      "items": [
+        {
+          "date": "2019",
+          "title": "Founded",
+          "text": "Two people and a shared desk."
+        },
+        {
+          "date": "Mar 2021",
+          "title": "First customers",
+          "text": "The first twenty sites moved over."
+        },
+        {
+          "date": "2024",
+          "title": "Open source",
+          "text": "The toolkit went public.",
+          "current": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "timeline-no-connector",
+    "props": {
+      "kind": "timeline",
+      "layout": "rail",
+      "connector": "none",
+      "items": [
+        {
+          "date": "2019",
+          "title": "Founded",
+          "text": "Two people and a shared desk."
+        },
+        {
+          "date": "Mar 2021",
+          "title": "First customers",
+          "text": "The first twenty sites moved over."
+        },
+        {
+          "title": "No date here",
+          "text": "An item with no date reads as a step."
+        }
+      ]
+    }
+  },
+  {
+    "name": "rail-numbered",
+    "props": {
+      "layout": "rail",
+      "marker": "number",
+      "items": [
+        {
+          "title": "Connect",
+          "text": "Point us at your site; we read everything it publishes."
+        },
+        {
+          "title": "Review",
+          "text": "Check the plan: every page, model and redirect."
+        },
+        {
+          "title": "Launch",
+          "text": "Deploy the new site; every old address still works."
+        }
+      ]
+    }
+  }
 ]

@@ -2,6 +2,8 @@
 // Images in a grid or in columns, with optional captions. Opening an image
 // shows it large in a native popover — no script: `popovertarget` opens it,
 // Escape and a click outside close it. `link` opens the image file instead.
+// Layouts: grid, masonry, a scroll-snap `row`, and a `mosaic` whose first image
+// spans 2×2. The popover shows one image; next/previous would need script.
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
@@ -13,6 +15,8 @@ export interface GalleryItem {
   image: ImageSource
   imageAlt?: string | undefined
   caption?: string | undefined
+  /** The full-size file for the viewer, where the source's node points at the original; otherwise the image itself. */
+  full?: ImageSource | undefined
 }
 
 const gallery = tv({
@@ -20,8 +24,8 @@ const gallery = tv({
     heading: 'mb-8 text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight md:text-3xl',
     list: 'gap-3 md:gap-4',
     item: 'm-0',
-    frame: 'block w-full cursor-zoom-in overflow-hidden rounded-[var(--radius-image,var(--radius-card))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-    thumb: 'h-full w-full object-cover transition-transform duration-300 hover:scale-[1.02]',
+    frame: 'group relative block w-full cursor-zoom-in overflow-hidden rounded-[var(--radius-image,var(--radius-card))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    thumb: 'h-full w-full object-cover',
     caption: 'mt-2 text-sm opacity-75',
     viewer: 'm-auto max-h-[92vh] max-w-[92vw] bg-transparent p-0 backdrop:bg-ink/85',
   },
@@ -29,22 +33,43 @@ const gallery = tv({
     layout: {
       grid: { list: 'grid', frame: 'aspect-square' },
       masonry: { list: 'columns-2 [&>*]:mb-3 md:[&>*]:mb-4', item: 'break-inside-avoid' },
+      // A strip scrolled sideways, each tile snapping into place; it is a keyboard-focusable region (see the markup).
+      row: { list: 'flex snap-x snap-mandatory overflow-x-auto pb-2 [scrollbar-width:thin]', item: 'w-64 shrink-0 snap-start md:w-80', frame: 'aspect-[4/3]' },
+      // The first tile takes 2×2 of the grid; the rest fill around it.
+      mosaic: { list: 'grid grid-flow-dense', item: '[&:first-child]:col-span-2 [&:first-child]:row-span-2', frame: 'h-full' },
     },
-    columns: { '2': { list: 'grid-cols-2' }, '3': { list: 'grid-cols-2 md:grid-cols-3' }, '4': { list: 'grid-cols-2 md:grid-cols-4' } },
+    aspect: { square: { frame: 'aspect-square' }, '4:3': { frame: 'aspect-[4/3]' }, '16:9': { frame: 'aspect-video' }, auto: { frame: 'aspect-auto' } },
+    gap: { sm: { list: 'gap-1.5 md:gap-2' }, md: {}, lg: { list: 'gap-5 md:gap-8' } },
+    // Under the image, or laid over its foot on hover and keyboard focus — always visible below `md`.
+    captionStyle: { below: {}, overlay: { caption: 'absolute inset-x-0 bottom-0 m-0 bg-ink/70 p-2 text-surface md:translate-y-full md:transition-transform md:group-focus-within:translate-y-0 md:group-hover:translate-y-0' } },
+    hoverEffect: { none: {}, zoom: { thumb: 'motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-105' } },
+    columns: { '2': { list: 'grid-cols-2' }, '3': { list: 'grid-cols-2 md:grid-cols-3' }, '4': { list: 'grid-cols-2 md:grid-cols-4' }, '5': { list: 'grid-cols-2 md:grid-cols-5' }, '6': { list: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6' } },
     open: { popover: {}, link: {}, none: { frame: 'cursor-default' } },
   },
   compoundVariants: [
     { layout: 'masonry', columns: '3', class: { list: 'md:columns-3' } },
     { layout: 'masonry', columns: '4', class: { list: 'md:columns-4' } },
+    { layout: 'masonry', columns: '5', class: { list: 'md:columns-5' } },
+    { layout: 'masonry', columns: '6', class: { list: 'md:columns-3 lg:columns-6' } },
+    // A row and a mosaic size by their own tiles, not by `columns`.
+    { layout: 'row', class: { list: 'grid-cols-none md:grid-cols-none' } },
+    { layout: 'masonry', aspect: ['square', '4:3', '16:9'], class: { frame: 'aspect-auto' } },
   ],
-  defaultVariants: { layout: 'grid', columns: '3', open: 'popover' },
+  defaultVariants: { layout: 'grid', columns: '3', open: 'popover', aspect: 'square', gap: 'md', captionStyle: 'below', hoverEffect: 'none' },
 })
 
 interface Props {
   items: GalleryItem[]
   heading?: string | undefined
-  layout?: 'grid' | 'masonry' | undefined
-  columns?: '2' | '3' | '4' | undefined
+  layout?: 'grid' | 'masonry' | 'row' | 'mosaic' | undefined
+  columns?: '2' | '3' | '4' | '5' | '6' | undefined
+  /** Tile shape (a masonry keeps each image's own). */
+  aspect?: 'square' | '4:3' | '16:9' | 'auto' | undefined
+  gap?: 'sm' | 'md' | 'lg' | undefined
+  captionStyle?: 'below' | 'overlay' | undefined
+  hoverEffect?: 'none' | 'zoom' | undefined
+  /** Prefix of the enlarge button's name for readers ("Enlarge"). */
+  enlargeLabel?: string | undefined
   /** What a click on an image does: show it large in place, open the file, or nothing. */
   open?: 'popover' | 'link' | 'none' | undefined
   /** Text of the viewer's close button ("Close"). */
@@ -53,15 +78,17 @@ interface Props {
   id?: string | undefined
 }
 
-const { items: given, heading, layout, columns, open = 'popover', closeLabel = 'Close', tone, id = 'gallery' } = Astro.props
-const items = given.flatMap(item => { const image = imageOf(item.image, item.imageAlt); return image ? [{ ...item, image }] : [] }) satisfies Array<{ image: ImageInput, caption?: string | undefined }>
-const s = gallery({ layout, columns, open })
+const { items: given, heading, layout, columns, aspect, gap, captionStyle, hoverEffect, enlargeLabel = 'Enlarge', open = 'popover', closeLabel = 'Close', tone, id = 'gallery' } = Astro.props
+const items = given.flatMap(item => { const image = imageOf(item.image, item.imageAlt); return image ? [{ ...item, image, full: imageOf(item.full, item.imageAlt) }] : [] }) satisfies Array<{ image: ImageInput, caption?: string | undefined }>
+const s = gallery({ layout, columns, open, aspect, gap, captionStyle, hoverEffect })
 const headingId = heading ? `${id}-title` : undefined
 const sizes = columns === '2' ? '50vw' : columns === '4' ? '(min-width: 768px) 25vw, 50vw' : '(min-width: 768px) 33vw, 50vw'
 ---
 {items.length > 0 && (
   <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
     {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+    {/* A scrolling strip is a labelled, focusable region so the keyboard can scroll it. */}
+    <div tabindex={layout === 'row' ? 0 : undefined} role={layout === 'row' ? 'region' : undefined} aria-label={layout === 'row' ? heading ?? id : undefined}>
     <ul class={s.list()} role="list">
       {items.map((item, i) => {
         const viewer = `${id}-image-${i + 1}`
@@ -69,7 +96,7 @@ const sizes = columns === '2' ? '50vw' : columns === '4' ? '(min-width: 768px) 2
           <li class={s.item()}>
             <figure class="m-0">
               {open === 'popover'
-                ? <button type="button" popovertarget={viewer} class={s.frame()} aria-label={item.image.alt || item.caption || undefined}><KitImage image={item.image} sizes={sizes} class={s.thumb()} /></button>
+                ? <button type="button" popovertarget={viewer} class={s.frame()} aria-label={`${enlargeLabel}: ${item.image.alt || item.caption || ''}`.trim()}><KitImage image={item.image} sizes={sizes} class={s.thumb()} /></button>
                 : open === 'link'
                   ? <a href={item.image.src} class={s.frame()}><KitImage image={item.image} sizes={sizes} class={s.thumb()} /></a>
                   : <div class={s.frame()}><KitImage image={item.image} sizes={sizes} class={s.thumb()} /></div>}
@@ -78,7 +105,7 @@ const sizes = columns === '2' ? '50vw' : columns === '4' ? '(min-width: 768px) 2
             {open === 'popover' && (
               <div id={viewer} popover class={s.viewer()}>
                 <figure class="m-0 flex flex-col items-center gap-3">
-                  <KitImage image={item.image} sizes="92vw" class="max-h-[80vh] w-auto rounded-[var(--radius-image,var(--radius-card))] object-contain" />
+                  <KitImage image={item.full ?? item.image} sizes="92vw" class="max-h-[80vh] w-auto rounded-[var(--radius-image,var(--radius-card))] object-contain" />
                   {item.caption && <figcaption class="text-sm text-surface">{item.caption}</figcaption>}
                   <button type="button" popovertarget={viewer} popovertargetaction="hide" class="rounded-md border border-surface/40 px-4 py-2 text-sm text-surface hover:bg-surface/10">{closeLabel}</button>
                 </figure>
@@ -88,5 +115,6 @@ const sizes = columns === '2' ? '50vw' : columns === '4' ? '(min-width: 768px) 2
         )
       })}
     </ul>
+    </div>
   </Section>
 )}

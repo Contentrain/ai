@@ -3,29 +3,185 @@
   "name": "Contact form",
   "description": "The contact section: heading, introduction, contact details (email, phone, address) and a Contentrain Studio form — fields, spam protection and notifications set in Studio, submissions reviewed there. Replaces form plugins; renders the details alone until the site is bound to a Studio project (a section left with only its heading is not drawn: the heading would title a form that is not there). When the owner chose another home at migration (site.config.ts `features.forms`) the form posts to their form service, or the section shows an address to write to or a link to the form on WordPress.",
   "category": "section",
-  "uses": [],
-  "shared": ["Section.astro"],
+  "uses": [
+    "embed"
+  ],
+  "shared": [
+    "Section.astro"
+  ],
   "variants": {
-    "layout": { "options": ["split", "stacked"], "default": "split", "description": "split: details beside the form on wide screens. stacked: one column (see align)." },
-    "align": { "options": ["center", "start"], "default": "center", "description": "Stacked only, and the details alone before a Studio form. center: one centred column at a reading width. start: the section's whole column from the start edge, as a page builder's container whose text sets no alignment." },
-    "tone": { "options": ["default", "muted", "inverse", "accent"], "default": "default", "description": "Section background; the form always sits on a surface card." },
-    "headingPlace": { "options": ["top", "after"], "default": "top", "description": "Where the heading sits. top: above the introduction and details. after: after them, as a source that writes its lead line and contact buttons first has it; beside a form it titles the form, without one it follows the details." }
+    "layout": {
+      "options": [
+        "split",
+        "stacked",
+        "form-only"
+      ],
+      "default": "split",
+      "description": "split: details beside the form on wide screens. stacked: one column (see align). form-only: only the form under its heading; details, hours and map are left out."
+    },
+    "align": {
+      "options": [
+        "center",
+        "start"
+      ],
+      "default": "center",
+      "description": "Stacked only, and the details alone before a Studio form. center: one centred column at a reading width. start: the section's whole column from the start edge, as a page builder's container whose text sets no alignment."
+    },
+    "tone": {
+      "options": [
+        "default",
+        "muted",
+        "inverse",
+        "accent"
+      ],
+      "default": "default",
+      "description": "Section background; the form always sits on a surface card."
+    },
+    "headingPlace": {
+      "options": [
+        "top",
+        "after"
+      ],
+      "default": "top",
+      "description": "Where the heading sits. top: above the introduction and details. after: after them, as a source that writes its lead line and contact buttons first has it; beside a form it titles the form, without one it follows the details."
+    },
+    "detailsStyle": {
+      "options": [
+        "list",
+        "cards"
+      ],
+      "default": "list",
+      "description": "The ways to reach you: a plain list, or a card each (label over value)."
+    },
+    "panel": {
+      "options": [
+        "card",
+        "none"
+      ],
+      "default": "card",
+      "description": "card: the form on its own surface. none: flush on the section's background."
+    }
   },
   "props": {
-    "model": { "type": "string", "required": true, "content": false, "description": "The Studio model submissions are saved to — the form's fields are that model's form settings (from the plugin form's fields at migration)." },
-    "heading": { "type": "string", "label": "Heading", "description": "Section heading." },
-    "intro": { "type": "text", "label": "Introduction", "description": "A line or two above the details." },
-    "formHeading": { "type": "string", "label": "Form heading", "description": "The form's own heading, shown above the form." },
-    "details": { "type": "array", "label": "Contact details", "items": { "type": "object", "fields": { "label": { "type": "string", "label": "Label", "description": "What the detail is (Phone, Email, Address). Without labels the details are a plain list." }, "value": { "type": "string", "label": "Value", "required": true, "description": "The detail as shown." }, "href": { "type": "url", "label": "Link", "description": "A tel:, mailto: or map link for it." } } }, "description": "Ways to reach you, in order (Email → mailto:, Phone → tel:, Address → map link)." },
-    "id": { "type": "string", "content": false, "description": "Section id; the heading gets `<id>-title`." }
+    "model": {
+      "type": "string",
+      "required": true,
+      "content": false,
+      "description": "The Studio model submissions are saved to — the form's fields are that model's form settings (from the plugin form's fields at migration)."
+    },
+    "heading": {
+      "type": "string",
+      "label": "Heading",
+      "description": "Section heading."
+    },
+    "intro": {
+      "type": "text",
+      "label": "Introduction",
+      "description": "A line or two above the details."
+    },
+    "formHeading": {
+      "type": "string",
+      "label": "Form heading",
+      "description": "The form's own heading, shown above the form."
+    },
+    "details": {
+      "type": "array",
+      "label": "Contact details",
+      "items": {
+        "type": "object",
+        "fields": {
+          "label": {
+            "type": "string",
+            "label": "Label",
+            "description": "What the detail is (Phone, Email, Address). Without labels the details are a plain list."
+          },
+          "value": {
+            "type": "string",
+            "label": "Value",
+            "required": true,
+            "description": "The detail as shown."
+          },
+          "href": {
+            "type": "url",
+            "label": "Link",
+            "description": "A tel:, mailto: or map link for it."
+          }
+        }
+      },
+      "description": "Ways to reach you, in order (Email → mailto:, Phone → tel:, Address → map link)."
+    },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Section id; the heading gets `<id>-title`."
+    },
+    "hours": {
+      "type": "text",
+      "label": "Opening hours",
+      "description": "Opening hours as written; line breaks are kept."
+    },
+    "socials": {
+      "type": "array",
+      "label": "Profile links",
+      "description": "Social or profile links, shown as a row under the details.",
+      "items": {
+        "type": "object",
+        "fields": {
+          "label": {
+            "type": "string",
+            "label": "Label",
+            "required": true,
+            "description": "Visible text of the link."
+          },
+          "href": {
+            "type": "url",
+            "label": "Link",
+            "required": true,
+            "description": "The profile address."
+          }
+        }
+      }
+    },
+    "map": {
+      "type": "object",
+      "label": "Map",
+      "description": "A map of the address, loaded only when the reader asks (no iframe on load); the address is printed under it.",
+      "fields": {
+        "address": {
+          "type": "string",
+          "label": "Address",
+          "description": "The place shown on the map."
+        },
+        "url": {
+          "type": "url",
+          "label": "Map address",
+          "description": "A Google Maps embed address, when the source has one."
+        },
+        "title": {
+          "type": "string",
+          "label": "Map title",
+          "required": true,
+          "description": "What the map is (\"Our studio\"): its accessible name."
+        }
+      }
+    }
   },
   "slots": {},
   "js": "studio",
   "dependencies": {},
   "sources": {
-    "elementor": ["elementor/form"],
-    "divi": ["divi/et_pb_contact_form"],
-    "classic": ["classic/contact-form-7", "classic/wpforms", "classic/gravityforms", "classic/ninja-forms"]
+    "elementor": [
+      "elementor/form"
+    ],
+    "divi": [
+      "divi/et_pb_contact_form"
+    ],
+    "classic": [
+      "classic/contact-form-7",
+      "classic/wpforms",
+      "classic/gravityforms",
+      "classic/ninja-forms"
+    ]
   },
   "a11y": "Contact details are a description list when every one has a label, a plain list otherwise; links say what they open. The form's labels, errors and focus handling are Studio's form runtime (FormMount). The section is labelled by its heading. Without a form to show and with no introduction or details, the section is not drawn at all."
 }

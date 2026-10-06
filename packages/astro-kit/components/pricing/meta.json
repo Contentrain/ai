@@ -28,6 +28,31 @@
       ],
       "default": "default",
       "description": "Section background."
+    },
+    "layout": {
+      "options": [
+        "cards",
+        "table"
+      ],
+      "default": "cards",
+      "description": "cards: plans side by side. table: one comparison table, plans as columns and features as rows (for more than four plans)."
+    },
+    "featureStyle": {
+      "options": [
+        "check",
+        "dot",
+        "plain"
+      ],
+      "default": "plain",
+      "description": "The mark before each feature in the cards: a check, a dot, or the list's own bullets."
+    },
+    "billingToggle": {
+      "options": [
+        "none",
+        "radio"
+      ],
+      "default": "none",
+      "description": "radio: two labelled radios swap each plan's price for its priceAlt (monthly / yearly), with no script."
     }
   },
   "props": {
@@ -89,6 +114,21 @@
             "type": "boolean",
             "label": "Featured",
             "description": "Raises the plan and gives it the badge."
+          },
+          "badge": {
+            "type": "string",
+            "label": "Badge",
+            "description": "A badge text on the plan (\"Best value\"); a featured plan without one reads the section's featuredLabel."
+          },
+          "priceAlt": {
+            "type": "string",
+            "label": "Price, other period",
+            "description": "The price for the other billing period (\"€150\"), shown when the toggle is on its second option."
+          },
+          "periodAlt": {
+            "type": "string",
+            "label": "Period, other period",
+            "description": "What the other price is per (\"/year\")."
           }
         }
       },
@@ -104,6 +144,40 @@
       "type": "string",
       "content": false,
       "description": "Anchor id of the section; the heading gets `<id>-title`."
+    },
+    "compact": {
+      "type": "boolean",
+      "default": false,
+      "content": false,
+      "description": "A denser card: smaller padding, gap and price."
+    },
+    "billingLabels": {
+      "type": "object",
+      "content": false,
+      "fields": {
+        "main": {
+          "type": "string"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "legend": {
+          "type": "string"
+        }
+      },
+      "description": "Texts of the billing toggle: its two options and the legend read to screen readers."
+    },
+    "includedLabel": {
+      "type": "string",
+      "default": "Included",
+      "content": false,
+      "description": "Table cell text for readers where a plan has the feature."
+    },
+    "notIncludedLabel": {
+      "type": "string",
+      "default": "Not included",
+      "content": false,
+      "description": "Table cell text for readers where a plan lacks the feature."
     }
   },
   "slots": {},
@@ -120,7 +194,7 @@
       "divi/et_pb_pricing_tables"
     ]
   },
-  "a11y": "Plans are a <ul>; each name is an <h3> under the section's <h2>, or an <h2> when the section has no heading. A featured plan is marked by a text badge and a ring, not colour alone. Buttons are links with their own label.",
+  "a11y": "Plans are a <ul>; each name is an <h3> under the section's <h2>, or an <h2> when the section has no heading. A featured plan is marked by a text badge and a ring, not colour alone. Buttons are links with their own label. The table layout is a real <table> with a caption, column and row headers, and Included / Not included text in every cell; the billing toggle is a fieldset with a legend and labelled radios.",
   "pattern": {
     "summary": "repeated plan units: name + price + feature list + button",
     "signals": [
