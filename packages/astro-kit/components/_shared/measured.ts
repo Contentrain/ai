@@ -140,3 +140,13 @@ export function measuredGrid(measured: MeasuredStyle | undefined): string | unde
   const gap = clamp(measured.gap, 0, 200) !== undefined ? 'gap-[var(--kit-gap)] md:gap-[var(--kit-gap)]' : ''
   return [columns, gap].filter(Boolean).join(' ') || undefined
 }
+
+/**
+ * A list laid out in CSS columns (not a grid, so items of unequal height pack) at the measured columns and gap, or
+ * `undefined` to keep the component's own variant. Literal class names, read from the custom properties Section sets.
+ */
+export function measuredColumns(measured: MeasuredStyle | undefined): string | undefined {
+  if (!measured || !columnsFor(measured.columns)) return undefined
+  const gap = clamp(measured.gap, 0, 200) !== undefined ? 'gap-x-[var(--kit-gap)]' : ''
+  return ['block columns-[var(--kit-cols-390)] md:columns-[var(--kit-cols-768)] lg:columns-[var(--kit-cols-1280)]', gap].filter(Boolean).join(' ')
+}

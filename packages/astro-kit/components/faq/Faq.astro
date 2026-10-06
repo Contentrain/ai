@@ -5,6 +5,7 @@
 // and AI answers.
 import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
+import { measuredColumns } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
 
 export interface FaqItem {
@@ -86,7 +87,11 @@ interface Props {
 const { items, heading, intro, layout, columns, icon, numbered = false, style, questionStyle, exclusive = false, openFirst = false, schema = false, tone, measured, id = 'faq' } = Astro.props
 const s = faq({ layout, columns, icon, numbered, style, questionStyle: style === 'plain' ? 'heading' : questionStyle, tone })
 // Two columns and the split layout need the page's width; one column reads in the narrow one.
-const wide = layout === 'split' || columns === '2'
+const measuredCols = measuredColumns(measured)
+const wide = layout === 'split' || columns === '2' || measuredCols !== undefined
+// Measured columns win over `columns`. A rule between items does not cross columns, so each item carries its own.
+const listClass = measuredCols && (style === 'cards' || style === 'plain' ? measuredCols : `${measuredCols} divide-y-0 border-b-0`)
+const itemClass = measuredCols ? (style === 'cards' ? 'break-inside-avoid mb-3' : style === 'plain' ? 'break-inside-avoid' : 'break-inside-avoid border-b border-line') : undefined
 const headingId = heading ? `${id}-title` : undefined
 const plain = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
 const structured = schema && items.length > 0
@@ -106,9 +111,9 @@ const structured = schema && items.length > 0
           {intro && <p class={s.intro()} data-kit-text>{intro}</p>}
         </header>
       )}
-      <div class={s.list()}>
+      <div class={s.list({ class: listClass })}>
         {items.map((item, i) => (
-          <details class={s.item()} name={exclusive ? id : undefined} open={openFirst && i === 0}>
+          <details class={s.item({ class: itemClass })} name={exclusive ? id : undefined} open={openFirst && i === 0}>
             <summary class={s.summary()}>
               <span class={s.question()}>{item.question}</span>
               {icon === 'chevron'
