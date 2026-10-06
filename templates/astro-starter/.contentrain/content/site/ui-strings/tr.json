@@ -37,6 +37,7 @@
   "form.send": "Gönder",
   "form.sending": "Gönderiliyor…",
   "form.wordpress": "Formu aç",
+  "form.wordpress_note": "Bu form {site} üzerinden gönderilir.",
   "gallery.close": "Kapat",
   "nav.breadcrumb": "İçerik yolu",
   "nav.close": "Kapat",

@@ -37,6 +37,7 @@
   "form.send": "送出",
   "form.sending": "送出中…",
   "form.wordpress": "開啟表單",
+  "form.wordpress_note": "此表單在 {site} 上提交。",
   "gallery.close": "關閉",
   "nav.breadcrumb": "導覽路徑",
   "nav.close": "關閉",

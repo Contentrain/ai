@@ -37,6 +37,7 @@
   "form.send": "Отправить",
   "form.sending": "Отправка…",
   "form.wordpress": "Открыть форму",
+  "form.wordpress_note": "Эта форма отправляется на сайте {site}.",
   "gallery.close": "Закрыть",
   "nav.breadcrumb": "Навигационная цепочка",
   "nav.close": "Закрыть",

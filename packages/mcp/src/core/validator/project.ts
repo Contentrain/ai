@@ -158,8 +158,8 @@ async function validateCollectionModel(
   // single meta set), so iterating every supported locale produces phantom
   // per-locale orphan/parity warnings. Iterate just the default locale. #8/Y3
   // An i18n model that declares `locales` covers that subset and no more — a
-  // partially-translated site says so once, in the model, instead of failing
-  // parity on every entry it never translated.
+  // model that was never translated into a locale says so once, instead of
+  // failing on that locale's missing file.
   const scope = resolveModelLocales(model, config)
   const locales = scope.locales
 
@@ -251,7 +251,10 @@ async function validateCollectionModel(
     }
   }
 
-  // Entry parity check (i18n)
+  // Entry parity check (i18n). An entry one locale has and another lacks is a
+  // translation that was never written — on a WPML or Polylang import the normal
+  // state of a site, not a broken store — so it is a warning, as a document's
+  // missing translation is. A locale with no file at all stays an error above.
   if (model.i18n && Object.keys(localeEntryIds).length > 1) {
     const localeKeys = Object.keys(localeEntryIds)
     for (let i = 1; i < localeKeys.length; i++) {
@@ -263,7 +266,7 @@ async function validateCollectionModel(
       for (const id of idsA) {
         if (!idsB.has(id)) {
           issues.push({
-            severity: 'error',
+            severity: 'warning',
             model: model.id,
             locale: locB,
             entry: id,
@@ -274,7 +277,7 @@ async function validateCollectionModel(
       for (const id of idsB) {
         if (!idsA.has(id)) {
           issues.push({
-            severity: 'error',
+            severity: 'warning',
             model: model.id,
             locale: locA,
             entry: id,

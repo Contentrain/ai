@@ -80,6 +80,12 @@ Where it lives is yours to choose; the move sets nothing up on a host.
 To check it once: approve a small change in Studio and look for it on the
 live site.
 
+To build part of the site, list its addresses in `CONTENTRAIN_ROUTES`
+(`CONTENTRAIN_ROUTES=/,/about/ pnpm build`): only those content pages are
+built, while redirects, the feeds, the sitemap and search stay as they are.
+An address the site does not have stops the build. This is meant for a
+preview; a site you publish builds without it.
+
 ## Conventions
 
 - **Content only through the loader.** No page reads `.contentrain/` files or
@@ -119,10 +125,14 @@ the project's delivery base (`https://cdn.example/api/cdn/v1/<project id>`).
   and comments.
 
 Without the file the site builds as usual: Studio images are shown as they
-are, and forms and comments render nothing.
+are, and forms and comments fall back as described below.
 
 A page whose `form` field names a model shows that form under its body; a post
-with `comments_open` shows its thread. Without the binding both render nothing
+with `comments_open` shows its thread. The form's fields (the model's public
+fields, labels and select options) are in the page HTML, and the script puts
+Studio's live form in their place. Without the binding, a form whose site kept
+WordPress (`features.wordpress`) shows the same fields, disabled, with a line
+saying where it is sent and a link to it there. Otherwise both render nothing
 and no script is shipped. `src/lib/studio/embed.ts` is the browser client for
 Studio's public forms and comments API; its exports are its interface, so knip
 does not report the ones this site does not call.

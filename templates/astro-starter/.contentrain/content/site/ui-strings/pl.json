@@ -37,6 +37,7 @@
   "form.send": "Wyślij",
   "form.sending": "Wysyłanie…",
   "form.wordpress": "Otwórz formularz",
+  "form.wordpress_note": "Ten formularz wysyła się na stronie {site}.",
   "gallery.close": "Zamknij",
   "nav.breadcrumb": "Ścieżka nawigacji",
   "nav.close": "Zamknij",

@@ -1,6 +1,13 @@
 ---
 // The client half of StudioForm: the custom element and the script that
 // mounts it. Kept apart so the script ships only on pages that render a form.
+// The fields are in the page as HTML (the model's public fields, the markup the
+// mount draws), so they show before the script runs and without it; the mount
+// then puts Studio's live form (captcha, honeypot) in their place. The page's
+// copy posts nowhere (no method, submit disabled): only the mounted form sends.
+import { formFields } from '../../lib/features'
+import { fieldsHtml } from '../../lib/studio/form-fields'
+
 interface Props {
   baseUrl: string
   projectId: string
@@ -10,15 +17,25 @@ interface Props {
 }
 
 const { baseUrl, projectId, model, text, class: className } = Astro.props
+const fields = formFields(model)
 ---
 <cr-form
   class:list={['cr-form-mount block', className]}
+  data-cr-part="form"
+  data-state="studio"
   data-base-url={baseUrl}
   data-project={projectId}
   data-model={model}
   data-strings={JSON.stringify(text)}
 >
-  <noscript><p class="cr-noscript">{text['form.noscript']}</p></noscript>
+  {fields.length > 0 && (
+    <form class="cr-form" data-model={model}>
+      <Fragment set:html={fieldsHtml(fields)} />
+      <noscript><p class="cr-noscript">{text['form.noscript']}</p></noscript>
+      <p class="cr-actions"><button type="submit" disabled aria-disabled="true">{text['form.send'] ?? 'Send'}</button></p>
+    </form>
+  )}
+  {fields.length === 0 && <noscript><p class="cr-noscript">{text['form.noscript']}</p></noscript>}
 </cr-form>
 
 <script>

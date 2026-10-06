@@ -4,7 +4,7 @@
 // (the host's own 301 rules are in _redirects).
 import type { GetStaticPaths, InferGetStaticPropsType } from 'astro'
 import { redirectRules, type RedirectStatus } from '../lib/redirects'
-import { toParam } from '../lib/routes'
+import { onlyRoutes, toParam } from '../lib/routes'
 import { type Route, routeTable } from '../lib/site-routes'
 import { composedViews } from '../views/composed'
 import EntryView from '../views/EntryView.astro'
@@ -15,7 +15,13 @@ import PostView from '../views/PostView.astro'
 type Moved = { view: 'redirect', to: string, status: RedirectStatus }
 
 export const getStaticPaths = (async () => {
-  const [routes, redirects] = await Promise.all([routeTable(), redirectRules()])
+  const [table, redirects] = await Promise.all([routeTable(), redirectRules()])
+  // CONTENTRAIN_ROUTES builds the listed pages alone (a preview of the home page); an address it names that the
+  // site does not have is a typo, and stops the build rather than preview nothing.
+  const only = onlyRoutes()
+  const routes = only ? [...table].filter(([href]) => only.has(toParam(href) ?? '')) : [...table]
+  const missing = only ? [...only].filter(param => !routes.some(([href]) => (toParam(href) ?? '') === param)) : []
+  if (missing.length) throw new Error(`CONTENTRAIN_ROUTES names ${missing.map(param => `/${param}${param ? '/' : ''}`).join(', ')}, which the site does not build.`)
   // A file address (`/old.pdf`) cannot be a page; the host rules redirect it.
   const moved = redirects.flatMap(rule => (rule.status !== 410 && rule.from.endsWith('/') ? [[rule.from, { view: 'redirect', to: rule.to, status: rule.status }] as const] : []))
   return [...routes, ...moved].map(([href, route]: readonly [string, Route | Moved]) => ({ params: { path: toParam(href) }, props: route }))

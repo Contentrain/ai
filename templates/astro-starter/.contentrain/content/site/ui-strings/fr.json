@@ -37,6 +37,7 @@
   "form.send": "Envoyer",
   "form.sending": "Envoi…",
   "form.wordpress": "Ouvrir le formulaire",
+  "form.wordpress_note": "Ce formulaire s’envoie sur {site}.",
   "gallery.close": "Fermer",
   "nav.breadcrumb": "Fil d’Ariane",
   "nav.close": "Fermer",

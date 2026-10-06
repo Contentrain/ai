@@ -6,7 +6,7 @@
 // The service shows its own confirmation page. StudioForm renders it only
 // when formHome() says it can (https action, at least one field).
 import { formFields } from '../../lib/features'
-import { fieldControl, labelFor, esc } from '../../lib/studio/embed'
+import { fieldsHtml } from '../../lib/studio/form-fields'
 
 interface Props {
   /** The model whose fields the form shows. */
@@ -21,11 +21,7 @@ const { model, action, text, class: className } = Astro.props
 
 const fields = formFields(model)
 const valid = action.startsWith('https://') && fields.length > 0
-const html = fields.map(({ id, def }) => {
-  const control = fieldControl(id, def, 'cr-static')
-  const label = `<label for="${esc(`cr-static-${id}`)}">${esc(labelFor(id, def))}${def.required ? ' <span aria-hidden="true">*</span>' : ''}</label>`
-  return `<p class="cr-field cr-field--${esc(def.type)}">${def.type === 'boolean' ? `${control} ${label}` : label + control}</p>`
-}).join('')
+const html = fieldsHtml(fields, 'cr-static')
 ---
 {valid && (
   <div class:list={['cr-form-mount block', className]} data-cr-part="form" data-state="endpoint">
