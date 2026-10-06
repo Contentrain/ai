@@ -5,7 +5,8 @@
 // the same markup into tabs.
 import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
-import type { MeasuredStyle } from '../_shared/types'
+import SectionHeader from '../_shared/SectionHeader.astro'
+import type { ActionInput, MeasuredStyle } from '../_shared/types'
 
 export interface TabItem {
   label: string
@@ -42,6 +43,10 @@ const tabs = tv({
 interface Props {
   items: TabItem[]
   heading?: string | undefined
+  /** The rest of the section's head, drawn with the heading when any is given. */
+  intro?: string | undefined
+  eyebrow?: string | undefined
+  actions?: ActionInput[] | undefined
   /** Accessible name of the tab list when there is no heading. */
   label?: string | undefined
   style?: 'underline' | 'pills' | undefined
@@ -52,7 +57,7 @@ interface Props {
   measured?: MeasuredStyle | undefined
 }
 
-const { items, heading, label, style, orientation = 'horizontal', tone, id = 'tabs', measured } = Astro.props
+const { items, heading, intro, eyebrow, actions, label, style, orientation = 'horizontal', tone, id = 'tabs', measured } = Astro.props
 const s = tabs({ style, orientation, tone })
 const headingId = heading ? `${id}-title` : undefined
 // One level under the section heading, or the section's heading when there is none.
@@ -61,7 +66,9 @@ const value = (i: number) => `tab-${i + 1}`
 ---
 {items.length > 0 && (
   <Section measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
-    {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+    {intro || eyebrow || actions?.length
+      ? <SectionHeader heading={heading} intro={intro} eyebrow={eyebrow} actions={actions} headingId={headingId} />
+      : heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
     <div class={s.root()} data-kit-tabs={id} data-orientation={orientation} data-label={label ?? heading ?? undefined}>
       <div class={s.list()} data-part="list">
         {items.map((item, i) => <button type="button" class={s.trigger()} data-part="trigger" data-value={value(i)}>{item.label}</button>)}

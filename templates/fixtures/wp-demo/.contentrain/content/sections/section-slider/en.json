@@ -1,6 +1,8 @@
 {
   "services-1": {
-    "label": "Recent work",
+    "heading": "Recent work",
+    "intro": "A few of the sites we moved to Astro this year.",
+    "label": "Recent work slideshow",
     "slides": [
       {
         "image": {

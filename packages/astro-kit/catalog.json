@@ -4080,6 +4080,7 @@
         "Button.astro",
         "KitImage.astro",
         "Section.astro",
+        "SectionHeader.astro",
         "image.ts",
         "measured.ts",
         "types.ts"
@@ -4192,6 +4193,59 @@
           "default": "slider",
           "content": false,
           "description": "Unique on the page: names the track that the previous/next buttons control (aria-controls)."
+        },
+        "heading": {
+          "type": "string",
+          "label": "Heading",
+          "description": "The section heading."
+        },
+        "intro": {
+          "type": "text",
+          "label": "Introduction",
+          "description": "A sentence under the heading."
+        },
+        "eyebrow": {
+          "type": "string",
+          "label": "Eyebrow",
+          "description": "A short line above the heading."
+        },
+        "actions": {
+          "type": "array",
+          "label": "Buttons",
+          "required": false,
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "label": "Label",
+                "required": true,
+                "description": "The button text."
+              },
+              "href": {
+                "type": "url",
+                "label": "Link",
+                "required": true,
+                "description": "Where the button goes: a page on this site or a full address."
+              },
+              "newTab": {
+                "type": "boolean",
+                "label": "Open in a new tab",
+                "description": "Open the link in a new tab (an external site the reader should not leave for)."
+              },
+              "style": {
+                "type": "select",
+                "label": "Style",
+                "options": [
+                  "primary",
+                  "secondary",
+                  "ghost"
+                ],
+                "description": "primary for the main action, secondary or ghost for the ones beside it."
+              }
+            }
+          },
+          "description": "Buttons under the intro, in order; none by default."
         },
         "measured": {
           "type": "object",
@@ -4347,7 +4401,15 @@
         "slides[].title": "slides[].title",
         "slides[].text": "slides[].text",
         "slides[].ctaLabel": "slides[].cta_label",
-        "slides[].ctaHref": "slides[].cta_href"
+        "slides[].ctaHref": "slides[].cta_href",
+        "heading": "heading",
+        "intro": "intro",
+        "eyebrow": "eyebrow",
+        "actions": "actions",
+        "actions[].label": "actions[].label",
+        "actions[].href": "actions[].href",
+        "actions[].newTab": "actions[].new_tab",
+        "actions[].style": "actions[].style"
       }
     },
     {
@@ -5171,7 +5233,9 @@
       "category": "content",
       "uses": [],
       "shared": [
+        "Button.astro",
         "Section.astro",
+        "SectionHeader.astro",
         "measured.ts",
         "types.ts"
       ],
@@ -5204,6 +5268,54 @@
         }
       },
       "props": {
+        "intro": {
+          "type": "text",
+          "label": "Introduction",
+          "description": "A sentence under the heading."
+        },
+        "eyebrow": {
+          "type": "string",
+          "label": "Eyebrow",
+          "description": "A short line above the heading."
+        },
+        "actions": {
+          "type": "array",
+          "label": "Buttons",
+          "required": false,
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": {
+                "type": "string",
+                "label": "Label",
+                "required": true,
+                "description": "The button text."
+              },
+              "href": {
+                "type": "url",
+                "label": "Link",
+                "required": true,
+                "description": "Where the button goes: a page on this site or a full address."
+              },
+              "newTab": {
+                "type": "boolean",
+                "label": "Open in a new tab",
+                "description": "Open the link in a new tab (an external site the reader should not leave for)."
+              },
+              "style": {
+                "type": "select",
+                "label": "Style",
+                "options": [
+                  "primary",
+                  "secondary",
+                  "ghost"
+                ],
+                "description": "primary for the main action, secondary or ghost for the ones beside it."
+              }
+            }
+          },
+          "description": "Buttons under the intro, in order; none by default."
+        },
         "measured": {
           "type": "object",
           "content": false,
@@ -5360,7 +5472,8 @@
           "divi/et_pb_tabs"
         ],
         "classic": [
-          "classic/tabs"
+          "classic/tabs",
+          "classic/aria-tabs"
         ]
       },
       "a11y": "Zag.js tabs: role=tablist/tab/tabpanel with aria-selected, aria-controls and aria-labelledby; arrow keys (per orientation), Home and End move between tabs. Before the script runs every panel is visible with its own title (an h3 under the section's h2, an h2 when there is no heading); after, the titles become screen-reader-only and the tabs label the panels.",

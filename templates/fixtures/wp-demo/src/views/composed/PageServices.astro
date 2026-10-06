@@ -29,6 +29,8 @@ const section0 = entry0 && value1?.length ? {
 } : undefined
 const entry2 = await getEntry('sectionSlider', 'en/services-1')
 const section1 = entry2 && entry2.data.slides?.length && entry2.data.label !== undefined ? {
+  heading: entry2.data.heading,
+  intro: entry2.data.intro,
   label: entry2.data.label,
   slides: entry2.data.slides,
   prevLabel: t('slider.prev'),

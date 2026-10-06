@@ -1,6 +1,14 @@
 {
   "domain": "sections",
   "fields": {
+    "heading": {
+      "required": false,
+      "type": "string"
+    },
+    "intro": {
+      "required": false,
+      "type": "text"
+    },
     "label": {
       "required": false,
       "type": "string"

@@ -42,12 +42,26 @@
     "unannounced-tunnel"
   ],
   "distFiles": {
+    "index.html": {
+      "excludes": [
+        "SliderTrack.astro_astro_type_script",
+        "Tabs.astro_astro_type_script"
+      ]
+    },
+    "about/index.html": {
+      "excludes": [
+        "SliderTrack.astro_astro_type_script",
+        "Tabs.astro_astro_type_script"
+      ]
+    },
     "services/index.html": {
       "contains": [
         "A design system for editors",
         "A mobile-first rebuild",
         "Search without a server",
         "Product documentation",
+        "Recent work",
+        "A few of the sites we moved to Astro this year.",
         "aria-controls=\"slider-track\"",
         "Slide 5 of 5",
         ">By train<",

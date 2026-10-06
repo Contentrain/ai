@@ -546,4 +546,13 @@ describe('carousel, tabs and disclosure rules', () => {
     expect(rule('elementor/loop-carousel')).toMatchObject({ component: 'slider', bind: 'collection:posts' })
     expect(rule('elementor/reviews')).toMatchObject({ component: 'testimonial', variant: { layout: 'row' } })
   })
+
+  // A tab's panel is a sibling of its title, not inside it: each tabs rule reads the panels from the section root,
+  // the i-th panel for the i-th title (`html@root:`).
+  it.each(['elementor/tabs', 'elementor/nested-tabs', 'divi/et_pb_tabs', 'classic/tabs', 'classic/aria-tabs'])('%s reads its panels from the section root', (match) => {
+    const rule = Object.values(tables).flatMap(table => table.rules).find(r => r.match === match)!
+    expect(rule.component).toBe('tabs')
+    expect(rule.item?.content).toMatch(/^html@root:/)
+    expect(rule.props?.label).toBe('ui:tabs.label')
+  })
 })

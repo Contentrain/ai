@@ -7,6 +7,7 @@
 import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
 import KitImage from '../_shared/KitImage.astro'
+import SectionHeader from '../_shared/SectionHeader.astro'
 import { imageOf, type ImageSource } from '../_shared/image'
 import { measuredSlides } from '../_shared/measured'
 import { type ActionInput, type ImageInput, type MeasuredStyle } from '../_shared/types'
@@ -53,6 +54,11 @@ interface Slide {
 
 interface Props {
   slides: Slide[]
+  /** The section's head, drawn above the carousel; none of these given, nothing is drawn. */
+  heading?: string | undefined
+  intro?: string | undefined
+  eyebrow?: string | undefined
+  actions?: ActionInput[] | undefined
   /** Accessible name of the carousel ("Featured projects"). */
   label: string
   prevLabel?: string | undefined
@@ -73,7 +79,7 @@ interface Props {
   framed?: boolean | undefined
 }
 
-const { slides: given, label, prevLabel = 'Previous slide', nextLabel = 'Next slide', slideLabel = 'Slide', ofLabel = 'of', loop = false, perView = '1', aspect, caption, measured, id = 'slider', framed = true } = Astro.props
+const { slides: given, label, prevLabel = 'Previous slide', nextLabel = 'Next slide', slideLabel = 'Slide', ofLabel = 'of', loop = false, perView = '1', aspect, caption, heading, intro, eyebrow, actions, measured, id = 'slider', framed = true } = Astro.props
 const slides = given.flatMap((slide) => {
   const image = imageOf(slide.image, slide.imageAlt)
   const action = slide.action ?? (slide.ctaLabel && slide.ctaHref ? { label: slide.ctaLabel, href: slide.ctaHref } : undefined)
@@ -89,6 +95,7 @@ const Root = framed ? 'section' : 'div'
 const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md ring-1 ring-line hover:bg-surface disabled:opacity-40 sm:group-data-[ready]:flex'
 ---
 <Root class:list={['group relative', framed && 'container-page py-8']} role={framed ? undefined : 'region'} aria-roledescription="carousel" aria-label={label} data-kit-slider data-loop={loop ? '' : undefined} data-slide-label={slideLabel}>
+  <SectionHeader heading={heading} intro={intro} eyebrow={eyebrow} actions={actions} />
   <div class={slots.viewport()} data-viewport tabindex="0" role="group" aria-label={label}>
     <div class:list={['flex gap-4 [&>*]:shrink-0 group-data-[ready]:[&>*]:snap-align-none', measuredRow?.track]} id={trackId} data-container>
       {slides.map((slide, index) => (

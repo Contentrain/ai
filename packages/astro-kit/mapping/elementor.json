@@ -263,7 +263,7 @@
       "each": ".elementor-tab-desktop-title",
       "item": {
         "label": "dom:",
-        "content": "html:.elementor-tab-content"
+        "content": "html@root:.elementor-tab-content"
       }
     },
     {
@@ -276,7 +276,7 @@
       "each": ".e-n-tab-title",
       "item": {
         "label": "dom:.e-n-tab-title-text",
-        "content": "html:.e-con"
+        "content": "html@root:.e-n-tabs-content > .e-con"
       }
     },
     {

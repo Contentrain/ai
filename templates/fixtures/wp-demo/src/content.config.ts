@@ -167,6 +167,8 @@ export const collections = {
     schema: z.object({
       id: z.string(),
       locale: z.string().optional(),
+      heading: z.string().optional(),
+      intro: z.string().optional(),
       label: z.string().optional(),
       loop: z.boolean().default(false),
       nextLabel: z.string().optional(),

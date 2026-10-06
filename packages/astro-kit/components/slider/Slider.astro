@@ -24,6 +24,11 @@ interface Slide {
 
 interface Props {
   slides: Slide[]
+  /** The section's head, drawn above the carousel; none of these given, nothing is drawn. */
+  heading?: string | undefined
+  intro?: string | undefined
+  eyebrow?: string | undefined
+  actions?: ActionInput[] | undefined
   /** Accessible name of the carousel ("Featured projects"). */
   label: string
   prevLabel?: string | undefined

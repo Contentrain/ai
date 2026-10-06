@@ -197,7 +197,20 @@
       "each": "[role=tab]",
       "item": {
         "label": "dom:",
-        "content": "html:[role=tabpanel]"
+        "content": "html@root:[role=tabpanel]"
+      }
+    },
+    {
+      "match": "classic/aria-tabs",
+      "component": "tabs",
+      "props": {
+        "label": "ui:tabs.label"
+      },
+      "into": "items",
+      "each": "[role=tab]",
+      "item": {
+        "label": "dom:",
+        "content": "html@root:[role=tabpanel]"
       }
     },
     {
