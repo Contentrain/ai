@@ -43,7 +43,7 @@
         "dot"
       ],
       "default": "number",
-      "description": "What sits on the rail: the style's number badge, or a plain dot (the timeline default)."
+      "description": "What sits on the rail: the style's number badge, or a plain dot (the timeline default). Not yet: icon and date markers, and a visual emphasis for the current item (it has aria-current and a hidden label only)."
     },
     "connector": {
       "options": [

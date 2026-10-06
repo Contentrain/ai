@@ -89,8 +89,10 @@ interface Props {
   id?: string | undefined
 }
 
-const { heading, intro, plans, featuredLabel = 'Most popular', columns, layout = 'cards', featureStyle, compact, billingToggle = 'none', billingLabels = { main: 'Monthly', alt: 'Yearly', legend: 'Billing period' }, includedLabel = 'Included', notIncludedLabel = 'Not included', tone, id = 'pricing' } = Astro.props
+const { heading, intro, plans, featuredLabel = 'Most popular', columns, layout = 'cards', featureStyle, compact, billingToggle = 'none', billingLabels = { main: 'Monthly', alt: 'Yearly', legend: 'Billing period' }, includedLabel = 'Included', notIncludedLabel = 'Not included', tone, id } = Astro.props
 const s = pricing({ columns, featureStyle, compact: compact ?? false, tone })
+// The radio group's name must be unique on the page: the section's id, or a hash of its plans when it has none.
+const group = id ?? `pricing-${[...JSON.stringify(plans)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36)}`
 const toggled = billingToggle === 'radio' && plans.some(plan => plan.priceAlt)
 // The cards' list items, as plain strings, for the table's feature rows (the markdown list's `- ` / `* ` lines).
 const itemsOf = (md?: string) => (md ?? '').split('\n').flatMap((line) => { const m = /^\s*[-*]\s+(.*\S)/.exec(line); return m ? [m[1]!.replace(/[*_`]/g, '')] : [] })
@@ -157,8 +159,8 @@ const features = await Promise.all(plans.map(plan => renderMarkdown(plan.feature
         {toggled && (
           <fieldset class={s.toggle()}>
             <legend class="sr-only">{billingLabels.legend}</legend>
-            <label class={s.toggleOption()}><input type="radio" name={`${id}-billing`} value="main" checked class="sr-only" />{billingLabels.main}</label>
-            <label class={s.toggleOption()}><input type="radio" name={`${id}-billing`} value="alt" class="sr-only" />{billingLabels.alt}</label>
+            <label class={s.toggleOption()}><input type="radio" name={`${group}-billing`} value="main" checked class="sr-only" />{billingLabels.main}</label>
+            <label class={s.toggleOption()}><input type="radio" name={`${group}-billing`} value="alt" class="sr-only" />{billingLabels.alt}</label>
           </fieldset>
         )}
         <ul class={s.list()}>

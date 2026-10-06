@@ -14,7 +14,7 @@ const team = tv({
     list: 'grid gap-6 sm:grid-cols-2 md:gap-8',
     socials: 'relative z-10 mt-1 flex flex-wrap gap-3 text-sm',
     social: 'rounded text-accent-text underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-    more: 'text-pretty opacity-80 [&>summary]:cursor-pointer [&>summary]:text-sm [&>summary]:font-medium [&>summary]:text-accent-text',
+    more: 'text-pretty opacity-80 [&>summary]:text-sm [&>summary]:font-medium [&>summary]:text-accent-text',
     member: 'group relative flex flex-col gap-3',
     portrait: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
     name: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)]',
@@ -34,7 +34,7 @@ const team = tv({
       list: { list: 'grid-cols-1 sm:grid-cols-1', member: 'sm:flex-row sm:items-start sm:gap-6', portrait: 'sm:w-48 sm:shrink-0' },
       featured: { list: '[&>li:first-child]:col-span-full [&>li:first-child]:sm:flex-row [&>li:first-child]:sm:gap-8 [&>li:first-child_.kit-portrait]:sm:w-1/2' },
     },
-    imageShape: { square: {}, rounded: { portrait: 'rounded-2xl' }, circle: { portrait: 'rounded-full' } },
+    imageShape: { square: {}, rounded: { portrait: 'rounded-[var(--radius-image,1rem)]' }, circle: { portrait: 'rounded-full' } },
     align: { start: {}, center: { member: 'items-center text-center', socials: 'justify-center' } },
     style: {
       card: { member: 'rounded-card border border-line p-6', portrait: '-mx-6 -mt-6 mb-2 rounded-b-none' },
@@ -69,12 +69,14 @@ interface Props {
   /** Clamp a long bio to this many lines with the rest in a native `<details>` ("Read more"). */
   bioClamp?: 2 | 3 | 4 | undefined
   readMoreLabel?: string | undefined
+  /** The accessible name of a profile link; `{name}` and `{network}` are replaced ("{name} on {network}"). */
+  socialLabel?: string | undefined
   style?: 'card' | 'plain' | undefined
   roleStyle?: 'accent' | 'plain' | undefined
   id?: string | undefined
 }
 
-const { heading, intro, items, columns, layout, imageShape, align, bioClamp, readMoreLabel = 'Read more', style, roleStyle, id } = Astro.props
+const { heading, intro, items, columns, layout, imageShape, align, bioClamp, readMoreLabel = 'Read more', socialLabel = '{name} on {network}', style, roleStyle, id } = Astro.props
 const s = team({ columns, layout, imageShape, align, style, roleStyle })
 // The network a profile address belongs to, read from its host (`linkedin.com` → LinkedIn); an unknown host is shown as itself.
 const NETWORKS: Record<string, string> = { 'linkedin.com': 'LinkedIn', 'github.com': 'GitHub', 'x.com': 'X', 'twitter.com': 'X', 'instagram.com': 'Instagram', 'facebook.com': 'Facebook', 'youtube.com': 'YouTube', 'dribbble.com': 'Dribbble', 'behance.net': 'Behance', 'medium.com': 'Medium' }
@@ -110,12 +112,17 @@ const NameHeading = heading ? 'h3' : 'h2'
           </NameHeading>
           {member.role && <p class={s.role()}>{member.role}</p>}
           {member.bio && (longBio(member.bio)
-            ? <details class={`${s.more()} group/bio`}><summary class="list-none"><span class={`${s.bio()} ${clamp[bioClamp!]} group-open/bio:hidden`} data-kit-text>{member.bio}</span><span class="block">{readMoreLabel}</span></summary><p class={s.bio()} data-kit-text>{member.bio}</p></details>
+            ? (
+                <div class="[&:has(details[open])>p]:hidden">
+                  <p class={`${s.bio()} ${clamp[bioClamp!]}`} data-kit-text>{member.bio}</p>
+                  <details class={s.more()}><summary>{readMoreLabel}</summary><p class={s.bio()} data-kit-text>{member.bio}</p></details>
+                </div>
+              )
             : <p class={s.bio()} data-kit-text>{member.bio}</p>)}
           {member.links && member.links.length > 0 && (
             <ul class={s.socials()}>
               {member.links.map(profile).map(link => (
-                <li><a href={link.href} class={s.social()} aria-label={`${member.name} on ${link.label}`}>{link.label}</a></li>
+                <li><a href={link.href} class={s.social()} aria-label={socialLabel.replace('{name}', member.name).replace('{network}', link.label)}>{link.label}</a></li>
               ))}
             </ul>
           )}

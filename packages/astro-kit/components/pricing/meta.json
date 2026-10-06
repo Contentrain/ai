@@ -52,7 +52,7 @@
         "radio"
       ],
       "default": "none",
-      "description": "radio: two labelled radios swap each plan's price for its priceAlt (monthly / yearly), with no script."
+      "description": "radio: two labelled radios swap each plan's price for its priceAlt (monthly / yearly), with no script. The radio group is named from the section id, or a hash of the plans without one, so two toggles on a page stay independent."
     }
   },
   "props": {

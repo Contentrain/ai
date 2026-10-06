@@ -142,6 +142,12 @@
       "default": "Read more",
       "content": false,
       "description": "Text of the bio disclosure."
+    },
+    "socialLabel": {
+      "type": "string",
+      "default": "{name} on {network}",
+      "content": false,
+      "description": "Accessible name of a profile link; {name} and {network} are replaced."
     }
   },
   "slots": {},

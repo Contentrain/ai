@@ -141,6 +141,12 @@
       "default": "Enlarge",
       "content": false,
       "description": "Prefix of each thumbnail button's name for screen readers (\"Enlarge: <description>\")."
+    },
+    "regionLabel": {
+      "type": "string",
+      "default": "Images",
+      "content": false,
+      "description": "Name of the scrolling row's region when the gallery has no heading."
     }
   },
   "slots": {},

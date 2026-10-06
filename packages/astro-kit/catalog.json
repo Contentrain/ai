@@ -1546,6 +1546,12 @@
           "default": "Enlarge",
           "content": false,
           "description": "Prefix of each thumbnail button's name for screen readers (\"Enlarge: <description>\")."
+        },
+        "regionLabel": {
+          "type": "string",
+          "default": "Images",
+          "content": false,
+          "description": "Name of the scrolling row's region when the gallery has no heading."
         }
       },
       "slots": {},
@@ -2859,7 +2865,7 @@
             "radio"
           ],
           "default": "none",
-          "description": "radio: two labelled radios swap each plan's price for its priceAlt (monthly / yearly), with no script."
+          "description": "radio: two labelled radios swap each plan's price for its priceAlt (monthly / yearly), with no script. The radio group is named from the section id, or a hash of the plans without one, so two toggles on a page stay independent."
         }
       },
       "props": {
@@ -3620,7 +3626,7 @@
             "dot"
           ],
           "default": "number",
-          "description": "What sits on the rail: the style's number badge, or a plain dot (the timeline default)."
+          "description": "What sits on the rail: the style's number badge, or a plain dot (the timeline default). Not yet: icon and date markers, and a visual emphasis for the current item (it has aria-current and a hidden label only)."
         },
         "connector": {
           "options": [
@@ -3979,6 +3985,12 @@
           "default": "Read more",
           "content": false,
           "description": "Text of the bio disclosure."
+        },
+        "socialLabel": {
+          "type": "string",
+          "default": "{name} on {network}",
+          "content": false,
+          "description": "Accessible name of a profile link; {name} and {network} are replaced."
         }
       },
       "slots": {},
