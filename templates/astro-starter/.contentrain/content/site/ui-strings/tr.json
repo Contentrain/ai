@@ -68,5 +68,7 @@
   "slider.next": "Sonraki slayt",
   "slider.of": "/",
   "slider.prev": "Önceki slayt",
-  "slider.slide": "Slayt"
+  "slider.slide": "Slayt",
+  "testimonial.label": "Müşteri yorumları",
+  "testimonial.rating": "5 yıldız üzerinden {rating}"
 }

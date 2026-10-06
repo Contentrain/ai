@@ -68,5 +68,7 @@
   "slider.next": "Diapositiva successiva",
   "slider.of": "di",
   "slider.prev": "Diapositiva precedente",
-  "slider.slide": "Diapositiva"
+  "slider.slide": "Diapositiva",
+  "testimonial.label": "Testimonianze",
+  "testimonial.rating": "{rating} stelle su 5"
 }

@@ -68,5 +68,7 @@
   "slider.next": "Следующий слайд",
   "slider.of": "из",
   "slider.prev": "Предыдущий слайд",
-  "slider.slide": "Слайд"
+  "slider.slide": "Слайд",
+  "testimonial.label": "Отзывы",
+  "testimonial.rating": "{rating} из 5 звёзд"
 }
