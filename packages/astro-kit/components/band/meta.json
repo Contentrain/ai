@@ -1,34 +1,34 @@
 {
-  "id": "card-grid",
-  "name": "Card grid",
-  "description": "A grid of cards (features, services, team, linked pages) with an optional section heading and intro. A card with a link is clickable as a whole.",
+  "id": "band",
+  "name": "Band",
+  "description": "The styled fallback section: an optional heading, lead, image, a grid of items and buttons, in the section's measured frame and fill. Used where no closer component fits (an unrecognised or low-confidence section), so it still reads as a designed section, never bare text.",
   "category": "section",
   "uses": [],
   "shared": [
+    "Button.astro",
     "KitImage.astro",
     "Section.astro",
-    "image.ts",
     "measured.ts",
     "types.ts"
   ],
   "variants": {
+    "layout": {
+      "options": [
+        "stack",
+        "split"
+      ],
+      "default": "stack",
+      "description": "stack: one column. split: the copy beside the image on wide screens (only with an image)."
+    },
     "columns": {
       "options": [
+        "1",
         "2",
         "3",
         "4"
       ],
       "default": "3",
-      "description": "Columns on wide screens; one on phones, two on tablets."
-    },
-    "style": {
-      "options": [
-        "plain",
-        "bordered",
-        "elevated"
-      ],
-      "default": "plain",
-      "description": "Card chrome: none, a border, or a raised surface."
+      "description": "Item columns on wide screens when nothing is measured; one on phones, two on tablets."
     },
     "align": {
       "options": [
@@ -36,7 +36,7 @@
         "center"
       ],
       "default": "start",
-      "description": "Text alignment inside cards and of the header."
+      "description": "Alignment of the copy and the items."
     },
     "tone": {
       "options": [
@@ -46,61 +46,150 @@
         "accent"
       ],
       "default": "default",
-      "description": "Section background."
+      "description": "Section background when nothing is measured."
     }
   },
   "props": {
-    "title": {
+    "heading": {
       "type": "string",
       "label": "Heading",
       "description": "Section heading."
     },
-    "intro": {
+    "eyebrow": {
+      "type": "string",
+      "label": "Eyebrow",
+      "description": "Short line above the heading."
+    },
+    "lead": {
       "type": "text",
-      "label": "Introduction",
+      "label": "Lead",
       "description": "Paragraph under the heading."
+    },
+    "media": {
+      "type": "object",
+      "label": "Image",
+      "fields": {
+        "src": {
+          "type": "image",
+          "label": "Image",
+          "required": true,
+          "description": "The image file."
+        },
+        "alt": {
+          "type": "string",
+          "label": "Image description",
+          "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
+        },
+        "width": {
+          "type": "integer",
+          "label": "Width",
+          "description": "Width in pixels, as uploaded."
+        },
+        "height": {
+          "type": "integer",
+          "label": "Height",
+          "description": "Height in pixels, as uploaded."
+        }
+      },
+      "description": "The section's image, under or beside the copy."
     },
     "items": {
       "type": "array",
-      "label": "Cards",
-      "required": true,
+      "label": "Items",
       "items": {
         "type": "object",
         "fields": {
+          "value": {
+            "type": "string",
+            "label": "Figure",
+            "description": "A figure drawn large above the title (a stat with its prefix or suffix, a price)."
+          },
           "title": {
             "type": "string",
             "label": "Title",
-            "required": true,
-            "description": "The card heading."
+            "description": "The item heading."
+          },
+          "meta": {
+            "type": "string",
+            "label": "Detail",
+            "description": "A short line under the title (a role, a date, a period)."
           },
           "text": {
             "type": "text",
             "label": "Text",
-            "description": "A sentence or two under the heading."
+            "description": "A sentence or two under the title."
           },
           "href": {
             "type": "url",
             "label": "Link",
-            "description": "Makes the whole card a link."
+            "description": "Where the item goes; without a link text the whole item is the link."
           },
-          "image": {
+          "linkLabel": {
+            "type": "string",
+            "label": "Link text",
+            "description": "The link's own text, shown under the item."
+          },
+          "media": {
             "type": "image",
             "label": "Image",
-            "description": "Image on top of the card."
+            "description": "Image on top of the item."
           },
-          "imageAlt": {
+          "mediaAlt": {
             "type": "string",
             "label": "Image description",
             "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
           },
-          "eyebrow": {
-            "type": "string",
-            "label": "Eyebrow",
-            "description": "Short line above the title (a category, a role, a price)."
+          "icon": {
+            "type": "image",
+            "label": "Icon",
+            "description": "A small image above the title (decoration)."
+          },
+          "points": {
+            "type": "array",
+            "label": "Points",
+            "items": "string",
+            "description": "A short list under the text (features, facts)."
           }
         }
       },
-      "description": "The cards. image is an ImageInput ({ src, alt, width?, height? })."
+      "description": "Items in a grid (cards, features, logos), in order."
+    },
+    "actions": {
+      "type": "array",
+      "label": "Buttons",
+      "items": {
+        "type": "object",
+        "fields": {
+          "label": {
+            "type": "string",
+            "label": "Label",
+            "required": true,
+            "description": "The button text."
+          },
+          "href": {
+            "type": "url",
+            "label": "Link",
+            "required": true,
+            "description": "Where the button goes: a page on this site or a full address."
+          },
+          "newTab": {
+            "type": "boolean",
+            "label": "Open in a new tab",
+            "description": "Open the link in a new tab (an external site the reader should not leave for)."
+          },
+          "style": {
+            "type": "select",
+            "label": "Style",
+            "options": [
+              "primary",
+              "secondary",
+              "ghost"
+            ],
+            "description": "primary for the main action, secondary or ghost for the ones beside it."
+          }
+        }
+      },
+      "description": "Buttons, in order."
     },
     "headingLevel": {
       "type": "integer",
@@ -108,7 +197,7 @@
       "max": 3,
       "default": 2,
       "content": false,
-      "description": "Level of the section heading; card titles are one below, or at this level when there is no title."
+      "description": "Level of the section heading; item titles are one below, or at this level when there is no heading."
     },
     "measured": {
       "type": "object",
@@ -219,30 +308,16 @@
           "description": "The section's minimum height."
         }
       }
+    },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Anchor id of the section; the heading gets `<id>-title`."
     }
   },
   "slots": {},
   "js": "none",
   "dependencies": {},
-  "sources": {
-    "gutenberg": [
-      "core/columns",
-      "core/media-text"
-    ],
-    "elementor": [
-      "elementor/icon-box",
-      "elementor/image-box",
-      "elementor/call-to-action",
-      "elementor/posts"
-    ],
-    "divi": [
-      "divi/et_pb_blurb",
-      "divi/et_pb_team_member",
-      "divi/et_pb_pricing_tables"
-    ],
-    "classic": [
-      "classic/widget-area"
-    ]
-  },
-  "a11y": "A list of cards; the whole card is clickable through a stretched link on its title, so screen readers hear one link per card. The section is labelled by its heading."
+  "sources": {},
+  "a11y": "A labelled region (aria-labelledby its heading) when it has one. Item titles sit one level under the heading. An item with a link and no link text is clickable as a whole through its title's link; icons are decoration (alt=\"\")."
 }

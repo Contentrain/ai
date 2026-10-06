@@ -239,5 +239,6 @@
       },
       "headingSize": "h2"
     }
-  }
+  },
+  {"name": "cover-measured-overlay", "props": {"heading": "Fresh eggs, every morning", "lead": "A family farm since 1962.", "layout": "cover", "image": {"src": "/kit-fixtures/photo-4.svg", "alt": "", "width": 1600, "height": 900}, "actions": [{"label": "Visit us", "href": "/visit/"}], "measured": {"padY": 140, "minHeight": 560, "tone": "dark", "bg": {"image": "/kit-fixtures/photo-4.svg", "overlay": "rgba(20, 40, 10, 0.45)"}}}}
 ]

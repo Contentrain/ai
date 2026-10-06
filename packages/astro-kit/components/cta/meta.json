@@ -4,7 +4,7 @@
   "description": "A call to action: a short heading, an optional line of text and one or two buttons — across the whole section, or as a card inside it.",
   "category": "section",
   "uses": [],
-  "shared": ["Button.astro", "Section.astro", "types.ts"],
+  "shared": ["Button.astro", "Section.astro", "measured.ts", "types.ts"],
   "variants": {
     "layout": { "options": ["inline", "centered", "stacked"], "default": "inline", "description": "inline: text left, buttons right on wide screens. centered: everything centred. stacked: heading, text and buttons in one column at the start edge on every width." },
     "frame": { "options": ["full", "card"], "default": "full", "description": "full: the tone fills the section. card: a rounded box in a plain section carries the tone." },

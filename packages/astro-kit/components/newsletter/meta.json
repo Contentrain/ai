@@ -5,7 +5,9 @@
   "category": "section",
   "uses": [],
   "shared": [
-    "Section.astro"
+    "Section.astro",
+    "measured.ts",
+    "types.ts"
   ],
   "variants": {
     "layout": {
@@ -99,6 +101,116 @@
       "type": "string",
       "content": false,
       "description": "Section id, unique per page (two sign-ups on one page need two ids): the heading gets `<id>-title`, the inputs `<id>-email`/`<id>-name`."
+    },
+    "measured": {
+      "type": "object",
+      "content": false,
+      "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+      "fields": {
+        "containerPx": {
+          "type": "integer",
+          "min": 0,
+          "max": 2560,
+          "description": "The frame's content width."
+        },
+        "padY": {
+          "type": "integer",
+          "min": 0,
+          "max": 400,
+          "description": "Top and bottom padding."
+        },
+        "padX": {
+          "type": "integer",
+          "min": 0,
+          "max": 200,
+          "description": "The frame's side padding (gutter)."
+        },
+        "bg": {
+          "type": "object",
+          "description": "The section's background.",
+          "fields": {
+            "color": {
+              "type": "string",
+              "description": "Fill colour: hex, rgb(a) or hsl(a)."
+            },
+            "image": {
+              "type": "string",
+              "description": "Background image address (http(s) or root-relative), drawn behind the content."
+            },
+            "overlay": {
+              "type": "string",
+              "description": "Colour or linear/radial gradient laid over the image or the fill."
+            },
+            "size": {
+              "type": "string",
+              "description": "cover, contain or auto; anything else draws as cover."
+            },
+            "position": {
+              "type": "string",
+              "description": "One or two of center/top/bottom/left/right or percentages."
+            }
+          }
+        },
+        "columns": {
+          "type": "object",
+          "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+          "fields": {
+            "390": {
+              "type": "integer",
+              "min": 1,
+              "max": 6,
+              "description": "Phone."
+            },
+            "768": {
+              "type": "integer",
+              "min": 1,
+              "max": 6,
+              "description": "Tablet."
+            },
+            "1280": {
+              "type": "integer",
+              "min": 1,
+              "max": 6,
+              "description": "Desktop."
+            }
+          }
+        },
+        "gap": {
+          "type": "integer",
+          "min": 0,
+          "max": 200,
+          "description": "Gap between items."
+        },
+        "tone": {
+          "type": "select",
+          "options": [
+            "light",
+            "dark"
+          ],
+          "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+        },
+        "align": {
+          "type": "select",
+          "options": [
+            "start",
+            "center",
+            "end"
+          ],
+          "description": "Where the heading and lead sit; read by a component whose own align is not set."
+        },
+        "radius": {
+          "type": "integer",
+          "min": 0,
+          "max": 200,
+          "description": "Card and item corner radius."
+        },
+        "minHeight": {
+          "type": "integer",
+          "min": 0,
+          "max": 2000,
+          "description": "The section's minimum height."
+        }
+      }
     }
   },
   "slots": {},

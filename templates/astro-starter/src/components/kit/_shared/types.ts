@@ -25,3 +25,43 @@ export interface ActionInput extends LinkInput {
 export interface NavItem extends LinkInput {
   children?: NavItem[] | undefined
 }
+
+/** The widths a migration measures a page at: phone, tablet, desktop (the kit's base, `md` and `lg`). */
+export type MeasuredWidth = 390 | 768 | 1280
+
+/**
+ * A section's style as measured on the source page (`MeasuredStyle` in `@contentrain/types`, same fields). Absent,
+ * a section takes the site's tokens; present, it wins over the tone and column variants. Values are pixels; Section
+ * checks each one and drops what is not a number, a colour or a known keyword.
+ */
+export interface MeasuredStyle {
+  /** The frame's content width. */
+  containerPx?: number | undefined
+  /** The section's top and bottom padding. */
+  padY?: number | undefined
+  /** The frame's side padding (the gutter). */
+  padX?: number | undefined
+  bg?: {
+    /** Hex, rgb(a) or hsl(a). */
+    color?: string | undefined
+    /** http(s) or root-relative address; drawn as an image behind the content. */
+    image?: string | undefined
+    /** A colour or a linear/radial gradient laid over the image (or the fill). */
+    overlay?: string | undefined
+    /** `cover`, `contain` or `auto`; anything else draws as `cover`. */
+    size?: string | undefined
+    /** One or two of center/top/bottom/left/right or percentages. */
+    position?: string | undefined
+  } | undefined
+  /** Item columns per measured width; a missing width follows the narrower one. */
+  columns?: Partial<Record<MeasuredWidth, number>> | undefined
+  /** The gap between items. */
+  gap?: number | undefined
+  /** What the section's text is set for: `dark` is light text on a dark band. */
+  tone?: 'light' | 'dark' | undefined
+  /** Where the heading and lead sit across the frame; a component with its own `align` reads it when that is not set. */
+  align?: 'start' | 'center' | 'end' | undefined
+  /** Card and item corner radius. */
+  radius?: number | undefined
+  minHeight?: number | undefined
+}

@@ -10,6 +10,7 @@
 // of placing it.
 import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
+import type { MeasuredStyle } from '../_shared/types'
 import { newsletterForm } from './newsletter'
 
 const newsletter = tv({
@@ -64,12 +65,15 @@ interface Props {
   layout?: 'inline' | 'stacked' | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   id?: string | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
 }
 
 const {
   action, provider = 'mailchimp', emailName, askName = false, heading, intro, note,
   emailLabel = 'Email address', nameLabel = 'First name', submitLabel = 'Subscribe', newTab = true,
   layout, tone = 'muted', id = 'newsletter',
+  measured,
 } = Astro.props
 const form = newsletterForm(provider, action, { email: emailName }, Astro.site)
 const s = newsletter({ layout, tone })
@@ -78,7 +82,7 @@ const headingId = heading ? `${id}-title` : undefined
 const formRel: Record<string, string> = newTab ? { rel: 'noopener noreferrer' } : {}
 ---
 {form && (
-  <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+  <Section measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
     <div class={s.box()}>
       {(heading || intro) && (
         <div class={s.copy()}>

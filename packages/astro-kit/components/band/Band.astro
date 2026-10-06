@@ -1,0 +1,132 @@
+---
+// A section the migration has no closer component for: a band with an optional heading, lead, image, a grid of
+// items and buttons. It draws whatever a measured source section holds, so an unrecognised section still reads as
+// one of the site's sections and never as bare text.
+import { tv } from 'tailwind-variants'
+import Button from '../_shared/Button.astro'
+import KitImage from '../_shared/KitImage.astro'
+import Section, { type Tone } from '../_shared/Section.astro'
+import { measuredGrid } from '../_shared/measured'
+import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
+
+const band = tv({
+  slots: {
+    grid: 'grid gap-10',
+    copy: 'flex max-w-3xl flex-col gap-4',
+    eyebrow: 'text-sm font-semibold tracking-wide text-accent-text uppercase',
+    heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
+    lead: 'text-lg text-pretty opacity-85',
+    media: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
+    list: 'grid items-start gap-6 md:gap-8',
+    item: 'relative flex flex-col gap-3 rounded-[var(--radius-card)]',
+    itemMedia: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
+    itemTitle: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)] text-balance',
+    itemValue: 'text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight',
+    itemMeta: 'text-sm opacity-75',
+    itemText: 'opacity-80',
+    itemPoints: 'flex list-disc flex-col gap-1 ps-5 opacity-80',
+    actions: 'flex flex-wrap gap-3',
+  },
+  variants: {
+    // stack: everything in one column. split: the copy beside the image on wide screens.
+    layout: { stack: {}, split: { grid: 'md:grid-cols-2 md:items-center' } },
+    columns: {
+      '1': {},
+      '2': { list: 'sm:grid-cols-2' },
+      '3': { list: 'sm:grid-cols-2 md:grid-cols-3' },
+      '4': { list: 'sm:grid-cols-2 lg:grid-cols-4' },
+    },
+    align: {
+      start: {},
+      center: { copy: 'mx-auto items-center text-center', actions: 'justify-center', item: 'items-center text-center' },
+    },
+    // Accent backgrounds have the least contrast headroom: text on them is never dimmed.
+    tone: { default: {}, muted: {}, inverse: {}, accent: { lead: 'opacity-100', itemText: 'opacity-100', itemMeta: 'opacity-100', itemPoints: 'opacity-100', eyebrow: 'text-current' } },
+  },
+  defaultVariants: { layout: 'stack', columns: '3', align: 'start', tone: 'default' },
+})
+
+interface Item {
+  /** A figure drawn large above the title (a stat, a price). */
+  value?: string | undefined
+  title?: string | undefined
+  /** A short line under the title (a role, a date, a period). */
+  meta?: string | undefined
+  text?: string | undefined
+  href?: string | undefined
+  /** The link's own text, shown under the item; without it the whole item is the link. */
+  linkLabel?: string | undefined
+  /** The item's image address. */
+  media?: string | undefined
+  mediaAlt?: string | undefined
+  /** A small image (an icon) above the title. */
+  icon?: string | undefined
+  /** A short list under the text (features, facts). */
+  points?: string[] | undefined
+}
+
+interface Props {
+  heading?: string | undefined
+  eyebrow?: string | undefined
+  lead?: string | undefined
+  media?: ImageInput | undefined
+  items?: Item[] | undefined
+  actions?: ActionInput[] | undefined
+  /** Heading level of the section heading; item titles are one level below, or at this level when there is none. */
+  headingLevel?: 2 | 3 | undefined
+  layout?: 'stack' | 'split' | undefined
+  columns?: '1' | '2' | '3' | '4' | undefined
+  align?: 'start' | 'center' | undefined
+  tone?: Tone | undefined
+  measured?: MeasuredStyle | undefined
+  id?: string | undefined
+}
+
+const { heading, eyebrow, lead, media, items = [], actions = [], headingLevel = 2, layout, columns, align, tone, measured, id } = Astro.props
+// The measured alignment when none is given (`end` has no band layout: it reads as `start`).
+const aligned = align ?? (measured?.align === 'center' ? 'center' : undefined)
+const s = band({ layout: media ? layout : 'stack', columns, align: aligned, tone })
+const Heading = `h${headingLevel}` as 'h2' | 'h3'
+const ItemHeading = `h${heading ? headingLevel + 1 : headingLevel}` as 'h2' | 'h3' | 'h4'
+const headingId = heading ? (id ? `${id}-title` : `band-${heading.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) : undefined
+const hasCopy = Boolean(heading || eyebrow || lead || actions.length)
+---
+<Section tone={tone} id={id} aria-labelledby={headingId} measured={measured}>
+  <div class="flex flex-col gap-10">
+    {(hasCopy || media) && (
+      <div class={s.grid()}>
+        {hasCopy && (
+          <div class={s.copy()}>
+            {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
+            {heading && <Heading id={headingId} class={s.heading()}>{heading}</Heading>}
+            {lead && <p class={s.lead()} data-kit-text>{lead}</p>}
+            {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
+          </div>
+        )}
+        {media && <div class={s.media()}><KitImage image={media} sizes={layout === 'split' ? '(min-width: 768px) 50vw, 100vw' : '100vw'} class="h-auto w-full object-cover" /></div>}
+      </div>
+    )}
+    {items.length > 0 && (
+      <ul class={s.list({ class: measuredGrid(measured) })}>
+        {items.map(item => (
+          <li class={s.item()}>
+            {item.media && <div class={s.itemMedia()}><KitImage image={{ src: item.media, alt: item.mediaAlt ?? '' }} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover" /></div>}
+            {item.icon && <KitImage image={{ src: item.icon, alt: '' }} class="h-10 w-10 object-contain" />}
+            {item.value && <p class={s.itemValue()}>{item.value}</p>}
+            {item.title && (
+              <ItemHeading class={s.itemTitle()}>
+                {item.href && !item.linkLabel
+                  ? <a href={item.href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{item.title}</a>
+                  : item.title}
+              </ItemHeading>
+            )}
+            {item.meta && <p class={s.itemMeta()}>{item.meta}</p>}
+            {item.text && <p class={s.itemText()} data-kit-text>{item.text}</p>}
+            {item.points && item.points.length > 0 && <ul class={s.itemPoints()}>{item.points.map(point => <li>{point}</li>)}</ul>}
+            {item.href && item.linkLabel && <a href={item.href} class="font-medium text-accent-text underline-offset-4 hover:underline">{item.linkLabel}</a>}
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+</Section>
