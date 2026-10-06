@@ -46,9 +46,10 @@ export interface MeasuredStyle {
     color?: string | undefined
     /** http(s) or root-relative address; drawn as an image behind the content. */
     image?: string | undefined
-    /** A colour laid over the image (with its alpha). */
+    /** A colour or a linear/radial gradient laid over the image (or the fill). */
     overlay?: string | undefined
-    size?: 'cover' | 'contain' | 'auto' | undefined
+    /** `cover`, `contain` or `auto`; anything else draws as `cover`. */
+    size?: string | undefined
     /** One or two of center/top/bottom/left/right or percentages. */
     position?: string | undefined
   } | undefined
@@ -58,6 +59,8 @@ export interface MeasuredStyle {
   gap?: number | undefined
   /** What the section's text is set for: `dark` is light text on a dark band. */
   tone?: 'light' | 'dark' | undefined
+  /** Where the heading and lead sit across the frame; a component with its own `align` reads it when that is not set. */
+  align?: 'start' | 'center' | 'end' | undefined
   /** Card and item corner radius. */
   radius?: number | undefined
   minHeight?: number | undefined

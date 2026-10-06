@@ -50,7 +50,7 @@ const m = measuredFrame(measured)
 // A measured fill is the section's own colour, its text set by the measured tone; a tone alone picks the kit's band.
 const tone = m.color ? 'none' : m.tone === 'dark' ? 'inverse' : m.tone === 'light' ? 'default' : given
 const text = m.color ? (m.tone === 'dark' ? 'text-surface [--color-accent-text:var(--color-accent-text-inverse)]' : 'text-ink') : undefined
-const layered = m.image ? 'relative isolate overflow-hidden' : undefined
+const layered = m.image || m.overlay ? 'relative isolate overflow-hidden' : undefined
 const style = [m.color && `background-color: ${m.color}`, m.style].filter(Boolean).join('; ') || undefined
 // The reading column reads its own width token.
 const frameStyle = width === 'prose' ? m.frameStyle?.replace('--container-page:', '--container-prose:') : m.frameStyle
@@ -58,6 +58,6 @@ const dataTone = m.color ? (m.tone === 'dark' ? 'inverse' : 'default') : tone ??
 ---
 <Tag id={id} aria-labelledby={labelledBy} class={section({ tone, spacing, class: [text, layered, className].filter(Boolean).join(' ') || undefined })} style={style} data-tone={dataTone} data-kit-section data-kit-spacing={spacing ?? 'md'} data-kit-measured={measured ? '' : undefined}>
   {m.image && <img src={m.image.src} alt="" loading="lazy" decoding="async" class="absolute inset-0 -z-10 h-full w-full" style={`object-fit: ${m.image.fit}${m.image.position ? `; object-position: ${m.image.position}` : ''}`} />}
-  {m.image && m.overlay && <div class="absolute inset-0 -z-10" style={`background-color: ${m.overlay}`} aria-hidden="true" />}
+  {m.overlay && <div class="absolute inset-0 -z-10" style={`background: ${m.overlay}`} aria-hidden="true" />}
   {width === 'none' ? <slot /> : <div class={width === 'prose' ? 'container-prose' : 'container-page'} style={frameStyle}><slot /></div>}
 </Tag>

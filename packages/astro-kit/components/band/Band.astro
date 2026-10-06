@@ -83,7 +83,9 @@ interface Props {
 }
 
 const { heading, eyebrow, lead, media, items = [], actions = [], headingLevel = 2, layout, columns, align, tone, measured, id } = Astro.props
-const s = band({ layout: media ? layout : 'stack', columns, align, tone })
+// The measured alignment when none is given (`end` has no band layout: it reads as `start`).
+const aligned = align ?? (measured?.align === 'center' ? 'center' : undefined)
+const s = band({ layout: media ? layout : 'stack', columns, align: aligned, tone })
 const Heading = `h${headingLevel}` as 'h2' | 'h3'
 const ItemHeading = `h${heading ? headingLevel + 1 : headingLevel}` as 'h2' | 'h3' | 'h4'
 const headingId = heading ? (id ? `${id}-title` : `band-${heading.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) : undefined

@@ -6,7 +6,7 @@ import Button from '../_shared/Button.astro'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
 import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
-import { colorOf } from '../_shared/measured'
+import { measuredFrame } from '../_shared/measured'
 import { coverHeight as heightOf, headingStyle as styleOf } from './hero'
 
 const hero = tv({
@@ -92,15 +92,15 @@ const cover = layout === 'cover' && image
 const coverHeight = cover ? heightOf(minHeight) : undefined
 const headingStyle = styleOf(headingScale, level, headingSize)
 // A cover draws its own image: the measured background image is that image, and the measured overlay is its scrim.
-const sectionMeasured = cover && measured ? { ...measured, bg: measured.bg ? { ...measured.bg, image: undefined } : undefined } : measured
-const scrim = cover ? colorOf(measured?.bg?.overlay) : undefined
+const sectionMeasured = cover && measured ? { ...measured, bg: measured.bg ? { ...measured.bg, image: undefined, overlay: undefined } : undefined } : measured
+const scrim = cover ? measuredFrame(measured).overlay : undefined
 ---
 {cover && width === 'content'
   ? (
     <Section measured={sectionMeasured} tone="none" spacing="sm" width="prose" id={id} aria-labelledby={headingId}>
       <div class="relative isolate overflow-hidden bg-ink text-surface">
         <KitImage image={image} priority sizes="(min-width: 768px) 46rem, 100vw" class="absolute inset-0 -z-10 h-full w-full object-cover" />
-        <div class:list={['absolute inset-0 -z-10', !scrim && 'bg-ink/60']} style={scrim ? `background-color: ${scrim}` : undefined} aria-hidden="true" />
+        <div class:list={['absolute inset-0 -z-10', !scrim && 'bg-ink/60']} style={scrim ? `background: ${scrim}` : undefined} aria-hidden="true" />
         <div class="px-6 py-10 md:px-10">
           <div class={s.grid()} style={coverHeight ? `min-height: ${coverHeight}` : undefined}>
             <div class={s.copy()}>
@@ -118,7 +118,7 @@ const scrim = cover ? colorOf(measured?.bg?.overlay) : undefined
   ? (
     <Section measured={sectionMeasured} tone="inverse" spacing="none" width="none" id={id} aria-labelledby={headingId} class="relative isolate overflow-hidden">
       <KitImage image={image} priority sizes="100vw" class="absolute inset-0 -z-10 h-full w-full object-cover" />
-      <div class:list={['absolute inset-0 -z-10', !scrim && 'bg-ink/60']} style={scrim ? `background-color: ${scrim}` : undefined} aria-hidden="true" />
+      <div class:list={['absolute inset-0 -z-10', !scrim && 'bg-ink/60']} style={scrim ? `background: ${scrim}` : undefined} aria-hidden="true" />
       <div class:list={['container-page', measured?.padY === undefined && 'py-16 md:py-28']}>
         <div class={s.grid()} style={coverHeight ? `min-height: ${coverHeight}` : undefined}>
           <div class={s.copy()}>

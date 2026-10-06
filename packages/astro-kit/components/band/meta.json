@@ -236,16 +236,11 @@
             },
             "overlay": {
               "type": "string",
-              "description": "Colour laid over the image, with its alpha."
+              "description": "Colour or linear/radial gradient laid over the image or the fill."
             },
             "size": {
-              "type": "select",
-              "options": [
-                "cover",
-                "contain",
-                "auto"
-              ],
-              "description": "How the image fills the section."
+              "type": "string",
+              "description": "cover, contain or auto; anything else draws as cover."
             },
             "position": {
               "type": "string",
@@ -290,6 +285,15 @@
             "dark"
           ],
           "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+        },
+        "align": {
+          "type": "select",
+          "options": [
+            "start",
+            "center",
+            "end"
+          ],
+          "description": "Where the heading and lead sit; read by a component whose own align is not set."
         },
         "radius": {
           "type": "integer",

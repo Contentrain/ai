@@ -11,11 +11,11 @@ const FUNCTIONAL = /^(?:rgba?|hsla?)\(\s*[\d.]+%?(?:\s*[,\s]\s*[\d.]+%?){2}(?:\s
 const NAMED = /^(?:transparent|white|black)$/i
 
 /** A colour the source wrote as hex, rgb(a) or hsl(a) (or transparent / white / black); anything else is dropped. */
-export const colorOf = (value: unknown): string | undefined =>
+const colorOf = (value: unknown): string | undefined =>
   typeof value === 'string' && (HEX.test(value.trim()) || FUNCTIONAL.test(value.trim()) || NAMED.test(value.trim())) ? value.trim() : undefined
 
 /** Whether a colour is dark enough to need light text (relative luminance under 0.4); unknown for named and hsl colours. */
-export const isDark = (color: string): boolean | undefined => {
+const isDark = (color: string): boolean | undefined => {
   const hex = HEX.test(color) ? color.slice(1) : undefined
   const channels = hex
     ? (hex.length <= 4 ? hex.slice(0, 3).split('').map(digit => Number.parseInt(digit + digit, 16)) : [0, 2, 4].map(i => Number.parseInt(hex.slice(i, i + 2), 16)))
@@ -25,25 +25,53 @@ export const isDark = (color: string): boolean | undefined => {
   return 0.2126 * r! + 0.7152 * g! + 0.0722 * b! < 0.4
 }
 
+const STOP = /^(.+?)(?:\s+\d{1,3}(?:\.\d+)?%){0,2}$/
+const DIRECTION = /^(?:\d{1,3}(?:\.\d+)?deg|to (?:top|bottom|left|right)(?: (?:top|bottom|left|right))?|circle|ellipse)$/
+/** Splits at commas outside parentheses: `rgba(0, 0, 0, .5) 0%, #000` → two stops. */
+const topLevel = (inner: string): string[] => {
+  const parts: string[] = []
+  let depth = 0
+  let start = 0
+  for (let i = 0; i < inner.length; i++) {
+    if (inner[i] === '(') depth++
+    else if (inner[i] === ')') depth--
+    else if (inner[i] === ',' && depth === 0) { parts.push(inner.slice(start, i).trim()); start = i + 1 }
+    if (depth < 0) return []
+  }
+  return depth === 0 ? [...parts, inner.slice(start).trim()] : []
+}
+/** An overlay: a colour, or a linear/radial gradient whose every stop is a colour (with up to two percentages). */
+const overlayOf = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined
+  const text = value.trim()
+  const gradient = /^(linear|radial)-gradient\((.*)\)$/i.exec(text)
+  if (!gradient) return colorOf(text)
+  const parts = topLevel(gradient[2]!)
+  if (parts.length < 2) return undefined
+  const [first, ...rest] = DIRECTION.test(parts[0]!) ? parts : ['', ...parts]
+  const stops = first ? rest : parts
+  return stops.length >= 2 && stops.every(stop => colorOf(STOP.exec(stop)?.[1]) !== undefined) ? text : undefined
+}
+
 /** An image address: http(s) or root-relative, with nothing that could close a quote or a url(). */
-export const imageOf = (value: unknown): string | undefined =>
+const imageOf = (value: unknown): string | undefined =>
   typeof value === 'string' && /^(?:https?:\/\/|\/(?!\/))/i.test(value) && !/["'()<>\\\s]/.test(value) ? value : undefined
 
 const KEYWORD = /^(?:center|top|bottom|left|right)$/
 const PERCENT = /^\d{1,3}(?:\.\d+)?%$/
 /** `object-position` from the source's background position: up to two keywords or percentages. */
-export const positionOf = (value: unknown): string | undefined => {
+const positionOf = (value: unknown): string | undefined => {
   if (typeof value !== 'string') return undefined
   const parts = value.trim().toLowerCase().split(/\s+/)
   return parts.length <= 2 && parts.every(part => KEYWORD.test(part) || PERCENT.test(part)) ? parts.join(' ') : undefined
 }
 
 /** `object-fit` from the source's background size. */
-export const fitOf = (value: unknown): 'cover' | 'contain' | 'none' | undefined =>
+const fitOf = (value: unknown): 'cover' | 'contain' | 'none' | undefined =>
   value === 'cover' || value === 'contain' ? value : value === 'auto' ? 'none' : undefined
 
 /** Columns at each measured width, every width filled: 390 ?? 1; 768 ?? min(2, 1280) ?? 390; 1280 ?? 768 ?? 390. */
-export const columnsFor = (columns: MeasuredStyle['columns']): Record<MeasuredWidth, number> | undefined => {
+const columnsFor = (columns: MeasuredStyle['columns']): Record<MeasuredWidth, number> | undefined => {
   if (!columns) return undefined
   const at = (width: MeasuredWidth) => clamp(columns[width], 1, 6)
   const [narrow, mid, wide] = [at(390), at(768), at(1280)]
@@ -64,6 +92,7 @@ export interface MeasuredFrame {
   /** The section's own background colour (it then draws no tone fill). */
   color?: string | undefined
   image?: { src: string, fit?: 'cover' | 'contain' | 'none' | undefined, position?: string | undefined } | undefined
+  /** A colour or gradient over the image (or over the fill); it is drawn as a layer's `background`. */
   overlay?: string | undefined
 }
 
@@ -97,7 +126,7 @@ export function measuredFrame(measured: MeasuredStyle | undefined): MeasuredFram
     tone,
     color,
     image: src ? { src, fit: fitOf(measured.bg?.size) ?? 'cover', position: positionOf(measured.bg?.position) } : undefined,
-    overlay: src ? colorOf(measured.bg?.overlay) : undefined,
+    overlay: overlayOf(measured.bg?.overlay),
   }
 }
 
