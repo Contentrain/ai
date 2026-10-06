@@ -5,7 +5,7 @@ import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
-import type { ActionInput, ImageInput } from '../_shared/types'
+import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
 
 const cta = tv({
   slots: {
@@ -78,17 +78,28 @@ interface Props {
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | 'brand' | 'none' | undefined
   /** The buttons' alignment: as the layout sets it, or at the start edge under centred text (layout centered). */
   actionsAlign?: 'inherit' | 'start' | undefined
+  /** A picture behind the band (its address); the text turns light and an overlay keeps it readable. For `frame` full. */
+  bgImage?: string | undefined
+  /** The colour laid over `bgImage` (default: black at 55 %). */
+  bgOverlay?: string | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   id?: string | undefined
 }
 
-const { heading, eyebrow, body, note, image, actions, layout, frame, size, align, mediaSide, tone = 'accent', actionsAlign, id } = Astro.props
+const { heading, eyebrow, body, note, image, actions, layout, frame, size, align, mediaSide, tone = 'accent', actionsAlign, bgImage, bgOverlay, measured: given, id } = Astro.props
 const s = cta({ layout, frame, size, align, mediaSide, tone, actionsAlign })
+// A background picture is the section's measured background: Section draws the image and its overlay, and the text
+// turns light so it reads on either.
+const measured: MeasuredStyle | undefined = bgImage
+  ? { ...given, tone: 'dark', bg: { ...given?.bg, image: bgImage, overlay: bgOverlay ?? given?.bg?.overlay ?? 'rgba(0, 0, 0, 0.55)' } }
+  : given
 const headingId = id ? `${id}-title` : undefined
 // On the accent background the primary button (accent) would vanish: it is drawn as the secondary style there.
 const onAccent = (action: ActionInput): ActionInput => ({ label: action.label, href: action.href, newTab: action.newTab, style: 'secondary' })
-const shown = actions.map(action => (tone === 'accent' && (action.style ?? 'primary') === 'primary' ? onAccent(action) : action))
+const shown = actions.map(action => (tone === 'accent' && !bgImage && (action.style ?? 'primary') === 'primary' ? onAccent(action) : action))
 ---
-<Section tone={frame === 'card' ? 'default' : tone} spacing={size === 'lg' ? 'lg' : 'md'} id={id} aria-labelledby={headingId}>
+<Section measured={measured} tone={frame === 'card' ? 'default' : tone} spacing={size === 'lg' ? 'lg' : 'md'} id={id} aria-labelledby={headingId}>
   <div class:list={[s.box(), image && 'md:flex-row md:items-center md:justify-between md:gap-12']}>
     <div class={image ? s.text() : 'contents'}>
       <div class={s.copy()}>

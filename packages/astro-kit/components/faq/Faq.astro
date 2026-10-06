@@ -5,6 +5,7 @@
 // and AI answers.
 import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
+import type { MeasuredStyle } from '../_shared/types'
 
 export interface FaqItem {
   question: string
@@ -77,10 +78,12 @@ interface Props {
   /** Add FAQPage structured data (JSON-LD). Once per page. */
   schema?: boolean | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   id?: string | undefined
 }
 
-const { items, heading, intro, layout, columns, icon, numbered = false, style, questionStyle, exclusive = false, openFirst = false, schema = false, tone, id = 'faq' } = Astro.props
+const { items, heading, intro, layout, columns, icon, numbered = false, style, questionStyle, exclusive = false, openFirst = false, schema = false, tone, measured, id = 'faq' } = Astro.props
 const s = faq({ layout, columns, icon, numbered, style, questionStyle: style === 'plain' ? 'heading' : questionStyle, tone })
 // Two columns and the split layout need the page's width; one column reads in the narrow one.
 const wide = layout === 'split' || columns === '2'
@@ -95,7 +98,7 @@ const structured = schema && items.length > 0
   : null
 ---
 {items.length > 0 && (
-  <Section tone={tone} spacing="md" width={wide ? 'page' : 'prose'} id={id} aria-labelledby={headingId}>
+  <Section measured={measured} tone={tone} spacing="md" width={wide ? 'page' : 'prose'} id={id} aria-labelledby={headingId}>
     <div class={s.root()}>
       {(heading || intro) && (
         <header class={s.head()}>

@@ -6,6 +6,8 @@ import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
 import { imageOf, type ImageSource } from '../_shared/image'
+import { measuredGrid } from '../_shared/measured'
+import type { MeasuredStyle } from '../_shared/types'
 
 const cloud = tv({
   slots: {
@@ -70,11 +72,15 @@ interface Props {
   style?: 'plain' | 'grayscale' | 'mono-light' | undefined
   align?: 'center' | 'start' | undefined
   tone?: Tone | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   id?: string | undefined
 }
 
-const { heading, items, layout, columns, logoHeight, style, align, tone, id } = Astro.props
+const { heading, items, layout, columns, logoHeight, style, align, tone, measured, id } = Astro.props
 const s = cloud({ layout, columns, logoHeight, style, align, tone })
+// Measured columns and gap shape the grid layout only; a row or a strip keeps its own flow.
+const grid = (layout ?? 'grid') === 'grid' ? measuredGrid(measured) : undefined
 const headingId = heading && id ? `${id}-title` : undefined
 const marquee = layout === 'marquee'
 // A linked logo with no name is read as the site it goes to, never as a made-up word.
@@ -88,10 +94,10 @@ const shown = items.flatMap((item) => {
 // About four seconds a logo: the strip reads at a pace, whatever its length.
 const duration = `${Math.max(20, shown.length * 4)}s`
 ---
-<Section tone={tone} id={id} aria-labelledby={headingId}>
+<Section measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
   {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
   <div class:list={[marquee && 'kit-marquee overflow-hidden']} style={marquee ? `--kit-marquee-duration:${duration}` : undefined}>
-    <ul class={s.list()}>
+    <ul class={s.list({ class: grid })}>
       {shown.map(({ image, href }) => (
         <li class={s.item()}>
           {href

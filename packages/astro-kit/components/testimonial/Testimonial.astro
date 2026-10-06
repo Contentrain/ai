@@ -6,6 +6,8 @@ import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
 import { imageOf, type ImageSource } from '../_shared/image'
+import { measuredGrid } from '../_shared/measured'
+import type { MeasuredStyle } from '../_shared/types'
 
 export interface TestimonialItem {
   quote: string
@@ -81,15 +83,18 @@ interface Props {
   ratingLabel?: string | undefined
   /** The scrolling row's name for assistive technology, when there is no heading to name it (layout row). */
   label?: string | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   id?: string | undefined
 }
 
-const { items, heading, layout, quoteSize, frame, avatarSize, avatarPlace, quoteMark = 'marks', ratingLabel = '{rating} out of 5 stars', label = 'Testimonials', tone, id } = Astro.props
+const { items, heading, layout, quoteSize, frame, avatarSize, avatarPlace, quoteMark = 'marks', ratingLabel = '{rating} out of 5 stars', label = 'Testimonials', tone, measured, id } = Astro.props
 const s = testimonial({ layout, quoteSize, frame, avatarSize, avatarPlace, quoteMark, tone })
 const headingId = heading && id ? `${id}-title` : undefined
 // Two quotes share the row: a third column would stand empty beside them and narrow both (IP-4 elementor launch G9).
-const list = s.list(items.length === 2 && (layout ?? 'grid') === 'grid' ? { class: 'lg:grid-cols-2' } : {})
+const measuredList = (layout ?? 'grid') === 'grid' ? measuredGrid(measured) : undefined
+const list = s.list({ class: measuredList ?? (items.length === 2 && (layout ?? 'grid') === 'grid' ? 'lg:grid-cols-2' : undefined) })
 // The quotation marks are drawn, not written: the quote's text is the source's words, read once. A quote the source
 // already wrote inside marks keeps its own.
 const quoted = (text: string) => /^\s*["'“‘„«‹「『]/.test(text)
@@ -100,7 +105,7 @@ const spoken = (rating: number) => String(Math.round(rating * 10) / 10)
 const scrolls = layout === 'row'
 ---
 {items.length > 0 && (
-  <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+  <Section measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
     {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
     <div class={list} tabindex={scrolls ? 0 : undefined} role={scrolls ? 'region' : undefined} aria-labelledby={scrolls && heading ? headingId : undefined} aria-label={scrolls && !heading ? label : undefined}>
       {items.map((item) => {

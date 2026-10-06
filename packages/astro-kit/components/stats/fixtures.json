@@ -293,5 +293,41 @@
       ],
       "columns": "6"
     }
+  },
+  {
+    "name": "measured-columns",
+    "props": {
+      "heading": "By the numbers",
+      "intro": "A decade of shipping sites for small teams.",
+      "items": [
+        {
+          "value": "12",
+          "label": "Years in business",
+          "suffix": "+"
+        },
+        {
+          "value": "480",
+          "label": "Clients served"
+        },
+        {
+          "value": "99.9",
+          "label": "Uptime",
+          "suffix": "%"
+        }
+      ],
+      "measured": {
+        "columns": {
+          "390": 1,
+          "768": 2,
+          "1280": 4
+        },
+        "gap": 40,
+        "padY": 96,
+        "bg": {
+          "color": "#0f172a"
+        },
+        "tone": "dark"
+      }
+    }
   }
 ]

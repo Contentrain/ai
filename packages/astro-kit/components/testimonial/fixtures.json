@@ -414,5 +414,58 @@
       "quoteMark": "none",
       "tone": "muted"
     }
+  },
+  {
+    "name": "measured-columns",
+    "props": {
+      "heading": "What readers say",
+      "id": "readers",
+      "items": [
+        {
+          "quote": "The only travel site I read to the end. Every guide feels written by someone who stayed.",
+          "name": "Ayşe Demir",
+          "role": "Reader since 2019",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-1.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          }
+        },
+        {
+          "quote": "Their Lisbon guide saved our trip.",
+          "name": "Tom Becker",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-2.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          }
+        },
+        {
+          "quote": "Honest, slow, and beautifully photographed. I recommend it to every friend who asks where to go next.",
+          "name": "Mei Tanaka",
+          "role": "Photographer",
+          "avatar": {
+            "src": "/kit-fixtures/avatar-3.svg",
+            "alt": "",
+            "width": 96,
+            "height": 96
+          }
+        }
+      ],
+      "measured": {
+        "columns": {
+          "390": 1,
+          "768": 2,
+          "1280": 3
+        },
+        "gap": 16,
+        "bg": {
+          "color": "#f1f5f9"
+        },
+        "tone": "light"
+      }
+    }
   }
 ]

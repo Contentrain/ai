@@ -321,5 +321,58 @@
       ],
       "columns": "6"
     }
+  },
+  {
+    "name": "measured-columns",
+    "props": {
+      "heading": "Trusted by",
+      "items": [
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 1",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 2"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 3",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 4"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 5",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 6"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 7",
+          "href": "https://example.com"
+        },
+        {
+          "image": "/kit-fixtures/logo.svg",
+          "imageAlt": "Company 8"
+        }
+      ],
+      "measured": {
+        "columns": {
+          "390": 2,
+          "768": 3,
+          "1280": 6
+        },
+        "gap": 32,
+        "padY": 48
+      }
+    }
   }
 ]

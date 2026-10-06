@@ -5,6 +5,8 @@ import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
 import { imageOf, type ImageSource } from '../_shared/image'
+import { measuredGrid } from '../_shared/measured'
+import type { MeasuredStyle } from '../_shared/types'
 
 const stats = tv({
   slots: {
@@ -74,16 +76,19 @@ interface Props {
   labelSize?: 'sm' | 'base' | 'lg' | undefined
   order?: 'label-first' | 'value-first' | undefined
   tone?: Tone | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   id?: string | undefined
 }
 
-const { heading, intro, items, layout, columns, style, align, valueSize, labelSize, order, tone, id } = Astro.props
+const { heading, intro, items, layout, columns, style, align, valueSize, labelSize, order, tone, measured, id } = Astro.props
 const s = stats({ layout, columns, style, align, valueSize, labelSize, order, tone })
+const grid = (layout ?? 'grid') === 'grid' ? measuredGrid(measured) : undefined
 const headingId = heading && id ? `${id}-title` : undefined
 const iconOf = (item: Item) => imageOf(item.icon, '')
 // A <dl> names its term first, so figure-first is a plain list, read in the order it is drawn (WCAG 1.3.2).
 ---
-<Section tone={tone} id={id} aria-labelledby={headingId}>
+<Section measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
   {(heading || intro) && (
     <header class="mb-10 flex max-w-2xl flex-col gap-3">
       {heading && <h2 id={headingId} class="text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl">{heading}</h2>}
@@ -91,7 +96,7 @@ const iconOf = (item: Item) => imageOf(item.icon, '')
     </header>
   )}
   {order === 'value-first' ? (
-    <ul class={s.list()} role="list">
+    <ul class={s.list({ class: grid })} role="list">
       {items.map(item => (
         <li class={s.item()}>
           <p class={s.value()}>{iconOf(item) && <KitImage image={iconOf(item)!} sizes="40px" class={s.icon()} />}{item.prefix}{item.value}{item.suffix}</p>
@@ -100,7 +105,7 @@ const iconOf = (item: Item) => imageOf(item.icon, '')
       ))}
     </ul>
   ) : (
-    <dl class={s.list()}>
+    <dl class={s.list({ class: grid })}>
       {items.map(item => (
         <div class={s.item()}>
           <dt class={s.label()}>{item.label}</dt>

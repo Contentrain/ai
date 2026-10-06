@@ -200,5 +200,36 @@
         }
       ]
     }
+  },
+  {
+    "name": "measured-frame",
+    "props": {
+      "heading": "Frequently asked questions",
+      "exclusive": true,
+      "openFirst": true,
+      "schema": true,
+      "items": [
+        {
+          "question": "Do you accept guest essays?",
+          "answer": "<p>Yes — we publish reader essays every season. Send a <a href=\"/pitch/\">short pitch</a> first.</p>"
+        },
+        {
+          "question": "Can I reuse your photographs?",
+          "answer": "<p>Only with written permission. Most are licensed from the photographers, not owned by us.</p>"
+        },
+        {
+          "question": "How often do you publish?",
+          "answer": "<p>Two or three pieces a month, plus the seasonal issue.</p><ul><li>Guides: monthly</li><li>Essays: seasonal</li></ul>"
+        }
+      ],
+      "measured": {
+        "containerPx": 720,
+        "padY": 64,
+        "bg": {
+          "color": "#111827"
+        },
+        "tone": "dark"
+      }
+    }
   }
 ]

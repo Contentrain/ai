@@ -168,5 +168,22 @@
       "layout": "centered",
       "tone": "inverse"
     }
+  },
+  {
+    "name": "background-image",
+    "props": {
+      "heading": "Planning a trip?",
+      "body": "Start with the guides readers use most.",
+      "actions": [
+        {
+          "label": "Subscribe",
+          "href": "/subscribe/"
+        }
+      ],
+      "layout": "centered",
+      "bgImage": "/kit-fixtures/photo-3.svg",
+      "tone": "inverse",
+      "size": "lg"
+    }
   }
 ]

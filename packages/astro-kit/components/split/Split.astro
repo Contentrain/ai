@@ -9,7 +9,7 @@ import Embed from '../embed/Embed.astro'
 import FeatureList from '../feature-list/FeatureList.astro'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
-import type { ActionInput, ImageInput } from '../_shared/types'
+import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
 
 const split = tv({
   slots: {
@@ -92,10 +92,12 @@ interface Props {
   sticky?: boolean | undefined
   align?: 'start' | 'center' | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | 'brand' | 'none' | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   id?: string | undefined
 }
 
-const { heading, headingLevel = 2, eyebrow, body, actions = [], image, features = [], videoUrl, playLabel, imageSide, ratio = '1:1', imageFit, imageShape, imageBleed, mediaKind, featureStyle = 'check', stackOrder, sticky = false, align, tone, id } = Astro.props
+const { heading, headingLevel = 2, eyebrow, body, actions = [], image, features = [], videoUrl, playLabel, imageSide, ratio = '1:1', imageFit, imageShape, imageBleed, mediaKind, featureStyle = 'check', stackOrder, sticky = false, align, tone, measured, id } = Astro.props
 const s = split({ imageSide, ratio, imageFit, imageShape, imageBleed, stackOrder, sticky, align, tone })
 const Heading = `h${headingLevel}` as 'h2'
 const columns = COLUMNS[imageSide === 'start' ? 'image' : 'text'][ratio]
@@ -104,7 +106,7 @@ const video = mediaKind === 'video' && videoUrl
 const headingId = id ? `${id}-title` : undefined
 const html = await renderMarkdown(body)
 ---
-<Section tone={tone} id={id} aria-labelledby={headingId} class={bleed ? 'overflow-x-clip' : undefined}>
+<Section measured={measured} tone={tone} id={id} aria-labelledby={headingId} class={bleed ? 'overflow-x-clip' : undefined}>
   <div class:list={[s.grid(), columns]}>
     <div class={s.copy()}>
       {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
