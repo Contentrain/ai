@@ -322,7 +322,8 @@
           "<fieldset class=\"cr-fields\" disabled>"
         ],
         "excludes": [
-          "<cr-form"
+          "<cr-form",
+          "method=\"post\""
         ]
       }
     },
@@ -330,10 +331,12 @@
       "contact/index.html": {
         "contains": [
           "<cr-form",
-          "data-model=\"contact-messages\""
+          "data-model=\"contact-messages\"",
+          "data-cr-part=\"form\" data-state=\"studio\""
         ],
         "excludes": [
-          "data-state=\"wordpress\""
+          "data-state=\"wordpress\"",
+          "method=\"post\""
         ]
       }
     }

@@ -3,7 +3,8 @@
 // mounts it. Kept apart so the script ships only on pages that render a form.
 // The fields are in the page as HTML (the model's public fields, the markup the
 // mount draws), so they show before the script runs and without it; the mount
-// then puts Studio's live form (captcha, honeypot) in their place.
+// then puts Studio's live form (captcha, honeypot) in their place. The page's
+// copy posts nowhere (no method, submit disabled): only the mounted form sends.
 import { formFields } from '../../lib/features'
 import { fieldsHtml } from '../../lib/studio/form-fields'
 
@@ -20,13 +21,15 @@ const fields = formFields(model)
 ---
 <cr-form
   class:list={['cr-form-mount block', className]}
+  data-cr-part="form"
+  data-state="studio"
   data-base-url={baseUrl}
   data-project={projectId}
   data-model={model}
   data-strings={JSON.stringify(text)}
 >
   {fields.length > 0 && (
-    <form class="cr-form" method="post" data-model={model}>
+    <form class="cr-form" data-model={model}>
       <Fragment set:html={fieldsHtml(fields)} />
       <noscript><p class="cr-noscript">{text['form.noscript']}</p></noscript>
       <p class="cr-actions"><button type="submit" disabled aria-disabled="true">{text['form.send'] ?? 'Send'}</button></p>
