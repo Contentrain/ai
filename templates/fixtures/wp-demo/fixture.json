@@ -93,6 +93,8 @@
       "contains": [
         "column-gap:22px",
         "max-width:1200px",
+        "aria-haspopup=\"true\"",
+        ">Our team</a>",
         "href=\"/rss.xml\"",
         "©",
         "location.replace(to)",

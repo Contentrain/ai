@@ -1,6 +1,6 @@
 ---
 // Site navigation. Wide screens get an inline list whose submenus open on
-// hover and keyboard focus; narrow screens get a toggle that opens the menu as
+// hover and keyboard focus (a chevron button marks the ones that have one); narrow screens get a toggle that opens the menu as
 // a native popover (drawer) or a <details> dropdown. No JavaScript.
 import { tv } from 'tailwind-variants'
 import type { NavItem } from '../_shared/types'
@@ -57,11 +57,17 @@ const drawer = `${id}-drawer`
         <li class="group relative">
           <a href={item.href} aria-current={item.href === current ? 'page' : undefined} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener' : undefined} class={link()}>{item.label}</a>
           {item.children && item.children.length > 0 && (
+            <>
+              {/* The chevron is the submenu's handle: focusing it (a tap on a touch screen, Tab on a keyboard) opens the submenu, with no script. */}
+              <button type="button" aria-haspopup="true" aria-label={item.label} class="ms-1 inline-flex cursor-pointer items-center align-middle opacity-80 hover:opacity-100">
+                <svg aria-hidden="true" viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6" /></svg>
+              </button>
             <ul class={sub()}>
               {item.children.map(child => (
                 <li><a href={child.href} aria-current={child.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-sm text-ink no-underline hover:bg-surface-muted">{child.label}</a></li>
               ))}
             </ul>
+            </>
           )}
         </li>
       ))}
