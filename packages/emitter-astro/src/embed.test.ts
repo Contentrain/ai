@@ -310,7 +310,24 @@ describe('emitted embed runtime — 402 payment_required (the workspace subscrip
     const host = fakeHost({ baseUrl: rt.base_url, project: 'proj1', model: 'contact' })
     await em.mountForm(host)
     expect(host.hidden).toBe(false)
-    expect(host.innerHTML).toBe('<p class="cr-error">Forms are available on Pro. Upgrade your plan.</p>')
+    expect(host.innerHTML).toBe('<p class="cr-error" role="alert">Forms are available on Pro. Upgrade your plan.</p>')
+  })
+
+  it('a form the page drew stays, and the load error is announced under it', async () => {
+    vi.stubGlobal('fetch', mockFetch({ statusCode: 500, message: 'Studio is unreachable.' }, 500))
+    const added: string[] = []
+    const drawn = { insertAdjacentHTML: (_where: string, html: string) => added.push(html) }
+    const host = { ...fakeHost({ baseUrl: rt.base_url, project: 'proj1', model: 'contact' }), innerHTML: '<form class="cr-form"></form>', querySelector: () => drawn }
+    await em.mountForm(host)
+    expect(host.innerHTML).toBe('<form class="cr-form"></form>')
+    expect(added).toEqual(['<p class="cr-error" role="alert">Studio is unreachable.</p>'])
+  })
+
+  it('a comments thread that cannot load says so as an alert', async () => {
+    vi.stubGlobal('fetch', mockFetch({ statusCode: 500, message: 'Studio is unreachable.' }, 500))
+    const host = fakeHost({ baseUrl: rt.base_url, project: 'proj1', model: 'posts', entry: 'hello-world', locale: 'en' })
+    await em.mountComments(host)
+    expect(host.innerHTML).toBe('<p class="cr-error" role="alert">Studio is unreachable.</p>')
   })
 })
 
