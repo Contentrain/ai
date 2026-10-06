@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "elementor",
-  "version": "11",
+  "version": "12",
   "fallback": "prose",
   "defaults": {
     "elementor/video": {
@@ -256,6 +256,9 @@
     {
       "match": "elementor/tabs",
       "component": "tabs",
+      "props": {
+        "label": "ui:tabs.label"
+      },
       "into": "items",
       "each": ".elementor-tab-desktop-title",
       "item": {
@@ -266,11 +269,91 @@
     {
       "match": "elementor/nested-tabs",
       "component": "tabs",
+      "props": {
+        "label": "ui:tabs.label"
+      },
       "into": "items",
       "each": ".e-n-tab-title",
       "item": {
         "label": "dom:.e-n-tab-title-text",
         "content": "html:.e-con"
+      }
+    },
+    {
+      "match": "elementor/nested-carousel",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".swiper-slide:not(.swiper-slide-duplicate)",
+      "item": {
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
+        "title": "dom:h1, h2, h3, h4",
+        "text": "dom:p"
+      }
+    },
+    {
+      "match": "elementor/loop-carousel",
+      "component": "slider",
+      "bind": "collection:posts",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "item": {
+        "title": "field:title",
+        "text": "field:excerpt",
+        "image": "media:featured_image"
+      }
+    },
+    {
+      "match": "elementor/testimonial-carousel",
+      "component": "testimonial",
+      "props": {
+        "ratingLabel": "ui:testimonial.rating",
+        "label": "ui:testimonial.label"
+      },
+      "variant": {
+        "layout": "row"
+      },
+      "into": "items",
+      "each": ".swiper-slide:not(.swiper-slide-duplicate)",
+      "item": {
+        "quote": "dom:.elementor-testimonial__text",
+        "name": "dom:.elementor-testimonial__name",
+        "role": "dom:.elementor-testimonial__title",
+        "avatar": "img:.elementor-testimonial__image img@src",
+        "avatarAlt": "img:.elementor-testimonial__image img@alt"
+      }
+    },
+    {
+      "match": "elementor/reviews",
+      "component": "testimonial",
+      "props": {
+        "ratingLabel": "ui:testimonial.rating",
+        "label": "ui:testimonial.label"
+      },
+      "variant": {
+        "layout": "row"
+      },
+      "into": "items",
+      "each": ".swiper-slide:not(.swiper-slide-duplicate)",
+      "item": {
+        "quote": "dom:.elementor-testimonial__text",
+        "name": "dom:.elementor-testimonial__name",
+        "role": "dom:.elementor-testimonial__title",
+        "avatar": "img:.elementor-testimonial__image img@src",
+        "avatarAlt": "img:.elementor-testimonial__image img@alt"
       }
     },
     {

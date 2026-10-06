@@ -70,6 +70,7 @@
   "slider.of": "/",
   "slider.prev": "前のスライド",
   "slider.slide": "スライド",
+  "tabs.label": "タブ",
   "testimonial.label": "お客様の声",
   "testimonial.rating": "5つ星のうち{rating}"
 }

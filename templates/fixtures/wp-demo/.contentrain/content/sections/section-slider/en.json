@@ -21,6 +21,36 @@
         },
         "text": "Moved 900 pages without a broken link.",
         "title": "Product documentation"
+      },
+      {
+        "image": {
+          "alt": "Sketches of a page layout",
+          "height": 450,
+          "src": "/demo/cover-1.svg",
+          "width": 800
+        },
+        "text": "Design that stays consistent.",
+        "title": "A design system for editors"
+      },
+      {
+        "image": {
+          "alt": "A phone showing a menu",
+          "height": 450,
+          "src": "/demo/cover-3.svg",
+          "width": 800
+        },
+        "text": "Menus that work on a phone.",
+        "title": "A mobile-first rebuild"
+      },
+      {
+        "image": {
+          "alt": "Charts on a screen",
+          "height": 450,
+          "src": "/demo/cover-2.svg",
+          "width": 800
+        },
+        "text": "A static index the browser reads.",
+        "title": "Search without a server"
       }
     ]
   }

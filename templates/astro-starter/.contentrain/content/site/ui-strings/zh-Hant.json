@@ -70,6 +70,7 @@
   "slider.of": "/",
   "slider.prev": "上一張投影片",
   "slider.slide": "投影片",
+  "tabs.label": "分頁標籤",
   "testimonial.label": "客戶評價",
   "testimonial.rating": "5 星中的 {rating} 星"
 }

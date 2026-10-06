@@ -31,7 +31,7 @@
     "gutenberg": ["core/details"],
     "elementor": ["elementor/accordion", "elementor/toggle", "elementor/nested-accordion"],
     "divi": ["divi/et_pb_accordion", "divi/et_pb_toggle"],
-    "classic": ["classic/faq"]
+    "classic": ["classic/faq", "classic/details"]
   },
   "a11y": "Native <details>/<summary>: keyboard operable and announced as expandable by every screen reader, with no script to fail. The plus icon is decorative. The JSON-LD answer text is the answer with its markup removed."
 }

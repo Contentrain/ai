@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "@zag-js/tabs": "^1.44.0",
+    "@zag-js/vanilla": "^1.44.0",
     "embla-carousel": "^8.6.0"
   },
   "siteConfig": [
@@ -40,6 +42,29 @@
     "unannounced-tunnel"
   ],
   "distFiles": {
+    "services/index.html": {
+      "contains": [
+        "A design system for editors",
+        "A mobile-first rebuild",
+        "Search without a server",
+        "Product documentation",
+        "aria-controls=\"slider-track\"",
+        "Slide 5 of 5",
+        ">By train<",
+        ">By air<",
+        ">By car<",
+        ">On foot<",
+        "The coastal path starts at the harbour.",
+        "Use the park-and-ride at",
+        "Do you keep our URLs?",
+        "How long does a move take?",
+        "Is the content copied or rewritten?",
+        "Do we need a server?",
+        "How do editors work?",
+        "Are translations kept?",
+        "Yes, every language the source site had."
+      ]
+    },
     "_redirects": {
       "contains": [
         "/old-about/ /about/ 301",

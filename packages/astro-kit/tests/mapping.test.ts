@@ -526,3 +526,24 @@ describe('the page reads a section in the source order (G-text)', () => {
     expect(statsRule('elementor')?.variant?.order).toBeUndefined()
   })
 })
+
+describe('carousel, tabs and disclosure rules', () => {
+  // Facts count a carousel's slides without the copies its script makes (Swiper, Slick, Splide, Owl clone the ends),
+  // so a rule that selects the clones too would give more items than the source shows.
+  const CLONES: Record<string, string> = {
+    'classic/swiper': 'swiper-slide-duplicate', 'classic/slick': 'slick-cloned', 'classic/splide': 'splide__slide--clone', 'classic/owl': 'cloned',
+    'elementor/nested-carousel': 'swiper-slide-duplicate', 'elementor/testimonial-carousel': 'swiper-slide-duplicate', 'elementor/reviews': 'swiper-slide-duplicate',
+  }
+  it.each(Object.entries(CLONES))('%s selects each slide once, never a script\'s copy', (match, clone) => {
+    const rule = Object.values(tables).flatMap(table => table.rules).find(r => r.match === match)!
+    expect(rule.each, match).toContain(`:not(.${clone})`)
+    expect(Object.keys(rule.item ?? {}).length, match).toBeGreaterThan(1)
+  })
+
+  it('maps a plain disclosure run, a post carousel and the review widgets', () => {
+    const rule = (match: string) => Object.values(tables).flatMap(table => table.rules).find(r => r.match === match)
+    expect(rule('classic/details')).toMatchObject({ component: 'faq', each: 'details' })
+    expect(rule('elementor/loop-carousel')).toMatchObject({ component: 'slider', bind: 'collection:posts' })
+    expect(rule('elementor/reviews')).toMatchObject({ component: 'testimonial', variant: { layout: 'row' } })
+  })
+})

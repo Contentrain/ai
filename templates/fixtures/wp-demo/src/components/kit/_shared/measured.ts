@@ -150,3 +150,16 @@ export function measuredColumns(measured: MeasuredStyle | undefined): string | u
   const gap = clamp(measured.gap, 0, 200) !== undefined ? 'gap-x-[var(--kit-gap)]' : ''
   return ['block columns-[var(--kit-cols-390)] md:columns-[var(--kit-cols-768)] lg:columns-[var(--kit-cols-1280)]', gap].filter(Boolean).join(' ')
 }
+
+/**
+ * A row of slides at the measured columns (slides in view at 390, 768 and 1280) and gap, or `undefined` to keep the
+ * component's own `perView`. A basis per width: the row less the gaps, shared by the columns. The class names are written
+ * out in full so Tailwind finds them.
+ */
+export function measuredSlides(measured: MeasuredStyle | undefined): { slide: string, track: string } | undefined {
+  if (!measured || !columnsFor(measured.columns)) return undefined
+  return {
+    slide: 'basis-[calc((100%-(var(--kit-cols-390)-1)*var(--kit-gap,1rem))/var(--kit-cols-390))] md:basis-[calc((100%-(var(--kit-cols-768)-1)*var(--kit-gap,1rem))/var(--kit-cols-768))] lg:basis-[calc((100%-(var(--kit-cols-1280)-1)*var(--kit-gap,1rem))/var(--kit-cols-1280))]',
+    track: clamp(measured.gap, 0, 200) !== undefined ? 'gap-[var(--kit-gap)]' : '',
+  }
+}

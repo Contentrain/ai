@@ -243,6 +243,9 @@
     {
       "match": "divi/et_pb_tabs",
       "component": "tabs",
+      "props": {
+        "label": "ui:tabs.label"
+      },
       "into": "items",
       "each": ".et_pb_tabs_controls li",
       "item": {

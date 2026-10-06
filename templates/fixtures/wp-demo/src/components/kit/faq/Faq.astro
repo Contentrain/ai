@@ -1,0 +1,130 @@
+---
+// Questions and answers as native disclosure widgets (<details>) — no script.
+// `exclusive` groups them by name, so opening one closes the others. With
+// `schema`, the page also carries FAQPage structured data for search engines
+// and AI answers.
+import { tv } from 'tailwind-variants'
+import Section from '../_shared/Section.astro'
+import { measuredColumns } from '../_shared/measured'
+import type { MeasuredStyle } from '../_shared/types'
+
+export interface FaqItem {
+  question: string
+  /** The answer as HTML (the rich text the question came with). */
+  answer: string
+}
+
+const faq = tv({
+  slots: {
+    root: '',
+    head: 'mb-8 flex flex-col gap-3',
+    heading: 'text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
+    intro: 'max-w-2xl text-lg opacity-80',
+    list: 'flex flex-col',
+    item: 'group',
+    question: '',
+    summary: 'flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-lg [font-weight:var(--font-weight-heading,600)] [&::-webkit-details-marker]:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    marker: 'size-5 shrink-0 transition-transform duration-200 motion-reduce:transition-none',
+    answer: 'prose-site prose max-w-none pb-5 text-current',
+  },
+  variants: {
+    // single: heading above, one column. split: the heading and intro stay in a left column (sticky) beside the list.
+    layout: {
+      single: {},
+      split: { root: 'grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-16', head: 'mb-0 lg:sticky lg:top-8 lg:self-start' },
+    },
+    // Two balanced columns of questions on wide screens.
+    columns: { '1': {}, '2': { list: 'lg:block lg:columns-2 lg:gap-x-12', item: 'break-inside-avoid' } },
+    // The marker in each question's row: a plus that turns into a cross, or a chevron that turns over.
+    icon: { plus: {}, chevron: { marker: 'group-open:rotate-180' } },
+    numbered: { true: { list: '[counter-reset:faq]', item: '[counter-increment:faq]', question: 'before:me-4 before:tabular-nums before:opacity-60 before:content-[counter(faq,decimal-leading-zero)]' }, false: {} },
+    style: {
+      lines: { list: 'divide-y divide-line border-y border-line' },
+      cards: { list: 'gap-3', item: 'rounded-card border border-line px-5', summary: 'py-5' },
+      // WordPress's details block: the browser's own disclosure triangle, no rules or box.
+      plain: { list: 'gap-2', summary: 'list-item list-[revert] py-1 text-[length:var(--text-body,1rem)] [font-weight:inherit] [&::-webkit-details-marker]:inline', marker: 'hidden', answer: 'pt-2 ps-5' },
+    },
+    tone: { default: {}, muted: { item: 'bg-surface' }, inverse: { answer: 'prose-invert' }, accent: { answer: 'prose-invert' } },
+    // heading: the question as a small heading. bold: body size in bold, as accordion and toggle titles often are. The
+    // weight is an arbitrary property like the summary's own: twMerge replaces one only with another, and a `font-bold`
+    // beside it lost in the CSS (IP-4 elementor G9: the question stayed at the heading weight).
+    questionStyle: { heading: {}, bold: { summary: 'text-[length:var(--text-body,1rem)] [font-weight:700]' } },
+  },
+  compoundVariants: [
+    { style: 'cards', tone: 'muted', class: { item: 'border-transparent' } },
+    { icon: 'plus', class: { marker: 'group-open:rotate-45' } },
+    // A rule between items does not cross columns: each item carries its own, and the list's are dropped.
+    { columns: '2', style: 'lines', class: { list: 'lg:divide-y-0 lg:border-y-0', item: 'lg:border-b lg:border-line' } },
+    { columns: '2', style: 'cards', class: { item: 'lg:mb-3' } },
+  ],
+  defaultVariants: { layout: 'single', columns: '1', icon: 'plus', numbered: false, style: 'lines', tone: 'default', questionStyle: 'heading' },
+})
+
+interface Props {
+  items: FaqItem[]
+  heading?: string | undefined
+  intro?: string | undefined
+  layout?: 'single' | 'split' | undefined
+  columns?: '1' | '2' | undefined
+  icon?: 'plus' | 'chevron' | undefined
+  /** Count the questions with a leading number (drawn by CSS, not part of the text). */
+  numbered?: boolean | undefined
+  style?: 'lines' | 'cards' | 'plain' | undefined
+  /** How the questions read; `plain` sets its own and ignores this. */
+  questionStyle?: 'heading' | 'bold' | undefined
+  /** One answer open at a time (`<details name>`). */
+  exclusive?: boolean | undefined
+  /** Open the first answer. */
+  openFirst?: boolean | undefined
+  /** Add FAQPage structured data (JSON-LD). Once per page. */
+  schema?: boolean | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
+  id?: string | undefined
+}
+
+const { items, heading, intro, layout, columns, icon, numbered = false, style, questionStyle, exclusive = false, openFirst = false, schema = false, tone, measured, id = 'faq' } = Astro.props
+const s = faq({ layout, columns, icon, numbered, style, questionStyle: style === 'plain' ? 'heading' : questionStyle, tone })
+// Two columns and the split layout need the page's width; one column reads in the narrow one.
+const measuredCols = measuredColumns(measured)
+const wide = layout === 'split' || columns === '2' || measuredCols !== undefined
+// Measured columns win over `columns`. A rule between items does not cross columns, so each item carries its own.
+const listClass = measuredCols && (style === 'cards' || style === 'plain' ? measuredCols : `${measuredCols} divide-y-0 border-b-0`)
+const itemClass = measuredCols ? (style === 'cards' ? 'break-inside-avoid mb-3' : style === 'plain' ? 'break-inside-avoid' : 'break-inside-avoid border-b border-line') : undefined
+const headingId = heading ? `${id}-title` : undefined
+const plain = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
+const structured = schema && items.length > 0
+  ? JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: items.map(item => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: plain(item.answer) } })),
+    }).replace(/</g, '\\u003c')
+  : null
+---
+{items.length > 0 && (
+  <Section measured={measured} tone={tone} spacing="md" width={wide ? 'page' : 'prose'} id={id} aria-labelledby={headingId}>
+    <div class={s.root()}>
+      {(heading || intro) && (
+        <header class={s.head()}>
+          {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+          {intro && <p class={s.intro()} data-kit-text>{intro}</p>}
+        </header>
+      )}
+      <div class={s.list({ class: listClass })}>
+        {items.map((item, i) => (
+          <details class={s.item({ class: itemClass })} name={exclusive ? id : undefined} open={openFirst && i === 0}>
+            <summary class={s.summary()}>
+              <span class={s.question()}>{item.question}</span>
+              {icon === 'chevron'
+                ? <svg class={s.marker()} viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 5 5 5-5" /></svg>
+                : <svg class={s.marker()} viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>}
+            </summary>
+            <div class={s.answer()} set:html={item.answer} />
+          </details>
+        ))}
+      </div>
+    </div>
+    {structured && <script type="application/ld+json" set:html={structured} />}
+  </Section>
+)}
