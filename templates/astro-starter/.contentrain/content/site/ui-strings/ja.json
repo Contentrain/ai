@@ -37,6 +37,7 @@
   "form.send": "送信",
   "form.sending": "送信中…",
   "form.wordpress": "フォームを開く",
+  "form.wordpress_note": "このフォームは {site} から送信します。",
   "gallery.close": "閉じる",
   "gallery.enlarge": "拡大",
   "gallery.images": "画像",

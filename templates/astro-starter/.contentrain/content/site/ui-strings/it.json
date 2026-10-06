@@ -37,6 +37,7 @@
   "form.send": "Invia",
   "form.sending": "Invio in corso…",
   "form.wordpress": "Apri il modulo",
+  "form.wordpress_note": "Questo modulo si invia su {site}.",
   "gallery.close": "Chiudi",
   "gallery.enlarge": "Ingrandisci",
   "gallery.images": "Immagini",

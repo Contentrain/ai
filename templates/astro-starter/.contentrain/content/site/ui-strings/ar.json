@@ -37,6 +37,7 @@
   "form.send": "إرسال",
   "form.sending": "جارٍ الإرسال…",
   "form.wordpress": "فتح النموذج",
+  "form.wordpress_note": "يُرسَل هذا النموذج عبر {site}.",
   "gallery.close": "إغلاق",
   "gallery.enlarge": "تكبير",
   "gallery.images": "الصور",

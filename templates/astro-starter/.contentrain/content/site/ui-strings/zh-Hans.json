@@ -37,6 +37,7 @@
   "form.send": "发送",
   "form.sending": "发送中…",
   "form.wordpress": "打开表单",
+  "form.wordpress_note": "此表单在 {site} 上提交。",
   "gallery.close": "关闭",
   "gallery.enlarge": "放大",
   "gallery.images": "图片",

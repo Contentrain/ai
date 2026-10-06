@@ -26,7 +26,7 @@
 // titles and addresses of the fixture's drafts, which no menu, body link,
 // sitemap or feed may reveal. `distFiles` names built files and text each
 // must contain or must not (the host's redirect rules, a redirect page, the
-// sitemap). `optimizedInDist` names images that must reach dist as
+// sitemap), and `distFilesByMedia` the same for one `--media` mode only. `optimizedInDist` names images that must reach dist as
 // resized copies with a srcset, from public/ or from Studio's media host.
 
 import { execFileSync, spawn } from 'node:child_process'
@@ -229,7 +229,13 @@ if (absent.length) {
   console.log(`\nno unpublished content in dist (${absent.length} markers)`)
 }
 
-const fileChecks = Object.entries(fixture.distFiles ?? {})
+// `distFilesByMedia.<local|studio>` adds checks for one media mode: a Studio-bound build (`--media studio`) renders
+// what a site waiting for Studio does not.
+const byMedia = fixture.distFilesByMedia?.[values.media] ?? {}
+const fileChecks = [...new Set([...Object.keys(fixture.distFiles ?? {}), ...Object.keys(byMedia)])].map(file => [file, {
+  contains: [...(fixture.distFiles?.[file]?.contains ?? []), ...(byMedia[file]?.contains ?? [])],
+  excludes: [...(fixture.distFiles?.[file]?.excludes ?? []), ...(byMedia[file]?.excludes ?? [])],
+}])
 if (fileChecks.length) {
   const problems = []
   for (const [file, { contains = [], excludes = [] }] of fileChecks) {

@@ -37,6 +37,7 @@
   "form.send": "Enviar",
   "form.sending": "A enviar…",
   "form.wordpress": "Abrir o formulário",
+  "form.wordpress_note": "Este formulário é enviado em {site}.",
   "gallery.close": "Fechar",
   "gallery.enlarge": "Ampliar",
   "gallery.images": "Imagens",

@@ -39,3 +39,13 @@ export function toParam(path: string): string | undefined {
 }
 
 export const permalinks = siteConfig.permalinks
+
+/**
+ * The addresses to build when `CONTENTRAIN_ROUTES` lists some (`/,/about/`, comma separated): a preview of part of
+ * the site builds those pages alone. Unset or empty, `undefined`: every address. Compared as `toParam` sees them, so
+ * `/about`, `about/` and `/about/` are one address.
+ */
+export function onlyRoutes(value = process.env.CONTENTRAIN_ROUTES): Set<string> | undefined {
+  const listed = (value ?? '').split(',').map(part => part.trim()).filter(Boolean)
+  return listed.length ? new Set(listed.map(path => toParam(path) ?? '')) : undefined
+}

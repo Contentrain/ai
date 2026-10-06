@@ -126,7 +126,7 @@ describe('validateProject — model.locales narrows locale coverage', () => {
     expect(result.valid).toBe(false)
   })
 
-  it('a subset still holds parity inside itself: a locale it claims but has not filled is an error', async () => {
+  it('a subset still holds parity inside itself: an entry a claimed locale lacks is reported, as a warning', async () => {
     await seedModel(collectionModel(['en', 'tr']))
     await seedCollection('pages', ['en'], { a1b2c3: { title: 'About' } })
     await seedCollection('pages', ['tr'], {})
@@ -135,10 +135,38 @@ describe('validateProject — model.locales narrows locale coverage', () => {
 
     const parity = result.issues.filter(i => i.message.includes('Entry parity'))
     expect(parity).toHaveLength(1)
-    expect(parity[0]!.severity).toBe('error')
+    expect(parity[0]!.severity).toBe('warning')
     expect(parity[0]!.locale).toBe('tr')
     // da is outside the model's scope, so it is neither missing nor checked.
     expect(result.issues.some(i => i.locale === 'da')).toBe(false)
+  })
+
+  it('a partly translated collection is valid: an untranslated entry warns in either direction and never fails the project', async () => {
+    await seedModel(collectionModel(['en', 'tr']))
+    await seedCollection('pages', ['en'], { a1b2c3: { title: 'About' }, d4e5f6: { title: 'Contact' } })
+    await seedCollection('pages', ['tr'], { a1b2c3: { title: 'Hakkımızda' }, g7h8i9: { title: 'Kampanya' } })
+
+    const result = await validateProject(testDir, {})
+
+    const parity = result.issues.filter(i => i.message.includes('Entry parity'))
+    expect(parity.map(i => [i.severity, i.locale, i.entry])).toEqual([
+      ['warning', 'tr', 'd4e5f6'],
+      ['warning', 'en', 'g7h8i9'],
+    ])
+    expect(result.summary.errors).toBe(0)
+    expect(result.summary.warnings).toBe(2)
+    expect(result.valid).toBe(true)
+  })
+
+  it('a locale with no file at all is still an error: only the entry-level gap became a warning', async () => {
+    await seedModel(collectionModel(['en', 'tr']))
+    await seedCollection('pages', ['en'], { a1b2c3: { title: 'About' } })
+
+    const result = await validateProject(testDir, {})
+
+    const missing = result.issues.filter(i => i.message.includes('Locale file missing'))
+    expect(missing.map(i => [i.severity, i.locale])).toEqual([['error', 'tr']])
+    expect(result.valid).toBe(false)
   })
 
   it('a document model keeps warning severity, scoped to its own locales', async () => {
