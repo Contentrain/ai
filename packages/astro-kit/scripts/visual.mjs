@@ -16,7 +16,7 @@
 //
 //   node scripts/visual.mjs                 compare (a missing baseline is written and reported)
 //   node scripts/visual.mjs --update        rewrite every baseline
-//   node scripts/visual.mjs --only hero     one component
+//   node scripts/visual.mjs --only hero     one component (or several: --only hero,faq — one install, one astro check)
 //   node scripts/visual.mjs --out <dir>     keep the site there
 //   node scripts/visual.mjs --local-sdk     @contentrain/query from this checkout
 
@@ -47,8 +47,9 @@ const WIDTHS = [390, 768, 1280]
 const MAX_DIFF_RATIO = 0.002
 const baselineDir = join(kitRoot, 'visual', process.platform)
 const catalog = JSON.parse(readFileSync(join(kitRoot, 'catalog.json'), 'utf8'))
-const components = catalog.components.filter(c => !values.only || c.id === values.only)
-if (components.length === 0) throw new Error(`no component "${values.only}"`)
+const only = values.only?.split(',').map(id => id.trim()).filter(Boolean)
+const components = catalog.components.filter(c => !only || only.includes(c.id))
+if (components.length === 0 || (only && components.length !== only.length)) throw new Error(`no component "${values.only}"`)
 
 const site = values.out ? resolve(values.out) : mkdtempSync(join(tmpdir(), 'astro-kit-visual-'))
 const run = (command, args, cwd = site) => execFileSync(command, args, { cwd, stdio: 'inherit', env: { ...process.env, CI: 'true' } })

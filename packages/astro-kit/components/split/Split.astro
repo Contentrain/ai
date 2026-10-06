@@ -5,59 +5,121 @@
 import { tv } from 'tailwind-variants'
 import { renderMarkdown } from '../../../lib/markdown'
 import Button from '../_shared/Button.astro'
+import Embed from '../embed/Embed.astro'
+import FeatureList from '../feature-list/FeatureList.astro'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
-import type { ActionInput, ImageInput } from '../_shared/types'
+import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
 
 const split = tv({
   slots: {
-    grid: 'grid items-center gap-10 md:grid-cols-2 md:gap-16',
+    grid: 'grid items-center gap-10 md:gap-16',
     copy: 'flex flex-col gap-5',
     eyebrow: 'text-sm font-semibold tracking-wide uppercase opacity-80',
     heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
     body: 'prose prose-site max-w-none text-pretty',
     actions: 'flex flex-wrap gap-3 pt-2',
-    media: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
+    media: 'overflow-hidden',
+    image: 'h-auto w-full object-cover',
   },
   variants: {
     // Source order is text first; `start` moves the image before it on wide screens only.
     imageSide: { start: { media: 'md:order-first' }, end: {} },
+    // The text column's share against the image's (the columns follow the sides, see `columns` below).
+    ratio: { '1:1': {}, '5:7': {}, '7:5': {} },
+    // contain: the image at its own proportions. cover: it fills the column's height.
+    imageFit: { contain: {}, cover: { grid: 'items-stretch', media: 'min-h-72 md:h-full', image: 'h-full min-h-72' } },
+    imageShape: {
+      none: { media: 'rounded-none' },
+      rounded: { media: 'rounded-[var(--radius-image,var(--radius-card))]' },
+      circle: { media: 'mx-auto aspect-square w-full max-w-lg rounded-full', image: 'h-full' },
+    },
+    // edge: the image runs on to the viewport's edge on its side (wide screens).
+    imageBleed: { none: {}, edge: { media: 'rounded-none' } },
+    // Phones show the text first, as the source does, or the picture first when it is the content itself.
+    stackOrder: { 'text-first': {}, 'media-first': { media: 'max-md:order-first' } },
+    // The media column follows the reader down a long text (wide screens).
+    sticky: { true: { media: 'md:sticky md:top-8 md:self-start' }, false: {} },
     align: { start: {}, center: { copy: 'items-center text-center', actions: 'justify-center' } },
     // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
-    tone: { default: {}, muted: {}, inverse: {}, accent: { eyebrow: 'opacity-100' } },
+    tone: { default: {}, muted: {}, inverse: {}, accent: { eyebrow: 'opacity-100' }, brand: { eyebrow: 'opacity-100' }, none: {} },
   },
-  defaultVariants: { imageSide: 'end', align: 'start', tone: 'default' },
+  defaultVariants: { imageSide: 'end', ratio: '1:1', imageFit: 'contain', imageShape: 'rounded', imageBleed: 'none', stackOrder: 'text-first', sticky: false, align: 'start', tone: 'default' },
 })
+
+// Literal class names, so the stylesheet builder sees them: the text column's share first, the image's second; a
+// picture before the text on wide screens swaps the two columns.
+const COLUMNS = {
+  text: { '1:1': 'md:grid-cols-2', '5:7': 'md:grid-cols-[5fr_7fr]', '7:5': 'md:grid-cols-[7fr_5fr]' },
+  image: { '1:1': 'md:grid-cols-2', '5:7': 'md:grid-cols-[7fr_5fr]', '7:5': 'md:grid-cols-[5fr_7fr]' },
+} as const
+// The viewport's edge, from the content's edge: what is left of the page's width, halved.
+const BLEED = {
+  end: 'md:-me-[calc((100vw-min(var(--container-page),100vw-2*var(--spacing-gutter,2rem)))/2)]',
+  start: 'md:-ms-[calc((100vw-min(var(--container-page),100vw-2*var(--spacing-gutter,2rem)))/2)]',
+} as const
+
+interface Feature {
+  title: string
+  text?: string | undefined
+  /** A kit icon name (check, star, bolt, shield, heart, globe, clock, chat). */
+  icon?: string | undefined
+}
 
 interface Props {
   heading: string
+  /** The heading's level: 2 under the page title; 3 or 4 when the section sits inside another. */
+  headingLevel?: 2 | 3 | 4 | undefined
   eyebrow?: string | undefined
   /** Markdown, rendered at build time. */
   body?: string | undefined
   actions?: ActionInput[] | undefined
   image?: ImageInput | undefined
+  /** Short points under the text, each with a title and a line. */
+  features?: Feature[] | undefined
+  /** A video page (YouTube, Vimeo); the image is its poster and nothing loads from the provider until it is played. */
+  videoUrl?: string | undefined
+  /** The video's text for the play button. */
+  playLabel?: string | undefined
   imageSide?: 'start' | 'end' | undefined
+  ratio?: '1:1' | '5:7' | '7:5' | undefined
+  imageFit?: 'contain' | 'cover' | undefined
+  imageShape?: 'none' | 'rounded' | 'circle' | undefined
+  imageBleed?: 'none' | 'edge' | undefined
+  mediaKind?: 'image' | 'video' | undefined
+  featureStyle?: 'check' | 'icon' | undefined
+  stackOrder?: 'text-first' | 'media-first' | undefined
+  sticky?: boolean | undefined
   align?: 'start' | 'center' | undefined
-  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | 'brand' | 'none' | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   id?: string | undefined
 }
 
-const { heading, eyebrow, body, actions = [], image, imageSide, align, tone, id } = Astro.props
-const s = split({ imageSide, align, tone })
+const { heading, headingLevel = 2, eyebrow, body, actions = [], image, features = [], videoUrl, playLabel, imageSide, ratio = '1:1', imageFit, imageShape, imageBleed, mediaKind, featureStyle = 'check', stackOrder, sticky = false, align, tone, measured, id } = Astro.props
+const s = split({ imageSide, ratio, imageFit, imageShape, imageBleed, stackOrder, sticky, align, tone })
+const Heading = `h${headingLevel}` as 'h2'
+const columns = COLUMNS[imageSide === 'start' ? 'image' : 'text'][ratio]
+const bleed = imageBleed === 'edge' ? BLEED[imageSide === 'start' ? 'start' : 'end'] : undefined
+const video = mediaKind === 'video' && videoUrl
 const headingId = id ? `${id}-title` : undefined
 const html = await renderMarkdown(body)
 ---
-<Section tone={tone} id={id} aria-labelledby={headingId}>
-  <div class={s.grid()}>
+<Section measured={measured} tone={tone} id={id} aria-labelledby={headingId} class={bleed ? 'overflow-x-clip' : undefined}>
+  <div class:list={[s.grid(), columns]}>
     <div class={s.copy()}>
       {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
-      <h2 id={headingId} class={s.heading()}>{heading}</h2>
+      <Heading id={headingId} class={s.heading()}>{heading}</Heading>
       {html && <div class={s.body()} data-kit-text set:html={html} />}
+      {features.length > 0 && <FeatureList items={features} columns="2" style={featureStyle} tone={tone === 'brand' || tone === 'none' ? undefined : tone} bare titleLevel={Math.min(5, headingLevel + 1) as 3 | 4 | 5} />}
       {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
     </div>
-    {image && (
-      <div class={s.media()}>
-        <KitImage image={image} sizes="(min-width: 768px) 50vw, 100vw" class="h-auto w-full object-cover" />
+    {(video || image) && (
+      <div class:list={[s.media(), bleed]}>
+        {video
+          ? <div class="[&>figure]:my-0 [&>figure]:max-w-none"><Embed url={videoUrl} title={heading} poster={image} playLabel={playLabel} aspect="video" width="page" /></div>
+          : image && <KitImage image={image} sizes="(min-width: 768px) 50vw, 100vw" class={s.image()} />}
       </div>
     )}
   </div>

@@ -80,5 +80,7 @@
   "slider.slide": "שקופית",
   "steps.current": "נוכחי",
   "team.read_more": "קרא עוד",
-  "team.social": "{name} ב-{network}"
+  "team.social": "{name} ב-{network}",
+  "testimonial.label": "המלצות",
+  "testimonial.rating": "{rating} מתוך 5 כוכבים"
 }

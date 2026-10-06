@@ -80,5 +80,7 @@
   "slider.slide": "スライド",
   "steps.current": "現在",
   "team.read_more": "続きを読む",
-  "team.social": "{network}の{name}"
+  "team.social": "{network}の{name}",
+  "testimonial.label": "お客様の声",
+  "testimonial.rating": "5つ星のうち{rating}"
 }

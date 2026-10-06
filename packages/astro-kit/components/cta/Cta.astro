@@ -3,13 +3,21 @@
 // across the full section, or as a card inside it.
 import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
+import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
-import type { ActionInput } from '../_shared/types'
+import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
 
 const cta = tv({
   slots: {
     box: 'flex flex-col gap-6',
     copy: 'flex flex-col gap-3',
+    eyebrow: 'text-sm font-semibold tracking-wide uppercase opacity-80',
+    // The text and buttons when a picture stands beside them.
+    text: 'flex min-w-0 flex-1 flex-col gap-6',
+    // The buttons with the small print under them.
+    cta: 'flex flex-col gap-2 md:shrink-0',
+    note: 'text-sm opacity-75',
+    media: 'w-full max-w-sm shrink-0 overflow-hidden rounded-[var(--radius-image,var(--radius-card))] md:w-2/5',
     heading: 'text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
     body: 'max-w-2xl text-pretty opacity-85',
     actions: 'flex flex-wrap gap-3',
@@ -21,13 +29,19 @@ const cta = tv({
       // Heading, text and buttons in one column at the start edge, on every width.
       stacked: { box: 'items-start text-start' },
     },
+    // The heading's scale; `lg` also gives the band more room.
+    size: { md: {}, lg: { heading: 'text-3xl md:text-5xl' } },
+    // The text block's alignment (`centered` already sets its own).
+    align: { start: {}, center: { copy: 'items-center text-center', body: 'mx-auto' } },
+    // With a picture: which side it takes on wide screens (text first in the source).
+    mediaSide: { end: {}, start: { media: 'md:order-first' } },
     frame: {
       full: {},
       card: { box: 'rounded-card border border-line p-8 md:p-12' },
     },
     // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
     // none: no fill of its own — the page background and text colour show through.
-    tone: { default: {}, muted: {}, inverse: {}, accent: { body: 'opacity-100' }, brand: { body: 'opacity-100' }, none: {} },
+    tone: { default: {}, muted: {}, inverse: {}, accent: { body: 'opacity-100', eyebrow: 'opacity-100', note: 'opacity-100' }, brand: { body: 'opacity-100', eyebrow: 'opacity-100', note: 'opacity-100' }, none: {} },
     // The buttons' own alignment: `start` keeps them at the start edge under centred text (a WordPress buttons block
     // with no justification sits left in a group whose heading and paragraph are centred). The row is the text's
     // column, as WordPress's content width is, not the whole section. Only centred needs it: inline and stacked
@@ -42,35 +56,61 @@ const cta = tv({
     { frame: 'card', tone: 'accent', class: { box: 'border-transparent bg-accent text-accent-ink' } },
     { frame: 'card', tone: 'brand', class: { box: 'border-transparent bg-brand text-brand-ink' } },
     { layout: 'centered', actionsAlign: 'start', class: { actions: 'w-full max-w-2xl justify-start' } },
+    { layout: 'centered', class: { cta: 'items-center' } },
   ],
-  defaultVariants: { layout: 'inline', frame: 'full', tone: 'accent', actionsAlign: 'inherit' },
+  defaultVariants: { layout: 'inline', frame: 'full', size: 'md', align: 'start', mediaSide: 'end', tone: 'accent', actionsAlign: 'inherit' },
 })
 
 interface Props {
   heading: string
+  eyebrow?: string | undefined
   body?: string | undefined
+  /** The small print under the buttons ("No credit card required"). */
+  note?: string | undefined
+  /** A small picture beside the text. A large one is a `split`. */
+  image?: ImageInput | undefined
   actions: ActionInput[]
   layout?: 'inline' | 'centered' | 'stacked' | undefined
   frame?: 'full' | 'card' | undefined
+  size?: 'md' | 'lg' | undefined
+  align?: 'start' | 'center' | undefined
+  mediaSide?: 'start' | 'end' | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | 'brand' | 'none' | undefined
   /** The buttons' alignment: as the layout sets it, or at the start edge under centred text (layout centered). */
   actionsAlign?: 'inherit' | 'start' | undefined
+  /** A picture behind the band (its address); the text turns light and an overlay keeps it readable. For `frame` full. */
+  bgImage?: string | undefined
+  /** The colour laid over `bgImage` (default: black at 55 %). */
+  bgOverlay?: string | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   id?: string | undefined
 }
 
-const { heading, body, actions, layout, frame, tone = 'accent', actionsAlign, id } = Astro.props
-const s = cta({ layout, frame, tone, actionsAlign })
+const { heading, eyebrow, body, note, image, actions, layout, frame, size, align, mediaSide, tone = 'accent', actionsAlign, bgImage, bgOverlay, measured: given, id } = Astro.props
+const s = cta({ layout, frame, size, align, mediaSide, tone, actionsAlign })
+// A background picture is the section's measured background: Section draws the image and its overlay, and the text
+// turns light so it reads on either.
+const measured: MeasuredStyle | undefined = bgImage
+  ? { ...given, tone: 'dark', bg: { ...given?.bg, image: bgImage, overlay: bgOverlay ?? given?.bg?.overlay ?? 'rgba(0, 0, 0, 0.55)' } }
+  : given
 const headingId = id ? `${id}-title` : undefined
 // On the accent background the primary button (accent) would vanish: it is drawn as the secondary style there.
 const onAccent = (action: ActionInput): ActionInput => ({ label: action.label, href: action.href, newTab: action.newTab, style: 'secondary' })
-const shown = actions.map(action => (tone === 'accent' && (action.style ?? 'primary') === 'primary' ? onAccent(action) : action))
+const shown = actions.map(action => (tone === 'accent' && !bgImage && (action.style ?? 'primary') === 'primary' ? onAccent(action) : action))
 ---
-<Section tone={frame === 'card' ? 'default' : tone} spacing="md" id={id} aria-labelledby={headingId}>
-  <div class={s.box()}>
-    <div class={s.copy()}>
-      <h2 id={headingId} class={s.heading()}>{heading}</h2>
-      {body && <p class={s.body()} data-kit-text>{body}</p>}
+<Section measured={measured} tone={frame === 'card' ? 'default' : tone} spacing={size === 'lg' ? 'lg' : 'md'} id={id} aria-labelledby={headingId}>
+  <div class:list={[s.box(), image && 'md:flex-row md:items-center md:justify-between md:gap-12']}>
+    <div class={image ? s.text() : 'contents'}>
+      <div class={s.copy()}>
+        {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
+        <h2 id={headingId} class={s.heading()}>{heading}</h2>
+        {body && <p class={s.body()} data-kit-text>{body}</p>}
+      </div>
+      {note
+        ? <div class={s.cta()}>{shown.length > 0 && <div class={s.actions()}>{shown.map(action => <Button action={action} size="lg" />)}</div>}<p class={s.note()} data-kit-text>{note}</p></div>
+        : shown.length > 0 && <div class={s.actions()}>{shown.map(action => <Button action={action} size="lg" />)}</div>}
     </div>
-    {shown.length > 0 && <div class={s.actions()}>{shown.map(action => <Button action={action} size="lg" />)}</div>}
+    {image && <div class={s.media()}><KitImage image={image} sizes="(min-width: 768px) 30vw, 100vw" class="h-auto w-full object-cover" /></div>}
   </div>
 </Section>

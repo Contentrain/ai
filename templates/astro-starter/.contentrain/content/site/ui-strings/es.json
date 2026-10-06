@@ -80,5 +80,7 @@
   "slider.slide": "Diapositiva",
   "steps.current": "Actual",
   "team.read_more": "Leer más",
-  "team.social": "{name} en {network}"
+  "team.social": "{name} en {network}",
+  "testimonial.label": "Opiniones",
+  "testimonial.rating": "{rating} de 5 estrellas"
 }

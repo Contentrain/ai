@@ -80,5 +80,7 @@
   "slider.slide": "Diapositivo",
   "steps.current": "Atual",
   "team.read_more": "Ler mais",
-  "team.social": "{name} no {network}"
+  "team.social": "{name} no {network}",
+  "testimonial.label": "Depoimentos",
+  "testimonial.rating": "{rating} de 5 estrelas"
 }

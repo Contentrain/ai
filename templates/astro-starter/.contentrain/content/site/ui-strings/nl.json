@@ -80,5 +80,7 @@
   "slider.slide": "Dia",
   "steps.current": "Huidig",
   "team.read_more": "Lees meer",
-  "team.social": "{name} op {network}"
+  "team.social": "{name} op {network}",
+  "testimonial.label": "Ervaringen",
+  "testimonial.rating": "{rating} van de 5 sterren"
 }

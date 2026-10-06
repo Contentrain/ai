@@ -200,6 +200,10 @@
     {
       "match": "classic/testimonial",
       "component": "testimonial",
+      "props": {
+        "ratingLabel": "ui:testimonial.rating",
+        "label": "ui:testimonial.label"
+      },
       "group": "siblings",
       "into": "items",
       "item": {

@@ -80,5 +80,7 @@
   "slider.slide": "Diapositive",
   "steps.current": "En cours",
   "team.read_more": "Lire la suite",
-  "team.social": "{name} sur {network}"
+  "team.social": "{name} sur {network}",
+  "testimonial.label": "Témoignages",
+  "testimonial.rating": "{rating} sur 5 étoiles"
 }

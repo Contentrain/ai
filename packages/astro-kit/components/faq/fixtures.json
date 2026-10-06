@@ -40,5 +40,80 @@
   {
     "name": "lines-bold",
     "props": { "heading": "Questions", "questionStyle": "bold", "id": "faq-bold", "items": [{ "question": "Do you ship printed guides abroad?", "answer": "<p>Yes, to every country in the EU and the UK.</p>" }, { "question": "Can I change my route later?", "answer": "<p>Any time before the trip starts.</p>" }] }
+  },
+  {
+    "name": "split-chevron",
+    "props": {
+      "layout": "split",
+      "icon": "chevron",
+      "heading": "Questions",
+      "intro": "Everything you need before you start.",
+      "id": "faq-split",
+      "items": [
+        { "question": "Do you accept guest essays?", "answer": "<p>Yes — we publish reader essays every season. Send a <a href=\"/pitch/\">short pitch</a> first.</p>" },
+        { "question": "Can I reuse your photographs?", "answer": "<p>Only with written permission. Most are licensed from the photographers, not owned by us.</p>" },
+        { "question": "How often do you publish?", "answer": "<p>Two or three pieces a month, plus the seasonal issue.</p><ul><li>Guides: monthly</li><li>Essays: seasonal</li></ul>" }
+      ]
+    }
+  },
+  {
+    "name": "two-columns-numbered",
+    "props": {
+      "columns": "2",
+      "numbered": true,
+      "icon": "chevron",
+      "id": "faq-cols",
+      "items": [
+        { "question": "Do you accept guest essays?", "answer": "<p>Yes — we publish reader essays every season. Send a <a href=\"/pitch/\">short pitch</a> first.</p>" },
+        { "question": "Can I reuse your photographs?", "answer": "<p>Only with written permission. Most are licensed from the photographers, not owned by us.</p>" },
+        { "question": "How often do you publish?", "answer": "<p>Two or three pieces a month, plus the seasonal issue.</p><ul><li>Guides: monthly</li><li>Essays: seasonal</li></ul>" },
+        { "question": "Do you accept guest essays?", "answer": "<p>Yes — we publish reader essays every season. Send a <a href=\"/pitch/\">short pitch</a> first.</p>" },
+        { "question": "Can I reuse your photographs?", "answer": "<p>Only with written permission. Most are licensed from the photographers, not owned by us.</p>" },
+        { "question": "How often do you publish?", "answer": "<p>Two or three pieces a month, plus the seasonal issue.</p><ul><li>Guides: monthly</li><li>Essays: seasonal</li></ul>" }
+      ],
+      "heading": "Common questions"
+    }
+  },
+  {
+    "name": "split-two-cards-plus",
+    "props": {
+      "layout": "split",
+      "columns": "2",
+      "style": "cards",
+      "icon": "plus",
+      "id": "faq-split-cols",
+      "heading": "Help",
+      "intro": "Short answers.",
+      "items": [
+        { "question": "Do you accept guest essays?", "answer": "<p>Yes — we publish reader essays every season. Send a <a href=\"/pitch/\">short pitch</a> first.</p>" },
+        { "question": "Can I reuse your photographs?", "answer": "<p>Only with written permission. Most are licensed from the photographers, not owned by us.</p>" },
+        { "question": "How often do you publish?", "answer": "<p>Two or three pieces a month, plus the seasonal issue.</p><ul><li>Guides: monthly</li><li>Essays: seasonal</li></ul>" },
+        { "question": "Do you accept guest essays?", "answer": "<p>Yes — we publish reader essays every season. Send a <a href=\"/pitch/\">short pitch</a> first.</p>" },
+        { "question": "Can I reuse your photographs?", "answer": "<p>Only with written permission. Most are licensed from the photographers, not owned by us.</p>" },
+        { "question": "How often do you publish?", "answer": "<p>Two or three pieces a month, plus the seasonal issue.</p><ul><li>Guides: monthly</li><li>Essays: seasonal</li></ul>" }
+      ]
+    }
+  },
+  {
+    "name": "measured-frame",
+    "props": {
+      "heading": "Frequently asked questions",
+      "exclusive": true,
+      "openFirst": true,
+      "schema": true,
+      "items": [
+        { "question": "Do you accept guest essays?", "answer": "<p>Yes — we publish reader essays every season. Send a <a href=\"/pitch/\">short pitch</a> first.</p>" },
+        { "question": "Can I reuse your photographs?", "answer": "<p>Only with written permission. Most are licensed from the photographers, not owned by us.</p>" },
+        { "question": "How often do you publish?", "answer": "<p>Two or three pieces a month, plus the seasonal issue.</p><ul><li>Guides: monthly</li><li>Essays: seasonal</li></ul>" }
+      ],
+      "measured": {
+        "containerPx": 720,
+        "padY": 64,
+        "bg": {
+          "color": "#111827"
+        },
+        "tone": "dark"
+      }
+    }
   }
 ]

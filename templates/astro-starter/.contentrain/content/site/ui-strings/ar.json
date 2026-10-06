@@ -80,5 +80,7 @@
   "slider.slide": "شريحة",
   "steps.current": "الحالي",
   "team.read_more": "اقرأ المزيد",
-  "team.social": "{name} على {network}"
+  "team.social": "{name} على {network}",
+  "testimonial.label": "آراء العملاء",
+  "testimonial.rating": "{rating} من 5 نجوم"
 }

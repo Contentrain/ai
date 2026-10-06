@@ -80,5 +80,7 @@
   "slider.slide": "슬라이드",
   "steps.current": "현재",
   "team.read_more": "더 보기",
-  "team.social": "{network}의 {name}"
+  "team.social": "{network}의 {name}",
+  "testimonial.label": "고객 후기",
+  "testimonial.rating": "별 5개 중 {rating}개"
 }

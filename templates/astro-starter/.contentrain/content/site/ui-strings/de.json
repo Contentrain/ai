@@ -80,5 +80,7 @@
   "slider.slide": "Folie",
   "steps.current": "Aktuell",
   "team.read_more": "Mehr lesen",
-  "team.social": "{name} auf {network}"
+  "team.social": "{name} auf {network}",
+  "testimonial.label": "Kundenstimmen",
+  "testimonial.rating": "{rating} von 5 Sternen"
 }

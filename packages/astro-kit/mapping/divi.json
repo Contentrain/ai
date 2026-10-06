@@ -253,6 +253,10 @@
     {
       "match": "divi/et_pb_testimonial",
       "component": "testimonial",
+      "props": {
+        "ratingLabel": "ui:testimonial.rating",
+        "label": "ui:testimonial.label"
+      },
       "group": "siblings",
       "into": "items",
       "item": {
@@ -508,6 +512,10 @@
     {
       "id": "testimonial.quotes",
       "component": "testimonial",
+      "props": {
+        "ratingLabel": "ui:testimonial.rating",
+        "label": "ui:testimonial.label"
+      },
       "slots": {
         "intro": {
           "match": "divi/et_pb_text",

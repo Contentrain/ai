@@ -80,5 +80,7 @@
   "slider.slide": "Slajd",
   "steps.current": "Bieżący",
   "team.read_more": "Czytaj więcej",
-  "team.social": "{name} w serwisie {network}"
+  "team.social": "{name} w serwisie {network}",
+  "testimonial.label": "Opinie",
+  "testimonial.rating": "{rating} na 5 gwiazdek"
 }

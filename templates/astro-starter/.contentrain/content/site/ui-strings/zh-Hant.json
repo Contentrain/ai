@@ -80,5 +80,7 @@
   "slider.slide": "投影片",
   "steps.current": "目前",
   "team.read_more": "閱讀更多",
-  "team.social": "{name}的{network}"
+  "team.social": "{name}的{network}",
+  "testimonial.label": "客戶評價",
+  "testimonial.rating": "5 星中的 {rating} 星"
 }

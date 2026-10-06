@@ -80,5 +80,7 @@
   "slider.slide": "Slayt",
   "steps.current": "Güncel",
   "team.read_more": "Devamını oku",
-  "team.social": "{name} — {network}"
+  "team.social": "{name} — {network}",
+  "testimonial.label": "Müşteri yorumları",
+  "testimonial.rating": "5 yıldız üzerinden {rating}"
 }

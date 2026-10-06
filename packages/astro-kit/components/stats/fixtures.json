@@ -156,5 +156,178 @@
         }
       ]
     }
+  },
+  {
+    "name": "divided-center-md",
+    "props": {
+      "items": [
+        {
+          "value": "12",
+          "label": "Years in business",
+          "suffix": "+"
+        },
+        {
+          "value": "480",
+          "label": "Clients served"
+        },
+        {
+          "value": "99.9",
+          "label": "Uptime",
+          "suffix": "%"
+        }
+      ],
+      "style": "divided",
+      "align": "center",
+      "valueSize": "md"
+    }
+  },
+  {
+    "name": "inline-xl",
+    "props": {
+      "items": [
+        {
+          "value": "12",
+          "label": "Years in business",
+          "suffix": "+"
+        },
+        {
+          "value": "480",
+          "label": "Clients served"
+        },
+        {
+          "value": "99.9",
+          "label": "Uptime",
+          "suffix": "%"
+        }
+      ],
+      "layout": "inline",
+      "valueSize": "xl",
+      "heading": "In numbers"
+    }
+  },
+  {
+    "name": "display-icons",
+    "props": {
+      "items": [
+        {
+          "value": "12",
+          "label": "Years in business",
+          "suffix": "+",
+          "icon": "/kit-fixtures/logo.svg"
+        },
+        {
+          "value": "480",
+          "label": "Clients served",
+          "icon": "/kit-fixtures/logo.svg"
+        },
+        {
+          "value": "99.9",
+          "label": "Uptime",
+          "suffix": "%",
+          "icon": "/kit-fixtures/logo.svg"
+        }
+      ],
+      "valueSize": "display"
+    }
+  },
+  {
+    "name": "five-columns",
+    "props": {
+      "items": [
+        {
+          "value": "12",
+          "label": "Years in business",
+          "suffix": "+"
+        },
+        {
+          "value": "480",
+          "label": "Clients served"
+        },
+        {
+          "value": "99.9",
+          "label": "Uptime",
+          "suffix": "%"
+        },
+        {
+          "value": "7",
+          "label": "Offices"
+        },
+        {
+          "value": "24/7",
+          "label": "Support"
+        }
+      ],
+      "columns": "5"
+    }
+  },
+  {
+    "name": "six-columns",
+    "props": {
+      "items": [
+        {
+          "value": "12",
+          "label": "Years in business",
+          "suffix": "+"
+        },
+        {
+          "value": "480",
+          "label": "Clients served"
+        },
+        {
+          "value": "99.9",
+          "label": "Uptime",
+          "suffix": "%"
+        },
+        {
+          "value": "7",
+          "label": "Offices"
+        },
+        {
+          "value": "24/7",
+          "label": "Support"
+        },
+        {
+          "value": "3",
+          "label": "Awards"
+        }
+      ],
+      "columns": "6"
+    }
+  },
+  {
+    "name": "measured-columns",
+    "props": {
+      "heading": "By the numbers",
+      "intro": "A decade of shipping sites for small teams.",
+      "items": [
+        {
+          "value": "12",
+          "label": "Years in business",
+          "suffix": "+"
+        },
+        {
+          "value": "480",
+          "label": "Clients served"
+        },
+        {
+          "value": "99.9",
+          "label": "Uptime",
+          "suffix": "%"
+        }
+      ],
+      "measured": {
+        "columns": {
+          "390": 1,
+          "768": 2,
+          "1280": 4
+        },
+        "gap": 40,
+        "padY": 96,
+        "bg": {
+          "color": "#0f172a"
+        },
+        "tone": "dark"
+      }
+    }
   }
 ]

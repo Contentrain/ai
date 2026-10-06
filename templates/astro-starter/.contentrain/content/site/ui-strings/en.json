@@ -80,5 +80,7 @@
   "slider.slide": "Slide",
   "steps.current": "Current",
   "team.read_more": "Read more",
-  "team.social": "{name} on {network}"
+  "team.social": "{name} on {network}",
+  "testimonial.label": "Testimonials",
+  "testimonial.rating": "{rating} out of 5 stars"
 }

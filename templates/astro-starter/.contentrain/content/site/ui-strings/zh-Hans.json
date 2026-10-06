@@ -80,5 +80,7 @@
   "slider.slide": "幻灯片",
   "steps.current": "当前",
   "team.read_more": "阅读更多",
-  "team.social": "{name}的{network}"
+  "team.social": "{name}的{network}",
+  "testimonial.label": "客户评价",
+  "testimonial.rating": "5 星中的 {rating} 星"
 }

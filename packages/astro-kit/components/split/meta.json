@@ -3,7 +3,10 @@
   "name": "Split",
   "description": "An image beside a block of text — eyebrow, heading, a markdown body and buttons — on either side, stacked on phones. The media-and-text section of a landing page (Gutenberg media-text, a two-column Elementor container with an image, Divi's image + text row).",
   "category": "section",
-  "uses": [],
+  "uses": [
+    "embed",
+    "feature-list"
+  ],
   "shared": [
     "Button.astro",
     "KitImage.astro",
@@ -20,6 +23,64 @@
       "default": "end",
       "description": "Which side the image takes on wide screens: start (left in left-to-right text) or end. Phones always show it after the text."
     },
+    "ratio": {
+      "options": [
+        "1:1",
+        "5:7",
+        "7:5"
+      ],
+      "default": "1:1",
+      "description": "The text column's share against the image's: equal, text 5 to image 7, or text 7 to image 5."
+    },
+    "imageFit": {
+      "options": [
+        "contain",
+        "cover"
+      ],
+      "default": "contain",
+      "description": "contain: the image at its own proportions. cover: it fills the column's height."
+    },
+    "imageShape": {
+      "options": [
+        "none",
+        "rounded",
+        "circle"
+      ],
+      "default": "rounded",
+      "description": "The image's corners: square, the theme's rounding, or a circle."
+    },
+    "imageBleed": {
+      "options": [
+        "none",
+        "edge"
+      ],
+      "default": "none",
+      "description": "edge: the image runs on to the edge of the screen on its side (wide screens)."
+    },
+    "mediaKind": {
+      "options": [
+        "image",
+        "video"
+      ],
+      "default": "image",
+      "description": "image: the picture. video: the picture is the poster of a video that loads only when played."
+    },
+    "featureStyle": {
+      "options": [
+        "check",
+        "icon"
+      ],
+      "default": "check",
+      "description": "The marks of the points under the text: a check, or each point's own icon."
+    },
+    "stackOrder": {
+      "options": [
+        "text-first",
+        "media-first"
+      ],
+      "default": "text-first",
+      "description": "On a phone: the text first, or the picture first."
+    },
     "align": {
       "options": [
         "start",
@@ -33,10 +94,12 @@
         "default",
         "muted",
         "inverse",
-        "accent"
+        "accent",
+        "brand",
+        "none"
       ],
       "default": "default",
-      "description": "Section background."
+      "description": "Section background (brand: the site's brand colour; none: the page's own)."
     }
   },
   "props": {
@@ -45,6 +108,12 @@
       "label": "Heading",
       "required": true,
       "description": "The section heading."
+    },
+    "headingLevel": {
+      "type": "integer",
+      "default": 2,
+      "content": false,
+      "description": "The heading's level: 2 under the page title; 3 or 4 when the section sits inside another."
     },
     "eyebrow": {
       "type": "string",
@@ -121,10 +190,162 @@
       },
       "description": "The image beside the text. Width and height, when known, let the site reserve its space."
     },
+    "features": {
+      "type": "array",
+      "label": "Points",
+      "items": {
+        "type": "object",
+        "fields": {
+          "title": {
+            "type": "string",
+            "label": "Title",
+            "required": true,
+            "description": "The point, in a few words."
+          },
+          "text": {
+            "type": "string",
+            "label": "Text",
+            "description": "A line about it."
+          },
+          "icon": {
+            "type": "string",
+            "label": "Icon",
+            "description": "A kit icon name (check, star, bolt, shield, heart, globe, clock, chat)."
+          }
+        }
+      },
+      "description": "Short points under the text (an Elementor icon list or icon box, a Gutenberg list), each with a title and a line."
+    },
+    "videoUrl": {
+      "type": "url",
+      "label": "Video",
+      "description": "A video page (YouTube, Vimeo); the image is its poster and nothing loads from the provider until it is played."
+    },
+    "playLabel": {
+      "type": "string",
+      "content": false,
+      "description": "The play button's text (ui-strings embed.play)."
+    },
+    "measured": {
+      "type": "object",
+      "content": false,
+      "description": "The source section's measured style (MeasuredStyle): frame width, padding, fill, image, columns per width, gap, text tone, radius, minimum height — all in pixels. Absent, the site's tokens; present, it wins over tone and columns. Values that are not a number, a colour or a known keyword are dropped.",
+      "fields": {
+        "containerPx": {
+          "type": "integer",
+          "min": 0,
+          "max": 2560,
+          "description": "The frame's content width."
+        },
+        "padY": {
+          "type": "integer",
+          "min": 0,
+          "max": 400,
+          "description": "Top and bottom padding."
+        },
+        "padX": {
+          "type": "integer",
+          "min": 0,
+          "max": 200,
+          "description": "The frame's side padding (gutter)."
+        },
+        "bg": {
+          "type": "object",
+          "description": "The section's background.",
+          "fields": {
+            "color": {
+              "type": "string",
+              "description": "Fill colour: hex, rgb(a) or hsl(a)."
+            },
+            "image": {
+              "type": "string",
+              "description": "Background image address (http(s) or root-relative), drawn behind the content."
+            },
+            "overlay": {
+              "type": "string",
+              "description": "Colour or linear/radial gradient laid over the image or the fill."
+            },
+            "size": {
+              "type": "string",
+              "description": "cover, contain or auto; anything else draws as cover."
+            },
+            "position": {
+              "type": "string",
+              "description": "One or two of center/top/bottom/left/right or percentages."
+            }
+          }
+        },
+        "columns": {
+          "type": "object",
+          "description": "Item columns at 390 (base), 768 (md) and 1280 (lg) px; a missing width follows the narrower one.",
+          "fields": {
+            "390": {
+              "type": "integer",
+              "min": 1,
+              "max": 6,
+              "description": "Phone."
+            },
+            "768": {
+              "type": "integer",
+              "min": 1,
+              "max": 6,
+              "description": "Tablet."
+            },
+            "1280": {
+              "type": "integer",
+              "min": 1,
+              "max": 6,
+              "description": "Desktop."
+            }
+          }
+        },
+        "gap": {
+          "type": "integer",
+          "min": 0,
+          "max": 200,
+          "description": "Gap between items."
+        },
+        "tone": {
+          "type": "select",
+          "options": [
+            "light",
+            "dark"
+          ],
+          "description": "What the text is set for: dark = light text on a dark band. Without it, a fill's own lightness decides."
+        },
+        "align": {
+          "type": "select",
+          "options": [
+            "start",
+            "center",
+            "end"
+          ],
+          "description": "Where the heading and lead sit; read by a component whose own align is not set."
+        },
+        "radius": {
+          "type": "integer",
+          "min": 0,
+          "max": 200,
+          "description": "Card and item corner radius."
+        },
+        "minHeight": {
+          "type": "integer",
+          "min": 0,
+          "max": 2000,
+          "description": "The section's minimum height."
+        }
+      }
+    },
     "id": {
       "type": "string",
       "content": false,
       "description": "Anchor id of the section; the heading gets `<id>-title`."
+    },
+    "sticky": {
+      "type": "boolean",
+      "default": false,
+      "content": false,
+      "description": "The picture stays in view while a long text scrolls past it (wide screens)."
     }
   },
   "slots": {},
@@ -141,7 +362,7 @@
       "divi/et_pb_image"
     ]
   },
-  "a11y": "The section is labelled by its heading. The image is a separate figure in reading order after the text; an empty description marks a decorative one.",
+  "a11y": "The section is labelled by its heading. The image is a separate figure in reading order after the text; an empty description marks a decorative one. With stackOrder media-first the picture comes first on a phone by CSS order only: the DOM and so the reading order stay text first, which is right when the picture is decoration; give the picture an empty description then.",
   "pattern": {
     "summary": "image beside heading + text",
     "signals": [
