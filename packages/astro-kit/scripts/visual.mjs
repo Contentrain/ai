@@ -118,6 +118,9 @@ const origin = `http://localhost:${server.address().port}`
 
 const fixturesOf = new Map(components.map(c => [c.id, new Map(JSON.parse(readFileSync(join(kitRoot, 'components', c.id, 'fixtures.json'), 'utf8')).map(f => [f.name, f.props]))]))
 const outline = []
+const menus = []
+/** Every real href of a menu tree (a Nav or Header `items` prop), at any depth. */
+const menuHrefs = items => (items ?? []).flatMap(item => (item.href && item.href !== '#' ? [item.href] : []).concat(menuHrefs(item.children)))
 const browser = await chromium.launch(process.platform === 'darwin' ? { channel: 'chrome' } : {})
 const failures = []
 const written = []
@@ -140,6 +143,14 @@ try {
           const opens = Number(props.level ?? props.headingLevel ?? 2)
           const skip = levels.findIndex((level, i) => level > (i === 0 ? opens : levels[i - 1] + 1))
           if (skip >= 0) outline.push(`${c.id}/${name}: h${levels.join(' h')} (${skip === 0 ? `opens below h${opens}` : `h${levels[skip - 1]} → h${levels[skip]}`})`)
+        }
+        if (width === WIDTHS[0] && (c.id === 'nav' || c.id === 'header')) {
+          // A menu keeps every level: each real href is a link in the wide menu and again in the narrow one, and a
+          // group with no link is not drawn as <a href="#">.
+          const props = fixturesOf.get(c.id).get(name) ?? {}
+          const counts = await element.evaluate(el => [...el.querySelectorAll('a[href]')].map(a => a.getAttribute('href')))
+          for (const href of menuHrefs(props.items)) if (counts.filter(h => h === href).length < 2) menus.push(`${c.id}/${name}: ${href} is drawn ${counts.filter(h => h === href).length} time(s), expected the wide and the narrow menu`)
+          if (counts.includes('#')) menus.push(`${c.id}/${name}: a group with no link is drawn as <a href="#">`)
         }
         const shot = PNG.sync.read(await element.screenshot({ animations: 'disabled' }))
         const file = join(baselineDir, c.id, `${name}-${width}.png`)
@@ -172,11 +183,12 @@ try {
 }
 
 if (outline.length) console.error(`visual: ${outline.length} fixture(s) skip a heading level:\n${outline.map(line => `  ✗ ${line}`).join('\n')}`)
+if (menus.length) console.error(`visual: ${menus.length} menu level(s) lost:\n${menus.map(line => `  ✗ ${line}`).join('\n')}`)
 if (written.length) console.log(`visual: wrote ${written.length} baseline(s) under ${baselineDir}`)
 if (failures.length) {
   console.error(`visual: ${failures.length} fixture(s) changed:\n${failures.map(line => `  ✗ ${line}`).join('\n')}`)
   process.exit(1)
 }
-if (outline.length) process.exit(1)
+if (outline.length || menus.length) process.exit(1)
 console.log(`visual: ${components.length} component(s) × ${WIDTHS.length} widths match`)
 if (!values.out) rmSync(site, { recursive: true, force: true })

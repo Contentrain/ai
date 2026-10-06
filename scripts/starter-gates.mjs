@@ -235,15 +235,21 @@ const byMedia = fixture.distFilesByMedia?.[values.media] ?? {}
 const fileChecks = [...new Set([...Object.keys(fixture.distFiles ?? {}), ...Object.keys(byMedia)])].map(file => [file, {
   contains: [...(fixture.distFiles?.[file]?.contains ?? []), ...(byMedia[file]?.contains ?? [])],
   excludes: [...(fixture.distFiles?.[file]?.excludes ?? []), ...(byMedia[file]?.excludes ?? [])],
+  counts: { ...fixture.distFiles?.[file]?.counts, ...byMedia[file]?.counts },
 }])
 if (fileChecks.length) {
   const problems = []
-  for (const [file, { contains = [], excludes = [] }] of fileChecks) {
+  for (const [file, { contains = [], excludes = [], counts = {} }] of fileChecks) {
     const path = join(project, 'dist', file)
     if (!existsSync(path)) { problems.push(`${file}: not built`); continue }
     const text = readFileSync(path, 'utf8')
     for (const needle of contains) if (!text.includes(needle)) problems.push(`${file}: missing ${needle}`)
     for (const needle of excludes) if (text.includes(needle)) problems.push(`${file}: must not contain ${needle}`)
+    // `counts`: a needle that must appear at least n times (a menu entry drawn in the flyout and in the drawer).
+    for (const [needle, least] of Object.entries(counts)) {
+      const found = text.split(needle).length - 1
+      if (found < least) problems.push(`${file}: ${needle} appears ${found} time(s), expected at least ${least}`)
+    }
   }
   if (problems.length) throw new Error(`Built files are not as expected:\n${problems.join('\n')}`)
   console.log(`\n${fileChecks.length} built file(s) as expected`)

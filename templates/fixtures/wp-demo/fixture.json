@@ -133,11 +133,15 @@
       ]
     },
     "index.html": {
+      "counts": {
+        ">Leadership</a>": 2
+      },
       "contains": [
         "column-gap:22px",
         "max-width:1200px",
-        "aria-haspopup=\"true\"",
+        "aria-controls=\"site-nav-sub-",
         ">Our team</a>",
+        ">Leadership</a>",
         "href=\"/rss.xml\"",
         "©",
         "location.replace(to)",

@@ -2860,6 +2860,14 @@
           ],
           "default": "static",
           "description": "Sticky keeps the header at the top while scrolling."
+        },
+        "menu": {
+          "options": [
+            "flyout",
+            "mega"
+          ],
+          "default": "flyout",
+          "description": "How submenus open on wide screens: a list under the item (flyout) or a wide panel of columns (mega). Submenus nest to any depth."
         }
       },
       "props": {
@@ -3615,7 +3623,7 @@
     {
       "id": "nav",
       "name": "Navigation",
-      "description": "Site navigation: an inline list with hover/focus submenus on wide screens and a toggle on narrow ones that opens a native popover drawer or a <details> dropdown. No JavaScript.",
+      "description": "Site navigation: an inline list with hover/focus submenus on wide screens and a toggle on narrow ones that opens a native popover drawer or a <details> dropdown. Submenus nest to any depth; the mega variant draws them as a column panel. Works without JavaScript; a small script (only when a menu has submenus) keeps aria-expanded true and lets Escape close a panel.",
       "category": "chrome",
       "uses": [],
       "shared": [
@@ -3629,6 +3637,14 @@
           ],
           "default": "popover",
           "description": "Narrow-screen menu: a side drawer (Popover API) or a dropdown under the toggle."
+        },
+        "menu": {
+          "options": [
+            "flyout",
+            "mega"
+          ],
+          "default": "flyout",
+          "description": "How a submenu opens on wide screens: a list under the item (flyout) or a wide panel with one column per child and the grandchildren listed under it (mega)."
         },
         "align": {
           "options": [
@@ -3721,9 +3737,10 @@
           "classic/nav-menu"
         ]
       },
-      "a11y": "A <nav> landmark with a label; the current page carries aria-current. Submenus open on :focus-within as well as hover. The drawer is a native popover: Escape and light dismiss close it and focus returns to the toggle.",
+      "a11y": "A <nav> landmark with a label; the current page carries aria-current. Each parent has a button (aria-controls its panel, labelled by the item) that opens the panel on hover and :focus-within; with the small script aria-expanded follows what is open and Escape closes the panel and returns focus to the button, as in the WAI-ARIA disclosure navigation pattern. Tab leaves a panel and closes it; nothing is hidden from crawlers (the panels are in the HTML). The drawer is a native popover: Escape and light dismiss close it and focus returns to the toggle.",
       "files": [
-        "Nav.astro"
+        "Nav.astro",
+        "NavTree.astro"
       ]
     },
     {
