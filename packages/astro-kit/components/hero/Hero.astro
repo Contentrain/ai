@@ -5,7 +5,8 @@ import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
-import type { ActionInput, ImageInput } from '../_shared/types'
+import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
+import { measuredFrame } from '../_shared/measured'
 import { coverHeight as heightOf, headingStyle as styleOf } from './hero'
 
 const hero = tv({
@@ -78,23 +79,28 @@ interface Props {
   headingScale?: 'default' | 'theme' | undefined
   /** The level whose site size the heading takes, when it is not the level it is written at (`h1` size on an `h2`: a page keeps one `h1`). `own` (absent): the heading's own level under `theme`, as before. */
   headingSize?: 'own' | 'h1' | 'h2' | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
 }
 
 
-const { heading, level = 1, eyebrow, lead, actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id, minHeight, headingScale, headingSize } = Astro.props
+const { heading, level = 1, eyebrow, lead, actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id, minHeight, headingScale, headingSize, measured } = Astro.props
 const s = hero({ layout, align, leadAlign, actionsAlign, width, tone, headingScale, headingSize })
 const Heading = level === 1 ? 'h1' : 'h2'
 const headingId = id ? `${id}-title` : undefined
 const cover = layout === 'cover' && image
 const coverHeight = cover ? heightOf(minHeight) : undefined
 const headingStyle = styleOf(headingScale, level, headingSize)
+// A cover draws its own image: the measured background image is that image, and the measured overlay is its scrim.
+const sectionMeasured = cover && measured ? { ...measured, bg: measured.bg ? { ...measured.bg, image: undefined, overlay: undefined } : undefined } : measured
+const scrim = cover ? measuredFrame(measured).overlay : undefined
 ---
 {cover && width === 'content'
   ? (
-    <Section tone="none" spacing="sm" width="prose" id={id} aria-labelledby={headingId}>
+    <Section measured={sectionMeasured} tone="none" spacing="sm" width="prose" id={id} aria-labelledby={headingId}>
       <div class="relative isolate overflow-hidden bg-ink text-surface">
         <KitImage image={image} priority sizes="(min-width: 768px) 46rem, 100vw" class="absolute inset-0 -z-10 h-full w-full object-cover" />
-        <div class="absolute inset-0 -z-10 bg-ink/60" aria-hidden="true" />
+        <div class:list={['absolute inset-0 -z-10', !scrim && 'bg-ink/60']} style={scrim ? `background: ${scrim}` : undefined} aria-hidden="true" />
         <div class="px-6 py-10 md:px-10">
           <div class={s.grid()} style={coverHeight ? `min-height: ${coverHeight}` : undefined}>
             <div class={s.copy()}>
@@ -110,10 +116,10 @@ const headingStyle = styleOf(headingScale, level, headingSize)
   )
   : cover
   ? (
-    <Section tone="inverse" spacing="none" width="none" id={id} aria-labelledby={headingId} class="relative isolate overflow-hidden">
+    <Section measured={sectionMeasured} tone="inverse" spacing="none" width="none" id={id} aria-labelledby={headingId} class="relative isolate overflow-hidden">
       <KitImage image={image} priority sizes="100vw" class="absolute inset-0 -z-10 h-full w-full object-cover" />
-      <div class="absolute inset-0 -z-10 bg-ink/60" aria-hidden="true" />
-      <div class="container-page py-16 md:py-28">
+      <div class:list={['absolute inset-0 -z-10', !scrim && 'bg-ink/60']} style={scrim ? `background: ${scrim}` : undefined} aria-hidden="true" />
+      <div class:list={['container-page', measured?.padY === undefined && 'py-16 md:py-28']}>
         <div class={s.grid()} style={coverHeight ? `min-height: ${coverHeight}` : undefined}>
           <div class={s.copy()}>
             {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
@@ -126,7 +132,7 @@ const headingStyle = styleOf(headingScale, level, headingSize)
     </Section>
   )
   : (
-    <Section tone={tone} spacing="lg" id={id} aria-labelledby={headingId}>
+    <Section measured={sectionMeasured} tone={tone} spacing="lg" id={id} aria-labelledby={headingId}>
       {/* Without an image a split has nothing beside the text: the text takes the whole row, not half of it. */}
       <div class={s.grid({ class: image ? undefined : 'md:grid-cols-1' })}>
         <div class={s.copy()}>

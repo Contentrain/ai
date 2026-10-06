@@ -6,6 +6,8 @@
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
+import { measuredGrid } from '../_shared/measured'
+import type { MeasuredStyle } from '../_shared/types'
 import { imageOf, type ImageSource } from '../_shared/image'
 
 const steps = tv({
@@ -72,10 +74,12 @@ interface Props {
   connector?: 'none' | 'line' | 'dashed' | undefined
   currentLabel?: string | undefined
   style?: 'numbered' | 'plain' | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   id?: string | undefined
 }
 
-const { heading, intro, items, kind = 'steps', layout: givenLayout, marker, connector, currentLabel = 'Current', style, id } = Astro.props
+const { heading, intro, items, kind = 'steps', layout: givenLayout, marker, connector, currentLabel = 'Current', style, measured, id } = Astro.props
 // A timeline defaults to the rail layout and, without numbers, to the plain dot marker.
 const layout = givenLayout ?? (kind === 'timeline' ? 'rail' : 'list')
 const s = steps({ layout, marker: marker ?? (kind === 'timeline' ? 'dot' : 'number'), connector, style })
@@ -86,14 +90,14 @@ const headingId = heading && id ? `${id}-title` : undefined
 const StepHeading = heading ? 'h3' : 'h2'
 ---
 {items.length > 0 && (
-  <Section id={id} aria-labelledby={headingId}>
+  <Section measured={measured} id={id} aria-labelledby={headingId}>
     {(heading || intro) && (
       <header class={s.header()}>
         {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
         {intro && <p class={s.intro()} data-kit-text>{intro}</p>}
       </header>
     )}
-    <ol class={s.list()}>
+    <ol class={s.list({ class: layout === 'row' ? measuredGrid(measured) : undefined })}>
       {items.map(step => (
         <li class={s.step({ class: step.number || kind === 'timeline' ? 'before:hidden' : undefined })} aria-current={step.current ? 'step' : undefined}>
           {step.number && <span class={s.badge()} aria-hidden="true">{step.number}</span>}

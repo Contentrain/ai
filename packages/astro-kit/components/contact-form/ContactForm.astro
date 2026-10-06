@@ -11,6 +11,7 @@
 // form on WordPress.
 import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
+import type { MeasuredStyle } from '../_shared/types'
 import Embed from '../embed/Embed.astro'
 import StudioForm from '../../studio/StudioForm.astro'
 import { formHome } from '../../../lib/features'
@@ -89,10 +90,12 @@ interface Props {
   /** `after`: the heading follows the introduction and the details (as the source wrote them), titling the form when there is one. */
   headingPlace?: 'top' | 'after' | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   id?: string | undefined
 }
 
-const { model, heading, intro, formHeading, details = [], layout, detailsStyle, panel, hours, socials = [], map, align, tone, headingPlace = 'top', id = 'contact' } = Astro.props
+const { model, heading, intro, formHeading, details = [], layout, detailsStyle, panel, hours, socials = [], map, align, tone, headingPlace = 'top', measured, id = 'contact' } = Astro.props
 // Nothing to render (Studio not bound and no fallback): a split would leave an empty column — the details stand alone.
 const formShown = formHome(model) !== null
 const bare = contactSectionBare({ formShown, heading, intro, details })
@@ -112,7 +115,7 @@ const LINK = 'underline decoration-line underline-offset-4 hover:decoration-curr
 const FormHeading = heading ? 'h3' : 'h2'
 ---
 {!bare && (
-<Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+<Section measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
   <div class={s.grid()}>
     {!formOnly && (heading || intro || details.length > 0 || hours || socials.length > 0 || map) && !(headingInForm && !hours && socials.length === 0 && !map && !intro && details.length === 0) && (
       <div class={s.copy()}>

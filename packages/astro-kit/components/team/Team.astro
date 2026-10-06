@@ -4,6 +4,8 @@
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
+import { measuredGrid } from '../_shared/measured'
+import type { MeasuredStyle } from '../_shared/types'
 import { imageOf, type ImageSource } from '../_shared/image'
 
 const team = tv({
@@ -73,10 +75,12 @@ interface Props {
   socialLabel?: string | undefined
   style?: 'card' | 'plain' | undefined
   roleStyle?: 'accent' | 'plain' | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   id?: string | undefined
 }
 
-const { heading, intro, items, columns, layout, imageShape, align, bioClamp, readMoreLabel = 'Read more', socialLabel = '{name} on {network}', style, roleStyle, id } = Astro.props
+const { heading, intro, items, columns, layout, imageShape, align, bioClamp, readMoreLabel = 'Read more', socialLabel = '{name} on {network}', style, roleStyle, measured, id } = Astro.props
 const s = team({ columns, layout, imageShape, align, style, roleStyle })
 // The network a profile address belongs to, read from its host (`linkedin.com` → LinkedIn); an unknown host is shown as itself.
 const NETWORKS: Record<string, string> = { 'linkedin.com': 'LinkedIn', 'github.com': 'GitHub', 'x.com': 'X', 'twitter.com': 'X', 'instagram.com': 'Instagram', 'facebook.com': 'Facebook', 'youtube.com': 'YouTube', 'dribbble.com': 'Dribbble', 'behance.net': 'Behance', 'medium.com': 'Medium' }
@@ -93,14 +97,14 @@ const headingId = heading && id ? `${id}-title` : undefined
 const NameHeading = heading ? 'h3' : 'h2'
 ---
 {items.length > 0 && (
-  <Section id={id} aria-labelledby={headingId}>
+  <Section measured={measured} id={id} aria-labelledby={headingId}>
     {(heading || intro) && (
       <header class={s.header()}>
         {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
         {intro && <p class={s.intro()} data-kit-text>{intro}</p>}
       </header>
     )}
-    <ul class={s.list()}>
+    <ul class={s.list({ class: measuredGrid(measured) })}>
       {items.map(member => (
         <li class={s.member()}>
           {/* The portrait's text defaults to the name: a photo of a named person is not decoration. */}

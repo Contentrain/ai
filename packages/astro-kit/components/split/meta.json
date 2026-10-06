@@ -8,6 +8,7 @@
     "Button.astro",
     "KitImage.astro",
     "Section.astro",
+    "measured.ts",
     "types.ts"
   ],
   "variants": {

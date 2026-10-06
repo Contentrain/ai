@@ -7,6 +7,8 @@
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
+import { measuredGrid } from '../_shared/measured'
+import type { MeasuredStyle } from '../_shared/types'
 import { imageOf, type ImageSource } from '../_shared/image'
 import { type ImageInput } from '../_shared/types'
 
@@ -77,21 +79,23 @@ interface Props {
   /** Text of the viewer's close button ("Close"). */
   closeLabel?: string | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   id?: string | undefined
 }
 
-const { items: given, heading, layout, columns, aspect, gap, captionStyle, hoverEffect, enlargeLabel = 'Enlarge', regionLabel = 'Images', open = 'popover', closeLabel = 'Close', tone, id = 'gallery' } = Astro.props
+const { items: given, heading, layout, columns, aspect, gap, captionStyle, hoverEffect, enlargeLabel = 'Enlarge', regionLabel = 'Images', open = 'popover', closeLabel = 'Close', tone, measured, id = 'gallery' } = Astro.props
 const items = given.flatMap(item => { const image = imageOf(item.image, item.imageAlt); return image ? [{ ...item, image, full: imageOf(item.full, item.imageAlt) }] : [] }) satisfies Array<{ image: ImageInput, caption?: string | undefined }>
 const s = gallery({ layout, columns, open, aspect, gap, captionStyle, hoverEffect })
 const headingId = heading ? `${id}-title` : undefined
 const sizes = columns === '2' ? '50vw' : columns === '4' ? '(min-width: 768px) 25vw, 50vw' : '(min-width: 768px) 33vw, 50vw'
 ---
 {items.length > 0 && (
-  <Section tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+  <Section measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
     {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
     {/* A scrolling strip is a labelled, focusable region so the keyboard can scroll it. */}
     <div tabindex={layout === 'row' ? 0 : undefined} role={layout === 'row' ? 'region' : undefined} aria-label={layout === 'row' ? heading ?? regionLabel : undefined}>
-    <ul class={s.list()} role="list">
+    <ul class={s.list({ class: layout === 'grid' || layout === 'mosaic' ? measuredGrid(measured) : undefined })} role="list">
       {items.map((item, i) => {
         const viewer = `${id}-image-${i + 1}`
         return (

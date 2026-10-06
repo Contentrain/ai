@@ -8,6 +8,8 @@
 import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
+import { measuredGrid } from '../_shared/measured'
+import type { MeasuredStyle } from '../_shared/types'
 import { renderMarkdown } from '../../../lib/markdown'
 
 const pricing = tv({
@@ -86,10 +88,12 @@ interface Props {
   includedLabel?: string | undefined
   notIncludedLabel?: string | undefined
   tone?: Tone | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
+  measured?: MeasuredStyle | undefined
   id?: string | undefined
 }
 
-const { heading, intro, plans, featuredLabel = 'Most popular', columns, layout = 'cards', featureStyle, compact, billingToggle = 'none', billingLabels = { main: 'Monthly', alt: 'Yearly', legend: 'Billing period' }, includedLabel = 'Included', notIncludedLabel = 'Not included', tone, id } = Astro.props
+const { heading, intro, plans, featuredLabel = 'Most popular', columns, layout = 'cards', featureStyle, compact, billingToggle = 'none', billingLabels = { main: 'Monthly', alt: 'Yearly', legend: 'Billing period' }, includedLabel = 'Included', notIncludedLabel = 'Not included', tone, measured, id } = Astro.props
 const s = pricing({ columns, featureStyle, compact: compact ?? false, tone })
 // The radio group's name must be unique on the page: the section's id, or a hash of its plans when it has none.
 const group = id ?? `pricing-${[...JSON.stringify(plans)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36)}`
@@ -104,7 +108,7 @@ const PlanHeading = heading ? 'h3' : 'h2'
 const features = await Promise.all(plans.map(plan => renderMarkdown(plan.features)))
 ---
 {plans.length > 0 && (
-  <Section tone={tone} id={id} aria-labelledby={headingId}>
+  <Section measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
     {(heading || intro) && (
       <header class={s.header()}>
         {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
@@ -163,7 +167,7 @@ const features = await Promise.all(plans.map(plan => renderMarkdown(plan.feature
             <label class={s.toggleOption()}><input type="radio" name={`${group}-billing`} value="alt" class="sr-only" />{billingLabels.alt}</label>
           </fieldset>
         )}
-        <ul class={s.list()}>
+        <ul class={s.list({ class: measuredGrid(measured) })}>
           {plans.map((plan, i) => (
             <li class={s.plan({ class: plan.featured ? 'ring-2 ring-accent shadow-lg md:-my-2 md:py-10' : undefined })}>
               {(plan.badge ?? (plan.featured ? featuredLabel : undefined)) && <p class={s.badge()}>{plan.badge ?? featuredLabel}</p>}
