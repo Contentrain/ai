@@ -565,6 +565,12 @@ export interface MigrateGrantStatusResponse {
   ended?: true
   /** Studio's own text for the ended plan; Migrate shows it as is. Only with `ended`. */
   notice?: string
+  /**
+   * The GitHub account the grant's workspace has Studio's GitHub App installed on. A workspace connects one
+   * account, so a delivery repository in another one can never be connected: Migrate's delivery defaults to this
+   * account and warns on another. Absent when the workspace has no installation (or GitHub did not answer).
+   */
+  workspace_github_account?: { login: string, type: 'User' | 'Organization' }
 }
 
 export interface MigrateInstallUrlResponse {
@@ -633,6 +639,10 @@ export function validateMigrateGrantStatusResponse(input: unknown):
   if (input.ended !== undefined && input.ended !== true) errors.push('ended: only true when present')
   if (input.notice !== undefined && !isText(input.notice)) errors.push('notice: invalid')
   if (input.notice !== undefined && input.ended !== true) errors.push('notice: only with ended')
+  if (input.workspace_github_account !== undefined) {
+    const account = input.workspace_github_account
+    if (!isObject(account) || !isText(account.login) || (account.type !== 'User' && account.type !== 'Organization')) errors.push('workspace_github_account: invalid')
+  }
   return errors.length === 0 ? { ok: true, response: input as unknown as MigrateGrantStatusResponse } : { ok: false, errors }
 }
 
