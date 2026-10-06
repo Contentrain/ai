@@ -100,7 +100,7 @@ const sizes = columns === '2' ? '50vw' : columns === '4' ? '(min-width: 768px) 2
         const viewer = `${id}-image-${i + 1}`
         return (
           <li class={s.item()}>
-            <figure class={captionStyle === 'overlay' ? 'group relative m-0' : 'm-0'}>
+            <figure class={captionStyle === 'overlay' ? 'group relative m-0 overflow-hidden' : 'm-0'}>
               {open === 'popover'
                 ? <button type="button" popovertarget={viewer} class={s.frame()} aria-label={`${enlargeLabel}: ${item.image.alt || item.caption || ''}`.trim()}><KitImage image={item.image} sizes={sizes} class={s.thumb()} /></button>
                 : open === 'link'

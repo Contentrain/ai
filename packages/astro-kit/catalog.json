@@ -5717,7 +5717,8 @@
         ]
       },
       "files": [
-        "Team.astro"
+        "Team.astro",
+        "team.ts"
       ],
       "contentFields": {
         "heading": "heading",

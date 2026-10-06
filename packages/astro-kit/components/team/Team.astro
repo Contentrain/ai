@@ -7,6 +7,7 @@ import Section from '../_shared/Section.astro'
 import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
 import { imageOf, type ImageSource } from '../_shared/image'
+import { profile } from './team'
 
 const team = tv({
   slots: {
@@ -82,13 +83,6 @@ interface Props {
 
 const { heading, intro, items, columns, layout, imageShape, align, bioClamp, readMoreLabel = 'Read more', socialLabel = '{name} on {network}', style, roleStyle, measured, id } = Astro.props
 const s = team({ columns, layout, imageShape, align, style, roleStyle })
-// The network a profile address belongs to, read from its host (`linkedin.com` → LinkedIn); an unknown host is shown as itself.
-const NETWORKS: Record<string, string> = { 'linkedin.com': 'LinkedIn', 'github.com': 'GitHub', 'x.com': 'X', 'twitter.com': 'X', 'instagram.com': 'Instagram', 'facebook.com': 'Facebook', 'youtube.com': 'YouTube', 'dribbble.com': 'Dribbble', 'behance.net': 'Behance', 'medium.com': 'Medium' }
-const profile = (href: string) => {
-  let host = href
-  try { host = new URL(href).hostname.replace(/^www\./, '') } catch { /* a relative or mailto address keeps its own text */ }
-  return { href, label: NETWORKS[host] ?? host }
-}
 const clamp = { 2: 'line-clamp-2', 3: 'line-clamp-3', 4: 'line-clamp-4' } as const
 // A bio that fits the clamp needs no disclosure: short means about 160 characters per two lines, a rough, build-time guess.
 const longBio = (bio: string) => bioClamp !== undefined && bio.length > bioClamp * 80
