@@ -428,7 +428,7 @@ When a model has `i18n: false`, locale is ignored entirely:
 
 An `i18n: true` model is expected to carry content in **every** locale in `config.locales.supported`. That is what `contentrain validate` checks parity against, and on a fully-translated site it is exactly right.
 
-Some sites are not fully translated. A blog in three languages next to a set of pages that only ever existed in one is not a defect — but without a way to say so, every untranslated page is a hard error, and the only ways to clear it are to invent empty translations or to drop the locale from the whole project.
+Some sites are not fully translated. A blog in three languages next to a set of pages that only ever existed in one is not a defect — but without a way to say so, the pages model fails on every locale it has no file for, and the only ways to clear it are to invent empty translations or to drop the locale from the whole project.
 
 The optional `locales` field says which project locales a model actually covers:
 
@@ -454,7 +454,7 @@ Rules:
 - `locales` **must be a subset of `config.locales.supported`**. A locale the project does not support is a validation error — add it to `config.json` first, or drop it here.
 - It **narrows validation; it never grants a locale.** Writing content is still governed by `config.locales.supported`.
 - It has **no effect on an `i18n: false` model**, which stores one locale-agnostic copy. Declaring it there is a warning.
-- Inside the subset, the ordinary rules still apply: a locale a model claims but has not filled is still a parity error.
+- Inside the subset, the ordinary rules still apply: a locale a model claims but has no file for is still an error, and an entry one of its locales lacks is still reported.
 
 Every locale-coverage message names the list it was evaluated against, so the two cases read differently:
 
@@ -467,7 +467,15 @@ Entry parity: entry "a1b2c3" exists in en but missing in tr (checked against the
 `contentrain validate --fix` never invents a `locales` value for a model that does not declare one. Choosing a narrower set would be deciding which translations are *supposed* to exist — a content decision — and the one value the tool could compute ("the locales that happen to have files today") would write the current gaps into the schema and silence the very errors that reveal them. Set it deliberately, with `contentrain_model_save`.
 :::
 
-Severity is unchanged and still follows the model kind: a missing translation is a **warning** on a `document` model and an **error** on a `collection`.
+Severity separates a translation that was never written from a locale that is not there at all:
+
+| Finding | Severity |
+|---|---|
+| An entry of a `collection`, or a `document`, that one locale has and another lacks (`Entry parity`, `Missing translation`) | **warning** |
+| A locale with no content file (`Locale file missing`) | **error** |
+| A `dictionary` key that one locale has and another lacks (`Key parity`) | **error** |
+
+A partly translated site — the usual state of a WordPress site imported from WPML or Polylang — therefore validates, with one warning per untranslated entry.
 
 `@contentrain/wp-import` writes this field for you: importing a partially-translated WordPress site sets `locales` to the languages each post type actually has content in (the default locale always included), and omits it entirely when the type is fully translated.
 

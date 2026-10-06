@@ -369,8 +369,10 @@ list — is checked against the subset instead, which is how a partially-transla
 site states the truth rather than failing on translations it never had. Absent, as
 on every model that predates the field, means the whole project list.
 
-Severity is unchanged and still follows the kind: a missing translation is a
-**warning** on a `document` model and an **error** on a `collection`. Every message
+A translation that was never written is a **warning**: an entry of a `collection`
+that one locale has and another lacks (`Entry parity`), like a `document`'s missing
+translation. A locale with no content file (`Locale file missing`) and a
+`dictionary` key missing from a locale (`Key parity`) are **errors**. Every message
 names the list it was evaluated against, so the two cases read apart:
 
 ```
