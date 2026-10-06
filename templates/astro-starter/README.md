@@ -125,10 +125,14 @@ the project's delivery base (`https://cdn.example/api/cdn/v1/<project id>`).
   and comments.
 
 Without the file the site builds as usual: Studio images are shown as they
-are, and forms and comments render nothing.
+are, and forms and comments fall back as described below.
 
 A page whose `form` field names a model shows that form under its body; a post
-with `comments_open` shows its thread. Without the binding both render nothing
+with `comments_open` shows its thread. The form's fields (the model's public
+fields, labels and select options) are in the page HTML, and the script puts
+Studio's live form in their place. Without the binding, a form whose site kept
+WordPress (`features.wordpress`) shows the same fields, disabled, with a line
+saying where it is sent and a link to it there. Otherwise both render nothing
 and no script is shipped. `src/lib/studio/embed.ts` is the browser client for
 Studio's public forms and comments API; its exports are its interface, so knip
 does not report the ones this site does not call.

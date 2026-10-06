@@ -37,6 +37,7 @@
   "form.send": "发送",
   "form.sending": "发送中…",
   "form.wordpress": "打开表单",
+  "form.wordpress_note": "此表单在 {site} 上提交。",
   "gallery.close": "关闭",
   "nav.breadcrumb": "面包屑导航",
   "nav.close": "关闭",

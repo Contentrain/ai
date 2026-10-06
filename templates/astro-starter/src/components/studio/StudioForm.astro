@@ -7,8 +7,11 @@
 // renders nothing — no script — when there is neither. When the owner chose another home at
 // migration (site.config.ts `features.forms`), it posts to their form service,
 // shows an address to write to, or links to the form on the WordPress site.
+// A form that links to WordPress still shows its fields where the source page
+// showed them, inert, with a line saying where it is sent and the link.
 import { getStringTable } from '../../lib/content'
-import { formAddress, formHome, onWordPress } from '../../lib/features'
+import { formAddress, formFields, formHome, onWordPress } from '../../lib/features'
+import { fieldsHtml } from '../../lib/studio/form-fields'
 import { siteConfig } from '../../site.config'
 import FormMount from './FormMount.astro'
 import StaticForm from './StaticForm.astro'
@@ -26,6 +29,9 @@ const home = formHome(model)
 const text = home ? await getStringTable(['common.', 'form.']) : {}
 const wordpress = home === 'wordpress' ? onWordPress(Astro.url.pathname) : undefined
 const address = home === 'mailto' ? formAddress() : undefined
+const fields = wordpress ? formFields(model) : []
+const host = wordpress ? new URL(wordpress).host : ''
+const noteId = `cr-form-note-${model.replace(/[^\w-]/g, '-')}`
 ---
 {home === 'studio' && studio && <FormMount baseUrl={studio.baseUrl} projectId={studio.projectId} model={model} text={text} class={className} />}
 {home === 'endpoint' && forms?.home === 'endpoint' && <StaticForm model={model} action={forms.action} text={text} class={className} />}
@@ -34,8 +40,22 @@ const address = home === 'mailto' ? formAddress() : undefined
     {text['form.mailto'] ?? 'Write to us at'} <a href={`mailto:${encodeURI(address)}`} class="underline underline-offset-4">{address}</a>
   </p>
 )}
-{wordpress && (
+{wordpress && fields.length === 0 && (
   <div class:list={['cr-form-mount block', className]} data-cr-part="form" data-state="wordpress">
     <a href={wordpress} class="cr-form-link">{text['form.wordpress'] ?? 'Open the form'}</a>
+  </div>
+)}
+{wordpress && fields.length > 0 && (
+  <div class:list={['cr-form-mount block', className]} data-cr-part="form" data-state="wordpress">
+    <form class="cr-form" aria-describedby={noteId} data-model={model}>
+      <fieldset class="cr-fields" disabled>
+        <Fragment set:html={fieldsHtml(fields)} />
+      </fieldset>
+      <p class="cr-form-note" id={noteId}>{(text['form.wordpress_note'] ?? 'This form is sent on {site}.').replace('{site}', host)}</p>
+      <p class="cr-actions">
+        <a href={wordpress} class="cr-form-link">{text['form.wordpress'] ?? 'Open the form'}</a>
+        <button type="submit" disabled aria-disabled="true" aria-describedby={noteId}>{text['form.send'] ?? 'Send'}</button>
+      </p>
+    </form>
   </div>
 )}

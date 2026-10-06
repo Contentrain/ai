@@ -37,6 +37,7 @@
   "form.send": "보내기",
   "form.sending": "보내는 중…",
   "form.wordpress": "양식 열기",
+  "form.wordpress_note": "이 양식은 {site}에서 보냅니다.",
   "gallery.close": "닫기",
   "nav.breadcrumb": "탐색 경로",
   "nav.close": "닫기",
