@@ -31,6 +31,7 @@ function normaliseConfig(raw: Partial<ContentrainConfig> | null): ContentrainCon
     branchWarnLimit: raw.branchWarnLimit,
     branchBlockLimit: raw.branchBlockLimit,
     remoteBranchCleanup: raw.remoteBranchCleanup,
+    git: raw.git,
   }
 }
 

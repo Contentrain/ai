@@ -7,6 +7,7 @@ import { readConfig } from './config.js'
 import { writeContext } from './context.js'
 import { createTransaction, buildBranchName } from '../git/transaction.js'
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
+import { LOCAL_MODE_NOTE } from '../git/push-policy.js'
 
 // ─── Types ───
 
@@ -653,7 +654,7 @@ export async function applyExtract(
     const commitMsg = `[contentrain] normalize: extract ${entriesWritten} entries to ${extractions.length} models`
     await tx.commit(commitMsg)
 
-    const gitResult: { branch: string; action: string; commit: string; warning?: string } = {
+    const gitResult: { branch: string; action: string; commit: string; warning?: string; remote_push?: string; remote_note?: string } = {
       branch: branchName,
       action: 'pending-review',
       commit: '',
@@ -663,6 +664,10 @@ export async function applyExtract(
       gitResult.action = completed.action
       gitResult.commit = completed.commit
       if (completed.warning !== undefined) gitResult.warning = completed.warning
+      if (completed.remote_push === 'disabled') {
+        gitResult.remote_push = 'disabled'
+        gitResult.remote_note = LOCAL_MODE_NOTE
+      }
     } catch (error) {
       // Never fall through to a value that mimics success. The commit landed
       // but publishing it did not, and 'pending-review' with an empty commit
@@ -687,7 +692,7 @@ export async function applyExtract(
       context_updated: true,
       next_steps: [
         'Run contentrain_validate to check the extracted content',
-        'Run contentrain_submit to push the branch for review',
+        gitResult.remote_push === 'disabled' ? `LOCAL MODE: ${LOCAL_MODE_NOTE} — review the branch locally with contentrain_merge; contentrain_submit is unavailable while pushing is off` : 'Run contentrain_submit to push the branch for review',
         'For browser-based review: ensure `contentrain serve` is running, direct user to http://localhost:3333/normalize',
         'For terminal workflow: use contentrain_merge to merge the branch locally',
         'After merge, run `npx contentrain generate` to update SDK client',
@@ -1011,7 +1016,7 @@ export async function applyReuse(
     const commitMsg = `[contentrain] normalize: reuse ${scopeTarget} — patch ${filesModified.length} files (${patchesApplied} replacements)`
     await tx.commit(commitMsg)
 
-    const gitResult: { branch: string; action: string; commit: string; warning?: string } = {
+    const gitResult: { branch: string; action: string; commit: string; warning?: string; remote_push?: string; remote_note?: string } = {
       branch: branchName,
       action: 'pending-review',
       commit: '',
@@ -1021,6 +1026,10 @@ export async function applyReuse(
       gitResult.action = completed.action
       gitResult.commit = completed.commit
       if (completed.warning !== undefined) gitResult.warning = completed.warning
+      if (completed.remote_push === 'disabled') {
+        gitResult.remote_push = 'disabled'
+        gitResult.remote_note = LOCAL_MODE_NOTE
+      }
     } catch (error) {
       // Never fall through to a value that mimics success. The commit landed
       // but publishing it did not, and 'pending-review' with an empty commit
@@ -1050,7 +1059,7 @@ export async function applyReuse(
         patchesSkipped.length > 0 ? `${patchesSkipped.length} patches were skipped — review and retry if needed` : '',
         syntaxErrors.length > 0 ? `WARNING: ${syntaxErrors.length} file(s) may have syntax errors after patching — review manually` : '',
         scopeWarnings.length > 0 ? `NOTE: ${scopeWarnings.length} patch file(s) not in extract source map` : '',
-        'Run contentrain_submit to push the branch for review',
+        gitResult.remote_push === 'disabled' ? `LOCAL MODE: ${LOCAL_MODE_NOTE} — review the branch locally with contentrain_merge; contentrain_submit is unavailable while pushing is off` : 'Run contentrain_submit to push the branch for review',
         'For review: direct user to http://localhost:3333/branches or use contentrain_merge',
         'After all reuse phases complete, run `npx contentrain generate` to update SDK types',
       ].filter(Boolean),

@@ -7,6 +7,7 @@ import { buildBranchName } from '../git/transaction.js'
 import { normalizeOperationError } from '../git/errors.js'
 import { commitThroughProvider } from './commit-plan.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
+import { LOCAL_MODE_NOTE } from '../git/push-policy.js'
 
 /**
  * Vocabulary write tools.
@@ -87,6 +88,7 @@ export function registerVocabularyTools(
             workflow_action: commit.workflowAction,
             ...(commit.base_advance ? { base_advance: commit.base_advance } : {}),
             ...(commit.remote_push ? { remote_push: commit.remote_push } : {}),
+            ...(commit.remote_push === 'disabled' ? { remote_note: LOCAL_MODE_NOTE } : {}),
             ...(commit.warning ? { warning: commit.warning } : {}),
             ...(plan.advisories.length > 0 ? { advisories: plan.advisories } : {}),
           }, null, 2) }],
@@ -173,6 +175,7 @@ export function registerVocabularyTools(
             workflow_action: commit.workflowAction,
             ...(commit.base_advance ? { base_advance: commit.base_advance } : {}),
             ...(commit.remote_push ? { remote_push: commit.remote_push } : {}),
+            ...(commit.remote_push === 'disabled' ? { remote_note: LOCAL_MODE_NOTE } : {}),
             ...(commit.warning ? { warning: commit.warning } : {}),
             ...(plan.advisories.length > 0 ? { advisories: plan.advisories } : {}),
           }, null, 2) }],

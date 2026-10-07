@@ -8,6 +8,7 @@ import { validateProject } from '../core/validator/index.js'
 import { readConfig } from '../core/config.js'
 import { createTransaction, buildBranchName, mergeBranch } from '../git/transaction.js'
 import { resolveBaseBranch } from '../git/base-branch.js'
+import { LOCAL_MODE_NOTE, localModeReason, pushPolicy } from '../git/push-policy.js'
 import { checkBranchHealth, cleanupMergedBranches, deleteRemoteBranch, listRemoteCrBranches, pruneMergedRemoteBranches } from '../git/branch-lifecycle.js'
 import { isMerged } from '../providers/local/branch-ops.js'
 import { normalizeOperationError } from '../git/errors.js'
@@ -227,6 +228,28 @@ export function registerWorkflowTools(
       const git = createGit(projectRoot)
       const remoteName = process.env['CONTENTRAIN_REMOTE'] ?? 'origin'
 
+      // Local mode: submit is a push, so it is refused, never a silent no-op.
+      const policy = pushPolicy(config)
+      if (!policy.push) {
+        const summary = await git.branchLocal().catch(() => ({ all: [] as string[] }))
+        const pending = summary.all.filter(b => b.startsWith('cr/') && b !== CONTENTRAIN_BRANCH)
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify({
+            error: `Nothing was pushed: ${localModeReason(policy)} — contentrain_submit is unavailable in local mode.`,
+            stage: 'submit',
+            remote_push: 'disabled',
+            agent_hint: 'This project keeps writes local. Land pending review branches with contentrain_merge, or turn pushing back on (remove git.push: false, or set CONTENTRAIN_NO_PUSH=0) and submit again.',
+            pending_branches: pending,
+            next_steps: [
+              pending.length > 0
+                ? `Merge a pending branch locally: contentrain_merge { branch: "${pending[0]}", confirm: true }`
+                : 'Make changes with contentrain_content_save — they stay local',
+            ],
+          }, null, 2) }],
+          isError: true,
+        }
+      }
+
       // Check remote exists
       let hasRemote = false
       try {
@@ -422,6 +445,7 @@ export function registerWorkflowTools(
             sync: result.sync,
             base_advance: result.base_advance,
             remote_push: result.remote_push,
+            ...(result.remote_push === 'disabled' ? { remote_note: LOCAL_MODE_NOTE } : {}),
             ...(result.warning ? { warning: result.warning } : {}),
             ...(result.remote ? { remote: result.remote } : {}),
             next_steps: [
@@ -559,6 +583,7 @@ export function registerWorkflowTools(
           return {
             content: [{ type: 'text' as const, text: JSON.stringify({
               error: `Branch "${input.branch}" not found locally${remoteOnly.skipped === 'not-found' ? ' or on the remote' : ''}.`,
+              ...(remoteOnly.skipped === 'local-mode' ? { remote_skipped: 'local-mode', remote_note: `${LOCAL_MODE_NOTE}: the remote copy, if any, was left untouched` } : {}),
               ...(remoteOnly.warning ? { remote_warning: remoteOnly.warning } : {}),
               next_steps: ['List branches with contentrain_branch_list'],
             }) }],
@@ -580,6 +605,7 @@ export function registerWorkflowTools(
             was_merged: merged,
             remote_deleted: remote.deleted,
             ...(remote.skipped ? { remote_skipped: remote.skipped } : {}),
+            ...(remote.skipped === 'local-mode' ? { remote_note: `${LOCAL_MODE_NOTE}: the remote copy, if any, was left untouched` } : {}),
             ...(remote.warning ? { remote_warning: remote.warning } : {}),
             warning: merged ? undefined : 'Branch was not merged — its commits were discarded.',
           }, null, 2) }],

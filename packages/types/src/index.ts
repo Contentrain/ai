@@ -201,6 +201,17 @@ export interface ContentrainConfig {
    * Default: true.
    */
   remoteBranchCleanup?: boolean
+  /**
+   * Local git behaviour of the MCP write path (local provider only).
+   * `push: false` keeps every write local: commits, merges and the base
+   * branch fast-forward still happen, but nothing is pushed and no remote
+   * branch is deleted — results report `remote_push: 'disabled'`. The
+   * `CONTENTRAIN_NO_PUSH` env (`1`/`true` off, `0`/`false` on) overrides it.
+   * Default: push whenever the remote exists.
+   */
+  git?: {
+    push?: boolean
+  }
 }
 
 // ─── Vocabulary ───

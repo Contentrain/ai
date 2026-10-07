@@ -49,6 +49,8 @@ export default defineCommand({
 
     if (preview.skipped === 'disabled') {
       log.info('Remote branch cleanup is disabled (remoteBranchCleanup: false in config.json).')
+    } else if (preview.skipped === 'local-mode') {
+      log.info('Local mode: pushing is off (git.push: false in config.json, or CONTENTRAIN_NO_PUSH=1) — the remote is left untouched; only local merged branches will be pruned.')
     } else if (preview.skipped === 'no-remote') {
       log.info('No git remote configured — only local merged branches will be pruned.')
     } else if (preview.skipped === 'offline') {

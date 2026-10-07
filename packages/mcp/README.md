@@ -66,6 +66,7 @@ All write operations are designed around git-backed safety:
 - plans are read from the working tree but committed on the fetched `contentrain` tip: JSON changes are carried over key by key, so entries another writer pushed are kept; a same-value conflict writes nothing and returns `CONTENT_WORKING_TREE_STALE`
 - on a checked-out feature branch, which writes do not update, `.contentrain/**` is read from the `contentrain` ref instead (source files still from the working tree); read tools report it as `content_source`
 - review: feature branch pushed to remote for team review; once merged (or deleted), its remote copy is removed too — best-effort, opt out with `remoteBranchCleanup: false` in config.json
+- local mode (`git.push: false` or `CONTENTRAIN_NO_PUSH=1`): nothing is ever pushed or deleted on the remote, and every result says so — see [Git environment and local mode](#git-environment-and-local-mode)
 - merged-branch detection survives base-history rewrites (ancestry check with a patch-id fallback), so rebases/squashes don't strand stale branches
 - developer's working tree is never mutated during MCP git operations (no stash, no checkout, no merge)
 - context.json never lands on feature branches — it is regenerated on the `contentrain` branch after merge (locally by the transaction layer; in remote flows by the orchestrator that owns the merge)
@@ -125,6 +126,22 @@ CONTENTRAIN_PROJECT_ROOT=/path/to/project npx contentrain-mcp
 ```
 
 If `CONTENTRAIN_PROJECT_ROOT` is omitted, the current working directory is used.
+
+### Git environment and local mode
+
+These apply to the local provider (stdio, `LocalProvider`):
+
+| Variable | Default | Effect |
+|---|---|---|
+| `CONTENTRAIN_BRANCH` | unset | Base branch the `contentrain` branch advances. Wins over `repository.default_branch`, then remote HEAD → `main` → `master` → the checked-out branch. Per process; never written to config |
+| `CONTENTRAIN_REMOTE` | `origin` | Remote used for every fetch and push (and remote branch cleanup) |
+| `CONTENTRAIN_NO_PUSH` | unset | `1`/`true` turns local mode on; `0`/`false` turns it off. Any other value is ignored |
+
+**Local mode** keeps every write on local branches: no branch push, no review push, no push after an auto-merge, approve or reconcile, and no remote branch delete or prune. Fetching is not a push and still happens when a remote exists. Turn it on for a project with `"git": { "push": false }` in `.contentrain/config.json`, or for one run with `CONTENTRAIN_NO_PUSH=1`.
+
+Precedence: the env wins over the config in both directions. `CONTENTRAIN_NO_PUSH=1` turns pushing off even when config allows it; `CONTENTRAIN_NO_PUSH=0` turns it back on over `git.push: false`. With neither, pushing is on.
+
+It is never a silent success. Each write's `git` block reports `remote_push: "disabled"` with `remote_note: "not pushed (local mode)"`, and `next_steps` carries a `LOCAL MODE` line. `contentrain_submit` returns an error instead of pushing; land review branches with `contentrain_merge`. `contentrain_merge` and `contentrain_branch_delete` delete the local branch as usual and report `remote_skipped: "local-mode"`, leaving any remote copy untouched.
 
 ### Embed the server in your own process
 
