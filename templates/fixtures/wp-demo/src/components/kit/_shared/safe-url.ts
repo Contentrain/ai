@@ -39,12 +39,19 @@ function schemeOf(value: string): string | undefined {
   return /^([a-z][a-z0-9+.-]*):/i.exec(probe(value))?.[1]?.toLowerCase()
 }
 
+/** In `astro dev` (not in a build or a test) a refused address says so, with the scheme it was refused for. */
+function refused(scheme: string): undefined {
+  const mode = (import.meta as { env?: { DEV?: boolean, MODE?: string } }).env
+  if (mode?.DEV && mode.MODE !== 'test') console.warn(`[astro-kit] refused an address with the "${scheme}:" scheme; allowed: http, https, mailto, tel and relative addresses.`)
+  return undefined
+}
+
 /** The address if it is safe to print as a link or form target; otherwise `undefined` (leave the attribute off). */
 export function safeUrl(value: string | null | undefined): string | undefined {
   if (value === null || value === undefined) return undefined
   const text = String(value)
   const scheme = schemeOf(text)
-  return scheme === undefined || SAFE_SCHEMES.has(scheme) ? text.trim() : undefined
+  return scheme === undefined || SAFE_SCHEMES.has(scheme) ? text.trim() : refused(scheme)
 }
 
 /** The address if it is safe; otherwise `#`, so a link keeps its place and goes nowhere. */

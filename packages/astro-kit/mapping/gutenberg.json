@@ -85,6 +85,22 @@
       }
     },
     {
+      "match": "core/search",
+      "component": "search-box",
+      "props": {
+        "label": "ui:search.label",
+        "placeholder": "ui:search.placeholder",
+        "submitLabel": "ui:search.submit"
+      }
+    },
+    {
+      "match": "polylang/language-switcher",
+      "component": "language-switcher",
+      "props": {
+        "label": "ui:language.label"
+      }
+    },
+    {
       "match": "core/columns",
       "component": "card-grid",
       "variant": {

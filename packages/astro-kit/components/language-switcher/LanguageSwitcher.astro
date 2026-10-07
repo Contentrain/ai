@@ -1,0 +1,68 @@
+---
+// Links to the same page in the site's other languages. Each link carries `hreflang` and its own `lang`, so the
+// language's name is read in that language; the current one is marked `aria-current`. A plain list, or a native
+// `<details>` menu that shows the current language: no JavaScript. The addresses come from the caller (the page's
+// equivalent in each language); a link without one is not drawn.
+import { tv } from 'tailwind-variants'
+import { safeHref } from '../_shared/safe-url'
+
+const switcher = tv({
+  slots: {
+    list: 'flex flex-wrap items-center gap-x-4 gap-y-1',
+    link: 'text-current no-underline opacity-80 hover:opacity-100 hover:underline aria-[current=true]:font-semibold aria-[current=true]:opacity-100',
+    summary: 'inline-flex cursor-pointer list-none items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden',
+    panel: 'absolute z-30 mt-1 flex min-w-40 flex-col gap-1 rounded-lg border border-line bg-surface p-2 text-ink shadow-lg',
+  },
+  variants: {
+    layout: { list: {}, menu: {} },
+    align: { start: { panel: 'start-0' }, end: { panel: 'end-0' } },
+    // `name`: "Deutsch"; `code`: "DE".
+    labelStyle: { name: {}, code: { link: 'uppercase' } },
+  },
+  defaultVariants: { layout: 'list', align: 'start', labelStyle: 'name' },
+})
+
+interface Props {
+  /** The languages (none: nothing is drawn), `lang` a BCP 47 code ("de", "pt-BR"); `label` the language's own name ("Deutsch"). */
+  languages?: Array<{ lang: string, label: string, href: string, current?: boolean | undefined }> | undefined
+  /** Accessible name ("Language"). */
+  label?: string | undefined
+  layout?: 'list' | 'menu' | undefined
+  align?: 'start' | 'end' | undefined
+  labelStyle?: 'name' | 'code' | undefined
+}
+
+const { languages = [], label = 'Language', layout, align, labelStyle } = Astro.props
+const s = switcher({ layout, align, labelStyle })
+const shown = languages.filter(language => language.href)
+const current = shown.find(language => language.current)
+const text = (language: { lang: string, label: string }) => (labelStyle === 'code' ? language.lang.split('-')[0]! : language.label)
+---
+{shown.length > 1 && (layout === 'menu'
+  ? (
+    <details class="relative" data-cr-part="language-switcher">
+      <summary class={s.summary()}>
+        <span class="sr-only">{label}: </span>
+        <span lang={current?.lang}>{current ? text(current) : label}</span>
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6" /></svg>
+      </summary>
+      <ul class={s.panel()}>
+      {shown.map(language => (
+        <li>
+          <a href={safeHref(language.href)} lang={language.lang} hreflang={language.lang} aria-current={language.current ? 'true' : undefined} class={s.link()}>{text(language)}</a>
+        </li>
+      ))}
+      </ul>
+    </details>
+  )
+  : (
+    <nav aria-label={label} data-cr-part="language-switcher">
+      <ul class={s.list()}>
+      {shown.map(language => (
+        <li>
+          <a href={safeHref(language.href)} lang={language.lang} hreflang={language.lang} aria-current={language.current ? 'true' : undefined} class={s.link()}>{text(language)}</a>
+        </li>
+      ))}
+      </ul>
+    </nav>
+  ))}

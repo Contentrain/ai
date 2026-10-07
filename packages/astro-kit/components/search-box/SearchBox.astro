@@ -1,0 +1,51 @@
+---
+// A search field that sends the visitor to the site's search page (`/search?q=…`, a plain GET form, no JavaScript
+// here: the page itself shows the results). A labelled `role="search"` landmark; the label is visible only to
+// assistive technology unless `labelStyle` shows it.
+import { tv } from 'tailwind-variants'
+import { safeUrl } from '../_shared/safe-url'
+
+const search = tv({
+  slots: {
+    form: 'flex items-center gap-2',
+    label: 'sr-only',
+    input: 'min-w-0 flex-1 rounded-md border border-line bg-surface px-3 text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    button: 'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-line bg-surface px-3 font-medium text-ink hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+  },
+  variants: {
+    size: { sm: { input: 'h-9 text-sm', button: 'h-9 text-sm' }, md: { input: 'h-11 text-base', button: 'h-11 text-base' } },
+    width: { auto: { form: 'w-full max-w-xs' }, full: { form: 'w-full' } },
+    // `text`: the button reads "Search"; `icon`: a magnifier with the same name for assistive technology.
+    button: { text: {}, icon: { button: 'px-0 aspect-square' } },
+    labelStyle: { hidden: {}, shown: { form: 'flex-wrap', label: 'not-sr-only basis-full text-sm font-medium' } },
+  },
+  defaultVariants: { size: 'md', width: 'auto', button: 'text', labelStyle: 'hidden' },
+})
+
+interface Props {
+  /** The search page the form sends to (it reads `q`). */
+  action?: string | undefined
+  /** The landmark's and field's accessible name ("Search"). */
+  label?: string | undefined
+  placeholder?: string | undefined
+  /** The button's name ("Search"). */
+  submitLabel?: string | undefined
+  size?: 'sm' | 'md' | undefined
+  width?: 'auto' | 'full' | undefined
+  button?: 'text' | 'icon' | undefined
+  labelStyle?: 'hidden' | 'shown' | undefined
+  id?: string | undefined
+}
+
+const { action = '/search', label = 'Search', placeholder, submitLabel = label, size, width, button, labelStyle, id = 'site-search' } = Astro.props
+const s = search({ size, width, button, labelStyle })
+---
+<form role="search" method="get" action={safeUrl(action)} class={s.form()} data-cr-part="search-box">
+  <label for={`${id}-q`} class={s.label()}>{label}</label>
+  <input id={`${id}-q`} type="search" name="q" placeholder={placeholder} autocomplete="off" enterkeyhint="search" class={s.input()} />
+  <button type="submit" class={s.button()} aria-label={button === 'icon' ? submitLabel : undefined}>
+    {button === 'icon'
+      ? <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+      : submitLabel}
+  </button>
+</form>
