@@ -12,14 +12,23 @@ const stats = tv({
   slots: {
     list: 'grid grid-cols-2 gap-6 md:gap-8',
     item: 'flex gap-1',
-    value: 'text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight tabular-nums md:text-5xl',
+    // nowrap keeps a figure with its prefix and suffix ("99.9%" never splits into "99.9" / "%").
+    // The size is one pair of variables (valueSize sets them): --stat-max below md, --stat-max-md from md. Its line
+    // height comes with valueSize too: a font-size class merged in later would drop one set here.
+    value: 'text-[length:var(--stat-max,2.25rem)] [font-weight:var(--font-weight-heading,700)] tracking-tight tabular-nums whitespace-nowrap [--stat-max-md:3rem] md:text-[length:var(--stat-max-md)]',
     icon: 'mb-3 block size-10 object-contain',
     label: 'text-sm opacity-80',
   },
   variants: {
     // grid: figures in columns. inline: one line that wraps, for two to four short figures.
     layout: {
-      grid: {},
+      // Each cell is a size container; a figure is no wider than the cell: its size is capped by 100cqi over its
+      // character count (--stat-chars, about 0.66em a character), so a long one ("1.250+", "€12.5M") in four columns at
+      // tablet width shrinks to fit the card, and a short one keeps the size valueSize gives it.
+      grid: {
+        item: '[container-type:inline-size] min-w-0',
+        value: 'text-[length:min(var(--stat-max,2.25rem),max(1.25rem,calc(100cqi_/_(var(--stat-chars,1)_*_0.66))))] md:text-[length:min(var(--stat-max-md),max(1.25rem,calc(100cqi_/_(var(--stat-chars,1)_*_0.66))))]',
+      },
       inline: { list: 'flex flex-wrap gap-x-12 gap-y-6 md:gap-x-16' },
     },
     columns: {
@@ -39,10 +48,10 @@ const stats = tv({
     align: { start: {}, center: { item: 'items-center text-center', icon: 'mx-auto' } },
     // The figure's size: md, lg (the default), xl, or a display number.
     valueSize: {
-      md: { value: 'text-3xl md:text-4xl' },
-      lg: {},
-      xl: { value: 'text-5xl md:text-6xl' },
-      display: { value: 'text-6xl md:text-7xl' },
+      md: { value: '[--stat-max:1.875rem] [--stat-max-md:2.25rem] leading-[1.2] md:leading-[1.1112]' },
+      lg: { value: 'leading-[1.1112] md:leading-none' },
+      xl: { value: '[--stat-max:3rem] [--stat-max-md:3.75rem] leading-none' },
+      display: { value: '[--stat-max:3.75rem] [--stat-max-md:4.5rem] leading-none' },
     },
     // accent/accent-ink is only ~5:1 — dimming text on it drops it under 4.5:1 (WCAG 1.4.3).
     tone: { default: {}, muted: {}, inverse: {}, accent: { label: 'opacity-100' } },
@@ -86,6 +95,8 @@ const s = stats({ layout, columns, style, align, valueSize, labelSize, order, to
 const grid = (layout ?? 'grid') === 'grid' ? measuredGrid(measured) : undefined
 const headingId = heading && id ? `${id}-title` : undefined
 const iconOf = (item: Item) => imageOf(item.icon, '')
+// The figure's width in characters, for the size it may take in a narrow cell.
+const widthOf = (item: Item) => `--stat-chars:${(item.prefix ?? '').length + item.value.length + (item.suffix ?? '').length}`
 // A <dl> names its term first, so figure-first is a plain list, read in the order it is drawn (WCAG 1.3.2).
 ---
 <Section measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
@@ -99,7 +110,7 @@ const iconOf = (item: Item) => imageOf(item.icon, '')
     <ul class={s.list({ class: grid })} role="list">
       {items.map(item => (
         <li class={s.item()}>
-          <p class={s.value()}>{iconOf(item) && <KitImage image={iconOf(item)!} sizes="40px" class={s.icon()} />}{item.prefix}{item.value}{item.suffix}</p>
+          <p class={s.value()} style={widthOf(item)}>{iconOf(item) && <KitImage image={iconOf(item)!} sizes="40px" class={s.icon()} />}{item.prefix}{item.value}{item.suffix}</p>
           <p class={s.label()}>{item.label}</p>
         </li>
       ))}
@@ -109,7 +120,7 @@ const iconOf = (item: Item) => imageOf(item.icon, '')
       {items.map(item => (
         <div class={s.item()}>
           <dt class={s.label()}>{item.label}</dt>
-          <dd class={s.value()}>{iconOf(item) && <KitImage image={iconOf(item)!} sizes="40px" class={s.icon()} />}{item.prefix}{item.value}{item.suffix}</dd>
+          <dd class={s.value()} style={widthOf(item)}>{iconOf(item) && <KitImage image={iconOf(item)!} sizes="40px" class={s.icon()} />}{item.prefix}{item.value}{item.suffix}</dd>
         </div>
       ))}
     </dl>
