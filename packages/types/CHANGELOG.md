@@ -1,5 +1,12 @@
 # @contentrain/types
 
+## 1.60.0
+
+### Minor Changes
+
+- eaccd74: A project plan can say that the source prints a breadcrumb on every page. `site.chrome.breadcrumbs: 'always'` is for a source whose top-level pages show one too, starting from the home page (Yoast, Rank Math or the theme's own). The starter then shows Home › Page on those pages with their BreadcrumbList, and puts Home in front of a nested page's trail. Without the key, only nested pages show a breadcrumb, as before. `validateProjectPlan` accepts `'always'` and nothing else.
+- 7e5a4ce: A project plan can now place what the source draws over every page, apart from its header and footer, such as a popup from Elementor Popup or Popup Maker. These go in `layout.overlays`, a list of placements in source order, each bound to its own singleton. `validateProjectPlan` checks each one as it checks the header and footer, reporting problems as `layout overlay <n>`. The starter renders them after the footer, from `src/views/overlays/index.ts`.
+
 ## 1.59.0
 
 ### Minor Changes

@@ -1,5 +1,26 @@
 # @contentrain/astro-kit
 
+## 0.33.0
+
+### Minor Changes
+
+- 2763f0f: `nav` keeps every level of a menu: the flyout, the new `menu="mega"` column panel (also a `menu` variant on `header`) and the narrow-screen menu all draw the third level and deeper as real links, and an entry with no real link (empty href or `#`) is a disclosure button or a label, not `<a href="#">`. Each parent button has `aria-controls`; a small script, only when a menu has submenus, keeps `aria-expanded` true and lets Escape close a panel and return focus.
+- f9b6a21: New `dialog` section: a popup as a dialog the visitor opens — a button in a section of the page and a native modal `<dialog>` with a heading, rich text and buttons. Nothing opens by itself (no timers, scroll or exit intent). Focus trap, Escape and focus return are the platform's; the button opens it with no script where Invoker Commands exist, a small script covers other browsers and closes on a backdrop click, and with scripting off the content is laid out in the section itself. Variants `triggerStyle`, `size`, `align`, `tone`; takes the measured style. Mapping rules `elementor/popup` (elementor.json 13) and `classic/popup-maker` (classic.json 8) read the popup's title, text and its own buttons (the dialog's actions); `dialog.open` and `dialog.close` join the interface strings in all 16 languages.
+- b88aeb8: `slider`, `tabs` and `faq` take the measured style (`measured`: columns, gap, padding), and `slider` and `tabs` take an optional section header (`heading`, `intro`, `eyebrow`, `actions`, drawn by the shared `SectionHeader`; without one the markup is unchanged). The slider's previous and next buttons carry `aria-controls`, its viewport is keyboard reachable, and `tabs.label` joins the interface strings in all 16 languages.
+
+  Mapping tables gain carousel rules (Swiper, Slick, Splide, Owl, Elementor nested and loop carousels), `classic/details` for faq, testimonial-carousel and reviews rules, and `classic/aria-tabs`. Tabs rules read panels with `html@root:<selector>`, which `MAPPING_VALUE_PATTERN` now accepts.
+
+- a88ce02: Release 3 chrome primitives: `SocialLinks` (network and mark read from each address's host, icons/text/both, shared network table that `team` now reads too), `SearchBox` (a role=search GET form to the site's `/search`, also a `search` prop on `Header`) and `LanguageSwitcher` (hreflang list or native `<details>` menu, zero JS). New ui-strings keys in all 16 starter languages: language.label, search.label, search.submit, social.label, social.profile.
+
+### Patch Changes
+
+- 25b649b: Every address a kit component prints now goes through a shared `_shared/safe-url` helper (`safeHref`, `safeUrl`, `safeSrc`): content, including migrated WordPress content, can carry `javascript:`, `vbscript:` or `data:text/html` in a link, a form action or an image source, and the components printed them as written. Only http, https, mailto, tel and relative addresses (`/`, `./`, `../`, `?`, `#`) are kept, read the way a browser reads them (leading spaces and control characters, tabs inside the scheme, mixed case and character references such as `&#106;avascript:` are all refused). A refused link becomes `#`, a refused form action or image source is left off, and `astro dev` logs the scheme. The starter's own views and the rich-text link rewrite use the same helper, and a test fails when a URL attribute in the kit or the starter skips it. The `Header` fixture list gains `mega-menu-search`; the header's search field now sits in the bar from `lg` (at `md` it keeps its own row, so a long menu no longer wraps).
+- d06aaa6: Four testimonial section rules in the mapping tables (gutenberg `testimonial.columns` and `testimonial.quotes`, elementor and divi `testimonial.quotes`) listed `props` twice, and the last one won, so their `ui:testimonial.rating` and `ui:testimonial.label` bindings were never read. The two objects are merged. A new test reads every mapping table as raw text and fails on a key repeated within an object.
+- 2c7717a: `stats` keeps a figure with its prefix and suffix on one line ("99.9%" no longer breaks into "99.9" / "%" in a narrow card). In a grid, the figure's size is capped by its cell and its character count, so a long figure ("1.250+", "€12.5M") shrinks to fit the card; a short one keeps the size `valueSize` gives it. The inline layout only stops wrapping a figure.
+- Updated dependencies [eaccd74]
+- Updated dependencies [7e5a4ce]
+  - @contentrain/types@1.60.0
+
 ## 0.32.0
 
 ### Minor Changes
