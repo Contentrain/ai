@@ -13,7 +13,7 @@ import { textDirection } from '../lib/direction'
 import { getSite, getStrings } from '../lib/content'
 import { menusAt } from '../lib/links'
 import { queryMap } from '../lib/redirects'
-import { describePage, organizationLd, websiteLd } from '../lib/seo'
+import { describePage, documentTitle, organizationLd, websiteLd } from '../lib/seo'
 import { siteConfig } from '../site.config'
 import { overlays } from '../views/overlays'
 import '../styles/global.css'
@@ -45,9 +45,9 @@ const origin = Astro.site ?? Astro.url
 const home = new URL('/', origin).href
 const identity = { name: site.title, url: home, description: site.tagline, logo: site.logo, sameAs: site.same_as }
 const isHome = Astro.url.pathname === '/'
-const fullTitle = seoTitle ?? (title && !isHome
-  ? siteConfig.titleTemplate.replace('{title}', title).replace('{site}', site.title)
-  : site.tagline ? `${site.title} – ${site.tagline}` : site.title)
+// A latest-posts home is no entry: its SEO title and description are the site's (`site.seo`, written from the source).
+const homeSeo = isHome ? site.seo : undefined
+const fullTitle = documentTitle({ seoTitle, title, isHome, home: homeSeo, site: site.title, tagline: site.tagline, template: siteConfig.titleTemplate })
 const lang = site.language
 const shareImage = image ?? site.social_image
 // Two or more footer menus are columns, as the source theme's footer showed them; one is a row of links.
@@ -77,7 +77,7 @@ const wpQueries = isHome ? await queryMap() : {}
     <Font cssVariable="--font-inter" preload={[{ subset: 'latin' }, { subset: 'latin-ext' }]} />
     <SEO
       title={fullTitle}
-      description={describePage({ own: description, label: isHome ? undefined : title, site: site.title, tagline: site.tagline })}
+      description={describePage({ own: description ?? homeSeo?.description, label: isHome ? undefined : title, site: site.title, tagline: site.tagline })}
       canonical={canonical ?? new URL(Astro.url.pathname, origin).href}
       image={shareImage ? new URL(shareImage, origin).href : undefined}
       type={type ?? 'website'}

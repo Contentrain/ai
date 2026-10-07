@@ -57,9 +57,10 @@ const imageSizes = columns ? `(min-width: 1200px) ${Math.ceil(1200 / columns)}px
 const listImage = siteConfig.lists.image
 const pageSuffix = current > 1 ? ` – ${t('pagination.page')} ${current}` : ''
 const url = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href
-// The archive's own description, else one that says what the page is (a later page with its number).
+// The archive's own description (on a latest-posts home's first page, the home's SEO description from the source),
+// else one that says what the page is (a later page with its number).
 const metaDescription = describePage({
-  own: description,
+  own: description ?? (Astro.url.pathname === '/' ? site.seo?.description : undefined),
   label: title ? (eyebrow ? `${eyebrow}: ${title}` : title) : current > 1 ? t('blog.title') : undefined,
   site: site.title,
   tagline: site.tagline,
