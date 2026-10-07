@@ -64,6 +64,22 @@ describe('validateProjectPlan', () => {
     expect(validateProjectPlan(plan())).toEqual({ errors: [], warnings: [] })
   })
 
+  it('checks the layout overlays as placements, in order', () => {
+    const p = plan()
+    p.layout.overlays = [{ component: 'FeatureGrid', id: 'newsletter-popup', bind: { kind: 'static', props: { title: 'site:title' } } }]
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.layout.overlays.push(
+      { component: 'Popup', bind: { kind: 'static', props: {} } },
+      { component: 'FeatureGrid', bind: { kind: 'entry', props: { title: 'field:title' } } },
+    )
+    expect(validateProjectPlan(p).errors).toEqual([
+      'layout overlay 1: component Popup is not declared',
+      'layout overlay 2: binds the route entry but layout has no entry',
+    ])
+    p.layout.overlays = { component: 'FeatureGrid' } as never
+    expect(validateProjectPlan(p).errors).toEqual(['layout overlays is not a list'])
+  })
+
   it('accepts the theme\'s type scale and section rhythm as roles', () => {
     const p = plan()
     p.site.tokens.roles = { ...p.site.tokens.roles, 'text-nav': '1.125rem', 'text-heading-1': 'clamp(2rem, 5vw, 3rem)', 'text-heading-2': '2rem', 'text-heading-3': '1.5rem', 'spacing-section': '5rem' }

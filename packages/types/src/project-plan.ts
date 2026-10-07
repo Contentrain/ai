@@ -49,8 +49,12 @@ export interface ProjectPlan {
   format: typeof PROJECT_PLAN_FORMAT
   source: PlanSource
   site: PlanSite
-  /** The starter's single `BaseLayout`: chrome every route shares. */
-  layout: { header?: PlanPlacement, footer?: PlanPlacement }
+  /**
+   * The starter's single `BaseLayout`: chrome every route shares. `overlays`: what the source draws over every page,
+   * outside the header and footer (a popup: Elementor Popup, Popup Maker), in source order; each reads its own singleton
+   * and renders after the footer. Absent or empty, none.
+   */
+  layout: { header?: PlanPlacement, footer?: PlanPlacement, overlays?: PlanPlacement[] }
   models: PlanModel[]
   components: PlanComponent[]
   routes: PlanRoute[]
@@ -730,6 +734,9 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   }
   if (plan.layout?.header) placement(plan.layout.header, 'layout header')
   if (plan.layout?.footer) placement(plan.layout.footer, 'layout footer')
+  const overlays = plan.layout?.overlays
+  if (overlays !== undefined && !Array.isArray(overlays)) errors.push('layout overlays is not a list')
+  else overlays?.forEach((s, i) => placement(s, `layout overlay ${i}`))
 
   const routeIds = new Set<string>()
   const byModel = new Map<string, PlanRoute[]>()

@@ -43,12 +43,19 @@
   ],
   "distFiles": {
     "index.html": {
+      "contains": [
+        "</footer> <aside class=\"container-prose py-8\" data-cr-part=\"overlay\" aria-labelledby=\"newsletter-popup-title\">",
+        ">Notes from the studio</h2>"
+      ],
       "excludes": [
         "SliderTrack.astro_astro_type_script",
         "Tabs.astro_astro_type_script"
       ]
     },
     "about/index.html": {
+      "contains": [
+        ">One letter a month on calm, fast websites.</p>"
+      ],
       "excludes": [
         "SliderTrack.astro_astro_type_script",
         "Tabs.astro_astro_type_script"

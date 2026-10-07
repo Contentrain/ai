@@ -21,7 +21,7 @@ pnpm lhci        # Lighthouse CI on the built site
 | `src/site.config.ts` | What is not content: permalink patterns, the front page, posts per page, menu slugs and the Studio binding. |
 | `src/lib/site-routes.ts`, `src/pages/[...path].astro` | The route table. Every content address — posts, pages, the posts index, category/tag/author archives and their `/page/N/` pages — comes from the permalink patterns. Two entries claiming one address fail the build. |
 | `src/lib/links.ts` | Links to what the public can see: menu targets, body links and section links resolve through the route table; a link to a draft, a private page or the source site's old address is dropped or rewritten. |
-| `src/views/` | The page templates: `PostView`, `PageView`, `ListView`. |
+| `src/views/` | The page templates: `PostView`, `PageView`, `ListView`. A migration adds composed pages (`views/composed/`) and the overlays every page draws after the footer, such as a popup (`views/overlays/`); both are empty by default. |
 | `src/layouts/BaseLayout.astro` | Document shell: SEO head, font, skip link, header, footer. |
 | `src/components/SEO.astro`, `src/lib/seo.ts` | Title, description, canonical, robots, Open Graph, Twitter, RSS discovery and a JSON-LD graph (WebSite, Organization, BlogPosting, BreadcrumbList, CollectionPage). |
 | `src/components/Prose.astro`, `src/styles/wp-blocks.css` | Rich-text bodies: Tailwind Typography plus styles for WordPress block markup (columns, buttons, gallery, cover, media & text, tables, quotes, separators, alignments, preset colors and sizes). |
