@@ -21,6 +21,10 @@ const social = tv({
     align: { start: { list: 'justify-start' }, center: { list: 'justify-center' }, end: { list: 'justify-end' } },
     shape: { plain: {}, circle: { link: 'rounded-full border border-line' } },
   },
+  // A bordered link that shows a name needs room around it; a bare mark stays a circle.
+  compoundVariants: [
+    { shape: 'circle', display: ['text', 'both'], class: { link: 'px-4' } },
+  ],
   defaultVariants: { display: 'icons', size: 'md', align: 'start', shape: 'plain' },
 })
 
