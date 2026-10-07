@@ -2827,7 +2827,8 @@
       "description": "Site header: brand (logo and/or name), navigation and an optional call-to-action button.",
       "category": "chrome",
       "uses": [
-        "nav"
+        "nav",
+        "search-box"
       ],
       "shared": [
         "Button.astro",
@@ -2989,6 +2990,24 @@
             }
           },
           "description": "Header button, shown on wide screens."
+        },
+        "search": {
+          "type": "object",
+          "fields": {
+            "label": {
+              "type": "string"
+            },
+            "placeholder": {
+              "type": "string"
+            },
+            "submitLabel": {
+              "type": "string"
+            },
+            "action": {
+              "type": "url"
+            }
+          },
+          "description": "A search field in the bar: a GET form to the site's search page (default /search); below the bar on a phone."
         },
         "navLabel": {
           "type": "string",
@@ -3362,6 +3381,82 @@
         "image.width": "image.width",
         "image.height": "image.height"
       }
+    },
+    {
+      "id": "language-switcher",
+      "name": "LanguageSwitcher",
+      "description": "Links to the same page in the site's other languages, each with hreflang and its own lang; the current one is marked aria-current. A plain list or a native <details> menu; no JavaScript. The addresses are the page's equivalents in each language, supplied by the caller.",
+      "category": "chrome",
+      "uses": [],
+      "shared": [],
+      "variants": {
+        "layout": {
+          "options": [
+            "list",
+            "menu"
+          ],
+          "default": "list",
+          "description": "A row of links, or a menu that shows the current language and opens on click."
+        },
+        "align": {
+          "options": [
+            "start",
+            "end"
+          ],
+          "default": "start",
+          "description": "Which edge the menu panel lines up with."
+        },
+        "labelStyle": {
+          "options": [
+            "name",
+            "code"
+          ],
+          "default": "name",
+          "description": "The language's own name (\"Deutsch\") or its code (\"DE\")."
+        }
+      },
+      "props": {
+        "languages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "lang": {
+                "type": "string",
+                "required": true
+              },
+              "label": {
+                "type": "string",
+                "required": true
+              },
+              "href": {
+                "type": "url",
+                "required": true
+              },
+              "current": {
+                "type": "boolean"
+              }
+            }
+          },
+          "description": "The languages: BCP 47 code, the language's own name, the page's address in it, and whether it is the page being read."
+        },
+        "label": {
+          "type": "string",
+          "description": "Accessible name (ui-strings language.label)."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "polylang/language-switcher"
+        ]
+      },
+      "a11y": "List layout: a labelled <nav>; menu layout: a native <details> whose summary carries the label for assistive technology and the current language visibly. Every link has lang and hreflang, so screen readers pronounce each name in its language; the current one is aria-current=true. Fewer than two languages draw nothing.",
+      "files": [
+        "LanguageSwitcher.astro"
+      ]
     },
     {
       "id": "logo-cloud",
@@ -4953,6 +5048,84 @@
       ]
     },
     {
+      "id": "search-box",
+      "name": "SearchBox",
+      "description": "A search field that sends the visitor to the site's search page (`/search?q=…`): a plain GET form with a labelled role=search landmark, no JavaScript. For a header slot or inline in a page.",
+      "category": "chrome",
+      "uses": [],
+      "shared": [],
+      "variants": {
+        "size": {
+          "options": [
+            "sm",
+            "md"
+          ],
+          "default": "md",
+          "description": "Field and button height (36 and 44 px)."
+        },
+        "width": {
+          "options": [
+            "auto",
+            "full"
+          ],
+          "default": "auto",
+          "description": "A compact field (up to 20 rem) or the whole column."
+        },
+        "button": {
+          "options": [
+            "text",
+            "icon"
+          ],
+          "default": "text",
+          "description": "The button reads its label, or shows a magnifier named by the same label."
+        },
+        "labelStyle": {
+          "options": [
+            "hidden",
+            "shown"
+          ],
+          "default": "hidden",
+          "description": "The field's label for assistive technology only, or printed above the field."
+        }
+      },
+      "props": {
+        "action": {
+          "type": "url",
+          "default": "/search",
+          "description": "The search page the form sends to; it reads `q`."
+        },
+        "label": {
+          "type": "string",
+          "description": "The landmark's and field's accessible name (ui-strings search.label)."
+        },
+        "placeholder": {
+          "type": "string",
+          "description": "Hint text in the field (ui-strings search.placeholder)."
+        },
+        "submitLabel": {
+          "type": "string",
+          "description": "The button's name (ui-strings search.submit)."
+        },
+        "id": {
+          "type": "string",
+          "default": "site-search",
+          "description": "Prefix of the field's id; set it when two search boxes share a page."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/search"
+        ]
+      },
+      "a11y": "A <form role=\"search\"> with a real <label> for the type=search field (sr-only unless shown); the button has a text or aria-label name; focus rings on both.",
+      "files": [
+        "SearchBox.astro"
+      ]
+    },
+    {
       "id": "slider",
       "name": "Slider",
       "description": "A carousel of images with optional title, text and button per slide. Without JavaScript it is a snapping horizontal scroller; Embla adds paging, arrows and dots.",
@@ -5293,6 +5466,102 @@
         "actions[].newTab": "actions[].new_tab",
         "actions[].style": "actions[].style"
       }
+    },
+    {
+      "id": "social-links",
+      "name": "SocialLinks",
+      "description": "Links to the site's profiles on other networks as marks, names or both. The network is read from each address's host (the table Team uses), so a link carries only its address; an unknown host is shown as itself. Stands alone in a header, top bar, contact section or author box.",
+      "category": "chrome",
+      "uses": [],
+      "shared": [
+        "social.ts"
+      ],
+      "variants": {
+        "display": {
+          "options": [
+            "icons",
+            "text",
+            "both"
+          ],
+          "default": "icons",
+          "description": "Mark only (named for assistive technology), the network's name, or both."
+        },
+        "size": {
+          "options": [
+            "sm",
+            "md",
+            "lg"
+          ],
+          "default": "md",
+          "description": "Mark and touch target size (32, 40 and 48 px minimum)."
+        },
+        "align": {
+          "options": [
+            "start",
+            "center",
+            "end"
+          ],
+          "default": "start",
+          "description": "Where the row sits in its container."
+        },
+        "shape": {
+          "options": [
+            "plain",
+            "circle"
+          ],
+          "default": "plain",
+          "description": "Bare marks, or each in a ringed circle."
+        }
+      },
+      "props": {
+        "links": {
+          "type": "array",
+          "required": true,
+          "items": {
+            "type": "object",
+            "fields": {
+              "href": {
+                "type": "url",
+                "required": true
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The profiles; `label` only for a link whose host names no network (a personal site, \"Newsletter\")."
+        },
+        "name": {
+          "type": "string",
+          "description": "Whose profiles these are, for \"{name} on {network}\"."
+        },
+        "label": {
+          "type": "string",
+          "description": "Accessible name of the list (ui-strings social.label)."
+        },
+        "profileLabel": {
+          "type": "string",
+          "description": "How each link announces itself; {name} and {network} are replaced (ui-strings social.profile)."
+        }
+      },
+      "slots": {},
+      "js": "none",
+      "dependencies": {},
+      "sources": {
+        "gutenberg": [
+          "core/social-links"
+        ],
+        "elementor": [
+          "elementor/social-icons"
+        ],
+        "divi": [
+          "divi/et_pb_social_media_follow"
+        ]
+      },
+      "a11y": "A labelled list of links; each link's accessible name is \"{name} on {network}\" and always contains the visible text; marks are aria-hidden; links open in a new tab with rel=me noopener; every target is at least 32 px.",
+      "files": [
+        "SocialLinks.astro"
+      ]
     },
     {
       "id": "split",
@@ -6529,6 +6798,7 @@
         "Section.astro",
         "image.ts",
         "measured.ts",
+        "social.ts",
         "types.ts"
       ],
       "variants": {

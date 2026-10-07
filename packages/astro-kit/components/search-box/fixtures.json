@@ -1,0 +1,31 @@
+[
+  {
+    "name": "default",
+    "props": {
+      "label": "Search",
+      "placeholder": "Search this site",
+      "submitLabel": "Search"
+    }
+  },
+  {
+    "name": "small-icon",
+    "props": {
+      "size": "sm",
+      "button": "icon",
+      "label": "Search",
+      "submitLabel": "Search",
+      "id": "header-search"
+    }
+  },
+  {
+    "name": "full-shown-label",
+    "props": {
+      "width": "full",
+      "labelStyle": "shown",
+      "label": "Search the journal",
+      "placeholder": "Search this site",
+      "submitLabel": "Search",
+      "id": "journal-search"
+    }
+  }
+]

@@ -3,7 +3,7 @@
   "name": "Header",
   "description": "Site header: brand (logo and/or name), navigation and an optional call-to-action button.",
   "category": "chrome",
-  "uses": ["nav"],
+  "uses": ["nav", "search-box"],
   "shared": ["Button.astro", "KitImage.astro", "types.ts"],
   "variants": {
     "layout": { "options": ["split", "centered", "brand-left"], "default": "split", "description": "split: brand left, navigation right. centered: brand above centred navigation. brand-left: navigation right after the brand." },
@@ -27,6 +27,7 @@
     "homeHref": { "type": "url", "default": "/", "description": "Where the brand links." },
     "items": { "type": "array", "required": true, "items": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true }, "newTab": { "type": "boolean" }, "children": { "type": "array" } } }, "description": "Primary menu (menus → menu-items)." },
     "action": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true }, "style": { "type": "select", "options": ["primary", "secondary", "ghost"] } }, "description": "Header button, shown on wide screens." },
+    "search": { "type": "object", "fields": { "label": { "type": "string" }, "placeholder": { "type": "string" }, "submitLabel": { "type": "string" }, "action": { "type": "url" } }, "description": "A search field in the bar: a GET form to the site's search page (default /search); below the bar on a phone." },
     "navLabel": { "type": "string", "description": "Accessible name of the navigation (ui-strings nav.label)." },
     "menuLabel": { "type": "string", "description": "Narrow-screen toggle text (ui-strings nav.menu)." },
     "closeLabel": { "type": "string", "description": "Drawer close text (ui-strings nav.close)." }

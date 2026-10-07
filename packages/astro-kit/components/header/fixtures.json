@@ -209,5 +209,6 @@
         "href": "/contact/"
       }
     }
-  }
+  },
+  { "name": "search", "props": { "siteName": "Northwind Journal", "items": [{ "label": "Journal", "href": "/" }, { "label": "About", "href": "/about/" }], "search": { "label": "Search", "placeholder": "Search this site", "submitLabel": "Search" } } }
 ]

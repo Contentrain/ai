@@ -6,6 +6,7 @@ import Button from '../_shared/Button.astro'
 import KitImage from '../_shared/KitImage.astro'
 import type { ActionInput, ImageInput, NavItem } from '../_shared/types'
 import Nav from '../nav/Nav.astro'
+import SearchBox from '../search-box/SearchBox.astro'
 
 const header = tv({
   slots: {
@@ -54,6 +55,8 @@ interface Props {
   homeHref?: string | undefined
   items: NavItem[]
   action?: ActionInput | undefined
+  /** A search field in the bar (a GET form to the site's search page); below the bar on a phone. */
+  search?: { label?: string | undefined, placeholder?: string | undefined, submitLabel?: string | undefined, action?: string | undefined } | undefined
   navLabel?: string | undefined
   menuLabel?: string | undefined
   closeLabel?: string | undefined
@@ -64,13 +67,13 @@ interface Props {
   menu?: 'flyout' | 'mega' | undefined
 }
 
-const { siteName, tagline, brandSize, brandWeight, brandTracking, bordered, offsetTop, padTop, padBottom, linkNav, logo, showName = true, homeHref = '/', items, action, navLabel, menuLabel, closeLabel, layout, tone, position, menu } = Astro.props
+const { siteName, tagline, brandSize, brandWeight, brandTracking, bordered, offsetTop, padTop, padBottom, linkNav, logo, showName = true, homeHref = '/', items, action, search, navLabel, menuLabel, closeLabel, layout, tone, position, menu } = Astro.props
 const { root, inner, brand } = header({ layout, tone, position, bordered })
 const rootStyle = offsetTop ? `margin-top: ${offsetTop}` : undefined
 const innerStyle = [padTop && `padding-top: ${padTop}`, padBottom && `padding-bottom: ${padBottom}`].filter(Boolean).join('; ') || undefined
 const brandStyle = [brandSize && `font-size: ${brandSize}`, brandWeight && `font-weight: ${brandWeight}`, brandTracking && `letter-spacing: ${brandTracking}`].filter(Boolean).join('; ') || undefined
 // A tagline under the name keeps its line on a phone, as themes print it: the navigation wraps below.
-const wrap = tagline ? 'flex-wrap md:flex-nowrap' : undefined
+const wrap = tagline || search ? 'flex-wrap md:flex-nowrap' : undefined
 ---
 <header class={root()} style={rootStyle}>
   <div class={inner({ class: wrap })} style={innerStyle}>
@@ -90,6 +93,11 @@ const wrap = tagline ? 'flex-wrap md:flex-nowrap' : undefined
           {showName && <span>{siteName}</span>}
         </a>
       )}
+    {search && (
+      <div class:list={['basis-full md:basis-auto md:order-none', layout === 'centered' ? 'order-last md:ms-auto' : 'order-last md:ms-auto']}>
+        <SearchBox action={search.action} label={search.label} placeholder={search.placeholder} submitLabel={search.submitLabel} size="sm" id="header-search" />
+      </div>
+    )}
     <div class:list={['flex items-center gap-4', layout === 'centered' ? 'justify-center' : 'ms-auto']}>
       <Nav items={items} menu={menu} label={navLabel} menuLabel={menuLabel} closeLabel={closeLabel} part="nav-header" color={linkNav ? 'link' : 'current'} align={layout === 'centered' ? 'center' : 'end'} />
       {action && <Button action={action} size="sm" class="hidden md:inline-flex" />}
