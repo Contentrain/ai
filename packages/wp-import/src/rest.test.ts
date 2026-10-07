@@ -212,6 +212,27 @@ describe('fetchRestRawIR', () => {
     expect(raw.posts.some((p) => p.type === 'e-landing-page')).toBe(false)
   })
 
+  it('a page list in a navigation shows the pages, not the landing pages', async () => {
+    const calls: string[] = []
+    const site = (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+      const u = String(url)
+      if (u.includes('/types')) return json({
+        page: { slug: 'page', rest_base: 'pages' },
+        'e-landing-page': { slug: 'e-landing-page', rest_base: 'e-landing-page' },
+      })
+      if (u.includes('/pages?')) return json([post(11, 'about')])
+      if (u.includes('/e-landing-page?')) return json([post(901, 'summer-sale')])
+      if (u.endsWith('/users/me')) return json({ id: 1, slug: 'ada', name: 'Ada Lovelace' })
+      if (u.includes('/templates?')) return json([{ slug: 'index', content: { raw: '<!-- wp:template-part {"slug":"header","area":"header"} /-->' } }])
+      if (u.includes('/template-parts?')) return json([{ slug: 'header', area: 'header', title: { raw: 'Header' }, content: { raw: '<!-- wp:navigation --><!-- wp:page-list /--><!-- /wp:navigation -->' } }])
+      return stubFetch(calls)(url, init)
+    }) as typeof fetch
+    const { raw } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: site, auth: { user: 'ada', appPassword: 'abcd efgh' } })
+    expect(raw.posts.map((p) => [p.id, p.type]).toSorted()).toEqual([[11, 'page'], [901, 'page']])
+    const titles = (raw.menus ?? []).flatMap((m) => m.items.map((i) => i.title))
+    expect(titles).toEqual(['about'])
+  })
+
   it('reads Polylang and WPML language fields into RawPost.lang and one language_pair per group', async () => {
     const multilingual = (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
       const u = String(url)
