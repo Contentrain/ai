@@ -478,7 +478,10 @@
         "html": "html:.elementor-widget-text-editor",
         "triggerLabel": "ui:dialog.open",
         "closeLabel": "ui:dialog.close"
-      }
+      },
+      "into": "actions",
+      "each": "a.elementor-button",
+      "item": { "label": "dom:", "href": "dom:@href" }
     }
   ],
   "sections": [

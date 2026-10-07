@@ -552,6 +552,10 @@ describe('carousel, tabs and disclosure rules', () => {
     const rule = Object.values(tables).flatMap(table => table.rules).find(r => r.match === match)!
     expect(rule.component).toBe('dialog')
     expect(rule.props).toMatchObject({ triggerLabel: 'ui:dialog.open', closeLabel: 'ui:dialog.close' })
+    // A CTA popup keeps its buttons: the popup's own links become the dialog's actions.
+    expect(rule.into).toBe('actions')
+    expect(rule.each).toBe(match === 'elementor/popup' ? 'a.elementor-button' : '.pum-content a.button')
+    expect(rule.item).toEqual({ label: 'dom:', href: 'dom:@href' })
     expect(rule.props?.html, match).toMatch(/^html:/)
   })
 

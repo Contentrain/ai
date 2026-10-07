@@ -517,7 +517,10 @@
         "html": "html:.pum-content",
         "triggerLabel": "ui:dialog.open",
         "closeLabel": "ui:dialog.close"
-      }
+      },
+      "into": "actions",
+      "each": ".pum-content a.button",
+      "item": { "label": "dom:", "href": "dom:@href" }
     }
   ]
 }
