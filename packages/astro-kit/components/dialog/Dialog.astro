@@ -1,0 +1,113 @@
+---
+// A popup, as a dialog the visitor opens: a button in a section of the page and a modal <dialog> with a heading, text
+// and buttons. Replaces Elementor popups and Popup Maker overlays. Never opens by itself (no timers, no exit intent):
+// content that a source popup showed on load or on scroll is reachable from the button instead, and sits in the HTML
+// for crawlers. The section is the kit's (Section: tone, spacing, measured style), like every other section.
+//
+// Modal behaviour is the browser's (the APG dialog pattern as `showModal()` implements it): focus moves into the
+// dialog and is kept there, the page behind is inert, Escape closes it and focus returns to the button. The button
+// opens it with no script where Invoker Commands exist (`command`/`commandfor`); a small script covers browsers
+// without them and closes it on a click outside. With scripting off altogether, the dialog's content is laid out in
+// the section itself, under where the button was: nothing is hidden and nothing blocks the page.
+import { tv } from 'tailwind-variants'
+import Button from '../_shared/Button.astro'
+import Section from '../_shared/Section.astro'
+import type { ActionInput, MeasuredStyle } from '../_shared/types'
+import Prose from '../prose/Prose.astro'
+
+const dialog = tv({
+  slots: {
+    root: 'flex flex-wrap gap-6',
+    trigger: 'inline-flex cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-control,var(--radius-md))] px-5 py-2.5 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2',
+    // A dialog is not positioned by the page: UA styles centre it; width and surface come from here. Open but not
+    // modal (the `open` preview prop) it is a block in the flow under the button, not a box over it. The inner box
+    // scrolls, not the dialog: a click on the scrollbar then never lands on the dialog itself (the backdrop test). The
+    // display is set only when open (`open:flex`): an author `display` would override the UA's `display: none` when closed.
+    box: 'm-auto w-[min(92vw,var(--dialog-width))] max-h-[85dvh] flex-col open:flex rounded-card border border-line bg-surface p-0 text-ink shadow-xl backdrop:bg-ink/50 [&[open]:not(:modal)]:relative [&[open]:not(:modal)]:m-0 [&[open]:not(:modal)]:basis-full',
+    inner: 'flex min-h-0 flex-col gap-4 overflow-y-auto p-6 md:p-8',
+    heading: 'pe-10 text-xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-2xl',
+    actions: 'flex flex-wrap gap-3',
+    close: 'absolute end-3 top-3 inline-flex size-9 cursor-pointer items-center justify-center rounded-md hover:bg-surface-muted focus-visible:outline-2',
+  },
+  variants: {
+    triggerStyle: {
+      primary: { trigger: 'bg-accent text-accent-ink hover:bg-ink hover:text-surface' },
+      secondary: { trigger: 'bg-ink text-surface hover:bg-accent hover:text-accent-ink' },
+      ghost: { trigger: 'border border-current bg-transparent text-current hover:bg-ink/5' },
+      link: { trigger: 'bg-transparent p-0 text-[color:var(--color-link,var(--color-accent))] underline underline-offset-4' },
+    },
+    size: { sm: { box: '[--dialog-width:28rem]' }, md: { box: '[--dialog-width:40rem]' }, lg: { box: '[--dialog-width:56rem]' } },
+    // Where the button sits in the section.
+    align: { start: { root: 'justify-start' }, center: { root: 'justify-center' }, end: { root: 'justify-end' } },
+  },
+  defaultVariants: { triggerStyle: 'primary', size: 'md', align: 'start' },
+})
+
+interface Props {
+  /** Unique on the page; the button points at the dialog by it. */
+  id?: string | undefined
+  /** Text of the button that opens the dialog. */
+  triggerLabel: string
+  heading?: string | undefined
+  /** The dialog's text (rendered HTML). */
+  html?: string | undefined
+  actions?: ActionInput[] | undefined
+  /** Accessible name of the close button (ui-strings dialog.close). */
+  closeLabel?: string | undefined
+  triggerStyle?: 'primary' | 'secondary' | 'ghost' | 'link' | undefined
+  size?: 'sm' | 'md' | 'lg' | undefined
+  align?: 'start' | 'center' | 'end' | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image. Absent, the site's tokens; present, it wins over tone. */
+  measured?: MeasuredStyle | undefined
+  /** Rendered already open, in the flow of the section and not modal: for previews and visual baselines only, never for a page. */
+  open?: boolean | undefined
+}
+
+const { id: givenId = 'dialog', triggerLabel, heading, html, actions = [], closeLabel = 'Close', triggerStyle, size, align: given, tone, measured, open = false } = Astro.props
+// The id goes into attributes and into the scripting-off style sheet, so it is a plain token or the default.
+const id = /^[A-Za-z][\w-]*$/.test(givenId) ? givenId : 'dialog'
+const align = given ?? measured?.align
+// On the accent band the primary button (accent) would vanish: drawn as the secondary style there, as in Cta. The
+// dialog's own actions sit on the dialog's surface, not the band, so they keep their styles.
+const onAccent = tone === 'accent' && !measured?.bg?.image
+const s = dialog({ triggerStyle: onAccent && (triggerStyle ?? 'primary') === 'primary' ? 'secondary' : triggerStyle, size, align })
+const headingId = `${id}-title`
+// Invoker Commands attributes are not in Astro's button types.
+const invoker = { command: 'show-modal', commandfor: id }
+// Scripting off: the content takes the button's place in the section, as a plain block, and the close button goes
+// (it can only close an open dialog). Styles scoped by the dialog's id (a checked token, nothing from content); the selectors win over the UA sheet by specificity.
+const noscript = `<style>[data-kit-dialog="${id}"]>[data-kit-dialog-open],#${id} form[method=dialog]{display:none}#${id}:not([open]){display:block;position:static;margin:0;width:100%;max-width:none;max-height:none;box-shadow:none}</style>`
+---
+<Section measured={measured} tone={tone} spacing="md" id={`${id}-section`}>
+  <div class={s.root()} data-kit-dialog={id}>
+    <noscript set:html={noscript} />
+    <button type="button" class={s.trigger()} data-kit-dialog-open aria-haspopup="dialog" {...invoker}>{triggerLabel}</button>
+    <dialog id={id} class={s.box()} open={open || undefined} aria-labelledby={heading ? headingId : undefined} aria-label={heading ? undefined : triggerLabel}>
+      <div class={s.inner()}>
+        {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
+        {html && <Prose html={html} searchable={false} />}
+        {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} />)}</div>}
+      </div>
+      <form method="dialog">
+        <button type="submit" class={s.close()} aria-label={closeLabel}>
+          <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </form>
+    </dialog>
+  </div>
+</Section>
+
+<script>
+  // Browsers without Invoker Commands: the button opens the dialog here. Everywhere, a click on the backdrop closes it.
+  const invokers = 'commandForElement' in HTMLButtonElement.prototype
+  for (const root of document.querySelectorAll<HTMLElement>('[data-kit-dialog]')) {
+    const dialog = root.querySelector('dialog')
+    const open = root.querySelector<HTMLButtonElement>('[data-kit-dialog-open]')
+    if (!dialog || !open || root.dataset.ready !== undefined) continue
+    root.dataset.ready = ''
+    if (!invokers) open.addEventListener('click', () => { if (!dialog.open) dialog.showModal() })
+    // The inner box fills the dialog and owns the scrollbar, so a click whose target is the dialog itself landed on the backdrop.
+    dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close() })
+  }
+</script>

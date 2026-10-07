@@ -26,6 +26,8 @@
   "comments.wordpress": "댓글 읽기 및 참여",
   "common.failed": "문제가 발생했습니다. 다시 시도해 주세요.",
   "common.loading": "불러오는 중…",
+  "dialog.close": "닫기",
+  "dialog.open": "열기",
   "embed.play": "재생",
   "embed.show": "보기",
   "footer.copyright": "모든 권리 보유.",

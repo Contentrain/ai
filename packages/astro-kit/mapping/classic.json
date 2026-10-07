@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "classic",
-  "version": "7",
+  "version": "8",
   "fallback": "prose",
   "rules": [
     {
@@ -508,6 +508,19 @@
         "question": "dom:summary",
         "answer": "html::scope > :not(summary)"
       }
+    },
+    {
+      "match": "classic/popup-maker",
+      "component": "dialog",
+      "props": {
+        "heading": "dom:.pum-title",
+        "html": "html:.pum-content",
+        "triggerLabel": "ui:dialog.open",
+        "closeLabel": "ui:dialog.close"
+      },
+      "into": "actions",
+      "each": ".pum-content a.button",
+      "item": { "label": "dom:", "href": "dom:@href" }
     }
   ]
 }
