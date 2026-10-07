@@ -2,7 +2,7 @@ import type { ContentrainConfig, EntryMeta, ModelDefinition, Vocabulary } from '
 import { generateEntryId, rewriteEntryMedia, rewriteMarkdownMedia, validateEntryId, validateLocale, validateSlug } from '@contentrain/types'
 import type { FileChange, RepoReader } from '../contracts/index.js'
 import type { ContentEntry } from '../content-manager.js'
-import { canonicalStringify, parseMarkdownFrontmatter, serializeMarkdownFrontmatter } from '../serialization/index.js'
+import { canonicalStringify, parseMarkdownFrontmatter, preservedKeyConflicts, serializeMarkdownFrontmatter } from '../serialization/index.js'
 import type { ContentSaveEntryResult, ContentSavePlan } from './types.js'
 import { contentFilePath, documentFilePath, metaFilePath } from './paths.js'
 import { mergeEntryMeta } from '../meta-manager.js'
@@ -248,7 +248,14 @@ export async function planContentSave(reader: RepoReader, input: PlanInput): Pro
         // Frontmatter media fields go through the schema-guided rewrite; the
         // markdown body has its `media/...` image/link targets rewritten too.
         const normalizedBody = mediaBaseUrl ? rewriteMarkdownMedia(bodyContent, mediaBaseUrl) : bodyContent
-        markdownChanges.set(dPath, serializeMarkdownFrontmatter(normalizeMedia(fmData), normalizedBody))
+        // Lines the reader cannot turn into fields (a Turkish or spaced key, a nested map, a comment) are written
+        // back as they were; a new value for one of those keys wins, and that is said out loud.
+        for (const key of preservedKeyConflicts(fmData, existing?.preserved)) {
+          const notice = `Document "${slug}" (${locale}): the saved "${key}" replaced a "${key}" block the file held in a shape Contentrain does not read.`
+          entryAdvisories.push(notice)
+          advisories.push(notice)
+        }
+        markdownChanges.set(dPath, serializeMarkdownFrontmatter(normalizeMedia(fmData), normalizedBody, existing?.preserved))
         metaByPath.set(mPath, mergeEntryMeta(await priorMeta(mPath), entry))
 
         result.push({
