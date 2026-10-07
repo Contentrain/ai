@@ -77,6 +77,13 @@ export const collections = {
       wp_id: z.number().int().optional(),
     }),
   }),
+  newsletterPopup: defineCollection({
+    loader: loader('newsletter-popup'),
+    schema: z.object({
+      heading: z.string(),
+      text: z.string().optional(),
+    }),
+  }),
   pages: defineCollection({
     loader: loader('pages'),
     schema: z.object({

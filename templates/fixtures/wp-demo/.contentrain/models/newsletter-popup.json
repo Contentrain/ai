@@ -1,0 +1,18 @@
+{
+  "domain": "sections",
+  "fields": {
+    "heading": {
+      "required": true,
+      "type": "string"
+    },
+    "text": {
+      "required": false,
+      "type": "string"
+    }
+  },
+  "i18n": false,
+  "id": "newsletter-popup",
+  "kind": "singleton",
+  "name": "Newsletter popup",
+  "title_field": "heading"
+}
