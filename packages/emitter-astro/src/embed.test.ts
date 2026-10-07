@@ -331,6 +331,38 @@ describe('emitted embed runtime — 402 payment_required (the workspace subscrip
   })
 })
 
+describe('embed runtime — a commenter\'s website is a link only when it is http(s)', () => {
+  const asComment = async (url: string) => {
+    const thread = await fixture('comments.read.response')
+    return em.commentHtml({ ...thread.comments[0], author: { ...thread.comments[0].author, name: 'Mallory', url }, replies: [] }, thread.config)
+  }
+
+  it.each([
+    ['javascript:alert(1)', 'javascript:alert(1)'],
+    ['mixed case with a leading space', ' JaVaScRiPt:alert(1)'],
+    ['a tab inside the scheme', 'java\tscript:alert(1)'],
+    ['a newline inside the scheme', 'java\nscript:alert(1)'],
+    ['data:', 'data:text/html,<script>alert(1)</script>'],
+    ['vbscript:', 'vbscript:msgbox(1)'],
+    ['an entity-encoded scheme', '&#106;avascript:alert(1)'],
+    ['a relative address', '/evil'],
+    ['a protocol-relative address', '//evil.example/x'],
+    ['not an address at all', 'not a url'],
+  ])('%s renders the name and no link', async (_label, url) => {
+    const html: string = await asComment(url)
+    expect(html).not.toContain('<a ')
+    expect(html).not.toContain('href=')
+    expect(html).toContain('Mallory')
+  })
+
+  it('an https address is still a link, escaped, opening safely', async () => {
+    expect(await asComment('https://ada.dev/?a=1&b="2"')).toContain(
+      '<a href="https://ada.dev/?a=1&amp;b=%222%22" rel="nofollow ugc noopener" target="_blank">Mallory</a>',
+    )
+    expect(await asComment('http://ada.dev')).toContain('<a href="http://ada.dev/" rel="nofollow ugc noopener" target="_blank">Mallory</a>')
+  })
+})
+
 describe('embed runtime — the Astro starter carries the same client', () => {
   it('templates/astro-starter/src/lib/studio/embed.ts is EMBED_TS byte for byte', async () => {
     // The starter ships this client as a file; a fix made here and not there

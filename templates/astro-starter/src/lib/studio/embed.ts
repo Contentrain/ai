@@ -458,10 +458,26 @@ export function initials(name: string): string {
   return (firstChar(words[0]) + (words.length > 1 ? firstChar(words[words.length - 1]) : '')).toLocaleUpperCase()
 }
 
+/**
+ * A commenter's website, as an address that is safe to link: the browser's own parse of it (which drops tabs and newlines
+ * and lower-cases the scheme, so `java\tscript:` and ` JaVaScRiPt:` are what they are), and only http: or https:.
+ * Anything else (javascript:, data:, vbscript:, a bare word, an address that does not parse) is no link: HTML escaping
+ * does not stop a scheme, and a row may not have come through the public form that checks it.
+ */
+export function safeHref(raw: string): string | null {
+  try {
+    const url = new URL(raw.trim())
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null
+  } catch {
+    return null
+  }
+}
+
 /** One comment with its replies. A reply button appears only while the thread is open and depth allows it. */
 export function commentHtml(c: PublicComment, config: { closed: boolean; maxDepth: number }): string {
-  const author = c.author.url
-    ? '<a href="' + esc(c.author.url) + '" rel="nofollow ugc noopener" target="_blank">' + esc(c.author.name) + '</a>'
+  const href = c.author.url ? safeHref(c.author.url) : null
+  const author = href
+    ? '<a href="' + esc(href) + '" rel="nofollow ugc noopener" target="_blank">' + esc(c.author.name) + '</a>'
     : esc(c.author.name)
   const badge = c.author.isModerator ? ' <span class="cr-moderator">' + esc(strings.moderator) + '</span>' : ''
   const date = '<time datetime="' + esc(c.createdAt) + '">' + esc(c.createdAt.slice(0, 10)) + '</time>'
