@@ -4,6 +4,7 @@
 import { tv } from 'tailwind-variants'
 import type { LinkInput } from '../_shared/types'
 import { footerLinkSizeClasses, footerVars } from './footer'
+import { safeHref } from '../_shared/safe-url'
 
 const footer = tv({
   slots: {
@@ -107,7 +108,7 @@ const hasBottom = Boolean(line || consentLabel)
         <nav aria-label={column.label ?? column.title} data-cr-part="nav-footer">
           {column.title && <p class="mb-3 font-semibold">{column.title}</p>}
           <ul class="flex flex-col gap-2">
-            {column.links.map(item => <li><a href={item.href} class={link()}>{item.label}</a></li>)}
+            {column.links.map(item => <li><a href={safeHref(item.href)} class={link()}>{item.label}</a></li>)}
           </ul>
         </nav>
       ))
@@ -115,13 +116,13 @@ const hasBottom = Boolean(line || consentLabel)
         <div class:list={['flex flex-col gap-4', align === 'center' ? 'items-center' : 'md:items-end']}>
           {social.length > 0 && (
             <ul class="flex flex-wrap gap-4">
-              {social.map(item => <li><a href={item.href} rel="me noopener" target="_blank" class={link()}>{item.label}</a></li>)}
+              {social.map(item => <li><a href={safeHref(item.href)} rel="me noopener" target="_blank" class={link()}>{item.label}</a></li>)}
             </ul>
           )}
           {links.length > 0 && (
             <nav aria-label={navLabel} data-cr-part="nav-footer">
               <ul class="flex flex-wrap gap-x-6 gap-y-2">
-                {links.map(item => <li><a href={item.href} class={link()}>{item.label}</a></li>)}
+                {links.map(item => <li><a href={safeHref(item.href)} class={link()}>{item.label}</a></li>)}
               </ul>
             </nav>
           )}
@@ -130,7 +131,7 @@ const hasBottom = Boolean(line || consentLabel)
       )}
     {layout === 'columns' && social.length > 0 && (
       <ul class="flex flex-wrap gap-4 md:col-span-full">
-        {social.map(item => <li><a href={item.href} rel="me noopener" target="_blank" class={link()}>{item.label}</a></li>)}
+        {social.map(item => <li><a href={safeHref(item.href)} rel="me noopener" target="_blank" class={link()}>{item.label}</a></li>)}
       </ul>
     )}
   </div>

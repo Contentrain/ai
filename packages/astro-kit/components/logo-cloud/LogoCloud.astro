@@ -8,6 +8,7 @@ import Section, { type Tone } from '../_shared/Section.astro'
 import { imageOf, type ImageSource } from '../_shared/image'
 import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
+import { safeHref } from '../_shared/safe-url'
 
 const cloud = tv({
   slots: {
@@ -101,7 +102,7 @@ const duration = `${Math.max(20, shown.length * 4)}s`
       {shown.map(({ image, href }) => (
         <li class={s.item()}>
           {href
-            ? <a href={href} class="group rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4"><KitImage image={image} sizes="160px" class={s.logo()} /></a>
+            ? <a href={safeHref(href)} class="group rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4"><KitImage image={image} sizes="160px" class={s.logo()} /></a>
             : <span class="group"><KitImage image={image} sizes="160px" class={s.logo()} /></span>}
         </li>
       ))}

@@ -4,6 +4,7 @@
 // their order.
 import { tv } from 'tailwind-variants'
 import { measuredFrame } from './measured'
+import { safeSrc } from './safe-url'
 import type { MeasuredStyle } from './types'
 
 const section = tv({
@@ -54,10 +55,11 @@ const layered = m.image || m.overlay ? 'relative isolate overflow-hidden' : unde
 const style = [m.color && `background-color: ${m.color}`, m.style].filter(Boolean).join('; ') || undefined
 // The reading column reads its own width token.
 const frameStyle = width === 'prose' ? m.frameStyle?.replace('--container-page:', '--container-prose:') : m.frameStyle
+const backdrop = safeSrc(m.image?.src)
 const dataTone = m.color ? (m.tone === 'dark' ? 'inverse' : 'default') : tone ?? 'default'
 ---
 <Tag id={id} aria-labelledby={labelledBy} class={section({ tone, spacing, class: [text, layered, className].filter(Boolean).join(' ') || undefined })} style={style} data-tone={dataTone} data-kit-section data-kit-spacing={spacing ?? 'md'} data-kit-measured={measured ? '' : undefined}>
-  {m.image && <img src={m.image.src} alt="" loading="lazy" decoding="async" class="absolute inset-0 -z-10 h-full w-full" style={`object-fit: ${m.image.fit}${m.image.position ? `; object-position: ${m.image.position}` : ''}`} />}
+  {m.image && backdrop && <img src={backdrop} alt="" loading="lazy" decoding="async" class="absolute inset-0 -z-10 h-full w-full" style={`object-fit: ${m.image.fit}${m.image.position ? `; object-position: ${m.image.position}` : ''}`} />}
   {m.overlay && <div class="absolute inset-0 -z-10" style={`background: ${m.overlay}`} aria-hidden="true" />}
   {width === 'none' ? <slot /> : <div class={width === 'prose' ? 'container-prose' : 'container-page'} style={frameStyle}><slot /></div>}
 </Tag>

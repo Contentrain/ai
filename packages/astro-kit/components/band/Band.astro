@@ -8,6 +8,7 @@ import KitImage from '../_shared/KitImage.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
 import { measuredGrid } from '../_shared/measured'
 import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
+import { safeHref } from '../_shared/safe-url'
 
 const band = tv({
   slots: {
@@ -116,14 +117,14 @@ const hasCopy = Boolean(heading || eyebrow || lead || actions.length)
             {item.title && (
               <ItemHeading class={s.itemTitle()}>
                 {item.href && !item.linkLabel
-                  ? <a href={item.href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{item.title}</a>
+                  ? <a href={safeHref(item.href)} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{item.title}</a>
                   : item.title}
               </ItemHeading>
             )}
             {item.meta && <p class={s.itemMeta()}>{item.meta}</p>}
             {item.text && <p class={s.itemText()} data-kit-text>{item.text}</p>}
             {item.points && item.points.length > 0 && <ul class={s.itemPoints()}>{item.points.map(point => <li>{point}</li>)}</ul>}
-            {item.href && item.linkLabel && <a href={item.href} class="font-medium text-accent-text underline-offset-4 hover:underline">{item.linkLabel}</a>}
+            {item.href && item.linkLabel && <a href={safeHref(item.href)} class="font-medium text-accent-text underline-offset-4 hover:underline">{item.linkLabel}</a>}
           </li>
         ))}
       </ul>

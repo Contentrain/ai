@@ -7,6 +7,7 @@
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import type { ImageInput, LinkInput } from '../_shared/types'
+import { safeHref } from '../_shared/safe-url'
 
 const card = tv({
   slots: {
@@ -79,18 +80,18 @@ const Heading = `h${headingLevel}` as 'h2' | 'h3'
   <div class={slots.body()}>
     {below && category && (
       <p class={slots.meta()}>
-        <a href={category.href} class="relative z-10 no-underline hover:underline">{category.label}</a>
+        <a href={safeHref(category.href)} class="relative z-10 no-underline hover:underline">{category.label}</a>
       </p>
     )}
     {!below && (category || date) && (
       <p class={slots.meta()}>
-        {category && <a href={category.href} class="relative z-10 font-medium text-accent-text no-underline hover:underline">{category.label}</a>}
+        {category && <a href={safeHref(category.href)} class="relative z-10 font-medium text-accent-text no-underline hover:underline">{category.label}</a>}
         {category && date && <span aria-hidden="true">·</span>}
         {date && <time datetime={date.toISOString()}>{shown}</time>}
       </p>
     )}
     <Heading class={slots.title({ class: linkTitle ? 'text-[color:var(--color-link,var(--color-accent))]' : undefined })}>
-      <a href={href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{title}</a>
+      <a href={safeHref(href)} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{title}</a>
     </Heading>
     {below && (author || date) && (
       <p class={slots.meta()}>

@@ -3,6 +3,7 @@
 // migrated content are links, so this is always an <a>.
 import { tv } from 'tailwind-variants'
 import type { ActionInput } from './types'
+import { safeHref } from './safe-url'
 
 const button = tv({
   base: 'inline-flex items-center justify-center gap-2 rounded-[var(--radius-control,var(--radius-md))] font-medium no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-2',
@@ -30,7 +31,7 @@ interface Props {
 const { action, size, class: className } = Astro.props
 ---
 <a
-  href={action.href}
+  href={safeHref(action.href)}
   target={action.newTab ? '_blank' : undefined}
   rel={action.newTab ? 'noopener' : undefined}
   class={button({ style: action.style ?? 'primary', size, class: className })}

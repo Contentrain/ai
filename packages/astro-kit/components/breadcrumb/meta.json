@@ -4,7 +4,7 @@
   "description": "The page's ancestors as links followed by the page itself; optionally emits BreadcrumbList JSON-LD.",
   "category": "content",
   "uses": [],
-  "shared": ["types.ts"],
+  "shared": ["safe-url.ts", "types.ts"],
   "variants": {
     "separator": { "options": ["slash", "chevron", "dot"], "default": "slash", "description": "Mark between items." }
   },

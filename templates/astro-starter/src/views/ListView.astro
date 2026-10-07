@@ -13,6 +13,7 @@ import type { Card } from '../lib/custom'
 import { publicHtml } from '../lib/links'
 import { collectionLd, describePage } from '../lib/seo'
 import { siteConfig } from '../site.config'
+import { safeHref } from '../components/kit/_shared/safe-url'
 
 interface Props {
   /** The archive's heading; the blog index on the front page has none. */
@@ -87,8 +88,8 @@ const metaDescription = describePage({
       <div class="mx-auto flex max-w-(--container-prose) flex-col gap-24" style={siteConfig.lists.text ? `--text-body: ${siteConfig.lists.text}` : undefined}>
         {cards.map((card, index) => (
           <article class="flex flex-col gap-6">
-            {card.image && <a href={card.href} tabindex="-1" aria-hidden="true"><KitImage image={{ ...card.image, alt: '' }} priority={index === 0} sizes="(min-width: 768px) 46rem, 100vw" class="h-auto w-full rounded-[var(--radius-image,0.75rem)] object-cover" /></a>}
-            <h2 class="text-3xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight"><a href={card.href} class:list={[siteConfig.chrome?.titleLinks ? 'text-[color:var(--color-link,var(--color-accent))]' : 'text-ink', 'no-underline hover:underline']}>{card.title}</a></h2>
+            {card.image && <a href={safeHref(card.href)} tabindex="-1" aria-hidden="true"><KitImage image={{ ...card.image, alt: '' }} priority={index === 0} sizes="(min-width: 768px) 46rem, 100vw" class="h-auto w-full rounded-[var(--radius-image,0.75rem)] object-cover" /></a>}
+            <h2 class="text-3xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight"><a href={safeHref(card.href)} class:list={[siteConfig.chrome?.titleLinks ? 'text-[color:var(--color-link,var(--color-accent))]' : 'text-ink', 'no-underline hover:underline']}>{card.title}</a></h2>
             {bodies[index] && <Prose html={bodies[index]} searchable={false} />}
             {card.date && <time datetime={card.date.toISOString()} class="text-sm text-ink-muted">{card.date.toLocaleDateString(site.language, { dateStyle: 'long', timeZone: 'UTC' })}</time>}
           </article>

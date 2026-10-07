@@ -16,6 +16,7 @@ import Embed from '../embed/Embed.astro'
 import StudioForm from '../../studio/StudioForm.astro'
 import { formHome } from '../../../lib/features'
 import { contactSectionBare } from './contact-form'
+import { safeHref } from '../_shared/safe-url'
 
 export interface ContactDetail {
   /** What the detail is (Phone, Email); a source's icon list often has none. */
@@ -127,7 +128,7 @@ const FormHeading = heading ? 'h3' : 'h2'
                 {details.map(detail => (
                   <div class={detailsStyle === 'cards' ? s.card() : undefined}>
                     <dt class={s.term()}>{detail.label}</dt>
-                    <dd class={s.value()}>{detail.href ? <a href={detail.href} class={LINK}>{detail.value}</a> : detail.value}</dd>
+                    <dd class={s.value()}>{detail.href ? <a href={safeHref(detail.href)} class={LINK}>{detail.value}</a> : detail.value}</dd>
                   </div>
                 ))}
               </dl>
@@ -137,7 +138,7 @@ const FormHeading = heading ? 'h3' : 'h2'
                 {details.map(detail => (
                   <li class={s.value({ class: detailsStyle === 'cards' ? s.card() : undefined })}>
                     {detail.label && <span class={s.term()}>{detail.label}: </span>}
-                    {detail.href ? <a href={detail.href} class={LINK}>{detail.value}</a> : detail.value}
+                    {detail.href ? <a href={safeHref(detail.href)} class={LINK}>{detail.value}</a> : detail.value}
                   </li>
                 ))}
               </ul>
@@ -145,7 +146,7 @@ const FormHeading = heading ? 'h3' : 'h2'
         {hours && <p class={s.hours()}>{hours}</p>}
         {socials.length > 0 && (
           <ul class={s.socials()}>
-            {socials.map(link => <li><a href={link.href} class={LINK}>{link.label}</a></li>)}
+            {socials.map(link => <li><a href={safeHref(link.href)} class={LINK}>{link.label}</a></li>)}
           </ul>
         )}
         {map && (

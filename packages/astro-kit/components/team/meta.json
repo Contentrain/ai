@@ -10,6 +10,7 @@
     "image.ts",
     "measured.ts",
     "social.ts",
+    "safe-url.ts",
     "types.ts"
   ],
   "variants": {

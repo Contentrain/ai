@@ -11,6 +11,7 @@ import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
 import { imageOf, type ImageSource } from '../_shared/image'
 import { type ImageInput } from '../_shared/types'
+import { safeHref } from '../_shared/safe-url'
 
 export interface GalleryItem {
   /** The image's address (or, until 0.7, an `ImageInput`). */
@@ -104,7 +105,7 @@ const sizes = columns === '2' ? '50vw' : columns === '4' ? '(min-width: 768px) 2
               {open === 'popover'
                 ? <button type="button" popovertarget={viewer} class={s.frame()} aria-label={`${enlargeLabel}: ${item.image.alt || item.caption || ''}`.trim()}><KitImage image={item.image} sizes={sizes} class={s.thumb()} /></button>
                 : open === 'link'
-                  ? <a href={item.image.src} class={s.frame()}><KitImage image={item.image} sizes={sizes} class={s.thumb()} /></a>
+                  ? <a href={safeHref(item.image.src)} class={s.frame()}><KitImage image={item.image} sizes={sizes} class={s.thumb()} /></a>
                   : <div class={s.frame()}><KitImage image={item.image} sizes={sizes} class={s.thumb()} /></div>}
               {item.caption && <figcaption class={s.caption({ class: tone === 'accent' ? 'opacity-100' : undefined })}>{item.caption}</figcaption>}
             </figure>

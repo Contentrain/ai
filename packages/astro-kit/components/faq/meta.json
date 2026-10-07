@@ -4,7 +4,7 @@
   "description": "Questions and answers as native <details> disclosures (no script), in lines or cards; optionally one open at a time, and optionally with FAQPage structured data for search engines and AI answers.",
   "category": "section",
   "uses": [],
-  "shared": ["Section.astro", "measured.ts", "types.ts"],
+  "shared": ["Section.astro", "measured.ts", "safe-url.ts", "types.ts"],
   "variants": {
     "layout": { "options": ["single", "split"], "default": "single", "description": "single: the heading above one column. split: the heading and introduction stay in a left column beside the list; stacks on a phone." },
     "columns": { "options": ["1", "2"], "default": "1", "description": "Columns of questions on wide screens." },

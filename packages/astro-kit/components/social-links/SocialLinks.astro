@@ -4,6 +4,7 @@
 // is shown as its host. Stands alone (header, top bar, contact, author) or beside the footer's own row.
 import { tv } from 'tailwind-variants'
 import { addressLabel, NETWORK_MARKS, networkOf } from '../_shared/social'
+import { safeHref } from '../_shared/safe-url'
 
 const social = tv({
   slots: {
@@ -62,7 +63,7 @@ const entries = links.map(link => {
       const mark = display !== 'text' && entry.mark
       return (
         <li>
-          <a href={entry.href} rel="me noopener" target="_blank" aria-label={entry.accessible} class={s.link()}>
+          <a href={safeHref(entry.href)} rel="me noopener" target="_blank" aria-label={entry.accessible} class={s.link()}>
             {mark && <svg class={s.mark()} viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d={entry.mark} /></svg>}
             {text && <span>{entry.shown}</span>}
           </a>

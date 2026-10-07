@@ -4,7 +4,7 @@
   "description": "Links between the pages of a post list, at WordPress addresses (<base>page/<n>/).",
   "category": "content",
   "uses": [],
-  "shared": [],
+  "shared": ["safe-url.ts"],
   "variants": {
     "style": { "options": ["numbered", "simple"], "default": "numbered", "description": "Numbered pages with ellipses, or previous/next with 'Page n / m'." },
     "align": { "options": ["start", "center", "end"], "default": "center", "description": "Alignment of the numbered style." }

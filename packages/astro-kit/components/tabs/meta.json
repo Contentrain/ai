@@ -4,7 +4,7 @@
   "description": "Tabbed panels with the WAI-ARIA tabs pattern from Zag.js (arrow keys, Home/End, roving focus). Without script every panel shows in turn under its own title, so no content is ever hidden from a reader or a crawler.",
   "category": "content",
   "uses": [],
-  "shared": ["Button.astro", "Section.astro", "SectionHeader.astro", "measured.ts", "types.ts"],
+  "shared": ["Button.astro", "Section.astro", "SectionHeader.astro", "measured.ts", "safe-url.ts", "types.ts"],
   "variants": {
     "style": { "options": ["underline", "pills"], "default": "underline", "description": "underline: a rule under the list, the selected tab underlined in accent. pills: the selected tab filled with accent." },
     "orientation": { "options": ["horizontal", "vertical"], "default": "horizontal", "description": "vertical: the tab list beside the panel on wide screens (Elementor vertical tabs)." },

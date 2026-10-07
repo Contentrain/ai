@@ -4,6 +4,7 @@
 // `<details>` menu that shows the current language: no JavaScript. The addresses come from the caller (the page's
 // equivalent in each language); a link without one is not drawn.
 import { tv } from 'tailwind-variants'
+import { safeHref } from '../_shared/safe-url'
 
 const switcher = tv({
   slots: {
@@ -48,7 +49,7 @@ const text = (language: { lang: string, label: string }) => (labelStyle === 'cod
       <ul class={s.panel()}>
       {shown.map(language => (
         <li>
-          <a href={language.href} lang={language.lang} hreflang={language.lang} aria-current={language.current ? 'true' : undefined} class={s.link()}>{text(language)}</a>
+          <a href={safeHref(language.href)} lang={language.lang} hreflang={language.lang} aria-current={language.current ? 'true' : undefined} class={s.link()}>{text(language)}</a>
         </li>
       ))}
       </ul>
@@ -59,7 +60,7 @@ const text = (language: { lang: string, label: string }) => (labelStyle === 'cod
       <ul class={s.list()}>
       {shown.map(language => (
         <li>
-          <a href={language.href} lang={language.lang} hreflang={language.lang} aria-current={language.current ? 'true' : undefined} class={s.link()}>{text(language)}</a>
+          <a href={safeHref(language.href)} lang={language.lang} hreflang={language.lang} aria-current={language.current ? 'true' : undefined} class={s.link()}>{text(language)}</a>
         </li>
       ))}
       </ul>

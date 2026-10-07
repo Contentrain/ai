@@ -7,6 +7,7 @@
 // when formHome() says it can (https action, at least one field).
 import { formFields } from '../../lib/features'
 import { fieldsHtml } from '../../lib/studio/form-fields'
+import { safeUrl } from '../kit/_shared/safe-url'
 
 interface Props {
   /** The model whose fields the form shows. */
@@ -25,7 +26,7 @@ const html = fieldsHtml(fields, 'cr-static')
 ---
 {valid && (
   <div class:list={['cr-form-mount block', className]} data-cr-part="form" data-state="endpoint">
-    <form class="cr-form" method="post" action={action}>
+    <form class="cr-form" method="post" action={safeUrl(action)}>
       <Fragment set:html={html} />
       <p class="cr-hp" aria-hidden="true" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden">
         <label>{text['form.honeypot'] ?? 'Leave this field empty'} <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" /></label>

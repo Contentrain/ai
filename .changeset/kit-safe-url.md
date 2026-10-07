@@ -1,0 +1,5 @@
+---
+"@contentrain/astro-kit": patch
+---
+
+Every address a kit component prints now goes through a shared `_shared/safe-url` helper (`safeHref`, `safeUrl`, `safeSrc`): content, including migrated WordPress content, can carry `javascript:`, `vbscript:` or `data:text/html` in a link, a form action or an image source, and the components printed them as written. Only http, https, mailto, tel and relative addresses (`/`, `./`, `../`, `?`, `#`) are kept, read the way a browser reads them (leading spaces and control characters, tabs inside the scheme, mixed case and character references such as `&#106;avascript:` are all refused). A refused link becomes `#`, a refused form action or image source is left off, and `astro dev` logs the scheme. The starter's own views and the rich-text link rewrite use the same helper, and a test fails when a URL attribute in the kit or the starter skips it. The `Header` fixture list gains `mega-menu-search`; the header's search field now sits in the bar from `lg` (at `md` it keeps its own row, so a long menu no longer wraps).

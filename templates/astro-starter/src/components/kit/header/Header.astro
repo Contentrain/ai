@@ -7,6 +7,7 @@ import KitImage from '../_shared/KitImage.astro'
 import type { ActionInput, ImageInput, NavItem } from '../_shared/types'
 import Nav from '../nav/Nav.astro'
 import SearchBox from '../search-box/SearchBox.astro'
+import { safeHref } from '../_shared/safe-url'
 
 const header = tv({
   slots: {
@@ -55,7 +56,7 @@ interface Props {
   homeHref?: string | undefined
   items: NavItem[]
   action?: ActionInput | undefined
-  /** A search field in the bar (a GET form to the site's search page); below the bar on a phone. */
+  /** A search field in the bar (a GET form to the site's search page); below the bar until lg. */
   search?: { label?: string | undefined, placeholder?: string | undefined, submitLabel?: string | undefined, action?: string | undefined } | undefined
   navLabel?: string | undefined
   menuLabel?: string | undefined
@@ -73,14 +74,15 @@ const rootStyle = offsetTop ? `margin-top: ${offsetTop}` : undefined
 const innerStyle = [padTop && `padding-top: ${padTop}`, padBottom && `padding-bottom: ${padBottom}`].filter(Boolean).join('; ') || undefined
 const brandStyle = [brandSize && `font-size: ${brandSize}`, brandWeight && `font-weight: ${brandWeight}`, brandTracking && `letter-spacing: ${brandTracking}`].filter(Boolean).join('; ') || undefined
 // A tagline under the name keeps its line on a phone, as themes print it: the navigation wraps below.
-const wrap = tagline || search ? 'flex-wrap md:flex-nowrap' : undefined
+// The search field sits in the bar from lg; at md the bar already holds the navigation, so the field keeps its own row.
+const wrap = search ? 'flex-wrap lg:flex-nowrap' : tagline ? 'flex-wrap md:flex-nowrap' : undefined
 ---
 <header class={root()} style={rootStyle}>
   <div class={inner({ class: wrap })} style={innerStyle}>
     {tagline
       ? (
         <div class="flex min-w-0 basis-full flex-col gap-1 md:basis-auto">
-          <a href={homeHref} class={brand()} aria-label={showName ? undefined : siteName} style={brandStyle} data-kit-brand>
+          <a href={safeHref(homeHref)} class={brand()} aria-label={showName ? undefined : siteName} style={brandStyle} data-kit-brand>
             {logo && <KitImage image={logo} priority class="h-8 w-auto" sizes="160px" />}
             {showName && <span>{siteName}</span>}
           </a>
@@ -88,13 +90,13 @@ const wrap = tagline || search ? 'flex-wrap md:flex-nowrap' : undefined
         </div>
       )
       : (
-        <a href={homeHref} class={brand()} aria-label={showName ? undefined : siteName} style={brandStyle} data-kit-brand>
+        <a href={safeHref(homeHref)} class={brand()} aria-label={showName ? undefined : siteName} style={brandStyle} data-kit-brand>
           {logo && <KitImage image={logo} priority class="h-8 w-auto" sizes="160px" />}
           {showName && <span>{siteName}</span>}
         </a>
       )}
     {search && (
-      <div class:list={['basis-full md:basis-auto md:order-none', layout === 'centered' ? 'order-last md:ms-auto' : 'order-last md:ms-auto']}>
+      <div class="order-last basis-full lg:order-none lg:ms-auto lg:basis-auto">
         <SearchBox action={search.action} label={search.label} placeholder={search.placeholder} submitLabel={search.submitLabel} size="sm" id="header-search" />
       </div>
     )}

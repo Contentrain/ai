@@ -3,6 +3,7 @@
 // here: the page itself shows the results). A labelled `role="search"` landmark; the label is visible only to
 // assistive technology unless `labelStyle` shows it.
 import { tv } from 'tailwind-variants'
+import { safeUrl } from '../_shared/safe-url'
 
 const search = tv({
   slots: {
@@ -39,7 +40,7 @@ interface Props {
 const { action = '/search', label = 'Search', placeholder, submitLabel = label, size, width, button, labelStyle, id = 'site-search' } = Astro.props
 const s = search({ size, width, button, labelStyle })
 ---
-<form role="search" method="get" action={action} class={s.form()} data-cr-part="search-box">
+<form role="search" method="get" action={safeUrl(action)} class={s.form()} data-cr-part="search-box">
   <label for={`${id}-q`} class={s.label()}>{label}</label>
   <input id={`${id}-q`} type="search" name="q" placeholder={placeholder} autocomplete="off" enterkeyhint="search" class={s.input()} />
   <button type="submit" class={s.button()} aria-label={button === 'icon' ? submitLabel : undefined}>

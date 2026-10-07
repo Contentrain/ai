@@ -4,7 +4,7 @@
   "description": "A search field that sends the visitor to the site's search page (`/search?q=…`): a plain GET form with a labelled role=search landmark, no JavaScript. For a header slot or inline in a page.",
   "category": "chrome",
   "uses": [],
-  "shared": [],
+  "shared": ["safe-url.ts"],
   "variants": {
     "size": {
       "options": [
