@@ -134,7 +134,7 @@ Third-party developers can implement custom providers by implementing these inte
 | `MergeResult` | Merge outcome (merged flag, sha, pullRequestUrl, optional `sync?: SyncResult` for LocalProvider, optional `remote?` source-branch cleanup outcome) |
 | `SyncResult` | Selective file sync result (synced, skipped, optional warning) |
 | `BaseAdvance` | `'advanced' \| 'blocked_diverged'` — what happened to the base branch after a write (shared vocabulary with Studio; a PR is an attachment, never a third state) |
-| `RemotePush` | `'pushed' \| 'rejected' \| 'no-remote'` — outcome of pushing the contentrain branch |
+| `RemotePush` | `'pushed' \| 'rejected' \| 'no-remote' \| 'disabled'` — outcome of pushing the contentrain branch; `'disabled'` = local mode (`git.push: false` or `CONTENTRAIN_NO_PUSH=1`), nothing was pushed |
 | `ConflictItem` | One surviving reconcile conflict — position (`path`, `key`, `field`, `locale`), the three values, a CLOSED `code` union (Studio keys localized editor questions on it), and a value-derived `id` |
 | `ConflictCode` | Closed union of conflict kinds — adding a value is a minor + changelog entry; renaming or removing one is breaking |
 | `ConflictResolution` | A decision keyed by conflict id: `{ id, choose: 'ours'\|'theirs' }` or `{ id, value }` — stale ids (values changed since the dry-run) are dropped and re-reported |

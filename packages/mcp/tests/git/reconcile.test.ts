@@ -9,6 +9,7 @@ import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import { ensureContentBranch } from '../../src/git/transaction.js'
 import { reconcileBranches } from '../../src/git/reconcile.js'
 import { writeJson, ensureDir } from '../../src/util/fs.js'
+import { addCountingRemote } from '../fixtures/bare-remote.js'
 
 let testDir: string
 let defaultBranch: string
@@ -201,5 +202,34 @@ describe('reconcileBranches', () => {
     // No merge commit was needed — plain fast-forward.
     const parents = (await git.raw(['log', '-1', '--format=%P', defaultBranch])).trim().split(' ')
     expect(parents).toHaveLength(1)
+  })
+})
+
+describe('reconcileBranches in local mode', () => {
+  it('reconciles and advances the base without a single push', async () => {
+    await diverge()
+    const remote = await addCountingRemote(testDir)
+    try {
+      await writeJson(join(testDir, '.contentrain', 'config.json'), {
+        version: 1,
+        stack: 'other',
+        workflow: 'auto-merge',
+        locales: { default: 'en', supported: ['en'] },
+        domains: ['site'],
+        git: { push: false },
+      })
+      const git = simpleGit(testDir)
+      await git.add('.')
+      await git.commit('chore: local mode')
+
+      const result = await reconcileBranches(testDir, { dryRun: false })
+
+      expect(result.action).toBe('reconciled')
+      expect(result.base_advance).toBe('advanced')
+      expect(result.remote_push).toBe('disabled')
+      expect(await remote.pushes()).toBe(0)
+    } finally {
+      await rm(remote.dir, { recursive: true, force: true })
+    }
   })
 })

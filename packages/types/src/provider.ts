@@ -271,8 +271,10 @@ export type BaseAdvance = 'advanced' | 'blocked_diverged'
  * fetch-merge-retry). `rejected` — the push failed even after the retry;
  * local and remote have diverged and need reconciling. `no-remote` — the
  * repository has no configured remote, so nothing was attempted.
+ * `disabled` — pushing is turned off (`config.git.push: false` or
+ * `CONTENTRAIN_NO_PUSH=1`): the write is committed locally only.
  */
-export type RemotePush = 'pushed' | 'rejected' | 'no-remote'
+export type RemotePush = 'pushed' | 'rejected' | 'no-remote' | 'disabled'
 
 // ─── Reconcile / conflicts ───
 

@@ -66,6 +66,9 @@ export default defineCommand({
       if (result.remote_push === 'rejected') {
         log.warning('The remote refused the contentrain push — local and remote have diverged; fetch and run `contentrain reconcile`.')
       }
+      if (result.remote_push === 'disabled') {
+        log.info('Not pushed (local mode): pushing is off (git.push: false in config.json, or CONTENTRAIN_NO_PUSH=1).')
+      }
       if (result.remote?.deleted) {
         log.message(pc.dim('  Deleted remote copy.'))
       }

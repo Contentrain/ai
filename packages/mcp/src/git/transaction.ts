@@ -11,6 +11,10 @@ import { authorConfig } from './identity.js'
 import { branchTimestamp } from '../util/id.js'
 import { migrateLegacyBranches } from '../providers/local/migration.js'
 import { resolveBaseBranch } from './base-branch.js'
+import { pushPolicy } from './push-policy.js'
+
+// Re-exported so hosts of mergeBranch (CLI serve) word local mode the same way.
+export { LOCAL_MODE_NOTE } from './push-policy.js'
 import type { BaseAdvance, RemotePush, SyncResult, WorkflowMode } from '@contentrain/types'
 import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 
@@ -90,7 +94,8 @@ export async function ensureContentBranch(projectRoot: string): Promise<void> {
   // Create contentrain branch from base
   await git.branch([CONTENTRAIN_BRANCH, baseBranch])
 
-  // Push to remote if exists
+  // Push to remote if exists — unless pushing is off (local mode).
+  if (!pushPolicy(config).push) return
   const remoteName = process.env['CONTENTRAIN_REMOTE'] ?? 'origin'
   try {
     const remotes = await git.getRemotes()
@@ -217,6 +222,7 @@ export async function createTransaction(
   const git = createGit(projectRoot)
   const config = await readConfig(projectRoot)
   const workflow = options?.workflowOverride ?? config?.workflow ?? 'auto-merge'
+  const push = pushPolicy(config).push
 
   const remoteName = process.env['CONTENTRAIN_REMOTE'] ?? 'origin'
 
@@ -339,7 +345,7 @@ export async function createTransaction(
         pendingReview = true
 
         let warning: string | undefined
-        if (hasRemote) {
+        if (hasRemote && push) {
           try {
             await networkGit(projectRoot, NETWORK_TIMEOUT_MS).push(remoteName, branch)
           } catch (error) {
@@ -349,7 +355,7 @@ export async function createTransaction(
           }
         }
 
-        return { action: 'pending-review', commit: commitHash, warning }
+        return { action: 'pending-review', commit: commitHash, warning, ...(push ? {} : { remote_push: 'disabled' as const }) }
       }
 
       // auto-merge: merge feature branch into contentrain, then advance base
@@ -419,8 +425,8 @@ export async function createTransaction(
       }
 
       // Push contentrain (with retry) and, when advanced, the base branch.
-      let remotePush: RemotePush = 'no-remote'
-      if (hasRemote) {
+      let remotePush: RemotePush = push ? 'no-remote' : 'disabled'
+      if (hasRemote && push) {
         remotePush = await pushContentBranches(projectRoot, worktreePath, wtGit, remoteName, baseBranch, baseAdvance === 'advanced')
       }
 
@@ -579,8 +585,9 @@ export async function mergeBranch(
     }
 
     // Push contentrain (with retry) and, when advanced, the base branch.
-    let remotePush: RemotePush = 'no-remote'
-    if (hasRemote) {
+    const push = pushPolicy(config).push
+    let remotePush: RemotePush = push ? 'no-remote' : 'disabled'
+    if (hasRemote && push) {
       remotePush = await pushContentBranches(projectRoot, worktreePath, wtGit, remoteName, baseBranch, baseAdvance === 'advanced')
     }
 
