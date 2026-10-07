@@ -26,6 +26,8 @@
   "comments.wordpress": "Read and join the comments",
   "common.failed": "Something went wrong. Please try again.",
   "common.loading": "Loading…",
+  "dialog.close": "Close",
+  "dialog.open": "Open",
   "embed.play": "Play",
   "embed.show": "Show",
   "footer.copyright": "All rights reserved.",

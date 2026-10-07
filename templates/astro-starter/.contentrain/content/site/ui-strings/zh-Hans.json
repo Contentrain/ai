@@ -26,6 +26,8 @@
   "comments.wordpress": "阅读并参与评论",
   "common.failed": "出错了，请重试。",
   "common.loading": "加载中…",
+  "dialog.close": "关闭",
+  "dialog.open": "打开",
   "embed.play": "播放",
   "embed.show": "显示",
   "footer.copyright": "版权所有。",

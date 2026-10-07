@@ -26,6 +26,8 @@
   "comments.wordpress": "Читать комментарии и участвовать в обсуждении",
   "common.failed": "Что-то пошло не так. Попробуйте ещё раз.",
   "common.loading": "Загрузка…",
+  "dialog.close": "Закрыть",
+  "dialog.open": "Открыть",
   "embed.play": "Воспроизвести",
   "embed.show": "Показать",
   "footer.copyright": "Все права защищены.",

@@ -26,6 +26,8 @@
   "comments.wordpress": "Yorumları oku ve katıl",
   "common.failed": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
   "common.loading": "Yükleniyor…",
+  "dialog.close": "Kapat",
+  "dialog.open": "Aç",
   "embed.play": "Oynat",
   "embed.show": "Göster",
   "footer.copyright": "Tüm hakları saklıdır.",

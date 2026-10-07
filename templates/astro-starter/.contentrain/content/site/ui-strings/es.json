@@ -26,6 +26,8 @@
   "comments.wordpress": "Leer y unirse a los comentarios",
   "common.failed": "Algo salió mal. Inténtalo de nuevo.",
   "common.loading": "Cargando…",
+  "dialog.close": "Cerrar",
+  "dialog.open": "Abrir",
   "embed.play": "Reproducir",
   "embed.show": "Mostrar",
   "footer.copyright": "Todos los derechos reservados.",
