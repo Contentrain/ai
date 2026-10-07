@@ -525,6 +525,11 @@ loads with ids prefixed (`en/my-post`) — Astro ids are unique per collection, 
 without the prefix one language would overwrite the other. `root` points at the
 project holding `.contentrain` (default: `process.cwd()`).
 
+The loaders of one Astro sync share a single read of the project, and the loader keeps at most 64 files open at a
+time, so a site with hundreds of models builds under a small file-descriptor limit. A file that is missing reads as
+absent. Any other read failure fails the build instead of dropping content. A content file that is not valid JSON loads
+no entries, and the loader logs a warning naming the model and the file.
+
 This loader reads `.contentrain` directly, so nothing upstream has rewritten a
 stored `media/...` reference into an absolute URL yet — pass `mediaBaseUrl` to
 resolve it here, the same opt-in resolver `media()`/`mediaBody()` use:

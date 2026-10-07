@@ -1,6 +1,6 @@
 import type { ContentrainConfig, ModelDefinition, LocaleStrategy } from '@contentrain/types'
 import { join } from 'node:path'
-import { readJson, readDir, readText, contentrainDir } from './utils.js'
+import { fileExists, readJson, readDir, contentrainDir } from './utils.js'
 
 export interface ContentFileRef {
   modelId: string
@@ -92,8 +92,7 @@ async function mapContentFiles(
     const results = await Promise.all(
       config.locales.supported.map(async (locale) => {
         const filePath = jsonFilePath(dir, model, locale)
-        const content = await readJson(filePath)
-        if (content === null) return null
+        if (!(await fileExists(filePath))) return null
         return { modelId: model.id, locale, filePath, kind: model.kind } as ContentFileRef
       }),
     )
@@ -102,8 +101,7 @@ async function mapContentFiles(
 
   // Non-i18n: always data.json
   const filePath = join(dir, 'data.json')
-  const content = await readJson(filePath)
-  if (content === null) return []
+  if (!(await fileExists(filePath))) return []
   return [{ modelId: model.id, locale: null, filePath, kind: model.kind }]
 }
 
@@ -145,8 +143,7 @@ async function mapDocumentLocale(
     const results = await Promise.all(
       entries.map(async (entry) => {
         const filePath = join(dir, entry, `${locale}.md`)
-        const content = await readText(filePath)
-        if (content === null) return null
+        if (!(await fileExists(filePath))) return null
         return { modelId: model.id, locale, filePath, kind: 'document', slug: entry } as ContentFileRef
       }),
     )

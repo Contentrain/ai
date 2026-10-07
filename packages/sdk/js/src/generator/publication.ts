@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { ModelDefinition } from '@contentrain/types'
 import type { ContentFileRef } from './config-reader.js'
+import { limitRead } from './utils.js'
 
 export interface PublicationOptions {
   /** Opt in for public builds; the default keeps the existing editorial client. */
@@ -41,7 +42,7 @@ export async function publicationMeta(ref: ContentFileRef, model: ModelDefinitio
   if (model.kind === 'document') parts.push(ref.slug ?? model.id)
   const path = join(...parts, `${locale}.json`)
   let text: string
-  try { text = await readFile(path, 'utf8') }
+  try { text = await limitRead(() => readFile(path, 'utf8')) }
   catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
     throw error

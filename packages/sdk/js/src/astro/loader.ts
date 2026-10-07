@@ -17,7 +17,7 @@ import { rewriteEntryMedia } from '@contentrain/types'
 import { isAbsolute, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { ContentFileRef } from '../generator/config-reader.js'
-import { readProjectManifest } from '../generator/config-reader.js'
+import { readProjectManifest, type ProjectManifest } from '../generator/config-reader.js'
 import { readJson, readText } from '../generator/utils.js'
 import { parseFrontmatter, stringLikeFieldKeys } from '../shared/frontmatter.js'
 import { resolveMediaRefsInBody } from '../shared/media.js'
@@ -106,6 +106,29 @@ interface Entry {
  * key, because a single blob would make `getEntry()` useless · singleton → one
  * entry, id `<model>` or the locale.
  */
+/**
+ * One manifest per project root for each Astro sync. Astro starts every collection's loader at once and hands them
+ * the same config object, so the loaders of one build share a single read of the models and content files instead
+ * of each reading them all again. The dev server re-reads on every load (it reloads when a file changes); without a
+ * config, as in a test, nothing is shared.
+ */
+const manifests = new WeakMap<object, Map<string, Promise<ProjectManifest>>>()
+
+function manifestFor(root: string, context: ContentrainLoaderContext): Promise<ProjectManifest> {
+  const config = context.config
+  if (context.watcher || !config) return readProjectManifest(root)
+  let byRoot = manifests.get(config)
+  if (!byRoot) manifests.set(config, byRoot = new Map())
+  let manifest = byRoot.get(root)
+  if (!manifest) {
+    manifest = readProjectManifest(root)
+    byRoot.set(root, manifest)
+    // A failed read is not kept: the next load tries again.
+    manifest.catch(() => byRoot!.delete(root))
+  }
+  return manifest
+}
+
 export function contentrainLoader(options: ContentrainLoaderOptions): ContentrainLoader {
   const root = options.root ?? process.cwd()
   let watching = false
@@ -113,7 +136,7 @@ export function contentrainLoader(options: ContentrainLoaderOptions): Contentrai
   return {
     name: `contentrain:${options.model}`,
     async load(context) {
-      const manifest = await readProjectManifest(root)
+      const manifest = await manifestFor(root, context)
       const model = manifest.models.find(m => m.id === options.model)
       if (!model) {
         const known = manifest.models.map(m => m.id).join(', ') || 'none'
@@ -136,9 +159,19 @@ export function contentrainLoader(options: ContentrainLoaderOptions): Contentrai
 
       const publication = publicationContext(root, manifest.config.locales.default, options)
       const perFile = await Promise.all(refs.map(ref => entriesOf(ref, model, prefixLocale, publication)))
+      // A content file that is there but reads as nothing (not valid JSON) loads no entries: say so, or the
+      // collection silently comes out short.
+      const unread = refs.filter((_, i) => perFile[i] === null)
+      if (unread.length) {
+        context.logger?.warn(
+          `contentrainLoader: model "${model.id}": ${refs.length} content file${refs.length === 1 ? '' : 's'} found, ${refs.length - unread.length} read — `
+          + `no entries from ${unread.map(ref => relative(root, ref.filePath)).join(', ')} (not valid JSON).`,
+        )
+      }
+      const loaded = perFile.flatMap(file => file ?? [])
       const entries = options.mediaBaseUrl
-        ? resolveEntriesMedia(perFile.flat(), model, options.mediaBaseUrl)
-        : perFile.flat()
+        ? resolveEntriesMedia(loaded, model, options.mediaBaseUrl)
+        : loaded
       // Astro rejects an absolute filePath ("must be relative to the site
       // root"), and a `.contentrain` outside the Astro root has no relative
       // form it accepts — there we send none rather than a path it refuses.
@@ -219,7 +252,8 @@ function resolveEntriesMedia(entries: Entry[], model: ModelDefinition, mediaBase
   })
 }
 
-async function entriesOf(ref: ContentFileRef, model: ModelDefinition, prefixLocale: boolean, publication?: PublicationContext): Promise<Entry[]> {
+/** The file's entries a build may show; null when the file reads as nothing (not valid JSON, or gone since it was listed). */
+async function entriesOf(ref: ContentFileRef, model: ModelDefinition, prefixLocale: boolean, publication?: PublicationContext): Promise<Entry[] | null> {
   const meta = publication ? await publicationMeta(ref, model, publication) : undefined
   const visible = (id?: string) => !publication || isPublishedAt(id === undefined ? meta : meta?.[id], publication.at, publication.requireStatus)
   // Dictionary meta is one record for the whole file, as for a singleton or document.
@@ -231,7 +265,7 @@ async function entriesOf(ref: ContentFileRef, model: ModelDefinition, prefixLoca
   switch (ref.kind) {
     case 'collection': {
       const raw = await readJson<Record<string, Record<string, unknown>>>(ref.filePath)
-      if (!raw) return []
+      if (!raw) return null
       return Object.entries(raw)
         .filter(([id]) => visible(id))
         .toSorted(([a], [b]) => a.localeCompare(b, 'en'))
@@ -244,7 +278,7 @@ async function entriesOf(ref: ContentFileRef, model: ModelDefinition, prefixLoca
 
     case 'singleton': {
       const raw = await readJson<Record<string, unknown>>(ref.filePath)
-      if (!raw) return []
+      if (!raw) return null
       return [{
         id: prefix ? `${ref.locale}` : model.id,
         data: withLocale(raw),
@@ -256,7 +290,7 @@ async function entriesOf(ref: ContentFileRef, model: ModelDefinition, prefixLoca
       // One entry per key: a dictionary key is a semantic address, and a single
       // blob entry would make getEntry() and reference() useless on it.
       const raw = await readJson<Record<string, string>>(ref.filePath)
-      if (!raw) return []
+      if (!raw) return null
       return Object.entries(raw)
         .toSorted(([a], [b]) => a.localeCompare(b, 'en'))
         .map(([key, value]) => ({
@@ -268,7 +302,7 @@ async function entriesOf(ref: ContentFileRef, model: ModelDefinition, prefixLoca
 
     case 'document': {
       const text = await readText(ref.filePath)
-      if (text === null) return []
+      if (text === null) return null
       const { frontmatter, body } = parseFrontmatter(text, stringLikeFieldKeys(model))
       const slug = ref.slug ?? model.id
       return [{
