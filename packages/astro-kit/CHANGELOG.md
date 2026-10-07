@@ -1,5 +1,11 @@
 # @contentrain/astro-kit
 
+## 0.33.1
+
+### Patch Changes
+
+- 661ad22: Mapping: the Alpus / UDesign slider on an Elementor site (`elementor/udesign_widget_posts_grid`, a `.slider-wrapper` inside the widget) maps to the slider component, one slide per child of the wrapper, the same pattern as the other carousel rules.
+
 ## 0.33.0
 
 ### Minor Changes
