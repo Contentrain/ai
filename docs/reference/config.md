@@ -85,6 +85,9 @@ interface ContentrainConfig {
   branchWarnLimit?: number      // Unmerged cr/* count that triggers a warning (default: 50)
   branchBlockLimit?: number     // Unmerged cr/* count that blocks new writes (default: 80)
   remoteBranchCleanup?: boolean // Delete remote cr/* copies on merge/delete + allow pruning (default: true)
+  git?: {
+    push?: boolean         // false = local mode: no write ever pushes or deletes on the remote (default: true)
+  }
 }
 ```
 
@@ -132,6 +135,7 @@ interface ContentrainConfig {
 | `branchWarnLimit` | `number` | No | Unmerged `cr/*` branch count that triggers a warning. Default: `50`. |
 | `branchBlockLimit` | `number` | No | Unmerged `cr/*` branch count that blocks new writes. Default: `80`. |
 | `remoteBranchCleanup` | `boolean` | No | Delete the remote copy of a `cr/*` branch when it is merged or deleted locally, and allow `contentrain prune` / lazy sweeps to remove merged remote leftovers. Default: `true`. |
+| `git.push` | `boolean` | No | `false` turns on **local mode** (local provider): no write pushes a branch, and no merge, delete or prune touches the remote. Fetching still happens. Results report `remote_push: "disabled"` with `remote_note: "not pushed (local mode)"`, and `contentrain_submit` returns an error. The `CONTENTRAIN_NO_PUSH` env overrides it in both directions (`1`/`true` off, `0`/`false` on). Default: `true`. |
 
 ### Supported Stacks
 

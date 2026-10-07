@@ -4,6 +4,7 @@ import { CONTENTRAIN_BRANCH, type ContentrainConfig } from '@contentrain/types'
 import { readConfig } from '../core/config.js'
 import { NETWORK_UNSAFE } from './identity.js'
 import { resolveBaseBranch } from './base-branch.js'
+import { pushPolicy } from './push-policy.js'
 
 export interface CleanupResult {
   deleted: number
@@ -380,7 +381,7 @@ async function resolveRemote(git: SimpleGit): Promise<string | null> {
 export interface RemoteDeleteResult {
   deleted: boolean
   /** Why nothing was deleted, when that is expected (not a failure). */
-  skipped?: 'disabled' | 'no-remote' | 'not-found' | 'protected'
+  skipped?: 'disabled' | 'local-mode' | 'no-remote' | 'not-found' | 'protected'
   /** A real failure (offline, auth, protected ref) — surfaced, never thrown. */
   warning?: string
 }
@@ -405,6 +406,8 @@ export async function deleteRemoteBranch(
   if (!(config?.remoteBranchCleanup ?? true)) {
     return { deleted: false, skipped: 'disabled' }
   }
+  // A remote delete is a push: local mode leaves the remote untouched.
+  if (!pushPolicy(config).push) return { deleted: false, skipped: 'local-mode' }
   const git = networkGit(projectRoot, opts?.timeoutMs ?? REMOTE_PUSH_TIMEOUT_MS)
   const remote = await resolveRemote(git)
   if (!remote) return { deleted: false, skipped: 'no-remote' }
@@ -460,7 +463,7 @@ export interface RemotePruneResult {
   deleted: string[]
   kept: string[]
   errors: string[]
-  skipped?: 'disabled' | 'no-remote' | 'offline'
+  skipped?: 'disabled' | 'local-mode' | 'no-remote' | 'offline'
 }
 
 const PRUNE_PUSH_CHUNK = 50
@@ -480,6 +483,7 @@ export async function pruneMergedRemoteBranches(
   if (!(config?.remoteBranchCleanup ?? true)) {
     return { deleted: [], kept: [], errors: [], skipped: 'disabled' }
   }
+  if (!pushPolicy(config).push) return { deleted: [], kept: [], errors: [], skipped: 'local-mode' }
 
   const listed = await listRemoteCrBranches(projectRoot, { timeoutMs: opts?.timeoutMs })
   if (!listed) return { deleted: [], kept: [], errors: [], skipped: 'no-remote' }
