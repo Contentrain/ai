@@ -177,6 +177,28 @@ try {
     }
     await page.close()
   }
+  // The menus work with no script: with JavaScript off, focusing a parent's button (Tab) or hovering its item opens the
+  // panel and the deepest links in it are visible. The script only adds aria-expanded, Escape and outside clicks.
+  if (components.some(c => c.id === 'nav')) {
+    const bare = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1280, height: 900 } })
+    const page = await bare.newPage()
+    await page.goto(`${origin}/kit/nav/`, { waitUntil: 'load' })
+    for (const [name, props] of fixturesOf.get('nav')) {
+      const deepest = (items => { let found; const walk = (list, depth) => { for (const item of list ?? []) { if (depth >= 3 && item.href && item.href !== '#') found ??= item.href; walk(item.children, depth + 1) } }; walk(items, 1); return found })(props.items)
+      if (!deepest) continue
+      const root = page.locator(`[data-fixture="${name}"]`)
+      const item = root.locator('li.group').filter({ has: page.locator(`a[href="${deepest}"]`) }).first()
+      const link = item.locator(`a[href="${deepest}"]`).first()
+      await item.hover()
+      if (!await link.isVisible()) menus.push(`nav/${name}: with JavaScript off, hovering the item does not show ${deepest}`)
+      await page.mouse.move(0, 0)
+      await item.locator('button[data-kit-sub]').first().focus()
+      if (!await link.isVisible()) menus.push(`nav/${name}: with JavaScript off, focusing the item's button does not show ${deepest}`)
+      // Drop focus so this fixture's open panel does not cover the next one.
+      await page.mouse.click(1, 1)
+    }
+    await bare.close()
+  }
 } finally {
   await browser.close()
   server.close()
