@@ -17,10 +17,11 @@ import Prose from '../prose/Prose.astro'
 
 const dialog = tv({
   slots: {
-    root: 'flex',
+    root: 'flex flex-wrap gap-6',
     trigger: 'inline-flex cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-control,var(--radius-md))] px-5 py-2.5 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2',
-    // A dialog is not positioned by the page: UA styles centre it; width and surface come from here.
-    box: 'm-auto w-[min(92vw,var(--dialog-width))] max-h-[85dvh] overflow-y-auto rounded-card border border-line bg-surface p-0 text-ink shadow-xl backdrop:bg-ink/50',
+    // A dialog is not positioned by the page: UA styles centre it; width and surface come from here. Open but not
+    // modal (the `open` preview prop) it is a block in the flow under the button, not a box over it.
+    box: 'm-auto w-[min(92vw,var(--dialog-width))] max-h-[85dvh] overflow-y-auto rounded-card border border-line bg-surface p-0 text-ink shadow-xl backdrop:bg-ink/50 [&[open]:not(:modal)]:relative [&[open]:not(:modal)]:m-0 [&[open]:not(:modal)]:basis-full',
     inner: 'flex flex-col gap-4 p-6 md:p-8',
     heading: 'pe-10 text-xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-2xl',
     actions: 'flex flex-wrap gap-3',
@@ -65,7 +66,10 @@ const { id: givenId = 'dialog', triggerLabel, heading, html, actions = [], close
 // The id goes into attributes and into the scripting-off style sheet, so it is a plain token or the default.
 const id = /^[A-Za-z][\w-]*$/.test(givenId) ? givenId : 'dialog'
 const align = given ?? measured?.align
-const s = dialog({ triggerStyle, size, align })
+// On the accent band the primary button (accent) would vanish: drawn as the secondary style there, as in Cta. The
+// dialog's own actions sit on the dialog's surface, not the band, so they keep their styles.
+const onAccent = tone === 'accent' && !measured?.bg?.image
+const s = dialog({ triggerStyle: onAccent && (triggerStyle ?? 'primary') === 'primary' ? 'secondary' : triggerStyle, size, align })
 const headingId = `${id}-title`
 // Invoker Commands attributes are not in Astro's button types.
 const invoker = { command: 'show-modal', commandfor: id }
