@@ -1606,6 +1606,8 @@ export interface FrontmatterPreserved {
   order: string[]
   /** The file's line ending: a CRLF file is written back as CRLF. */
   eol: '\n' | '\r\n'
+  /** Whether the file ended with a newline; a file that did not is written back without one. */
+  finalNewline?: boolean
 }
 
 /** The keys of the preserved blocks the data would replace: the data's value wins and the block is not written. */
@@ -1686,7 +1688,7 @@ export function parseMarkdownFrontmatter(content: string): { frontmatter: Record
   }
 
   if (blocks.length === 0) return { frontmatter, body }
-  return { frontmatter, body, preserved: { blocks, order, eol: content.includes('\r\n') ? '\r\n' : '\n' } }
+  return { frontmatter, body, preserved: { blocks, order, eol: content.includes('\r\n') ? '\r\n' : '\n', finalNewline: content.endsWith('\n') } }
 }
 
 /**
@@ -1694,7 +1696,10 @@ export function parseMarkdownFrontmatter(content: string): { frontmatter: Record
  * for the document being saved and the lines it could not read are written back where they were.
  */
 export function serializeMarkdownFrontmatter(data: Record<string, unknown>, body: string, preserved?: FrontmatterPreserved): string {
-  const written = (lines: string[]): string => (preserved?.eol === '\r\n' ? lines.join('\n').replace(/\n/g, '\r\n') : lines.join('\n'))
+  const written = (lines: string[]): string => {
+    const text = preserved?.eol === '\r\n' ? lines.join('\n').replace(/\n/g, '\r\n') : lines.join('\n')
+    return preserved?.finalNewline === false ? text.replace(/\r?\n$/, '') : text
+  }
   const trimmedBody = body.trimStart()
   if (trimmedBody.startsWith('---')) {
     const endIdx = trimmedBody.indexOf('---', 3)

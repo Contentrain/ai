@@ -43,10 +43,12 @@ describe('frontmatter round-trip keeps what it cannot read', () => {
     expect(serializeMarkdownFrontmatter(rest2, doc.body, doc.preserved)).toContain('üçüncü alan: x')
   })
 
-  it('writes frontmatter with no trailing newline back identically', () => {
-    const raw = '---\ntitle: A\nyazar adı: Ayşe\n---'
-    const doc = parseMarkdownFrontmatter(raw)
-    expect(serializeMarkdownFrontmatter(doc.frontmatter, doc.body, doc.preserved)).toContain('yazar adı: Ayşe')
+  it.each([
+    ['frontmatter with no trailing newline', '---\ntitle: A\nyazar adı: Ayşe\n---'],
+    ['a body with no trailing newline', '---\ntitle: A\nyazar adı: Ayşe\n---\n\nBody'],
+    ['CRLF with no trailing newline', '---\r\ntitle: A\r\nyazar adı: Ayşe\r\n---\r\n\r\nBody'],
+  ])('%s comes back byte-identical', (_name, raw) => {
+    expect(save(raw)).toBe(raw)
   })
 
   it('leaves documents with nothing unreadable untouched in shape', () => {

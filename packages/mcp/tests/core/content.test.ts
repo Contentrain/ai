@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import { join } from 'node:path'
-import { mkdtemp, rm, mkdir } from 'node:fs/promises'
+import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import type { ModelDefinition, ContentrainConfig } from '@contentrain/types'
 import { writeContent, deleteContent, listContent, parseFrontmatter, serializeFrontmatter } from '../../src/core/content-manager.js'
@@ -280,6 +280,17 @@ describe('writeContent', () => {
     expect(raw).toContain('slug: hello-world')
     expect(raw).toContain('# Hello')
     expect(raw).toContain('Welcome!')
+  })
+
+  it('writeContent: a saved value for a preserved key wins and is announced', async () => {
+    const file = join(contentrainDir(testDir), 'content', 'blog', 'blog-post', 'hello-world', 'en.md')
+    await mkdir(join(file, '..'), { recursive: true })
+    await writeFile(file, '---\ntitle: A\nseo:\n  title: T\nslug: hello-world\n---\n\nBody\n')
+    const results = await writeContent(testDir, documentModel, [
+      { slug: 'hello-world', locale: 'en', data: { seo: { title: 'N' } } },
+    ], config)
+    expect(results[0]!.advisories?.some(a => a.includes('"seo"'))).toBe(true)
+    expect((await readText(file))!.match(/^seo:/gm)).toHaveLength(1)
   })
 
   it('writes dictionary key-value pairs', async () => {
