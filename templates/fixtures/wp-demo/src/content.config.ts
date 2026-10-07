@@ -289,6 +289,10 @@ export const collections = {
       address: z.string().optional(),
       socials: z.array(z.object({ label: z.string(), link: z.string() })).optional(),
       same_as: z.array(z.string()).optional(),
+      seo: z.object({
+        description: z.string().optional(),
+        title: z.string().optional(),
+      }).optional(),
       social_image: z.string().optional(),
       tagline: z.string().optional(),
       title: z.string(),
