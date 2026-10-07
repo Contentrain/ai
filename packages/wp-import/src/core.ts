@@ -82,7 +82,16 @@ export const PROTECTED = '[protected]'
  * Whether a stored record gets a public route is the route producer's decision.
  */
 export const SKIP_TYPES =
-  /^(attachment|nav_menu_item|wp_|jp_|pattern|revision|oembed_cache|customize_changeset|user_request|custom_css|gblocks_|gblocks-|gp_elements|gp-elements|elementor_library|e-landing-page|wpcf7_contact_form|wpforms)/
+  /^(attachment|nav_menu_item|wp_|jp_|pattern|revision|oembed_cache|customize_changeset|user_request|custom_css|gblocks_|gblocks-|gp_elements|gp-elements|elementor_library|wpcf7_contact_form|wpforms)/
+
+/**
+ * Elementor landing pages (`e-landing-page`) are public pages at `/<slug>/`, the same address and SEO as a page, built
+ * in the same editor. They enter the import as pages — one `pages` model, one permalink space, the page's SEO — not as a
+ * model of their own. WordPress lists the type over REST only when it is `show_in_rest`; a site that hides it is imported
+ * from a WXR export instead.
+ */
+export const LANDING_PAGE_TYPE = 'e-landing-page'
+export const pageTypeOf = (type: string): string => (type === LANDING_PAGE_TYPE ? 'page' : type)
 
 /** Open meta keys that are plugin plumbing, not editorial fields. */
 export const PLUGIN_META = /^(jetpack|wpdc|discourse|footnotes|inline_featured|spay_|advanced_seo|rank_math|yoast)/i

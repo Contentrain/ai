@@ -23,7 +23,7 @@ import type {
 } from '@contentrain/types'
 import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
 import { tryUnserialize } from './php-unserialize.js'
-import { strip, PROTECTED } from './core.js'
+import { strip, PROTECTED, pageTypeOf } from './core.js'
 
 export interface WxrStats {
   serialized: { detected: number; decoded: number; failed: number; keys: string[] }
@@ -289,7 +289,7 @@ export async function parseWxr(input: string | Readable, opts?: { tool?: string 
     const comments: RawComment[] = it.comments.map((c) => ({
       id: num(c.id),
       post: id,
-      post_type: (it.type as string) || 'post',
+      post_type: pageTypeOf((it.type as string) || 'post'),
       parent: num(c.parent) || null,
       parent_resolved: null,
       author: (c.author as string) ?? '',
@@ -305,7 +305,7 @@ export async function parseWxr(input: string | Readable, opts?: { tool?: string 
     }))
     return {
       id,
-      type: (it.type as string) || 'post',
+      type: pageTypeOf((it.type as string) || 'post'),
       status: (it.status as string) || 'publish',
       slug: (it.slug as string) || '',
       title: (it.title as string) ?? '',

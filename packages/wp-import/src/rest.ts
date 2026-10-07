@@ -7,7 +7,7 @@
 
 import type { RawAcfValue, RawIR, RawAttachment, RawComment, RawLanguagePair, RawMenu, RawPost, RawRedirect, RawRedirectExcluded, RawTerm, RawTermRef, SourceAccessKind } from '@contentrain/types'
 import { MIGRATION_CONTRACT_VERSION } from '@contentrain/types'
-import { strip, SKIP_TYPES, PROTECTED } from './core.js'
+import { strip, SKIP_TYPES, PROTECTED, pageTypeOf, LANDING_PAGE_TYPE } from './core.js'
 import { acfIsSecret, acfScrub } from './acf.js'
 import { redirectionRules, type RestRedirection, type RestRedirectionGroup, type RestRedirectionOptions } from './rest-redirects.js'
 import { blockMenus, classicMenus, type MenuContext, type RestMenu, type RestMenuItem, type RestNavigation, type RestTemplate, type RestTemplatePart } from './rest-menus.js'
@@ -366,6 +366,8 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
   const userById = new Map(users.map((u) => [u.id, u]))
 
   const posts: RawPost[] = []
+  // Landing pages are pages in the import, but WordPress's own page list (the fallback menu) does not show them.
+  const landingIds = new Set<number>()
   // Translation groups, one pair per group. Polylang's `translations` already
   // includes the post itself; WPML lists the OTHER translations, so add self.
   const languagePairs: RawLanguagePair[] = []
@@ -402,10 +404,11 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
       if (p.featured_media) meta._thumbnail_id = String(p.featured_media)
       const lang = (typeof p.lang === 'string' && p.lang) || (typeof p.wpml_current_locale === 'string' && p.wpml_current_locale) || null
       recordGroup(p, lang)
+      if (base.slug === LANDING_PAGE_TYPE) landingIds.add(p.id)
       posts.push({
         ...(lang ? { lang } : {}),
         id: p.id,
-        type: base.slug,
+        type: pageTypeOf(base.slug),
         status: p.status ?? 'publish',
         slug: p.slug,
         title: p.title?.rendered ?? '',
@@ -500,7 +503,7 @@ export async function fetchRestRawIR(options: RestImportOptions): Promise<RestIm
       termSlug: (taxonomy, id) => { const t = termsById.get(id); return t && t.taxonomy === taxonomy ? t.slug : undefined },
       postLink: (id) => linkOf.get(id),
       termLink: (taxonomy, id) => (termsById.get(id)?.taxonomy === taxonomy ? termLinks.get(id) : undefined),
-      pages: posts.filter((p) => p.type === 'page' && p.status === 'publish' && !p.password).map((p) => ({ id: p.id, parent: p.parent ?? null, menu_order: p.menu_order ?? 0, title: strip(p.title), link: p.link ?? null, slug: p.slug })),
+      pages: posts.filter((p) => p.type === 'page' && !landingIds.has(p.id) && p.status === 'publish' && !p.password).map((p) => ({ id: p.id, parent: p.parent ?? null, menu_order: p.menu_order ?? 0, title: strip(p.title), link: p.link ?? null, slug: p.slug })),
     }
     const dropped = { count: 0 }
     menus = classicMenus(DENIED.has(classic.status) ? [] : classic.items, DENIED.has(items.status) ? [] : items.items, ctx, dropped)
