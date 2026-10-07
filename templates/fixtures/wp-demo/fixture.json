@@ -370,6 +370,14 @@
   "optimizedInDist": [
     "harbour"
   ],
+  "distFilesByMenu": {
+    "flyout": {
+      "index.html": { "excludes": ["max-w-[min(64rem,90vw)]"] }
+    },
+    "mega": {
+      "index.html": { "contains": ["max-w-[min(64rem,90vw)]"] }
+    }
+  },
   "distFilesByMedia": {
     "local": {
       "contact/index.html": {

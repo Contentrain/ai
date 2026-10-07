@@ -185,6 +185,8 @@ export interface PlanSite {
    * `breadcrumbs: 'always'`: the source prints a breadcrumb on top-level pages too, starting from the home page
    * (Yoast, Rank Math, a theme's own); the site shows home › page there, with its BreadcrumbList, and puts home in
    * front of a nested page's trail. Absent, only nested pages show one, from their topmost parent.
+   * `menu: 'mega'`: the source's header menu opens a wide panel of columns (a mega menu) instead of a list under the
+   * item; the second level heads each column, the third is listed under it. Absent, the starter's flyout.
    */
   chrome?: {
     parts?: true
@@ -201,6 +203,7 @@ export interface PlanSite {
     footerColumns?: { gap: number, size?: number, narrowGap?: number, narrowSize?: number }
     header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string }
     breadcrumbs?: 'always'
+    menu?: 'mega'
   }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
@@ -600,6 +603,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   if (chrome?.navLinks !== undefined && typeof chrome.navLinks !== 'boolean') errors.push('site.chrome.navLinks is not a boolean')
   if (chrome?.parts !== undefined && chrome.parts !== true) errors.push('site.chrome.parts is not true')
   if (chrome?.breadcrumbs !== undefined && chrome.breadcrumbs !== 'always') errors.push(`site.chrome.breadcrumbs ${String(chrome.breadcrumbs)} is not always`)
+  if (chrome?.menu !== undefined && chrome.menu !== 'mega') errors.push(`site.chrome.menu ${String(chrome.menu)} is not mega`)
   const header = chrome?.header
   if (header !== undefined) {
     if (header === null || typeof header !== 'object' || Array.isArray(header)) errors.push('site.chrome.header is not an object')

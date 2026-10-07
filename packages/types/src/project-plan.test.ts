@@ -402,6 +402,16 @@ describe('validateProjectPlan', () => {
     }
   })
 
+  it('checks that the header menu setting is only mega', () => {
+    const p = plan()
+    p.site.chrome = { menu: 'mega' }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    for (const menu of ['flyout', 'Mega', true, 1]) {
+      p.site.chrome = { menu: menu as 'mega' }
+      expect(validateProjectPlan(p).errors, JSON.stringify(menu)).toEqual([`site.chrome.menu ${String(menu)} is not mega`])
+    }
+  })
+
   it('checks that breadcrumbs on every page are only always', () => {
     const p = plan()
     p.site.chrome = { breadcrumbs: 'always' }
