@@ -1543,98 +1543,169 @@ function serializeYamlValue(value: unknown, indent: number): string[] {
   return [`${pad}${yamlScalar(value)}`]
 }
 
-function serializeYamlFields(data: Record<string, unknown>): string[] {
+/** The YAML lines of one top-level field; none for a value that is not written (null, undefined, `body`). */
+function serializeYamlField(key: string, value: unknown): string[] {
+  if (key === 'body') return []
+  if (value === null || value === undefined) return []
   const lines: string[] = []
-  for (const [key, value] of Object.entries(data)) {
-    if (key === 'body') continue
-    if (value === null || value === undefined) continue
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      lines.push(`${key}:`)
-      lines.push(...serializeYamlValue(value, 1))
-    } else if (Array.isArray(value)) {
-      // A bare `key:` is genuinely ambiguous — empty array, empty object, or
-      // null — and two readers guessed it differently. Writing `[]` says which
-      // one it is instead of asking anyone to infer it from the next line.
-      if (value.length === 0) {
-        lines.push(`${key}: []`)
-        continue
-      }
-      lines.push(`${key}:`)
-      for (const item of value) {
-        if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-          const nested = serializeYamlValue(item, 2)
-          if (nested.length > 0) {
-            lines.push(`  - ${nested[0]!.trimStart()}`)
-            lines.push(...nested.slice(1))
-          }
-        } else {
-          lines.push(`  - ${yamlScalar(item)}`)
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    lines.push(`${key}:`)
+    lines.push(...serializeYamlValue(value, 1))
+  } else if (Array.isArray(value)) {
+    // A bare `key:` is genuinely ambiguous — empty array, empty object, or
+    // null — and two readers guessed it differently. Writing `[]` says which
+    // one it is instead of asking anyone to infer it from the next line.
+    if (value.length === 0) return [`${key}: []`]
+    lines.push(`${key}:`)
+    for (const item of value) {
+      if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+        const nested = serializeYamlValue(item, 2)
+        if (nested.length > 0) {
+          lines.push(`  - ${nested[0]!.trimStart()}`)
+          lines.push(...nested.slice(1))
         }
+      } else {
+        lines.push(`  - ${yamlScalar(item)}`)
       }
-    } else {
-      lines.push(`${key}: ${yamlScalar(value)}`)
     }
+  } else {
+    lines.push(`${key}: ${yamlScalar(value)}`)
   }
   return lines
 }
 
-/** Parse markdown frontmatter — extracts YAML frontmatter and body from a markdown string */
-export function parseMarkdownFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
+/**
+ * The fields as YAML lines. With `preserved`, the lines the reader could not turn into fields are written back where
+ * they were: after the field they followed, or — when a save removed that field — after the nearest earlier field that
+ * is still there. A preserved block whose key the data now holds is dropped: the new value wins, and the key is never
+ * written twice (`preservedKeyConflicts` names those so a caller can say so).
+ */
+function serializeYamlFields(data: Record<string, unknown>, preserved?: FrontmatterPreserved): string[] {
+  const fields = Object.entries(data).map(([key, value]) => [key, serializeYamlField(key, value)] as const).filter(([, lines]) => lines.length > 0)
+  if (!preserved || preserved.blocks.length === 0) return fields.flatMap(([, lines]) => lines)
+
+  const present = new Set(fields.map(([key]) => key))
+  const landing = (after: string | null): string | null => {
+    if (after === null || present.has(after)) return after
+    for (let k = preserved.order.indexOf(after) - 1; k >= 0; k--) if (present.has(preserved.order[k]!)) return preserved.order[k]!
+    return null
+  }
+  const keep = preserved.blocks.filter(block => block.key === undefined || !Object.hasOwn(data, block.key))
+  const at = (after: string | null): string[] => keep.filter(block => landing(block.after) === after).flatMap(block => block.lines)
+  const out = at(null)
+  for (const [key, lines] of fields) out.push(...lines, ...at(key))
+  return out
+}
+
+/**
+ * Lines of a document's frontmatter the reader cannot turn into fields: a key with a space or a non-ASCII name, a nested
+ * map, a block scalar, a comment. They are kept exactly as written and handed back to `serializeMarkdownFrontmatter`, so
+ * saving a document never erases what Contentrain does not read.
+ */
+export interface FrontmatterPreservedBlock {
+  /** The field this block follows in the file; `null` when it comes before the first field. */
+  after: string | null
+  /** The key the block's first line names (a nested map, a key with a space or a Turkish letter); absent for a comment. */
+  key?: string
+  /** The lines as written, indentation included. */
+  lines: string[]
+}
+
+export interface FrontmatterPreserved {
+  blocks: FrontmatterPreservedBlock[]
+  /** The fields in file order, so a block whose anchor was removed lands after the nearest earlier field that is still there. */
+  order: string[]
+  /** The file's line ending: a CRLF file is written back as CRLF. */
+  eol: '\n' | '\r\n'
+}
+
+/** The keys of the preserved blocks the data would replace: the data's value wins and the block is not written. */
+export function preservedKeyConflicts(data: Record<string, unknown>, preserved?: FrontmatterPreserved): string[] {
+  return (preserved?.blocks ?? []).flatMap(block => (block.key !== undefined && Object.hasOwn(data, block.key) ? [block.key] : []))
+}
+
+const FRONTMATTER_KEY_LINE = /^([\w][\w.-]*)\s*:\s*(.*)$/
+
+/** The key a line names, quoted or not, for a line the field reader skips; none for a comment or a line without a colon. */
+function frontmatterBlockKey(head: string): string | undefined {
+  if (head.startsWith('#')) return undefined
+  const named = head.match(/^("[^"]*"|'[^']*'|[^:]+?)\s*:(?:\s|$)/)
+  return named ? named[1]!.trim().replace(/^(["'])(.*)\1$/, '$2') : undefined
+}
+
+/** One field's value, or `undefined` when its lines are more than a scalar, an inline list or a plain dash list. */
+function readFrontmatterField(rawValue: string, children: string[]): { value: unknown } | undefined {
+  const rest = children.filter(line => line.trim() !== '')
+  if (rawValue === '') {
+    if (rest.length === 0) return { value: [] }
+    if (!rest.every(line => /^\s*-\s+/.test(line))) return undefined
+    return { value: rest.map(line => parseFrontmatterScalarString(line.replace(/^\s*-\s+/, '').trim())) }
+  }
+  if (/^[|>][+-]?\d*$/.test(rawValue) || rest.length > 0) return undefined
+  if (rawValue.startsWith('[')) {
+    if (!rawValue.endsWith(']')) return undefined
+    const inner = rawValue.slice(1, -1).trim()
+    return { value: inner === '' ? [] : splitFrontmatterList(inner).map(item => parseFrontmatterScalarString(item.trim())) }
+  }
+  return { value: parseFrontmatterScalar(rawValue) }
+}
+
+/**
+ * Parse markdown frontmatter — extracts YAML frontmatter and body from a markdown string.
+ *
+ * Lines that are not a scalar, an inline list or a dash list (nested maps, block scalars, keys with a space or a
+ * non-ASCII name, comments) are not fields: they come back in `preserved`, verbatim, for `serializeMarkdownFrontmatter`
+ * to write back. A key above a nested map is therefore absent from `frontmatter`, not an empty array.
+ */
+export function parseMarkdownFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string; preserved?: FrontmatterPreserved } {
   const normalized = content.replace(/\r\n/g, '\n')
   const match = normalized.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
   if (!match) return { frontmatter: {}, body: normalized }
 
-  const frontmatterStr = match[1]!
+  const lines = match[1]!.split('\n')
   const body = match[2]!.trim()
   const frontmatter: Record<string, unknown> = {}
+  const blocks: FrontmatterPreservedBlock[] = []
+  const order: string[] = []
+  let anchor: string | null = null
 
-  let currentKey: string | null = null
-  let currentArray: string[] | null = null
+  for (let i = 0; i < lines.length;) {
+    const head = lines[i]!
+    if (head.trim() === '') { i++; continue }
+    const kv = head.match(FRONTMATTER_KEY_LINE)
+    // A block is its first line and what follows it indented (or, under an empty `key:`, a dash list at column 0).
+    let next = i + 1
+    while (next < lines.length) {
+      const line = lines[next]!
+      if (line.trim() !== '' && !/^\s/.test(line) && !(kv && kv[2]!.trim() === '' && /^-(\s|$)/.test(line))) break
+      next++
+    }
+    let end = next
+    while (end > i + 1 && lines[end - 1]!.trim() === '') end--
+    const chunk = lines.slice(i, end)
+    i = next
 
-  for (const line of frontmatterStr.split('\n')) {
-    if (/^\s+-\s+/.test(line) && currentKey) {
-      const value = parseFrontmatterScalarString(line.replace(/^\s+-\s+/, '').trim())
-      if (!currentArray) currentArray = []
-      currentArray.push(value)
+    const field = kv ? readFrontmatterField(kv[2]!.trim(), chunk.slice(1)) : undefined
+    if (!kv || !field) {
+      const key = frontmatterBlockKey(head)
+      blocks.push({ after: anchor, ...(key === undefined ? {} : { key }), lines: chunk })
       continue
     }
-
-    if (currentKey && currentArray) {
-      frontmatter[currentKey] = currentArray
-      currentKey = null
-      currentArray = null
-    }
-
-    const kvMatch = line.match(/^([\w][\w.-]*)\s*:\s*(.*)$/)
-    if (!kvMatch) continue
-
-    const key = kvMatch[1]!
-    const rawValue = kvMatch[2]!.trim()
-
-    if (rawValue === '') {
-      currentKey = key
-      currentArray = []
-      continue
-    }
-
-    if (rawValue.startsWith('[') && rawValue.endsWith(']')) {
-      const inner = rawValue.slice(1, -1).trim()
-      frontmatter[key] = inner === '' ? [] : splitFrontmatterList(inner).map(item => parseFrontmatterScalarString(item.trim()))
-      continue
-    }
-
-    frontmatter[key] = parseFrontmatterScalar(rawValue)
+    frontmatter[kv[1]!] = field.value
+    order.push(kv[1]!)
+    anchor = kv[1]!
   }
 
-  if (currentKey && currentArray) {
-    frontmatter[currentKey] = currentArray
-  }
-
-  return { frontmatter, body }
+  if (blocks.length === 0) return { frontmatter, body }
+  return { frontmatter, body, preserved: { blocks, order, eol: content.includes('\r\n') ? '\r\n' : '\n' } }
 }
 
-/** Serialize data + body into markdown frontmatter format */
-export function serializeMarkdownFrontmatter(data: Record<string, unknown>, body: string): string {
+/**
+ * Serialize data + body into markdown frontmatter format. Pass the `preserved` that `parseMarkdownFrontmatter` returned
+ * for the document being saved and the lines it could not read are written back where they were.
+ */
+export function serializeMarkdownFrontmatter(data: Record<string, unknown>, body: string, preserved?: FrontmatterPreserved): string {
+  const written = (lines: string[]): string => (preserved?.eol === '\r\n' ? lines.join('\n').replace(/\n/g, '\r\n') : lines.join('\n'))
   const trimmedBody = body.trimStart()
   if (trimmedBody.startsWith('---')) {
     const endIdx = trimmedBody.indexOf('---', 3)
@@ -1643,7 +1714,7 @@ export function serializeMarkdownFrontmatter(data: Record<string, unknown>, body
       const afterFm = trimmedBody.slice(endIdx + 3)
 
       const lines: string[] = ['---']
-      lines.push(...serializeYamlFields(data))
+      lines.push(...serializeYamlFields(data, preserved))
       if (bodyFmContent) {
         const modelKeys = new Set(Object.keys(data))
         for (const line of bodyFmContent.split('\n')) {
@@ -1660,19 +1731,19 @@ export function serializeMarkdownFrontmatter(data: Record<string, unknown>, body
         lines.push(afterFm.trimStart())
       }
       lines.push('')
-      return lines.join('\n')
+      return written(lines)
     }
   }
 
   const lines: string[] = ['---']
-  lines.push(...serializeYamlFields(data))
+  lines.push(...serializeYamlFields(data, preserved))
   lines.push('---')
   lines.push('')
   if (body) {
     lines.push(body)
     lines.push('')
   }
-  return lines.join('\n')
+  return written(lines)
 }
 
 // ─── Migration contracts ───

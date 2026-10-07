@@ -195,7 +195,7 @@ export async function writeContent(
         const fmData = { ...existingDoc?.frontmatter, ...incomingFm }
         const bodyContent = bodySent ? incomingBody : (existingDoc?.body ?? '')
 
-        const mdContent = serializeMarkdownFrontmatter(fmData, bodyContent)
+        const mdContent = serializeMarkdownFrontmatter(fmData, bodyContent, existingDoc?.preserved)
         await writeText(docPath, mdContent)
         const prevMeta = await readMeta(projectRoot, model, { locale, slug, defaultLocale }) as EntryMeta | null
         await writeMeta(projectRoot, model, { locale, slug, defaultLocale }, mergeEntryMeta(prevMeta ?? undefined, entry))

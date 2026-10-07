@@ -61,6 +61,8 @@ export function mergeDocumentFile(
   const lossy = (['ours', 'theirs'] as const).some((side) => {
     const doc = parsed[side]
     if (!doc) return false
+    // Lines the reader cannot parse are not part of the merge: only the conflict path keeps both sides whole.
+    if (doc.preserved) return true
     const reserialized = parseMarkdownFrontmatter(serializeMarkdownFrontmatter(doc.frontmatter, doc.body))
     return !eqCanonical(reserialized.frontmatter, doc.frontmatter) || reserialized.body !== doc.body
   })
