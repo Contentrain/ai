@@ -7,6 +7,7 @@ import Section, { type Tone } from '../_shared/Section.astro'
 import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
 import { imageOf, type ImageSource } from '../_shared/image'
+import { safeHref } from '../_shared/safe-url'
 
 const grid = tv({
   slots: {
@@ -79,7 +80,7 @@ const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-
         {item.eyebrow && <p class="text-sm font-medium text-accent-text">{item.eyebrow}</p>}
         <CardHeading class={cardTitle()}>
           {item.href
-            ? <a href={item.href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{item.title}</a>
+            ? <a href={safeHref(item.href)} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{item.title}</a>
             : item.title}
         </CardHeading>
         {item.text && <p class={text({ class: dim })} data-kit-text>{item.text}</p>}

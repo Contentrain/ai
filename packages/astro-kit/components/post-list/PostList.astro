@@ -9,6 +9,7 @@ import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
 import PostCard from '../post-card/PostCard.astro'
 import type { ImageInput, LinkInput } from '../_shared/types'
+import { safeHref } from '../_shared/safe-url'
 
 export interface PostItem {
   title: string
@@ -93,7 +94,7 @@ const cardLayout = (i: number) => layout === 'compact' ? 'minimal' : layout === 
         <li>
           <PostCard
             title={post.title}
-            href={post.href}
+            href={safeHref(post.href)}
             excerpt={showExcerpt && layout !== 'compact' ? post.excerpt : undefined}
             date={post.date}
             locale={locale}
@@ -109,6 +110,6 @@ const cardLayout = (i: number) => layout === 'compact' ? 'minimal' : layout === 
         </li>
       ))}
     </ul>
-    {moreHref && moreLabel && <p class={s.more()}><a href={moreHref} class="font-medium text-accent-text underline underline-offset-4">{moreLabel}</a></p>}
+    {moreHref && moreLabel && <p class={s.more()}><a href={safeHref(moreHref)} class="font-medium text-accent-text underline underline-offset-4">{moreLabel}</a></p>}
   </Section>
 )}

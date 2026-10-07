@@ -9,6 +9,7 @@
 // <details> is the only built-in element that starts visible and hides itself.
 // Dismissal is not remembered; the bar comes back on the next page.
 import { tv } from 'tailwind-variants'
+import { safeHref } from '../_shared/safe-url'
 
 const announcement = tv({
   slots: {
@@ -48,6 +49,6 @@ const s = announcement({ tone })
   <summary class={s.close()} aria-label={closeLabel}><span aria-hidden="true">✕</span></summary>
   <div class={s.bar()}>
     <p>{message}</p>
-    {href && <a href={href} class={s.link()}>{linkLabel ?? 'Learn more'}</a>}
+    {href && <a href={safeHref(href)} class={s.link()}>{linkLabel ?? 'Learn more'}</a>}
   </div>
 </details>

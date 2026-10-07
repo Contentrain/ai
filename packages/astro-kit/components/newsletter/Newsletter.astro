@@ -12,6 +12,7 @@ import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
 import type { MeasuredStyle } from '../_shared/types'
 import { newsletterForm } from './newsletter'
+import { safeUrl } from '../_shared/safe-url'
 
 const newsletter = tv({
   slots: {
@@ -91,7 +92,7 @@ const formRel: Record<string, string> = newTab ? { rel: 'noopener noreferrer' } 
         </div>
       )}
       <div class="flex flex-col gap-2">
-        <form method="post" action={form.action} target={newTab ? '_blank' : undefined} {...formRel} class={s.form()} aria-labelledby={headingId} aria-label={headingId ? undefined : submitLabel}>
+        <form method="post" action={safeUrl(form.action)} target={newTab ? '_blank' : undefined} {...formRel} class={s.form()} aria-labelledby={headingId} aria-label={headingId ? undefined : submitLabel}>
           {askName && form.name && (
             <div class={s.field()}>
               <label for={`${id}-name`} class={s.label()}>{nameLabel}</label>

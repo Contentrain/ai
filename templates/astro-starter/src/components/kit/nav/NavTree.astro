@@ -3,6 +3,7 @@
 // (an empty href or "#": a WordPress "custom link" used as a group heading) is a label, not `<a href="#">`.
 import NavTree from './NavTree.astro'
 import type { NavItem } from '../_shared/types'
+import { safeHref } from '../_shared/safe-url'
 
 interface Props {
   items: NavItem[]
@@ -31,7 +32,7 @@ const nested = kind === 'drawer' || level > 2 ? 'ms-3 border-s border-line ps-3'
   {items.map(item => (
     <li>
       {real(item.href)
-        ? <a href={item.href} aria-current={item.href === current ? 'page' : undefined} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener' : undefined} class={`${row} ${hover}`}>{item.label}</a>
+        ? <a href={safeHref(item.href)} aria-current={item.href === current ? 'page' : undefined} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener' : undefined} class={`${row} ${hover}`}>{item.label}</a>
         : <span class={`${row} font-semibold`}>{item.label}</span>}
       {item.children && item.children.length > 0 && <NavTree items={item.children} current={current} kind={kind === 'mega' ? 'flyout' : kind} level={level + 1} />}
     </li>

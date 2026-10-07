@@ -4,7 +4,7 @@
   "description": "Site header: brand (logo and/or name), navigation and an optional call-to-action button.",
   "category": "chrome",
   "uses": ["nav"],
-  "shared": ["Button.astro", "KitImage.astro", "types.ts"],
+  "shared": ["Button.astro", "KitImage.astro", "safe-url.ts", "types.ts"],
   "variants": {
     "layout": { "options": ["split", "centered", "brand-left"], "default": "split", "description": "split: brand left, navigation right. centered: brand above centred navigation. brand-left: navigation right after the brand." },
     "tone": { "options": ["default", "inverse", "transparent"], "default": "default", "description": "Surface with a bottom border, dark (ink) background, or transparent over the hero that follows." },

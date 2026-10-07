@@ -3,6 +3,7 @@
 // the matching BreadcrumbList JSON-LD.
 import { tv } from 'tailwind-variants'
 import type { LinkInput } from '../_shared/types'
+import { safeHref } from '../_shared/safe-url'
 
 const breadcrumb = tv({
   slots: {
@@ -46,7 +47,7 @@ const jsonLd = schema
   <ol class={slots.list()}>
     {items.map(item => (
       <li class="flex items-center gap-2">
-        <a href={item.href} class={slots.link()}>{item.label}</a>
+        <a href={safeHref(item.href)} class={slots.link()}>{item.label}</a>
         <span aria-hidden="true">{MARKS[separator]}</span>
       </li>
     ))}

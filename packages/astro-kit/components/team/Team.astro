@@ -8,6 +8,7 @@ import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
 import { imageOf, type ImageSource } from '../_shared/image'
 import { profile } from './team'
+import { safeHref } from '../_shared/safe-url'
 
 const team = tv({
   slots: {
@@ -105,7 +106,7 @@ const NameHeading = heading ? 'h3' : 'h2'
           {imageOf(member.image, member.imageAlt ?? member.name) && <div class={`${s.portrait()} kit-portrait`}><KitImage image={imageOf(member.image, member.imageAlt ?? member.name)!} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" class="aspect-square w-full object-cover" /></div>}
           <NameHeading class={s.name()}>
             {member.href
-              ? <a href={member.href} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{member.name}</a>
+              ? <a href={safeHref(member.href)} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{member.name}</a>
               : member.name}
           </NameHeading>
           {member.role && <p class={s.role()}>{member.role}</p>}
@@ -120,7 +121,7 @@ const NameHeading = heading ? 'h3' : 'h2'
           {member.links && member.links.length > 0 && (
             <ul class={s.socials()}>
               {member.links.map(profile).map(link => (
-                <li><a href={link.href} class={s.social()} aria-label={socialLabel.replace('{name}', member.name).replace('{network}', link.label)}>{link.label}</a></li>
+                <li><a href={safeHref(link.href)} class={s.social()} aria-label={socialLabel.replace('{name}', member.name).replace('{network}', link.label)}>{link.label}</a></li>
               ))}
             </ul>
           )}

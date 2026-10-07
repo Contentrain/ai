@@ -4,7 +4,7 @@
   "description": "Cookie consent bar with accept and decline. Consent is denied by default: until the visitor explicitly accepts, <html data-consent> is \"denied\" (set before first paint) and nothing may start measurement. The choice is stored in localStorage (`kit-consent`), set as <html data-consent=\"granted|denied\"> and dispatched as a `kit:consent` event on document with {granted}; the site-settings analytics gate reads data-consent and loads analytics only when it is \"granted\". The bar shows only while no choice is stored, with no flash on later visits.",
   "category": "chrome",
   "uses": [],
-  "shared": [],
+  "shared": ["safe-url.ts"],
   "variants": {
     "position": {
       "options": [

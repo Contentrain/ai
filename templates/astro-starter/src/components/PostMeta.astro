@@ -5,6 +5,7 @@
 // when the entry has it, with its own prefix and suffix, as a WordPress block prints nothing (its label included) for
 // an empty one. A row left with nothing to print is not printed.
 import type { PostMeta } from '../site.config'
+import { safeHref } from './kit/_shared/safe-url'
 
 interface Link { label: string, href: string }
 
@@ -34,8 +35,8 @@ const columns = meta.map(column => column.filter(row => row.some(has))).filter(c
               <span>
                 {token.prefix}
                 {token.part === 'date' ? <time datetime={date!.toISOString()}>{formatDate(date!)}</time>
-                  : token.part === 'author' ? <a href={author!.href} class="text-ink no-underline hover:underline">{author!.label}</a>
-                  : (token.part === 'terms' ? terms : tags).map((link, index) => <>{index > 0 && ', '}<a href={link.href} class="text-ink no-underline hover:underline">{link.label}</a></>)}
+                  : token.part === 'author' ? <a href={safeHref(author!.href)} class="text-ink no-underline hover:underline">{author!.label}</a>
+                  : (token.part === 'terms' ? terms : tags).map((link, index) => <>{index > 0 && ', '}<a href={safeHref(link.href)} class="text-ink no-underline hover:underline">{link.label}</a></>)}
                 {token.suffix}
               </span>
             ))}

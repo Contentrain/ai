@@ -4,7 +4,7 @@
   "description": "A one-line notice above the header (sale, event, changed hours) with an optional link. The visitor closes it with no JS (an open <details> whose summary is the close button); the dismissal is not remembered across pages.",
   "category": "chrome",
   "uses": [],
-  "shared": [],
+  "shared": ["safe-url.ts"],
   "variants": {
     "tone": {
       "options": [

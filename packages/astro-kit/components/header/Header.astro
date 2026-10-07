@@ -6,6 +6,7 @@ import Button from '../_shared/Button.astro'
 import KitImage from '../_shared/KitImage.astro'
 import type { ActionInput, ImageInput, NavItem } from '../_shared/types'
 import Nav from '../nav/Nav.astro'
+import { safeHref } from '../_shared/safe-url'
 
 const header = tv({
   slots: {
@@ -77,7 +78,7 @@ const wrap = tagline ? 'flex-wrap md:flex-nowrap' : undefined
     {tagline
       ? (
         <div class="flex min-w-0 basis-full flex-col gap-1 md:basis-auto">
-          <a href={homeHref} class={brand()} aria-label={showName ? undefined : siteName} style={brandStyle} data-kit-brand>
+          <a href={safeHref(homeHref)} class={brand()} aria-label={showName ? undefined : siteName} style={brandStyle} data-kit-brand>
             {logo && <KitImage image={logo} priority class="h-8 w-auto" sizes="160px" />}
             {showName && <span>{siteName}</span>}
           </a>
@@ -85,7 +86,7 @@ const wrap = tagline ? 'flex-wrap md:flex-nowrap' : undefined
         </div>
       )
       : (
-        <a href={homeHref} class={brand()} aria-label={showName ? undefined : siteName} style={brandStyle} data-kit-brand>
+        <a href={safeHref(homeHref)} class={brand()} aria-label={showName ? undefined : siteName} style={brandStyle} data-kit-brand>
           {logo && <KitImage image={logo} priority class="h-8 w-auto" sizes="160px" />}
           {showName && <span>{siteName}</span>}
         </a>

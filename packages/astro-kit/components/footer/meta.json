@@ -5,6 +5,7 @@
   "category": "chrome",
   "uses": [],
   "shared": [
+    "safe-url.ts",
     "types.ts"
   ],
   "variants": {

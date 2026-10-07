@@ -16,6 +16,7 @@ import { siteConfig } from '../site.config'
 import { cssSize } from '../lib/css-size'
 import { summarize } from '../lib/seo'
 import type { CustomType } from '../site.config'
+import { safeHref } from '../components/kit/_shared/safe-url'
 
 interface Props {
   type: CustomType
@@ -69,7 +70,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
   <article class="container-prose py-12 md:py-16" data-kit-entry>
     {taxonomy && terms.length > 0 && (
       <p class="mb-4 flex flex-wrap gap-3 text-sm font-medium" data-kit-meta>
-        {terms.map(term => <a href={termHref(taxonomy, term, allTerms)} class="text-accent-text no-underline hover:underline">{text(term.data.name) ?? term.id}</a>)}
+        {terms.map(term => <a href={safeHref(termHref(taxonomy, term, allTerms))} class="text-accent-text no-underline hover:underline">{text(term.data.name) ?? term.id}</a>)}
       </p>
     )}
     <h1 class="[margin-bottom:var(--spacing-title,1.5rem)] text-4xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl">{title}</h1>
@@ -88,8 +89,8 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
     )}
     {(previous || next) && (
       <nav aria-label={t('post.adjacent')} data-cr-part="post-navigation" class="mt-12 flex flex-wrap justify-between gap-4 border-t border-line pt-6" style={cssSize(type.adjacentText)}>
-        {previous ? <a href={entryHref(type, previous)} rel="prev" class="text-ink"><span aria-hidden="true" class="inline-block rtl:-scale-x-100">←</span> {entryTitle(type, previous)}</a> : <span />}
-        {next && <a href={entryHref(type, next)} rel="next" class="text-ink">{entryTitle(type, next)} <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
+        {previous ? <a href={safeHref(entryHref(type, previous))} rel="prev" class="text-ink"><span aria-hidden="true" class="inline-block rtl:-scale-x-100">←</span> {entryTitle(type, previous)}</a> : <span />}
+        {next && <a href={safeHref(entryHref(type, next))} rel="next" class="text-ink">{entryTitle(type, next)} <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
       </nav>
     )}
     {type.model && data.comments_open === true && <StudioComments model={type.model} entry={entry.id} />}
@@ -100,7 +101,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
       <ul class:list={['border-t border-line', siteConfig.lists.tone === 'muted' && 'text-ink-muted']}>
         {more.map(other => (
           <li class="flex flex-wrap items-baseline justify-between gap-2 border-b border-line py-3">
-            <a href={other.href} class="text-lg text-ink no-underline hover:underline" style={cssSize(type.moreText)}>{other.title}</a>
+            <a href={safeHref(other.href)} class="text-lg text-ink no-underline hover:underline" style={cssSize(type.moreText)}>{other.title}</a>
             {other.date && <time datetime={other.date.toISOString()} class="text-sm text-ink-muted">{formatDate(other.date)}</time>}
           </li>
         ))}
