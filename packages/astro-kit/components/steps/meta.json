@@ -9,6 +9,7 @@
     "Section.astro",
     "image.ts",
     "measured.ts",
+    "safe-url.ts",
     "types.ts"
   ],
   "variants": {

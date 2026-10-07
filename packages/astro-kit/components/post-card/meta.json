@@ -4,7 +4,7 @@
   "description": "One post in a list (index, archive, related posts): image, category, date, title, excerpt, author. The whole card links to the post.",
   "category": "content",
   "uses": [],
-  "shared": ["KitImage.astro", "types.ts"],
+  "shared": ["KitImage.astro", "safe-url.ts", "types.ts"],
   "variants": {
     "layout": { "options": ["vertical", "horizontal", "minimal"], "default": "vertical", "description": "Image on top, image beside the text, or text only with a divider." },
     "surface": { "options": ["plain", "card"], "default": "plain", "description": "plain: no surface. card: its own background (--color-card), radius and shadow (--shadow-card), the text padded (--spacing-card) and the image flush at the edge, as theme cards are drawn on a tinted page." },

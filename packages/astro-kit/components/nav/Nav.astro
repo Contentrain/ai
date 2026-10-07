@@ -7,6 +7,7 @@
 import { tv } from 'tailwind-variants'
 import NavTree from './NavTree.astro'
 import type { NavItem } from '../_shared/types'
+import { safeHref } from '../_shared/safe-url'
 
 const nav = tv({
   slots: {
@@ -65,7 +66,7 @@ const real = (href: string | undefined) => !!href && href !== '#'
       {items.map((item, index) => (
         <li class="group relative">
           {real(item.href)
-            ? <a href={item.href} aria-current={item.href === current ? 'page' : undefined} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener' : undefined} class={link()}>{item.label}</a>
+            ? <a href={safeHref(item.href)} aria-current={item.href === current ? 'page' : undefined} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener' : undefined} class={link()}>{item.label}</a>
             : !(item.children && item.children.length > 0) && <span class={link()}>{item.label}</span>}
           {item.children && item.children.length > 0 && (
             <>
@@ -107,7 +108,7 @@ const real = (href: string | undefined) => !!href && href !== '#'
               {items.map(item => (
                 <li>
                   {real(item.href)
-                    ? <a href={item.href} aria-current={item.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-ink no-underline hover:bg-surface-muted aria-[current=page]:font-semibold">{item.label}</a>
+                    ? <a href={safeHref(item.href)} aria-current={item.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-ink no-underline hover:bg-surface-muted aria-[current=page]:font-semibold">{item.label}</a>
                     : <span class="block px-3 py-2 font-semibold text-ink">{item.label}</span>}
                   {item.children && item.children.length > 0 && <NavTree items={item.children} current={current} kind="drawer" />}
                 </li>
@@ -126,7 +127,7 @@ const real = (href: string | undefined) => !!href && href !== '#'
             {items.map(item => (
               <li>
                 {real(item.href)
-                  ? <a href={item.href} aria-current={item.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-sm text-ink no-underline hover:bg-surface-muted">{item.label}</a>
+                  ? <a href={safeHref(item.href)} aria-current={item.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-sm text-ink no-underline hover:bg-surface-muted">{item.label}</a>
                   : <span class="block px-3 py-2 text-sm font-semibold text-ink">{item.label}</span>}
                 {item.children && item.children.length > 0 && <NavTree items={item.children} current={current} kind="drawer" />}
               </li>

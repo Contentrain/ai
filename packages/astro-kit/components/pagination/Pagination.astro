@@ -3,6 +3,7 @@
 // itself for page 1, `<base>page/<n>/` after — so a migrated archive keeps
 // its page URLs.
 import { tv } from 'tailwind-variants'
+import { safeHref } from '../_shared/safe-url'
 
 const pagination = tv({
   slots: {
@@ -52,7 +53,7 @@ const shown = [...new Set([1, current - 2, current - 1, current, current + 1, cu
 {total > 1 && (
   <nav aria-label={label} data-cr-part="pagination" class={slots.root()}>
     {current > 1
-      ? <a href={href(current - 1)} rel="prev" class:list={[slots.item(), slots.link()]}><span aria-hidden="true" class="inline-block rtl:-scale-x-100">←</span> <span class="max-sm:sr-only">{prevLabel}</span></a>
+      ? <a href={safeHref(href(current - 1))} rel="prev" class:list={[slots.item(), slots.link()]}><span aria-hidden="true" class="inline-block rtl:-scale-x-100">←</span> <span class="max-sm:sr-only">{prevLabel}</span></a>
       : style === 'simple' && <span />}
     {style === 'numbered' && shown.map((page, index) => (
       <>
@@ -60,10 +61,10 @@ const shown = [...new Set([1, current - 2, current - 1, current, current + 1, cu
         {/* Two away from the current page: dropped on phones so the row fits one line. */}
         {page === current
           ? <span aria-current="page" class:list={[slots.item(), slots.current()]}><span class="sr-only">{pageLabel} </span>{page}</span>
-          : <a href={href(page)} class:list={[slots.item(), slots.link(), Math.abs(page - current) === 2 && page !== 1 && page !== total && 'max-md:hidden']}><span class="sr-only">{pageLabel} </span>{page}</a>}
+          : <a href={safeHref(href(page))} class:list={[slots.item(), slots.link(), Math.abs(page - current) === 2 && page !== 1 && page !== total && 'max-md:hidden']}><span class="sr-only">{pageLabel} </span>{page}</a>}
       </>
     ))}
     {style === 'simple' && <span class="text-sm text-ink-muted">{pageLabel} {current} / {total}</span>}
-    {current < total && <a href={href(current + 1)} rel="next" class:list={[slots.item(), slots.link()]}><span class="max-sm:sr-only">{nextLabel}</span> <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
+    {current < total && <a href={safeHref(href(current + 1))} rel="next" class:list={[slots.item(), slots.link()]}><span class="max-sm:sr-only">{nextLabel}</span> <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
   </nav>
 )}

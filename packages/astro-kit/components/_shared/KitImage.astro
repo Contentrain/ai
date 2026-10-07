@@ -16,6 +16,7 @@
 import type { ImageMetadata } from 'astro'
 import { Image } from 'astro:assets'
 import { mediaSize } from '../../../lib/media'
+import { safeSrc } from './safe-url'
 import type { ImageInput } from './types'
 
 interface Props {
@@ -35,7 +36,9 @@ const LOCAL = import.meta.glob<ImageMetadata>('/public/**/*.{avif,gif,jpeg,jpg,p
 const { image: given, sizes = '100vw', class: className, style, priority = false } = Astro.props
 // Content stores an address; the size the migration measured comes from the site's media table.
 const measured = given.width && given.height ? undefined : mediaSize(given.src)
-const image: ImageInput = measured ? { ...given, ...measured } : given
+// An address that is not a plain image link (`javascript:`, `data:text/html`) draws nothing.
+const url = safeSrc(given.src)
+const image: ImageInput = { ...(measured ? { ...given, ...measured } : given), src: url ?? '' }
 const loading = priority ? 'eager' : 'lazy'
 const fetchpriority = priority ? 'high' : 'auto'
 const path = image.src.startsWith('/') && !image.src.startsWith('//') ? image.src.split(/[?#]/)[0]! : undefined
@@ -49,8 +52,10 @@ const size = image.width && image.height ? { width: image.width, height: image.h
 const STEPS = [320, 640, 960, 1280, 1600, 1920, 2560]
 const widthsUpTo = (max: number) => [...STEPS.filter(step => step < max), max]
 ---
-{local
+{url && (
+  local
   ? <Image src={local} alt={image.alt ?? ''} {...size} widths={widthsUpTo(image.width ?? local.width)} sizes={sizes} class={className} style={style} loading={loading} fetchpriority={fetchpriority} />
   : image.width && image.height && path === undefined
-    ? <Image src={image.src} alt={image.alt ?? ''} width={image.width} height={image.height} widths={widthsUpTo(image.width)} sizes={sizes} class={className} style={style} loading={loading} fetchpriority={fetchpriority} />
-    : <img src={image.src} alt={image.alt ?? ''} width={image.width} height={image.height} class={className} style={style} loading={loading} fetchpriority={fetchpriority} decoding="async" />}
+    ? <Image src={url} alt={image.alt ?? ''} width={image.width} height={image.height} widths={widthsUpTo(image.width)} sizes={sizes} class={className} style={style} loading={loading} fetchpriority={fetchpriority} />
+    : <img src={url} alt={image.alt ?? ''} width={image.width} height={image.height} class={className} style={style} loading={loading} fetchpriority={fetchpriority} decoding="async" />
+)}

@@ -41,7 +41,9 @@
       "description": "A one-line notice above the header (sale, event, changed hours) with an optional link. The visitor closes it with no JS (an open <details> whose summary is the close button); the dismissal is not remembered across pages.",
       "category": "chrome",
       "uses": [],
-      "shared": [],
+      "shared": [
+        "safe-url.ts"
+      ],
       "variants": {
         "tone": {
           "options": [
@@ -102,6 +104,7 @@
         "KitImage.astro",
         "Section.astro",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -450,6 +453,7 @@
       "category": "content",
       "uses": [],
       "shared": [
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -532,6 +536,7 @@
         "Section.astro",
         "image.ts",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -789,7 +794,9 @@
       "description": "Cookie consent bar with accept and decline. Consent is denied by default: until the visitor explicitly accepts, <html data-consent> is \"denied\" (set before first paint) and nothing may start measurement. The choice is stored in localStorage (`kit-consent`), set as <html data-consent=\"granted|denied\"> and dispatched as a `kit:consent` event on document with {granted}; the site-settings analytics gate reads data-consent and loads analytics only when it is \"granted\". The bar shows only while no choice is stored, with no flash on later visits.",
       "category": "chrome",
       "uses": [],
-      "shared": [],
+      "shared": [
+        "safe-url.ts"
+      ],
       "variants": {
         "position": {
           "options": [
@@ -862,6 +869,7 @@
       "shared": [
         "Section.astro",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -1092,6 +1100,7 @@
       "shared": [
         "Section.astro",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -1412,6 +1421,7 @@
         "KitImage.astro",
         "Section.astro",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -1712,6 +1722,7 @@
         "Button.astro",
         "Section.astro",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -1972,6 +1983,7 @@
       "uses": [],
       "shared": [
         "KitImage.astro",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -2081,6 +2093,7 @@
       "shared": [
         "Section.astro",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -2352,6 +2365,7 @@
       "shared": [
         "Section.astro",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -2604,6 +2618,7 @@
       "category": "chrome",
       "uses": [],
       "shared": [
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -2803,6 +2818,7 @@
         "Section.astro",
         "image.ts",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -3097,6 +3113,7 @@
       "shared": [
         "Button.astro",
         "KitImage.astro",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -3322,6 +3339,7 @@
         "KitImage.astro",
         "Section.astro",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -3652,7 +3670,9 @@
       "description": "Links to the same page in the site's other languages, each with hreflang and its own lang; the current one is marked aria-current. A plain list or a native <details> menu; no JavaScript. The addresses are the page's equivalents in each language, supplied by the caller.",
       "category": "chrome",
       "uses": [],
-      "shared": [],
+      "shared": [
+        "safe-url.ts"
+      ],
       "variants": {
         "layout": {
           "options": [
@@ -3733,6 +3753,7 @@
         "Section.astro",
         "image.ts",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -3986,6 +4007,7 @@
       "category": "chrome",
       "uses": [],
       "shared": [
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -4111,6 +4133,7 @@
       "shared": [
         "Section.astro",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -4350,7 +4373,9 @@
       "description": "Links between the pages of a post list, at WordPress addresses (<base>page/<n>/).",
       "category": "content",
       "uses": [],
-      "shared": [],
+      "shared": [
+        "safe-url.ts"
+      ],
       "variants": {
         "style": {
           "options": [
@@ -4435,6 +4460,7 @@
       "uses": [],
       "shared": [
         "KitImage.astro",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -4593,6 +4619,7 @@
       "shared": [
         "Section.astro",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -4907,6 +4934,7 @@
         "Button.astro",
         "Section.astro",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -5317,7 +5345,9 @@
       "description": "A search field that sends the visitor to the site's search page (`/search?q=…`): a plain GET form with a labelled role=search landmark, no JavaScript. For a header slot or inline in a page.",
       "category": "chrome",
       "uses": [],
-      "shared": [],
+      "shared": [
+        "safe-url.ts"
+      ],
       "variants": {
         "size": {
           "options": [
@@ -5402,6 +5432,7 @@
         "SectionHeader.astro",
         "image.ts",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -5739,7 +5770,8 @@
       "category": "chrome",
       "uses": [],
       "shared": [
-        "social.ts"
+        "social.ts",
+        "safe-url.ts"
       ],
       "variants": {
         "display": {
@@ -5842,6 +5874,7 @@
         "KitImage.astro",
         "Section.astro",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -6238,6 +6271,7 @@
         "Section.astro",
         "image.ts",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -6529,6 +6563,7 @@
         "Section.astro",
         "image.ts",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -6808,6 +6843,7 @@
         "Section.astro",
         "SectionHeader.astro",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -7064,6 +7100,7 @@
         "image.ts",
         "measured.ts",
         "social.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {
@@ -7369,6 +7406,7 @@
         "Section.astro",
         "image.ts",
         "measured.ts",
+        "safe-url.ts",
         "types.ts"
       ],
       "variants": {

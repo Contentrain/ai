@@ -8,6 +8,7 @@
     "Button.astro",
     "Section.astro",
     "measured.ts",
+    "safe-url.ts",
     "types.ts"
   ],
   "variants": {

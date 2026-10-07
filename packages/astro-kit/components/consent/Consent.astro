@@ -7,6 +7,7 @@
 // button) reopens the bar, so consent is withdrawn as easily as it is given.
 // Replaces cookie plugins (Cookie Notice, Complianz, CookieYes, Cookiebot).
 import { tv } from 'tailwind-variants'
+import { safeHref } from '../_shared/safe-url'
 
 const consent = tv({
   slots: {
@@ -49,7 +50,7 @@ const s = consent({ position })
 <div data-kit-consent role="region" aria-label={regionLabel} class={s.root()} hidden>
   <p class={s.message()}>
     {message}
-    {policyHref && <> <a href={policyHref} class={s.link()}>{policyLabel}</a></>}
+    {policyHref && <> <a href={safeHref(policyHref)} class={s.link()}>{policyLabel}</a></>}
   </p>
   <div class={s.actions()}>
     <button type="button" data-kit-consent-choice="granted" class={s.accept()}>{acceptLabel}</button>

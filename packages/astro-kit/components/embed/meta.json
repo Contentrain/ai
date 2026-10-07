@@ -4,7 +4,7 @@
   "description": "A video, map or player from another site (YouTube, Vimeo, Google Maps, OpenStreetMap, Spotify, SoundCloud, Calendly, Typeform, Google Forms, Loom, Wistia), loaded only on click: until then a poster link to the provider's page, with no iframe, no third-party request and no cookie (YouTube through youtube-nocookie.com). Unknown providers are never framed; they stay a plain link.",
   "category": "content",
   "uses": [],
-  "shared": ["KitImage.astro", "types.ts"],
+  "shared": ["KitImage.astro", "safe-url.ts", "types.ts"],
   "variants": {
     "aspect": { "options": ["auto", "video", "portrait", "square", "map"], "default": "auto", "description": "auto: 16:9 for videos, 9:16 for YouTube Shorts, 4:3 (16:9 wide) for maps, a fixed strip for audio players. The others force a ratio." },
     "width": { "options": ["prose", "page"], "default": "prose", "description": "prose: as wide as the reading column. page: the full page frame." }

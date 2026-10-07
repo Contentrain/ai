@@ -15,6 +15,7 @@ import { fieldsHtml } from '../../lib/studio/form-fields'
 import { siteConfig } from '../../site.config'
 import FormMount from './FormMount.astro'
 import StaticForm from './StaticForm.astro'
+import { safeHref } from '../kit/_shared/safe-url'
 
 interface Props {
   /** The model submissions are saved to. */
@@ -42,7 +43,7 @@ const noteId = `cr-form-note-${model.replace(/[^\w-]/g, '-')}`
 )}
 {wordpress && fields.length === 0 && (
   <div class:list={['cr-form-mount block', className]} data-cr-part="form" data-state="wordpress">
-    <a href={wordpress} class="cr-form-link">{text['form.wordpress'] ?? 'Open the form'}</a>
+    <a href={safeHref(wordpress)} class="cr-form-link">{text['form.wordpress'] ?? 'Open the form'}</a>
   </div>
 )}
 {wordpress && fields.length > 0 && (
@@ -53,7 +54,7 @@ const noteId = `cr-form-note-${model.replace(/[^\w-]/g, '-')}`
       </fieldset>
       <p class="cr-form-note" id={noteId}>{(text['form.wordpress_note'] ?? 'This form is sent on {site}.').replace('{site}', host)}</p>
       <p class="cr-actions">
-        <a href={wordpress} class="cr-form-link">{text['form.wordpress'] ?? 'Open the form'}</a>
+        <a href={safeHref(wordpress)} class="cr-form-link">{text['form.wordpress'] ?? 'Open the form'}</a>
         <button type="submit" disabled aria-disabled="true" aria-describedby={noteId}>{text['form.send'] ?? 'Send'}</button>
       </p>
     </form>

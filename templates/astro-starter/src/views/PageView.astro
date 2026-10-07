@@ -10,6 +10,7 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import { getStrings, imageOf, type Page } from '../lib/content'
 import { publicHtml } from '../lib/links'
 import { breadcrumbLd, summarize } from '../lib/seo'
+import { safeHref } from '../components/kit/_shared/safe-url'
 
 interface Props {
   page: Page
@@ -48,7 +49,7 @@ const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
     {body && <Prose html={body} />}
     {!body && subpages.length > 0 && (
       <ul class="flex flex-col gap-3 text-lg">
-        {subpages.map(subpage => <li><a href={subpage.href} class="text-[color:var(--color-link,var(--color-accent))] underline-offset-4 hover:underline">{subpage.title}</a></li>)}
+        {subpages.map(subpage => <li><a href={safeHref(subpage.href)} class="text-[color:var(--color-link,var(--color-accent))] underline-offset-4 hover:underline">{subpage.title}</a></li>)}
       </ul>
     )}
     {data.form && <StudioForm model={data.form} class="mt-12" />}

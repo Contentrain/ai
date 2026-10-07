@@ -7,6 +7,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content'
+import { safeUrl } from '../components/kit/_shared/safe-url'
 import type { NavItem } from '../components/kit/_shared/types'
 import { byId, getRedirects, getSite, pageHref, postHref, resolve, termHref } from './content'
 import { optimizedImages } from './body-images'
@@ -187,7 +188,8 @@ export async function publicHtml(html: string | undefined): Promise<string | und
       if (!match) return anchor
       const stored = decode(match[1] ?? match[2] ?? '')
       const href = link(stored)
-      if (href === undefined) return inner
+      // A link to what is not public, or to a `javascript:` / `data:` address, is its text.
+      if (href === undefined || safeUrl(href) === undefined) return inner
       return href === stored ? anchor : `<a${attributes.replace(HREF, `href="${encode(href)}"`)}>${inner}</a>`
     })
   }
