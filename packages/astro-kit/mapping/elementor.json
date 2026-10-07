@@ -1,7 +1,7 @@
 {
   "format": "astro-kit-mapping@1",
   "builder": "elementor",
-  "version": "12",
+  "version": "13",
   "fallback": "prose",
   "defaults": {
     "elementor/video": {
@@ -469,6 +469,19 @@
         "playLabel": "ui:embed.play",
         "showLabel": "ui:embed.show"
       }
+    },
+    {
+      "match": "elementor/popup",
+      "component": "dialog",
+      "props": {
+        "heading": "dom:.elementor-heading-title",
+        "html": "html:.elementor-widget-text-editor",
+        "triggerLabel": "ui:dialog.open",
+        "closeLabel": "ui:dialog.close"
+      },
+      "into": "actions",
+      "each": "a.elementor-button:not([href^='#elementor-action'])",
+      "item": { "label": "dom:", "href": "dom:@href" }
     }
   ],
   "sections": [

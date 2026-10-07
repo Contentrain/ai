@@ -329,5 +329,92 @@
         "tone": "dark"
       }
     }
+  },
+  {
+    "name": "long-values-four",
+    "props": {
+      "items": [
+        {
+          "value": "99.9",
+          "label": "Uptime",
+          "suffix": "%"
+        },
+        {
+          "value": "1.250",
+          "label": "Projects shipped",
+          "suffix": "+"
+        },
+        {
+          "value": "12.5",
+          "label": "Revenue handled",
+          "prefix": "€",
+          "suffix": "M"
+        },
+        {
+          "value": "480",
+          "label": "Clients served"
+        }
+      ],
+      "columns": "4",
+      "style": "card",
+      "tone": "muted"
+    }
+  },
+  {
+    "name": "long-values-two-xl",
+    "props": {
+      "items": [
+        {
+          "value": "99.9",
+          "label": "Uptime",
+          "suffix": "%"
+        },
+        {
+          "value": "1.250",
+          "label": "Projects shipped",
+          "suffix": "+"
+        },
+        {
+          "value": "12.5",
+          "label": "Revenue handled",
+          "prefix": "€",
+          "suffix": "M"
+        },
+        {
+          "value": "480",
+          "label": "Clients served"
+        }
+      ],
+      "columns": "2",
+      "style": "card",
+      "valueSize": "xl"
+    }
+  },
+  {
+    "name": "long-values-three-display",
+    "props": {
+      "items": [
+        {
+          "value": "99.9",
+          "label": "Uptime",
+          "suffix": "%"
+        },
+        {
+          "value": "1.250",
+          "label": "Projects shipped",
+          "suffix": "+"
+        },
+        {
+          "value": "12.5",
+          "label": "Revenue handled",
+          "prefix": "€",
+          "suffix": "M"
+        }
+      ],
+      "columns": "3",
+      "style": "card",
+      "valueSize": "display",
+      "align": "center"
+    }
   }
 ]

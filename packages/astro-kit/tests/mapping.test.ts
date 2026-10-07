@@ -547,6 +547,19 @@ describe('carousel, tabs and disclosure rules', () => {
     expect(rule('elementor/reviews')).toMatchObject({ component: 'testimonial', variant: { layout: 'row' } })
   })
 
+  // A popup becomes a dialog the visitor opens: its title and text are read, the button and close names are interface strings.
+  it.each(['elementor/popup', 'classic/popup-maker'])('%s maps to a dialog opened by a button', (match) => {
+    const rule = Object.values(tables).flatMap(table => table.rules).find(r => r.match === match)!
+    expect(rule.component).toBe('dialog')
+    expect(rule.props).toMatchObject({ triggerLabel: 'ui:dialog.open', closeLabel: 'ui:dialog.close' })
+    // A CTA popup keeps its buttons: the popup's own links become the dialog's actions.
+    expect(rule.into).toBe('actions')
+    // Elementor's own popup controls (`href="#elementor-action:action=popup:close"`, popup:open, lightbox) are not actions.
+    expect(rule.each).toBe(match === 'elementor/popup' ? "a.elementor-button:not([href^='#elementor-action'])" : '.pum-content a.button')
+    expect(rule.item).toEqual({ label: 'dom:', href: 'dom:@href' })
+    expect(rule.props?.html, match).toMatch(/^html:/)
+  })
+
   // A tab's panel is a sibling of its title, not inside it: each tabs rule reads the panels from the section root,
   // the i-th panel for the i-th title (`html@root:`).
   it.each(['elementor/tabs', 'elementor/nested-tabs', 'divi/et_pb_tabs', 'classic/tabs', 'classic/aria-tabs'])('%s reads its panels from the section root', (match) => {

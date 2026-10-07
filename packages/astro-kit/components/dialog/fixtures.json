@@ -1,0 +1,84 @@
+[
+  {
+    "name": "default",
+    "props": {
+      "id": "fx-dialog-a",
+      "triggerLabel": "Open the opening hours",
+      "heading": "Opening hours",
+      "html": "<p>We are open Monday to Friday, <strong>9:00 to 17:00</strong>.</p><p>On public holidays we are closed.</p>",
+      "actions": [
+        {
+          "label": "Contact us",
+          "href": "/contact/"
+        }
+      ],
+      "closeLabel": "Close"
+    }
+  },
+  {
+    "name": "link-large",
+    "props": {
+      "id": "fx-dialog-b",
+      "triggerLabel": "Read the terms",
+      "triggerStyle": "link",
+      "size": "lg",
+      "heading": "Terms of the offer",
+      "html": "<p>The offer runs while stocks last.</p><ul><li>One per customer</li><li>Not combinable</li></ul>",
+      "align": "end"
+    }
+  },
+  {
+    "name": "small-no-heading",
+    "props": {
+      "id": "fx-dialog-c",
+      "triggerLabel": "Subscribe",
+      "triggerStyle": "ghost",
+      "size": "sm",
+      "html": "<p>Thank you for your interest.</p>",
+      "tone": "inverse"
+    }
+  },
+  {
+    "name": "secondary",
+    "props": {
+      "id": "fx-dialog-d",
+      "triggerLabel": "Subscribe to updates",
+      "triggerStyle": "secondary",
+      "heading": "Stay in the loop",
+      "html": "<p>One email a month, never more.</p>",
+      "actions": [
+        {
+          "label": "Subscribe",
+          "href": "/newsletter/",
+          "style": "secondary"
+        }
+      ],
+      "align": "center",
+      "tone": "muted"
+    }
+  },
+  {
+    "name": "open-preview",
+    "frame": "tall",
+    "props": {
+      "id": "fx-dialog-e",
+      "triggerLabel": "Open the opening hours",
+      "heading": "Opening hours",
+      "html": "<p>We are open Monday to Friday, <strong>9:00 to 17:00</strong>.</p><p>On public holidays we are closed.</p>",
+      "actions": [
+        {
+          "label": "Contact us",
+          "href": "/contact/"
+        },
+        {
+          "label": "Call",
+          "href": "tel:+10000000000",
+          "style": "ghost"
+        }
+      ],
+      "closeLabel": "Close",
+      "open": true,
+      "tone": "accent"
+    }
+  }
+]

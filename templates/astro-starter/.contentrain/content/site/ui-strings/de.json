@@ -26,6 +26,8 @@
   "comments.wordpress": "Kommentare lesen und mitdiskutieren",
   "common.failed": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
   "common.loading": "Wird geladen …",
+  "dialog.close": "Schließen",
+  "dialog.open": "Öffnen",
   "embed.play": "Abspielen",
   "embed.show": "Anzeigen",
   "footer.copyright": "Alle Rechte vorbehalten.",

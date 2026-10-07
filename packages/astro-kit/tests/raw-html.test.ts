@@ -19,6 +19,7 @@ async function astroFiles(dir: string): Promise<string[]> {
  */
 const SINKS = [
   'packages/astro-kit/components/breadcrumb/Breadcrumb.astro: jsonLd', // JSON.stringify(...).replace(/</g, '\\u003c')
+  'packages/astro-kit/components/dialog/Dialog.astro: noscript', // a <style> built from the dialog's id, a checked token; no field
   'packages/astro-kit/components/faq/Faq.astro: item.answer', // rich text
   'packages/astro-kit/components/faq/Faq.astro: structured', // JSON-LD, `<` escaped
   'packages/astro-kit/components/pricing/Pricing.astro: features[i]', // renderMarkdown(plan.features)

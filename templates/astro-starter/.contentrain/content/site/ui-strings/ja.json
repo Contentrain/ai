@@ -26,6 +26,8 @@
   "comments.wordpress": "コメントを読む・参加する",
   "common.failed": "問題が発生しました。もう一度お試しください。",
   "common.loading": "読み込み中…",
+  "dialog.close": "閉じる",
+  "dialog.open": "開く",
   "embed.play": "再生",
   "embed.show": "表示",
   "footer.copyright": "All rights reserved.",
