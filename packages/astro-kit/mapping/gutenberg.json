@@ -916,7 +916,8 @@
       "component": "testimonial",
       "props": {
         "ratingLabel": "ui:testimonial.rating",
-        "label": "ui:testimonial.label"
+        "label": "ui:testimonial.label",
+        "heading": "@heading dom:"
       },
       "when": {
         "columns": [
@@ -948,9 +949,6 @@
           "min": 1,
           "max": 1
         }
-      },
-      "props": {
-        "heading": "@heading dom:"
       },
       "into": "items",
       "each": "column",
@@ -1101,7 +1099,8 @@
       "component": "testimonial",
       "props": {
         "ratingLabel": "ui:testimonial.rating",
-        "label": "ui:testimonial.label"
+        "label": "ui:testimonial.label",
+        "heading": "@title dom:"
       },
       "slots": {
         "title": {
@@ -1115,9 +1114,6 @@
           ],
           "min": 1
         }
-      },
-      "props": {
-        "heading": "@title dom:"
       },
       "into": "items",
       "each": "@quote",

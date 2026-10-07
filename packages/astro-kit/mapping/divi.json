@@ -517,7 +517,8 @@
       "component": "testimonial",
       "props": {
         "ratingLabel": "ui:testimonial.rating",
-        "label": "ui:testimonial.label"
+        "label": "ui:testimonial.label",
+        "heading": "@intro dom:h1,h2,h3,h4"
       },
       "slots": {
         "intro": {
@@ -528,9 +529,6 @@
           "match": "divi/et_pb_testimonial",
           "min": 1
         }
-      },
-      "props": {
-        "heading": "@intro dom:h1,h2,h3,h4"
       },
       "into": "items",
       "each": "@quote",

@@ -969,7 +969,8 @@
       "component": "testimonial",
       "props": {
         "ratingLabel": "ui:testimonial.rating",
-        "label": "ui:testimonial.label"
+        "label": "ui:testimonial.label",
+        "heading": "@title attr:title || @title dom:"
       },
       "variant": {
         "quoteSize": "xl",
@@ -984,9 +985,6 @@
           "match": "elementor/testimonial",
           "min": 1
         }
-      },
-      "props": {
-        "heading": "@title attr:title || @title dom:"
       },
       "into": "items",
       "each": "@quote",

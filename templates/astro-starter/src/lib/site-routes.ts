@@ -9,7 +9,7 @@ import { getCollection } from 'astro:content'
 import { siteConfig } from '../site.config'
 import { entriesOf, entryCard, entryHref, newestFirst, refIds, termHref as customTermHref, text, type Card, type TypeEntry } from './custom'
 import { targetsOf, type Targets } from './fields'
-import { authorHref, byId, getPosts, getStrings, pageHref, postHref, termHref, type Page, type Post } from './content'
+import { authorHref, byId, getPosts, getSite, getStrings, pageHref, postHref, termHref, type Page, type Post } from './content'
 import { pagePath, permalinks } from './routes'
 import type { CustomType } from '../site.config'
 
@@ -20,8 +20,8 @@ export type Route =
   | { view: 'list', title?: string, eyebrow?: string, description?: string, posts: Post[], cards?: Card[], base: string, current: number, total: number }
 
 async function buildRoutes(): Promise<Map<string, Route>> {
-  const [posts, pages, categories, tags, authors, t] = await Promise.all([
-    getPosts(), byId('pages'), byId('categories'), byId('tags'), getCollection('authors'), getStrings(),
+  const [posts, pages, categories, tags, authors, t, site] = await Promise.all([
+    getPosts(), byId('pages'), byId('categories'), byId('tags'), getCollection('authors'), getStrings(), getSite(),
   ])
   const routes = new Map<string, Route>()
   const add = (href: string, route: Route) => {
@@ -54,6 +54,8 @@ async function buildRoutes(): Promise<Map<string, Route>> {
       trail.unshift({ title: parent.data.title, href: pageHref(parent, pages) })
     }
     const href = pageHref(page, pages)
+    // A source that prints its breadcrumb on every page starts it from the home page, top-level pages included.
+    if (siteConfig.chrome?.breadcrumbs === 'always' && href !== '/' && trail[0]?.href !== '/') trail.unshift({ title: site.title, href: '/' })
     // The page WordPress uses as the posts page (Settings → Reading) shows the posts, not its own body.
     if (siteConfig.home.kind === 'page' && href === permalinks.blog) continue
     // Its children, in WordPress page order: an empty parent page lists them instead of standing blank.
