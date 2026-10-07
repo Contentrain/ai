@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.19",
-    "@contentrain/query": "^7.6.0",
+    "@contentrain/query": "^7.6.40",
     "astro": "^7.3.5",
     "marked": "^18.0.14",
     "sharp": "^0.35.4",
