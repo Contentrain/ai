@@ -2,7 +2,7 @@
   "siteConfig": [
     {
       "from": "  sourceHosts: [],",
-      "to": "  footer: { feed: false, border: false, copyright: false },\n  sourceHosts: [],"
+      "to": "  footer: { feed: false, border: false, copyright: false },\n  chrome: { breadcrumbs: 'always' },\n  sourceHosts: [],"
     }
   ],
   "distFiles": {
@@ -15,7 +15,22 @@
       "excludes": [
         "<html lang=\"en\"",
         "href=\"/rss.xml\"",
-        "©"
+        "©",
+        "data-cr-part=\"breadcrumb\""
+      ]
+    },
+    "hakkimizda/index.html": {
+      "contains": [
+        "data-cr-part=\"breadcrumb\"",
+        "<a href=\"/\" class=",
+        ">Bağımsız Sinema</a>",
+        "<li aria-current=\"page\" class=\"text-ink\">Hakkımızda</li>",
+        "\"@type\":\"BreadcrumbList\",\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Bağımsız Sinema\",\"item\":\"https://example.com/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"Hakkımızda\",\"item\":\"https://example.com/hakkimizda/\"}]"
+      ]
+    },
+    "hakkimizda/ekip/index.html": {
+      "contains": [
+        "\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Bağımsız Sinema\",\"item\":\"https://example.com/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"Hakkımızda\",\"item\":\"https://example.com/hakkimizda/\"},{\"@type\":\"ListItem\",\"position\":3,\"name\":\"Ekip\",\"item\":\"https://example.com/hakkimizda/ekip/\"}]"
       ]
     }
   }
