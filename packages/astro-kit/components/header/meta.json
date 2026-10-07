@@ -8,7 +8,8 @@
   "variants": {
     "layout": { "options": ["split", "centered", "brand-left"], "default": "split", "description": "split: brand left, navigation right. centered: brand above centred navigation. brand-left: navigation right after the brand." },
     "tone": { "options": ["default", "inverse", "transparent"], "default": "default", "description": "Surface with a bottom border, dark (ink) background, or transparent over the hero that follows." },
-    "position": { "options": ["static", "sticky"], "default": "static", "description": "Sticky keeps the header at the top while scrolling." }
+    "position": { "options": ["static", "sticky"], "default": "static", "description": "Sticky keeps the header at the top while scrolling." },
+    "menu": { "options": ["flyout", "mega"], "default": "flyout", "description": "How submenus open on wide screens: a list under the item (flyout) or a wide panel of columns (mega). Submenus nest to any depth." }
   },
   "props": {
     "siteName": { "type": "string", "required": true, "description": "Site title (site.title)." },

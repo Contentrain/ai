@@ -77,5 +77,170 @@
         }
       ]
     }
+  },
+  {
+    "name": "ps-flyout",
+    "props": {
+      "id": "fx-nav-ps",
+      "items": [
+        {
+          "label": "Hakkımızda",
+          "href": "/hakkimizda/"
+        },
+        {
+          "label": "Ürünlerimiz",
+          "href": "#",
+          "children": [
+            {
+              "label": "Aracım İçin",
+              "href": "#",
+              "children": [
+                {
+                  "label": "Trafik Sigortası",
+                  "href": "/urunlerimiz/trafik-sigortasi/"
+                },
+                {
+                  "label": "Kasko",
+                  "href": "/urunlerimiz/kasko/"
+                }
+              ]
+            },
+            {
+              "label": "Evim İçin",
+              "href": "#",
+              "children": [
+                {
+                  "label": "Dask",
+                  "href": "/urunlerimiz/dask/"
+                },
+                {
+                  "label": "Konut Sigortası",
+                  "href": "/urunlerimiz/konut-sigortasi/"
+                }
+              ]
+            },
+            {
+              "label": "Sağlığım İçin",
+              "href": "#",
+              "children": [
+                {
+                  "label": "Sağlık Sigortası",
+                  "href": "/urunlerimiz/saglik-sigortasi/"
+                },
+                {
+                  "label": "Tamamlayıcı Sağlık",
+                  "href": "/urunlerimiz/tamamlayici-saglik/"
+                }
+              ]
+            },
+            {
+              "label": "Diğer",
+              "href": "#",
+              "children": [
+                {
+                  "label": "İş Yeri Sigortası",
+                  "href": "/urunlerimiz/is-yeri-sigortasi/"
+                },
+                {
+                  "label": "Seyahat Sigortası",
+                  "href": "/urunlerimiz/seyahat-sigortasi/"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Anlaşmalı Sigorta Şirketleri",
+          "href": "/anlasmali-sigorta-sirketleri/"
+        },
+        {
+          "label": "İletişim",
+          "href": "/iletisim/"
+        }
+      ]
+    }
+  },
+  {
+    "name": "ps-mega",
+    "props": {
+      "id": "fx-nav-ps-mega",
+      "menu": "mega",
+      "items": [
+        {
+          "label": "Hakkımızda",
+          "href": "/hakkimizda/"
+        },
+        {
+          "label": "Ürünlerimiz",
+          "href": "#",
+          "children": [
+            {
+              "label": "Aracım İçin",
+              "href": "#",
+              "children": [
+                {
+                  "label": "Trafik Sigortası",
+                  "href": "/urunlerimiz/trafik-sigortasi/"
+                },
+                {
+                  "label": "Kasko",
+                  "href": "/urunlerimiz/kasko/"
+                }
+              ]
+            },
+            {
+              "label": "Evim İçin",
+              "href": "#",
+              "children": [
+                {
+                  "label": "Dask",
+                  "href": "/urunlerimiz/dask/"
+                },
+                {
+                  "label": "Konut Sigortası",
+                  "href": "/urunlerimiz/konut-sigortasi/"
+                }
+              ]
+            },
+            {
+              "label": "Sağlığım İçin",
+              "href": "#",
+              "children": [
+                {
+                  "label": "Sağlık Sigortası",
+                  "href": "/urunlerimiz/saglik-sigortasi/"
+                },
+                {
+                  "label": "Tamamlayıcı Sağlık",
+                  "href": "/urunlerimiz/tamamlayici-saglik/"
+                }
+              ]
+            },
+            {
+              "label": "Diğer",
+              "href": "#",
+              "children": [
+                {
+                  "label": "İş Yeri Sigortası",
+                  "href": "/urunlerimiz/is-yeri-sigortasi/"
+                },
+                {
+                  "label": "Seyahat Sigortası",
+                  "href": "/urunlerimiz/seyahat-sigortasi/"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Anlaşmalı Sigorta Şirketleri",
+          "href": "/anlasmali-sigorta-sirketleri/"
+        },
+        {
+          "label": "İletişim",
+          "href": "/iletisim/"
+        }
+      ]
+    }
   }
 ]

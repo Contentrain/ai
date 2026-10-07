@@ -156,8 +156,10 @@ export interface SiteConfig {
    * `navLinks`: so does the header navigation. `footerAlign`: `center` when the source's footer is
    * one centred column; absent, brand and links to the sides. `footerColumns`: the link columns packed at the end edge, `gap` px apart, links `size` px (`narrowSize` px below 768), side by side below 768 at `narrowGap` px (absent: stacked); absent, they share the footer's width.
    * `header`: what the source's header does differently (no line under the bar, the site name's weight and letter-spacing, the space above and inside the bar); a key absent: the starter's own.
+   * `breadcrumbs: 'always'`: the source prints a breadcrumb on top-level pages too, from the home page: they show
+   * home › page with its BreadcrumbList, and a nested page's trail starts from home. Absent, only nested pages show one.
    */
-  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean, footerAlign?: 'start' | 'center', footerColumns?: { gap: number, size?: number, narrowGap?: number, narrowSize?: number }, header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string } }
+  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean, footerAlign?: 'start' | 'center', footerColumns?: { gap: number, size?: number, narrowGap?: number, narrowSize?: number }, header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string }, breadcrumbs?: 'always' }
   /**
    * The site singleton's fields that hold the contact details, by field name (a migration finds them
    * in the source's settings: an ACF options page). The footer prints what is set: `address`,

@@ -1,8 +1,11 @@
 ---
 // Site navigation. Wide screens get an inline list whose submenus open on
 // hover and keyboard focus (a chevron button marks the ones that have one); narrow screens get a toggle that opens the menu as
-// a native popover (drawer) or a <details> dropdown. No JavaScript.
+// a native popover (drawer) or a <details> dropdown. Submenus nest to any depth; `menu="mega"` draws them as a wide panel of
+// columns. Everything works without JavaScript; a small script (only when a menu has submenus) is the disclosure pattern's
+// last step: it keeps aria-expanded true to what is open and lets Escape close a panel and return to its button.
 import { tv } from 'tailwind-variants'
+import NavTree from './NavTree.astro'
 import type { NavItem } from '../_shared/types'
 
 const nav = tv({
@@ -10,12 +13,14 @@ const nav = tv({
     list: 'hidden items-center md:flex',
     link: 'no-underline aria-[current=page]:font-semibold',
     // hidden, not invisible: a closed submenu takes no space, so one under the last item cannot widen the page.
-    sub: 'absolute top-full z-30 hidden min-w-48 rounded-lg border border-line bg-surface p-2 text-ink shadow-lg group-hover:block group-focus-within:block',
+    sub: 'absolute top-full z-30 hidden min-w-48 rounded-lg border border-line bg-surface p-2 text-ink shadow-lg group-hover:block group-focus-within:block group-data-[closed]:hidden!',
     toggle: 'inline-flex cursor-pointer list-none items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-current/10 md:hidden [&::-webkit-details-marker]:hidden',
   },
   variants: {
     // Submenus open towards the page: leftwards under an end-aligned menu.
     align: { start: { list: 'justify-start', sub: 'start-0' }, end: { list: 'justify-end', sub: 'end-0' }, center: { list: 'justify-center', sub: 'start-0' } },
+    // flyout: a list under the item. mega: a wide panel, one column per child with the grandchildren listed under it.
+    menu: { flyout: {}, mega: { sub: 'w-max max-w-[min(64rem,90vw)] p-5' } },
     density: { compact: { list: 'gap-5 text-sm' }, comfortable: { list: 'gap-8 text-base' } },
     // current: the surrounding text, dimmed until hovered. link: the site's link colour at full strength, as themes that
     // colour every link draw their menu; the toggle keeps the surrounding text.
@@ -24,7 +29,7 @@ const nav = tv({
       link: { link: 'text-[color:var(--color-link,var(--color-accent))]' },
     },
   },
-  defaultVariants: { align: 'end', density: 'compact', color: 'current' },
+  defaultVariants: { menu: 'flyout', align: 'end', density: 'compact', color: 'current' },
 })
 
 interface Props {
@@ -36,6 +41,7 @@ interface Props {
   /** Text on the drawer's close button ("Close"). */
   closeLabel?: string | undefined
   mobile?: 'popover' | 'details' | undefined
+  menu?: 'flyout' | 'mega' | undefined
   align?: 'start' | 'end' | 'center' | undefined
   density?: 'compact' | 'comfortable' | undefined
   color?: 'current' | 'link' | undefined
@@ -45,28 +51,40 @@ interface Props {
   part?: string | undefined
 }
 
-const { items, label = 'Main', menuLabel = 'Menu', closeLabel = 'Close', mobile = 'popover', align, density, color, id = 'site-nav', part } = Astro.props
-const { list, link, sub, toggle } = nav({ align, density, color })
+const { items, label = 'Main', menuLabel = 'Menu', closeLabel = 'Close', mobile = 'popover', menu, align, density, color, id = 'site-nav', part } = Astro.props
+const { list, link, sub, toggle } = nav({ menu, align, density, color })
 const current = Astro.url.pathname
 const drawer = `${id}-drawer`
+const hasSub = items.some(item => (item.children?.length ?? 0) > 0)
+// An empty href or "#" is a group label (a WordPress custom link), not a link.
+const real = (href: string | undefined) => !!href && href !== '#'
 ---
 {items.length > 0 && (
   <nav aria-label={label} data-cr-part={part} class="relative">
     <ul class={list()}>
-      {items.map(item => (
+      {items.map((item, index) => (
         <li class="group relative">
-          <a href={item.href} aria-current={item.href === current ? 'page' : undefined} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener' : undefined} class={link()}>{item.label}</a>
+          {real(item.href)
+            ? <a href={item.href} aria-current={item.href === current ? 'page' : undefined} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener' : undefined} class={link()}>{item.label}</a>
+            : !(item.children && item.children.length > 0) && <span class={link()}>{item.label}</span>}
           {item.children && item.children.length > 0 && (
             <>
-              {/* The chevron is the submenu's handle: focusing it (a tap on a touch screen, Tab on a keyboard) opens the submenu, with no script. */}
-              <button type="button" aria-haspopup="true" aria-label={item.label} class="ms-1 inline-flex cursor-pointer items-center align-middle opacity-80 hover:opacity-100">
-                <svg aria-hidden="true" viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6" /></svg>
-              </button>
-            <ul class={sub()}>
-              {item.children.map(child => (
-                <li><a href={child.href} aria-current={child.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-sm text-ink no-underline hover:bg-surface-muted">{child.label}</a></li>
-              ))}
-            </ul>
+              {/* The button is the submenu's handle: focusing it (a tap on a touch screen, Tab on a keyboard) opens the submenu, with no script. With no real link of its own the item is the button, label and all. */}
+              {real(item.href)
+                ? (
+                  <button type="button" data-kit-sub aria-controls={`${id}-sub-${index}`} aria-label={item.label} class="ms-1 inline-flex cursor-pointer items-center align-middle opacity-80 hover:opacity-100">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6" /></svg>
+                  </button>
+                )
+                : (
+                  <button type="button" data-kit-sub aria-controls={`${id}-sub-${index}`} class={`${link()} inline-flex cursor-pointer items-center gap-1`}>
+                    {item.label}
+                    <svg aria-hidden="true" viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6" /></svg>
+                  </button>
+                )}
+              <div id={`${id}-sub-${index}`} class={sub()}>
+                <NavTree items={item.children} current={current} kind={menu === 'mega' ? 'mega' : 'flyout'} />
+              </div>
             </>
           )}
         </li>
@@ -88,12 +106,10 @@ const drawer = `${id}-drawer`
             <ul class="flex flex-col gap-1">
               {items.map(item => (
                 <li>
-                  <a href={item.href} aria-current={item.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-ink no-underline hover:bg-surface-muted aria-[current=page]:font-semibold">{item.label}</a>
-                  {item.children && item.children.length > 0 && (
-                    <ul class="ms-3 border-s border-line ps-3">
-                      {item.children.map(child => <li><a href={child.href} class="block rounded-md px-3 py-1.5 text-sm text-ink-muted no-underline hover:text-ink">{child.label}</a></li>)}
-                    </ul>
-                  )}
+                  {real(item.href)
+                    ? <a href={item.href} aria-current={item.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-ink no-underline hover:bg-surface-muted aria-[current=page]:font-semibold">{item.label}</a>
+                    : <span class="block px-3 py-2 font-semibold text-ink">{item.label}</span>}
+                  {item.children && item.children.length > 0 && <NavTree items={item.children} current={current} kind="drawer" />}
                 </li>
               ))}
             </ul>
@@ -107,11 +123,47 @@ const drawer = `${id}-drawer`
             {menuLabel}
           </summary>
           <ul class="absolute end-0 z-30 mt-2 flex w-64 flex-col gap-1 rounded-lg border border-line bg-surface p-3 text-ink shadow-lg">
-            {items.flatMap(item => [item, ...(item.children ?? [])]).map(item => (
-              <li><a href={item.href} aria-current={item.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-sm text-ink no-underline hover:bg-surface-muted">{item.label}</a></li>
+            {items.map(item => (
+              <li>
+                {real(item.href)
+                  ? <a href={item.href} aria-current={item.href === current ? 'page' : undefined} class="block rounded-md px-3 py-2 text-sm text-ink no-underline hover:bg-surface-muted">{item.label}</a>
+                  : <span class="block px-3 py-2 text-sm font-semibold text-ink">{item.label}</span>}
+                {item.children && item.children.length > 0 && <NavTree items={item.children} current={current} kind="drawer" />}
+              </li>
             ))}
           </ul>
         </details>
       )}
   </nav>
+)}
+{hasSub && (
+  <script>
+    // Disclosure navigation, last step: aria-expanded follows what is open (hover, focus or a click), Escape closes the
+    // open panel and returns to its button. Without this script the panels still open on hover and focus.
+    for (const nav of document.querySelectorAll<HTMLElement>('nav')) {
+      for (const button of nav.querySelectorAll<HTMLButtonElement>('button[data-kit-sub]')) {
+        const item = button.closest<HTMLElement>('li')
+        const panel = item?.querySelector<HTMLElement>(`#${CSS.escape(button.getAttribute('aria-controls') ?? '')}`)
+        if (!item || !panel) continue
+        const sync = () => button.setAttribute('aria-expanded', String(!item.hasAttribute('data-closed') && getComputedStyle(panel).display !== 'none'))
+        sync()
+        item.addEventListener('mouseenter', () => { item.removeAttribute('data-closed'); queueMicrotask(sync) })
+        item.addEventListener('mouseleave', () => queueMicrotask(sync))
+        item.addEventListener('focusin', () => { item.removeAttribute('data-closed'); queueMicrotask(sync) })
+        item.addEventListener('focusout', () => queueMicrotask(sync))
+        item.addEventListener('keydown', (event) => {
+          if (event.key !== 'Escape' || item.hasAttribute('data-closed') || getComputedStyle(panel).display === 'none') return
+          event.preventDefault()
+          item.setAttribute('data-closed', '')
+          if (panel.contains(document.activeElement)) button.focus()
+          sync()
+        })
+        button.addEventListener('click', () => {
+          if (item.hasAttribute('data-closed')) item.removeAttribute('data-closed')
+          else if (getComputedStyle(panel).display !== 'none') item.setAttribute('data-closed', '')
+          sync()
+        })
+      }
+    }
+  </script>
 )}

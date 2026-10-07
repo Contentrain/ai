@@ -1,0 +1,17 @@
+{
+  "a1c0e2b3d4f5": {
+    "body": "<p>Mahallenin sinema salonu, 1962’den beri.</p>",
+    "menu_order": 1,
+    "slug": "hakkimizda",
+    "title": "Hakkımızda",
+    "wp_id": 10
+  },
+  "b2d1f3c4e5a6": {
+    "body": "<p>Salonu ayakta tutan dört kişi.</p>",
+    "menu_order": 1,
+    "parent": "a1c0e2b3d4f5",
+    "slug": "ekip",
+    "title": "Ekip",
+    "wp_id": 11
+  }
+}

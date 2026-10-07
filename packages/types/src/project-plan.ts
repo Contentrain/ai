@@ -178,6 +178,9 @@ export interface PlanSite {
    * `parts: true`: the header and footer are a block theme's template parts (Twenty Twenty-Five), sized by the theme's
    * presets (the footer's site title at the h2 size) the way a classic theme's are read off its render. Absent, a plan
    * with `chrome` is read as a classic theme's and one without as a block theme's (plans before 1.50).
+   * `breadcrumbs: 'always'`: the source prints a breadcrumb on top-level pages too, starting from the home page
+   * (Yoast, Rank Math, a theme's own); the site shows home › page there, with its BreadcrumbList, and puts home in
+   * front of a nested page's trail. Absent, only nested pages show one, from their topmost parent.
    */
   chrome?: {
     parts?: true
@@ -193,6 +196,7 @@ export interface PlanSite {
     listColumns?: ChromeColumnStep[]
     footerColumns?: { gap: number, size?: number, narrowGap?: number, narrowSize?: number }
     header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string }
+    breadcrumbs?: 'always'
   }
   studio?: { baseUrl: string, projectId: string }
   /** `redirects.json`: old path → new path, or with a status other than 301. */
@@ -591,6 +595,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   if (chrome?.titleLinks !== undefined && typeof chrome.titleLinks !== 'boolean') errors.push('site.chrome.titleLinks is not a boolean')
   if (chrome?.navLinks !== undefined && typeof chrome.navLinks !== 'boolean') errors.push('site.chrome.navLinks is not a boolean')
   if (chrome?.parts !== undefined && chrome.parts !== true) errors.push('site.chrome.parts is not true')
+  if (chrome?.breadcrumbs !== undefined && chrome.breadcrumbs !== 'always') errors.push(`site.chrome.breadcrumbs ${String(chrome.breadcrumbs)} is not always`)
   const header = chrome?.header
   if (header !== undefined) {
     if (header === null || typeof header !== 'object' || Array.isArray(header)) errors.push('site.chrome.header is not an object')

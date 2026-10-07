@@ -386,6 +386,16 @@ describe('validateProjectPlan', () => {
     }
   })
 
+  it('checks that breadcrumbs on every page are only always', () => {
+    const p = plan()
+    p.site.chrome = { breadcrumbs: 'always' }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    for (const breadcrumbs of ['nested', true, 1]) {
+      p.site.chrome = { breadcrumbs: breadcrumbs as 'always' }
+      expect(validateProjectPlan(p).errors, JSON.stringify(breadcrumbs)).toEqual([`site.chrome.breadcrumbs ${String(breadcrumbs)} is not always`])
+    }
+  })
+
   it('checks the footer columns packed at the end edge', () => {
     const p = plan()
     p.site.chrome = { footerColumns: { gap: 128, size: 17.88, narrowGap: 63, narrowSize: 16.4 } }

@@ -1,0 +1,39 @@
+---
+// The submenu levels of Nav, rendered recursively so a menu of any depth keeps every level. An entry with no real link
+// (an empty href or "#": a WordPress "custom link" used as a group heading) is a label, not `<a href="#">`.
+import NavTree from './NavTree.astro'
+import type { NavItem } from '../_shared/types'
+
+interface Props {
+  items: NavItem[]
+  /** The current page's path, for aria-current. */
+  current?: string | undefined
+  /** flyout: a list under the item. drawer: the narrow-screen menu. mega: the columns of a wide panel. */
+  kind: 'flyout' | 'drawer' | 'mega'
+  /** 2 for the first level under a top item, 3 for the next. */
+  level?: number | undefined
+}
+
+const { items, current, kind, level = 2 } = Astro.props
+const real = (href: string | undefined) => !!href && href !== '#'
+// Column headings in a mega panel; deeper rows (and every drawer row below the top) are quieter.
+const heading = kind === 'mega' && level === 2
+const row = heading
+  ? 'block px-3 py-2 text-sm font-semibold text-ink'
+  : level === 2 && kind === 'flyout'
+    ? 'block px-3 py-2 text-sm text-ink'
+    : 'block px-3 py-1.5 text-sm text-ink-muted'
+const hover = 'rounded-md no-underline hover:bg-surface-muted hover:text-ink'
+// Nested lists are indented, except the first list of a flyout or mega panel, which fills the panel.
+const nested = kind === 'drawer' || level > 2 ? 'ms-3 border-s border-line ps-3' : ''
+---
+<ul class={heading ? 'grid grid-flow-col auto-cols-fr gap-x-8 gap-y-4' : nested}>
+  {items.map(item => (
+    <li>
+      {real(item.href)
+        ? <a href={item.href} aria-current={item.href === current ? 'page' : undefined} target={item.newTab ? '_blank' : undefined} rel={item.newTab ? 'noopener' : undefined} class={`${row} ${hover}`}>{item.label}</a>
+        : <span class={`${row} font-semibold`}>{item.label}</span>}
+      {item.children && item.children.length > 0 && <NavTree items={item.children} current={current} kind={kind === 'mega' ? 'flyout' : kind} level={level + 1} />}
+    </li>
+  ))}
+</ul>

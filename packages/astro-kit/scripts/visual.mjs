@@ -118,6 +118,9 @@ const origin = `http://localhost:${server.address().port}`
 
 const fixturesOf = new Map(components.map(c => [c.id, new Map(JSON.parse(readFileSync(join(kitRoot, 'components', c.id, 'fixtures.json'), 'utf8')).map(f => [f.name, f.props]))]))
 const outline = []
+const menus = []
+/** Every real href of a menu tree (a Nav or Header `items` prop), at any depth. */
+const menuHrefs = items => (items ?? []).flatMap(item => (item.href && item.href !== '#' ? [item.href] : []).concat(menuHrefs(item.children)))
 const browser = await chromium.launch(process.platform === 'darwin' ? { channel: 'chrome' } : {})
 const failures = []
 const written = []
@@ -140,6 +143,14 @@ try {
           const opens = Number(props.level ?? props.headingLevel ?? 2)
           const skip = levels.findIndex((level, i) => level > (i === 0 ? opens : levels[i - 1] + 1))
           if (skip >= 0) outline.push(`${c.id}/${name}: h${levels.join(' h')} (${skip === 0 ? `opens below h${opens}` : `h${levels[skip - 1]} → h${levels[skip]}`})`)
+        }
+        if (width === WIDTHS[0] && (c.id === 'nav' || c.id === 'header')) {
+          // A menu keeps every level: each real href is a link in the wide menu and again in the narrow one, and a
+          // group with no link is not drawn as <a href="#">.
+          const props = fixturesOf.get(c.id).get(name) ?? {}
+          const counts = await element.evaluate(el => [...el.querySelectorAll('a[href]')].map(a => a.getAttribute('href')))
+          for (const href of menuHrefs(props.items)) if (counts.filter(h => h === href).length < 2) menus.push(`${c.id}/${name}: ${href} is drawn ${counts.filter(h => h === href).length} time(s), expected the wide and the narrow menu`)
+          if (counts.includes('#')) menus.push(`${c.id}/${name}: a group with no link is drawn as <a href="#">`)
         }
         const shot = PNG.sync.read(await element.screenshot({ animations: 'disabled' }))
         const file = join(baselineDir, c.id, `${name}-${width}.png`)
@@ -166,17 +177,40 @@ try {
     }
     await page.close()
   }
+  // The menus work with no script: with JavaScript off, focusing a parent's button (Tab) or hovering its item opens the
+  // panel and the deepest links in it are visible. The script only adds aria-expanded, Escape and outside clicks.
+  if (components.some(c => c.id === 'nav')) {
+    const bare = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1280, height: 900 } })
+    const page = await bare.newPage()
+    await page.goto(`${origin}/kit/nav/`, { waitUntil: 'load' })
+    for (const [name, props] of fixturesOf.get('nav')) {
+      const deepest = (items => { let found; const walk = (list, depth) => { for (const item of list ?? []) { if (depth >= 3 && item.href && item.href !== '#') found ??= item.href; walk(item.children, depth + 1) } }; walk(items, 1); return found })(props.items)
+      if (!deepest) continue
+      const root = page.locator(`[data-fixture="${name}"]`)
+      const item = root.locator('li.group').filter({ has: page.locator(`a[href="${deepest}"]`) }).first()
+      const link = item.locator(`a[href="${deepest}"]`).first()
+      await item.hover()
+      if (!await link.isVisible()) menus.push(`nav/${name}: with JavaScript off, hovering the item does not show ${deepest}`)
+      await page.mouse.move(0, 0)
+      await item.locator('button[data-kit-sub]').first().focus()
+      if (!await link.isVisible()) menus.push(`nav/${name}: with JavaScript off, focusing the item's button does not show ${deepest}`)
+      // Drop focus so this fixture's open panel does not cover the next one.
+      await page.mouse.click(1, 1)
+    }
+    await bare.close()
+  }
 } finally {
   await browser.close()
   server.close()
 }
 
 if (outline.length) console.error(`visual: ${outline.length} fixture(s) skip a heading level:\n${outline.map(line => `  ✗ ${line}`).join('\n')}`)
+if (menus.length) console.error(`visual: ${menus.length} menu level(s) lost:\n${menus.map(line => `  ✗ ${line}`).join('\n')}`)
 if (written.length) console.log(`visual: wrote ${written.length} baseline(s) under ${baselineDir}`)
 if (failures.length) {
   console.error(`visual: ${failures.length} fixture(s) changed:\n${failures.map(line => `  ✗ ${line}`).join('\n')}`)
   process.exit(1)
 }
-if (outline.length) process.exit(1)
+if (outline.length || menus.length) process.exit(1)
 console.log(`visual: ${components.length} component(s) × ${WIDTHS.length} widths match`)
 if (!values.out) rmSync(site, { recursive: true, force: true })
