@@ -299,6 +299,25 @@
       }
     },
     {
+      "match": "elementor/udesign_widget_posts_grid",
+      "component": "slider",
+      "props": {
+        "label": "ui:slider.label",
+        "prevLabel": "ui:slider.prev",
+        "nextLabel": "ui:slider.next",
+        "slideLabel": "ui:slider.slide",
+        "ofLabel": "ui:slider.of"
+      },
+      "into": "slides",
+      "each": ".slider-wrapper[data-slider-options] > *",
+      "item": {
+        "image": "img:img@src",
+        "imageAlt": "img:img@alt",
+        "title": "dom:h1, h2, h3, h4",
+        "text": "dom:p, figcaption"
+      }
+    },
+    {
       "match": "elementor/loop-carousel",
       "component": "slider",
       "bind": "collection:posts",

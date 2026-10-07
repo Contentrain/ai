@@ -2,4 +2,4 @@
 "@contentrain/astro-kit": patch
 ---
 
-Mapping: `classic/alpus-slider` maps the Alpus / UDesign slider (`.slider-wrapper[data-slider-options]`, as the facts name it `alpus/slider`) to the slider component, one slide per direct child (`:scope > *`), the same pattern as the Swiper, Slick and Splide rules.
+Mapping: the Alpus / UDesign slider on an Elementor site (`elementor/udesign_widget_posts_grid`, a `.slider-wrapper` inside the widget) maps to the slider component, one slide per child of the wrapper, the same pattern as the other carousel rules.

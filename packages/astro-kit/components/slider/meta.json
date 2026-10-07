@@ -30,9 +30,9 @@
   "dependencies": { "embla-carousel": "^8.6.0" },
   "sources": {
     "gutenberg": ["core/gallery:carousel"],
-    "elementor": ["elementor/image-carousel", "elementor/slides", "elementor/media-carousel", "elementor/nested-carousel", "elementor/loop-carousel"],
+    "elementor": ["elementor/image-carousel", "elementor/slides", "elementor/media-carousel", "elementor/nested-carousel", "elementor/udesign_widget_posts_grid", "elementor/loop-carousel"],
     "divi": ["divi/et_pb_slider", "divi/et_pb_fullwidth_slider", "divi/et_pb_post_slider"],
-    "classic": ["classic/revslider", "classic/metaslider", "classic/smart-slider", "classic/swiper", "classic/slick", "classic/splide", "classic/alpus-slider", "classic/owl"]
+    "classic": ["classic/revslider", "classic/metaslider", "classic/smart-slider", "classic/swiper", "classic/slick", "classic/splide", "classic/owl"]
   },
   "a11y": "WAI-ARIA carousel pattern: a labelled region with aria-roledescription=carousel, slides as labelled groups ('Slide 2 of 5'), labelled previous/next buttons disabled at the ends, and dot buttons marking the current slide. The track and the buttons are tied by aria-controls, the row takes focus (arrow keys page it, polite live announcement). There is no autoplay, so nothing moves unasked; with prefers-reduced-motion slides change without animation. Without JavaScript every slide is reachable by scrolling."
 }

@@ -540,17 +540,19 @@ describe('carousel, tabs and disclosure rules', () => {
     expect(Object.keys(rule.item ?? {}).length, match).toBeGreaterThan(1)
   })
 
-  // Alpus / UDesign (`.slider-wrapper[data-slider-options]`, sky's 20 testimonials and 6-item portfolio) prints each slide as a
-  // direct child and clones nothing, so the facts count `:scope > *` and the rule reads exactly that set: every slide, none dropped,
-  // none doubled. The facts name the carousel `alpus/slider`; the kit entry that places it is `classic/alpus-slider`.
-  it('classic/alpus-slider reads every direct child as a slide, the way the facts count them', () => {
-    const rule = Object.values(tables).flatMap(table => table.rules).find(r => r.match === 'classic/alpus-slider')!
-    expect(rule).toMatchObject({ component: 'slider', into: 'slides', each: ':scope > *' })
+  // Alpus / UDesign (sky: `elementor/udesign_widget_posts_grid`, a `.slider-wrapper[data-slider-options]` inside the widget) prints each
+  // slide as a direct child of that wrapper and clones nothing, so the rule reads exactly the wrapper's children (the facts count the
+  // same set as `:scope > *` on the wrapper): every slide, none dropped, none doubled. The section is found by its element name
+  // (facts markerOf), not by the facts' `via` (`alpus/slider`). Running it over real markup is migrate's test (needs the applier).
+  it('elementor/udesign_widget_posts_grid reads every child of the slider wrapper as a slide', () => {
+    const rule = tables.elementor!.rules.find(r => r.match === 'elementor/udesign_widget_posts_grid')!
+    expect(rule).toMatchObject({ component: 'slider', into: 'slides', each: '.slider-wrapper[data-slider-options] > *' })
     expect(rule.each).not.toContain(':not(')
-    expect(rule.item).toEqual({ image: 'img:img@src', imageAlt: 'img:img@alt', title: 'dom:h1, h2, h3, h4', text: 'dom:p, blockquote, figcaption' })
+    expect(rule.item).toEqual({ image: 'img:img@src', imageAlt: 'img:img@alt', title: 'dom:h1, h2, h3, h4', text: 'dom:p, figcaption' })
     expect(rule.props).toMatchObject({ label: 'ui:slider.label', prevLabel: 'ui:slider.prev', nextLabel: 'ui:slider.next', slideLabel: 'ui:slider.slide', ofLabel: 'ui:slider.of' })
-    // The same name sits in the slider's own source list, so the catalog and the table agree (nothing unmapped, nothing orphaned).
-    expect(catalog.components.find(c => c.id === 'slider')?.sources.classic).toContain('classic/alpus-slider')
+    // The same name sits in the slider's own source list, so the catalog and the table agree.
+    expect(catalog.components.find(c => c.id === 'slider')?.sources.elementor).toContain('elementor/udesign_widget_posts_grid')
+    expect(Object.values(tables).flatMap(table => table.rules).some(r => r.match === 'classic/alpus-slider')).toBe(false)
   })
 
   it('maps a plain disclosure run, a post carousel and the review widgets', () => {
