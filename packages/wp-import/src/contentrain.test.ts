@@ -59,6 +59,41 @@ describe('password-protected posts never come in published, on any path', () => 
   })
 })
 
+const landing = (id: number, slug: string) => `<item>
+<title>Summer sale</title>
+<link>https://fixture.example/${slug}/</link>
+<wp:post_id>${id}</wp:post_id>
+<wp:post_date_gmt>2026-06-01 10:00:00</wp:post_date_gmt>
+<wp:post_name>${slug}</wp:post_name>
+<wp:status>publish</wp:status>
+<wp:post_type>e-landing-page</wp:post_type>
+<content:encoded><![CDATA[<p>Everything must go</p>]]></content:encoded>
+<wp:postmeta><wp:meta_key>subtitle</wp:meta_key><wp:meta_value><![CDATA[Up to 50% off]]></wp:meta_value></wp:postmeta>
+</item>`
+const pageEntries = (files: Record<string, string>) => JSON.parse(files['.contentrain/content/site/pages/data.json']!)
+
+describe('Elementor landing pages are pages', () => {
+  it('goes to the pages model with its slug, permalink and meta, and is not reported skipped', async () => {
+    const { raw } = await parseWxr(FIXTURE.replace('</channel>', `${landing(40, 'summer-sale')}</channel>`))
+    expect(raw.posts.find((p) => p.id === 40)).toMatchObject({ type: 'page', slug: 'summer-sale', link: 'https://fixture.example/summer-sale/' })
+    const { files, report } = rawToContentrain(raw, { updatedBy: 'test' })
+    expect(report.skipped_types).not.toContain('e-landing-page')
+    expect(files['.contentrain/models/e-landing-page.json']).toBeUndefined()
+    const entry = pageEntries(files)[hexId('pages:summer-sale')]
+    expect(entry).toMatchObject({ slug: 'summer-sale', title: 'Summer sale', link: 'https://fixture.example/summer-sale/', subtitle: 'Up to 50% off' })
+    expect(JSON.parse(files['.contentrain/meta/pages/en.json']!)[hexId('pages:summer-sale')]).toMatchObject({ status: 'published' })
+    // The page that was already there is untouched.
+    expect(pageEntries(files)[hexId('pages:about')]).toBeDefined()
+  })
+
+  it('shares the pages address space: a landing page and a page with one slug keep both, the later one moved', async () => {
+    const { raw } = await parseWxr(FIXTURE.replace('</channel>', `${landing(41, 'about')}</channel>`))
+    const { files, report } = rawToContentrain(raw, { updatedBy: 'test' })
+    expect(Object.values(pageEntries(files)).filter((e: any) => String(e.slug).startsWith('about'))).toHaveLength(2)
+    expect(report.slug_moves.map((m) => [m.wp_id, m.type])).toContainEqual([41, 'page'])
+  })
+})
+
 describe('rawToContentrain', () => {
   it('produces a PATH_PATTERNS-conformant canonical file map', async () => {
     const { result } = await load()

@@ -194,6 +194,24 @@ describe('fetchRestRawIR', () => {
     expect(raw.posts.some((p) => p.type === 'ps_member')).toBe(true)
   })
 
+  it('Elementor landing pages are pages: fetched from their REST base, typed page, permalink kept', async () => {
+    const calls: string[] = []
+    const typed = (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+      const u = String(url)
+      if (u.includes('/types')) return json({
+        post: { slug: 'post', rest_base: 'posts' },
+        page: { slug: 'page', rest_base: 'pages' },
+        'e-landing-page': { slug: 'e-landing-page', rest_base: 'e-landing-page' },
+      })
+      if (u.includes('/e-landing-page?')) return json([post(901, 'summer-sale', { link: 'https://s.example/summer-sale/' })])
+      return stubFetch(calls)(url, init)
+    }) as typeof fetch
+    const { raw } = await fetchRestRawIR({ origin: 'https://s.example', fetchImpl: typed })
+    const landing = raw.posts.find((p) => p.id === 901)!
+    expect(landing).toMatchObject({ type: 'page', slug: 'summer-sale', link: 'https://s.example/summer-sale/' })
+    expect(raw.posts.some((p) => p.type === 'e-landing-page')).toBe(false)
+  })
+
   it('reads Polylang and WPML language fields into RawPost.lang and one language_pair per group', async () => {
     const multilingual = (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
       const u = String(url)

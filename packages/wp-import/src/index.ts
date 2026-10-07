@@ -23,6 +23,6 @@ export { addressSlug, canon, hexId, slugify, strip, taxModelId } from './core.js
 // The exclusion rules are documented behaviour — an agent has to be able to
 // answer "why is my custom post type missing?" — so they are part of the
 // public surface and a docs-parity test can hold them to it.
-export { PLUGIN_META, SKIP_TYPES } from './core.js'
+export { LANDING_PAGE_TYPE, PLUGIN_META, SKIP_TYPES, pageTypeOf } from './core.js'
 export { DEFAULT_IMPORTERS, DEFAULT_TAXONOMIES, formatSourceDeltaReport, planSourceDelta } from './delta.js'
 export type { DeltaStore, PlanSourceDeltaInput } from './delta.js'
