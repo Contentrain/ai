@@ -60,3 +60,15 @@ describe('planReconcile — documents', () => {
     expect(conflict!.key).toBe('getting-started')
   })
 })
+
+describe('planReconcile — documents with frontmatter the reader cannot parse', () => {
+  const NESTED = '---\ntitle: Getting Started\nseo:\n  title: T\norder: 1\n---\n\nOriginal body.\n'
+  it('goes to the conflict path instead of silently dropping the unreadable lines', async () => {
+    const BASE = docProject({ [DOC_EN]: NESTED })
+    const ours = docProject({ [DOC_EN]: NESTED.replace('order: 1', 'order: 2') })
+    const theirs = docProject({ [DOC_EN]: NESTED.replace('Original body.', 'Rewritten body.') })
+    const plan = await reconcile({ base: BASE, ours, theirs })
+    expect(plan.conflicts).toHaveLength(1)
+    expect(plan.conflicts[0]!.kind).toBe('document')
+  })
+})

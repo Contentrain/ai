@@ -921,7 +921,18 @@ async function validateDocumentModel(
       }
 
       entriesChecked++
-      const { frontmatter, body } = parseFrontmatter(raw)
+      const { frontmatter, body, preserved } = parseFrontmatter(raw)
+      for (const block of preserved?.blocks ?? []) {
+        if (block.key === undefined) continue
+        issues.push({
+          severity: 'warning',
+          model: model.id,
+          locale,
+          slug,
+          field: block.key,
+          message: `Frontmatter key "${block.key}" is in a shape Contentrain does not read (a nested map, a block value, or a name with a space or a non-ASCII letter). It is kept exactly as written when the document is saved, but it is not validated.`,
+        })
+      }
 
       // Always scan undeclared frontmatter fields + body for secrets.
       scanUndeclaredFieldsForSecrets(
@@ -962,7 +973,7 @@ async function validateDocumentModel(
         })
         if (fix && projectRoot) {
           const cleaned = Object.fromEntries(Object.entries(frontmatter).filter(([k]) => !leaked.includes(k)))
-          await writeText(join(projectRoot, filePath), serializeFrontmatter(cleaned, body))
+          await writeText(join(projectRoot, filePath), serializeFrontmatter(cleaned, body, preserved))
           fixed++
         }
       }
