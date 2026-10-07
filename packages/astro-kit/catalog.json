@@ -5722,6 +5722,7 @@
           "elementor/slides",
           "elementor/media-carousel",
           "elementor/nested-carousel",
+          "elementor/udesign_widget_posts_grid",
           "elementor/loop-carousel"
         ],
         "divi": [

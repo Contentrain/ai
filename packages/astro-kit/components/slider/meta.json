@@ -30,7 +30,7 @@
   "dependencies": { "embla-carousel": "^8.6.0" },
   "sources": {
     "gutenberg": ["core/gallery:carousel"],
-    "elementor": ["elementor/image-carousel", "elementor/slides", "elementor/media-carousel", "elementor/nested-carousel", "elementor/loop-carousel"],
+    "elementor": ["elementor/image-carousel", "elementor/slides", "elementor/media-carousel", "elementor/nested-carousel", "elementor/udesign_widget_posts_grid", "elementor/loop-carousel"],
     "divi": ["divi/et_pb_slider", "divi/et_pb_fullwidth_slider", "divi/et_pb_post_slider"],
     "classic": ["classic/revslider", "classic/metaslider", "classic/smart-slider", "classic/swiper", "classic/slick", "classic/splide", "classic/owl"]
   },
