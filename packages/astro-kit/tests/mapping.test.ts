@@ -540,6 +540,19 @@ describe('carousel, tabs and disclosure rules', () => {
     expect(Object.keys(rule.item ?? {}).length, match).toBeGreaterThan(1)
   })
 
+  // Alpus / UDesign (`.slider-wrapper[data-slider-options]`, sky's 20 testimonials and 6-item portfolio) prints each slide as a
+  // direct child and clones nothing, so the facts count `:scope > *` and the rule reads exactly that set: every slide, none dropped,
+  // none doubled. The facts name the carousel `alpus/slider`; the kit entry that places it is `classic/alpus-slider`.
+  it('classic/alpus-slider reads every direct child as a slide, the way the facts count them', () => {
+    const rule = Object.values(tables).flatMap(table => table.rules).find(r => r.match === 'classic/alpus-slider')!
+    expect(rule).toMatchObject({ component: 'slider', into: 'slides', each: ':scope > *' })
+    expect(rule.each).not.toContain(':not(')
+    expect(rule.item).toEqual({ image: 'img:img@src', imageAlt: 'img:img@alt', title: 'dom:h1, h2, h3, h4', text: 'dom:p, blockquote, figcaption' })
+    expect(rule.props).toMatchObject({ label: 'ui:slider.label', prevLabel: 'ui:slider.prev', nextLabel: 'ui:slider.next', slideLabel: 'ui:slider.slide', ofLabel: 'ui:slider.of' })
+    // The same name sits in the slider's own source list, so the catalog and the table agree (nothing unmapped, nothing orphaned).
+    expect(catalog.components.find(c => c.id === 'slider')?.sources.classic).toContain('classic/alpus-slider')
+  })
+
   it('maps a plain disclosure run, a post carousel and the review widgets', () => {
     const rule = (match: string) => Object.values(tables).flatMap(table => table.rules).find(r => r.match === match)
     expect(rule('classic/details')).toMatchObject({ component: 'faq', each: 'details' })
