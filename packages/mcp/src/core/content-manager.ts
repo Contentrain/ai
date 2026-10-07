@@ -1,5 +1,5 @@
 import type { ModelDefinition, ContentrainConfig, EntryMeta, LocaleStrategy, DocumentEntry, Vocabulary } from '@contentrain/types'
-import { validateSlug, validateEntryId, validateLocale, generateEntryId, parseMarkdownFrontmatter, serializeMarkdownFrontmatter } from '@contentrain/types'
+import { validateSlug, validateEntryId, validateLocale, generateEntryId, parseMarkdownFrontmatter, preservedKeyConflicts, serializeMarkdownFrontmatter } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { contentrainDir, readDir, readJson, readText, writeJson, writeText } from '../util/fs.js'
@@ -199,7 +199,10 @@ export async function writeContent(
         await writeText(docPath, mdContent)
         const prevMeta = await readMeta(projectRoot, model, { locale, slug, defaultLocale }) as EntryMeta | null
         await writeMeta(projectRoot, model, { locale, slug, defaultLocale }, mergeEntryMeta(prevMeta ?? undefined, entry))
-        results.push({ action, slug, locale })
+        // Same advisory as planContentSave: a saved value for a key the file held in an unreadable shape replaces it.
+        const replaced = preservedKeyConflicts(fmData, existingDoc?.preserved)
+          .map(key => `Document "${slug}" (${locale}): the saved "${key}" replaced a "${key}" block the file held in a shape Contentrain does not read.`)
+        results.push({ action, slug, locale, ...(replaced.length > 0 ? { advisories: replaced } : {}) })
         break
       }
 
