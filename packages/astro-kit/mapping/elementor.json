@@ -480,7 +480,7 @@
         "closeLabel": "ui:dialog.close"
       },
       "into": "actions",
-      "each": "a.elementor-button",
+      "each": "a.elementor-button:not([href^='#elementor-action'])",
       "item": { "label": "dom:", "href": "dom:@href" }
     }
   ],

@@ -105,7 +105,7 @@
           }
         }
       },
-      "description": "Buttons under the intro, in order; none by default."
+      "description": "The popup's own buttons, under its text, in order; none by default."
     },
     "id": {
       "type": "string",
@@ -237,7 +237,7 @@
     }
   },
   "slots": {},
-  "js": "none",
+  "js": "vanilla",
   "dependencies": {},
   "sources": {
     "elementor": [

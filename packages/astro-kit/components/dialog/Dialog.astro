@@ -20,9 +20,11 @@ const dialog = tv({
     root: 'flex flex-wrap gap-6',
     trigger: 'inline-flex cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-control,var(--radius-md))] px-5 py-2.5 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2',
     // A dialog is not positioned by the page: UA styles centre it; width and surface come from here. Open but not
-    // modal (the `open` preview prop) it is a block in the flow under the button, not a box over it.
-    box: 'm-auto w-[min(92vw,var(--dialog-width))] max-h-[85dvh] overflow-y-auto rounded-card border border-line bg-surface p-0 text-ink shadow-xl backdrop:bg-ink/50 [&[open]:not(:modal)]:relative [&[open]:not(:modal)]:m-0 [&[open]:not(:modal)]:basis-full',
-    inner: 'flex flex-col gap-4 p-6 md:p-8',
+    // modal (the `open` preview prop) it is a block in the flow under the button, not a box over it. The inner box
+    // scrolls, not the dialog: a click on the scrollbar then never lands on the dialog itself (the backdrop test). The
+    // display is set only when open (`open:flex`): an author `display` would override the UA's `display: none` when closed.
+    box: 'm-auto w-[min(92vw,var(--dialog-width))] max-h-[85dvh] flex-col open:flex rounded-card border border-line bg-surface p-0 text-ink shadow-xl backdrop:bg-ink/50 [&[open]:not(:modal)]:relative [&[open]:not(:modal)]:m-0 [&[open]:not(:modal)]:basis-full',
+    inner: 'flex min-h-0 flex-col gap-4 overflow-y-auto p-6 md:p-8',
     heading: 'pe-10 text-xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-2xl',
     actions: 'flex flex-wrap gap-3',
     close: 'absolute end-3 top-3 inline-flex size-9 cursor-pointer items-center justify-center rounded-md hover:bg-surface-muted focus-visible:outline-2',
@@ -105,7 +107,7 @@ const noscript = `<style>[data-kit-dialog="${id}"]>[data-kit-dialog-open],#${id}
     if (!dialog || !open || root.dataset.ready !== undefined) continue
     root.dataset.ready = ''
     if (!invokers) open.addEventListener('click', () => { if (!dialog.open) dialog.showModal() })
-    // The dialog fills its own box, so a click whose target is the dialog itself landed on the backdrop.
+    // The inner box fills the dialog and owns the scrollbar, so a click whose target is the dialog itself landed on the backdrop.
     dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close() })
   }
 </script>
