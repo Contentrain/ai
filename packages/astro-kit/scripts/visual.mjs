@@ -115,6 +115,7 @@ const origin = `http://localhost:${server.address().port}`
 const fixturesOf = new Map(components.map(c => [c.id, new Map(JSON.parse(readFileSync(join(kitRoot, 'components', c.id, 'fixtures.json'), 'utf8')).map(f => [f.name, f.props]))]))
 const outline = []
 const menus = []
+const carousels = []
 /** Every real href of a menu tree (a Nav or Header `items` prop), at any depth. */
 const menuHrefs = items => (items ?? []).flatMap(item => (item.href && item.href !== '#' ? [item.href] : []).concat(menuHrefs(item.children)))
 const browser = await chromium.launch(process.platform === 'darwin' ? { channel: 'chrome' } : {})
@@ -195,6 +196,48 @@ try {
     }
     await bare.close()
   }
+  // A carousel set up while its page is hidden (a background tab opened with ctrl/cmd-click: no layout, visibilityState
+  // "hidden") pages once the page is shown: it draws a dot per snap and "next" moves the selected one. The kit page loads
+  // with the document hidden and not laid out, then is shown the way a tab brought to the front is.
+  if (components.some(c => c.id === 'slider')) {
+    const page = await browser.newPage({ viewport: { width: 900, height: 900 }, reducedMotion: 'reduce' })
+    await page.addInitScript(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__shown ? 'visible' : 'hidden' })
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => !window.__shown })
+    })
+    await page.route(`${origin}/kit/slider/`, async (route) => {
+      const response = await route.fetch()
+      await route.fulfill({ response, body: (await response.text()).replace('<head>', '<head><style id="hidden-tab">html{display:none!important}</style>') })
+    })
+    await page.goto(`${origin}/kit/slider/`, { waitUntil: 'networkidle' })
+    await page.waitForFunction(() => [...document.querySelectorAll('[data-kit-slider]')].every(el => el.hasAttribute('data-ready')))
+    await page.evaluate(() => {
+      document.getElementById('hidden-tab').remove()
+      window.__shown = true
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 300)))))
+    for (const element of await page.locator('[data-fixture]').all()) {
+      const name = await element.getAttribute('data-fixture')
+      const state = () => element.evaluate((el) => {
+        const viewport = el.querySelector('[data-viewport]')
+        const track = el.querySelector('[data-container]')
+        const dots = [...el.querySelectorAll('[data-dots] button')]
+        return { overflows: track.scrollWidth > viewport.clientWidth + 2, dots: dots.length, selected: dots.findIndex(dot => dot.getAttribute('aria-current') === 'true'), next: el.querySelector('[data-next]')?.disabled }
+      })
+      const before = await state()
+      if (!before.overflows) continue
+      if (before.dots < 2 || before.next) {
+        carousels.push(`slider/${name}: shown after it was set up hidden, it draws ${before.dots} dot(s) and "next" is ${before.next ? 'disabled' : 'enabled'}`)
+        continue
+      }
+      await element.evaluate(el => el.querySelector('[data-next]').click())
+      await page.evaluate(() => new Promise(done => setTimeout(done, 300)))
+      const after = await state()
+      if (after.selected === before.selected) carousels.push(`slider/${name}: shown after it was set up hidden, "next" does not move the carousel (dot ${before.selected + 1} of ${before.dots} stays selected)`)
+    }
+    await page.close()
+  }
 } finally {
   await browser.close()
   server.close()
@@ -202,11 +245,12 @@ try {
 
 if (outline.length) console.error(`visual: ${outline.length} fixture(s) skip a heading level:\n${outline.map(line => `  ✗ ${line}`).join('\n')}`)
 if (menus.length) console.error(`visual: ${menus.length} menu level(s) lost:\n${menus.map(line => `  ✗ ${line}`).join('\n')}`)
+if (carousels.length) console.error(`visual: ${carousels.length} carousel(s) not paging:\n${carousels.map(line => `  ✗ ${line}`).join('\n')}`)
 if (written.length) console.log(`visual: wrote ${written.length} baseline(s) under ${baselineDir}`)
 if (failures.length) {
   console.error(`visual: ${failures.length} fixture(s) changed:\n${failures.map(line => `  ✗ ${line}`).join('\n')}`)
   process.exit(1)
 }
-if (outline.length || menus.length) process.exit(1)
+if (outline.length || menus.length || carousels.length) process.exit(1)
 console.log(`visual: ${components.length} component(s) × ${WIDTHS.length} widths match`)
 if (!values.out) rmSync(site, { recursive: true, force: true })
