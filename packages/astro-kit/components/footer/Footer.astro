@@ -3,7 +3,7 @@
 // links and the copyright line.
 import { tv } from 'tailwind-variants'
 import type { LinkInput } from '../_shared/types'
-import { footerLinkSizeClasses, footerVars } from './footer'
+import { contactKeys, footerLinkSizeClasses, footerVars, type ContactInput } from './footer'
 import { safeHref } from '../_shared/safe-url'
 
 const footer = tv({
@@ -50,8 +50,12 @@ interface Props {
   /** A single row of links (the footer menu). */
   links?: LinkInput[] | undefined
   social?: LinkInput[] | undefined
-  /** Contact details printed in an `<address>` block; each is optional, and the block is left out when none is set. */
-  contact?: { address?: string | undefined, phone?: string | undefined, email?: string | undefined } | undefined
+  /**
+   * Contact details printed in an `<address>` block; each is optional, and the block is left out when none is set.
+   * `labels`: the words the source prints before a detail ("Telefon:", "Email:"), each optional. `order`: the details'
+   * order as the source prints them; absent, address, phone, email. A detail the order leaves out is printed after it.
+   */
+  contact?: ContactInput | undefined
   /** The copyright line, e.g. "© 2026 Northwind Studio"; `{year}` is the current year; `false` prints none. Absent: "© year Site". */
   copyright?: string | false | undefined
   /** Label of the cookie settings link after the copyright line ("Cookie settings"); it reopens the consent bar, so a visitor can withdraw consent as easily as they gave it. Only with a consent bar on the page. */
@@ -84,6 +88,7 @@ const vars = footerVars({ layout, columnCount: columns.length, pack, narrow, pac
 const year = String(new Date().getFullYear())
 const phoneHref = contact?.phone?.replace(/[^\d+]/g, '')
 const hasContact = Boolean(contact?.address || contact?.phone || contact?.email)
+const contactOrder = contactKeys(contact?.order)
 const line = copyright === false ? undefined : copyright?.replaceAll('{year}', year) ?? `© ${year} ${siteName}`
 // The line and the cookie settings control share one paragraph; neither: no paragraph.
 const hasBottom = Boolean(line || consentLabel)
@@ -93,12 +98,15 @@ const hasBottom = Boolean(line || consentLabel)
   <div class:list={[inner(), ...footerLinkSizeClasses({ linkSize, linkSizeNarrow })]} data-kit-footer style={vars || undefined}>
     <div class="flex flex-col gap-3">
       <p class="text-base font-semibold" data-kit-brand>{siteName}</p>
-      {tagline && <p class={muted()} data-kit-tagline>{tagline}</p>}
+      {/* Line breaks are kept: an about line and the designer's credit under it ("Web Tasarım: …") stay two lines. */}
+      {tagline && <p class={`${muted()} whitespace-pre-line`} data-kit-tagline>{tagline}</p>}
       {hasContact && (
         <address class={`${muted()} flex flex-col gap-1 not-italic`} data-kit-contact>
-          {contact?.address && <span class="whitespace-pre-line">{contact.address}</span>}
-          {contact?.phone && (phoneHref ? <a href={`tel:${phoneHref}`} class={link()}>{contact.phone}</a> : <span>{contact.phone}</span>)}
-          {contact?.email && <a href={`mailto:${contact.email}`} class={link()}>{contact.email}</a>}
+          {contactOrder.map(key => key === 'address'
+            ? contact?.address && <span class="whitespace-pre-line">{contact.labels?.address && <>{contact.labels.address} </>}{contact.address}</span>
+            : key === 'phone'
+              ? contact?.phone && <span>{contact.labels?.phone && <>{contact.labels.phone} </>}{phoneHref ? <a href={`tel:${phoneHref}`} class={link()}>{contact.phone}</a> : contact.phone}</span>
+              : contact?.email && <span>{contact.labels?.email && <>{contact.labels.email} </>}<a href={`mailto:${contact.email}`} class={link()}>{contact.email}</a></span>)}
         </address>
       )}
       {layout === 'columns' && hasBottom && <p class:list={[muted(), 'mt-auto pt-6']}>{line}{consentLabel && <>{line && ' · '}<button type="button" data-kit-consent-open class={link()}>{consentLabel}</button></>}</p>}

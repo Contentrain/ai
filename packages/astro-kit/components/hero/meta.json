@@ -109,6 +109,27 @@
       "label": "Lead",
       "description": "Paragraph under the heading."
     },
+    "items": {
+      "type": "array",
+      "label": "Points",
+      "items": {
+        "type": "object",
+        "fields": {
+          "icon": {
+            "type": "image",
+            "label": "Icon",
+            "description": "A small image before the text (decoration)."
+          },
+          "title": {
+            "type": "string",
+            "label": "Text",
+            "required": true,
+            "description": "A short promise or feature (\"Fast, easy and painless\")."
+          }
+        }
+      },
+      "description": "Short points under the lead, before the buttons, in order: a hero's feature or promise list."
+    },
     "actions": {
       "type": "array",
       "label": "Buttons",

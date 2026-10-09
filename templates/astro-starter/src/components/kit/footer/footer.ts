@@ -1,3 +1,22 @@
+export type ContactKey = 'address' | 'phone' | 'email'
+
+/** The footer's contact details, with the words the source prints before each and the order it prints them in. */
+export interface ContactInput {
+  address?: string | undefined
+  phone?: string | undefined
+  email?: string | undefined
+  labels?: { address?: string | undefined, phone?: string | undefined, email?: string | undefined } | undefined
+  order?: readonly ContactKey[] | undefined
+}
+
+const CONTACT_KEYS: readonly ContactKey[] = ['address', 'phone', 'email']
+
+/** The details in the order given (unknown and repeated keys dropped), then the ones it left out in the default order. */
+export function contactKeys(order: readonly string[] | undefined): ContactKey[] {
+  const given = [...new Set((order ?? []).filter((key): key is ContactKey => (CONTACT_KEYS as readonly string[]).includes(key)))]
+  return [...given, ...CONTACT_KEYS.filter(key => !given.includes(key))]
+}
+
 export interface FooterVarsInput {
   layout: 'simple' | 'columns'
   columnCount: number
