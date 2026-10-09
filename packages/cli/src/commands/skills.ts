@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { resolveProjectRoot } from '../utils/context.js'
 import { pc } from '../utils/ui.js'
 import { pathExists } from '@contentrain/mcp/util/fs'
-import { AGENT_SKILL_NAMES, IDE_CONFIGS, detectIdes, installIdeRulesAndSkills, createPackageResolver } from '../utils/ide.js'
+import { listAgentSkillNames, IDE_CONFIGS, detectIdes, installIdeRulesAndSkills, createPackageResolver } from '../utils/ide.js'
 
 // ─── Command ───
 
@@ -80,6 +80,12 @@ export default defineCommand({
 
 async function listInstalledSkills(projectRoot: string): Promise<void> {
   let found = false
+  const resolveSkillFile = await createPackageResolver('@contentrain/skills', projectRoot)
+  let skillNames: string[] = []
+  if (resolveSkillFile) {
+    try { skillNames = await listAgentSkillNames(resolveSkillFile) } catch { /* skills package unreadable */ }
+  }
+  if (skillNames.length === 0) log.warning('@contentrain/skills package not found — cannot tell which skills are missing')
 
   for (const [, ide] of Object.entries(IDE_CONFIGS)) {
     const skillsDir = join(projectRoot, ide.skillsDir)
@@ -88,7 +94,7 @@ async function listInstalledSkills(projectRoot: string): Promise<void> {
     found = true
     log.info(`${pc.bold(ide.name)} (${ide.skillsDir}/):`)
 
-    for (const skillName of AGENT_SKILL_NAMES) {
+    for (const skillName of skillNames) {
       const skillMd = join(skillsDir, skillName, 'SKILL.md')
       if (await pathExists(skillMd)) {
         log.message(`  ${pc.green('✓')} ${skillName}`)

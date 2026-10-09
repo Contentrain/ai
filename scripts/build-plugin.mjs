@@ -27,6 +27,8 @@ const PLUGIN_DIR = join(ROOT, 'plugins/contentrain')
 const PLUGIN_PKG = join(PLUGIN_DIR, 'package.json')
 const PLUGIN_MANIFEST = join(PLUGIN_DIR, '.claude-plugin/plugin.json')
 const MARKETPLACE_MANIFEST = join(ROOT, '.claude-plugin/marketplace.json')
+const PLUGIN_MCP = join(PLUGIN_DIR, '.mcp.json')
+const MCP_PKG = join(ROOT, 'packages/mcp/package.json')
 
 /**
  * The normalize wedge, end to end: init -> scan/extract -> model -> validate
@@ -80,6 +82,25 @@ function syncVersion() {
   return version
 }
 
+/**
+ * plugins/contentrain/.mcp.json pins the MCP server the plugin starts. It is
+ * written from packages/mcp/package.json as `^<major>`: a hand-kept exact pin
+ * sat at 2.3.0 (24 tools) for ~70 releases while the plugin's skill described
+ * 27. A caret on the current major takes every fix without a plugin release,
+ * and a new major regenerates this file, which CI's stale-diff check catches.
+ */
+function writeMcpConfig() {
+  const { version } = readJson(MCP_PKG)
+  const major = /^(\d+)\./.exec(version ?? '')?.[1]
+  if (!major) {
+    console.error(`✘ Cannot read a major version from ${MCP_PKG} (got ${JSON.stringify(version)})`)
+    process.exit(1)
+  }
+  const spec = `@contentrain/mcp@^${major}`
+  writeJson(PLUGIN_MCP, { mcpServers: { contentrain: { command: 'npx', args: ['-y', spec] } } })
+  return spec
+}
+
 function build() {
   const skillsOut = join(PLUGIN_DIR, 'skills')
   const frameworksOut = join(PLUGIN_DIR, 'frameworks')
@@ -100,8 +121,9 @@ function build() {
   cpSync(FRAMEWORKS_SRC, frameworksOut, { recursive: true })
 
   const version = syncVersion()
+  const mcpSpec = writeMcpConfig()
   const frameworkCount = readdirSync(frameworksOut).filter(f => f.endsWith('.md')).length
-  console.log(`✔ plugins/contentrain@${version} — ${CURATED_SKILLS.length} skills, ${frameworkCount} framework guides`)
+  console.log(`✔ plugins/contentrain@${version} — ${CURATED_SKILLS.length} skills, ${frameworkCount} framework guides, MCP ${mcpSpec}`)
 }
 
 build()

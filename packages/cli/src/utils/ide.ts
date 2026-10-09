@@ -1,27 +1,27 @@
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { readFile, writeFile, appendFile } from 'node:fs/promises'
 import { createGit } from '@contentrain/mcp/git/identity'
 import { ensureDir, pathExists } from '@contentrain/mcp/util/fs'
 
-// ─── Skill list (single source of truth) ───
+// ─── Skill list: read from the @contentrain/skills package ───
 
-export const AGENT_SKILL_NAMES = [
-  'contentrain',
-  'contentrain-normalize',
-  'contentrain-quality',
-  'contentrain-sdk',
-  'contentrain-content',
-  'contentrain-model',
-  'contentrain-init',
-  'contentrain-bulk',
-  'contentrain-validate-fix',
-  'contentrain-review',
-  'contentrain-translate',
-  'contentrain-generate',
-  'contentrain-serve',
-  'contentrain-diff',
-  'contentrain-doctor',
-]
+/**
+ * Every skill the installed `@contentrain/skills` ships: the directories under
+ * its `skills/` that hold a `SKILL.md`, sorted. Read from disk rather than kept
+ * as a second hand-written list, which is how `contentrain skills` came to
+ * install 15 of 16 (`contentrain-migrate-wordpress` was never added).
+ *
+ * The package exports `./skills/*` only, so the directory is found through one
+ * known file: the core `contentrain` skill.
+ */
+export async function listAgentSkillNames(resolveSkillFile: (p: string) => string): Promise<string[]> {
+  const { readdir } = await import('node:fs/promises')
+  const skillsRoot = dirname(dirname(resolveSkillFile('skills/contentrain/SKILL.md')))
+  const entries = await readdir(skillsRoot, { withFileTypes: true })
+  const dirs = entries.filter((e) => e.isDirectory()).map((e) => e.name)
+  const hasSkill = await Promise.all(dirs.map((d) => pathExists(join(skillsRoot, d, 'SKILL.md'))))
+  return dirs.filter((_, i) => hasSkill[i]).toSorted()
+}
 
 // Old granular rule files to clean up during migration
 export const OLD_RULE_FILES = [
@@ -298,7 +298,9 @@ export async function installIdeRulesAndSkills(
   if (resolveSkillFile) {
     const skillsDir = join(projectRoot, ide.skillsDir)
     await ensureDir(skillsDir)
-    for (const skillName of AGENT_SKILL_NAMES) {
+    let skillNames: string[] = []
+    try { skillNames = await listAgentSkillNames(resolveSkillFile) } catch { /* skills package unreadable */ }
+    for (const skillName of skillNames) {
       const skillDir = join(skillsDir, skillName)
       const skillMd = join(skillDir, 'SKILL.md')
       try {

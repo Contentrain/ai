@@ -1,8 +1,10 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm, mkdir, readFile, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { mkdtemp, rm, mkdir, readFile, writeFile, readdir } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
-import { MCP_CONFIGS, IDE_CONFIGS, detectIdes, writeMcpConfig, installIdeRulesAndSkills } from '../../src/utils/ide.js'
+import { MCP_CONFIGS, IDE_CONFIGS, detectIdes, writeMcpConfig, installIdeRulesAndSkills, listAgentSkillNames, createPackageResolver } from '../../src/utils/ide.js'
 
 let root: string
 
@@ -145,5 +147,44 @@ describe('shared instruction files are appended, never overwritten', () => {
     await installIdeRulesAndSkills(root, IDE_CONFIGS['claude-code']!, await fakeRules(), null, true)
 
     expect(await readFile(join(dest, 'contentrain-essentials.md'), 'utf-8')).toContain('describe_format')
+  })
+})
+
+/**
+ * Parity: the installer offers every skill the skills package ships. It used
+ * to iterate a hand-written list of 15 and never installed
+ * contentrain-migrate-wordpress (#514).
+ */
+describe('skills install covers every skill in @contentrain/skills', () => {
+  const SKILLS_SRC = join(dirname(fileURLToPath(import.meta.url)), '../../../skills/skills')
+
+  async function shipped(): Promise<string[]> {
+    const entries = await readdir(SKILLS_SRC, { withFileTypes: true })
+    return entries.filter((e) => e.isDirectory() && existsSync(join(SKILLS_SRC, e.name, 'SKILL.md'))).map((e) => e.name).toSorted()
+  }
+
+  it('lists exactly the skill directories the package holds', async () => {
+    const resolveSkillFile = await createPackageResolver('@contentrain/skills', root)
+    expect(resolveSkillFile).not.toBeNull()
+    const names = await listAgentSkillNames(resolveSkillFile!)
+    expect(names).toEqual(await shipped())
+    expect(names).toContain('contentrain-migrate-wordpress')
+  })
+
+  it('installs a SKILL.md for each of them', async () => {
+    const resolveSkillFile = await createPackageResolver('@contentrain/skills', root)
+    const res = await installIdeRulesAndSkills(root, IDE_CONFIGS['claude-code']!, null, resolveSkillFile)
+    const expected = await shipped()
+    const missing = expected.filter((n) => !existsSync(join(root, '.claude/skills', n, 'SKILL.md')))
+    expect(missing).toEqual([])
+    expect(res.installed).toBe(expected.length)
+  })
+
+  it('ignores a directory without a SKILL.md', async () => {
+    const fake = join(root, '__skills')
+    await mkdir(join(fake, 'skills', 'contentrain'), { recursive: true })
+    await writeFile(join(fake, 'skills', 'contentrain', 'SKILL.md'), '# x\n', 'utf-8')
+    await mkdir(join(fake, 'skills', 'not-a-skill'), { recursive: true })
+    expect(await listAgentSkillNames((p) => join(fake, p))).toEqual(['contentrain'])
   })
 })
