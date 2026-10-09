@@ -144,8 +144,22 @@ const idsOf = (v: unknown): number[] =>
     .map((x) => (typeof x === 'number' ? x : typeof x === 'string' && /^\d+$/.test(x) ? Number(x) : x && typeof x === 'object' ? Number((x as { ID?: unknown; id?: unknown; term_id?: unknown }).ID ?? (x as { id?: unknown }).id ?? (x as { term_id?: unknown }).term_id) : Number.NaN))
     .filter((n) => Number.isSafeInteger(n) && n > 0)
 
-export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): ContentrainResult {
+export interface RawToContentrainOptions {
+  /** `updated_by` stamped on every meta entry. Default `@contentrain/wp-import`. */
+  updatedBy?: string
+  /**
+   * Write author and commenter e-mail addresses into the `authors` and
+   * `comments` entries. Default `false`: a WXR export carries them, but they
+   * are third parties' personal data and a store usually ends up in git
+   * (sometimes a public repo), so they stay out unless asked for. The REST
+   * path never has them.
+   */
+  includeEmails?: boolean
+}
+
+export function rawToContentrain(raw: RawIR, opts?: RawToContentrainOptions): ContentrainResult {
   const updatedBy = opts?.updatedBy ?? '@contentrain/wp-import'
+  const includeEmails = opts?.includeEmails === true
   const locale = normLocale(raw.site.language) || 'en'
   const models: Record<string, ModelDefinition> = {}
   const contents: Record<string, Record<string, Entry>> = {}
@@ -402,7 +416,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
   for (const a of raw.authors) {
     const id = authorId(slugify(a.login))
     contents.authors![id] = pick(
-      { name: strip(a.display_name), slug: slugify(a.login), email: a.email, wp_id: a.id },
+      { name: strip(a.display_name), slug: slugify(a.login), email: includeEmails ? a.email : null, wp_id: a.id },
       new Set(['name', 'slug', 'email', 'wp_id']),
     )
     metas.authors![id] = importMeta('published')
@@ -746,7 +760,7 @@ export function rawToContentrain(raw: RawIR, opts?: { updatedBy?: string }): Con
       contents.comments![cRef(c.id)] = pick(
         {
           author: strip(c.author) || 'anonymous',
-          email: c.email,
+          email: includeEmails ? c.email : null,
           url: c.url,
           body: c.content,
           published_at: c.date,

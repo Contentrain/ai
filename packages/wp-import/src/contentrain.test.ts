@@ -94,6 +94,31 @@ describe('Elementor landing pages are pages', () => {
   })
 })
 
+const authorsOf = (files: Record<string, string>) => Object.values(JSON.parse(files['.contentrain/content/blog/authors/data.json']!)) as Array<Record<string, unknown>>
+const commentsOf = (files: Record<string, string>) => Object.values(JSON.parse(files['.contentrain/content/blog/comments/data.json']!)) as Array<Record<string, unknown>>
+
+describe('personal data: e-mail addresses stay out of the store unless asked for', () => {
+  it('WXR carries author and commenter e-mails, but the default store holds none', async () => {
+    const { raw, result } = await load()
+    expect(raw.authors.some((a) => a.email === 'ada@example.com')).toBe(true)
+    expect(raw.comments!.some((c) => c.email === 'r@example.com')).toBe(true)
+    const all = Object.values(result.files).join('\n')
+    expect(all).not.toContain('ada@example.com')
+    expect(all).not.toContain('r@example.com')
+    expect(authorsOf(result.files).every((a) => !('email' in a))).toBe(true)
+    expect(commentsOf(result.files).every((c) => !('email' in c))).toBe(true)
+    // The schema keeps the field, so an opted-in import and a default one share models.
+    expect(JSON.parse(result.files['.contentrain/models/authors.json']!).fields.email.type).toBe('email')
+  })
+
+  it('includeEmails: true writes them', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const { files } = rawToContentrain(raw, { updatedBy: 'test', includeEmails: true })
+    expect(authorsOf(files).map((a) => a.email)).toContain('ada@example.com')
+    expect(commentsOf(files).map((c) => c.email)).toContain('r@example.com')
+  })
+})
+
 describe('rawToContentrain', () => {
   it('produces a PATH_PATTERNS-conformant canonical file map', async () => {
     const { result } = await load()

@@ -230,14 +230,17 @@ Templates: `blog`, `landing`, `docs`, `ecommerce`, `saas`, `i18n`, `mobile`.
 contentrain import export.xml                             # a WXR export file
 contentrain import export.xml --out ./my-site
 contentrain import https://site.example                   # public REST
-contentrain import https://site.example --auth user:pass  # lifts access to rest_auth
+contentrain import https://site.example --auth editor     # rest_auth; prompts for the password
+CONTENTRAIN_WP_APP_PASSWORD=… contentrain import https://site.example --auth editor
+contentrain import export.xml --include-emails            # also write author/commenter e-mails
 contentrain import export.xml --force --json
 ```
 
 | Flag | Effect |
 |---|---|
 | `--out <dir>` | Target directory (default: current directory) |
-| `--auth <user:password>` | REST Application Password — lifts the access rung from `rest_public` to `rest_auth` |
+| `--auth <user>` | REST user for an Application Password — lifts the access rung from `rest_public` to `rest_auth`. The password comes from `CONTENTRAIN_WP_APP_PASSWORD` or a hidden prompt; `CONTENTRAIN_WP_AUTH=user:password` works without the flag. `--auth user:password` is deprecated (shell history) and warns |
+| `--include-emails` | Write author and commenter e-mail addresses from a WXR export into the store (off by default: personal data) |
 | `--force` | Overwrite an existing `.contentrain/` |
 | `--json` | Machine-readable report for scripting |
 
