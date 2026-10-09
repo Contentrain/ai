@@ -215,7 +215,7 @@ export function registerContentTools(
           status: 'committed',
           message: 'Content saved and committed to git. Do NOT manually edit .contentrain/ files.',
           results: plan.result,
-          git: gitReport({ branch, action: commit.workflowAction, commit: commit.commitSha, sync: commit.sync, base_advance: commit.base_advance, remote_push: commit.remote_push }),
+          git: gitReport({ branch, action: commit.workflowAction, commit: commit.commitSha, sync: commit.sync, base_advance: commit.base_advance, remote_push: commit.remote_push, base_branch: commit.base_branch }),
           ...(commit.warning ? { warning: commit.warning } : {}),
           ...(allAdvisories.length > 0 ? {
             advisories: allAdvisories,
@@ -325,7 +325,7 @@ export function registerContentTools(
             message: 'Content deleted and committed to git. Do NOT manually edit .contentrain/ files.',
             deleted: true,
             files_removed: deletePlan.result,
-            git: gitReport({ branch, action: commit.workflowAction, commit: commit.commitSha, sync: commit.sync, base_advance: commit.base_advance, remote_push: commit.remote_push }),
+            git: gitReport({ branch, action: commit.workflowAction, commit: commit.commitSha, sync: commit.sync, base_advance: commit.base_advance, remote_push: commit.remote_push, base_branch: commit.base_branch }),
             ...(commit.warning ? { warning: commit.warning } : {}),
             context_updated: true,
             ...(nextSteps.length > 0 ? { next_steps: nextSteps } : {}),

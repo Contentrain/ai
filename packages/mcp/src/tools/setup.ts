@@ -15,6 +15,7 @@ import { createTransaction, buildBranchName, ensureContentBranch } from '../git/
 import { checkBranchHealth } from '../git/branch-lifecycle.js'
 import { resolveInitDefaultBranch } from '../git/base-branch.js'
 import { normalizeOperationError } from '../git/errors.js'
+import { commitOptions, hookPolicy } from '../git/hook-policy.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 import { capabilityError } from './guards.js'
 import { gitReport } from './commit-plan.js'
@@ -71,7 +72,7 @@ export function registerSetupTools(
       }
       const hasAnyCommit = await git.raw(['rev-list', '-n', '1', '--all']).then(out => out.trim().length > 0).catch(() => false)
       if (!hasAnyCommit) {
-        await git.commit('initial commit', { '--allow-empty': null, '--no-verify': null })
+        await git.commit('initial commit', commitOptions(hookPolicy(await readConfig(projectRoot)), { '--allow-empty': null }))
       }
 
       // Branch health gate
@@ -170,7 +171,7 @@ export function registerSetupTools(
               '.contentrain/meta/',
             ],
             gitignore_updated: true,
-            git: gitReport({ branch, action: gitResult.action, commit: gitResult.commit, sync: gitResult.sync, base_advance: gitResult.base_advance, remote_push: gitResult.remote_push }),
+            git: gitReport({ branch, action: gitResult.action, commit: gitResult.commit, sync: gitResult.sync, base_advance: gitResult.base_advance, remote_push: gitResult.remote_push, base_branch: gitResult.base_branch }),
             ...(gitResult.warning ? { warning: gitResult.warning } : {}),
             next_steps: [
               'Create models with contentrain_model_save or contentrain_scaffold',
@@ -301,7 +302,7 @@ export function registerSetupTools(
             models_created: modelsCreated,
             content_created: contentCreated,
             vocabulary_terms_added: vocabAdded,
-            git: gitReport({ branch, action: gitResult.action, commit: gitResult.commit, sync: gitResult.sync, base_advance: gitResult.base_advance, remote_push: gitResult.remote_push }),
+            git: gitReport({ branch, action: gitResult.action, commit: gitResult.commit, sync: gitResult.sync, base_advance: gitResult.base_advance, remote_push: gitResult.remote_push, base_branch: gitResult.base_branch }),
             ...(gitResult.warning ? { warning: gitResult.warning } : {}),
             context_updated: true,
             next_steps: [
