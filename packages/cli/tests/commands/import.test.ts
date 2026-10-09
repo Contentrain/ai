@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtemp, readFile, writeFile, mkdir, access } from 'node:fs/promises'
+import { mkdtemp, readFile, writeFile, mkdir, access, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -48,7 +48,7 @@ const WXR = `<?xml version="1.0" encoding="UTF-8"?>
     <wp:status>publish</wp:status>
     <wp:post_type>post</wp:post_type>
     <category domain="category" nicename="news"><![CDATA[News]]></category>
-    <wp:comment><wp:comment_id>500</wp:comment_id><wp:comment_author><![CDATA[Reader]]></wp:comment_author><wp:comment_author_email>reader@cli.example</wp:comment_author_email><wp:comment_date_gmt>2026-01-03 09:00:00</wp:comment_date_gmt><wp:comment_content><![CDATA[Nice]]></wp:comment_content><wp:comment_approved>1</wp:comment_approved><wp:comment_parent>0</wp:comment_parent></wp:comment>
+    <wp:comment><wp:comment_id>500</wp:comment_id><wp:comment_author><![CDATA[Reader]]></wp:comment_author><wp:comment_author_email>reader@cli.example</wp:comment_author_email><wp:comment_date_gmt>2026-01-03 09:00:00</wp:comment_date_gmt><wp:comment_content><![CDATA[Nice]]></wp:comment_content><wp:comment_approved>1</wp:comment_approved><wp:comment_parent>0</wp:comment_parent><wp:commentmeta><wp:meta_key>akismet_as_submitted</wp:meta_key><wp:meta_value><![CDATA[a:1:{s:20:"comment_author_email";s:18:"reader@cli.example";}]]></wp:meta_value></wp:commentmeta><wp:commentmeta><wp:meta_key>rating</wp:meta_key><wp:meta_value>5</wp:meta_value></wp:commentmeta></wp:comment>
   </item>
 </channel>
 </rss>`
@@ -103,6 +103,35 @@ describe('import command', () => {
   it('errors on a missing source file', async () => {
     await run({ source: join(dir, 'yok.xml'), out: dir })
     expect(process.exitCode).toBe(1)
+  })
+
+  // Every file the command writes, anywhere under the output directory.
+  const writtenFiles = async (root: string): Promise<Record<string, string>> => {
+    const entries = await readdir(root, { recursive: true, withFileTypes: true })
+    const files = entries.filter((e) => e.isFile()).map((e) => join(e.parentPath, e.name)).filter((p) => p !== wxrPath)
+    return Object.fromEntries(await Promise.all(files.map(async (p) => [p.slice(root.length + 1), await readFile(p, 'utf8')] as const)))
+  }
+
+  it('no written file carries an e-mail address by default (store, comments export, report, source map)', async () => {
+    await run({ source: wxrPath, out: dir })
+    expect(process.exitCode).toBeUndefined()
+    const files = await writtenFiles(dir)
+    expect(Object.keys(files)).toEqual(expect.arrayContaining(['comments-export.json', 'import-report.json', 'entry-source-map.json']))
+    const leaks = Object.entries(files).filter(([, text]) => /ada@cli\.example|reader@cli\.example/.test(text)).map(([p]) => p)
+    expect(leaks).toEqual([])
+    // The comment itself still travels, with non-personal meta intact.
+    const exp = JSON.parse(files['comments-export.json']!)
+    expect(exp.comments).toHaveLength(1)
+    expect(exp.comments[0]).toMatchObject({ author: 'Reader', email: null, meta: { rating: '5' } })
+    expect(exp.comments[0].meta.akismet_as_submitted).toBeUndefined()
+  })
+
+  it('--include-emails carries them into the store and the comments export', async () => {
+    await run({ source: wxrPath, out: dir, 'include-emails': true })
+    const files = await writtenFiles(dir)
+    expect(files['comments-export.json']).toContain('reader@cli.example')
+    expect(JSON.parse(files['comments-export.json']!).comments[0].meta.akismet_as_submitted).toBeDefined()
+    expect(files['.contentrain/content/blog/authors/data.json']).toContain('ada@cli.example')
   })
 
   it('leaves author and commenter e-mails out of the store by default', async () => {

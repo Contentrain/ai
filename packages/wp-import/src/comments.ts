@@ -28,9 +28,38 @@ export function selectComments(raw: RawIR): { comments: RawComment[]; excluded: 
   return { comments, excluded }
 }
 
-export function buildCommentsExport(raw: RawIR, entries: EntrySourceMap, opts?: { generated_at?: string }): CommentsExport {
+/** Anything shaped like an e-mail address, anywhere in a serialized value. */
+const EMAIL_RE = /[^\s@"'<>;:]+@[^\s@"'<>;:]+\.[a-z]{2,}/i
+
+/**
+ * A comment with its commenter's e-mail address removed: `email` becomes null,
+ * and any meta entry whose value carries an address is dropped (Akismet's
+ * `akismet_as_submitted` stores the whole submission, address and IP included).
+ */
+function withoutEmail(c: RawComment): RawComment {
+  const out: RawComment = { ...c, email: null }
+  if (c.meta) {
+    const kept = Object.entries(c.meta).filter(([, v]) => !EMAIL_RE.test(typeof v === 'string' ? v : JSON.stringify(v) ?? ''))
+    out.meta = Object.fromEntries(kept)
+  }
+  return out
+}
+
+export interface CommentsExportOptions {
+  generated_at?: string
+  /**
+   * Carry commenter e-mail addresses (and comment meta that holds one). Default
+   * `false`: the export is written next to the store and is personal data of
+   * third parties; a receiving service that needs addresses asks for them.
+   */
+  includeEmails?: boolean
+}
+
+export function buildCommentsExport(raw: RawIR, entries: EntrySourceMap, opts?: CommentsExportOptions): CommentsExport {
   const threadsClosed = raw.posts.filter((p) => p.comment_status && p.comment_status !== 'open').map((p) => p.id)
-  const { comments, excluded } = selectComments(raw)
+  const selected = selectComments(raw)
+  const excluded = selected.excluded
+  const comments = opts?.includeEmails === true ? selected.comments : selected.comments.map(withoutEmail)
   return {
     version: MIGRATION_CONTRACT_VERSION,
     format: COMMENTS_EXPORT_FORMAT,

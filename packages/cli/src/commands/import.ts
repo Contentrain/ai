@@ -151,7 +151,7 @@ export default defineCommand({
     const includeEmails = Boolean(args['include-emails'])
     const { files, entry_source_map, report } = rawToContentrain(raw, { includeEmails })
     if (raw.comments?.length) {
-      const exp = buildCommentsExport(raw, entry_source_map)
+      const exp = buildCommentsExport(raw, entry_source_map, { includeEmails })
       files['comments-export.json'] = `${JSON.stringify(exp, null, 2)}\n`
       const summary = summarizeComments(exp)
       if (summary.unresolved?.length) warnings.push(`${summary.unresolved.length} comments reference posts outside the import`)

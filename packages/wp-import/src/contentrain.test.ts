@@ -111,6 +111,21 @@ describe('personal data: e-mail addresses stay out of the store unless asked for
     expect(JSON.parse(result.files['.contentrain/models/authors.json']!).fields.email.type).toBe('email')
   })
 
+  it('the comments export drops commenter e-mails (and meta holding one) unless includeEmails', async () => {
+    const { raw, result } = await load()
+    const withMeta = structuredClone(raw)
+    for (const c of withMeta.comments!) c.meta = { akismet_as_submitted: { comment_author_email: c.email }, rating: 5 }
+    const exp = buildCommentsExport(withMeta, result.entry_source_map, { generated_at: '2026-10-09T00:00:00Z' })
+    expect(JSON.stringify(exp)).not.toContain('r@example.com')
+    expect(exp.comments.length).toBeGreaterThan(0)
+    expect(exp.comments.every((c) => c.email === null && c.meta?.rating === 5)).toBe(true)
+    // The commenter with an address loses the meta that repeats it; non-personal meta stays.
+    const reader = exp.comments.find((c) => c.author === 'Reader')!
+    expect(reader.meta).toEqual({ rating: 5 })
+    const opted = buildCommentsExport(withMeta, result.entry_source_map, { generated_at: '2026-10-09T00:00:00Z', includeEmails: true })
+    expect(JSON.stringify(opted)).toContain('r@example.com')
+  })
+
   it('includeEmails: true writes them', async () => {
     const { raw } = await parseWxr(FIXTURE)
     const { files } = rawToContentrain(raw, { updatedBy: 'test', includeEmails: true })

@@ -340,7 +340,7 @@ contentrain import export.xml --include-emails  # also write author/commenter e-
 
 Writes the canonical store plus `import-report.json`, `entry-source-map.json` (WP id → entry address), and — when the source has comments — `comments-export.json` (`contentrain-comments@1`, ready for a comments-service intake). An existing `.contentrain` is only overwritten with `--force`. Powered by `@contentrain/wp-import`.
 
-**Personal data.** The store holds author names and logins, and commenters' names, website URLs and comment text. A WXR export also carries author and commenter e-mail addresses; they are left out unless you pass `--include-emails`, because the store usually ends up in git (sometimes a public repo). The REST path never sees them.
+**Personal data.** The store holds author names and logins, and commenters' names, website URLs and comment text. A WXR export also carries author and commenter e-mail addresses; they are left out of the store and of `comments-export.json` (along with comment meta that repeats an address) unless you pass `--include-emails`, because the store usually ends up in git (sometimes a public repo). The REST path never sees them.
 
 **Credentials.** The Application Password is read from `CONTENTRAIN_WP_APP_PASSWORD` (with `--auth <user>`), from `CONTENTRAIN_WP_AUTH=user:password`, or from a hidden prompt. `--auth user:password` still works but is deprecated and warns: argv lands in shell history and process listings.
 
