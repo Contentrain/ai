@@ -99,7 +99,11 @@ preview; a site you publish builds without it.
 - **Interface text is content.** Every label the site prints comes from the
   `ui-strings` dictionary, in the site's language; a missing key shows the key.
 - **Addresses are kept.** Permalinks follow WordPress tokens (`:slug`, `:path`,
-  `:year`, `:month`, `:day`, `:id`) and the site is built with trailing slashes.
+  `:year`, `:month`, `:day`, `:id`, and `:category` for posts) and the site is
+  built with trailing slashes. `:category` is WordPress's `%category%`: the
+  post's primary category (`primary_category`, from Yoast or Rank Math), else
+  its category with the lowest term ID, with its parents (`news/local`); a post
+  with none takes `siteConfig.defaultCategory` (default `uncategorized`).
 
 ## Studio binding: forms, comments and media
 

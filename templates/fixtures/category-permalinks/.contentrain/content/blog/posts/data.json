@@ -1,0 +1,57 @@
+{
+  "b0a000000001": {
+    "body": "<p>A flat category.</p>",
+    "categories": [
+      "c0a000000001"
+    ],
+    "excerpt": "A flat category.",
+    "published_at": "2026-09-01T09:00:00Z",
+    "slug": "flat-post",
+    "title": "A flat category",
+    "wp_id": 201
+  },
+  "b0a000000002": {
+    "body": "<p>A nested category.</p>",
+    "categories": [
+      "c0a000000002"
+    ],
+    "excerpt": "A nested category.",
+    "published_at": "2026-09-02T09:00:00Z",
+    "slug": "nested-post",
+    "title": "A nested category",
+    "wp_id": 202
+  },
+  "b0a000000003": {
+    "body": "<p>Two categories, lowest ID.</p>",
+    "categories": [
+      "c0a000000003",
+      "c0a000000001"
+    ],
+    "excerpt": "Two categories, lowest ID.",
+    "published_at": "2026-09-03T09:00:00Z",
+    "slug": "two-categories",
+    "title": "Two categories, lowest ID",
+    "wp_id": 203
+  },
+  "b0a000000004": {
+    "body": "<p>The primary category wins.</p>",
+    "categories": [
+      "c0a000000001",
+      "c0a000000003"
+    ],
+    "excerpt": "The primary category wins.",
+    "primary_category": "c0a000000003",
+    "published_at": "2026-09-04T09:00:00Z",
+    "slug": "primary-wins",
+    "title": "The primary category wins",
+    "wp_id": 204
+  },
+  "b0a000000005": {
+    "body": "<p>No category at all.</p>",
+    "excerpt": "No category at all.",
+    "published_at": "2026-09-05T09:00:00Z",
+    "slug": "no-category",
+    "title": "No category at all",
+    "wp_id": 205
+  }
+}

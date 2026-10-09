@@ -8,7 +8,7 @@ import Prose from '../components/kit/prose/Prose.astro'
 import StudioComments from '../components/studio/StudioComments.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { getEntry } from 'astro:content'
-import { authorHref, getPosts, getSite, getStrings, imageOf, postHref, type Media } from '../lib/content'
+import { authorHref, byId, getPosts, getSite, getStrings, imageOf, postHref, type Category, type Media } from '../lib/content'
 import { bodyOf, dateOf, entriesOf, entryHref, entryTitle, newestFirst, refIds, termHref, termsById, text, type TypeEntry } from '../lib/custom'
 import { shownFields, type Targets } from '../lib/fields'
 import { publicHtml } from '../lib/links'
@@ -26,13 +26,14 @@ interface Props {
 
 const { type, entry, targets } = Astro.props
 const { data } = entry
-const [site, t, fields, body, siblings, latestPosts] = await Promise.all([
+const [site, t, fields, body, siblings, latestPosts, categories] = await Promise.all([
   getSite(),
   getStrings(),
   shownFields(type.fields, data, targets),
   bodyOf(type, entry) ? publicHtml(bodyOf(type, entry)) : undefined,
   type.adjacent || (type.more && type.moreOf !== 'posts') ? entriesOf(type.collection) : [],
   type.more && type.moreOf === 'posts' ? getPosts() : [],
+  type.more && type.moreOf === 'posts' ? byId('categories') : new Map<string, Category>(),
 ])
 // Newest first: the previous entry is the older one, the next the newer, as in WordPress.
 const ordered = newestFirst(siblings, type.card.date)
@@ -42,7 +43,7 @@ const next = at > 0 ? ordered[at - 1] : undefined
 const more: Array<{ href: string, title: string, date: Date | undefined }> = !type.more
   ? []
   : type.moreOf === 'posts'
-    ? latestPosts.slice(0, type.more).map(post => ({ href: postHref(post), title: post.data.title, date: post.data.published_at }))
+    ? latestPosts.slice(0, type.more).map(post => ({ href: postHref(post, categories), title: post.data.title, date: post.data.published_at }))
     : ordered.filter(other => type.moreIncludesCurrent || other.id !== entry.id).slice(0, type.more)
         .map(other => ({ href: entryHref(type, other), title: entryTitle(type, other), date: dateOf(other.data[type.card.date ?? 'published_at']) }))
 const formatDate = (date: Date) => date.toLocaleDateString(site.language, { dateStyle: 'long', timeZone: 'UTC' })

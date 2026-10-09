@@ -1,0 +1,18 @@
+{
+  "c0a000000001": {
+    "name": "News",
+    "slug": "news",
+    "wp_id": 2
+  },
+  "c0a000000002": {
+    "name": "Local",
+    "parent": "c0a000000001",
+    "slug": "local",
+    "wp_id": 7
+  },
+  "c0a000000003": {
+    "name": "Events",
+    "slug": "events",
+    "wp_id": 5
+  }
+}
