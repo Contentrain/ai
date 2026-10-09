@@ -68,7 +68,7 @@ export interface ProjectPlan {
 }
 
 export interface PlanSource {
-  /** The WordPress origin, `https://example.com`. */
+  /** The WordPress origin, `https://example.com`, or a sub-directory install's, `https://example.com/blog` (no trailing slash). */
   origin: string
   builder: 'gutenberg' | 'elementor' | 'divi' | 'classic'
   /** Hash of the fact pack the plan was made from; a plan is only valid for those facts. */
@@ -552,7 +552,9 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   const errors: string[] = []
   const warnings: string[] = []
   if (plan.format !== PROJECT_PLAN_FORMAT) errors.push(`format is not ${PROJECT_PLAN_FORMAT}`)
-  if (!/^https?:\/\/[^/]+$/.test(plan.source?.origin ?? '')) errors.push('source.origin is not an http(s) origin without a path')
+  // A sub-directory install (`https://host/blog`) is a WordPress origin too: its paths keep the prefix. No trailing slash,
+  // query or fragment: the origin is joined with host-absolute paths.
+  if (!/^https?:\/\/[^/?#\s]+(?:\/[^/?#\s]+)*$/.test(plan.source?.origin ?? '')) errors.push('source.origin is not an http(s) origin (a sub-directory is allowed; no trailing slash, query or fragment)')
   const site = plan.site
   for (const [key, value] of Object.entries(site?.permalinks ?? {})) {
     if (!PERMALINK.test(value)) errors.push(`site.permalinks.${key} must start and end with "/" (${value})`)
