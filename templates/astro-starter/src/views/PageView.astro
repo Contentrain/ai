@@ -30,6 +30,8 @@ const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
 <BaseLayout
   title={isHome ? undefined : data.title}
   fullTitle={data.seo?.title}
+  ogTitle={data.seo?.og_title}
+  ogDescription={data.seo?.og_description}
   description={data.seo?.description ?? data.excerpt ?? summarize(data.body)}
   image={data.seo?.image ?? cover?.data.url}
   canonical={data.seo?.canonical}
