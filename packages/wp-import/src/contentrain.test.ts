@@ -123,7 +123,28 @@ describe('personal data: e-mail addresses stay out of the store unless asked for
     const reader = exp.comments.find((c) => c.author === 'Reader')!
     expect(reader.meta).toEqual({ rating: 5 })
     const opted = buildCommentsExport(withMeta, result.entry_source_map, { generated_at: '2026-10-09T00:00:00Z', includeEmails: true })
-    expect(JSON.stringify(opted)).toContain('r@example.com')
+    expect(opted.comments.find((c) => c.author === 'Reader')!.email).toBe('r@example.com')
+  })
+
+  it('IP, user agent and avatar meta never leave, by key, even with no e-mail and with includeEmails', async () => {
+    const { raw, result } = await load()
+    const withPii = structuredClone(raw)
+    for (const c of withPii.comments!) {
+      c.email = null
+      c.meta = {
+        akismet_as_submitted: { user_ip: '203.0.113.7', user_agent: 'Mozilla/5.0 (X11; Linux x86_64)' },
+        akismet_history: [{ event: 'check-ham' }],
+        _wp_user_ip: '2001:db8::1',
+        author_avatar_urls: { 96: 'https://secure.gravatar.com/avatar/abc' },
+        rating: 5,
+      }
+    }
+    for (const includeEmails of [false, true]) {
+      const exp = buildCommentsExport(withPii, result.entry_source_map, { generated_at: '2026-10-09T00:00:00Z', includeEmails })
+      const text = JSON.stringify(exp)
+      for (const needle of ['203.0.113.7', '2001:db8::1', 'Mozilla/', 'gravatar', 'akismet']) expect(text, needle).not.toContain(needle)
+      expect(exp.comments.every((c) => c.meta?.rating === 5)).toBe(true)
+    }
   })
 
   it('includeEmails: true writes them', async () => {

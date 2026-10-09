@@ -49,9 +49,17 @@ const WXR = `<?xml version="1.0" encoding="UTF-8"?>
     <wp:post_type>post</wp:post_type>
     <category domain="category" nicename="news"><![CDATA[News]]></category>
     <wp:comment><wp:comment_id>500</wp:comment_id><wp:comment_author><![CDATA[Reader]]></wp:comment_author><wp:comment_author_email>reader@cli.example</wp:comment_author_email><wp:comment_date_gmt>2026-01-03 09:00:00</wp:comment_date_gmt><wp:comment_content><![CDATA[Nice]]></wp:comment_content><wp:comment_approved>1</wp:comment_approved><wp:comment_parent>0</wp:comment_parent><wp:commentmeta><wp:meta_key>akismet_as_submitted</wp:meta_key><wp:meta_value><![CDATA[a:1:{s:20:"comment_author_email";s:18:"reader@cli.example";}]]></wp:meta_value></wp:commentmeta><wp:commentmeta><wp:meta_key>rating</wp:meta_key><wp:meta_value>5</wp:meta_value></wp:commentmeta></wp:comment>
+    <wp:comment><wp:comment_id>501</wp:comment_id><wp:comment_author><![CDATA[Anon]]></wp:comment_author><wp:comment_author_IP>198.51.100.23</wp:comment_author_IP><wp:comment_agent><![CDATA[Mozilla/5.0 (X11; Linux x86_64)]]></wp:comment_agent><wp:comment_date_gmt>2026-01-04 09:00:00</wp:comment_date_gmt><wp:comment_content><![CDATA[No e-mail here]]></wp:comment_content><wp:comment_approved>1</wp:comment_approved><wp:comment_parent>0</wp:comment_parent><wp:commentmeta><wp:meta_key>akismet_as_submitted</wp:meta_key><wp:meta_value><![CDATA[a:2:{s:7:"user_ip";s:13:"198.51.100.23";s:10:"user_agent";s:31:"Mozilla/5.0 (X11; Linux x86_64)";}]]></wp:meta_value></wp:commentmeta><wp:commentmeta><wp:meta_key>_user_ip</wp:meta_key><wp:meta_value>2001:db8::7</wp:meta_value></wp:commentmeta></wp:comment>
   </item>
 </channel>
 </rss>`
+
+// Personal data that must never reach disk by default: the fixture's
+// addresses, any IPv4, any IPv6 (`::` form, as WordPress stores them), and a
+// browser user agent.
+const PII = [/ada@cli\.example|reader@cli\.example/, /\b\d{1,3}(?:\.\d{1,3}){3}\b/, /\b[0-9a-f]{1,4}(?::[0-9a-f]{1,4})*::(?:[0-9a-f]{1,4})?\b/i, /Mozilla\/\d/]
+const piiLeaks = (files: Record<string, string>, patterns = PII) =>
+  Object.entries(files).flatMap(([p, text]) => patterns.filter((re) => re.test(text)).map((re) => `${p}: ${re.source}`))
 
 const run = async (args: Record<string, unknown>) => {
   const mod = await import('../../src/commands/import.js')
@@ -112,26 +120,29 @@ describe('import command', () => {
     return Object.fromEntries(await Promise.all(files.map(async (p) => [p.slice(root.length + 1), await readFile(p, 'utf8')] as const)))
   }
 
-  it('no written file carries an e-mail address by default (store, comments export, report, source map)', async () => {
+  it('no written file carries an e-mail, IP or user agent by default (store, comments export, report, source map)', async () => {
     await run({ source: wxrPath, out: dir })
     expect(process.exitCode).toBeUndefined()
     const files = await writtenFiles(dir)
     expect(Object.keys(files)).toEqual(expect.arrayContaining(['comments-export.json', 'import-report.json', 'entry-source-map.json']))
-    const leaks = Object.entries(files).filter(([, text]) => /ada@cli\.example|reader@cli\.example/.test(text)).map(([p]) => p)
-    expect(leaks).toEqual([])
-    // The comment itself still travels, with non-personal meta intact.
+    expect(piiLeaks(files)).toEqual([])
+    // The comments themselves still travel, with non-personal meta intact.
     const exp = JSON.parse(files['comments-export.json']!)
-    expect(exp.comments).toHaveLength(1)
-    expect(exp.comments[0]).toMatchObject({ author: 'Reader', email: null, meta: { rating: '5' } })
-    expect(exp.comments[0].meta.akismet_as_submitted).toBeUndefined()
+    expect(exp.comments).toHaveLength(2)
+    const byAuthor = Object.fromEntries(exp.comments.map((c: { author: string }) => [c.author, c]))
+    expect(byAuthor.Reader).toMatchObject({ email: null, meta: { rating: '5' } })
+    expect(Object.keys(byAuthor.Reader.meta)).toEqual(['rating'])
+    // No e-mail left, yet the IP and user agent in its Akismet meta still must not travel.
+    expect(byAuthor.Anon.meta).toBeUndefined()
   })
 
   it('--include-emails carries them into the store and the comments export', async () => {
     await run({ source: wxrPath, out: dir, 'include-emails': true })
     const files = await writtenFiles(dir)
     expect(files['comments-export.json']).toContain('reader@cli.example')
-    expect(JSON.parse(files['comments-export.json']!).comments[0].meta.akismet_as_submitted).toBeDefined()
     expect(files['.contentrain/content/blog/authors/data.json']).toContain('ada@cli.example')
+    // --include-emails covers e-mails only: no IP or user agent, anywhere.
+    expect(piiLeaks(files, PII.slice(1))).toEqual([])
   })
 
   it('leaves author and commenter e-mails out of the store by default', async () => {
