@@ -1,5 +1,32 @@
 # @contentrain/types
 
+## 1.63.0
+
+### Minor Changes
+
+- 18f8792: A `:category` permalink token, so WordPress `/%category%/%postname%/` sites keep their post URLs.
+
+  - `@contentrain/types`: `PlanPermalink` documents `:category` for `site.permalinks.post`; the plan validator rejects it in any other permalink.
+  - `@contentrain/wp-import`: posts get a `primary_category` relation to `categories` from Yoast's `_yoast_wpseo_primary_category` or Rank Math's `rank_math_primary_category` (a term id), which is the category WordPress puts in `%category%`. A primary that names no imported category is dropped and counted in `dropped_relations`.
+
+  The astro starter fills `:category` with the post's primary category, else its category with the lowest term ID, with its parents (`news/local`); a post with none takes `siteConfig.defaultCategory` (default `uncategorized`), as WordPress does.
+
+- d089839: Commit hooks are opt-in, and every local write names its base branch.
+
+  - `"git": { "verify": true }` in `.contentrain/config.json`, or `CONTENTRAIN_VERIFY=1` for one run, runs the repository's commit hooks (`pre-commit`, `prepare-commit-msg`, `commit-msg`) on Contentrain's machine commits: the content commit, the `context.json` commit, a reconcile merge commit and the seed commit of an empty repo. A hook that rejects the content commit fails the write with the hook's output; nothing is retried without hooks. A hook that rejects only the follow-up `context.json` commit is reported in the result's `warning`. `CONTENTRAIN_VERIFY=0` skips hooks over the config. The default is unchanged: commit hooks are skipped, so existing projects keep working (#510).
+  - Every local write's `git` block, and `contentrain_merge`, report `base_branch`: the resolved branch an auto-merge advances and, unless pushing is off, pushes. When it is not the checked-out branch the result's `warning` already says the working tree was not touched (#509).
+  - `ContentrainConfig.git.verify?: boolean` and `Commit.base_branch?: string` in `@contentrain/types`.
+
+- 7ec8e1f: Validator and init gaps (#512).
+
+  - **validate checks document file names against the slug rule.** A file such as `Bad_Name.md` could be read but never saved, because every write rejects that slug. validate now reports it as an error, once per slug, and suggests the slug to rename it to (`"bad-name"`).
+  - **`contentrain init --locales` / `--domains`.** Both take a comma-separated list (`--locales tr`, `--locales en,tr`, `--domains docs`), where the first locale is the default. They work with `--yes` and skip the matching prompt in interactive mode. An invalid locale or domain stops init before anything is written.
+  - **A YAML inline comment is no longer read as part of the value.** `status: draft # todo` reads as `draft`, `title: "A" # x` as `A` (quotes resolved) and `tags: [a, b] # x` as the list. `C#`, `"a # b"` and a value that starts with `#` keep their `#`. The rule is one exported function, `stripFrontmatterComment`, used by the content engine and by `@contentrain/query`'s generator and Astro loader alike. A list ends at its own closing bracket, so `[a, b] # see [c]` is `['a', 'b']`. The comment is not written back on save, so validate warns about each such line, dash-list items included (`frontmatterCommentKeys`).
+
+### Patch Changes
+
+- 3bfe833: A document saved without a field change is byte-identical again (#521). `parseMarkdownFrontmatter` now records the layout around the body — the blank lines after the closing `---`, the trailing newlines, the line ending and the final newline — whenever it differs from the default shape, and `serializeMarkdownFrontmatter` writes it back: no blank line is added after `---` or collapsed, `\n\n` at the end stays `\n\n`, a plain document without a final newline keeps none, and a plain CRLF document stays CRLF. A document in the default shape (LF, one blank line after `---`, one final newline) still has no `preserved`, and new documents are written as before.
+
 ## 1.62.0
 
 ### Minor Changes
