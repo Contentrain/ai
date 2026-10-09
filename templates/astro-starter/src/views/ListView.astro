@@ -41,7 +41,7 @@ const cards: Card[] = given ?? await Promise.all(posts.map(async (post) => {
   const category = post.data.categories[0] ? categories.get(post.data.categories[0].id) : undefined
   return {
     title: post.data.title,
-    href: postHref(post),
+    href: postHref(post, categories),
     excerpt: post.data.excerpt,
     date: post.data.published_at,
     author: post.data.author ? authors?.get(post.data.author.id)?.data.name : undefined,

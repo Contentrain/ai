@@ -44,6 +44,12 @@
       "order": 120,
       "type": "datetime"
     },
+    "primary_category": {
+      "label": "Primary category",
+      "model": "categories",
+      "order": 85,
+      "type": "relation"
+    },
     "published_at": {
       "label": "Published at",
       "order": 60,

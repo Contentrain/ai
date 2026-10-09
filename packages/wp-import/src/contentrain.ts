@@ -145,6 +145,17 @@ const idsOf = (v: unknown): number[] =>
     .map((x) => (typeof x === 'number' ? x : typeof x === 'string' && /^\d+$/.test(x) ? Number(x) : x && typeof x === 'object' ? Number((x as { ID?: unknown; id?: unknown; term_id?: unknown }).ID ?? (x as { id?: unknown }).id ?? (x as { term_id?: unknown }).term_id) : Number.NaN))
     .filter((n) => Number.isSafeInteger(n) && n > 0)
 
+/** Yoast's and Rank Math's primary category (a term id in post meta); undefined when neither is set. */
+const PRIMARY_CATEGORY_META = ['_yoast_wpseo_primary_category', 'rank_math_primary_category'] as const
+function primaryCategoryId(p: RawPost): number | undefined {
+  for (const key of PRIMARY_CATEGORY_META) {
+    const v = p.meta[key]
+    const id = typeof v === 'number' ? v : typeof v === 'string' && /^\d+$/.test(v) ? Number(v) : Number.NaN
+    if (Number.isSafeInteger(id) && id > 0) return id
+  }
+  return undefined
+}
+
 export interface RawToContentrainOptions {
   /** `updated_by` stamped on every meta entry. Default `@contentrain/wp-import`. */
   updatedBy?: string
@@ -579,6 +590,9 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
     }
     if (typeItems.some((p) => p.menu_order)) fields.menu_order = { type: 'integer', label: 'Menu order', order: (o += 10) }
     if (typeItems.some((p) => p.sticky)) fields.sticky = { type: 'boolean', label: 'Sticky', order: (o += 10) }
+    // The primary category an SEO plugin set: the one WordPress puts in a `%category%` permalink (`post_link_category`).
+    if (taxes.includes('category') && typeItems.some((p) => primaryCategoryId(p) !== undefined))
+      fields.primary_category = { type: 'relation', model: taxModelId('category'), label: 'Primary category', order: (o += 10) }
     if (typeItems.some((p) => typeof p.meta._wp_page_template === 'string' && p.meta._wp_page_template !== 'default'))
       fields.template = { type: 'string', label: 'Page template', order: (o += 10) }
     const formats = [
@@ -660,6 +674,15 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
       }
       if (fields.menu_order && p.menu_order) e.menu_order = p.menu_order
       if (fields.sticky) e.sticky = p.sticky ?? false
+      if (fields.primary_category) {
+        const termWpId = primaryCategoryId(p)
+        const term = termWpId === undefined ? undefined : termById.get(termWpId)
+        const ref = term && term.taxonomy === 'category' ? termId('category', term.slug) : undefined
+        // Only a category the post is in, as Yoast and Rank Math check before using it; a stale one is left out.
+        const assigned = ref !== undefined && Array.isArray(e[taxModelId('category')]) && (e[taxModelId('category')] as string[]).includes(ref)
+        if (ref && assigned && contents[taxModelId('category')]?.[ref]) e.primary_category = ref
+        else if (termWpId !== undefined) report.dropped_relations++
+      }
       if (fields.template && typeof p.meta._wp_page_template === 'string' && p.meta._wp_page_template !== 'default')
         e.template = p.meta._wp_page_template
       if (fields.format) {

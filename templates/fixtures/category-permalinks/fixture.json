@@ -1,0 +1,84 @@
+{
+  "siteConfig": [
+    {
+      "from": "    post: '/blog/:slug/',",
+      "to": "    post: '/:category/:slug/',"
+    }
+  ],
+  "absentFromDist": [
+    "/blog/flat-post/",
+    "/blog/nested-post/",
+    "/events/two-categories/",
+    "/news/primary-wins/",
+    "/news/local/no-category/",
+    "/news/local/stale-primary/"
+  ],
+  "distFiles": {
+    "news/flat-post/index.html": {
+      "contains": [
+        "A flat category",
+        "<link rel=\"canonical\" href=\"https://example.com/news/flat-post/\">"
+      ]
+    },
+    "news/local/nested-post/index.html": {
+      "contains": [
+        "A nested category",
+        "<link rel=\"canonical\" href=\"https://example.com/news/local/nested-post/\">"
+      ]
+    },
+    "news/two-categories/index.html": {
+      "contains": [
+        "Two categories, lowest ID",
+        "<link rel=\"canonical\" href=\"https://example.com/news/two-categories/\">"
+      ]
+    },
+    "events/primary-wins/index.html": {
+      "contains": [
+        "The primary category wins",
+        "<link rel=\"canonical\" href=\"https://example.com/events/primary-wins/\">"
+      ]
+    },
+    "uncategorized/no-category/index.html": {
+      "contains": [
+        "No category at all",
+        "<link rel=\"canonical\" href=\"https://example.com/uncategorized/no-category/\">"
+      ]
+    },
+    "sitemap-0.xml": {
+      "contains": [
+        "https://example.com/news/flat-post/",
+        "https://example.com/news/local/nested-post/",
+        "https://example.com/news/two-categories/",
+        "https://example.com/events/primary-wins/",
+        "https://example.com/uncategorized/no-category/",
+        "https://example.com/news/stale-primary/"
+      ]
+    },
+    "rss.xml": {
+      "contains": [
+        "https://example.com/news/flat-post/",
+        "https://example.com/news/local/nested-post/",
+        "https://example.com/news/two-categories/",
+        "https://example.com/events/primary-wins/",
+        "https://example.com/uncategorized/no-category/",
+        "https://example.com/news/stale-primary/"
+      ]
+    },
+    "index.html": {
+      "contains": [
+        "href=\"/news/flat-post/\"",
+        "href=\"/news/local/nested-post/\"",
+        "href=\"/news/two-categories/\"",
+        "href=\"/events/primary-wins/\"",
+        "href=\"/uncategorized/no-category/\"",
+        "href=\"/news/stale-primary/\""
+      ]
+    },
+    "news/stale-primary/index.html": {
+      "contains": [
+        "A stale primary is ignored",
+        "<link rel=\"canonical\" href=\"https://example.com/news/stale-primary/\">"
+      ]
+    }
+  }
+}

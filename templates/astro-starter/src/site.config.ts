@@ -92,6 +92,11 @@ export interface SiteConfig {
     /** The posts index when the front page is a static page; otherwise the posts are listed at `/`. */
     blog: string
   }
+  /**
+   * The slug a post with no category puts in `:category` (WordPress: the default category, Settings → Writing).
+   * Absent: `uncategorized`.
+   */
+  defaultCategory?: string
   /** The front page: the posts index, or one page by slug. */
   home: { kind: 'posts' } | { kind: 'page', slug: string }
   /**
