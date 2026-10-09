@@ -35,6 +35,7 @@
   "footer.rss": "RSSフィード",
   "form.honeypot": "この欄は空のままにしてください",
   "form.mailto": "メールでのお問い合わせ：",
+  "form.needs_endpoint": "このフォームでメッセージを受け取るには、Studio またはフォームの送信先が必要です。",
   "form.noscript": "このフォームにはJavaScriptが必要です。",
   "form.send": "送信",
   "form.sending": "送信中…",

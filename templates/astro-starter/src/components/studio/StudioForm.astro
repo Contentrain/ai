@@ -3,15 +3,15 @@
 // honeypot and captcha come from the model's form settings in Studio, so an
 // editor changes the form without touching code; submissions arrive in Studio
 // for review. Until the site is bound to a Studio project (site.config.ts) it
-// links to the form on WordPress or shows the source's address to write to, and
-// renders nothing — no script — when there is neither. When the owner chose another home at
-// migration (site.config.ts `features.forms`), it posts to their form service,
-// shows an address to write to, or links to the form on the WordPress site.
-// A form that links to WordPress still shows its fields where the source page
-// showed them, inert, with a line saying where it is sent and the link.
+// shows the source's address to write to, and when there is none it says so in
+// the form's place (`needs_endpoint`: its fields as text and a line that it
+// needs Studio or a form endpoint) — no script, never a form that vanishes.
+// When the owner chose another home at migration (site.config.ts
+// `features.forms`), it posts to their form service, shows an address to write
+// to, or links to the form on the WordPress site: a live link, with a line
+// saying where it is sent.
 import { getStringTable } from '../../lib/content'
 import { formAddress, formFields, formHome, onWordPress } from '../../lib/features'
-import { fieldsHtml } from '../../lib/studio/form-fields'
 import { siteConfig } from '../../site.config'
 import FormMount from './FormMount.astro'
 import StaticForm from './StaticForm.astro'
@@ -30,7 +30,7 @@ const home = formHome(model)
 const text = home ? await getStringTable(['common.', 'form.']) : {}
 const wordpress = home === 'wordpress' ? onWordPress(Astro.url.pathname) : undefined
 const address = home === 'mailto' ? formAddress() : undefined
-const fields = wordpress ? formFields(model) : []
+const fields = home === 'needs_endpoint' ? formFields(model) : []
 const host = wordpress ? new URL(wordpress).host : ''
 const noteId = `cr-form-note-${model.replace(/[^\w-]/g, '-')}`
 ---
@@ -41,22 +41,15 @@ const noteId = `cr-form-note-${model.replace(/[^\w-]/g, '-')}`
     {text['form.mailto'] ?? 'Write to us at'} <a href={`mailto:${encodeURI(address)}`} class="underline underline-offset-4">{address}</a>
   </p>
 )}
-{wordpress && fields.length === 0 && (
+{wordpress && (
   <div class:list={['cr-form-mount block', className]} data-cr-part="form" data-state="wordpress">
-    <a href={safeHref(wordpress)} class="cr-form-link">{text['form.wordpress'] ?? 'Open the form'}</a>
+    <p class="cr-form-note" id={noteId}>{(text['form.wordpress_note'] ?? 'This form is sent on {site}.').replace('{site}', host)}</p>
+    <p class="cr-actions"><a href={safeHref(wordpress)} class="cr-form-link" aria-describedby={noteId}>{text['form.wordpress'] ?? 'Open the form'}</a></p>
   </div>
 )}
-{wordpress && fields.length > 0 && (
-  <div class:list={['cr-form-mount block', className]} data-cr-part="form" data-state="wordpress">
-    <form class="cr-form" aria-describedby={noteId} data-model={model}>
-      <fieldset class="cr-fields" disabled>
-        <Fragment set:html={fieldsHtml(fields)} />
-      </fieldset>
-      <p class="cr-form-note" id={noteId}>{(text['form.wordpress_note'] ?? 'This form is sent on {site}.').replace('{site}', host)}</p>
-      <p class="cr-actions">
-        <a href={safeHref(wordpress)} class="cr-form-link">{text['form.wordpress'] ?? 'Open the form'}</a>
-        <button type="submit" disabled aria-disabled="true" aria-describedby={noteId}>{text['form.send'] ?? 'Send'}</button>
-      </p>
-    </form>
+{home === 'needs_endpoint' && (
+  <div class:list={['cr-form-mount block', className]} data-cr-part="form" data-state="needs_endpoint" data-model={model}>
+    {fields.length > 0 && <ul class="cr-form-fields">{fields.map(field => <li>{field.def.label ?? field.id}</li>)}</ul>}
+    <p class="cr-form-note" role="note">{text['form.needs_endpoint'] ?? 'This form needs Studio or a form endpoint to receive messages.'}</p>
   </div>
 )}

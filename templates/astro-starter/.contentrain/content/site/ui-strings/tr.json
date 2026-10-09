@@ -35,6 +35,7 @@
   "footer.rss": "RSS beslemesi",
   "form.honeypot": "Bu alanı boş bırakın",
   "form.mailto": "Bize şu adresten yazın:",
+  "form.needs_endpoint": "Bu form mesaj almak için Studio ya da bir form adresi gerektirir.",
   "form.noscript": "Bu form için JavaScript gerekir.",
   "form.send": "Gönder",
   "form.sending": "Gönderiliyor…",

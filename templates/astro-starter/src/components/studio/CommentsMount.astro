@@ -21,6 +21,7 @@ const { baseUrl, projectId, model, entry, locale, text } = Astro.props
   data-locale={locale}
   data-strings={JSON.stringify(text)}
 >
+  <slot />
   <noscript><p class="cr-noscript">{text['comments.noscript']}</p></noscript>
 </cr-comments>
 

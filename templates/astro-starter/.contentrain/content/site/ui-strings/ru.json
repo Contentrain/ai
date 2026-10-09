@@ -35,6 +35,7 @@
   "footer.rss": "RSS-лента",
   "form.honeypot": "Оставьте это поле пустым",
   "form.mailto": "Напишите нам на",
+  "form.needs_endpoint": "Этой форме нужен Studio или адрес для форм, чтобы получать сообщения.",
   "form.noscript": "Для этой формы нужен JavaScript.",
   "form.send": "Отправить",
   "form.sending": "Отправка…",
