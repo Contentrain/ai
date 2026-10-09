@@ -214,6 +214,15 @@ describe('primary category (Yoast / Rank Math) for a %category% permalink', () =
     expect(postOf(files).rank_math_primary_category).toBeUndefined()
   })
 
+  it('a primary the post is not in is left out, so the address falls back to the lowest term ID', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const post = raw.posts.find((p) => p.id === 10)!
+    post.meta._yoast_wpseo_primary_category = '3' // events, but the post is only in news
+    const { files } = rawToContentrain(raw, { updatedBy: 'test' })
+    expect(postOf(files).categories).not.toContain(hexId('category:events'))
+    expect(postOf(files).primary_category).toBeUndefined()
+  })
+
   it('no primary set: no field; a primary that names no imported category is dropped and counted', async () => {
     const none = await withMeta({})
     expect(JSON.parse(none.files['.contentrain/models/posts.json']!).fields.primary_category).toBeUndefined()

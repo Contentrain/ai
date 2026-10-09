@@ -53,5 +53,18 @@
     "slug": "no-category",
     "title": "No category at all",
     "wp_id": 205
+  },
+  "b0a000000006": {
+    "body": "<p>A stale primary is ignored.</p>",
+    "categories": [
+      "c0a000000003",
+      "c0a000000001"
+    ],
+    "excerpt": "A stale primary is ignored.",
+    "primary_category": "c0a000000002",
+    "published_at": "2026-09-06T09:00:00Z",
+    "slug": "stale-primary",
+    "title": "A stale primary is ignored",
+    "wp_id": 206
   }
 }

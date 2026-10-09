@@ -44,16 +44,18 @@ const termRank = (category: Category) => category.data.wp_id ?? Number.MAX_SAFE_
 
 /**
  * The category a post's address names, as WordPress picks it for `%category%`: the primary category an SEO plugin
- * set (Yoast's or Rank Math's, imported as `primary_category`), else the post's category with the lowest term ID.
+ * set (Yoast's or Rank Math's, imported as `primary_category`) when the post is in it, else the post's category with
+ * the lowest term ID.
  * Undefined when the post has none.
  */
 function primaryCategory(post: Post, categories: ReadonlyMap<string, Category>): Category | undefined {
-  const primary = post.data.primary_category ? categories.get(post.data.primary_category.id) : undefined
-  if (primary) return primary
   const own = post.data.categories.flatMap((ref) => {
     const category = categories.get(ref.id)
     return category ? [category] : []
   })
+  // Only a category the post is in, as Yoast and Rank Math themselves check: a stale primary does not move the post.
+  const primary = post.data.primary_category ? own.find(category => category.id === post.data.primary_category!.id) : undefined
+  if (primary) return primary
   return own.toSorted((a, b) => termRank(a) - termRank(b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0]
 }
 

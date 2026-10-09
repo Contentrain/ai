@@ -678,7 +678,9 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
         const termWpId = primaryCategoryId(p)
         const term = termWpId === undefined ? undefined : termById.get(termWpId)
         const ref = term && term.taxonomy === 'category' ? termId('category', term.slug) : undefined
-        if (ref && contents[taxModelId('category')]?.[ref]) e.primary_category = ref
+        // Only a category the post is in, as Yoast and Rank Math check before using it; a stale one is left out.
+        const assigned = ref !== undefined && Array.isArray(e[taxModelId('category')]) && (e[taxModelId('category')] as string[]).includes(ref)
+        if (ref && assigned && contents[taxModelId('category')]?.[ref]) e.primary_category = ref
         else if (termWpId !== undefined) report.dropped_relations++
       }
       if (fields.template && typeof p.meta._wp_page_template === 'string' && p.meta._wp_page_template !== 'default')
