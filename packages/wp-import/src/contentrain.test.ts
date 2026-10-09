@@ -72,6 +72,14 @@ const landing = (id: number, slug: string) => `<item>
 </item>`
 const pageEntries = (files: Record<string, string>) => JSON.parse(files['.contentrain/content/site/pages/data.json']!)
 
+// A RawIR that did not come through parseWxr / fetchRestRawIR (a Bridge export) still carries the WordPress type.
+const bridgeShaped = (mapped: RawIR): RawIR => {
+  const raw = structuredClone(mapped)
+  for (const p of raw.posts) if (p.id === 40) p.type = 'e-landing-page'
+  raw.comments = [...(raw.comments ?? []), { ...raw.comments![0]!, id: 900, post: 40, post_type: 'e-landing-page' }]
+  return raw
+}
+
 describe('Elementor landing pages are pages', () => {
   it('goes to the pages model with its slug, permalink and meta, and is not reported skipped', async () => {
     const { raw } = await parseWxr(FIXTURE.replace('</channel>', `${landing(40, 'summer-sale')}</channel>`))
@@ -91,6 +99,33 @@ describe('Elementor landing pages are pages', () => {
     const { files, report } = rawToContentrain(raw, { updatedBy: 'test' })
     expect(Object.values(pageEntries(files)).filter((e: any) => String(e.slug).startsWith('about'))).toHaveLength(2)
     expect(report.slug_moves.map((m) => [m.wp_id, m.type])).toContainEqual([41, 'page'])
+  })
+
+  it('rawToContentrain maps e-landing-page itself: a Bridge-shaped RawIR lands in pages, same files as the reader path', async () => {
+    const { raw: mapped } = await parseWxr(FIXTURE.replace('</channel>', `${landing(40, 'summer-sale')}</channel>`))
+    const bridge = bridgeShaped(mapped)
+    expect(bridge.posts.find((p) => p.id === 40)!.type).toBe('e-landing-page')
+    const fromBridge = rawToContentrain(bridge, { updatedBy: 'test' })
+    expect(fromBridge.files['.contentrain/models/e-landing-page.json']).toBeUndefined()
+    expect(Object.keys(fromBridge.files).filter((f) => f.includes('e-landing-page'))).toEqual([])
+    expect(fromBridge.report.skipped_types).not.toContain('e-landing-page')
+    expect(pageEntries(fromBridge.files)[hexId('pages:summer-sale')]).toMatchObject({ slug: 'summer-sale', title: 'Summer sale' })
+    expect(fromBridge.entry_source_map['40']).toEqual({ model_id: 'pages', entry_id: hexId('pages:summer-sale'), locale: 'en' })
+    // The input is not mutated.
+    expect(bridge.posts.find((p) => p.id === 40)!.type).toBe('e-landing-page')
+    // Same store as the reader-mapped RawIR carrying the same comment.
+    const readerMapped = structuredClone(mapped)
+    readerMapped.comments = [...(readerMapped.comments ?? []), { ...readerMapped.comments![0]!, id: 900, post: 40, post_type: 'page' }]
+    expect(fromBridge.files).toEqual(rawToContentrain(readerMapped, { updatedBy: 'test' }).files)
+  })
+
+  it('is idempotent: an already-mapped RawIR converts unchanged and is not touched', async () => {
+    const { raw } = await parseWxr(FIXTURE.replace('</channel>', `${landing(40, 'summer-sale')}</channel>`))
+    const before = structuredClone(raw)
+    const once = rawToContentrain(raw, { updatedBy: 'test' })
+    expect(raw).toEqual(before)
+    expect(rawToContentrain(before, { updatedBy: 'test' }).files).toEqual(once.files)
+    expect(pageEntries(once.files)[hexId('pages:summer-sale')]).toBeDefined()
   })
 })
 

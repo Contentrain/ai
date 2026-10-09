@@ -23,6 +23,7 @@ import {
   PLUGIN_META,
   SKIP_TYPES,
   addressSlug,
+  pageTypeOf,
   slugify,
   strip,
   taxModelId,
@@ -157,7 +158,26 @@ export interface RawToContentrainOptions {
   includeEmails?: boolean
 }
 
-export function rawToContentrain(raw: RawIR, opts?: RawToContentrainOptions): ContentrainResult {
+/**
+ * The page-type mapping the WordPress readers apply (`pageTypeOf`: Elementor's `e-landing-page` → `page`), applied again
+ * here so a RawIR from any producer — a Bridge export, a hand-built fixture — gets it too, not only one read by
+ * `parseWxr` / `fetchRestRawIR`. Idempotent: an already-mapped RawIR comes back as the same object.
+ */
+function withPageTypes(raw: RawIR): RawIR {
+  const postNeeds = raw.posts.some((p) => pageTypeOf(p.type) !== p.type)
+  const commentNeeds = (raw.comments ?? []).some((c) => c.post_type !== undefined && pageTypeOf(c.post_type) !== c.post_type)
+  if (!postNeeds && !commentNeeds) return raw
+  return {
+    ...raw,
+    posts: postNeeds ? raw.posts.map((p) => (pageTypeOf(p.type) === p.type ? p : Object.assign({}, p, { type: pageTypeOf(p.type) }))) : raw.posts,
+    ...(raw.comments && commentNeeds
+      ? { comments: raw.comments.map((c) => (c.post_type === undefined || pageTypeOf(c.post_type) === c.post_type ? c : Object.assign({}, c, { post_type: pageTypeOf(c.post_type) }))) }
+      : {}),
+  }
+}
+
+export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): ContentrainResult {
+  const raw = withPageTypes(input)
   const updatedBy = opts?.updatedBy ?? '@contentrain/wp-import'
   const includeEmails = opts?.includeEmails === true
   const locale = normLocale(raw.site.language) || 'en'
