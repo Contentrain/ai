@@ -5,6 +5,7 @@
 import { getCollection, getEntry, type CollectionKey } from 'astro:content'
 import type { ImageInput } from '../components/kit/_shared/types'
 import { siteConfig, type CustomType } from '../site.config'
+import { withBase } from './base'
 import { imageOf, type Media } from './content'
 import { dateParams, fillPattern } from './routes'
 
@@ -43,7 +44,7 @@ export function newestFirst(entries: readonly TypeEntry[], dateField = 'publishe
 export function entryHref(type: CustomType, entry: TypeEntry): string {
   const slug = text(entry.data.slug) ?? entry.id
   const wpId = entry.data.wp_id
-  return fillPattern(type.single, { slug, id: typeof wpId === 'number' ? String(wpId) : entry.id, ...dateParams(dateOf(entry.data.published_at)) })
+  return withBase(fillPattern(type.single, { slug, id: typeof wpId === 'number' ? String(wpId) : entry.id, ...dateParams(dateOf(entry.data.published_at)) }))
 }
 
 /** A taxonomy's terms by `collection:id`, the key `termHref` reads a term's parents under. */
@@ -56,14 +57,14 @@ export const termsById = (collection: string, terms: readonly TypeEntry[]): Map<
  */
 export function termHref(taxonomy: Taxonomy, term: TypeEntry, terms?: ReadonlyMap<string, TypeEntry>): string {
   const slug = text(term.data.slug) ?? term.id
-  if (!taxonomy.pattern.includes(':path')) return fillPattern(taxonomy.pattern, { slug })
+  if (!taxonomy.pattern.includes(':path')) return withBase(fillPattern(taxonomy.pattern, { slug }))
   const trail: string[] = []
   const seen = new Set<string>()
   for (let at: TypeEntry | undefined = term; at && !seen.has(at.id); at = terms?.get(`${taxonomy.collection}:${refIds(at.data.parent)[0] ?? ''}`)) {
     seen.add(at.id)
     trail.unshift(text(at.data.slug) ?? at.id)
   }
-  return fillPattern(taxonomy.pattern, { slug, path: trail.join('/') })
+  return withBase(fillPattern(taxonomy.pattern, { slug, path: trail.join('/') }))
 }
 
 /** The ids a `relations` (or `relation`) value points at. */

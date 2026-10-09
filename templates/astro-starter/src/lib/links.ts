@@ -8,6 +8,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content'
 import { safeUrl } from '../components/kit/_shared/safe-url'
+import { servedPath, underBase, withBase, withoutBase } from './base'
 import type { NavItem } from '../components/kit/_shared/types'
 import { byId, getRedirects, getSite, pageHref, postHref, resolve, termHref } from './content'
 import { optimizedImages } from './body-images'
@@ -16,7 +17,7 @@ import { siteConfig } from '../site.config'
 import { routeTable } from './site-routes'
 
 /** Addresses outside the route table that the site serves: search, the feed. */
-const SERVED = new Set(['/search/', '/rss.xml'])
+const SERVED = new Set(['/search/', '/rss.xml'].map(withBase))
 /** A file in public/ (media, documents): served as it is, not a route. */
 const FILE = /\/[^/]+\.[a-z\d]{2,5}$/i
 const SCHEMES = new Set(['mailto:', 'tel:', 'sms:'])
@@ -28,8 +29,9 @@ const hostOf = (url: string) => {
   try { return bareHost(new URL(url.includes('//') ? url : `http://${url}`).hostname) } catch { return undefined }
 }
 
+/** A served file address (`/blog/doc.pdf` under a `base`) is `public/doc.pdf`. */
 const inPublic = (path: string) => {
-  try { return existsSync(join(process.cwd(), 'public', decodeURI(path))) } catch { return false }
+  try { return existsSync(join(process.cwd(), 'public', decodeURI(withoutBase(path)))) } catch { return false }
 }
 
 /** A path as the site builds it: directories end in a slash (trailingSlash: 'always'), files do not. */
@@ -47,6 +49,16 @@ function internalHosts(): Promise<ReadonlySet<string>> {
 }
 
 /**
+ * The address a URL on this site is served at, or null for one outside it. A root path (`/a/`) is the site's own, put
+ * in its directory under a `base`; an absolute URL on this host keeps its path when it is inside the directory, and
+ * one outside it (another application on the host) is not this site's.
+ */
+function servedOf(parsed: URL): string | null {
+  if (parsed.origin === BASE) return servedPath(parsed.pathname)
+  return underBase(parsed.pathname) ? parsed.pathname : null
+}
+
+/**
  * A URL as this site's path when it points at this site (any scheme, `www.` or case), null when it
  * points elsewhere, undefined when it is no web address. For targets the published set cannot check
  * whole, such as a prefix redirect's `/b/:splat`.
@@ -55,7 +67,7 @@ export async function ownPath(url: string): Promise<string | null | undefined> {
   let parsed: URL
   try { parsed = new URL(url.trim(), `${BASE}/`) } catch { return undefined }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return undefined
-  return (await internalHosts()).has(bareHost(parsed.hostname)) ? parsed.pathname : null
+  return (await internalHosts()).has(bareHost(parsed.hostname)) ? servedOf(parsed) : null
 }
 
 type Linker = (url: string | undefined) => string | undefined
@@ -73,8 +85,11 @@ export function publicLinks(): Promise<Linker> {
   linker ??= (async () => {
     const [routes, internal, redirects] = await Promise.all([routeTable(), internalHosts(), getRedirects()])
     // Keyed by path and query: a rule for `/old.php?id=3` or `/?page_id=5` stands for that address only, not its path.
-    const ruleKey = (url: URL) => `${sitePath(url.pathname)}${url.search}`
-    const rules = new Map(redirects.filter(entry => !entry.data.from.includes('*')).map(entry => [ruleKey(new URL(entry.data.from, `${BASE}/`)), entry.data]))
+    const ruleKey = (path: string, url: URL) => `${sitePath(path)}${url.search}`
+    const rules = new Map(redirects.filter(entry => !entry.data.from.includes('*')).map((entry) => {
+      const from = new URL(entry.data.from, `${BASE}/`)
+      return [ruleKey(servedPath(from.pathname), from), entry.data]
+    }))
     // WordPress's own short links (`/?p=12`, `/?page_id=7`) point at the entry, wherever it lives now.
     const byWpId = new Map<number, string>()
     for (const [href, route] of routes) {
@@ -91,16 +106,21 @@ export function publicLinks(): Promise<Linker> {
       if (SCHEMES.has(parsed.protocol)) return raw
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return undefined
       if (!internal.has(bareHost(parsed.hostname))) return raw
-      const shortLink = parsed.pathname === '/' ? Number(parsed.searchParams.get('p') ?? parsed.searchParams.get('page_id') ?? Number.NaN) : Number.NaN
-      const path = sitePath(parsed.pathname)
-      const key = ruleKey(parsed)
+      // Under a `base`, the site's own addresses are inside its directory: one outside it is another application's.
+      const served = servedOf(parsed)
+      if (served === null) return raw
+      const path = sitePath(served)
+      const shortLink = path === withBase('/') ? Number(parsed.searchParams.get('p') ?? parsed.searchParams.get('page_id') ?? Number.NaN) : Number.NaN
+      const key = ruleKey(served, parsed)
       // The entry's own address wins; the collection's rule answers a short link to an entry that is gone.
       const rule = (!Number.isNaN(shortLink) && byWpId.has(shortLink)) || (!parsed.search && routes.has(path)) ? undefined : rules.get(key) ?? (routes.has(path) ? undefined : rules.get(path))
       if (!Number.isNaN(shortLink)) return byWpId.get(shortLink) ?? (rule && !followed.has(key) && rule.status !== 410 ? link(rule.to, new Set([...followed, key])) : undefined)
       if (rule) return followed.has(key) || rule.status === 410 ? undefined : link(rule.to, new Set([...followed, key]))
+      // The feed and search are built, not files in public/: served before the file test (`/rss.xml` looks like a file).
+      if (SERVED.has(path)) return `${path}${parsed.search}${parsed.hash}`
       // A file the media stage copied into public/ is served here; one it could not copy stays at its old address.
       if (FILE.test(path)) return inPublic(path) ? `${path}${parsed.search}${parsed.hash}` : raw
-      return routes.has(path) || SERVED.has(path) ? `${path}${parsed.search}${parsed.hash}` : undefined
+      return routes.has(path) ? `${path}${parsed.search}${parsed.hash}` : undefined
     }
     return url => link(url, new Set())
   })()

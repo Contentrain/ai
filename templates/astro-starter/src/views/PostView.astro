@@ -10,6 +10,7 @@ import StudioComments from '../components/studio/StudioComments.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { authorHref, byId, getPosts, getSite, getStrings, imageOf, postHref, resolve, termHref, type Post } from '../lib/content'
 import { cssSize } from '../lib/css-size'
+import { servedPath, withBase } from '../lib/base'
 import { publicHtml } from '../lib/links'
 import { articleLd, summarize } from '../lib/seo'
 import { siteConfig } from '../site.config'
@@ -57,11 +58,11 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
   nofollow={data.seo?.nofollow}
   published={data.published_at}
   modified={data.modified_at}
-  jsonLd={[articleLd({ name: site.title, url: new URL('/', Astro.site ?? Astro.url).href }, {
+  jsonLd={[articleLd({ name: site.title, url: new URL(withBase('/'), Astro.site ?? Astro.url).href }, {
     url,
     headline: data.title,
     description,
-    image: image ? new URL(image, Astro.site ?? Astro.url).href : undefined,
+    image: image ? new URL(servedPath(image), Astro.site ?? Astro.url).href : undefined,
     published: data.published_at,
     modified: data.modified_at,
     author: author ? { name: author.data.name, url: new URL(authorHref(author), Astro.site ?? Astro.url).href } : undefined,

@@ -7,13 +7,14 @@
 // (A page file named `_redirects.ts` would be ignored: Astro skips pages whose
 // name starts with an underscore, hence the parameter.)
 import type { APIRoute, GetStaticPaths } from 'astro'
+import { withBase } from '../lib/base'
 import { attachmentRules, prefixRules, queriedRules, queryRules, redirectRules } from '../lib/redirects'
 
 /** Cloudflare Pages reads at most 2,000 static rules; Netlify reads more but slows with every one. */
 const HOST_RULE_LIMIT = 2000
 
-/** A WordPress query address in Netlify's query form: `/ p=12 /hello-world/ 301`. */
-const query = (rule: { param: string, value: string, to: string, status: number }) => `/ ${rule.param}=${rule.value} ${rule.to} ${rule.status}`
+/** A WordPress query address in Netlify's query form: `/ p=12 /hello-world/ 301` (`/blog/ p=12 …` under a `base`). */
+const query = (rule: { param: string, value: string, to: string, status: number }) => `${withBase('/')} ${rule.param}=${rule.value} ${rule.to} ${rule.status}`
 
 export const getStaticPaths = (() => [{ params: { hostfile: '_redirects' } }]) satisfies GetStaticPaths
 
@@ -24,7 +25,7 @@ export const GET: APIRoute = async () => {
   // (Redirection, Rank Math) answer before an attachment page does. Exact addresses, then prefixes,
   // then query addresses, and the attachment pages last.
   const lines = [
-    ...rules.map(rule => (rule.status === 410 ? `${rule.from} /404.html 410` : `${rule.from} ${rule.to} ${rule.status}`)),
+    ...rules.map(rule => (rule.status === 410 ? `${rule.from} ${withBase('/404.html')} 410` : `${rule.from} ${rule.to} ${rule.status}`)),
     ...prefixes.map(rule => `${rule.from} ${rule.to} ${rule.status}`),
     ...own.map(query),
     ...queried.map(rule => `${rule.path} ${rule.query.map(([name, value]) => `${encodeURIComponent(name)}=${encodeURIComponent(value)}`).join(' ')} ${rule.to} ${rule.status}`),
