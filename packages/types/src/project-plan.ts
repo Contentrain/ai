@@ -79,7 +79,10 @@ export interface PlanSource {
 
 // ─── Site ───
 
-/** WordPress-style address pattern: `/blog/:slug/`, `/:path/`; tokens `:slug :path :year :month :day :id`. */
+/**
+ * WordPress-style address pattern: `/blog/:slug/`, `/:path/`; tokens `:slug :path :year :month :day :id`, and
+ * `:category` in `permalinks.post` only — the post's primary category with its parents (`%category%`).
+ */
 export type PlanPermalink = string
 
 /** From `min` px of viewport width up, a column `width` px wide, centred. */
@@ -558,6 +561,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   const site = plan.site
   for (const [key, value] of Object.entries(site?.permalinks ?? {})) {
     if (!PERMALINK.test(value)) errors.push(`site.permalinks.${key} must start and end with "/" (${value})`)
+    if (key !== 'post' && /:category\b/.test(value)) errors.push(`site.permalinks.${key} uses :category, which only a post address has (${value})`)
   }
   if (!Number.isSafeInteger(site?.postsPerPage) || site.postsPerPage < 1) errors.push('site.postsPerPage is not a positive integer')
   if (site?.post) {

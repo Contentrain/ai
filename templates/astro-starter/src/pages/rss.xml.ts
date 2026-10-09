@@ -2,10 +2,10 @@
 // in the redirects collection when the source site had one.
 import rss from '@astrojs/rss'
 import type { APIRoute } from 'astro'
-import { getPosts, getSite, postHref } from '../lib/content'
+import { byId, getPosts, getSite, postHref } from '../lib/content'
 
 export const GET: APIRoute = async ({ site: origin }) => {
-  const [site, posts] = await Promise.all([getSite(), getPosts()])
+  const [site, posts, categories] = await Promise.all([getSite(), getPosts(), byId('categories')])
   const newest = posts.toSorted((a, b) => (b.data.published_at?.getTime() ?? 0) - (a.data.published_at?.getTime() ?? 0))
   return rss({
     title: site.title,
@@ -13,7 +13,7 @@ export const GET: APIRoute = async ({ site: origin }) => {
     site: origin ?? 'http://localhost',
     items: newest.slice(0, 20).map(post => ({
       title: post.data.title,
-      link: postHref(post),
+      link: postHref(post, categories),
       pubDate: post.data.published_at,
       description: post.data.excerpt,
     })),

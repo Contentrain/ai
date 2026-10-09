@@ -44,7 +44,7 @@ async function buildRoutes(): Promise<Map<string, Route>> {
     }
   }
 
-  for (const post of posts) add(postHref(post), { view: 'post', post })
+  for (const post of posts) add(postHref(post, categories), { view: 'post', post })
 
   for (const page of pages.values()) {
     const trail: Array<{ title: string, href: string }> = []

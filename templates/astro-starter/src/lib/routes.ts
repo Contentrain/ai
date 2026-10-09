@@ -4,11 +4,15 @@
 
 import { siteConfig } from '../site.config'
 
-export type PathParams = Partial<Record<'slug' | 'path' | 'year' | 'month' | 'day' | 'id', string>>
+/**
+ * `:category` is a post's category with its parents (`news/local`), as WordPress fills `%category%`; see
+ * `categoryPath` in content.ts for which category that is.
+ */
+export type PathParams = Partial<Record<'slug' | 'path' | 'year' | 'month' | 'day' | 'id' | 'category', string>>
 
 /** Fill a permalink pattern. A token without a value is a configuration error, not an empty segment. */
 export function fillPattern(pattern: string, params: PathParams): string {
-  return pattern.replace(/:(slug|path|year|month|day|id)\b/g, (_match, token: keyof PathParams) => {
+  return pattern.replace(/:(slug|path|year|month|day|id|category)\b/g, (_match, token: keyof PathParams) => {
     const value = params[token]
     if (value === undefined || value === '') {
       throw new Error(`Permalink "${pattern}" needs :${token}, which this entry does not have.`)

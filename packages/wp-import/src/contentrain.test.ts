@@ -190,6 +190,48 @@ describe('personal data: e-mail addresses stay out of the store unless asked for
   })
 })
 
+describe('primary category (Yoast / Rank Math) for a %category% permalink', () => {
+  const withMeta = async (meta: Record<string, unknown>) => {
+    const { raw } = await parseWxr(FIXTURE)
+    const post = raw.posts.find((p) => p.id === 10)!
+    Object.assign(post.meta, meta)
+    // The post is in both categories, so the primary decides which one its address names.
+    post.terms.push({ taxonomy: 'category', slug: 'events', name: 'Events', resolved: true })
+    return rawToContentrain(raw, { updatedBy: 'test' })
+  }
+  const postOf = (files: Record<string, string>) => postEntries(files)[hexId('posts:hello-world')]
+
+  it("Yoast's _yoast_wpseo_primary_category becomes primary_category, a relation to categories", async () => {
+    const { files } = await withMeta({ _yoast_wpseo_primary_category: '3' })
+    expect(JSON.parse(files['.contentrain/models/posts.json']!).fields.primary_category).toMatchObject({ type: 'relation', model: 'categories' })
+    expect(postOf(files).primary_category).toBe(hexId('category:events'))
+    expect(postOf(files).categories).toContain(hexId('category:events'))
+  })
+
+  it("Rank Math's rank_math_primary_category works the same; it is not copied as a custom field", async () => {
+    const { files } = await withMeta({ rank_math_primary_category: 2 })
+    expect(postOf(files).primary_category).toBe(hexId('category:news'))
+    expect(postOf(files).rank_math_primary_category).toBeUndefined()
+  })
+
+  it('a primary the post is not in is left out, so the address falls back to the lowest term ID', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const post = raw.posts.find((p) => p.id === 10)!
+    post.meta._yoast_wpseo_primary_category = '3' // events, but the post is only in news
+    const { files } = rawToContentrain(raw, { updatedBy: 'test' })
+    expect(postOf(files).categories).not.toContain(hexId('category:events'))
+    expect(postOf(files).primary_category).toBeUndefined()
+  })
+
+  it('no primary set: no field; a primary that names no imported category is dropped and counted', async () => {
+    const none = await withMeta({})
+    expect(JSON.parse(none.files['.contentrain/models/posts.json']!).fields.primary_category).toBeUndefined()
+    const ghost = await withMeta({ _yoast_wpseo_primary_category: '999' })
+    expect(postOf(ghost.files).primary_category).toBeUndefined()
+    expect(ghost.report.dropped_relations).toBe(none.report.dropped_relations + 1)
+  })
+})
+
 describe('rawToContentrain', () => {
   it('produces a PATH_PATTERNS-conformant canonical file map', async () => {
     const { result } = await load()

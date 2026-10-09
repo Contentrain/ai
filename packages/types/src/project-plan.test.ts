@@ -114,6 +114,14 @@ describe('validateProjectPlan', () => {
     ]))
   })
 
+  it(':category is a post address token only', () => {
+    const p = plan()
+    p.site.permalinks.post = '/:category/:slug/'
+    expect(validateProjectPlan(p).errors.filter(e => e.includes('permalinks'))).toEqual([])
+    p.site.permalinks.page = '/:category/:path/'
+    expect(validateProjectPlan(p).errors).toContain('site.permalinks.page uses :category, which only a post address has (/:category/:path/)')
+  })
+
   it('catches broken references, permalinks, values and bindings', () => {
     const p = plan()
     p.site.permalinks.post = '/:slug'

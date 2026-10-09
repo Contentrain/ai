@@ -225,8 +225,8 @@ async function itemHref(item: MenuItem, link: (url: string | undefined) => strin
   // The entry must be published (the collections hold nothing else) and its address public.
   switch (target.model) {
     case 'posts': {
-      const post = await getEntry('posts', target.ref)
-      return post ? link(postHref(post)) : undefined
+      const [post, categories] = await Promise.all([getEntry('posts', target.ref), byId('categories')])
+      return post ? link(postHref(post, categories)) : undefined
     }
     case 'pages': {
       const pages = await byId('pages')

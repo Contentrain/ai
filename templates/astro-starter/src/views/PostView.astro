@@ -40,7 +40,7 @@ const previous = layout.adjacent && at >= 0 ? posts[at + 1] : undefined
 const next = layout.adjacent && at > 0 ? posts[at - 1] : undefined
 const more = posts.filter(other => layout.moreIncludesCurrent || other.id !== post.id).slice(0, layout.more)
 const locale = site.language
-const url = new URL(postHref(post), Astro.site ?? Astro.url).href
+const url = new URL(postHref(post, categoryMap), Astro.site ?? Astro.url).href
 const description = data.seo?.description ?? data.excerpt ?? summarize(data.body)
 const image = data.seo?.image ?? cover?.data.url
 const formatDate = (date: Date) => date.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' })
@@ -115,8 +115,8 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
     )}
     {(previous || next) && (
       <nav aria-label={t('post.adjacent')} data-cr-part="post-navigation" class="mt-12 flex flex-wrap justify-between gap-4 border-t border-line pt-6" style={cssSize(layout.adjacentText)}>
-        {previous ? <a href={safeHref(postHref(previous))} rel="prev" class="text-ink"><span aria-hidden="true" class="inline-block rtl:-scale-x-100">←</span> {previous.data.title}</a> : <span />}
-        {next && <a href={safeHref(postHref(next))} rel="next" class="text-ink">{next.data.title} <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
+        {previous ? <a href={safeHref(postHref(previous, categoryMap))} rel="prev" class="text-ink"><span aria-hidden="true" class="inline-block rtl:-scale-x-100">←</span> {previous.data.title}</a> : <span />}
+        {next && <a href={safeHref(postHref(next, categoryMap))} rel="next" class="text-ink">{next.data.title} <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
       </nav>
     )}
     {data.comments_open && <StudioComments model="posts" entry={post.id} />}
@@ -127,7 +127,7 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
       <ul class:list={['border-t border-line', siteConfig.lists.tone === 'muted' && 'text-ink-muted']}>
         {more.map(other => (
           <li class="flex flex-wrap items-baseline justify-between gap-2 border-b border-line py-3">
-            <a href={safeHref(postHref(other))} class="text-lg text-ink no-underline hover:underline" style={cssSize(layout.moreText)}>{other.data.title}</a>
+            <a href={safeHref(postHref(other, categoryMap))} class="text-lg text-ink no-underline hover:underline" style={cssSize(layout.moreText)}>{other.data.title}</a>
             {other.data.published_at && <time datetime={other.data.published_at.toISOString()} class="text-sm text-ink-muted">{formatDate(other.data.published_at)}</time>}
           </li>
         ))}

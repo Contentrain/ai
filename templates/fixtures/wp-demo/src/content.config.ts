@@ -122,6 +122,7 @@ export const collections = {
       excerpt: z.string().optional(),
       link: z.string().optional(),
       modified_at: z.coerce.date().optional(),
+      primary_category: reference('categories').optional(),
       published_at: z.coerce.date().optional(),
       seo: z.object({
       canonical: z.string().optional(),
