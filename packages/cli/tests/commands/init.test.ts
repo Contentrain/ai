@@ -114,4 +114,10 @@ describe('init --locales / --domains (#512)', () => {
     expect(() => parseListFlag('Docs', 'domain')).toThrow(/Invalid domain "Docs"/)
     expect(() => parseListFlag(' , ', 'domain')).toThrow(/at least one domain/)
   })
+
+  it('init --yes writes the flags in place of the defaults, the defaults otherwise', async () => {
+    const { defaultInitOptions, parseListFlag } = await import('../../src/commands/init.js')
+    expect(defaultInitOptions('astro', parseListFlag('tr', 'locale'), parseListFlag('docs', 'domain'))).toMatchObject({ locales: ['tr'], domains: ['docs'] })
+    expect(defaultInitOptions('astro')).toMatchObject({ locales: ['en'], domains: ['marketing', 'blog', 'system'], workflow: 'auto-merge', template: null })
+  })
 })

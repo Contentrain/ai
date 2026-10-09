@@ -83,13 +83,7 @@ export default defineCommand({
     }
 
     if (args.yes) {
-      await executeInit(projectRoot, {
-        stack: info.stack,
-        locales: flagLocales ?? ['en'],
-        domains: flagDomains ?? ['marketing', 'blog', 'system'],
-        workflow: 'auto-merge',
-        template: null,
-      })
+      await executeInit(projectRoot, defaultInitOptions(info.stack, flagLocales, flagDomains))
       outro(pc.green('Initialized with defaults!'))
       return
     }
@@ -259,7 +253,18 @@ function printStackWiring(stack: string): void {
   }
 }
 
-interface InitOptions {
+/** What `init --yes` writes: the defaults, with `--locales` / `--domains` taking their place when given. */
+export function defaultInitOptions(stack: string, locales?: string[], domains?: string[]): InitOptions {
+  return {
+    stack,
+    locales: locales ?? ['en'],
+    domains: domains ?? ['marketing', 'blog', 'system'],
+    workflow: 'auto-merge',
+    template: null,
+  }
+}
+
+export interface InitOptions {
   stack: string
   locales: string[]
   domains: string[]
