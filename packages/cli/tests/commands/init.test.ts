@@ -91,3 +91,27 @@ describe('init command', () => {
     expect(mod.default.args?.root?.type).toBe('string')
   })
 })
+
+describe('init --locales / --domains (#512)', () => {
+  it('declares both flags as strings', async () => {
+    const mod = await import('../../src/commands/init.js')
+    expect(mod.default.args?.locales?.type).toBe('string')
+    expect(mod.default.args?.domains?.type).toBe('string')
+  })
+
+  it('parses a comma-separated list, trimmed, de-duplicated, in order', async () => {
+    const { parseListFlag } = await import('../../src/commands/init.js')
+    expect(parseListFlag(undefined, 'locale')).toBeUndefined()
+    expect(parseListFlag('tr', 'locale')).toEqual(['tr'])
+    expect(parseListFlag(' tr , en,,tr ', 'locale')).toEqual(['tr', 'en'])
+    expect(parseListFlag('pt-BR', 'locale')).toEqual(['pt-BR'])
+    expect(parseListFlag('docs,landing-pages', 'domain')).toEqual(['docs', 'landing-pages'])
+  })
+
+  it('rejects an invalid locale or domain, and an empty list', async () => {
+    const { parseListFlag } = await import('../../src/commands/init.js')
+    expect(() => parseListFlag('english', 'locale')).toThrow(/Invalid locale "english"/)
+    expect(() => parseListFlag('Docs', 'domain')).toThrow(/Invalid domain "Docs"/)
+    expect(() => parseListFlag(' , ', 'domain')).toThrow(/at least one domain/)
+  })
+})

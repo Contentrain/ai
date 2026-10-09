@@ -1394,7 +1394,8 @@ function decodeSingleQuoted(inner: string): string | undefined {
  * \"Hi\""` says, which means the generated client and the content engine
  * disagreed about the same file. One implementation, imported by both.
  */
-export function parseFrontmatterScalar(raw: string): unknown {
+export function parseFrontmatterScalar(input: string): unknown {
+  const raw = stripFrontmatterComment(input)
   if (raw === 'true') return true
   if (raw === 'false') return false
   if (raw === 'null') return null
@@ -1413,6 +1414,60 @@ export function parseFrontmatterScalar(raw: string): unknown {
 }
 
 /**
+ * A value's raw text without a trailing YAML comment. In YAML a `#` starts a comment only after whitespace and outside
+ * quotes, so `status: draft # todo` is `draft`, `title: "A" # x` is `A`, and `[a, b] # x` is the list — while `C#`
+ * and `"a # b"` keep their `#`. A value that starts with `#` (`color: #fff`) is kept as written: strict YAML reads it as
+ * empty, but these readers always returned the text, and turning it into nothing would erase it on the next save.
+ * Exported for the same reason as {@link parseFrontmatterScalar}: every reader must cut a value in the same place.
+ */
+export function stripFrontmatterComment(raw: string): string {
+  const value = raw.trim()
+  let end = -1
+  if (value.startsWith('"')) {
+    for (let i = 1; i < value.length; i += 1) {
+      if (value[i] === '\\') { i += 1; continue }
+      if (value[i] === '"') { end = i; break }
+    }
+  } else if (value.startsWith("'")) {
+    for (let i = 1; i < value.length; i += 1) {
+      if (value[i] === "'") {
+        if (value[i + 1] === "'") { i += 1; continue }
+        end = i
+        break
+      }
+    }
+  } else if (value.startsWith('[')) {
+    end = value.lastIndexOf(']')
+  }
+  if (end > 0) {
+    const rest = value.slice(end + 1)
+    return /^\s+#/.test(rest) ? value.slice(0, end + 1) : value
+  }
+  const comment = /\s#/.exec(value)
+  return comment ? value.slice(0, comment.index).trimEnd() : value
+}
+
+/** Whether a raw value carries a trailing YAML comment that {@link stripFrontmatterComment} cuts off. */
+export function hasFrontmatterComment(raw: string): boolean {
+  return stripFrontmatterComment(raw) !== raw.trim()
+}
+
+/**
+ * The top-level frontmatter keys of a markdown document whose value line ends in a ` # comment`. The readers drop the
+ * comment, so a save writes the value without it; `validate` warns about these lines before that happens.
+ */
+export function frontmatterCommentKeys(content: string): string[] {
+  const match = content.replace(/\r\n/g, '\n').match(/^---\n([\s\S]*?)\n---(?:\n|$)/)
+  if (!match) return []
+  const keys: string[] = []
+  for (const line of match[1]!.split('\n')) {
+    const kv = line.match(/^([\w][\w.-]*)\s*:\s*(.*)$/)
+    if (kv && hasFrontmatterComment(kv[2]!)) keys.push(kv[1]!)
+  }
+  return keys
+}
+
+/**
  * A scalar read as a string: quoting and escapes are resolved, but a value that
  * merely looks like a number or a boolean stays the text it was. Array items
  * use this, and so does any reader that knows from the model that a field is
@@ -1420,7 +1475,7 @@ export function parseFrontmatterScalar(raw: string): unknown {
  */
 export function parseFrontmatterScalarString(raw: string): string {
   const value = parseFrontmatterScalar(raw)
-  return typeof value === 'string' ? value : raw
+  return typeof value === 'string' ? value : stripFrontmatterComment(raw)
 }
 
 /**
@@ -1636,7 +1691,8 @@ function frontmatterBlockKey(head: string): string | undefined {
 }
 
 /** One field's value, or `undefined` when its lines are more than a scalar, an inline list or a plain dash list. */
-function readFrontmatterField(rawValue: string, children: string[]): { value: unknown } | undefined {
+function readFrontmatterField(written: string, children: string[]): { value: unknown } | undefined {
+  const rawValue = stripFrontmatterComment(written)
   const rest = children.filter(line => line.trim() !== '')
   if (rawValue === '') {
     if (rest.length === 0) return { value: [] }
