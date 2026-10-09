@@ -24,6 +24,10 @@ const ALLOWED = [
   'packages/astro-kit/components/embed/Embed.astro: href={linkUrl}', // linkUrl is set only when the address starts with http(s)://
   'templates/astro-starter/src/components/SEO.astro: href={canonical}', // Astro.site + the page's path
   'templates/astro-starter/src/components/SEO.astro: href={feed}', // the site's feed path
+  "templates/astro-starter/src/components/SEO.astro: href={withBase('/sitemap-index.xml')}", // a fixed path in the site's directory
+  "templates/astro-starter/src/layouts/BaseLayout.astro: href={withBase('/favicon.svg')}", // a fixed path in the site's directory
+  "templates/astro-starter/src/pages/404.astro: href={withBase('/')}", // the site's home, in its directory
+  "templates/astro-starter/src/pages/search.astro: href={withBase('/pagefind/pagefind-component-ui.css')}", // a fixed path in the site's directory
 ]
 
 const NATIVE = new Set(['a', 'area', 'audio', 'button', 'form', 'iframe', 'img', 'input', 'link', 'source', 'track', 'video', 'Image'])

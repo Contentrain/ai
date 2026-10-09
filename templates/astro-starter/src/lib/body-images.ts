@@ -2,10 +2,12 @@
 // component: it is rewritten here, at build time, the way KitImage treats the files under public/. A raster file
 // there (png, jpg) is resized into a webp srcset up to its own width, its width and height are written when the tag
 // has none (no layout shift), and WordPress's own srcset of sizes of the same file is replaced by it. Anything else
-// stays as written: a remote image, a gif (may be animated), a vector, a file that is not in public/.
+// stays as written: a remote image, a gif (may be animated), a vector, a file that is not in public/. Under a `base` a
+// root address (`/media/a.svg`) is put in the site's directory, where public/ is served.
 
 import type { ImageMetadata } from 'astro'
 import { getImage } from 'astro:assets'
+import { servedPath, withoutBase } from './base'
 
 const LOCAL = import.meta.glob<ImageMetadata>('/public/**/*.{jpeg,jpg,png,JPEG,JPG,PNG}', { import: 'default' })
 const IMG = /<img\b[^>]*>/gi
@@ -20,13 +22,21 @@ function write(tag: string, name: string, value: string): string {
   return attr(name).test(tag) ? tag.replace(attr(name), `$1${quoted}`) : tag.replace(/\s*\/?>$/, end => ` ${name}=${quoted}${end}`)
 }
 
+/** A root image address as served: in the site's directory under a `base` (public/ is served there). */
+function served(tag: string): string {
+  const src = read(tag, 'src')?.replaceAll('&amp;', '&').replaceAll('&#038;', '&')
+  if (!src?.startsWith('/') || src.startsWith('//')) return tag
+  const at = servedPath(src)
+  return at === src ? tag : write(tag, 'src', at)
+}
+
 async function optimize(tag: string): Promise<string> {
   const src = read(tag, 'src')?.replaceAll('&amp;', '&').replaceAll('&#038;', '&')
   if (!src?.startsWith('/') || src.startsWith('//')) return tag
   let file: string
-  try { file = decodeURI(src.split(/[?#]/)[0]!) } catch { return tag }
+  try { file = decodeURI(withoutBase(src.split(/[?#]/)[0]!)) } catch { return served(tag) }
   const load = LOCAL[`/public${file}`]
-  if (!load) return tag
+  if (!load) return served(tag)
   try {
     const local = await load()
     const shown = Number(read(tag, 'width')) || local.width
@@ -49,7 +59,7 @@ async function optimize(tag: string): Promise<string> {
   }
   catch {
     // An image that cannot be processed (a corrupt file) stays as written: the page still builds and shows it.
-    return tag
+    return served(tag)
   }
 }
 

@@ -17,6 +17,10 @@
 //                                                       site.config chrome.menu 'mega': the header menu as a mega panel
 //   node scripts/starter-gates.mjs --frozen             install exactly the starter's lockfile — the published
 //                                                       packages a delivered site gets (no --local-sdk)
+//   node scripts/starter-gates.mjs --fixture wp-demo --base /blog/
+//                                                       a WordPress installed in a directory: astro.config `base`, as a
+//                                                       migration writes it; every address the site points at on itself
+//                                                       must be inside the directory and lead to a built file
 //
 // --local-sdk tests the starter against the SDK at HEAD, so an SDK change
 // that would break delivered sites fails here before it is released.
@@ -48,6 +52,7 @@ const { values } = parseArgs({
     out: { type: 'string' },
     media: { type: 'string', default: 'local' },
     menu: { type: 'string', default: 'flyout' },
+    base: { type: 'string' },
   },
 })
 
@@ -100,6 +105,38 @@ if (values.menu === 'mega') {
   writeFileSync(file, source.replace('  sourceHosts: [],', "  chrome: { menu: 'mega' },\n  sourceHosts: [],"))
 } else if (values.menu !== 'flyout') throw new Error(`--menu ${values.menu} is not flyout or mega`)
 const fixtureDeps = Object.entries(fixture.dependencies ?? {})
+
+// `--base /blog/`: the line a migration writes into astro.config.mjs for a WordPress installed in a directory.
+const base = values.base === undefined ? '' : `/${values.base.replace(/^\/+|\/+$/g, '')}`
+if (values.base !== undefined && !/^\/[a-z\d][a-z\d._~-]*(?:\/[a-z\d][a-z\d._~-]*)*$/i.test(base)) throw new Error(`--base ${values.base} is not a directory path (/blog/)`)
+if (base) {
+  const file = join(project, 'astro.config.mjs')
+  const source = readFileSync(file, 'utf8')
+  if (!source.includes('\n  site,\n')) throw new Error('--base: `site,` is not in astro.config.mjs')
+  writeFileSync(file, source.replace('\n  site,\n', `\n  site,\n  base: '${base}/',\n`))
+  // The fixture is a WordPress at its host's root. Installed in a directory, its absolute links to itself carry that
+  // directory (`https://northwind.example/blog/roadmap/`); root-relative store paths (`/files/a.txt`) are relative to
+  // the install and stay. Without this, every self link would point outside the directory: another application's.
+  const siteFile = join(project, '.contentrain', 'content', 'site', 'site', 'data.json')
+  // The store's site singleton: `{ url: 'https://northwind.example', … }`.
+  const siteUrl = existsSync(siteFile) ? JSON.parse(readFileSync(siteFile, 'utf8'))?.url : undefined
+  if (typeof siteUrl === 'string') {
+    const host = new URL(siteUrl).hostname.replace(/^www\./, '').replaceAll('.', '\\.')
+    const self = new RegExp(`(https?:\\/\\/(?:www\\.)?${host})(?=\\/)(?!${base}\\/)`, 'gi')
+    const rewrite = (dir) => {
+      if (!existsSync(dir)) return
+      for (const entry of readdirSync(dir, { recursive: true, withFileTypes: true })) {
+        if (!entry.isFile() || !entry.name.endsWith('.json')) continue
+        const path = join(entry.parentPath, entry.name)
+        const text = readFileSync(path, 'utf8')
+        const next = text.replace(self, `$1${base}`)
+        if (next !== text) writeFileSync(path, next)
+      }
+    }
+    rewrite(join(project, '.contentrain', 'content'))
+    rewrite(join(project, 'src', 'data'))
+  }
+}
 
 // Studio media: the media entries point at `<studio>/api/cdn/v1/<project>/…`, served by a
 // child process (the build blocks this one) from the fixture's public/ files.
@@ -237,7 +274,8 @@ if (absent.length) {
 // what a site waiting for Studio does not. `distFilesByMenu.<flyout|mega>` does the same for `--menu`.
 const byMedia = fixture.distFilesByMedia?.[values.media] ?? {}
 const byMenu = fixture.distFilesByMenu?.[values.menu] ?? {}
-const fileChecks = [...new Set([...Object.keys(fixture.distFiles ?? {}), ...Object.keys(byMedia), ...Object.keys(byMenu)])].map(file => [file, {
+// Their needles are the root build's markup (`href="/about/"`): under `--base` the sweep below checks the addresses instead.
+const fileChecks = base ? [] : [...new Set([...Object.keys(fixture.distFiles ?? {}), ...Object.keys(byMedia), ...Object.keys(byMenu)])].map(file => [file, {
   contains: [...(fixture.distFiles?.[file]?.contains ?? []), ...(byMedia[file]?.contains ?? []), ...(byMenu[file]?.contains ?? [])],
   excludes: [...(fixture.distFiles?.[file]?.excludes ?? []), ...(byMedia[file]?.excludes ?? []), ...(byMenu[file]?.excludes ?? [])],
   counts: { ...fixture.distFiles?.[file]?.counts, ...byMedia[file]?.counts, ...byMenu[file]?.counts },
@@ -266,7 +304,7 @@ if (optimized.length) {
     .filter(entry => entry.isFile() && entry.name.endsWith('.html'))
     .map(entry => readFileSync(join(entry.parentPath, entry.name), 'utf8'))
     .join('\n')
-  const missing = optimized.filter(name => !new RegExp(`<img[^>]+srcset="/_astro/${name}[._][^"]+ \\d+w`).test(html))
+  const missing = optimized.filter(name => !new RegExp(`<img[^>]+srcset="${base}/_astro/${name}[._][^"]+ \\d+w`).test(html))
   if (missing.length) throw new Error(`Not optimized in dist (no /_astro/ srcset): ${missing.join(', ')}`)
   console.log(`\n${optimized.length} image(s) optimized with a srcset (media: ${values.media})`)
 }
@@ -282,11 +320,66 @@ if (optimized.length) {
       const src = /\ssrc\s*=\s*(?:"(\/[^"/][^"]*\.(?:png|jpe?g))(?:[?#][^"]*)?"|'(\/[^'/][^']*\.(?:png|jpe?g))(?:[?#][^']*)?')/i.exec(tag)?.slice(1).find(Boolean)
       if (src) served.push(`${src} (${join(entry.parentPath, entry.name).replace(`${join(project, 'dist')}/`, '')})`)
       // An optimized body image is sized on both sides: a layout that shifts when it loads is half the fix.
-      else if (/\ssrcset\s*=\s*["']\/_astro\//i.test(tag) && !(/\swidth\s*=\s*["']?\d/i.test(tag) && /\sheight\s*=\s*["']?\d/i.test(tag))) unsized.push(tag.slice(0, 120))
+      else if (new RegExp(`\\ssrcset\\s*=\\s*["']${base}/_astro/`, 'i').test(tag) && !(/\swidth\s*=\s*["']?\d/i.test(tag) && /\sheight\s*=\s*["']?\d/i.test(tag))) unsized.push(tag.slice(0, 120))
     }
   }
   if (served.length) throw new Error(`Raster originals served as they are:\n  ${[...new Set(served)].join('\n  ')}`)
   if (unsized.length) throw new Error(`Optimized images without width and height:\n  ${[...new Set(unsized)].join('\n  ')}`)
+}
+
+// `--base`: every address a page, the sitemap, the feed or the host's rules give on this site is inside the directory
+// (check-dist checks that much on every delivered site), and leads to a file this build wrote.
+if (base) {
+  const dist = join(project, 'dist')
+  const origin = 'https://example.com'
+  const built = (path) => {
+    let file
+    try { file = decodeURIComponent(path.split(/[?#]/)[0]) } catch { return false }
+    if (file !== base && !file.startsWith(`${base}/`)) return false
+    file = file.slice(base.length) || '/'
+    // The not-found page names itself `/404/` (its canonical); hosts serve it as `404.html`.
+    if (file === '/404/') return existsSync(join(dist, '404.html'))
+    return existsSync(join(dist, file)) && (!file.endsWith('/') || existsSync(join(dist, file, 'index.html')))
+      || existsSync(join(dist, file, 'index.html'))
+  }
+  const own = (address) => {
+    if (address.startsWith('/') && !address.startsWith('//')) return address
+    try { const url = new URL(address); return url.origin === origin ? url.pathname + url.search : undefined } catch { return undefined }
+  }
+  const broken = new Set()
+  let checked = 0
+  const check = (where, address) => {
+    const path = own(address)
+    if (path === undefined) return
+    checked++
+    if (!built(path)) broken.add(`${where}: ${address}`)
+  }
+  for (const entry of readdirSync(dist, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile()) continue
+    const path = join(entry.parentPath, entry.name)
+    const where = path.slice(dist.length + 1)
+    if (where.startsWith('pagefind/') || where.startsWith('_astro/')) continue
+    if (entry.name.endsWith('.html')) {
+      const html = readFileSync(path, 'utf8')
+      // Only addresses a visitor or a crawler follows: links, sources, the canonical and Open Graph URLs.
+      for (const [, address] of html.matchAll(/\s(?:href|src)="([^"#][^"]*)"/g)) check(where, unescape(address))
+      for (const [, address] of html.matchAll(/<meta property="og:(?:url|image)" content="([^"]*)"/g)) check(where, unescape(address))
+      for (const [, list] of html.matchAll(/\ssrcset="([^"]*)"/g)) for (const candidate of list.split(',')) check(where, candidate.trim().split(/\s+/)[0])
+    }
+    if (entry.name.endsWith('.xml')) for (const [, address] of readFileSync(path, 'utf8').matchAll(/<(?:loc|link)>([^<]+)<\/(?:loc|link)>/g)) check(where, unescape(address))
+  }
+  // The host's rules: an old address is inside the directory, and its target is a built page.
+  const rules = readFileSync(join(dist, '_redirects'), 'utf8').split('\n').filter(line => line && !line.startsWith('#'))
+  for (const line of rules) {
+    const parts = line.split(/\s+/)
+    const from = parts[0]
+    const to = parts.at(-2)
+    if (from !== base && !from.startsWith(`${base}/`)) broken.add(`_redirects: old address outside ${base}/: ${line}`)
+    if (to.startsWith('/') && !to.includes(':splat') && !built(to)) broken.add(`_redirects: ${line}`)
+  }
+  if (broken.size) throw new Error(`Under base ${base}/, addresses that do not lead to a built file:\n  ${[...broken].slice(0, 40).join('\n  ')}${broken.size > 40 ? `\n  … ${broken.size - 40} more` : ''}`)
+  if (checked === 0 || rules.length === 0 && values.fixture) throw new Error(`--base: nothing was checked (${checked} addresses, ${rules.length} host rules)`)
+  console.log(`\nbase ${base}/: ${checked} address(es) in pages, sitemap and feed and ${rules.length} host rule(s), all inside the directory and built`)
 }
 
 studioServer?.kill()

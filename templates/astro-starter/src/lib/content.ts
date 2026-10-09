@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { getCollection, getEntry, type CollectionEntry, type CollectionKey } from 'astro:content'
 import type { ImageInput } from '../components/kit/_shared/types'
 import { siteConfig } from '../site.config'
+import { withBase } from './base'
 import { siteLanguage, localeRank } from './language'
 import { dateParams, fillPattern, permalinks } from './routes'
 
@@ -70,24 +71,24 @@ function categoryPath(post: Post, categories: ReadonlyMap<string, Category>): st
 
 /** A post's address. `categories` (`byId('categories')`) fills `:category`; a pattern without it never reads them. */
 export function postHref(post: Post, categories: ReadonlyMap<string, Category>): string {
-  return fillPattern(permalinks.post, {
+  return withBase(fillPattern(permalinks.post, {
     slug: post.data.slug,
     id: String(post.data.wp_id ?? post.id),
     ...dateParams(post.data.published_at),
     ...(permalinks.post.includes(':category') ? { category: categoryPath(post, categories) } : {}),
-  })
+  }))
 }
 
 /** A page's address carries its parents: `about/team`. */
 export function pageHref(page: Page, pages: ReadonlyMap<string, Page>): string {
-  if (siteConfig.home.kind === 'page' && siteConfig.home.slug === page.data.slug) return '/'
+  if (siteConfig.home.kind === 'page' && siteConfig.home.slug === page.data.slug) return withBase('/')
   const trail: string[] = []
   const seen = new Set<string>()
   for (let at: Page | undefined = page; at && !seen.has(at.id); at = at.data.parent ? pages.get(at.data.parent.id) : undefined) {
     seen.add(at.id)
     trail.unshift(at.data.slug)
   }
-  return fillPattern(permalinks.page, { slug: page.data.slug, path: trail.join('/') })
+  return withBase(fillPattern(permalinks.page, { slug: page.data.slug, path: trail.join('/') }))
 }
 
 /** Categories nest; tags have no parent field. */
@@ -105,11 +106,11 @@ function termTrail<T extends Term>(term: T, terms: ReadonlyMap<string, T>): stri
 }
 
 export function termHref(kind: 'category' | 'tag', term: Term, terms: ReadonlyMap<string, Term>): string {
-  return fillPattern(permalinks[kind], { slug: term.data.slug, path: termTrail(term, terms).join('/') })
+  return withBase(fillPattern(permalinks[kind], { slug: term.data.slug, path: termTrail(term, terms).join('/') }))
 }
 
 export function authorHref(author: Author): string {
-  return fillPattern(permalinks.author, { slug: author.data.slug })
+  return withBase(fillPattern(permalinks.author, { slug: author.data.slug }))
 }
 
 export async function byId<C extends 'pages' | 'categories' | 'tags' | 'authors' | 'media'>(collection: C): Promise<Map<string, CollectionEntry<C>>> {

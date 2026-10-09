@@ -11,6 +11,7 @@
 
 import { getCollection } from 'astro:content'
 import { authorHref, byId, getRedirects, pageHref, termHref } from './content'
+import { servedPath, withBase } from './base'
 import { ownPath, publicLinks, sitePath } from './links'
 import { routeTable } from './site-routes'
 
@@ -19,6 +20,8 @@ export type RedirectRule = { from: string, to: string, status: RedirectStatus } 
 
 const MOVES = new Set<number>([301, 302, 303, 307, 308])
 const BASE = 'http://link.invalid/'
+/** Where a 410 is answered: the not-found page, in the site's directory. */
+const GONE = withBase('/404.html')
 
 /** An address WordPress answers by query (`/?p=12`), whatever the permalink structure: one parameter, one value. */
 export interface QueryRule { param: 'p' | 'page_id' | 'cat' | 'tag' | 'author' | 'attachment_id', value: string, to: string, status: RedirectStatus | 410 }
@@ -49,22 +52,24 @@ function collect() {
       // only a host rule. Its target is checked like any link: a whole target through the published set, a
       // `:splat` one by its fixed part, which must lead into public addresses. An external target stays.
       if (data.from.includes('*')) {
-        if (data.status === 410) prefixes.push({ from: data.from, to: '/404.html', status: 410 })
+        const from = servedPath(data.from)
+        if (data.status === 410) prefixes.push({ from, to: GONE, status: 410 })
         else if (MOVES.has(data.status) && data.to) {
           const target = await prefixTarget(data.to, routes, link)
-          if (target) prefixes.push({ from: data.from, to: target, status: data.status as RedirectStatus })
+          if (target) prefixes.push({ from, to: target, status: data.status as RedirectStatus })
         }
         continue
       }
       const url = new URL(data.from, BASE)
-      const from = sitePath(url.pathname)
+      // Old addresses are the install's (`/a/`): under a `base` the host is asked for them in the site's directory.
+      const from = sitePath(servedPath(url.pathname))
       const query = [...url.searchParams]
-      const to = data.status === 410 ? '/404.html' : MOVES.has(data.status) ? link(data.to) : undefined
+      const to = data.status === 410 ? GONE : MOVES.has(data.status) ? link(data.to) : undefined
       if (to === undefined) continue
       const status = data.status as RedirectStatus | 410
       if (query.length > 0) {
         const [first] = query
-        if (from === '/' && query.length === 1 && first && WP_PARAMS.has(first[0])) wp.push({ param: first[0] as QueryRule['param'], value: first[1], to, status })
+        if (from === withBase('/') && query.length === 1 && first && WP_PARAMS.has(first[0])) wp.push({ param: first[0] as QueryRule['param'], value: first[1], to, status })
         else queried.push({ path: from, query, to, status })
         continue
       }
@@ -124,12 +129,12 @@ export function attachmentRules(): Promise<{ paths: AttachmentRule[], queries: Q
       const to = link(entry.to)
       if (to === undefined) continue
       const url = new URL(entry.from, BASE)
-      const id = url.pathname === '/' ? url.searchParams.get('attachment_id') : null
+      const id = sitePath(servedPath(url.pathname)) === withBase('/') ? url.searchParams.get('attachment_id') : null
       if (id !== null) {
         if (!queried.has(`attachment_id=${id}`)) queries.push({ param: 'attachment_id', value: id, to, status: 301 })
         continue
       }
-      const from = sitePath(url.pathname)
+      const from = sitePath(servedPath(url.pathname))
       if (!url.search && !routes.has(from) && !taken.has(from) && to !== from) paths.push({ from, to, status: 301 })
     }
     return { paths: paths.toSorted((a, b) => a.from.localeCompare(b.from)), queries }

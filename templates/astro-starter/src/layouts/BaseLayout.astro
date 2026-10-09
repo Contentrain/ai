@@ -7,6 +7,7 @@ import Analytics from '../components/Analytics.astro'
 import Footer from '../components/kit/footer/Footer.astro'
 import Header from '../components/kit/header/Header.astro'
 import SEO from '../components/SEO.astro'
+import { servedPath, withBase } from '../lib/base'
 import { siteContact } from '../lib/contact'
 import { cssLength, cssSpacing, cssWeight } from '../lib/css-size'
 import { textDirection } from '../lib/direction'
@@ -47,9 +48,9 @@ const contact = siteContact(site, siteConfig.contact)
 const sameAs = (site.same_as ?? []).map(url => ({ label: new URL(url).hostname.replace(/^www\./, ''), href: url }))
 const social = [...sameAs, ...contact.socials.filter(link => !sameAs.some(known => known.href === link.href))]
 const origin = Astro.site ?? Astro.url
-const home = new URL('/', origin).href
+const home = new URL(withBase('/'), origin).href
 const identity = { name: site.title, url: home, description: site.tagline, logo: site.logo, sameAs: site.same_as }
-const isHome = Astro.url.pathname === '/'
+const isHome = Astro.url.pathname === withBase('/')
 // A latest-posts home is no entry: its SEO title and description are the site's (`site.seo`, written from the source).
 const homeSeo = isHome ? site.seo : undefined
 const fullTitle = documentTitle({ seoTitle, title, isHome, home: homeSeo, site: site.title, tagline: site.tagline, template: siteConfig.titleTemplate })
@@ -59,7 +60,7 @@ const shareImage = image ?? site.social_image
 // Two or more footer menus are columns, as the source theme's footer showed them; one is a row of links.
 const footerColumns = footerMenus.filter(menu => menu.items.length > 0)
 // The "RSS feed" link is the source's only where its footer has one (the feed file is served either way).
-const rss = siteConfig.footer?.feed === false ? undefined : { label: t('footer.rss'), href: '/rss.xml' }
+const rss = siteConfig.footer?.feed === false ? undefined : { label: t('footer.rss'), href: withBase('/rss.xml') }
 // WordPress's query addresses land on the home page of a static host; a host rule (_redirects) answers
 // them with a 301 where the host reads one, and this map sends the browser on everywhere else.
 const wpQueries = isHome ? await queryMap() : {}
@@ -79,7 +80,7 @@ const wpQueries = isHome ? await queryMap() : {}
     )}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
     <Font cssVariable="--font-inter" preload={[{ subset: 'latin' }, { subset: 'latin-ext' }]} />
     <SEO
       title={fullTitle}
@@ -87,7 +88,7 @@ const wpQueries = isHome ? await queryMap() : {}
       shareTitle={shareTitle({ own: ogTitle ?? homeSeo?.og_title, seoTitle, title, isHome, documentTitle: fullTitle })}
       shareDescription={shareDescription({ own: ogDescription ?? homeSeo?.og_description, description: metaDescription })}
       canonical={canonical ?? new URL(Astro.url.pathname, origin).href}
-      image={shareImage ? new URL(shareImage, origin).href : undefined}
+      image={shareImage ? new URL(servedPath(shareImage), origin).href : undefined}
       type={type ?? 'website'}
       noindex={noindex}
       nofollow={nofollow}
@@ -116,6 +117,7 @@ const wpQueries = isHome ? await queryMap() : {}
       padBottom={cssLength(siteConfig.chrome?.header?.padBottom)}
       linkNav={siteConfig.chrome?.navLinks}
       menu={siteConfig.chrome?.menu}
+      homeHref={withBase('/')}
       items={primary?.items ?? []}
       navLabel={primary?.name ?? t('nav.label')}
       menuLabel={t('nav.menu')}

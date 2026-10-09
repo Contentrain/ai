@@ -10,6 +10,7 @@ import { siteConfig } from '../site.config'
 import { entriesOf, entryCard, entryHref, newestFirst, refIds, termHref as customTermHref, text, type Card, type TypeEntry } from './custom'
 import { targetsOf, type Targets } from './fields'
 import { authorHref, byId, getPosts, getSite, getStrings, pageHref, postHref, termHref, type Page, type Post } from './content'
+import { withBase } from './base'
 import { pagePath, permalinks } from './routes'
 import type { CustomType } from '../site.config'
 
@@ -24,6 +25,8 @@ async function buildRoutes(): Promise<Map<string, Route>> {
     getPosts(), byId('pages'), byId('categories'), byId('tags'), getCollection('authors'), getStrings(), getSite(),
   ])
   const routes = new Map<string, Route>()
+  // The front page's address: the site's directory (`/`, or `/blog/` under a `base`).
+  const home = withBase('/')
   const add = (href: string, route: Route) => {
     if (routes.has(href)) throw new Error(`Two entries claim the address ${href}. Change a slug or a permalink pattern in site.config.ts.`)
     routes.set(href, route)
@@ -55,24 +58,24 @@ async function buildRoutes(): Promise<Map<string, Route>> {
     }
     const href = pageHref(page, pages)
     // A source that prints its breadcrumb on every page starts it from the home page, top-level pages included.
-    if (siteConfig.chrome?.breadcrumbs === 'always' && href !== '/' && trail[0]?.href !== '/') trail.unshift({ title: site.title, href: '/' })
+    if (siteConfig.chrome?.breadcrumbs === 'always' && href !== home && trail[0]?.href !== home) trail.unshift({ title: site.title, href: home })
     // The page WordPress uses as the posts page (Settings → Reading) shows the posts, not its own body.
-    if (siteConfig.home.kind === 'page' && href === permalinks.blog) continue
+    if (siteConfig.home.kind === 'page' && href === withBase(permalinks.blog)) continue
     // Its children, in WordPress page order: an empty parent page lists them instead of standing blank.
     const subpages = [...pages.values()]
       .filter(child => child.data.parent?.id === page.id)
       .toSorted((a, b) => (a.data.menu_order ?? 0) - (b.data.menu_order ?? 0) || a.data.title.localeCompare(b.data.title))
       .map(child => ({ title: child.data.title, href: pageHref(child, pages) }))
-    add(href, { view: 'page', page, trail, isHome: href === '/', subpages })
+    add(href, { view: 'page', page, trail, isHome: href === home, subpages })
   }
 
   // The posts index: the front page, or — on a site whose front page is a
   // static page — its own address (WordPress: Settings → Reading).
-  const blog = siteConfig.home.kind === 'posts' ? '/' : permalinks.blog
+  const blog = siteConfig.home.kind === 'posts' ? home : withBase(permalinks.blog)
   // The posts page keeps the name and description its editors gave it ("Journal"), as in WordPress.
-  const postsPage = blog === '/' ? undefined : [...pages.values()].find(page => pageHref(page, pages) === blog)
+  const postsPage = blog === home ? undefined : [...pages.values()].find(page => pageHref(page, pages) === blog)
   const blogDescription = postsPage?.data.seo?.description ?? postsPage?.data.excerpt
-  paginate(blog, posts, blog === '/' ? {} : { title: postsPage?.data.title ?? t('blog.title'), ...(blogDescription ? { description: blogDescription } : {}) }, posts.filter(post => post.data.sticky))
+  paginate(blog, posts, blog === home ? {} : { title: postsPage?.data.title ?? t('blog.title'), ...(blogDescription ? { description: blogDescription } : {}) }, posts.filter(post => post.data.sticky))
 
   for (const category of categories.values()) {
     paginate(termHref('category', category, categories), posts.filter(post => post.data.categories.some(ref => ref.id === category.id)), {
@@ -113,7 +116,7 @@ async function addTypeRoutes(add: (href: string, route: Route) => void): Promise
     const own = newestFirst(entries.get(type.collection) ?? [], type.card.date)
     for (const entry of own) add(entryHref(type, entry), { view: 'entry', type, entry, targets })
     const cards = new Map(await Promise.all(own.map(async entry => [entry.id, await entryCard(type, entry, terms)] as const)))
-    if (type.archive) paginateCards(type.archive.pattern, [...cards.values()], { title: type.archive.title, ...(type.archive.label ? { eyebrow: type.archive.label } : {}) })
+    if (type.archive) paginateCards(withBase(type.archive.pattern), [...cards.values()], { title: type.archive.title, ...(type.archive.label ? { eyebrow: type.archive.label } : {}) })
     for (const taxonomy of type.taxonomies ?? []) {
       for (const term of entries.get(taxonomy.collection) ?? []) {
         const members = own.filter(entry => refIds(entry.data[taxonomy.field]).includes(term.id)).flatMap(entry => cards.get(entry.id) ?? [])
