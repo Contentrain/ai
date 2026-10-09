@@ -1674,6 +1674,15 @@ export interface FrontmatterPreserved {
   eol: '\n' | '\r\n'
   /** Whether the file ended with a newline; a file that did not is written back without one. */
   finalNewline?: boolean
+  /**
+   * The whitespace between the closing `---` line and the body, as written (LF form). Absent when the file had no
+   * body. Written back as long as the saved body is not empty, so no blank line is added or collapsed.
+   */
+  bodyLead?: string
+  /** The whitespace after the body, as written (LF form): `\n\n` stays `\n\n`, none stays none. Absent when the file had no body. */
+  bodyTrail?: string
+  /** What followed the closing `---` line in a file with no body (blank lines, LF form). Written back while the body stays empty. */
+  emptyTail?: string
 }
 
 /** The keys of the preserved blocks the data would replace: the data's value wins and the block is not written. */
@@ -1714,6 +1723,10 @@ function readFrontmatterField(written: string, children: string[]): { value: unk
  * Lines that are not a scalar, an inline list or a dash list (nested maps, block scalars, keys with a space or a
  * non-ASCII name, comments) are not fields: they come back in `preserved`, verbatim, for `serializeMarkdownFrontmatter`
  * to write back. A key above a nested map is therefore absent from `frontmatter`, not an empty array.
+ *
+ * `preserved` also carries the file's layout — line ending, final newline, the blank lines around the body — whenever
+ * it differs from what the serializer writes by default, so a save that changes no field is byte-identical (#521). A
+ * document in the default shape (LF, one blank line after `---`, one final newline) has no `preserved`.
  */
 export function parseMarkdownFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string; preserved?: FrontmatterPreserved } {
   const normalized = content.replace(/\r\n/g, '\n')
@@ -1721,7 +1734,8 @@ export function parseMarkdownFrontmatter(content: string): { frontmatter: Record
   if (!match) return { frontmatter: {}, body: normalized }
 
   const lines = match[1]!.split('\n')
-  const body = match[2]!.trim()
+  const after = match[2]!
+  const body = after.trim()
   const frontmatter: Record<string, unknown> = {}
   const blocks: FrontmatterPreservedBlock[] = []
   const order: string[] = []
@@ -1754,8 +1768,16 @@ export function parseMarkdownFrontmatter(content: string): { frontmatter: Record
     anchor = kv[1]!
   }
 
-  if (blocks.length === 0) return { frontmatter, body }
-  return { frontmatter, body, preserved: { blocks, order, eol: content.includes('\r\n') ? '\r\n' : '\n', finalNewline: content.endsWith('\n') } }
+  const eol: '\n' | '\r\n' = content.includes('\r\n') ? '\r\n' : '\n'
+  const finalNewline = content.endsWith('\n')
+  const layout: Pick<FrontmatterPreserved, 'bodyLead' | 'bodyTrail' | 'emptyTail'> = body
+    ? { bodyLead: after.slice(0, after.length - after.trimStart().length), bodyTrail: after.slice(after.trimEnd().length) }
+    : { emptyTail: after }
+  const defaultLayout = eol === '\n' && (body
+    ? layout.bodyLead === '\n' && layout.bodyTrail === '\n'
+    : layout.emptyTail === '' && finalNewline)
+  if (blocks.length === 0 && defaultLayout) return { frontmatter, body }
+  return { frontmatter, body, preserved: { blocks, order, eol, finalNewline, ...layout } }
 }
 
 /**
@@ -1796,15 +1818,17 @@ export function serializeMarkdownFrontmatter(data: Record<string, unknown>, body
     }
   }
 
-  const lines: string[] = ['---']
-  lines.push(...serializeYamlFields(data, preserved))
-  lines.push('---')
-  lines.push('')
-  if (body) {
-    lines.push(body)
-    lines.push('')
-  }
-  return written(lines)
+  // The body is framed the way the file had it: the same blank lines after `---` and the same trailing newlines (#521).
+  // A new document, or a body where the file had none, gets the default: one blank line, one final newline.
+  const head = ['---', ...serializeYamlFields(data, preserved), '---'].join('\n') + '\n'
+  const tail = body
+    ? (preserved?.bodyLead ?? '\n') + body + (preserved?.bodyTrail ?? '\n')
+    : preserved?.emptyTail ?? ''
+  let text = head + tail
+  if (preserved?.eol === '\r\n') text = text.replace(/\r?\n/g, '\r\n')
+  // Only a file with nothing after its closing `---` can lack a final newline that the layout above does not say.
+  if (preserved?.finalNewline === false && tail === '') text = text.replace(/\r?\n$/, '')
+  return text
 }
 
 // ─── Migration contracts ───
