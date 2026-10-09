@@ -1,0 +1,10 @@
+{
+  "e0a000000001": {
+    "body": "<p>The first post.</p>",
+    "excerpt": "The first post.",
+    "published_at": "2026-09-01T09:00:00Z",
+    "slug": "hello-there",
+    "title": "Hello there",
+    "wp_id": 401
+  }
+}

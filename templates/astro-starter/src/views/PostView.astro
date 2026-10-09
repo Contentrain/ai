@@ -49,6 +49,8 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
 <BaseLayout
   title={data.title}
   fullTitle={data.seo?.title}
+  ogTitle={data.seo?.og_title}
+  ogDescription={data.seo?.og_description}
   description={description}
   image={image}
   canonical={data.seo?.canonical}
