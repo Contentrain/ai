@@ -37,6 +37,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
+import { installLocalSdk } from './local-sdk.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const { values } = parseArgs({
@@ -162,25 +163,7 @@ process.on('exit', () => studioServer?.kill())
 if (values.frozen && values['local-sdk']) throw new Error('--frozen tests the published packages; --local-sdk replaces one. Pick one.')
 run('pnpm', ['install', values.frozen ? '--frozen-lockfile' : '--no-frozen-lockfile'])
 if (fixtureDeps.length) run('pnpm', ['add', ...fixtureDeps.map(([name, range]) => `${name}@${range}`)])
-if (values['local-sdk']) {
-  run('pnpm', ['--filter', '@contentrain/types', '--filter', '@contentrain/query', 'build'], root)
-  const pack = (dir) => {
-    const packDir = mkdtempSync(join(tmpdir(), 'contentrain-pack-'))
-    run('pnpm', ['pack', '--pack-destination', packDir], join(root, dir))
-    const tarball = readdirSync(packDir).find(name => name.endsWith('.tgz'))
-    if (!tarball) throw new Error(`pnpm pack produced no tarball in ${dir}`)
-    return join(packDir, tarball)
-  }
-  // The SDK at HEAD is released together with the types at HEAD (its `workspace:*` range becomes their version), so
-  // install it with them. Packing the SDK alone resolved @contentrain/types from npm, and an SDK that imports a new
-  // types export failed `astro sync` here although the release would have been fine (#512).
-  const typesTarball = pack('packages/types')
-  const pkgPath = join(project, 'package.json')
-  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
-  pkg.pnpm = { ...pkg.pnpm, overrides: { ...pkg.pnpm?.overrides, '@contentrain/types': `file:${typesTarball}` } }
-  writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
-  run('pnpm', ['add', pack('packages/sdk/js')])
-}
+if (values['local-sdk']) installLocalSdk({ repoRoot: root, site: project, run })
 
 run('pnpm', ['exec', 'astro', 'check'])
 run('pnpm', ['exec', 'knip'])

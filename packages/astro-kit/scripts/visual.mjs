@@ -18,10 +18,10 @@
 //   node scripts/visual.mjs --update        rewrite every baseline
 //   node scripts/visual.mjs --only hero     one component (or several: --only hero,faq — one install, one astro check)
 //   node scripts/visual.mjs --out <dir>     keep the site there
-//   node scripts/visual.mjs --local-sdk     @contentrain/query from this checkout
+//   node scripts/visual.mjs --local-sdk     @contentrain/query and @contentrain/types from this checkout (scripts/local-sdk.mjs)
 
 import { execFileSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { dirname, extname, join, resolve } from 'node:path'
@@ -30,6 +30,7 @@ import { parseArgs } from 'node:util'
 import pixelmatch from 'pixelmatch'
 import { chromium } from 'playwright'
 import { PNG } from 'pngjs'
+import { installLocalSdk } from '../../../scripts/local-sdk.mjs'
 
 const kitRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const repoRoot = resolve(kitRoot, '..', '..')
@@ -91,12 +92,7 @@ const fixtures = ${fixtures.trim()} satisfies Fixture[]
 const dependencies = Object.entries({ ...catalog.dependencies, ...Object.assign({}, ...catalog.components.map(c => c.dependencies)) }).map(([name, range]) => `${name}@${range}`)
 run('pnpm', ['install', '--no-frozen-lockfile'])
 run('pnpm', ['add', ...dependencies])
-if (values['local-sdk']) {
-  run('pnpm', ['--filter', '@contentrain/types', '--filter', '@contentrain/query', 'build'], repoRoot)
-  const packDir = mkdtempSync(join(tmpdir(), 'contentrain-query-'))
-  run('pnpm', ['pack', '--pack-destination', packDir], join(repoRoot, 'packages', 'sdk', 'js'))
-  run('pnpm', ['add', join(packDir, readdirSync(packDir).find(name => name.endsWith('.tgz')))])
-}
+if (values['local-sdk']) installLocalSdk({ repoRoot, site, run })
 run('pnpm', ['exec', 'astro', 'check'])
 run('pnpm', ['exec', 'astro', 'build'])
 
