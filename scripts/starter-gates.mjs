@@ -13,6 +13,8 @@
 //   node scripts/starter-gates.mjs --fixture wp-demo --media studio
 //                                                       the fixture's media served as Contentrain Studio
 //                                                       delivery URLs from a local stand-in, not from public/
+//   node scripts/starter-gates.mjs --fixture wp-demo --menu mega
+//                                                       site.config chrome.menu 'mega': the header menu as a mega panel
 //   node scripts/starter-gates.mjs --frozen             install exactly the starter's lockfile — the published
 //                                                       packages a delivered site gets (no --local-sdk)
 //
@@ -44,6 +46,7 @@ const { values } = parseArgs({
     frozen: { type: 'boolean', default: false },
     out: { type: 'string' },
     media: { type: 'string', default: 'local' },
+    menu: { type: 'string', default: 'flyout' },
   },
 })
 
@@ -88,6 +91,13 @@ for (const { from, to } of fixture.siteConfig ?? []) {
   if (!source.includes(from)) throw new Error(`fixture.siteConfig: ${from} is not in src/site.config.ts`)
   writeFileSync(file, source.replace(from, to))
 }
+// `--menu mega` sets what a migration writes for a mega menu (`chrome.menu`); the default leaves site.config.ts as it is.
+if (values.menu === 'mega') {
+  const file = join(project, 'src', 'site.config.ts')
+  const source = readFileSync(file, 'utf8')
+  if (!source.includes('  sourceHosts: [],')) throw new Error('--menu mega: sourceHosts is not in src/site.config.ts')
+  writeFileSync(file, source.replace('  sourceHosts: [],', "  chrome: { menu: 'mega' },\n  sourceHosts: [],"))
+} else if (values.menu !== 'flyout') throw new Error(`--menu ${values.menu} is not flyout or mega`)
 const fixtureDeps = Object.entries(fixture.dependencies ?? {})
 
 // Studio media: the media entries point at `<studio>/api/cdn/v1/<project>/…`, served by a
@@ -230,12 +240,13 @@ if (absent.length) {
 }
 
 // `distFilesByMedia.<local|studio>` adds checks for one media mode: a Studio-bound build (`--media studio`) renders
-// what a site waiting for Studio does not.
+// what a site waiting for Studio does not. `distFilesByMenu.<flyout|mega>` does the same for `--menu`.
 const byMedia = fixture.distFilesByMedia?.[values.media] ?? {}
-const fileChecks = [...new Set([...Object.keys(fixture.distFiles ?? {}), ...Object.keys(byMedia)])].map(file => [file, {
-  contains: [...(fixture.distFiles?.[file]?.contains ?? []), ...(byMedia[file]?.contains ?? [])],
-  excludes: [...(fixture.distFiles?.[file]?.excludes ?? []), ...(byMedia[file]?.excludes ?? [])],
-  counts: { ...fixture.distFiles?.[file]?.counts, ...byMedia[file]?.counts },
+const byMenu = fixture.distFilesByMenu?.[values.menu] ?? {}
+const fileChecks = [...new Set([...Object.keys(fixture.distFiles ?? {}), ...Object.keys(byMedia), ...Object.keys(byMenu)])].map(file => [file, {
+  contains: [...(fixture.distFiles?.[file]?.contains ?? []), ...(byMedia[file]?.contains ?? []), ...(byMenu[file]?.contains ?? [])],
+  excludes: [...(fixture.distFiles?.[file]?.excludes ?? []), ...(byMedia[file]?.excludes ?? []), ...(byMenu[file]?.excludes ?? [])],
+  counts: { ...fixture.distFiles?.[file]?.counts, ...byMedia[file]?.counts, ...byMenu[file]?.counts },
 }])
 if (fileChecks.length) {
   const problems = []

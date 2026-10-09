@@ -107,6 +107,7 @@ const wpQueries = isHome ? await queryMap() : {}
       padTop={cssLength(siteConfig.chrome?.header?.padTop)}
       padBottom={cssLength(siteConfig.chrome?.header?.padBottom)}
       linkNav={siteConfig.chrome?.navLinks}
+      menu={siteConfig.chrome?.menu}
       items={primary?.items ?? []}
       navLabel={primary?.name ?? t('nav.label')}
       menuLabel={t('nav.menu')}

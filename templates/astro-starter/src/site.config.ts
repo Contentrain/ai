@@ -158,8 +158,10 @@ export interface SiteConfig {
    * `header`: what the source's header does differently (no line under the bar, the site name's weight and letter-spacing, the space above and inside the bar); a key absent: the starter's own.
    * `breadcrumbs: 'always'`: the source prints a breadcrumb on top-level pages too, from the home page: they show
    * home › page with its BreadcrumbList, and a nested page's trail starts from home. Absent, only nested pages show one.
+   * `menu: 'mega'`: the header menu's submenus open as a wide panel of columns (the second level heads each column, the
+   * third is listed under it) instead of a list under the item. Absent, the flyout.
    */
-  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean, footerAlign?: 'start' | 'center', footerColumns?: { gap: number, size?: number, narrowGap?: number, narrowSize?: number }, header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string }, breadcrumbs?: 'always' }
+  chrome?: { brand?: string, tagline?: boolean, copyright?: string, titleLinks?: boolean, navLinks?: boolean, footerAlign?: 'start' | 'center', footerColumns?: { gap: number, size?: number, narrowGap?: number, narrowSize?: number }, header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string }, breadcrumbs?: 'always', menu?: 'mega' }
   /**
    * The site singleton's fields that hold the contact details, by field name (a migration finds them
    * in the source's settings: an ACF options page). The footer prints what is set: `address`,
