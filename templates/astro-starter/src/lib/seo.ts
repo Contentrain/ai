@@ -114,6 +114,18 @@ export function summarize(html: string | undefined, max = 160): string | undefin
 }
 
 /**
+ * A page's document title: an SEO title written for it, as it is; on the home, the site's own SEO title (a
+ * latest-posts home is no entry, so the source's home title lives on the site, `site.seo`); a page's title in the
+ * site's pattern (`titleTemplate`); else the home's default, "Site – Tagline", as WordPress prints it.
+ */
+export function documentTitle(input: { seoTitle?: string | undefined, title?: string | undefined, isHome: boolean, home?: { title?: string | undefined } | undefined, site: string, tagline?: string | undefined, template: string }): string {
+  if (input.seoTitle) return input.seoTitle
+  if (input.isHome && input.home?.title?.trim()) return input.home.title
+  if (input.title && !input.isHome) return input.template.replace('{title}', input.title).replace('{site}', input.site)
+  return input.tagline ? `${input.site} – ${input.tagline}` : input.site
+}
+
+/**
  * A page's meta description: the source's own when it has one, else what the page is in the site's own words —
  * "Author: Ada – Northwind. Fresh bread daily." — so no indexable page goes without one (an archive in WordPress often
  * has none, and the site's CI asserts Lighthouse SEO at 1). The front page keeps the tagline, as WordPress does. A later

@@ -248,7 +248,7 @@ Most write operations create feature branches from the dedicated `contentrain` b
 
 When baseBranch has diverged (commits `contentrain` lacks — the state a dual-domain migration PR leaves behind), a write is a **partial success**: it lands on `contentrain` and reports `base_advance: "blocked_diverged"` instead of failing. `contentrain status` shows the relation in both directions; `contentrain reconcile` merges the branches content-aware (a two-parent merge commit) so the fast-forward advance works again.
 
-Merging a review branch (via `contentrain merge`, `contentrain diff`, the Serve UI, or the MCP tools) also deletes its remote copy, so merged branches never pile up as phantom pending reviews. The same applies to rejected/deleted drafts. This is best-effort — an offline or permission failure only produces a warning — and can be disabled with `remoteBranchCleanup: false` in `config.json`. Note that deleting a pushed branch closes any open PR/MR on it.
+Merging a review branch (via `contentrain merge`, `contentrain diff`, the Serve UI, or the MCP tools) also deletes its remote copy, so merged branches never pile up as phantom pending reviews. The same applies to rejected/deleted drafts. This is best-effort — an offline or permission failure only produces a warning — and can be disabled with `remoteBranchCleanup: false` in `config.json`. In local mode (`"git": { "push": false }` in `config.json`, or `CONTENTRAIN_NO_PUSH=1`) nothing is pushed or deleted on the remote, and `merge`/`prune` print that they skipped it. Note that deleting a pushed branch closes any open PR/MR on it.
 
 Use:
 

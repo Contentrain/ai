@@ -15,4 +15,4 @@
  * `@contentrain/query`'s generator and Astro loader, because how a value is
  * spelled on disk is a contract rather than an implementation detail.
  */
-export { parseMarkdownFrontmatter, serializeMarkdownFrontmatter } from '@contentrain/types'
+export { parseMarkdownFrontmatter, preservedKeyConflicts, serializeMarkdownFrontmatter } from '@contentrain/types'

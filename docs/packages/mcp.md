@@ -262,6 +262,7 @@ All write operations create or update `cr/*` branches:
 - On a checked-out feature branch (a named branch other than the base, `contentrain` or `cr/*`), `.contentrain/**` is read from the local `contentrain` branch — one tree listing and one blob batch per tool call, reused while `contentrain` does not move — and read tools add `content_source: { source: 'ref', ref: 'contentrain', commit, checked_out }`. Source files, scan and normalize still read the working tree, and so does a detached HEAD (CI)
 - A diverged baseBranch (commits `contentrain` lacks — typically a dual-domain migration PR) is a **partial success**, not an error: the write lands on `contentrain`, the response reports `base_advance: "blocked_diverged"`, and `contentrain_reconcile` merges the branches content-aware so the fast-forward works again. `contentrain_status` reports the relation (`in_sync` / `content_ahead` / `base_ahead` / `diverged`) in both directions
 - Merging (or deleting) a branch also removes its copy on the remote, so merged branches don't pile up as phantom pending reviews — best-effort, opt out with `remoteBranchCleanup: false` in `config.json`. Drain an existing backlog with `contentrain prune`
+- Local mode — `"git": { "push": false }` in `config.json`, or `CONTENTRAIN_NO_PUSH=1` for one run (the env wins over the config in both directions; `=0` turns pushing back on) — keeps every write local: no branch push, no remote delete or prune. Fetching still happens. Results report `remote_push: "disabled"` with `remote_note: "not pushed (local mode)"`, and `contentrain_submit` returns an error. The remote name is `CONTENTRAIN_REMOTE` (default `origin`) (see [Config](/reference/config#field-reference))
 - Merged-branch detection survives base-history rewrites (ancestry check with a patch-id fallback)
 - Branch health is tracked and surfaced via `contentrain_status` (warning at 50, blocked at 80 active branches); `contentrain_doctor` adds a remote `cr/*` count
 - Legacy `contentrain/*` branches are auto-migrated on first init
@@ -294,7 +295,7 @@ Agent drivers treat `capability_required` as a retry signal. See [Providers & Tr
 
 ## Transports
 
-- **stdio** — `contentrain serve --stdio` or `npx contentrain-mcp`. IDE agents (Claude Code, Cursor, Windsurf) connect over stdin/stdout.
+- **stdio** — `contentrain serve --stdio` or `npx -y @contentrain/mcp`. IDE agents (Claude Code, Cursor, Windsurf) connect over stdin/stdout.
 - **HTTP** — `contentrain serve --mcpHttp --authToken $TOKEN` or the programmatic `startHttpMcpServer({...})` / `startHttpMcpServerWith({ provider })` exports. Streamable HTTP at `POST /mcp` with secure-by-default Bearer auth. See the [HTTP Transport guide](/guides/http-transport).
 
 Both transports serve the same tool surface and the same JSON response shapes.

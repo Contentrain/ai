@@ -7,7 +7,7 @@
   "siteConfig": [
     {
       "from": "  sourceHosts: [],",
-      "to": "  contact: { address: 'address', phone: 'phone', socials: 'socials' },\n  sourceHosts: [],"
+      "to": "  contact: { address: 'address', phone: 'phone', email: 'email', socials: 'socials', labels: { phone: 'phone_label', email: 'email_label' }, order: ['email', 'phone', 'address'] },\n  sourceHosts: [],"
     },
     {
       "from": "  sourceHosts: [],",
@@ -146,6 +146,8 @@
         ">Leadership</a>": 2
       },
       "contains": [
+        "Email: <a href=\"mailto:hello@northwind.example\"",
+        "Phone: <a href=\"tel:+441170000000\"",
         "column-gap:22px",
         "max-width:1200px",
         "aria-controls=\"site-nav-sub-",
@@ -198,6 +200,7 @@
     },
     "services/index.html": {
       "contains": [
+        ">Plan your move</a>",
         "<meta name=\"description\" content=\"Yoast: design, build and migration services from Northwind.\">"
       ],
       "excludes": [

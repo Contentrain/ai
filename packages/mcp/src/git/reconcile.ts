@@ -7,6 +7,7 @@ import { createGit, authorConfig } from './identity.js'
 import { networkGit } from './branch-lifecycle.js'
 import { GitRefReader } from './ref-reader.js'
 import { resolveBaseBranch } from './base-branch.js'
+import { pushPolicy } from './push-policy.js'
 import {
   NETWORK_TIMEOUT_MS,
   ensureContentBranch,
@@ -205,8 +206,9 @@ export async function reconcileBranches(
     }
     const sync = await selectiveSync(projectRoot, worktreePath, newTip, previousBaseRef, dirtyFilesBeforeUpdate)
 
-    let remotePush: RemotePush = 'no-remote'
-    if (hasRemote) {
+    const push = pushPolicy(config).push
+    let remotePush: RemotePush = push ? 'no-remote' : 'disabled'
+    if (hasRemote && push) {
       remotePush = await pushContentBranches(projectRoot, worktreePath, wtGit, remoteName, baseBranch, true)
     }
 

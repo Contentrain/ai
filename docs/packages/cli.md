@@ -293,7 +293,7 @@ contentrain merge cr/content/faq/1234-abcd
 contentrain merge cr/content/faq/1234-abcd --yes  # Skip confirm (CI)
 ```
 
-Non-interactive single-branch sibling of `contentrain diff`. Delegates to MCP's `mergeBranch` so dirty-file protections + selective sync warnings behave identically. After a successful merge it also deletes the branch's copy on the remote — best-effort, so an offline or permission failure only prints a warning. Opt out with `remoteBranchCleanup: false` in `config.json`. When the base branch has diverged, the merge still lands on `contentrain` and the command says so (`base_advance: blocked_diverged`) — run `contentrain reconcile` to restore the advance.
+Non-interactive single-branch sibling of `contentrain diff`. Delegates to MCP's `mergeBranch` so dirty-file protections + selective sync warnings behave identically. After a successful merge it also deletes the branch's copy on the remote — best-effort, so an offline or permission failure only prints a warning. Opt out with `remoteBranchCleanup: false` in `config.json`. In local mode (`git.push: false` or `CONTENTRAIN_NO_PUSH=1`) it pushes nothing, leaves the remote copy alone, and says so. When the base branch has diverged, the merge still lands on `contentrain` and the command says so (`base_advance: blocked_diverged`) — run `contentrain reconcile` to restore the advance.
 
 ---
 
@@ -318,7 +318,7 @@ contentrain prune --yes       # Skip confirm (CI)
 contentrain prune --json      # Machine-readable output (mutates only with --yes)
 ```
 
-Drains already-merged `cr/*` branches: local ones past their retention period plus every merged copy left on the remote. This is the operator-facing cleanup for backlogs the per-merge deletion could not remove — e.g. branches merged before remote cleanup shipped, or after an offline/permission failure. Merged detection uses the same ancestry + patch-id classification as the rest of the toolchain, so branches orphaned by a base-history rewrite are still recognised. Governed by `remoteBranchCleanup` in `config.json`; exits non-zero if any remote deletion fails.
+Drains already-merged `cr/*` branches: local ones past their retention period plus every merged copy left on the remote. This is the operator-facing cleanup for backlogs the per-merge deletion could not remove — e.g. branches merged before remote cleanup shipped, or after an offline/permission failure. Merged detection uses the same ancestry + patch-id classification as the rest of the toolchain, so branches orphaned by a base-history rewrite are still recognised. Governed by `remoteBranchCleanup` in `config.json`; local mode (`git.push: false` or `CONTENTRAIN_NO_PUSH=1`) skips the remote half and says so; exits non-zero if any remote deletion fails.
 
 ---
 

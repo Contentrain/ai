@@ -20,7 +20,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { createGit } from '@contentrain/mcp/git/identity'
 import { CONTENTRAIN_BRANCH, LOCAL_CAPABILITIES } from '@contentrain/types'
-import { mergeBranch } from '@contentrain/mcp/git/transaction'
+import { LOCAL_MODE_NOTE, mergeBranch } from '@contentrain/mcp/git/transaction'
 import { normalizeOperationError } from '@contentrain/mcp/git/errors'
 import { branchDiff, checkBranchHealth, deleteRemoteBranch } from '@contentrain/mcp/git/branch-lifecycle'
 import { resolveBaseBranch } from '@contentrain/mcp/git/base-branch'
@@ -510,6 +510,7 @@ export async function createServeApp(options: ServeOptions) {
         sync: result.sync,
         base_advance: result.base_advance,
         remote_push: result.remote_push,
+        ...(result.remote_push === 'disabled' ? { remote_note: LOCAL_MODE_NOTE } : {}),
         ...(result.warning ? { warning: result.warning } : {}),
         remote: result.remote,
       }
@@ -839,6 +840,7 @@ export async function createServeApp(options: ServeOptions) {
         sync: result.sync,
         base_advance: result.base_advance,
         remote_push: result.remote_push,
+        ...(result.remote_push === 'disabled' ? { remote_note: LOCAL_MODE_NOTE } : {}),
         ...(result.warning ? { warning: result.warning } : {}),
         remote: result.remote,
       }

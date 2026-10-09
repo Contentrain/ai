@@ -17,7 +17,7 @@ They read its design tokens and pass its gates: `astro check` with the
 | `header` | Brand, navigation, optional call to action | none |
 | `nav` | Inline menu with submenus; popover drawer or `<details>` on phones | none |
 | `footer` | Brand, link columns or a link row, social links, copyright | none |
-| `hero` | Page opener: heading, text, actions, image | none |
+| `hero` | Page opener: heading, text, points, actions, image | none |
 | `card-grid` | Grid of cards (features, services, team) | none |
 | `post-card` | One post in a list | none |
 | `cta` | Call-to-action band | none |

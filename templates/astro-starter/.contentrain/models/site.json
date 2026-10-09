@@ -47,6 +47,24 @@
       "order": 80,
       "type": "array"
     },
+    "seo": {
+      "fields": {
+        "description": {
+          "label": "Meta description",
+          "max": 320,
+          "order": 20,
+          "type": "text"
+        },
+        "title": {
+          "label": "SEO title",
+          "order": 10,
+          "type": "string"
+        }
+      },
+      "label": "Home page SEO",
+      "order": 85,
+      "type": "object"
+    },
     "social_image": {
       "label": "Default social image",
       "order": 60,

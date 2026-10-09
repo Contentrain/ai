@@ -2,6 +2,7 @@ import { CONTENTRAIN_BRANCH } from '@contentrain/types'
 import type { BaseAdvance, RemotePush } from '@contentrain/types'
 import type { FileChange } from '../core/contracts/index.js'
 import type { ToolProvider } from '../server.js'
+import { LOCAL_MODE_NOTE } from '../git/push-policy.js'
 
 /**
  * Context payload describing the operation, threaded into the local
@@ -60,6 +61,7 @@ export function gitReport(input: {
     ...(input.sync ? { sync: input.sync } : {}),
     ...(input.base_advance ? { base_advance: input.base_advance } : {}),
     ...(input.remote_push ? { remote_push: input.remote_push } : {}),
+    ...(input.remote_push === 'disabled' ? { remote_note: LOCAL_MODE_NOTE } : {}),
   }
 }
 
@@ -74,6 +76,9 @@ export function divergenceNextSteps(input: {
   const steps: string[] = []
   if (input.base_advance === 'blocked_diverged') {
     steps.push('DIVERGED: the content is safe on the contentrain branch, but the base branch has commits contentrain does not — run contentrain_reconcile (dry_run first) to merge them and restore the fast-forward advance')
+  }
+  if (input.remote_push === 'disabled') {
+    steps.push(`LOCAL MODE: ${LOCAL_MODE_NOTE} — the commit is on the local branches only; push it yourself when ready (pushing is off via git.push: false or CONTENTRAIN_NO_PUSH)`)
   }
   if (input.remote_push === 'rejected') {
     steps.push('PUSH REJECTED: the remote refused the contentrain push even after a retry — the local and remote contentrain branches have diverged; fetch and run contentrain_reconcile')

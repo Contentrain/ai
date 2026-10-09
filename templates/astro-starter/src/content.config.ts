@@ -150,6 +150,10 @@ export const collections = {
       logo: z.string().optional(),
       organization: z.string().optional(),
       same_as: z.array(z.string()).optional(),
+      seo: z.object({
+      description: z.string().optional(),
+      title: z.string().optional(),
+    }).optional(),
       social_image: z.string().optional(),
       tagline: z.string().optional(),
       title: z.string(),

@@ -49,7 +49,7 @@ export interface ApproveBranchResult {
   status: string
   /** Did the base branch advance? `blocked_diverged` = content landed on contentrain, advance pending. */
   base_advance?: 'advanced' | 'blocked_diverged'
-  remote_push?: 'pushed' | 'rejected' | 'no-remote'
+  remote_push?: 'pushed' | 'rejected' | 'no-remote' | 'disabled'
   /** Human-readable detail for a partial success — shown as-is. */
   warning?: string
 }

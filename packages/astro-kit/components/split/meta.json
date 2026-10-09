@@ -107,7 +107,6 @@
     "heading": {
       "type": "string",
       "label": "Heading",
-      "required": true,
       "description": "The section heading."
     },
     "headingLevel": {

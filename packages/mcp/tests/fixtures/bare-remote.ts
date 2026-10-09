@@ -1,4 +1,4 @@
-import { mkdtemp } from 'node:fs/promises'
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { simpleGit } from 'simple-git'
@@ -22,4 +22,30 @@ export async function addBareRemote(repoDir: string, remoteName = 'origin'): Pro
 export async function remoteHeads(remoteDir: string): Promise<string[]> {
   const raw = await simpleGit(remoteDir).raw(['for-each-ref', '--format=%(refname:short)', 'refs/heads'])
   return raw.split('\n').map(s => s.trim()).filter(Boolean)
+}
+
+/**
+ * A bare remote that records every ref update it receives. Its pre-receive
+ * hook appends one line per updated ref (branch push and `push --delete`
+ * alike) to a log, so {@link CountingRemote.pushes} is the number of pushes
+ * that actually reached the remote — the witness for local mode.
+ */
+export interface CountingRemote {
+  dir: string
+  /** Ref updates received since the last {@link CountingRemote.reset}. */
+  pushes: () => Promise<number>
+  /** Forget pushes so far (after seeding the remote). */
+  reset: () => Promise<void>
+}
+
+export async function addCountingRemote(repoDir: string, remoteName = 'origin'): Promise<CountingRemote> {
+  const dir = await addBareRemote(repoDir, remoteName)
+  const log = join(dir, 'received.log')
+  await writeFile(log, '')
+  await writeFile(join(dir, 'hooks', 'pre-receive'), `#!/bin/sh\ncat >> "${log}"\n`, { mode: 0o755 })
+  return {
+    dir,
+    pushes: async () => (await readFile(log, 'utf8')).split('\n').filter(Boolean).length,
+    reset: () => writeFile(log, ''),
+  }
 }

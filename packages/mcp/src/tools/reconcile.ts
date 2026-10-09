@@ -7,6 +7,7 @@ import { reconcileBranches } from '../git/reconcile.js'
 import { normalizeOperationError } from '../git/errors.js'
 import { TOOL_ANNOTATIONS } from './annotations.js'
 import { capabilityError } from './guards.js'
+import { LOCAL_MODE_NOTE } from '../git/push-policy.js'
 
 const resolutionSchema = z.union([
   z.object({
@@ -109,6 +110,7 @@ export function registerReconcileTools(
             commit: result.commit,
             base_advance: result.base_advance,
             ...(result.remote_push ? { remote_push: result.remote_push } : {}),
+            ...(result.remote_push === 'disabled' ? { remote_note: LOCAL_MODE_NOTE } : {}),
             ...(result.sync ? { sync: result.sync } : {}),
             summary: result.plan.result,
             ...(result.plan.advisories.length > 0 ? { advisories: result.plan.advisories } : {}),

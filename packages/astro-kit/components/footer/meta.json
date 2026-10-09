@@ -59,7 +59,7 @@
     },
     "tagline": {
       "type": "string",
-      "description": "One line under the name (site.tagline)."
+      "description": "A line under the name (site.tagline, or the source footer's about text); line breaks are kept, so a credit under it stays its own line."
     },
     "columns": {
       "type": "array",
@@ -121,7 +121,17 @@
       "fields": {
         "address": { "type": "text", "description": "Postal address; line breaks are kept." },
         "phone": { "type": "string", "description": "Phone number, linked as tel: when it has digits." },
-        "email": { "type": "email", "description": "Email address, linked as mailto:." }
+        "email": { "type": "email", "description": "Email address, linked as mailto:." },
+        "labels": {
+          "type": "object",
+          "description": "The words the source prints before each detail (\"Telefon:\", \"Email:\"); each optional.",
+          "fields": {
+            "address": { "type": "string", "description": "Before the address." },
+            "phone": { "type": "string", "description": "Before the phone number." },
+            "email": { "type": "string", "description": "Before the email address." }
+          }
+        },
+        "order": { "type": "array", "items": "string", "description": "The details' order as the source prints them: address, phone and email, each once; absent, that order. A detail left out is printed after the listed ones." }
       },
       "description": "Contact details printed in an address block under the tagline; the block is left out when none is set."
     },

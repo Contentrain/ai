@@ -67,7 +67,8 @@ interface Feature {
 }
 
 interface Props {
-  heading: string
+  /** The section heading; absent when the source's text and image stand without one. */
+  heading?: string | undefined
   /** The heading's level: 2 under the page title; 3 or 4 when the section sits inside another. */
   headingLevel?: 2 | 3 | 4 | undefined
   eyebrow?: string | undefined
@@ -103,14 +104,14 @@ const Heading = `h${headingLevel}` as 'h2'
 const columns = COLUMNS[imageSide === 'start' ? 'image' : 'text'][ratio]
 const bleed = imageBleed === 'edge' ? BLEED[imageSide === 'start' ? 'start' : 'end'] : undefined
 const video = mediaKind === 'video' && videoUrl
-const headingId = id ? `${id}-title` : undefined
+const headingId = id && heading ? `${id}-title` : undefined
 const html = await renderMarkdown(body)
 ---
 <Section measured={measured} tone={tone} id={id} aria-labelledby={headingId} class={bleed ? 'overflow-x-clip' : undefined}>
   <div class:list={[s.grid(), columns]}>
     <div class={s.copy()}>
       {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
-      <Heading id={headingId} class={s.heading()}>{heading}</Heading>
+      {heading && <Heading id={headingId} class={s.heading()}>{heading}</Heading>}
       {html && <div class={s.body()} data-kit-text set:html={html} />}
       {features.length > 0 && <FeatureList items={features} columns="2" style={featureStyle} tone={tone === 'brand' || tone === 'none' ? undefined : tone} bare titleLevel={Math.min(5, headingLevel + 1) as 3 | 4 | 5} />}
       {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}

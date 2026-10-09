@@ -166,9 +166,11 @@ export interface SiteConfig {
    * The site singleton's fields that hold the contact details, by field name (a migration finds them
    * in the source's settings: an ACF options page). The footer prints what is set: `address`,
    * `phone` and `email` as text, `socials` as a list of rows each with a link and a label.
-   * Absent, or a field empty, the footer prints nothing for it.
+   * Absent, or a field empty, the footer prints nothing for it. `labels`: the fields that hold the
+   * words the source prints before a detail ("Telefon:", "Email:"), so an editor changes them in
+   * Studio. `order`: the details' order as the source prints them; absent, address, phone, email.
    */
-  contact?: { address?: string, phone?: string, email?: string, socials?: string }
+  contact?: { address?: string, phone?: string, email?: string, socials?: string, labels?: { address?: string, phone?: string, email?: string }, order?: ReadonlyArray<'address' | 'phone' | 'email'> }
   /** Custom post types: each gets its single pages, archive and term lists. */
   types?: readonly CustomType[]
   /**
