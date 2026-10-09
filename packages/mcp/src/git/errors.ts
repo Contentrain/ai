@@ -71,7 +71,7 @@ export function normalizeOperationError(err: unknown, stage?: string): Normalize
       out.stage = out.stage ?? 'git-commit'
       out.hook = hookName ?? hookTool
       out.agent_hint = out.agent_hint
-        ?? 'A git hook rejected the Contentrain commit. Contentrain commits with --no-verify, but a wrapping CLI or server-side hook may still run. Ask the developer to allow machine-generated "[contentrain]" commits or to exclude cr/* branches from the hook.'
+        ?? 'A git hook rejected a Contentrain git operation. Commit hooks run on Contentrain commits only when git.verify is true (or CONTENTRAIN_VERIFY=1); merge and pre-push hooks always run. Nothing was retried without hooks. Show the developer the hook output: they can fix what the hook reports, allow machine-generated "[contentrain]" commits or exclude cr/* branches in the hook, or turn commit hooks back off with git.verify: false.'
     }
   }
 

@@ -67,6 +67,8 @@ All write operations are designed around git-backed safety:
 - on a checked-out feature branch, which writes do not update, `.contentrain/**` is read from the `contentrain` ref instead (source files still from the working tree); read tools report it as `content_source`
 - review: feature branch pushed to remote for team review; once merged (or deleted), its remote copy is removed too — best-effort, opt out with `remoteBranchCleanup: false` in config.json
 - local mode (`git.push: false` or `CONTENTRAIN_NO_PUSH=1`): nothing is ever pushed or deleted on the remote, and every result says so — see [Git environment and local mode](#git-environment-and-local-mode)
+- every local write's `git` block names the resolved `base_branch`; when it is not the checked-out branch, the result's `warning` says your working tree was left alone
+- commit hooks: skipped on machine commits by default; `git.verify: true` or `CONTENTRAIN_VERIFY=1` runs them, and a rejecting hook fails the write with its output — see [Commit hooks](#commit-hooks)
 - merged-branch detection survives base-history rewrites (ancestry check with a patch-id fallback), so rebases/squashes don't strand stale branches
 - developer's working tree is never mutated during MCP git operations (no stash, no checkout, no merge)
 - context.json never lands on feature branches — it is regenerated on the `contentrain` branch after merge (locally by the transaction layer; in remote flows by the orchestrator that owns the merge)
@@ -77,7 +79,7 @@ All write operations are designed around git-backed safety:
 
 27 MCP tools — 22 core + 5 media — with [annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) for client safety hints.
 
-**Tool listing is capability-aware.** `tools/list` only advertises tools the resolved provider + `projectRoot` pair can actually satisfy. A local stdio server lists the 22 core tools; a session driven by a remote provider (GitHub/GitLab, no local checkout) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. The requirement map lives in `TOOL_REQUIREMENTS` (`@contentrain/mcp/tools/availability`).
+**Tool listing is capability-aware.** `tools/list` only advertises tools the resolved provider + `projectRoot` pair can actually satisfy. A local stdio server lists the 22 core tools; a session driven by a remote provider (GitHub/GitLab, no local checkout) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `vocabulary_save`, `vocabulary_delete`, `validate`. The requirement map lives in `TOOL_REQUIREMENTS` (`@contentrain/mcp/tools/availability`).
 
 | Tool | Purpose | Read-only | Destructive |
 | --- | --- | --- | --- |
@@ -101,6 +103,8 @@ All write operations are designed around git-backed safety:
 | `contentrain_scan` | Graph- and candidate-based hardcoded string scan | Yes | — |
 | `contentrain_apply` | Normalize extract/reuse execution with dry-run support | — | — |
 | `contentrain_bulk` | Bulk locale copy, status updates, and deletes (`dry_run` previews) | — | — |
+| `contentrain_vocabulary_save` | Add or update canonical vocabulary terms (merges with what exists) | — | — |
+| `contentrain_vocabulary_delete` | Remove canonical vocabulary terms by slug (`confirm: true`) | — | **Yes** |
 | `contentrain_media_list` | List media assets (search, tag filter, cursor pagination) | Yes | — |
 | `contentrain_media_get` | Get one media asset by id | Yes | — |
 | `contentrain_media_ingest` | Ingest an asset from a source URL (provider fetches server-side) | — | — |
@@ -136,12 +140,23 @@ These apply to the local provider (stdio, `LocalProvider`):
 | `CONTENTRAIN_BRANCH` | unset | Base branch the `contentrain` branch advances. Wins over `repository.default_branch`, then remote HEAD → `main` → `master` → the checked-out branch. Per process; never written to config |
 | `CONTENTRAIN_REMOTE` | `origin` | Remote used for every fetch and push (and remote branch cleanup) |
 | `CONTENTRAIN_NO_PUSH` | unset | `1`/`true` turns local mode on; `0`/`false` turns it off. Any other value is ignored |
+| `CONTENTRAIN_VERIFY` | unset | `1`/`true` runs the repository's commit hooks on Contentrain's commits; `0`/`false` skips them. Wins over `git.verify`. Any other value is ignored |
 
 **Local mode** keeps every write on local branches: no branch push, no review push, no push after an auto-merge, approve or reconcile, and no remote branch delete or prune. Fetching is not a push and still happens when a remote exists. Turn it on for a project with `"git": { "push": false }` in `.contentrain/config.json`, or for one run with `CONTENTRAIN_NO_PUSH=1`.
 
 Precedence: the env wins over the config in both directions. `CONTENTRAIN_NO_PUSH=1` turns pushing off even when config allows it; `CONTENTRAIN_NO_PUSH=0` turns it back on over `git.push: false`. With neither, pushing is on.
 
 It is never a silent success. Each write's `git` block reports `remote_push: "disabled"` with `remote_note: "not pushed (local mode)"`, and `next_steps` carries a `LOCAL MODE` line. `contentrain_submit` returns an error instead of pushing; land review branches with `contentrain_merge`. `contentrain_merge` and `contentrain_branch_delete` delete the local branch as usual and report `remote_skipped: "local-mode"`, leaving any remote copy untouched.
+
+### Commit hooks
+
+By default Contentrain's machine commits (the `cr/*` content commit, the `context.json` commit, a reconcile merge commit, the seed commit of an empty repo) skip the repository's commit hooks (`pre-commit`, `prepare-commit-msg`, `commit-msg`). That keeps existing projects working: these commits are made in a temporary worktree without your `node_modules`, and their `[contentrain] …` subject fails a strict commitlint. Merges still run the merge hooks and pushes still run `pre-push`, as before.
+
+To run commit hooks on every machine commit, set `"git": { "verify": true }` in `.contentrain/config.json`, or `CONTENTRAIN_VERIFY=1` for one run (`CONTENTRAIN_VERIFY=0` skips them over the config). With hooks on:
+
+- a hook that rejects the content commit fails the write: nothing lands, and the tool error carries the hook's output. Nothing is retried without hooks;
+- a hook that rejects only the follow-up `context.json` commit (the content is already on `contentrain`) is reported in the result's `warning`, not swallowed;
+- the hooks must work in a worktree under the system temp directory — a hook that runs `npx lint-staged` needs the tool available there.
 
 ### Embed the server in your own process
 

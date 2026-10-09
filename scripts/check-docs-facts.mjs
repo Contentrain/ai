@@ -232,10 +232,13 @@ const MATCHERS = [
   { re: /\b(\d+)-value conflict\b/gi, fact: () => 'conflict-codes' },
   { re: /\b(\d+)\s+conflict codes\b/gi, fact: () => 'conflict-codes' },
   {
-    // "16 skills", "16 Agent Skills", "16 on-demand Agent Skills", "15 production skills"
-    re: /\b(\d+)\s+(?:on-demand\s+|production\s+)*(?:Agent\s+)?skills\b/gi,
+    // "16 skills", "16 Agent Skills", "16 on-demand Agent Skills", "15 production skills",
+    // and the linked form "16 [Agent Skills](https://agentskills.io)"
+    re: /\b(\d+)\s+(?:on-demand\s+|production\s+)*\[?(?:Agent\s+)?skills\b/gi,
     fact: () => 'agent-skills',
   },
+  // The README badge: shields.io `Agent_Skills-16_skills-…`
+  { re: /\bAgent_Skills-(\d+)_skills\b/g, fact: () => 'agent-skills' },
 ]
 
 /** Every claim the matchers find in one body of text. */
@@ -292,14 +295,12 @@ function breakdownProblems(text, fieldTypeTotal) {
 /**
  * Reader-facing surfaces that state these numbers. `README.md` is the npm and
  * GitHub front page, so it is read more than the docs site; `AGENTS.md` is the
- * contract coding agents load.
- *
- * `CLAUDE.md` deliberately is NOT here. It carries the same drift, but it is
- * this repo's instruction file rather than published documentation, and
- * changing it is a decision for its owner. Once its numbers are corrected,
- * adding it to `EXTRA_FILES` is a one-line change.
+ * contract coding agents load; `CLAUDE.md` is the instruction file agents load
+ * in this repo (its counts were corrected in #516); `packages/mcp/server.json`
+ * is the MCP Registry listing. Its version is checked by
+ * `scripts/sync-server-json.mjs --check`.
  */
-const EXTRA_FILES = ['README.md', 'AGENTS.md']
+const EXTRA_FILES = ['README.md', 'AGENTS.md', 'CLAUDE.md', 'packages/mcp/server.json']
 
 /**
  * Every markdown file a package ships: READMEs, and the rule and skill
@@ -374,6 +375,10 @@ const HISTORICAL_DRIFT = [
   { fact: 'mcp-tools', wrong: 22, line: '| @contentrain/mcp | 22 MCP tools (scan, apply, validate, merge, reconcile, doctor...) |' },
   { fact: 'model-kinds', wrong: 5, line: '- Read/write/delete content and models (5 kinds).' },
   { fact: 'field-types', wrong: 26, line: '## 2. Complete Type Reference (26 Types)' },
+  // #516: the linked and badge forms the README carried while 16 skills shipped.
+  { fact: 'agent-skills', wrong: 15, line: 'This repo ships 15 [Agent Skills](https://agentskills.io) — reusable workflow procedures' },
+  { fact: 'agent-skills', wrong: 15, line: '[![Agent Skills](https://img.shields.io/badge/Agent_Skills-15_skills-8B5CF6)](https://agentskills.io)' },
+  { fact: 'mcp-tools', wrong: 21, line: '│   ├── mcp/          — 21 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers' },
 ]
 
 function selfTest(facts) {

@@ -208,9 +208,20 @@ export interface ContentrainConfig {
    * branch is deleted — results report `remote_push: 'disabled'`. The
    * `CONTENTRAIN_NO_PUSH` env (`1`/`true` off, `0`/`false` on) overrides it.
    * Default: push whenever the remote exists.
+   *
+   * `verify: true` runs the repository's commit hooks (pre-commit,
+   * commit-msg, …) on Contentrain's machine commits; a hook that rejects a
+   * commit fails the write with the hook's output, and nothing is retried
+   * without hooks. The `CONTENTRAIN_VERIFY` env (`1`/`true` on, `0`/`false`
+   * off) overrides it. Default: false — machine commits skip commit hooks,
+   * as before, because a `[contentrain] …` message or a hook that needs the
+   * repo's `node_modules` would otherwise fail every write in the temporary
+   * worktree. Merges and pushes are not affected: they run the merge and
+   * pre-push hooks either way.
    */
   git?: {
     push?: boolean
+    verify?: boolean
   }
 }
 
@@ -1394,7 +1405,8 @@ function decodeSingleQuoted(inner: string): string | undefined {
  * \"Hi\""` says, which means the generated client and the content engine
  * disagreed about the same file. One implementation, imported by both.
  */
-export function parseFrontmatterScalar(raw: string): unknown {
+export function parseFrontmatterScalar(input: string): unknown {
+  const raw = stripFrontmatterComment(input)
   if (raw === 'true') return true
   if (raw === 'false') return false
   if (raw === 'null') return null
@@ -1413,6 +1425,82 @@ export function parseFrontmatterScalar(raw: string): unknown {
 }
 
 /**
+ * A value's raw text without a trailing YAML comment. In YAML a `#` starts a comment only after whitespace and outside
+ * quotes, so `status: draft # todo` is `draft`, `title: "A" # x` is `A`, and `[a, b] # x` is the list — while `C#`
+ * and `"a # b"` keep their `#`. A value that starts with `#` (`color: #fff`) is kept as written: strict YAML reads it as
+ * empty, but these readers always returned the text, and turning it into nothing would erase it on the next save.
+ * Exported for the same reason as {@link parseFrontmatterScalar}: every reader must cut a value in the same place.
+ */
+export function stripFrontmatterComment(raw: string): string {
+  const value = raw.trim()
+  let end = -1
+  if (value.startsWith('"')) {
+    for (let i = 1; i < value.length; i += 1) {
+      if (value[i] === '\\') { i += 1; continue }
+      if (value[i] === '"') { end = i; break }
+    }
+  } else if (value.startsWith("'")) {
+    for (let i = 1; i < value.length; i += 1) {
+      if (value[i] === "'") {
+        if (value[i + 1] === "'") { i += 1; continue }
+        end = i
+        break
+      }
+    }
+  } else if (value.startsWith('[')) {
+    // The bracket that closes the list, not the last one on the line: `[a, b] # see [c]` is the list `[a, b]`.
+    let depth = 0
+    let quote: '"' | "'" | undefined
+    for (let i = 0; i < value.length; i += 1) {
+      const char = value[i]!
+      if (quote) {
+        if (char === '\\' && quote === '"') { i += 1; continue }
+        if (char === quote) quote = undefined
+        continue
+      }
+      if (char === '"' || char === "'") quote = char
+      else if (char === '[') depth += 1
+      else if (char === ']' && --depth === 0) { end = i; break }
+    }
+  }
+  if (end > 0) {
+    const rest = value.slice(end + 1)
+    return /^\s+#/.test(rest) ? value.slice(0, end + 1) : value
+  }
+  const comment = /\s#/.exec(value)
+  return comment ? value.slice(0, comment.index).trimEnd() : value
+}
+
+/** Whether a raw value carries a trailing YAML comment that {@link stripFrontmatterComment} cuts off. */
+export function hasFrontmatterComment(raw: string): boolean {
+  return stripFrontmatterComment(raw) !== raw.trim()
+}
+
+/**
+ * The top-level frontmatter keys of a markdown document whose value line, or one of whose dash-list items, ends in a
+ * ` # comment`. The readers drop the comment, so a save writes the value without it; `validate` warns about these
+ * lines before that happens. Each key is named once.
+ */
+export function frontmatterCommentKeys(content: string): string[] {
+  const match = content.replace(/\r\n/g, '\n').match(/^---\n([\s\S]*?)\n---(?:\n|$)/)
+  if (!match) return []
+  const keys = new Set<string>()
+  let current: string | undefined
+  for (const line of match[1]!.split('\n')) {
+    const kv = line.match(/^([\w][\w.-]*)\s*:\s*(.*)$/)
+    if (kv) {
+      current = kv[1]!
+      if (hasFrontmatterComment(kv[2]!)) keys.add(current)
+      continue
+    }
+    const item = line.match(/^\s*-\s+(.*)$/)
+    if (item && current !== undefined && hasFrontmatterComment(item[1]!)) keys.add(current)
+    else if (!item && line.trim() !== '' && !/^\s/.test(line)) current = undefined
+  }
+  return [...keys]
+}
+
+/**
  * A scalar read as a string: quoting and escapes are resolved, but a value that
  * merely looks like a number or a boolean stays the text it was. Array items
  * use this, and so does any reader that knows from the model that a field is
@@ -1420,7 +1508,7 @@ export function parseFrontmatterScalar(raw: string): unknown {
  */
 export function parseFrontmatterScalarString(raw: string): string {
   const value = parseFrontmatterScalar(raw)
-  return typeof value === 'string' ? value : raw
+  return typeof value === 'string' ? value : stripFrontmatterComment(raw)
 }
 
 /**
@@ -1619,6 +1707,15 @@ export interface FrontmatterPreserved {
   eol: '\n' | '\r\n'
   /** Whether the file ended with a newline; a file that did not is written back without one. */
   finalNewline?: boolean
+  /**
+   * The whitespace between the closing `---` line and the body, as written (LF form). Absent when the file had no
+   * body. Written back as long as the saved body is not empty, so no blank line is added or collapsed.
+   */
+  bodyLead?: string
+  /** The whitespace after the body, as written (LF form): `\n\n` stays `\n\n`, none stays none. Absent when the file had no body. */
+  bodyTrail?: string
+  /** What followed the closing `---` line in a file with no body (blank lines, LF form). Written back while the body stays empty. */
+  emptyTail?: string
 }
 
 /** The keys of the preserved blocks the data would replace: the data's value wins and the block is not written. */
@@ -1636,7 +1733,8 @@ function frontmatterBlockKey(head: string): string | undefined {
 }
 
 /** One field's value, or `undefined` when its lines are more than a scalar, an inline list or a plain dash list. */
-function readFrontmatterField(rawValue: string, children: string[]): { value: unknown } | undefined {
+function readFrontmatterField(written: string, children: string[]): { value: unknown } | undefined {
+  const rawValue = stripFrontmatterComment(written)
   const rest = children.filter(line => line.trim() !== '')
   if (rawValue === '') {
     if (rest.length === 0) return { value: [] }
@@ -1658,6 +1756,10 @@ function readFrontmatterField(rawValue: string, children: string[]): { value: un
  * Lines that are not a scalar, an inline list or a dash list (nested maps, block scalars, keys with a space or a
  * non-ASCII name, comments) are not fields: they come back in `preserved`, verbatim, for `serializeMarkdownFrontmatter`
  * to write back. A key above a nested map is therefore absent from `frontmatter`, not an empty array.
+ *
+ * `preserved` also carries the file's layout — line ending, final newline, the blank lines around the body — whenever
+ * it differs from what the serializer writes by default, so a save that changes no field is byte-identical (#521). A
+ * document in the default shape (LF, one blank line after `---`, one final newline) has no `preserved`.
  */
 export function parseMarkdownFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string; preserved?: FrontmatterPreserved } {
   const normalized = content.replace(/\r\n/g, '\n')
@@ -1665,7 +1767,8 @@ export function parseMarkdownFrontmatter(content: string): { frontmatter: Record
   if (!match) return { frontmatter: {}, body: normalized }
 
   const lines = match[1]!.split('\n')
-  const body = match[2]!.trim()
+  const after = match[2]!
+  const body = after.trim()
   const frontmatter: Record<string, unknown> = {}
   const blocks: FrontmatterPreservedBlock[] = []
   const order: string[] = []
@@ -1698,8 +1801,16 @@ export function parseMarkdownFrontmatter(content: string): { frontmatter: Record
     anchor = kv[1]!
   }
 
-  if (blocks.length === 0) return { frontmatter, body }
-  return { frontmatter, body, preserved: { blocks, order, eol: content.includes('\r\n') ? '\r\n' : '\n', finalNewline: content.endsWith('\n') } }
+  const eol: '\n' | '\r\n' = content.includes('\r\n') ? '\r\n' : '\n'
+  const finalNewline = content.endsWith('\n')
+  const layout: Pick<FrontmatterPreserved, 'bodyLead' | 'bodyTrail' | 'emptyTail'> = body
+    ? { bodyLead: after.slice(0, after.length - after.trimStart().length), bodyTrail: after.slice(after.trimEnd().length) }
+    : { emptyTail: after }
+  const defaultLayout = eol === '\n' && (body
+    ? layout.bodyLead === '\n' && layout.bodyTrail === '\n'
+    : layout.emptyTail === '' && finalNewline)
+  if (blocks.length === 0 && defaultLayout) return { frontmatter, body }
+  return { frontmatter, body, preserved: { blocks, order, eol, finalNewline, ...layout } }
 }
 
 /**
@@ -1740,15 +1851,17 @@ export function serializeMarkdownFrontmatter(data: Record<string, unknown>, body
     }
   }
 
-  const lines: string[] = ['---']
-  lines.push(...serializeYamlFields(data, preserved))
-  lines.push('---')
-  lines.push('')
-  if (body) {
-    lines.push(body)
-    lines.push('')
-  }
-  return written(lines)
+  // The body is framed the way the file had it: the same blank lines after `---` and the same trailing newlines (#521).
+  // A new document, or a body where the file had none, gets the default: one blank line, one final newline.
+  const head = ['---', ...serializeYamlFields(data, preserved), '---'].join('\n') + '\n'
+  const tail = body
+    ? (preserved?.bodyLead ?? '\n') + body + (preserved?.bodyTrail ?? '\n')
+    : preserved?.emptyTail ?? ''
+  let text = head + tail
+  if (preserved?.eol === '\r\n') text = text.replace(/\r?\n/g, '\r\n')
+  // Only a file with nothing after its closing `---` can lack a final newline that the layout above does not say.
+  if (preserved?.finalNewline === false && tail === '') text = text.replace(/\r?\n$/, '')
+  return text
 }
 
 // ─── Migration contracts ───

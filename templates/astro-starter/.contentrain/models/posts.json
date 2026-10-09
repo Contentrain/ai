@@ -83,6 +83,16 @@
           "order": 50,
           "type": "boolean"
         },
+        "og_description": {
+          "label": "Social description (og:description)",
+          "order": 75,
+          "type": "text"
+        },
+        "og_title": {
+          "label": "Social title (og:title)",
+          "order": 70,
+          "type": "string"
+        },
         "title": {
           "label": "SEO title",
           "order": 10,

@@ -56,12 +56,14 @@ const terms = taxonomy ? [...allTerms.values()].filter(term => refIds(data[taxon
 const [authorId] = type.meta ? refIds(data.author) : []
 const author = authorId ? await getEntry('authors', authorId) : undefined
 const title = entryTitle(type, entry)
-const seo = data.seo as { title?: string, description?: string, noindex?: boolean, nofollow?: boolean, canonical?: string } | undefined
+const seo = data.seo as { title?: string, description?: string, og_title?: string, og_description?: string, noindex?: boolean, nofollow?: boolean, canonical?: string } | undefined
 const description = seo?.description ?? (type.card.excerpt ? text(data[type.card.excerpt]) : undefined) ?? summarize(body)
 ---
 <BaseLayout
   title={title}
   fullTitle={seo?.title}
+  ogTitle={seo?.og_title}
+  ogDescription={seo?.og_description}
   description={description}
   image={cover ? imageOf(cover as Media).src : undefined}
   canonical={seo?.canonical ?? new URL(entryHref(type, entry), Astro.site ?? Astro.url).href}

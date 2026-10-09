@@ -8,6 +8,7 @@ import { networkGit } from './branch-lifecycle.js'
 import { GitRefReader } from './ref-reader.js'
 import { resolveBaseBranch } from './base-branch.js'
 import { pushPolicy } from './push-policy.js'
+import { commitOptions, hookPolicy } from './hook-policy.js'
 import {
   NETWORK_TIMEOUT_MS,
   ensureContentBranch,
@@ -186,7 +187,7 @@ export async function reconcileBranches(
 
     await wtGit.commit(
       `[contentrain] reconcile: merge ${baseBranch} into ${CONTENTRAIN_BRANCH}`,
-      { '--no-verify': null },
+      commitOptions(hookPolicy(config)),
     )
 
     const [newTip, previousBaseRef, statusBeforeUpdate] = await Promise.all([

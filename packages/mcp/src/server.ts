@@ -116,7 +116,7 @@ class CapabilityFilteredMcpServer extends McpServer {
  * (`TOOL_REQUIREMENTS`) cannot be met by the resolved provider +
  * projectRoot pair are not registered, so `tools/list` only advertises
  * tools that can actually succeed. With a `LocalProvider` (stdio and CLI
- * flows) all 19 tools remain registered — behavior there is unchanged.
+ * flows) all 22 core tools remain registered — behavior there is unchanged.
  */
 export function createServer(projectRoot: string): McpServer
 export function createServer(opts: CreateServerOptions): McpServer

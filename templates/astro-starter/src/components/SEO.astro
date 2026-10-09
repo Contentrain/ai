@@ -9,6 +9,10 @@ interface Props {
   /** The document title as it should appear, site name included. */
   title: string
   description?: string | undefined
+  /** og:title / twitter:title (`shareTitle`): the page's own, not the document title. Absent: the document title. */
+  shareTitle?: string | undefined
+  /** og:description / twitter:description (`shareDescription`). Absent: the meta description. */
+  shareDescription?: string | undefined
   /** Absolute canonical URL. */
   canonical: string
   /** Absolute image URL for link previews. */
@@ -24,7 +28,7 @@ interface Props {
 }
 
 const {
-  title, description, canonical, image, type = 'website', noindex = false, nofollow = false,
+  title, description, shareTitle = title, shareDescription = description, canonical, image, type = 'website', noindex = false, nofollow = false,
   siteName, locale, published, modified, jsonLd = [],
 } = Astro.props
 
@@ -40,17 +44,17 @@ const feed = new URL(withBase('/rss.xml'), Astro.site ?? canonical).href
 
 <meta property="og:type" content={type} />
 <meta property="og:site_name" content={siteName} />
-<meta property="og:title" content={title} />
+<meta property="og:title" content={shareTitle} />
 <meta property="og:url" content={canonical} />
-{description && <meta property="og:description" content={description} />}
+{shareDescription && <meta property="og:description" content={shareDescription} />}
 {locale && <meta property="og:locale" content={locale.replace('-', '_')} />}
 {image && <meta property="og:image" content={image} />}
 {published && <meta property="article:published_time" content={published.toISOString()} />}
 {modified && <meta property="article:modified_time" content={modified.toISOString()} />}
 
 <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
-<meta name="twitter:title" content={title} />
-{description && <meta name="twitter:description" content={description} />}
+<meta name="twitter:title" content={shareTitle} />
+{shareDescription && <meta name="twitter:description" content={shareDescription} />}
 {image && <meta name="twitter:image" content={image} />}
 
 {jsonLd.length > 0 && <script type="application/ld+json" is:inline set:html={serializeLd(jsonLd)} />}

@@ -20,6 +20,8 @@ import { applyChangesToWorktree } from '../../core/ops/index.js'
 import { checkBranchHealth } from '../../git/branch-lifecycle.js'
 import { createGit } from '../../git/identity.js'
 import { createTransaction } from '../../git/transaction.js'
+import { commitOptions, hookPolicy } from '../../git/hook-policy.js'
+import { readConfig } from '../../core/config.js'
 import {
   createBranch as createBranchOp,
   deleteBranch as deleteBranchOp,
@@ -144,6 +146,7 @@ export class LocalProvider implements RepoProvider {
         warning: gitResult.warning,
         base_advance: gitResult.base_advance,
         remote_push: gitResult.remote_push,
+        base_branch: gitResult.base_branch,
       }
     } finally {
       await tx.cleanup()
@@ -248,7 +251,7 @@ export class LocalProvider implements RepoProvider {
           `createMergeCommit: ${paths.length} non-content file(s) conflict: ${paths.join(', ')}.`,
         ), { code: 'RECONCILE_SOURCE_CONFLICT' })
       }
-      await wtGit.commit(input.message, { '--no-verify': null })
+      await wtGit.commit(input.message, commitOptions(hookPolicy(await readConfig(this.projectRoot))))
       const sha = (await wtGit.raw(['rev-parse', 'HEAD'])).trim()
       return {
         sha,

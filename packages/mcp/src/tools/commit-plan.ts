@@ -38,6 +38,8 @@ export interface CommitThroughProviderResult {
   base_advance?: BaseAdvance
   /** Present when a local provider pushed: outcome for the contentrain branch. */
   remote_push?: RemotePush
+  /** Present for a local provider: the resolved base branch the write lands on. */
+  base_branch?: string
 }
 
 /**
@@ -45,6 +47,9 @@ export interface CommitThroughProviderResult {
  * hand-rolled literals, so `base_advance`/`remote_push` cannot drift between
  * tools. Both fields appear only when the provider reported them (local
  * auto-merge) — remote/review responses keep their previous shape.
+ * `base_branch` is the resolved base branch of a local write (#509): where an
+ * auto-merge lands and, unless pushing is off, what is pushed. It may differ
+ * from the checked-out branch; the write's warning says so when it does.
  */
 export function gitReport(input: {
   branch: string
@@ -53,11 +58,13 @@ export function gitReport(input: {
   sync?: unknown
   base_advance?: BaseAdvance
   remote_push?: RemotePush
+  base_branch?: string
 }): Record<string, unknown> {
   return {
     branch: input.branch,
     action: input.action,
     commit: input.commit,
+    ...(input.base_branch ? { base_branch: input.base_branch } : {}),
     ...(input.sync ? { sync: input.sync } : {}),
     ...(input.base_advance ? { base_advance: input.base_advance } : {}),
     ...(input.remote_push ? { remote_push: input.remote_push } : {}),
@@ -139,6 +146,7 @@ export async function commitThroughProvider(
       warning: result.warning,
       base_advance: result.base_advance,
       remote_push: result.remote_push,
+      ...(result.base_branch ? { base_branch: result.base_branch } : {}),
     }
   }
 

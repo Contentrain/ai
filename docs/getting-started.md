@@ -21,7 +21,7 @@ Contentrain AI is an open-source, repo-native content governance stack. Your AI 
 ::: code-group
 
 ```bash [Existing Project]
-# This is the main wedge: rescue hardcoded strings
+# Start here: rescue hardcoded strings
 npx contentrain init
 # Then tell your agent: "Scan my project and extract all hardcoded strings"
 ```

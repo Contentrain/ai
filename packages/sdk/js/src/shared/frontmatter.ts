@@ -17,6 +17,7 @@ import {
   parseFrontmatterScalar,
   parseFrontmatterScalarString,
   splitFrontmatterList,
+  stripFrontmatterComment,
 } from '@contentrain/types'
 
 // Field types that map to `string` in the generated types — their frontmatter
@@ -78,7 +79,8 @@ export function parseFrontmatter(text: string, stringKeys: Set<string> = new Set
 
     const kvIndent = kvMatch[1]!.length
     const key = kvMatch[2]!
-    const rawValue = kvMatch[3]!.trim()
+    // A trailing ` # comment` is not part of the value, as in YAML.
+    const rawValue = stripFrontmatterComment(kvMatch[3]!)
 
     // Pop stack to find correct parent based on indentation
     while (stack.length > 1 && stack[stack.length - 1]!.indent >= kvIndent) {

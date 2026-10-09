@@ -11,14 +11,16 @@ MIT-licensed monorepo for Contentrain's open-source packages: MCP tools, CLI, Ty
 ```
 contentrain-ai/
 ├── packages/
-│   ├── mcp/          — 21 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers (simple-git + zod + MCP SDK)
-│   ├── cli/          — citty + tsdown (init/serve/validate/normalize/connect)
+│   ├── mcp/          — 27 MCP tools (22 core + 5 media), stdio + HTTP transports, Local / GitHub / GitLab providers (simple-git + zod + MCP SDK)
+│   ├── cli/          — citty + tsdown (init, status, doctor, validate, serve, generate, diff, merge, reconcile, prune, scaffold, import, studio connect, …)
 │   ├── types/        — Shared TypeScript types (@contentrain/types)
 │   ├── rules/        — AI agent quality rules & conventions
 │   ├── skills/       — AI agent workflow procedures & framework guides
 │   ├── wp-import/    — WordPress WXR/REST → RawIR → .contentrain store
 │   ├── emitter-astro/— ProjectIR → a complete Astro project
 │   ├── verify/       — Offline SEO/indexing/link/asset gates for a built site
+│   ├── astro-kit/    — Copy-in Astro components + catalog + builder mapping tables
+│   ├── decide/       — Typed decisions (rule → Jev → Claude Haiku), cached and budgeted
 │   └── sdk/
 │       └── js/       — Universal query SDK (@contentrain/query)
 ├── templates/
@@ -106,7 +108,7 @@ When working with Contentrain content operations (models, content, normalize, va
 
 | Package | Name | Description |
 |---|---|---|
-| packages/mcp | @contentrain/mcp | 21 MCP tools, stdio + HTTP transports, Local / GitHub / GitLab providers |
+| packages/mcp | @contentrain/mcp | 27 MCP tools (22 core + 5 media), stdio + HTTP transports, Local / GitHub / GitLab providers |
 | packages/cli | contentrain | CLI (npx contentrain) |
 | packages/types | @contentrain/types | Shared TypeScript types |
 | packages/rules | @contentrain/rules | AI agent quality rules & conventions |
@@ -115,6 +117,8 @@ When working with Contentrain content operations (models, content, normalize, va
 | packages/wp-import | @contentrain/wp-import | WordPress WXR/REST importers → RawIR → .contentrain |
 | packages/emitter-astro | @contentrain/emitter-astro | ProjectIR → Astro project emitter |
 | packages/verify | @contentrain/verify | Portable SEO/indexing/link/asset gates (offline, zero-dep) |
+| packages/astro-kit | @contentrain/astro-kit | Copy-in Astro components, catalog and builder mapping tables |
+| packages/decide | @contentrain/decide | Typed decisions — rule first, then Jev, then Claude Haiku — cached, budgeted, audited |
 
 ## Test Performance (read before adding a git-touching test)
 

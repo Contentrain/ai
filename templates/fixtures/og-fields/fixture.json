@@ -1,0 +1,36 @@
+{
+  "distFiles": {
+    "contact/index.html": {
+      "contains": [
+        "<title>Contact – Contentrain Astro Starter</title>",
+        "<meta property=\"og:title\" content=\"Contact Us\">",
+        "<meta name=\"twitter:title\" content=\"Contact Us\">",
+        "<meta name=\"description\" content=\"Office hours and how to reach us.\">",
+        "<meta property=\"og:description\" content=\"Write to us, or drop by on a weekday.\">",
+        "<meta name=\"twitter:description\" content=\"Write to us, or drop by on a weekday.\">"
+      ],
+      "excludes": [
+        "<meta property=\"og:title\" content=\"Contact – Contentrain Astro Starter\">",
+        "content=\"Contact Us – Contentrain Astro Starter\""
+      ]
+    },
+    "about/index.html": {
+      "contains": [
+        "<title>About – Contentrain Astro Starter</title>",
+        "<meta property=\"og:title\" content=\"About\">",
+        "<meta name=\"twitter:title\" content=\"About\">"
+      ],
+      "excludes": [
+        "<meta property=\"og:title\" content=\"About – Contentrain Astro Starter\">"
+      ]
+    },
+    "blog/hello-there/index.html": {
+      "contains": [
+        "<title>Hello there – Contentrain Astro Starter</title>",
+        "<meta property=\"og:title\" content=\"Hello there\">",
+        "<meta name=\"description\" content=\"The first post.\">",
+        "<meta property=\"og:description\" content=\"The first post.\">"
+      ]
+    }
+  }
+}

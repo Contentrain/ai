@@ -2,20 +2,20 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.Contentrain/contentrain",
   "title": "Contentrain",
-  "description": "Git-native content governance for AI agents \u2014 27 deterministic MCP tools over stdio and HTTP.",
+  "description": "Git-native content governance for AI agents — 27 deterministic MCP tools over stdio and HTTP.",
   "websiteUrl": "https://ai.contentrain.io/packages/mcp",
   "repository": {
     "url": "https://github.com/Contentrain/ai",
     "source": "github",
     "subfolder": "packages/mcp"
   },
-  "version": "1.8.1",
+  "version": "3.11.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@contentrain/mcp",
-      "version": "1.8.1",
+      "version": "3.11.0",
       "transport": {
         "type": "stdio"
       }

@@ -1,5 +1,5 @@
 import type { ValidationError, ModelDefinition, ContentrainConfig, EntryMeta, ModelLocaleScope } from '@contentrain/types'
-import { describeModelLocaleScope, detectSecrets, MODEL_FIELD_ORDER, resolveModelLocales, validateModelLocales } from '@contentrain/types'
+import { describeModelLocaleScope, detectSecrets, frontmatterCommentKeys, MODEL_FIELD_ORDER, resolveModelLocales, validateModelLocales, validateSlug } from '@contentrain/types'
 import { join } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { writeJson, writeText } from '../../util/fs.js'
@@ -894,6 +894,22 @@ async function validateDocumentModel(
     }
   }
 
+  // A document file name is its slug. One the write tools reject (`Bad_Name.md`) can be read but never saved, so say
+  // so here, once per slug, with the slug it would have to be renamed to (#512).
+  for (const slug of slugs) {
+    if (slug.startsWith('.')) continue
+    const slugError = validateSlug(slug)
+    if (!slugError) continue
+    const suggestion = suggestSlug(slug)
+    issues.push({
+      severity: 'error',
+      model: model.id,
+      slug,
+      field: 'slug',
+      message: `${slugError}. Content tools cannot save this document until its file is renamed${suggestion && suggestion !== slug ? ` — e.g. to "${suggestion}"` : ''}.`,
+    })
+  }
+
   for (const slug of slugs) {
     if (slug.startsWith('.')) continue
 
@@ -922,6 +938,16 @@ async function validateDocumentModel(
 
       entriesChecked++
       const { frontmatter, body, preserved } = parseFrontmatter(raw)
+      for (const key of frontmatterCommentKeys(raw)) {
+        issues.push({
+          severity: 'warning',
+          model: model.id,
+          locale,
+          slug,
+          field: key,
+          message: `Frontmatter "${key}" has a " # …" comment after its value or after one of its list items. It is read as a YAML comment, not as part of the value, and it is not written back when the document is saved — move it to its own "# …" line to keep it.`,
+        })
+      }
       for (const block of preserved?.blocks ?? []) {
         if (block.key === undefined) continue
         issues.push({
@@ -1191,4 +1217,11 @@ export async function validateProject(
     issues,
     fixed: totalFixed,
   }
+}
+
+/** The slug a document file name would pass `validateSlug` as: NFC, lowercase, every run of other characters one hyphen. */
+function suggestSlug(slug: string): string {
+  return slug.normalize('NFC').toLocaleLowerCase('en')
+    .replace(/[^\p{Ll}\p{Lo}\p{Lm}\p{N}\p{M}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
 }

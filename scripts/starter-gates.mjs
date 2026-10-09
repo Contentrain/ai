@@ -8,7 +8,7 @@
 //   node scripts/starter-gates.mjs --fixture wp-demo    with templates/fixtures/wp-demo laid over it
 //   node scripts/starter-gates.mjs --fixture tr-site    a Turkish-only site: config default locale tr, site.language tr (endpopcorn)
 //   node scripts/starter-gates.mjs --fixture ar-site    an Arabic site: <html lang="ar" dir="rtl">
-//   node scripts/starter-gates.mjs --local-sdk          @contentrain/query from this checkout, not npm
+//   node scripts/starter-gates.mjs --local-sdk          @contentrain/query (and the @contentrain/types it uses) from this checkout, not npm
 //   node scripts/starter-gates.mjs --out <dir>          keep the project there (default: a temp dir, removed on success)
 //   node scripts/starter-gates.mjs --fixture wp-demo --media studio
 //                                                       the fixture's media served as Contentrain Studio
@@ -41,6 +41,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
+import { installLocalSdk } from './local-sdk.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const { values } = parseArgs({
@@ -199,14 +200,7 @@ process.on('exit', () => studioServer?.kill())
 if (values.frozen && values['local-sdk']) throw new Error('--frozen tests the published packages; --local-sdk replaces one. Pick one.')
 run('pnpm', ['install', values.frozen ? '--frozen-lockfile' : '--no-frozen-lockfile'])
 if (fixtureDeps.length) run('pnpm', ['add', ...fixtureDeps.map(([name, range]) => `${name}@${range}`)])
-if (values['local-sdk']) {
-  run('pnpm', ['--filter', '@contentrain/types', '--filter', '@contentrain/query', 'build'], root)
-  const packDir = mkdtempSync(join(tmpdir(), 'contentrain-query-'))
-  run('pnpm', ['pack', '--pack-destination', packDir], join(root, 'packages', 'sdk', 'js'))
-  const tarball = readdirSync(packDir).find(name => name.endsWith('.tgz'))
-  if (!tarball) throw new Error('pnpm pack produced no tarball')
-  run('pnpm', ['add', join(packDir, tarball)])
-}
+if (values['local-sdk']) installLocalSdk({ repoRoot: root, site: project, run })
 
 run('pnpm', ['exec', 'astro', 'check'])
 run('pnpm', ['exec', 'knip'])
