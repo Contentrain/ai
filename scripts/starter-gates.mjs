@@ -8,7 +8,7 @@
 //   node scripts/starter-gates.mjs --fixture wp-demo    with templates/fixtures/wp-demo laid over it
 //   node scripts/starter-gates.mjs --fixture tr-site    a Turkish-only site: config default locale tr, site.language tr (endpopcorn)
 //   node scripts/starter-gates.mjs --fixture ar-site    an Arabic site: <html lang="ar" dir="rtl">
-//   node scripts/starter-gates.mjs --local-sdk          @contentrain/query from this checkout, not npm
+//   node scripts/starter-gates.mjs --local-sdk          @contentrain/query (and the @contentrain/types it uses) from this checkout, not npm
 //   node scripts/starter-gates.mjs --out <dir>          keep the project there (default: a temp dir, removed on success)
 //   node scripts/starter-gates.mjs --fixture wp-demo --media studio
 //                                                       the fixture's media served as Contentrain Studio
@@ -164,11 +164,22 @@ run('pnpm', ['install', values.frozen ? '--frozen-lockfile' : '--no-frozen-lockf
 if (fixtureDeps.length) run('pnpm', ['add', ...fixtureDeps.map(([name, range]) => `${name}@${range}`)])
 if (values['local-sdk']) {
   run('pnpm', ['--filter', '@contentrain/types', '--filter', '@contentrain/query', 'build'], root)
-  const packDir = mkdtempSync(join(tmpdir(), 'contentrain-query-'))
-  run('pnpm', ['pack', '--pack-destination', packDir], join(root, 'packages', 'sdk', 'js'))
-  const tarball = readdirSync(packDir).find(name => name.endsWith('.tgz'))
-  if (!tarball) throw new Error('pnpm pack produced no tarball')
-  run('pnpm', ['add', join(packDir, tarball)])
+  const pack = (dir) => {
+    const packDir = mkdtempSync(join(tmpdir(), 'contentrain-pack-'))
+    run('pnpm', ['pack', '--pack-destination', packDir], join(root, dir))
+    const tarball = readdirSync(packDir).find(name => name.endsWith('.tgz'))
+    if (!tarball) throw new Error(`pnpm pack produced no tarball in ${dir}`)
+    return join(packDir, tarball)
+  }
+  // The SDK at HEAD is released together with the types at HEAD (its `workspace:*` range becomes their version), so
+  // install it with them. Packing the SDK alone resolved @contentrain/types from npm, and an SDK that imports a new
+  // types export failed `astro sync` here although the release would have been fine (#512).
+  const typesTarball = pack('packages/types')
+  const pkgPath = join(project, 'package.json')
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
+  pkg.pnpm = { ...pkg.pnpm, overrides: { ...pkg.pnpm?.overrides, '@contentrain/types': `file:${typesTarball}` } }
+  writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
+  run('pnpm', ['add', pack('packages/sdk/js')])
 }
 
 run('pnpm', ['exec', 'astro', 'check'])

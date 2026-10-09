@@ -72,6 +72,11 @@ describe('validate: inline YAML comments', () => {
     expect(warned).toEqual(['status', 'title'])
   })
 
+  it('warns about a comment on a dash-list item too', async () => {
+    const result = await validateProject(project({ 'a.md': '---\ntitle: A\nstatus:\n  - draft # todo\n---\n\nBody\n' }))
+    expect(result.issues.filter(i => i.severity === 'warning' && i.message.includes('comment')).map(i => i.field)).toEqual(['status'])
+  })
+
   it('does not warn about a # that is part of the value', async () => {
     const result = await validateProject(project({ 'a.md': '---\ntitle: "C # tips"\nstatus: C#\n---\n\nBody\n' }))
     expect(result.issues.filter(i => i.message.includes('comment'))).toEqual([])

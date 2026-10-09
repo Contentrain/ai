@@ -945,7 +945,7 @@ async function validateDocumentModel(
           locale,
           slug,
           field: key,
-          message: `Frontmatter "${key}" ends in a " # …" comment. It is read as a YAML comment, not as part of the value, and it is not written back when the document is saved — move it to its own "# …" line to keep it.`,
+          message: `Frontmatter "${key}" has a " # …" comment after its value or after one of its list items. It is read as a YAML comment, not as part of the value, and it is not written back when the document is saved — move it to its own "# …" line to keep it.`,
         })
       }
       for (const block of preserved?.blocks ?? []) {

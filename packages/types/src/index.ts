@@ -1437,7 +1437,20 @@ export function stripFrontmatterComment(raw: string): string {
       }
     }
   } else if (value.startsWith('[')) {
-    end = value.lastIndexOf(']')
+    // The bracket that closes the list, not the last one on the line: `[a, b] # see [c]` is the list `[a, b]`.
+    let depth = 0
+    let quote: '"' | "'" | undefined
+    for (let i = 0; i < value.length; i += 1) {
+      const char = value[i]!
+      if (quote) {
+        if (char === '\\' && quote === '"') { i += 1; continue }
+        if (char === quote) quote = undefined
+        continue
+      }
+      if (char === '"' || char === "'") quote = char
+      else if (char === '[') depth += 1
+      else if (char === ']' && --depth === 0) { end = i; break }
+    }
   }
   if (end > 0) {
     const rest = value.slice(end + 1)
@@ -1453,18 +1466,27 @@ export function hasFrontmatterComment(raw: string): boolean {
 }
 
 /**
- * The top-level frontmatter keys of a markdown document whose value line ends in a ` # comment`. The readers drop the
- * comment, so a save writes the value without it; `validate` warns about these lines before that happens.
+ * The top-level frontmatter keys of a markdown document whose value line, or one of whose dash-list items, ends in a
+ * ` # comment`. The readers drop the comment, so a save writes the value without it; `validate` warns about these
+ * lines before that happens. Each key is named once.
  */
 export function frontmatterCommentKeys(content: string): string[] {
   const match = content.replace(/\r\n/g, '\n').match(/^---\n([\s\S]*?)\n---(?:\n|$)/)
   if (!match) return []
-  const keys: string[] = []
+  const keys = new Set<string>()
+  let current: string | undefined
   for (const line of match[1]!.split('\n')) {
     const kv = line.match(/^([\w][\w.-]*)\s*:\s*(.*)$/)
-    if (kv && hasFrontmatterComment(kv[2]!)) keys.push(kv[1]!)
+    if (kv) {
+      current = kv[1]!
+      if (hasFrontmatterComment(kv[2]!)) keys.add(current)
+      continue
+    }
+    const item = line.match(/^\s*-\s+(.*)$/)
+    if (item && current !== undefined && hasFrontmatterComment(item[1]!)) keys.add(current)
+    else if (!item && line.trim() !== '' && !/^\s/.test(line)) current = undefined
   }
-  return keys
+  return [...keys]
 }
 
 /**
