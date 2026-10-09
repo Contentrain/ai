@@ -122,7 +122,7 @@ This auto-creates the correct MCP config file for your IDE. See [CLI docs](https
 ### Run as a standalone MCP server
 
 ```bash
-CONTENTRAIN_PROJECT_ROOT=/path/to/project npx contentrain-mcp
+CONTENTRAIN_PROJECT_ROOT=/path/to/project npx -y @contentrain/mcp
 ```
 
 If `CONTENTRAIN_PROJECT_ROOT` is omitted, the current working directory is used.
