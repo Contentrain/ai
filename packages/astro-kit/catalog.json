@@ -611,6 +611,11 @@
                 "label": "Link",
                 "description": "Makes the whole card a link."
               },
+              "linkLabel": {
+                "type": "string",
+                "label": "Link text",
+                "description": "The link's own text, shown under the card (\"Get a quote\"); without it the whole card is the link."
+              },
               "image": {
                 "type": "image",
                 "label": "Image",
@@ -783,6 +788,7 @@
         "items[].title": "items[].title",
         "items[].text": "items[].text",
         "items[].href": "items[].href",
+        "items[].linkLabel": "items[].link_label",
         "items[].image": "items[].image",
         "items[].imageAlt": "items[].image_alt",
         "items[].eyebrow": "items[].eyebrow"
@@ -2672,7 +2678,7 @@
         },
         "tagline": {
           "type": "string",
-          "description": "One line under the name (site.tagline)."
+          "description": "A line under the name (site.tagline, or the source footer's about text); line breaks are kept, so a credit under it stays its own line."
         },
         "columns": {
           "type": "array",
@@ -2743,6 +2749,29 @@
             "email": {
               "type": "email",
               "description": "Email address, linked as mailto:."
+            },
+            "labels": {
+              "type": "object",
+              "description": "The words the source prints before each detail (\"Telefon:\", \"Email:\"); each optional.",
+              "fields": {
+                "address": {
+                  "type": "string",
+                  "description": "Before the address."
+                },
+                "phone": {
+                  "type": "string",
+                  "description": "Before the phone number."
+                },
+                "email": {
+                  "type": "string",
+                  "description": "Before the email address."
+                }
+              }
+            },
+            "order": {
+              "type": "array",
+              "items": "string",
+              "description": "The details' order as the source prints them: address, phone and email, each once; absent, that order. A detail left out is printed after the listed ones."
             }
           },
           "description": "Contact details printed in an address block under the tagline; the block is left out when none is set."
@@ -3439,6 +3468,27 @@
           "label": "Lead",
           "description": "Paragraph under the heading."
         },
+        "items": {
+          "type": "array",
+          "label": "Points",
+          "items": {
+            "type": "object",
+            "fields": {
+              "icon": {
+                "type": "image",
+                "label": "Icon",
+                "description": "A small image before the text (decoration)."
+              },
+              "title": {
+                "type": "string",
+                "label": "Text",
+                "required": true,
+                "description": "A short promise or feature (\"Fast, easy and painless\")."
+              }
+            }
+          },
+          "description": "Short points under the lead, before the buttons, in order: a hero's feature or promise list."
+        },
         "actions": {
           "type": "array",
           "label": "Buttons",
@@ -3652,6 +3702,9 @@
         "heading": "heading",
         "eyebrow": "eyebrow",
         "lead": "lead",
+        "items": "items",
+        "items[].icon": "items[].icon",
+        "items[].title": "items[].title",
         "actions": "actions",
         "actions[].label": "actions[].label",
         "actions[].href": "actions[].href",
@@ -5969,7 +6022,6 @@
         "heading": {
           "type": "string",
           "label": "Heading",
-          "required": true,
           "description": "The section heading."
         },
         "headingLevel": {

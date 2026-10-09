@@ -157,6 +157,7 @@ export const collections = {
       items: z.array(z.object({
       eyebrow: z.string().optional(),
       href: z.string().optional(),
+      linkLabel: z.string().optional(),
       image: z.object({
       alt: z.string(),
       height: z.number().int().optional(),
@@ -286,6 +287,9 @@ export const collections = {
       logo: z.string().optional(),
       organization: z.string().optional(),
       phone: z.string().optional(),
+      phone_label: z.string().optional(),
+      email: z.string().optional(),
+      email_label: z.string().optional(),
       address: z.string().optional(),
       socials: z.array(z.object({ label: z.string(), link: z.string() })).optional(),
       same_as: z.array(z.string()).optional(),

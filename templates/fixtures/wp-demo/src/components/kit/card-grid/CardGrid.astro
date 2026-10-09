@@ -37,6 +37,8 @@ interface Item {
   title: string
   text?: string | undefined
   href?: string | undefined
+  /** The link's own text, shown under the card ("Get a quote"); without it the whole card is the link. */
+  linkLabel?: string | undefined
   /** The image's address (or, until 0.7, an `ImageInput`). */
   image?: ImageSource | undefined
   imageAlt?: string | undefined
@@ -79,11 +81,12 @@ const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-
         {imageOf(item.image, item.imageAlt) && <div class={media()}><KitImage image={imageOf(item.image, item.imageAlt)!} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover transition duration-300 group-hover:scale-[1.02]" /></div>}
         {item.eyebrow && <p class="text-sm font-medium text-accent-text">{item.eyebrow}</p>}
         <CardHeading class={cardTitle()}>
-          {item.href
+          {item.href && !item.linkLabel
             ? <a href={safeHref(item.href)} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{item.title}</a>
             : item.title}
         </CardHeading>
         {item.text && <p class={text({ class: dim })} data-kit-text>{item.text}</p>}
+        {item.href && item.linkLabel && <a href={safeHref(item.href)} class="font-medium text-accent-text underline-offset-4 hover:underline">{item.linkLabel}</a>}
       </li>
     ))}
   </ul>

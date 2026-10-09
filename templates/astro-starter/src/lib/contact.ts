@@ -22,10 +22,14 @@ function rowLink(row: unknown): LinkInput | undefined {
 export function siteContact(site: object, fields: SiteConfig['contact']) {
   const data = site as SiteFields
   const rows = fields?.socials ? data[fields.socials] : undefined
+  const label = (name: string | undefined) => (name ? text(data[name]) : undefined)
+  const labels = { address: label(fields?.labels?.address), phone: label(fields?.labels?.phone), email: label(fields?.labels?.email) }
   return {
     address: fields?.address ? text(data[fields.address]) : undefined,
     phone: fields?.phone ? text(data[fields.phone]) : undefined,
     email: fields?.email ? text(data[fields.email]) : undefined,
+    labels: labels.address || labels.phone || labels.email ? labels : undefined,
+    order: fields?.order,
     socials: Array.isArray(rows) ? rows.map(rowLink).filter((link): link is LinkInput => link !== undefined) : [],
   }
 }

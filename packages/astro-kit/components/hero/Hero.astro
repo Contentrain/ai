@@ -1,5 +1,5 @@
 ---
-// The page's opening section: heading, lead, actions and an image — beside the
+// The page's opening section: heading, lead, points, actions and an image — beside the
 // text, below it, or behind it as a cover with the text over a scrim.
 import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
@@ -16,13 +16,16 @@ const hero = tv({
     eyebrow: 'text-sm font-semibold tracking-wide uppercase opacity-80',
     heading: 'text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl lg:text-6xl',
     lead: 'max-w-2xl text-lg text-pretty opacity-85 md:text-xl',
+    // A hero's short promise list ("Fast, easy and painless"), each with its icon when it has one.
+    points: 'flex flex-wrap gap-x-6 gap-y-2 text-base font-medium md:text-lg',
+    point: 'flex items-center gap-2',
     actions: 'flex flex-wrap gap-3 pt-2',
     media: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
   },
   variants: {
     layout: {
       split: { grid: 'md:grid-cols-2' },
-      centered: { copy: 'items-center text-center', lead: 'mx-auto', actions: 'justify-center', media: 'mx-auto w-full max-w-4xl' },
+      centered: { copy: 'items-center text-center', lead: 'mx-auto', points: 'justify-center', actions: 'justify-center', media: 'mx-auto w-full max-w-4xl' },
       cover: { grid: 'relative z-10 min-h-[28rem] md:min-h-[36rem]', copy: 'max-w-3xl' },
     },
     // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
@@ -46,7 +49,7 @@ const hero = tv({
   compoundVariants: [
     // After the layout's own heights, so a boxed cover keeps WordPress's 430px default.
     { layout: 'cover', width: 'content', class: { grid: 'min-h-[20rem] md:min-h-[26.875rem]' } },
-    { layout: 'cover', align: 'center', class: { grid: 'justify-items-center', copy: 'mx-auto items-center text-center', lead: 'mx-auto', actions: 'justify-center' } },
+    { layout: 'cover', align: 'center', class: { grid: 'justify-items-center', copy: 'mx-auto items-center text-center', lead: 'mx-auto', points: 'justify-center', actions: 'justify-center' } },
     // After the centring rules, so the lead leaves them.
     { leadAlign: 'start', class: { lead: 'mx-0 max-w-none self-stretch text-start' } },
     { actionsAlign: 'start', class: { actions: 'justify-start self-stretch' } },
@@ -60,6 +63,8 @@ interface Props {
   level?: 1 | 2 | undefined
   eyebrow?: string | undefined
   lead?: string | undefined
+  /** Short points under the lead, before the buttons: a promise or feature list, each with an optional icon (an image address). */
+  items?: Array<{ title: string, icon?: string | undefined }> | undefined
   actions?: ActionInput[] | undefined
   image?: ImageInput | undefined
   layout?: 'split' | 'centered' | 'cover' | undefined
@@ -84,7 +89,7 @@ interface Props {
 }
 
 
-const { heading, level = 1, eyebrow, lead, actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id, minHeight, headingScale, headingSize, measured } = Astro.props
+const { heading, level = 1, eyebrow, lead, items = [], actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id, minHeight, headingScale, headingSize, measured } = Astro.props
 const s = hero({ layout, align, leadAlign, actionsAlign, width, tone, headingScale, headingSize })
 const Heading = level === 1 ? 'h1' : 'h2'
 const headingId = id ? `${id}-title` : undefined
@@ -107,6 +112,7 @@ const scrim = cover ? measuredFrame(measured).overlay : undefined
               {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
               <Heading id={headingId} class={s.heading()} style={headingStyle}>{heading}</Heading>
               {lead && <p class={s.lead()} data-kit-text>{lead}</p>}
+              {items.length > 0 && <ul class={s.points()}>{items.map(item => <li class={s.point()}>{item.icon && <KitImage image={{ src: item.icon, alt: '' }} class="h-6 w-6 shrink-0 object-contain" />}<span>{item.title}</span></li>)}</ul>}
               {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
             </div>
           </div>
@@ -125,6 +131,7 @@ const scrim = cover ? measuredFrame(measured).overlay : undefined
             {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
             <Heading id={headingId} class={s.heading()} style={headingStyle}>{heading}</Heading>
             {lead && <p class={s.lead()} data-kit-text>{lead}</p>}
+              {items.length > 0 && <ul class={s.points()}>{items.map(item => <li class={s.point()}>{item.icon && <KitImage image={{ src: item.icon, alt: '' }} class="h-6 w-6 shrink-0 object-contain" />}<span>{item.title}</span></li>)}</ul>}
             {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
           </div>
         </div>
@@ -139,6 +146,7 @@ const scrim = cover ? measuredFrame(measured).overlay : undefined
           {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
           <Heading id={headingId} class={s.heading()} style={headingStyle}>{heading}</Heading>
           {lead && <p class={s.lead()} data-kit-text>{lead}</p>}
+              {items.length > 0 && <ul class={s.points()}>{items.map(item => <li class={s.point()}>{item.icon && <KitImage image={{ src: item.icon, alt: '' }} class="h-6 w-6 shrink-0 object-contain" />}<span>{item.title}</span></li>)}</ul>}
           {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
         </div>
         {image && (

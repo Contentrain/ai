@@ -1,8 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { footerLinkSizeClasses, footerVars } from '../components/footer/footer'
+import { contactKeys, footerLinkSizeClasses, footerVars } from '../components/footer/footer'
 
 const packed = { layout: 'columns', columnCount: 2, pack: 'end', narrow: 'row', packGap: '128px', packGapNarrow: '70px', linkSize: '17.88px' } as const
+
+describe('contact order', () => {
+  it('absent, the details print as before: address, phone, email', () => {
+    expect(contactKeys(undefined)).toEqual(['address', 'phone', 'email'])
+    expect(contactKeys([])).toEqual(['address', 'phone', 'email'])
+  })
+
+  it('in the source\'s order, the ones it leaves out after it, unknown and repeated keys dropped', () => {
+    expect(contactKeys(['email', 'phone', 'address'])).toEqual(['email', 'phone', 'address'])
+    expect(contactKeys(['email'])).toEqual(['email', 'address', 'phone'])
+    expect(contactKeys(['fax', 'phone', 'phone'])).toEqual(['phone', 'address', 'email'])
+  })
+})
 
 describe('footerVars', () => {
   it('without a narrow link size the footer is exactly as before', () => {

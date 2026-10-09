@@ -40,6 +40,9 @@
             },
             "type": "object"
           },
+          "linkLabel": {
+            "type": "string"
+          },
           "text": {
             "type": "text"
           },

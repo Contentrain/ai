@@ -1,8 +1,11 @@
 {
   "address": "12 Harbour Road\nBristol",
+  "email": "hello@northwind.example",
+  "email_label": "Email:",
   "language": "en",
   "organization": "Northwind Studio",
   "phone": "+44 117 000 0000",
+  "phone_label": "Phone:",
   "same_as": [
     "https://github.com/contentrain"
   ],

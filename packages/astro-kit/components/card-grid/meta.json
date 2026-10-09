@@ -84,6 +84,11 @@
             "label": "Link",
             "description": "Makes the whole card a link."
           },
+          "linkLabel": {
+            "type": "string",
+            "label": "Link text",
+            "description": "The link's own text, shown under the card (\"Get a quote\"); without it the whole card is the link."
+          },
           "image": {
             "type": "image",
             "label": "Image",
