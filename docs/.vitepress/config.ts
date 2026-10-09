@@ -23,6 +23,7 @@ const LLMS_PAGE_ORDER = [
   'packages/wp-import',
   'packages/emitter-astro',
   'packages/verify',
+  'packages/astro-kit',
   'packages/decide',
   'guides/first-model',
   'guides/providers',
@@ -132,6 +133,7 @@ export default defineConfig({
         { text: 'WordPress Import', link: '/packages/wp-import' },
         { text: 'Astro Emitter', link: '/packages/emitter-astro' },
         { text: 'Verify', link: '/packages/verify' },
+        { text: 'Astro Kit', link: '/packages/astro-kit' },
         { text: 'Decide', link: '/packages/decide' },
       ]},
       { text: 'Guides', items: [
@@ -180,6 +182,7 @@ export default defineConfig({
             { text: 'WordPress Import', link: '/packages/wp-import' },
             { text: 'Astro Emitter', link: '/packages/emitter-astro' },
             { text: 'Verify', link: '/packages/verify' },
+            { text: 'Astro Kit', link: '/packages/astro-kit' },
             { text: 'Decide', link: '/packages/decide' },
           ],
         },

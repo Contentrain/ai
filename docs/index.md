@@ -67,7 +67,7 @@ AI made you faster at producing code. It did not solve what happens to the conte
 - **Wednesday:** Mobile team asks for the same content via API
 - **Friday:** You're still doing grep-and-replace
 
-This is the first wedge for Contentrain:
+This is where most projects start with Contentrain:
 
 **take the content chaos already living in your codebase and turn it into a governed, reviewable content layer.**
 

@@ -79,7 +79,7 @@ All write operations are designed around git-backed safety:
 
 27 MCP tools — 22 core + 5 media — with [annotations](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/tools/#annotations) (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint: false` everywhere except `contentrain_media_ingest`, which fetches a caller-supplied URL server-side) for client safety hints.
 
-**Tool listing is capability-aware.** `tools/list` only advertises tools the resolved provider + `projectRoot` pair can actually satisfy. A local stdio server lists the 22 core tools; a session driven by a remote provider (GitHub/GitLab, no local checkout) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `validate`. The requirement map lives in `TOOL_REQUIREMENTS` (`@contentrain/mcp/tools/availability`).
+**Tool listing is capability-aware.** `tools/list` only advertises tools the resolved provider + `projectRoot` pair can actually satisfy. A local stdio server lists the 22 core tools; a session driven by a remote provider (GitHub/GitLab, no local checkout) lists only the remote-safe subset — `status`, `describe`, `describe_format`, `model_save`, `model_delete`, `content_save`, `content_delete`, `content_list`, `vocabulary_save`, `vocabulary_delete`, `validate`. The requirement map lives in `TOOL_REQUIREMENTS` (`@contentrain/mcp/tools/availability`).
 
 | Tool | Purpose | Read-only | Destructive |
 | --- | --- | --- | --- |
@@ -103,6 +103,8 @@ All write operations are designed around git-backed safety:
 | `contentrain_scan` | Graph- and candidate-based hardcoded string scan | Yes | — |
 | `contentrain_apply` | Normalize extract/reuse execution with dry-run support | — | — |
 | `contentrain_bulk` | Bulk locale copy, status updates, and deletes (`dry_run` previews) | — | — |
+| `contentrain_vocabulary_save` | Add or update canonical vocabulary terms (merges with what exists) | — | — |
+| `contentrain_vocabulary_delete` | Remove canonical vocabulary terms by slug (`confirm: true`) | — | **Yes** |
 | `contentrain_media_list` | List media assets (search, tag filter, cursor pagination) | Yes | — |
 | `contentrain_media_get` | Get one media asset by id | Yes | — |
 | `contentrain_media_ingest` | Ingest an asset from a source URL (provider fetches server-side) | — | — |

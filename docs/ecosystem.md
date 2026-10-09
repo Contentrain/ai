@@ -69,7 +69,7 @@ Use **Contentrain Studio** when you need:
 
 The growth loop is intentional:
 
-1. **Normalize is the wedge** — most developers discover Contentrain by rescuing hardcoded strings in an existing codebase.
+1. **Normalize is the entry point** — most developers discover Contentrain by rescuing hardcoded strings in an existing codebase.
 2. **Packages create trust** — MCP, CLI, rules, skills, and query are adoptable independently.
 3. **Studio is the expansion surface** — teams move into Studio when review, collaboration, and delivery become operational needs.
 4. **CDN and team workflows monetize naturally** — after the content layer already exists.

@@ -36,7 +36,7 @@ The alignment model is simple:
 
 - local agents use rules and skills directly through IDE integrations
 - Studio translates the same standards into its authenticated web workflows
-- marketing and distribution should point users from the normalize wedge into Studio without changing the underlying quality model
+- marketing and distribution should point users from normalize into Studio without changing the underlying quality model
 
 See [Ecosystem Map](/ecosystem) for the full package map, then compare the Studio surface here:
 
