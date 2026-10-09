@@ -1,5 +1,23 @@
 # contentrain
 
+## 0.17.0
+
+### Minor Changes
+
+- 56930b6: WXR import leaves author and commenter e-mail addresses out of the store unless asked. `rawToContentrain(raw, { includeEmails: true })`, `buildCommentsExport(raw, map, { includeEmails: true })` and `contentrain import --include-emails` write them. Without the option the comments export carries `email: null`. Comment meta under a personal-data key (IP, user agent, e-mail, avatar URLs, every `akismet_*`) is never exported, matched by key (`COMMENT_PII_META_KEY`, the same list as Migrate's intake plus Akismet); the default matches the REST path, which never has them.
+
+  `contentrain import --auth` takes the Application Password from `CONTENTRAIN_WP_APP_PASSWORD` (with `--auth <user>`), from `CONTENTRAIN_WP_AUTH=user:password`, or from a hidden prompt. `--auth user:password` still works but prints a deprecation warning, since argv lands in shell history and process listings.
+
+### Patch Changes
+
+- b7bb4d0: The Claude Code plugin starts `@contentrain/mcp@^3` instead of the stale 2.3.0 pin (24 tools, while the plugin's skill described 27). `pnpm plugin:build` now writes `plugins/contentrain/.mcp.json` from the current major in `packages/mcp/package.json`, so CI's stale-payload check catches the next major.
+
+  `contentrain skills` installs and `--list`s every skill the `@contentrain/skills` package ships, read from its `skills/` directory, rather than a hand-kept list of 15 that left out `contentrain-migrate-wordpress`.
+
+- Updated dependencies [56930b6]
+  - @contentrain/wp-import@0.13.0
+  - @contentrain/skills@0.9.6
+
 ## 0.16.1
 
 ### Patch Changes
