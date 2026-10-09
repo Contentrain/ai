@@ -79,6 +79,13 @@ is the file Changesets bumps. `pnpm plugin:build` propagates it into
 `.claude-plugin/marketplace.json`. Never edit either manifest's version by
 hand — CI regenerates the payload and fails on a dirty diff.
 
+The MCP server the plugin starts is generated too: `pnpm plugin:build` writes
+`plugins/contentrain/.mcp.json` as `npx -y @contentrain/mcp@^<major>`, the
+major read from `packages/mcp/package.json`. Minor and patch releases reach
+plugin users without a plugin release; a new MCP major changes the file, and
+the same stale-diff check fails until the payload is rebuilt and committed.
+Never edit `.mcp.json` by hand.
+
 So a plugin-affecting change is an ordinary changeset:
 
 ```bash

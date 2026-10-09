@@ -34,6 +34,17 @@ describe('MCP parity — tool reference coverage', () => {
   })
 })
 
+describe('MCP parity — tool count in the core skill', () => {
+  it('SKILL.md states the number of tools the MCP server registers', () => {
+    // The Claude plugin pinned an MCP release with 24 tools while this line
+    // said 27 (#513): the agent was promised tools the server did not have.
+    const content = readFileSync(join(PKG_ROOT, 'skills', 'contentrain', 'SKILL.md'), 'utf-8')
+    const m = /\|\s*@contentrain\/mcp\s*\|\s*(\d+)\s+MCP tools\b/u.exec(content)
+    expect(m, 'SKILL.md has no "| @contentrain/mcp | <n> MCP tools" row').not.toBeNull()
+    expect(Number(m![1])).toBe(TOOL_NAMES.length)
+  })
+})
+
 describe('MCP parity — branch naming', () => {
   it('skills docs do not reference the legacy `contentrain/<operation>/` branch prefix', () => {
     // The `.contentrain/` directory path is correct — only the branch
