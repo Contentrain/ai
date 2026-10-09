@@ -97,13 +97,18 @@ Bootstraps a Contentrain project in your repository.
 ```bash
 contentrain init              # Interactive
 contentrain init --yes        # Skip prompts
+contentrain init --yes --locales tr --domains docs  # Non-interactive, Turkish-only docs project
 contentrain init --root /path # Different project root
 ```
 
 | Flag | Description |
 |------|-------------|
 | `--yes` | Skip prompts, use defaults |
+| `--locales <list>` | Supported locales, comma-separated; the first is the default (e.g. `tr`, `en,tr`). Default with `--yes`: `en`. Skips the locale prompt |
+| `--domains <list>` | Content domains, comma-separated (e.g. `docs`). Default with `--yes`: `marketing,blog,system`. Skips the domain prompt |
 | `--root <path>` | Project root path |
+
+An invalid locale (not ISO 639-1, e.g. `english`) or domain (not lowercase kebab-case) stops init before anything is written.
 
 Creates `.contentrain/config.json`, the `models/`, `content/`, and `meta/` directories, `vocabulary.json`, and `context.json`, appends `.contentrain/.cache/` and `.contentrain/client/` to `.gitignore`, installs IDE rules, Agent Skills, and the MCP config (`.mcp.json` or IDE equivalent). Runs `git init` plus an initial commit if not already a repo. Records the project's default branch as `repository.default_branch` — the [base branch](/reference/config#base-branch) local writes advance — resolved once from the remote's default, then `main`, then `master`; run from a feature branch it still records the default. An initialized project is never re-initialized, so an existing value is kept.
 

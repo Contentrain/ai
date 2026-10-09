@@ -119,3 +119,13 @@ describe('frontmatter parity between @contentrain/types and the SDK reader', () 
     expect(parseFrontmatter(markdown).frontmatter).toEqual(canonical)
   })
 })
+
+// #512: both readers cut a trailing ` # comment` off a value in the same place.
+describe('inline comments read the same in both readers', () => {
+  it('drops the comment and keeps a # that belongs to the value', () => {
+    const md = '---\nstatus: draft # todo\ntitle: "A" # x\ntags: [a, b] # t\nlang: C#\ncolor: "#fff"\n---\n\nB\n'
+    const ours = parseFrontmatter(md).frontmatter
+    expect(ours).toEqual({ status: 'draft', title: 'A', tags: ['a', 'b'], lang: 'C#', color: '#fff' })
+    expect(ours).toEqual(parseMarkdownFrontmatter(md).frontmatter)
+  })
+})

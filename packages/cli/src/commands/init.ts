@@ -14,6 +14,7 @@ import { pc } from '../utils/ui.js'
 import { IDE_CONFIGS, detectIdes, installIdeRulesAndSkills, addClaudeMdReference, writeMcpConfig, createPackageResolver } from '../utils/ide.js'
 import { writeFile, readFile, appendFile } from 'node:fs/promises'
 import type { ContentrainConfig, Vocabulary } from '@contentrain/types'
+import { LOCALE_PATTERN } from '@contentrain/types'
 
 const COMMON_LOCALES = [
   { value: 'en', label: 'English' },
@@ -39,11 +40,25 @@ export default defineCommand({
   args: {
     root: { type: 'string', description: 'Project root path', required: false },
     yes: { type: 'boolean', description: 'Skip prompts, use defaults', required: false },
+    locales: { type: 'string', description: 'Supported locales, comma-separated; the first is the default (e.g. "tr" or "en,tr"). Default: en', required: false },
+    domains: { type: 'string', description: 'Content domains, comma-separated (e.g. "docs"). Default: marketing,blog,system', required: false },
   },
   async run({ args }) {
     const projectRoot = await resolveProjectRoot(args.root)
 
     intro(pc.bold('contentrain init'))
+
+    let flagLocales: string[] | undefined
+    let flagDomains: string[] | undefined
+    try {
+      flagLocales = parseListFlag(args.locales, 'locale')
+      flagDomains = parseListFlag(args.domains, 'domain')
+    } catch (error) {
+      log.error(error instanceof Error ? error.message : String(error))
+      process.exitCode = 1
+      outro('')
+      return
+    }
 
     // Already initialized?
     const ctx = await loadProjectContext(projectRoot)
@@ -68,13 +83,7 @@ export default defineCommand({
     }
 
     if (args.yes) {
-      await executeInit(projectRoot, {
-        stack: info.stack,
-        locales: ['en'],
-        domains: ['marketing', 'blog', 'system'],
-        workflow: 'auto-merge',
-        template: null,
-      })
+      await executeInit(projectRoot, defaultInitOptions(info.stack, flagLocales, flagDomains))
       outro(pc.green('Initialized with defaults!'))
       return
     }
@@ -103,8 +112,8 @@ export default defineCommand({
     })
     if (isCancel(stackChoice)) return handleCancel()
 
-    // 3. Locales
-    const localeChoices = await multiselect({
+    // 3. Locales — asked only when --locales did not answer it
+    const localeChoices = flagLocales ?? await multiselect({
       message: 'Supported locales',
       options: COMMON_LOCALES.map(l => ({
         value: l.value,
@@ -115,8 +124,8 @@ export default defineCommand({
     })
     if (isCancel(localeChoices)) return handleCancel()
 
-    // 4. Domains
-    const domainChoices = await multiselect({
+    // 4. Domains — asked only when --domains did not answer it
+    const domainChoices = flagDomains ?? await multiselect({
       message: 'Content domains',
       options: [
         { value: 'marketing', label: 'Marketing — landing pages, CTAs, testimonials' },
@@ -201,6 +210,27 @@ export default defineCommand({
   },
 })
 
+const DOMAIN_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+/**
+ * A comma-separated `--locales` / `--domains` value as a list: trimmed, empty items and repeats dropped, order kept
+ * (the first locale is the default). `undefined` when the flag was not given; throws on an invalid item, so a typo
+ * never becomes a config value.
+ */
+export function parseListFlag(value: string | undefined, kind: 'locale' | 'domain'): string[] | undefined {
+  if (value === undefined) return undefined
+  const items = [...new Set(String(value).split(',').map(item => item.trim()).filter(Boolean))]
+  if (items.length === 0) throw new Error(`--${kind}s needs at least one ${kind}`)
+  const pattern = kind === 'locale' ? LOCALE_PATTERN : DOMAIN_PATTERN
+  const bad = items.filter(item => !pattern.test(item))
+  if (bad.length > 0) {
+    throw new Error(kind === 'locale'
+      ? `Invalid locale ${bad.map(b => `"${b}"`).join(', ')}: use ISO 639-1 codes such as "en", "tr" or "pt-BR"`
+      : `Invalid domain ${bad.map(b => `"${b}"`).join(', ')}: use lowercase letters, digits and hyphens, such as "docs" or "marketing"`)
+  }
+  return items
+}
+
 /**
  * Print stack-aware guidance for wiring the generated `#contentrain` client
  * into the host project. Init does not mutate the host's bundler config or
@@ -223,7 +253,18 @@ function printStackWiring(stack: string): void {
   }
 }
 
-interface InitOptions {
+/** What `init --yes` writes: the defaults, with `--locales` / `--domains` taking their place when given. */
+export function defaultInitOptions(stack: string, locales?: string[], domains?: string[]): InitOptions {
+  return {
+    stack,
+    locales: locales ?? ['en'],
+    domains: domains ?? ['marketing', 'blog', 'system'],
+    workflow: 'auto-merge',
+    template: null,
+  }
+}
+
+export interface InitOptions {
   stack: string
   locales: string[]
   domains: string[]
