@@ -1,0 +1,34 @@
+---
+// The approved comments the migration carried (src/lib/comments.ts), drawn at build time with the classes Studio's
+// thread uses, so the live thread that replaces it once the site is bound looks the same. Read-only: no form, no reply
+// button. `data-cr-comment` marks each comment and `data-count` the section, so a gate can count what shipped.
+import { commentTree, paragraphsOf, type CommentNode, type StaticThread } from '../../lib/comments'
+import { initials } from '../../lib/studio/embed'
+
+interface Props {
+  thread: StaticThread
+  text: Record<string, string>
+}
+
+const { thread, text } = Astro.props
+const tree = commentTree(thread.comments)
+const count = (nodes: CommentNode[]): number => nodes.reduce((n, c) => n + 1 + count(c.replies), 0)
+const total = count(tree)
+---
+<section class="cr-comments-section" data-cr-static data-count={total}>
+  <h2 class="cr-comments-title">{text['comments.title'] ?? 'Comments'} <span class="cr-count">({total})</span></h2>
+  <div class="cr-thread">
+    <ol class="cr-comment-list">
+      {tree.map(function item(c: CommentNode): unknown {
+        return (
+          <li class="cr-comment cr-comment--comment" id={`cr-comment-${c.id}`} data-depth={c.depth} data-cr-comment>
+            <div class="cr-comment-meta"><span class="cr-avatar" aria-hidden="true">{initials(c.author)}</span><span class="cr-comment-author">{c.author}</span> <time datetime={c.date}>{c.date.slice(0, 10)}</time></div>
+            <div class="cr-comment-body">{paragraphsOf(c.text).map(lines => <p>{lines.map((line, i) => (i ? <Fragment><br />{line}</Fragment> : line))}</p>)}</div>
+            {c.replies.length > 0 && <ol class="cr-replies">{c.replies.map(item)}</ol>}
+          </li>
+        )
+      })}
+    </ol>
+  </div>
+  {thread.closed && <p class="cr-closed">{text['comments.closed'] ?? 'Comments are closed.'}</p>}
+</section>

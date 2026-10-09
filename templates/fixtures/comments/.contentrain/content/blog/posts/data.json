@@ -1,0 +1,29 @@
+{
+  "d0c000000001": {
+    "body": "<p>A post with a threaded conversation.</p>",
+    "comments_open": true,
+    "excerpt": "A post with a threaded conversation.",
+    "published_at": "2026-09-01T09:00:00Z",
+    "slug": "open-thread",
+    "title": "An open thread",
+    "wp_id": 301
+  },
+  "d0c000000002": {
+    "body": "<p>Comments were closed on the old site.</p>",
+    "comments_open": false,
+    "excerpt": "Comments were closed.",
+    "published_at": "2026-09-02T09:00:00Z",
+    "slug": "closed-thread",
+    "title": "A closed thread",
+    "wp_id": 302
+  },
+  "d0c000000003": {
+    "body": "<p>Nobody commented here.</p>",
+    "comments_open": true,
+    "excerpt": "Nobody commented.",
+    "published_at": "2026-09-03T09:00:00Z",
+    "slug": "no-comments",
+    "title": "No comments yet",
+    "wp_id": 303
+  }
+}

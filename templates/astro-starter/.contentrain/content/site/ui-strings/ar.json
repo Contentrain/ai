@@ -35,6 +35,7 @@
   "footer.rss": "خلاصة RSS",
   "form.honeypot": "اترك هذا الحقل فارغًا",
   "form.mailto": "راسلنا على",
+  "form.needs_endpoint": "يحتاج هذا النموذج إلى Studio أو عنوان نموذج لاستقبال الرسائل.",
   "form.noscript": "هذا النموذج يحتاج إلى JavaScript.",
   "form.send": "إرسال",
   "form.sending": "جارٍ الإرسال…",

@@ -35,6 +35,7 @@
   "footer.rss": "RSS feed",
   "form.honeypot": "Leave this field empty",
   "form.mailto": "Write to us at",
+  "form.needs_endpoint": "This form needs Studio or a form endpoint to receive messages.",
   "form.noscript": "This form needs JavaScript.",
   "form.send": "Send",
   "form.sending": "Sending…",

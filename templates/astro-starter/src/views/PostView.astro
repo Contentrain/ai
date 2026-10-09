@@ -122,7 +122,7 @@ const updated = data.modified_at && data.published_at && data.modified_at.getTim
         {next && <a href={safeHref(postHref(next, categoryMap))} rel="next" class="text-ink">{next.data.title} <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
       </nav>
     )}
-    {data.comments_open && <StudioComments model="posts" entry={post.id} />}
+    <StudioComments model="posts" entry={post.id} open={data.comments_open} />
   </article>
   {more.length > 0 && (
     <section aria-labelledby="more-posts" data-cr-part="related" class="container-page pb-16">

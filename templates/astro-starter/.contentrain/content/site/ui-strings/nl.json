@@ -35,6 +35,7 @@
   "footer.rss": "RSS-feed",
   "form.honeypot": "Laat dit veld leeg",
   "form.mailto": "Mail ons op",
+  "form.needs_endpoint": "Dit formulier heeft Studio of een formulieradres nodig om berichten te ontvangen.",
   "form.noscript": "Dit formulier vereist JavaScript.",
   "form.send": "Verzenden",
   "form.sending": "Verzenden…",

@@ -1,0 +1,98 @@
+{
+  "absentFromDist": [
+    "<script>alert(1)</script>"
+  ],
+  "distFiles": {
+    "blog/open-thread/index.html": {
+      "contains": [
+        "data-count=\"4\"",
+        "Ada Lovelace",
+        "Grace Hopper",
+        "&lt;script&gt;alert(1)&lt;/script&gt; text stays text",
+        "First paragraph of a thoughtful note.",
+        "Second paragraph,<br>with a line break.",
+        "<time datetime=\"2026-09-01T10:00:00Z\">2026-09-01</time>",
+        "class=\"cr-replies\""
+      ],
+      "excludes": [
+        "cr-closed",
+        "cr-comment-form",
+        "pending_studio"
+      ],
+      "counts": {
+        "data-cr-comment": 4,
+        "class=\"cr-replies\"": 2
+      }
+    },
+    "blog/closed-thread/index.html": {
+      "contains": [
+        "data-count=\"1\"",
+        "Said before the thread closed.",
+        "class=\"cr-closed\"",
+        "Comments are closed."
+      ],
+      "counts": {
+        "data-cr-comment": 1
+      }
+    },
+    "blog/no-comments/index.html": {
+      "excludes": [
+        "data-cr-comment",
+        "data-cr-static"
+      ]
+    }
+  },
+  "distFilesByMedia": {
+    "local": {
+      "blog/open-thread/index.html": {
+        "contains": [
+          "data-cr-part=\"comments\" data-state=\"static\""
+        ],
+        "excludes": [
+          "<cr-comments"
+        ]
+      },
+      "blog/no-comments/index.html": {
+        "contains": [
+          "data-state=\"pending_studio\""
+        ],
+        "excludes": [
+          "<cr-comments"
+        ]
+      }
+    },
+    "studio": {
+      "blog/open-thread/index.html": {
+        "contains": [
+          "data-cr-part=\"comments\" data-state=\"ready\"",
+          "<cr-comments",
+          "data-entry=\"d0c000000001\""
+        ],
+        "excludes": [
+          "data-state=\"static\"",
+          "pending_studio"
+        ],
+        "counts": {
+          "<cr-comments": 1,
+          "data-cr-static": 1
+        }
+      },
+      "blog/closed-thread/index.html": {
+        "contains": [
+          "data-cr-part=\"comments\" data-state=\"static\""
+        ],
+        "excludes": [
+          "<cr-comments"
+        ]
+      },
+      "blog/no-comments/index.html": {
+        "contains": [
+          "<cr-comments"
+        ],
+        "excludes": [
+          "pending_studio"
+        ]
+      }
+    }
+  }
+}

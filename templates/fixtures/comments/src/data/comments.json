@@ -1,0 +1,47 @@
+{
+  "posts/d0c000000001": {
+    "closed": false,
+    "comments": [
+      {
+        "id": "11",
+        "parent": null,
+        "author": "Ada Lovelace",
+        "date": "2026-09-01T10:00:00Z",
+        "text": "First paragraph of a thoughtful note.\n\nSecond paragraph,\nwith a line break."
+      },
+      {
+        "id": "12",
+        "parent": "11",
+        "author": "Grace Hopper",
+        "date": "2026-09-01T11:00:00Z",
+        "text": "A reply to Ada."
+      },
+      {
+        "id": "13",
+        "parent": "12",
+        "author": "Ada Lovelace",
+        "date": "2026-09-01T12:00:00Z",
+        "text": "A reply to the reply."
+      },
+      {
+        "id": "14",
+        "parent": "999",
+        "author": "Mallory",
+        "date": "2026-09-01T13:00:00Z",
+        "text": "<script>alert(1)</script> text stays text"
+      }
+    ]
+  },
+  "posts/d0c000000002": {
+    "closed": false,
+    "comments": [
+      {
+        "id": "21",
+        "parent": null,
+        "author": "Linus",
+        "date": "2026-09-02T10:00:00Z",
+        "text": "Said before the thread closed."
+      }
+    ]
+  }
+}

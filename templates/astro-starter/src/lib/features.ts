@@ -5,7 +5,8 @@ import { join } from 'node:path'
 import { siteConfig } from '../site.config'
 import type { FieldDef } from './studio/embed'
 
-export type FormHome = 'studio' | 'endpoint' | 'mailto' | 'wordpress'
+/** `needs_endpoint`: a Studio form on a site not bound yet, with no published address: it cannot receive messages, and says so. */
+export type FormHome = 'studio' | 'endpoint' | 'mailto' | 'wordpress' | 'needs_endpoint'
 
 const EMAIL = /^[^\s@<>"?&]+@[^\s@<>"?&]+\.[^\s@<>"?&]+$/
 
@@ -34,12 +35,13 @@ export function formFields(model: string): Array<{ id: string, def: FieldDef }> 
 }
 
 /**
- * Where a Studio form goes while the site is not bound to Studio yet: the same form on the WordPress site that stays
- * up, else the address the source site published to write to, else nowhere. Binding Studio replaces it, no edit needed.
+ * Where a Studio form goes while the site is not bound to Studio yet: the address the source site published to write
+ * to, else nowhere, said on the page (`needs_endpoint`) rather than a form that vanishes. A WordPress site that stays up
+ * is the form's home only when the owner chose it (`features.forms.home: 'wordpress'`), never by default. Binding
+ * Studio replaces it, no edit needed.
  */
-function unboundHome(): FormHome | null {
-  if (siteConfig.features?.wordpress) return 'wordpress'
-  return EMAIL.test(siteConfig.features?.email ?? '') ? 'mailto' : null
+function unboundHome(): FormHome {
+  return EMAIL.test(siteConfig.features?.email ?? '') ? 'mailto' : 'needs_endpoint'
 }
 
 /** The address a `mailto` form shows: the chosen one, or the fallback a Studio form uses until Studio is bound. */
@@ -49,8 +51,7 @@ export function formAddress(): string | undefined {
 }
 
 /**
- * How the form for `model` renders here, or null when nothing can: Studio not bound and no fallback, the WordPress
- * address unknown, a service address that is not https, a model with no public fields, an address that is not an email.
+ * How the form for `model` renders here, or null when nothing can: the WordPress address unknown, a service address that is not https, a model with no public fields, an address that is not an email.
  */
 export function formHome(model: string): FormHome | null {
   const forms = siteConfig.features?.forms ?? { home: 'studio' as const }
