@@ -12,13 +12,13 @@ MIT-licensed monorepo for Contentrain's open-source packages: MCP tools, CLI, Ty
 This repo ships 16 Agent Skills following the [Agent Skills standard](https://agentskills.io). Install them with:
 
 ```bash
-npx skills add contentrain/contentrain-ai --skill='*'
+npx skills add Contentrain/ai/packages/skills --skill='*'
 ```
 
 Or install a specific skill:
 
 ```bash
-npx skills add contentrain/contentrain-ai --skill='contentrain-normalize'
+npx skills add Contentrain/ai/packages/skills --skill='contentrain-normalize'
 ```
 
 Skills are located at `packages/skills/skills/*/SKILL.md`:

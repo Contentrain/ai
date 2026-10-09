@@ -3,7 +3,7 @@
 [![npm: @contentrain/mcp](https://img.shields.io/npm/v/%40contentrain%2Fmcp?label=%40contentrain%2Fmcp)](https://www.npmjs.com/package/@contentrain/mcp)
 [![npm: contentrain](https://img.shields.io/npm/v/contentrain?label=contentrain)](https://www.npmjs.com/package/contentrain)
 [![npm: @contentrain/query](https://img.shields.io/npm/v/%40contentrain%2Fquery?label=%40contentrain%2Fquery)](https://www.npmjs.com/package/@contentrain/query)
-[![Agent Skills](https://img.shields.io/badge/Agent_Skills-15_skills-8B5CF6)](https://agentskills.io)
+[![Agent Skills](https://img.shields.io/badge/Agent_Skills-16_skills-8B5CF6)](https://agentskills.io)
 [![Docs](https://img.shields.io/badge/docs-ai.contentrain.io-0f172a)](https://ai.contentrain.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -154,7 +154,7 @@ Works with Nuxt, Next.js, Astro, SvelteKit, Vue, React, Node, Go, Python, Swift,
 
 ## Agent Skills
 
-This repo ships 15 [Agent Skills](https://agentskills.io) — reusable workflow procedures that any AI coding agent can load on demand.
+This repo ships 16 [Agent Skills](https://agentskills.io) — reusable workflow procedures that any AI coding agent can load on demand.
 
 Install all skills to your agent:
 
@@ -185,6 +185,7 @@ See [`AGENTS.md`](AGENTS.md) for the full skill catalog and agent guidance.
 | [`@contentrain/wp-import`](packages/wp-import) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fwp-import)](https://www.npmjs.com/package/@contentrain/wp-import) | WordPress WXR / REST → `RawIR` → `.contentrain` store |
 | [`@contentrain/emitter-astro`](packages/emitter-astro) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Femitter-astro)](https://www.npmjs.com/package/@contentrain/emitter-astro) | `ProjectIR` → a complete Astro project |
 | [`@contentrain/verify`](packages/verify) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fverify)](https://www.npmjs.com/package/@contentrain/verify) | SEO, indexing, link and asset gates for a built site |
+| [`@contentrain/astro-kit`](packages/astro-kit) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fastro-kit)](https://www.npmjs.com/package/@contentrain/astro-kit) | Copy-in Astro components + catalog + builder mapping tables |
 | [`@contentrain/decide`](packages/decide) | [![npm](https://img.shields.io/npm/v/%40contentrain%2Fdecide)](https://www.npmjs.com/package/@contentrain/decide) | Typed decisions — rule first, then Jev, then Claude Haiku — cached, budgeted, audited |
 
 ## Starter Templates

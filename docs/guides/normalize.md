@@ -301,7 +301,7 @@ The application now serves localized content.
 
 ## When Studio Enters
 
-Normalize is the wedge, not the final surface.
+Normalize is the starting point, not the final surface.
 
 Use local AI packages first when you need to scan code, extract hardcoded strings, patch source files, and validate everything in git. Move into [Contentrain Studio](/studio) when the same structured content now needs:
 

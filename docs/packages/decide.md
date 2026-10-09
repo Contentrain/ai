@@ -1,7 +1,7 @@
 ---
 title: Decide
 description: "@contentrain/decide — small typed decisions (a choice or a score) asked rule first, then Jev, then Claude Haiku, cached, budgeted, circuit-broken and audited; a provider failure never fails the call"
-order: 10
+order: 11
 slug: decide
 ---
 
