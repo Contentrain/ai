@@ -12,6 +12,7 @@ import { branchTimestamp } from '../util/id.js'
 import { migrateLegacyBranches } from '../providers/local/migration.js'
 import { resolveBaseBranch } from './base-branch.js'
 import { pushPolicy } from './push-policy.js'
+import { commitOptions, hookPolicy, type HookPolicy } from './hook-policy.js'
 
 // Re-exported so hosts of mergeBranch (CLI serve) word local mode the same way.
 export { LOCAL_MODE_NOTE } from './push-policy.js'
@@ -49,6 +50,8 @@ export interface CompleteResult {
   base_advance?: BaseAdvance
   /** Present on `auto-merged`: outcome of pushing the contentrain branch. */
   remote_push?: RemotePush
+  /** The resolved base branch: what an auto-merge advances and, when pushing is on, pushes. */
+  base_branch: string
 }
 
 /** Result of landing a feature branch via {@link mergeBranch}. */
@@ -58,6 +61,8 @@ export interface MergeBranchResult {
   sync: SyncResult
   base_advance: BaseAdvance
   remote_push: RemotePush
+  /** The resolved base branch the merge advanced (or would have, had it not diverged). */
+  base_branch: string
   warning?: string
   remote?: RemoteDeleteResult
 }
@@ -223,6 +228,7 @@ export async function createTransaction(
   const config = await readConfig(projectRoot)
   const workflow = options?.workflowOverride ?? config?.workflow ?? 'auto-merge'
   const push = pushPolicy(config).push
+  const hooks = hookPolicy(config)
 
   const remoteName = process.env['CONTENTRAIN_REMOTE'] ?? 'origin'
 
@@ -324,12 +330,13 @@ export async function createTransaction(
       // context.json is intentionally NOT committed on the feature branch — it
       // is regenerated on the contentrain branch after the merge (see
       // complete()). Committing it per-branch caused cross-branch merge
-      // conflicts on a single mutable file. `--no-verify` keeps the repo's
-      // commit-msg / pre-commit hooks (commitlint, lefthook, husky) from
-      // rejecting these machine-generated infra commits.
+      // conflicts on a single mutable file. Commit hooks are skipped unless
+      // `git.verify` / CONTENTRAIN_VERIFY turns them on (see hookPolicy):
+      // with them on, a rejecting hook throws here with its output and the
+      // write fails — nothing is retried without hooks.
       savedContextUpdate = contextUpdate
       await wtGit.add('.')
-      const result = await wtGit.commit(message, { '--allow-empty': null, '--no-verify': null })
+      const result = await wtGit.commit(message, commitOptions(hooks, { '--allow-empty': null }))
       commitHash = result.commit || ''
       return commitHash
     },
@@ -355,7 +362,7 @@ export async function createTransaction(
           }
         }
 
-        return { action: 'pending-review', commit: commitHash, warning, ...(push ? {} : { remote_push: 'disabled' as const }) }
+        return { action: 'pending-review', commit: commitHash, base_branch: baseBranch, warning, ...(push ? {} : { remote_push: 'disabled' as const }) }
       }
 
       // auto-merge: merge feature branch into contentrain, then advance base
@@ -387,9 +394,9 @@ export async function createTransaction(
 
       // Regenerate context.json on the contentrain branch (post-merge,
       // single-threaded) and fold it into the tip before advancing the base.
-      if (savedContextUpdate) {
-        await regenerateContextOnContentrain(wtGit, worktreePath, savedContextUpdate)
-      }
+      const contextWarning = savedContextUpdate
+        ? await regenerateContextOnContentrain(wtGit, worktreePath, savedContextUpdate, hooks)
+        : undefined
 
       // Get contentrain tip + old base ref + dirty files in parallel
       const [contentrainTip, previousBaseRef, statusBeforeUpdate] = await Promise.all([
@@ -430,13 +437,14 @@ export async function createTransaction(
         remotePush = await pushContentBranches(projectRoot, worktreePath, wtGit, remoteName, baseBranch, baseAdvance === 'advanced')
       }
 
-      const warnings = [divergedWarning, sync.warning].filter(Boolean)
+      const warnings = [divergedWarning, sync.warning, contextWarning].filter(Boolean)
       return {
         action: 'auto-merged' as const,
         commit: commitHash,
         sync,
         base_advance: baseAdvance,
         remote_push: remotePush,
+        base_branch: baseBranch,
         ...(warnings.length > 0 ? { warning: warnings.join(' ') } : {}),
       }
     },
@@ -553,7 +561,7 @@ export async function mergeBranch(
     // Regenerate context.json on contentrain post-merge (deterministic,
     // single-threaded) so review-mode branches — which carry no context.json —
     // still produce up-to-date stats once landed.
-    await regenerateContextOnContentrain(wtGit, worktreePath, { tool: 'contentrain_merge', model: '*' })
+    const contextWarning = await regenerateContextOnContentrain(wtGit, worktreePath, { tool: 'contentrain_merge', model: '*' }, hookPolicy(config))
 
     // Get contentrain tip + old base ref + dirty files in parallel
     const [contentrainTip, previousBaseRef, statusBeforeUpdate] = await Promise.all([
@@ -602,13 +610,14 @@ export async function mergeBranch(
       remote = await deleteRemoteBranch(projectRoot, branchName, { config })
     }
 
-    const warnings = [divergedWarning, sync.warning].filter(Boolean)
+    const warnings = [divergedWarning, sync.warning, contextWarning].filter(Boolean)
     return {
       action: 'merged' as const,
       commit: contentrainTip,
       sync,
       base_advance: baseAdvance,
       remote_push: remotePush,
+      base_branch: baseBranch,
       ...(warnings.length > 0 ? { warning: warnings.join(' ') } : {}),
       ...(remote ? { remote } : {}),
     }
@@ -755,8 +764,8 @@ async function safeDeleteBranch(git: SimpleGit, branch: string): Promise<void> {
 
 /**
  * Regenerate `.contentrain/context.json` deterministically inside a worktree
- * that is currently on the `contentrain` branch, then commit it (hooks
- * bypassed). Called AFTER a feature branch is merged so context.json is only
+ * that is currently on the `contentrain` branch, then commit it (commit
+ * hooks per {@link hookPolicy}). Called AFTER a feature branch is merged so context.json is only
  * ever written on `contentrain`, single-threaded — eliminating the per-branch
  * merge conflicts that came from committing it on every feature branch.
  */
@@ -764,12 +773,21 @@ async function regenerateContextOnContentrain(
   wtGit: SimpleGit,
   worktreePath: string,
   contextUpdate: ContextUpdate,
-): Promise<void> {
+  hooks: HookPolicy,
+): Promise<string | undefined> {
   await writeContext(worktreePath, contextUpdate)
   await wtGit.add('.contentrain/context.json')
+  const staged = await wtGit.raw(['diff', '--cached', '--name-only']).catch(() => '')
+  if (staged.trim() === '') return undefined // context.json unchanged — nothing to commit
   try {
-    await wtGit.commit('[contentrain] context: update', { '--no-verify': null })
-  } catch {
-    // Nothing staged (context.json unchanged) — fine.
+    await wtGit.commit('[contentrain] context: update', commitOptions(hooks))
+    return undefined
+  } catch (error) {
+    // The content is already merged into contentrain at this point, so a
+    // failure here is not a failed write. With hooks on it is most likely a
+    // hook rejecting the context commit: say so instead of swallowing it.
+    if (!hooks.verify) return undefined
+    const detail = error instanceof Error ? error.message.trim() : String(error)
+    return `The content landed, but a git hook rejected the "[contentrain] context: update" commit, so .contentrain/context.json was not updated: ${detail}`
   }
 }

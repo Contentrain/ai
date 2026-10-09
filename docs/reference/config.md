@@ -136,6 +136,7 @@ interface ContentrainConfig {
 | `branchBlockLimit` | `number` | No | Unmerged `cr/*` branch count that blocks new writes. Default: `80`. |
 | `remoteBranchCleanup` | `boolean` | No | Delete the remote copy of a `cr/*` branch when it is merged or deleted locally, and allow `contentrain prune` / lazy sweeps to remove merged remote leftovers. Default: `true`. |
 | `git.push` | `boolean` | No | `false` turns on **local mode** (local provider): no write pushes a branch, and no merge, delete or prune touches the remote. Fetching still happens. Results report `remote_push: "disabled"` with `remote_note: "not pushed (local mode)"`, and `contentrain_submit` returns an error. The `CONTENTRAIN_NO_PUSH` env overrides it in both directions (`1`/`true` off, `0`/`false` on). Default: `true`. |
+| `git.verify` | `boolean` | No | `true` runs the repository's commit hooks (`pre-commit`, `commit-msg`, …) on Contentrain's machine commits (local provider). A hook that rejects the content commit fails the write with the hook's output; nothing is retried without hooks. The `CONTENTRAIN_VERIFY` env overrides it in both directions (`1`/`true` on, `0`/`false` off). Default: `false` — commit hooks are skipped, as before; merge and `pre-push` hooks run either way. |
 
 ### Supported Stacks
 

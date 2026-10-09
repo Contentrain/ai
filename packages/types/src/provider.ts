@@ -157,6 +157,12 @@ export interface Commit {
   base_advance?: BaseAdvance
   /** Outcome of pushing the contentrain branch, when the provider pushes. */
   remote_push?: RemotePush
+  /**
+   * The resolved base branch the write lands on (local worktree providers):
+   * the branch an auto-merge fast-forwards and, when pushing is on, pushes.
+   * It is not necessarily the checked-out branch — see `resolveBaseBranch`.
+   */
+  base_branch?: string
 }
 
 /**

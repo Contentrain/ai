@@ -172,7 +172,7 @@ export function registerModelTools(
           // rather than left for the author to discover in production.
           ...(schemaWarnings.length > 0 ? { schema_warnings: schemaWarnings } : {}),
           ...(preserved.length > 0 ? { preserved_blocks: preserved } : {}),
-          git: gitReport({ branch, action: commit.workflowAction, commit: commit.commitSha, sync: commit.sync, base_advance: commit.base_advance, remote_push: commit.remote_push }),
+          git: gitReport({ branch, action: commit.workflowAction, commit: commit.commitSha, sync: commit.sync, base_advance: commit.base_advance, remote_push: commit.remote_push, base_branch: commit.base_branch }),
           ...(commit.warning ? { warning: commit.warning } : {}),
           context_updated: true,
           content_path: contentPath + '/',
@@ -260,7 +260,7 @@ export function registerModelTools(
             status: 'committed',
             message: 'Model deleted and committed to git. Do NOT manually edit .contentrain/ files.',
             deleted: true,
-            git: gitReport({ branch, action: commit.workflowAction, commit: commit.commitSha, sync: commit.sync, base_advance: commit.base_advance, remote_push: commit.remote_push }),
+            git: gitReport({ branch, action: commit.workflowAction, commit: commit.commitSha, sync: commit.sync, base_advance: commit.base_advance, remote_push: commit.remote_push, base_branch: commit.base_branch }),
             ...(commit.warning ? { warning: commit.warning } : {}),
             files_removed: deletePlan.result,
             context_updated: true,

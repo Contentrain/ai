@@ -208,9 +208,20 @@ export interface ContentrainConfig {
    * branch is deleted — results report `remote_push: 'disabled'`. The
    * `CONTENTRAIN_NO_PUSH` env (`1`/`true` off, `0`/`false` on) overrides it.
    * Default: push whenever the remote exists.
+   *
+   * `verify: true` runs the repository's commit hooks (pre-commit,
+   * commit-msg, …) on Contentrain's machine commits; a hook that rejects a
+   * commit fails the write with the hook's output, and nothing is retried
+   * without hooks. The `CONTENTRAIN_VERIFY` env (`1`/`true` on, `0`/`false`
+   * off) overrides it. Default: false — machine commits skip commit hooks,
+   * as before, because a `[contentrain] …` message or a hook that needs the
+   * repo's `node_modules` would otherwise fail every write in the temporary
+   * worktree. Merges and pushes are not affected: they run the merge and
+   * pre-push hooks either way.
    */
   git?: {
     push?: boolean
+    verify?: boolean
   }
 }
 
