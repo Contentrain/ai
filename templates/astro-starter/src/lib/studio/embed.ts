@@ -707,11 +707,18 @@ export async function mountComments(host: HTMLElement): Promise<void> {
   applyStrings(host)
   const rt = runtimeOf(host)
   const entry = entryOf(host)
-  host.innerHTML = '<p class="cr-loading">' + esc(strings.loading) + '</p>'
+  // The thread the migration carried, drawn at build time inside the mount: Studio's answer replaces it, and when
+  // Studio cannot answer (an error, an inactive subscription) it stays, so a comment never vanishes from the page.
+  const carried = host.querySelector('[data-cr-static]') !== null
+  if (!carried) host.innerHTML = '<p class="cr-loading">' + esc(strings.loading) + '</p>'
   let thread: CommentThread
   try {
     thread = await fetchThread(rt, entry)
   } catch (error) {
+    if (carried) {
+      console.debug('[contentrain] comments: the migrated thread stays, Studio did not answer (' + (error instanceof Error ? error.message : String(error)) + ')')
+      return
+    }
     if (isPaymentRequired(error)) return hideUnavailable(host, 'comments')
     host.innerHTML = '<p class="cr-error" role="alert">' + esc(error instanceof Error ? error.message : strings.failed) + '</p>'
     return

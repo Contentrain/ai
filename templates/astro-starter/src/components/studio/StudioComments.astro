@@ -5,10 +5,18 @@
 // and no script, only an empty marker that says the thread is waiting for it.
 // When the owner kept comments on WordPress (site.config.ts `features`), it is
 // a link to the same post there.
+//
+// The approved comments a migration carried (src/data/comments.json) are drawn
+// at build time in every other case: inside the Studio mount, which replaces
+// them with the live thread once Studio answers (and puts them back when it
+// cannot), or on their own before the site is bound. A thread the old site had
+// closed, or one closed here, shows read-only with a "comments are closed" line.
+import { staticThreadOf } from '../../lib/comments'
 import { getStringTable } from '../../lib/content'
 import { commentsHome, onWordPress } from '../../lib/features'
 import { siteConfig } from '../../site.config'
 import CommentsMount from './CommentsMount.astro'
+import StaticComments from './StaticComments.astro'
 import { safeHref } from '../kit/_shared/safe-url'
 
 interface Props {
@@ -16,15 +24,21 @@ interface Props {
   model: string
   entry: string
   locale?: string | undefined
+  /** The entry takes new comments (`comments_open`). Closed, only the carried thread shows, read-only. */
+  open: boolean
 }
 
-const { model, entry, locale } = Astro.props
+const { model, entry, locale, open } = Astro.props
 const studio = siteConfig.studio
-const wordpress = commentsHome() === 'wordpress' ? onWordPress(Astro.url.pathname) : undefined
-const text = studio || wordpress ? await getStringTable(['common.', 'comments.', 'form.']) : {}
+const wordpress = open && commentsHome() === 'wordpress' ? onWordPress(Astro.url.pathname) : undefined
+const carried = wordpress ? undefined : staticThreadOf(model, entry)
+const thread = carried && (open ? carried : { ...carried, closed: true })
+const text = studio || wordpress || thread ? await getStringTable(['common.', 'comments.', 'form.']) : {}
 ---
 {wordpress
   ? <p class="cr-comments mt-16 border-t border-line pt-10" data-cr-part="comments" data-state="wordpress"><a href={safeHref(`${wordpress}#comments`)} class="underline underline-offset-4">{text['comments.wordpress'] ?? 'Read and join the comments'}</a></p>
-  : studio
-    ? <div data-cr-part="comments" data-state="ready"><CommentsMount baseUrl={studio.baseUrl} projectId={studio.projectId} model={model} entry={entry} locale={locale} text={text} /></div>
-    : <div data-cr-part="comments" data-state="pending_studio" hidden />}
+  : studio && open
+    ? <div data-cr-part="comments" data-state="ready"><CommentsMount baseUrl={studio.baseUrl} projectId={studio.projectId} model={model} entry={entry} locale={locale} text={text}>{thread && <StaticComments thread={thread} text={text} />}</CommentsMount></div>
+    : thread
+      ? <div class="cr-comments mt-16 block border-t border-line pt-10" data-cr-part="comments" data-state="static"><StaticComments thread={thread} text={text} /></div>
+      : open && <div data-cr-part="comments" data-state="pending_studio" hidden />}

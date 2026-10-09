@@ -35,6 +35,7 @@
   "footer.rss": "Kanał RSS",
   "form.honeypot": "Pozostaw to pole puste",
   "form.mailto": "Napisz do nas na adres",
+  "form.needs_endpoint": "Ten formularz potrzebuje Studio lub adresu formularza, aby odbierać wiadomości.",
   "form.noscript": "Ten formularz wymaga JavaScriptu.",
   "form.send": "Wyślij",
   "form.sending": "Wysyłanie…",

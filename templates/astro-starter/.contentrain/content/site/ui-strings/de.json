@@ -35,6 +35,7 @@
   "footer.rss": "RSS-Feed",
   "form.honeypot": "Dieses Feld leer lassen",
   "form.mailto": "Schreib uns an",
+  "form.needs_endpoint": "Dieses Formular braucht Studio oder einen Formular-Endpunkt, um Nachrichten zu empfangen.",
   "form.noscript": "Dieses Formular benötigt JavaScript.",
   "form.send": "Senden",
   "form.sending": "Wird gesendet …",

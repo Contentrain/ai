@@ -35,6 +35,7 @@
   "footer.rss": "עדכוני RSS",
   "form.honeypot": "השאירו שדה זה ריק",
   "form.mailto": "כתבו לנו בכתובת",
+  "form.needs_endpoint": "הטופס הזה צריך את Studio או כתובת טופס כדי לקבל הודעות.",
   "form.noscript": "הטופס הזה דורש JavaScript.",
   "form.send": "שליחה",
   "form.sending": "שולח…",

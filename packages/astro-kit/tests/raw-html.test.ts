@@ -29,7 +29,6 @@ const SINKS = [
   'templates/astro-starter/src/components/SEO.astro: serializeLd(jsonLd)', // JSON-LD, `<` escaped
   'templates/astro-starter/src/components/studio/FormMount.astro: fieldsHtml(fields)', // lib/studio/form-fields.ts: esc()'d labels and controls
   'templates/astro-starter/src/components/studio/StaticForm.astro: html', // built from esc()'d labels and controls
-  'templates/astro-starter/src/components/studio/StudioForm.astro: fieldsHtml(fields)', // lib/studio/form-fields.ts: esc()'d labels and controls
 ]
 
 describe('raw HTML in the kit and the starter', () => {

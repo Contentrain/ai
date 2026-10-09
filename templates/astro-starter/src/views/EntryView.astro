@@ -96,7 +96,7 @@ const description = seo?.description ?? (type.card.excerpt ? text(data[type.card
         {next && <a href={safeHref(entryHref(type, next))} rel="next" class="text-ink">{entryTitle(type, next)} <span aria-hidden="true" class="inline-block rtl:-scale-x-100">→</span></a>}
       </nav>
     )}
-    {type.model && data.comments_open === true && <StudioComments model={type.model} entry={entry.id} />}
+    {type.model && <StudioComments model={type.model} entry={entry.id} open={data.comments_open === true} />}
   </article>
   {more.length > 0 && (
     <section aria-labelledby="more-entries" data-cr-part="related" class="container-page pb-16">

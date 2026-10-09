@@ -35,6 +35,7 @@
   "footer.rss": "Flux RSS",
   "form.honeypot": "Laissez ce champ vide",
   "form.mailto": "Écrivez-nous à",
+  "form.needs_endpoint": "Ce formulaire a besoin de Studio ou d’une adresse de formulaire pour recevoir des messages.",
   "form.noscript": "Ce formulaire nécessite JavaScript.",
   "form.send": "Envoyer",
   "form.sending": "Envoi…",
