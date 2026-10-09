@@ -75,13 +75,15 @@ The CLI wraps `@contentrain/wp-import` and writes the store to disk:
 npx contentrain import export.xml --out ./my-site
 
 # Or over REST, with an Application Password to reach rest_auth
-npx contentrain import https://site.example --auth user:app-password
+npx contentrain import https://site.example --auth editor   # prompts for the password
+CONTENTRAIN_WP_APP_PASSWORD=… npx contentrain import https://site.example --auth editor
 ```
 
 | Flag | Effect |
 |---|---|
 | `--out <dir>` | Target directory (default: current) |
-| `--auth <user:password>` | REST Application Password — lifts access to `rest_auth`, which also imports drafts, scheduled, pending and private posts and held comments |
+| `--auth <user>` | REST user for an Application Password — lifts access to `rest_auth`, which also imports drafts, scheduled, pending and private posts and held comments. The password comes from `CONTENTRAIN_WP_APP_PASSWORD` or a hidden prompt; `CONTENTRAIN_WP_AUTH=user:password` works without the flag. `--auth user:password` is deprecated (shell history) and warns |
+| `--include-emails` | Write author and commenter e-mail addresses from a WXR export into the store. Off by default: they are personal data and the store usually lands in git |
 | `--force` | Overwrite an existing `.contentrain/` |
 | `--json` | Machine-readable report, for scripting |
 

@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtemp, readFile, writeFile, mkdir, access } from 'node:fs/promises'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { mkdtemp, readFile, writeFile, mkdir, access, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -8,7 +8,24 @@ vi.mock('@clack/prompts', () => ({
   outro: vi.fn(),
   log: { message: vi.fn(), success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
   spinner: () => ({ start: vi.fn(), stop: vi.fn() }),
+  password: vi.fn(),
+  isCancel: () => false,
 }))
+
+// The REST fetch is replaced by a recorder that answers with the WXR fixture,
+// so the credential the command hands over can be checked without a network.
+const restCalls: Array<{ origin: string; auth?: { user: string; appPassword: string } }> = []
+vi.mock('@contentrain/wp-import', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@contentrain/wp-import')>()
+  return {
+    ...actual,
+    fetchRestRawIR: async (opts: { origin: string; auth?: { user: string; appPassword: string } }) => {
+      restCalls.push({ origin: opts.origin, auth: opts.auth })
+      const { raw } = await actual.parseWxr(WXR)
+      return { raw, warnings: [] }
+    },
+  }
+})
 
 const WXR = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
@@ -17,7 +34,7 @@ const WXR = `<?xml version="1.0" encoding="UTF-8"?>
   <link>https://cli.example</link>
   <language>en-US</language>
   <wp:wxr_version>1.2</wp:wxr_version>
-  <wp:author><wp:author_id>1</wp:author_id><wp:author_login>ada</wp:author_login><wp:author_display_name><![CDATA[Ada]]></wp:author_display_name></wp:author>
+  <wp:author><wp:author_id>1</wp:author_id><wp:author_login>ada</wp:author_login><wp:author_email>ada@cli.example</wp:author_email><wp:author_display_name><![CDATA[Ada]]></wp:author_display_name></wp:author>
   <wp:category><wp:term_id>2</wp:term_id><wp:category_nicename>news</wp:category_nicename><wp:cat_name><![CDATA[News]]></wp:cat_name></wp:category>
   <item>
     <title>Hello</title>
@@ -31,10 +48,18 @@ const WXR = `<?xml version="1.0" encoding="UTF-8"?>
     <wp:status>publish</wp:status>
     <wp:post_type>post</wp:post_type>
     <category domain="category" nicename="news"><![CDATA[News]]></category>
-    <wp:comment><wp:comment_id>500</wp:comment_id><wp:comment_author><![CDATA[Reader]]></wp:comment_author><wp:comment_date_gmt>2026-01-03 09:00:00</wp:comment_date_gmt><wp:comment_content><![CDATA[Nice]]></wp:comment_content><wp:comment_approved>1</wp:comment_approved><wp:comment_parent>0</wp:comment_parent></wp:comment>
+    <wp:comment><wp:comment_id>500</wp:comment_id><wp:comment_author><![CDATA[Reader]]></wp:comment_author><wp:comment_author_email>reader@cli.example</wp:comment_author_email><wp:comment_date_gmt>2026-01-03 09:00:00</wp:comment_date_gmt><wp:comment_content><![CDATA[Nice]]></wp:comment_content><wp:comment_approved>1</wp:comment_approved><wp:comment_parent>0</wp:comment_parent><wp:commentmeta><wp:meta_key>akismet_as_submitted</wp:meta_key><wp:meta_value><![CDATA[a:1:{s:20:"comment_author_email";s:18:"reader@cli.example";}]]></wp:meta_value></wp:commentmeta><wp:commentmeta><wp:meta_key>rating</wp:meta_key><wp:meta_value>5</wp:meta_value></wp:commentmeta></wp:comment>
+    <wp:comment><wp:comment_id>501</wp:comment_id><wp:comment_author><![CDATA[Anon]]></wp:comment_author><wp:comment_author_IP>198.51.100.23</wp:comment_author_IP><wp:comment_agent><![CDATA[Mozilla/5.0 (X11; Linux x86_64)]]></wp:comment_agent><wp:comment_date_gmt>2026-01-04 09:00:00</wp:comment_date_gmt><wp:comment_content><![CDATA[No e-mail here]]></wp:comment_content><wp:comment_approved>1</wp:comment_approved><wp:comment_parent>0</wp:comment_parent><wp:commentmeta><wp:meta_key>akismet_as_submitted</wp:meta_key><wp:meta_value><![CDATA[a:2:{s:7:"user_ip";s:13:"198.51.100.23";s:10:"user_agent";s:31:"Mozilla/5.0 (X11; Linux x86_64)";}]]></wp:meta_value></wp:commentmeta><wp:commentmeta><wp:meta_key>_user_ip</wp:meta_key><wp:meta_value>2001:db8::7</wp:meta_value></wp:commentmeta></wp:comment>
   </item>
 </channel>
 </rss>`
+
+// Personal data that must never reach disk by default: the fixture's
+// addresses, any IPv4, any IPv6 (`::` form, as WordPress stores them), and a
+// browser user agent.
+const PII = [/ada@cli\.example|reader@cli\.example/, /\b\d{1,3}(?:\.\d{1,3}){3}\b/, /\b[0-9a-f]{1,4}(?::[0-9a-f]{1,4})*::(?:[0-9a-f]{1,4})?\b/i, /Mozilla\/\d/]
+const piiLeaks = (files: Record<string, string>, patterns = PII) =>
+  Object.entries(files).flatMap(([p, text]) => patterns.filter((re) => re.test(text)).map((re) => `${p}: ${re.source}`))
 
 const run = async (args: Record<string, unknown>) => {
   const mod = await import('../../src/commands/import.js')
@@ -47,6 +72,7 @@ describe('import command', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
+    restCalls.length = 0
     process.exitCode = undefined
     dir = await mkdtemp(join(tmpdir(), 'cr-import-'))
     wxrPath = join(dir, 'export.xml')
@@ -85,5 +111,117 @@ describe('import command', () => {
   it('errors on a missing source file', async () => {
     await run({ source: join(dir, 'yok.xml'), out: dir })
     expect(process.exitCode).toBe(1)
+  })
+
+  // Every file the command writes, anywhere under the output directory.
+  const writtenFiles = async (root: string): Promise<Record<string, string>> => {
+    const entries = await readdir(root, { recursive: true, withFileTypes: true })
+    const files = entries.filter((e) => e.isFile()).map((e) => join(e.parentPath, e.name)).filter((p) => p !== wxrPath)
+    return Object.fromEntries(await Promise.all(files.map(async (p) => [p.slice(root.length + 1), await readFile(p, 'utf8')] as const)))
+  }
+
+  it('no written file carries an e-mail, IP or user agent by default (store, comments export, report, source map)', async () => {
+    await run({ source: wxrPath, out: dir })
+    expect(process.exitCode).toBeUndefined()
+    const files = await writtenFiles(dir)
+    expect(Object.keys(files)).toEqual(expect.arrayContaining(['comments-export.json', 'import-report.json', 'entry-source-map.json']))
+    expect(piiLeaks(files)).toEqual([])
+    // The comments themselves still travel, with non-personal meta intact.
+    const exp = JSON.parse(files['comments-export.json']!)
+    expect(exp.comments).toHaveLength(2)
+    const byAuthor = Object.fromEntries(exp.comments.map((c: { author: string }) => [c.author, c]))
+    expect(byAuthor.Reader).toMatchObject({ email: null, meta: { rating: '5' } })
+    expect(Object.keys(byAuthor.Reader.meta)).toEqual(['rating'])
+    // No e-mail left, yet the IP and user agent in its Akismet meta still must not travel.
+    expect(byAuthor.Anon.meta).toBeUndefined()
+  })
+
+  it('--include-emails carries them into the store and the comments export', async () => {
+    await run({ source: wxrPath, out: dir, 'include-emails': true })
+    const files = await writtenFiles(dir)
+    expect(files['comments-export.json']).toContain('reader@cli.example')
+    expect(files['.contentrain/content/blog/authors/data.json']).toContain('ada@cli.example')
+    // --include-emails covers e-mails only: no IP or user agent, anywhere.
+    expect(piiLeaks(files, PII.slice(1))).toEqual([])
+  })
+
+  it('leaves author and commenter e-mails out of the store by default', async () => {
+    await run({ source: wxrPath, out: dir })
+    expect(process.exitCode).toBeUndefined()
+    const authors = await readFile(join(dir, '.contentrain/content/blog/authors/data.json'), 'utf8')
+    const comments = await readFile(join(dir, '.contentrain/content/blog/comments/data.json'), 'utf8')
+    expect(JSON.parse(authors)).not.toEqual({})
+    expect(authors).not.toContain('ada@cli.example')
+    expect(comments).not.toContain('reader@cli.example')
+    expect(comments).toContain('Reader')
+  })
+
+  it('--include-emails writes them', async () => {
+    await run({ source: wxrPath, out: dir, 'include-emails': true })
+    expect(process.exitCode).toBeUndefined()
+    expect(await readFile(join(dir, '.contentrain/content/blog/authors/data.json'), 'utf8')).toContain('ada@cli.example')
+    expect(await readFile(join(dir, '.contentrain/content/blog/comments/data.json'), 'utf8')).toContain('reader@cli.example')
+  })
+
+  describe('REST credential', () => {
+    const saved = { ...process.env }
+    afterEach(() => {
+      process.env = { ...saved }
+    })
+
+    it('reads user:password from CONTENTRAIN_WP_AUTH, with no deprecation warning', async () => {
+      process.env.CONTENTRAIN_WP_AUTH = 'editor:abcd efgh:ijkl'
+      await run({ source: 'https://cli.example', out: dir })
+      expect(process.exitCode).toBeUndefined()
+      expect(restCalls).toEqual([{ origin: 'https://cli.example', auth: { user: 'editor', appPassword: 'abcd efgh:ijkl' } }])
+      const { log } = await import('@clack/prompts')
+      expect(vi.mocked(log.warning).mock.calls.flat().join(' ')).not.toContain('deprecated')
+    })
+
+    it('--auth <user> takes the password from CONTENTRAIN_WP_APP_PASSWORD', async () => {
+      process.env.CONTENTRAIN_WP_APP_PASSWORD = 'secret-pw'
+      await run({ source: 'https://cli.example', out: dir, auth: 'editor' })
+      expect(restCalls[0]?.auth).toEqual({ user: 'editor', appPassword: 'secret-pw' })
+    })
+
+    it('--auth user:password still works but warns that it is deprecated', async () => {
+      await run({ source: 'https://cli.example', out: dir, auth: 'editor:argv-pw' })
+      expect(restCalls[0]?.auth).toEqual({ user: 'editor', appPassword: 'argv-pw' })
+      const { log } = await import('@clack/prompts')
+      expect(vi.mocked(log.warning).mock.calls.flat().join(' ')).toContain('deprecated')
+    })
+
+    it('no credential anywhere → anonymous REST', async () => {
+      delete process.env.CONTENTRAIN_WP_AUTH
+      delete process.env.CONTENTRAIN_WP_APP_PASSWORD
+      await run({ source: 'https://cli.example', out: dir })
+      expect(restCalls[0]?.auth).toBeUndefined()
+    })
+  })
+})
+
+const loadResolver = async () => (await import('../../src/commands/import.js')).resolveRestAuth
+
+describe('resolveRestAuth', () => {
+  it('prompts for the password of --auth <user> when interactive and no env is set', async () => {
+    const resolveRestAuth = await loadResolver()
+    const prompt = vi.fn(async () => 'typed-pw')
+    const r = await resolveRestAuth({ auth: 'editor', env: {}, interactive: true, prompt })
+    expect(prompt).toHaveBeenCalledWith('editor')
+    expect(r).toEqual({ auth: { user: 'editor', appPassword: 'typed-pw' } })
+  })
+
+  it('errors instead of prompting when not interactive', async () => {
+    const resolveRestAuth = await loadResolver()
+    const prompt = vi.fn(async () => 'typed-pw')
+    const r = await resolveRestAuth({ auth: 'editor', env: {}, interactive: false, prompt })
+    expect(prompt).not.toHaveBeenCalled()
+    expect(r.error).toContain('CONTENTRAIN_WP_APP_PASSWORD')
+  })
+
+  it('--auth wins over CONTENTRAIN_WP_AUTH; a malformed env value is an error', async () => {
+    const resolveRestAuth = await loadResolver()
+    expect((await resolveRestAuth({ auth: 'a:b', env: { CONTENTRAIN_WP_AUTH: 'c:d' }, interactive: false })).auth).toEqual({ user: 'a', appPassword: 'b' })
+    expect((await resolveRestAuth({ env: { CONTENTRAIN_WP_AUTH: 'no-colon' }, interactive: false })).error).toContain('user:password')
   })
 })

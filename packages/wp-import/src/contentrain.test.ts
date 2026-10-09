@@ -94,6 +94,67 @@ describe('Elementor landing pages are pages', () => {
   })
 })
 
+const authorsOf = (files: Record<string, string>) => Object.values(JSON.parse(files['.contentrain/content/blog/authors/data.json']!)) as Array<Record<string, unknown>>
+const commentsOf = (files: Record<string, string>) => Object.values(JSON.parse(files['.contentrain/content/blog/comments/data.json']!)) as Array<Record<string, unknown>>
+
+describe('personal data: e-mail addresses stay out of the store unless asked for', () => {
+  it('WXR carries author and commenter e-mails, but the default store holds none', async () => {
+    const { raw, result } = await load()
+    expect(raw.authors.some((a) => a.email === 'ada@example.com')).toBe(true)
+    expect(raw.comments!.some((c) => c.email === 'r@example.com')).toBe(true)
+    const all = Object.values(result.files).join('\n')
+    expect(all).not.toContain('ada@example.com')
+    expect(all).not.toContain('r@example.com')
+    expect(authorsOf(result.files).every((a) => !('email' in a))).toBe(true)
+    expect(commentsOf(result.files).every((c) => !('email' in c))).toBe(true)
+    // The schema keeps the field, so an opted-in import and a default one share models.
+    expect(JSON.parse(result.files['.contentrain/models/authors.json']!).fields.email.type).toBe('email')
+  })
+
+  it('the comments export drops commenter e-mails (and meta holding one) unless includeEmails', async () => {
+    const { raw, result } = await load()
+    const withMeta = structuredClone(raw)
+    for (const c of withMeta.comments!) c.meta = { akismet_as_submitted: { comment_author_email: c.email }, rating: 5 }
+    const exp = buildCommentsExport(withMeta, result.entry_source_map, { generated_at: '2026-10-09T00:00:00Z' })
+    expect(JSON.stringify(exp)).not.toContain('r@example.com')
+    expect(exp.comments.length).toBeGreaterThan(0)
+    expect(exp.comments.every((c) => c.email === null && c.meta?.rating === 5)).toBe(true)
+    // The commenter with an address loses the meta that repeats it; non-personal meta stays.
+    const reader = exp.comments.find((c) => c.author === 'Reader')!
+    expect(reader.meta).toEqual({ rating: 5 })
+    const opted = buildCommentsExport(withMeta, result.entry_source_map, { generated_at: '2026-10-09T00:00:00Z', includeEmails: true })
+    expect(opted.comments.find((c) => c.author === 'Reader')!.email).toBe('r@example.com')
+  })
+
+  it('IP, user agent and avatar meta never leave, by key, even with no e-mail and with includeEmails', async () => {
+    const { raw, result } = await load()
+    const withPii = structuredClone(raw)
+    for (const c of withPii.comments!) {
+      c.email = null
+      c.meta = {
+        akismet_as_submitted: { user_ip: '203.0.113.7', user_agent: 'Mozilla/5.0 (X11; Linux x86_64)' },
+        akismet_history: [{ event: 'check-ham' }],
+        _wp_user_ip: '2001:db8::1',
+        author_avatar_urls: { 96: 'https://secure.gravatar.com/avatar/abc' },
+        rating: 5,
+      }
+    }
+    for (const includeEmails of [false, true]) {
+      const exp = buildCommentsExport(withPii, result.entry_source_map, { generated_at: '2026-10-09T00:00:00Z', includeEmails })
+      const text = JSON.stringify(exp)
+      for (const needle of ['203.0.113.7', '2001:db8::1', 'Mozilla/', 'gravatar', 'akismet']) expect(text, needle).not.toContain(needle)
+      expect(exp.comments.every((c) => c.meta?.rating === 5)).toBe(true)
+    }
+  })
+
+  it('includeEmails: true writes them', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const { files } = rawToContentrain(raw, { updatedBy: 'test', includeEmails: true })
+    expect(authorsOf(files).map((a) => a.email)).toContain('ada@example.com')
+    expect(commentsOf(files).map((c) => c.email)).toContain('r@example.com')
+  })
+})
+
 describe('rawToContentrain', () => {
   it('produces a PATH_PATTERNS-conformant canonical file map', async () => {
     const { result } = await load()

@@ -36,8 +36,10 @@ REST returns more than WXR (rendered HTML, media metadata, per-type discovery); 
 **Private or partial REST.** A site can answer `/wp-json` but hide drafts, private types and some fields. An Application Password lifts the run to `rest_auth`:
 
 ```bash
-npx contentrain import https://example.com --auth "user:xxxx xxxx xxxx xxxx"
+CONTENTRAIN_WP_APP_PASSWORD="xxxx xxxx xxxx xxxx" npx contentrain import https://example.com --auth user
 ```
+
+Ask the user to set the password in the environment (or run the command themselves for the hidden prompt). Never put `user:password` on the command line: it lands in shell history. A WXR import leaves author and commenter e-mail addresses out of the store; add `--include-emails` only when the user asks and the repository stays private.
 
 Check first, so you tell the user what they will get rather than discovering it after:
 

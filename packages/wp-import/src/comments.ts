@@ -28,9 +28,54 @@ export function selectComments(raw: RawIR): { comments: RawComment[]; excluded: 
   return { comments, excluded }
 }
 
-export function buildCommentsExport(raw: RawIR, entries: EntrySourceMap, opts?: { generated_at?: string }): CommentsExport {
+/**
+ * Comment meta keys that hold a commenter's personal data: IP, browser user
+ * agent, e-mail, avatar URLs (a Gravatar URL carries the e-mail's hash). Same
+ * list as Migrate's intake (`PII_META_KEY`), plus every `akismet_*` key:
+ * `akismet_as_submitted` stores the whole submission (IP, user agent, e-mail,
+ * referrer) and the rest is spam-check bookkeeping. Matched by key, so a
+ * comment with no e-mail still loses its IP and user agent.
+ */
+export const COMMENT_PII_META_KEY = /(?:^|[_-])(?:ip|ip_address|author_ip|user_ip|agent|user_agent|author_agent|email|author_email|mail|avatar|avatar_url|avatar_urls|author_avatar_urls)$|^_?akismet_/i
+
+/** Anything shaped like an e-mail address, anywhere in a serialized value. */
+const EMAIL_RE = /[^\s@"'<>;:]+@[^\s@"'<>;:]+\.[a-z]{2,}/i
+
+const serialized = (v: unknown): string => (typeof v === 'string' ? v : JSON.stringify(v) ?? '')
+
+/**
+ * A comment as it may leave the site. Meta under a personal-data key is always
+ * dropped: IPs and user agents are never exported. Without `includeEmails`,
+ * `email` becomes null and any remaining meta whose value holds an address is
+ * dropped too (an unknown plugin's own key).
+ */
+function exportableComment(c: RawComment, includeEmails: boolean): RawComment {
+  const out: RawComment = includeEmails ? { ...c } : { ...c, email: null }
+  if (c.meta) {
+    const kept = Object.entries(c.meta).filter(([k, v]) => !COMMENT_PII_META_KEY.test(k) && (includeEmails || !EMAIL_RE.test(serialized(v))))
+    if (kept.length) out.meta = Object.fromEntries(kept)
+    else delete out.meta
+  }
+  return out
+}
+
+export interface CommentsExportOptions {
+  generated_at?: string
+  /**
+   * Carry commenter e-mail addresses. Default `false`: the export is written
+   * next to the store and is personal data of third parties; a receiving
+   * service that needs addresses asks for them. IPs, user agents and avatar
+   * URLs are never carried, with or without this option.
+   */
+  includeEmails?: boolean
+}
+
+export function buildCommentsExport(raw: RawIR, entries: EntrySourceMap, opts?: CommentsExportOptions): CommentsExport {
   const threadsClosed = raw.posts.filter((p) => p.comment_status && p.comment_status !== 'open').map((p) => p.id)
-  const { comments, excluded } = selectComments(raw)
+  const selected = selectComments(raw)
+  const excluded = selected.excluded
+  const includeEmails = opts?.includeEmails === true
+  const comments = selected.comments.map((c) => exportableComment(c, includeEmails))
   return {
     version: MIGRATION_CONTRACT_VERSION,
     format: COMMENTS_EXPORT_FORMAT,
