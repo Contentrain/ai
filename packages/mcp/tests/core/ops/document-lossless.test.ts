@@ -56,3 +56,17 @@ describe('planContentSave — frontmatter it cannot read survives a save', () =>
     expect(plan.advisories.some(a => a.includes('"seo"'))).toBe(true)
   })
 })
+
+// #521: the layout around the body survives a save too, with or without unreadable lines.
+describe('planContentSave — the layout around the body survives a save', () => {
+  it.each([
+    ['no blank line after ---', '---\ntitle: A\nslug: a\n---\nBody\n'],
+    ['three blank lines after ---', '---\ntitle: A\nslug: a\n---\n\n\n\nBody\n'],
+    ['a double trailing newline', '---\ntitle: A\nslug: a\n---\n\nBody\n\n'],
+    ['no final newline', '---\ntitle: A\nslug: a\n---\n\nBody'],
+    ['CRLF', '---\r\ntitle: A\r\nslug: a\r\n---\r\nBody\r\n\r\n'],
+  ])('%s is byte-identical after saving an unchanged field', async (_name, raw) => {
+    const { md } = await saveTitle(raw, { title: 'A' })
+    expect(md).toBe(raw)
+  })
+})
