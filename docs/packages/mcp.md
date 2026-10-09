@@ -295,7 +295,7 @@ Agent drivers treat `capability_required` as a retry signal. See [Providers & Tr
 
 ## Transports
 
-- **stdio** — `contentrain serve --stdio` or `npx contentrain-mcp`. IDE agents (Claude Code, Cursor, Windsurf) connect over stdin/stdout.
+- **stdio** — `contentrain serve --stdio` or `npx -y @contentrain/mcp`. IDE agents (Claude Code, Cursor, Windsurf) connect over stdin/stdout.
 - **HTTP** — `contentrain serve --mcpHttp --authToken $TOKEN` or the programmatic `startHttpMcpServer({...})` / `startHttpMcpServerWith({ provider })` exports. Streamable HTTP at `POST /mcp` with secure-by-default Bearer auth. See the [HTTP Transport guide](/guides/http-transport).
 
 Both transports serve the same tool surface and the same JSON response shapes.
