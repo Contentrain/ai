@@ -1,5 +1,13 @@
 # @contentrain/emitter-astro
 
+## 0.18.46
+
+### Patch Changes
+
+- abfa54c: The comments client keeps a thread the page already drew (a migration's approved comments, rendered at build time) when Studio cannot answer, and shows no loading swap over it; Studio's answer still replaces it. The Astro starter draws those comments from `src/data/comments.json`, renders an unbound form with no address as an honest `needs_endpoint` block instead of nothing, and sends a form to WordPress only on the owner's explicit choice, as a live link.
+- Updated dependencies [04ce5eb]
+  - @contentrain/types@1.63.1
+
 ## 0.18.45
 
 ### Patch Changes
