@@ -19,10 +19,11 @@
         "primary",
         "secondary",
         "ghost",
-        "link"
+        "link",
+        "none"
       ],
       "default": "primary",
-      "description": "How the opening button looks: a filled or outlined button, or a text link."
+      "description": "How the opening button looks: a filled or outlined button, or a text link. none: no button of its own and no section band; opened by a link to #<id> or a commandfor button elsewhere on the page, or an address ending in #<id> (a popup drawn over the page, its opener in the content)."
     },
     "size": {
       "options": [

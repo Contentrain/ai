@@ -9,6 +9,11 @@
 // opens it with no script where Invoker Commands exist (`command`/`commandfor`); a small script covers browsers
 // without them and closes it on a click outside. With scripting off altogether, the dialog's content is laid out in
 // the section itself, under where the button was: nothing is hidden and nothing blocks the page.
+//
+// `triggerStyle: 'none'`: the dialog has no button of its own and no section band. It is opened from elsewhere on the
+// page, as the source popup was: a link to `#<id>` (the migrated popup opener), a `commandfor` button, or an address
+// that ends in `#<id>`. Used where the popup is drawn over the page (the starter's overlays, after the footer). With
+// scripting off its content sits there as a plain block, and the `#<id>` link jumps to it.
 import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
 import Section from '../_shared/Section.astro'
@@ -35,6 +40,7 @@ const dialog = tv({
       secondary: { trigger: 'bg-ink text-surface hover:bg-accent hover:text-accent-ink' },
       ghost: { trigger: 'border border-current bg-transparent text-current hover:bg-ink/5' },
       link: { trigger: 'bg-transparent p-0 text-[color:var(--color-link,var(--color-accent))] underline underline-offset-4' },
+      none: {},
     },
     size: { sm: { box: '[--dialog-width:28rem]' }, md: { box: '[--dialog-width:40rem]' }, lg: { box: '[--dialog-width:56rem]' } },
     // Where the button sits in the section.
@@ -54,7 +60,8 @@ interface Props {
   actions?: ActionInput[] | undefined
   /** Accessible name of the close button (ui-strings dialog.close). */
   closeLabel?: string | undefined
-  triggerStyle?: 'primary' | 'secondary' | 'ghost' | 'link' | undefined
+  /** `none`: no button of its own; opened by a link to `#<id>` or a `commandfor` button elsewhere on the page. */
+  triggerStyle?: 'primary' | 'secondary' | 'ghost' | 'link' | 'none' | undefined
   size?: 'sm' | 'md' | 'lg' | undefined
   align?: 'start' | 'center' | 'end' | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
@@ -81,16 +88,20 @@ const align = given ?? measured?.align
 const onAccent = tone === 'accent' && !measured?.bg?.image
 const s = dialog({ triggerStyle: onAccent && (triggerStyle ?? 'primary') === 'primary' ? 'secondary' : triggerStyle, size, align })
 const headingId = `${id}-title`
+// Opened only from elsewhere: no button, no band of its own (the page's opener carries the source's label).
+const external = triggerStyle === 'none'
+const Frame = external ? Fragment : Section
+const frame = external ? {} : { measured, tone, spacing: 'md' as const, id: `${id}-section` }
 // Invoker Commands attributes are not in Astro's button types.
 const invoker = { command: 'show-modal', commandfor: id }
 // Scripting off: the content takes the button's place in the section, as a plain block, and the close button goes
 // (it can only close an open dialog). Styles scoped by the dialog's id (a checked token, nothing from content); the selectors win over the UA sheet by specificity.
 const noscript = `<style>[data-kit-dialog="${id}"]>[data-kit-dialog-open],#${id} form[method=dialog]{display:none}#${id}:not([open]){display:block;position:static;margin:0;width:100%;max-width:none;max-height:none;box-shadow:none}</style>`
 ---
-<Section measured={measured} tone={tone} spacing="md" id={`${id}-section`}>
-  <div class={s.root()} data-kit-dialog={id} data-kit-trigger={trigger} data-cr-fact={factId}>
+<Frame {...frame}>
+  <div class={external ? undefined : s.root()} data-kit-dialog={id} data-kit-external={external || undefined} data-kit-trigger={trigger} data-cr-fact={factId}>
     <noscript set:html={noscript} />
-    <button type="button" class={s.trigger()} data-kit-dialog-open aria-haspopup="dialog" {...invoker}>{triggerLabel}</button>
+    {!external && <button type="button" class={s.trigger()} data-kit-dialog-open aria-haspopup="dialog" {...invoker}>{triggerLabel}</button>}
     <dialog id={id} class={s.box()} open={open || undefined} aria-labelledby={heading ? headingId : undefined} aria-label={heading ? undefined : triggerLabel}>
       <div class={s.inner()}>
         {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
@@ -106,7 +117,7 @@ const noscript = `<style>[data-kit-dialog="${id}"]>[data-kit-dialog-open],#${id}
       </form>
     </dialog>
   </div>
-</Section>
+</Frame>
 
 <script>
   // Browsers without Invoker Commands: the button opens the dialog here. Everywhere, a click on the backdrop closes it.
@@ -114,9 +125,22 @@ const noscript = `<style>[data-kit-dialog="${id}"]>[data-kit-dialog-open],#${id}
   for (const root of document.querySelectorAll<HTMLElement>('[data-kit-dialog]')) {
     const dialog = root.querySelector('dialog')
     const open = root.querySelector<HTMLButtonElement>('[data-kit-dialog-open]')
-    if (!dialog || !open || root.dataset.ready !== undefined) continue
+    if (!dialog || (!open && root.dataset.kitExternal === undefined) || root.dataset.ready !== undefined) continue
     root.dataset.ready = ''
-    if (!invokers) open.addEventListener('click', () => { if (!dialog.open) dialog.showModal() })
+    const show = () => { if (!dialog.open) dialog.showModal() }
+    if (open && !invokers) open.addEventListener('click', show)
+    // Opened from elsewhere (`triggerStyle: 'none'`): a link to `#<id>` anywhere on the page, a `commandfor` button where
+    // the browser has no Invoker Commands, and an address that arrives with `#<id>`. Ids are plain tokens (checked above).
+    if (root.dataset.kitExternal !== undefined) {
+      for (const link of document.querySelectorAll<HTMLAnchorElement>(`a[href="#${dialog.id}"]`)) {
+        link.setAttribute('aria-haspopup', 'dialog')
+        link.addEventListener('click', (event) => { event.preventDefault(); show() })
+      }
+      if (!invokers) for (const button of document.querySelectorAll<HTMLButtonElement>(`button[commandfor="${dialog.id}"]`)) button.addEventListener('click', show)
+      const fromHash = () => { if (location.hash === `#${dialog.id}`) show() }
+      fromHash()
+      addEventListener('hashchange', fromHash)
+    }
     // The inner box fills the dialog and owns the scrollbar, so a click whose target is the dialog itself landed on the backdrop.
     dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close() })
   }

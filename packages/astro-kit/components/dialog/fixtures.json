@@ -80,5 +80,24 @@
       "open": true,
       "tone": "accent"
     }
+  },
+  {
+    "name": "external-open",
+    "props": {
+      "id": "fx-dialog-ext",
+      "triggerLabel": "Sign up now",
+      "triggerStyle": "none",
+      "open": true,
+      "heading": "Get the monthly guide",
+      "html": "<p>One email a month: what we built, what we learned.</p>",
+      "actions": [
+        {
+          "label": "Read past issues",
+          "href": "/journal/"
+        }
+      ],
+      "closeLabel": "Close",
+      "trigger": "click"
+    }
   }
 ]

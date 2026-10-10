@@ -35,6 +35,8 @@ const { kind, html, items, title, panel, fact, previousLabel, nextLabel, closeLa
 // Selectors and ids go into attributes only, never into markup or a script; an empty one is left out.
 const attr = (value: string | undefined): string | undefined => (value && value.length <= 300 ? value : undefined)
 const factId = fact && /^[\w:.-]{1,120}$/.test(fact) ? fact : undefined
+// Scripting off: a dialog the island holds closed is laid out in place, so its content is never hidden. A fixed sheet.
+const NOSCRIPT = '<style>.cr-behavior dialog:not([open]){display:block;position:static;margin:0;max-width:none}</style>'
 ---
 {html && (
   <Section tone={tone} measured={measured}>
@@ -50,6 +52,7 @@ const factId = fact && /^[\w:.-]{1,120}$/.test(fact) ? fact : undefined
       data-cr-close={closeLabel}
       set:html={html}
     />
+    <noscript set:html={NOSCRIPT} />
   </Section>
 )}
 
