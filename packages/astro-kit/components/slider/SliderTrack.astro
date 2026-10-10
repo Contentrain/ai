@@ -14,7 +14,8 @@ import { type ActionInput, type ImageInput, type MeasuredStyle } from '../_share
 
 const slider = tv({
   slots: {
-    viewport: 'flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth group-data-[ready]:snap-none group-data-[ready]:overflow-hidden [scrollbar-width:none] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+    // A block viewport around the flex row, as Embla's own markup has it: the row is the container Embla moves.
+    viewport: 'snap-x snap-mandatory overflow-x-auto scroll-smooth group-data-[ready]:snap-none group-data-[ready]:overflow-hidden [scrollbar-width:none] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
     slide: 'relative min-w-0 shrink-0 snap-start overflow-hidden',
     image: 'w-full object-cover',
     caption: 'flex flex-col items-start gap-2',
@@ -140,6 +141,7 @@ const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-cente
     const prev = root.querySelector<HTMLButtonElement>('[data-prev]')
     const next = root.querySelector<HTMLButtonElement>('[data-next]')
     const dots = root.querySelector<HTMLElement>('[data-dots]')
+    const track = root.querySelector<HTMLElement>('[data-container]')
     prev?.addEventListener('click', () => embla.scrollPrev())
     next?.addEventListener('click', () => embla.scrollNext())
     // The row takes focus (the buttons are hidden on phones): the arrow keys page it, and a slide change is announced.
@@ -150,10 +152,13 @@ const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-cente
       else embla.scrollPrev()
     })
     // No autoplay: the carousel only moves when asked, so a polite announcement of the slide is right.
-    root.querySelector('[data-container]')?.setAttribute('aria-live', 'polite')
+    track?.setAttribute('aria-live', 'polite')
 
     const label = root.dataset.slideLabel ?? 'Slide'
-    const buttons = embla.scrollSnapList().map((_, index) => {
+    // One dot per snap, drawn again whenever Embla measures again: the snaps of a carousel set up before its page was
+    // laid out (a background tab, a frame sized later) are not the ones it ends up with.
+    let buttons: HTMLButtonElement[] = []
+    const drawDots = () => { buttons = embla.scrollSnapList().map((_, index) => {
       const dot = document.createElement('button')
       dot.type = 'button'
       // A 24px target around a 10px dot (WCAG 2.5.8): on phones the dots are the only controls.
@@ -163,16 +168,27 @@ const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-cente
       dot.append(mark)
       dot.setAttribute('aria-label', `${label} ${index + 1}`)
       dot.addEventListener('click', () => embla.scrollTo(index))
-      dots?.append(dot)
       return dot
     })
+    dots?.replaceChildren(...buttons) }
+    drawDots()
     const sync = () => {
       const selected = embla.selectedScrollSnap()
       buttons.forEach((dot, index) => dot.setAttribute('aria-current', String(index === selected)))
       if (prev) prev.disabled = !embla.canScrollPrev()
       if (next) next.disabled = !embla.canScrollNext()
     }
-    embla.on('select', sync).on('reInit', sync)
+    embla.on('select', sync).on('reInit', () => { drawDots(); sync() })
     sync()
+    // Set up before the layout was final, Embla measures once more when it is: the page loaded, its fonts in, the tab in
+    // view. A background tab lays nothing out (ctrl/cmd-click), so its carousel had one snap and a dead "next" until then;
+    // Embla's own resize watch does not fire there, since nothing changed size while the tab was hidden. Only a carousel
+    // whose row overflows while Embla can page neither way is measured again: one that already pages is left where it is.
+    const measure = () => {
+      if (track && track.scrollWidth > viewport.clientWidth + 1 && !embla.canScrollNext() && !embla.canScrollPrev()) embla.reInit()
+    }
+    if (document.readyState !== 'complete') addEventListener('load', measure, { once: true })
+    void document.fonts?.ready.then(measure)
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') measure() })
   }
 </script>
