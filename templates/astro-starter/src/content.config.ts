@@ -89,6 +89,7 @@ export const collections = {
       menu_order: z.number().int().optional(),
       modified_at: z.coerce.date().optional(),
       parent: reference('pages').optional(),
+      path_prefix: z.string().optional(),
       published_at: z.coerce.date().optional(),
       seo: z.object({
       canonical: z.string().optional(),

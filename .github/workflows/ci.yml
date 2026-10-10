@@ -84,6 +84,7 @@ jobs:
           node scripts/starter-gates.mjs --local-sdk --fixture unicode-slugs
           node scripts/starter-gates.mjs --local-sdk --fixture category-permalinks
           node scripts/starter-gates.mjs --local-sdk --fixture time-zone
+          node scripts/starter-gates.mjs --local-sdk --fixture page-prefix
           node scripts/starter-gates.mjs --local-sdk --fixture og-fields
           node scripts/starter-gates.mjs --local-sdk --fixture ar-site
           node scripts/starter-gates.mjs --local-sdk --fixture comments
