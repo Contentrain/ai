@@ -32,6 +32,8 @@ They read its design tokens and pass its gates: `astro check` with the
 | `pagination` | WordPress-style `/page/N/` links | none |
 | `breadcrumb` | Ancestors, then the current page, optional JSON-LD | none |
 | `band` | The styled fallback section: heading, lead, image, a grid of items (figure, title, detail, text, points, link) and buttons, in the measured frame | none |
+| `dialog` | A popup the visitor opens: a button and a modal `<dialog>` with text, buttons and a `form` slot; never opens by itself | a few lines, no dependency |
+| `behavior` | A behavior island: a source widget no component carries (slider, tabs, accordion, counter, toggle, filter, in-page dialog, anchor links, image lightbox), kept as its own markup and wired by one vanilla module; static and readable without it | `_shared/behaviors.ts`, no dependency |
 
 Each component lives in `components/<id>/`:
 

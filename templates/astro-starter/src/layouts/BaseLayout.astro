@@ -110,6 +110,7 @@ const wpQueries = isHome ? await queryMap() : {}
       tagline={siteConfig.chrome?.tagline ? site.tagline : undefined}
       brandSize={siteConfig.chrome?.brand}
       bordered={siteConfig.chrome?.header?.border === false ? false : undefined}
+      position={siteConfig.chrome?.header?.sticky ? 'sticky' : undefined}
       brandWeight={cssWeight(siteConfig.chrome?.header?.brandWeight)}
       brandTracking={cssSpacing(siteConfig.chrome?.header?.brandTracking)}
       offsetTop={cssLength(siteConfig.chrome?.header?.offsetTop)}
