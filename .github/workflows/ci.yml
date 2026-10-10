@@ -71,7 +71,9 @@ jobs:
         # and once more with the demo's media served from a stand-in Studio host,
         # a Turkish-only site (config default locale tr, site.language tr),
         # an Arabic one (right to left: <html lang="ar" dir="rtl">)
-        # and a site whose post addresses are ja / ar / tr / de words (unicode-slugs).
+        # a site whose post addresses are ja / ar / tr / de words (unicode-slugs),
+        # a migrated comment thread drawn at build time (unbound and bound to Studio)
+        # and a form the owner kept on WordPress.
         run: |
           node scripts/starter-gates.mjs --local-sdk
           node scripts/starter-gates.mjs --local-sdk --fixture wp-demo
@@ -83,6 +85,9 @@ jobs:
           node scripts/starter-gates.mjs --local-sdk --fixture category-permalinks
           node scripts/starter-gates.mjs --local-sdk --fixture og-fields
           node scripts/starter-gates.mjs --local-sdk --fixture ar-site
+          node scripts/starter-gates.mjs --local-sdk --fixture comments
+          node scripts/starter-gates.mjs --local-sdk --fixture comments --media studio
+          node scripts/starter-gates.mjs --local-sdk --fixture forms-wordpress
 
       - name: Kit components render as their baselines
         # Every fixture of every astro-kit component, in a copy of the starter,

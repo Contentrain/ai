@@ -134,10 +134,22 @@ are, and forms and comments fall back as described below.
 A page whose `form` field names a model shows that form under its body; a post
 with `comments_open` shows its thread. The form's fields (the model's public
 fields, labels and select options) are in the page HTML, and the script puts
-Studio's live form in their place. Without the binding, a form whose site kept
-WordPress (`features.wordpress`) shows the same fields, disabled, with a line
-saying where it is sent and a link to it there. Otherwise both render nothing
-and no script is shipped. `src/lib/studio/embed.ts` is the browser client for
+Studio's live form in their place. Without the binding, a form shows the
+address the source site published to write to (`features.email`); with none,
+its place says so (`data-state="needs_endpoint"`: the fields as text and "This
+form needs Studio or a form endpoint to receive messages"), never a form that
+vanishes. A form goes to the WordPress site only when the owner chose it
+(`features.forms.home: 'wordpress'`): a line saying where it is sent and a live
+link there.
+
+Comments a migration carried are drawn at build time from
+`src/data/comments.json` (`src/lib/comments.ts`): per entry, the approved
+comments as display name, date and plain text, threaded, with no email, IP or
+avatar. Inside the Studio mount they are the page's thread until Studio answers,
+which replaces them, and they stay when it cannot (an error, an inactive
+subscription). Unbound, they show on their own. A thread closed at the source,
+or with `comments_open` off, shows read-only with "Comments are closed". With
+neither Studio nor a carried thread, nothing renders and no script is shipped. `src/lib/studio/embed.ts` is the browser client for
 Studio's public forms and comments API; its exports are its interface, so knip
 does not report the ones this site does not call.
 

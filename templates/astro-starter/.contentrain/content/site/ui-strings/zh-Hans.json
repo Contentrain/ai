@@ -35,6 +35,7 @@
   "footer.rss": "RSS 订阅",
   "form.honeypot": "此栏请留空",
   "form.mailto": "请写信至",
+  "form.needs_endpoint": "此表单需要 Studio 或表单接收地址才能接收消息。",
   "form.noscript": "此表单需要 JavaScript。",
   "form.send": "发送",
   "form.sending": "发送中…",

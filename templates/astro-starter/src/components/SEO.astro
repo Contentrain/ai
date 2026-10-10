@@ -2,6 +2,7 @@
 // Everything a page says about itself to search engines and link previews:
 // title, description, canonical, robots, Open Graph, Twitter, RSS discovery
 // and one JSON-LD graph.
+import { withBase } from '../lib/base'
 import { serializeLd } from '../lib/seo'
 
 interface Props {
@@ -32,14 +33,14 @@ const {
 } = Astro.props
 
 const robots = [noindex ? 'noindex' : 'index', nofollow ? 'nofollow' : 'follow', 'max-image-preview:large'].join(', ')
-const feed = new URL('rss.xml', Astro.site ?? canonical).href
+const feed = new URL(withBase('/rss.xml'), Astro.site ?? canonical).href
 ---
 <title>{title}</title>
 {description && <meta name="description" content={description} />}
 <link rel="canonical" href={canonical} />
 <meta name="robots" content={robots} />
 <link rel="alternate" type="application/rss+xml" title={siteName} href={feed} />
-<link rel="sitemap" href="/sitemap-index.xml" />
+<link rel="sitemap" href={withBase('/sitemap-index.xml')} />
 
 <meta property="og:type" content={type} />
 <meta property="og:site_name" content={siteName} />

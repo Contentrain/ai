@@ -329,6 +329,19 @@ describe('emitted embed runtime — 402 payment_required (the workspace subscrip
     await em.mountComments(host)
     expect(host.innerHTML).toBe('<p class="cr-error" role="alert">Studio is unreachable.</p>')
   })
+
+  it('a thread the migration drew at build time stays when Studio fails or is locked: a comment never vanishes', async () => {
+    const carried = '<section class="cr-comments-section" data-cr-static data-count="2"></section>'
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {})
+    for (const [body, status] of [[{ statusCode: 500, message: 'Studio is unreachable.' }, 500], [locked, 402]] as const) {
+      vi.stubGlobal('fetch', mockFetch(body, status))
+      const host = { ...fakeHost({ baseUrl: rt.base_url, project: 'proj1', model: 'posts', entry: 'hello-world', locale: 'en' }), innerHTML: carried, querySelector: (q: string) => (q === '[data-cr-static]' ? {} : null) }
+      await em.mountComments(host)
+      expect(host.innerHTML).toBe(carried)
+      expect(host.hidden).toBe(false)
+    }
+    expect(debug.mock.calls.map(c => String(c[0]))).toEqual([expect.stringContaining('the migrated thread stays'), expect.stringContaining('the migrated thread stays')])
+  })
 })
 
 describe('embed runtime — a commenter\'s website is a link only when it is http(s)', () => {

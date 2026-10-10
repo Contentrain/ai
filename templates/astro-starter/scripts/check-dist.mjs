@@ -12,6 +12,9 @@
 //  - every indexable page has a title, a meta description, a canonical URL, a
 //    language and well-formed JSON-LD — Lighthouse's SEO audits, which the
 //    site's CI asserts at 1
+//  - a site served from a directory (astro.config `base`, named by the
+//    sitemap's address): every address a page or _redirects points at on the
+//    site is inside that directory
 //
 // Usage: node scripts/check-dist.mjs [dist]   — exits 1 on any failure.
 
@@ -59,6 +62,8 @@ if (searchPage?.includes('/pagefind/') && !await exists(join(dist, 'pagefind', '
 // exist, open with the site's name, and every link must be on the site's origin and lead to a page this build wrote.
 const robots = await readFile(join(dist, 'robots.txt'), 'utf8').catch(() => '')
 const sitemapUrl = robots.match(/^Sitemap: (\S+)$/m)?.[1]
+// The directory the site is served from (`/blog` for astro.config `base: '/blog/'`), as the sitemap's address names it.
+const base = sitemapUrl ? new URL(sitemapUrl).pathname.replace(/\/sitemap-index\.xml$/, '') : ''
 if (sitemapUrl) {
   const llms = await readFile(join(dist, 'llms.txt'), 'utf8').catch(() => null)
   if (llms === null) fail('llms.txt', 'missing (the site has an address)')
@@ -69,10 +74,32 @@ if (sitemapUrl) {
       let url
       try { url = new URL(href) } catch { fail('llms.txt', `not an absolute link: ${href}`); continue }
       if (url.origin !== origin) { fail('llms.txt', `link off the site's origin: ${href}`); continue }
-      const path = decodeURIComponent(url.pathname)
+      const path = decodeURIComponent(base && url.pathname.startsWith(`${base}/`) ? url.pathname.slice(base.length) : url.pathname)
       const built = path.endsWith('/') ? join(dist, path, 'index.html') : join(dist, path)
       if (!await exists(built) && !await exists(join(dist, path, 'index.html'))) fail('llms.txt', `broken link: ${href}`)
     }
+  }
+}
+
+const siteOrigin = sitemapUrl ? new URL(sitemapUrl).origin : undefined
+/** A root address (`/a/`) or one on the site's origin that is outside the site's directory: the host does not serve it. */
+const outside = (address) => {
+  if (!base) return false
+  let path
+  if (address.startsWith('/') && !address.startsWith('//')) path = address
+  else {
+    try { const url = new URL(address); if (url.origin !== siteOrigin) return false; path = url.pathname } catch { return false }
+  }
+  path = path.split(/[?#]/)[0]
+  return path !== base && !path.startsWith(`${base}/`)
+}
+
+if (base) {
+  const rules = await readFile(join(dist, '_redirects'), 'utf8').catch(() => '')
+  for (const line of rules.split('\n')) {
+    if (!line || line.startsWith('#')) continue
+    const parts = line.split(/\s+/)
+    for (const address of [parts[0], parts.at(-2)]) if (address && outside(address)) fail('_redirects', `outside ${base}/: ${line}`)
   }
 }
 
@@ -80,8 +107,8 @@ if (await exists(join(dist, 'wp-query-map.json'))) {
   try {
     const map = JSON.parse(await readFile(join(dist, 'wp-query-map.json'), 'utf8'))
     const valid = map && typeof map === 'object' && !Array.isArray(map)
-      && Object.values(map).every(targets => targets && typeof targets === 'object' && Object.values(targets).every(to => typeof to === 'string' && to.startsWith('/')))
-    if (!valid) fail('wp-query-map.json', 'not a map of parameter → value → site path')
+      && Object.values(map).every(targets => targets && typeof targets === 'object' && Object.values(targets).every(to => typeof to === 'string' && (to.startsWith('/') || /^https?:\/\//.test(to))))
+    if (!valid) fail('wp-query-map.json', 'not a map of parameter → value → site path or address')
   } catch {
     fail('wp-query-map.json', 'does not parse')
   }
@@ -108,6 +135,12 @@ for (const path of pages) {
   const scripts = [...html.matchAll(/<script\b([^>]*)>/gi)].filter(match => !/type="application\/ld\+json"/.test(match[1]))
   if (scripts.length > 0) scripted.push(file)
   if (WP_RUNTIME.test(html)) fail(file, 'references the WordPress runtime')
+  if (base) {
+    const addresses = [...html.matchAll(/\s(?:href|src|action|content|bundle-path|base-url)="([^"]*)"/g)].map(match => match[1].replaceAll('&amp;', '&'))
+    for (const srcset of html.matchAll(/\ssrcset="([^"]*)"/g)) addresses.push(...srcset[1].split(',').map(candidate => candidate.trim().split(/\s+/)[0]))
+    const off = [...new Set(addresses.filter(outside))]
+    if (off.length) fail(file, `outside ${base}/: ${off.slice(0, 5).join(', ')}${off.length > 5 ? ` (+${off.length - 5})` : ''}`)
+  }
 
   if (!/<html[^>]+lang="[^"]+"/.test(html)) fail(file, 'no <html lang>')
   if (!/<title>[^<]+<\/title>/.test(html)) fail(file, 'no <title>')

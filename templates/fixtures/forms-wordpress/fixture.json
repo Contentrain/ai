@@ -1,0 +1,24 @@
+{
+  "siteConfig": [
+    {
+      "from": "  sourceHosts: [],",
+      "to": "  features: { wordpress: 'https://old.example', forms: { home: 'wordpress' } },\n  sourceHosts: [],"
+    }
+  ],
+  "distFiles": {
+    "write-to-us/index.html": {
+      "contains": [
+        "data-cr-part=\"form\" data-state=\"wordpress\"",
+        "This form is sent on old.example.",
+        "<a href=\"https://old.example/write-to-us/\" class=\"cr-form-link\""
+      ],
+      "excludes": [
+        "<fieldset",
+        "disabled",
+        "<cr-form",
+        "method=\"post\"",
+        "needs_endpoint"
+      ]
+    }
+  }
+}

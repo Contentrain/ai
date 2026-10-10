@@ -64,6 +64,19 @@ describe('validateProjectPlan', () => {
     expect(validateProjectPlan(plan())).toEqual({ errors: [], warnings: [] })
   })
 
+  it('accepts a sub-directory install as the origin, and still refuses what cannot be joined with a path', () => {
+    for (const origin of ['https://example.com', 'http://localhost:8080', 'https://example.com/blog', 'https://websitedemos.net/outdoor-adventure-02', 'https://example.com/a/b']) {
+      const p = plan()
+      p.source.origin = origin
+      expect(validateProjectPlan(p).errors, origin).not.toContainEqual(expect.stringContaining('source.origin'))
+    }
+    for (const origin of ['', 'example.com', 'ftp://example.com', 'https://example.com/', 'https://example.com/blog/', 'https://example.com/?p=1', 'https://example.com/blog#x', 'https://example.com//blog', 'https://exa mple.com']) {
+      const p = plan()
+      p.source.origin = origin
+      expect(validateProjectPlan(p).errors, origin).toContainEqual(expect.stringContaining('source.origin is not an http(s) origin'))
+    }
+  })
+
   it('checks the layout overlays as placements, in order', () => {
     const p = plan()
     p.layout.overlays = [{ component: 'FeatureGrid', id: 'newsletter-popup', bind: { kind: 'static', props: { title: 'site:title' } } }]

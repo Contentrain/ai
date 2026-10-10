@@ -3,6 +3,7 @@
 // is data in one place rather than a directory layout under src/pages.
 
 import { siteConfig } from '../site.config'
+import { withoutBase } from './base'
 
 /**
  * `:category` is a post's category with its parents (`news/local`), as WordPress fills `%category%`; see
@@ -36,9 +37,9 @@ export function pagePath(base: string, page: number): string {
   return page <= 1 ? base : `${base}page/${page}/`
 }
 
-/** `/a/b/` → `a/b` for an Astro rest parameter; the root is `undefined`. */
+/** `/a/b/` → `a/b` for an Astro rest parameter (under a `base`, from inside its directory); the root is `undefined`. */
 export function toParam(path: string): string | undefined {
-  const trimmed = path.replace(/^\/+|\/+$/g, '')
+  const trimmed = withoutBase(path).replace(/^\/+|\/+$/g, '')
   return trimmed === '' ? undefined : decodeURIComponent(trimmed)
 }
 

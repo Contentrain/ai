@@ -7,6 +7,7 @@ import type { ImageInput } from '../components/kit/_shared/types'
 import type { CustomField, CustomType } from '../site.config'
 import { entryHref, refIds, termHref, termsById, text, type TypeEntry } from './custom'
 import { imageOf, type Media } from './content'
+import { servedPath } from './base'
 
 export type Shown =
   | { kind: 'text', text: string }
@@ -27,6 +28,8 @@ export interface ShownField {
 const LINKED = new Set(['url', 'email', 'phone'])
 /** Only addresses a visitor can follow safely become links: http(s) and site paths; `javascript:` or `data:` stay text. */
 const safeHref = (value: string): string | undefined => (/^https?:\/\//i.test(value) || /^\/(?!\/)/.test(value) ? value : undefined)
+/** A site path as the site serves it: in its directory under a `base` (`/files/a.pdf` → `/blog/files/a.pdf`). */
+const served = (href: string): string => (href.startsWith('/') ? servedPath(href) : href)
 
 /** The file's own name with its extension, from the last path segment of its address. */
 const fileName = (href: string): string => {
@@ -35,7 +38,8 @@ const fileName = (href: string): string => {
 }
 
 function linked(type: string, value: string): Shown {
-  const href = type === 'email' ? `mailto:${value}` : type === 'phone' ? `tel:${value.replace(/[^\d+]/g, '')}` : safeHref(value)
+  const safe = type === 'email' || type === 'phone' ? undefined : safeHref(value)
+  const href = type === 'email' ? `mailto:${value}` : type === 'phone' ? `tel:${value.replace(/[^\d+]/g, '')}` : safe && served(safe)
   return href ? { kind: 'link', text: value, href } : { kind: 'text', text: value }
 }
 
@@ -99,7 +103,7 @@ async function show(field: CustomField, value: unknown, targets: Targets, depth:
   if (type === 'image' || type === 'file') {
     const src = safeHref(str)
     if (src && type === 'image') return { kind: 'image', image: { src, alt: field.label } }
-    if (src) return { kind: 'link', text: fileName(src), href: src, download: true }
+    if (src) return { kind: 'link', text: fileName(src), href: served(src), download: true }
   }
   return LINKED.has(type) ? linked(type, str) : { kind: 'text', text: str }
 }

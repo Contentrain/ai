@@ -2,6 +2,7 @@
 // in the redirects collection when the source site had one.
 import rss from '@astrojs/rss'
 import type { APIRoute } from 'astro'
+import { withBase } from '../lib/base'
 import { byId, getPosts, getSite, postHref } from '../lib/content'
 
 export const GET: APIRoute = async ({ site: origin }) => {
@@ -10,7 +11,8 @@ export const GET: APIRoute = async ({ site: origin }) => {
   return rss({
     title: site.title,
     description: site.tagline ?? site.title,
-    site: origin ?? 'http://localhost',
+    // The channel's link is the site's home: in its directory under a `base`. Item links already carry it.
+    site: new URL(withBase('/'), origin ?? 'http://localhost').href,
     items: newest.slice(0, 20).map(post => ({
       title: post.data.title,
       link: postHref(post, categories),

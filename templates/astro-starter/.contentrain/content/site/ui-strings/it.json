@@ -35,6 +35,7 @@
   "footer.rss": "Feed RSS",
   "form.honeypot": "Lascia vuoto questo campo",
   "form.mailto": "Scrivici a",
+  "form.needs_endpoint": "Questo modulo ha bisogno di Studio o di un indirizzo per moduli per ricevere messaggi.",
   "form.noscript": "Questo modulo richiede JavaScript.",
   "form.send": "Invia",
   "form.sending": "Invio in corso…",

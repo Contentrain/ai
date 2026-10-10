@@ -42,8 +42,14 @@ const image: ImageInput = { ...(measured ? { ...given, ...measured } : given), s
 const loading = priority ? 'eager' : 'lazy'
 const fetchpriority = priority ? 'high' : 'auto'
 const path = image.src.startsWith('/') && !image.src.startsWith('//') ? image.src.split(/[?#]/)[0]! : undefined
+// Under Astro's `base` (a site served from `/blog/`) public/ is served in that directory: a root address is the file's
+// path in public/, printed in the directory. An address already in it is not put there twice.
+const base = (import.meta.env.BASE_URL ?? '/').replace(/\/+$/, '')
+const inBase = (at: string) => base !== '' && (at === base || at.startsWith(`${base}/`))
+const filePath = path !== undefined && inBase(path) ? path.slice(base.length) : path
+const shown = path !== undefined && base !== '' && !inBase(path) ? `${base}${image.src}` : url
 // A malformed escape (`%E0%A4%A`) is no file in public/: the image stays a plain <img> rather than failing the build.
-const decoded = (() => { try { return path === undefined ? undefined : decodeURI(path) } catch { return undefined } })()
+const decoded = (() => { try { return filePath === undefined ? undefined : decodeURI(filePath) } catch { return undefined } })()
 const load = decoded === undefined ? undefined : LOCAL[`/public${decoded}`]
 const local = load ? await load() : undefined
 // The stored size (WordPress's chosen size of the file), else the file's own.
@@ -57,5 +63,5 @@ const widthsUpTo = (max: number) => [...STEPS.filter(step => step < max), max]
   ? <Image src={local} alt={image.alt ?? ''} {...size} widths={widthsUpTo(image.width ?? local.width)} sizes={sizes} class={className} style={style} loading={loading} fetchpriority={fetchpriority} />
   : image.width && image.height && path === undefined
     ? <Image src={url} alt={image.alt ?? ''} width={image.width} height={image.height} widths={widthsUpTo(image.width)} sizes={sizes} class={className} style={style} loading={loading} fetchpriority={fetchpriority} />
-    : <img src={url} alt={image.alt ?? ''} width={image.width} height={image.height} class={className} style={style} loading={loading} fetchpriority={fetchpriority} decoding="async" />
+    : <img src={safeSrc(shown)} alt={image.alt ?? ''} width={image.width} height={image.height} class={className} style={style} loading={loading} fetchpriority={fetchpriority} decoding="async" />
 )}
