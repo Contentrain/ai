@@ -10,6 +10,7 @@
 // that posts to their form service, an address to write to, or a link to the
 // form on WordPress.
 import { tv } from 'tailwind-variants'
+import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
 import type { MeasuredStyle } from '../_shared/types'
 import Embed from '../embed/Embed.astro'
@@ -24,6 +25,8 @@ export interface ContactDetail {
   value: string
   /** `mailto:`, `tel:` or a map link. */
   href?: string | undefined
+  /** The detail's own icon as an image file (the old site's map marker or phone, moved as an svg), drawn before it. */
+  iconImage?: string | undefined
 }
 
 const contact = tv({
@@ -35,6 +38,7 @@ const contact = tv({
     details: 'mt-2 flex flex-col gap-4',
     term: 'text-sm font-semibold opacity-75',
     value: 'text-current',
+    mark: 'mr-2 inline-flex size-5 shrink-0 align-[-0.25em]',
     formColumn: 'flex flex-col gap-4',
     formHeading: 'text-xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-2xl',
     form: 'rounded-card',
@@ -128,7 +132,7 @@ const FormHeading = heading ? 'h3' : 'h2'
                 {details.map(detail => (
                   <div class={detailsStyle === 'cards' ? s.card() : undefined}>
                     <dt class={s.term()}>{detail.label}</dt>
-                    <dd class={s.value()}>{detail.href ? <a href={safeHref(detail.href)} class={LINK}>{detail.value}</a> : detail.value}</dd>
+                    <dd class={s.value()}>{detail.iconImage && <span class={s.mark()} aria-hidden="true"><KitImage image={{ src: detail.iconImage, alt: '' }} class="size-5 object-contain" /></span>}{detail.href ? <a href={safeHref(detail.href)} class={LINK}>{detail.value}</a> : detail.value}</dd>
                   </div>
                 ))}
               </dl>
@@ -137,6 +141,7 @@ const FormHeading = heading ? 'h3' : 'h2'
               <ul class={s.details()}>
                 {details.map(detail => (
                   <li class={s.value({ class: detailsStyle === 'cards' ? s.card() : undefined })}>
+                    {detail.iconImage && <span class={s.mark()} aria-hidden="true"><KitImage image={{ src: detail.iconImage, alt: '' }} class="size-5 object-contain" /></span>}
                     {detail.label && <span class={s.term()}>{detail.label}: </span>}
                     {detail.href ? <a href={safeHref(detail.href)} class={LINK}>{detail.value}</a> : detail.value}
                   </li>
