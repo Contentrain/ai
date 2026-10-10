@@ -1,4 +1,10 @@
 {
+  "siteConfig": [
+    {
+      "from": "  home: { kind: 'posts' },",
+      "to": "  home: { kind: 'page', slug: 'welcome' },"
+    }
+  ],
   "distFiles": {
     "contact/index.html": {
       "contains": [
@@ -40,6 +46,17 @@
         "<link rel=\"canonical\"",
         "<meta property=\"og:url\"",
         "/404/"
+      ]
+    },
+    "blog/index.html": {
+      "contains": [
+        "<title>Journal - Golden Agency</title>",
+        "<meta property=\"og:title\" content=\"The journal\">",
+        "<meta name=\"twitter:title\" content=\"The journal\">",
+        "<meta property=\"og:description\" content=\"Notes from the studio.\">"
+      ],
+      "excludes": [
+        "<meta property=\"og:title\" content=\"Journal\">"
       ]
     }
   }

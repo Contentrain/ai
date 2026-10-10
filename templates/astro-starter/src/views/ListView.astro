@@ -9,7 +9,7 @@ import Pagination from '../components/kit/pagination/Pagination.astro'
 import Prose from '../components/kit/prose/Prose.astro'
 import PostCard from '../components/kit/post-card/PostCard.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
-import { byId, getSite, getStrings, imageOf, postHref, termHref, type Post } from '../lib/content'
+import { byId, getSite, getStrings, imageOf, postHref, termHref, type Page, type Post } from '../lib/content'
 import type { Card } from '../lib/custom'
 import { withBase } from '../lib/base'
 import { publicHtml } from '../lib/links'
@@ -23,6 +23,8 @@ interface Props {
   /** What kind of archive this is, shown above the title ("Category"). */
   eyebrow?: string | undefined
   description?: string | undefined
+  /** The posts page's own SEO (a static front page's blog index): its titles, preview and robots, as on the source. */
+  seo?: Page['data']['seo'] | undefined
   posts: Post[]
   /** A list of another content type (a custom post type): cards already built, in place of `posts`. */
   cards?: Card[] | undefined
@@ -31,7 +33,9 @@ interface Props {
   total: number
 }
 
-const { title, eyebrow, description, posts, cards: given, base, current, total } = Astro.props
+const { title, eyebrow, description, seo, posts, cards: given, base, current, total } = Astro.props
+// The source's titles, preview and canonical are the first page's; a later page keeps its own ("Journal – Page 2").
+const first = current === 1 ? seo : undefined
 const [site, t, categories, authors] = await Promise.all([getSite(), getStrings(), byId('categories'), siteConfig.lists.byline ? byId('authors') : undefined])
 const full = siteConfig.lists.display === 'full'
 const column = full || siteConfig.lists.display === 'list'
@@ -71,7 +75,14 @@ const metaDescription = describePage({
 ---
 <BaseLayout
   title={title ? `${title}${pageSuffix}` : current > 1 ? `${t('blog.title')}${pageSuffix}` : undefined}
+  fullTitle={first?.title}
+  ogTitle={first?.og_title}
+  ogDescription={first?.og_description}
   description={metaDescription}
+  image={first?.image}
+  canonical={first?.canonical}
+  noindex={seo?.noindex}
+  nofollow={seo?.nofollow}
   jsonLd={[collectionLd(url, title ?? t('blog.title'))]}
 >
   {/* data-cr-described: the description is the site's own words for the page, not the source's — counted for the owner. */}
