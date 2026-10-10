@@ -18,7 +18,7 @@ export type Route =
   | { view: 'post', post: Post }
   | { view: 'page', page: Page, trail: Array<{ title: string, href: string }>, isHome: boolean, subpages: Array<{ title: string, href: string }> }
   | { view: 'entry', type: CustomType, entry: TypeEntry, targets: Targets }
-  | { view: 'list', title?: string, eyebrow?: string, description?: string, posts: Post[], cards?: Card[], base: string, current: number, total: number }
+  | { view: 'list', title?: string, eyebrow?: string, description?: string, seo?: Page['data']['seo'], posts: Post[], cards?: Card[], base: string, current: number, total: number }
 
 async function buildRoutes(): Promise<Map<string, Route>> {
   const [posts, pages, categories, tags, authors, t, site] = await Promise.all([
@@ -75,7 +75,9 @@ async function buildRoutes(): Promise<Map<string, Route>> {
   // The posts page keeps the name and description its editors gave it ("Journal"), as in WordPress.
   const postsPage = blog === home ? undefined : [...pages.values()].find(page => pageHref(page, pages) === blog)
   const blogDescription = postsPage?.data.seo?.description ?? postsPage?.data.excerpt
-  paginate(blog, posts, blog === home ? {} : { title: postsPage?.data.title ?? t('blog.title'), ...(blogDescription ? { description: blogDescription } : {}) }, posts.filter(post => post.data.sticky))
+  // …and the SEO its plugin gave it: the document title, the link preview's own title and text (Yoast's og:title).
+  const blogSeo = postsPage?.data.seo
+  paginate(blog, posts, blog === home ? {} : { title: postsPage?.data.title ?? t('blog.title'), ...(blogDescription ? { description: blogDescription } : {}), ...(blogSeo ? { seo: blogSeo } : {}) }, posts.filter(post => post.data.sticky))
 
   for (const category of categories.values()) {
     paginate(termHref('category', category, categories), posts.filter(post => post.data.categories.some(ref => ref.id === category.id)), {
