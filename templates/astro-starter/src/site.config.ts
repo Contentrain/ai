@@ -204,12 +204,17 @@ export interface SiteConfig {
    * write to (`mailto`), or a link to the form on WordPress. Comments stay on WordPress or go to Studio.
    * Until Studio is bound, a Studio form links to the form on `wordpress` when it is set, else shows `email` (the
    * address the source site published) to write to — never an empty place on the page.
+   * `chromeForms`: forms the source showed outside the page content (a footer or theme band's newsletter signup, a
+   * theme builder's contact form) that have no place on this site. With forms kept on `wordpress`, each links to the
+   * WordPress page (`path`) that carries it: at the end of the content of the pages in `on` (the form on /contact/),
+   * else once from the footer (a site-wide signup). `role` picks the footer link's words (subscribe, or the form).
    */
   features?: {
     wordpress?: string
     email?: string
     forms?: { home: 'studio' } | { home: 'endpoint', action: string } | { home: 'mailto', address: string } | { home: 'wordpress' }
     comments?: { home: 'studio' } | { home: 'wordpress' }
+    chromeForms?: ReadonlyArray<{ role: 'newsletter' | 'contact' | 'other', path: string, on?: readonly string[] }>
   }
 }
 
