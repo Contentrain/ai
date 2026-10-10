@@ -1,5 +1,17 @@
 # @contentrain/astro-kit
 
+## 0.36.0
+
+### Minor Changes
+
+- c36f2fa: `CardGrid` items take an `icon`: a small image above the title, drawn as decoration (`alt=""`), the same as `Band`'s item icon. An icon box row (Elementor's icon box, a feature with its mark) keeps its icons when it moves as a card grid. Before, the card grid had no field for them, so they were not shown. A card without an icon is unchanged.
+
+## 0.35.0
+
+### Minor Changes
+
+- fe84ccd: PostCard and PostList take a `timeZone` (an IANA name or a `±hh:mm` offset; absent, UTC): the date a card prints is read on the site's calendar, as WordPress prints it. The starter passes `siteConfig.timeZone`, which also places a post's `:year`/`:month`/`:day` address on the site's calendar: a post written in the evening of a UTC−n site keeps the address WordPress gave it.
+
 ## 0.34.3
 
 ### Patch Changes

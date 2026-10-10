@@ -61,6 +61,8 @@ interface Props {
   excerptLines?: 2 | 3 | 4 | undefined
   /** BCP 47 locale the dates are written in. */
   locale?: string | undefined
+  /** The time zone the dates are read in (the site's: an IANA name or a `±hh:mm` offset); absent, UTC. */
+  timeZone?: string | undefined
   /** Card surface: none, or each post its own card. */
   surface?: 'plain' | 'card' | undefined
   /** Where the full archive lives; with `moreLabel` a link follows the list. */
@@ -72,7 +74,7 @@ interface Props {
   id?: string | undefined
 }
 
-const { heading, intro, posts, layout = 'grid', columns, showImage = true, showExcerpt = true, showAuthor = true, showCategory = true, excerptLines, locale, surface, moreHref, moreLabel, tone, measured, id = 'posts' } = Astro.props
+const { heading, intro, posts, layout = 'grid', columns, showImage = true, showExcerpt = true, showAuthor = true, showCategory = true, excerptLines, locale, timeZone, surface, moreHref, moreLabel, tone, measured, id = 'posts' } = Astro.props
 const s = list({ layout, columns })
 const headingId = heading ? `${id}-title` : undefined
 // Cards sit one heading level under the section's; with no section heading they are the page's h2s.
@@ -98,6 +100,7 @@ const cardLayout = (i: number) => layout === 'compact' ? 'minimal' : layout === 
             excerpt={showExcerpt && layout !== 'compact' ? post.excerpt : undefined}
             date={post.date}
             locale={locale}
+            timeZone={timeZone}
             image={showImage && layout !== 'compact' ? post.image : undefined}
             category={showCategory && layout !== 'compact' ? post.category : undefined}
             author={showAuthor && layout !== 'compact' ? post.author : undefined}

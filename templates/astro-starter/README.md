@@ -104,6 +104,10 @@ preview; a site you publish builds without it.
   post's primary category (`primary_category`, from Yoast or Rank Math), else
   its category with the lowest term ID, with its parents (`news/local`); a post
   with none takes `siteConfig.defaultCategory` (default `uncategorized`).
+  `:year`, `:month` and `:day`, and every printed date, are read in
+  `siteConfig.timeZone` (an IANA name or a `±hh:mm` offset; absent, UTC), as
+  WordPress fills them from the post's local date: a post written in the
+  evening of a UTC−n site keeps its address and its day.
 
 ## Studio binding: forms, comments and media
 

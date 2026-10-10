@@ -626,6 +626,11 @@
                 "label": "Image description",
                 "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
               },
+              "icon": {
+                "type": "image",
+                "label": "Icon",
+                "description": "A small image above the title (decoration)."
+              },
               "eyebrow": {
                 "type": "string",
                 "label": "Eyebrow",
@@ -791,6 +796,7 @@
         "items[].linkLabel": "items[].link_label",
         "items[].image": "items[].image",
         "items[].imageAlt": "items[].image_alt",
+        "items[].icon": "items[].icon",
         "items[].eyebrow": "items[].eyebrow"
       }
     },
@@ -4566,6 +4572,10 @@
           "type": "string",
           "description": "Locale the date is written in (site.language)."
         },
+        "timeZone": {
+          "type": "string",
+          "description": "Time zone the date is read in (the site's: an IANA name or a ±hh:mm offset); absent, UTC."
+        },
         "image": {
           "type": "object",
           "fields": {
@@ -4803,6 +4813,11 @@
           "type": "string",
           "content": false,
           "description": "BCP 47 locale the dates are written in (site.language)."
+        },
+        "timeZone": {
+          "type": "string",
+          "content": false,
+          "description": "Time zone the dates are read in (the site's: an IANA name or a ±hh:mm offset); absent, UTC."
         },
         "surface": {
           "type": "string",
