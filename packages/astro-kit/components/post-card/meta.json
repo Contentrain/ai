@@ -16,6 +16,7 @@
     "excerpt": { "type": "text", "description": "Summary (posts.excerpt)." },
     "date": { "type": "datetime", "description": "Publication date (posts.published_at)." },
     "locale": { "type": "string", "description": "Locale the date is written in (site.language)." },
+    "timeZone": { "type": "string", "description": "Time zone the date is read in (the site's: an IANA name or a ±hh:mm offset); absent, UTC." },
     "image": { "type": "object", "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } }, "description": "Cover (posts.cover → media)." },
     "category": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "href": { "type": "url", "required": true } }, "description": "Primary category and its archive." },
     "author": { "type": "string", "description": "Author name (posts.author → authors.name)." },

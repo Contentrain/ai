@@ -2,6 +2,7 @@
 // A paginated list of posts: the blog index and the category, tag and author
 // archives — as cards (a grid, or one column), or each post in full (siteConfig.lists.display), as the
 // source's query loop showed them.
+import { formatDay, siteTimeZone } from '../lib/dates'
 import { getEntry } from 'astro:content'
 import KitImage from '../components/kit/_shared/KitImage.astro'
 import Pagination from '../components/kit/pagination/Pagination.astro'
@@ -83,7 +84,7 @@ const metaDescription = describePage({
     {cards.length === 0 && <p class="text-ink-muted">{t('blog.empty')}</p>}
     {cards.length > 0 && !full && (
       <div data-cr-grid class:list={['grid gap-y-12', !siteConfig.lists.gap && 'gap-x-8', siteConfig.lists.tone === 'muted' && 'text-ink-muted', column ? 'mx-auto w-full max-w-(--container-prose)' : siteConfig.lists.columns ? 'min-[600px]:grid-cols-(--cr-list-columns)' : 'sm:grid-cols-2 lg:grid-cols-3']} style={[!column && siteConfig.lists.columns ? `--cr-list-columns: repeat(${siteConfig.lists.columns}, minmax(0, 1fr))` : '', siteConfig.lists.gap ? `column-gap:${siteConfig.lists.gap}` : ''].filter(Boolean).join(';') || undefined}>
-        {cards.map(card => <PostCard {...card} locale={site.language} linkTitle={siteConfig.chrome?.titleLinks} surface={siteConfig.lists.surface ? 'card' : 'plain'} byline={siteConfig.lists.byline ? 'below' : 'inline'} sizes={column ? undefined : imageSizes} imageHeight={listImage?.height} imageAspect={listImage?.aspect} />)}
+        {cards.map(card => <PostCard {...card} locale={site.language} timeZone={siteTimeZone()} linkTitle={siteConfig.chrome?.titleLinks} surface={siteConfig.lists.surface ? 'card' : 'plain'} byline={siteConfig.lists.byline ? 'below' : 'inline'} sizes={column ? undefined : imageSizes} imageHeight={listImage?.height} imageAspect={listImage?.aspect} />)}
       </div>
     )}
     {cards.length > 0 && full && (
@@ -93,7 +94,7 @@ const metaDescription = describePage({
             {card.image && <a href={safeHref(card.href)} tabindex="-1" aria-hidden="true"><KitImage image={{ ...card.image, alt: '' }} priority={index === 0} sizes="(min-width: 768px) 46rem, 100vw" class="h-auto w-full rounded-[var(--radius-image,0.75rem)] object-cover" /></a>}
             <h2 class="text-3xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight"><a href={safeHref(card.href)} class:list={[siteConfig.chrome?.titleLinks ? 'text-[color:var(--color-link,var(--color-accent))]' : 'text-ink', 'no-underline hover:underline']}>{card.title}</a></h2>
             {bodies[index] && <Prose html={bodies[index]} searchable={false} />}
-            {card.date && <time datetime={card.date.toISOString()} class="text-sm text-ink-muted">{card.date.toLocaleDateString(site.language, { dateStyle: 'long', timeZone: 'UTC' })}</time>}
+            {card.date && <time datetime={card.date.toISOString()} class="text-sm text-ink-muted">{formatDay(card.date, site.language)}</time>}
           </article>
         ))}
       </div>

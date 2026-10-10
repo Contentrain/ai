@@ -2,6 +2,7 @@
 // A single post laid out as the source's single template: the header parts in
 // its order (siteConfig.post.header), body, tags, the previous and next post,
 // the comment thread and a list of more posts.
+import { formatDay } from '../lib/dates'
 import { getEntry } from 'astro:content'
 import KitImage from '../components/kit/_shared/KitImage.astro'
 import PostMeta from '../components/PostMeta.astro'
@@ -44,7 +45,7 @@ const locale = site.language
 const url = new URL(postHref(post, categoryMap), Astro.site ?? Astro.url).href
 const description = data.seo?.description ?? data.excerpt ?? summarize(data.body)
 const image = data.seo?.image ?? cover?.data.url
-const formatDate = (date: Date) => date.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' })
+const formatDate = (date: Date) => formatDay(date, locale)
 const updated = data.modified_at && data.published_at && data.modified_at.getTime() - data.published_at.getTime() > 86_400_000
 ---
 <BaseLayout

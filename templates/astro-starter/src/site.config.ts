@@ -176,6 +176,12 @@ export interface SiteConfig {
    * Studio. `order`: the details' order as the source prints them; absent, address, phone, email.
    */
   contact?: { address?: string, phone?: string, email?: string, socials?: string, labels?: { address?: string, phone?: string, email?: string }, order?: ReadonlyArray<'address' | 'phone' | 'email'> }
+  /**
+   * The source site's time zone: an IANA name (`America/Los_Angeles`, WordPress `timezone_string`) or a fixed offset
+   * (`-07:00`, WordPress `gmt_offset`). A post's address (`:year`, `:month`, `:day`) and its printed date are read on
+   * this calendar, as WordPress fills them from the post's local date. Absent, UTC.
+   */
+  timeZone?: string
   /** Custom post types: each gets its single pages, archive and term lists. */
   types?: readonly CustomType[]
   /**

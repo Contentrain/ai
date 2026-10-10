@@ -1,6 +1,7 @@
 ---
 // One entry of a custom post type: title, image, rich-text body, the terms it is filed under and its typed
 // fields (siteConfig.types), each labelled as the editor knows it; its comment thread when comments are open, as a post's.
+import { formatDay } from '../lib/dates'
 import FieldList from '../components/FieldList.astro'
 import KitImage from '../components/kit/_shared/KitImage.astro'
 import PostMeta from '../components/PostMeta.astro'
@@ -46,7 +47,7 @@ const more: Array<{ href: string, title: string, date: Date | undefined }> = !ty
     ? latestPosts.slice(0, type.more).map(post => ({ href: postHref(post, categories), title: post.data.title, date: post.data.published_at }))
     : ordered.filter(other => type.moreIncludesCurrent || other.id !== entry.id).slice(0, type.more)
         .map(other => ({ href: entryHref(type, other), title: entryTitle(type, other), date: dateOf(other.data[type.card.date ?? 'published_at']) }))
-const formatDate = (date: Date) => date.toLocaleDateString(site.language, { dateStyle: 'long', timeZone: 'UTC' })
+const formatDate = (date: Date) => formatDay(date, site.language)
 const [imageId] = type.card.image ? refIds(data[type.card.image]) : []
 const cover = imageId ? await getEntry('media', imageId) : undefined
 const taxonomy = type.taxonomies?.[0]

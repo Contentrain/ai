@@ -31,6 +31,16 @@
         "<meta name=\"description\" content=\"The first post.\">",
         "<meta property=\"og:description\" content=\"The first post.\">"
       ]
+    },
+    "404.html": {
+      "contains": [
+        "<meta name=\"robots\" content=\"noindex, follow"
+      ],
+      "excludes": [
+        "<link rel=\"canonical\"",
+        "<meta property=\"og:url\"",
+        "/404/"
+      ]
     }
   }
 }

@@ -44,6 +44,8 @@ interface Props {
   date?: Date | string | undefined
   /** BCP 47 locale the date is written in (site.language). */
   locale?: string | undefined
+  /** The time zone the date is read in (the site's, an IANA name or a `±hh:mm` offset); absent, UTC. */
+  timeZone?: string | undefined
   image?: ImageInput | undefined
   category?: LinkInput | undefined
   author?: string | undefined
@@ -63,11 +65,11 @@ interface Props {
   imageAspect?: string | undefined
 }
 
-const { title, href, excerpt, date: rawDate, locale = 'en', image, category, author, headingLevel = 2, layout, surface, byline, linkTitle, excerptLines, sizes, imageHeight, imageAspect } = Astro.props
+const { title, href, excerpt, date: rawDate, locale = 'en', timeZone = 'UTC', image, category, author, headingLevel = 2, layout, surface, byline, linkTitle, excerptLines, sizes, imageHeight, imageAspect } = Astro.props
 const date = rawDate === undefined ? undefined : new Date(rawDate)
 const slots = card({ layout, surface, byline })
 const below = byline === 'below'
-const shown = date?.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' })
+const shown = date?.toLocaleDateString(locale, { dateStyle: 'long', timeZone })
 const imageStyle = imageHeight ? `height:${imageHeight}` : imageAspect ? `aspect-ratio:${imageAspect}` : undefined
 const Heading = `h${headingLevel}` as 'h2' | 'h3'
 ---
