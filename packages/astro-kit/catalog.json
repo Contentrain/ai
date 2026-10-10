@@ -3468,6 +3468,10 @@
           "default": false,
           "description": "The navigation in the site's link colour, as themes that colour every link do."
         },
+        "brandColor": {
+          "type": "string",
+          "description": "The site name's colour where the source theme's is not the header's text colour: link for the site's link colour, or a colour (#hex, rgb(), hsl())."
+        },
         "logo": {
           "type": "object",
           "fields": {
@@ -3597,7 +3601,8 @@
       },
       "a11y": "One <header> landmark; the brand link is named by the site name when only the logo shows. Navigation as in nav.",
       "files": [
-        "Header.astro"
+        "Header.astro",
+        "header.ts"
       ]
     },
     {

@@ -166,7 +166,9 @@ export interface PlanSite {
    * (Hello Elementor: a 2.5rem heading). `tagline`: the header shows the tagline under the title.
    * `copyright`: the footer's line as the source prints it ("All rights reserved"; `{year}` for the
    * current year), instead of "© year Site". `titleLinks`: post titles in lists take the link colour, as the source's do.
-   * `navLinks`: so does the header navigation. `footerAlign`: `center` when the source's footer is
+   * `navLinks`: so does the header navigation. `brandColor`: the header site title's colour where it is not the text
+   * colour: `link` for the site's link colour (a theme whose title is a link styled like every other, Hello Elementor), or
+   * the title's own colour (`#hex`, `rgb()`, `hsl()`). Absent, the header's text colour. `footerAlign`: `center` when the source's footer is
    * one centred column; absent, brand and links to the sides. `frame`: the width the header's and footer's
    * content is held to where the theme boxes it, read from the source's renders: from `min` px of viewport
    * up it is `width` px wide and centred (Hello Elementor: 768 → 600, 1280 → 1140); below the first step,
@@ -198,6 +200,7 @@ export interface PlanSite {
     copyright?: string
     titleLinks?: boolean
     navLinks?: boolean
+    brandColor?: string
     footerAlign?: 'start' | 'center'
     frame?: ChromeFrameStep[]
     listFrame?: ChromeFrameStep[]
@@ -497,6 +500,8 @@ export function footerMenusOf(site: Pick<PlanSite, 'menus'>): string[] {
 const LETTER_SPACING = /^(?:normal|-?\d+(?:\.\d+)?(?:px|rem|em))$/
 
 /** A font size the starter writes into a style: a length, or a `clamp()`/`calc()`/`min()`/`max()` of lengths (a theme's fluid size). */
+/** A colour that goes into a style attribute: hex, `rgb()`/`rgba()` or `hsl()`/`hsla()` of numbers; never a `;` or `url()`. */
+const CSS_COLOR = /^(?:#[0-9a-f]{3,8}|(?:rgb|hsl)a?\([\d\s.,%/deg]+\))$/i
 const CSS_LENGTH = /^(?!.*url\()(?:\d+(?:\.\d+)?(?:px|rem|em|%)|(?:clamp|calc|min|max)\([\d\s.,+*/()a-z%-]+\))$/
 
 /**
@@ -607,6 +612,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   if (chrome?.tagline !== undefined && typeof chrome.tagline !== 'boolean') errors.push('site.chrome.tagline is not a boolean')
   if (chrome?.titleLinks !== undefined && typeof chrome.titleLinks !== 'boolean') errors.push('site.chrome.titleLinks is not a boolean')
   if (chrome?.navLinks !== undefined && typeof chrome.navLinks !== 'boolean') errors.push('site.chrome.navLinks is not a boolean')
+  if (chrome?.brandColor !== undefined && (typeof chrome.brandColor !== 'string' || (chrome.brandColor !== 'link' && !CSS_COLOR.test(chrome.brandColor)))) errors.push(`site.chrome.brandColor ${String(chrome.brandColor)} is not link or a colour`)
   if (chrome?.parts !== undefined && chrome.parts !== true) errors.push('site.chrome.parts is not true')
   if (chrome?.breadcrumbs !== undefined && chrome.breadcrumbs !== 'always') errors.push(`site.chrome.breadcrumbs ${String(chrome.breadcrumbs)} is not always`)
   if (chrome?.menu !== undefined && chrome.menu !== 'mega') errors.push(`site.chrome.menu ${String(chrome.menu)} is not mega`)
