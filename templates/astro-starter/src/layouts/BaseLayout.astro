@@ -6,6 +6,7 @@ import { Font } from 'astro:assets'
 import Analytics from '../components/Analytics.astro'
 import Footer from '../components/kit/footer/Footer.astro'
 import Header from '../components/kit/header/Header.astro'
+import { safeHref } from '../components/kit/_shared/safe-url'
 import SEO from '../components/SEO.astro'
 import { servedPath, withBase } from '../lib/base'
 import { siteContact } from '../lib/contact'
@@ -145,7 +146,7 @@ const wpQueries = isHome ? await queryMap() : {}
           {pageForms.map((form, index) => (
             <div class="cr-form-mount block" data-cr-part="form" data-state="wordpress">
               <p class="cr-form-note" id={`cr-kept-form-${index}`}>{t('form.wordpress_note').replace('{site}', wordpressHost)}</p>
-              <p class="cr-actions"><a href={form.href} class="cr-form-link" aria-describedby={`cr-kept-form-${index}`}>{t('form.wordpress')}</a></p>
+              <p class="cr-actions"><a href={safeHref(form.href)} class="cr-form-link" aria-describedby={`cr-kept-form-${index}`}>{t('form.wordpress')}</a></p>
             </div>
           ))}
         </div>
