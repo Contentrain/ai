@@ -423,7 +423,8 @@
       "id": "stats.counter",
       "component": "stats",
       "variant": {
-        "order": "value-first"
+        "order": "value-first",
+        "motion": "count"
       },
       "slots": {
         "intro": {
