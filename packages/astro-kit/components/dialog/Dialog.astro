@@ -1,6 +1,6 @@
 ---
-// A popup, as a dialog the visitor opens: a button in a section of the page and a modal <dialog> with a heading, text
-// and buttons. Replaces Elementor popups and Popup Maker overlays. Never opens by itself (no timers, no exit intent):
+// A popup, as a dialog the visitor opens: a button in a section of the page and a modal <dialog> with a heading, text,
+// buttons and, in its `form` slot, the popup's form. Replaces Elementor popups and Popup Maker overlays. Never opens by itself (no timers, no exit intent):
 // content that a source popup showed on load or on scroll is reachable from the button instead, and sits in the HTML
 // for crawlers. The section is the kit's (Section: tone, spacing, measured style), like every other section.
 //
@@ -62,9 +62,17 @@ interface Props {
   measured?: MeasuredStyle | undefined
   /** Rendered already open, in the flow of the section and not modal: for previews and visual baselines only, never for a page. */
   open?: boolean | undefined
+  /**
+   * How the source popup opened (`load`, `exit`, `scroll`: by itself; `click`: by its trigger). Here it always opens by
+   * the button, never by itself; the value is kept on the root for the gates and the receipt, which say the change.
+   */
+  trigger?: 'click' | 'load' | 'exit' | 'scroll' | undefined
+  /** The source behavior's fact id: the gates find the dialog by it (`data-cr-fact`). */
+  fact?: string | undefined
 }
 
-const { id: givenId = 'dialog', triggerLabel, heading, html, actions = [], closeLabel = 'Close', triggerStyle, size, align: given, tone, measured, open = false } = Astro.props
+const { id: givenId = 'dialog', triggerLabel, heading, html, actions = [], closeLabel = 'Close', triggerStyle, size, align: given, tone, measured, open = false, trigger, fact } = Astro.props
+const factId = fact && /^[\w:.-]{1,120}$/.test(fact) ? fact : undefined
 // The id goes into attributes and into the scripting-off style sheet, so it is a plain token or the default.
 const id = /^[A-Za-z][\w-]*$/.test(givenId) ? givenId : 'dialog'
 const align = given ?? measured?.align
@@ -80,7 +88,7 @@ const invoker = { command: 'show-modal', commandfor: id }
 const noscript = `<style>[data-kit-dialog="${id}"]>[data-kit-dialog-open],#${id} form[method=dialog]{display:none}#${id}:not([open]){display:block;position:static;margin:0;width:100%;max-width:none;max-height:none;box-shadow:none}</style>`
 ---
 <Section measured={measured} tone={tone} spacing="md" id={`${id}-section`}>
-  <div class={s.root()} data-kit-dialog={id}>
+  <div class={s.root()} data-kit-dialog={id} data-kit-trigger={trigger} data-cr-fact={factId}>
     <noscript set:html={noscript} />
     <button type="button" class={s.trigger()} data-kit-dialog-open aria-haspopup="dialog" {...invoker}>{triggerLabel}</button>
     <dialog id={id} class={s.box()} open={open || undefined} aria-labelledby={heading ? headingId : undefined} aria-label={heading ? undefined : triggerLabel}>
@@ -88,6 +96,8 @@ const noscript = `<style>[data-kit-dialog="${id}"]>[data-kit-dialog-open],#${id}
         {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
         {html && <Prose html={html} searchable={false} />}
         {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} />)}</div>}
+        {/* The popup's form (a source popup often held the contact or newsletter form): the starter's form, or its link to the form on WordPress. */}
+        {Astro.slots.has('form') && <div data-kit-dialog-form><slot name="form" /></div>}
       </div>
       <form method="dialog">
         <button type="submit" class={s.close()} aria-label={closeLabel}>

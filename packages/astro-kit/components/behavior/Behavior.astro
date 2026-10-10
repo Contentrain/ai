@@ -1,0 +1,71 @@
+---
+// A behavior island: a widget of the source site that no kit component carries (a slider, tabs, an accordion, a
+// counter, a filter), kept as the site's own markup and made to work again by the kit's one small module
+// (`_shared/behaviors.ts`). The markup is content, a rich-text field the writer already ran through the island
+// pass (no style element, no script, no form, no overlay, no `data-cr-*` of its own, ids prefixed); the behavior
+// is ours. The `data-cr-*` attributes on the root are the only ones on the page, and they come from these props.
+//
+// With no script, or a selector the browser refuses, the island stays as printed: every item in reading order,
+// nothing hidden. Only a page that has an island loads the module (Astro bundles a component's script once, for the
+// pages that use it).
+import Section from '../_shared/Section.astro'
+import type { MeasuredStyle } from '../_shared/types'
+
+interface Props {
+  /** What the module makes of it. */
+  kind: 'disclosure' | 'tablist' | 'carousel' | 'dialog' | 'countup' | 'toggle' | 'filter' | 'anchor' | 'lightbox'
+  /** The island's markup (rendered HTML of a richtext field, after the writer's island pass). */
+  html?: string | undefined
+  /** The engine's selectors inside the island: the items (slides, counters, filtered cards), a tab's title, a panel. */
+  items?: string | undefined
+  title?: string | undefined
+  panel?: string | undefined
+  /** The source behavior's fact id: the gates find this element by it (`data-cr-fact`). */
+  fact?: string | undefined
+  /** Button labels the module writes (ui-strings slider.prev / slider.next / dialog.close). */
+  previousLabel?: string | undefined
+  nextLabel?: string | undefined
+  closeLabel?: string | undefined
+  tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
+  /** The source section's measured style (`MeasuredStyle`). */
+  measured?: MeasuredStyle | undefined
+}
+
+const { kind, html, items, title, panel, fact, previousLabel, nextLabel, closeLabel, tone, measured } = Astro.props
+// Selectors and ids go into attributes only, never into markup or a script; an empty one is left out.
+const attr = (value: string | undefined): string | undefined => (value && value.length <= 300 ? value : undefined)
+const factId = fact && /^[\w:.-]{1,120}$/.test(fact) ? fact : undefined
+---
+{html && (
+  <Section tone={tone} measured={measured}>
+    <div
+      class="cr-behavior"
+      data-cr-behavior={kind}
+      data-cr-items={attr(items)}
+      data-cr-title={attr(title)}
+      data-cr-panel={attr(panel)}
+      data-cr-fact={factId}
+      data-cr-prev={previousLabel}
+      data-cr-next={nextLabel}
+      data-cr-close={closeLabel}
+      set:html={html}
+    />
+  </Section>
+)}
+
+<script>
+  import { initBehaviors } from '../_shared/behaviors'
+
+  initBehaviors()
+  // With Astro's client router a page arrives without a reload: wire its islands too (ready roots are skipped).
+  document.addEventListener('astro:page-load', () => initBehaviors())
+</script>
+
+<style is:global>
+  .cr-behavior-controls { display: flex; gap: 0.5rem; justify-content: center; margin-block-start: 1rem; }
+  .cr-behavior-control { cursor: pointer; border: 1px solid currentColor; border-radius: var(--radius-control, 0.375rem); padding: 0.375rem 0.875rem; background: transparent; }
+  .cr-behavior-control:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  .cr-behavior-dialog { margin: auto; max-width: min(92vw, 40rem); max-height: 85dvh; border: 1px solid var(--color-line); border-radius: var(--radius-card, 0.75rem); padding: 1.5rem; }
+  .cr-behavior-dialog::backdrop { background: rgb(0 0 0 / 0.5); }
+  .cr-behavior-lightbox img { display: block; max-width: 100%; max-height: 75dvh; margin-inline: auto; }
+</style>

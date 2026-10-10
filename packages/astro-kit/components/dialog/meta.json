@@ -235,9 +235,27 @@
       "default": false,
       "content": false,
       "description": "Rendered already open, in the flow of the section and not modal: for previews and visual baselines only, never for a page."
+    },
+    "trigger": {
+      "type": "select",
+      "options": [
+        "click",
+        "load",
+        "exit",
+        "scroll"
+      ],
+      "content": false,
+      "description": "How the source popup opened. Here it always opens by its button, never by itself; the value stays on the root for the gates and the receipt, which say the change."
+    },
+    "fact": {
+      "type": "string",
+      "content": false,
+      "description": "The source behavior's fact id; the gates find the dialog by it (data-cr-fact)."
     }
   },
-  "slots": {},
+  "slots": {
+    "form": "The popup's form, under its text and buttons: the starter's form (Studio) or its link to the form on WordPress."
+  },
   "js": "vanilla",
   "dependencies": {},
   "sources": {

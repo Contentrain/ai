@@ -1,0 +1,54 @@
+[
+  {
+    "name": "carousel",
+    "props": {
+      "kind": "carousel",
+      "items": ".slide",
+      "fact": "interactive:fx1",
+      "html": "<div class=\"slides\"><div class=\"slide\"><h2>First</h2><p>One of three slides.</p></div><div class=\"slide\"><h2>Second</h2><p>Two of three.</p></div><div class=\"slide\"><h2>Third</h2><p>Three of three.</p></div></div>"
+    }
+  },
+  {
+    "name": "tablist",
+    "props": {
+      "kind": "tablist",
+      "fact": "interactive:fx2",
+      "html": "<div role=\"tablist\"><button role=\"tab\" aria-controls=\"cr-fx2-a\" aria-selected=\"true\">Plans</button><button role=\"tab\" aria-controls=\"cr-fx2-b\">Support</button></div><div id=\"cr-fx2-a\"><p>Every plan includes hosting.</p></div><div id=\"cr-fx2-b\"><p>Support answers within a day.</p></div>"
+    }
+  },
+  {
+    "name": "disclosure",
+    "props": {
+      "kind": "disclosure",
+      "fact": "interactive:fx3",
+      "tone": "muted",
+      "html": "<h2><button aria-expanded=\"false\" aria-controls=\"cr-fx3-a\">Do you ship abroad?</button></h2><div id=\"cr-fx3-a\"><p>Yes, to the whole of Europe.</p></div><details><summary>Can I return an order?</summary><p>Within 30 days.</p></details>"
+    }
+  },
+  {
+    "name": "nested-spoof",
+    "props": {
+      "kind": "disclosure",
+      "fact": "interactive:fx4",
+      "html": "<h2><button aria-expanded=\"true\" aria-controls=\"cr-fx4-a\">Opening hours</button></h2><div id=\"cr-fx4-a\"><p>Monday to Friday.</p><div data-cr-behavior=\"carousel\" data-cr-items=\"body *\"><p>A spoofed inner root: never wired, printed as text.</p></div></div>"
+    }
+  },
+  {
+    "name": "disclosure-inverse",
+    "props": {
+      "kind": "disclosure",
+      "fact": "interactive:fx3",
+      "tone": "inverse",
+      "html": "<h2><button aria-expanded=\"false\" aria-controls=\"cr-fx3-a\">Do you ship abroad?</button></h2><div id=\"cr-fx3-a\"><p>Yes, to the whole of Europe.</p></div><details><summary>Can I return an order?</summary><p>Within 30 days.</p></details>"
+    }
+  },
+  {
+    "name": "disclosure-accent",
+    "props": {
+      "kind": "disclosure",
+      "fact": "interactive:fx3",
+      "tone": "accent",
+      "html": "<h2><button aria-expanded=\"false\" aria-controls=\"cr-fx3-a\">Do you ship abroad?</button></h2><div id=\"cr-fx3-a\"><p>Yes, to the whole of Europe.</p></div><details><summary>Can I return an order?</summary><p>Within 30 days.</p></details>"
+    }
+  }
+]

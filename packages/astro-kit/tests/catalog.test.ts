@@ -74,8 +74,10 @@ describe('catalog', () => {
   })
 
   it('says for every component which builder elements feed it', () => {
-    // The band stands in for no builder element: the migration's plan picks it for a section nothing closer fits.
-    for (const c of catalog.components.filter(component => component.id !== 'band')) expect(Object.values(c.sources).flat().length, c.id).toBeGreaterThan(0)
+    // The band stands in for no builder element: the migration's plan picks it for a section nothing closer fits. A
+    // behavior island neither: the writer's island pass places it for a source widget no component carries (PR-E E2),
+    // never a builder element's mapping, so a source element never reaches it unchecked.
+    for (const c of catalog.components.filter(component => component.id !== 'band' && component.id !== 'behavior')) expect(Object.values(c.sources).flat().length, c.id).toBeGreaterThan(0)
   })
 
   for (const c of catalog.components) {
