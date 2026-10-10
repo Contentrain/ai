@@ -10,7 +10,7 @@ import { safeHref } from '../components/kit/_shared/safe-url'
 import SEO from '../components/SEO.astro'
 import { servedPath, withBase } from '../lib/base'
 import { siteContact } from '../lib/contact'
-import { cssLength, cssSpacing, cssWeight } from '../lib/css-size'
+import { cssColor, cssLength, cssSpacing, cssWeight } from '../lib/css-size'
 import { textDirection } from '../lib/direction'
 import { getSite, getStrings } from '../lib/content'
 import { onWordPress } from '../lib/features'
@@ -133,6 +133,7 @@ const wpQueries = isHome ? await queryMap() : {}
       padTop={cssLength(siteConfig.chrome?.header?.padTop)}
       padBottom={cssLength(siteConfig.chrome?.header?.padBottom)}
       linkNav={siteConfig.chrome?.navLinks}
+      brandColor={cssColor(siteConfig.chrome?.brandColor)}
       menu={siteConfig.chrome?.menu}
       homeHref={withBase('/')}
       items={primary?.items ?? []}

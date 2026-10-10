@@ -387,9 +387,13 @@ describe('validateProjectPlan', () => {
   it('checks the list text size and the header and footer the source theme prints', () => {
     const p = plan()
     p.site.lists = { display: 'full', heading: true, text: 'clamp(1rem, 1rem + ((1vw - 0.2rem) * 0.196), 1.125rem)' }
-    p.site.chrome = { brand: '2.5rem', tagline: true, copyright: 'All rights reserved', titleLinks: true, navLinks: true, footerAlign: 'center' }
+    p.site.chrome = { brand: '2.5rem', tagline: true, copyright: 'All rights reserved', titleLinks: true, navLinks: true, brandColor: 'link', footerAlign: 'center' }
     p.site.tokens.roles['color-link'] = '#c36'
     expect(validateProjectPlan(p).errors).toEqual([])
+    for (const brandColor of ['rgb(204, 51, 102)', 'rgba(0 0 0 / 50%)', '#C36', 'hsl(330deg 60% 50%)']) {
+      p.site.chrome = { ...p.site.chrome, brandColor }
+      expect(validateProjectPlan(p).errors).toEqual([])
+    }
     p.site.lists = { ...p.site.lists, image: { height: 'clamp(15vw,30vh,400px)' }, gap: '22px', headingWidth: '1200px', tieOrder: 'asc' }
     expect(validateProjectPlan(p).errors).toEqual([])
     p.site.lists = { ...p.site.lists, image: { aspect: '1.95 / 1' } }
@@ -403,11 +407,12 @@ describe('validateProjectPlan', () => {
     ])
     p.site.lists = { display: p.site.lists.display, heading: p.site.lists.heading }
     p.site.lists.text = 'red; color: blue'
-    p.site.chrome = { brand: 'clamp(url(x))', copyright: '<b>x</b>', navLinks: 'yes' as unknown as boolean, footerAlign: 'middle' as 'center' }
+    p.site.chrome = { brand: 'clamp(url(x))', copyright: '<b>x</b>', navLinks: 'yes' as unknown as boolean, brandColor: 'red; background: url(x)', footerAlign: 'middle' as 'center' }
     expect(validateProjectPlan(p).errors).toEqual([
       'site.lists.text red; color: blue is not a CSS size',
       'site.chrome.brand clamp(url(x)) is not a CSS size',
       'site.chrome.navLinks is not a boolean',
+      'site.chrome.brandColor red; background: url(x) is not link or a colour',
       'site.chrome.footerAlign middle is not start or center',
       'site.chrome.copyright is not a line of plain text (1–200 characters, no markup)',
     ])

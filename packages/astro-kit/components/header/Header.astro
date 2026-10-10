@@ -8,6 +8,7 @@ import type { ActionInput, ImageInput, NavItem } from '../_shared/types'
 import Nav from '../nav/Nav.astro'
 import SearchBox from '../search-box/SearchBox.astro'
 import { safeHref } from '../_shared/safe-url'
+import { brandColorValue } from './header'
 
 const header = tv({
   slots: {
@@ -50,6 +51,11 @@ interface Props {
   padBottom?: string | undefined
   /** The navigation in the site's link colour, as themes that colour every link do (Hello Elementor). */
   linkNav?: boolean | undefined
+  /**
+   * The site name's colour where the source theme's is not the header's text colour: `link` for the site's link colour
+   * (a title that is a link styled like every other), or a colour (`#hex`, `rgb()`, `hsl()`; anything else is ignored).
+   */
+  brandColor?: string | undefined
   logo?: ImageInput | undefined
   /** Show the site name next to the logo. */
   showName?: boolean | undefined
@@ -68,11 +74,12 @@ interface Props {
   menu?: 'flyout' | 'mega' | undefined
 }
 
-const { siteName, tagline, brandSize, brandWeight, brandTracking, bordered, offsetTop, padTop, padBottom, linkNav, logo, showName = true, homeHref = '/', items, action, search, navLabel, menuLabel, closeLabel, layout, tone, position, menu } = Astro.props
+const { siteName, tagline, brandSize, brandWeight, brandTracking, bordered, offsetTop, padTop, padBottom, linkNav, brandColor, logo, showName = true, homeHref = '/', items, action, search, navLabel, menuLabel, closeLabel, layout, tone, position, menu } = Astro.props
 const { root, inner, brand } = header({ layout, tone, position, bordered })
 const rootStyle = offsetTop ? `margin-top: ${offsetTop}` : undefined
 const innerStyle = [padTop && `padding-top: ${padTop}`, padBottom && `padding-bottom: ${padBottom}`].filter(Boolean).join('; ') || undefined
-const brandStyle = [brandSize && `font-size: ${brandSize}`, brandWeight && `font-weight: ${brandWeight}`, brandTracking && `letter-spacing: ${brandTracking}`].filter(Boolean).join('; ') || undefined
+const brandColour = brandColorValue(brandColor)
+const brandStyle = [brandSize && `font-size: ${brandSize}`, brandWeight && `font-weight: ${brandWeight}`, brandTracking && `letter-spacing: ${brandTracking}`, brandColour && `color: ${brandColour}`].filter(Boolean).join('; ') || undefined
 // A tagline under the name keeps its line on a phone, as themes print it: the navigation wraps below.
 // The search field sits in the bar from lg; at md the bar already holds the navigation, so the field keeps its own row.
 const wrap = search ? 'flex-wrap lg:flex-nowrap' : tagline ? 'flex-wrap md:flex-nowrap' : undefined

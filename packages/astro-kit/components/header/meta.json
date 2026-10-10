@@ -22,6 +22,7 @@
     "padTop": { "type": "string", "description": "Space inside the bar above its content where the source's header has its own (a CSS length)." },
     "padBottom": { "type": "string", "description": "Space inside the bar below its content where the source's header has its own (a CSS length)." },
     "linkNav": { "type": "boolean", "default": false, "description": "The navigation in the site's link colour, as themes that colour every link do." },
+    "brandColor": { "type": "string", "description": "The site name's colour where the source theme's is not the header's text colour: link for the site's link colour, or a colour (#hex, rgb(), hsl())." },
     "logo": { "type": "object", "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } }, "description": "Logo image (site.logo)." },
     "showName": { "type": "boolean", "default": true, "description": "Show the site name next to the logo." },
     "homeHref": { "type": "url", "default": "/", "description": "Where the brand links." },

@@ -16,3 +16,7 @@ const SPACING = /^(?:normal|-?\d+(?:\.\d+)?(?:px|rem|em))$/
 export const cssLength = (value: string | undefined): string | undefined => (value && CSS_SIZE.test(value) ? value : undefined)
 export const cssWeight = (value: string | undefined): string | undefined => (value && WEIGHT.test(value) ? value : undefined)
 export const cssSpacing = (value: string | undefined): string | undefined => (value && SPACING.test(value) ? value : undefined)
+
+/** The header site name's colour: `link`, or a hex, `rgb()` or `hsl()` colour; never a `;` or `url()`. */
+const COLOR = /^(?:link|#[0-9a-f]{3,8}|(?:rgb|hsl)a?\([\d\s.,%/deg]+\))$/i
+export const cssColor = (value: string | undefined): string | undefined => (value && COLOR.test(value) ? value : undefined)
