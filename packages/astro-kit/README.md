@@ -25,7 +25,7 @@ They read its design tokens and pass its gates: `astro check` with the
 | `tabs` | Tabbed panels; readable as headed sections without JavaScript | Zag.js |
 | `testimonial` | Quotes with author and role | none |
 | `gallery` | Image grid with a popover lightbox | none |
-| `slider` | Carousel on a scroll-snap row | Embla |
+| `slider` | Carousel on a scroll-snap row: image, video (played only on request) or text-card slides | Embla |
 | `contact-form` | Contentrain Studio form in a section | Studio runtime |
 | `newsletter` | Sign-up posting straight to the list provider (Mailchimp, Kit, MailerLite, Brevo, Buttondown) | none |
 | `embed` | Video, map or player loaded on click; a provider link until then (YouTube via nocookie) | a few lines, no dependency |

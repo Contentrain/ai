@@ -1,5 +1,6 @@
 ---
-// A carousel of images with optional captions. Without JavaScript it is a
+// A carousel of images with optional captions, of videos (played only when the
+// reader asks), or of text cards (a slide with no image: quotes, testimonials). Without JavaScript it is a
 // horizontally scrolling, snapping row — every slide is reachable. With it,
 // Embla turns the row into a paged carousel with previous/next buttons and
 // slide dots. Slider.astro frames it (the section's own look, when a measured
@@ -9,6 +10,7 @@ import Button from '../_shared/Button.astro'
 import KitImage from '../_shared/KitImage.astro'
 import SectionHeader from '../_shared/SectionHeader.astro'
 import { imageOf, type ImageSource } from '../_shared/image'
+import { safeSrc } from '../_shared/safe-url'
 import { measuredSlides } from '../_shared/measured'
 import { type ActionInput, type ImageInput, type MeasuredStyle } from '../_shared/types'
 
@@ -19,6 +21,8 @@ const slider = tv({
     slide: 'relative min-w-0 shrink-0 snap-start overflow-hidden',
     image: 'w-full object-cover',
     caption: 'flex flex-col items-start gap-2',
+    // A slide with no image: its text as a card the height of the row, never laid over an image that is not there.
+    card: 'flex h-full flex-col items-start gap-2 rounded-[var(--radius-card)] bg-surface p-6 text-ink ring-1 ring-line/60',
   },
   variants: {
     perView: {
@@ -41,9 +45,14 @@ const slider = tv({
 })
 
 interface Slide {
-  /** The image's address (or, until 0.7, an `ImageInput`). */
-  image: ImageSource
+  /** The image's address (or, until 0.7, an `ImageInput`). Optional: a text card (a quote, a testimonial) is a slide too. */
+  image?: ImageSource | undefined
   imageAlt?: string | undefined
+  /**
+   * A video file's address (mp4, webm). Drawn in place of the image, which becomes its poster; it loads nothing until
+   * the reader plays it, never plays by itself, and pauses when its slide is paged away. The caption sits under it.
+   */
+  video?: string | undefined
   title?: string | undefined
   text?: string | undefined
   /** The slide's link, flat so a page stays within Contentrain's nesting depth. */
@@ -81,19 +90,28 @@ interface Props {
 }
 
 const { slides: given, label, prevLabel = 'Previous slide', nextLabel = 'Next slide', slideLabel = 'Slide', ofLabel = 'of', loop = false, perView = '1', aspect, caption, heading, intro, eyebrow, actions, measured, id = 'slider', framed = true } = Astro.props
+// A slide is drawn when it has something to show: an image, a video, or a text card (a title, a text or a link) where
+// the source carousel moved quotes or testimonials. A slide with none of them is dropped.
 const slides = given.flatMap((slide) => {
-  const image = imageOf(slide.image, slide.imageAlt)
+  const image = slide.image === undefined ? undefined : imageOf(slide.image, slide.imageAlt)
+  const video = safeSrc(slide.video) || undefined
   const action = slide.action ?? (slide.ctaLabel && slide.ctaHref ? { label: slide.ctaLabel, href: slide.ctaHref } : undefined)
-  return image ? [{ ...slide, image, action }] : []
-}) satisfies Array<{ image: ImageInput, action?: ActionInput | undefined }>
+  return image || video || slide.title || slide.text || action ? [{ ...slide, image, video, action }] : []
+}) satisfies Array<{ image: ImageInput | undefined, video: string | undefined, action?: ActionInput | undefined }>
 const measuredRow = measuredSlides(measured)
 // A measured row sets the slides in view itself, so the variant's own widths step aside.
 const slots = slider({ perView: measuredRow ? '1' : perView, aspect, caption })
+// A video's caption is never laid over it: it would cover the player's controls.
+const below = slider({ perView: measuredRow ? '1' : perView, aspect, caption: 'below' })
 const trackId = `${id}-track`
 const sizes = measuredRow ? '(min-width: 1216px) 1152px, 100vw' : perView === '1' ? '(min-width: 1216px) 1152px, 100vw' : perView === '2' ? '(min-width: 640px) 50vw, 85vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 85vw'
 // Arrows from sm up; on phones the carousel is swiped and the dots show the position.
 const Root = framed ? 'section' : 'div'
 const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md ring-1 ring-line hover:bg-surface disabled:opacity-40 sm:group-data-[ready]:flex'
+// A carousel of text cards alone has no picture for the arrows to sit on: over a card they would cover its words, so
+// they sit under the row, either side of the dots.
+const textOnly = !slides.some(slide => slide.image || slide.video)
+const under = 'flex size-11 shrink-0 items-center justify-center rounded-full bg-surface text-ink ring-1 ring-line hover:bg-surface disabled:opacity-40'
 ---
 <Root class:list={['group relative', framed && 'container-page py-8']} role={framed ? undefined : 'region'} aria-roledescription="carousel" aria-label={label} data-kit-slider data-loop={loop ? '' : undefined} data-slide-label={slideLabel}>
   <SectionHeader heading={heading} intro={intro} eyebrow={eyebrow} actions={actions} />
@@ -101,9 +119,11 @@ const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-cente
     <div class:list={['flex gap-4 [&>*]:shrink-0 group-data-[ready]:[&>*]:snap-align-none', measuredRow?.track]} id={trackId} data-container>
       {slides.map((slide, index) => (
         <div class={slots.slide({ class: measuredRow?.slide })} role="group" aria-roledescription="slide" aria-label={`${slideLabel} ${index + 1} ${ofLabel} ${slides.length}`}>
-          <KitImage image={slide.image} sizes={sizes} priority={index === 0} class={slots.image()} />
+          {slide.video
+            ? <video class={below.image({ class: 'bg-ink' })} src={safeSrc(slide.video)} poster={safeSrc(slide.image?.src)} controls preload="none" playsinline aria-label={slide.title || slide.image?.alt || `${slideLabel} ${index + 1}`} />
+            : slide.image && <KitImage image={slide.image} sizes={sizes} priority={index === 0} class={slots.image()} />}
           {(slide.title || slide.text || slide.action) && (
-            <div class={slots.caption()}>
+            <div class={slide.video ? below.caption() : slide.image ? slots.caption() : slots.card()}>
               {slide.title && <p class="text-xl [font-weight:var(--font-weight-heading,600)] text-balance">{slide.title}</p>}
               {slide.text && <p class="opacity-85">{slide.text}</p>}
               {slide.action && <Button action={slide.action} size="sm" class="mt-2" />}
@@ -113,17 +133,21 @@ const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-cente
       ))}
     </div>
   </div>
-  {slides.length > 1 && (
-    <>
-      <button type="button" class:list={[arrow, 'start-6 md:start-10']} aria-label={prevLabel} aria-controls={trackId} data-prev>
-        <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" /></svg>
-      </button>
-      <button type="button" class:list={[arrow, 'end-6 md:end-10']} aria-label={nextLabel} aria-controls={trackId} data-next>
-        <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg>
-      </button>
-      <div class="mt-4 hidden justify-center group-data-[ready]:flex" data-dots></div>
-    </>
-  )}
+  {slides.length > 1 && (textOnly
+    ? (
+      <div class="mt-4 hidden items-center justify-center gap-3 group-data-[ready]:flex">
+        <button type="button" class={under} aria-label={prevLabel} aria-controls={trackId} data-prev><svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" /></svg></button>
+        <div class="flex justify-center" data-dots></div>
+        <button type="button" class={under} aria-label={nextLabel} aria-controls={trackId} data-next><svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg></button>
+      </div>
+    )
+    : (
+      <>
+        <button type="button" class:list={[arrow, 'start-6 md:start-10']} aria-label={prevLabel} aria-controls={trackId} data-prev><svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" /></svg></button>
+        <button type="button" class:list={[arrow, 'end-6 md:end-10']} aria-label={nextLabel} aria-controls={trackId} data-next><svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg></button>
+        <div class="mt-4 hidden justify-center group-data-[ready]:flex" data-dots></div>
+      </>
+    ))}
 </Root>
 
 <script>
@@ -178,7 +202,9 @@ const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-cente
       if (prev) prev.disabled = !embla.canScrollPrev()
       if (next) next.disabled = !embla.canScrollNext()
     }
-    embla.on('select', sync).on('reInit', () => { drawDots(); sync() })
+    // A video paged out of view stops: nothing plays where the reader cannot see it.
+    const pause = () => { for (const video of root.querySelectorAll('video')) if (!video.paused) video.pause() }
+    embla.on('select', () => { pause(); sync() }).on('reInit', () => { drawDots(); sync() })
     sync()
     // Set up before the layout was final, Embla measures once more when it is: the page loaded, its fonts in, the tab in
     // view. A background tab lays nothing out (ctrl/cmd-click), so its carousel had one snap and a dead "next" until then;

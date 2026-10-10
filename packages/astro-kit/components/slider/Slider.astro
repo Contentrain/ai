@@ -1,5 +1,5 @@
 ---
-// A carousel of images with optional captions. Without JavaScript it is a
+// A carousel of images, videos or text cards, with optional captions. Without JavaScript it is a
 // horizontally scrolling, snapping row — every slide is reachable. With it,
 // Embla turns the row into a paged carousel with previous/next buttons and
 // slide dots. The markup and the script are in SliderTrack.astro; given a
@@ -10,9 +10,11 @@ import type { ActionInput, MeasuredStyle } from '../_shared/types'
 import SliderTrack from './SliderTrack.astro'
 
 interface Slide {
-  /** The image's address (or, until 0.7, an `ImageInput`). */
-  image: ImageSource
+  /** The image's address (or, until 0.7, an `ImageInput`). Optional: a text card (a quote, a testimonial) is a slide too. */
+  image?: ImageSource | undefined
   imageAlt?: string | undefined
+  /** A video file's address (mp4, webm): drawn in place of the image (its poster), played only when the reader asks. */
+  video?: string | undefined
   title?: string | undefined
   text?: string | undefined
   /** The slide's link, flat so a page stays within Contentrain's nesting depth. */
