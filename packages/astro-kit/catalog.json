@@ -1315,6 +1315,7 @@
         "embed"
       ],
       "shared": [
+        "KitImage.astro",
         "Section.astro",
         "measured.ts",
         "safe-url.ts",
@@ -1416,6 +1417,11 @@
                 "type": "url",
                 "label": "Link",
                 "description": "A tel:, mailto: or map link for it."
+              },
+              "iconImage": {
+                "type": "image",
+                "label": "Icon image",
+                "description": "The detail's own icon as an image file (the old site's map marker or phone, moved as an svg), drawn before it."
               }
             }
           },
@@ -1617,6 +1623,7 @@
         "details[].label": "details[].label",
         "details[].value": "details[].value",
         "details[].href": "details[].href",
+        "details[].iconImage": "details[].icon_image",
         "hours": "hours",
         "socials": "socials",
         "socials[].label": "socials[].label",
