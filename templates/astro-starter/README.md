@@ -108,6 +108,11 @@ preview; a site you publish builds without it.
   `siteConfig.timeZone` (an IANA name or a `±hh:mm` offset; absent, UTC), as
   WordPress fills them from the post's local date: a post written in the
   evening of a UTC−n site keeps its address and its day.
+  A page's `:path` is its parents' slugs and its own; the top page of that
+  trail may carry `path_prefix` (the folders before its address on the old
+  site when its parent page was not moved: `company` for
+  `/company/about-us/`). The migration sets it on those pages only; an editor
+  clears it, or gives the page a parent, to move the page.
 
 ## Studio binding: forms, comments and media
 

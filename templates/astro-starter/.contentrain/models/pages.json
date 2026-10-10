@@ -44,6 +44,12 @@
       "order": 140,
       "type": "relation"
     },
+    "path_prefix": {
+      "description": "The folders before this page's address on the old site (company for /company/about-us/), kept because its parent page was not moved. Used only while the page has no parent; clear it to put the page at the top level.",
+      "label": "Address prefix",
+      "order": 145,
+      "type": "string"
+    },
     "published_at": {
       "label": "Published at",
       "order": 60,

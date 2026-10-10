@@ -79,16 +79,27 @@ export function postHref(post: Post, categories: ReadonlyMap<string, Category>):
   }))
 }
 
-/** A page's address carries its parents: `about/team`. */
+/**
+ * A page's address carries its parents: `about/team`. The page at the top of that trail may carry `path_prefix`: the
+ * folders before its address on the old site when its parent page was not moved (`company` for `/company/about-us/`,
+ * `index.php` for a site whose pages lived under it). The migration sets it on those pages only; an editor sees it,
+ * and clearing it (or giving the page a parent) is how a page moves — a page an editor made top-level has none.
+ */
 export function pageHref(page: Page, pages: ReadonlyMap<string, Page>): string {
   if (siteConfig.home.kind === 'page' && siteConfig.home.slug === page.data.slug) return withBase('/')
   const trail: string[] = []
   const seen = new Set<string>()
+  let top: Page = page
   for (let at: Page | undefined = page; at && !seen.has(at.id); at = at.data.parent ? pages.get(at.data.parent.id) : undefined) {
     seen.add(at.id)
     trail.unshift(at.data.slug)
+    top = at
   }
-  return withBase(fillPattern(permalinks.page, { slug: page.data.slug, path: trail.join('/') }))
+  // As an editor typed it: blank, `.` and `..` segments are dropped, so a prefix never climbs or doubles a slash.
+  // Read whatever the pages model is: a project whose model has no `path_prefix` (an older store) builds as before.
+  const raw = (top.data as { path_prefix?: unknown }).path_prefix
+  const prefix = (typeof raw === 'string' ? raw : '').split('/').map((segment: string) => segment.trim()).filter((segment: string) => segment && segment !== '.' && segment !== '..')
+  return withBase(fillPattern(permalinks.page, { slug: page.data.slug, path: [...prefix, ...trail].join('/') }))
 }
 
 /** Categories nest; tags have no parent field. */
