@@ -19,6 +19,7 @@ async function astroFiles(dir: string): Promise<string[]> {
  */
 const SINKS = [
   'packages/astro-kit/components/behavior/Behavior.astro: html', // rich text, after the writer's island pass (migrate)
+  'packages/astro-kit/components/behavior/Behavior.astro: NOSCRIPT', // a constant <style> (a closed dialog shown in place without scripting); no field
   'packages/astro-kit/components/breadcrumb/Breadcrumb.astro: jsonLd', // JSON.stringify(...).replace(/</g, '\\u003c')
   'packages/astro-kit/components/dialog/Dialog.astro: noscript', // a <style> built from the dialog's id, a checked token; no field
   'packages/astro-kit/components/faq/Faq.astro: item.answer', // rich text

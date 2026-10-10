@@ -103,7 +103,17 @@ function carousel(root: HTMLElement): void {
 function dialog(root: HTMLElement): void {
   for (const opener of within(root, '[aria-haspopup="dialog"][aria-controls]')) {
     const content = target(root, opener.getAttribute('aria-controls'))
-    if (!content || content.closest('dialog')) continue
+    if (!content) continue
+    // The source's own closed <dialog> (the island pass keeps it closed, its openers named by aria-controls): opened as it
+    // is, with a close button where it has none. One inside another dialog is that dialog's content, not ours to open.
+    if (content instanceof HTMLDialogElement) {
+      if (content.parentElement?.closest('dialog')) continue
+      if (!content.querySelector('form[method="dialog"], .cr-behavior-control')) content.append(control(root.dataset.crClose ?? 'Close', () => content.close()))
+      opener.addEventListener('click', (event) => { event.preventDefault(); if (!content.open) content.showModal() })
+      content.addEventListener('click', (event) => { if (event.target === content) content.close() })
+      continue
+    }
+    if (content.closest('dialog')) continue
     const box = document.createElement('dialog')
     box.className = 'cr-behavior-dialog'
     content.before(box)
@@ -231,12 +241,17 @@ export function initBehaviors(scope: ParentNode = document): void {
     // A root inside another root is not ours: the component prints one root per island, so a nested one came with the
     // markup (a spoofed island the writer's pass would strip). Never wired, so its selectors never run.
     if (root.dataset.crReady !== undefined || !KINDS.has(kind) || root.parentElement?.closest('[data-cr-behavior]')) continue
-    try {
-      WIRE[kind as Kind](root)
-      root.dataset.crReady = ''
-    }
+    // Marked first: a wiring that fails part-way is never run again over what it already wired.
+    root.dataset.crReady = ''
+    try { WIRE[kind as Kind](root) }
     catch {
       // Left as printed: the content is all there, it just does not move.
+    }
+    // A dialog opener inside an island of another kind (a popup button in a tab): opened too, never left dead, even
+    // where the island's own wiring failed.
+    if (kind !== 'dialog') {
+      try { dialog(root) }
+      catch { /* its dialogs stay as printed */ }
     }
   }
 }
