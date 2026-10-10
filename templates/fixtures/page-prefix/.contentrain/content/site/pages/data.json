@@ -1,0 +1,42 @@
+{
+  "d1a000000001": {
+    "body": "<p>Who we are.</p>",
+    "link": "https://example.com/company/about-us/",
+    "path_prefix": "company",
+    "slug": "about-us",
+    "title": "About us",
+    "wp_id": 401
+  },
+  "d1a000000002": {
+    "body": "<p>The people.</p>",
+    "link": "https://example.com/company/about-us/team/",
+    "parent": "d1a000000001",
+    "slug": "team",
+    "title": "Our team",
+    "wp_id": 402
+  },
+  "d1a000000003": {
+    "body": "<p>Questions.</p>",
+    "link": "https://example.com/index.php/faqs/",
+    "path_prefix": "index.php",
+    "slug": "faqs",
+    "title": "FAQs",
+    "wp_id": 403
+  },
+  "d1a000000004": {
+    "body": "<p>An editor moved this page to the top level.</p>",
+    "link": "https://example.com/services/moved-up/",
+    "slug": "moved-up",
+    "title": "Moved up",
+    "wp_id": 404
+  },
+  "d1a000000005": {
+    "body": "<p>An editor gave this page a parent.</p>",
+    "link": "https://example.com/old/adopted/",
+    "parent": "d1a000000004",
+    "path_prefix": "old",
+    "slug": "adopted",
+    "title": "Adopted",
+    "wp_id": 405
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "absentFromDist": [
+    "\"/about-us/\"",
+    "\"/faqs/\"",
+    "\"/services/moved-up/\"",
+    "/old/adopted/",
+    "\"/team/\""
+  ],
+  "distFiles": {
+    "company/about-us/index.html": {
+      "contains": [
+        "About us",
+        "<link rel=\"canonical\" href=\"https://example.com/company/about-us/\">"
+      ]
+    },
+    "company/about-us/team/index.html": {
+      "contains": [
+        "Our team",
+        "<link rel=\"canonical\" href=\"https://example.com/company/about-us/team/\">"
+      ]
+    },
+    "index.php/faqs/index.html": {
+      "contains": [
+        "FAQs",
+        "<link rel=\"canonical\" href=\"https://example.com/index.php/faqs/\">"
+      ]
+    },
+    "moved-up/index.html": {
+      "contains": [
+        "Moved up",
+        "<link rel=\"canonical\" href=\"https://example.com/moved-up/\">"
+      ]
+    },
+    "moved-up/adopted/index.html": {
+      "contains": [
+        "Adopted",
+        "<link rel=\"canonical\" href=\"https://example.com/moved-up/adopted/\">"
+      ]
+    },
+    "sitemap-0.xml": {
+      "contains": [
+        "https://example.com/company/about-us/",
+        "https://example.com/company/about-us/team/",
+        "https://example.com/index.php/faqs/",
+        "https://example.com/moved-up/",
+        "https://example.com/moved-up/adopted/"
+      ]
+    }
+  }
+}
