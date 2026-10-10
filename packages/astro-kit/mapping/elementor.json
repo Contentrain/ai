@@ -897,7 +897,8 @@
       "id": "stats.counter",
       "component": "stats",
       "variant": {
-        "labelSize": "lg"
+        "labelSize": "lg",
+        "motion": "count"
       },
       "slots": {
         "title": {

@@ -416,5 +416,30 @@
       "valueSize": "display",
       "align": "center"
     }
+  },
+  {
+    "name": "count-label-lg",
+    "props": {
+      "motion": "count",
+      "labelSize": "lg",
+      "heading": "Since 2019",
+      "items": [
+        {
+          "value": "1,200",
+          "prefix": "$",
+          "suffix": "+",
+          "label": "Shops launched"
+        },
+        {
+          "value": "99.9",
+          "suffix": "%",
+          "label": "Uptime"
+        },
+        {
+          "value": "11",
+          "label": "Countries shipped to"
+        }
+      ]
+    }
   }
 ]
