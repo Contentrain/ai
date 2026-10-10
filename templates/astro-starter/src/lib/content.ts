@@ -96,7 +96,9 @@ export function pageHref(page: Page, pages: ReadonlyMap<string, Page>): string {
     top = at
   }
   // As an editor typed it: blank, `.` and `..` segments are dropped, so a prefix never climbs or doubles a slash.
-  const prefix = (top.data.path_prefix ?? '').split('/').map(segment => segment.trim()).filter(segment => segment && segment !== '.' && segment !== '..')
+  // Read whatever the pages model is: a project whose model has no `path_prefix` (an older store) builds as before.
+  const raw = (top.data as { path_prefix?: unknown }).path_prefix
+  const prefix = (typeof raw === 'string' ? raw : '').split('/').map((segment: string) => segment.trim()).filter((segment: string) => segment && segment !== '.' && segment !== '..')
   return withBase(fillPattern(permalinks.page, { slug: page.data.slug, path: [...prefix, ...trail].join('/') }))
 }
 
