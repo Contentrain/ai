@@ -1,5 +1,11 @@
 # @contentrain/astro-kit
 
+## 0.35.0
+
+### Minor Changes
+
+- fe84ccd: PostCard and PostList take a `timeZone` (an IANA name or a `±hh:mm` offset; absent, UTC): the date a card prints is read on the site's calendar, as WordPress prints it. The starter passes `siteConfig.timeZone`, which also places a post's `:year`/`:month`/`:day` address on the site's calendar: a post written in the evening of a UTC−n site keeps the address WordPress gave it.
+
 ## 0.34.3
 
 ### Patch Changes
