@@ -1,5 +1,30 @@
 # @contentrain/astro-kit
 
+## 0.39.0
+
+### Minor Changes
+
+- 9fb4d2c: A popup opened from the page's content opens the migrated `Dialog`, with no button of its own.
+  - `Dialog` takes `triggerStyle: "none"`: no button and no section band. A link to `#<id>` anywhere on the page opens it (marked `aria-haspopup="dialog"`, with no jump). So do a `commandfor` button where the browser has no Invoker Commands, and an address that arrives with `#<id>`. With scripting off, its content is laid out in place and the `#<id>` link jumps to it.
+  - A behaviour island's own closed `<dialog>` is opened by its `aria-controls` opener as a modal. A close button is added where it has none. This works in an island of any kind, even where that island's own wiring failed. Before, it stayed hidden.
+  - With scripting off, a closed `<dialog>` in an island is shown in place.
+- ad803f7: The header site name takes the source theme's colour where it is not the header's text colour. `Header` gains `brandColor`: `link` paints the name in the site's link colour (a title that is a link styled like every other, as Hello Elementor's is), or a colour (`#hex`, `rgb()`, `hsl()`) is used as it is; anything else is ignored. `site.chrome.brandColor` carries it in the plan, validated (`link` or a colour; never a `;` or `url()`), and the starter's BaseLayout passes it through the same guard. Without it the header is exactly as before.
+- b2fc508: Slider: a slide's image is optional. A slide with no image is drawn as a text card (title, text, link) the height of the row, so a carousel of quotes or testimonials is a slider too, and stays manageable in Studio as a slides list. The catalog's slide model has `image` not required. A slide with neither an image nor any text is still dropped. A carousel of text cards alone has its arrows under the row, either side of the dots, so they never cover a card's words. New fixture: `text-cards`.
+
+  Slider: a slide can hold a video (`video`, a file address, mp4/webm), drawn in place of the image, which becomes its poster. It loads nothing until the reader plays it (`preload="none"`), never plays by itself, keeps the browser's own controls with the caption under them (never over them), and pauses when its slide is paged away. A carousel of product clips moves as a slider. New fixture: `video-slides`.
+
+- c638f5e: `Stats` counts up where the source's counter did: `motion: "count"` (opt-in; default `static`). The Elementor and Divi counter mapping rules set it.
+  - The figure list becomes a `countup` behaviour island, wired by the existing `_shared/behaviors.ts`. Each figure's digits are their own span; its prefix, suffix and icon stay as printed.
+  - The final number is in the HTML: crawlers, screen readers, search and a page without JavaScript read it.
+  - Nothing moves under `prefers-reduced-motion: reduce` or without IntersectionObserver. The count starts only when the figure scrolls into view, once.
+  - The module loads only on a page with a counting Stats (`_shared/BehaviorScript.astro`); a static Stats ships no script.
+
+### Patch Changes
+
+- fe3f6a2: Slider: a carousel with any text card (mixed with image or video slides) has its arrows under the row, either side of the dots, so they never sit over a card's words. A video slide with a title has no label of its own: the caption under it names it, said once. New fixture: `mixed-cards`.
+- Updated dependencies [ad803f7]
+  - @contentrain/types@1.64.0
+
 ## 0.38.0
 
 ### Minor Changes
