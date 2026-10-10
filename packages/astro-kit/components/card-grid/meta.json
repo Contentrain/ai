@@ -99,6 +99,11 @@
             "label": "Image description",
             "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
           },
+          "icon": {
+            "type": "image",
+            "label": "Icon",
+            "description": "A small image above the title (decoration)."
+          },
           "eyebrow": {
             "type": "string",
             "label": "Eyebrow",

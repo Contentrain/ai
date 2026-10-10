@@ -626,6 +626,11 @@
                 "label": "Image description",
                 "description": "What the image shows, for readers who cannot see it; empty when it is decoration."
               },
+              "icon": {
+                "type": "image",
+                "label": "Icon",
+                "description": "A small image above the title (decoration)."
+              },
               "eyebrow": {
                 "type": "string",
                 "label": "Eyebrow",
@@ -791,6 +796,7 @@
         "items[].linkLabel": "items[].link_label",
         "items[].image": "items[].image",
         "items[].imageAlt": "items[].image_alt",
+        "items[].icon": "items[].icon",
         "items[].eyebrow": "items[].eyebrow"
       }
     },
