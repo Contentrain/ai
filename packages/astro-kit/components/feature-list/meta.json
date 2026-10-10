@@ -5,6 +5,7 @@
   "category": "section",
   "uses": [],
   "shared": [
+    "KitImage.astro",
     "Section.astro",
     "measured.ts",
     "safe-url.ts",
@@ -83,6 +84,11 @@
               "chat"
             ],
             "description": "The kit icon shown with the icon style; check when absent."
+          },
+          "iconImage": {
+            "type": "image",
+            "label": "Icon image",
+            "description": "The feature's own icon as an image file (the old site's icon, moved as an svg): drawn instead of the named icon; the check style ignores it."
           }
         }
       },
