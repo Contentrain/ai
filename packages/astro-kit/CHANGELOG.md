@@ -1,5 +1,24 @@
 # @contentrain/astro-kit
 
+## 0.37.0
+
+### Minor Changes
+
+- b278458: Behavior islands: a source widget no component carries keeps working.
+
+  - `Behavior` takes the source's own markup (a rich-text field the migration has already cleaned) and makes it work with one small vanilla module, `_shared/behaviors.ts`. The kinds: disclosure, tablist, carousel, in-page dialog, count-up, toggle, filter, anchor links and an image lightbox.
+  - The module writes text only through `textContent`. It never uses `innerHTML`, `eval` or the network, and it reads only ARIA, `details` and the `data-cr-*` attributes the component prints from its props. It is loaded only on pages that have an island. Without it, or with a selector the browser refuses, the island stays as printed, every item in reading order.
+
+  `Dialog`:
+
+  - takes a `form` slot, for the popup's form (the starter's form, or its link to the form on WordPress);
+  - takes a `trigger` (`click`, `load`, `exit`, `scroll`). It still opens only by its button; the value stays on the root, so the gates and the receipt can say a popup that opened by itself now opens on click;
+  - takes a `fact` (`data-cr-fact`), which the gates find it by.
+
+  The starter's header stays at the top while scrolling where the source's did (`siteConfig.chrome.header.sticky`, Header `position="sticky"`). The kit's Header had the option, but the starter never passed it, so a sticky source header scrolled away.
+
+- 0638b3e: `FeatureList` items take an `iconImage`: the feature's own icon as an image file, drawn as decoration (`alt=""`) in place of the named `icon`. An icon list whose icons have no kit name (Elementor's icon list with Font Awesome's pencil-ruler, credit-card, camera) keeps its icons when it moves as a feature list. Before, the only icon field was the kit's eight names, so other icons showed as a check. The `check` style still draws one check before every feature, and an item without an image is unchanged.
+
 ## 0.36.0
 
 ### Minor Changes
