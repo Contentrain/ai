@@ -38,5 +38,13 @@
     "slug": "adopted",
     "title": "Adopted",
     "wp_id": 405
+  },
+  "d1a000000006": {
+    "body": "<p>An editor typed dots into the prefix.</p>",
+    "link": "https://example.com/news/notes/",
+    "path_prefix": "../ news /./",
+    "slug": "notes",
+    "title": "Notes",
+    "wp_id": 406
   }
 }

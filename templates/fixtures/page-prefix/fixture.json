@@ -4,7 +4,8 @@
     "\"/faqs/\"",
     "\"/services/moved-up/\"",
     "/old/adopted/",
-    "\"/team/\""
+    "\"/team/\"",
+    "\"/notes/\""
   ],
   "distFiles": {
     "company/about-us/index.html": {
@@ -43,7 +44,14 @@
         "https://example.com/company/about-us/team/",
         "https://example.com/index.php/faqs/",
         "https://example.com/moved-up/",
-        "https://example.com/moved-up/adopted/"
+        "https://example.com/moved-up/adopted/",
+        "https://example.com/news/notes/"
+      ]
+    },
+    "news/notes/index.html": {
+      "contains": [
+        "Notes",
+        "<link rel=\"canonical\" href=\"https://example.com/news/notes/\">"
       ]
     }
   }
