@@ -4,6 +4,7 @@
 // 2026 kategorisi Tavuk Bakımı", "yazarı: admin", "Etiketler: kümes". A theme's words print as written; a part prints
 // when the entry has it, with its own prefix and suffix, as a WordPress block prints nothing (its label included) for
 // an empty one. A row left with nothing to print is not printed.
+import { formatDay } from '../lib/dates'
 import type { PostMeta } from '../site.config'
 import { safeHref } from './kit/_shared/safe-url'
 
@@ -19,7 +20,7 @@ interface Props {
 }
 
 const { meta, date, author, terms = [], tags = [], locale } = Astro.props
-const formatDate = (value: Date) => value.toLocaleDateString(locale, { dateStyle: 'long', timeZone: 'UTC' })
+const formatDate = (value: Date) => formatDay(value, locale)
 type Token = PostMeta[number][number][number]
 const has = (token: Token): boolean => 'text' in token
   || (token.part === 'date' ? !!date : token.part === 'author' ? !!author : (token.part === 'terms' ? terms : tags).length > 0)

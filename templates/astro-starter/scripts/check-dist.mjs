@@ -9,6 +9,7 @@
 //    llmstxt.org shape, every link on the site's own origin and built here
 //  - wp-query-map.json: WordPress's query addresses (?p=, ?page_id=, …) and
 //    where they lead now — the baseline every host serves, even when empty
+//  - a noindex page (404, search) has no canonical or og:url
 //  - every indexable page has a title, a meta description, a canonical URL, a
 //    language and well-formed JSON-LD — Lighthouse's SEO audits, which the
 //    site's CI asserts at 1
@@ -146,6 +147,9 @@ for (const path of pages) {
   if (!/<title>[^<]+<\/title>/.test(html)) fail(file, 'no <title>')
   const noindex = /<meta name="robots" content="noindex/.test(html)
   if (!noindex && !/<link rel="canonical" href="https?:\/\/[^"]+"/.test(html)) fail(file, 'no absolute canonical URL')
+  // A page kept out of search names no preferred address: the 404 page's own (`/404/`) is not served, and a crawler
+  // checking for dead links or a migration's old-site scan would follow it.
+  if (noindex && /<link rel="canonical"|<meta property="og:url"/.test(html)) fail(file, 'noindex page with a canonical or og:url')
   const description = /<meta name="description" content="([^"]*)"/.exec(html)?.[1]?.trim()
   if (!noindex && !description) fail(file, 'no meta description')
 

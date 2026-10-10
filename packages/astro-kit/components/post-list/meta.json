@@ -141,6 +141,11 @@
       "content": false,
       "description": "BCP 47 locale the dates are written in (site.language)."
     },
+    "timeZone": {
+      "type": "string",
+      "content": false,
+      "description": "Time zone the dates are read in (the site's: an IANA name or a ±hh:mm offset); absent, UTC."
+    },
     "surface": {
       "type": "string",
       "content": false,
