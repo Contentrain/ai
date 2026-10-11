@@ -5,12 +5,16 @@
 // Each island is a root the Behavior component prints: `data-cr-behavior` names the kind, and the item, title and
 // panel selectors come from the engine (`data-cr-items`, `data-cr-title`, `data-cr-panel`), never from the source
 // (the writer strips every `data-cr-*` the source markup carried before it wraps it). The module reads only ARIA,
-// `details`, `hidden` and those attributes.
+// `details`, `hidden` and those attributes, plus `data-cr-video` on a link the engine wrote after that strip (a source
+// video player kept as a poster link to its page).
 //
 // Rules (t13's PR-E checklist §4): text goes in through `textContent` only, never `innerHTML` or its family; no
 // `eval`, `Function`, `fetch` or `location`; every selector is scoped to its island root and run in try/catch (a
 // selector the browser refuses leaves that island static); `init` is idempotent; anything that fails leaves the
 // island as it was printed: readable, every item in reading order. Reduced motion is honoured.
+
+import { playerFrame, plainClick } from './embed-frame'
+import { videoTarget } from './embed-target'
 
 type Kind = 'disclosure' | 'tablist' | 'carousel' | 'dialog' | 'countup' | 'toggle' | 'filter' | 'anchor' | 'lightbox'
 
@@ -232,6 +236,33 @@ function lightbox(root: HTMLElement): void {
   }
 }
 
+/**
+ * A source video player the engine kept as a link to its page (`<a href=watch-url data-cr-video="youtube:<id>">`, a
+ * poster image inside): a plain click plays it in place. Nothing loads before the click, and the player's address is
+ * built from the checked provider and id (embed-target.ts), never from the link's `href` or the attribute's text: an
+ * id the parser refuses leaves the link as it is, opening the provider's page. The player takes the link's own box,
+ * so nothing around it moves.
+ */
+function video(root: HTMLElement): void {
+  for (const link of within(root, 'a[href][data-cr-video]') as HTMLAnchorElement[]) {
+    // Only `youtube:<id>` / `vimeo:<id>`, the form the engine writes: never an address, so no text of the attribute can
+    // reach the frame. One inside a nested root came with that (spoofed) root's markup: never ours to wire.
+    const value = link.dataset.crVideo ?? ''
+    const found = /^(?:youtube|vimeo):[\w-]+$/.test(value) && link.parentElement?.closest('[data-cr-behavior]') === root ? videoTarget(value) : null
+    if (!found) continue
+    link.addEventListener('click', (event) => {
+      if (!plainClick(event)) return
+      event.preventDefault()
+      const box = link.getBoundingClientRect()
+      const name = link.getAttribute('aria-label') || link.textContent?.trim() || link.querySelector('img')?.alt || found.provider
+      const frame = playerFrame(found.src, name, 'cr-behavior-video')
+      Object.assign(frame.style, { display: 'block', width: '100%', height: 'auto', border: '0', aspectRatio: box.width > 0 && box.height > 0 ? `${box.width} / ${box.height}` : '16 / 9' })
+      link.replaceWith(frame)
+      frame.focus()
+    })
+  }
+}
+
 const WIRE: Record<Kind, (root: HTMLElement) => void> = { disclosure, tablist, carousel, dialog, countup, toggle, filter, anchor, lightbox }
 
 /** Wires every island on the page once. Safe to call again (a view transition, a second script copy). */
@@ -247,6 +278,9 @@ export function initBehaviors(scope: ParentNode = document): void {
     catch {
       // Left as printed: the content is all there, it just does not move.
     }
+    // A video link plays in place in any island: a player sat in a tab, a slide or a panel as often as on its own.
+    try { video(root) }
+    catch { /* its links stay links */ }
     // A dialog opener inside an island of another kind (a popup button in a tab): opened too, never left dead, even
     // where the island's own wiring failed.
     if (kind !== 'dialog') {

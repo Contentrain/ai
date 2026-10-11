@@ -455,6 +455,8 @@
       "shared": [
         "Section.astro",
         "behaviors.ts",
+        "embed-frame.ts",
+        "embed-target.ts",
         "measured.ts",
         "safe-url.ts",
         "types.ts"
@@ -2226,6 +2228,8 @@
       "uses": [],
       "shared": [
         "KitImage.astro",
+        "embed-frame.ts",
+        "embed-target.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -2323,8 +2327,7 @@
       },
       "a11y": "The poster is one link named '<action>: <title>' that opens the provider's page without script. With script, Enter or a click puts the iframe in its place with the title as its accessible name and moves focus into it. Modified clicks (new tab) keep the link behaviour. The play icon is decorative.",
       "files": [
-        "Embed.astro",
-        "embed.ts"
+        "Embed.astro"
       ]
     },
     {
@@ -5733,7 +5736,7 @@
     {
       "id": "slider",
       "name": "Slider",
-      "description": "A carousel of images, videos or text cards, with optional title, text and button per slide. Without JavaScript it is a snapping horizontal scroller; Embla adds paging, arrows and dots.",
+      "description": "A carousel of images, videos (a file, or a YouTube/Vimeo link loaded only on click) or text cards, with optional title, text and button per slide. Without JavaScript it is a snapping horizontal scroller; Embla adds paging, arrows and dots.",
       "category": "section",
       "uses": [],
       "shared": [
@@ -5741,6 +5744,8 @@
         "KitImage.astro",
         "Section.astro",
         "SectionHeader.astro",
+        "embed-frame.ts",
+        "embed-target.ts",
         "image.ts",
         "measured.ts",
         "safe-url.ts",
@@ -5797,6 +5802,11 @@
                 "label": "Video",
                 "description": "A video file (mp4, webm) shown in place of the image, which is its poster. It plays only when the reader starts it."
               },
+              "embed": {
+                "type": "url",
+                "label": "Video link",
+                "description": "A video on another site: its YouTube, Vimeo, Loom or Wistia page (or youtube:<id> / vimeo:<id>). Shown as the image with a play button; nothing from that site loads until the reader clicks it. Wins over Video."
+              },
               "title": {
                 "type": "string",
                 "label": "Title",
@@ -5819,7 +5829,7 @@
               }
             }
           },
-          "description": "Slides: the image's address and text, an optional video (the image is its poster), and an optional link (ctaLabel + ctaHref). A slide with no image or video is a text card; one with none of them is not drawn."
+          "description": "Slides: the image's address and text, an optional video file or video link (the image is its poster), and an optional link (ctaLabel + ctaHref). A slide with no image or video is a text card; one with none of them is not drawn."
         },
         "label": {
           "type": "string",
@@ -5846,6 +5856,11 @@
           "type": "string",
           "content": false,
           "description": "ui-strings slider.of."
+        },
+        "playLabel": {
+          "type": "string",
+          "content": false,
+          "description": "ui-strings embed.play."
         },
         "loop": {
           "type": "boolean",
@@ -6055,7 +6070,7 @@
           "classic/owl"
         ]
       },
-      "a11y": "WAI-ARIA carousel pattern: a labelled region with aria-roledescription=carousel, slides as labelled groups ('Slide 2 of 5'), labelled previous/next buttons disabled at the ends, and dot buttons marking the current slide. The track and the buttons are tied by aria-controls, the row takes focus (arrow keys page it, polite live announcement). There is no autoplay, so nothing moves unasked: a video slide loads nothing until the reader plays it, never starts by itself, keeps its native controls with its caption under them, and pauses when its slide is paged away; with prefers-reduced-motion slides change without animation. Without JavaScript every slide is reachable by scrolling.",
+      "a11y": "WAI-ARIA carousel pattern: a labelled region with aria-roledescription=carousel, slides as labelled groups ('Slide 2 of 5'), labelled previous/next buttons disabled at the ends, and dot buttons marking the current slide. The track and the buttons are tied by aria-controls, the row takes focus (arrow keys page it, polite live announcement). There is no autoplay, so nothing moves unasked: a video slide loads nothing until the reader plays it, never starts by itself, keeps its native controls with its caption under them, and pauses when its slide is paged away; a video link is a labelled poster link ('Play: title') to the video's page that becomes the player only on a click (no request to the provider before it; YouTube from youtube-nocookie.com, Vimeo with dnt), keeps the poster's box so nothing moves, takes focus, and goes back to its poster when its slide is paged away; with prefers-reduced-motion slides change without animation. Without JavaScript every slide is reachable by scrolling.",
       "files": [
         "Slider.astro",
         "SliderTrack.astro"
@@ -6065,6 +6080,7 @@
         "slides[].image": "slides[].image",
         "slides[].imageAlt": "slides[].image_alt",
         "slides[].video": "slides[].video",
+        "slides[].embed": "slides[].embed",
         "slides[].title": "slides[].title",
         "slides[].text": "slides[].text",
         "slides[].ctaLabel": "slides[].cta_label",
@@ -6586,6 +6602,8 @@
         "KitImage.astro",
         "Section.astro",
         "behaviors.ts",
+        "embed-frame.ts",
+        "embed-target.ts",
         "image.ts",
         "measured.ts",
         "safe-url.ts",

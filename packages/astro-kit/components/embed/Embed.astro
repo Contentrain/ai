@@ -8,7 +8,7 @@
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import type { ImageInput } from '../_shared/types'
-import { embedTarget, mapTarget } from './embed'
+import { embedTarget, mapTarget } from '../_shared/embed-target'
 
 const embed = tv({
   slots: {
@@ -84,20 +84,16 @@ const linkUrl = url && /^https?:\/\//i.test(url) ? url : undefined
   )}
 
 <script>
+  import { playerFrame, plainClick } from '../_shared/embed-frame'
+
   // Click (or Enter) on the poster: the player replaces it, focused, so keyboard and screen-reader users land in it.
   // A modified click (new tab, new window) keeps the link's own behaviour.
   document.addEventListener('click', (event) => {
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    if (!plainClick(event)) return
     const link = (event.target as Element | null)?.closest<HTMLAnchorElement>('[data-kit-embed] a[data-embed-src]')
     if (!link?.dataset.embedSrc) return
     event.preventDefault()
-    const frame = document.createElement('iframe')
-    frame.src = link.dataset.embedSrc
-    frame.title = link.dataset.embedTitle ?? ''
-    frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write'
-    frame.allowFullscreen = true
-    frame.referrerPolicy = 'strict-origin-when-cross-origin'
-    frame.className = 'absolute inset-0 h-full w-full border-0'
+    const frame = playerFrame(link.dataset.embedSrc, link.dataset.embedTitle ?? '')
     link.replaceWith(frame)
     frame.focus()
   })

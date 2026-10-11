@@ -102,7 +102,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "each": "rs-slide, .tp-revslider-slidesli",
@@ -120,7 +121,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "each": ".slides > li",
@@ -138,7 +140,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "each": ".n2-ss-slide",
@@ -431,7 +434,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "each": ".swiper-slide:not(.swiper-slide-duplicate)",
@@ -450,7 +454,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "each": ".slick-slide:not(.slick-cloned)",
@@ -469,7 +474,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "each": ".splide__slide:not(.splide__slide--clone)",
@@ -488,7 +494,8 @@
         "prevLabel": "ui:slider.prev",
         "nextLabel": "ui:slider.next",
         "slideLabel": "ui:slider.slide",
-        "ofLabel": "ui:slider.of"
+        "ofLabel": "ui:slider.of",
+        "playLabel": "ui:embed.play"
       },
       "into": "slides",
       "each": ".owl-item:not(.cloned)",
