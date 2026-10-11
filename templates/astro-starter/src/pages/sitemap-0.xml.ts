@@ -1,7 +1,8 @@
 // Every public address, from the route table: published entries only, never
-// an entry marked noindex, never a redirect. Posts and pages carry their
+// an entry marked noindex, never a redirect (an empty inner page's included). Posts and pages carry their
 // last change.
 import type { APIRoute } from 'astro'
+import { leftEmpty } from '../lib/empty-page'
 import { routeTable } from '../lib/site-routes'
 
 const escape = (text: string) => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -10,6 +11,8 @@ export const GET: APIRoute = async ({ site }) => {
   const origin = site ?? new URL('http://localhost/')
   const urls: string[] = []
   for (const [href, route] of await routeTable()) {
+    // An inner page with nothing to build answers with a redirect, which a sitemap never lists.
+    if (route.view === 'page' && !route.isHome && leftEmpty(route)) continue
     const entry = route.view === 'post' ? route.post.data : route.view === 'page' ? route.page.data : route.view === 'entry' ? route.entry.data : undefined
     if ((entry?.seo as { noindex?: boolean } | undefined)?.noindex) continue
     const changed = (entry?.modified_at ?? entry?.published_at) as Date | undefined

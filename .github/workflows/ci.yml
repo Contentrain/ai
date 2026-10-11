@@ -90,6 +90,7 @@ jobs:
           node scripts/starter-gates.mjs --local-sdk --fixture comments
           node scripts/starter-gates.mjs --local-sdk --fixture comments --media studio
           node scripts/starter-gates.mjs --local-sdk --fixture forms-wordpress
+          node scripts/starter-gates.mjs --local-sdk --fixture empty-pages
 
       - name: Kit components render as their baselines
         # Every fixture of every astro-kit component, in a copy of the starter,

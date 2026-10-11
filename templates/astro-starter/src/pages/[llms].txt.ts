@@ -7,6 +7,7 @@
 // route build nothing: a plain `llms.txt.ts` always writes a file.)
 import type { APIRoute, GetStaticPaths } from 'astro'
 import { getSite } from '../lib/content'
+import { leftEmpty } from '../lib/empty-page'
 import { LLMS_LINKS, llmsTxt, type LlmsLink } from '../lib/llms'
 import { routeTable } from '../lib/site-routes'
 
@@ -17,6 +18,8 @@ export const GET: APIRoute = async ({ site: origin }) => {
   const sections = new Map<string, LlmsLink[]>([['Posts', []], ['Pages', []]])
   const add = (name: string, link: LlmsLink) => sections.set(name, [...(sections.get(name) ?? []), link])
   for (const [path, route] of await routeTable()) {
+    // An inner page with nothing to build answers with a redirect: not a page of its own.
+    if (route.view === 'page' && !route.isHome && leftEmpty(route)) continue
     const data = route.view === 'post' ? route.post.data : route.view === 'page' ? route.page.data : route.view === 'entry' ? route.entry.data : undefined
     if (!data || (data.seo as { noindex?: boolean } | undefined)?.noindex) continue
     const seo = data.seo as { description?: string } | undefined
