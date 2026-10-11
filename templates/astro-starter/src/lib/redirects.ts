@@ -10,7 +10,7 @@
 // unpublished one.
 
 import { getCollection } from 'astro:content'
-import { authorHref, byId, getRedirects, pageHref, termHref } from './content'
+import { authorHref, byId, getPosts, getRedirects, pageHref, stalePostPaths, termHref } from './content'
 import { servedPath, withBase } from './base'
 import { ownPath, publicLinks, sitePath } from './links'
 import { routeTable } from './site-routes'
@@ -75,6 +75,15 @@ function collect() {
       }
       if (routes.has(from) || paths.has(from) || to === from) continue
       paths.set(from, status === 410 ? { from, status } : { from, to, status })
+    }
+    // A post's kept address its slug has since left (`keptPath`): the old address leads to the post's new one, unless
+    // the collection already answers it or a page now lives there.
+    const [posts, categories] = await Promise.all([getPosts(), byId('categories')])
+    for (const moved of stalePostPaths(posts, categories)) {
+      const from = sitePath(servedPath(moved.from))
+      const to = link(moved.to)
+      if (to === undefined || routes.has(from) || paths.has(from) || to === from) continue
+      paths.set(from, { from, to, status: 301 })
     }
     return {
       paths: [...paths.values()].toSorted((a, b) => a.from.localeCompare(b.from)),

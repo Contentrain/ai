@@ -1,0 +1,46 @@
+{
+  "absentFromDist": [
+    "/blog/kristen-mathiasen/",
+    "\"/announcements/not-a-path"
+  ],
+  "distFiles": {
+    "announcements/kristen_mathiasen/index.html": {
+      "contains": [
+        "A kept address",
+        "<link rel=\"canonical\" href=\"https://example.com/announcements/kristen_mathiasen/\">"
+      ]
+    },
+    "blog/renamed-post/index.html": {
+      "contains": [
+        "A renamed post",
+        "<link rel=\"canonical\" href=\"https://example.com/blog/renamed-post/\">"
+      ]
+    },
+    "blog/plain-post/index.html": {
+      "contains": [
+        "A plain post"
+      ]
+    },
+    "blog/not-a-path/index.html": {
+      "contains": [
+        "Not a site path"
+      ]
+    },
+    "_redirects": {
+      "contains": [
+        "/news/old_name/ /blog/renamed-post/ 301"
+      ]
+    },
+    "sitemap-0.xml": {
+      "contains": [
+        "https://example.com/announcements/kristen_mathiasen/",
+        "https://example.com/blog/renamed-post/"
+      ]
+    },
+    "rss.xml": {
+      "contains": [
+        "https://example.com/announcements/kristen_mathiasen/"
+      ]
+    }
+  }
+}

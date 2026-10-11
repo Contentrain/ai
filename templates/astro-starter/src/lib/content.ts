@@ -69,8 +69,46 @@ function categoryPath(post: Post, categories: ReadonlyMap<string, Category>): st
   return category ? termTrail(category, categories).join('/') : (siteConfig.defaultCategory ?? 'uncategorized')
 }
 
-/** A post's address. `categories` (`byId('categories')`) fills `:category`; a pattern without it never reads them. */
+/** A slug as the store spells one (wp-import's `addressSlug`): lowercase letters, digits and marks, the rest one `-`. */
+function storeSlug(segment: string): string {
+  let text = segment
+  try { text = decodeURIComponent(segment) }
+  catch { /* as written */ }
+  return text.normalize('NFC').toLowerCase().normalize('NFC').replace(/[^\p{Ll}\p{Lo}\p{Lm}\p{N}\p{M}]+/gu, '-').replace(/^-+|-+$/g, '')
+}
+
+/** A site path as `path` takes one: starts and ends with `/`, no query, no fragment, no origin, no empty or dot segment. */
+const SITE_PATH = /^\/(?:[^/?#\s.][^/?#\s]*\/)+$/
+
+/**
+ * A post's own address kept from the old site (`path`: `/announcements/kristen_mathiasen/`, a slug the store spells
+ * `kristen-mathiasen`). The migration sets it only where the permalink pattern would build another address. It is an
+ * override of the pattern, never a second address: it holds while its last segment is the post's slug as the store
+ * spells it. An editor who changes the slug moves the post to the pattern's address, and the old one redirects there
+ * (`stalePostPaths`, 301). Clearing the field moves the post too; the old address then needs a rule in `redirects`.
+ */
+function keptPath(post: Post): string | undefined {
+  const raw = (post.data as { path?: unknown }).path
+  if (typeof raw !== 'string' || !SITE_PATH.test(raw)) return undefined
+  // The last segment: SITE_PATH ends in one, then `/`.
+  return storeSlug(raw.slice(raw.lastIndexOf('/', raw.length - 2) + 1, -1)) === post.data.slug ? raw : undefined
+}
+
+/** The kept addresses whose post's slug has changed since: each leads to where the post is now (a 301 rule). */
+export function stalePostPaths(posts: readonly Post[], categories: ReadonlyMap<string, Category>): Array<{ from: string, to: string }> {
+  return posts.flatMap((post) => {
+    const raw = (post.data as { path?: unknown }).path
+    return typeof raw === 'string' && SITE_PATH.test(raw) && !keptPath(post) ? [{ from: raw, to: postHref(post, categories) }] : []
+  })
+}
+
+/**
+ * A post's address: its kept `path` (`keptPath`), else the permalink pattern. `categories` (`byId('categories')`) fills
+ * `:category`; a pattern without it never reads them.
+ */
 export function postHref(post: Post, categories: ReadonlyMap<string, Category>): string {
+  const kept = keptPath(post)
+  if (kept) return withBase(kept)
   return withBase(fillPattern(permalinks.post, {
     slug: post.data.slug,
     id: String(post.data.wp_id ?? post.id),

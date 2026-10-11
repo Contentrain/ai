@@ -44,6 +44,12 @@
       "order": 120,
       "type": "datetime"
     },
+    "path": {
+      "description": "This post's address on the old site, kept where the permalink pattern would build another (an underscore or a character the slug cannot hold: /announcements/kristen_mathiasen/). Used only while its last part is this post's slug: change the slug and the post moves to the pattern's address, the old one redirecting there. Clearing it moves the post too; add a redirect for the old address if it is still linked.",
+      "label": "Kept address",
+      "order": 135,
+      "type": "string"
+    },
     "primary_category": {
       "label": "Primary category",
       "model": "categories",

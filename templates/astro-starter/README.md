@@ -113,6 +113,13 @@ preview; a site you publish builds without it.
   site when its parent page was not moved: `company` for
   `/company/about-us/`). The migration sets it on those pages only; an editor
   clears it, or gives the page a parent, to move the page.
+  A post may carry `path`: its address on the old site, kept where the pattern
+  would build another (a slug the store spells differently:
+  `/announcements/kristen_mathiasen/` for `kristen-mathiasen`). It is an
+  override, never a second address: it holds only while its last segment is
+  the post's slug as the store spells it. An editor who changes the slug moves
+  the post to the pattern's address, and the old address answers a 301 to it;
+  clearing the field moves the post without a redirect.
 
 ## Studio binding: forms, comments and media
 
