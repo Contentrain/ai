@@ -110,7 +110,7 @@ describe('the island link carries no player before the click', () => {
 
   it('never frames a javascript:, other-host or malformed value, whatever the href says', () => {
     // An address is never taken, even a known provider's: only `youtube:<id>` / `vimeo:<id>`, so no attribute text reaches the frame.
-    for (const value of ['javascript:alert(1)', 'https://evil.example/embed/aqz-KE-bpKQ', 'https://www.loom.com/embed/abc?x=1', 'https://fast.wistia.net/embed/iframe/abc', 'https://www.youtube.com/watch?v=aqz-KE-bpKQ', 'youtube:../../evil', 'youtube:aqz-KE-bpKQ?x=1', 'vimeo:76979871/../x', 'youtube:']) {
+    for (const value of ['javascript:alert(1)', 'https://evil.example/embed/aqz-KE-bpKQ', 'https://www.loom.com/embed/abc?x=1', 'https://fast.wistia.net/embed/iframe/abc', 'https://www.youtube.com/watch?v=aqz-KE-bpKQ', 'youtube:../../evil', 'youtube:aqz-KE-bpKQ?x=1', 'youtube:aqz-KE-bpKQ#t=1', 'vimeo:76979871#x', 'vimeo:76979871/../x', 'youtube:']) {
       document.body.innerHTML = island(link(value, 'https://www.youtube.com/watch?v=aqz-KE-bpKQ'))
       initBehaviors()
       expect(click(document.querySelector('a[data-cr-video]')!), value).toBe(true)
