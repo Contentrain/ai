@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it } from 'vitest'
 import { initBehaviors } from '../components/_shared/behaviors'
+import { playerFrame } from '../components/_shared/embed-frame'
 import { videoTarget } from '../components/_shared/embed-target'
 
 /**
@@ -29,7 +30,7 @@ describe('videoTarget', () => {
     expect(videoTarget('https://youtu.be/aqz-KE-bpKQ')?.provider).toBe('youtube')
   })
 
-  it('gives nothing for a bad id, another provider, a map or a widget', () => {
+  it('rejects a bad id, another provider, a map or a widget', () => {
     for (const value of ['youtube:abc', 'youtube:aqz-KE-bpKQ"><script>', 'vimeo:abc', 'dailymotion:x7tgad0', 'javascript:alert(1)', 'https://evil.example/watch?v=aqz-KE-bpKQ', 'https://www.google.com/maps/embed?pb=1', 'https://calendly.com/acme', '', undefined])
       expect(videoTarget(value), String(value)).toBeNull()
   })
@@ -48,6 +49,15 @@ describe('a video link in a behaviour island', () => {
     expect(frame.allowFullscreen).toBe(true)
     expect(document.querySelector('a[data-cr-video]')).toBeNull()
     expect(document.activeElement).toBe(frame)
+  })
+
+  it('a link with no poster (a title only) plays at 16:9, not one line of text tall', () => {
+    document.body.innerHTML = island('<a href="https://vimeo.com/76979871" data-cr-video="vimeo:76979871"><span>Behind the scenes</span></a>')
+    initBehaviors()
+    click(document.querySelector('a[data-cr-video]')!)
+    const frame = document.querySelector('iframe')!
+    expect(frame.style.aspectRatio).toBe('16 / 9')
+    expect(frame.title).toBe('Behind the scenes')
   })
 
   it('plays Vimeo with dnt, and builds the address from the attribute\'s id, never from the link\'s href', () => {
@@ -108,7 +118,7 @@ describe('the island link carries no player before the click', () => {
     expect(document.querySelector('iframe')).toBeNull()
   })
 
-  it('never frames a javascript:, other-host or malformed value, whatever the href says', () => {
+  it('rejects non-provider values, whatever the href says', () => {
     // An address is never taken, even a known provider's: only `youtube:<id>` / `vimeo:<id>`, so no attribute text reaches the frame.
     for (const value of ['javascript:alert(1)', 'https://evil.example/embed/aqz-KE-bpKQ', 'https://www.loom.com/embed/abc?x=1', 'https://fast.wistia.net/embed/iframe/abc', 'https://www.youtube.com/watch?v=aqz-KE-bpKQ', 'youtube:../../evil', 'youtube:aqz-KE-bpKQ?x=1', 'youtube:aqz-KE-bpKQ#t=1', 'vimeo:76979871#x', 'vimeo:76979871/../x', 'youtube:']) {
       document.body.innerHTML = island(link(value, 'https://www.youtube.com/watch?v=aqz-KE-bpKQ'))
@@ -116,5 +126,23 @@ describe('the island link carries no player before the click', () => {
       expect(click(document.querySelector('a[data-cr-video]')!), value).toBe(true)
       expect(document.querySelector('iframe'), value).toBeNull()
     }
+  })
+})
+
+describe('playerFrame: the one place a player address is built', () => {
+  it('rebuilds the address from the provider and id, dropping anything else the page carried', () => {
+    expect(playerFrame('https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ?autoplay=1&rel=0&onload=x', 'Tour')!.src).toBe('https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ?autoplay=1&rel=0')
+    expect(playerFrame('https://player.vimeo.com/video/76979871?autoplay=1&dnt=0', 'Tour')!.src).toBe('https://player.vimeo.com/video/76979871?autoplay=1&dnt=1')
+    expect(playerFrame('https://www.google.com/maps?q=Kadik%C3%B6y&output=embed', 'Office')!.src).toBe('https://www.google.com/maps?q=Kadik%C3%B6y&output=embed')
+  })
+
+  it('rejects non-provider values: no frame, so the link stays a link', () => {
+    for (const value of [
+      'javascript:alert(1)', 'JaVaScRiPt:alert(1)', ' javascript:alert(1)', '%6Aavascript:alert(1)', 'data:text/html,<p>x</p>', 'vbscript:x',
+      '//evil.example/embed/aqz-KE-bpKQ', 'https://evil.example/embed/aqz-KE-bpKQ', 'https://www.youtube.com.evil.example/embed/aqz-KE-bpKQ',
+      'https://evil.example/www.youtube-nocookie.com/embed/aqz-KE-bpKQ', 'https://youtube-nocookie.com.evil.example/embed/aqz-KE-bpKQ',
+      'https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ/../x', 'https://www.youtube-nocookie.com/embed/abc?x=1', 'https://www.youtube-nocookie.com/embed/aqz-KE-bpK%23',
+      'https://player.vimeo.com/video/76979871%2F..%2Fx', 'https://player.vimeo.com/video/abc', '', undefined,
+    ]) expect(playerFrame(value, 'x'), String(value)).toBeNull()
   })
 })

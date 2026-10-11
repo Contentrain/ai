@@ -51,5 +51,6 @@
       "html": "<h2><button aria-expanded=\"false\" aria-controls=\"cr-fx3-a\">Do you ship abroad?</button></h2><div id=\"cr-fx3-a\"><p>Yes, to the whole of Europe.</p></div><details><summary>Can I return an order?</summary><p>Within 30 days.</p></details>"
     }
   },
-  {"name": "video-link", "props": {"kind": "anchor", "fact": "interactive:fx5", "html": "<h2>Studio tour</h2><p>A walk through the workshop.</p><a href=\"https://www.youtube.com/watch?v=aqz-KE-bpKQ\" target=\"_blank\" rel=\"noopener noreferrer\" data-cr-video=\"youtube:aqz-KE-bpKQ\"><img src=\"/kit-fixtures/photo-2.svg\" alt=\"\" loading=\"lazy\" width=\"1200\" height=\"800\"><span>Studio tour</span></a>"}}
+  {"name": "video-link", "props": {"kind": "anchor", "fact": "interactive:fx5", "html": "<h2>Studio tour</h2><p>A walk through the workshop.</p><a href=\"https://www.youtube.com/watch?v=aqz-KE-bpKQ\" target=\"_blank\" rel=\"noopener noreferrer\" data-cr-video=\"youtube:aqz-KE-bpKQ\"><img src=\"/kit-fixtures/photo-2.svg\" alt=\"\" loading=\"lazy\" width=\"1200\" height=\"800\"><span>Studio tour</span></a>"}},
+  {"name": "video-link-no-poster", "props": {"kind": "anchor", "fact": "interactive:fx6", "html": "<h2>Studio tour</h2><a href=\"https://vimeo.com/76979871\" target=\"_blank\" rel=\"noopener noreferrer\" data-cr-video=\"vimeo:76979871\"><span>Behind the scenes</span></a>"}}
 ]

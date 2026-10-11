@@ -91,9 +91,10 @@ const linkUrl = url && /^https?:\/\//i.test(url) ? url : undefined
   document.addEventListener('click', (event) => {
     if (!plainClick(event)) return
     const link = (event.target as Element | null)?.closest<HTMLAnchorElement>('[data-kit-embed] a[data-embed-src]')
-    if (!link?.dataset.embedSrc) return
+    // An address that is no known player stays what it is: a link.
+    const frame = link && playerFrame(link.dataset.embedSrc, link.dataset.embedTitle ?? '')
+    if (!link || !frame) return
     event.preventDefault()
-    const frame = playerFrame(link.dataset.embedSrc, link.dataset.embedTitle ?? '')
     link.replaceWith(frame)
     frame.focus()
   })

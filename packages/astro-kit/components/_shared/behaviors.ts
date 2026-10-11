@@ -4,7 +4,7 @@
 //
 // Each island is a root the Behavior component prints: `data-cr-behavior` names the kind, and the item, title and
 // panel selectors come from the engine (`data-cr-items`, `data-cr-title`, `data-cr-panel`), never from the source
-// (the writer strips every `data-cr-*` the source markup carried before it wraps it). The module reads only ARIA,
+// (the engine's island pass strips every `data-cr-*` the source markup carried before it wraps it). The module reads only ARIA,
 // `details`, `hidden` and those attributes, plus `data-cr-video` on a link the engine wrote after that strip (a source
 // video player kept as a poster link to its page).
 //
@@ -252,11 +252,13 @@ function video(root: HTMLElement): void {
     if (!found) continue
     link.addEventListener('click', (event) => {
       if (!plainClick(event)) return
-      event.preventDefault()
-      const box = link.getBoundingClientRect()
+      // A poster's own box; a link with no picture (a title only) plays at 16:9, never as tall as one line of text.
+      const box = link.querySelector('img') ? link.getBoundingClientRect() : null
       const name = link.getAttribute('aria-label') || link.textContent?.trim() || link.querySelector('img')?.alt || found.provider
       const frame = playerFrame(found.src, name, 'cr-behavior-video')
-      Object.assign(frame.style, { display: 'block', width: '100%', height: 'auto', border: '0', aspectRatio: box.width > 0 && box.height > 0 ? `${box.width} / ${box.height}` : '16 / 9' })
+      if (!frame) return
+      event.preventDefault()
+      Object.assign(frame.style, { display: 'block', width: '100%', height: 'auto', border: '0', aspectRatio: box && box.width > 0 && box.height > 0 ? `${box.width} / ${box.height}` : '16 / 9' })
       link.replaceWith(frame)
       frame.focus()
     })

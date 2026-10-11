@@ -1,11 +1,15 @@
 // The player a click on an embed poster becomes: one recipe for the kit Embed, a Slider slide and a behaviour
-// island's video link, so the frame's permissions are written once. The address is always an `EmbedTarget`'s `src`
-// (built by embed-target.ts from a known provider), never text from the content.
+// island's video link, so the frame's permissions are written once. The address is checked again at the click: what
+// the page carries (`data-embed-src`, which an edited page could change) goes through embed-target.ts once more, and
+// the frame loads the address that builds from a known provider, never the attribute's text.
+import { embedTarget } from './embed-target'
 
-/** An iframe for `src`, named `title`, filling its positioned frame. */
-export function playerFrame(src: string, title: string, className = 'absolute inset-0 h-full w-full border-0'): HTMLIFrameElement {
+/** An iframe for the player at `src`, named `title`, filling its positioned frame; none when `src` is no known player. */
+export function playerFrame(src: string | undefined, title: string, className = 'absolute inset-0 h-full w-full border-0'): HTMLIFrameElement | null {
+  const target = src ? embedTarget(src) : null
+  if (!target) return null
   const frame = document.createElement('iframe')
-  frame.src = src
+  frame.src = target.src
   frame.title = title
   frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write'
   frame.allowFullscreen = true
