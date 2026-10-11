@@ -1,0 +1,41 @@
+{
+  "siteConfig": [
+    {
+      "from": "  home: { kind: 'posts' },",
+      "to": "  home: { kind: 'page', slug: 'welcome' },"
+    }
+  ],
+  "distFiles": {
+    "index.html": {
+      "contains": [
+        "Hello there",
+        "<meta name=\"description\" content=\"A studio for small shops.\">"
+      ]
+    },
+    "about/index.html": {
+      "contains": [
+        "A small team since 2019."
+      ]
+    },
+    "about/team/index.html": {
+      "contains": [
+        "http-equiv=\"refresh\"",
+        "/about/"
+      ]
+    },
+    "coming-soon/index.html": {
+      "contains": [
+        "http-equiv=\"refresh\""
+      ]
+    },
+    "sitemap-0.xml": {
+      "contains": [
+        "https://example.com/about/</loc>"
+      ],
+      "excludes": [
+        "/about/team/",
+        "/coming-soon/"
+      ]
+    }
+  }
+}
