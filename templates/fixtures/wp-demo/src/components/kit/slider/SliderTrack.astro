@@ -1,6 +1,6 @@
 ---
 // A carousel of images with optional captions, of videos (played only when the
-// reader asks), or of text cards (a slide with no image: quotes, testimonials). Without JavaScript it is a
+// reader asks; a YouTube or Vimeo one only once the reader clicks its poster), or of text cards (a slide with no image: quotes, testimonials). Without JavaScript it is a
 // horizontally scrolling, snapping row — every slide is reachable. With it,
 // Embla turns the row into a paged carousel with previous/next buttons and
 // slide dots. Slider.astro frames it (the section's own look, when a measured
@@ -11,6 +11,7 @@ import KitImage from '../_shared/KitImage.astro'
 import SectionHeader from '../_shared/SectionHeader.astro'
 import { imageOf, type ImageSource } from '../_shared/image'
 import { safeSrc } from '../_shared/safe-url'
+import { onVideoHost, videoTarget, type EmbedTarget } from '../_shared/embed-target'
 import { measuredSlides } from '../_shared/measured'
 import { type ActionInput, type ImageInput, type MeasuredStyle } from '../_shared/types'
 
@@ -53,6 +54,13 @@ interface Slide {
    * the reader plays it, never plays by itself, and pauses when its slide is paged away. The caption sits under it.
    */
   video?: string | undefined
+  /**
+   * A video on another site: its page (YouTube, Vimeo, Loom, Wistia) or `youtube:<id>` / `vimeo:<id>`. Drawn as its
+   * poster (the image, else a dark panel) with a play button; nothing from the provider loads until the reader clicks,
+   * and then the player takes the poster's place (YouTube from youtube-nocookie.com, Vimeo with dnt). Paged away, it
+   * goes back to its poster. Wins over `video`; an address that is not one of these videos is not drawn.
+   */
+  embed?: string | undefined
   title?: string | undefined
   text?: string | undefined
   /** The slide's link, flat so a page stays within Contentrain's nesting depth. */
@@ -77,6 +85,8 @@ interface Props {
   slideLabel?: string | undefined
   /** Word between a slide number and the count ("of"). */
   ofLabel?: string | undefined
+  /** An embedded video's play button, before its name ("Play"). */
+  playLabel?: string | undefined
   loop?: boolean | undefined
   perView?: '1' | '2' | '3' | undefined
   aspect?: 'wide' | 'standard' | 'square' | undefined
@@ -89,15 +99,19 @@ interface Props {
   framed?: boolean | undefined
 }
 
-const { slides: given, label, prevLabel = 'Previous slide', nextLabel = 'Next slide', slideLabel = 'Slide', ofLabel = 'of', loop = false, perView = '1', aspect, caption, heading, intro, eyebrow, actions, measured, id = 'slider', framed = true } = Astro.props
-// A slide is drawn when it has something to show: an image, a video, or a text card (a title, a text or a link) where
+const { slides: given, label, prevLabel = 'Previous slide', nextLabel = 'Next slide', slideLabel = 'Slide', ofLabel = 'of', playLabel = 'Play', loop = false, perView = '1', aspect, caption, heading, intro, eyebrow, actions, measured, id = 'slider', framed = true } = Astro.props
+// A slide is drawn when it has something to show: an image, a video (a file or another site's), or a text card (a title, a text or a link) where
 // the source carousel moved quotes or testimonials. A slide with none of them is dropped.
 const slides = given.flatMap((slide) => {
-  const image = slide.image === undefined ? undefined : imageOf(slide.image, slide.imageAlt)
-  const video = safeSrc(slide.video) || undefined
+  const player = videoTarget(slide.embed) ?? undefined
+  // A video's poster is the site's own image: one on the provider's hosts (its thumbnail) would be a request to it
+  // before the reader asked, so the poster is a plain dark panel instead.
+  const picture = slide.image === undefined ? undefined : imageOf(slide.image, slide.imageAlt)
+  const image = player && onVideoHost(picture?.src) ? undefined : picture
+  const video = player ? undefined : safeSrc(slide.video) || undefined
   const action = slide.action ?? (slide.ctaLabel && slide.ctaHref ? { label: slide.ctaLabel, href: slide.ctaHref } : undefined)
-  return image || video || slide.title || slide.text || action ? [{ ...slide, image, video, action }] : []
-}) satisfies Array<{ image: ImageInput | undefined, video: string | undefined, action?: ActionInput | undefined }>
+  return image || video || player || slide.title || slide.text || action ? [{ ...slide, image, video, player, action }] : []
+}) satisfies Array<{ image: ImageInput | undefined, video: string | undefined, player: EmbedTarget | undefined, action?: ActionInput | undefined }>
 const measuredRow = measuredSlides(measured)
 // A measured row sets the slides in view itself, so the variant's own widths step aside.
 const slots = slider({ perView: measuredRow ? '1' : perView, aspect, caption })
@@ -110,7 +124,9 @@ const Root = framed ? 'section' : 'div'
 const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md ring-1 ring-line hover:bg-surface disabled:opacity-40 sm:group-data-[ready]:flex'
 // A text card has no picture for the arrows to sit on: over it they would cover its words. A carousel with any text
 // card (all of them, or mixed with pictures) has its arrows under the row, either side of the dots.
-const cards = slides.some(slide => !slide.image && !slide.video)
+const cards = slides.some(slide => !slide.image && !slide.video && !slide.player)
+// A video from another site is a link to its page, so without JavaScript it opens there; its frame keeps the image's
+// ratio, so the player that replaces the link moves nothing.
 const under = 'flex size-11 shrink-0 items-center justify-center rounded-full bg-surface text-ink ring-1 ring-line hover:bg-surface disabled:opacity-40'
 ---
 <Root class:list={['group relative', framed && 'container-page py-8']} role={framed ? undefined : 'region'} aria-roledescription="carousel" aria-label={label} data-kit-slider data-loop={loop ? '' : undefined} data-slide-label={slideLabel}>
@@ -119,11 +135,22 @@ const under = 'flex size-11 shrink-0 items-center justify-center rounded-full bg
     <div class:list={['flex gap-4 [&>*]:shrink-0 group-data-[ready]:[&>*]:snap-align-none', measuredRow?.track]} id={trackId} data-container>
       {slides.map((slide, index) => (
         <div class={slots.slide({ class: measuredRow?.slide })} role="group" aria-roledescription="slide" aria-label={`${slideLabel} ${index + 1} ${ofLabel} ${slides.length}`}>
-          {slide.video
+          {slide.player
+            ? (
+              <div class={below.image({ class: 'relative overflow-hidden bg-ink' })} data-slide-player>
+                <a href={slide.player.href} class="group/play absolute inset-0 block focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent" data-embed-src={slide.player.src} data-embed-title={slide.title || slide.image?.alt || `${slideLabel} ${index + 1}`} aria-label={`${playLabel}: ${slide.title || slide.image?.alt || `${slideLabel} ${index + 1}`}`} rel="noopener">
+                  {slide.image && <KitImage image={{ ...slide.image, alt: '' }} sizes={sizes} priority={index === 0} class="absolute inset-0 h-full w-full object-cover opacity-85 transition-opacity group-hover/play:opacity-70" />}
+                  <span class="absolute top-1/2 left-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-accent text-accent-ink shadow-lg transition-transform group-hover/play:scale-105 group-focus-visible/play:scale-105" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="ms-1 size-7" fill="currentColor"><path d="M7 4.5v15a.5.5 0 0 0 .77.42l11.5-7.5a.5.5 0 0 0 0-.84L7.77 4.08A.5.5 0 0 0 7 4.5Z" /></svg>
+                  </span>
+                </a>
+              </div>
+            )
+            : slide.video
             ? <video class={below.image({ class: 'bg-ink' })} src={safeSrc(slide.video)} poster={safeSrc(slide.image?.src)} controls preload="none" playsinline aria-label={slide.title ? undefined : slide.image?.alt || `${slideLabel} ${index + 1}`} />
             : slide.image && <KitImage image={slide.image} sizes={sizes} priority={index === 0} class={slots.image()} />}
           {(slide.title || slide.text || slide.action) && (
-            <div class={slide.video ? below.caption() : slide.image ? slots.caption() : slots.card()}>
+            <div class={slide.video || slide.player ? below.caption() : slide.image ? slots.caption() : slots.card()}>
               {slide.title && <p class="text-xl [font-weight:var(--font-weight-heading,600)] text-balance">{slide.title}</p>}
               {slide.text && <p class="opacity-85">{slide.text}</p>}
               {slide.action && <Button action={slide.action} size="sm" class="mt-2" />}
@@ -152,6 +179,7 @@ const under = 'flex size-11 shrink-0 items-center justify-center rounded-full bg
 
 <script>
   import EmblaCarousel from 'embla-carousel'
+  import { playerFrame, plainClick } from '../_shared/embed-frame'
 
   for (const root of document.querySelectorAll<HTMLElement>('[data-kit-slider]')) {
     const viewport = root.querySelector<HTMLElement>('[data-viewport]')
@@ -204,7 +232,29 @@ const under = 'flex size-11 shrink-0 items-center justify-center rounded-full bg
     }
     // A video paged out of view stops: nothing plays where the reader cannot see it.
     const pause = () => { for (const video of root.querySelectorAll('video')) if (!video.paused) video.pause() }
-    embla.on('select', () => { pause(); sync() }).on('reInit', () => { drawDots(); sync() })
+    // Another site's video: its poster link becomes the player on a plain click (a swipe that ends on it is not one:
+    // Embla cancels that click), and goes back to its poster when its slide is paged out of view, which stops it and
+    // ends the provider's session there.
+    const posters = new Map<HTMLIFrameElement, HTMLAnchorElement>()
+    viewport.addEventListener('click', (event) => {
+      if (!plainClick(event)) return
+      const link = (event.target as Element | null)?.closest<HTMLAnchorElement>('[data-slide-player] a[data-embed-src]')
+      const frame = link && playerFrame(link.dataset.embedSrc, link.dataset.embedTitle ?? '')
+      if (!link || !frame) return
+      event.preventDefault()
+      posters.set(frame, link)
+      link.replaceWith(frame)
+      frame.focus()
+    })
+    const unplay = () => {
+      const inView = new Set(embla.slidesInView().map(index => embla.slideNodes()[index]))
+      for (const [frame, link] of posters) {
+        if (inView.has(frame.closest<HTMLElement>('[aria-roledescription="slide"]') ?? undefined)) continue
+        frame.replaceWith(link)
+        posters.delete(frame)
+      }
+    }
+    embla.on('select', () => { pause(); sync() }).on('settle', unplay).on('reInit', () => { drawDots(); sync() })
     sync()
     // Set up before the layout was final, Embla measures once more when it is: the page loaded, its fonts in, the tab in
     // view. A background tab lays nothing out (ctrl/cmd-click), so its carousel had one snap and a dead "next" until then;

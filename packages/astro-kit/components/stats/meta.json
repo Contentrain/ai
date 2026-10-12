@@ -9,6 +9,8 @@
     "KitImage.astro",
     "Section.astro",
     "behaviors.ts",
+    "embed-frame.ts",
+    "embed-target.ts",
     "image.ts",
     "measured.ts",
     "safe-url.ts",

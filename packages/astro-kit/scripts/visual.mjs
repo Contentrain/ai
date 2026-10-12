@@ -116,6 +116,7 @@ const fixturesOf = new Map(components.map(c => [c.id, new Map(JSON.parse(readFil
 const outline = []
 const menus = []
 const carousels = []
+const embeds = []
 /** Every real href of a menu tree (a Nav or Header `items` prop), at any depth. */
 const menuHrefs = items => (items ?? []).flatMap(item => (item.href && item.href !== '#' ? [item.href] : []).concat(menuHrefs(item.children)))
 const browser = await chromium.launch(process.platform === 'darwin' ? { channel: 'chrome' } : {})
@@ -238,6 +239,39 @@ try {
     }
     await page.close()
   }
+  // A video from another site loads nothing until the reader asks: no request to its host while the page loads and is
+  // scrolled through, then, on a click or Enter on a poster, its player (youtube-nocookie, Vimeo with dnt) in the poster's
+  // own box, focused. The providers' hosts are answered here, never reached.
+  for (const kitId of ['slider', 'behavior'].filter(want => components.some(c => c.id === want))) {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+    const asked = []
+    await page.route(url => /(?:^|\.)(?:(?:youtube|youtube-nocookie|ytimg|googlevideo|vimeo|vimeocdn)\.com|youtu\.be)$/.test(url.hostname), (route) => {
+      asked.push(route.request().url())
+      return route.fulfill({ status: 200, contentType: 'text/html', body: '' })
+    })
+    await page.goto(`${origin}/kit/${kitId}/`, { waitUntil: 'networkidle' })
+    await page.evaluate(() => new Promise((done) => { window.scrollTo(0, document.body.scrollHeight); setTimeout(done, 300) }))
+    await page.evaluate(() => window.scrollTo(0, 0))
+    if (asked.length) embeds.push(`${kitId}: ${asked.length} request(s) to a video host before any click (${asked[0]})`)
+    const links = await page.$$('[data-slide-player] a[data-embed-src], .cr-behavior a[data-cr-video]')
+    if (!links.length) embeds.push(`${kitId}: no video poster on the kit page`)
+    for (const [i, link] of links.entries()) {
+      const holder = await link.evaluateHandle(el => el.parentElement)
+      await link.scrollIntoViewIfNeeded()
+      const before = await link.boundingBox()
+      if (i % 2) { await link.focus(); await page.keyboard.press('Enter') }
+      else await link.click()
+      const frame = await holder.$('iframe')
+      if (!frame) { embeds.push(`${kitId} poster ${i + 1}: ${i % 2 ? 'Enter' : 'a click'} does not start the player`); continue }
+      const after = await frame.boundingBox()
+      const { src, focused } = await frame.evaluate(f => ({ src: f.src, focused: document.activeElement === f }))
+      const host = new URL(src).hostname
+      if (host !== 'www.youtube-nocookie.com' && !(host === 'player.vimeo.com' && new URL(src).searchParams.get('dnt') === '1')) embeds.push(`${kitId} poster ${i + 1}: the player loads ${src}`)
+      if (!focused) embeds.push(`${kitId} poster ${i + 1}: the player does not take focus`)
+      if (!before || !after || Math.abs(before.width - after.width) > 1 || Math.abs(before.height - after.height) > 1) embeds.push(`${kitId} poster ${i + 1}: the player is ${after?.width}×${after?.height}, the poster was ${before?.width}×${before?.height}`)
+    }
+    await page.close()
+  }
 } finally {
   await browser.close()
   server.close()
@@ -246,11 +280,12 @@ try {
 if (outline.length) console.error(`visual: ${outline.length} fixture(s) skip a heading level:\n${outline.map(line => `  ✗ ${line}`).join('\n')}`)
 if (menus.length) console.error(`visual: ${menus.length} menu level(s) lost:\n${menus.map(line => `  ✗ ${line}`).join('\n')}`)
 if (carousels.length) console.error(`visual: ${carousels.length} carousel(s) not paging:\n${carousels.map(line => `  ✗ ${line}`).join('\n')}`)
+if (embeds.length) console.error(`visual: ${embeds.length} embedded video(s) wrong:\n${embeds.map(line => `  ✗ ${line}`).join('\n')}`)
 if (written.length) console.log(`visual: wrote ${written.length} baseline(s) under ${baselineDir}`)
 if (failures.length) {
   console.error(`visual: ${failures.length} fixture(s) changed:\n${failures.map(line => `  ✗ ${line}`).join('\n')}`)
   process.exit(1)
 }
-if (outline.length || menus.length || carousels.length) process.exit(1)
+if (outline.length || menus.length || carousels.length || embeds.length) process.exit(1)
 console.log(`visual: ${components.length} component(s) × ${WIDTHS.length} widths match`)
 if (!values.out) rmSync(site, { recursive: true, force: true })

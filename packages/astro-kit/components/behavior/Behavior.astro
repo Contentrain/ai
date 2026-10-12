@@ -71,4 +71,12 @@ const NOSCRIPT = '<style>.cr-behavior dialog:not([open]){display:block;position:
   .cr-behavior-dialog { margin: auto; max-width: min(92vw, 40rem); max-height: 85dvh; border: 1px solid var(--color-line); border-radius: var(--radius-card, 0.75rem); padding: 1.5rem; }
   .cr-behavior-dialog::backdrop { background: rgb(0 0 0 / 0.5); }
   .cr-behavior-lightbox img { display: block; max-width: 100%; max-height: 75dvh; margin-inline: auto; }
+  /* A source video player kept as a poster link (data-cr-video): a play button over it, drawn in CSS (nothing loads). */
+  .cr-behavior a[data-cr-video] { position: relative; display: block; }
+  .cr-behavior a[data-cr-video] img { display: block; width: 100%; height: auto; }
+  .cr-behavior a[data-cr-video]::before { content: ''; position: absolute; z-index: 1; top: 50%; left: 50%; width: 4rem; height: 4rem; translate: -50% -50%; border-radius: 9999px; background: var(--color-accent); box-shadow: 0 4px 12px rgb(0 0 0 / 0.25); }
+  .cr-behavior a[data-cr-video]::after { content: ''; position: absolute; z-index: 2; top: 50%; left: 50%; translate: -35% -50%; border-top: 0.75rem solid transparent; border-bottom: 0.75rem solid transparent; border-left: 1.25rem solid var(--color-accent-ink, #fff); }
+  /* No poster (only the title): a 16:9 dark panel, the title along its foot, the button in its middle. */
+  .cr-behavior a[data-cr-video]:not(:has(img)) { aspect-ratio: 16 / 9; display: flex; align-items: flex-end; padding: 1rem 1.25rem; border-radius: var(--radius-card, 0.75rem); background: var(--color-ink, #111827); color: var(--color-surface, #fff); font-weight: 600; text-decoration: none; }
+  .cr-behavior a[data-cr-video]:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 </style>
