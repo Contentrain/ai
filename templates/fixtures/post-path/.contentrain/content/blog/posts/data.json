@@ -1,0 +1,37 @@
+{
+  "d0a000000001": {
+    "body": "<p>An underscore in the old address.</p>",
+    "excerpt": "Kept.",
+    "path": "/announcements/kristen_mathiasen/",
+    "published_at": "2026-09-04T09:00:00Z",
+    "slug": "kristen-mathiasen",
+    "title": "A kept address",
+    "wp_id": 401
+  },
+  "d0a000000002": {
+    "body": "<p>Renamed by an editor after the move.</p>",
+    "excerpt": "Renamed.",
+    "path": "/news/old_name/",
+    "published_at": "2026-09-03T09:00:00Z",
+    "slug": "renamed-post",
+    "title": "A renamed post",
+    "wp_id": 402
+  },
+  "d0a000000003": {
+    "body": "<p>No kept address.</p>",
+    "excerpt": "Plain.",
+    "published_at": "2026-09-02T09:00:00Z",
+    "slug": "plain-post",
+    "title": "A plain post",
+    "wp_id": 403
+  },
+  "d0a000000004": {
+    "body": "<p>A path that is not a site path.</p>",
+    "excerpt": "Ignored.",
+    "path": "announcements/not-a-path",
+    "published_at": "2026-09-01T09:00:00Z",
+    "slug": "not-a-path",
+    "title": "Not a site path",
+    "wp_id": 404
+  }
+}
