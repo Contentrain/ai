@@ -1,6 +1,5 @@
 ---
 '@contentrain/astro-kit': minor
-'contentrain-astro-starter': minor
 ---
 
 Every section can be addressed, and quieter text keeps its contrast on every band.
