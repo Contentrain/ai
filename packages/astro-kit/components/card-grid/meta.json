@@ -8,7 +8,9 @@
     "KitImage.astro",
     "Section.astro",
     "image.ts",
+    "instance-id.ts",
     "measured.ts",
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],
@@ -230,6 +232,11 @@
           "description": "The section's minimum height."
         }
       }
+    },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Anchor id of the section; the title gets `<id>-title`. Without one, `card-grid`, `card-grid-2`, … in render order, so every section on a page has its own."
     }
   },
   "slots": {},

@@ -13,19 +13,21 @@ import Section from '../_shared/Section.astro'
 import type { MeasuredStyle } from '../_shared/types'
 import { newsletterForm } from './newsletter'
 import { safeUrl } from '../_shared/safe-url'
+import { instanceId } from '../_shared/instance-id'
+import { muted } from '../_shared/muted'
 
 const newsletter = tv({
   slots: {
     box: 'flex flex-col gap-6',
     copy: 'flex flex-col gap-3',
     heading: 'text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
-    intro: 'max-w-xl text-pretty opacity-85',
+    intro: `max-w-xl text-pretty ${muted}`,
     form: 'flex flex-col gap-3',
     field: 'flex min-w-0 flex-col gap-1.5',
     label: 'text-sm font-semibold',
     input: 'min-h-11 w-full rounded-[var(--radius-control,var(--radius-md))] border border-line bg-surface px-3 py-2 text-base text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
     submit: 'inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control,var(--radius-md))] px-5 py-2.5 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 bg-accent text-accent-ink hover:bg-ink hover:text-surface',
-    note: 'text-sm opacity-75',
+    note: `text-sm ${muted}`,
   },
   variants: {
     layout: {
@@ -37,7 +39,7 @@ const newsletter = tv({
       default: {},
       muted: {},
       inverse: { submit: 'hover:bg-surface hover:text-ink' },
-      accent: { intro: 'opacity-100', note: 'opacity-100', submit: 'bg-ink text-surface hover:bg-surface hover:text-ink' },
+      accent: { submit: 'bg-ink text-surface hover:bg-surface hover:text-ink' },
     },
   },
   defaultVariants: { layout: 'inline', tone: 'muted' },
@@ -73,9 +75,11 @@ interface Props {
 const {
   action, provider = 'mailchimp', emailName, askName = false, heading, intro, note,
   emailLabel = 'Email address', nameLabel = 'First name', submitLabel = 'Subscribe', newTab = true,
-  layout, tone = 'muted', id = 'newsletter',
+  layout, tone = 'muted', id: givenId,
   measured,
 } = Astro.props
+// Two on one page never share an id: their labels and controls would point into each other.
+const id = instanceId(Astro.locals, givenId, 'newsletter')
 const form = newsletterForm(provider, action, { email: emailName }, Astro.site)
 const s = newsletter({ layout, tone })
 const headingId = heading ? `${id}-title` : undefined
@@ -83,7 +87,7 @@ const headingId = heading ? `${id}-title` : undefined
 const formRel: Record<string, string> = newTab ? { rel: 'noopener noreferrer' } : {}
 ---
 {form && (
-  <Section measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+  <Section kit="newsletter" measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
     <div class={s.box()}>
       {(heading || intro) && (
         <div class={s.copy()}>

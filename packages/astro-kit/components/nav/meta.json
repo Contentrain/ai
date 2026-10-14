@@ -5,6 +5,8 @@
   "category": "chrome",
   "uses": [],
   "shared": [
+    "instance-id.ts",
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],

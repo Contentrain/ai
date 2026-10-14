@@ -6,7 +6,9 @@
   "uses": [],
   "shared": [
     "Section.astro",
+    "instance-id.ts",
     "measured.ts",
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],

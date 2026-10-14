@@ -9,7 +9,9 @@
     "behaviors.ts",
     "embed-frame.ts",
     "embed-target.ts",
+    "instance-id.ts",
     "measured.ts",
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],
@@ -195,6 +197,11 @@
           "description": "The section's minimum height."
         }
       }
+    },
+    "id": {
+      "type": "string",
+      "content": false,
+      "description": "Anchor id of the section. Without one, `behavior`, `behavior-2`, … in render order, so every section on a page has its own."
     }
   },
   "slots": {},

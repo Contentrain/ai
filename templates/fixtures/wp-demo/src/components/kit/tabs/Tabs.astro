@@ -7,6 +7,8 @@ import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
 import SectionHeader from '../_shared/SectionHeader.astro'
 import type { ActionInput, MeasuredStyle } from '../_shared/types'
+import { instanceId } from '../_shared/instance-id'
+import { muted } from '../_shared/muted'
 
 export interface TabItem {
   label: string
@@ -19,7 +21,7 @@ const tabs = tv({
     heading: 'mb-8 text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
     root: 'group/tabs flex flex-col gap-6',
     list: 'hidden gap-1 group-data-[ready]/tabs:flex',
-    trigger: 'cursor-pointer rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap opacity-75 transition hover:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent data-[selected]:opacity-100',
+    trigger: `cursor-pointer rounded-md px-4 py-2 text-sm font-medium whitespace-nowrap ${muted} transition hover:text-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent data-[selected]:text-current`,
     panel: 'prose-site prose max-w-none text-current',
     title: 'mb-3 text-lg [font-weight:var(--font-weight-heading,600)] group-data-[ready]/tabs:sr-only',
   },
@@ -32,7 +34,7 @@ const tabs = tv({
       horizontal: { list: 'overflow-x-auto' },
       vertical: { root: 'md:data-[ready]:flex-row md:data-[ready]:items-start md:data-[ready]:gap-10', list: 'md:w-56 md:shrink-0 md:flex-col', trigger: 'text-start' },
     },
-    tone: { default: {}, muted: {}, inverse: { panel: 'prose-invert' }, accent: { panel: 'prose-invert', trigger: 'opacity-100' } },
+    tone: { default: {}, muted: {}, inverse: { panel: 'prose-invert' }, accent: { panel: 'prose-invert' } },
   },
   compoundVariants: [
     { style: 'underline', orientation: 'vertical', class: { list: 'md:border-b-0 md:border-s', trigger: 'md:mb-0 md:-ms-px md:border-b-0 md:border-s-2' } },
@@ -57,7 +59,9 @@ interface Props {
   measured?: MeasuredStyle | undefined
 }
 
-const { items, heading, intro, eyebrow, actions, label, style, orientation = 'horizontal', tone, id = 'tabs', measured } = Astro.props
+const { items, heading, intro, eyebrow, actions, label, style, orientation = 'horizontal', tone, id: givenId, measured } = Astro.props
+// Two on one page never share an id: their labels and controls would point into each other.
+const id = instanceId(Astro.locals, givenId, 'tabs')
 const s = tabs({ style, orientation, tone })
 const headingId = heading ? `${id}-title` : undefined
 // One level under the section heading, or the section's heading when there is none.
@@ -65,7 +69,7 @@ const PanelHeading = heading ? 'h3' : 'h2'
 const value = (i: number) => `tab-${i + 1}`
 ---
 {items.length > 0 && (
-  <Section measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+  <Section kit="tabs" measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
     {intro || eyebrow || actions?.length
       ? <SectionHeader heading={heading} intro={intro} eyebrow={eyebrow} actions={actions} headingId={headingId} />
       : heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}

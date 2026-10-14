@@ -7,8 +7,10 @@ import KitImage from '../_shared/KitImage.astro'
 import type { ActionInput, ImageInput, NavItem } from '../_shared/types'
 import Nav from '../nav/Nav.astro'
 import SearchBox from '../search-box/SearchBox.astro'
+import { instanceId } from '../_shared/instance-id'
 import { safeHref } from '../_shared/safe-url'
 import { brandColorValue } from './header'
+import { muted, mutedInverse } from '../_shared/muted'
 
 const header = tv({
   slots: {
@@ -24,8 +26,8 @@ const header = tv({
     },
     tone: {
       default: { root: 'bg-surface text-ink' },
-      inverse: { root: 'bg-ink text-surface' },
-      transparent: { root: 'absolute inset-x-0 top-0 bg-transparent text-surface' },
+      inverse: { root: `bg-ink text-surface ${mutedInverse}` },
+      transparent: { root: `absolute inset-x-0 top-0 bg-transparent text-surface ${mutedInverse}` },
     },
     position: { static: {}, sticky: { root: 'sticky top-0' } },
     bordered: { true: {}, false: {} },
@@ -76,6 +78,8 @@ interface Props {
 
 const { siteName, tagline, brandSize, brandWeight, brandTracking, bordered, offsetTop, padTop, padBottom, linkNav, brandColor, logo, showName = true, homeHref = '/', items, action, search, navLabel, menuLabel, closeLabel, layout, tone, position, menu } = Astro.props
 const { root, inner, brand } = header({ layout, tone, position, bordered })
+// The header's search field: `header-search` on a page, a second header's its own (its label points at its own input).
+const searchId = search ? instanceId(Astro.locals, undefined, 'header-search') : undefined
 const rootStyle = offsetTop ? `margin-top: ${offsetTop}` : undefined
 const innerStyle = [padTop && `padding-top: ${padTop}`, padBottom && `padding-bottom: ${padBottom}`].filter(Boolean).join('; ') || undefined
 const brandColour = brandColorValue(brandColor)
@@ -93,7 +97,7 @@ const wrap = search ? 'flex-wrap lg:flex-nowrap' : tagline ? 'flex-wrap md:flex-
             {logo && <KitImage image={logo} priority class="h-8 w-auto" sizes="160px" />}
             {showName && <span>{siteName}</span>}
           </a>
-          <p class="opacity-75" data-kit-tagline>{tagline}</p>
+          <p class={muted} data-kit-tagline>{tagline}</p>
         </div>
       )
       : (
@@ -104,7 +108,7 @@ const wrap = search ? 'flex-wrap lg:flex-nowrap' : tagline ? 'flex-wrap md:flex-
       )}
     {search && (
       <div class="order-last basis-full lg:order-none lg:ms-auto lg:basis-auto">
-        <SearchBox action={search.action} label={search.label} placeholder={search.placeholder} submitLabel={search.submitLabel} size="sm" id="header-search" />
+        <SearchBox action={search.action} label={search.label} placeholder={search.placeholder} submitLabel={search.submitLabel} size="sm" id={searchId} />
       </div>
     )}
     <div class:list={['flex items-center gap-4', layout === 'centered' ? 'justify-center' : 'ms-auto']}>

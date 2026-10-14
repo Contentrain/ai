@@ -4,10 +4,12 @@
 import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
+import { instanceId } from '../_shared/instance-id'
 import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
 import { imageOf, type ImageSource } from '../_shared/image'
 import { safeHref } from '../_shared/safe-url'
+import { muted, mutedReset } from '../_shared/muted'
 
 const grid = tv({
   slots: {
@@ -15,7 +17,7 @@ const grid = tv({
     card: 'group relative flex flex-col gap-3 rounded-[var(--radius-card)]',
     media: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
     title: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)] text-balance',
-    text: 'opacity-80',
+    text: muted,
   },
   variants: {
     columns: {
@@ -26,7 +28,7 @@ const grid = tv({
     style: {
       plain: {},
       bordered: { card: 'border border-line p-6', media: '-mx-6 -mt-6 mb-2 rounded-b-none' },
-      elevated: { card: 'bg-surface p-6 text-ink shadow-md ring-1 ring-line/60', media: '-mx-6 -mt-6 mb-2 rounded-b-none' },
+      elevated: { card: `bg-surface p-6 text-ink shadow-md ring-1 ring-line/60 ${mutedReset}`, media: '-mx-6 -mt-6 mb-2 rounded-b-none' },
     },
     align: { start: { card: 'text-start' }, center: { card: 'items-center text-center' } },
   },
@@ -59,22 +61,24 @@ interface Props {
   tone?: Tone | undefined
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
+  /** Section id, unique per page; without one `card-grid`, `card-grid-2`, … in render order. Its title is `<id>-title`. */
+  id?: string | undefined
 }
 
-const { title, intro, items, headingLevel = 2, columns, style, align, tone, measured } = Astro.props
+const { title, intro, items, headingLevel = 2, columns, style, align, tone, measured, id: givenId } = Astro.props
+// Every section has an id, so a theme or a design layer can address this one: the page's, or `card-grid`, `card-grid-2`, … in render order.
+const id = instanceId(Astro.locals, givenId, 'card-grid')
 const { list, card, media, title: cardTitle, text } = grid({ columns, style, align })
-// Accent backgrounds have the least contrast headroom: text on them is never dimmed.
-const dim = tone === 'accent' ? 'opacity-100' : undefined
 const Heading = `h${headingLevel}` as 'h2' | 'h3'
 // One level under the section title, or the title's level when there is none.
 const CardHeading = `h${title ? headingLevel + 1 : headingLevel}` as 'h2' | 'h3' | 'h4'
-const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : undefined
+const headingId = title ? `${id}-title` : undefined
 ---
-<Section measured={measured} tone={tone} aria-labelledby={headingId}>
+<Section kit="card-grid" measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
   {(title || intro) && (
     <header class:list={['mb-10 flex max-w-2xl flex-col gap-3', align === 'center' && 'mx-auto items-center text-center']}>
       {title && <Heading id={headingId} class="text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl">{title}</Heading>}
-      {intro && <p class:list={['text-lg', tone === 'accent' ? undefined : 'opacity-80']}>{intro}</p>}
+      {intro && <p class:list={['text-lg', muted]}>{intro}</p>}
     </header>
   )}
   <ul class={list({ class: measuredGrid(measured) })}>
@@ -88,7 +92,7 @@ const headingId = title ? `cards-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-
             ? <a href={safeHref(item.href)} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{item.title}</a>
             : item.title}
         </CardHeading>
-        {item.text && <p class={text({ class: dim })} data-kit-text>{item.text}</p>}
+        {item.text && <p class={text()} data-kit-text>{item.text}</p>}
         {item.href && item.linkLabel && <a href={safeHref(item.href)} class="font-medium text-accent-text underline-offset-4 hover:underline">{item.linkLabel}</a>}
       </li>
     ))}

@@ -9,6 +9,7 @@
 // nothing hidden. Only a page that has an island loads the module (Astro bundles a component's script once, for the
 // pages that use it).
 import Section from '../_shared/Section.astro'
+import { instanceId } from '../_shared/instance-id'
 import type { MeasuredStyle } from '../_shared/types'
 
 interface Props {
@@ -29,9 +30,13 @@ interface Props {
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   /** The source section's measured style (`MeasuredStyle`). */
   measured?: MeasuredStyle | undefined
+  /** Section id, unique per page; without one `behavior`, `behavior-2`, … in render order. */
+  id?: string | undefined
 }
 
-const { kind, html, items, title, panel, fact, previousLabel, nextLabel, closeLabel, tone, measured } = Astro.props
+const { kind, html, items, title, panel, fact, previousLabel, nextLabel, closeLabel, tone, measured, id: givenId } = Astro.props
+// Every section has an id, so a theme or a design layer can address this one: the page's, or `behavior`, `behavior-2`, … in render order.
+const id = instanceId(Astro.locals, givenId, 'behavior')
 // Selectors and ids go into attributes only, never into markup or a script; an empty one is left out.
 const attr = (value: string | undefined): string | undefined => (value && value.length <= 300 ? value : undefined)
 const factId = fact && /^[\w:.-]{1,120}$/.test(fact) ? fact : undefined
@@ -39,7 +44,7 @@ const factId = fact && /^[\w:.-]{1,120}$/.test(fact) ? fact : undefined
 const NOSCRIPT = '<style>.cr-behavior dialog:not([open]){display:block;position:static;margin:0;max-width:none}</style>'
 ---
 {html && (
-  <Section tone={tone} measured={measured}>
+  <Section kit="behavior" tone={tone} id={id} measured={measured}>
     <div
       class="cr-behavior"
       data-cr-behavior={kind}

@@ -117,6 +117,7 @@ const outline = []
 const menus = []
 const carousels = []
 const embeds = []
+const ids = []
 /** Every real href of a menu tree (a Nav or Header `items` prop), at any depth. */
 const menuHrefs = items => (items ?? []).flatMap(item => (item.href && item.href !== '#' ? [item.href] : []).concat(menuHrefs(item.children)))
 const browser = await chromium.launch(process.platform === 'darwin' ? { channel: 'chrome' } : {})
@@ -133,6 +134,26 @@ try {
       await page.evaluate(() => document.fonts.ready)
       await page.waitForFunction(() => [...document.querySelectorAll('[data-kit-slider]')].every(el => el.hasAttribute('data-ready')))
       await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 300)))))
+      // Every fixture of a component on one page, as two instances on a site page: no id twice (a label, tab or lightbox
+      // would point into the other instance), and each instance's first lightbox button opens its own image.
+      if (width === WIDTHS[0]) {
+        const twice = await page.evaluate(() => {
+          const seen = new Map()
+          for (const el of document.querySelectorAll('[id]')) seen.set(el.id, (seen.get(el.id) ?? 0) + 1)
+          return [...seen].filter(([, n]) => n > 1).map(([id, n]) => `${id} ×${n}`)
+        })
+        if (twice.length) ids.push(`${c.id}: ${twice.join(', ')}`)
+        for (const element of await page.locator('[data-fixture]').all()) {
+          const opener = element.locator('button[popovertarget]:not([popovertargetaction="hide"])').first()
+          if (!await opener.count()) continue
+          await opener.click()
+          const own = await element.evaluate(el => !!el.querySelector(':popover-open'))
+          if (!own) ids.push(`${c.id}/${await element.getAttribute('data-fixture')}: its first lightbox button opens another instance's popover`)
+          await page.keyboard.press('Escape')
+          // Closing hands focus back to the button: drop it, so the shot has no focus ring.
+          await page.evaluate(() => (document.activeElement instanceof HTMLElement ? document.activeElement.blur() : undefined))
+        }
+      }
       for (const element of await page.locator('[data-fixture]').all()) {
         const name = await element.getAttribute('data-fixture')
         if (width === WIDTHS[0]) {
@@ -281,11 +302,12 @@ if (outline.length) console.error(`visual: ${outline.length} fixture(s) skip a h
 if (menus.length) console.error(`visual: ${menus.length} menu level(s) lost:\n${menus.map(line => `  ✗ ${line}`).join('\n')}`)
 if (carousels.length) console.error(`visual: ${carousels.length} carousel(s) not paging:\n${carousels.map(line => `  ✗ ${line}`).join('\n')}`)
 if (embeds.length) console.error(`visual: ${embeds.length} embedded video(s) wrong:\n${embeds.map(line => `  ✗ ${line}`).join('\n')}`)
+if (ids.length) console.error(`visual: ${ids.length} page(s) with shared ids:\n${ids.map(line => `  ✗ ${line}`).join('\n')}`)
 if (written.length) console.log(`visual: wrote ${written.length} baseline(s) under ${baselineDir}`)
 if (failures.length) {
   console.error(`visual: ${failures.length} fixture(s) changed:\n${failures.map(line => `  ✗ ${line}`).join('\n')}`)
   process.exit(1)
 }
-if (outline.length || menus.length || carousels.length || embeds.length) process.exit(1)
+if (outline.length || menus.length || carousels.length || embeds.length || ids.length) process.exit(1)
 console.log(`visual: ${components.length} component(s) × ${WIDTHS.length} widths match`)
 if (!values.out) rmSync(site, { recursive: true, force: true })

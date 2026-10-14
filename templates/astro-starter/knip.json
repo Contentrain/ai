@@ -5,6 +5,7 @@
     "src/lib/studio/embed.ts": ["exports", "types"],
     "src/components/kit/**": ["types"],
     "src/components/kit/_shared/measured.ts": ["exports"],
-    "src/components/kit/_shared/embed-target.ts": ["exports"]
+    "src/components/kit/_shared/embed-target.ts": ["exports"],
+    "src/components/kit/_shared/muted.ts": ["exports"]
   }
 }
