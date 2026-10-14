@@ -8,6 +8,7 @@ import Section from '../_shared/Section.astro'
 import type { ImageSource } from '../_shared/image'
 import type { ActionInput, MeasuredStyle } from '../_shared/types'
 import SliderTrack from './SliderTrack.astro'
+import { instanceId } from '../_shared/instance-id'
 
 interface Slide {
   /** The image's address (or, until 0.7, an `ImageInput`). Optional: a text card (a quote, a testimonial) is a slide too. */
@@ -54,7 +55,9 @@ interface Props {
 }
 
 const props = Astro.props
+// The section and its track share one id (the track is `<id>-track`), taken once here so the track keeps it.
+const id = props.measured ? instanceId(Astro.locals, props.id, 'slider') : undefined
 ---
 {props.measured
-  ? <Section measured={props.measured} tone="none" spacing="sm" id={props.id}><SliderTrack {...props} id={props.id ?? 'slider'} framed={false} /></Section>
+  ? <Section kit="slider" measured={props.measured} tone="none" spacing="sm" id={id}><SliderTrack {...props} id={id} framed={false} /></Section>
   : <SliderTrack {...props} />}

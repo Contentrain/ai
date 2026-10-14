@@ -9,6 +9,8 @@ import Section, { type Tone } from '../_shared/Section.astro'
 import { measuredGrid } from '../_shared/measured'
 import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
 import { safeHref } from '../_shared/safe-url'
+import { instanceId } from '../_shared/instance-id'
+import { muted } from '../_shared/muted'
 
 const band = tv({
   slots: {
@@ -16,16 +18,16 @@ const band = tv({
     copy: 'flex max-w-3xl flex-col gap-4',
     eyebrow: 'text-sm font-semibold tracking-wide text-accent-text uppercase',
     heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
-    lead: 'text-lg text-pretty opacity-85',
+    lead: `text-lg text-pretty ${muted}`,
     media: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
     list: 'grid items-start gap-6 md:gap-8',
     item: 'relative flex flex-col gap-3 rounded-[var(--radius-card)]',
     itemMedia: 'overflow-hidden rounded-[var(--radius-image,var(--radius-card))]',
     itemTitle: 'text-lg leading-snug [font-weight:var(--font-weight-heading,600)] text-balance',
     itemValue: 'text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight',
-    itemMeta: 'text-sm opacity-75',
-    itemText: 'opacity-80',
-    itemPoints: 'flex list-disc flex-col gap-1 ps-5 opacity-80',
+    itemMeta: `text-sm ${muted}`,
+    itemText: muted,
+    itemPoints: `flex list-disc flex-col gap-1 ps-5 ${muted}`,
     actions: 'flex flex-wrap gap-3',
   },
   variants: {
@@ -42,7 +44,7 @@ const band = tv({
       center: { copy: 'mx-auto items-center text-center', actions: 'justify-center', item: 'items-center text-center' },
     },
     // Accent backgrounds have the least contrast headroom: text on them is never dimmed.
-    tone: { default: {}, muted: {}, inverse: {}, accent: { lead: 'opacity-100', itemText: 'opacity-100', itemMeta: 'opacity-100', itemPoints: 'opacity-100', eyebrow: 'text-current' } },
+    tone: { default: {}, muted: {}, inverse: {}, accent: { eyebrow: 'text-current' } },
   },
   defaultVariants: { layout: 'stack', columns: '3', align: 'start', tone: 'default' },
 })
@@ -89,10 +91,11 @@ const aligned = align ?? (measured?.align === 'center' ? 'center' : undefined)
 const s = band({ layout: media ? layout : 'stack', columns, align: aligned, tone })
 const Heading = `h${headingLevel}` as 'h2' | 'h3'
 const ItemHeading = `h${heading ? headingLevel + 1 : headingLevel}` as 'h2' | 'h3' | 'h4'
-const headingId = heading ? (id ? `${id}-title` : `band-${heading.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`) : undefined
+// Two bands with the same heading on one page get two ids (`band-<heading>`, then `band-<heading>-2`).
+const headingId = heading ? (id ? `${id}-title` : instanceId(Astro.locals, undefined, `band-${heading.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`)) : undefined
 const hasCopy = Boolean(heading || eyebrow || lead || actions.length)
 ---
-<Section tone={tone} id={id} aria-labelledby={headingId} measured={measured}>
+<Section kit="band" tone={tone} id={id} aria-labelledby={headingId} measured={measured}>
   <div class="flex flex-col gap-10">
     {(hasCopy || media) && (
       <div class={s.grid()}>

@@ -8,7 +8,9 @@
     "KitImage.astro",
     "Section.astro",
     "image.ts",
+    "instance-id.ts",
     "measured.ts",
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],

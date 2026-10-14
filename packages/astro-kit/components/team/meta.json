@@ -8,9 +8,11 @@
     "KitImage.astro",
     "Section.astro",
     "image.ts",
+    "instance-id.ts",
     "measured.ts",
-    "social.ts",
+    "muted.ts",
     "safe-url.ts",
+    "social.ts",
     "types.ts"
   ],
   "variants": {
@@ -131,7 +133,7 @@
     "id": {
       "type": "string",
       "content": false,
-      "description": "Anchor id of the section; the heading gets `<id>-title`."
+      "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `team`, `team-2`, … in render order, so every section on a page has its own."
     },
     "bioClamp": {
       "type": "integer",

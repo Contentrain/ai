@@ -7,9 +7,11 @@ import { tv } from 'tailwind-variants'
 import BehaviorScript from '../_shared/BehaviorScript.astro'
 import KitImage from '../_shared/KitImage.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
+import { instanceId } from '../_shared/instance-id'
 import { imageOf, type ImageSource } from '../_shared/image'
 import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
+import { muted, mutedReset } from '../_shared/muted'
 
 const stats = tv({
   slots: {
@@ -20,7 +22,7 @@ const stats = tv({
     // height comes with valueSize too: a font-size class merged in later would drop one set here.
     value: 'text-[length:var(--stat-max,2.25rem)] [font-weight:var(--font-weight-heading,700)] tracking-tight tabular-nums whitespace-nowrap [--stat-max-md:3rem] md:text-[length:var(--stat-max-md)]',
     icon: 'mb-3 block size-10 object-contain',
-    label: 'text-sm opacity-80',
+    label: `text-sm ${muted}`,
   },
   variants: {
     // grid: figures in columns. inline: one line that wraps, for two to four short figures.
@@ -43,7 +45,7 @@ const stats = tv({
     },
     style: {
       plain: {},
-      card: { item: 'rounded-[var(--radius-card)] bg-surface p-6 text-ink ring-1 ring-line/60' },
+      card: { item: `rounded-[var(--radius-card)] bg-surface p-6 text-ink ring-1 ring-line/60 ${mutedReset}` },
       // Hairlines between the figures, none before the first, no box: across on a wide screen, above each on a phone.
       // Meant for a single row (figures no more than the columns); a wrapped row starts with a line.
       divided: { item: 'border-t border-line pt-6 first:border-t-0 first:pt-0 md:border-t-0 md:pt-0 md:border-s md:ps-6 md:first:border-s-0 md:first:ps-0' },
@@ -57,7 +59,7 @@ const stats = tv({
       display: { value: '[--stat-max:3.75rem] [--stat-max-md:4.5rem] leading-none' },
     },
     // accent/accent-ink is only ~5:1 — dimming text on it drops it under 4.5:1 (WCAG 1.4.3).
-    tone: { default: {}, muted: {}, inverse: {}, accent: { label: 'opacity-100' } },
+    tone: { default: {}, muted: {}, inverse: {}, accent: {} },
     // The label under each figure: small, body size, or large (a counter title set like a subheading).
     labelSize: { sm: {}, base: { label: 'text-base' }, lg: { label: 'text-lg' } },
     // Which comes first in the page's text: the source's own order (a Gutenberg figure is a heading over its label, an
@@ -95,23 +97,25 @@ interface Props {
   id?: string | undefined
 }
 
-const { heading, intro, items, layout, columns, style, align, valueSize, labelSize, order, motion, tone, measured, id } = Astro.props
+const { heading, intro, items, layout, columns, style, align, valueSize, labelSize, order, motion, tone, measured, id: givenId } = Astro.props
+// Every section has an id, so a theme or a design layer can address this one: the page's, or `stats`, `stats-2`, … in render order.
+const id = instanceId(Astro.locals, givenId, 'stats')
 const count = motion === 'count'
 // A count-up island (behaviors.ts `countup`): the root names the kind, each figure's digits are their own span.
 const island = count ? { 'data-cr-behavior': 'countup', 'data-cr-items': '[data-kit-count]' } : {}
 const s = stats({ layout, columns, style, align, valueSize, labelSize, order, tone })
 const grid = (layout ?? 'grid') === 'grid' ? measuredGrid(measured) : undefined
-const headingId = heading && id ? `${id}-title` : undefined
+const headingId = heading ? `${id}-title` : undefined
 const iconOf = (item: Item) => imageOf(item.icon, '')
 // The figure's width in characters, for the size it may take in a narrow cell.
 const widthOf = (item: Item) => `--stat-chars:${(item.prefix ?? '').length + item.value.length + (item.suffix ?? '').length}`
 // A <dl> names its term first, so figure-first is a plain list, read in the order it is drawn (WCAG 1.3.2).
 ---
-<Section measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
+<Section kit="stats" measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
   {(heading || intro) && (
     <header class="mb-10 flex max-w-2xl flex-col gap-3">
       {heading && <h2 id={headingId} class="text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl">{heading}</h2>}
-      {intro && <p class:list={['text-lg', tone === 'accent' ? undefined : 'opacity-80']} data-kit-text>{intro}</p>}
+      {intro && <p class:list={['text-lg', muted]} data-kit-text>{intro}</p>}
     </header>
   )}
   {order === 'value-first' ? (

@@ -14,6 +14,8 @@ import { safeSrc } from '../_shared/safe-url'
 import { onVideoHost, videoTarget, type EmbedTarget } from '../_shared/embed-target'
 import { measuredSlides } from '../_shared/measured'
 import { type ActionInput, type ImageInput, type MeasuredStyle } from '../_shared/types'
+import { instanceId } from '../_shared/instance-id'
+import { muted, mutedReset } from '../_shared/muted'
 
 const slider = tv({
   slots: {
@@ -23,7 +25,7 @@ const slider = tv({
     image: 'w-full object-cover',
     caption: 'flex flex-col items-start gap-2',
     // A slide with no image: its text as a card the height of the row, never laid over an image that is not there.
-    card: 'flex h-full flex-col items-start gap-2 rounded-[var(--radius-card)] bg-surface p-6 text-ink ring-1 ring-line/60',
+    card: `flex h-full flex-col items-start gap-2 rounded-[var(--radius-card)] bg-surface p-6 text-ink ring-1 ring-line/60 ${mutedReset}`,
   },
   variants: {
     perView: {
@@ -39,7 +41,7 @@ const slider = tv({
     caption: {
       below: { image: 'rounded-[var(--radius-image,var(--radius-card))]', caption: 'pt-4' },
       // Over the image on wide screens; under it on phones, where the image is too short to hold text.
-      overlay: { image: 'rounded-[var(--radius-image,var(--radius-card))] md:rounded-none', slide: 'md:rounded-[var(--radius-image,var(--radius-card))]', caption: 'pt-4 md:absolute md:inset-x-0 md:bottom-0 md:bg-gradient-to-t md:from-ink/80 md:to-transparent md:p-6 md:pt-16 md:text-surface' },
+      overlay: { image: 'rounded-[var(--radius-image,var(--radius-card))] md:rounded-none', slide: 'md:rounded-[var(--radius-image,var(--radius-card))]', caption: 'pt-4 md:absolute md:inset-x-0 md:bottom-0 md:bg-gradient-to-t md:from-ink/80 md:to-transparent md:p-6 md:pt-16 md:text-surface md:[--kit-muted:var(--color-ink-muted-inverse,var(--color-surface))]' },
     },
   },
   defaultVariants: { perView: '1', aspect: 'wide', caption: 'overlay' },
@@ -99,7 +101,9 @@ interface Props {
   framed?: boolean | undefined
 }
 
-const { slides: given, label, prevLabel = 'Previous slide', nextLabel = 'Next slide', slideLabel = 'Slide', ofLabel = 'of', playLabel = 'Play', loop = false, perView = '1', aspect, caption, heading, intro, eyebrow, actions, measured, id = 'slider', framed = true } = Astro.props
+const { slides: given, label, prevLabel = 'Previous slide', nextLabel = 'Next slide', slideLabel = 'Slide', ofLabel = 'of', playLabel = 'Play', loop = false, perView = '1', aspect, caption, heading, intro, eyebrow, actions, measured, id: givenId, framed = true } = Astro.props
+// Two on one page never share an id: their labels and controls would point into each other.
+const id = instanceId(Astro.locals, givenId, 'slider')
 // A slide is drawn when it has something to show: an image, a video (a file or another site's), or a text card (a title, a text or a link) where
 // the source carousel moved quotes or testimonials. A slide with none of them is dropped.
 const slides = given.flatMap((slide) => {
@@ -120,6 +124,8 @@ const below = slider({ perView: measuredRow ? '1' : perView, aspect, caption: 'b
 const trackId = `${id}-track`
 const sizes = measuredRow ? '(min-width: 1216px) 1152px, 100vw' : perView === '1' ? '(min-width: 1216px) 1152px, 100vw' : perView === '2' ? '(min-width: 640px) 50vw, 85vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 85vw'
 // Arrows from sm up; on phones the carousel is swiped and the dots show the position.
+// Framed, the carousel is its own section: the same hooks as every other (`id`, `data-kit-section`), its padding its own,
+// so a theme's section spacing leaves it as it is.
 const Root = framed ? 'section' : 'div'
 const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md ring-1 ring-line hover:bg-surface disabled:opacity-40 sm:group-data-[ready]:flex'
 // A text card has no picture for the arrows to sit on: over it they would cover its words. A carousel with any text
@@ -129,7 +135,7 @@ const cards = slides.some(slide => !slide.image && !slide.video && !slide.player
 // ratio, so the player that replaces the link moves nothing.
 const under = 'flex size-11 shrink-0 items-center justify-center rounded-full bg-surface text-ink ring-1 ring-line hover:bg-surface disabled:opacity-40'
 ---
-<Root class:list={['group relative', framed && 'container-page py-8']} role={framed ? undefined : 'region'} aria-roledescription="carousel" aria-label={label} data-kit-slider data-loop={loop ? '' : undefined} data-slide-label={slideLabel}>
+<Root id={framed ? id : undefined} class:list={['group relative', framed && 'container-page py-8']} data-kit-section={framed ? 'slider' : undefined} data-kit-spacing={framed ? 'none' : undefined} role={framed ? undefined : 'region'} aria-roledescription="carousel" aria-label={label} data-kit-slider data-loop={loop ? '' : undefined} data-slide-label={slideLabel}>
   <SectionHeader heading={heading} intro={intro} eyebrow={eyebrow} actions={actions} />
   <div class={slots.viewport()} data-viewport tabindex="0" role="group" aria-label={label}>
     <div class:list={['flex gap-4 [&>*]:shrink-0 group-data-[ready]:[&>*]:snap-align-none', measuredRow?.track]} id={trackId} data-container>
@@ -152,7 +158,7 @@ const under = 'flex size-11 shrink-0 items-center justify-center rounded-full bg
           {(slide.title || slide.text || slide.action) && (
             <div class={slide.video || slide.player ? below.caption() : slide.image ? slots.caption() : slots.card()}>
               {slide.title && <p class="text-xl [font-weight:var(--font-weight-heading,600)] text-balance">{slide.title}</p>}
-              {slide.text && <p class="opacity-85">{slide.text}</p>}
+              {slide.text && <p class={muted}>{slide.text}</p>}
               {slide.action && <Button action={slide.action} size="sm" class="mt-2" />}
             </div>
           )}

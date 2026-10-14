@@ -19,6 +19,8 @@ import Button from '../_shared/Button.astro'
 import Section from '../_shared/Section.astro'
 import type { ActionInput, MeasuredStyle } from '../_shared/types'
 import Prose from '../prose/Prose.astro'
+import { instanceId } from '../_shared/instance-id'
+import { mutedReset } from '../_shared/muted'
 
 const dialog = tv({
   slots: {
@@ -28,7 +30,7 @@ const dialog = tv({
     // modal (the `open` preview prop) it is a block in the flow under the button, not a box over it. The inner box
     // scrolls, not the dialog: a click on the scrollbar then never lands on the dialog itself (the backdrop test). The
     // display is set only when open (`open:flex`): an author `display` would override the UA's `display: none` when closed.
-    box: 'm-auto w-[min(92vw,var(--dialog-width))] max-h-[85dvh] flex-col open:flex rounded-card border border-line bg-surface p-0 text-ink shadow-xl backdrop:bg-ink/50 [&[open]:not(:modal)]:relative [&[open]:not(:modal)]:m-0 [&[open]:not(:modal)]:basis-full',
+    box: `m-auto w-[min(92vw,var(--dialog-width))] max-h-[85dvh] flex-col open:flex rounded-card border border-line bg-surface p-0 text-ink shadow-xl backdrop:bg-ink/50 [&[open]:not(:modal)]:relative [&[open]:not(:modal)]:m-0 [&[open]:not(:modal)]:basis-full ${mutedReset}`,
     inner: 'flex min-h-0 flex-col gap-4 overflow-y-auto p-6 md:p-8',
     heading: 'pe-10 text-xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-2xl',
     actions: 'flex flex-wrap gap-3',
@@ -78,10 +80,11 @@ interface Props {
   fact?: string | undefined
 }
 
-const { id: givenId = 'dialog', triggerLabel, heading, html, actions = [], closeLabel = 'Close', triggerStyle, size, align: given, tone, measured, open = false, trigger, fact } = Astro.props
+const { id: givenId, triggerLabel, heading, html, actions = [], closeLabel = 'Close', triggerStyle, size, align: given, tone, measured, open = false, trigger, fact } = Astro.props
 const factId = fact && /^[\w:.-]{1,120}$/.test(fact) ? fact : undefined
 // The id goes into attributes and into the scripting-off style sheet, so it is a plain token or the default.
-const id = /^[A-Za-z][\w-]*$/.test(givenId) ? givenId : 'dialog'
+// Two dialogs without one of their own never share it (each opener would open the first).
+const id = instanceId(Astro.locals, givenId && /^[A-Za-z][\w-]*$/.test(givenId) ? givenId : undefined, 'dialog')
 const align = given ?? measured?.align
 // On the accent band the primary button (accent) would vanish: drawn as the secondary style there, as in Cta. The
 // dialog's own actions sit on the dialog's surface, not the band, so they keep their styles.

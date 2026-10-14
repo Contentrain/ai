@@ -10,6 +10,8 @@ import type { MeasuredStyle } from '../_shared/types'
 import PostCard from '../post-card/PostCard.astro'
 import type { ImageInput, LinkInput } from '../_shared/types'
 import { safeHref } from '../_shared/safe-url'
+import { instanceId } from '../_shared/instance-id'
+import { muted } from '../_shared/muted'
 
 export interface PostItem {
   title: string
@@ -25,7 +27,7 @@ const list = tv({
   slots: {
     header: 'mb-10 flex max-w-2xl flex-col gap-3',
     heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
-    intro: 'text-lg opacity-80',
+    intro: `text-lg ${muted}`,
     items: 'grid gap-8',
     more: 'mt-10',
   },
@@ -74,7 +76,9 @@ interface Props {
   id?: string | undefined
 }
 
-const { heading, intro, posts, layout = 'grid', columns, showImage = true, showExcerpt = true, showAuthor = true, showCategory = true, excerptLines, locale, timeZone, surface, moreHref, moreLabel, tone, measured, id = 'posts' } = Astro.props
+const { heading, intro, posts, layout = 'grid', columns, showImage = true, showExcerpt = true, showAuthor = true, showCategory = true, excerptLines, locale, timeZone, surface, moreHref, moreLabel, tone, measured, id: givenId } = Astro.props
+// Two on one page never share an id: their labels and controls would point into each other.
+const id = instanceId(Astro.locals, givenId, 'posts')
 const s = list({ layout, columns })
 const headingId = heading ? `${id}-title` : undefined
 // Cards sit one heading level under the section's; with no section heading they are the page's h2s.
@@ -84,7 +88,7 @@ const sizes = layout === 'list' || layout === 'compact' ? '256px' : columns === 
 const cardLayout = (i: number) => layout === 'compact' ? 'minimal' : layout === 'list' || (layout === 'featured' && i === 0) ? 'horizontal' : 'vertical'
 ---
 {posts.length > 0 && (
-  <Section measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
+  <Section kit="post-list" measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
     {(heading || intro) && (
       <header class={s.header()}>
         {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}

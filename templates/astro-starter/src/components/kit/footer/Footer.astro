@@ -5,13 +5,14 @@ import { tv } from 'tailwind-variants'
 import type { LinkInput } from '../_shared/types'
 import { contactKeys, footerLinkSizeClasses, footerVars, type ContactInput } from './footer'
 import { safeHref } from '../_shared/safe-url'
+import { muted as quiet, mutedInverse } from '../_shared/muted'
 
 const footer = tv({
   slots: {
     root: 'mt-auto',
     inner: 'container-page py-10 text-sm',
-    muted: 'opacity-75',
-    link: 'text-current no-underline opacity-75 hover:opacity-100 hover:underline',
+    muted: quiet,
+    link: `no-underline ${quiet} hover:text-current hover:underline`,
   },
   variants: {
     layout: {
@@ -21,7 +22,7 @@ const footer = tv({
     tone: {
       default: { root: 'bg-surface text-ink' },
       muted: { root: 'bg-surface-muted text-ink' },
-      inverse: { root: 'bg-ink text-surface' },
+      inverse: { root: `bg-ink text-surface ${mutedInverse}` },
     },
     // The border on the footer's top side: the default tone's own unless `border` says otherwise.
     border: { on: { root: 'border-t border-line' }, off: {} },

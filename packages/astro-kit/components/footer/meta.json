@@ -5,6 +5,7 @@
   "category": "chrome",
   "uses": [],
   "shared": [
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],

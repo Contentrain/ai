@@ -11,7 +11,9 @@
     "Button.astro",
     "KitImage.astro",
     "Section.astro",
+    "instance-id.ts",
     "measured.ts",
+    "muted.ts",
     "safe-url.ts",
     "types.ts"
   ],
@@ -339,7 +341,7 @@
     "id": {
       "type": "string",
       "content": false,
-      "description": "Anchor id of the section; the heading gets `<id>-title`."
+      "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `split`, `split-2`, … in render order, so every section on a page has its own."
     },
     "sticky": {
       "type": "boolean",

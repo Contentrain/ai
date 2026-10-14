@@ -5,13 +5,14 @@
 // equivalent in each language); a link without one is not drawn.
 import { tv } from 'tailwind-variants'
 import { safeHref } from '../_shared/safe-url'
+import { muted, mutedReset } from '../_shared/muted'
 
 const switcher = tv({
   slots: {
     list: 'flex flex-wrap items-center gap-x-4 gap-y-1',
-    link: 'text-current no-underline opacity-80 hover:opacity-100 hover:underline aria-[current=true]:font-semibold aria-[current=true]:opacity-100',
+    link: `no-underline ${muted} hover:text-current hover:underline aria-[current=true]:font-semibold aria-[current=true]:text-current`,
     summary: 'inline-flex cursor-pointer list-none items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-current/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden',
-    panel: 'absolute z-30 mt-1 flex min-w-40 flex-col gap-1 rounded-lg border border-line bg-surface p-2 text-ink shadow-lg',
+    panel: `absolute z-30 mt-1 flex min-w-40 flex-col gap-1 rounded-lg border border-line bg-surface p-2 text-ink shadow-lg ${mutedReset}`,
   },
   variants: {
     layout: { list: {}, menu: {} },

@@ -7,6 +7,8 @@ import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
 import { measuredColumns } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
+import { instanceId } from '../_shared/instance-id'
+import { muted } from '../_shared/muted'
 
 export interface FaqItem {
   question: string
@@ -19,7 +21,7 @@ const faq = tv({
     root: '',
     head: 'mb-8 flex flex-col gap-3',
     heading: 'text-2xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-3xl',
-    intro: 'max-w-2xl text-lg opacity-80',
+    intro: `max-w-2xl text-lg ${muted}`,
     list: 'flex flex-col',
     item: 'group',
     question: '',
@@ -37,7 +39,7 @@ const faq = tv({
     columns: { '1': {}, '2': { list: 'lg:block lg:columns-2 lg:gap-x-12', item: 'break-inside-avoid' } },
     // The marker in each question's row: a plus that turns into a cross, or a chevron that turns over.
     icon: { plus: {}, chevron: { marker: 'group-open:rotate-180' } },
-    numbered: { true: { list: '[counter-reset:faq]', item: '[counter-increment:faq]', question: 'before:me-4 before:tabular-nums before:opacity-60 before:content-[counter(faq,decimal-leading-zero)]' }, false: {} },
+    numbered: { true: { list: '[counter-reset:faq]', item: '[counter-increment:faq]', question: 'before:me-4 before:tabular-nums before:text-[color:var(--kit-muted,var(--color-ink-muted))] before:content-[counter(faq,decimal-leading-zero)]' }, false: {} },
     style: {
       lines: { list: 'divide-y divide-line border-y border-line' },
       cards: { list: 'gap-3', item: 'rounded-card border border-line px-5', summary: 'py-5' },
@@ -84,7 +86,9 @@ interface Props {
   id?: string | undefined
 }
 
-const { items, heading, intro, layout, columns, icon, numbered = false, style, questionStyle, exclusive = false, openFirst = false, schema = false, tone, measured, id = 'faq' } = Astro.props
+const { items, heading, intro, layout, columns, icon, numbered = false, style, questionStyle, exclusive = false, openFirst = false, schema = false, tone, measured, id: givenId } = Astro.props
+// Two on one page never share an id: their labels and controls would point into each other.
+const id = instanceId(Astro.locals, givenId, 'faq')
 const s = faq({ layout, columns, icon, numbered, style, questionStyle: style === 'plain' ? 'heading' : questionStyle, tone })
 // Two columns and the split layout need the page's width; one column reads in the narrow one.
 const measuredCols = measuredColumns(measured)
@@ -103,7 +107,7 @@ const structured = schema && items.length > 0
   : null
 ---
 {items.length > 0 && (
-  <Section measured={measured} tone={tone} spacing="md" width={wide ? 'page' : 'prose'} id={id} aria-labelledby={headingId}>
+  <Section kit="faq" measured={measured} tone={tone} spacing="md" width={wide ? 'page' : 'prose'} id={id} aria-labelledby={headingId}>
     <div class={s.root()}>
       {(heading || intro) && (
         <header class={s.head()}>

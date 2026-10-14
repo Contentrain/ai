@@ -81,6 +81,22 @@ The starter sets it to the accent; a site whose accent does not reach 4.5:1 on i
 surface sets a readable one. A dark section (`tone="inverse"`) reads
 `--color-accent-text-inverse` in its place.
 
+Quieter text (an intro, a caption, a role, a footer link) is a colour role, never
+opacity: dimmed text lays its colour over the band, and on a mid-tone band that falls
+under 4.5:1. It reads `--color-ink-muted` on a light band, `--color-ink-muted-inverse`
+on a dark one (the starter mixes the surface toward the ink; without it, the band's own
+text colour) and the fill's own ink on an accent or brand band. A light surface inside
+a band (a card, a form panel, a menu) is back on `--color-ink-muted`. The classes are
+in `_shared/muted.ts`.
+
+### Section hooks
+
+Every section component renders its root with an `id` and `data-kit-section="<component id>"`
+(`hero`, `card-grid`, `slider`, …), so a site's theme or a design layer can style one
+kind of section, or one section, without touching the component. The id is the one the
+page gives, or the component id counted per page (`hero`, then `hero-2`), the same on
+every build.
+
 A migrated site also carries its theme's type and shape, and components read
 these with a fallback to the kit's own values, so a site without them looks
 unchanged:

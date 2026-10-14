@@ -12,6 +12,8 @@ import type { MeasuredStyle } from '../_shared/types'
 import { imageOf, type ImageSource } from '../_shared/image'
 import { type ImageInput } from '../_shared/types'
 import { safeHref } from '../_shared/safe-url'
+import { instanceId } from '../_shared/instance-id'
+import { muted } from '../_shared/muted'
 
 export interface GalleryItem {
   /** The image's address (or, until 0.7, an `ImageInput`). */
@@ -29,7 +31,7 @@ const gallery = tv({
     item: 'm-0',
     frame: 'group relative block w-full cursor-zoom-in overflow-hidden rounded-[var(--radius-image,var(--radius-card))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
     thumb: 'h-full w-full object-cover transition-transform duration-300 hover:scale-[1.02]',
-    caption: 'mt-2 text-sm opacity-75',
+    caption: `mt-2 text-sm ${muted}`,
     viewer: 'm-auto max-h-[92vh] max-w-[92vw] bg-transparent p-0 backdrop:bg-ink/85',
   },
   variants: {
@@ -85,14 +87,16 @@ interface Props {
   id?: string | undefined
 }
 
-const { items: given, heading, layout, columns, aspect, gap, captionStyle, hoverEffect, enlargeLabel = 'Enlarge', regionLabel = 'Images', open = 'popover', closeLabel = 'Close', tone, measured, id = 'gallery' } = Astro.props
+const { items: given, heading, layout, columns, aspect, gap, captionStyle, hoverEffect, enlargeLabel = 'Enlarge', regionLabel = 'Images', open = 'popover', closeLabel = 'Close', tone, measured, id: givenId } = Astro.props
+// Two on one page never share an id: their labels and controls would point into each other.
+const id = instanceId(Astro.locals, givenId, 'gallery')
 const items = given.flatMap(item => { const image = imageOf(item.image, item.imageAlt); return image ? [{ ...item, image, full: imageOf(item.full, item.imageAlt) }] : [] }) satisfies Array<{ image: ImageInput, caption?: string | undefined }>
 const s = gallery({ layout, columns, open, aspect, gap, captionStyle, hoverEffect })
 const headingId = heading ? `${id}-title` : undefined
 const sizes = columns === '2' ? '50vw' : columns === '4' ? '(min-width: 768px) 25vw, 50vw' : '(min-width: 768px) 33vw, 50vw'
 ---
 {items.length > 0 && (
-  <Section measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+  <Section kit="gallery" measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
     {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
     {/* A scrolling strip is a labelled, focusable region so the keyboard can scroll it. */}
     <div tabindex={layout === 'row' ? 0 : undefined} role={layout === 'row' ? 'region' : undefined} aria-label={layout === 'row' ? heading ?? regionLabel : undefined}>
@@ -107,7 +111,7 @@ const sizes = columns === '2' ? '50vw' : columns === '4' ? '(min-width: 768px) 2
                 : open === 'link'
                   ? <a href={safeHref(item.image.src)} class={s.frame()}><KitImage image={item.image} sizes={sizes} class={s.thumb()} /></a>
                   : <div class={s.frame()}><KitImage image={item.image} sizes={sizes} class={s.thumb()} /></div>}
-              {item.caption && <figcaption class={s.caption({ class: tone === 'accent' ? 'opacity-100' : undefined })}>{item.caption}</figcaption>}
+              {item.caption && <figcaption class={s.caption()}>{item.caption}</figcaption>}
             </figure>
             {open === 'popover' && (
               <div id={viewer} popover class={s.viewer()}>

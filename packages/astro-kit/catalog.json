@@ -23,6 +23,7 @@
     "--radius-control",
     "--radius-image",
     "--spacing-gutter",
+    "--color-ink-muted-inverse",
     "--text-nav",
     "--text-footer",
     "--text-heading-1",
@@ -103,7 +104,9 @@
         "Button.astro",
         "KitImage.astro",
         "Section.astro",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -457,7 +460,9 @@
         "behaviors.ts",
         "embed-frame.ts",
         "embed-target.ts",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -643,6 +648,11 @@
               "description": "The section's minimum height."
             }
           }
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Anchor id of the section. Without one, `behavior`, `behavior-2`, … in render order, so every section on a page has its own."
         }
       },
       "slots": {},
@@ -742,7 +752,9 @@
         "KitImage.astro",
         "Section.astro",
         "image.ts",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -964,6 +976,11 @@
               "description": "The section's minimum height."
             }
           }
+        },
+        "id": {
+          "type": "string",
+          "content": false,
+          "description": "Anchor id of the section; the title gets `<id>-title`. Without one, `card-grid`, `card-grid-2`, … in render order, so every section on a page has its own."
         }
       },
       "slots": {},
@@ -1087,7 +1104,9 @@
       "uses": [],
       "shared": [
         "Section.astro",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -1319,7 +1338,9 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -1646,7 +1667,9 @@
         "Button.astro",
         "KitImage.astro",
         "Section.astro",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -1901,7 +1924,7 @@
         "id": {
           "type": "string",
           "content": false,
-          "description": "Anchor id of the section; the heading gets `<id>-title`."
+          "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `cta`, `cta-2`, … in render order, so every section on a page has its own."
         }
       },
       "slots": {},
@@ -1947,7 +1970,9 @@
       "shared": [
         "Button.astro",
         "Section.astro",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -2338,7 +2363,9 @@
       "uses": [],
       "shared": [
         "Section.astro",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -2611,7 +2638,9 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -2823,7 +2852,7 @@
         "id": {
           "type": "string",
           "content": false,
-          "description": "Anchor id of the section; the heading gets `<id>-title`."
+          "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `feature-list`, `feature-list-2`, … in render order, so every section on a page has its own."
         }
       },
       "slots": {},
@@ -2871,6 +2900,7 @@
       "category": "chrome",
       "uses": [],
       "shared": [
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -3093,7 +3123,9 @@
         "KitImage.astro",
         "Section.astro",
         "image.ts",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -3389,6 +3421,8 @@
       "shared": [
         "Button.astro",
         "KitImage.astro",
+        "instance-id.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -3619,7 +3653,9 @@
         "Button.astro",
         "KitImage.astro",
         "Section.astro",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -3809,7 +3845,7 @@
         "id": {
           "type": "string",
           "content": false,
-          "description": "Anchor id of the section; the heading gets `<id>-title`."
+          "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `hero`, `hero-2`, … in render order, so every section on a page has its own."
         },
         "minHeight": {
           "type": "integer",
@@ -3976,6 +4012,7 @@
       "category": "chrome",
       "uses": [],
       "shared": [
+        "muted.ts",
         "safe-url.ts"
       ],
       "variants": {
@@ -4057,7 +4094,9 @@
         "KitImage.astro",
         "Section.astro",
         "image.ts",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -4266,7 +4305,7 @@
         "id": {
           "type": "string",
           "content": false,
-          "description": "Anchor id of the section; the heading gets `<id>-title`."
+          "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `logo-cloud`, `logo-cloud-2`, … in render order, so every section on a page has its own."
         }
       },
       "slots": {},
@@ -4312,6 +4351,8 @@
       "category": "chrome",
       "uses": [],
       "shared": [
+        "instance-id.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -4437,7 +4478,9 @@
       "uses": [],
       "shared": [
         "Section.astro",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -4927,7 +4970,9 @@
       ],
       "shared": [
         "Section.astro",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -5247,7 +5292,9 @@
       "shared": [
         "Button.astro",
         "Section.astro",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -5385,7 +5432,7 @@
         "id": {
           "type": "string",
           "content": false,
-          "description": "Anchor id of the section; the heading gets `<id>-title`."
+          "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `pricing`, `pricing-2`, … in render order, so every section on a page has its own."
         },
         "compact": {
           "type": "boolean",
@@ -5660,6 +5707,7 @@
       "category": "chrome",
       "uses": [],
       "shared": [
+        "instance-id.ts",
         "safe-url.ts"
       ],
       "variants": {
@@ -5747,7 +5795,9 @@
         "embed-frame.ts",
         "embed-target.ts",
         "image.ts",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -6102,8 +6152,9 @@
       "category": "chrome",
       "uses": [],
       "shared": [
-        "social.ts",
-        "safe-url.ts"
+        "muted.ts",
+        "safe-url.ts",
+        "social.ts"
       ],
       "variants": {
         "display": {
@@ -6205,7 +6256,9 @@
         "Button.astro",
         "KitImage.astro",
         "Section.astro",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -6533,7 +6586,7 @@
         "id": {
           "type": "string",
           "content": false,
-          "description": "Anchor id of the section; the heading gets `<id>-title`."
+          "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `split`, `split-2`, … in render order, so every section on a page has its own."
         },
         "sticky": {
           "type": "boolean",
@@ -6605,7 +6658,9 @@
         "embed-frame.ts",
         "embed-target.ts",
         "image.ts",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -6854,7 +6909,7 @@
         "id": {
           "type": "string",
           "content": false,
-          "description": "Anchor id of the section; the heading gets `<id>-title`."
+          "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `stats`, `stats-2`, … in render order, so every section on a page has its own."
         }
       },
       "slots": {},
@@ -6905,7 +6960,9 @@
         "KitImage.astro",
         "Section.astro",
         "image.ts",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -7016,7 +7073,7 @@
         "id": {
           "type": "string",
           "content": false,
-          "description": "Anchor id of the section; the heading gets `<id>-title`."
+          "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `steps`, `steps-2`, … in render order, so every section on a page has its own."
         },
         "currentLabel": {
           "type": "string",
@@ -7185,7 +7242,9 @@
         "Button.astro",
         "Section.astro",
         "SectionHeader.astro",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -7441,9 +7500,11 @@
         "KitImage.astro",
         "Section.astro",
         "image.ts",
+        "instance-id.ts",
         "measured.ts",
-        "social.ts",
+        "muted.ts",
         "safe-url.ts",
+        "social.ts",
         "types.ts"
       ],
       "variants": {
@@ -7564,7 +7625,7 @@
         "id": {
           "type": "string",
           "content": false,
-          "description": "Anchor id of the section; the heading gets `<id>-title`."
+          "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `team`, `team-2`, … in render order, so every section on a page has its own."
         },
         "bioClamp": {
           "type": "integer",
@@ -7748,7 +7809,9 @@
         "KitImage.astro",
         "Section.astro",
         "image.ts",
+        "instance-id.ts",
         "measured.ts",
+        "muted.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -7990,7 +8053,7 @@
         "id": {
           "type": "string",
           "content": false,
-          "description": "Anchor id of the section; the heading gets `<id>-title`."
+          "description": "Anchor id of the section; the heading gets `<id>-title`. Without one, `testimonial`, `testimonial-2`, … in render order, so every section on a page has its own."
         },
         "ratingLabel": {
           "type": "string",

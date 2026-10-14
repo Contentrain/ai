@@ -8,15 +8,17 @@
 import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
+import { instanceId } from '../_shared/instance-id'
 import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
 import { renderMarkdown } from '../../../lib/markdown'
+import { muted, mutedReset } from '../_shared/muted'
 
 const pricing = tv({
   slots: {
     header: 'mx-auto mb-10 flex max-w-2xl flex-col items-center gap-3 text-center',
     heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
-    intro: 'text-lg opacity-80',
+    intro: `text-lg ${muted}`,
     list: 'grid items-stretch gap-6 sm:grid-cols-2',
     toggle: 'mx-auto mb-8 flex w-fit rounded-full border border-line p-1',
     toggleOption: 'rounded-full px-4 py-1.5 text-sm font-medium has-[:checked]:bg-accent has-[:checked]:text-accent-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent',
@@ -24,13 +26,13 @@ const pricing = tv({
     table: 'w-full min-w-[32rem] border-collapse text-start',
     cell: 'border-b border-line px-4 py-3 text-center align-top',
     rowHead: 'border-b border-line px-4 py-3 text-start font-normal',
-    plan: 'relative flex flex-col gap-5 rounded-card border border-line bg-surface p-6 text-ink md:p-8',
+    plan: `relative flex flex-col gap-5 rounded-card border border-line bg-surface p-6 text-ink md:p-8 ${mutedReset}`,
     badge: 'absolute -top-3 start-6 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-ink',
     name: 'text-lg [font-weight:var(--font-weight-heading,600)]',
     price: 'flex items-baseline gap-1',
     amount: 'text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight',
-    period: 'text-sm opacity-75',
-    description: 'text-pretty opacity-80',
+    period: `text-sm ${muted}`,
+    description: `text-pretty ${muted}`,
     features: 'prose-site prose max-w-none text-current prose-ul:ps-5 prose-li:my-1',
     action: 'mt-auto pt-2',
   },
@@ -47,7 +49,7 @@ const pricing = tv({
       plain: {},
     },
     compact: { true: { list: 'gap-4', plan: 'gap-3 p-4 md:p-5', amount: 'text-3xl' }, false: {} },
-    tone: { default: {}, muted: { plan: 'border-transparent' }, inverse: { plan: 'border-transparent' }, accent: { intro: 'opacity-100', plan: 'border-transparent', badge: 'bg-ink text-surface' } },
+    tone: { default: {}, muted: { plan: 'border-transparent' }, inverse: { plan: 'border-transparent' }, accent: { plan: 'border-transparent', badge: 'bg-ink text-surface' } },
   },
   defaultVariants: { columns: '3', featureStyle: 'plain', compact: false, tone: 'default' },
 })
@@ -95,22 +97,24 @@ interface Props {
   id?: string | undefined
 }
 
-const { heading, intro, plans, featuredLabel = 'Most popular', columns, layout = 'cards', featureStyle, compact, billingToggle = 'none', billingMainLabel = 'Monthly', billingAltLabel = 'Yearly', billingLegend = 'Billing period', includedLabel = 'Included', notIncludedLabel = 'Not included', tone, measured, id } = Astro.props
+const { heading, intro, plans, featuredLabel = 'Most popular', columns, layout = 'cards', featureStyle, compact, billingToggle = 'none', billingMainLabel = 'Monthly', billingAltLabel = 'Yearly', billingLegend = 'Billing period', includedLabel = 'Included', notIncludedLabel = 'Not included', tone, measured, id: givenId } = Astro.props
+// Every section has an id, so a theme or a design layer can address this one: the page's, or `pricing`, `pricing-2`, … in render order.
+const id = instanceId(Astro.locals, givenId, 'pricing')
 const s = pricing({ columns, featureStyle, compact: compact ?? false, tone })
-// The radio group's name must be unique on the page: the section's id, or a hash of its plans when it has none.
-const group = id ?? `pricing-${[...JSON.stringify(plans)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7).toString(36)}`
+// The radio group's name must be unique on the page: the section's id is.
+const group = id
 const toggled = billingToggle === 'radio' && plans.some(plan => plan.priceAlt)
 // The cards' list items, as plain strings, for the table's feature rows (the markdown list's `- ` / `* ` lines).
 const itemsOf = (md?: string) => (md ?? '').split('\n').flatMap((line) => { const m = /^\s*[-*]\s+(.*\S)/.exec(line); return m ? [m[1]!.replace(/[*_`]/g, '')] : [] })
 const rows = layout === 'table' ? [...new Set(plans.flatMap(plan => itemsOf(plan.features)))] : []
 const included = plans.map(plan => new Set(itemsOf(plan.features)))
-const headingId = heading && id ? `${id}-title` : undefined
+const headingId = heading ? `${id}-title` : undefined
 // One level under the section heading, or the section's heading when there is none.
 const PlanHeading = heading ? 'h3' : 'h2'
 const features = await Promise.all(plans.map(plan => renderMarkdown(plan.features)))
 ---
 {plans.length > 0 && (
-  <Section measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
+  <Section kit="pricing" measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
     {(heading || intro) && (
       <header class={s.header()}>
         {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
@@ -128,7 +132,7 @@ const features = await Promise.all(plans.map(plan => renderMarkdown(plan.feature
                 <th scope="col" class={s.cell({ class: plan.featured ? 'bg-surface-muted' : undefined })}>
                   <span class="block text-lg [font-weight:var(--font-weight-heading,600)]">{plan.name}</span>
                   <span class="block text-2xl [font-weight:var(--font-weight-heading,700)]">{plan.price}</span>
-                  {plan.period && <span class="block text-sm opacity-75">{plan.period}</span>}
+                  {plan.period && <span class:list={['block text-sm', muted]}>{plan.period}</span>}
                   {(plan.badge ?? (plan.featured ? featuredLabel : undefined)) && <span class="mt-1 inline-block rounded-full bg-accent px-3 py-0.5 text-xs font-semibold text-accent-ink">{plan.badge ?? featuredLabel}</span>}
                 </th>
               ))}

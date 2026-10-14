@@ -100,7 +100,7 @@
     "name": "measured-columns",
     "props": {
       "heading": "What readers say",
-      "id": "readers",
+      "id": "readers-2",
       "items": [
         { "quote": "The only travel site I read to the end. Every guide feels written by someone who stayed.", "name": "Ayşe Demir", "role": "Reader since 2019", "avatar": { "src": "/kit-fixtures/avatar-1.svg", "alt": "", "width": 96, "height": 96 } },
         { "quote": "Their Lisbon guide saved our trip.", "name": "Tom Becker", "avatar": { "src": "/kit-fixtures/avatar-2.svg", "alt": "", "width": 96, "height": 96 } },

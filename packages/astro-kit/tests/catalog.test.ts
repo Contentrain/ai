@@ -206,6 +206,6 @@ describe('text in the accent', () => {
     for (const used of ['text-accent', 'hover:text-accent', 'group-hover:text-accent', 'prose-a:text-accent', 'decoration-accent', "'text-accent'"]) expect(ACCENT_AS_TEXT.test(used), used).toBe(true)
     for (const fine of ['text-accent-text', 'hover:text-accent-text', 'text-accent-ink', 'bg-accent', 'border-accent']) expect(ACCENT_AS_TEXT.test(fine), fine).toBe(false)
     const section = await readFile(join(COMPONENTS, '_shared', 'Section.astro'), 'utf8')
-    expect(section).toContain("inverse: 'bg-ink text-surface [--color-accent-text:var(--color-accent-text-inverse)]'")
+    expect(section).toContain('inverse: `bg-ink text-surface [--color-accent-text:var(--color-accent-text-inverse)]')
   })
 })

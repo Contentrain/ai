@@ -5,17 +5,19 @@ import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
 import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
+import { instanceId } from '../_shared/instance-id'
 import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
 import { measuredFrame } from '../_shared/measured'
 import { coverHeight as heightOf, headingStyle as styleOf } from './hero'
+import { muted, mutedInverse } from '../_shared/muted'
 
 const hero = tv({
   slots: {
     grid: 'grid items-center gap-10',
     copy: 'flex flex-col gap-5',
-    eyebrow: 'text-sm font-semibold tracking-wide uppercase opacity-80',
+    eyebrow: `text-sm font-semibold tracking-wide uppercase ${muted}`,
     heading: 'text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-5xl lg:text-6xl',
-    lead: 'max-w-2xl text-lg text-pretty opacity-85 md:text-xl',
+    lead: `max-w-2xl text-lg text-pretty ${muted} md:text-xl`,
     // A hero's short promise list ("Fast, easy and painless"), each with its icon when it has one.
     points: 'flex flex-wrap gap-x-6 gap-y-2 text-base font-medium md:text-lg',
     point: 'flex items-center gap-2',
@@ -29,7 +31,7 @@ const hero = tv({
       cover: { grid: 'relative z-10 min-h-[28rem] md:min-h-[36rem]', copy: 'max-w-3xl' },
     },
     // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
-    tone: { default: {}, muted: {}, inverse: {}, accent: { eyebrow: 'opacity-100', lead: 'opacity-100' } },
+    tone: { default: {}, muted: {}, inverse: {}, accent: {} },
     // Where a cover sets its text over the image. WordPress covers centre it unless told otherwise.
     align: { start: {}, center: {} },
     // The lead's own alignment: `start` keeps it at the start edge, across the column, under a centred heading
@@ -89,10 +91,12 @@ interface Props {
 }
 
 
-const { heading, level = 1, eyebrow, lead, items = [], actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id, minHeight, headingScale, headingSize, measured } = Astro.props
+const { heading, level = 1, eyebrow, lead, items = [], actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id: givenId, minHeight, headingScale, headingSize, measured } = Astro.props
+// Every section has an id, so a theme or a design layer can address this one: the page's, or `hero`, `hero-2`, … in render order.
+const id = instanceId(Astro.locals, givenId, 'hero')
 const s = hero({ layout, align, leadAlign, actionsAlign, width, tone, headingScale, headingSize })
 const Heading = level === 1 ? 'h1' : 'h2'
-const headingId = id ? `${id}-title` : undefined
+const headingId = `${id}-title`
 const cover = layout === 'cover' && image
 const coverHeight = cover ? heightOf(minHeight) : undefined
 const headingStyle = styleOf(headingScale, level, headingSize)
@@ -102,8 +106,8 @@ const scrim = cover ? measuredFrame(measured).overlay : undefined
 ---
 {cover && width === 'content'
   ? (
-    <Section measured={sectionMeasured} tone="none" spacing="sm" width="prose" id={id} aria-labelledby={headingId}>
-      <div class="relative isolate overflow-hidden bg-ink text-surface">
+    <Section kit="hero" measured={sectionMeasured} tone="none" spacing="sm" width="prose" id={id} aria-labelledby={headingId}>
+      <div class={`relative isolate overflow-hidden bg-ink text-surface ${mutedInverse}`}>
         <KitImage image={image} priority sizes="(min-width: 768px) 46rem, 100vw" class="absolute inset-0 -z-10 h-full w-full object-cover" />
         <div class:list={['absolute inset-0 -z-10', !scrim && 'bg-ink/60']} style={scrim ? `background: ${scrim}` : undefined} aria-hidden="true" />
         <div class="px-6 py-10 md:px-10">
@@ -122,7 +126,7 @@ const scrim = cover ? measuredFrame(measured).overlay : undefined
   )
   : cover
   ? (
-    <Section measured={sectionMeasured} tone="inverse" spacing="none" width="none" id={id} aria-labelledby={headingId} class="relative isolate overflow-hidden">
+    <Section kit="hero" measured={sectionMeasured} tone="inverse" spacing="none" width="none" id={id} aria-labelledby={headingId} class="relative isolate overflow-hidden">
       <KitImage image={image} priority sizes="100vw" class="absolute inset-0 -z-10 h-full w-full object-cover" />
       <div class:list={['absolute inset-0 -z-10', !scrim && 'bg-ink/60']} style={scrim ? `background: ${scrim}` : undefined} aria-hidden="true" />
       <div class:list={['container-page', measured?.padY === undefined && 'py-16 md:py-28']}>
@@ -139,7 +143,7 @@ const scrim = cover ? measuredFrame(measured).overlay : undefined
     </Section>
   )
   : (
-    <Section measured={sectionMeasured} tone={tone} spacing="lg" id={id} aria-labelledby={headingId}>
+    <Section kit="hero" measured={sectionMeasured} tone={tone} spacing="lg" id={id} aria-labelledby={headingId}>
       {/* Without an image a split has nothing beside the text: the text takes the whole row, not half of it. */}
       <div class={s.grid({ class: image ? undefined : 'md:grid-cols-1' })}>
         <div class={s.copy()}>
