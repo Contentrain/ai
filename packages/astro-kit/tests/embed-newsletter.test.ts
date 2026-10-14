@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { embedTarget, mapTarget } from '../components/embed/embed'
+import { embedTarget, mapTarget } from '../components/_shared/embed-target'
 import { newsletterForm, newsletterProviderOf } from '../components/newsletter/newsletter'
 
 describe('embedTarget', () => {

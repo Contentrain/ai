@@ -7,6 +7,8 @@
   "shared": [
     "Section.astro",
     "behaviors.ts",
+    "embed-frame.ts",
+    "embed-target.ts",
     "measured.ts",
     "safe-url.ts",
     "types.ts"

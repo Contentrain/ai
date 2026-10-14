@@ -107,3 +107,33 @@ export function mapTarget(address: string): EmbedTarget | null {
   const query = encodeURIComponent(q)
   return { provider: 'google-maps', kind: 'map', src: `https://www.google.com/maps?q=${query}&output=embed`, href: `https://www.google.com/maps/search/?api=1&query=${query}` }
 }
+
+const VIDEO_PAGE: Record<string, (id: string) => string> = {
+  youtube: id => `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`,
+  vimeo: id => `https://vimeo.com/${encodeURIComponent(id)}`,
+}
+
+/**
+ * A video to play in place: a video page or player URL, or `youtube:<id>` / `vimeo:<id>` (what the engine writes on a
+ * slide or an island link). Only a video comes back (never a map or a form); the id is checked by the same parser as a
+ * URL, so the player address is always built here, never taken from the content.
+ */
+export function videoTarget(value: string | undefined): EmbedTarget | null {
+  if (!value) return null
+  const short = /^(youtube|vimeo):([\w-]+)$/.exec(value.trim())
+  const target = embedTarget(short ? VIDEO_PAGE[short[1]!]!(short[2]!) : value)
+  return target?.kind === 'video' ? target : null
+}
+
+/** Hosts a video provider serves its players, thumbnails and streams from. */
+const VIDEO_HOST = /(?:^|\.)(?:youtube|youtube-nocookie|youtu|ytimg|googlevideo|ggpht|vimeo|vimeocdn|loom|wistia)\.(?:com|be|net)$/i
+
+/**
+ * An address on a video provider's own hosts (a YouTube thumbnail on i.ytimg.com, a Vimeo one on vimeocdn.com): never
+ * drawn as a poster, since loading it is a request to the provider before the reader asked for the video.
+ */
+export function onVideoHost(src: string | undefined): boolean {
+  if (!src) return false
+  try { return VIDEO_HOST.test(new URL(src, 'https://site.invalid').hostname) }
+  catch { return false }
+}
