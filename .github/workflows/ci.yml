@@ -74,8 +74,9 @@ jobs:
         # a site whose post addresses are ja / ar / tr / de words (unicode-slugs),
         # a post at its kept old address (and one whose slug left it: a 301),
         # every other entry kind at its kept old address (pages, terms, a custom type: entry-path),
-        # a migrated comment thread drawn at build time (unbound and bound to Studio)
-        # and a form the owner kept on WordPress.
+        # a migrated comment thread drawn at build time (unbound and bound to Studio),
+        # a form the owner kept on WordPress,
+        # and a sample build whose links to the source's other pages go to the live site.
         run: |
           node scripts/starter-gates.mjs --local-sdk
           node scripts/starter-gates.mjs --local-sdk --fixture wp-demo
@@ -95,6 +96,7 @@ jobs:
           node scripts/starter-gates.mjs --local-sdk --fixture comments --media studio
           node scripts/starter-gates.mjs --local-sdk --fixture forms-wordpress
           node scripts/starter-gates.mjs --local-sdk --fixture empty-pages
+          node scripts/starter-gates.mjs --local-sdk --fixture sample-links
 
       - name: Kit components render as their baselines
         # Every fixture of every astro-kit component, in a copy of the starter,
