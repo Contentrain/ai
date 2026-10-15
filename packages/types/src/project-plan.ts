@@ -42,6 +42,9 @@ export const PLAN_TOKEN_ROLES = [
   // The brand colour a page builder declares and paints on a band of its own (Elementor's secondary on a call to action),
   // where it is not the accent the buttons paint; `color-brand-ink` is the text on it. Absent: the accent and its ink.
   'color-brand', 'color-brand-ink',
+  // Headings' own face and letter spacing (a design direction's display face and track). Absent: a heading inherits its
+  // face and draws its own track, as before. `tracking-heading` is a letter-spacing (`-0.02em`, `0`, `normal`).
+  'font-heading', 'tracking-heading',
 ] as const
 export type PlanTokenRole = (typeof PLAN_TOKEN_ROLES)[number]
 
@@ -502,6 +505,8 @@ const LETTER_SPACING = /^(?:normal|-?\d+(?:\.\d+)?(?:px|rem|em))$/
 /** A font size the starter writes into a style: a length, or a `clamp()`/`calc()`/`min()`/`max()` of lengths (a theme's fluid size). */
 /** A colour that goes into a style attribute: hex, `rgb()`/`rgba()` or `hsl()`/`hsla()` of numbers; never a `;` or `url()`. */
 const CSS_COLOR = /^(?:#[0-9a-f]{3,8}|(?:rgb|hsl)a?\([\d\s.,%/deg]+\))$/i
+/** A letter-spacing: `normal`, `0`, or a signed length in em, rem or px. */
+const CSS_TRACKING = /^(?:normal|0|-?(?:\d+(?:\.\d+)?|\.\d+)(?:em|rem|px))$/
 const CSS_LENGTH = /^(?!.*url\()(?:\d+(?:\.\d+)?(?:px|rem|em|%)|(?:clamp|calc|min|max)\([\d\s.,+*/()a-z%-]+\))$/
 
 /**
@@ -666,6 +671,8 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     const value = site?.tokens?.roles?.[role]
     if (value !== undefined && !CSS_LENGTH.test(value)) errors.push(`tokens.roles.${role} ${value} is not a CSS size`)
   }
+  const tracking = site?.tokens?.roles?.['tracking-heading']
+  if (tracking !== undefined && !CSS_TRACKING.test(tracking)) errors.push(`tokens.roles.tracking-heading ${tracking} is not a letter-spacing`)
 
   const models = new Map<string, PlanModel>()
   for (const m of plan.models ?? []) {
