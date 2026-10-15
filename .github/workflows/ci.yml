@@ -73,7 +73,7 @@ jobs:
         # an Arabic one (right to left: <html lang="ar" dir="rtl">)
         # a site whose post addresses are ja / ar / tr / de words (unicode-slugs),
         # a post at its kept old address (and one whose slug left it: a 301),
-        # every other entry kind at its kept old address (pages, terms, a custom type: entry-path),
+        # every other entry kind at its kept old address (pages, terms, a custom type: entry-path; a renamed one of each: a 301),
         # a migrated comment thread drawn at build time (unbound and bound to Studio),
         # a form the owner kept on WordPress,
         # and a sample build whose links to the source's other pages go to the live site.
