@@ -1,0 +1,19 @@
+{
+  "e7c000000001": {
+    "name": "Spectra blocks",
+    "slug": "spectra-blocks",
+    "wp_id": 51
+  },
+  "e7c000000002": {
+    "name": "Blocks and extensions",
+    "path": "/docs-category/spectra-blocks/blocks-and-extensions-spectra-blocks/",
+    "slug": "blocks-and-extensions-spectra-blocks",
+    "wp_id": 52
+  },
+  "e7c000000003": {
+    "name": "General, renamed",
+    "path": "/docs-category/general/",
+    "slug": "general-renamed",
+    "wp_id": 53
+  }
+}
