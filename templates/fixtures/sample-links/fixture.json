@@ -1,0 +1,23 @@
+{
+  "siteConfig": [
+    {
+      "from": "  sourceHosts: [],",
+      "to": "  sourceHosts: ['source.example'],\n  sampleOrigin: 'https://source.example',"
+    }
+  ],
+  "distFiles": {
+    "about/index.html": {
+      "contains": [
+        "href=\"https://source.example/trade-updates/?lang=en#latest\">Trade updates</a>",
+        "href=\"https://source.example/education/expectant-parents/\">Learn more</a>",
+        "href=\"/about/\">About us</a>",
+        "href=\"https://elsewhere.example/report/\">A report</a>",
+        "href=\"/blog/in-the-sample/\">In the sample</a>"
+      ],
+      "excludes": [
+        "www.Source.example",
+        "\t /education/"
+      ]
+    }
+  }
+}

@@ -2,7 +2,9 @@
 // pages and the source site's absolute URLs; a public build points at none of
 // them. Every internal link resolves through the route table — the published
 // set — or is dropped: a menu item without a public target is left out, a link
-// in a body becomes its text. External links pass through unchanged.
+// in a body becomes its text. External links pass through unchanged. On a
+// sample build (`siteConfig.sampleOrigin`), a source page the sample does not
+// hold points at the live source site instead.
 
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -27,6 +29,21 @@ const BASE = 'http://link.invalid'
 const bareHost = (hostname: string) => hostname.toLowerCase().replace(/^www\./, '')
 const hostOf = (url: string) => {
   try { return bareHost(new URL(url.includes('//') ? url : `http://${url}`).hostname) } catch { return undefined }
+}
+
+/**
+ * A sample build's link to a source page it does not hold, on the live source site: a root path or an address on one
+ * of the source's hosts, rebuilt from its parsed path, query and fragment on `sampleOrigin`'s origin, never the stored
+ * string. Undefined off a sample build, for an origin that is not http(s), or for this site's own other hosts.
+ */
+function liveSource(parsed: URL): string | undefined {
+  const origin = siteConfig.sampleOrigin
+  if (!origin) return undefined
+  let live: URL
+  try { live = new URL(origin) } catch { return undefined }
+  if (live.protocol !== 'http:' && live.protocol !== 'https:') return undefined
+  const source = parsed.origin === BASE || siteConfig.sourceHosts.some(url => hostOf(url) === bareHost(parsed.hostname))
+  return source ? new URL(`${parsed.pathname}${parsed.search}${parsed.hash}`, live.origin).href : undefined
 }
 
 /** A served file address (`/blog/doc.pdf` under a `base`) is `public/doc.pdf`. */
@@ -120,7 +137,7 @@ export function publicLinks(): Promise<Linker> {
       if (SERVED.has(path)) return `${path}${parsed.search}${parsed.hash}`
       // A file the media stage copied into public/ is served here; one it could not copy stays at its old address.
       if (FILE.test(path)) return inPublic(path) ? `${path}${parsed.search}${parsed.hash}` : raw
-      return routes.has(path) ? `${path}${parsed.search}${parsed.hash}` : undefined
+      return routes.has(path) ? `${path}${parsed.search}${parsed.hash}` : liveSource(parsed)
     }
     return url => link(url, new Set())
   })()

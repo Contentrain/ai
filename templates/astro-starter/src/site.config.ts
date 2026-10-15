@@ -191,6 +191,13 @@ export interface SiteConfig {
    */
   sourceHosts: readonly string[]
   /**
+   * Only on a migration's sample build: the source site's origin (`https://site.com`). The sample
+   * holds a few pages, so a link to one of the source's other pages has no route here; with this
+   * set it points at that page on the live source site instead of being dropped. Unset, such a
+   * link is not public and is dropped, as on every full migration.
+   */
+  sampleOrigin?: string
+  /**
    * Contentrain Studio's public forms and comments API, from studio.json at the
    * project root (see astro.config.mjs). Without it, forms and comment threads
    * render nothing — a form that cannot be sent is worse than no form.
