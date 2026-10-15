@@ -108,7 +108,7 @@
         "overlap"
       ],
       "default": "none",
-      "description": "Split and centered: edge runs the image on to the window's edge on its side (both sides when centered); overlap also lets it cross the section's bottom edge by --hero-overlap (3rem), over the next section's top padding. A cover ignores it."
+      "description": "Split and centered: edge runs the image on to the window's edge on its side (both sides when centered); overlap also lets it cross the section's bottom edge by --hero-overlap (3rem), over the next section's top padding, when the image comes last: with stackOrder media-first it draws as edge, so it never covers the text. A cover ignores it."
     }
   },
   "props": {

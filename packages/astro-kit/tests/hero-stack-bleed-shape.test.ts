@@ -33,6 +33,12 @@ describe('the hero\'s image first, to the window\'s edge, and Split\'s masks', (
     expect(await read('hero', 'Hero.astro')).toContain('`max-w-none md:w-auto ${BLEED.start} ${BLEED.end}`')
   })
 
+  it('lets only an image that comes last cross the bottom: overlap with media-first draws as edge, never over the text', async () => {
+    const hero = await read('hero', 'Hero.astro')
+    expect(hero).toContain("const bleedAs = imageBleed === 'overlap' && stackOrder === 'media-first' ? 'edge' : imageBleed")
+    expect(hero).toContain('imageBleed: bleedAs })')
+  })
+
   it('draws a mask from a fixed set of classes, never a value from content, and dims no text', async () => {
     const split = await read('split', 'Split.astro')
     expect(split).toContain("arch: { media: 'rounded-t-full', image: 'h-full' },")
