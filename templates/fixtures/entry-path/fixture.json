@@ -103,10 +103,28 @@
         "General, renamed"
       ]
     },
+    "category/latest-news/press-renamed/index.html": {
+      "contains": [
+        "Press, renamed"
+      ]
+    },
+    "tag/travel-notes/index.html": {
+      "contains": [
+        "Travel notes, renamed"
+      ]
+    },
+    "docs/migrated-guide/index.html": {
+      "contains": [
+        "A renamed docs page"
+      ]
+    },
     "_redirects": {
       "contains": [
         "/company/old_name/ /renamed-page/ 301",
-        "/docs-category/general/ /docs-category/general-renamed/ 301"
+        "/docs-category/general/ /docs-category/general-renamed/ 301",
+        "/category/press/ /category/latest-news/press-renamed/ 301",
+        "/tag/travel/ /tag/travel-notes/ 301",
+        "/docs/old-guide/ /docs/migrated-guide/ 301"
       ]
     },
     "sitemap-0.xml": {

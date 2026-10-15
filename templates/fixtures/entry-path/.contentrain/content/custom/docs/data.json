@@ -27,5 +27,13 @@
     "slug": "getting-started",
     "title": "A docs page at the pattern",
     "wp_id": 202501
+  },
+  "e7d000000004": {
+    "body": "<p>An editor renamed this guide.</p>",
+    "path": "/docs/old-guide/",
+    "published_at": "2024-03-04T10:00:00.000Z",
+    "slug": "migrated-guide",
+    "title": "A renamed docs page",
+    "wp_id": 202502
   }
 }

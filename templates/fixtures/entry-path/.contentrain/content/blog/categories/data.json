@@ -10,5 +10,11 @@
     "path": "/category/reviews/",
     "slug": "reviews",
     "wp_id": 12
+  },
+  "e7b000000003": {
+    "name": "Press, renamed",
+    "path": "/category/press/",
+    "slug": "press-renamed",
+    "wp_id": 13
   }
 }
