@@ -30,6 +30,7 @@ export const collections = {
       description: z.string().optional(),
       name: z.string(),
       parent: reference('categories').optional(),
+      path: z.string().optional(),
       slug: z.string(),
       wp_id: z.number().int().optional(),
     }),
@@ -89,6 +90,7 @@ export const collections = {
       menu_order: z.number().int().optional(),
       modified_at: z.coerce.date().optional(),
       parent: reference('pages').optional(),
+      path: z.string().optional(),
       path_prefix: z.string().optional(),
       published_at: z.coerce.date().optional(),
       seo: z.object({
@@ -175,6 +177,7 @@ export const collections = {
       id: z.string(),
       description: z.string().optional(),
       name: z.string(),
+      path: z.string().optional(),
       slug: z.string(),
       wp_id: z.number().int().optional(),
     }),

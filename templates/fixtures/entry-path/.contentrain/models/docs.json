@@ -1,0 +1,50 @@
+{
+  "domain": "custom",
+  "fields": {
+    "body": {
+      "label": "Body",
+      "order": 40,
+      "type": "richtext"
+    },
+    "docs-category": {
+      "label": "Docs category",
+      "model": "docs-category",
+      "order": 50,
+      "type": "relations"
+    },
+    "path": {
+      "description": "This entry's address on the old site, kept where the type's pattern would build another.",
+      "label": "Kept address",
+      "order": 60,
+      "type": "string"
+    },
+    "published_at": {
+      "label": "Published",
+      "order": 30,
+      "type": "date"
+    },
+    "slug": {
+      "label": "Slug",
+      "order": 20,
+      "required": true,
+      "type": "slug",
+      "unique": true
+    },
+    "title": {
+      "label": "Title",
+      "order": 10,
+      "required": true,
+      "type": "string"
+    },
+    "wp_id": {
+      "label": "WP post ID",
+      "order": 70,
+      "type": "integer"
+    }
+  },
+  "i18n": false,
+  "id": "docs",
+  "kind": "collection",
+  "name": "Docs",
+  "title_field": "title"
+}

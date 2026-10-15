@@ -6,7 +6,7 @@ import { getCollection, getEntry, type CollectionKey } from 'astro:content'
 import type { ImageInput } from '../components/kit/_shared/types'
 import { siteConfig, type CustomType } from '../site.config'
 import { withBase } from './base'
-import { imageOf, type Media } from './content'
+import { imageOf, keptPath, stalePath, type Media } from './content'
 import { dateParams, fillPattern } from './routes'
 
 export type TypeEntry = { id: string, data: Record<string, unknown> }
@@ -41,8 +41,11 @@ export function newestFirst(entries: readonly TypeEntry[], dateField = 'publishe
     || (text(a.data.title) ?? text(a.data.name) ?? a.id).localeCompare(text(b.data.title) ?? text(b.data.name) ?? b.id))
 }
 
+/** An entry's address: its kept `path` (`keptPath` in content.ts), else the type's pattern. */
 export function entryHref(type: CustomType, entry: TypeEntry): string {
   const slug = text(entry.data.slug) ?? entry.id
+  const kept = keptPath(entry.data.path, slug)
+  if (kept) return withBase(kept)
   const wpId = entry.data.wp_id
   return withBase(fillPattern(type.single, { slug, id: typeof wpId === 'number' ? String(wpId) : entry.id, ...dateParams(dateOf(entry.data.published_at)) }))
 }
@@ -53,10 +56,12 @@ export const termsById = (collection: string, terms: readonly TypeEntry[]): Map<
 /**
  * A term's address. A taxonomy whose terms nest serves a child at `/<base>/<parent>/<child>/` (WordPress, a hierarchical
  * taxonomy): its pattern carries `:path`, filled from the term's `parent` chain in `terms` (by `collection:id`), as a
- * category's is. Without `:path` the slug alone.
+ * category's is. Without `:path` the slug alone. A kept `path` (`keptPath` in content.ts) wins over the pattern.
  */
 export function termHref(taxonomy: Taxonomy, term: TypeEntry, terms?: ReadonlyMap<string, TypeEntry>): string {
   const slug = text(term.data.slug) ?? term.id
+  const kept = keptPath(term.data.path, slug)
+  if (kept) return withBase(kept)
   if (!taxonomy.pattern.includes(':path')) return withBase(fillPattern(taxonomy.pattern, { slug }))
   const trail: string[] = []
   const seen = new Set<string>()
@@ -65,6 +70,28 @@ export function termHref(taxonomy: Taxonomy, term: TypeEntry, terms?: ReadonlyMa
     trail.unshift(text(at.data.slug) ?? at.id)
   }
   return withBase(fillPattern(taxonomy.pattern, { slug, path: trail.join('/') }))
+}
+
+/** A custom type's kept addresses whose entry's or term's slug has changed since: each leads to where it is now (301). */
+export async function staleTypePaths(): Promise<Array<{ from: string, to: string }>> {
+  const out: Array<{ from: string, to: string }> = []
+  for (const type of siteConfig.types ?? []) {
+    const taxonomies = type.taxonomies ?? []
+    const [own, ...lists] = await Promise.all([entriesOf(type.collection), ...taxonomies.map(taxonomy => entriesOf(taxonomy.collection))])
+    for (const entry of own ?? []) {
+      const from = stalePath(entry.data.path, text(entry.data.slug) ?? entry.id)
+      if (from) out.push({ from, to: entryHref(type, entry) })
+    }
+    for (const [i, taxonomy] of taxonomies.entries()) {
+      const terms = lists[i] ?? []
+      const byKey = termsById(taxonomy.collection, terms)
+      for (const term of terms) {
+        const from = stalePath(term.data.path, text(term.data.slug) ?? term.id)
+        if (from) out.push({ from, to: termHref(taxonomy, term, byKey) })
+      }
+    }
+  }
+  return out
 }
 
 /** The ids a `relations` (or `relation`) value points at. */

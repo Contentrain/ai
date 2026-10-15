@@ -1,0 +1,33 @@
+{
+  "e7e000000001": {
+    "body": "<p>Who we are.</p>",
+    "link": "https://example.com/company/about-us/",
+    "path": "/company/about-us/",
+    "slug": "about-us",
+    "title": "About us under a parent not moved",
+    "wp_id": 401
+  },
+  "e7e000000002": {
+    "body": "<p>The survey product.</p>",
+    "link": "https://example.com/programs/best-employer-surveys-product-page/",
+    "path": "/programs/best-employer-surveys-product-page/",
+    "slug": "best-employer-surveys-product-page",
+    "title": "A product page under a parent not moved",
+    "wp_id": 402
+  },
+  "e7e000000003": {
+    "body": "<p>An editor renamed this page.</p>",
+    "link": "https://example.com/company/old_name/",
+    "path": "/company/old_name/",
+    "slug": "renamed-page",
+    "title": "A renamed page",
+    "wp_id": 403
+  },
+  "e7e000000004": {
+    "body": "<p>Write to us.</p>",
+    "link": "https://example.com/contact/",
+    "slug": "contact",
+    "title": "Contact at the pattern",
+    "wp_id": 404
+  }
+}
