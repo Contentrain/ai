@@ -1,0 +1,12 @@
+---
+// Text the author broke into lines (`\n`), one block per line, each marked `data-kit-line="<n>"` so a theme or a
+// design layer can give a line its own ink, indent or size. The lines stay one text: a heading made of them is
+// still one heading, read as one sentence (a space between the blocks keeps the words apart when it is read out).
+// Without a line break the text is printed as it is.
+interface Props {
+  text: string
+}
+
+const lines = Astro.props.text.split('\n').map(line => line.trim()).filter(Boolean)
+---
+{lines.length > 1 ? lines.map((line, i) => <>{i > 0 && ' '}<span class="block" data-kit-line={i + 1}>{line}</span></>) : Astro.props.text}
