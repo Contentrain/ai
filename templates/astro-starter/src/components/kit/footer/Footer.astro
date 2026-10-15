@@ -98,9 +98,9 @@ const line = copyright === false ? undefined : copyright?.replaceAll('{year}', y
 // The line and the cookie settings control share one paragraph; neither: no paragraph.
 const hasBottom = Boolean(line || consentLabel)
 // The wordmark: the name set in an SVG whose text is stretched (letter spacing only) to the box's width, so it fills the
-// footer's width at every size whatever its letters are. The box is 1000 wide; the font size guesses the name's natural
-// width (0.6em a letter) so the stretch stays small. `crop` keeps the box above the baseline's middle: the letters run
-// over its bottom edge and are cut there.
+// footer's width at every size whatever its letters are. The box is 1000 wide; the font size guesses the name's width on
+// the wide side, letter by letter, so the stretch only adds space. `crop` ends the box halfway up the letters: they run
+// over its bottom edge and are cut there. A name in a script letter spacing breaks (Arabic, Indic, …) gets none.
 const mark = wordmark === 'fit' || wordmark === 'crop' ? wordmarkBox(siteName, wordmark) : undefined
 ---
 <!-- The cookie settings control is a button, not a link: the Consent component's listener reopens its bar on any [data-kit-consent-open]. -->

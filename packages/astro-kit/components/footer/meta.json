@@ -58,7 +58,7 @@
         "crop"
       ],
       "default": "none",
-      "description": "none: no wordmark. fit: the site name drawn once more as a row exactly as wide as the footer, in the heading font and the footer's ink. crop: the same row cut by the footer's bottom edge, only the letters' top showing. Decoration, hidden from screen readers: the name is already the footer's brand."
+      "description": "none: no wordmark. fit: the site name drawn once more as a row exactly as wide as the footer, in the heading font and the footer's ink. crop: the same row cut by the footer's bottom edge, only the letters' top showing. A name in a script letter spacing breaks (Arabic, Hebrew, Indic, Thai, …) gets none. Decoration, hidden from screen readers: the name is already the footer's brand."
     },
     "wordmarkOrder": {
       "options": [

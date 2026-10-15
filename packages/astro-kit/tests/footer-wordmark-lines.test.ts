@@ -7,13 +7,22 @@ const COMPONENTS = join(import.meta.dirname, '..', 'components')
 const read = (...path: string[]) => readFile(join(COMPONENTS, ...path), 'utf8')
 
 describe('the footer wordmark: the site name once more, as wide as the footer', () => {
-  it('sizes a box the name fills at about its natural width, and cuts it above the descenders for crop', () => {
-    // 9 letters at 0.6em: the font size that makes them ~1000 wide; the baseline under the capitals.
-    expect(wordmarkBox('Northwind', 'fit')).toEqual({ size: 185, baseline: 144, height: 185 })
-    expect(wordmarkBox('Northwind', 'crop')).toEqual({ size: 185, baseline: 144, height: 78 })
+  it('sizes a box the name fills at or under its width, letter by letter, so the stretch only adds spacing', () => {
+    expect(wordmarkBox('Northwind', 'fit')).toEqual({ size: 157, baseline: 122, height: 157 })
+    expect(wordmarkBox('Northwind', 'crop')).toEqual({ size: 157, baseline: 122, height: 66 })
+    // Capitals are guessed wider than lower case, full-width letters (CJK) at a full em with a lower baseline.
+    expect(wordmarkBox('NORTHWIND STUDIO', 'fit')!.size).toBeLessThan(wordmarkBox('Northwind Studio', 'fit')!.size)
+    expect(wordmarkBox('北風スタジオ', 'fit')).toEqual({ size: 158, baseline: 139, height: 174 })
     // Letters, not UTF-16 units, and the name's own spaces at its ends do not count.
-    expect(wordmarkBox(' Çay ', 'fit').size).toBe(wordmarkBox('Çay', 'fit').size)
-    expect(wordmarkBox('', 'fit').size).toBeGreaterThan(0)
+    expect(wordmarkBox(' Çay ', 'fit')).toEqual(wordmarkBox('Çay', 'fit'))
+  })
+
+  it('draws none for a name letter spacing would break (joined and clustered scripts), or no name', () => {
+    expect(wordmarkBox('استوديو الشمال', 'fit')).toBeUndefined()
+    expect(wordmarkBox('סטודיו צפון', 'crop')).toBeUndefined()
+    expect(wordmarkBox('उत्तर स्टूडियो', 'fit')).toBeUndefined()
+    expect(wordmarkBox('สตูดิโอ', 'fit')).toBeUndefined()
+    expect(wordmarkBox('  ', 'fit')).toBeUndefined()
   })
 
   it('is drawn only when asked for, hidden from screen readers, stretched to the box by letter spacing alone', async () => {
