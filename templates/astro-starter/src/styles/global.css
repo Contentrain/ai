@@ -24,9 +24,12 @@
   --color-accent: #2563eb;
   --color-accent-ink: #ffffff;
   /* Text in the accent (a category link, an eyebrow): the accent itself unless a site sets a readable one — an accent
-     made for fills can be too light for text on the page (lime on white). The inverse twin is the one on a dark band. */
+     made for fills can be too light for text on the page (lime on white). The inverse twin is the one on a dark band:
+     the accent drawn halfway to the surface, so it keeps its hue and reads on the ink (the default blue at 8.6:1, every
+     usual accent at 4.5:1 or more; a near-black one does not, and needs the site's own). A site whose own accent
+     reads there sets it back. */
   --color-accent-text: var(--color-accent);
-  --color-accent-text-inverse: var(--color-accent);
+  --color-accent-text-inverse: color-mix(in oklab, var(--color-accent) 50%, var(--color-surface));
   --color-brand: var(--color-accent);
   --color-brand-ink: var(--color-accent-ink);
 
