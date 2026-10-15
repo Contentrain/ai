@@ -43,7 +43,13 @@ function liveSource(parsed: URL): string | undefined {
   try { live = new URL(origin) } catch { return undefined }
   if (live.protocol !== 'http:' && live.protocol !== 'https:') return undefined
   const source = parsed.origin === BASE || siteConfig.sourceHosts.some(url => hostOf(url) === bareHost(parsed.hostname))
-  return source ? new URL(`${parsed.pathname}${parsed.search}${parsed.hash}`, live.origin).href : undefined
+  if (!source) return undefined
+  // Set part by part: a path that begins `//` must stay a path on the source, never become another host.
+  const out = new URL(live.origin)
+  out.pathname = parsed.pathname
+  out.search = parsed.search
+  out.hash = parsed.hash
+  return out.origin === live.origin ? out.href : undefined
 }
 
 /** A served file address (`/blog/doc.pdf` under a `base`) is `public/doc.pdf`. */

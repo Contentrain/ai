@@ -1,6 +1,6 @@
 {
   "f2a000000001": {
-    "body": "<p><a href=\"https://www.Source.example/trade-updates/?lang=en#latest\">Trade updates</a> · <a href=\"\t /education/expectant-parents/\">Learn more</a> · <a href=\"https://source.example/about/\">About us</a> · <a href=\"https://elsewhere.example/report/\">A report</a> · <a href=\"https://source.example/blog/in-the-sample/\">In the sample</a></p>",
+    "body": "<p><a href=\"https://www.Source.example/trade-updates/?lang=en#latest\">Trade updates</a> · <a href=\"\t /education/expectant-parents/\">Learn more</a> · <a href=\"https://source.example/about/\">About us</a> · <a href=\"https://elsewhere.example/report/\">A report</a> · <a href=\"https://source.example/blog/in-the-sample/\">In the sample</a> · <a href=\"/.//other.example/x\">Odd path</a> · <a href=\"https://source.example//other.example/y?q=1#h\">Odd address</a></p>",
     "slug": "about",
     "title": "About",
     "wp_id": 702

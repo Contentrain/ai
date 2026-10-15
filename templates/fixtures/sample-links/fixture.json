@@ -12,11 +12,15 @@
         "href=\"https://source.example/education/expectant-parents/\">Learn more</a>",
         "href=\"/about/\">About us</a>",
         "href=\"https://elsewhere.example/report/\">A report</a>",
-        "href=\"/blog/in-the-sample/\">In the sample</a>"
+        "href=\"/blog/in-the-sample/\">In the sample</a>",
+        "href=\"https://source.example//other.example/x\">Odd path</a>",
+        "href=\"https://source.example//other.example/y?q=1#h\">Odd address</a>"
       ],
       "excludes": [
         "www.Source.example",
-        "\t /education/"
+        "\t /education/",
+        "href=\"https://other.example",
+        "href=\"//other.example"
       ]
     }
   }
