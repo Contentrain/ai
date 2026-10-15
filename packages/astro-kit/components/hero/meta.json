@@ -7,6 +7,7 @@
   "shared": [
     "Button.astro",
     "KitImage.astro",
+    "Lines.astro",
     "Section.astro",
     "instance-id.ts",
     "measured.ts",
@@ -82,6 +83,14 @@
       ],
       "default": "own",
       "description": "The level whose site size the heading takes when it is not the level it is written at: h1 on an h2 heading keeps a source's second h1 at the h1 size under a page that keeps one h1. own: the heading's own level under headingScale theme, nothing otherwise. Any other value than own sets the size by itself."
+    },
+    "headingLines": {
+      "options": [
+        "flow",
+        "lines"
+      ],
+      "default": "flow",
+      "description": "flow: the heading is one run of text. lines: each line the author broke it into (a line break, \\n, in the heading) is a block of its own, data-kit-line=\"1\", \"2\", …, so a theme or a design layer can give a line its own ink, indent or size. Still one heading, read as one sentence."
     }
   },
   "props": {

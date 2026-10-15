@@ -163,6 +163,13 @@ try {
           const skip = levels.findIndex((level, i) => level > (i === 0 ? opens : levels[i - 1] + 1))
           if (skip >= 0) outline.push(`${c.id}/${name}: h${levels.join(' h')} (${skip === 0 ? `opens below h${opens}` : `h${levels[skip - 1]} → h${levels[skip]}`})`)
         }
+        const lined = fixturesOf.get(c.id).get(name)
+        if (width === WIDTHS[0] && lined?.headingLines === 'lines') {
+          // A heading broken into lines: one block per line (`data-kit-line`), still one heading read as one sentence.
+          const want = String(lined.heading).split('\n').map(line => line.trim()).filter(Boolean)
+          const got = await element.evaluate(el => { const h = el.querySelector('h1, h2'); return { lines: [...(h?.querySelectorAll('[data-kit-line]') ?? [])].map(l => l.textContent), text: h?.textContent?.replace(/\s+/g, ' ').trim() } })
+          if (JSON.stringify(got.lines) !== JSON.stringify(want) || got.text !== want.join(' ')) outline.push(`${c.id}/${name}: heading lines ${JSON.stringify(got)} (expected ${JSON.stringify(want)})`)
+        }
         if (width === WIDTHS[0] && (c.id === 'nav' || c.id === 'header')) {
           // A menu keeps every level: each real href is a link in the wide menu and again in the narrow one, and a
           // group with no link is not drawn as <a href="#">.

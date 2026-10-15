@@ -41,6 +41,14 @@
       "default": "start",
       "description": "Text alignment inside cards and of the header."
     },
+    "layout": {
+      "options": [
+        "grid",
+        "rows"
+      ],
+      "default": "grid",
+      "description": "Cards in a grid, or one item per row: title, text and link on one axis, a hairline between rows, no card box (columns and style do not apply)."
+    },
     "tone": {
       "options": [
         "default",
@@ -114,6 +122,12 @@
         }
       },
       "description": "The cards. image is an ImageInput ({ src, alt, width?, height? })."
+    },
+    "index": {
+      "type": "boolean",
+      "default": false,
+      "content": false,
+      "description": "With layout rows: a numbered list, each row led by its number (01, 02, …) in the muted role."
     },
     "headingLevel": {
       "type": "integer",
