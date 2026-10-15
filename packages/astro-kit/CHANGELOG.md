@@ -1,5 +1,17 @@
 # @contentrain/astro-kit
 
+## 0.43.0
+
+### Minor Changes
+
+- 8be2af4: Footer gains `wordmark` and `wordmarkOrder`. `fit` draws the site name once more as a row exactly as wide as the footer, in the heading font and the footer's ink; `crop` lets the footer's bottom edge cut it, so only the letters' top shows. It is an SVG text stretched to the row by letter spacing, so any name fills it at every width (its size is guessed letter by letter on the wide side, so the stretch only adds spacing; a name in a script letter spacing breaks, such as Arabic, Hebrew or an Indic one, gets no wordmark), and it is hidden from screen readers (the name is already the footer's brand). `wordmarkOrder: 'first'` puts the row before the rest. The default, `none`, draws the footer exactly as before.
+- 8be2af4: Band gains `headingLines` and `leadLines`, Testimonial gains `quoteLines`, by Hero's `headingLines` rule: with `lines`, each line the author broke the text into (`\n`) is a block of its own, `data-kit-line="1"`, `"2"`, …, for a theme or a design layer to set its ink, indent or size. A heading stays one heading and a lead or a quote one paragraph; a quote's marks go before its first line and after its last. The default, `flow`, prints the text exactly as before.
+
+### Patch Changes
+
+- Updated dependencies [861bdd2]
+  - @contentrain/types@1.65.0
+
 ## 0.42.0
 
 ### Minor Changes
