@@ -11,6 +11,7 @@ import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
 import { measuredFrame } from '../_shared/measured'
 import { coverHeight as heightOf, headingStyle as styleOf } from './hero'
 import { muted, mutedInverse } from '../_shared/muted'
+import { BLEED } from '../_shared/bleed'
 
 const hero = tv({
   slots: {
@@ -51,6 +52,15 @@ const hero = tv({
     // The heading as the author broke it: `lines` prints each `\n`-separated line as its own block (`data-kit-line`),
     // `flow` (the default) as one run of text.
     headingLines: { flow: {}, lines: {} },
+    // Split and centered (a cover ignores both): the image before the text, on phones and on the start side (split),
+    // or above the heading (centered).
+    stackOrder: { 'text-first': {}, 'media-first': { media: 'order-first' } },
+    // edge: the image runs on to the window's edge on its side (wide screens), or across the whole width when centered.
+    // overlap: it also crosses the section's bottom edge by `--hero-overlap` (3rem), drawn over the next section's top
+    // padding: set at the grid's bottom and moved past the hero's own bottom padding (`spacing="lg"`: 4rem, 7rem from md),
+    // not laid out there, so the next section stays where it was. Only an image that comes last can cross the bottom: one
+    // that comes first (`media-first`) would be moved down over the text, so there overlap draws as edge.
+    imageBleed: { none: {}, edge: { media: 'rounded-none' }, overlap: { media: 'relative z-10 self-end translate-y-[calc(4rem+var(--hero-overlap,3rem))] rounded-none md:translate-y-[calc(7rem+var(--hero-overlap,3rem))]' } },
   },
   compoundVariants: [
     // After the layout's own heights, so a boxed cover keeps WordPress's 430px default.
@@ -60,7 +70,7 @@ const hero = tv({
     { leadAlign: 'start', class: { lead: 'mx-0 max-w-none self-stretch text-start' } },
     { actionsAlign: 'start', class: { actions: 'justify-start self-stretch' } },
   ],
-  defaultVariants: { layout: 'split', tone: 'default', align: 'center', leadAlign: 'inherit', actionsAlign: 'inherit', width: 'full', headingScale: 'default', headingSize: 'own', headingLines: 'flow' },
+  defaultVariants: { layout: 'split', tone: 'default', align: 'center', leadAlign: 'inherit', actionsAlign: 'inherit', width: 'full', headingScale: 'default', headingSize: 'own', headingLines: 'flow', stackOrder: 'text-first', imageBleed: 'none' },
 })
 
 interface Props {
@@ -92,15 +102,21 @@ interface Props {
   headingSize?: 'own' | 'h1' | 'h2' | undefined
   /** `lines`: each line of the heading (split at `\n`) is a block of its own, `data-kit-line="<n>"`, for a theme to set per line. `flow` (absent): one run of text, as before. */
   headingLines?: 'flow' | 'lines' | undefined
+  /** Split and centered: `media-first` puts the image before the text (phones and the start side in split, above the heading in centered). `text-first` (absent): as before. */
+  stackOrder?: 'text-first' | 'media-first' | undefined
+  /** Split and centered: `edge` runs the image on to the window's edge on its side (both sides when centered); `overlap` also lets it cross the section's bottom edge by `--hero-overlap` (3rem), when the image comes last (with `media-first` it draws as `edge`). `none` (absent): as before. */
+  imageBleed?: 'none' | 'edge' | 'overlap' | undefined
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
 }
 
 
-const { heading, level = 1, eyebrow, lead, items = [], actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id: givenId, minHeight, headingScale, headingSize, headingLines, measured } = Astro.props
+const { heading, level = 1, eyebrow, lead, items = [], actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id: givenId, minHeight, headingScale, headingSize, headingLines, stackOrder, imageBleed, measured } = Astro.props
 // Every section has an id, so a theme or a design layer can address this one: the page's, or `hero`, `hero-2`, … in render order.
 const id = instanceId(Astro.locals, givenId, 'hero')
-const s = hero({ layout, align, leadAlign, actionsAlign, width, tone, headingScale, headingSize, headingLines })
+// Overlap moves the image down past the section's bottom, so only an image that comes last may: first, it is edge.
+const bleedAs = imageBleed === 'overlap' && stackOrder === 'media-first' ? 'edge' : imageBleed
+const s = hero({ layout, align, leadAlign, actionsAlign, width, tone, headingScale, headingSize, headingLines, stackOrder, imageBleed: bleedAs })
 const Heading = level === 1 ? 'h1' : 'h2'
 const headingId = `${id}-title`
 const cover = layout === 'cover' && image
@@ -109,6 +125,9 @@ const headingStyle = styleOf(headingScale, level, headingSize)
 // A cover draws its own image: the measured background image is that image, and the measured overlay is its scrim.
 const sectionMeasured = cover && measured ? { ...measured, bg: measured.bg ? { ...measured.bg, image: undefined, overlay: undefined } : undefined } : measured
 const scrim = cover ? measuredFrame(measured).overlay : undefined
+// The window's edge for a bleeding image: its own side in split (the start side when it comes first), both when centered.
+const bleeds = !cover && image && imageBleed !== undefined && imageBleed !== 'none'
+const bleed = bleeds ? (layout === 'centered' ? `max-w-none md:w-auto ${BLEED.start} ${BLEED.end}` : BLEED[stackOrder === 'media-first' ? 'start' : 'end']) : undefined
 ---
 {cover && width === 'content'
   ? (
@@ -149,7 +168,7 @@ const scrim = cover ? measuredFrame(measured).overlay : undefined
     </Section>
   )
   : (
-    <Section kit="hero" measured={sectionMeasured} tone={tone} spacing="lg" id={id} aria-labelledby={headingId}>
+    <Section kit="hero" measured={sectionMeasured} tone={tone} spacing="lg" id={id} aria-labelledby={headingId} class={bleeds ? 'overflow-x-clip' : undefined}>
       {/* Without an image a split has nothing beside the text: the text takes the whole row, not half of it. */}
       <div class={s.grid({ class: image ? undefined : 'md:grid-cols-1' })}>
         <div class={s.copy()}>
@@ -160,7 +179,7 @@ const scrim = cover ? measuredFrame(measured).overlay : undefined
           {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
         </div>
         {image && (
-          <div class={s.media()}>
+          <div class:list={[s.media(), bleed]}>
             <KitImage image={image} priority sizes={layout === 'split' ? '(min-width: 768px) 50vw, 100vw' : '(min-width: 1024px) 56rem, 100vw'} class="h-auto w-full object-cover" />
           </div>
         )}

@@ -12,6 +12,7 @@ import Section from '../_shared/Section.astro'
 import { instanceId } from '../_shared/instance-id'
 import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
 import { muted } from '../_shared/muted'
+import { BLEED } from '../_shared/bleed'
 
 const split = tv({
   slots: {
@@ -35,6 +36,10 @@ const split = tv({
       none: { media: 'rounded-none' },
       rounded: { media: 'rounded-[var(--radius-image,var(--radius-card))]' },
       circle: { media: 'mx-auto aspect-square w-full max-w-lg rounded-full', image: 'h-full' },
+      // A fixed set of masks (never a value from content): an arch over the image, a cut corner, a soft blob.
+      arch: { media: 'rounded-t-full', image: 'h-full' },
+      chamfer: { media: '[clip-path:polygon(0_0,82%_0,100%_18%,100%_100%,0_100%)]' },
+      blob: { media: 'rounded-[38%_62%_55%_45%/48%_42%_58%_52%]' },
     },
     // edge: the image runs on to the viewport's edge on its side (wide screens).
     imageBleed: { none: {}, edge: { media: 'rounded-none' } },
@@ -54,11 +59,6 @@ const split = tv({
 const COLUMNS = {
   text: { '1:1': 'md:grid-cols-2', '5:7': 'md:grid-cols-[5fr_7fr]', '7:5': 'md:grid-cols-[7fr_5fr]' },
   image: { '1:1': 'md:grid-cols-2', '5:7': 'md:grid-cols-[7fr_5fr]', '7:5': 'md:grid-cols-[5fr_7fr]' },
-} as const
-// The viewport's edge, from the content's edge: what is left of the page's width, halved.
-const BLEED = {
-  end: 'md:-me-[calc((100vw-min(var(--container-page),100vw-2*var(--spacing-gutter,2rem)))/2)]',
-  start: 'md:-ms-[calc((100vw-min(var(--container-page),100vw-2*var(--spacing-gutter,2rem)))/2)]',
 } as const
 
 interface Feature {
@@ -87,7 +87,8 @@ interface Props {
   imageSide?: 'start' | 'end' | undefined
   ratio?: '1:1' | '5:7' | '7:5' | undefined
   imageFit?: 'contain' | 'cover' | undefined
-  imageShape?: 'none' | 'rounded' | 'circle' | undefined
+  /** The image's outline: none, rounded (the default), a circle, or one of a fixed set of masks: an arch, a cut corner (`chamfer`), a soft `blob`. */
+  imageShape?: 'none' | 'rounded' | 'circle' | 'arch' | 'chamfer' | 'blob' | undefined
   imageBleed?: 'none' | 'edge' | undefined
   mediaKind?: 'image' | 'video' | undefined
   featureStyle?: 'check' | 'icon' | undefined
