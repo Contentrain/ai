@@ -114,6 +114,24 @@ describe('validateProjectPlan', () => {
     ]))
   })
 
+  it('accepts a heading face and a heading track as roles, so a design direction can carry them', () => {
+    const p = plan()
+    p.site.tokens.roles = { ...p.site.tokens.roles, 'font-heading': "'Fraunces', ui-serif, Georgia, serif", 'tracking-heading': '-0.02em' }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    for (const track of ['0', 'normal', '0.05em', '-1px', '.5rem']) {
+      p.site.tokens.roles = { ...p.site.tokens.roles, 'tracking-heading': track }
+      expect(validateProjectPlan(p).errors, track).toEqual([])
+    }
+  })
+
+  it('refuses a heading track that is not a letter-spacing', () => {
+    const p = plan()
+    for (const track of ['tight', '1em; } h1 { display: none', 'url(//evil.test/x)', '5%', '-em']) {
+      p.site.tokens.roles = { ...p.site.tokens.roles, 'tracking-heading': track }
+      expect(validateProjectPlan(p).errors, track).toContain(`tokens.roles.tracking-heading ${track} is not a letter-spacing`)
+    }
+  })
+
   it(':category is a post address token only', () => {
     const p = plan()
     p.site.permalinks.post = '/:category/:slug/'
