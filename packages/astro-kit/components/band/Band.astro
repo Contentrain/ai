@@ -4,6 +4,7 @@
 // one of the site's sections and never as bare text.
 import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
+import Lines from '../_shared/Lines.astro'
 import KitImage from '../_shared/KitImage.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
 import { measuredGrid } from '../_shared/measured'
@@ -83,9 +84,13 @@ interface Props {
   tone?: Tone | undefined
   measured?: MeasuredStyle | undefined
   id?: string | undefined
+  /** `lines`: each line the author broke the heading into (`\n`) is a block of its own, `data-kit-line="1"`, `"2"`, …, for a theme to set its ink, indent or size; still one heading. `flow` (absent): one run of text, as before. */
+  headingLines?: 'flow' | 'lines' | undefined
+  /** The same for the lead: `lines` draws each of its lines as a block, still one paragraph. */
+  leadLines?: 'flow' | 'lines' | undefined
 }
 
-const { heading, eyebrow, lead, media, items = [], actions = [], headingLevel = 2, layout, columns, align, tone, measured, id } = Astro.props
+const { heading, eyebrow, lead, media, items = [], actions = [], headingLevel = 2, layout, columns, align, tone, measured, id, headingLines, leadLines } = Astro.props
 // The measured alignment when none is given (`end` has no band layout: it reads as `start`).
 const aligned = align ?? (measured?.align === 'center' ? 'center' : undefined)
 const s = band({ layout: media ? layout : 'stack', columns, align: aligned, tone })
@@ -102,8 +107,8 @@ const hasCopy = Boolean(heading || eyebrow || lead || actions.length)
         {hasCopy && (
           <div class={s.copy()}>
             {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}
-            {heading && <Heading id={headingId} class={s.heading()}>{heading}</Heading>}
-            {lead && <p class={s.lead()} data-kit-text>{lead}</p>}
+            {heading && <Heading id={headingId} class={s.heading()}>{headingLines === 'lines' ? <Lines text={heading} /> : heading}</Heading>}
+            {lead && <p class={s.lead()} data-kit-text>{leadLines === 'lines' ? <Lines text={lead} /> : lead}</p>}
             {actions.length > 0 && <div class={s.actions()}>{actions.map(action => <Button action={action} size="lg" />)}</div>}
           </div>
         )}

@@ -103,6 +103,7 @@
       "shared": [
         "Button.astro",
         "KitImage.astro",
+        "Lines.astro",
         "Section.astro",
         "instance-id.ts",
         "measured.ts",
@@ -146,6 +147,22 @@
           ],
           "default": "default",
           "description": "Section background when nothing is measured."
+        },
+        "headingLines": {
+          "options": [
+            "flow",
+            "lines"
+          ],
+          "default": "flow",
+          "description": "flow: the heading is one run of text. lines: each line the author broke it into (a line break, \\n, in the heading) is a block of its own, data-kit-line=\"1\", \"2\", …, so a theme or a design layer can give a line its own ink, indent or size. Still one heading, read as one sentence."
+        },
+        "leadLines": {
+          "options": [
+            "flow",
+            "lines"
+          ],
+          "default": "flow",
+          "description": "flow: the lead is one run of text. lines: each line the author broke it into (a line break, \\n, in the lead) is a block of its own, data-kit-line=\"1\", \"2\", …, so a theme or a design layer can give a line its own ink, indent or size. Still one paragraph."
         }
       },
       "props": {
@@ -2959,6 +2976,23 @@
           ],
           "default": "stack",
           "description": "Packed columns only, below the md breakpoint. stack: one column. row: still side by side from the start edge, under the brand."
+        },
+        "wordmark": {
+          "options": [
+            "none",
+            "fit",
+            "crop"
+          ],
+          "default": "none",
+          "description": "none: no wordmark. fit: the site name drawn once more as a row exactly as wide as the footer, in the heading font and the footer's ink. crop: the same row cut by the footer's bottom edge, only the letters' top showing. A name in a script letter spacing breaks (Arabic, Hebrew, Indic, Thai, …) gets none. Decoration, hidden from screen readers: the name is already the footer's brand."
+        },
+        "wordmarkOrder": {
+          "options": [
+            "last",
+            "first"
+          ],
+          "default": "last",
+          "description": "Where the wordmark row sits: after everything else in the footer (last) or before it (first). Only with a wordmark."
         }
       },
       "props": {
@@ -7852,6 +7886,7 @@
       "uses": [],
       "shared": [
         "KitImage.astro",
+        "Lines.astro",
         "Section.astro",
         "image.ts",
         "instance-id.ts",
@@ -7924,6 +7959,14 @@
           ],
           "default": "marks",
           "description": "marks: quotation marks around the text. glyph: one large decorative mark above. none: no marks."
+        },
+        "quoteLines": {
+          "options": [
+            "flow",
+            "lines"
+          ],
+          "default": "flow",
+          "description": "flow: the quote is one run of text. lines: each line the author broke it into (a line break, \\n, in the quote) is a block of its own, data-kit-line=\"1\", \"2\", …, so a theme or a design layer can give a line its own ink, indent or size. Still one quote in one paragraph; its marks go before the first line and after the last."
         }
       },
       "props": {
