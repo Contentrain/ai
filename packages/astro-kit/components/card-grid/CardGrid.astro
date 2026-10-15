@@ -36,7 +36,8 @@ const grid = tv({
 })
 
 // `layout: 'rows'`: one item per row, its title, text and link on one axis (an image sits at the row's top, out of the
-// baseline), a hairline between rows and no card box.
+// baseline: a head led by an icon too, else the icon's foot would be the baseline and push the text down by its
+// height), a hairline between rows and no card box.
 // With `index`, a numbered list whose numbers (01, 02, …) are drawn in the muted role, tabular; the list itself
 // carries the order for screen readers, so the drawn number is hidden from them.
 const rows = tv({
@@ -115,7 +116,7 @@ const number = (i: number) => String(i + 1).padStart(2, '0')
       {items.map((item, i) => (
         <li class={r.row()}>
           {index && <span class={r.number()} aria-hidden="true">{number(i)}</span>}
-          <div class={r.head()}>
+          <div class={r.head({ class: item.icon ? 'md:self-start' : undefined })}>
             {item.icon && <KitImage image={{ src: item.icon, alt: '' }} class="h-8 w-8 object-contain" />}
             {item.eyebrow && <p class="text-sm font-medium text-accent-text">{item.eyebrow}</p>}
             <CardHeading class={r.title()}>

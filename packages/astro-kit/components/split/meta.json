@@ -11,6 +11,7 @@
     "Button.astro",
     "KitImage.astro",
     "Section.astro",
+    "bleed.ts",
     "instance-id.ts",
     "measured.ts",
     "muted.ts",
@@ -47,10 +48,13 @@
       "options": [
         "none",
         "rounded",
-        "circle"
+        "circle",
+        "arch",
+        "chamfer",
+        "blob"
       ],
       "default": "rounded",
-      "description": "The image's corners: square, the theme's rounding, or a circle."
+      "description": "The image's outline: square, the theme's rounding, a circle, or a fixed mask: an arch over the image, a cut corner (chamfer), a soft blob."
     },
     "imageBleed": {
       "options": [

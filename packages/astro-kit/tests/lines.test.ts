@@ -10,7 +10,7 @@ describe('a heading the author broke into lines (Hero headingLines)', () => {
     const headings = [...hero.matchAll(/<Heading [^>]*>([\s\S]*?)<\/Heading>/g)].map(match => match[1])
     expect(headings).toHaveLength(3)
     for (const inner of headings) expect(inner).toBe("{headingLines === 'lines' ? <Lines text={heading} /> : heading}")
-    expect(hero).toContain("headingLines: 'flow' }")
+    expect(hero).toMatch(/headingLines: 'flow'[,\s}]/)
   })
 
   it('one block per line, numbered for a theme, with a space between them so the heading reads as one sentence', async () => {

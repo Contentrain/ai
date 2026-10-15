@@ -1,5 +1,16 @@
 # @contentrain/astro-kit
 
+## 0.42.0
+
+### Minor Changes
+
+- 1f41fc9: CardGrid gains `layout: 'rows'`: one item per row, its title, text and link (or image) on one axis, a hairline between rows and no card box, every field of an item kept. With `index` the rows are a numbered list, each led by its number (01, 02, …) in the muted role; the list carries the order for screen readers, so the drawn number is hidden from them. The default, `grid`, draws the cards exactly as before.
+- 8cc6f83: Hero gains `imageBleed`. `edge` runs the image on to the window's edge on its side (both sides when the hero is centered), by Split's rule, now shared as `_shared/bleed.ts`. `overlap` also lets it cross the section's bottom edge by `--hero-overlap` (3rem), drawn over the next section's top padding without moving that section. A cover ignores it. The default, `none`, draws the hero exactly as before.
+- 1f41fc9: Hero gains `headingLines`. With `lines`, each line the author broke the heading into (a `\n`) is a block of its own, marked `data-kit-line="1"`, `"2"`, …, so a theme or a design layer can give a line its own ink, indent or size. It stays one heading, read as one sentence. The default, `flow`, prints the heading exactly as before. The new shared `Lines.astro` does the splitting, and other components can use it.
+- 8cc6f83: Hero gains `stackOrder` (Split's name and values). With `media-first` the image comes before the text: on phones and on the start side in a split hero, above the heading in a centered one. A cover ignores it. The default, `text-first`, draws the hero exactly as before.
+- 8cc6f83: Split's edge bleed (`imageBleed: 'edge'`) now reaches the window's edge on screens wider than 1216 px. It used to stop 32 px short there: the rule assumed the page frame's gutter sat outside its 76rem width, but it sits inside. The rule now lives in `_shared/bleed.ts`, shared with Hero's `imageBleed`.
+- 8cc6f83: Split's `imageShape` gains `arch` (a rounded top), `chamfer` (a cut corner) and `blob` (a soft outline), each a fixed class, never a value from content. The existing shapes and the default, `rounded`, are unchanged.
+
 ## 0.41.0
 
 ### Minor Changes
