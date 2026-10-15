@@ -139,7 +139,11 @@ The key is read from `ANTHROPIC_API_KEY` at the moment of each request, on the
 same terms as Jev's token: never stored, logged or put in an error message.
 Requests go only to `https://api.anthropic.com/v1/messages`. Haiku gets the
 same shaped state and questions as Jev, as a prompt, and answers through one
-forced tool call, so the answer is a structured record, not parsed prose.
+forced tool call at temperature 0, so the answer is a structured record, not
+parsed prose. A Claude 4.7 or later model (`model` option) takes neither a
+non-default temperature nor, on Opus and Sonnet 5.5, a forced tool call; it is
+asked through structured outputs, with the same prompt and an equivalent JSON
+schema.
 `punch_item` sends the prompt AO-9 measured, word for word; other kinds get a
 generic prompt built from their questions.
 
