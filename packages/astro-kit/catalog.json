@@ -3668,6 +3668,7 @@
         "KitImage.astro",
         "Lines.astro",
         "Section.astro",
+        "bleed.ts",
         "instance-id.ts",
         "measured.ts",
         "muted.ts",
@@ -3750,6 +3751,23 @@
           ],
           "default": "flow",
           "description": "flow: the heading is one run of text. lines: each line the author broke it into (a line break, \\n, in the heading) is a block of its own, data-kit-line=\"1\", \"2\", …, so a theme or a design layer can give a line its own ink, indent or size. Still one heading, read as one sentence."
+        },
+        "stackOrder": {
+          "options": [
+            "text-first",
+            "media-first"
+          ],
+          "default": "text-first",
+          "description": "Split and centered: the image before the text, on phones and on the start side (split), or above the heading (centered). A cover ignores it."
+        },
+        "imageBleed": {
+          "options": [
+            "none",
+            "edge",
+            "overlap"
+          ],
+          "default": "none",
+          "description": "Split and centered: edge runs the image on to the window's edge on its side (both sides when centered); overlap also lets it cross the section's bottom edge by --hero-overlap (3rem), over the next section's top padding. A cover ignores it."
         }
       },
       "props": {
@@ -6279,6 +6297,7 @@
         "Button.astro",
         "KitImage.astro",
         "Section.astro",
+        "bleed.ts",
         "instance-id.ts",
         "measured.ts",
         "muted.ts",
@@ -6315,10 +6334,13 @@
           "options": [
             "none",
             "rounded",
-            "circle"
+            "circle",
+            "arch",
+            "chamfer",
+            "blob"
           ],
           "default": "rounded",
-          "description": "The image's corners: square, the theme's rounding, or a circle."
+          "description": "The image's outline: square, the theme's rounding, a circle, or a fixed mask: an arch over the image, a cut corner (chamfer), a soft blob."
         },
         "imageBleed": {
           "options": [
