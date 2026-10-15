@@ -75,12 +75,12 @@ import type { ComponentProps } from 'astro/types'
 import Component from '../../components/kit/${c.id}/${main}'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 
-type Fixture = { name: string, frame?: 'dark' | 'tall' | 'narrow' | 'overlay', props: ComponentProps<typeof Component> }
+type Fixture = { name: string, frame?: 'dark' | 'tall' | 'narrow' | 'overlay', theme?: Record<string, string>, props: ComponentProps<typeof Component> }
 const fixtures = ${fixtures.trim()} satisfies Fixture[]
 ---
 <BaseLayout title="Kit: ${pascal(c.id)}" noindex>
   {(fixtures as Fixture[]).map(fixture => (
-    <div data-fixture={fixture.name} class:list={['relative', fixture.frame === 'dark' && 'bg-ink pb-40', fixture.frame === 'tall' && 'min-h-[40rem]', fixture.frame === 'overlay' && 'min-h-64 [transform:translateZ(0)]']}>
+    <div data-fixture={fixture.name} class:list={['relative', fixture.frame === 'dark' && 'bg-ink pb-40', fixture.frame === 'tall' && 'min-h-[40rem]', fixture.frame === 'overlay' && 'min-h-64 [transform:translateZ(0)]']} style={fixture.theme ? Object.entries(fixture.theme).map(([name, value]) => \`\${name}: \${value}\`).join('; ') : undefined}>
       {fixture.frame === 'narrow' ? <div class="container-page py-6"><div class="max-w-sm"><Component {...fixture.props} /></div></div> : <Component {...fixture.props} />}
     </div>
   ))}
@@ -113,6 +113,9 @@ await new Promise(done => server.listen(0, done))
 const origin = `http://localhost:${server.address().port}`
 
 const fixturesOf = new Map(components.map(c => [c.id, new Map(JSON.parse(readFileSync(join(kitRoot, 'components', c.id, 'fixtures.json'), 'utf8')).map(f => [f.name, f.props]))]))
+// A fixture's `theme`: custom properties set around it, as a site's theme or a design direction would set them.
+const themeOf = new Map(components.map(c => [c.id, new Map(JSON.parse(readFileSync(join(kitRoot, 'components', c.id, 'fixtures.json'), 'utf8')).map(f => [f.name, f.theme]))]))
+const hooks = []
 const outline = []
 const menus = []
 const carousels = []
@@ -169,6 +172,19 @@ try {
           const want = String(lined.heading).split('\n').map(line => line.trim()).filter(Boolean)
           const got = await element.evaluate(el => { const h = el.querySelector('h1, h2'); return { lines: [...(h?.querySelectorAll('[data-kit-line]') ?? [])].map(l => l.textContent), text: h?.textContent?.replace(/\s+/g, ' ').trim() } })
           if (JSON.stringify(got.lines) !== JSON.stringify(want) || got.text !== want.join(' ')) outline.push(`${c.id}/${name}: heading lines ${JSON.stringify(got)} (expected ${JSON.stringify(want)})`)
+        }
+        if (width === WIDTHS[0] && themeOf.get(c.id).get(name)) {
+          // The heading hooks are read: the heading's face and track are the ones the theme set, not the body's.
+          const got = await element.evaluate(el => {
+            const h = el.querySelector('h1, h2, h3')
+            // At the heading's own size: a track in em is a length of the size it is drawn at.
+            const probe = Object.assign(document.createElement('span'), { style: `font-size: ${h ? getComputedStyle(h).fontSize : '1rem'}; font-family: var(--font-heading); letter-spacing: var(--tracking-heading)` })
+            el.append(probe)
+            const want = { font: getComputedStyle(probe).fontFamily, track: getComputedStyle(probe).letterSpacing }
+            probe.remove()
+            return { font: h && getComputedStyle(h).fontFamily, track: h && getComputedStyle(h).letterSpacing, want, body: getComputedStyle(document.body).fontFamily }
+          })
+          if (got.font !== got.want.font || got.track !== got.want.track || got.font === got.body) hooks.push(`${c.id}/${name}: heading ${JSON.stringify(got)}`)
         }
         if (width === WIDTHS[0] && (c.id === 'nav' || c.id === 'header')) {
           // A menu keeps every level: each real href is a link in the wide menu and again in the narrow one, and a
@@ -315,6 +331,7 @@ if (failures.length) {
   console.error(`visual: ${failures.length} fixture(s) changed:\n${failures.map(line => `  ✗ ${line}`).join('\n')}`)
   process.exit(1)
 }
-if (outline.length || menus.length || carousels.length || embeds.length || ids.length) process.exit(1)
+if (hooks.length) console.error(`visual: ${hooks.length} fixture(s) whose heading ignores the theme's heading face or track:\n${hooks.map(line => `  ✗ ${line}`).join('\n')}`)
+if (outline.length || menus.length || carousels.length || embeds.length || ids.length || hooks.length) process.exit(1)
 console.log(`visual: ${components.length} component(s) × ${WIDTHS.length} widths match`)
 if (!values.out) rmSync(site, { recursive: true, force: true })
