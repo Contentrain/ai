@@ -81,25 +81,43 @@ function storeSlug(segment: string): string {
 const SITE_PATH = /^\/(?:[^/?#\s.][^/?#\s]*\/)+$/
 
 /**
- * A post's own address kept from the old site (`path`: `/announcements/kristen_mathiasen/`, a slug the store spells
- * `kristen-mathiasen`). The migration sets it only where the permalink pattern would build another address. It is an
- * override of the pattern, never a second address: it holds while its last segment is the post's slug as the store
- * spells it. An editor who changes the slug moves the post to the pattern's address, and the old one redirects there
- * (`stalePostPaths`, 301). Clearing the field moves the post too; the old address then needs a rule in `redirects`.
+ * An entry's own address kept from the old site (`path`: `/announcements/kristen_mathiasen/`, a slug the store spells
+ * `kristen-mathiasen`; `/company/about-us/` under a parent page that did not move; `/docs/hosting/backups/` in a tree
+ * of a custom type). Posts, pages, categories, tags, and a custom type's entries and terms all read it. The migration
+ * sets it where the permalink pattern would build another address. It is an override of the pattern, never a second
+ * address: it holds while its last segment is the entry's slug as the store spells it. An editor who changes the slug
+ * moves the entry to the pattern's address, and the old one redirects there (`stalePaths`, 301). Clearing the field
+ * moves the entry too; the old address then needs a rule in `redirects`.
  */
-function keptPath(post: Post): string | undefined {
-  const raw = (post.data as { path?: unknown }).path
+export function keptPath(raw: unknown, slug: string): string | undefined {
   if (typeof raw !== 'string' || !SITE_PATH.test(raw)) return undefined
   // The last segment: SITE_PATH ends in one, then `/`.
-  return storeSlug(raw.slice(raw.lastIndexOf('/', raw.length - 2) + 1, -1)) === post.data.slug ? raw : undefined
+  return storeSlug(raw.slice(raw.lastIndexOf('/', raw.length - 2) + 1, -1)) === slug ? raw : undefined
 }
 
-/** The kept addresses whose post's slug has changed since: each leads to where the post is now (a 301 rule). */
-export function stalePostPaths(posts: readonly Post[], categories: ReadonlyMap<string, Category>): Array<{ from: string, to: string }> {
-  return posts.flatMap((post) => {
-    const raw = (post.data as { path?: unknown }).path
-    return typeof raw === 'string' && SITE_PATH.test(raw) && !keptPath(post) ? [{ from: raw, to: postHref(post, categories) }] : []
-  })
+/** A `path` that is a site path but no longer the entry's (its slug left it): the old address to redirect, or undefined. */
+export function stalePath(raw: unknown, slug: string): string | undefined {
+  return typeof raw === 'string' && SITE_PATH.test(raw) && !keptPath(raw, slug) ? raw : undefined
+}
+
+const pathOf = (entry: { data: object }): unknown => (entry.data as { path?: unknown }).path
+
+/**
+ * The kept addresses whose entry's slug has changed since — posts, pages, categories and tags: each leads to where the
+ * entry is now (a 301 rule). A custom type's are `staleTypePaths` (custom.ts).
+ */
+export async function stalePaths(): Promise<Array<{ from: string, to: string }>> {
+  const [posts, pages, categories, tags] = await Promise.all([getPosts(), byId('pages'), byId('categories'), byId('tags')])
+  const moved = (raw: unknown, slug: string, to: () => string) => {
+    const from = stalePath(raw, slug)
+    return from ? [{ from, to: to() }] : []
+  }
+  return [
+    ...posts.flatMap(post => moved(pathOf(post), post.data.slug, () => postHref(post, categories))),
+    ...[...pages.values()].flatMap(page => moved(pathOf(page), page.data.slug, () => pageHref(page, pages))),
+    ...[...categories.values()].flatMap(term => moved(pathOf(term), term.data.slug, () => termHref('category', term, categories))),
+    ...[...tags.values()].flatMap(term => moved(pathOf(term), term.data.slug, () => termHref('tag', term, tags))),
+  ]
 }
 
 /**
@@ -107,7 +125,7 @@ export function stalePostPaths(posts: readonly Post[], categories: ReadonlyMap<s
  * `:category`; a pattern without it never reads them.
  */
 export function postHref(post: Post, categories: ReadonlyMap<string, Category>): string {
-  const kept = keptPath(post)
+  const kept = keptPath(pathOf(post), post.data.slug)
   if (kept) return withBase(kept)
   return withBase(fillPattern(permalinks.post, {
     slug: post.data.slug,
@@ -122,9 +140,12 @@ export function postHref(post: Post, categories: ReadonlyMap<string, Category>):
  * folders before its address on the old site when its parent page was not moved (`company` for `/company/about-us/`,
  * `index.php` for a site whose pages lived under it). The migration sets it on those pages only; an editor sees it,
  * and clearing it (or giving the page a parent) is how a page moves — a page an editor made top-level has none.
+ * A kept `path` (`keptPath`) is the page's whole address and wins over both; the front page is always the root.
  */
 export function pageHref(page: Page, pages: ReadonlyMap<string, Page>): string {
   if (siteConfig.home.kind === 'page' && siteConfig.home.slug === page.data.slug) return withBase('/')
+  const kept = keptPath(pathOf(page), page.data.slug)
+  if (kept) return withBase(kept)
   const trail: string[] = []
   const seen = new Set<string>()
   let top: Page = page
@@ -154,7 +175,10 @@ function termTrail<T extends Term>(term: T, terms: ReadonlyMap<string, T>): stri
   return trail
 }
 
+/** A category's or tag's address: its kept `path` (`keptPath`), else the pattern with its parents. */
 export function termHref(kind: 'category' | 'tag', term: Term, terms: ReadonlyMap<string, Term>): string {
+  const kept = keptPath(pathOf(term), term.data.slug)
+  if (kept) return withBase(kept)
   return withBase(fillPattern(permalinks[kind], { slug: term.data.slug, path: termTrail(term, terms).join('/') }))
 }
 

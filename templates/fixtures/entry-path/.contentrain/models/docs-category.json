@@ -1,0 +1,45 @@
+{
+  "domain": "custom",
+  "fields": {
+    "description": {
+      "label": "Description",
+      "order": 30,
+      "type": "text"
+    },
+    "name": {
+      "label": "Name",
+      "order": 10,
+      "required": true,
+      "type": "string"
+    },
+    "parent": {
+      "label": "Parent",
+      "model": "docs-category",
+      "order": 40,
+      "type": "relation"
+    },
+    "path": {
+      "description": "This term's address on the old site, kept where the taxonomy's pattern would build another.",
+      "label": "Kept address",
+      "order": 45,
+      "type": "string"
+    },
+    "slug": {
+      "label": "Slug",
+      "order": 20,
+      "required": true,
+      "type": "slug",
+      "unique": true
+    },
+    "wp_id": {
+      "label": "WP term ID",
+      "order": 50,
+      "type": "integer"
+    }
+  },
+  "i18n": false,
+  "id": "docs-category",
+  "kind": "collection",
+  "name": "Docs categories",
+  "title_field": "name"
+}

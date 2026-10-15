@@ -73,6 +73,7 @@ jobs:
         # an Arabic one (right to left: <html lang="ar" dir="rtl">)
         # a site whose post addresses are ja / ar / tr / de words (unicode-slugs),
         # a post at its kept old address (and one whose slug left it: a 301),
+        # every other entry kind at its kept old address (pages, terms, a custom type: entry-path),
         # a migrated comment thread drawn at build time (unbound and bound to Studio)
         # and a form the owner kept on WordPress.
         run: |
@@ -87,6 +88,7 @@ jobs:
           node scripts/starter-gates.mjs --local-sdk --fixture time-zone
           node scripts/starter-gates.mjs --local-sdk --fixture page-prefix
           node scripts/starter-gates.mjs --local-sdk --fixture post-path
+          node scripts/starter-gates.mjs --local-sdk --fixture entry-path
           node scripts/starter-gates.mjs --local-sdk --fixture og-fields
           node scripts/starter-gates.mjs --local-sdk --fixture ar-site
           node scripts/starter-gates.mjs --local-sdk --fixture comments
