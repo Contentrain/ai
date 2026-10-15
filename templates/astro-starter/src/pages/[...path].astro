@@ -39,8 +39,9 @@ const composed = route.view === 'page' ? composedViews[route.page.data.wp_id ?? 
 // A page with nothing to build (lib/empty-page.ts) never fails the whole build: one page must not take the site down.
 // The front page is never left out (no root is not a working site): it builds as the plain latest-posts home WordPress
 // itself shows, the site's title and tagline over its newest posts. Any other page leaves for its nearest parent, else
-// the home, with a 301, so its address keeps working. The migration withholds such pages and says so on its receipt;
-// this is the guard behind it.
+// the home, so its address keeps working: in this static output `Astro.redirect` writes a meta refresh. A 301 comes from
+// the host's redirects file (`_redirects`, built from the redirects collection) where the collection has a rule for that
+// address. This is the guard behind it.
 const empty = leftEmpty(route)
 if (empty && route.view === 'page' && !route.isHome) return Astro.redirect(route.trail.at(-1)?.href ?? withBase('/'), 301)
 const latest = empty ? (await getPosts()).slice(0, siteConfig.postsPerPage) : []
