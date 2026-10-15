@@ -44,6 +44,9 @@ const { values } = parseArgs({
 })
 
 const WIDTHS = [390, 768, 1280]
+/** The props that break a text into lines, the field they break, and where it is drawn (a quote: the first item's). */
+const LINED = [['headingLines', 'heading', 'h1, h2'], ['leadLines', 'lead', '[data-kit-text]'], ['quoteLines', 'quote', 'blockquote p']]
+
 /** Share of differing pixels tolerated before a fixture fails. */
 const MAX_DIFF_RATIO = 0.002
 const baselineDir = join(kitRoot, 'visual', process.platform)
@@ -164,11 +167,13 @@ try {
           if (skip >= 0) outline.push(`${c.id}/${name}: h${levels.join(' h')} (${skip === 0 ? `opens below h${opens}` : `h${levels[skip - 1]} → h${levels[skip]}`})`)
         }
         const lined = fixturesOf.get(c.id).get(name)
-        if (width === WIDTHS[0] && lined?.headingLines === 'lines') {
-          // A heading broken into lines: one block per line (`data-kit-line`), still one heading read as one sentence.
-          const want = String(lined.heading).split('\n').map(line => line.trim()).filter(Boolean)
-          const got = await element.evaluate(el => { const h = el.querySelector('h1, h2'); return { lines: [...(h?.querySelectorAll('[data-kit-line]') ?? [])].map(l => l.textContent), text: h?.textContent?.replace(/\s+/g, ' ').trim() } })
-          if (JSON.stringify(got.lines) !== JSON.stringify(want) || got.text !== want.join(' ')) outline.push(`${c.id}/${name}: heading lines ${JSON.stringify(got)} (expected ${JSON.stringify(want)})`)
+        // Text broken into lines: one block per line (`data-kit-line`) inside the one element, still read as one sentence.
+        for (const [axis, field, selector] of LINED) {
+          if (width !== WIDTHS[0] || lined?.[axis] !== 'lines') continue
+          const text = field === 'quote' ? lined.items?.[0]?.quote : lined[field]
+          const want = String(text).split('\n').map(line => line.trim()).filter(Boolean)
+          const got = await element.evaluate((el, sel) => { const h = el.querySelector(sel); return { lines: [...(h?.querySelectorAll('[data-kit-line]') ?? [])].map(l => l.textContent), text: h?.textContent?.replace(/\s+/g, ' ').trim() } }, selector)
+          if (JSON.stringify(got.lines) !== JSON.stringify(want) || got.text !== want.join(' ')) outline.push(`${c.id}/${name}: ${field} lines ${JSON.stringify(got)} (expected ${JSON.stringify(want)})`)
         }
         if (width === WIDTHS[0] && (c.id === 'nav' || c.id === 'header')) {
           // A menu keeps every level: each real href is a link in the wide menu and again in the narrow one, and a

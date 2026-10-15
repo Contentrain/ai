@@ -51,3 +51,14 @@ export function footerLinkSizeClasses(i: Pick<FooterVarsInput, 'linkSize' | 'lin
     i.linkSizeNarrow ? 'max-md:[&_nav_a]:text-[length:var(--footer-link-size-narrow)]' : '',
   ].filter(Boolean)
 }
+
+/**
+ * The wordmark's SVG box (1000 wide) for a site name: the font size that makes the name about 1000 wide at 0.6em a
+ * letter (its text is then stretched to exactly 1000 by letter spacing), the baseline under the capitals and the box's
+ * height. `fit` keeps room for descenders; `crop` ends the box halfway up the capitals, so the footer cuts the letters.
+ */
+export function wordmarkBox(name: string, mode: 'fit' | 'crop'): { size: number, baseline: number, height: number } {
+  const size = Math.round(1000 / (Math.max([...name.trim()].length, 1) * 0.6))
+  const baseline = Math.round(size * 0.78)
+  return { size, baseline, height: mode === 'fit' ? Math.round(size * 1) : Math.round(size * 0.42) }
+}

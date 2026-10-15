@@ -7,6 +7,7 @@
   "shared": [
     "Button.astro",
     "KitImage.astro",
+    "Lines.astro",
     "Section.astro",
     "instance-id.ts",
     "measured.ts",
@@ -50,6 +51,22 @@
       ],
       "default": "default",
       "description": "Section background when nothing is measured."
+    },
+    "headingLines": {
+      "options": [
+        "flow",
+        "lines"
+      ],
+      "default": "flow",
+      "description": "flow: the heading is one run of text. lines: each line the author broke it into (a line break, \\n, in the heading) is a block of its own, data-kit-line=\"1\", \"2\", …, so a theme or a design layer can give a line its own ink, indent or size. Still one heading, read as one sentence."
+    },
+    "leadLines": {
+      "options": [
+        "flow",
+        "lines"
+      ],
+      "default": "flow",
+      "description": "flow: the lead is one run of text. lines: each line the author broke it into (a line break, \\n, in the lead) is a block of its own, data-kit-line=\"1\", \"2\", …, so a theme or a design layer can give a line its own ink, indent or size. Still one paragraph."
     }
   },
   "props": {
