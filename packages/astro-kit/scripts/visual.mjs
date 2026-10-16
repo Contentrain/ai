@@ -19,12 +19,13 @@
 //   node scripts/visual.mjs --only hero     one component (or several: --only hero,faq — one install, one astro check)
 //   node scripts/visual.mjs --out <dir>     keep the site there
 //   node scripts/visual.mjs --local-sdk     @contentrain/query and @contentrain/types from this checkout (scripts/local-sdk.mjs)
+//   node scripts/visual.mjs --ci            a missing baseline fails (its shot is kept as .actual.png) instead of being written
 
 import { execFileSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
-import { dirname, extname, join, resolve } from 'node:path'
+import { dirname, extname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import pixelmatch from 'pixelmatch'
@@ -40,6 +41,7 @@ const { values } = parseArgs({
     only: { type: 'string' },
     out: { type: 'string' },
     'local-sdk': { type: 'boolean', default: false },
+    ci: { type: 'boolean', default: false },
   },
 })
 
@@ -201,6 +203,13 @@ try {
         }
         const shot = PNG.sync.read(await element.screenshot({ animations: 'disabled' }))
         const file = join(baselineDir, c.id, `${name}-${width}.png`)
+        if (values.ci && !values.update && !existsSync(file)) {
+          // In CI a missing baseline is a failure: one written there would pass whatever was drawn.
+          mkdirSync(dirname(file), { recursive: true })
+          writeFileSync(file.replace(/\.png$/, '.actual.png'), PNG.sync.write(shot))
+          failures.push(`${c.id}/${name} @${width}: no ${process.platform} baseline (its shot is ${relative(kitRoot, file.replace(/\.png$/, '.actual.png'))})`)
+          continue
+        }
         if (values.update || !existsSync(file)) {
           mkdirSync(dirname(file), { recursive: true })
           writeFileSync(file, PNG.sync.write(shot))

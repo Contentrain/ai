@@ -1,0 +1,75 @@
+name: Kit visual
+
+# Every fixture of every astro-kit component, drawn in a copy of the starter at 390/768/1280 px and compared with
+# packages/astro-kit/visual/linux/. It runs in Playwright's own image at the lockfile's version, so the browser, its
+# libraries and the fallback fonts are the image's, not whatever ubuntu-latest has that day: a baseline written here
+# is the one the next run compares with.
+#
+# Baselines: run this workflow by hand on a branch with `update` on. It rewrites every linux baseline and uploads them
+# as the `astro-kit-visual-linux` artifact; check the ones your change owns by eye and commit those. Nothing here
+# pushes: the job reads the repository only.
+
+on:
+  pull_request:
+    # Only what can change a drawing: the kit, the starter it is drawn in, the SDK it installs, the lockfile, this file.
+    paths:
+      - 'packages/astro-kit/**'
+      - 'templates/astro-starter/**'
+      - 'packages/types/**'
+      - 'packages/query/**'
+      - 'scripts/local-sdk.mjs'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/kit-visual.yml'
+  workflow_dispatch:
+    inputs:
+      update:
+        description: Rewrite every linux baseline and upload them (commit the ones your change owns)
+        type: boolean
+        default: false
+
+concurrency:
+  group: kit-visual-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  kit-visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    container:
+      # Keep in step with playwright in pnpm-lock.yaml: the image carries that version's browsers.
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --user 1001
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Kit components render as their baselines
+        # --ci: a fixture with no linux baseline fails instead of writing one that would pass whatever was drawn.
+        # PR A (the first linux set) runs without it until that set is committed; PR B turns it on.
+        run: node packages/astro-kit/scripts/visual.mjs --local-sdk ${{ inputs.update && '--update' || '' }}
+
+      - name: Upload kit screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astro-kit-visual-linux
+          path: packages/astro-kit/visual/linux
+          if-no-files-found: ignore
