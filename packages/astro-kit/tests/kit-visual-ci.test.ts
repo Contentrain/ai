@@ -20,13 +20,22 @@ describe('the kit visual in CI', () => {
     expect(workflow).toContain(`image: mcr.microsoft.com/playwright:v${installed[0]}-noble`)
   })
 
-  it('reads the repository only, and runs where a drawing can change', async () => {
+  it('reads the repository only, reports on every pull request, and draws only where a drawing can change', async () => {
     const workflow = await read('.github/workflows/kit-visual.yml')
     expect(workflow).toMatch(/permissions:\s*\n\s*contents: read/)
     expect(workflow).not.toMatch(/contents: write|git push/)
-    for (const path of ['packages/astro-kit/**', 'templates/astro-starter/**', 'scripts/local-sdk.mjs', 'pnpm-lock.yaml']) expect(workflow).toContain(`'${path}'`)
+    // No workflow-level paths filter: a required check that never reports would block every other pull request.
+    expect(workflow).not.toMatch(/^\s+paths:/m)
+    expect(workflow).toContain("if: needs.changes.outputs.kit == 'true'")
+    const watched = /grep -qE '([^']+)'/.exec(workflow)![1]!
+    for (const path of ['packages/astro-kit/', 'templates/astro-starter/', 'packages/types/', 'packages/query/', 'scripts/local-sdk\\.mjs$', 'pnpm-lock\\.yaml$', '\\.github/workflows/kit-visual\\.yml$']) expect(watched).toContain(path)
     // The verify job no longer draws the kit: it would do so outside the pinned image.
     expect(await read('.github/workflows/ci.yml')).not.toContain('visual.mjs')
+  })
+
+  it('compares with --ci on every run but a hand-run that rewrites the baselines', async () => {
+    const workflow = await read('.github/workflows/kit-visual.yml')
+    expect(workflow).toContain("visual.mjs --local-sdk ${{ inputs.update && '--update' || '--ci' }}")
   })
 
   it('fails on a missing baseline with --ci, keeping the shot, instead of writing one', async () => {
