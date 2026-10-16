@@ -2,7 +2,7 @@
   {
     "name": "three-plain",
     "props": {
-      "heading": "By the numbers",
+      "heading": "By the numbers, changed on purpose",
       "intro": "A decade of shipping sites for small teams.",
       "items": [
         {
