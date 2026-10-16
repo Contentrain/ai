@@ -1,0 +1,38 @@
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+
+/**
+ * The kit visual in CI: drawn in Playwright's own image at the lockfile's version, compared with committed linux
+ * baselines. An image that drifted from the lockfile would draw with other browsers than the baselines were written
+ * with; a baseline written in CI would pass whatever was drawn.
+ */
+const ROOT = join(import.meta.dirname, '..', '..', '..')
+const read = (...path: string[]) => readFile(join(ROOT, ...path), 'utf8')
+
+describe('the kit visual in CI', () => {
+  it('runs in the Playwright image of the version the lockfile installs', async () => {
+    const lock = await read('pnpm-lock.yaml')
+    // One version, named under packages and again under snapshots.
+    const installed = [...new Set([...lock.matchAll(/^ {2}playwright@(\d+\.\d+\.\d+):/gm)].map(match => match[1]))]
+    expect(installed).toHaveLength(1)
+    const workflow = await read('.github/workflows/kit-visual.yml')
+    expect(workflow).toContain(`image: mcr.microsoft.com/playwright:v${installed[0]}-noble`)
+  })
+
+  it('reads the repository only, and runs where a drawing can change', async () => {
+    const workflow = await read('.github/workflows/kit-visual.yml')
+    expect(workflow).toMatch(/permissions:\s*\n\s*contents: read/)
+    expect(workflow).not.toMatch(/contents: write|git push/)
+    for (const path of ['packages/astro-kit/**', 'templates/astro-starter/**', 'scripts/local-sdk.mjs', 'pnpm-lock.yaml']) expect(workflow).toContain(`'${path}'`)
+    // The verify job no longer draws the kit: it would do so outside the pinned image.
+    expect(await read('.github/workflows/ci.yml')).not.toContain('visual.mjs')
+  })
+
+  it('fails on a missing baseline with --ci, keeping the shot, instead of writing one', async () => {
+    const visual = await read('packages/astro-kit/scripts/visual.mjs')
+    expect(visual).toContain('ci: { type: \'boolean\', default: false }')
+    expect(visual).toContain('if (values.ci && !values.update && !existsSync(file)) {')
+    expect(visual).toContain("writeFileSync(file.replace(/\\.png$/, '.actual.png'), PNG.sync.write(shot))")
+  })
+})
