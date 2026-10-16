@@ -27,6 +27,8 @@ describe('the kit visual in CI', () => {
     // No workflow-level paths filter: a required check that never reports would block every other pull request.
     expect(workflow).not.toMatch(/^\s+paths:/m)
     expect(workflow).toContain("if: needs.changes.outputs.kit == 'true'")
+    // Both paths of a rename: with rename detection on, a file moved out of the kit would list only its new path.
+    expect(workflow).toContain('git diff --no-renames --name-only "$BASE" HEAD')
     const watched = /grep -qE '([^']+)'/.exec(workflow)![1]!
     for (const path of ['packages/astro-kit/', 'templates/astro-starter/', 'packages/types/', 'packages/query/', 'scripts/local-sdk\\.mjs$', 'pnpm-lock\\.yaml$', '\\.github/workflows/kit-visual\\.yml$']) expect(watched).toContain(path)
     // The verify job no longer draws the kit: it would do so outside the pinned image.
