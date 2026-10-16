@@ -3,23 +3,17 @@ name: Kit visual
 # Every fixture of every astro-kit component, drawn in a copy of the starter at 390/768/1280 px and compared with
 # packages/astro-kit/visual/linux/. It runs in Playwright's own image at the lockfile's version, so the browser, its
 # libraries and the fallback fonts are the image's, not whatever ubuntu-latest has that day: a baseline written here
-# is the one the next run compares with.
+# is the one the next run compares with. A drawing that moves, a size that changes or a fixture with no baseline fails.
 #
 # Baselines: run this workflow by hand on a branch with `update` on. It rewrites every linux baseline and uploads them
 # as the `astro-kit-visual-linux` artifact; check the ones your change owns by eye and commit those. Nothing here
 # pushes: the job reads the repository only.
+#
+# `kit-visual` is a required check, so it reports on every pull request: the `changes` job looks at the files the pull
+# request changes, and `kit-visual` is skipped (a skipped job passes) unless one of them can change a drawing.
 
 on:
   pull_request:
-    # Only what can change a drawing: the kit, the starter it is drawn in, the SDK it installs, the lockfile, this file.
-    paths:
-      - 'packages/astro-kit/**'
-      - 'templates/astro-starter/**'
-      - 'packages/types/**'
-      - 'packages/query/**'
-      - 'scripts/local-sdk.mjs'
-      - 'pnpm-lock.yaml'
-      - '.github/workflows/kit-visual.yml'
   workflow_dispatch:
     inputs:
       update:
@@ -35,7 +29,35 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      kit: ${{ steps.paths.outputs.kit }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Does this change a drawing?
+        id: paths
+        # Only what can: the kit, the starter it is drawn in, the SDK it installs, the lockfile, this file. A hand-run
+        # (no pull request) always draws. --no-renames lists both paths of a move, so a file moved out of the kit counts.
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ -z "$BASE" ]; then echo "kit=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if git diff --no-renames --name-only "$BASE" HEAD | grep -qE '^(packages/astro-kit/|templates/astro-starter/|packages/types/|packages/query/|scripts/local-sdk\.mjs$|pnpm-lock\.yaml$|\.github/workflows/kit-visual\.yml$)'; then
+            echo "kit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "kit=false" >> "$GITHUB_OUTPUT"
+            echo "No kit, starter, SDK, lockfile or workflow change: kit-visual is skipped."
+          fi
+
   kit-visual:
+    needs: changes
+    if: needs.changes.outputs.kit == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     container:
@@ -63,11 +85,22 @@ jobs:
 
       - name: Kit components render as their baselines
         # --ci: a fixture with no linux baseline fails instead of writing one that would pass whatever was drawn.
-        # PR A (the first linux set) runs without it until that set is committed; PR B turns it on.
-        run: node packages/astro-kit/scripts/visual.mjs --local-sdk ${{ inputs.update && '--update' || '' }}
+        run: node packages/astro-kit/scripts/visual.mjs --local-sdk ${{ inputs.update && '--update' || '--ci' }}
 
-      - name: Upload kit screenshots
-        if: always()
+      - name: Upload the shots that failed
+        # Each failing fixture's shot (.actual.png) and, where the sizes match, its difference (.diff.png).
+        if: failure() && !inputs.update
+        uses: actions/upload-artifact@v4
+        with:
+          name: astro-kit-visual-linux-failed
+          path: |
+            packages/astro-kit/visual/linux/**/*.actual.png
+            packages/astro-kit/visual/linux/**/*.diff.png
+          if-no-files-found: ignore
+
+      - name: Upload every baseline
+        # The hand-run with `update`: commit the ones your change owns. A passing compare uploads nothing.
+        if: inputs.update
         uses: actions/upload-artifact@v4
         with:
           name: astro-kit-visual-linux
