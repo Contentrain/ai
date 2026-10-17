@@ -124,6 +124,7 @@ const hooks = []
 const outline = []
 const menus = []
 const carousels = []
+const lightboxes = []
 const embeds = []
 const ids = []
 /** Every real href of a menu tree (a Nav or Header `items` prop), at any depth. */
@@ -330,6 +331,38 @@ try {
     }
     await page.close()
   }
+  // A gallery's lightbox in a real browser: each tile links to its large file (what a click opens with JavaScript off),
+  // a click opens the modal viewer on that file, → steps to the next, and Escape closes it with focus back on the tile.
+  if (components.some(c => c.id === 'gallery')) {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' })
+    await page.goto(`${origin}/kit/gallery/`, { waitUntil: 'networkidle' })
+    for (const [name, props] of fixturesOf.get('gallery')) {
+      if (props.open !== 'lightbox') continue
+      const root = page.locator(`[data-fixture="${name}"]`)
+      const tiles = root.locator('a[data-kit-lightbox-item]')
+      const large = props.items.map(item => (item.full ?? item.image).src)
+      const hrefs = await tiles.evaluateAll(links => links.map(link => link.getAttribute('href')))
+      if (hrefs.join(' ') !== large.join(' ')) {
+        lightboxes.push(`gallery/${name}: the tiles link to ${hrefs.join(', ')}, not their large files ${large.join(', ')}`)
+        continue
+      }
+      const state = () => root.locator('dialog').evaluate(async (dialog) => {
+        const image = dialog.querySelector('[data-kit-lightbox-image]')
+        if (image && !image.complete) await new Promise(done => image.addEventListener('load', done, { once: true }))
+        return { modal: dialog.matches(':modal'), src: image?.getAttribute('src') ?? '', drawn: (image?.naturalWidth ?? 0) > 0, count: dialog.querySelector('[data-kit-lightbox-count]')?.textContent ?? '' }
+      })
+      await tiles.first().click()
+      const opened = await state()
+      if (!opened.modal || !opened.src.endsWith(large[0]) || !opened.drawn) lightboxes.push(`gallery/${name}: a click on the first tile ${opened.modal ? `shows ${opened.src || 'no image'}${opened.drawn ? '' : ' (not drawn)'}` : 'does not open the modal viewer'}`)
+      await page.keyboard.press('ArrowRight')
+      const stepped = await state()
+      if (large.length > 1 && (!stepped.src.endsWith(large[1]) || stepped.count !== `2 of ${large.length}`)) lightboxes.push(`gallery/${name}: → shows ${stepped.src} ("${stepped.count}"), not the second image`)
+      await page.keyboard.press('Escape')
+      const back = await root.evaluate(el => ({ open: !!el.querySelector('dialog[open]'), focused: document.activeElement === el.querySelector('a[data-kit-lightbox-item]') }))
+      if (back.open || !back.focused) lightboxes.push(`gallery/${name}: Escape ${back.open ? 'leaves the viewer open' : 'does not hand focus back to the tile'}`)
+    }
+    await page.close()
+  }
 } finally {
   await browser.close()
   server.close()
@@ -339,6 +372,7 @@ if (outline.length) console.error(`visual: ${outline.length} fixture(s) skip a h
 if (menus.length) console.error(`visual: ${menus.length} menu level(s) lost:\n${menus.map(line => `  ✗ ${line}`).join('\n')}`)
 if (carousels.length) console.error(`visual: ${carousels.length} carousel(s) not paging:\n${carousels.map(line => `  ✗ ${line}`).join('\n')}`)
 if (embeds.length) console.error(`visual: ${embeds.length} embedded video(s) wrong:\n${embeds.map(line => `  ✗ ${line}`).join('\n')}`)
+if (lightboxes.length) console.error(`visual: ${lightboxes.length} lightbox(es) wrong:\n${lightboxes.map(line => `  ✗ ${line}`).join('\n')}`)
 if (ids.length) console.error(`visual: ${ids.length} page(s) with shared ids:\n${ids.map(line => `  ✗ ${line}`).join('\n')}`)
 if (written.length) console.log(`visual: wrote ${written.length} baseline(s) under ${baselineDir}`)
 if (failures.length) {
@@ -346,6 +380,6 @@ if (failures.length) {
   process.exit(1)
 }
 if (hooks.length) console.error(`visual: ${hooks.length} fixture(s) whose heading ignores the theme's heading face or track:\n${hooks.map(line => `  ✗ ${line}`).join('\n')}`)
-if (outline.length || menus.length || carousels.length || embeds.length || ids.length || hooks.length) process.exit(1)
+if (outline.length || menus.length || carousels.length || embeds.length || lightboxes.length || ids.length || hooks.length) process.exit(1)
 console.log(`visual: ${components.length} component(s) × ${WIDTHS.length} widths match`)
 if (!values.out) rmSync(site, { recursive: true, force: true })

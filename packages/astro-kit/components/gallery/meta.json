@@ -1,7 +1,7 @@
 {
   "id": "gallery",
   "name": "Gallery",
-  "description": "Images in a square grid or in masonry columns, with optional captions. A click shows the image large in a native popover (no script), opens the image file, or does nothing.",
+  "description": "Images in a square grid or in masonry columns, with optional captions. A click shows the image large in a native popover (no script), steps through the set in a lightbox viewer, opens the image file, or does nothing.",
   "category": "section",
   "uses": [],
   "shared": [
@@ -40,10 +40,11 @@
       "options": [
         "popover",
         "link",
-        "none"
+        "none",
+        "lightbox"
       ],
       "default": "popover",
-      "description": "popover: the image opens large in place (Popover API; Escape or a click outside closes it). link: the thumbnail links to the image file (the WordPress 'link to media file'). none: images only."
+      "description": "popover: the image opens large in place (Popover API; Escape or a click outside closes it). link: the thumbnail links to the image file (the WordPress 'link to media file'). none: images only. lightbox: each thumbnail links to its large file (full, else the image); with script a click opens one modal viewer for the whole set, with previous / next, ←/→, a counter and the caption (a source lightbox: Elementor's slideshow group, a WordPress gallery with a lightbox plugin). The viewer and its script are printed only for this option."
     },
     "aspect": {
       "options": [
@@ -123,6 +124,24 @@
       "type": "string",
       "content": false,
       "description": "Text of the viewer's close button (ui-strings gallery.close)."
+    },
+    "prevLabel": {
+      "type": "string",
+      "default": "Previous image",
+      "content": false,
+      "description": "Name of the lightbox viewer's previous button (ui-strings slider.prev)."
+    },
+    "nextLabel": {
+      "type": "string",
+      "default": "Next image",
+      "content": false,
+      "description": "Name of the lightbox viewer's next button (ui-strings slider.next)."
+    },
+    "ofLabel": {
+      "type": "string",
+      "default": "of",
+      "content": false,
+      "description": "The word of the lightbox viewer's counter between position and total (\"2 of 5\"; ui-strings slider.of)."
     },
     "tone": {
       "type": "select",
@@ -264,7 +283,7 @@
     }
   },
   "slots": {},
-  "js": "none",
+  "js": "vanilla",
   "dependencies": {},
   "sources": {
     "gutenberg": [
@@ -281,5 +300,5 @@
       "classic/gallery"
     ]
   },
-  "a11y": "A list of figures. In popover mode each thumbnail is a <button> named by the image's alt (or caption) that opens the viewer; the viewer has a visible close button, and Escape closes it, returning focus to the thumbnail. Captions are <figcaption>s. A scrolling row is a labelled region with tabindex 0 so the keyboard can scroll it; thumbnail buttons are named \"Enlarge: …\". The viewer has no next/previous (it would need script)."
+  "a11y": "A list of figures. In popover mode each thumbnail is a <button> named by the image's alt (or caption) that opens the viewer; the viewer has a visible close button, and Escape closes it, returning focus to the thumbnail. Captions are <figcaption>s. A scrolling row is a labelled region with tabindex 0 so the keyboard can scroll it; thumbnail buttons are named \"Enlarge: …\". The popover viewer shows one image. In lightbox mode each thumbnail is a link to its large file, named \"Enlarge: …\"; with script it opens one modal <dialog> named by the heading (or the region label): focus moves into it and stays there (the page behind is inert), Escape or a click outside the image closes it and focus returns to the thumbnail, labelled previous / next buttons and ←/→ (mirrored right to left), Home and End step through the set, and the counter (\"2 of 5\") and caption are announced as they change. Nothing animates. Without script the links open the files. Other modes ship no script."
 }
