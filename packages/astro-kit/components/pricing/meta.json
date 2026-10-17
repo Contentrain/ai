@@ -127,7 +127,7 @@
           "priceAlt": {
             "type": "string",
             "label": "Price, other period",
-            "description": "The price for the other billing period (\"€150\"), shown when the toggle is on its second option."
+            "description": "The price for the other billing period (\"€150\"), shown when the toggle is on its second option. Without it the plan's price (and its struck price) shows under both options: a free plan, \"Contact us\", or one price for both periods. Its notes do not: they stay first-period lines."
           },
           "periodAlt": {
             "type": "string",
@@ -142,7 +142,7 @@
           "priceWasAlt": {
             "type": "string",
             "label": "Original price, other period",
-            "description": "The other period's struck original price, shown with priceAlt. No fallback: without it, the second option shows no struck price (priceWas belongs to the first period only)."
+            "description": "The other period's struck original price, shown with priceAlt. No fallback: without it, the second option shows no struck price (priceWas belongs to the first period only, except on a plan with no priceAlt, whose whole price line shows under both)."
           },
           "priceNote": {
             "type": "string",
