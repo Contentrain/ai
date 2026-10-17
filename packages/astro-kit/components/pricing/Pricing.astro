@@ -4,7 +4,10 @@
 // out by more than its colour. Each plan's features are a markdown list,
 // rendered at build time. Variants: `layout="table"` is a comparison table
 // (plan columns, feature rows); `billingToggle="radio"` swaps monthly and yearly
-// prices with two radio inputs and CSS `:has()` — no script.
+// prices with two radio inputs and CSS `:has()` — no script. A plan's struck price, its note under the price and its
+// line by the button swap the same way, and the section's `billingAltNote` shows only with the second option; each
+// is printed only where it is given. An Alt line never falls back to the main one: with the second option chosen, a
+// plan without it shows no line there (a note "for the first month" would be wrong under a yearly price).
 import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
@@ -32,6 +35,10 @@ const pricing = tv({
     price: 'flex items-baseline gap-1',
     amount: 'text-4xl [font-weight:var(--font-weight-heading,700)] tracking-tight',
     period: `text-sm ${muted}`,
+    was: `me-1 text-lg ${muted}`,
+    note: `-mt-2 text-sm ${muted}`,
+    foot: `text-sm ${muted}`,
+    altNote: 'mx-auto -mt-5 mb-8 w-fit text-center text-sm font-medium text-accent-text',
     description: `text-pretty ${muted}`,
     features: 'prose-site prose max-w-none text-current prose-ul:ps-5 prose-li:my-1',
     action: 'mt-auto pt-2',
@@ -69,6 +76,15 @@ interface Plan {
   /** The other billing period's price and period (`billingToggle="radio"`). */
   priceAlt?: string | undefined
   periodAlt?: string | undefined
+  /** The struck original price before the price, for each period ("$35"). */
+  priceWas?: string | undefined
+  priceWasAlt?: string | undefined
+  /** One line under the price, for each period ("USD for the first month"). */
+  priceNote?: string | undefined
+  priceNoteAlt?: string | undefined
+  /** One line at the card's foot, by the button, for each period ("Pay $0 today, $35 after the first month"). */
+  priceFoot?: string | undefined
+  priceFootAlt?: string | undefined
 }
 
 interface Props {
@@ -88,6 +104,10 @@ interface Props {
   billingMainLabel?: string | undefined
   billingAltLabel?: string | undefined
   billingLegend?: string | undefined
+  /** A line by the toggle shown only with its second option ("Save $70 by paying annually"). */
+  billingAltNote?: string | undefined
+  /** Read before a struck price by screen readers ("Was"), which do not announce the strike. */
+  wasLabel?: string | undefined
   /** Table cell texts for screen readers. */
   includedLabel?: string | undefined
   notIncludedLabel?: string | undefined
@@ -97,7 +117,7 @@ interface Props {
   id?: string | undefined
 }
 
-const { heading, intro, plans, featuredLabel = 'Most popular', columns, layout = 'cards', featureStyle, compact, billingToggle = 'none', billingMainLabel = 'Monthly', billingAltLabel = 'Yearly', billingLegend = 'Billing period', includedLabel = 'Included', notIncludedLabel = 'Not included', tone, measured, id: givenId } = Astro.props
+const { heading, intro, plans, featuredLabel = 'Most popular', columns, layout = 'cards', featureStyle, compact, billingToggle = 'none', billingMainLabel = 'Monthly', billingAltLabel = 'Yearly', billingLegend = 'Billing period', billingAltNote, wasLabel = 'Was', includedLabel = 'Included', notIncludedLabel = 'Not included', tone, measured, id: givenId } = Astro.props
 // Every section has an id, so a theme or a design layer can address this one: the page's, or `pricing`, `pricing-2`, … in render order.
 const id = instanceId(Astro.locals, givenId, 'pricing')
 const s = pricing({ columns, featureStyle, compact: compact ?? false, tone })
@@ -173,26 +193,39 @@ const features = await Promise.all(plans.map(plan => renderMarkdown(plan.feature
             <label class={s.toggleOption()}><input type="radio" name={`${group}-billing`} value="alt" class="sr-only" />{billingAltLabel}</label>
           </fieldset>
         )}
+        {toggled && billingAltNote && <p class={s.altNote()} data-price="alt">{billingAltNote}</p>}
         <ul class={s.list({ class: measuredGrid(measured) })}>
           {plans.map((plan, i) => (
             <li class={s.plan({ class: plan.featured ? 'ring-2 ring-accent shadow-lg md:-my-2 md:py-10' : undefined })}>
               {(plan.badge ?? (plan.featured ? featuredLabel : undefined)) && <p class={s.badge()}>{plan.badge ?? featuredLabel}</p>}
               <PlanHeading class={s.name()}>{plan.name}</PlanHeading>
               <p class={s.price()} data-price="main">
+                {plan.priceWas && <del class={s.was()}><span class="sr-only">{wasLabel} </span>{plan.priceWas}</del>}
                 <span class={s.amount()}>{plan.price}</span>
                 {plan.period && <span class={s.period()}>{plan.period}</span>}
               </p>
               {toggled && plan.priceAlt && (
                 <p class={s.price()} data-price="alt">
+                  {plan.priceWasAlt && <del class={s.was()}><span class="sr-only">{wasLabel} </span>{plan.priceWasAlt}</del>}
                   <span class={s.amount()}>{plan.priceAlt}</span>
                   {plan.periodAlt && <span class={s.period()}>{plan.periodAlt}</span>}
                 </p>
               )}
+              {plan.priceNote && <p class={s.note()} data-price="main">{plan.priceNote}</p>}
+              {toggled && plan.priceAlt && plan.priceNoteAlt && <p class={s.note()} data-price="alt">{plan.priceNoteAlt}</p>}
               {plan.description && <p class={s.description()} data-kit-text>{plan.description}</p>}
               {features[i] && <div class={s.features()} set:html={features[i]} />}
               {plan.ctaLabel && plan.ctaHref && (
                 <div class={s.action()}>
+                  {plan.priceFoot && <p class={s.foot({ class: 'mb-3' })} data-price="main">{plan.priceFoot}</p>}
+                  {toggled && plan.priceAlt && plan.priceFootAlt && <p class={s.foot({ class: 'mb-3' })} data-price="alt">{plan.priceFootAlt}</p>}
                   <Button action={{ label: plan.ctaLabel, href: plan.ctaHref, style: plan.featured ? 'primary' : 'ghost' }} class="w-full" />
+                </div>
+              )}
+              {!(plan.ctaLabel && plan.ctaHref) && (plan.priceFoot || (toggled && plan.priceAlt && plan.priceFootAlt)) && (
+                <div class={s.action()}>
+                  {plan.priceFoot && <p class={s.foot()} data-price="main">{plan.priceFoot}</p>}
+                  {toggled && plan.priceAlt && plan.priceFootAlt && <p class={s.foot()} data-price="alt">{plan.priceFootAlt}</p>}
                 </div>
               )}
             </li>

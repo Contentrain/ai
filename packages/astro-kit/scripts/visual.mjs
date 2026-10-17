@@ -125,6 +125,7 @@ const outline = []
 const menus = []
 const carousels = []
 const lightboxes = []
+const billings = []
 const embeds = []
 const ids = []
 /** Every real href of a menu tree (a Nav or Header `items` prop), at any depth. */
@@ -363,6 +364,28 @@ try {
     }
     await page.close()
   }
+  // A pricing toggle in a real browser: the first option shows each plan's main price, struck price and notes; choosing
+  // the second shows their Alt values and the section's billingAltNote instead, with no script.
+  if (components.some(c => c.id === 'pricing')) {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' })
+    await page.goto(`${origin}/kit/pricing/`, { waitUntil: 'networkidle' })
+    for (const [name, props] of fixturesOf.get('pricing')) {
+      if (props.billingToggle !== 'radio' || (!props.plans.some(plan => plan.priceWas || plan.priceNote || plan.priceFoot) && !props.billingAltNote)) continue
+      const root = page.locator(`[data-fixture="${name}"]`)
+      // Each visible struck price (without its "Was" for readers) and each visible one-line paragraph, as whole texts.
+      const shown = () => root.evaluate(el => [...el.querySelectorAll('del, p:not(:has(*))')].filter(node => node.checkVisibility()).map(node => (node.tagName === 'DEL' ? [...node.childNodes].filter(child => !(child instanceof Element && child.classList.contains('sr-only'))).map(child => child.textContent).join('') : node.textContent).trim()))
+      const main = props.plans.flatMap(plan => [plan.priceWas, plan.priceNote, plan.priceFoot]).filter(Boolean)
+      const alt = props.plans.flatMap(plan => plan.priceAlt ? [plan.priceWasAlt, plan.priceNoteAlt, plan.priceFootAlt] : []).filter(Boolean).concat(props.billingAltNote ?? [])
+      const check = (seen, want, other, period) => {
+        for (const text of want) if (!seen.includes(text)) billings.push(`pricing/${name}: with ${period} chosen, "${text}" is not shown`)
+        for (const text of other.filter(line => !want.includes(line))) if (seen.includes(text)) billings.push(`pricing/${name}: with ${period} chosen, "${text}" shows too`)
+      }
+      check(await shown(), main, alt, 'the first option')
+      await root.locator('input[value="alt"]').check({ force: true })
+      check(await shown(), alt, main, 'the second option')
+    }
+    await page.close()
+  }
 } finally {
   await browser.close()
   server.close()
@@ -373,6 +396,7 @@ if (menus.length) console.error(`visual: ${menus.length} menu level(s) lost:\n${
 if (carousels.length) console.error(`visual: ${carousels.length} carousel(s) not paging:\n${carousels.map(line => `  ✗ ${line}`).join('\n')}`)
 if (embeds.length) console.error(`visual: ${embeds.length} embedded video(s) wrong:\n${embeds.map(line => `  ✗ ${line}`).join('\n')}`)
 if (lightboxes.length) console.error(`visual: ${lightboxes.length} lightbox(es) wrong:\n${lightboxes.map(line => `  ✗ ${line}`).join('\n')}`)
+if (billings.length) console.error(`visual: ${billings.length} billing toggle line(s) wrong:\n${billings.map(line => `  ✗ ${line}`).join('\n')}`)
 if (ids.length) console.error(`visual: ${ids.length} page(s) with shared ids:\n${ids.map(line => `  ✗ ${line}`).join('\n')}`)
 if (written.length) console.log(`visual: wrote ${written.length} baseline(s) under ${baselineDir}`)
 if (failures.length) {
@@ -380,6 +404,6 @@ if (failures.length) {
   process.exit(1)
 }
 if (hooks.length) console.error(`visual: ${hooks.length} fixture(s) whose heading ignores the theme's heading face or track:\n${hooks.map(line => `  ✗ ${line}`).join('\n')}`)
-if (outline.length || menus.length || carousels.length || embeds.length || lightboxes.length || ids.length || hooks.length) process.exit(1)
+if (outline.length || menus.length || carousels.length || embeds.length || lightboxes.length || billings.length || ids.length || hooks.length) process.exit(1)
 console.log(`visual: ${components.length} component(s) × ${WIDTHS.length} widths match`)
 if (!values.out) rmSync(site, { recursive: true, force: true })
