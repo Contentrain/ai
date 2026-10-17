@@ -34,7 +34,17 @@ describe('Pricing period notes', () => {
     for (const field of ['priceNote', 'priceFoot']) expect(pricing).not.toMatch(new RegExp(`${field}Alt \\?\\? plan\\.${field}|${field}Alt \\|\\| plan\\.${field}`))
     expect(pricing).not.toMatch(/priceWasAlt \?\? plan\.priceWas|priceWasAlt \|\| plan\.priceWas/)
     expect(pricing.match(/data-price="main">\{plan\.price(?:Note|Foot)\}/g)).toHaveLength(3)
-    expect(pricing).toContain('<p class={s.price()} data-price="main">\n                {plan.priceWas && <del')
+    expect(pricing).toContain('<p class={s.price()} data-price={toggled && !plan.priceAlt ? undefined : \'main\'}>\n                {plan.priceWas && <del')
+  })
+
+  it('a plan with no priceAlt keeps its price line under both options; its notes stay first-period lines', async () => {
+    const pricing = await read()
+    // Unmarked when toggled without an Alt price, so neither option hides it; marked main everywhere else (unchanged).
+    expect(pricing.match(/<p class=\{s\.price\(\)\} data-price=/g)).toHaveLength(2)
+    expect(pricing).toContain("data-price={toggled && !plan.priceAlt ? undefined : 'main'}")
+    expect(pricing).toContain('{toggled && plan.priceAlt && (\n                <p class={s.price()} data-price="alt">')
+    // The notes do not follow the price: still main, still hidden with the second option.
+    expect(pricing).toContain('{plan.priceNote && <p class={s.note()} data-price="main">{plan.priceNote}</p>}')
   })
 
   it('reads a struck price as "Was …": a strike alone is not announced', async () => {

@@ -365,17 +365,31 @@ try {
     await page.close()
   }
   // A pricing toggle in a real browser: the first option shows each plan's main price, struck price and notes; choosing
-  // the second shows their Alt values and the section's billingAltNote instead, with no script.
+  // the second shows their Alt values and the section's billingAltNote instead, with no script. Every card shows a price
+  // with either option: its priceAlt with the second, else its one price line (struck price included).
   if (components.some(c => c.id === 'pricing')) {
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' })
     await page.goto(`${origin}/kit/pricing/`, { waitUntil: 'networkidle' })
     for (const [name, props] of fixturesOf.get('pricing')) {
-      if (props.billingToggle !== 'radio' || (!props.plans.some(plan => plan.priceWas || plan.priceNote || plan.priceFoot) && !props.billingAltNote)) continue
+      if (props.billingToggle !== 'radio') continue
       const root = page.locator(`[data-fixture="${name}"]`)
+      // Each card's visible amounts: the first span of a price line (a struck price is a del before it).
+      const prices = () => root.evaluate(el => [...el.querySelectorAll('li')].filter(card => card.querySelector(':scope > p > span')).map(card => [...card.querySelectorAll(':scope > p > span:first-of-type')].filter(node => node.checkVisibility()).map(node => node.textContent.trim())))
+      const priced = async (period, want) => {
+        const cards = await prices()
+        if (cards.length !== props.plans.length) billings.push(`pricing/${name}: ${cards.length} price card(s) found for ${props.plans.length} plan(s)`)
+        cards.forEach((seen, i) => { if (!seen.includes(want(props.plans[i]))) billings.push(`pricing/${name}: with ${period} chosen, plan ${i + 1} shows no price "${want(props.plans[i])}" (shows ${JSON.stringify(seen)})`) })
+      }
+      await priced('the first option', plan => plan.price)
+      await root.locator('input[value="alt"]').check({ force: true })
+      await priced('the second option', plan => plan.priceAlt ?? plan.price)
+      await root.locator('input[value="main"]').check({ force: true })
+      if (!props.plans.some(plan => plan.priceWas || plan.priceNote || plan.priceFoot) && !props.billingAltNote) continue
       // Each visible struck price (without its "Was" for readers) and each visible one-line paragraph, as whole texts.
       const shown = () => root.evaluate(el => [...el.querySelectorAll('del, p:not(:has(*))')].filter(node => node.checkVisibility()).map(node => (node.tagName === 'DEL' ? [...node.childNodes].filter(child => !(child instanceof Element && child.classList.contains('sr-only'))).map(child => child.textContent).join('') : node.textContent).trim()))
       const main = props.plans.flatMap(plan => [plan.priceWas, plan.priceNote, plan.priceFoot]).filter(Boolean)
-      const alt = props.plans.flatMap(plan => plan.priceAlt ? [plan.priceWasAlt, plan.priceNoteAlt, plan.priceFootAlt] : []).filter(Boolean).concat(props.billingAltNote ?? [])
+      // A plan with no priceAlt keeps its struck price with its price; its notes stay first-period lines.
+      const alt = props.plans.flatMap(plan => plan.priceAlt ? [plan.priceWasAlt, plan.priceNoteAlt, plan.priceFootAlt] : [plan.priceWas]).filter(Boolean).concat(props.billingAltNote ?? [])
       const check = (seen, want, other, period) => {
         for (const text of want) if (!seen.includes(text)) billings.push(`pricing/${name}: with ${period} chosen, "${text}" is not shown`)
         for (const text of other.filter(line => !want.includes(line))) if (seen.includes(text)) billings.push(`pricing/${name}: with ${period} chosen, "${text}" shows too`)

@@ -328,5 +328,47 @@
         }
       ]
     }
+  },
+  {
+    "name": "billing-toggle-no-alt",
+    "props": {
+      "id": "teams",
+      "heading": "Teams",
+      "billingToggle": "radio",
+      "columns": "3",
+      "plans": [
+        {
+          "name": "Free",
+          "price": "$0",
+          "period": "/month",
+          "priceNote": "Free for one user",
+          "features": "- 1 user",
+          "ctaLabel": "Start free",
+          "ctaHref": "/signup/free/"
+        },
+        {
+          "name": "Team",
+          "price": "$12",
+          "period": "/month",
+          "priceAlt": "$120",
+          "periodAlt": "/year",
+          "features": "- 10 users\n- Shared drafts",
+          "ctaLabel": "Subscribe",
+          "ctaHref": "/buy/team/",
+          "featured": true
+        },
+        {
+          "name": "Enterprise",
+          "price": "Contact us",
+          "priceWas": "$99",
+          "features": "- Unlimited users\n- SSO",
+          "ctaLabel": "Talk to sales",
+          "ctaHref": "/contact/"
+        }
+      ],
+      "billingMainLabel": "Monthly",
+      "billingAltLabel": "Yearly",
+      "billingLegend": "Billing period"
+    }
   }
 ]

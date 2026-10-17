@@ -8,6 +8,8 @@
 // line by the button swap the same way, and the section's `billingAltNote` shows only with the second option; each
 // is printed only where it is given. An Alt line never falls back to the main one: with the second option chosen, a
 // plan without it shows no line there (a note "for the first month" would be wrong under a yearly price).
+// The price itself is the one exception: a plan with no `priceAlt` (free, "Contact us", or one price for both periods)
+// keeps its price line, struck price included, under both options; a card never loses its price.
 import { tv } from 'tailwind-variants'
 import Button from '../_shared/Button.astro'
 import Section, { type Tone } from '../_shared/Section.astro'
@@ -199,7 +201,7 @@ const features = await Promise.all(plans.map(plan => renderMarkdown(plan.feature
             <li class={s.plan({ class: plan.featured ? 'ring-2 ring-accent shadow-lg md:-my-2 md:py-10' : undefined })}>
               {(plan.badge ?? (plan.featured ? featuredLabel : undefined)) && <p class={s.badge()}>{plan.badge ?? featuredLabel}</p>}
               <PlanHeading class={s.name()}>{plan.name}</PlanHeading>
-              <p class={s.price()} data-price="main">
+              <p class={s.price()} data-price={toggled && !plan.priceAlt ? undefined : 'main'}>
                 {plan.priceWas && <del class={s.was()}><span class="sr-only">{wasLabel} </span>{plan.priceWas}</del>}
                 <span class={s.amount()}>{plan.price}</span>
                 {plan.period && <span class={s.period()}>{plan.period}</span>}
