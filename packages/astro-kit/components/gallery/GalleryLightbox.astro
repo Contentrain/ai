@@ -49,6 +49,12 @@ const step = 'grid size-11 shrink-0 cursor-pointer place-items-center rounded-fu
     const caption = dialog.querySelector<HTMLElement>('[data-kit-lightbox-caption]')
     const count = dialog.querySelector<HTMLElement>('[data-kit-lightbox-count]')
     if (!links.length || !image || !caption) return
+    // One tile left once the refused ones are out: nothing to step to, so no step buttons and no counter. The buttons
+    // keep their place in the row (hidden from sight, focus and readers alike), so the image does not move.
+    if (links.length < 2) {
+      for (const button of dialog.querySelectorAll<HTMLElement>('[data-kit-lightbox-prev], [data-kit-lightbox-next]')) button.style.visibility = 'hidden'
+      if (count) count.hidden = true
+    }
     let index = 0
     let opener: HTMLAnchorElement | null = null
     const show = (at: number) => {
