@@ -146,6 +146,18 @@ describe('Gallery lightbox: one viewer for the set', () => {
     expect(click.defaultPrevented).toBe(false)
   })
 
+  it('two tiles, one refused: one image left, so the step buttons are hidden (keeping their place) and so is the counter', () => {
+    document.body.innerHTML = page(tile(1, 'Porto at dawn') + tile(2, undefined, '#'))
+    modalSpy()
+    run()
+    links()[0]!.click()
+    for (const name of ['prev', 'next']) expect(document.querySelector<HTMLElement>(`[data-kit-lightbox-${name}]`)!.style.visibility).toBe('hidden')
+    expect(document.querySelector<HTMLElement>('[data-kit-lightbox-count]')!.hidden).toBe(true)
+    key('ArrowRight')
+    expect(image().src).toBe(full(1))
+    expect(caption()).toBe('Porto at dawn')
+  })
+
   it('one image: no counter, and the keys do nothing', () => {
     document.body.innerHTML = page(tile(1, 'Porto at dawn'), true)
     modalSpy()
