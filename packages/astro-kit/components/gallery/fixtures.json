@@ -462,5 +462,57 @@
         }
       ]
     }
+  },
+  {
+    "name": "lightbox",
+    "props": {
+      "heading": "Along the coast",
+      "id": "coast",
+      "open": "lightbox",
+      "columns": "4",
+      "items": [
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-1.svg",
+            "alt": "Photo 1",
+            "width": 1200,
+            "height": 800
+          },
+          "full": {
+            "src": "/kit-fixtures/photo-1.svg",
+            "alt": "Photo 1",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Porto at dawn"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-2.svg",
+            "alt": "Photo 2",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Train to Coimbra"
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-3.svg",
+            "alt": "Photo 3",
+            "width": 1200,
+            "height": 800
+          }
+        },
+        {
+          "image": {
+            "src": "/kit-fixtures/photo-4.svg",
+            "alt": "Photo 4",
+            "width": 1200,
+            "height": 800
+          },
+          "caption": "Harbour"
+        }
+      ]
+    }
   }
 ]
