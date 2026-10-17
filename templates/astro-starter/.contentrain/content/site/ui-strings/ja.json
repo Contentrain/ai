@@ -76,6 +76,7 @@
   "pricing.featured": "一番人気",
   "pricing.included": "含まれる",
   "pricing.not_included": "含まれない",
+  "pricing.was": "通常価格",
   "search.label": "検索",
   "search.noscript": "検索にはJavaScriptが必要です。",
   "search.placeholder": "サイト内を検索",
