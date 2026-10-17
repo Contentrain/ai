@@ -286,5 +286,47 @@
         }
       ]
     }
+  },
+  {
+    "name": "billing-period-notes",
+    "props": {
+      "id": "hosting",
+      "heading": "Hosting",
+      "billingToggle": "radio",
+      "columns": "2",
+      "billingAltNote": "Save $70 by paying annually",
+      "plans": [
+        {
+          "name": "Single",
+          "price": "$0",
+          "period": "/first month",
+          "priceWas": "$35",
+          "priceNote": "USD for the first month",
+          "priceFoot": "Pay $0 today, $35 after the first month",
+          "priceAlt": "$0",
+          "periodAlt": "/first month",
+          "priceWasAlt": "$30",
+          "priceNoteAlt": "USD for the first month, then $350 a year",
+          "priceFootAlt": "Pay $0 today, $350 after the first month",
+          "features": "- 1 site\n- 20GB bandwidth",
+          "ctaLabel": "Sign up",
+          "ctaHref": "/signup/single/"
+        },
+        {
+          "name": "Multiple",
+          "price": "$0",
+          "period": "/first month",
+          "priceWas": "$70",
+          "priceNote": "USD for the first month",
+          "priceFoot": "Pay $0 today, $70 after the first month",
+          "priceAlt": "$0",
+          "periodAlt": "/first month",
+          "priceWasAlt": "$58",
+          "priceFootAlt": "Pay $0 today, $700 after the first month",
+          "features": "- 5 sites\n- 100GB bandwidth",
+          "featured": true
+        }
+      ]
+    }
   }
 ]

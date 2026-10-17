@@ -5436,7 +5436,7 @@
             "radio"
           ],
           "default": "none",
-          "description": "radio: two labelled radios swap each plan's price for its priceAlt (monthly / yearly), with no script. The radio group is named from the section id, or a hash of the plans without one, so two toggles on a page stay independent."
+          "description": "radio: two labelled radios swap each plan's price for its priceAlt (monthly / yearly), with no script. The radio group is named from the section id, or a hash of the plans without one, so two toggles on a page stay independent. A plan's priceWas, priceNote and priceFoot swap for their Alt values the same way, and billingAltNote shows only with the second option."
         }
       },
       "props": {
@@ -5513,6 +5513,36 @@
                 "type": "string",
                 "label": "Period, other period",
                 "description": "What the other price is per (\"/year\")."
+              },
+              "priceWas": {
+                "type": "string",
+                "label": "Original price",
+                "description": "The original price, struck before the price (\"$35\"; cards layout)."
+              },
+              "priceWasAlt": {
+                "type": "string",
+                "label": "Original price, other period",
+                "description": "The other period's struck original price, shown with priceAlt. No fallback: without it, the second option shows no struck price (priceWas belongs to the first period only)."
+              },
+              "priceNote": {
+                "type": "string",
+                "label": "Price note",
+                "description": "One line under the price (\"USD for the first month\"; cards layout)."
+              },
+              "priceNoteAlt": {
+                "type": "string",
+                "label": "Price note, other period",
+                "description": "The other period's line under the price, shown with priceAlt. No fallback: without it, the second option shows no line there (a note like \"for the first month\" would be wrong under the other price)."
+              },
+              "priceFoot": {
+                "type": "string",
+                "label": "Footnote",
+                "description": "One line at the card's foot, above the button (\"Pay $0 today, $35 after the first month\"; cards layout)."
+              },
+              "priceFootAlt": {
+                "type": "string",
+                "label": "Footnote, other period",
+                "description": "The other period's line at the card's foot, shown with priceAlt. No fallback: without it, the second option shows no line there."
               }
             }
           },
@@ -5674,6 +5704,17 @@
           "default": "Billing period",
           "content": false,
           "description": "Legend of the toggle, read to screen readers."
+        },
+        "billingAltNote": {
+          "type": "string",
+          "label": "Second-option note",
+          "description": "A line under the billing toggle shown only while its second option is chosen (\"Save $70 by paying annually\")."
+        },
+        "wasLabel": {
+          "type": "string",
+          "default": "Was",
+          "content": false,
+          "description": "Read before a struck original price by screen readers, which do not announce the strike. 'Was' is only the kit default: the writer passes it in the site's language."
         }
       },
       "slots": {},
@@ -5690,7 +5731,7 @@
           "divi/et_pb_pricing_tables"
         ]
       },
-      "a11y": "Plans are a <ul>; each name is an <h3> under the section's <h2>, or an <h2> when the section has no heading. A featured plan is marked by a text badge and a ring, not colour alone. Buttons are links with their own label. The table layout is a real <table> with a caption, column and row headers, and Included / Not included text in every cell; the billing toggle is a fieldset with a legend and labelled radios.",
+      "a11y": "Plans are a <ul>; each name is an <h3> under the section's <h2>, or an <h2> when the section has no heading. A featured plan is marked by a text badge and a ring, not colour alone. Buttons are links with their own label. The table layout is a real <table> with a caption, column and row headers, and Included / Not included text in every cell; the billing toggle is a fieldset with a legend and labelled radios. A struck original price is a <del> read as \"Was <price>\" (the strike alone is not announced); the period's notes swap with its price, hidden (display: none) for the period not chosen.",
       "pattern": {
         "summary": "repeated plan units: name + price + feature list + button",
         "signals": [
@@ -5717,7 +5758,14 @@
         "plans[].featured": "plans[].featured",
         "plans[].badge": "plans[].badge",
         "plans[].priceAlt": "plans[].price_alt",
-        "plans[].periodAlt": "plans[].period_alt"
+        "plans[].periodAlt": "plans[].period_alt",
+        "plans[].priceWas": "plans[].price_was",
+        "plans[].priceWasAlt": "plans[].price_was_alt",
+        "plans[].priceNote": "plans[].price_note",
+        "plans[].priceNoteAlt": "plans[].price_note_alt",
+        "plans[].priceFoot": "plans[].price_foot",
+        "plans[].priceFootAlt": "plans[].price_foot_alt",
+        "billingAltNote": "billing_alt_note"
       }
     },
     {
