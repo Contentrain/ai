@@ -1,5 +1,17 @@
 # @contentrain/astro-kit
 
+## 0.44.0
+
+### Minor Changes
+
+- 6906f61: Gallery `open: 'lightbox'`: each tile links to its large file (`full`, else the image), and with script a click opens one modal viewer for the whole set, with previous / next buttons, ←/→ (mirrored right to left), Home and End, a counter ("2 of 5") and the caption, announced as they change. Escape or a click outside the image closes it and focus returns to the tile. Labels come from props (`prevLabel`, `nextLabel`, `ofLabel`, with the existing `closeLabel`, `enlargeLabel`, `regionLabel`). Nothing animates. The viewer and its script are printed only for this option: the other modes render as before.
+- 4bf3850: Pricing gains period notes for its billing toggle. Each plan can have `priceWas` / `priceWasAlt` (a struck original price before the price, read as "Was …"), `priceNote` / `priceNoteAlt` (one line under the price) and `priceFoot` / `priceFootAlt` (one line above the button). The section can have `billingAltNote` (a line by the toggle shown only with its second option). The Alt values swap with `priceAlt` the same way, with no script. Each line is printed only where it is given, so a pricing section without them renders as before. A new `wasLabel` ('Was') names the struck price for screen readers.
+
+### Patch Changes
+
+- 89eeb8f: Gallery lightbox: when only one image is left to show, because the kit refused the other tiles' addresses, the viewer hides its previous / next buttons and its counter instead of cycling one image as "1 of 1". The buttons keep their place, so the image does not move.
+- 61c0753: Pricing: in a section with the billing toggle, a plan with no `priceAlt` (a free plan, "Contact us", or one price for both periods) now shows its price line, struck price included, under both options instead of no price under the second. Its notes still show with the first option only.
+
 ## 0.43.0
 
 ### Minor Changes
