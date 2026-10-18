@@ -1,5 +1,11 @@
 # @contentrain/astro-kit
 
+## 0.45.3
+
+### Patch Changes
+
+- 0e7b027: PostCard: `href` is optional. Without one (an entry with no page of its own, such as a list-only custom type's), the title is printed unlinked rather than as a dead or `#` link.
+
 ## 0.45.2
 
 ### Patch Changes
