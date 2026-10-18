@@ -203,6 +203,22 @@ try {
           for (const href of menuHrefs(props.items)) if (counts.filter(h => h === href).length < 2) menus.push(`${c.id}/${name}: ${href} is drawn ${counts.filter(h => h === href).length} time(s), expected the wide and the narrow menu`)
           if (counts.includes('#')) menus.push(`${c.id}/${name}: a group with no link is drawn as <a href="#">`)
         }
+        if (width === WIDTHS[0] && c.id === 'header') {
+          // On a phone the bar fits its width and a tap on the menu button's middle reaches it: a wide logo or a long
+          // name is cut, not drawn over the button.
+          await element.scrollIntoViewIfNeeded()
+          const phone = await element.evaluate(el => {
+            const opener = el.querySelector('button[popovertarget]:not([popovertargetaction="hide"])')
+            const box = opener?.getBoundingClientRect()
+            const hit = box && document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+            // What is drawn past the screen's edge (the closed drawer is not drawn: it has no box).
+            const edge = document.documentElement.clientWidth
+            const over = Math.max(0, ...[...el.querySelectorAll('*')].map(child => child.getBoundingClientRect()).filter(r => r.width > 0).map(r => Math.max(r.right - edge, -r.left)))
+            return { over: Math.round(over), tappable: !opener || (!!hit && opener.contains(hit)) }
+          })
+          if (phone.over > 0) menus.push(`header/${name}: at ${WIDTHS[0]} px the bar is drawn ${phone.over} px past the screen's edge`)
+          if (!phone.tappable) menus.push(`header/${name}: at ${WIDTHS[0]} px a tap on the menu button reaches something drawn over it`)
+        }
         const shot = PNG.sync.read(await element.screenshot({ animations: 'disabled' }))
         const file = join(baselineDir, c.id, `${name}-${width}.png`)
         if (values.ci && !values.update && !existsSync(file)) {
@@ -406,7 +422,7 @@ try {
 }
 
 if (outline.length) console.error(`visual: ${outline.length} fixture(s) skip a heading level:\n${outline.map(line => `  ✗ ${line}`).join('\n')}`)
-if (menus.length) console.error(`visual: ${menus.length} menu level(s) lost:\n${menus.map(line => `  ✗ ${line}`).join('\n')}`)
+if (menus.length) console.error(`visual: ${menus.length} menu check(s) failed:\n${menus.map(line => `  ✗ ${line}`).join('\n')}`)
 if (carousels.length) console.error(`visual: ${carousels.length} carousel(s) not paging:\n${carousels.map(line => `  ✗ ${line}`).join('\n')}`)
 if (embeds.length) console.error(`visual: ${embeds.length} embedded video(s) wrong:\n${embeds.map(line => `  ✗ ${line}`).join('\n')}`)
 if (lightboxes.length) console.error(`visual: ${lightboxes.length} lightbox(es) wrong:\n${lightboxes.map(line => `  ✗ ${line}`).join('\n')}`)
