@@ -57,13 +57,45 @@
     },
     "index.html": {
       "contains": [
-        "</footer> <aside class=\"container-prose py-8\" data-cr-part=\"overlay\" aria-labelledby=\"newsletter-popup-title\">",
-        ">Notes from the studio</h2>"
+        "</footer><aside class=\"container-prose py-8\" data-cr-part=\"overlay\" aria-labelledby=\"newsletter-popup-title\">",
+        ">Notes from the studio</h2>",
+        "<p class=\"mb-3 font-semibold\">Studio</p>",
+        "Email: <a href=\"mailto:hello@northwind.example\"",
+        "Phone: <a href=\"tel:+441170000000\"",
+        "column-gap:22px",
+        "max-width:1200px",
+        "aria-controls=\"site-nav-sub-",
+        ">Our team</a>",
+        ">Leadership</a>",
+        "href=\"/rss.xml\"",
+        "©",
+        "location.replace(to)",
+        "aria-label=\"Primary\"",
+        "aria-label=\"Studio\" data-cr-part=\"nav-footer\"",
+        "aria-label=\"Legal\" data-cr-part=\"nav-footer\"",
+        ">Imprint</a>",
+        "href=\"/projects/harbour-bridge/\"",
+        "href=\"/project-type/software/\"",
+        "href=\"/projects/\"",
+        "<address",
+        "tel:+441170000000",
+        "12 Harbour Road",
+        "https://www.linkedin.com/company/northwind-studio\" rel=\"me noopener\"",
+        "bg-card",
+        "aria-hidden=\"true\">/</span>",
+        "/blog/shipping-the-first-version/",
+        "/blog/search-without-a-server/"
       ],
       "excludes": [
         "SliderTrack.astro_astro_type_script",
-        "Tabs.astro_astro_type_script"
-      ]
+        "Tabs.astro_astro_type_script",
+        "Sidebar only link",
+        "<p class=\"mb-3 font-semibold\">Legal</p>",
+        "aria-label=\"Footer\" data-cr-part=\"nav-footer\""
+      ],
+      "counts": {
+        ">Leadership</a>": 2
+      }
     },
     "about/index.html": {
       "contains": [
@@ -98,7 +130,12 @@
         "Do we need a server?",
         "How do editors work?",
         "Are translations kept?",
-        "Yes, every language the source site had."
+        "Yes, every language the source site had.",
+        ">Plan your move</a>",
+        "<meta name=\"description\" content=\"Yoast: design, build and migration services from Northwind.\">"
+      ],
+      "excludes": [
+        "Composed: what Northwind does"
       ]
     },
     "_redirects": {
@@ -154,44 +191,6 @@
         "\"304\""
       ]
     },
-    "index.html": {
-      "counts": {
-        ">Leadership</a>": 2
-      },
-      "contains": [
-        "<p class=\"mb-3 font-semibold\">Studio</p>",
-        "Email: <a href=\"mailto:hello@northwind.example\"",
-        "Phone: <a href=\"tel:+441170000000\"",
-        "column-gap:22px",
-        "max-width:1200px",
-        "aria-controls=\"site-nav-sub-",
-        ">Our team</a>",
-        ">Leadership</a>",
-        "href=\"/rss.xml\"",
-        "©",
-        "location.replace(to)",
-        "aria-label=\"Primary\"",
-        "aria-label=\"Studio\" data-cr-part=\"nav-footer\"",
-        "aria-label=\"Legal\" data-cr-part=\"nav-footer\"",
-        ">Imprint</a>",
-        "href=\"/projects/harbour-bridge/\"",
-        "href=\"/project-type/software/\"",
-        "href=\"/projects/\"",
-        "<address",
-        "tel:+441170000000",
-        "12 Harbour Road",
-        "https://www.linkedin.com/company/northwind-studio\" rel=\"me noopener\"",
-        "bg-card",
-        "aria-hidden=\"true\">/</span>",
-        "/blog/shipping-the-first-version/",
-        "/blog/search-without-a-server/"
-      ],
-      "excludes": [
-        "Sidebar only link",
-        "<p class=\"mb-3 font-semibold\">Legal</p>",
-        "aria-label=\"Footer\" data-cr-part=\"nav-footer\""
-      ]
-    },
     "_headers": {
       "contains": [
         "/media/*.svg",
@@ -212,15 +211,6 @@
       ],
       "excludes": [
         "Cover three from the library"
-      ]
-    },
-    "services/index.html": {
-      "contains": [
-        ">Plan your move</a>",
-        "<meta name=\"description\" content=\"Yoast: design, build and migration services from Northwind.\">"
-      ],
-      "excludes": [
-        "Composed: what Northwind does"
       ]
     },
     "company/careers/index.html": {
