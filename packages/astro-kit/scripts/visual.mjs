@@ -80,13 +80,13 @@ import type { ComponentProps } from 'astro/types'
 import Component from '../../components/kit/${c.id}/${main}'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 
-type Fixture = { name: string, frame?: 'dark' | 'tall' | 'narrow' | 'overlay', theme?: Record<string, string>, props: ComponentProps<typeof Component> }
+type Fixture = { name: string, frame?: 'dark' | 'tall' | 'narrow' | 'overlay' | 'page', theme?: Record<string, string>, props: ComponentProps<typeof Component> }
 const fixtures = ${fixtures.trim()} satisfies Fixture[]
 ---
 <BaseLayout title="Kit: ${pascal(c.id)}" noindex>
   {(fixtures as Fixture[]).map(fixture => (
     <div data-fixture={fixture.name} class:list={['relative', fixture.frame === 'dark' && 'bg-ink pb-40', fixture.frame === 'tall' && 'min-h-[40rem]', fixture.frame === 'overlay' && 'min-h-64 [transform:translateZ(0)]']} style={fixture.theme ? Object.entries(fixture.theme).map(([name, value]) => \`\${name}: \${value}\`).join('; ') : undefined}>
-      {fixture.frame === 'narrow' ? <div class="container-page py-6"><div class="max-w-sm"><Component {...fixture.props} /></div></div> : <Component {...fixture.props} />}
+      {fixture.frame === 'narrow' ? <div class="container-page py-6"><div class="max-w-sm"><Component {...fixture.props} /></div></div> : fixture.frame === 'page' ? <div class="container-page py-6"><Component {...fixture.props} /></div> : <Component {...fixture.props} />}
     </div>
   ))}
 </BaseLayout>

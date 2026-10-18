@@ -248,5 +248,81 @@
   {"name": "split-overlap", "props": {"heading": "Your site, moved and checked", "lead": "Every page, address and form carried over.", "imageBleed": "overlap", "tone": "muted", "image": {"src": "/kit-fixtures/photo-1.svg", "alt": "A desk by a window", "width": 1200, "height": 800}}},
   {"name": "centered-media-first-overlap", "props": {"layout": "centered", "heading": "Your site, moved and checked", "lead": "Every page, address and form carried over.", "stackOrder": "media-first", "imageBleed": "overlap", "tone": "muted", "image": {"src": "/kit-fixtures/photo-1.svg", "alt": "A desk by a window", "width": 1200, "height": 800}}},
   {"name": "split-media-first-overlap", "props": {"heading": "Your site, moved and checked", "lead": "Every page, address and form carried over.", "stackOrder": "media-first", "imageBleed": "overlap", "tone": "muted", "image": {"src": "/kit-fixtures/photo-1.svg", "alt": "A desk by a window", "width": 1200, "height": 800}}},
-  {"name": "heading-hooks", "theme": {"--font-heading": "var(--font-serif)", "--tracking-heading": "0.04em"}, "props": {"layout": "centered", "eyebrow": "A design direction", "heading": "Headings in a face of their own", "lead": "The heading face and track come from the theme; the lead keeps the body face."}}
+  {"name": "heading-hooks", "theme": {"--font-heading": "var(--font-serif)", "--tracking-heading": "0.04em"}, "props": {"layout": "centered", "eyebrow": "A design direction", "heading": "Headings in a face of their own", "lead": "The heading face and track come from the theme; the lead keeps the body face."}},
+  {
+    "name": "centered-inset-42",
+    "props": {
+      "heading": "Plan a calmer trip",
+      "lead": "Our guides pick fewer places and give each one more time.",
+      "layout": "centered",
+      "tone": "muted",
+      "level": 2,
+      "actions": [
+        {
+          "label": "Browse guides",
+          "href": "/category/guides/"
+        }
+      ],
+      "image": {
+        "src": "/kit-fixtures/photo-2.svg",
+        "alt": "",
+        "width": 1600,
+        "height": 700
+      },
+      "inset": "42"
+    }
+  },
+  {
+    "name": "centered-lead-start-inset-15",
+    "props": {
+      "heading": "About the studio",
+      "lead": "We are a small team of editors and photographers. This page tells you who we are, how we work and what we will never do with your data.",
+      "layout": "centered",
+      "leadAlign": "start",
+      "level": 2,
+      "inset": "15"
+    }
+  },
+  {
+    "name": "heading-lines-inset-27",
+    "props": {
+      "layout": "centered",
+      "tone": "accent",
+      "headingLines": "lines",
+      "eyebrow": "Northwind Journal",
+      "heading": "Slow travel.\nGood coffee.\nTwelve years on the road.",
+      "lead": "Essays, guides and photographs, now in one place.",
+      "actions": [
+        {
+          "label": "Start reading",
+          "href": "/journal/"
+        }
+      ],
+      "inset": "27"
+    }
+  },
+  {
+    "name": "centered-size-h2-inset-34",
+    "props": {
+      "heading": "Plan a calmer trip",
+      "lead": "Our guides pick fewer places and give each one more time.",
+      "layout": "centered",
+      "tone": "muted",
+      "level": 2,
+      "actions": [
+        {
+          "label": "Browse guides",
+          "href": "/category/guides/"
+        }
+      ],
+      "image": {
+        "src": "/kit-fixtures/photo-2.svg",
+        "alt": "",
+        "width": 1600,
+        "height": 700
+      },
+      "headingSize": "h2",
+      "inset": "34"
+    }
+  }
 ]

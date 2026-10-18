@@ -148,6 +148,17 @@
           "default": "default",
           "description": "Section background when nothing is measured."
         },
+        "inset": {
+          "options": [
+            "none",
+            "15",
+            "27",
+            "34",
+            "42"
+          ],
+          "default": "none",
+          "description": "Layout stack only (split ignores it). From md (768px) up, the band's content (copy, image and items) starts at this share of the frame's width and runs to its end, its text at that edge (a centred band's too): a narrow talk beside a wide margin. Below md it is the full column. none: as before."
+        },
         "headingLines": {
           "options": [
             "flow",
@@ -3822,6 +3833,17 @@
           ],
           "default": "none",
           "description": "Split and centered: edge runs the image on to the window's edge on its side (both sides when centered); overlap also lets it cross the section's bottom edge by --hero-overlap (3rem), over the next section's top padding, when the image comes last: with stackOrder media-first it draws as edge, so it never covers the text. A cover ignores it."
+        },
+        "inset": {
+          "options": [
+            "none",
+            "15",
+            "27",
+            "34",
+            "42"
+          ],
+          "default": "none",
+          "description": "Layout centered only (split and cover ignore it). From md (768px) up, the copy's start edge sits at this share of the frame's width and its text is set at that edge, not centred: a statement on an axis, the void before it part of the page. Below md the hero is centred as without it. none: as before."
         }
       },
       "props": {
@@ -5783,6 +5805,17 @@
           ],
           "default": "lg",
           "description": "Type scale of the body."
+        },
+        "inset": {
+          "options": [
+            "none",
+            "15",
+            "27",
+            "34",
+            "42"
+          ],
+          "default": "none",
+          "description": "From md (768px) up, the body's start edge sits at this share of its container's width and the body runs to the container's end: the axis an editorial page sets its text on (an intro in a narrow column, a column set off the page's start). Below md it is the full column. none: as before. The share is of the container the body sits in (in the starter's pages, the reading column)."
         }
       },
       "props": {

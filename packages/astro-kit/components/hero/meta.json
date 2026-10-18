@@ -109,6 +109,17 @@
       ],
       "default": "none",
       "description": "Split and centered: edge runs the image on to the window's edge on its side (both sides when centered); overlap also lets it cross the section's bottom edge by --hero-overlap (3rem), over the next section's top padding, when the image comes last: with stackOrder media-first it draws as edge, so it never covers the text. A cover ignores it."
+    },
+    "inset": {
+      "options": [
+        "none",
+        "15",
+        "27",
+        "34",
+        "42"
+      ],
+      "default": "none",
+      "description": "Layout centered only (split and cover ignore it). From md (768px) up, the copy's start edge sits at this share of the frame's width and its text is set at that edge, not centred: a statement on an axis, the void before it part of the page. Below md the hero is centred as without it. none: as before."
     }
   },
   "props": {
