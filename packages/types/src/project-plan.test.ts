@@ -132,6 +132,61 @@ describe('validateProjectPlan', () => {
     }
   })
 
+  it('accepts a direction\'s display voice and its fields as roles', () => {
+    const p = plan()
+    p.site.tokens.roles = {
+      ...p.site.tokens.roles,
+      'text-display': 'clamp(3rem, 1.5rem + 5vw, 6.5rem)', 'text-lead': '1.25rem', 'leading-display': '0.95', 'tracking-display': '-0.03em', 'case-heading': 'uppercase',
+      'color-field-1': '#1d3b2a', 'color-field-1-ink': '#f4efe6', 'color-field-4': 'rgb(240 230 210)', 'color-field-4-ink': '#222',
+    }
+    expect(validateProjectPlan(p).errors).toEqual([])
+  })
+
+  it('refuses a display voice or a field that is not the CSS it names, and a field without its ink', () => {
+    const p = plan()
+    p.site.tokens.roles = {
+      ...p.site.tokens.roles,
+      'text-display': 'huge', 'text-lead': '1rem; } h1 { display: none', 'leading-display': '1.1rem', 'tracking-display': 'tight', 'case-heading': 'small-caps',
+      'color-field-1': 'url(//evil.test/x)', 'color-field-1-ink': '#fff', 'color-field-2': '#123456',
+    }
+    expect(validateProjectPlan(p).errors).toEqual(expect.arrayContaining([
+      'tokens.roles.text-display huge is not a CSS size',
+      'tokens.roles.text-lead 1rem; } h1 { display: none is not a CSS size',
+      'tokens.roles.leading-display 1.1rem is not a line-height',
+      'tokens.roles.tracking-display tight is not a letter-spacing',
+      'tokens.roles.case-heading small-caps is not uppercase or none',
+      'tokens.roles.color-field-1 url(//evil.test/x) is not a colour',
+      'tokens.roles.color-field-2 is set without its ink, or its ink without it',
+    ]))
+  })
+
+  it('holds the display voice to the design layer\'s floors and ceiling', () => {
+    const p = plan()
+    const errorsFor = (roles: Record<string, string>) => {
+      p.site.tokens.roles = { ...plan().site.tokens.roles, ...roles }
+      return validateProjectPlan(p).errors
+    }
+    for (const ok of [{ 'leading-display': '0.8' }, { 'leading-display': 'normal' }, { 'tracking-display': '-0.05em' }, { 'tracking-display': '-2px' }, { 'text-display': 'clamp(3rem, 1.5rem + 6vw, 9rem)' }, { 'text-display': '144px' }] as Array<Record<string, string>>) {
+      expect(errorsFor(ok), JSON.stringify(ok)).toEqual([])
+    }
+    expect(errorsFor({ 'leading-display': '0.5' })).toEqual(['tokens.roles.leading-display 0.5 sets lines tighter than 0.8'])
+    expect(errorsFor({ 'tracking-display': '-0.08em' })).toEqual(['tokens.roles.tracking-display -0.08em sets letters tighter than -0.05em'])
+    expect(errorsFor({ 'tracking-display': '-1rem' })).toEqual(['tokens.roles.tracking-display -1rem sets letters tighter than -0.05em'])
+    expect(errorsFor({ 'tracking-display': '-3px' })).toEqual(['tokens.roles.tracking-display -3px sets letters tighter than -0.05em'])
+    expect(errorsFor({ 'text-display': '40rem' })).toEqual(['tokens.roles.text-display 40rem is larger than 9rem or not held to a largest size'])
+    expect(errorsFor({ 'text-display': 'clamp(3rem, 2rem + 8vw, 12rem)' })).toEqual(['tokens.roles.text-display clamp(3rem, 2rem + 8vw, 12rem) is larger than 9rem or not held to a largest size'])
+    expect(errorsFor({ 'text-display': 'clamp(3rem, 6vw, 20vw)' })).toEqual(['tokens.roles.text-display clamp(3rem, 6vw, 20vw) is larger than 9rem or not held to a largest size'])
+    expect(errorsFor({ 'text-display': 'min(12vw, 30vw)' })).toEqual(['tokens.roles.text-display min(12vw, 30vw) is larger than 9rem or not held to a largest size'])
+    expect(errorsFor({ 'text-display': 'min(12vw, 8rem)' })).toEqual([])
+    // One call, closed at the end, nothing outside it: a trailing expression after a bounded call grows unbounded.
+    expect(errorsFor({ 'text-display': 'min(8rem, 1rem) + calc(50vw)' })).toEqual(['tokens.roles.text-display min(8rem, 1rem) + calc(50vw) is larger than 9rem or not held to a largest size'])
+    for (const trailing of ['min(8rem, 1rem) + calc(50vw)', 'clamp(3rem, 6vw, 8rem) + 10vw', 'clamp(3rem, 6vw, 8rem) clamp(1rem, 50vw, 99vw)', 'min(8rem, 10vw)*3']) {
+      // Refused either as no CSS size or as unheld; never accepted.
+      expect(errorsFor({ 'text-display': trailing }), trailing).toEqual([expect.stringMatching(new RegExp(`^tokens\\.roles\\.text-display ${trailing.replace(/[()*+.]/g, '\\$&')} is (?:not a CSS size|larger than 9rem or not held to a largest size)$`))])
+    }
+    expect(errorsFor({ 'text-display': 'calc(2rem + 10vw)' })).toEqual(['tokens.roles.text-display calc(2rem + 10vw) is larger than 9rem or not held to a largest size'])
+  })
+
   it(':category is a post address token only', () => {
     const p = plan()
     p.site.permalinks.post = '/:category/:slug/'
