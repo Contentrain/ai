@@ -9,10 +9,10 @@ const STARTER = join(import.meta.dirname, '..', '..', '..', 'templates', 'astro-
 // (not installed in the template). It imports nothing, so it runs as it is.
 const source = await readFile(join(STARTER, 'src', 'lib', 'body-tables.ts'), 'utf8')
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
-const loaded = { exports: {} as { scrollingTables: (html: string, label: string) => string } }
+const loaded = { exports: {} as { scrollingTables: (html: string, label: string) => string, tableLabel: (t: (key: string) => string) => string } }
 // eslint-disable-next-line no-new-func -- the starter's module, read from its file
 new Function('module', 'exports', compiled)(loaded, loaded.exports)
-const { scrollingTables } = loaded.exports
+const { scrollingTables, tableLabel } = loaded.exports
 const region = (name: string) => `<div class="table-scroll" role="region" tabindex="0" ${name}>`
 const TABLE = '<table><tr><td>a</td></tr></table>'
 
@@ -47,16 +47,24 @@ describe('a table in rich text with no table block around it scrolls in a named 
     expect(scrollingTables(`${block}${TABLE}`, 'Table')).toBe(`${block}${region('aria-label="Table"')}${TABLE}</div>`)
   })
 
-  it('every page body takes it: publicHtml wraps with the site\'s table.label, which every locale names', async () => {
+  it('names a region "Table" where no locale has table.label (the dictionary would print the key)', () => {
+    expect(tableLabel(key => key)).toBe('Table')
+    expect(tableLabel(key => (key === 'table.label' ? 'Tablo' : key))).toBe('Tablo')
+  })
+
+  it('every page body and rich custom field takes it, with the site\'s table.label, which every locale names', async () => {
     const links = await readFile(join(STARTER, 'src', 'lib', 'links.ts'), 'utf8')
-    expect(links).toContain("if (result.includes('<table')) result = scrollingTables(result, (await getStrings())('table.label'))")
+    expect(links).toContain("if (result.includes('<table')) result = scrollingTables(result, tableLabel(await getStrings()))")
+    const fields = await readFile(join(STARTER, 'src', 'lib', 'fields.ts'), 'utf8')
+    expect(fields).toContain("html: value.includes('<table') ? scrollingTables(value, tableLabel(await getStrings())) : value")
     const dir = join(STARTER, '.contentrain', 'content', 'site', 'ui-strings')
     const locales = await readdir(dir)
     expect(locales.length).toBeGreaterThan(1)
     for (const file of locales) expect(JSON.parse(await readFile(join(dir, file), 'utf8'))['table.label'], file).toBeTruthy()
-    // The table keeps its display (no `display: block` on it); the region scrolls.
+    // The region scrolls and the table in it keeps its display; only an unwrapped table falls back to scrolling itself.
     const css = await readFile(join(STARTER, 'src', 'styles', 'wp-blocks.css'), 'utf8')
     expect(css).toContain('.prose .table-scroll { overflow-x: auto;')
-    expect(css).not.toMatch(/table[^{]*\{[^}]*display:\s*block/)
+    const blocks = [...css.matchAll(/([^{}]*table[^{}]*)\{([^}]*display:\s*block[^}]*)\}/g)].map(m => m[1]!.trim().split('\n').at(-1))
+    expect(blocks).toEqual(['.prose table:not(.wp-block-table table, .table-scroll table)'])
   })
 })

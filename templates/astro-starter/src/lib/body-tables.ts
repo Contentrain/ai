@@ -63,3 +63,9 @@ export function scrollingTables(html: string, label: string): string {
   }
   return copied === 0 ? html : out + html.slice(copied)
 }
+
+/** The region's name where a table has no caption: the site's `table.label`, or "Table" where no locale names it. */
+export function tableLabel(t: (key: string) => string): string {
+  const text = t('table.label')
+  return text === 'table.label' ? 'Table' : text
+}

@@ -271,6 +271,9 @@
 .prose .table-scroll { overflow-x: auto; margin-block: 2em; }
 .prose .table-scroll table { margin: 0; }
 .prose .table-scroll:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+/* A net for a table that reached the page some other way, unwrapped: it scrolls in its own box rather than widen the
+   page. Never applies on the wrapped path. */
+.prose table:not(.wp-block-table table, .table-scroll table) { display: block; max-width: 100%; overflow-x: auto; }
 .prose .wp-block-code { border-radius: 0.5rem; }
 .prose .wp-block-verse { font-family: var(--font-serif); white-space: pre-wrap; }
 .prose .wp-block-file { display: flex; flex-wrap: wrap; align-items: center; gap: 1em; }

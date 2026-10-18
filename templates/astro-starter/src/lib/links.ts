@@ -14,7 +14,7 @@ import { servedPath, underBase, withBase, withoutBase } from './base'
 import type { NavItem } from '../components/kit/_shared/types'
 import { byId, getRedirects, getSite, getStrings, pageHref, postHref, resolve, termHref } from './content'
 import { optimizedImages } from './body-images'
-import { scrollingTables } from './body-tables'
+import { scrollingTables, tableLabel } from './body-tables'
 import { entriesOf, entryById, entryHref, termHref as customTermHref, termsById } from './custom'
 import { siteConfig } from '../site.config'
 import { routeTable } from './site-routes'
@@ -238,7 +238,7 @@ export async function publicHtml(html: string | undefined): Promise<string | und
       return href === stored ? anchor : `<a${attributes.replace(HREF, `href="${encode(href)}"`)}>${inner}</a>`
     })
   }
-  if (result.includes('<table')) result = scrollingTables(result, (await getStrings())('table.label'))
+  if (result.includes('<table')) result = scrollingTables(result, tableLabel(await getStrings()))
   return result.includes('<img') ? optimizedImages(mediaText(result, await media())) : result
 }
 
