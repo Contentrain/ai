@@ -505,6 +505,19 @@ describe('validateProjectPlan', () => {
     expect(validateProjectPlan(p).errors.some(e => e.endsWith('width full is not content or wide'))).toBe(true)
   })
 
+  it('takes a section\'s facts: each a planned behavior, each once', () => {
+    const p = plan()
+    p.behaviors = [{ fact: 'interactive:aa11', outcome: 'prose' }, { fact: 'interactive:bb22', outcome: 'prose' }]
+    p.routes[1]!.sections[0]!.facts = ['interactive:aa11', 'interactive:bb22']
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.routes[1]!.sections[0]!.facts = ['interactive:aa11', 'interactive:aa11']
+    expect(validateProjectPlan(p).errors.some(e => e.endsWith('facts names a fact twice'))).toBe(true)
+    p.routes[1]!.sections[0]!.facts = ['interactive:cc33']
+    expect(validateProjectPlan(p).errors.some(e => e.endsWith('facts interactive:cc33 is not a planned behavior'))).toBe(true)
+    p.routes[1]!.sections[0]!.facts = [''] as string[]
+    expect(validateProjectPlan(p).errors.some(e => e.endsWith('facts is not a list of fact ids'))).toBe(true)
+  })
+
   it('requires a home route', () => {
     const p = plan()
     p.routes = p.routes.filter(r => r.kind !== 'home')
