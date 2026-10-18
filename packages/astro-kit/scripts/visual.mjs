@@ -129,6 +129,7 @@ const billings = []
 const embeds = []
 const ids = []
 const tables = []
+const widths = []
 /** Every real href of a menu tree (a Nav or Header `items` prop), at any depth. */
 const menuHrefs = items => (items ?? []).flatMap(item => (item.href && item.href !== '#' ? [item.href] : []).concat(menuHrefs(item.children)))
 const browser = await chromium.launch(process.platform === 'darwin' ? { channel: 'chrome' } : {})
@@ -293,6 +294,18 @@ try {
     }
     await phone.close()
   }
+  // A button's label never widens a phone's page: one with no break in it (a raw URL) wraps inside the button.
+  if (components.some(c => c.id === 'cta')) {
+    const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+    const page = await phone.newPage()
+    await page.goto(`${origin}/kit/cta/`, { waitUntil: 'load' })
+    // Against the screen's 390, as for prose tables above.
+    const { scrollWidth, innerWidth } = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }))
+    if (scrollWidth > 390 || innerWidth > 390) widths.push(`cta: on a 390 phone the page is ${scrollWidth}px wide, its layout viewport ${innerWidth}px`)
+    const button = await page.locator('[data-fixture="long-label"] a').first().evaluate(el => ({ right: el.getBoundingClientRect().right, scrollWidth: el.scrollWidth, clientWidth: el.clientWidth }))
+    if (button.right > 390 || button.scrollWidth > button.clientWidth) widths.push(`cta/long-label: the button runs past the screen (its right edge at ${Math.round(button.right)}px, ${button.scrollWidth}px of label in ${button.clientWidth}px)`)
+    await phone.close()
+  }
   // A carousel set up while its page is hidden (a background tab opened with ctrl/cmd-click: no layout, visibilityState
   // "hidden") pages once the page is shown: it draws a dot per snap and "next" moves the selected one. The kit page loads
   // with the document hidden and not laid out, then is shown the way a tab brought to the front is.
@@ -448,6 +461,7 @@ if (embeds.length) console.error(`visual: ${embeds.length} embedded video(s) wro
 if (lightboxes.length) console.error(`visual: ${lightboxes.length} lightbox(es) wrong:\n${lightboxes.map(line => `  ✗ ${line}`).join('\n')}`)
 if (billings.length) console.error(`visual: ${billings.length} billing toggle line(s) wrong:\n${billings.map(line => `  ✗ ${line}`).join('\n')}`)
 if (tables.length) console.error(`visual: ${tables.length} table check(s) failed:\n${tables.map(line => `  ✗ ${line}`).join('\n')}`)
+if (widths.length) console.error(`visual: ${widths.length} page width check(s) failed:\n${widths.map(line => `  ✗ ${line}`).join('\n')}`)
 if (ids.length) console.error(`visual: ${ids.length} page(s) with shared ids:\n${ids.map(line => `  ✗ ${line}`).join('\n')}`)
 if (written.length) console.log(`visual: wrote ${written.length} baseline(s) under ${baselineDir}`)
 if (failures.length) {
@@ -455,6 +469,6 @@ if (failures.length) {
   process.exit(1)
 }
 if (hooks.length) console.error(`visual: ${hooks.length} fixture(s) whose heading ignores the theme's heading face or track:\n${hooks.map(line => `  ✗ ${line}`).join('\n')}`)
-if (outline.length || menus.length || carousels.length || embeds.length || lightboxes.length || billings.length || ids.length || tables.length || hooks.length) process.exit(1)
+if (outline.length || menus.length || carousels.length || embeds.length || lightboxes.length || billings.length || ids.length || tables.length || widths.length || hooks.length) process.exit(1)
 console.log(`visual: ${components.length} component(s) × ${WIDTHS.length} widths match`)
 if (!values.out) rmSync(site, { recursive: true, force: true })

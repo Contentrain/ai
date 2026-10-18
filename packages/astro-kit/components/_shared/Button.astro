@@ -1,12 +1,15 @@
 ---
 // A link drawn as a button — the kit's call-to-action primitive. Actions in
-// migrated content are links, so this is always an <a>.
+// migrated content are links, so this is always an <a>. A label never widens
+// the page: the button is at most as wide as its row, and a label with no
+// break in it (a raw URL) wraps inside it. The label's own box breaks only
+// where it overflows, so a table or a row still sizes the button to its words.
 import { tv } from 'tailwind-variants'
 import type { ActionInput } from './types'
 import { safeHref } from './safe-url'
 
 const button = tv({
-  base: 'inline-flex items-center justify-center gap-2 rounded-[var(--radius-control,var(--radius-md))] font-medium no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-2',
+  base: 'inline-flex max-w-full items-center justify-center gap-2 rounded-[var(--radius-control,var(--radius-md))] font-medium no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-2',
   variants: {
     style: {
       primary: 'bg-accent text-accent-ink hover:bg-ink hover:text-surface',
@@ -35,4 +38,4 @@ const { action, size, class: className } = Astro.props
   target={action.newTab ? '_blank' : undefined}
   rel={action.newTab ? 'noopener' : undefined}
   class={button({ style: action.style ?? 'primary', size, class: className })}
->{action.label}</a>
+><span class="min-w-0 text-center [overflow-wrap:break-word]">{action.label}</span></a>
