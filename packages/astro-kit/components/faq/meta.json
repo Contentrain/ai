@@ -14,7 +14,7 @@
     "questionStyle": { "options": ["heading", "bold"], "default": "heading", "description": "How the questions read. heading: a small heading (lg, heading weight). bold: body size in bold, as accordion and toggle titles often are. The plain style sets its own and ignores this." }
   },
   "props": {
-    "items": { "type": "array", "label": "Questions", "required": true, "items": { "type": "object", "fields": { "question": { "type": "string", "label": "Question", "required": true, "description": "The question, as the visitor would ask it." }, "answer": { "type": "richtext", "label": "Answer", "required": true, "description": "The answer; links and lists allowed." } } }, "description": "The questions in order (core/details summary + content, Elementor accordion/toggle tabs, Divi accordion/toggle items)." },
+    "items": { "type": "array", "label": "Questions", "required": true, "items": { "type": "object", "fields": { "question": { "type": "string", "label": "Question", "required": true, "description": "The question, as the visitor would ask it." }, "answer": { "type": "richtext", "label": "Answer", "required": true, "description": "The answer; links and lists allowed. One with no text and nothing to see (no image, video or frame) draws its question alone, in the item's style, with no disclosure to press, and stays out of the FAQPage JSON-LD." } } }, "description": "The questions in order (core/details summary + content, Elementor accordion/toggle tabs, Divi accordion/toggle items)." },
     "heading": { "type": "string", "label": "Heading", "description": "Section heading." },
     "intro": { "type": "text", "label": "Introduction", "description": "A sentence under the heading." },
     "exclusive": { "type": "boolean", "default": false, "content": false, "description": "One answer open at a time (Elementor accordion, Divi accordion). Off for toggles." },
@@ -33,5 +33,5 @@
     "divi": ["divi/et_pb_accordion", "divi/et_pb_toggle"],
     "classic": ["classic/faq", "classic/details"]
   },
-  "a11y": "Native <details>/<summary>: keyboard operable and announced as expandable by every screen reader, with no script to fail. The plus icon is decorative. The JSON-LD answer text is the answer with its markup removed."
+  "a11y": "Native <details>/<summary>: keyboard operable and announced as expandable by every screen reader, with no script to fail. The plus icon is decorative. The JSON-LD answer text is the answer with its markup removed; a question whose answer has no text is left out of it, and an empty answer gets no control that opens onto nothing."
 }

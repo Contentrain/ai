@@ -97,12 +97,19 @@ const wide = layout === 'split' || columns === '2' || measuredCols !== undefined
 const listClass = measuredCols && (style === 'cards' || style === 'plain' ? measuredCols : `${measuredCols} divide-y-0 border-b-0`)
 const itemClass = measuredCols ? (style === 'cards' ? 'break-inside-avoid mb-3' : style === 'plain' ? 'break-inside-avoid' : 'break-inside-avoid border-b border-line') : undefined
 const headingId = heading ? `${id}-title` : undefined
-const plain = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
-const structured = schema && items.length > 0
+const plain = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&(?:nbsp|#160|#xa0);/gi, ' ').replace(/\s+/g, ' ').trim()
+// An answer with no text and nothing to see (an empty paragraph, a stray break) opens onto nothing: its question is
+// drawn alone, in the item's style, with no disclosure to press. An image or a frame alone is still an answer.
+const MEDIA = /<(?:img|picture|video|audio|iframe|svg|embed|object|canvas)\b/i
+const answered = items.map(item => plain(item.answer) !== '' || MEDIA.test(item.answer))
+const firstAnswered = answered.indexOf(true)
+// FAQPage needs each question's acceptedAnswer text, so a question without one is left out of it.
+const withText = items.filter(item => plain(item.answer) !== '')
+const structured = schema && withText.length > 0
   ? JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
-      mainEntity: items.map(item => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: plain(item.answer) } })),
+      mainEntity: withText.map(item => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: plain(item.answer) } })),
     }).replace(/</g, '\\u003c')
   : null
 ---
@@ -116,8 +123,8 @@ const structured = schema && items.length > 0
         </header>
       )}
       <div class={s.list({ class: listClass })}>
-        {items.map((item, i) => (
-          <details class={s.item({ class: itemClass })} name={exclusive ? id : undefined} open={openFirst && i === 0}>
+        {items.map((item, i) => answered[i] ? (
+          <details class={s.item({ class: itemClass })} name={exclusive ? id : undefined} open={openFirst && i === firstAnswered}>
             <summary class={s.summary()}>
               <span class={s.question()}>{item.question}</span>
               {icon === 'chevron'
@@ -126,6 +133,12 @@ const structured = schema && items.length > 0
             </summary>
             <div class={s.answer()} set:html={item.answer} />
           </details>
+        ) : (
+          <div class={s.item({ class: itemClass })}>
+            <div class={s.summary({ class: style === 'plain' ? 'block cursor-auto' : 'cursor-auto' })}>
+              <span class={s.question()}>{item.question}</span>
+            </div>
+          </div>
         ))}
       </div>
     </div>
