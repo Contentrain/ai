@@ -265,10 +265,15 @@
 .prose .wp-block-table { overflow-x: auto; margin-block: 2em; }
 .prose .wp-block-table table { margin: 0; }
 .prose .wp-block-table.is-style-stripes tbody tr:nth-child(odd) { background: var(--color-surface-muted); }
-/* A table with no table block around it (the classic editor's, or hand-written) scrolls in its own box: a narrow one
-   keeps its content width, a wide one stays inside the column instead of widening the page (on a phone, a page wider
-   than the screen is zoomed out and its taps miss). */
-.prose table:not(.wp-block-table table) { display: block; width: max-content; max-width: 100%; overflow-x: auto; }
+/* A table with no table block around it (the classic editor's, or hand-written) is wrapped in a scroll region when the
+   page is built (lib/body-tables.ts): a wide one stays inside the column instead of widening the page, and the table
+   keeps its own display, so screen readers still read it as a table. The region takes focus to scroll by keyboard. */
+.prose .table-scroll { overflow-x: auto; margin-block: 2em; }
+.prose .table-scroll table { margin: 0; }
+.prose .table-scroll:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+/* A net for a table that reached the page some other way, unwrapped: it scrolls in its own box rather than widen the
+   page. Never applies on the wrapped path. */
+.prose table:not(.wp-block-table table, .table-scroll table) { display: block; max-width: 100%; overflow-x: auto; }
 .prose .wp-block-code { border-radius: 0.5rem; }
 .prose .wp-block-verse { font-family: var(--font-serif); white-space: pre-wrap; }
 .prose .wp-block-file { display: flex; flex-wrap: wrap; align-items: center; gap: 1em; }
