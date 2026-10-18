@@ -11,7 +11,7 @@ const astroFiles = async (): Promise<string[]> => {
 }
 
 describe('section hooks', () => {
-  it('every section a component renders names the component (data-kit-section) and carries its id', async () => {
+  it('every section a component renders names the component (data-kit-section), carries its id and its page entry', async () => {
     const missing: string[] = []
     let sections = 0
     for (const file of await astroFiles()) {
@@ -20,7 +20,7 @@ describe('section hooks', () => {
       const component = file.split('/')[0]!
       for (const tag of source.matchAll(/<Section\b[^>]*>/g)) {
         sections++
-        if (!tag[0].includes(`kit="${component}"`) || !/\bid=\{id\}/.test(tag[0])) missing.push(`${file}: ${tag[0].slice(0, 80)}`)
+        if (!tag[0].includes(`kit="${component}"`) || !/\bid=\{id\}/.test(tag[0]) || !tag[0].includes('entry={Astro.props.entry}')) missing.push(`${file}: ${tag[0].slice(0, 80)}`)
       }
     }
     expect(missing).toEqual([])
@@ -32,10 +32,28 @@ describe('section hooks', () => {
     expect(section).toContain("data-kit-section={kit ?? ''}")
   })
 
+  it('Section prints the page entry it is given (data-kit-entry), and nothing without one, so a site that passes none renders as before', async () => {
+    const section = await readFile(join(COMPONENTS, '_shared', 'Section.astro'), 'utf8')
+    expect(section).toContain('data-kit-entry={entry}')
+  })
+
+  it('every component that renders a section declares the entry prop and documents it', async () => {
+    const missing: string[] = []
+    for (const file of await astroFiles()) {
+      if (file.startsWith('_shared/')) continue
+      const source = await readFile(join(COMPONENTS, file), 'utf8')
+      if (!/<Section\b/.test(source)) continue
+      const component = file.split('/')[0]!
+      const meta = JSON.parse(await readFile(join(COMPONENTS, component, 'meta.json'), 'utf8')) as { props: Record<string, { type: string }> }
+      if (!source.includes('  entry?: string | undefined\n') || meta.props.entry?.type !== 'string') missing.push(file)
+    }
+    expect(missing).toEqual([])
+  })
+
   it('a framed carousel, a section of its own, carries the same hooks and keeps its own padding', async () => {
     const track = await readFile(join(COMPONENTS, 'slider', 'SliderTrack.astro'), 'utf8')
     expect(track).toContain("id={framed ? id : undefined}")
-    expect(track).toContain("data-kit-section={framed ? 'slider' : undefined} data-kit-spacing={framed ? 'none' : undefined}")
+    expect(track).toContain("data-kit-section={framed ? 'slider' : undefined} data-kit-entry={framed ? Astro.props.entry : undefined} data-kit-spacing={framed ? 'none' : undefined}")
   })
 })
 
