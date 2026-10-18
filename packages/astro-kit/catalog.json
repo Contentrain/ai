@@ -5552,7 +5552,7 @@
           "type": "string",
           "default": "Most popular",
           "content": false,
-          "description": "Badge text on featured plans."
+          "description": "Badge text on featured plans (ui-strings pricing.featured)."
         },
         "id": {
           "type": "string",
@@ -5569,13 +5569,13 @@
           "type": "string",
           "default": "Included",
           "content": false,
-          "description": "Table cell text for readers where a plan has the feature."
+          "description": "Table cell text for readers where a plan has the feature (ui-strings pricing.included)."
         },
         "notIncludedLabel": {
           "type": "string",
           "default": "Not included",
           "content": false,
-          "description": "Table cell text for readers where a plan lacks the feature."
+          "description": "Table cell text for readers where a plan lacks the feature (ui-strings pricing.not_included)."
         },
         "measured": {
           "type": "object",
@@ -5691,19 +5691,19 @@
           "type": "string",
           "default": "Monthly",
           "content": false,
-          "description": "First option of the billing toggle."
+          "description": "First option of the billing toggle (ui-strings pricing.billing_main)."
         },
         "billingAltLabel": {
           "type": "string",
           "default": "Yearly",
           "content": false,
-          "description": "Second option of the billing toggle (the plans' priceAlt)."
+          "description": "Second option of the billing toggle, the plans' priceAlt (ui-strings pricing.billing_alt)."
         },
         "billingLegend": {
           "type": "string",
           "default": "Billing period",
           "content": false,
-          "description": "Legend of the toggle, read to screen readers."
+          "description": "Legend of the toggle, read to screen readers (ui-strings pricing.billing_legend)."
         },
         "billingAltNote": {
           "type": "string",
@@ -5714,7 +5714,7 @@
           "type": "string",
           "default": "Was",
           "content": false,
-          "description": "Read before a struck original price by screen readers, which do not announce the strike. 'Was' is only the kit default: the writer passes it in the site's language."
+          "description": "Read before a struck original price by screen readers, which do not announce the strike. 'Was' is only the kit default: the writer passes it in the site's language (ui-strings pricing.was)."
         }
       },
       "slots": {},
