@@ -265,6 +265,10 @@
 .prose .wp-block-table { overflow-x: auto; margin-block: 2em; }
 .prose .wp-block-table table { margin: 0; }
 .prose .wp-block-table.is-style-stripes tbody tr:nth-child(odd) { background: var(--color-surface-muted); }
+/* A table with no table block around it (the classic editor's, or hand-written) scrolls in its own box: a narrow one
+   keeps its content width, a wide one stays inside the column instead of widening the page (on a phone, a page wider
+   than the screen is zoomed out and its taps miss). */
+.prose table:not(.wp-block-table table) { display: block; width: max-content; max-width: 100%; overflow-x: auto; }
 .prose .wp-block-code { border-radius: 0.5rem; }
 .prose .wp-block-verse { font-family: var(--font-serif); white-space: pre-wrap; }
 .prose .wp-block-file { display: flex; flex-wrap: wrap; align-items: center; gap: 1em; }
