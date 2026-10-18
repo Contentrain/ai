@@ -41,8 +41,9 @@ export function newestFirst(entries: readonly TypeEntry[], dateField = 'publishe
     || (text(a.data.title) ?? text(a.data.name) ?? a.id).localeCompare(text(b.data.title) ?? text(b.data.name) ?? b.id))
 }
 
-/** An entry's address: its kept `path` (`keptPath` in content.ts), else the type's pattern. */
-export function entryHref(type: CustomType, entry: TypeEntry): string {
+/** An entry's address: its kept `path` (`keptPath` in content.ts), else the type's pattern. A list-only type's entries have none. */
+export function entryHref(type: CustomType, entry: TypeEntry): string | undefined {
+  if (type.single === undefined) return undefined
   const slug = text(entry.data.slug) ?? entry.id
   const kept = keptPath(entry.data.path, slug)
   if (kept) return withBase(kept)
@@ -80,7 +81,8 @@ export async function staleTypePaths(): Promise<Array<{ from: string, to: string
     const [own, ...lists] = await Promise.all([entriesOf(type.collection), ...taxonomies.map(taxonomy => entriesOf(taxonomy.collection))])
     for (const entry of own ?? []) {
       const from = stalePath(entry.data.path, text(entry.data.slug) ?? entry.id)
-      if (from) out.push({ from, to: entryHref(type, entry) })
+      const to = entryHref(type, entry)
+      if (from && to) out.push({ from, to })
     }
     for (const [i, taxonomy] of taxonomies.entries()) {
       const terms = lists[i] ?? []
@@ -108,7 +110,8 @@ export const bodyOf = (type: CustomType, entry: TypeEntry): string | undefined =
 /** What a card of a post-card list shows. */
 export interface Card {
   title: string
-  href: string
+  /** Absent for an entry with no page of its own (a list-only type's): the card prints its title unlinked. */
+  href?: string | undefined
   excerpt?: string | undefined
   /** The entry's rich-text body, for a list that shows each entry in full. */
   body?: string | undefined

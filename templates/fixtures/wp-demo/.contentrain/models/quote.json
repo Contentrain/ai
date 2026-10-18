@@ -1,0 +1,39 @@
+{
+  "domain": "custom",
+  "fields": {
+    "title": {
+      "label": "Title",
+      "order": 10,
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "label": "Slug",
+      "order": 20,
+      "type": "slug",
+      "required": true,
+      "unique": true
+    },
+    "summary": {
+      "label": "Summary",
+      "order": 30,
+      "type": "text"
+    },
+    "quote-category": {
+      "label": "Quote category",
+      "model": "quote-category",
+      "order": 40,
+      "type": "relations"
+    },
+    "wp_id": {
+      "label": "WP post ID",
+      "order": 50,
+      "type": "integer"
+    }
+  },
+  "i18n": false,
+  "id": "quote",
+  "kind": "collection",
+  "name": "Client quotes",
+  "title_field": "title"
+}

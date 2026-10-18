@@ -292,7 +292,9 @@ async function itemHref(item: MenuItem, link: (url: string | undefined) => strin
       for (const type of siteConfig.types ?? []) {
         if (type.collection === collection) {
           const entry = await entryById(collection, target.ref)
-          return entry ? link(entryHref(type, entry)) : undefined
+          // A list-only type's entry has no page: the item is dropped, as one pointing at a draft is.
+          const href = entry ? entryHref(type, entry) : undefined
+          return href ? link(href) : undefined
         }
         const taxonomy = type.taxonomies?.find(candidate => candidate.collection === collection)
         if (taxonomy) {
