@@ -65,6 +65,8 @@ describe('a table in rich text with no table block around it scrolls in a named 
     // its display; only an unwrapped table falls back to scrolling itself.
     const css = await readFile(join(STARTER, 'src', 'styles', 'wp-blocks.css'), 'utf8')
     expect(css).toContain('.prose .table-scroll { position: relative; overflow-x: auto;')
+    expect(css).toContain('.prose .wp-block-table { position: relative; overflow-x: auto;')
+    expect(css).toContain('.prose table:not(.wp-block-table table, .table-scroll table) { position: relative; display: block;')
     const blocks = [...css.matchAll(/([^{}]*table[^{}]*)\{([^}]*display:\s*block[^}]*)\}/g)].map(m => m[1]!.trim().split('\n').at(-1))
     expect(blocks).toEqual(['.prose table:not(.wp-block-table table, .table-scroll table)'])
   })
