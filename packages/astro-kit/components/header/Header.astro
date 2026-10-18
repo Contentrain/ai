@@ -94,16 +94,16 @@ const wrap = search ? 'flex-wrap lg:flex-nowrap' : tagline ? 'flex-wrap md:flex-
       ? (
         <div class="flex min-w-0 basis-full flex-col gap-1 md:basis-auto">
           <a href={safeHref(homeHref)} class={brand()} aria-label={showName ? undefined : siteName} style={brandStyle} data-kit-brand>
-            {logo && <KitImage image={logo} priority class="h-8 w-auto max-w-full object-contain" sizes="160px" />}
-            {showName && <span class="min-w-0 truncate">{siteName}</span>}
+            {logo && <KitImage image={logo} priority class="h-8 w-auto min-w-0 max-w-full object-contain" sizes="160px" />}
+            {showName && <span class="min-w-[3ch] shrink-[8] truncate">{siteName}</span>}
           </a>
           <p class={muted} data-kit-tagline>{tagline}</p>
         </div>
       )
       : (
         <a href={safeHref(homeHref)} class={brand()} aria-label={showName ? undefined : siteName} style={brandStyle} data-kit-brand>
-          {logo && <KitImage image={logo} priority class="h-8 w-auto max-w-full object-contain" sizes="160px" />}
-          {showName && <span class="min-w-0 truncate">{siteName}</span>}
+          {logo && <KitImage image={logo} priority class="h-8 w-auto min-w-0 max-w-full object-contain" sizes="160px" />}
+          {showName && <span class="min-w-[3ch] shrink-[8] truncate">{siteName}</span>}
         </a>
       )}
     {search && (
