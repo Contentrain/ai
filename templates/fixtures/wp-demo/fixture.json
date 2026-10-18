@@ -158,7 +158,7 @@
         "©",
         "location.replace(to)",
         "aria-label=\"Primary\"",
-        "aria-label=\"Footer\" data-cr-part=\"nav-footer\"",
+        "aria-label=\"Studio\" data-cr-part=\"nav-footer\"",
         "aria-label=\"Legal\" data-cr-part=\"nav-footer\"",
         ">Imprint</a>",
         "href=\"/projects/harbour-bridge/\"",
@@ -175,7 +175,8 @@
       ],
       "excludes": [
         "Sidebar only link",
-        "<p class=\"mb-3 font-semibold\">Legal</p>"
+        "<p class=\"mb-3 font-semibold\">Legal</p>",
+        "aria-label=\"Footer\" data-cr-part=\"nav-footer\""
       ]
     },
     "_headers": {
