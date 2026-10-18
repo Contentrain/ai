@@ -275,7 +275,7 @@ try {
     await bare.close()
   }
   // A wide table in prose does not widen a phone's page (zoomed out, its taps miss): on a 390 phone the page is as wide
-  // as the screen, and the table scrolls in its own box.
+  // as the screen, and the table scrolls in its region.
   if (components.some(c => c.id === 'prose')) {
     const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
     const page = await phone.newPage()
@@ -284,8 +284,13 @@ try {
     // page always fits innerWidth (1560 for a 1849px page).
     const { scrollWidth, innerWidth } = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }))
     if (scrollWidth > 390 || innerWidth > 390) tables.push(`prose: on a 390 phone the page is ${scrollWidth}px wide, its layout viewport ${innerWidth}px`)
-    const wide = await page.locator('[data-fixture="table-wide"] table').evaluate(el => ({ scrollWidth: el.scrollWidth, clientWidth: el.clientWidth }))
-    if (!(wide.scrollWidth > wide.clientWidth)) tables.push(`prose/table-wide: the table does not scroll in its own box (${wide.scrollWidth}px in ${wide.clientWidth}px)`)
+    // The fixtures hold what a page renders: the starter wraps such a table in a region (lib/body-tables.ts).
+    const wide = await page.locator('[data-fixture="table-wide"] .table-scroll').evaluate(el => ({ scrollWidth: el.scrollWidth, clientWidth: el.clientWidth }))
+    if (!(wide.scrollWidth > wide.clientWidth)) tables.push(`prose/table-wide: the table's region does not scroll (${wide.scrollWidth}px in ${wide.clientWidth}px)`)
+    // The table keeps its own display, so a screen reader still reads it as a table.
+    for (const display of await page.locator('[data-fixture^="table-"] table').evaluateAll(els => els.map(el => getComputedStyle(el).display))) {
+      if (display !== 'table') tables.push(`prose: a table in a scroll region is drawn as ${display}, not as a table`)
+    }
     await phone.close()
   }
   // A carousel set up while its page is hidden (a background tab opened with ctrl/cmd-click: no layout, visibilityState

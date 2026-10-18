@@ -12,8 +12,9 @@ import { getCollection, getEntry, type CollectionEntry } from 'astro:content'
 import { safeUrl } from '../components/kit/_shared/safe-url'
 import { servedPath, underBase, withBase, withoutBase } from './base'
 import type { NavItem } from '../components/kit/_shared/types'
-import { byId, getRedirects, getSite, pageHref, postHref, resolve, termHref } from './content'
+import { byId, getRedirects, getSite, getStrings, pageHref, postHref, resolve, termHref } from './content'
 import { optimizedImages } from './body-images'
+import { scrollingTables } from './body-tables'
 import { entriesOf, entryById, entryHref, termHref as customTermHref, termsById } from './custom'
 import { siteConfig } from '../site.config'
 import { routeTable } from './site-routes'
@@ -217,7 +218,8 @@ function mediaText(html: string, index: MediaIndex): string {
 
 /**
  * Rich text made public: internal links become site paths, links to what is not public become their text,
- * images without an alt take their media library entry's, and local raster images are served optimized.
+ * images without an alt take their media library entry's, local raster images are served optimized, and a table no
+ * table block holds scrolls in its own region.
  */
 export async function publicHtml(html: string): Promise<string>
 export async function publicHtml(html: string | undefined): Promise<string | undefined>
@@ -236,6 +238,7 @@ export async function publicHtml(html: string | undefined): Promise<string | und
       return href === stored ? anchor : `<a${attributes.replace(HREF, `href="${encode(href)}"`)}>${inner}</a>`
     })
   }
+  if (result.includes('<table')) result = scrollingTables(result, (await getStrings())('table.label'))
   return result.includes('<img') ? optimizedImages(mediaText(result, await media())) : result
 }
 
