@@ -300,6 +300,12 @@ try {
     // The fixtures hold what a page renders: the starter wraps such a table in a region (lib/body-tables.ts).
     const wide = await page.locator('[data-fixture="table-wide"] .table-scroll').evaluate(el => ({ scrollWidth: el.scrollWidth, clientWidth: el.clientWidth }))
     if (!(wide.scrollWidth > wide.clientWidth)) tables.push(`prose/table-wide: the table's region does not scroll (${wide.scrollWidth}px in ${wide.clientWidth}px)`)
+    // Screen-reader text in a table is placed absolutely: the box the table scrolls in holds it (its containing block),
+    // so it scrolls with the table instead of widening the page from wherever the table ends. The nearest such box: the
+    // table block's figure or the built region, else (unwrapped) the table itself.
+    for (const loose of await page.locator('[data-fixture] table .screen-reader-text').evaluateAll(els => els.filter(el => el.offsetParent !== (el.closest('.wp-block-table, .table-scroll') ?? el.closest('table'))).map(el => `${el.closest('[data-fixture]').dataset.fixture}: held by ${el.offsetParent?.tagName.toLowerCase()}.${[...el.offsetParent?.classList ?? []].join('.')}`))) {
+      tables.push(`prose/${loose}, not by the box its table scrolls in`)
+    }
     // The table keeps its own display, so a screen reader still reads it as a table.
     for (const display of await page.locator('[data-fixture^="table-"] table').evaluateAll(els => els.map(el => getComputedStyle(el).display))) {
       if (display !== 'table') tables.push(`prose: a table in a scroll region is drawn as ${display}, not as a table`)

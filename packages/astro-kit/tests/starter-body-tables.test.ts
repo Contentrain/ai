@@ -61,9 +61,12 @@ describe('a table in rich text with no table block around it scrolls in a named 
     const locales = await readdir(dir)
     expect(locales.length).toBeGreaterThan(1)
     for (const file of locales) expect(JSON.parse(await readFile(join(dir, file), 'utf8'))['table.label'], file).toBeTruthy()
-    // The region scrolls and the table in it keeps its display; only an unwrapped table falls back to scrolling itself.
+    // The region scrolls and holds what is placed absolutely in the table (screen-reader text), and the table in it keeps
+    // its display; only an unwrapped table falls back to scrolling itself.
     const css = await readFile(join(STARTER, 'src', 'styles', 'wp-blocks.css'), 'utf8')
-    expect(css).toContain('.prose .table-scroll { overflow-x: auto;')
+    expect(css).toContain('.prose .table-scroll { position: relative; overflow-x: auto;')
+    expect(css).toContain('.prose .wp-block-table { position: relative; overflow-x: auto;')
+    expect(css).toContain('.prose table:not(.wp-block-table table, .table-scroll table) { position: relative; display: block;')
     const blocks = [...css.matchAll(/([^{}]*table[^{}]*)\{([^}]*display:\s*block[^}]*)\}/g)].map(m => m[1]!.trim().split('\n').at(-1))
     expect(blocks).toEqual(['.prose table:not(.wp-block-table table, .table-scroll table)'])
   })
