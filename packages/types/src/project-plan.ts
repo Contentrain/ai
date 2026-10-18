@@ -387,6 +387,12 @@ export interface PlanPlacement {
    * The section's background spans the page either way. Absent: `wide`.
    */
   width?: 'content' | 'wide'
+  /**
+   * The fact behavior ids (`interactive:3fa9c21e`) whose source element this section holds: the writer marks the
+   * section's root with them, so a check on the built site finds each widget in the section that carries it. Each id
+   * once, and each one a planned behavior (`ProjectPlan.behaviors`). Absent: the writer places them by its own rule.
+   */
+  facts?: string[]
 }
 
 /**
@@ -726,8 +732,17 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (c.origin === 'site' && !c.brief) warnings.push(`site component ${c.id} has no brief for the writer`)
   }
 
+  /** Placements' `facts`, checked against the planned behaviors once those are read. */
+  const placedFacts: Array<{ at: string, facts: string[] }> = []
   const placement = (s: PlanPlacement, at: string, route?: PlanRoute) => {
     if (s.width !== undefined && s.width !== 'content' && s.width !== 'wide') errors.push(`${at}: width ${s.width as string} is not content or wide`)
+    if (s.facts !== undefined) {
+      if (!Array.isArray(s.facts) || s.facts.some(f => typeof f !== 'string' || !f.trim())) errors.push(`${at}: facts is not a list of fact ids`)
+      else {
+        if (new Set(s.facts).size !== s.facts.length) errors.push(`${at}: facts names a fact twice`)
+        placedFacts.push({ at, facts: s.facts })
+      }
+    }
     const c = components.get(s.component)
     if (!c) { errors.push(`${at}: component ${s.component} is not declared`); return }
     const b = s.bind
@@ -836,6 +851,10 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
       if (!m) errors.push(`${at}: model ${b.model} is not declared`)
       else if (!m.form) errors.push(`${at}: model ${b.model} is not a form model`)
     }
+  }
+  for (const { at, facts } of placedFacts) {
+    const unknown = facts.filter(f => !behaviorIds.has(f))
+    if (unknown.length) errors.push(`${at}: facts ${unknown.join(', ')} ${unknown.length === 1 ? 'is' : 'are'} not a planned behavior`)
   }
   return { errors, warnings }
 }
