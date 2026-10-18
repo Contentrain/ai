@@ -1,5 +1,12 @@
 # @contentrain/serve-ui
 
+## 0.0.73
+
+### Patch Changes
+
+- Updated dependencies [1bdca2f]
+  - @contentrain/types@1.66.0
+
 ## 0.0.72
 
 ### Patch Changes
