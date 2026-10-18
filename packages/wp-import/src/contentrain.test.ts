@@ -316,6 +316,19 @@ describe('rawToContentrain', () => {
     expect(Object.values(items).find(item => item.title === 'Projects')).not.toHaveProperty('target')
   })
 
+  it('a menu\'s printed heading becomes its title, and the model gains the field only when a source printed one', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const [menu] = raw.menus ?? []
+    const untitled = rawToContentrain(raw, { updatedBy: 'test' })
+    expect(JSON.parse(untitled.files['.contentrain/models/menus.json']!).fields).not.toHaveProperty('title')
+    const titled = rawToContentrain({ ...raw, menus: [{ ...menu!, title: ' <b>Company</b> ' }, { ...menu!, id: 77, slug: 'legal', name: 'Footer Menu 2', items: [] }] }, { updatedBy: 'test' })
+    expect(JSON.parse(titled.files['.contentrain/models/menus.json']!).fields.title).toMatchObject({ type: 'string', label: 'Heading' })
+    const menus = Object.values(JSON.parse(titled.files['.contentrain/content/site/menus/data.json']!)) as Array<{ slug: string, name: string, title?: string }>
+    expect(menus.find(m => m.slug === menu!.slug)?.title).toBe('Company')
+    // The other keeps its admin name as its name and gets no heading from it.
+    expect(menus.find(m => m.slug === 'legal')).not.toHaveProperty('title')
+  })
+
   it('is deterministic', async () => {
     const { raw } = await parseWxr(FIXTURE)
     const a = rawToContentrain(raw, { updatedBy: 'test' })

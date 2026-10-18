@@ -146,6 +146,7 @@
         ">Leadership</a>": 2
       },
       "contains": [
+        "<p class=\"mb-3 font-semibold\">Studio</p>",
         "Email: <a href=\"mailto:hello@northwind.example\"",
         "Phone: <a href=\"tel:+441170000000\"",
         "column-gap:22px",
@@ -157,7 +158,7 @@
         "©",
         "location.replace(to)",
         "aria-label=\"Primary\"",
-        "aria-label=\"Footer\" data-cr-part=\"nav-footer\"",
+        "aria-label=\"Studio\" data-cr-part=\"nav-footer\"",
         "aria-label=\"Legal\" data-cr-part=\"nav-footer\"",
         ">Imprint</a>",
         "href=\"/projects/harbour-bridge/\"",
@@ -173,7 +174,9 @@
         "/blog/search-without-a-server/"
       ],
       "excludes": [
-        "Sidebar only link"
+        "Sidebar only link",
+        "<p class=\"mb-3 font-semibold\">Legal</p>",
+        "aria-label=\"Footer\" data-cr-part=\"nav-footer\""
       ]
     },
     "_headers": {

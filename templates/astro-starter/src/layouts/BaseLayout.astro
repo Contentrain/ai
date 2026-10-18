@@ -168,11 +168,11 @@ const wpQueries = isHome ? await queryMap() : {}
       linkSize={siteConfig.chrome?.footerColumns?.size ? `${siteConfig.chrome.footerColumns.size}px` : undefined}
       linkSizeNarrow={siteConfig.chrome?.footerColumns?.narrowSize ? `${siteConfig.chrome.footerColumns.narrowSize}px` : undefined}
       layout={footerColumns.length > 1 ? 'columns' : 'simple'}
-      columns={footerColumns.map((menu, index) => ({ label: menu.name, links: index === footerColumns.length - 1 && footerExtras.length ? [...menu.items, ...footerExtras] : menu.items }))}
+      columns={footerColumns.map((menu, index) => ({ label: menu.title ? undefined : menu.name, title: menu.title, links: index === footerColumns.length - 1 && footerExtras.length ? [...menu.items, ...footerExtras] : menu.items }))}
       links={[...(footerColumns[0]?.items ?? []), ...footerExtras]}
       social={social}
       contact={contact}
-      navLabel={footerColumns[0]?.name ?? t('nav.footer')}
+      navLabel={footerColumns[0]?.title ?? footerColumns[0]?.name ?? t('nav.footer')}
     />
     {overlays.map(Overlay => <Overlay />)}
   </body>
