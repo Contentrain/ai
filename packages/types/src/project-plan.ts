@@ -732,15 +732,19 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (c.origin === 'site' && !c.brief) warnings.push(`site component ${c.id} has no brief for the writer`)
   }
 
-  /** Placements' `facts`, checked against the planned behaviors once those are read. */
-  const placedFacts: Array<{ at: string, facts: string[] }> = []
+  /**
+   * Placements' `facts`, checked against the planned behaviors once those are read. `route`: the route the section is on;
+   * none for a layout part, which is drawn on every route.
+   */
+  const placedFacts: Array<{ at: string, facts: string[], route?: string }> = []
   const placement = (s: PlanPlacement, at: string, route?: PlanRoute) => {
     if (s.width !== undefined && s.width !== 'content' && s.width !== 'wide') errors.push(`${at}: width ${s.width as string} is not content or wide`)
     if (s.facts !== undefined) {
       if (!Array.isArray(s.facts) || s.facts.some(f => typeof f !== 'string' || !f.trim())) errors.push(`${at}: facts is not a list of fact ids`)
+      else if (!s.facts.length) errors.push(`${at}: facts is empty (leave it out when the section holds no fact)`)
       else {
         if (new Set(s.facts).size !== s.facts.length) errors.push(`${at}: facts names a fact twice`)
-        placedFacts.push({ at, facts: s.facts })
+        placedFacts.push({ at, facts: s.facts, ...(route ? { route: route.id } : {}) })
       }
     }
     const c = components.get(s.component)
@@ -855,6 +859,19 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   for (const { at, facts } of placedFacts) {
     const unknown = facts.filter(f => !behaviorIds.has(f))
     if (unknown.length) errors.push(`${at}: facts ${unknown.join(', ')} ${unknown.length === 1 ? 'is' : 'are'} not a planned behavior`)
+  }
+  // A fact names one section per page: on a route, its sections and the layout drawn over it. A widget on several pages is
+  // in one section of each of their routes.
+  const layoutFacts = placedFacts.filter(p => p.route === undefined)
+  for (const r of plan.routes ?? []) {
+    const where = new Map<string, string>()
+    for (const { at, facts } of [...layoutFacts, ...placedFacts.filter(p => p.route === r.id)]) {
+      for (const f of facts) {
+        const first = where.get(f)
+        if (first) errors.push(`route ${r.id}: fact ${f} is named by ${first} and ${at}`)
+        else where.set(f, at)
+      }
+    }
   }
   return { errors, warnings }
 }
