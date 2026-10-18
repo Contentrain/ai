@@ -99,6 +99,8 @@ interface Props {
   id?: string | undefined
   /** Draw the section's own frame and spacing (when Slider.astro has no Section around it). */
   framed?: boolean | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
 const { slides: given, label, prevLabel = 'Previous slide', nextLabel = 'Next slide', slideLabel = 'Slide', ofLabel = 'of', playLabel = 'Play', loop = false, perView = '1', aspect, caption, heading, intro, eyebrow, actions, measured, id: givenId, framed = true } = Astro.props
@@ -135,7 +137,7 @@ const cards = slides.some(slide => !slide.image && !slide.video && !slide.player
 // ratio, so the player that replaces the link moves nothing.
 const under = 'flex size-11 shrink-0 items-center justify-center rounded-full bg-surface text-ink ring-1 ring-line hover:bg-surface disabled:opacity-40'
 ---
-<Root id={framed ? id : undefined} class:list={['group relative', framed && 'container-page py-8']} data-kit-section={framed ? 'slider' : undefined} data-kit-spacing={framed ? 'none' : undefined} role={framed ? undefined : 'region'} aria-roledescription="carousel" aria-label={label} data-kit-slider data-loop={loop ? '' : undefined} data-slide-label={slideLabel}>
+<Root id={framed ? id : undefined} class:list={['group relative', framed && 'container-page py-8']} data-kit-section={framed ? 'slider' : undefined} data-kit-entry={framed ? Astro.props.entry : undefined} data-kit-spacing={framed ? 'none' : undefined} role={framed ? undefined : 'region'} aria-roledescription="carousel" aria-label={label} data-kit-slider data-loop={loop ? '' : undefined} data-slide-label={slideLabel}>
   <SectionHeader heading={heading} intro={intro} eyebrow={eyebrow} actions={actions} />
   <div class={slots.viewport()} data-viewport tabindex="0" role="group" aria-label={label}>
     <div class:list={['flex gap-4 [&>*]:shrink-0 group-data-[ready]:[&>*]:snap-align-none', measuredRow?.track]} id={trackId} data-container>

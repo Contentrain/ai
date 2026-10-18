@@ -84,6 +84,8 @@ interface Props {
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
 const { items, heading, intro, layout, columns, icon, numbered = false, style, questionStyle, exclusive = false, openFirst = false, schema = false, tone, measured, id: givenId } = Astro.props
@@ -114,7 +116,7 @@ const structured = schema && withText.length > 0
   : null
 ---
 {items.length > 0 && (
-  <Section kit="faq" measured={measured} tone={tone} spacing="md" width={wide ? 'page' : 'prose'} id={id} aria-labelledby={headingId}>
+  <Section kit="faq" measured={measured} tone={tone} spacing="md" width={wide ? 'page' : 'prose'} id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
     <div class={s.root()}>
       {(heading || intro) && (
         <header class={s.head()}>

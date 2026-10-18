@@ -78,6 +78,8 @@ interface Props {
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
 const { heading, items, layout, columns, logoHeight, style, align, tone, measured, id: givenId } = Astro.props
@@ -99,7 +101,7 @@ const shown = items.flatMap((item) => {
 // About four seconds a logo: the strip reads at a pace, whatever its length.
 const duration = `${Math.max(20, shown.length * 4)}s`
 ---
-<Section kit="logo-cloud" measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
+<Section kit="logo-cloud" measured={measured} tone={tone} id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
   {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
   <div class:list={[marquee && 'kit-marquee overflow-hidden']} style={marquee ? `--kit-marquee-duration:${duration}` : undefined}>
     <ul class={s.list({ class: grid })}>

@@ -19,6 +19,7 @@
     "ofLabel": { "type": "string", "content": false, "description": "ui-strings slider.of." },
     "playLabel": { "type": "string", "content": false, "description": "ui-strings embed.play." },
     "loop": { "type": "boolean", "default": false, "content": false, "description": "Wrap from the last slide to the first." },
+    "entry": { "type": "string", "content": false, "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed." },
     "id": { "type": "string", "default": "slider", "content": false, "description": "Unique on the page: names the track that the previous/next buttons control (aria-controls)." },
     "heading": {"type": "string", "label": "Heading", "description": "The section heading."},
     "intro": {"type": "text", "label": "Introduction", "description": "A sentence under the heading."},

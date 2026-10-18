@@ -436,6 +436,11 @@
             }
           }
         },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
+        },
         "id": {
           "type": "string",
           "content": false,
@@ -676,6 +681,11 @@
               "description": "The section's minimum height."
             }
           }
+        },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
         },
         "id": {
           "type": "string",
@@ -1019,6 +1029,11 @@
             }
           }
         },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
+        },
         "id": {
           "type": "string",
           "content": false,
@@ -1222,6 +1237,11 @@
           "default": "View on the map",
           "content": false,
           "description": "Text of the map link (ui:)."
+        },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
         },
         "id": {
           "type": "string",
@@ -1491,6 +1511,11 @@
             }
           },
           "description": "Ways to reach you, in order (Email → mailto:, Phone → tel:, Address → map link)."
+        },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
         },
         "id": {
           "type": "string",
@@ -1962,6 +1987,11 @@
               "description": "The section's minimum height."
             }
           }
+        },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
         },
         "id": {
           "type": "string",
@@ -2626,6 +2656,11 @@
             }
           }
         },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
+        },
         "id": {
           "type": "string",
           "content": false,
@@ -2890,6 +2925,11 @@
               "description": "The section's minimum height."
             }
           }
+        },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
         },
         "id": {
           "type": "string",
@@ -3327,6 +3367,11 @@
           ],
           "content": false,
           "description": "Section background."
+        },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
         },
         "id": {
           "type": "string",
@@ -3975,6 +4020,11 @@
           },
           "description": "Hero image; loaded first (the page's largest image)."
         },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
+        },
         "id": {
           "type": "string",
           "content": false,
@@ -4435,6 +4485,11 @@
             }
           }
         },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
+        },
         "id": {
           "type": "string",
           "content": false,
@@ -4704,6 +4759,11 @@
           "default": true,
           "content": false,
           "description": "Open the provider's confirmation page in a new tab (the reader keeps the site)."
+        },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
         },
         "id": {
           "type": "string",
@@ -5262,6 +5322,11 @@
           "content": false,
           "description": "Section background: default, muted, inverse or accent."
         },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
+        },
         "id": {
           "type": "string",
           "content": false,
@@ -5590,6 +5655,11 @@
           "default": "Most popular",
           "content": false,
           "description": "Badge text on featured plans (ui-strings pricing.featured)."
+        },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
         },
         "id": {
           "type": "string",
@@ -6108,6 +6178,11 @@
           "default": false,
           "content": false,
           "description": "Wrap from the last slide to the first."
+        },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
         },
         "id": {
           "type": "string",
@@ -6778,6 +6853,11 @@
             }
           }
         },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
+        },
         "id": {
           "type": "string",
           "content": false,
@@ -7101,6 +7181,11 @@
             }
           }
         },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
+        },
         "id": {
           "type": "string",
           "content": false,
@@ -7264,6 +7349,11 @@
             }
           },
           "description": "The steps, in order (Elementor icon boxes, Divi blurbs, Gutenberg columns of heading + text)."
+        },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
         },
         "id": {
           "type": "string",
@@ -7656,6 +7746,11 @@
           "type": "string",
           "description": "Accessible name of the tab list when there is no heading."
         },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
+        },
         "id": {
           "type": "string",
           "description": "Section id, unique per page: the tabs machine and its element ids derive from it."
@@ -7816,6 +7911,11 @@
             }
           },
           "description": "The people, in display order (Divi team member name/position/content/image_url, Elementor image box)."
+        },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
         },
         "id": {
           "type": "string",
@@ -8253,6 +8353,11 @@
               "description": "The section's minimum height."
             }
           }
+        },
+        "entry": {
+          "type": "string",
+          "content": false,
+          "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed."
         },
         "id": {
           "type": "string",

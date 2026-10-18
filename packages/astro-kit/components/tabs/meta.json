@@ -18,6 +18,7 @@
     "items": { "type": "array", "required": true, "items": { "type": "object", "fields": { "label": { "type": "string", "required": true }, "content": { "type": "richtext", "required": true } } }, "description": "Tabs in order (Elementor tabs tab_title/tab_content, Divi tab title + content)." },
     "heading": { "type": "string", "description": "Section heading; also names the tab list." },
     "label": { "type": "string", "description": "Accessible name of the tab list when there is no heading." },
+    "entry": { "type": "string", "content": false, "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed." },
     "id": { "type": "string", "description": "Section id, unique per page: the tabs machine and its element ids derive from it." }
   },
   "slots": {},

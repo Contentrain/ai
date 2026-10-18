@@ -70,6 +70,8 @@ interface Props {
   id?: string | undefined
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
 const {
@@ -87,7 +89,7 @@ const headingId = heading ? `${id}-title` : undefined
 const formRel: Record<string, string> = newTab ? { rel: 'noopener noreferrer' } : {}
 ---
 {form && (
-  <Section kit="newsletter" measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+  <Section kit="newsletter" measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
     <div class={s.box()}>
       {(heading || intro) && (
         <div class={s.copy()}>

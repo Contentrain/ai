@@ -92,6 +92,8 @@ interface Props {
   id?: string | undefined
   /** `lines`: each line the author broke a quote into (`\n`) is a block of its own, `data-kit-line="1"`, `"2"`, …, for a theme to set its ink, indent or size; still one quote in one paragraph, its marks before the first line and after the last. `flow` (absent): as before. */
   quoteLines?: 'flow' | 'lines' | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
 const { items, heading, layout, quoteSize, frame, avatarSize, avatarPlace, quoteMark = 'marks', ratingLabel = '{rating} out of 5 stars', label = 'Testimonials', tone, measured, id: givenId, quoteLines } = Astro.props
@@ -114,7 +116,7 @@ const spoken = (rating: number) => String(Math.round(rating * 10) / 10)
 const scrolls = layout === 'row'
 ---
 {items.length > 0 && (
-  <Section kit="testimonial" measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId}>
+  <Section kit="testimonial" measured={measured} tone={tone} spacing="md" id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
     {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}
     <div class={list} tabindex={scrolls ? 0 : undefined} role={scrolls ? 'region' : undefined} aria-labelledby={scrolls && heading ? headingId : undefined} aria-label={scrolls && !heading ? label : undefined}>
       {items.map((item) => {

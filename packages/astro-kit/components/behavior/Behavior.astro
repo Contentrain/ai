@@ -32,6 +32,8 @@ interface Props {
   measured?: MeasuredStyle | undefined
   /** Section id, unique per page; without one `behavior`, `behavior-2`, … in render order. */
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
 const { kind, html, items, title, panel, fact, previousLabel, nextLabel, closeLabel, tone, measured, id: givenId } = Astro.props
@@ -44,7 +46,7 @@ const factId = fact && /^[\w:.-]{1,120}$/.test(fact) ? fact : undefined
 const NOSCRIPT = '<style>.cr-behavior dialog:not([open]){display:block;position:static;margin:0;max-width:none}</style>'
 ---
 {html && (
-  <Section kit="behavior" tone={tone} id={id} measured={measured}>
+  <Section kit="behavior" tone={tone} id={id} measured={measured} entry={Astro.props.entry}>
     <div
       class="cr-behavior"
       data-cr-behavior={kind}
