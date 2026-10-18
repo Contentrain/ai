@@ -116,7 +116,10 @@ async function addTypeRoutes(add: (href: string, route: Route) => void): Promise
   }
   for (const type of types) {
     const own = newestFirst(entries.get(type.collection) ?? [], type.card.date)
-    for (const entry of own) add(entryHref(type, entry), { view: 'entry', type, entry, targets })
+    for (const entry of own) {
+      const href = entryHref(type, entry)
+      if (href) add(href, { view: 'entry', type, entry, targets })
+    }
     const cards = new Map(await Promise.all(own.map(async entry => [entry.id, await entryCard(type, entry, terms)] as const)))
     if (type.archive) paginateCards(withBase(type.archive.pattern), [...cards.values()], { title: type.archive.title, ...(type.archive.label ? { eyebrow: type.archive.label } : {}) })
     for (const taxonomy of type.taxonomies ?? []) {

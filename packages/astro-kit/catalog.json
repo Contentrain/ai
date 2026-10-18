@@ -4979,8 +4979,7 @@
         },
         "href": {
           "type": "url",
-          "required": true,
-          "description": "Post address (from the permalink pattern)."
+          "description": "Post address (from the permalink pattern). Absent for an entry with no page of its own (a list-only custom type's): the title is printed unlinked, never as a dead or `#` link."
         },
         "excerpt": {
           "type": "text",

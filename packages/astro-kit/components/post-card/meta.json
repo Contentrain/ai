@@ -12,7 +12,7 @@
   },
   "props": {
     "title": { "type": "string", "required": true, "description": "Post title (posts.title)." },
-    "href": { "type": "url", "required": true, "description": "Post address (from the permalink pattern)." },
+    "href": { "type": "url", "description": "Post address (from the permalink pattern). Absent for an entry with no page of its own (a list-only custom type's): the title is printed unlinked, never as a dead or `#` link." },
     "excerpt": { "type": "text", "description": "Summary (posts.excerpt)." },
     "date": { "type": "datetime", "description": "Publication date (posts.published_at)." },
     "locale": { "type": "string", "description": "Locale the date is written in (site.language)." },

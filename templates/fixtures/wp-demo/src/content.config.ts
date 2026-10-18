@@ -270,6 +270,26 @@ export const collections = {
       wp_id: z.number().int().optional(),
     }),
   }),
+  quote: defineCollection({
+    loader: loader('quote'),
+    schema: z.object({
+      id: z.string(),
+      'quote-category': z.array(reference('quoteCategory')).default([]),
+      slug: z.string(),
+      summary: z.string().optional(),
+      title: z.string(),
+      wp_id: z.number().int().optional(),
+    }),
+  }),
+  quoteCategory: defineCollection({
+    loader: loader('quote-category'),
+    schema: z.object({
+      id: z.string(),
+      name: z.string(),
+      slug: z.string(),
+      wp_id: z.number().int().optional(),
+    }),
+  }),
   teamMember: defineCollection({
     loader: loader('team-member'),
     schema: z.object({

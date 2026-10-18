@@ -38,7 +38,8 @@ const card = tv({
 
 interface Props {
   title: string
-  href: string
+  /** The entry's address. Absent for an entry with no page of its own: the title is printed unlinked, never as a dead link. */
+  href?: string | undefined
   excerpt?: string | undefined
   /** Publication date: a Date, or ISO 8601 text as Contentrain stores it. */
   date?: Date | string | undefined
@@ -93,7 +94,7 @@ const Heading = `h${headingLevel}` as 'h2' | 'h3'
       </p>
     )}
     <Heading class={slots.title({ class: linkTitle ? 'text-[color:var(--color-link,var(--color-accent))]' : undefined })}>
-      <a href={safeHref(href)} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{title}</a>
+      {href ? <a href={safeHref(href)} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{title}</a> : title}
     </Heading>
     {below && (author || date) && (
       <p class={slots.meta()}>

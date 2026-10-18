@@ -102,8 +102,11 @@ const metaDescription = describePage({
       <div class="mx-auto flex max-w-(--container-prose) flex-col gap-24" style={siteConfig.lists.text ? `--text-body: ${siteConfig.lists.text}` : undefined}>
         {cards.map((card, index) => (
           <article class="flex flex-col gap-6">
-            {card.image && <a href={safeHref(card.href)} tabindex="-1" aria-hidden="true"><KitImage image={{ ...card.image, alt: '' }} priority={index === 0} sizes="(min-width: 768px) 46rem, 100vw" class="h-auto w-full rounded-[var(--radius-image,0.75rem)] object-cover" /></a>}
-            <h2 class="text-3xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight"><a href={safeHref(card.href)} class:list={[siteConfig.chrome?.titleLinks ? 'text-[color:var(--color-link,var(--color-accent))]' : 'text-ink', 'no-underline hover:underline']}>{card.title}</a></h2>
+            {/* An entry with no page of its own (a list-only type's) prints its image and title unlinked. */}
+            {card.image && (card.href
+              ? <a href={safeHref(card.href)} tabindex="-1" aria-hidden="true"><KitImage image={{ ...card.image, alt: '' }} priority={index === 0} sizes="(min-width: 768px) 46rem, 100vw" class="h-auto w-full rounded-[var(--radius-image,0.75rem)] object-cover" /></a>
+              : <KitImage image={{ ...card.image, alt: '' }} priority={index === 0} sizes="(min-width: 768px) 46rem, 100vw" class="h-auto w-full rounded-[var(--radius-image,0.75rem)] object-cover" />)}
+            <h2 class="text-3xl leading-tight [font-weight:var(--font-weight-heading,700)] tracking-tight">{card.href ? <a href={safeHref(card.href)} class:list={[siteConfig.chrome?.titleLinks ? 'text-[color:var(--color-link,var(--color-accent))]' : 'text-ink', 'no-underline hover:underline']}>{card.title}</a> : card.title}</h2>
             {bodies[index] && <Prose html={bodies[index]} searchable={false} />}
             {card.date && <time datetime={card.date.toISOString()} class="text-sm text-ink-muted">{formatDay(card.date, site.language)}</time>}
           </article>

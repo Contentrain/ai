@@ -48,8 +48,11 @@ export interface CustomType {
    * Absent: the type's pages show no thread.
    */
   model?: string
-  /** Address of one entry: `/projects/:slug/`. */
-  single: string
+  /**
+   * Address of one entry: `/projects/:slug/`. Absent: a list-only type, whose entries have no page of their own (WordPress
+   * gives them only a query address): they print by title, unlinked, in the archive and term lists, and nothing links to them.
+   */
+  single?: string
   /** `label`: the word the source's archive title prints before the name ("Archives: Projects"), where `lists.prefixed`. */
   archive?: { pattern: string, title: string, label?: string }
   /** Term lists: the entries whose `field` (a `relations` field) holds the term, at `pattern` (`/project-type/:slug/`). */

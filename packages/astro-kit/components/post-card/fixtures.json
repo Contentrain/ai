@@ -73,5 +73,17 @@
       }
     },
     "frame": "narrow"
+  },
+  {
+    "name": "unlinked",
+    "props": {
+      "title": "Fast support, every time",
+      "excerpt": "Moved forty sites without a single ticket left open.",
+      "category": {
+        "label": "Agencies",
+        "href": "/quote-category/agencies/"
+      }
+    },
+    "frame": "narrow"
   }
 ]

@@ -51,7 +51,11 @@ export function targetsOf(types: readonly CustomType[], entries: ReadonlyMap<str
   const out = new Map<string, { href: string, title: string }>()
   const titleOf = (entry: TypeEntry, field: string) => text(entry.data[field]) ?? text(entry.data.name) ?? entry.id
   for (const type of types) {
-    for (const entry of entries.get(type.collection) ?? []) out.set(`${type.collection}:${entry.id}`, { href: entryHref(type, entry), title: titleOf(entry, type.card.title) })
+    // A list-only type's entry has no page: a relation to it prints its title, as one to an entry without a target does.
+    for (const entry of entries.get(type.collection) ?? []) {
+      const href = entryHref(type, entry)
+      if (href) out.set(`${type.collection}:${entry.id}`, { href, title: titleOf(entry, type.card.title) })
+    }
     for (const taxonomy of type.taxonomies ?? []) {
       const terms = termsById(taxonomy.collection, entries.get(taxonomy.collection) ?? [])
       for (const term of terms.values()) out.set(`${taxonomy.collection}:${term.id}`, { href: termHref(taxonomy, term, terms), title: titleOf(term, 'name') })

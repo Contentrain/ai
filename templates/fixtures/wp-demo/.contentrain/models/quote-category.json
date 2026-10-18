@@ -1,0 +1,28 @@
+{
+  "domain": "custom",
+  "fields": {
+    "name": {
+      "label": "Name",
+      "order": 10,
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "label": "Slug",
+      "order": 20,
+      "type": "slug",
+      "required": true,
+      "unique": true
+    },
+    "wp_id": {
+      "label": "WP term ID",
+      "order": 30,
+      "type": "integer"
+    }
+  },
+  "i18n": false,
+  "id": "quote-category",
+  "kind": "collection",
+  "name": "Quote categories",
+  "title_field": "name"
+}
