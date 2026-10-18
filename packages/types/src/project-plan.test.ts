@@ -178,6 +178,12 @@ describe('validateProjectPlan', () => {
     expect(errorsFor({ 'text-display': 'clamp(3rem, 6vw, 20vw)' })).toEqual(['tokens.roles.text-display clamp(3rem, 6vw, 20vw) is larger than 9rem or not held to a largest size'])
     expect(errorsFor({ 'text-display': 'min(12vw, 30vw)' })).toEqual(['tokens.roles.text-display min(12vw, 30vw) is larger than 9rem or not held to a largest size'])
     expect(errorsFor({ 'text-display': 'min(12vw, 8rem)' })).toEqual([])
+    // One call, closed at the end, nothing outside it: a trailing expression after a bounded call grows unbounded.
+    expect(errorsFor({ 'text-display': 'min(8rem, 1rem) + calc(50vw)' })).toEqual(['tokens.roles.text-display min(8rem, 1rem) + calc(50vw) is larger than 9rem or not held to a largest size'])
+    for (const trailing of ['min(8rem, 1rem) + calc(50vw)', 'clamp(3rem, 6vw, 8rem) + 10vw', 'clamp(3rem, 6vw, 8rem) clamp(1rem, 50vw, 99vw)', 'min(8rem, 10vw)*3']) {
+      // Refused either as no CSS size or as unheld; never accepted.
+      expect(errorsFor({ 'text-display': trailing }), trailing).toEqual([expect.stringMatching(new RegExp(`^tokens\\.roles\\.text-display ${trailing.replace(/[()*+.]/g, '\\$&')} is (?:not a CSS size|larger than 9rem or not held to a largest size)$`))])
+    }
     expect(errorsFor({ 'text-display': 'calc(2rem + 10vw)' })).toEqual(['tokens.roles.text-display calc(2rem + 10vw) is larger than 9rem or not held to a largest size'])
   })
 

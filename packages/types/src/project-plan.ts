@@ -534,26 +534,36 @@ function absoluteRem(value: string): number | undefined {
   const m = /^(\d+(?:\.\d+)?|\.\d+)(px|rem|em)$/.exec(value.trim())
   return m ? Number(m[1]) / (m[2] === 'px' ? 16 : 1) : undefined
 }
-/** The arguments of a top-level function, split at its own commas (`clamp(a, calc(b, c), d)` → three). */
-function argsOf(value: string): string[] {
-  const inner = value.slice(value.indexOf('(') + 1, -1)
+/**
+ * The arguments of `value` when it is exactly one call of `fn` (`clamp(a, calc(b, c), d)` → three), its closing paren the
+ * last character and nothing outside it; else undefined (`min(8rem, 1rem) + calc(50vw)` is not one call).
+ */
+function wholeCall(value: string, fn: 'clamp' | 'min'): string[] | undefined {
+  if (!value.startsWith(`${fn}(`)) return undefined
   const out: string[] = []
   let depth = 0
-  let from = 0
-  for (let i = 0; i < inner.length; i++) {
-    if (inner[i] === '(') depth++
-    else if (inner[i] === ')') depth--
-    else if (inner[i] === ',' && depth === 0) { out.push(inner.slice(from, i)); from = i + 1 }
+  let from = fn.length + 1
+  for (let i = fn.length; i < value.length; i++) {
+    const c = value[i]
+    if (c === '(') depth++
+    else if (c === ')') {
+      depth--
+      if (depth === 0) return i === value.length - 1 ? [...out, value.slice(from, i)] : undefined
+    }
+    else if (c === ',' && depth === 1) { out.push(value.slice(from, i)); from = i + 1 }
   }
-  return [...out, inner.slice(from)]
+  return undefined
 }
 function displayTooLarge(value: string): boolean {
   const lengths = [...value.matchAll(/(\d+(?:\.\d+)?|\.\d+)(px|rem|em)\b/g)].map(m => Number(m[1]) / (m[2] === 'px' ? 16 : 1))
   if (lengths.some(rem => rem > DISPLAY_MAX_REM)) return true
   if (!/\d(?:vw|vh|vmin|vmax|%)/.test(value)) return false
-  // A size that grows with the screen is held by an absolute largest size: clamp()'s last argument, or one of min()'s.
-  if (value.startsWith('clamp(')) return absoluteRem(argsOf(value)[2] ?? '') === undefined
-  if (value.startsWith('min(')) return !argsOf(value).some(arg => absoluteRem(arg) !== undefined)
+  // A size that grows with the screen is exactly one clamp() whose largest size is absolute, or one min() with an absolute
+  // argument; anything else that grows (a sum, a calc(), a trailing expression) is refused, not read case by case.
+  const clamp = wholeCall(value, 'clamp')
+  if (clamp) return clamp.length !== 3 || absoluteRem(clamp[2]!) === undefined
+  const min = wholeCall(value, 'min')
+  if (min) return !min.some(arg => absoluteRem(arg) !== undefined)
   return true
 }
 const CSS_LENGTH = /^(?!.*url\()(?:\d+(?:\.\d+)?(?:px|rem|em|%)|(?:clamp|calc|min|max)\([\d\s.,+*/()a-z%-]+\))$/
