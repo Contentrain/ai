@@ -1,5 +1,12 @@
 # @contentrain/decide
 
+## 0.2.47
+
+### Patch Changes
+
+- Updated dependencies [1bdca2f]
+  - @contentrain/types@1.66.0
+
 ## 0.2.46
 
 ### Patch Changes
