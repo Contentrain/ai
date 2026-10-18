@@ -52,6 +52,17 @@
       "default": "default",
       "description": "Section background when nothing is measured."
     },
+    "inset": {
+      "options": [
+        "none",
+        "15",
+        "27",
+        "34",
+        "42"
+      ],
+      "default": "none",
+      "description": "Layout stack only (split ignores it). From md (768px) up, the band's content (copy, image and items) starts at this share of the frame's width and runs to its end, its text at that edge (a centred band's too): a narrow talk beside a wide margin. Below md it is the full column. none: as before."
+    },
     "headingLines": {
       "options": [
         "flow",

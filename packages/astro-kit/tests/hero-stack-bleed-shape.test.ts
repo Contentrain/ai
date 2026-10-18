@@ -8,7 +8,7 @@ const read = (...path: string[]) => readFile(join(COMPONENTS, ...path), 'utf8')
 describe('the hero\'s image first, to the window\'s edge, and Split\'s masks', () => {
   it('leaves a hero and a split as they were unless the new options are asked for', async () => {
     const hero = await read('hero', 'Hero.astro')
-    expect(hero).toContain("headingLines: 'flow', stackOrder: 'text-first', imageBleed: 'none' }")
+    expect(hero).toContain("headingLines: 'flow', stackOrder: 'text-first', inset: 'none', imageBleed: 'none' }")
     expect(hero).toContain("stackOrder: { 'text-first': {}, 'media-first': { media: 'order-first' } }")
     expect(hero).toContain("const bleeds = !cover && image && imageBleed !== undefined && imageBleed !== 'none'")
     expect(hero).toContain("class={bleeds ? 'overflow-x-clip' : undefined}")

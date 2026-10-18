@@ -15,6 +15,7 @@ import { muted } from '../_shared/muted'
 
 const band = tv({
   slots: {
+    column: 'flex flex-col gap-10',
     grid: 'grid gap-10',
     copy: 'flex max-w-3xl flex-col gap-4',
     eyebrow: 'text-sm font-semibold tracking-wide text-accent-text uppercase',
@@ -46,8 +47,18 @@ const band = tv({
     },
     // Accent backgrounds have the least contrast headroom: text on them is never dimmed.
     tone: { default: {}, muted: {}, inverse: {}, accent: { eyebrow: 'text-current' } },
+    // Stack only (split ignores it): from md the band's content starts at this share of the frame's width and runs to
+    // its end, its text at that edge; below md it is the full column, as without it.
+    inset: { none: {}, '15': {}, '27': {}, '34': {}, '42': {} },
   },
-  defaultVariants: { layout: 'stack', columns: '3', align: 'start', tone: 'default' },
+  compoundVariants: [
+    { layout: 'stack', inset: '15', class: { column: 'md:ms-[15%]' } },
+    { layout: 'stack', inset: '27', class: { column: 'md:ms-[27%]' } },
+    { layout: 'stack', inset: '34', class: { column: 'md:ms-[34%]' } },
+    { layout: 'stack', inset: '42', class: { column: 'md:ms-[42%]' } },
+    { layout: 'stack', align: 'center', inset: ['15', '27', '34', '42'], class: { copy: 'md:mx-0 md:items-start md:text-start', actions: 'md:justify-start', item: 'md:items-start md:text-start' } },
+  ],
+  defaultVariants: { layout: 'stack', columns: '3', align: 'start', tone: 'default', inset: 'none' },
 })
 
 interface Item {
@@ -88,12 +99,14 @@ interface Props {
   headingLines?: 'flow' | 'lines' | undefined
   /** The same for the lead: `lines` draws each of its lines as a block, still one paragraph. */
   leadLines?: 'flow' | 'lines' | undefined
+  /** Stack only: from md the content starts at this share of the frame's width (`15` … `42` %), its text at that edge. `none` (absent): as before. */
+  inset?: 'none' | '15' | '27' | '34' | '42' | undefined
 }
 
-const { heading, eyebrow, lead, media, items = [], actions = [], headingLevel = 2, layout, columns, align, tone, measured, id, headingLines, leadLines } = Astro.props
+const { heading, eyebrow, lead, media, items = [], actions = [], headingLevel = 2, layout, columns, align, tone, measured, id, headingLines, leadLines, inset } = Astro.props
 // The measured alignment when none is given (`end` has no band layout: it reads as `start`).
 const aligned = align ?? (measured?.align === 'center' ? 'center' : undefined)
-const s = band({ layout: media ? layout : 'stack', columns, align: aligned, tone })
+const s = band({ layout: media ? layout : 'stack', columns, align: aligned, tone, inset })
 const Heading = `h${headingLevel}` as 'h2' | 'h3'
 const ItemHeading = `h${heading ? headingLevel + 1 : headingLevel}` as 'h2' | 'h3' | 'h4'
 // Two bands with the same heading on one page get two ids (`band-<heading>`, then `band-<heading>-2`).
@@ -101,7 +114,7 @@ const headingId = heading ? (id ? `${id}-title` : instanceId(Astro.locals, undef
 const hasCopy = Boolean(heading || eyebrow || lead || actions.length)
 ---
 <Section kit="band" tone={tone} id={id} aria-labelledby={headingId} measured={measured}>
-  <div class="flex flex-col gap-10">
+  <div class={s.column()}>
     {(hasCopy || media) && (
       <div class={s.grid()}>
         {hasCopy && (
