@@ -132,6 +132,34 @@ describe('validateProjectPlan', () => {
     }
   })
 
+  it('accepts a direction\'s display voice and its fields as roles', () => {
+    const p = plan()
+    p.site.tokens.roles = {
+      ...p.site.tokens.roles,
+      'text-display': 'clamp(3rem, 1.5rem + 5vw, 6.5rem)', 'text-lead': '1.25rem', 'leading-display': '0.95', 'tracking-display': '-0.03em', 'case-heading': 'uppercase',
+      'color-field-1': '#1d3b2a', 'color-field-1-ink': '#f4efe6', 'color-field-4': 'rgb(240 230 210)', 'color-field-4-ink': '#222',
+    }
+    expect(validateProjectPlan(p).errors).toEqual([])
+  })
+
+  it('refuses a display voice or a field that is not the CSS it names, and a field without its ink', () => {
+    const p = plan()
+    p.site.tokens.roles = {
+      ...p.site.tokens.roles,
+      'text-display': 'huge', 'text-lead': '1rem; } h1 { display: none', 'leading-display': '1.1rem', 'tracking-display': 'tight', 'case-heading': 'small-caps',
+      'color-field-1': 'url(//evil.test/x)', 'color-field-1-ink': '#fff', 'color-field-2': '#123456',
+    }
+    expect(validateProjectPlan(p).errors).toEqual(expect.arrayContaining([
+      'tokens.roles.text-display huge is not a CSS size',
+      'tokens.roles.text-lead 1rem; } h1 { display: none is not a CSS size',
+      'tokens.roles.leading-display 1.1rem is not a line-height',
+      'tokens.roles.tracking-display tight is not a letter-spacing',
+      'tokens.roles.case-heading small-caps is not uppercase or none',
+      'tokens.roles.color-field-1 url(//evil.test/x) is not a colour',
+      'tokens.roles.color-field-2 is set without its ink, or its ink without it',
+    ]))
+  })
+
   it(':category is a post address token only', () => {
     const p = plan()
     p.site.permalinks.post = '/:category/:slug/'

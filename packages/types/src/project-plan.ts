@@ -45,6 +45,13 @@ export const PLAN_TOKEN_ROLES = [
   // Headings' own face and letter spacing (a design direction's display face and track). Absent: a heading inherits its
   // face and draws its own track, as before. `tracking-heading` is a letter-spacing (`-0.02em`, `0`, `normal`).
   'font-heading', 'tracking-heading',
+  // A design direction's own voice: the display size, leading and track of a page's opening heading (above
+  // `text-heading-1`), and the lead paragraph's size. Absent: the opening heading is an h1 like any other.
+  // `case-heading`: `uppercase` where the direction draws its headings in capitals (the content keeps its own case).
+  'text-display', 'text-lead', 'leading-display', 'tracking-display', 'case-heading',
+  // A design direction's coloured fields: up to four grounds a section can sit on, each with the text that reads on
+  // it (`color-field-1-ink`). A field is set only together with its ink. Absent: sections keep the kit's tones.
+  'color-field-1', 'color-field-1-ink', 'color-field-2', 'color-field-2-ink', 'color-field-3', 'color-field-3-ink', 'color-field-4', 'color-field-4-ink',
 ] as const
 export type PlanTokenRole = (typeof PLAN_TOKEN_ROLES)[number]
 
@@ -507,6 +514,8 @@ const LETTER_SPACING = /^(?:normal|-?\d+(?:\.\d+)?(?:px|rem|em))$/
 const CSS_COLOR = /^(?:#[0-9a-f]{3,8}|(?:rgb|hsl)a?\([\d\s.,%/deg]+\))$/i
 /** A letter-spacing: `normal`, `0`, or a signed length in em, rem or px. */
 const CSS_TRACKING = /^(?:normal|0|-?(?:\d+(?:\.\d+)?|\.\d+)(?:em|rem|px))$/
+/** A line-height: a unitless number (`1.05`, `.95`) or `normal`. */
+const CSS_LEADING = /^(?:normal|\d+(?:\.\d+)?|\.\d+)$/
 const CSS_LENGTH = /^(?!.*url\()(?:\d+(?:\.\d+)?(?:px|rem|em|%)|(?:clamp|calc|min|max)\([\d\s.,+*/()a-z%-]+\))$/
 
 /**
@@ -671,8 +680,26 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     const value = site?.tokens?.roles?.[role]
     if (value !== undefined && !CSS_LENGTH.test(value)) errors.push(`tokens.roles.${role} ${value} is not a CSS size`)
   }
-  const tracking = site?.tokens?.roles?.['tracking-heading']
-  if (tracking !== undefined && !CSS_TRACKING.test(tracking)) errors.push(`tokens.roles.tracking-heading ${tracking} is not a letter-spacing`)
+  for (const role of ['tracking-heading', 'tracking-display'] as const) {
+    const value = site?.tokens?.roles?.[role]
+    if (value !== undefined && !CSS_TRACKING.test(value)) errors.push(`tokens.roles.${role} ${value} is not a letter-spacing`)
+  }
+  for (const role of ['text-display', 'text-lead'] as const) {
+    const value = site?.tokens?.roles?.[role]
+    if (value !== undefined && !CSS_LENGTH.test(value)) errors.push(`tokens.roles.${role} ${value} is not a CSS size`)
+  }
+  const headingCase = site?.tokens?.roles?.['case-heading']
+  if (headingCase !== undefined && headingCase !== 'uppercase' && headingCase !== 'none') errors.push(`tokens.roles.case-heading ${headingCase} is not uppercase or none`)
+  const leading = site?.tokens?.roles?.['leading-display']
+  if (leading !== undefined && !CSS_LEADING.test(leading)) errors.push(`tokens.roles.leading-display ${leading} is not a line-height`)
+  for (const n of [1, 2, 3, 4] as const) {
+    const field = site?.tokens?.roles?.[`color-field-${n}`]
+    const ink = site?.tokens?.roles?.[`color-field-${n}-ink`]
+    for (const [role, value] of [[`color-field-${n}`, field], [`color-field-${n}-ink`, ink]] as const) {
+      if (value !== undefined && !CSS_COLOR.test(value)) errors.push(`tokens.roles.${role} ${value} is not a colour`)
+    }
+    if ((field === undefined) !== (ink === undefined)) errors.push(`tokens.roles.color-field-${n} is set without its ink, or its ink without it`)
+  }
 
   const models = new Map<string, PlanModel>()
   for (const m of plan.models ?? []) {
