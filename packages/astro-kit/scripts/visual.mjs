@@ -128,6 +128,7 @@ const lightboxes = []
 const billings = []
 const embeds = []
 const ids = []
+const tables = []
 /** Every real href of a menu tree (a Nav or Header `items` prop), at any depth. */
 const menuHrefs = items => (items ?? []).flatMap(item => (item.href && item.href !== '#' ? [item.href] : []).concat(menuHrefs(item.children)))
 const browser = await chromium.launch(process.platform === 'darwin' ? { channel: 'chrome' } : {})
@@ -272,6 +273,20 @@ try {
       await page.mouse.click(1, 1)
     }
     await bare.close()
+  }
+  // A wide table in prose does not widen a phone's page (zoomed out, its taps miss): on a 390 phone the page is as wide
+  // as the screen, and the table scrolls in its own box.
+  if (components.some(c => c.id === 'prose')) {
+    const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+    const page = await phone.newPage()
+    await page.goto(`${origin}/kit/prose/`, { waitUntil: 'load' })
+    // Against the screen's 390, not innerWidth: a phone widens its layout viewport to a page that overflows, so the
+    // page always fits innerWidth (1560 for a 1849px page).
+    const { scrollWidth, innerWidth } = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }))
+    if (scrollWidth > 390 || innerWidth > 390) tables.push(`prose: on a 390 phone the page is ${scrollWidth}px wide, its layout viewport ${innerWidth}px`)
+    const wide = await page.locator('[data-fixture="table-wide"] table').evaluate(el => ({ scrollWidth: el.scrollWidth, clientWidth: el.clientWidth }))
+    if (!(wide.scrollWidth > wide.clientWidth)) tables.push(`prose/table-wide: the table does not scroll in its own box (${wide.scrollWidth}px in ${wide.clientWidth}px)`)
+    await phone.close()
   }
   // A carousel set up while its page is hidden (a background tab opened with ctrl/cmd-click: no layout, visibilityState
   // "hidden") pages once the page is shown: it draws a dot per snap and "next" moves the selected one. The kit page loads
@@ -427,6 +442,7 @@ if (carousels.length) console.error(`visual: ${carousels.length} carousel(s) not
 if (embeds.length) console.error(`visual: ${embeds.length} embedded video(s) wrong:\n${embeds.map(line => `  ✗ ${line}`).join('\n')}`)
 if (lightboxes.length) console.error(`visual: ${lightboxes.length} lightbox(es) wrong:\n${lightboxes.map(line => `  ✗ ${line}`).join('\n')}`)
 if (billings.length) console.error(`visual: ${billings.length} billing toggle line(s) wrong:\n${billings.map(line => `  ✗ ${line}`).join('\n')}`)
+if (tables.length) console.error(`visual: ${tables.length} table check(s) failed:\n${tables.map(line => `  ✗ ${line}`).join('\n')}`)
 if (ids.length) console.error(`visual: ${ids.length} page(s) with shared ids:\n${ids.map(line => `  ✗ ${line}`).join('\n')}`)
 if (written.length) console.log(`visual: wrote ${written.length} baseline(s) under ${baselineDir}`)
 if (failures.length) {
@@ -434,6 +450,6 @@ if (failures.length) {
   process.exit(1)
 }
 if (hooks.length) console.error(`visual: ${hooks.length} fixture(s) whose heading ignores the theme's heading face or track:\n${hooks.map(line => `  ✗ ${line}`).join('\n')}`)
-if (outline.length || menus.length || carousels.length || embeds.length || lightboxes.length || billings.length || ids.length || hooks.length) process.exit(1)
+if (outline.length || menus.length || carousels.length || embeds.length || lightboxes.length || billings.length || ids.length || tables.length || hooks.length) process.exit(1)
 console.log(`visual: ${components.length} component(s) × ${WIDTHS.length} widths match`)
 if (!values.out) rmSync(site, { recursive: true, force: true })
