@@ -160,6 +160,24 @@ describe('validateProjectPlan', () => {
     ]))
   })
 
+  it('holds the display voice to the design layer\'s floors and ceiling', () => {
+    const p = plan()
+    const errorsFor = (roles: Record<string, string>) => {
+      p.site.tokens.roles = { ...plan().site.tokens.roles, ...roles }
+      return validateProjectPlan(p).errors
+    }
+    for (const ok of [{ 'leading-display': '0.8' }, { 'leading-display': 'normal' }, { 'tracking-display': '-0.05em' }, { 'tracking-display': '-2px' }, { 'text-display': 'clamp(3rem, 1.5rem + 6vw, 9rem)' }, { 'text-display': '144px' }] as Array<Record<string, string>>) {
+      expect(errorsFor(ok), JSON.stringify(ok)).toEqual([])
+    }
+    expect(errorsFor({ 'leading-display': '0.5' })).toEqual(['tokens.roles.leading-display 0.5 sets lines tighter than 0.8'])
+    expect(errorsFor({ 'tracking-display': '-0.08em' })).toEqual(['tokens.roles.tracking-display -0.08em sets letters tighter than -0.05em'])
+    expect(errorsFor({ 'tracking-display': '-1rem' })).toEqual(['tokens.roles.tracking-display -1rem sets letters tighter than -0.05em'])
+    expect(errorsFor({ 'tracking-display': '-3px' })).toEqual(['tokens.roles.tracking-display -3px sets letters tighter than -0.05em'])
+    expect(errorsFor({ 'text-display': '40rem' })).toEqual(['tokens.roles.text-display 40rem is larger than 9rem or not held to a largest size'])
+    expect(errorsFor({ 'text-display': 'clamp(3rem, 2rem + 8vw, 12rem)' })).toEqual(['tokens.roles.text-display clamp(3rem, 2rem + 8vw, 12rem) is larger than 9rem or not held to a largest size'])
+    expect(errorsFor({ 'text-display': 'calc(2rem + 10vw)' })).toEqual(['tokens.roles.text-display calc(2rem + 10vw) is larger than 9rem or not held to a largest size'])
+  })
+
   it(':category is a post address token only', () => {
     const p = plan()
     p.site.permalinks.post = '/:category/:slug/'
