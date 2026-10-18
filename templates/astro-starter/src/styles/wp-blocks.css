@@ -268,7 +268,9 @@
 /* A table with no table block around it (the classic editor's, or hand-written) is wrapped in a scroll region when the
    page is built (lib/body-tables.ts): a wide one stays inside the column instead of widening the page, and the table
    keeps its own display, so screen readers still read it as a table. The region takes focus to scroll by keyboard. */
-.prose .table-scroll { overflow-x: auto; margin-block: 2em; }
+/* Positioned, so text placed absolutely inside the table (WordPress's screen-reader-text) is held by the region and
+   scrolls with it, rather than widen the page from wherever the table ends. */
+.prose .table-scroll { position: relative; overflow-x: auto; margin-block: 2em; }
 .prose .table-scroll table { margin: 0; }
 .prose .table-scroll:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 /* A net for a table that reached the page some other way, unwrapped: it scrolls in its own box rather than widen the
