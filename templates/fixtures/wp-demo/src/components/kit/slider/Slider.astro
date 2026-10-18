@@ -52,6 +52,8 @@ interface Props {
   measured?: MeasuredStyle | undefined
   /** Unique on the page: names the track the buttons control. */
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
 const props = Astro.props
@@ -59,5 +61,5 @@ const props = Astro.props
 const id = props.measured ? instanceId(Astro.locals, props.id, 'slider') : undefined
 ---
 {props.measured
-  ? <Section kit="slider" measured={props.measured} tone="none" spacing="sm" id={id}><SliderTrack {...props} id={id} framed={false} /></Section>
+  ? <Section kit="slider" measured={props.measured} tone="none" spacing="sm" id={id} entry={Astro.props.entry}><SliderTrack {...props} id={id} framed={false} /></Section>
   : <SliderTrack {...props} />}

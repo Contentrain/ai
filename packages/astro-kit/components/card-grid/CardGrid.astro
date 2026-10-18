@@ -90,6 +90,8 @@ interface Props {
   measured?: MeasuredStyle | undefined
   /** Section id, unique per page; without one `card-grid`, `card-grid-2`, … in render order. Its title is `<id>-title`. */
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
 const { title, intro, items, headingLevel = 2, columns, style, align, tone, measured, id: givenId, layout, index = false } = Astro.props
@@ -104,7 +106,7 @@ const r = rows({ index })
 const List = index ? 'ol' : 'ul'
 const number = (i: number) => String(i + 1).padStart(2, '0')
 ---
-<Section kit="card-grid" measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
+<Section kit="card-grid" measured={measured} tone={tone} id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
   {(title || intro) && (
     <header class:list={['mb-10 flex max-w-2xl flex-col gap-3', align === 'center' && 'mx-auto items-center text-center']}>
       {title && <Heading id={headingId} class="text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl">{title}</Heading>}

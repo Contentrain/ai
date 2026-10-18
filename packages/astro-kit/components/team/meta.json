@@ -130,6 +130,7 @@
       },
       "description": "The people, in display order (Divi team member name/position/content/image_url, Elementor image box)."
     },
+    "entry": { "type": "string", "content": false, "description": "The page entry this section is built from, without its locale (services-0): printed as data-kit-entry, the hook a design layer styles this one section by. Absent, none is printed." },
     "id": {
       "type": "string",
       "content": false,

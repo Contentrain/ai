@@ -101,6 +101,8 @@ interface Props {
   leadLines?: 'flow' | 'lines' | undefined
   /** Stack only: from md the content starts at this share of the frame's width (`15` … `42` %), its text at that edge. `none` (absent): as before. */
   inset?: 'none' | '15' | '27' | '34' | '42' | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
 const { heading, eyebrow, lead, media, items = [], actions = [], headingLevel = 2, layout, columns, align, tone, measured, id, headingLines, leadLines, inset } = Astro.props
@@ -113,7 +115,7 @@ const ItemHeading = `h${heading ? headingLevel + 1 : headingLevel}` as 'h2' | 'h
 const headingId = heading ? (id ? `${id}-title` : instanceId(Astro.locals, undefined, `band-${heading.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`)) : undefined
 const hasCopy = Boolean(heading || eyebrow || lead || actions.length)
 ---
-<Section kit="band" tone={tone} id={id} aria-labelledby={headingId} measured={measured}>
+<Section kit="band" tone={tone} id={id} aria-labelledby={headingId} measured={measured} entry={Astro.props.entry}>
   <div class={s.column()}>
     {(hasCopy || media) && (
       <div class={s.grid()}>

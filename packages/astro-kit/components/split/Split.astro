@@ -99,6 +99,8 @@ interface Props {
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
 const { heading, headingLevel = 2, eyebrow, body, actions = [], image, features = [], videoUrl, playLabel, imageSide, ratio = '1:1', imageFit, imageShape, imageBleed, mediaKind, featureStyle = 'check', stackOrder, sticky = false, align, tone, measured, id: givenId } = Astro.props
@@ -112,7 +114,7 @@ const video = mediaKind === 'video' && videoUrl
 const headingId = heading ? `${id}-title` : undefined
 const html = await renderMarkdown(body)
 ---
-<Section kit="split" measured={measured} tone={tone} id={id} aria-labelledby={headingId} class={bleed ? 'overflow-x-clip' : undefined}>
+<Section kit="split" measured={measured} tone={tone} id={id} aria-labelledby={headingId} class={bleed ? 'overflow-x-clip' : undefined} entry={Astro.props.entry}>
   <div class:list={[s.grid(), columns]}>
     <div class={s.copy()}>
       {eyebrow && <p class={s.eyebrow()}>{eyebrow}</p>}

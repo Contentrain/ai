@@ -82,11 +82,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 
 type Fixture = { name: string, frame?: 'dark' | 'tall' | 'narrow' | 'overlay' | 'page', theme?: Record<string, string>, props: ComponentProps<typeof Component> }
 const fixtures = ${fixtures.trim()} satisfies Fixture[]
+// A section component is told its fixture's name as its page entry, as a site's page tells it its entry key: the hook is
+// checked on the rendered page (it prints an attribute only, so no shot moves).
+const entries = ${c.props.entry ? 'true' : 'false'}
+const propsOf = (fixture: Fixture) => (entries ? { ...fixture.props, entry: fixture.name } : fixture.props)
 ---
 <BaseLayout title="Kit: ${pascal(c.id)}" noindex>
   {(fixtures as Fixture[]).map(fixture => (
     <div data-fixture={fixture.name} class:list={['relative', fixture.frame === 'dark' && 'bg-ink pb-40', fixture.frame === 'tall' && 'min-h-[40rem]', fixture.frame === 'overlay' && 'min-h-64 [transform:translateZ(0)]']} style={fixture.theme ? Object.entries(fixture.theme).map(([name, value]) => \`\${name}: \${value}\`).join('; ') : undefined}>
-      {fixture.frame === 'narrow' ? <div class="container-page py-6"><div class="max-w-sm"><Component {...fixture.props} /></div></div> : fixture.frame === 'page' ? <div class="container-page py-6"><Component {...fixture.props} /></div> : <Component {...fixture.props} />}
+      {fixture.frame === 'narrow' ? <div class="container-page py-6"><div class="max-w-sm"><Component {...propsOf(fixture)} /></div></div> : fixture.frame === 'page' ? <div class="container-page py-6"><Component {...propsOf(fixture)} /></div> : <Component {...propsOf(fixture)} />}
     </div>
   ))}
 </BaseLayout>
@@ -130,6 +134,7 @@ const embeds = []
 const ids = []
 const tables = []
 const widths = []
+const sections = []
 /** Every real href of a menu tree (a Nav or Header `items` prop), at any depth. */
 const menuHrefs = items => (items ?? []).flatMap(item => (item.href && item.href !== '#' ? [item.href] : []).concat(menuHrefs(item.children)))
 const browser = await chromium.launch(process.platform === 'darwin' ? { channel: 'chrome' } : {})
@@ -155,6 +160,14 @@ try {
           return [...seen].filter(([, n]) => n > 1).map(([id, n]) => `${id} ×${n}`)
         })
         if (twice.length) ids.push(`${c.id}: ${twice.join(', ')}`)
+        // Every section a section component renders names the component and the page entry it was built from.
+        if (c.props.entry) {
+          for (const element of await page.locator('[data-fixture]').all()) {
+            const name = await element.getAttribute('data-fixture')
+            const roots = await element.locator('[data-kit-section]').evaluateAll(els => els.map(el => [el.getAttribute('data-kit-section'), el.getAttribute('data-kit-entry')]))
+            if (!roots.some(([kit, entry]) => kit === c.id && entry === name)) sections.push(`${c.id}/${name}: no section root with data-kit-section="${c.id}" data-kit-entry="${name}" (${JSON.stringify(roots)})`)
+          }
+        }
         for (const element of await page.locator('[data-fixture]').all()) {
           const opener = element.locator('button[popovertarget]:not([popovertargetaction="hide"])').first()
           if (!await opener.count()) continue
@@ -288,6 +301,12 @@ try {
     // The fixtures hold what a page renders: the starter wraps such a table in a region (lib/body-tables.ts).
     const wide = await page.locator('[data-fixture="table-wide"] .table-scroll').evaluate(el => ({ scrollWidth: el.scrollWidth, clientWidth: el.clientWidth }))
     if (!(wide.scrollWidth > wide.clientWidth)) tables.push(`prose/table-wide: the table's region does not scroll (${wide.scrollWidth}px in ${wide.clientWidth}px)`)
+    // Screen-reader text in a table is placed absolutely: the box the table scrolls in holds it (its containing block),
+    // so it scrolls with the table instead of widening the page from wherever the table ends. The nearest such box: the
+    // table block's figure or the built region, else (unwrapped) the table itself.
+    for (const loose of await page.locator('[data-fixture] table .screen-reader-text').evaluateAll(els => els.filter(el => el.offsetParent !== (el.closest('.wp-block-table, .table-scroll') ?? el.closest('table'))).map(el => `${el.closest('[data-fixture]').dataset.fixture}: held by ${el.offsetParent?.tagName.toLowerCase()}.${[...el.offsetParent?.classList ?? []].join('.')}`))) {
+      tables.push(`prose/${loose}, not by the box its table scrolls in`)
+    }
     // The table keeps its own display, so a screen reader still reads it as a table.
     for (const display of await page.locator('[data-fixture^="table-"] table').evaluateAll(els => els.map(el => getComputedStyle(el).display))) {
       if (display !== 'table') tables.push(`prose: a table in a scroll region is drawn as ${display}, not as a table`)
@@ -462,6 +481,7 @@ if (lightboxes.length) console.error(`visual: ${lightboxes.length} lightbox(es) 
 if (billings.length) console.error(`visual: ${billings.length} billing toggle line(s) wrong:\n${billings.map(line => `  ✗ ${line}`).join('\n')}`)
 if (tables.length) console.error(`visual: ${tables.length} table check(s) failed:\n${tables.map(line => `  ✗ ${line}`).join('\n')}`)
 if (widths.length) console.error(`visual: ${widths.length} page width check(s) failed:\n${widths.map(line => `  ✗ ${line}`).join('\n')}`)
+if (sections.length) console.error(`visual: ${sections.length} section hook(s) missing:\n${sections.map(line => `  ✗ ${line}`).join('\n')}`)
 if (ids.length) console.error(`visual: ${ids.length} page(s) with shared ids:\n${ids.map(line => `  ✗ ${line}`).join('\n')}`)
 if (written.length) console.log(`visual: wrote ${written.length} baseline(s) under ${baselineDir}`)
 if (failures.length) {
@@ -469,6 +489,6 @@ if (failures.length) {
   process.exit(1)
 }
 if (hooks.length) console.error(`visual: ${hooks.length} fixture(s) whose heading ignores the theme's heading face or track:\n${hooks.map(line => `  ✗ ${line}`).join('\n')}`)
-if (outline.length || menus.length || carousels.length || embeds.length || lightboxes.length || billings.length || ids.length || tables.length || widths.length || hooks.length) process.exit(1)
+if (outline.length || menus.length || carousels.length || embeds.length || lightboxes.length || billings.length || ids.length || tables.length || widths.length || sections.length || hooks.length) process.exit(1)
 console.log(`visual: ${components.length} component(s) × ${WIDTHS.length} widths match`)
 if (!values.out) rmSync(site, { recursive: true, force: true })

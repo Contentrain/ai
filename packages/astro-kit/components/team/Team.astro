@@ -82,6 +82,8 @@ interface Props {
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
 const { heading, intro, items, columns, layout, imageShape, align, bioClamp, readMoreLabel = 'Read more', socialLabel = '{name} on {network}', style, roleStyle, measured, id: givenId } = Astro.props
@@ -96,7 +98,7 @@ const headingId = heading ? `${id}-title` : undefined
 const NameHeading = heading ? 'h3' : 'h2'
 ---
 {items.length > 0 && (
-  <Section kit="team" measured={measured} id={id} aria-labelledby={headingId}>
+  <Section kit="team" measured={measured} id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
     {(heading || intro) && (
       <header class={s.header()}>
         {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}

@@ -117,6 +117,8 @@ interface Props {
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
   id?: string | undefined
+  /** The page entry this section is built from, without its locale (`services-0`): `data-kit-entry`, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
 }
 
 const { heading, intro, plans, featuredLabel = 'Most popular', columns, layout = 'cards', featureStyle, compact, billingToggle = 'none', billingMainLabel = 'Monthly', billingAltLabel = 'Yearly', billingLegend = 'Billing period', billingAltNote, wasLabel = 'Was', includedLabel = 'Included', notIncludedLabel = 'Not included', tone, measured, id: givenId } = Astro.props
@@ -136,7 +138,7 @@ const PlanHeading = heading ? 'h3' : 'h2'
 const features = await Promise.all(plans.map(plan => renderMarkdown(plan.features)))
 ---
 {plans.length > 0 && (
-  <Section kit="pricing" measured={measured} tone={tone} id={id} aria-labelledby={headingId}>
+  <Section kit="pricing" measured={measured} tone={tone} id={id} aria-labelledby={headingId} entry={Astro.props.entry}>
     {(heading || intro) && (
       <header class={s.header()}>
         {heading && <h2 id={headingId} class={s.heading()}>{heading}</h2>}

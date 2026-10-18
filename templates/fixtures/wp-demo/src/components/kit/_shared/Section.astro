@@ -46,11 +46,13 @@ interface Props {
   'aria-labelledby'?: string | undefined
   /** The component this section is (`hero`, `card-grid`): `data-kit-section`'s value, the hook a theme or a design layer styles one kind of section by. */
   kit?: string | undefined
+  /** The page entry the section is built from, without its locale (`services-0`): `data-kit-entry`'s value, the hook a design layer styles this one section by. Absent, none is printed. */
+  entry?: string | undefined
   /** The source section's measured style (`MeasuredStyle`): frame width, padding, fill, image, columns, gap. Wins over `tone`. */
   measured?: MeasuredStyle | undefined
 }
 
-const { tone: given, spacing, width = 'page', as: Tag = 'section', id, class: className, 'aria-labelledby': labelledBy, kit, measured } = Astro.props
+const { tone: given, spacing, width = 'page', as: Tag = 'section', id, class: className, 'aria-labelledby': labelledBy, kit, entry, measured } = Astro.props
 const m = measuredFrame(measured)
 // A measured fill is the section's own colour, its text set by the measured tone; a tone alone picks the kit's band.
 const tone = m.color ? 'none' : m.tone === 'dark' ? 'inverse' : m.tone === 'light' ? 'default' : given
@@ -62,7 +64,7 @@ const frameStyle = width === 'prose' ? m.frameStyle?.replace('--container-page:'
 const backdrop = safeSrc(m.image?.src)
 const dataTone = m.color ? (m.tone === 'dark' ? 'inverse' : 'default') : tone ?? 'default'
 ---
-<Tag id={id} aria-labelledby={labelledBy} class={section({ tone, spacing, class: [text, layered, className].filter(Boolean).join(' ') || undefined })} style={style} data-tone={dataTone} data-kit-section={kit ?? ''} data-kit-spacing={spacing ?? 'md'} data-kit-measured={measured ? '' : undefined}>
+<Tag id={id} aria-labelledby={labelledBy} class={section({ tone, spacing, class: [text, layered, className].filter(Boolean).join(' ') || undefined })} style={style} data-tone={dataTone} data-kit-section={kit ?? ''} data-kit-entry={entry} data-kit-spacing={spacing ?? 'md'} data-kit-measured={measured ? '' : undefined}>
   {m.image && backdrop && <img src={backdrop} alt="" loading="lazy" decoding="async" class="absolute inset-0 -z-10 h-full w-full" style={`object-fit: ${m.image.fit}${m.image.position ? `; object-position: ${m.image.position}` : ''}`} />}
   {m.overlay && <div class="absolute inset-0 -z-10" style={`background: ${m.overlay}`} aria-hidden="true" />}
   {width === 'none' ? <slot /> : <div class={width === 'prose' ? 'container-prose' : 'container-page'} style={frameStyle}><slot /></div>}
