@@ -571,6 +571,27 @@ describe('validateProjectPlan', () => {
     expect(validateProjectPlan(p).errors.some(e => e.endsWith('facts interactive:cc33 is not a planned behavior'))).toBe(true)
     p.routes[1]!.sections[0]!.facts = [''] as string[]
     expect(validateProjectPlan(p).errors.some(e => e.endsWith('facts is not a list of fact ids'))).toBe(true)
+    p.routes[1]!.sections[0]!.facts = 'interactive:aa11' as unknown as string[]
+    expect(validateProjectPlan(p).errors.some(e => e.endsWith('facts is not a list of fact ids'))).toBe(true)
+    p.routes[1]!.sections[0]!.facts = []
+    expect(validateProjectPlan(p).errors.some(e => e.endsWith('facts is empty (leave it out when the section holds no fact)'))).toBe(true)
+  })
+
+  it('names a fact once per route: its sections and the layout drawn over it; a widget on two pages is in one section of each', () => {
+    const p = plan()
+    p.behaviors = [{ fact: 'interactive:aa11', outcome: 'prose' }]
+    // One section on each of two routes: the widget on two pages.
+    p.routes[0]!.sections[0]!.facts = ['interactive:aa11']
+    p.routes[2]!.sections[0]!.facts = ['interactive:aa11']
+    expect(validateProjectPlan(p).errors).toEqual([])
+    // Two sections of one route.
+    p.routes[2]!.sections.push({ ...p.routes[2]!.sections[0]!, facts: ['interactive:aa11'] })
+    expect(validateProjectPlan(p).errors).toContain('route about: fact interactive:aa11 is named by route about section 0 and route about section 1')
+    p.routes[2]!.sections.pop()
+    // The header is drawn on every route: with a route section it is two roots there.
+    p.layout.header!.facts = ['interactive:aa11']
+    expect(validateProjectPlan(p).errors).toContain('route home: fact interactive:aa11 is named by layout header and route home section 0')
+    expect(validateProjectPlan(p).errors.some(e => e.startsWith('route post:'))).toBe(false)
   })
 
   it('requires a home route', () => {
