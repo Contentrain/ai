@@ -146,6 +146,7 @@
         ">Leadership</a>": 2
       },
       "contains": [
+        "<p class=\"mb-3 font-semibold\">Studio</p>",
         "Email: <a href=\"mailto:hello@northwind.example\"",
         "Phone: <a href=\"tel:+441170000000\"",
         "column-gap:22px",
@@ -173,7 +174,8 @@
         "/blog/search-without-a-server/"
       ],
       "excludes": [
-        "Sidebar only link"
+        "Sidebar only link",
+        "<p class=\"mb-3 font-semibold\">Legal</p>"
       ]
     },
     "_headers": {

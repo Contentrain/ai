@@ -246,6 +246,11 @@ export interface RawMenu {
    * block theme's navigation. Absent when the producer does not know.
    */
   locations?: string[]
+  /**
+   * The heading the site prints above this menu where it shows it (a footer column's "Company", "Support"). Not the
+   * menu's name, which is an admin label: absent when the page prints none, or the producer did not read it.
+   */
+  title?: string
 }
 
 export interface RawComment {

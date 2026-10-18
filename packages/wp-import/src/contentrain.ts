@@ -715,6 +715,8 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
         wp_id: { type: 'integer', label: 'WP term ID', order: 40 },
         // Only when the source said where its menus are shown: stores from sources that do not know stay as they were.
         ...(menus.some((m) => m.locations?.length) ? { locations: { type: 'array', items: 'string', label: 'Locations', order: 50 } as FieldDef } : {}),
+        // Only when the source printed a heading above a menu: the site prints this, never the name.
+        ...(menus.some((m) => m.title && strip(m.title)) ? { title: { type: 'string', label: 'Heading', order: 15 } as FieldDef } : {}),
       },
     })
     const toTarget = relationOver([...contentModelIds, ...taxonomies.map(taxModelId)])
@@ -744,6 +746,7 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
         // An inline navigation has no WordPress record (a negative placeholder): none is claimed.
         ...(m.id !== null && m.id > 0 ? { wp_id: m.id } : {}),
         ...(m.locations?.length ? { locations: m.locations } : {}),
+        ...(m.title && strip(m.title) ? { title: strip(m.title) } : {}),
       }
       metas.menus![mid] = importMeta('published')
       for (const i of m.items) {

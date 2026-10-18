@@ -74,6 +74,7 @@ export const collections = {
       locations: z.array(z.string()).optional(),
       name: z.string(),
       slug: z.string(),
+      title: z.string().optional(),
       wp_id: z.number().int().optional(),
     }),
   }),
