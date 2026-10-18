@@ -1,5 +1,11 @@
 # @contentrain/astro-kit
 
+## 0.45.8
+
+### Patch Changes
+
+- 9151d78: Button: a label with no break in it (a raw URL) wraps inside the button instead of widening the page on a phone.
+
 ## 0.45.7
 
 ### Patch Changes
