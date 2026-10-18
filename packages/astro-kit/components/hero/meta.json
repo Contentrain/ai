@@ -120,6 +120,22 @@
       ],
       "default": "none",
       "description": "Layout centered only (split and cover ignore it). From md (768px) up, the copy's start edge sits at this share of the frame's width and its text is set at that edge, not centred: a statement on an axis, the void before it part of the page. Below md the hero is centred as without it. none: as before."
+    },
+    "height": {
+      "options": [
+        "auto",
+        "screen"
+      ],
+      "default": "auto",
+      "description": "The hero's height. screen: from sm (640px) up, at least the window's height (100svh, 100vh where unknown) less --header-h, the header's height where the site sets it (0 without, so a static header above adds to it): the page opens on one full screen, the statement placed in it by contentAt. Below sm the hero is as tall as its content, as with auto: no empty screen on a phone. A boxed cover (width content) ignores it. auto: as before."
+    },
+    "contentAt": {
+      "options": [
+        "start",
+        "end"
+      ],
+      "default": "start",
+      "description": "Where the content sits in a hero taller than it (height screen, or a cover with its own height). end: on the bottom edge, the section's bottom padding under it (a title on the image's lower edge, a statement after a void). start: where the layout puts it, as before."
     }
   },
   "props": {

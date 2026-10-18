@@ -9,7 +9,7 @@ const SHARES = ['15', '27', '34', '42']
 describe('inset: the content column starts at an axis from md', () => {
   it('is none by default on Prose, Hero and Band, so a section without it is drawn as before', async () => {
     expect(await read('prose', 'Prose.astro')).toContain("defaultVariants: { size: 'lg', inset: 'none' }")
-    expect(await read('hero', 'Hero.astro')).toContain("stackOrder: 'text-first', inset: 'none', imageBleed: 'none' }")
+    expect(await read('hero', 'Hero.astro')).toContain("stackOrder: 'text-first', inset: 'none', contentAt: 'start', imageBleed: 'none' }")
     expect(await read('band', 'Band.astro')).toContain("tone: 'default', inset: 'none' }")
     // Band's column keeps the classes it had inline.
     expect(await read('band', 'Band.astro')).toContain("column: 'flex flex-col gap-10',")

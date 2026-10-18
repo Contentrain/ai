@@ -324,5 +324,46 @@
       "headingSize": "h2",
       "inset": "34"
     }
+  },
+  {
+    "name": "heading-lines-screen-end-inset-42",
+    "props": {
+      "layout": "centered",
+      "tone": "accent",
+      "headingLines": "lines",
+      "eyebrow": "Northwind Journal",
+      "heading": "Slow travel.\nGood coffee.\nTwelve years on the road.",
+      "lead": "Essays, guides and photographs, now in one place.",
+      "actions": [
+        {
+          "label": "Start reading",
+          "href": "/journal/"
+        }
+      ],
+      "height": "screen",
+      "contentAt": "end",
+      "inset": "42"
+    }
+  },
+  {
+    "name": "cover-content-at-end",
+    "props": {
+      "heading": "The long way round",
+      "lead": "A year of trains across Europe, one station at a time.",
+      "layout": "cover",
+      "actions": [
+        {
+          "label": "Read the series",
+          "href": "/series/long-way/"
+        }
+      ],
+      "image": {
+        "src": "/kit-fixtures/photo-3.svg",
+        "alt": "",
+        "width": 1600,
+        "height": 900
+      },
+      "contentAt": "end"
+    }
   }
 ]

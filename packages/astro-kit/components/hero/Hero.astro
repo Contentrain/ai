@@ -13,6 +13,8 @@ import { coverHeight as heightOf, headingStyle as styleOf } from './hero'
 import { muted, mutedInverse } from '../_shared/muted'
 import { BLEED } from '../_shared/bleed'
 
+const SCREEN = 'sm:flex sm:flex-col sm:min-h-[calc(100vh-var(--header-h,0px))] sm:supports-[height:100svh]:min-h-[calc(100svh-var(--header-h,0px))] sm:[&>.container-page]:flex sm:[&>.container-page]:flex-1 sm:[&>.container-page]:flex-col sm:[&>.container-page>.grid]:flex-1'
+
 const hero = tv({
   slots: {
     grid: 'grid items-center gap-10',
@@ -63,6 +65,9 @@ const hero = tv({
     // Centered only (split and cover ignore it): from md the copy's start edge sits at this share of the frame's width,
     // its text at that edge; below md it is centred, as without it.
     inset: { none: {}, '15': {}, '27': {}, '34': {}, '42': {} },
+    // Where the content sits in a hero taller than it (a screen-high one, a cover): where the layout puts it, or on the
+    // bottom edge, the section's bottom padding under it.
+    contentAt: { start: {}, end: { grid: 'content-end' } },
     imageBleed: { none: {}, edge: { media: 'rounded-none' }, overlap: { media: 'relative z-10 self-end translate-y-[calc(4rem+var(--hero-overlap,3rem))] rounded-none md:translate-y-[calc(7rem+var(--hero-overlap,3rem))]' } },
   },
   compoundVariants: [
@@ -79,7 +84,7 @@ const hero = tv({
     { layout: 'centered', inset: '34', class: { copy: 'md:ms-[34%]' } },
     { layout: 'centered', inset: '42', class: { copy: 'md:ms-[42%]' } },
   ],
-  defaultVariants: { layout: 'split', tone: 'default', align: 'center', leadAlign: 'inherit', actionsAlign: 'inherit', width: 'full', headingScale: 'default', headingSize: 'own', headingLines: 'flow', stackOrder: 'text-first', inset: 'none', imageBleed: 'none' },
+  defaultVariants: { layout: 'split', tone: 'default', align: 'center', leadAlign: 'inherit', actionsAlign: 'inherit', width: 'full', headingScale: 'default', headingSize: 'own', headingLines: 'flow', stackOrder: 'text-first', inset: 'none', contentAt: 'start', imageBleed: 'none' },
 })
 
 interface Props {
@@ -117,17 +122,21 @@ interface Props {
   imageBleed?: 'none' | 'edge' | 'overlap' | undefined
   /** Centered only: from md the copy starts at this share of the frame's width (`15` … `42` %), its text at that edge. `none` (absent): as before. */
   inset?: 'none' | '15' | '27' | '34' | '42' | undefined
+  /** `screen`: from sm the hero is at least the window's height less `--header-h` (a site that sets it; 0 without), on phones as before. A boxed cover (`width: content`) ignores it. `auto` (absent): as before. */
+  height?: 'auto' | 'screen' | undefined
+  /** `end`: the content sits on the hero's bottom edge, in a hero taller than it (`height: screen`, a cover). `start` (absent): where the layout puts it, as before. */
+  contentAt?: 'start' | 'end' | undefined
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
   measured?: MeasuredStyle | undefined
 }
 
 
-const { heading, level = 1, eyebrow, lead, items = [], actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id: givenId, minHeight, headingScale, headingSize, headingLines, stackOrder, imageBleed, inset, measured } = Astro.props
+const { heading, level = 1, eyebrow, lead, items = [], actions = [], image, layout = 'split', align, leadAlign, actionsAlign, width = 'full', tone, id: givenId, minHeight, headingScale, headingSize, headingLines, stackOrder, imageBleed, inset, height, contentAt, measured } = Astro.props
 // Every section has an id, so a theme or a design layer can address this one: the page's, or `hero`, `hero-2`, … in render order.
 const id = instanceId(Astro.locals, givenId, 'hero')
 // Overlap moves the image down past the section's bottom, so only an image that comes last may: first, it is edge.
 const bleedAs = imageBleed === 'overlap' && stackOrder === 'media-first' ? 'edge' : imageBleed
-const s = hero({ layout, align, leadAlign, actionsAlign, width, tone, headingScale, headingSize, headingLines, stackOrder, inset, imageBleed: bleedAs })
+const s = hero({ layout, align, leadAlign, actionsAlign, width, tone, headingScale, headingSize, headingLines, stackOrder, inset, contentAt, imageBleed: bleedAs })
 const Heading = level === 1 ? 'h1' : 'h2'
 const headingId = `${id}-title`
 const cover = layout === 'cover' && image
@@ -138,6 +147,10 @@ const sectionMeasured = cover && measured ? { ...measured, bg: measured.bg ? { .
 const scrim = cover ? measuredFrame(measured).overlay : undefined
 // The window's edge for a bleeding image: its own side in split (the start side when it comes first), both when centered.
 const bleeds = !cover && image && imageBleed !== undefined && imageBleed !== 'none'
+// A screen-high hero from sm: the section is a column at least the window's height (less a header the site measures as
+// `--header-h`), its frame and grid stretched to fill it, so `contentAt` has the room to place the content in. 100vh
+// where the small viewport unit is unknown. On phones the hero is as tall as its content.
+const screen = height === 'screen' && !(cover && width === 'content') ? SCREEN : undefined
 const bleed = bleeds ? (layout === 'centered' ? `max-w-none md:w-auto ${BLEED.start} ${BLEED.end}` : BLEED[stackOrder === 'media-first' ? 'start' : 'end']) : undefined
 ---
 {cover && width === 'content'
@@ -162,7 +175,7 @@ const bleed = bleeds ? (layout === 'centered' ? `max-w-none md:w-auto ${BLEED.st
   )
   : cover
   ? (
-    <Section kit="hero" measured={sectionMeasured} tone="inverse" spacing="none" width="none" id={id} aria-labelledby={headingId} class="relative isolate overflow-hidden">
+    <Section kit="hero" measured={sectionMeasured} tone="inverse" spacing="none" width="none" id={id} aria-labelledby={headingId} class={screen ? `relative isolate overflow-hidden ${screen}` : 'relative isolate overflow-hidden'}>
       <KitImage image={image} priority sizes="100vw" class="absolute inset-0 -z-10 h-full w-full object-cover" />
       <div class:list={['absolute inset-0 -z-10', !scrim && 'bg-ink/60']} style={scrim ? `background: ${scrim}` : undefined} aria-hidden="true" />
       <div class:list={['container-page', measured?.padY === undefined && 'py-16 md:py-28']}>
@@ -179,7 +192,7 @@ const bleed = bleeds ? (layout === 'centered' ? `max-w-none md:w-auto ${BLEED.st
     </Section>
   )
   : (
-    <Section kit="hero" measured={sectionMeasured} tone={tone} spacing="lg" id={id} aria-labelledby={headingId} class={bleeds ? 'overflow-x-clip' : undefined}>
+    <Section kit="hero" measured={sectionMeasured} tone={tone} spacing="lg" id={id} aria-labelledby={headingId} class={[bleeds && 'overflow-x-clip', screen].filter(Boolean).join(' ') || undefined}>
       {/* Without an image a split has nothing beside the text: the text takes the whole row, not half of it. */}
       <div class={s.grid({ class: image ? undefined : 'md:grid-cols-1' })}>
         <div class={s.copy()}>
