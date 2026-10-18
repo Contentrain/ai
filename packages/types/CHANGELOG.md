@@ -1,5 +1,23 @@
 # @contentrain/types
 
+## 1.69.0
+
+### Minor Changes
+
+- c17f75c: `validateProjectPlan` names a fact behavior once per route: two sections of one route, or a section and a layout part drawn over it (header, footer, overlay), naming the same fact is an error. An empty `facts` list is an error too; leave the field out instead.
+
+## 1.68.0
+
+### Minor Changes
+
+- a1b715f: `PLAN_TOKEN_ROLES` gains a design direction's own voice and fields: `text-display`, `text-lead`, `leading-display` and `tracking-display` (a page's opening heading above `text-heading-1`, and the lead paragraph), `case-heading` (`uppercase` where the direction draws its headings in capitals), and `color-field-1` … `color-field-4` with their `-ink` (up to four coloured grounds a section can sit on, each with the text that reads on it). `validateProjectPlan` accepts the sizes only as CSS sizes, `leading-display` only as a unitless line-height of at least 0.8, `tracking-display` only as a letter-spacing no tighter than -0.05em (or -2px), `text-display` no larger than 9rem and, where it grows with the screen, held by `clamp()` or `min()`, `case-heading` only as `uppercase` or `none`, the fields only as colours, and a field only together with its ink. Absent, nothing changes.
+
+## 1.67.0
+
+### Minor Changes
+
+- d57a8bb: A plan section can name the fact behaviors its source element holds: `PlanPlacement.facts`, a list of planned behavior ids, each once. A writer can mark the section with them so a check on the built site finds each widget in the section that carries it. The validator rejects a duplicate id, an empty one, or one that is not a planned behavior. Absent, nothing changes.
+
 ## 1.66.0
 
 ### Minor Changes

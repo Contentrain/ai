@@ -151,6 +151,18 @@ try {
       await page.evaluate(() => document.fonts.ready)
       await page.waitForFunction(() => [...document.querySelectorAll('[data-kit-slider]')].every(el => el.hasAttribute('data-ready')))
       await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 300)))))
+      // Every frame on whole pixels, top and height, in document order: a shot's clip encloses its box, so a fractional
+      // box takes in a row of the next fixture, and that row changes when a fixture is added after it.
+      const fractional = await page.evaluate(() => {
+        const frames = [...document.querySelectorAll('[data-fixture]')]
+        for (const el of frames) {
+          const top = el.getBoundingClientRect().top + scrollY
+          if (top % 1) el.style.marginTop = `${Math.ceil(top) - top}px`
+          el.style.height = `${Math.ceil(el.getBoundingClientRect().height)}px`
+        }
+        return frames.map(el => [el.getAttribute('data-fixture'), el.getBoundingClientRect()]).filter(([, r]) => (r.top + scrollY) % 1 || r.height % 1).map(([name, r]) => `${name} (top ${r.top + scrollY}, height ${r.height})`)
+      })
+      if (fractional.length) failures.push(`${c.id} @${width}: frames off whole pixels: ${fractional.join(', ')}`)
       // Every fixture of a component on one page, as two instances on a site page: no id twice (a label, tab or lightbox
       // would point into the other instance), and each instance's first lightbox button opens its own image.
       if (width === WIDTHS[0]) {

@@ -45,6 +45,13 @@ export const PLAN_TOKEN_ROLES = [
   // Headings' own face and letter spacing (a design direction's display face and track). Absent: a heading inherits its
   // face and draws its own track, as before. `tracking-heading` is a letter-spacing (`-0.02em`, `0`, `normal`).
   'font-heading', 'tracking-heading',
+  // A design direction's own voice: the display size, leading and track of a page's opening heading (above
+  // `text-heading-1`), and the lead paragraph's size. Absent: the opening heading is an h1 like any other.
+  // `case-heading`: `uppercase` where the direction draws its headings in capitals (the content keeps its own case).
+  'text-display', 'text-lead', 'leading-display', 'tracking-display', 'case-heading',
+  // A design direction's coloured fields: up to four grounds a section can sit on, each with the text that reads on
+  // it (`color-field-1-ink`). A field is set only together with its ink. Absent: sections keep the kit's tones.
+  'color-field-1', 'color-field-1-ink', 'color-field-2', 'color-field-2-ink', 'color-field-3', 'color-field-3-ink', 'color-field-4', 'color-field-4-ink',
 ] as const
 export type PlanTokenRole = (typeof PLAN_TOKEN_ROLES)[number]
 
@@ -387,6 +394,12 @@ export interface PlanPlacement {
    * The section's background spans the page either way. Absent: `wide`.
    */
   width?: 'content' | 'wide'
+  /**
+   * The fact behavior ids (`interactive:3fa9c21e`) whose source element this section holds: the writer marks the
+   * section's root with them, so a check on the built site finds each widget in the section that carries it. Each id
+   * once, and each one a planned behavior (`ProjectPlan.behaviors`). Absent: the writer places them by its own rule.
+   */
+  facts?: string[]
 }
 
 /**
@@ -507,6 +520,58 @@ const LETTER_SPACING = /^(?:normal|-?\d+(?:\.\d+)?(?:px|rem|em))$/
 const CSS_COLOR = /^(?:#[0-9a-f]{3,8}|(?:rgb|hsl)a?\([\d\s.,%/deg]+\))$/i
 /** A letter-spacing: `normal`, `0`, or a signed length in em, rem or px. */
 const CSS_TRACKING = /^(?:normal|0|-?(?:\d+(?:\.\d+)?|\.\d+)(?:em|rem|px))$/
+/** A line-height: a unitless number (`1.05`, `.95`) or `normal`. */
+const CSS_LEADING = /^(?:normal|\d+(?:\.\d+)?|\.\d+)$/
+/**
+ * The display heading's floors and ceiling, as a design layer's own rules are held: lines no tighter than 0.8, letters
+ * no tighter than -0.05em (or -2px), and a size no larger than 9rem, with a viewport-relative size held by `clamp()` or `min()`.
+ */
+const DISPLAY_LEADING_MIN = 0.8
+const DISPLAY_TRACKING_MIN_EM = -0.05
+const DISPLAY_TRACKING_MIN_PX = -2
+const DISPLAY_MAX_REM = 9
+function trackingTooTight(value: string): boolean {
+  const m = /^(-?(?:\d+(?:\.\d+)?|\.\d+))(em|rem|px)$/.exec(value)
+  if (!m) return false
+  return Number(m[1]) < (m[2] === 'px' ? DISPLAY_TRACKING_MIN_PX : DISPLAY_TRACKING_MIN_EM)
+}
+/** An absolute length (`9rem`, `144px`) in rem, else undefined. */
+function absoluteRem(value: string): number | undefined {
+  const m = /^(\d+(?:\.\d+)?|\.\d+)(px|rem|em)$/.exec(value.trim())
+  return m ? Number(m[1]) / (m[2] === 'px' ? 16 : 1) : undefined
+}
+/**
+ * The arguments of `value` when it is exactly one call of `fn` (`clamp(a, calc(b, c), d)` → three), its closing paren the
+ * last character and nothing outside it; else undefined (`min(8rem, 1rem) + calc(50vw)` is not one call).
+ */
+function wholeCall(value: string, fn: 'clamp' | 'min'): string[] | undefined {
+  if (!value.startsWith(`${fn}(`)) return undefined
+  const out: string[] = []
+  let depth = 0
+  let from = fn.length + 1
+  for (let i = fn.length; i < value.length; i++) {
+    const c = value[i]
+    if (c === '(') depth++
+    else if (c === ')') {
+      depth--
+      if (depth === 0) return i === value.length - 1 ? [...out, value.slice(from, i)] : undefined
+    }
+    else if (c === ',' && depth === 1) { out.push(value.slice(from, i)); from = i + 1 }
+  }
+  return undefined
+}
+function displayTooLarge(value: string): boolean {
+  const lengths = [...value.matchAll(/(\d+(?:\.\d+)?|\.\d+)(px|rem|em)\b/g)].map(m => Number(m[1]) / (m[2] === 'px' ? 16 : 1))
+  if (lengths.some(rem => rem > DISPLAY_MAX_REM)) return true
+  if (!/\d(?:vw|vh|vmin|vmax|%)/.test(value)) return false
+  // A size that grows with the screen is exactly one clamp() whose largest size is absolute, or one min() with an absolute
+  // argument; anything else that grows (a sum, a calc(), a trailing expression) is refused, not read case by case.
+  const clamp = wholeCall(value, 'clamp')
+  if (clamp) return clamp.length !== 3 || absoluteRem(clamp[2]!) === undefined
+  const min = wholeCall(value, 'min')
+  if (min) return !min.some(arg => absoluteRem(arg) !== undefined)
+  return true
+}
 const CSS_LENGTH = /^(?!.*url\()(?:\d+(?:\.\d+)?(?:px|rem|em|%)|(?:clamp|calc|min|max)\([\d\s.,+*/()a-z%-]+\))$/
 
 /**
@@ -671,8 +736,31 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     const value = site?.tokens?.roles?.[role]
     if (value !== undefined && !CSS_LENGTH.test(value)) errors.push(`tokens.roles.${role} ${value} is not a CSS size`)
   }
-  const tracking = site?.tokens?.roles?.['tracking-heading']
-  if (tracking !== undefined && !CSS_TRACKING.test(tracking)) errors.push(`tokens.roles.tracking-heading ${tracking} is not a letter-spacing`)
+  for (const role of ['tracking-heading', 'tracking-display'] as const) {
+    const value = site?.tokens?.roles?.[role]
+    if (value !== undefined && !CSS_TRACKING.test(value)) errors.push(`tokens.roles.${role} ${value} is not a letter-spacing`)
+  }
+  const displayTrack = site?.tokens?.roles?.['tracking-display']
+  if (displayTrack !== undefined && CSS_TRACKING.test(displayTrack) && trackingTooTight(displayTrack)) errors.push(`tokens.roles.tracking-display ${displayTrack} sets letters tighter than ${DISPLAY_TRACKING_MIN_EM}em`)
+  for (const role of ['text-display', 'text-lead'] as const) {
+    const value = site?.tokens?.roles?.[role]
+    if (value !== undefined && !CSS_LENGTH.test(value)) errors.push(`tokens.roles.${role} ${value} is not a CSS size`)
+  }
+  const headingCase = site?.tokens?.roles?.['case-heading']
+  if (headingCase !== undefined && headingCase !== 'uppercase' && headingCase !== 'none') errors.push(`tokens.roles.case-heading ${headingCase} is not uppercase or none`)
+  const leading = site?.tokens?.roles?.['leading-display']
+  if (leading !== undefined && !CSS_LEADING.test(leading)) errors.push(`tokens.roles.leading-display ${leading} is not a line-height`)
+  else if (leading !== undefined && leading !== 'normal' && Number(leading) < DISPLAY_LEADING_MIN) errors.push(`tokens.roles.leading-display ${leading} sets lines tighter than ${DISPLAY_LEADING_MIN}`)
+  const display = site?.tokens?.roles?.['text-display']
+  if (display !== undefined && CSS_LENGTH.test(display) && displayTooLarge(display)) errors.push(`tokens.roles.text-display ${display} is larger than ${DISPLAY_MAX_REM}rem or not held to a largest size`)
+  for (const n of [1, 2, 3, 4] as const) {
+    const field = site?.tokens?.roles?.[`color-field-${n}`]
+    const ink = site?.tokens?.roles?.[`color-field-${n}-ink`]
+    for (const [role, value] of [[`color-field-${n}`, field], [`color-field-${n}-ink`, ink]] as const) {
+      if (value !== undefined && !CSS_COLOR.test(value)) errors.push(`tokens.roles.${role} ${value} is not a colour`)
+    }
+    if ((field === undefined) !== (ink === undefined)) errors.push(`tokens.roles.color-field-${n} is set without its ink, or its ink without it`)
+  }
 
   const models = new Map<string, PlanModel>()
   for (const m of plan.models ?? []) {
@@ -726,8 +814,21 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (c.origin === 'site' && !c.brief) warnings.push(`site component ${c.id} has no brief for the writer`)
   }
 
+  /**
+   * Placements' `facts`, checked against the planned behaviors once those are read. `route`: the route the section is on;
+   * none for a layout part, which is drawn on every route.
+   */
+  const placedFacts: Array<{ at: string, facts: string[], route?: string }> = []
   const placement = (s: PlanPlacement, at: string, route?: PlanRoute) => {
     if (s.width !== undefined && s.width !== 'content' && s.width !== 'wide') errors.push(`${at}: width ${s.width as string} is not content or wide`)
+    if (s.facts !== undefined) {
+      if (!Array.isArray(s.facts) || s.facts.some(f => typeof f !== 'string' || !f.trim())) errors.push(`${at}: facts is not a list of fact ids`)
+      else if (!s.facts.length) errors.push(`${at}: facts is empty (leave it out when the section holds no fact)`)
+      else {
+        if (new Set(s.facts).size !== s.facts.length) errors.push(`${at}: facts names a fact twice`)
+        placedFacts.push({ at, facts: s.facts, ...(route ? { route: route.id } : {}) })
+      }
+    }
     const c = components.get(s.component)
     if (!c) { errors.push(`${at}: component ${s.component} is not declared`); return }
     const b = s.bind
@@ -835,6 +936,23 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
       const m = models.get(b.model)
       if (!m) errors.push(`${at}: model ${b.model} is not declared`)
       else if (!m.form) errors.push(`${at}: model ${b.model} is not a form model`)
+    }
+  }
+  for (const { at, facts } of placedFacts) {
+    const unknown = facts.filter(f => !behaviorIds.has(f))
+    if (unknown.length) errors.push(`${at}: facts ${unknown.join(', ')} ${unknown.length === 1 ? 'is' : 'are'} not a planned behavior`)
+  }
+  // A fact names one section per page: on a route, its sections and the layout drawn over it. A widget on several pages is
+  // in one section of each of their routes.
+  const layoutFacts = placedFacts.filter(p => p.route === undefined)
+  for (const r of plan.routes ?? []) {
+    const where = new Map<string, string>()
+    for (const { at, facts } of [...layoutFacts, ...placedFacts.filter(p => p.route === r.id)]) {
+      for (const f of facts) {
+        const first = where.get(f)
+        if (first) errors.push(`route ${r.id}: fact ${f} is named by ${first} and ${at}`)
+        else where.set(f, at)
+      }
     }
   }
   return { errors, warnings }
