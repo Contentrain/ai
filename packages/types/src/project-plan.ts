@@ -529,11 +529,32 @@ function trackingTooTight(value: string): boolean {
   if (!m) return false
   return Number(m[1]) < (m[2] === 'px' ? DISPLAY_TRACKING_MIN_PX : DISPLAY_TRACKING_MIN_EM)
 }
+/** An absolute length (`9rem`, `144px`) in rem, else undefined. */
+function absoluteRem(value: string): number | undefined {
+  const m = /^(\d+(?:\.\d+)?|\.\d+)(px|rem|em)$/.exec(value.trim())
+  return m ? Number(m[1]) / (m[2] === 'px' ? 16 : 1) : undefined
+}
+/** The arguments of a top-level function, split at its own commas (`clamp(a, calc(b, c), d)` → three). */
+function argsOf(value: string): string[] {
+  const inner = value.slice(value.indexOf('(') + 1, -1)
+  const out: string[] = []
+  let depth = 0
+  let from = 0
+  for (let i = 0; i < inner.length; i++) {
+    if (inner[i] === '(') depth++
+    else if (inner[i] === ')') depth--
+    else if (inner[i] === ',' && depth === 0) { out.push(inner.slice(from, i)); from = i + 1 }
+  }
+  return [...out, inner.slice(from)]
+}
 function displayTooLarge(value: string): boolean {
   const lengths = [...value.matchAll(/(\d+(?:\.\d+)?|\.\d+)(px|rem|em)\b/g)].map(m => Number(m[1]) / (m[2] === 'px' ? 16 : 1))
   if (lengths.some(rem => rem > DISPLAY_MAX_REM)) return true
-  // A size that grows with the screen needs a largest size beside it.
-  return /\d(?:vw|vh|vmin|vmax|%)/.test(value) && !/^(?:clamp|min)\(/.test(value)
+  if (!/\d(?:vw|vh|vmin|vmax|%)/.test(value)) return false
+  // A size that grows with the screen is held by an absolute largest size: clamp()'s last argument, or one of min()'s.
+  if (value.startsWith('clamp(')) return absoluteRem(argsOf(value)[2] ?? '') === undefined
+  if (value.startsWith('min(')) return !argsOf(value).some(arg => absoluteRem(arg) !== undefined)
+  return true
 }
 const CSS_LENGTH = /^(?!.*url\()(?:\d+(?:\.\d+)?(?:px|rem|em|%)|(?:clamp|calc|min|max)\([\d\s.,+*/()a-z%-]+\))$/
 

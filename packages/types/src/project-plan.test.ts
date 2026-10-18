@@ -175,6 +175,9 @@ describe('validateProjectPlan', () => {
     expect(errorsFor({ 'tracking-display': '-3px' })).toEqual(['tokens.roles.tracking-display -3px sets letters tighter than -0.05em'])
     expect(errorsFor({ 'text-display': '40rem' })).toEqual(['tokens.roles.text-display 40rem is larger than 9rem or not held to a largest size'])
     expect(errorsFor({ 'text-display': 'clamp(3rem, 2rem + 8vw, 12rem)' })).toEqual(['tokens.roles.text-display clamp(3rem, 2rem + 8vw, 12rem) is larger than 9rem or not held to a largest size'])
+    expect(errorsFor({ 'text-display': 'clamp(3rem, 6vw, 20vw)' })).toEqual(['tokens.roles.text-display clamp(3rem, 6vw, 20vw) is larger than 9rem or not held to a largest size'])
+    expect(errorsFor({ 'text-display': 'min(12vw, 30vw)' })).toEqual(['tokens.roles.text-display min(12vw, 30vw) is larger than 9rem or not held to a largest size'])
+    expect(errorsFor({ 'text-display': 'min(12vw, 8rem)' })).toEqual([])
     expect(errorsFor({ 'text-display': 'calc(2rem + 10vw)' })).toEqual(['tokens.roles.text-display calc(2rem + 10vw) is larger than 9rem or not held to a largest size'])
   })
 
