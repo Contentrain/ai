@@ -11,7 +11,7 @@ import KitImage from '../_shared/KitImage.astro'
 import Section from '../_shared/Section.astro'
 import { instanceId } from '../_shared/instance-id'
 import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
-import { muted } from '../_shared/muted'
+import { muted, proseOnBand } from '../_shared/muted'
 import { BLEED } from '../_shared/bleed'
 
 const split = tv({
@@ -20,7 +20,8 @@ const split = tv({
     copy: 'flex flex-col gap-5',
     eyebrow: `text-sm font-semibold tracking-wide uppercase ${muted}`,
     heading: 'text-3xl [font-weight:var(--font-weight-heading,700)] tracking-tight text-balance md:text-4xl',
-    body: 'prose prose-site max-w-none text-pretty',
+    // The body in the band's own colours, as the heading beside it (on default and muted that is the page's ink).
+    body: `prose prose-site max-w-none text-pretty ${proseOnBand}`,
     actions: 'flex flex-wrap gap-3 pt-2',
     media: 'overflow-hidden',
     image: 'h-auto w-full object-cover',
@@ -49,7 +50,8 @@ const split = tv({
     sticky: { true: { media: 'md:sticky md:top-8 md:self-start' }, false: {} },
     align: { start: {}, center: { copy: 'items-center text-center', actions: 'justify-center' } },
     // accent/accent-ink is only ~5:1 — dimming text on it drops body copy under 4.5:1 (WCAG 1.4.3), so accent keeps it at full strength.
-    tone: { default: {}, muted: {}, inverse: {}, accent: {}, brand: {}, none: {} },
+    // A fill sets no accent text of its own: a link in the body is drawn in the fill's ink (underlined, as prose draws it).
+    tone: { default: {}, muted: {}, inverse: {}, accent: { body: '[--tw-prose-links:currentColor]' }, brand: { body: '[--tw-prose-links:currentColor]' }, none: {} },
   },
   defaultVariants: { imageSide: 'end', ratio: '1:1', imageFit: 'contain', imageShape: 'rounded', imageBleed: 'none', stackOrder: 'text-first', sticky: false, align: 'start', tone: 'default' },
 })

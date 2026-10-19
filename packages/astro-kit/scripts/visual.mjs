@@ -135,6 +135,7 @@ const ids = []
 const tables = []
 const widths = []
 const sections = []
+const contrasts = []
 /** Every real href of a menu tree (a Nav or Header `items` prop), at any depth. */
 const menuHrefs = items => (items ?? []).flatMap(item => (item.href && item.href !== '#' ? [item.href] : []).concat(menuHrefs(item.children)))
 const browser = await chromium.launch(process.platform === 'darwin' ? { channel: 'chrome' } : {})
@@ -208,6 +209,50 @@ try {
           const want = String(text).split('\n').map(line => line.trim()).filter(Boolean)
           const got = await element.evaluate((el, sel) => { const h = el.querySelector(sel); return { lines: [...(h?.querySelectorAll('[data-kit-line]') ?? [])].map(l => l.textContent), text: h?.textContent?.replace(/\s+/g, ' ').trim() } }, selector)
           if (JSON.stringify(got.lines) !== JSON.stringify(want) || got.text !== want.join(' ')) outline.push(`${c.id}/${name}: ${field} lines ${JSON.stringify(got)} (expected ${JSON.stringify(want)})`)
+        }
+        if (width === WIDTHS[0]) {
+          // A body's text reads on its band: 4.5:1 (3:1 at a large size), the colours as drawn. A body on an image or a
+          // gradient is not judged here (the band's own colour is not what is behind it).
+          const low = await element.evaluate(el => {
+            const ctx = Object.assign(document.createElement('canvas'), { width: 1, height: 1 }).getContext('2d', { willReadFrequently: true })
+            const rgba = (css) => { ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = '#000'; ctx.fillStyle = css; ctx.fillRect(0, 0, 1, 1); const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data; return [r, g, b, a / 255] }
+            const out = []
+            for (const body of el.querySelectorAll('[data-kit-text]')) {
+              let ground = null
+              for (let at = body; at && !ground; at = at.parentElement) {
+                const style = getComputedStyle(at)
+                if (style.backgroundImage !== 'none') { ground = 'image'; break }
+                const bg = rgba(style.backgroundColor)
+                if (bg[3] > 0.99) ground = bg
+              }
+              if (ground === 'image') continue
+              ground ??= rgba(getComputedStyle(document.body).backgroundColor)
+              for (const node of [body, ...body.querySelectorAll('*')]) {
+                if (![...node.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) continue
+                const style = getComputedStyle(node)
+                // Text a visitor sees: drawn, visible, not a screen-reader-only box.
+                const box = node.getBoundingClientRect()
+                if (style.visibility !== 'visible' || box.width <= 1 || box.height <= 1) continue
+                const [r, g, b, a] = rgba(style.color)
+                const ink = [r * a + ground[0] * (1 - a), g * a + ground[1] * (1 - a), b * a + ground[2] * (1 - a)]
+                // Relative luminance (WCAG), inline: this runs in the page.
+                const [hi, lo] = [ink, ground].map((rgb) => {
+                  let sum = 0
+                  for (const [i, weight] of [[0, 0.2126], [1, 0.7152], [2, 0.0722]]) {
+                    const v = rgb[i] / 255
+                    sum += weight * (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
+                  }
+                  return sum
+                }).toSorted((x, y) => y - x)
+                const ratio = (hi + 0.05) / (lo + 0.05)
+                const size = parseFloat(style.fontSize)
+                const large = size >= 24 || (size >= 18.66 && Number(style.fontWeight) >= 700)
+                if (ratio < (large ? 3 : 4.5)) out.push(`${ratio.toFixed(2)}:1 ${style.color} on rgb(${ground.slice(0, 3).join(', ')}) "${node.textContent.trim().slice(0, 40)}"`)
+              }
+            }
+            return out
+          })
+          for (const line of low.slice(0, 3)) contrasts.push(`${c.id}/${name}: ${line}`)
         }
         if (width === WIDTHS[0] && themeOf.get(c.id).get(name)) {
           // The heading hooks are read: the heading's face and track are the ones the theme set, not the body's.
@@ -493,6 +538,7 @@ if (lightboxes.length) console.error(`visual: ${lightboxes.length} lightbox(es) 
 if (billings.length) console.error(`visual: ${billings.length} billing toggle line(s) wrong:\n${billings.map(line => `  ✗ ${line}`).join('\n')}`)
 if (tables.length) console.error(`visual: ${tables.length} table check(s) failed:\n${tables.map(line => `  ✗ ${line}`).join('\n')}`)
 if (widths.length) console.error(`visual: ${widths.length} page width check(s) failed:\n${widths.map(line => `  ✗ ${line}`).join('\n')}`)
+if (contrasts.length) console.error(`visual: ${contrasts.length} body text(s) under the contrast floor on their band:\n${contrasts.map(line => `  ✗ ${line}`).join('\n')}`)
 if (sections.length) console.error(`visual: ${sections.length} section hook(s) missing:\n${sections.map(line => `  ✗ ${line}`).join('\n')}`)
 if (ids.length) console.error(`visual: ${ids.length} page(s) with shared ids:\n${ids.map(line => `  ✗ ${line}`).join('\n')}`)
 if (written.length) console.log(`visual: wrote ${written.length} baseline(s) under ${baselineDir}`)
@@ -501,6 +547,6 @@ if (failures.length) {
   process.exit(1)
 }
 if (hooks.length) console.error(`visual: ${hooks.length} fixture(s) whose heading ignores the theme's heading face or track:\n${hooks.map(line => `  ✗ ${line}`).join('\n')}`)
-if (outline.length || menus.length || carousels.length || embeds.length || lightboxes.length || billings.length || ids.length || tables.length || widths.length || sections.length || hooks.length) process.exit(1)
+if (outline.length || menus.length || carousels.length || embeds.length || lightboxes.length || billings.length || ids.length || tables.length || widths.length || sections.length || contrasts.length || hooks.length) process.exit(1)
 console.log(`visual: ${components.length} component(s) × ${WIDTHS.length} widths match`)
 if (!values.out) rmSync(site, { recursive: true, force: true })
