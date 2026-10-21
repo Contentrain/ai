@@ -7,6 +7,7 @@ import type { ImageInput } from '../components/kit/_shared/types'
 import type { CustomField, CustomType } from '../site.config'
 import { entryHref, refIds, termHref, termsById, text, type TypeEntry } from './custom'
 import { getStrings, imageOf, type Media } from './content'
+import { optimizedImages } from './body-images'
 import { scrollingTables, tableLabel } from './body-tables'
 import { servedPath } from './base'
 
@@ -84,10 +85,12 @@ async function show(field: CustomField, value: unknown, targets: Targets, depth:
     if (shown.length === 0) return undefined
     return type === 'relation' || shown.length === 1 ? shown[0] : { kind: 'list', items: shown }
   }
-  // Printed as written, but a table in it scrolls in its region like a body's (it does not pass through publicHtml).
+  // Printed as written, but its images are served like a body's and a table in it scrolls in its region (it does not
+  // pass through publicHtml).
   if (type === 'richtext' || type === 'markdown') {
     if (typeof value !== 'string') return undefined
-    return { kind: 'html', html: value.includes('<table') ? scrollingTables(value, tableLabel(await getStrings())) : value }
+    const html = await optimizedImages(value)
+    return { kind: 'html', html: html.includes('<table') ? scrollingTables(html, tableLabel(await getStrings())) : html }
   }
   if (type === 'date' || type === 'datetime') return value instanceof Date ? { kind: 'time', value, dateOnly: type === 'date' } : undefined
   // The label is the row's term; a true value is its mark.
