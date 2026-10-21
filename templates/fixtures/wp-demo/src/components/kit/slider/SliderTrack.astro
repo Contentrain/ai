@@ -132,6 +132,7 @@ const Root = framed ? 'section' : 'div'
 const arrow = 'absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-ink shadow-md ring-1 ring-line hover:bg-surface disabled:opacity-40 sm:group-data-[ready]:flex'
 // A text card has no picture for the arrows to sit on: over it they would cover its words. A carousel with any text
 // card (all of them, or mixed with pictures) has its arrows under the row, either side of the dots.
+// The dots wrap (one 24px target per slide): 14 of them between the arrows outgrew a 390 phone and pushed both off it.
 const cards = slides.some(slide => !slide.image && !slide.video && !slide.player)
 // A video from another site is a link to its page, so without JavaScript it opens there; its frame keeps the image's
 // ratio, so the player that replaces the link moves nothing.
@@ -172,7 +173,7 @@ const under = 'flex size-11 shrink-0 items-center justify-center rounded-full bg
     ? (
       <div class="mt-4 hidden items-center justify-center gap-3 group-data-[ready]:flex">
         <button type="button" class={under} aria-label={prevLabel} aria-controls={trackId} data-prev><svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" /></svg></button>
-        <div class="flex justify-center" data-dots></div>
+        <div class="flex min-w-0 flex-wrap justify-center" data-dots></div>
         <button type="button" class={under} aria-label={nextLabel} aria-controls={trackId} data-next><svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg></button>
       </div>
     )
@@ -180,7 +181,7 @@ const under = 'flex size-11 shrink-0 items-center justify-center rounded-full bg
       <>
         <button type="button" class:list={[arrow, 'start-6 md:start-10']} aria-label={prevLabel} aria-controls={trackId} data-prev><svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" /></svg></button>
         <button type="button" class:list={[arrow, 'end-6 md:end-10']} aria-label={nextLabel} aria-controls={trackId} data-next><svg aria-hidden="true" viewBox="0 0 24 24" class="size-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" /></svg></button>
-        <div class="mt-4 hidden justify-center group-data-[ready]:flex" data-dots></div>
+        <div class="mt-4 hidden flex-wrap justify-center group-data-[ready]:flex" data-dots></div>
       </>
     ))}
 </Root>

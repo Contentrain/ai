@@ -13,6 +13,16 @@
       "to": "  postsPerPage: 2,"
     }
   ],
+  "contentConfig": [
+    {
+      "from": "      cover: reference('media').optional(),\n      excerpt: z.string().optional(),\n      form: z.string().optional(),",
+      "to": "      comments_open: z.boolean().default(false),\n      cover: reference('media').optional(),\n      excerpt: z.string().optional(),\n      form: z.string().optional(),"
+    },
+    {
+      "from": "      title: z.string(),\n      wp_id: z.number().int().optional(),\n    }),\n  }),\n  posts:",
+      "to": "      title: z.string(),\n      wp_id: z.number().int(),\n    }),\n  }),\n  posts:"
+    }
+  ],
   "distFiles": {
     "index.html": {
       "contains": [

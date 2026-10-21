@@ -6,6 +6,7 @@
 // not in it is not public.
 
 import { getCollection } from 'astro:content'
+import { collections } from '../content.config'
 import { siteConfig } from '../site.config'
 import { entriesOf, entryCard, entryHref, newestFirst, refIds, termHref as customTermHref, text, type Card, type TypeEntry } from './custom'
 import { targetsOf, type Targets } from './fields'
@@ -158,10 +159,14 @@ async function addTypeRoutes(add: (href: string, route: Route) => void): Promise
 /**
  * The front page a migration composed from sections with no page entry of its own (`home.view`): the site's title, its
  * home SEO (the `site` singleton's `seo`, `social_image` its picture), no body, keyed to the composed view by `wp_id`.
+ * Read through the site's own pages schema, as Astro reads a real page entry: every default a page gets is filled
+ * (`comments_open`, `seo.noindex`, whatever its model adds), and a field it requires with none fails the build here.
  */
 function frontPage(site: Awaited<ReturnType<typeof getSite>>, view: number): Page {
-  const seo = site.seo || site.social_image ? { seo: { ...site.seo, ...(site.social_image ? { image: site.social_image } : {}), nofollow: false, noindex: false } } : {}
-  return { id: 'front-page', collection: 'pages', data: { id: 'front-page', slug: '', title: site.title, wp_id: view, ...seo } }
+  const seo = site.seo || site.social_image ? { seo: { ...site.seo, ...(site.social_image ? { image: site.social_image } : {}) } } : {}
+  const schema = collections.pages.schema
+  if (typeof schema !== 'object') throw new Error('content.config.ts: the pages collection\'s schema is not an object schema; the composed front page cannot be read through it.')
+  return { id: 'front-page', collection: 'pages', data: schema.parse({ id: 'front-page', slug: '', title: site.title, wp_id: view, ...seo }) }
 }
 
 let table: Promise<Map<string, Route>> | undefined
