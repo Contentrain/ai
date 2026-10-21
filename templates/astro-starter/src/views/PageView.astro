@@ -7,10 +7,11 @@ import KitImage from '../components/kit/_shared/KitImage.astro'
 import Prose from '../components/kit/prose/Prose.astro'
 import StudioForm from '../components/studio/StudioForm.astro'
 import BaseLayout from '../layouts/BaseLayout.astro'
-import { getStrings, imageOf, type Page } from '../lib/content'
+import { withBase } from '../lib/base'
+import { getSite, getStrings, imageOf, type Page } from '../lib/content'
 import { publicHtml } from '../lib/links'
 import type { ListPage } from '../lib/site-routes'
-import { breadcrumbLd, summarize } from '../lib/seo'
+import { breadcrumbLd, pageTrail, summarize } from '../lib/seo'
 import { safeHref } from '../components/kit/_shared/safe-url'
 
 interface Props {
@@ -26,7 +27,7 @@ interface Props {
 
 const { page, trail, isHome, subpages = [] } = Astro.props
 const { data } = page
-const [cover, t, body] = await Promise.all([data.cover ? getEntry(data.cover) : undefined, getStrings(), publicHtml(data.body)])
+const [cover, t, body, site] = await Promise.all([data.cover ? getEntry(data.cover) : undefined, getStrings(), publicHtml(data.body), getSite()])
 const origin = Astro.site ?? Astro.url
 const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
 ---
@@ -41,7 +42,7 @@ const crumbs = [...trail, { title: data.title, href: Astro.url.pathname }]
   noindex={data.seo?.noindex}
   nofollow={data.seo?.nofollow}
   modified={data.modified_at}
-  jsonLd={trail.length > 0 ? [breadcrumbLd(crumbs.map(crumb => ({ name: crumb.title, url: new URL(crumb.href, origin).href })))] : []}
+  jsonLd={isHome ? [] : [breadcrumbLd(pageTrail({ name: site.title, url: new URL(withBase('/'), origin).href }, crumbs.map(crumb => ({ name: crumb.title, url: new URL(crumb.href, origin).href }))))]}
 >
   <article class="container-prose py-12 md:py-16">
     {trail.length > 0 && (
