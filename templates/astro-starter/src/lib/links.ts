@@ -334,9 +334,9 @@ const AREAS = {
  * The menus an area shows, as WordPress places them: a menu assigned to theme locations shows where
  * they are, so moving or unassigning it in Studio moves it on the site; a menu with no location shows
  * where site.config names it. Each comes with its name, the navigation's accessible name, and the heading the source
- * printed above it, if any (`title`: a footer column's).
+ * printed above it, if any (`title`: a footer column's), and where that heading links when it is a link (`titleHref`).
  */
-export async function menusAt(area: keyof typeof AREAS): Promise<Array<{ name: string, title?: string | undefined, items: NavItem[] }>> {
+export async function menusAt(area: keyof typeof AREAS): Promise<Array<{ name: string, title?: string | undefined, titleHref?: string | undefined, items: NavItem[] }>> {
   const configured = area === 'header' ? [siteConfig.menus.primary] : [...siteConfig.menus.footer]
   const all = await getCollection('menus')
   const placed = all.filter(menu => (menu.data.locations?.length ? menu.data.locations.some(AREAS[area]) : configured.includes(menu.data.slug)))
@@ -345,7 +345,7 @@ export async function menusAt(area: keyof typeof AREAS): Promise<Array<{ name: s
     return index === -1 ? configured.length : index
   }
   const ordered = placed.toSorted((a, b) => rank(a) - rank(b) || String(a.data.locations ?? '').localeCompare(String(b.data.locations ?? '')))
-  return Promise.all((area === 'header' ? ordered.slice(0, 1) : ordered).map(async menu => ({ name: menu.data.name, title: menu.data.title || undefined, items: await menuItems(menu) })))
+  return Promise.all((area === 'header' ? ordered.slice(0, 1) : ordered).map(async menu => ({ name: menu.data.name, title: menu.data.title || undefined, titleHref: (menu.data.title && menu.data.title_href) || undefined, items: await menuItems(menu) })))
 }
 
 type Menu = CollectionEntry<'menus'>

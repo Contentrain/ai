@@ -136,6 +136,16 @@ export function postHref(post: Post, categories: ReadonlyMap<string, Category>):
 }
 
 /**
+ * The front page `siteConfig.home` names by slug. Pages under different parents may share a slug (`/faq/` and
+ * `/services/faq/`): the front page is the top-level one, and a child page with that slug keeps its own address. A
+ * child page is the front page only when no other page has its slug.
+ */
+function isHomePage(page: Page, pages: ReadonlyMap<string, Page>): boolean {
+  if (siteConfig.home.kind !== 'page' || siteConfig.home.slug !== page.data.slug) return false
+  return !page.data.parent || [...pages.values()].every(other => other === page || other.data.slug !== page.data.slug)
+}
+
+/**
  * A page's address carries its parents: `about/team`. The page at the top of that trail may carry `path_prefix`: the
  * folders before its address on the old site when its parent page was not moved (`company` for `/company/about-us/`,
  * `index.php` for a site whose pages lived under it). The migration sets it on those pages only; an editor sees it,
@@ -143,7 +153,7 @@ export function postHref(post: Post, categories: ReadonlyMap<string, Category>):
  * A kept `path` (`keptPath`) is the page's whole address and wins over both; the front page is always the root.
  */
 export function pageHref(page: Page, pages: ReadonlyMap<string, Page>): string {
-  if (siteConfig.home.kind === 'page' && siteConfig.home.slug === page.data.slug) return withBase('/')
+  if (isHomePage(page, pages)) return withBase('/')
   const kept = keptPath(pathOf(page), page.data.slug)
   if (kept) return withBase(kept)
   const trail: string[] = []

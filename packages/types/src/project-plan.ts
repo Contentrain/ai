@@ -150,8 +150,10 @@ export interface PlanSite {
    * fit), or `aspect` (`16 / 9`) where the source uses an aspect ratio; absent, 16 / 9. `gap`: the grid's column gap
    * (a CSS length). `headingWidth`: the archive title box's width (a CSS length). `tieOrder`: how posts of the same
    * moment are ordered as the source's database returned them (`asc`: the lower ID first); absent, `desc`.
+   * `moreLabel`: the source's own read-more words under each card ("READ ARTICLE"), plain text; absent, none.
+   * `dateStyle`: how the cards write their date, as the source does (`Intl` `dateStyle`); absent, `long`.
    */
-  lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean, columns?: number, image?: { height?: string, aspect?: string }, gap?: string, headingWidth?: string, tieOrder?: 'asc' | 'desc' }
+  lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean, columns?: number, image?: { height?: string, aspect?: string }, gap?: string, headingWidth?: string, tieOrder?: 'asc' | 'desc', moreLabel?: string, dateStyle?: 'full' | 'long' | 'medium' | 'short' }
   /**
    * The interface text the source theme itself printed (its "Read more" link, skip link, search placeholder, the
    * previous and next labels), by the `site/ui-strings` key it answers (`blog.read_more`, `nav.skip`): written over the
@@ -671,6 +673,8 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   if (site?.home?.kind === 'page' && (site.home.slug === undefined) === (site.home.view === undefined)) errors.push('site.home of kind page names neither or both of a slug and a view')
   if (site?.home?.kind === 'page' && site.home.view !== undefined && !Number.isInteger(site.home.view)) errors.push(`site.home.view ${String(site.home.view)} is not a whole number`)
   if (site?.lists?.tieOrder !== undefined && site.lists.tieOrder !== 'asc' && site.lists.tieOrder !== 'desc') errors.push(`site.lists.tieOrder ${String(site.lists.tieOrder)} is not asc or desc`)
+  if (site?.lists?.moreLabel !== undefined && (typeof site.lists.moreLabel !== 'string' || !/^[^<>\n]{1,40}$/.test(site.lists.moreLabel) || !site.lists.moreLabel.trim())) errors.push('site.lists.moreLabel is not plain words of 1-40 characters')
+  if (site?.lists?.dateStyle !== undefined && !['full', 'long', 'medium', 'short'].includes(site.lists.dateStyle)) errors.push(`site.lists.dateStyle ${String(site.lists.dateStyle)} is not full, long, medium or short`)
   for (const [route, layout] of Object.entries(site?.entryLayouts ?? {})) {
     if (typeof layout?.adjacent !== 'boolean') errors.push(`site.entryLayouts.${route}.adjacent is not true or false`)
     if (layout?.more !== undefined && (!Number.isSafeInteger(layout.more) || layout.more < 0 || layout.more > 20)) errors.push(`site.entryLayouts.${route}.more is not a count from 0 to 20`)
