@@ -10,11 +10,11 @@ import { initBehaviors } from '../components/_shared/behaviors'
 
 const SLIDER = '<div data-cr-behavior="carousel" data-cr-items=".slide"><div class="track"><div class="slide">One</div><div class="slide">Two</div><div class="slide">Three</div></div></div>'
 
-/** The track three 300 px slides wide, scrolled by its buttons as a browser would. */
-function layout(track: HTMLElement, width = 300): void {
+/** The track three 300 px slides wide, scrolled by its buttons as a browser would (`row`: its measured content width). */
+function layout(track: HTMLElement, width = 300, row = width * 3): void {
   let left = 0
   Object.defineProperty(track, 'clientWidth', { configurable: true, get: () => width })
-  Object.defineProperty(track, 'scrollWidth', { configurable: true, get: () => width * 3 })
+  Object.defineProperty(track, 'scrollWidth', { configurable: true, get: () => row })
   Object.defineProperty(track, 'scrollLeft', { configurable: true, get: () => left })
   track.scrollBy = ((options: ScrollToOptions) => {
     left = Math.max(0, Math.min(width * 2, left + (options.left ?? 0)))
@@ -33,6 +33,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 describe('carousel ends (behaviors.ts carousel)', () => {
@@ -68,6 +69,35 @@ describe('carousel ends (behaviors.ts carousel)', () => {
     expect(state()).toEqual([['Previous', false, null], ['Next', false, null]])
     layout(track())
     for (const callback of observed) callback()
+    expect(state()).toEqual([['Previous', true, 'true'], ['Next', false, 'false']])
+  })
+  it('a row that does not overflow yet (its frame as wide as its slides) keeps both on; a slide resizing sets the ends', () => {
+    const observed: Array<{ callback: () => void, boxes: Element[] }> = []
+    vi.stubGlobal('ResizeObserver', class {
+      boxes: Element[] = []
+      constructor(callback: () => void) { observed.push({ callback, boxes: this.boxes }) }
+      observe(box: Element) { this.boxes.push(box) }
+    })
+    layout(track(), 900, 900)
+    initBehaviors()
+    expect(state()).toEqual([['Previous', false, null], ['Next', false, null]])
+    expect(observed[0]!.boxes).toEqual([track(), ...document.querySelectorAll('.slide')])
+    layout(track())
+    observed[0]!.callback()
+    expect(state()).toEqual([['Previous', true, 'true'], ['Next', false, 'false']])
+    // Back to a row that fits: both on again, never left off.
+    layout(track(), 900, 900)
+    observed[0]!.callback()
+    expect(state()).toEqual([['Previous', false, 'false'], ['Next', false, 'false']])
+  })
+
+  it('the page\'s load measures a row laid out after the script ran', () => {
+    vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading')
+    layout(track(), 900, 900)
+    initBehaviors()
+    expect(state()).toEqual([['Previous', false, null], ['Next', false, null]])
+    layout(track())
+    window.dispatchEvent(new Event('load'))
     expect(state()).toEqual([['Previous', true, 'true'], ['Next', false, 'false']])
   })
 })
