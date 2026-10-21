@@ -1,5 +1,12 @@
 # @contentrain/types
 
+## 1.70.0
+
+### Minor Changes
+
+- 707351b: A footer column's heading can be a link, as the site printed it (a Beaver footer's `<h2><a href="/services/">OUR SERVICES</a></h2>`): `RawMenu.titleHref`, beside `title`. The importer writes it to the menu entry as `title_href` and adds a `title_href` ("Heading link", url) field to the menus model only when a source printed a linked heading; an address with no heading is dropped. The kit Footer's `columns[].titleHref` draws the heading as a link to it, in the heading's own colour; the starter reads it from the menu entry. A plain heading renders as before.
+- 707351b: PostCard: `moreLabel` prints the source's own read-more words under the excerpt ("READ ARTICLE"), only on a card with a link and as words (`aria-hidden`), so the title link stays the card's one link and a click on them reaches it. `dateStyle` (`full` | `long` | `medium` | `short`, default `long`) writes the date as the source does. The excerpt is capped at 75ch, so a one-column list at 1280 keeps lines readable. Nothing else changes for a card that sets neither. The plan's `site.lists.moreLabel` (plain words, 1-40 characters) and `site.lists.dateStyle` carry them; the starter's lists pass both to every card, and absent, the cards are as before.
+
 ## 1.69.0
 
 ### Minor Changes

@@ -1,5 +1,18 @@
 # @contentrain/wp-import
 
+## 0.16.0
+
+### Minor Changes
+
+- 707351b: A footer column's heading can be a link, as the site printed it (a Beaver footer's `<h2><a href="/services/">OUR SERVICES</a></h2>`): `RawMenu.titleHref`, beside `title`. The importer writes it to the menu entry as `title_href` and adds a `title_href` ("Heading link", url) field to the menus model only when a source printed a linked heading; an address with no heading is dropped. The kit Footer's `columns[].titleHref` draws the heading as a link to it, in the heading's own colour; the starter reads it from the menu entry. A plain heading renders as before.
+
+### Patch Changes
+
+- 92c95a8: Pages under different parents that share a slug (`/interior-redesign/faq/` and `/faq/`) keep their slug and their address: a slug is unique per type and parent, as WordPress keeps it, so no page is renamed (`faq-25`) and redirected away from its old URL. Where such pages exist, the type's slug field is unique per parent only and drops `unique` (the WP post ID stays unique); every other type, and a site whose slugs are all distinct, is unchanged. Two siblings sharing a slug are still renamed.
+- Updated dependencies [707351b]
+- Updated dependencies [707351b]
+  - @contentrain/types@1.70.0
+
 ## 0.15.3
 
 ### Patch Changes

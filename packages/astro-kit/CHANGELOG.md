@@ -1,5 +1,20 @@
 # @contentrain/astro-kit
 
+## 0.46.0
+
+### Minor Changes
+
+- 707351b: A footer column's heading can be a link, as the site printed it (a Beaver footer's `<h2><a href="/services/">OUR SERVICES</a></h2>`): `RawMenu.titleHref`, beside `title`. The importer writes it to the menu entry as `title_href` and adds a `title_href` ("Heading link", url) field to the menus model only when a source printed a linked heading; an address with no heading is dropped. The kit Footer's `columns[].titleHref` draws the heading as a link to it, in the heading's own colour; the starter reads it from the menu entry. A plain heading renders as before.
+- 707351b: PostCard: `moreLabel` prints the source's own read-more words under the excerpt ("READ ARTICLE"), only on a card with a link and as words (`aria-hidden`), so the title link stays the card's one link and a click on them reaches it. `dateStyle` (`full` | `long` | `medium` | `short`, default `long`) writes the date as the source does. The excerpt is capped at 75ch, so a one-column list at 1280 keeps lines readable. Nothing else changes for a card that sets neither. The plan's `site.lists.moreLabel` (plain words, 1-40 characters) and `site.lists.dateStyle` carry them; the starter's lists pass both to every card, and absent, the cards are as before.
+
+### Patch Changes
+
+- 707351b: A carousel island no longer has a dead button: it does not loop (owl's own default), so Previous is disabled (with `aria-disabled`) on the first slide and Next on the last, updated as the track scrolls (buttons, swipe or keys) and whenever the track or a slide resizes or the page finishes loading. Only a row measured wider than its frame has ends: one that does not overflow yet (inside a closed tab, or a frame still as wide as its slides) keeps both on, so the buttons are never left off on a carousel that can move. Before, both were always on and Previous on the first slide did nothing. A disabled control is drawn faded.
+- ce625c8: Split's body follows its band: on an inverse, accent or brand band (or a measured dark fill) the markdown body is drawn in the band's own text colour and muted role, as its heading is. Before, it kept the page's ink, so on an inverse band it was invisible (1:1) and on a fill it was under 4.5:1. A link in the body on a fill is drawn in the fill's ink. On the page's own surface nothing changes. The kit visual now fails a body text under 4.5:1 (3:1 large) on its band.
+- Updated dependencies [707351b]
+- Updated dependencies [707351b]
+  - @contentrain/types@1.70.0
+
 ## 0.45.8
 
 ### Patch Changes
