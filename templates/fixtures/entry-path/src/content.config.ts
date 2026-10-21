@@ -101,6 +101,7 @@ export const collections = {
       name: z.string(),
       slug: z.string(),
       title: z.string().optional(),
+      title_href: z.string().optional(),
       wp_id: z.number().int().optional(),
     }),
   }),

@@ -87,6 +87,12 @@ function control(label: string, onClick: () => void): HTMLButtonElement {
   return button
 }
 
+/** A carousel button on or off; `aria-disabled` is said once the row has been measured, and kept true to its state after. */
+function setEnd(button: HTMLButtonElement, off: boolean, measured: boolean): void {
+  button.disabled = off
+  if (measured || button.hasAttribute('aria-disabled')) button.setAttribute('aria-disabled', String(off))
+}
+
 function carousel(root: HTMLElement): void {
   const items = within(root, root.dataset.crItems)
   const track = items[0]?.parentElement
@@ -98,10 +104,27 @@ function carousel(root: HTMLElement): void {
   for (const item of items) Object.assign(item.style, { flex: '0 0 100%', scrollSnapAlign: 'start' })
   track.setAttribute('tabindex', '0')
   const go = (step: number) => track.scrollBy({ left: step * track.clientWidth })
+  const prev = control(root.dataset.crPrev ?? 'Previous', () => go(-1))
+  const next = control(root.dataset.crNext ?? 'Next', () => go(1))
+  // No loop (owl's own default): Previous is off on the first slide and Next on the last, so neither is a dead button.
+  // A row that does not overflow yet (a closed tab or dialog, a frame still sized to its slides) keeps both on: only a
+  // track measured wider than its frame has ends. The track or a slide resizing, and the page's load, measure it again.
+  const ends = () => {
+    const overflows = track.clientWidth > 0 && track.scrollWidth > track.clientWidth + 1
+    setEnd(prev, overflows && track.scrollLeft <= 1, overflows)
+    setEnd(next, overflows && track.scrollLeft + track.clientWidth >= track.scrollWidth - 1, overflows)
+  }
+  track.addEventListener('scroll', ends, { passive: true })
+  if (typeof ResizeObserver === 'function') {
+    const resized = new ResizeObserver(ends)
+    for (const box of [track, ...items]) resized.observe(box)
+  }
+  if (document.readyState !== 'complete') addEventListener('load', ends, { once: true })
   const bar = document.createElement('div')
   bar.className = 'cr-behavior-controls'
-  bar.append(control(root.dataset.crPrev ?? 'Previous', () => go(-1)), control(root.dataset.crNext ?? 'Next', () => go(1)))
+  bar.append(prev, next)
   track.after(bar)
+  ends()
 }
 
 function dialog(root: HTMLElement): void {

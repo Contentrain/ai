@@ -329,6 +329,19 @@ describe('rawToContentrain', () => {
     expect(menus.find(m => m.slug === 'legal')).not.toHaveProperty('title')
   })
 
+  it('a printed heading that is a link keeps its address; the model gains the field only then, and never without a heading', async () => {
+    const { raw } = await parseWxr(FIXTURE)
+    const [menu] = raw.menus ?? []
+    const plain = rawToContentrain({ ...raw, menus: [{ ...menu!, title: 'Company' }, { ...menu!, id: 77, slug: 'legal', name: 'Footer Menu 2', items: [], titleHref: '/legal/' }] }, { updatedBy: 'test' })
+    expect(JSON.parse(plain.files['.contentrain/models/menus.json']!).fields).not.toHaveProperty('title_href')
+    const linked = rawToContentrain({ ...raw, menus: [{ ...menu!, title: 'OUR SERVICES', titleHref: ' /services/ ' }, { ...menu!, id: 77, slug: 'legal', name: 'Footer Menu 2', items: [], titleHref: '/legal/' }] }, { updatedBy: 'test' })
+    expect(JSON.parse(linked.files['.contentrain/models/menus.json']!).fields.title_href).toMatchObject({ type: 'url', label: 'Heading link' })
+    const menus = Object.values(JSON.parse(linked.files['.contentrain/content/site/menus/data.json']!)) as Array<{ slug: string, title_href?: string }>
+    expect(menus.find(m => m.slug === menu!.slug)?.title_href).toBe('/services/')
+    // An address with no heading to carry it is dropped.
+    expect(menus.find(m => m.slug === 'legal')).not.toHaveProperty('title_href')
+  })
+
   it('is deterministic', async () => {
     const { raw } = await parseWxr(FIXTURE)
     const a = rawToContentrain(raw, { updatedBy: 'test' })

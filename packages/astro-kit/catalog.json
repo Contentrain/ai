@@ -3065,6 +3065,10 @@
                 "type": "string",
                 "description": "Heading shown above the links; leave out when the source shows none."
               },
+              "titleHref": {
+                "type": "url",
+                "description": "Where the heading links, when the source prints it as a link; leave out for a plain heading."
+              },
               "label": {
                 "type": "string",
                 "description": "Accessible name of the column navigation (the menu name); defaults to the title."
@@ -5125,6 +5129,22 @@
           "max": 4,
           "content": false,
           "description": "Clamp the excerpt to this many lines; absent, the layout's own (3 vertical, 2 otherwise)."
+        },
+        "moreLabel": {
+          "type": "string",
+          "description": "The source's own read-more words under the excerpt (READ ARTICLE); absent, none. Shown only on a card with a link; the title link stays the one link."
+        },
+        "dateStyle": {
+          "type": "select",
+          "options": [
+            "full",
+            "long",
+            "medium",
+            "short"
+          ],
+          "default": "long",
+          "content": false,
+          "description": "How the date is written (Intl dateStyle), as the source writes it; absent, long."
         }
       },
       "slots": {},

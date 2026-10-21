@@ -46,8 +46,8 @@ const footer = tv({
 interface Props {
   siteName: string
   tagline?: string | undefined
-  /** Link groups for the `columns` layout. */
-  columns?: Array<{ title?: string | undefined, label?: string | undefined, links: LinkInput[] }> | undefined
+  /** Link groups for the `columns` layout. `titleHref`: the heading is a link to it (a source heading printed as one). */
+  columns?: Array<{ title?: string | undefined, titleHref?: string | undefined, label?: string | undefined, links: LinkInput[] }> | undefined
   /** A single row of links (the footer menu). */
   links?: LinkInput[] | undefined
   social?: LinkInput[] | undefined
@@ -125,7 +125,7 @@ const mark = wordmark === 'fit' || wordmark === 'crop' ? wordmarkBox(siteName, w
     {layout === 'columns'
       ? columns.map(column => (
         <nav aria-label={column.label ?? column.title} data-cr-part="nav-footer">
-          {column.title && <p class="mb-3 font-semibold">{column.title}</p>}
+          {column.title && <p class="mb-3 font-semibold">{column.titleHref ? <a href={safeHref(column.titleHref)} class="text-current no-underline hover:underline">{column.title}</a> : column.title}</p>}
           <ul class="flex flex-col gap-2">
             {column.links.map(item => <li><a href={safeHref(item.href)} class={link()}>{item.label}</a></li>)}
           </ul>

@@ -705,6 +705,8 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
 
   // ── menus ──
   const menus = raw.menus ?? []
+  // A printed heading that is a link (x12's footer `<h2><a href="/services/">`): its address, only beside a heading.
+  const headingLink = (m: (typeof menus)[number]): boolean => Boolean(m.title && strip(m.title) && m.titleHref?.trim())
   if (menus.length) {
     addModel({
       id: 'menus', name: 'Menus', kind: 'collection', domain: 'site', i18n: false, title_field: 'name',
@@ -717,6 +719,8 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
         ...(menus.some((m) => m.locations?.length) ? { locations: { type: 'array', items: 'string', label: 'Locations', order: 50 } as FieldDef } : {}),
         // Only when the source printed a heading above a menu: the site prints this, never the name.
         ...(menus.some((m) => m.title && strip(m.title)) ? { title: { type: 'string', label: 'Heading', order: 15 } as FieldDef } : {}),
+        // Only when a printed heading is a link: the heading keeps it.
+        ...(menus.some(headingLink) ? { title_href: { type: 'url', label: 'Heading link', order: 16 } as FieldDef } : {}),
       },
     })
     const toTarget = relationOver([...contentModelIds, ...taxonomies.map(taxModelId)])
@@ -747,6 +751,7 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
         ...(m.id !== null && m.id > 0 ? { wp_id: m.id } : {}),
         ...(m.locations?.length ? { locations: m.locations } : {}),
         ...(m.title && strip(m.title) ? { title: strip(m.title) } : {}),
+        ...(headingLink(m) ? { title_href: m.titleHref!.trim() } : {}),
       }
       metas.menus![mid] = importMeta('published')
       for (const i of m.items) {
