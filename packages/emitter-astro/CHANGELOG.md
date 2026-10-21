@@ -1,5 +1,12 @@
 # @contentrain/emitter-astro
 
+## 0.18.54
+
+### Patch Changes
+
+- Updated dependencies [a5bfce7]
+  - @contentrain/types@1.71.0
+
 ## 0.18.53
 
 ### Patch Changes

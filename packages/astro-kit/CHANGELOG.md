@@ -1,5 +1,13 @@
 # @contentrain/astro-kit
 
+## 0.46.1
+
+### Patch Changes
+
+- a5bfce7: A carousel island takes every slide: past 50 (x10's 59-slide metaslider) it was cut at the item cap, so its track held slides it did not count and it stayed static with no controls. The cap stays for islands that wire each item one by one (tabs, counters, filters).
+- Updated dependencies [a5bfce7]
+  - @contentrain/types@1.71.0
+
 ## 0.46.0
 
 ### Minor Changes
