@@ -12,13 +12,20 @@ import { targetsOf, type Targets } from './fields'
 import { authorHref, byId, getPosts, getSite, getStrings, pageHref, postHref, termHref, type Page, type Post } from './content'
 import { withBase } from './base'
 import { pagePath, permalinks } from './routes'
+import { composedViews } from '../views/composed'
 import type { CustomType } from '../site.config'
+
+/** One page of a post list: its posts (sticky ones first on page 1), where the list lives, which page, how many. */
+export interface ListPage { posts: Post[], base: string, current: number, total: number }
 
 export type Route =
   | { view: 'post', post: Post }
-  | { view: 'page', page: Page, trail: Array<{ title: string, href: string }>, isHome: boolean, subpages: Array<{ title: string, href: string }> }
+  /** `list`: page 1 of the post list, when a composed page carries it (the front page, or the posts page, drawn from sections). */
+  | { view: 'page', page: Page, trail: Array<{ title: string, href: string }>, isHome: boolean, subpages: Array<{ title: string, href: string }>, list?: ListPage }
   | { view: 'entry', type: CustomType, entry: TypeEntry, targets: Targets }
   | { view: 'list', title?: string, eyebrow?: string, description?: string, seo?: Page['data']['seo'], posts: Post[], cards?: Card[], base: string, current: number, total: number }
+
+type PageRoute = Extract<Route, { view: 'page' }>
 
 async function buildRoutes(): Promise<Map<string, Route>> {
   const [posts, pages, categories, tags, authors, t, site] = await Promise.all([
@@ -36,16 +43,26 @@ async function buildRoutes(): Promise<Map<string, Route>> {
    * A post list split into pages at `base`, `base/page/2/`, … — page 1 exists even when empty. `leading`: posts the first
    * page shows on top, as WordPress does for sticky posts on the posts page — those inside the first chunk move up, those
    * outside it are added, so the page is longer than `postsPerPage`. Later pages are plain chronological chunks (a sticky
-   * post shows again at its date) and the page count ignores `leading`.
+   * post shows again at its date) and the page count ignores `leading`. `first`: the route page 1 is instead, a composed
+   * page that carries the list (`list`) among its own sections; the later pages stay lists.
    */
-  const paginate = (base: string, list: Post[], heading: Omit<Extract<Route, { view: 'list' }>, 'view' | 'posts' | 'base' | 'current' | 'total'>, leading: Post[] = []) => {
+  const paginate = (base: string, list: Post[], heading: Omit<Extract<Route, { view: 'list' }>, 'view' | 'posts' | 'base' | 'current' | 'total'>, leading: Post[] = [], first?: (page: ListPage) => Route) => {
     const size = siteConfig.postsPerPage
     const total = Math.max(1, Math.ceil(list.length / size))
     for (let current = 1; current <= total; current++) {
       const chunk = list.slice((current - 1) * size, current * size)
-      add(pagePath(base, current), { view: 'list', ...heading, posts: current === 1 && leading.length ? [...leading, ...chunk.filter(post => !leading.includes(post))] : chunk, base, current, total })
+      const page: ListPage = { posts: current === 1 && leading.length ? [...leading, ...chunk.filter(post => !leading.includes(post))] : chunk, base, current, total }
+      add(pagePath(base, current), current === 1 && first ? first(page) : { view: 'list', ...heading, ...page })
     }
   }
+
+  // The posts index: the front page, or — on a site whose front page is a static page — its own address (WordPress:
+  // Settings → Reading). A front page composed from sections with no page entry (`home.view`) keeps the list at `/` when
+  // the site gives it no address of its own.
+  const front = siteConfig.home.kind === 'page' && siteConfig.home.view !== undefined && !siteConfig.home.slug ? frontPage(site, siteConfig.home.view) : undefined
+  const blog = siteConfig.home.kind === 'posts' || (front && withBase(permalinks.blog || '/') === home) ? home : withBase(permalinks.blog)
+  // The posts page, when it is composed from sections: it keeps them, with the list's first page among them.
+  let postsRoute: PageRoute | undefined
 
   for (const post of posts) add(postHref(post, categories), { view: 'post', post })
 
@@ -59,25 +76,31 @@ async function buildRoutes(): Promise<Map<string, Route>> {
     const href = pageHref(page, pages)
     // A source that prints its breadcrumb on every page starts it from the home page, top-level pages included.
     if (siteConfig.chrome?.breadcrumbs === 'always' && href !== home && trail[0]?.href !== home) trail.unshift({ title: site.title, href: home })
-    // The page WordPress uses as the posts page (Settings → Reading) shows the posts, not its own body.
-    if (siteConfig.home.kind === 'page' && href === withBase(permalinks.blog)) continue
     // Its children, in WordPress page order: an empty parent page lists them instead of standing blank.
     const subpages = [...pages.values()]
       .filter(child => child.data.parent?.id === page.id)
       .toSorted((a, b) => (a.data.menu_order ?? 0) - (b.data.menu_order ?? 0) || a.data.title.localeCompare(b.data.title))
       .map(child => ({ title: child.data.title, href: pageHref(child, pages) }))
-    add(href, { view: 'page', page, trail, isHome: href === home, subpages })
+    const route: PageRoute = { view: 'page', page, trail, isHome: href === home, subpages }
+    // The page WordPress uses as the posts page (Settings → Reading) shows the posts, not its own body; one composed from
+    // sections keeps them, the list among them (below).
+    if (siteConfig.home.kind === 'page' && href === blog) {
+      if (composedViews[page.data.wp_id ?? -1]) postsRoute = route
+      continue
+    }
+    add(href, route)
   }
 
-  // The posts index: the front page, or — on a site whose front page is a
-  // static page — its own address (WordPress: Settings → Reading).
-  const blog = siteConfig.home.kind === 'posts' ? home : withBase(permalinks.blog)
   // The posts page keeps the name and description its editors gave it ("Journal"), as in WordPress.
   const postsPage = blog === home ? undefined : [...pages.values()].find(page => pageHref(page, pages) === blog)
   const blogDescription = postsPage?.data.seo?.description ?? postsPage?.data.excerpt
   // …and the SEO its plugin gave it: the document title, the link preview's own title and text (Yoast's og:title).
   const blogSeo = postsPage?.data.seo
-  paginate(blog, posts, blog === home ? {} : { title: postsPage?.data.title ?? t('blog.title'), ...(blogDescription ? { description: blogDescription } : {}), ...(blogSeo ? { seo: blogSeo } : {}) }, posts.filter(post => post.data.sticky))
+  const frontRoute: PageRoute | undefined = front && { view: 'page', page: front, trail: [], isHome: true, subpages: [] }
+  if (frontRoute && blog !== home) add(home, frontRoute)
+  // Page 1 of the list in a composed page: the front page when the list is at `/`, else the posts page when it has sections.
+  const carrier = blog === home ? frontRoute : postsRoute
+  paginate(blog, posts, blog === home ? {} : { title: postsPage?.data.title ?? t('blog.title'), ...(blogDescription ? { description: blogDescription } : {}), ...(blogSeo ? { seo: blogSeo } : {}) }, posts.filter(post => post.data.sticky), carrier ? list => ({ ...carrier, list }) : undefined)
 
   for (const category of categories.values()) {
     paginate(termHref('category', category, categories), posts.filter(post => post.data.categories.some(ref => ref.id === category.id)), {
@@ -130,6 +153,15 @@ async function addTypeRoutes(add: (href: string, route: Route) => void): Promise
       }
     }
   }
+}
+
+/**
+ * The front page a migration composed from sections with no page entry of its own (`home.view`): the site's title, its
+ * home SEO (the `site` singleton's `seo`, `social_image` its picture), no body, keyed to the composed view by `wp_id`.
+ */
+function frontPage(site: Awaited<ReturnType<typeof getSite>>, view: number): Page {
+  const seo = site.seo || site.social_image ? { seo: { ...site.seo, ...(site.social_image ? { image: site.social_image } : {}), nofollow: false, noindex: false } } : {}
+  return { id: 'front-page', collection: 'pages', data: { id: 'front-page', slug: '', title: site.title, wp_id: view, ...seo } }
 }
 
 let table: Promise<Map<string, Route>> | undefined

@@ -521,6 +521,20 @@ describe('validateProjectPlan', () => {
     }
   })
 
+  it('a page front names one page by slug, or a composed view with no page entry, never both or neither', () => {
+    const p = plan()
+    p.site.home = { kind: 'page', slug: 'welcome' }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.home = { kind: 'page', view: -2 }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.home = { kind: 'page', slug: 'welcome', view: -2 }
+    expect(validateProjectPlan(p).errors).toEqual(['site.home of kind page names neither or both of a slug and a view'])
+    p.site.home = { kind: 'page' }
+    expect(validateProjectPlan(p).errors).toEqual(['site.home of kind page names neither or both of a slug and a view'])
+    p.site.home = { kind: 'page', view: 1.5 }
+    expect(validateProjectPlan(p).errors).toEqual(['site.home.view 1.5 is not a whole number'])
+  })
+
   it('checks the footer columns packed at the end edge', () => {
     const p = plan()
     p.site.chrome = { footerColumns: { gap: 128, size: 17.88, narrowGap: 63, narrowSize: 16.4 } }

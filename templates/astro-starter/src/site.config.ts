@@ -100,8 +100,12 @@ export interface SiteConfig {
    * Absent: `uncategorized`.
    */
   defaultCategory?: string
-  /** The front page: the posts index, or one page by slug. */
-  home: { kind: 'posts' } | { kind: 'page', slug: string }
+  /**
+   * The front page: the posts index, or one page by `slug`, or (`view`, no slug) the composed view a migration drew for
+   * a front with no page entry (a posts-front site whose theme draws a front): its title and SEO are the site's. The posts
+   * are then at `permalinks.blog`, or at `/` under it when that is `/` (the list's first page in the view, `/page/2/` on).
+   */
+  home: { kind: 'posts' } | { kind: 'page', slug?: string, view?: number }
   /**
    * The document title of a page with a title of its own: `{title}` and `{site}` are filled in.
    * A migration copies the source's pattern (Yoast's separator, WordPress's en dash); an entry's
