@@ -5,3 +5,5 @@ import PostsPage from './PostsPage.astro'
 export const composedViews: Partial<Record<number, typeof PageView>> = {
   802: PostsPage,
 }
+
+export const listViews: ReadonlySet<number> = new Set([802])

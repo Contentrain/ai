@@ -6,3 +6,5 @@ import Front from './Front.astro'
 export const composedViews: Partial<Record<number, typeof PageView>> = {
   [-2]: Front,
 }
+
+export const listViews: ReadonlySet<number> = new Set([-2])

@@ -1,0 +1,16 @@
+---
+// The posts page a migration composed from sections, with no list section of its own.
+import type { Page } from '../../lib/content'
+import ComposedPage from '../ComposedPage.astro'
+
+interface Props {
+  page: Page
+  trail: Array<{ title: string, href: string }>
+  isHome: boolean
+}
+
+const { page, trail, isHome } = Astro.props
+---
+<ComposedPage page={page} trail={trail} isHome={isHome}>
+  <p>Fresh from the oven, every morning.</p>
+</ComposedPage>

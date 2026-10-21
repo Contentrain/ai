@@ -13,7 +13,7 @@ import { targetsOf, type Targets } from './fields'
 import { authorHref, byId, getPosts, getSite, getStrings, pageHref, postHref, termHref, type Page, type Post } from './content'
 import { withBase } from './base'
 import { pagePath, permalinks } from './routes'
-import { composedViews } from '../views/composed'
+import * as composed from '../views/composed'
 import type { CustomType } from '../site.config'
 
 /** One page of a post list: its posts (sticky ones first on page 1), where the list lives, which page, how many. */
@@ -62,7 +62,12 @@ async function buildRoutes(): Promise<Map<string, Route>> {
   // the site gives it no address of its own.
   const front = siteConfig.home.kind === 'page' && siteConfig.home.view !== undefined && !siteConfig.home.slug ? frontPage(site, siteConfig.home.view) : undefined
   const blog = siteConfig.home.kind === 'posts' || (front && withBase(permalinks.blog || '/') === home) ? home : withBase(permalinks.blog)
-  // The posts page, when it is composed from sections: it keeps them, with the list's first page among them.
+  // The composed views that print the list they carry (`listViews`). An index written without it (an older writer, an
+  // agent's own) names none: the list's first page then stays a plain list, never a page that drops it.
+  const { composedViews } = composed
+  const listViews = 'listViews' in composed ? composed.listViews as ReadonlySet<number> : new Set<number>()
+  const takesList = (route: PageRoute | undefined) => route && listViews.has(route.page.data.wp_id ?? -1) ? route : undefined
+  // The posts page, when it is composed from sections and prints the list: it keeps them, with the list's first page among them.
   let postsRoute: PageRoute | undefined
 
   for (const post of posts) add(postHref(post, categories), { view: 'post', post })
@@ -86,7 +91,7 @@ async function buildRoutes(): Promise<Map<string, Route>> {
     // The page WordPress uses as the posts page (Settings → Reading) shows the posts, not its own body; one composed from
     // sections keeps them, the list among them (below).
     if (siteConfig.home.kind === 'page' && href === blog) {
-      if (composedViews[page.data.wp_id ?? -1]) postsRoute = route
+      if (composedViews[page.data.wp_id ?? -1]) postsRoute = takesList(route)
       continue
     }
     add(href, route)
@@ -99,8 +104,9 @@ async function buildRoutes(): Promise<Map<string, Route>> {
   const blogSeo = postsPage?.data.seo
   const frontRoute: PageRoute | undefined = front && { view: 'page', page: front, trail: [], isHome: true, subpages: [] }
   if (frontRoute && blog !== home) add(home, frontRoute)
-  // Page 1 of the list in a composed page: the front page when the list is at `/`, else the posts page when it has sections.
-  const carrier = blog === home ? frontRoute : postsRoute
+  // Page 1 of the list in a composed page that prints it: the front page when the list is at `/`, else the posts page when
+  // it has sections.
+  const carrier = blog === home ? takesList(frontRoute) : postsRoute
   paginate(blog, posts, blog === home ? {} : { title: postsPage?.data.title ?? t('blog.title'), ...(blogDescription ? { description: blogDescription } : {}), ...(blogSeo ? { seo: blogSeo } : {}) }, posts.filter(post => post.data.sticky), carrier ? list => ({ ...carrier, list }) : undefined)
 
   for (const category of categories.values()) {
