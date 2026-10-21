@@ -7,6 +7,7 @@ import Section from '../_shared/Section.astro'
 import { instanceId } from '../_shared/instance-id'
 import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
+import { cardImage } from '../_shared/card-image'
 import { imageOf, type ImageSource } from '../_shared/image'
 import { profile } from './team'
 import { safeHref } from '../_shared/safe-url'
@@ -109,7 +110,7 @@ const NameHeading = heading ? 'h3' : 'h2'
       {items.map(member => (
         <li class={s.member()}>
           {/* The portrait's text defaults to the name: a photo of a named person is not decoration. */}
-          {imageOf(member.image, member.imageAlt ?? member.name) && <div class={`${s.portrait()} kit-portrait`}><KitImage image={imageOf(member.image, member.imageAlt ?? member.name)!} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" class="aspect-square w-full object-cover" /></div>}
+          {imageOf(member.image, member.imageAlt ?? member.name) && <div class={`${s.portrait()} kit-portrait`}><KitImage image={cardImage(imageOf(member.image, member.imageAlt ?? member.name), member.name, !!member.href)!} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" class="aspect-square w-full object-cover" /></div>}
           <NameHeading class={s.name()}>
             {member.href
               ? <a href={safeHref(member.href)} class="text-current no-underline after:absolute after:inset-0 after:content-[''] hover:text-accent-text">{member.name}</a>

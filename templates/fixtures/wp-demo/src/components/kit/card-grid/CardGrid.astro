@@ -7,6 +7,7 @@ import Section, { type Tone } from '../_shared/Section.astro'
 import { instanceId } from '../_shared/instance-id'
 import { measuredGrid } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
+import { cardImage } from '../_shared/card-image'
 import { imageOf, type ImageSource } from '../_shared/image'
 import { safeHref } from '../_shared/safe-url'
 import { muted, mutedReset } from '../_shared/muted'
@@ -130,7 +131,7 @@ const number = (i: number) => String(i + 1).padStart(2, '0')
           {item.text ? <p class={r.text()} data-kit-text>{item.text}</p> : <span aria-hidden="true" />}
           {(imageOf(item.image, item.imageAlt) || (item.href && item.linkLabel)) && (
             <div class={r.end({ class: imageOf(item.image, item.imageAlt) ? 'md:self-start' : undefined })}>
-              {imageOf(item.image, item.imageAlt) && <div class={r.media()}><KitImage image={imageOf(item.image, item.imageAlt)!} sizes="(min-width: 768px) 12rem, 100vw" class="aspect-[3/2] w-full object-cover" /></div>}
+              {imageOf(item.image, item.imageAlt) && <div class={r.media()}><KitImage image={cardImage(imageOf(item.image, item.imageAlt), item.title, !!item.href && !item.linkLabel)!} sizes="(min-width: 768px) 12rem, 100vw" class="aspect-[3/2] w-full object-cover" /></div>}
               {item.href && item.linkLabel && <a href={safeHref(item.href)} class={r.link()}>{item.linkLabel}</a>}
             </div>
           )}
@@ -141,7 +142,7 @@ const number = (i: number) => String(i + 1).padStart(2, '0')
     <ul class={list({ class: measuredGrid(measured) })}>
       {items.map(item => (
         <li class={card()}>
-          {imageOf(item.image, item.imageAlt) && <div class={media()}><KitImage image={imageOf(item.image, item.imageAlt)!} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover transition duration-300 group-hover:scale-[1.02]" /></div>}
+          {imageOf(item.image, item.imageAlt) && <div class={media()}><KitImage image={cardImage(imageOf(item.image, item.imageAlt), item.title, !!item.href && !item.linkLabel)!} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover transition duration-300 group-hover:scale-[1.02]" /></div>}
           {item.icon && <KitImage image={{ src: item.icon, alt: '' }} class="h-10 w-10 object-contain" />}
           {item.eyebrow && <p class="text-sm font-medium text-accent-text">{item.eyebrow}</p>}
           <CardHeading class={cardTitle()}>

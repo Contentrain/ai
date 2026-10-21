@@ -9,6 +9,7 @@
     "KitImage.astro",
     "Lines.astro",
     "Section.astro",
+    "card-image.ts",
     "image-widths.ts",
     "instance-id.ts",
     "measured.ts",

@@ -8,6 +8,7 @@ import { tv } from 'tailwind-variants'
 import KitImage from '../_shared/KitImage.astro'
 import type { ImageInput, LinkInput } from '../_shared/types'
 import { safeHref } from '../_shared/safe-url'
+import { cardImage } from '../_shared/card-image'
 
 const card = tv({
   slots: {
@@ -82,7 +83,7 @@ const Heading = `h${headingLevel}` as 'h2' | 'h3'
 <article class={slots.root()}>
   {image && layout !== 'minimal' && (
     <div class={slots.media()}>
-      <KitImage image={image} sizes={sizes ?? (layout === 'horizontal' ? '256px' : '(min-width: 1024px) 360px, 100vw')} class:list={['w-full object-cover transition duration-300 group-hover:scale-[1.02]', !imageStyle && 'aspect-[16/9]']} style={imageStyle} />
+      <KitImage image={cardImage(image, title, !!href)!} sizes={sizes ?? (layout === 'horizontal' ? '256px' : '(min-width: 1024px) 360px, 100vw')} class:list={['w-full object-cover transition duration-300 group-hover:scale-[1.02]', !imageStyle && 'aspect-[16/9]']} style={imageStyle} />
     </div>
   )}
   <div class={slots.body()}>
