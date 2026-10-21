@@ -1,0 +1,42 @@
+{
+  "siteConfig": [
+    {
+      "from": "  home: { kind: 'posts' },",
+      "to": "  home: { kind: 'page', view: -2 },"
+    },
+    {
+      "from": "    blog: '/blog/',",
+      "to": "    blog: '/',"
+    },
+    {
+      "from": "  postsPerPage: 10,",
+      "to": "  postsPerPage: 2,"
+    }
+  ],
+  "distFiles": {
+    "index.html": {
+      "contains": [
+        "Fresh from the oven, every morning.",
+        "<li>Pinned recipe</li>",
+        "<li>The oven we kept</li>",
+        "<li>Slower rise</li>",
+        "Page 1 of 2"
+      ]
+    },
+    "page/2/index.html": {
+      "contains": [
+        "First loaf",
+        "Pinned recipe"
+      ],
+      "excludes": [
+        "Fresh from the oven"
+      ]
+    },
+    "sitemap-0.xml": {
+      "contains": [
+        "https://example.com/</loc>",
+        "https://example.com/page/2/</loc>"
+      ]
+    }
+  }
+}
