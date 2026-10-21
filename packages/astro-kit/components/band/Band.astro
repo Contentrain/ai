@@ -12,6 +12,7 @@ import type { ActionInput, ImageInput, MeasuredStyle } from '../_shared/types'
 import { safeHref } from '../_shared/safe-url'
 import { instanceId } from '../_shared/instance-id'
 import { muted } from '../_shared/muted'
+import { cardImage } from '../_shared/card-image'
 
 const band = tv({
   slots: {
@@ -134,7 +135,7 @@ const hasCopy = Boolean(heading || eyebrow || lead || actions.length)
       <ul class={s.list({ class: measuredGrid(measured) })}>
         {items.map(item => (
           <li class={s.item()}>
-            {item.media && <div class={s.itemMedia()}><KitImage image={{ src: item.media, alt: item.mediaAlt ?? '' }} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover" /></div>}
+            {item.media && <div class={s.itemMedia()}><KitImage image={cardImage({ src: item.media, alt: item.mediaAlt ?? '' }, item.title, !!item.href && !item.linkLabel)!} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" class="aspect-[3/2] w-full object-cover" /></div>}
             {item.icon && <KitImage image={{ src: item.icon, alt: '' }} class="h-10 w-10 object-contain" />}
             {item.value && <p class={s.itemValue()}>{item.value}</p>}
             {item.title && (

@@ -105,6 +105,7 @@
         "KitImage.astro",
         "Lines.astro",
         "Section.astro",
+        "card-image.ts",
         "image-widths.ts",
         "instance-id.ts",
         "measured.ts",
@@ -790,6 +791,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "card-image.ts",
         "image-widths.ts",
         "image.ts",
         "instance-id.ts",
@@ -5015,6 +5017,7 @@
       "uses": [],
       "shared": [
         "KitImage.astro",
+        "card-image.ts",
         "image-widths.ts",
         "safe-url.ts",
         "types.ts"
@@ -7824,6 +7827,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "card-image.ts",
         "image-widths.ts",
         "image.ts",
         "instance-id.ts",

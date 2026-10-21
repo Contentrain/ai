@@ -7,6 +7,7 @@
   "shared": [
     "KitImage.astro",
     "Section.astro",
+    "card-image.ts",
     "image-widths.ts",
     "image.ts",
     "instance-id.ts",
