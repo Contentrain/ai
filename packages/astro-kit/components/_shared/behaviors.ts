@@ -19,15 +19,20 @@ import { videoTarget } from './embed-target'
 type Kind = 'disclosure' | 'tablist' | 'carousel' | 'dialog' | 'countup' | 'toggle' | 'filter' | 'anchor' | 'lightbox'
 
 const KINDS: ReadonlySet<string> = new Set<Kind>(['disclosure', 'tablist', 'carousel', 'dialog', 'countup', 'toggle', 'filter', 'anchor', 'lightbox'])
-/** Past this many items an island wires the first ones; the rest stay visible as printed (said on the receipt). */
+/**
+ * Past this many items an island that wires each item (tabs, a counter, a filter) wires the first ones; the rest stay
+ * visible as printed (said on the receipt). A carousel wires none of its slides one by one (one scroll-snap track), so it
+ * takes every slide: a 59-slide slider (x10's metaslider) cut at 50 left its track with slides it did not count, and stayed
+ * static with no controls.
+ */
 const MAX_ITEMS = 50
 
 const reduced = (): boolean => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Elements under the island root for a selector the engine wrote; nothing (never a throw) for a bad selector. */
-function within(root: HTMLElement, selector: string | undefined): HTMLElement[] {
+function within(root: HTMLElement, selector: string | undefined, limit = MAX_ITEMS): HTMLElement[] {
   if (!selector) return []
-  try { return [...root.querySelectorAll<HTMLElement>(selector)].slice(0, MAX_ITEMS) }
+  try { return [...root.querySelectorAll<HTMLElement>(selector)].slice(0, limit) }
   catch { return [] }
 }
 
@@ -94,9 +99,9 @@ function setEnd(button: HTMLButtonElement, off: boolean, measured: boolean): voi
 }
 
 function carousel(root: HTMLElement): void {
-  const items = within(root, root.dataset.crItems)
+  const items = within(root, root.dataset.crItems, Infinity)
   const track = items[0]?.parentElement
-  // Past MAX_ITEMS (or other children in the track) the carousel stays static: never squeeze unwired slides into the row.
+  // Other children in the track keep the carousel static: never squeeze what is not a slide into the row.
   if (items.length < 2 || !track || !items.every(item => item.parentElement === track) || track.children.length !== items.length) return
   // A scroll-snap track: the browser moves it (swipe, keys, scroll); the buttons only scroll it. No timer: a slider
   // that advanced by itself on the old site waits for the visitor here (said on the receipt).
