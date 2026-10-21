@@ -56,7 +56,7 @@ describe('a table in rich text with no table block around it scrolls in a named 
     const links = await readFile(join(STARTER, 'src', 'lib', 'links.ts'), 'utf8')
     expect(links).toContain("if (result.includes('<table')) result = scrollingTables(result, tableLabel(await getStrings()))")
     const fields = await readFile(join(STARTER, 'src', 'lib', 'fields.ts'), 'utf8')
-    expect(fields).toContain("html: value.includes('<table') ? scrollingTables(value, tableLabel(await getStrings())) : value")
+    expect(fields).toContain("html: html.includes('<table') ? scrollingTables(html, tableLabel(await getStrings())) : html")
     const dir = join(STARTER, '.contentrain', 'content', 'site', 'ui-strings')
     const locales = await readdir(dir)
     expect(locales.length).toBeGreaterThan(1)
