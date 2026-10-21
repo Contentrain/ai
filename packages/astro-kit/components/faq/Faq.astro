@@ -1,13 +1,14 @@
 ---
 // Questions and answers as native disclosure widgets (<details>) — no script.
-// `exclusive` groups them by name, so opening one closes the others. With
-// `schema`, the page also carries FAQPage structured data for search engines
-// and AI answers.
+// `exclusive` groups them by name, so opening one closes the others. The first
+// FAQ on a page with an answered question also carries the page's FAQPage
+// structured data for search engines and AI answers (`schema={false}`: none).
 import { tv } from 'tailwind-variants'
 import Section from '../_shared/Section.astro'
 import { measuredColumns } from '../_shared/measured'
 import type { MeasuredStyle } from '../_shared/types'
 import { instanceId } from '../_shared/instance-id'
+import { firstOnPage } from '../_shared/once-per-page'
 import { muted } from '../_shared/muted'
 
 export interface FaqItem {
@@ -78,7 +79,7 @@ interface Props {
   exclusive?: boolean | undefined
   /** Open the first answer. */
   openFirst?: boolean | undefined
-  /** Add FAQPage structured data (JSON-LD). Once per page. */
+  /** FAQPage structured data (JSON-LD) from the answered questions; on by default, printed by the first FAQ on the page only. */
   schema?: boolean | undefined
   tone?: 'default' | 'muted' | 'inverse' | 'accent' | undefined
   /** The source section's measured style (`MeasuredStyle`): frame, padding, fill, background image, columns per width, gap. Absent, the site's tokens; present, it wins over tone and columns. */
@@ -88,7 +89,7 @@ interface Props {
   entry?: string | undefined
 }
 
-const { items, heading, intro, layout, columns, icon, numbered = false, style, questionStyle, exclusive = false, openFirst = false, schema = false, tone, measured, id: givenId } = Astro.props
+const { items, heading, intro, layout, columns, icon, numbered = false, style, questionStyle, exclusive = false, openFirst = false, schema = true, tone, measured, id: givenId } = Astro.props
 // Two on one page never share an id: their labels and controls would point into each other.
 const id = instanceId(Astro.locals, givenId, 'faq')
 const s = faq({ layout, columns, icon, numbered, style, questionStyle: style === 'plain' ? 'heading' : questionStyle, tone })
@@ -105,9 +106,10 @@ const plain = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&(?:nbsp|
 const MEDIA = /<(?:img|picture|video|audio|iframe|svg|embed|object|canvas)\b/i
 const answered = items.map(item => plain(item.answer) !== '' || MEDIA.test(item.answer))
 const firstAnswered = answered.indexOf(true)
-// FAQPage needs each question's acceptedAnswer text, so a question without one is left out of it.
+// FAQPage needs each question's acceptedAnswer text, so a question without one is left out of it. One per page: a FAQ
+// with nothing to state does not take the page's turn.
 const withText = items.filter(item => plain(item.answer) !== '')
-const structured = schema && withText.length > 0
+const structured = schema && withText.length > 0 && firstOnPage(Astro.locals, 'faq-page')
   ? JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'FAQPage',

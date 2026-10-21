@@ -49,14 +49,14 @@ interface Props {
   showLabel?: string | undefined
   aspect?: 'auto' | 'video' | 'portrait' | 'square' | 'map' | undefined
   width?: 'prose' | 'page' | undefined
-  /** Add VideoObject structured data (JSON-LD) for a video with a name (`title` or `caption`). */
+  /** VideoObject structured data (JSON-LD) for a video with a name (`title` or `caption`); on by default, `false`: none. */
   schema?: boolean | undefined
   /** When the video was published (ISO date), for the VideoObject's uploadDate; left out when unknown. */
   uploaded?: string | undefined
   id?: string | undefined
 }
 
-const { url, address, title, caption, poster, playLabel = 'Play', showLabel = 'Show', aspect = 'auto', width, schema = false, uploaded, id } = Astro.props
+const { url, address, title, caption, poster, playLabel = 'Play', showLabel = 'Show', aspect = 'auto', width, schema = true, uploaded, id } = Astro.props
 const target = (url ? embedTarget(url) : null) ?? (address && !url ? mapTarget(address) : null)
 const shape = aspect !== 'auto' ? aspect : target?.portrait ? 'portrait' : target?.kind === 'map' ? 'map' : 'video'
 // A player strip (Spotify, SoundCloud) has a fixed height, not a ratio.

@@ -17,7 +17,7 @@
     "poster": { "type": "object", "fields": { "src": { "type": "image", "required": true }, "alt": { "type": "string", "required": true }, "width": { "type": "integer" }, "height": { "type": "integer" } }, "description": "Local poster image (an ImageInput; its alt is not used, the link names the embed). Without one the poster is a plain dark panel. Never a provider thumbnail URL: that would be a third-party request before the click." },
     "playLabel": { "type": "string", "description": "Poster action for a video or audio player (ui-strings embed.play)." },
     "showLabel": { "type": "string", "description": "Poster action for a map or widget (ui-strings embed.show)." },
-    "schema": { "type": "boolean", "description": "Print a VideoObject (JSON-LD) for a video with a title: name, caption as description, page and embed url, the local poster or the YouTube still as thumbnail (a URL in the data, not a request). Set it on video embeds that are the page's own video." },
+    "schema": { "type": "boolean", "default": true, "content": false, "description": "A VideoObject (JSON-LD) for a video with a title: name, caption as description, page and embed url, the local poster or the YouTube still as thumbnail (a URL in the data, not a request). On by default; a video with no title, a map or a player prints none. false: none." },
     "uploaded": { "type": "string", "description": "The video's upload date (ISO 8601), printed as uploadDate only when the source states it." },
     "id": { "type": "string", "description": "Element id." }
   },

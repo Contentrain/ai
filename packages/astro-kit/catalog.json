@@ -2403,7 +2403,9 @@
         },
         "schema": {
           "type": "boolean",
-          "description": "Print a VideoObject (JSON-LD) for a video with a title: name, caption as description, page and embed url, the local poster or the YouTube still as thumbnail (a URL in the data, not a request). Set it on video embeds that are the page's own video."
+          "default": true,
+          "content": false,
+          "description": "A VideoObject (JSON-LD) for a video with a title: name, caption as description, page and embed url, the local poster or the YouTube still as thumbnail (a URL in the data, not a request). On by default; a video with no title, a map or a player prints none. false: none."
         },
         "uploaded": {
           "type": "string",
@@ -2451,6 +2453,7 @@
         "instance-id.ts",
         "measured.ts",
         "muted.ts",
+        "once-per-page.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -2555,9 +2558,9 @@
         },
         "schema": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "content": false,
-          "description": "Emit FAQPage JSON-LD built from these items. Use on at most one FAQ per page, and only when the page is really a FAQ."
+          "description": "FAQPage JSON-LD built from the answered items. On by default; only the first FAQ on a page that has an answered question prints it. false: none (questions that are not the page's own FAQ)."
         },
         "measured": {
           "type": "object",

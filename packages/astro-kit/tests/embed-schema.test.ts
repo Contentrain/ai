@@ -15,9 +15,9 @@ async function youtubeIdOf() {
 }
 
 describe('an Embed\'s VideoObject JSON-LD', () => {
-  it('is printed only when asked, for a video that has a name', async () => {
+  it('is printed by default for a video that has a name, never for a map or a player, and not when turned off', async () => {
     const source = await readFile(EMBED, 'utf8')
-    expect(source).toContain('schema = false')
+    expect(source).toContain('schema = true')
     expect(source).toContain("const structured = schema && target?.kind === 'video' && name")
     expect(source).toContain('{structured && <script type="application/ld+json" set:html={structured}></script>}')
   })
