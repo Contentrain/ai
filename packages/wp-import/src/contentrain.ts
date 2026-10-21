@@ -301,9 +301,10 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
       // Case alone is not a move (WP serves post_name lowercase); anything else changes the address.
       rewritten = s !== decodeSlug(p.slug).toLowerCase()
     }
-    // Slugs are unique per type — and per locale on a multilingual site, where
-    // `/about/` and `/tr/about/` are different entries with the same slug.
-    const key = multilingual ? `${p.type}:${postLocale(p)}:${s}` : `${p.type}:${s}`
+    // Slugs are unique per type and parent, as WordPress keeps them — `/a/faq/` and `/b/faq/` are two pages, each at
+    // its own address (the store builds a page's address from its parents) — and per locale on a multilingual site,
+    // where `/about/` and `/tr/about/` are different entries with the same slug.
+    const key = `${p.type}:${multilingual ? `${postLocale(p)}:` : ''}${p.parent ?? 0}:${s}`
     const n = usedSlugs.get(key) ?? 0
     usedSlugs.set(key, n + 1)
     if (n) {
@@ -575,6 +576,10 @@ export function rawToContentrain(input: RawIR, opts?: RawToContentrainOptions): 
       taxes,
       cover: typeItems.some((p) => p.meta._thumbnail_id),
     })
+    // Children of different parents sharing a slug: the slug is unique per parent, not per type, so the field is not
+    // `unique` there (the WP post ID still is). Every other type keeps a unique slug.
+    const typeSlugs = typeItems.filter((p) => slugOf.has(p.id)).map((p) => `${multilingual ? `${postLocale(p)}:` : ''}${slugOf.get(p.id)!}`)
+    if (new Set(typeSlugs).size < typeSlugs.length) delete fields.slug!.unique
     let o = order
     fields.wp_id = { type: 'integer', required: true, unique: true, label: 'WP post ID', order: (o += 10) }
     fields.modified_at = { type: 'datetime', label: 'Modified at', order: (o += 10) }
