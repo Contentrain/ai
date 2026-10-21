@@ -98,6 +98,7 @@ jobs:
           node scripts/starter-gates.mjs --local-sdk --fixture empty-pages
           node scripts/starter-gates.mjs --local-sdk --fixture composed-home
           node scripts/starter-gates.mjs --local-sdk --fixture composed-blog
+          node scripts/starter-gates.mjs --local-sdk --fixture composed-blog-nolist
           node scripts/starter-gates.mjs --local-sdk --fixture sample-links
 
       - name: Plugin payload in sync
