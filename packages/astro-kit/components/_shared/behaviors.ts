@@ -98,10 +98,26 @@ function carousel(root: HTMLElement): void {
   for (const item of items) Object.assign(item.style, { flex: '0 0 100%', scrollSnapAlign: 'start' })
   track.setAttribute('tabindex', '0')
   const go = (step: number) => track.scrollBy({ left: step * track.clientWidth })
+  const prev = control(root.dataset.crPrev ?? 'Previous', () => go(-1))
+  const next = control(root.dataset.crNext ?? 'Next', () => go(1))
+  // No loop (owl's own default): Previous is off on the first slide and Next on the last, so neither is a dead button.
+  // A track not laid out yet (inside a closed tab or dialog) has no width: both stay on until it is, when the resize says so.
+  const ends = () => {
+    if (track.clientWidth === 0) return
+    const first = track.scrollLeft <= 1
+    const last = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1
+    prev.disabled = first
+    prev.setAttribute('aria-disabled', String(first))
+    next.disabled = last
+    next.setAttribute('aria-disabled', String(last))
+  }
+  track.addEventListener('scroll', ends, { passive: true })
+  if (typeof ResizeObserver === 'function') new ResizeObserver(ends).observe(track)
   const bar = document.createElement('div')
   bar.className = 'cr-behavior-controls'
-  bar.append(control(root.dataset.crPrev ?? 'Previous', () => go(-1)), control(root.dataset.crNext ?? 'Next', () => go(1)))
+  bar.append(prev, next)
   track.after(bar)
+  ends()
 }
 
 function dialog(root: HTMLElement): void {
