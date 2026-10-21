@@ -32,6 +32,12 @@
       "order": 15,
       "type": "string"
     },
+    "title_href": {
+      "description": "Where the heading links, when the site prints it as a link. Empty: the heading is plain text.",
+      "label": "Heading link",
+      "order": 16,
+      "type": "url"
+    },
     "wp_id": {
       "label": "WP term ID",
       "order": 40,

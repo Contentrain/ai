@@ -88,6 +88,10 @@
             "type": "string",
             "description": "Heading shown above the links; leave out when the source shows none."
           },
+          "titleHref": {
+            "type": "url",
+            "description": "Where the heading links, when the source prints it as a link; leave out for a plain heading."
+          },
           "label": {
             "type": "string",
             "description": "Accessible name of the column navigation (the menu name); defaults to the title."

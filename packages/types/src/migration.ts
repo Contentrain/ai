@@ -251,6 +251,11 @@ export interface RawMenu {
    * menu's name, which is an admin label: absent when the page prints none, or the producer did not read it.
    */
   title?: string
+  /**
+   * Where that heading links, when the site prints it as a link (x12's Beaver footer: `<h2><a href="/services/">OUR
+   * SERVICES</a></h2>`). Only with a `title`; absent when the heading is plain text.
+   */
+  titleHref?: string
 }
 
 export interface RawComment {
