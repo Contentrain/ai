@@ -1,0 +1,25 @@
+---
+// A front a migration composed for a posts-front site (no page entry): its own section, then the list's first page it
+// carries (`list`), as the writer's list section prints it.
+import type { Page } from '../../lib/content'
+import type { ListPage } from '../../lib/site-routes'
+import ComposedPage from '../ComposedPage.astro'
+
+interface Props {
+  page: Page
+  trail: Array<{ title: string, href: string }>
+  isHome: boolean
+  list?: ListPage | undefined
+}
+
+const { page, trail, isHome, list } = Astro.props
+---
+<ComposedPage page={page} trail={trail} isHome={isHome}>
+  <p>Fresh from the oven, every morning.</p>
+  {list && (
+    <ul data-front-list>
+      {list.posts.map(post => <li>{post.data.title}</li>)}
+    </ul>
+  )}
+  {list && <p data-front-pager>Page {list.current} of {list.total}</p>}
+</ComposedPage>

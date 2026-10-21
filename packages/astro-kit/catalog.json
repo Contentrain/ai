@@ -105,6 +105,7 @@
         "KitImage.astro",
         "Lines.astro",
         "Section.astro",
+        "image-widths.ts",
         "instance-id.ts",
         "measured.ts",
         "muted.ts",
@@ -789,6 +790,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "image-widths.ts",
         "image.ts",
         "instance-id.ts",
         "measured.ts",
@@ -1400,6 +1402,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "image-widths.ts",
         "instance-id.ts",
         "measured.ts",
         "muted.ts",
@@ -1734,6 +1737,7 @@
         "Button.astro",
         "KitImage.astro",
         "Section.astro",
+        "image-widths.ts",
         "instance-id.ts",
         "measured.ts",
         "muted.ts",
@@ -2327,6 +2331,7 @@
         "KitImage.astro",
         "embed-frame.ts",
         "embed-target.ts",
+        "image-widths.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -2723,6 +2728,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "image-widths.ts",
         "instance-id.ts",
         "measured.ts",
         "muted.ts",
@@ -3233,6 +3239,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "image-widths.ts",
         "image.ts",
         "instance-id.ts",
         "measured.ts",
@@ -3557,6 +3564,7 @@
       "shared": [
         "Button.astro",
         "KitImage.astro",
+        "image-widths.ts",
         "instance-id.ts",
         "muted.ts",
         "safe-url.ts",
@@ -3791,6 +3799,7 @@
         "Lines.astro",
         "Section.astro",
         "bleed.ts",
+        "image-widths.ts",
         "instance-id.ts",
         "measured.ts",
         "muted.ts",
@@ -4288,6 +4297,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "image-widths.ts",
         "image.ts",
         "instance-id.ts",
         "measured.ts",
@@ -5013,6 +5023,7 @@
       "uses": [],
       "shared": [
         "KitImage.astro",
+        "image-widths.ts",
         "safe-url.ts",
         "types.ts"
       ],
@@ -6083,6 +6094,7 @@
         "SectionHeader.astro",
         "embed-frame.ts",
         "embed-target.ts",
+        "image-widths.ts",
         "image.ts",
         "instance-id.ts",
         "measured.ts",
@@ -6551,6 +6563,7 @@
         "KitImage.astro",
         "Section.astro",
         "bleed.ts",
+        "image-widths.ts",
         "instance-id.ts",
         "measured.ts",
         "muted.ts",
@@ -6960,6 +6973,7 @@
         "behaviors.ts",
         "embed-frame.ts",
         "embed-target.ts",
+        "image-widths.ts",
         "image.ts",
         "instance-id.ts",
         "measured.ts",
@@ -7267,6 +7281,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "image-widths.ts",
         "image.ts",
         "instance-id.ts",
         "measured.ts",
@@ -7817,6 +7832,7 @@
       "shared": [
         "KitImage.astro",
         "Section.astro",
+        "image-widths.ts",
         "image.ts",
         "instance-id.ts",
         "measured.ts",
@@ -8132,6 +8148,7 @@
         "KitImage.astro",
         "Lines.astro",
         "Section.astro",
+        "image-widths.ts",
         "image.ts",
         "instance-id.ts",
         "measured.ts",

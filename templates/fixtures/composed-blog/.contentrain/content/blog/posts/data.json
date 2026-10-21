@@ -1,0 +1,35 @@
+{
+  "c0a000000001": {
+    "body": "<p>Our first loaf.</p>",
+    "excerpt": "Our first loaf.",
+    "published_at": "2026-09-01T09:00:00Z",
+    "slug": "first-loaf",
+    "title": "First loaf",
+    "wp_id": 701
+  },
+  "c0a000000002": {
+    "body": "<p>A slower rise.</p>",
+    "excerpt": "A slower rise.",
+    "published_at": "2026-09-02T09:00:00Z",
+    "slug": "slower-rise",
+    "title": "Slower rise",
+    "wp_id": 702
+  },
+  "c0a000000003": {
+    "body": "<p>The oven we kept.</p>",
+    "excerpt": "The oven we kept.",
+    "published_at": "2026-09-03T09:00:00Z",
+    "slug": "the-oven-we-kept",
+    "title": "The oven we kept",
+    "wp_id": 703
+  },
+  "c0a000000004": {
+    "body": "<p>Always on top.</p>",
+    "excerpt": "Always on top.",
+    "published_at": "2026-08-01T09:00:00Z",
+    "slug": "pinned-recipe",
+    "sticky": true,
+    "title": "Pinned recipe",
+    "wp_id": 704
+  }
+}

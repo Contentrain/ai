@@ -7,6 +7,7 @@
   "shared": [
     "KitImage.astro",
     "Section.astro",
+    "image-widths.ts",
     "instance-id.ts",
     "measured.ts",
     "muted.ts",

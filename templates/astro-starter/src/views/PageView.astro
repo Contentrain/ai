@@ -10,6 +10,7 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import { withBase } from '../lib/base'
 import { getSite, getStrings, imageOf, type Page } from '../lib/content'
 import { publicHtml } from '../lib/links'
+import type { ListPage } from '../lib/site-routes'
 import { breadcrumbLd, pageTrail, summarize } from '../lib/seo'
 import { safeHref } from '../components/kit/_shared/safe-url'
 
@@ -20,6 +21,8 @@ interface Props {
   isHome: boolean
   /** The page's child pages, in page order; listed when it has no body of its own. */
   subpages?: Array<{ title: string, href: string }> | undefined
+  /** Page 1 of the post list a composed page carries (its list section reads it); a plain page gets none. */
+  list?: ListPage | undefined
 }
 
 const { page, trail, isHome, subpages = [] } = Astro.props

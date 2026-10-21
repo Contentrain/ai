@@ -71,6 +71,7 @@ describe('carousel ends (behaviors.ts carousel)', () => {
     for (const callback of observed) callback()
     expect(state()).toEqual([['Previous', true, 'true'], ['Next', false, 'false']])
   })
+
   it('a row that does not overflow yet (its frame as wide as its slides) keeps both on; a slide resizing sets the ends', () => {
     const observed: Array<{ callback: () => void, boxes: Element[] }> = []
     vi.stubGlobal('ResizeObserver', class {
@@ -98,6 +99,15 @@ describe('carousel ends (behaviors.ts carousel)', () => {
     expect(state()).toEqual([['Previous', false, null], ['Next', false, null]])
     layout(track())
     window.dispatchEvent(new Event('load'))
+    expect(state()).toEqual([['Previous', true, 'true'], ['Next', false, 'false']])
+  })
+
+  it('a slider of more than 50 slides (x10: 59) is wired whole, not left static without controls', () => {
+    document.body.innerHTML = `<div data-cr-behavior="carousel" data-cr-items=".slide"><div class="track">${Array.from({ length: 59 }, (_, i) => `<div class="slide">${i + 1}</div>`).join('')}</div></div>`
+    layout(track())
+    initBehaviors()
+    expect(track().style.overflowX).toBe('auto')
+    expect([...track().children].every(slide => (slide as HTMLElement).style.scrollSnapAlign === 'start')).toBe(true)
     expect(state()).toEqual([['Previous', true, 'true'], ['Next', false, 'false']])
   })
 })

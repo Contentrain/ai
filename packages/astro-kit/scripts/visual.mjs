@@ -382,6 +382,20 @@ try {
     if (button.right > 390 || button.scrollWidth > button.clientWidth) widths.push(`cta/long-label: the button runs past the screen (its right edge at ${Math.round(button.right)}px, ${button.scrollWidth}px of label in ${button.clientWidth}px)`)
     await phone.close()
   }
+  // A carousel's controls stay on a phone's screen: one 24px dot per slide, beside a text-card row's two arrows, wraps
+  // instead of pushing the arrows off it (x07: 14 dots, 336px, between two 44px arrows on a 390 phone).
+  if (components.some(c => c.id === 'slider')) {
+    const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+    const page = await phone.newPage()
+    await page.goto(`${origin}/kit/slider/`, { waitUntil: 'load' })
+    await page.waitForFunction(() => [...document.querySelectorAll('[data-kit-slider]')].every(el => el.hasAttribute('data-ready')))
+    const { scrollWidth, innerWidth } = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }))
+    if (scrollWidth > 390 || innerWidth > 390) widths.push(`slider: on a 390 phone the page is ${scrollWidth}px wide, its layout viewport ${innerWidth}px`)
+    for (const off of await page.locator('[data-fixture="text-cards-many"] :is([data-prev], [data-next], [data-dots] button)').evaluateAll(els => els.map(el => [el.getAttribute('aria-label'), el.getBoundingClientRect()]).filter(([, box]) => box.left < 0 || box.right > 390).map(([label, box]) => `${label} at ${Math.round(box.left)}–${Math.round(box.right)}px`))) {
+      widths.push(`slider/text-cards-many: a control runs past a 390 phone's screen (${off})`)
+    }
+    await phone.close()
+  }
   // A carousel set up while its page is hidden (a background tab opened with ctrl/cmd-click: no layout, visibilityState
   // "hidden") pages once the page is shown: it draws a dot per snap and "next" moves the selected one. The kit page loads
   // with the document hidden and not laid out, then is shown the way a tab brought to the front is.

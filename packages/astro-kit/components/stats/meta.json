@@ -11,6 +11,7 @@
     "behaviors.ts",
     "embed-frame.ts",
     "embed-target.ts",
+    "image-widths.ts",
     "image.ts",
     "instance-id.ts",
     "measured.ts",

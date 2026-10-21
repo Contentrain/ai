@@ -1,18 +1,33 @@
 // Images inside rich text. A body is HTML a person (or WordPress) wrote, so its `<img>` cannot be the Image
-// component: it is rewritten here, at build time, the way KitImage treats the files under public/. A raster file
-// there (png, jpg) is resized into a webp srcset up to its own width, its width and height are written when the tag
-// has none (no layout shift), and WordPress's own srcset of sizes of the same file is replaced by it. Anything else
-// stays as written: a remote image, a gif (may be animated), a vector, a file that is not in public/. Under a `base` a
-// root address (`/media/a.svg`) is put in the site's directory, where public/ is served.
+// component: it is rewritten here, at build time, the way KitImage treats images. The move is never less responsive
+// than the source:
+//
+//  - a raster file under public/ (avif, jpg, png, tif, webp) is resized into a webp srcset, up to twice the width the
+//    tag shows it at (never past the file's own), and WordPress's own srcset of sizes of the same file is replaced;
+//  - a raster image on a media host the site allows (astro.config `image.remotePatterns`, Contentrain Studio) is resized
+//    the same way when its size is known (the tag's, else the one the migration measured);
+//  - any other image (a remote one left where it was, a gif, which may be animated, a file not in public/) keeps the
+//    source's srcset only when every candidate is the same file as `src` in another size: a set that names another
+//    picture (an edit changed `src`, the set stayed) would show the old one, so it goes;
+//  - `sizes` never stays without a `srcset`, and `sizes="auto"` only with `loading="lazy"`.
+//
+// The tag's width, height and loading are kept (WordPress writes the size it chose and leaves its first image eager);
+// only what is missing is written. Under a `base` a root address (`/media/a.svg`) is put in the site's directory, where
+// public/ is served.
 
 import type { ImageMetadata } from 'astro'
-import { getImage } from 'astro:assets'
+import { getImage, imageConfig } from 'astro:assets'
+import { isRemoteAllowed } from 'astro/assets/utils'
+import { widthCap, widthsUpTo } from '../components/kit/_shared/image-widths'
 import { servedPath, withoutBase } from './base'
+import { mediaSize } from './media'
 
-const LOCAL = import.meta.glob<ImageMetadata>('/public/**/*.{jpeg,jpg,png,JPEG,JPG,PNG}', { import: 'default' })
+const LOCAL = import.meta.glob<ImageMetadata>('/public/**/*.{avif,jpeg,jpg,png,tif,tiff,webp,AVIF,JPEG,JPG,PNG,TIF,TIFF,WEBP}', { import: 'default' })
 const IMG = /<img\b[^>]*>/gi
-const STEPS = [320, 640, 960, 1280, 1600, 1920, 2560]
-const widthsUpTo = (max: number) => [...STEPS.filter(step => step < max), max]
+/** A raster file the build resizes (the local glob's formats): a vector or a gif, which may be animated, is not one. */
+const RASTER = /\.(?:avif|jpe?g|png|tiff?|webp)$/i
+// The site's `image` config, as the check Astro itself runs reads it (its types differ only in optional keys).
+const allowed = imageConfig as Parameters<typeof isRemoteAllowed>[1]
 
 const attr = (name: string) => new RegExp(`(\\s${name}\\s*=\\s*)(?:"([^"]*)"|'([^']*)')`, 'i')
 const read = (tag: string, name: string) => { const m = attr(name).exec(tag); return m ? (m[2] ?? m[3]) : undefined }
@@ -21,49 +36,106 @@ function write(tag: string, name: string, value: string): string {
   const quoted = `"${value.replaceAll('&', '&amp;').replaceAll('"', '&quot;')}"`
   return attr(name).test(tag) ? tag.replace(attr(name), `$1${quoted}`) : tag.replace(/\s*\/?>$/, end => ` ${name}=${quoted}${end}`)
 }
+const drop = (tag: string, name: string) => tag.replace(new RegExp(`\\s${name}\\s*=\\s*(?:"[^"]*"|'[^']*')`, 'i'), '')
+const unescaped = (value: string | undefined) => value?.replaceAll('&amp;', '&').replaceAll('&#038;', '&')
+const isRoot = (src: string) => src.startsWith('/') && !src.startsWith('//')
 
 /** A root image address as served: in the site's directory under a `base` (public/ is served there). */
-function served(tag: string): string {
-  const src = read(tag, 'src')?.replaceAll('&amp;', '&').replaceAll('&#038;', '&')
-  if (!src?.startsWith('/') || src.startsWith('//')) return tag
-  const at = servedPath(src)
-  return at === src ? tag : write(tag, 'src', at)
+const servedAt = (src: string) => (isRoot(src) ? servedPath(src) : src)
+
+/**
+ * The file an address is, whatever size of it: host and path, with WordPress's size suffixes (`-300x200`, `-scaled`)
+ * taken off the name. `null` for an address that is not one.
+ */
+function attachment(src: string): string | null {
+  try {
+    const url = new URL(src, 'https://site.invalid')
+    return `${url.host}${url.pathname.replace(/(?:-\d+x\d+|-scaled)+(\.[a-z0-9]+)$/i, '$1')}`
+  }
+  catch { return null }
+}
+
+/** The address of each candidate of a srcset (`a.jpg 300w, b.jpg 600w`). */
+const candidates = (srcset: string) => srcset.split(/,\s+/).map(part => part.trim().split(/\s+/)[0] ?? '').filter(Boolean)
+
+/**
+ * The tag as written, made safe: its srcset kept only when every candidate is `src`'s own file (served under a
+ * `base`), else gone; `sizes` only with a srcset, `auto` only with lazy loading; a known size written when it has none.
+ */
+function kept(tag: string, src: string): string {
+  let next = isRoot(src) && servedAt(src) !== src ? write(tag, 'src', servedAt(src)) : tag
+  const srcset = unescaped(read(next, 'srcset'))
+  const own = attachment(src)
+  if (srcset !== undefined) {
+    const list = candidates(srcset)
+    if (list.length && own && list.every(candidate => attachment(candidate) === own))
+      next = write(next, 'srcset', srcset.split(/,\s+/).map((part) => { const [at = '', ...rest] = part.trim().split(/\s+/); return [servedAt(at), ...rest].join(' ') }).join(', '))
+    else next = drop(next, 'srcset')
+  }
+  if (read(next, 'srcset') === undefined) next = drop(next, 'sizes')
+  const sizes = read(next, 'sizes')
+  if (sizes && /^auto\s*(?:,|$)/i.test(sizes) && read(next, 'loading') !== 'lazy') {
+    const rest = sizes.replace(/^auto\s*,?\s*/i, '')
+    next = rest ? write(next, 'sizes', rest) : drop(next, 'sizes')
+  }
+  const measured = read(next, 'width') && read(next, 'height') ? undefined : mediaSize(src)
+  if (measured) next = sized(next, measured)
+  return next
+}
+
+/** The tag with its missing width and height from `file` (the other side follows the file's ratio). */
+function sized(tag: string, file: { width: number, height: number }): string {
+  const given = { width: Number(read(tag, 'width')) || 0, height: Number(read(tag, 'height')) || 0 }
+  if (given.width && given.height) return tag
+  const width = given.width || (given.height ? Math.round(given.height * file.width / file.height) : file.width)
+  const height = given.height || Math.round(width * file.height / file.width)
+  let next = tag
+  if (!given.width) next = write(next, 'width', String(width))
+  if (!given.height) next = write(next, 'height', String(height))
+  return next
+}
+
+/** The tag served as the resized `image`, `file` its full size. */
+function resized(tag: string, image: Awaited<ReturnType<typeof getImage>>, file: { width: number, height: number }): string {
+  const shown = Number(read(tag, 'width')) || file.width
+  let next = write(tag, 'src', image.src)
+  next = write(next, 'srcset', image.srcSet.attribute)
+  if (!read(tag, 'sizes') || /^auto\b/.test(read(tag, 'sizes')!)) next = write(next, 'sizes', `(max-width: ${shown}px) 100vw, ${shown}px`)
+  next = sized(next, file)
+  if (read(tag, 'loading') === undefined) next = write(next, 'loading', 'lazy')
+  if (read(tag, 'decoding') === undefined) next = write(next, 'decoding', 'async')
+  return next
 }
 
 async function optimize(tag: string): Promise<string> {
-  const src = read(tag, 'src')?.replaceAll('&amp;', '&').replaceAll('&#038;', '&')
-  if (!src?.startsWith('/') || src.startsWith('//')) return tag
-  let file: string
-  try { file = decodeURI(withoutBase(src.split(/[?#]/)[0]!)) } catch { return served(tag) }
-  const load = LOCAL[`/public${file}`]
-  if (!load) return served(tag)
+  const src = unescaped(read(tag, 'src'))
+  if (!src) return tag
+  const shown = Number(read(tag, 'width')) || undefined
   try {
-    const local = await load()
-    const shown = Number(read(tag, 'width')) || local.width
-    const image = await getImage({ src: local, widths: widthsUpTo(local.width), format: 'webp' })
-    let next = write(tag, 'src', image.src)
-    next = write(next, 'srcset', image.srcSet.attribute)
-    if (!read(tag, 'sizes') || /^auto\b/.test(read(tag, 'sizes')!)) next = write(next, 'sizes', `(max-width: ${shown}px) 100vw, ${shown}px`)
-    // WordPress writes the size it chose. Only what is missing is written: the other side follows the file's ratio,
-    // and a tag with neither takes the file's own size.
-    const given = { width: Number(read(tag, 'width')) || 0, height: Number(read(tag, 'height')) || 0 }
-    if (!given.width || !given.height) {
-      const width = given.width || (given.height ? Math.round(given.height * local.width / local.height) : local.width)
-      const height = given.height || Math.round(width * local.height / local.width)
-      if (!given.width) next = write(next, 'width', String(width))
-      if (!given.height) next = write(next, 'height', String(height))
+    if (isRoot(src)) {
+      const load = LOCAL[`/public${decodeURI(withoutBase(src.split(/[?#]/)[0]!))}`]
+      if (!load) return kept(tag, src)
+      const local = await load()
+      return resized(tag, await getImage({ src: local, widths: widthsUpTo(widthCap(local.width, shown)), format: 'webp' }), local)
     }
-    if (read(tag, 'loading') === undefined) next = write(next, 'loading', 'lazy')
-    if (read(tag, 'decoding') === undefined) next = write(next, 'decoding', 'async')
-    return next
+    // A media host the site allows: fetched at build time and resized, when its size is known (nothing is fetched to
+    // learn it). Any other host is never fetched.
+    if (/^https?:\/\//i.test(src) && RASTER.test(src.split(/[?#]/)[0]!) && isRemoteAllowed(src, allowed)) {
+      const width = Number(read(tag, 'width')) || 0
+      const height = Number(read(tag, 'height')) || 0
+      const file = width && height ? { width, height } : mediaSize(src)
+      if (file) return resized(tag, await getImage({ src, width: file.width, height: file.height, widths: widthsUpTo(widthCap(file.width, shown)), format: 'webp' }), file)
+    }
+    return kept(tag, src)
   }
   catch {
-    // An image that cannot be processed (a corrupt file) stays as written: the page still builds and shows it.
-    return served(tag)
+    // An image that cannot be processed (a corrupt file, an escape that is not one) stays as written, made safe: the
+    // page still builds and shows it.
+    return kept(tag, src)
   }
 }
 
-/** The HTML with every local raster `<img>` served as a webp srcset of its file. */
+/** The HTML with every `<img>` served responsively: resized where the build can, the source's own set where it cannot. */
 export async function optimizedImages(html: string): Promise<string> {
   const tags = [...new Set(html.match(IMG) ?? [])]
   if (!tags.length) return html

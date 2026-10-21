@@ -12,6 +12,7 @@
     "KitImage.astro",
     "Section.astro",
     "bleed.ts",
+    "image-widths.ts",
     "instance-id.ts",
     "measured.ts",
     "muted.ts",

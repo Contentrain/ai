@@ -1,5 +1,20 @@
 # @contentrain/astro-kit
 
+## 0.46.2
+
+### Patch Changes
+
+- 9ddea34: KitImage takes its srcset width ladder from a new shared `_shared/image-widths.ts`, the same one the starter's rich-text image pass uses, so section and body images resize alike.
+- 6d585fa: A slider's dots wrap instead of widening the row. With one 24px target per slide, 14 dots (336px) between a text-card row's two 44px arrows outgrew a 390px phone: Previous sat at -29px, Next at 375–419px, and the page scrolled sideways (x07's G-interaction `slider_stuck` at 390). The kit visual now checks on a 390 phone that the page is no wider than the screen and that every control of a 14-slide text-card slider lies on it.
+
+## 0.46.1
+
+### Patch Changes
+
+- a5bfce7: A carousel island takes every slide: past 50 (x10's 59-slide metaslider) it was cut at the item cap, so its track held slides it did not count and it stayed static with no controls. The cap stays for islands that wire each item one by one (tabs, counters, filters).
+- Updated dependencies [a5bfce7]
+  - @contentrain/types@1.71.0
+
 ## 0.46.0
 
 ### Minor Changes

@@ -108,7 +108,12 @@ export interface PlanSite {
   /** Default locale, short form (`en`, `tr`). */
   locale: string
   permalinks: { post: PlanPermalink, page: PlanPermalink, category: PlanPermalink, tag: PlanPermalink, author: PlanPermalink, blog: PlanPermalink }
-  home: { kind: 'posts' } | { kind: 'page', slug: string }
+  /**
+   * The front page: the posts, one page by `slug`, or (`view`, no slug) a front composed from sections with no page entry
+   * (a posts-front site whose theme draws one): the starter renders `composedViews[view]` at `/` with the site's title and
+   * home SEO. The posts are at `permalinks.blog`, or at `/` when that is `/`: page 1 in the view, `/page/2/` on.
+   */
+  home: { kind: 'posts' } | { kind: 'page', slug?: string, view?: number }
   postsPerPage: number
   /**
    * Menu slugs (`menus.slug`, as WordPress named them) for the starter's navigation areas — `getMenu(slug)`.
@@ -665,6 +670,8 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
   }
   if (site?.lists?.image?.height !== undefined && !CSS_LENGTH.test(site.lists.image.height)) errors.push(`site.lists.image.height ${site.lists.image.height} is not a CSS size`)
   if (site?.lists?.image?.aspect !== undefined && !/^\d+(?:\.\d+)?\s*\/\s*\d+(?:\.\d+)?$/.test(site.lists.image.aspect)) errors.push(`site.lists.image.aspect ${site.lists.image.aspect} is not a ratio like 16 / 9`)
+  if (site?.home?.kind === 'page' && (site.home.slug === undefined) === (site.home.view === undefined)) errors.push('site.home of kind page names neither or both of a slug and a view')
+  if (site?.home?.kind === 'page' && site.home.view !== undefined && !Number.isInteger(site.home.view)) errors.push(`site.home.view ${String(site.home.view)} is not a whole number`)
   if (site?.lists?.tieOrder !== undefined && site.lists.tieOrder !== 'asc' && site.lists.tieOrder !== 'desc') errors.push(`site.lists.tieOrder ${String(site.lists.tieOrder)} is not asc or desc`)
   if (site?.lists?.moreLabel !== undefined && (typeof site.lists.moreLabel !== 'string' || !/^[^<>\n]{1,40}$/.test(site.lists.moreLabel) || !site.lists.moreLabel.trim())) errors.push('site.lists.moreLabel is not plain words of 1-40 characters')
   if (site?.lists?.dateStyle !== undefined && !['full', 'long', 'medium', 'short'].includes(site.lists.dateStyle)) errors.push(`site.lists.dateStyle ${String(site.lists.dateStyle)} is not full, long, medium or short`)
