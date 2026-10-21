@@ -16,7 +16,8 @@ const card = tv({
     body: 'flex min-w-0 flex-col gap-2',
     meta: 'flex flex-wrap items-center gap-x-2 text-sm text-ink-muted',
     title: 'leading-snug [font-weight:var(--font-weight-heading,600)] text-balance text-ink',
-    excerpt: 'text-ink-muted',
+    // At most ~75 characters a line, however wide the card (a one-column list at 1280).
+    excerpt: 'max-w-[75ch] text-ink-muted',
   },
   variants: {
     layout: {
@@ -56,6 +57,10 @@ interface Props {
   byline?: 'inline' | 'below' | undefined
   /** Clamp the excerpt to this many lines; absent, the layout's own (3 vertical, 2 otherwise). */
   excerptLines?: 2 | 3 | 4 | undefined
+  /** The source's own "read more" words under the excerpt ("READ ARTICLE"); absent, none. The card's title link is the link. */
+  moreLabel?: string | undefined
+  /** How the date is written (`Intl.DateTimeFormat` `dateStyle`), as the source writes it; absent, long. */
+  dateStyle?: 'full' | 'long' | 'medium' | 'short' | undefined
   /** The title in the site's link colour, as themes that colour every link do (Hello Elementor). */
   linkTitle?: boolean | undefined
   /** The image's `sizes` hint; absent, the card's own guess. A list passes the slot its columns give. */
@@ -66,11 +71,11 @@ interface Props {
   imageAspect?: string | undefined
 }
 
-const { title, href, excerpt, date: rawDate, locale = 'en', timeZone = 'UTC', image, category, author, headingLevel = 2, layout, surface, byline, linkTitle, excerptLines, sizes, imageHeight, imageAspect } = Astro.props
+const { title, href, excerpt, date: rawDate, locale = 'en', timeZone = 'UTC', image, category, author, headingLevel = 2, layout, surface, byline, linkTitle, excerptLines, moreLabel, dateStyle = 'long', sizes, imageHeight, imageAspect } = Astro.props
 const date = rawDate === undefined ? undefined : new Date(rawDate)
 const slots = card({ layout, surface, byline })
 const below = byline === 'below'
-const shown = date?.toLocaleDateString(locale, { dateStyle: 'long', timeZone })
+const shown = date?.toLocaleDateString(locale, { dateStyle, timeZone })
 const imageStyle = imageHeight ? `height:${imageHeight}` : imageAspect ? `aspect-ratio:${imageAspect}` : undefined
 const Heading = `h${headingLevel}` as 'h2' | 'h3'
 ---
@@ -105,5 +110,7 @@ const Heading = `h${headingLevel}` as 'h2' | 'h3'
     )}
     {excerpt && <p class={slots.excerpt({ class: excerptLines ? { 2: 'line-clamp-2', 3: 'line-clamp-3', 4: 'line-clamp-4' }[excerptLines] : undefined })}>{excerpt}</p>}
     {!below && author && <p class="text-sm text-ink-muted">{author}</p>}
+    {/* Words, not a second link to the same page: a click on them reaches the title link's overlay. */}
+    {href && moreLabel && <p class="text-sm font-semibold text-accent-text" aria-hidden="true">{moreLabel}</p>}
   </div>
 </article>

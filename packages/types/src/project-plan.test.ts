@@ -478,6 +478,12 @@ describe('validateProjectPlan', () => {
       'site.lists.image.aspect wide is not a ratio like 16 / 9',
       'site.lists.tieOrder up is not asc or desc',
     ])
+    p.site.lists = { display: p.site.lists.display, heading: p.site.lists.heading, moreLabel: 'READ ARTICLE', dateStyle: 'medium' }
+    expect(validateProjectPlan(p).errors).toEqual([])
+    p.site.lists = { display: p.site.lists.display, heading: p.site.lists.heading, moreLabel: '<b>More</b>', dateStyle: 'tiny' as 'short' }
+    expect(validateProjectPlan(p).errors).toEqual(['site.lists.moreLabel is not plain words of 1-40 characters', 'site.lists.dateStyle tiny is not full, long, medium or short'])
+    p.site.lists = { display: p.site.lists.display, heading: p.site.lists.heading, moreLabel: '  ' }
+    expect(validateProjectPlan(p).errors).toEqual(['site.lists.moreLabel is not plain words of 1-40 characters'])
     p.site.lists = { display: p.site.lists.display, heading: p.site.lists.heading }
     p.site.lists.text = 'red; color: blue'
     p.site.chrome = { brand: 'clamp(url(x))', copyright: '<b>x</b>', navLinks: 'yes' as unknown as boolean, brandColor: 'red; background: url(x)', footerAlign: 'middle' as 'center' }
