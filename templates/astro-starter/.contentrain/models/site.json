@@ -26,6 +26,85 @@
       ],
       "description": "Loaded only after the visitor accepts cookies in the site's consent bar. Without a consent bar on the site it never loads."
     },
+    "business": {
+      "fields": {
+        "city": {
+          "label": "City",
+          "order": 30,
+          "type": "string"
+        },
+        "country": {
+          "label": "Country",
+          "order": 60,
+          "type": "string"
+        },
+        "latitude": {
+          "label": "Latitude",
+          "order": 80,
+          "type": "number"
+        },
+        "longitude": {
+          "label": "Longitude",
+          "order": 81,
+          "type": "number"
+        },
+        "opening_hours": {
+          "items": "string",
+          "label": "Opening hours",
+          "order": 90,
+          "type": "array",
+          "description": "One line each, as schema.org writes them: Mo-Fr 09:00-17:00."
+        },
+        "postal_code": {
+          "label": "Postal code",
+          "order": 50,
+          "type": "string"
+        },
+        "price_range": {
+          "label": "Price range",
+          "order": 95,
+          "type": "string",
+          "description": "As the business says it: $$, €10–20."
+        },
+        "region": {
+          "label": "Region or state",
+          "order": 40,
+          "type": "string"
+        },
+        "serves_cuisine": {
+          "items": "string",
+          "label": "Cuisine",
+          "order": 96,
+          "type": "array"
+        },
+        "street": {
+          "label": "Street address",
+          "order": 20,
+          "type": "string"
+        },
+        "telephone": {
+          "label": "Telephone",
+          "order": 70,
+          "type": "string"
+        },
+        "type": {
+          "label": "Kind of business",
+          "order": 10,
+          "type": "select",
+          "options": [
+            "LocalBusiness",
+            "Restaurant",
+            "Store",
+            "ProfessionalService",
+            "LodgingBusiness"
+          ]
+        }
+      },
+      "label": "Business",
+      "order": 75,
+      "type": "object",
+      "description": "Where the business is and when it is open. Search engines show it beside the site; with no address, telephone, position or hours nothing is printed."
+    },
     "language": {
       "label": "Language",
       "order": 40,

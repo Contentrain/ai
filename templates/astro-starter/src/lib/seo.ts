@@ -76,6 +76,63 @@ export function breadcrumbLd(trail: ReadonlyArray<{ name: string, url: string }>
   }
 }
 
+/**
+ * A page's breadcrumb for search, from the home page down: the trail when it already starts there, else the home
+ * first (Home › Page, as Yoast and Rank Math print it on a top-level page). Every page but the home has one, whether
+ * or not the page shows a breadcrumb.
+ */
+export function pageTrail(home: { name: string, url: string }, crumbs: ReadonlyArray<{ name: string, url: string }>): Array<{ name: string, url: string }> {
+  return crumbs[0]?.url === home.url ? [...crumbs] : [home, ...crumbs]
+}
+
+export interface BusinessInput {
+  type?: string | undefined
+  street?: string | undefined
+  city?: string | undefined
+  region?: string | undefined
+  postal_code?: string | undefined
+  country?: string | undefined
+  telephone?: string | undefined
+  latitude?: number | undefined
+  longitude?: number | undefined
+  opening_hours?: readonly string[] | undefined
+  price_range?: string | undefined
+  serves_cuisine?: readonly string[] | undefined
+}
+
+/**
+ * The site's place of business (`site.business`), on the home beside the organization: only what the fields state,
+ * and nothing at all when they state no address, telephone, position or hours.
+ */
+export function localBusinessLd(site: SiteIdentity, business: BusinessInput | undefined): Thing | undefined {
+  if (!business) return undefined
+  const address = clean({ streetAddress: business.street, addressLocality: business.city, addressRegion: business.region, postalCode: business.postal_code, addressCountry: business.country })
+  const geo = business.latitude !== undefined && business.longitude !== undefined ? { '@type': 'GeoCoordinates', latitude: business.latitude, longitude: business.longitude } : undefined
+  const hours = business.opening_hours?.filter(Boolean) ?? []
+  if (!address && !business.telephone && !geo && hours.length === 0) return undefined
+  const cuisine = business.serves_cuisine?.filter(Boolean) ?? []
+  return {
+    '@type': business.type || 'LocalBusiness',
+    '@id': `${site.url}#business`,
+    name: site.name,
+    url: site.url,
+    ...(site.logo ? { image: site.logo } : {}),
+    ...(address ? { address: { '@type': 'PostalAddress', ...address } } : {}),
+    ...(business.telephone ? { telephone: business.telephone } : {}),
+    ...(geo ? { geo } : {}),
+    ...(hours.length ? { openingHours: hours } : {}),
+    ...(business.price_range ? { priceRange: business.price_range } : {}),
+    ...(cuisine.length ? { servesCuisine: cuisine } : {}),
+    parentOrganization: { '@id': `${site.url}#organization` },
+  }
+}
+
+/** The fields that hold a value, or undefined when none does. */
+function clean(fields: Record<string, string | undefined>): Record<string, string> | undefined {
+  const kept = Object.entries(fields).filter((entry): entry is [string, string] => !!entry[1]?.trim())
+  return kept.length ? Object.fromEntries(kept) : undefined
+}
+
 export function collectionLd(url: string, name: string): Thing {
   return { '@type': 'CollectionPage', '@id': `${url}#collection`, url, name }
 }

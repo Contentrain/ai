@@ -16,7 +16,7 @@ import { getSite, getStrings } from '../lib/content'
 import { onWordPress } from '../lib/features'
 import { menusAt } from '../lib/links'
 import { queryMap } from '../lib/redirects'
-import { describePage, documentTitle, organizationLd, websiteLd } from '../lib/seo'
+import { describePage, documentTitle, localBusinessLd, organizationLd, websiteLd, type BusinessInput } from '../lib/seo'
 import { shareDescription, shareTitle } from '../lib/share'
 import { siteConfig } from '../site.config'
 import { overlays } from '../views/overlays'
@@ -112,7 +112,7 @@ const wpQueries = isHome ? await queryMap() : {}
       locale={lang}
       published={published}
       modified={modified}
-      jsonLd={isHome ? [websiteLd(identity), organizationLd(identity), ...jsonLd] : jsonLd}
+      jsonLd={isHome ? [websiteLd(identity), organizationLd(identity), ...[localBusinessLd(identity, (site as { business?: BusinessInput }).business)].filter(thing => thing !== undefined), ...jsonLd] : jsonLd}
     />
     <Analytics />
   </head>

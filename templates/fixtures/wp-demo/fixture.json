@@ -99,13 +99,13 @@
     },
     "about/index.html": {
       "contains": [
-        ">One letter a month on calm, fast websites.</p>"
+        ">One letter a month on calm, fast websites.</p>",
+        "\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Northwind Journal\",\"item\":\"https://example.com/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"About\",\"item\":\"https://example.com/about/\"}]"
       ],
       "excludes": [
         "SliderTrack.astro_astro_type_script",
         "Tabs.astro_astro_type_script",
-        "data-cr-part=\"breadcrumb\"",
-        "BreadcrumbList"
+        "data-cr-part=\"breadcrumb\""
       ]
     },
     "services/index.html": {
@@ -217,7 +217,7 @@
       "contains": [
         "<meta name=\"description\" content=\"Careers at Northwind: how we hire and who we look for.\">",
         "<li aria-current=\"page\" class=\"text-ink\">Careers</li>",
-        "\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Company\""
+        "\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Northwind Journal\",\"item\":\"https://example.com/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"Company\",\"item\":\"https://example.com/company/\"},{\"@type\":\"ListItem\",\"position\":3,\"name\":\"Careers\",\"item\":\"https://example.com/company/careers/\"}]"
       ],
       "excludes": [
         "<meta name=\"description\" content=\"We hire slowly"
@@ -226,11 +226,11 @@
     "company/index.html": {
       "contains": [
         "<li><a href=\"/company/office/\"",
-        ">Office</a></li><li><a href=\"/company/careers/\""
+        ">Office</a></li><li><a href=\"/company/careers/\"",
+        "\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Northwind Journal\",\"item\":\"https://example.com/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"Company\",\"item\":\"https://example.com/company/\"}]"
       ],
       "excludes": [
-        "data-cr-part=\"breadcrumb\"",
-        "BreadcrumbList"
+        "data-cr-part=\"breadcrumb\""
       ]
     },
     "projects/index.html": {
