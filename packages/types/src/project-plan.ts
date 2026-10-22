@@ -407,6 +407,12 @@ export interface PlanPlacement {
    * once, and each one a planned behavior (`ProjectPlan.behaviors`). Absent: the writer places them by its own rule.
    */
   facts?: string[]
+  /**
+   * The source's in-page link targets this section holds (`ddl-bluetest` for `href="#ddl-bluetest"`) where its component
+   * takes no `id` prop (prose): the writer renders each as an element id in the section, so the carried link still lands.
+   * Each an HTML id (no whitespace), each once. A component with an `id` prop carries its target there instead.
+   */
+  anchors?: string[]
 }
 
 /**
@@ -839,6 +845,10 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
         if (new Set(s.facts).size !== s.facts.length) errors.push(`${at}: facts names a fact twice`)
         placedFacts.push({ at, facts: s.facts, ...(route ? { route: route.id } : {}) })
       }
+    }
+    if (s.anchors !== undefined) {
+      if (!Array.isArray(s.anchors) || !s.anchors.length || s.anchors.some(x => typeof x !== 'string' || !x || /\s/.test(x))) errors.push(`${at}: anchors is not a non-empty list of element ids`)
+      else if (new Set(s.anchors).size !== s.anchors.length) errors.push(`${at}: anchors names an id twice`)
     }
     const c = components.get(s.component)
     if (!c) { errors.push(`${at}: component ${s.component} is not declared`); return }
