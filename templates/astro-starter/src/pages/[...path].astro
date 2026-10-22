@@ -3,7 +3,7 @@
 // and every old address in the redirects collection as an instant redirect page
 // (the host's own 301 rules are in _redirects).
 import type { GetStaticPaths, InferGetStaticPropsType } from 'astro'
-import { redirectRules, type RedirectStatus } from '../lib/redirects'
+import { attachmentRules, prefixRules, redirectRules, type RedirectStatus } from '../lib/redirects'
 import { onlyRoutes, toParam } from '../lib/routes'
 import { type Route, routeTable } from '../lib/site-routes'
 import { composedViews } from '../views/composed'
@@ -19,7 +19,7 @@ import PostView from '../views/PostView.astro'
 type Moved = { view: 'redirect', to: string, status: RedirectStatus }
 
 export const getStaticPaths = (async () => {
-  const [table, redirects] = await Promise.all([routeTable(), redirectRules()])
+  const [table, redirects, attachments, prefixes] = await Promise.all([routeTable(), redirectRules(), attachmentRules(), prefixRules()])
   // CONTENTRAIN_ROUTES builds the listed pages alone (a preview of the home page); an address it names that the
   // site does not have is a typo, and stops the build rather than preview nothing.
   const only = onlyRoutes()
@@ -28,7 +28,18 @@ export const getStaticPaths = (async () => {
   if (missing.length) throw new Error(`CONTENTRAIN_ROUTES names ${missing.map(param => `/${param}${param ? '/' : ''}`).join(', ')}, which the site does not build.`)
   // A file address (`/old.pdf`) cannot be a page; the host rules redirect it.
   const moved = redirects.flatMap(rule => (rule.status !== 410 && rule.from.endsWith('/') ? [[rule.from, { view: 'redirect', to: rule.to, status: rule.status }] as const] : []))
-  return [...routes, ...moved].map(([href, route]: readonly [string, Route | Moved]) => ({ params: { path: toParam(href) }, props: route }))
+  // WordPress's attachment pages too (an old `/page/photo/`): a host keeps only so many rules (`_redirects` cuts them
+  // at its limit), and one that reads none still serves these. Never at an address the site builds or redirects already,
+  // nor under one of its prefix rules: those answer first (a page there would shadow the rule on Netlify).
+  const seen = new Set(moved.map(([from]) => from))
+  const under = prefixes.map(rule => rule.from.replace(/\*$/, ''))
+  const attached: Array<readonly [string, Moved]> = []
+  for (const rule of only ? [] : attachments.paths) {
+    if (!rule.from.endsWith('/') || seen.has(rule.from) || under.some(prefix => rule.from.startsWith(prefix))) continue
+    seen.add(rule.from)
+    attached.push([rule.from, { view: 'redirect', to: rule.to, status: rule.status }])
+  }
+  return [...routes, ...moved, ...attached].map(([href, route]: readonly [string, Route | Moved]) => ({ params: { path: toParam(href) }, props: route }))
 }) satisfies GetStaticPaths
 
 type Props = InferGetStaticPropsType<typeof getStaticPaths>
