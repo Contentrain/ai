@@ -200,7 +200,8 @@ export interface PlanSite {
    * `header`: what the source's header does differently from the starter's, each key only where it does (computed styles):
    * `border: false` draws no line under the bar; `brandWeight` and `brandTracking` set the site name's weight and
    * letter-spacing; `offsetTop` is the space above the bar and `padTop`/`padBottom` the space inside it above and below
-   * its content (CSS lengths, a fluid theme's as a `clamp()`). A key absent: the starter's own.
+   * its content (CSS lengths, a fluid theme's as a `clamp()`). `search: true`: the source's header holds a search form;
+   * the bar shows a search field that sends to the starter's `/search/` page. A key absent: the starter's own.
    * `parts: true`: the header and footer are a block theme's template parts (Twenty Twenty-Five), sized by the theme's
    * presets (the footer's site title at the h2 size) the way a classic theme's are read off its render. Absent, a plan
    * with `chrome` is read as a classic theme's and one without as a block theme's (plans before 1.50).
@@ -224,7 +225,7 @@ export interface PlanSite {
     postFrame?: ChromeFrameStep[]
     listColumns?: ChromeColumnStep[]
     footerColumns?: { gap: number, size?: number, narrowGap?: number, narrowSize?: number }
-    header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string }
+    header?: { border?: false, brandWeight?: string, brandTracking?: string, offsetTop?: string, padTop?: string, padBottom?: string, search?: true }
     breadcrumbs?: 'always'
     menu?: 'mega'
   }
@@ -708,6 +709,7 @@ export function validateProjectPlan(plan: ProjectPlan): ProjectPlanReport {
     if (header === null || typeof header !== 'object' || Array.isArray(header)) errors.push('site.chrome.header is not an object')
     else {
       if (header.border !== undefined && header.border !== false) errors.push('site.chrome.header.border is not false')
+      if (header.search !== undefined && header.search !== true) errors.push('site.chrome.header.search is not true')
       if (header.brandWeight !== undefined && !/^[1-9]00$/.test(header.brandWeight)) errors.push(`site.chrome.header.brandWeight ${header.brandWeight} is not a font weight`)
       if (header.brandTracking !== undefined && !LETTER_SPACING.test(header.brandTracking)) errors.push(`site.chrome.header.brandTracking ${header.brandTracking} is not a letter spacing`)
       for (const key of ['offsetTop', 'padTop', 'padBottom'] as const) {
