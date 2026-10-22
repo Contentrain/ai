@@ -28,7 +28,7 @@
     "gutenberg": ["core/embed"],
     "elementor": ["elementor/video", "elementor/google_maps"],
     "divi": ["divi/et_pb_video", "divi/et_pb_map"],
-    "classic": ["classic/youtube", "classic/vimeo", "classic/google-maps"]
+    "classic": ["classic/youtube", "classic/vimeo", "classic/google-maps", "classic/embed"]
   },
   "a11y": "The poster is one link named '<action>: <title>' that opens the provider's page without script. With script, Enter or a click puts the iframe in its place with the title as its accessible name and moves focus into it. Modified clicks (new tab) keep the link behaviour. The play icon is decorative."
 }
