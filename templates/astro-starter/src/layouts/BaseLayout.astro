@@ -136,6 +136,7 @@ const wpQueries = isHome ? await queryMap() : {}
       linkNav={siteConfig.chrome?.navLinks}
       brandColor={cssColor(siteConfig.chrome?.brandColor)}
       menu={siteConfig.chrome?.menu}
+      search={siteConfig.chrome?.header?.search ? { action: withBase('/search/'), label: t('search.label'), placeholder: t('search.placeholder'), submitLabel: t('search.submit') } : undefined}
       homeHref={withBase('/')}
       items={primary?.items ?? []}
       navLabel={primary?.name ?? t('nav.label')}
