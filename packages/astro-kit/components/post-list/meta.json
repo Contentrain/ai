@@ -163,6 +163,18 @@
       "content": false,
       "description": "Text of the archive link."
     },
+    "readMoreLabel": {
+      "type": "string",
+      "content": false,
+      "description": "The source's own read-more words under each card's excerpt (READ ARTICLE), passed to every card; absent, none."
+    },
+    "dateStyle": {
+      "type": "select",
+      "options": ["full", "long", "medium", "short"],
+      "default": "long",
+      "content": false,
+      "description": "How the cards write their date (Intl dateStyle), as the source does; absent, long."
+    },
     "tone": {
       "type": "string",
       "content": false,
