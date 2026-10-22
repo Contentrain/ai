@@ -1,6 +1,6 @@
 {
   "name": "@contentrain/emitter-astro",
-  "version": "0.18.54",
+  "version": "0.18.55",
   "license": "MIT",
   "description": "Open Astro emitter for Contentrain migrations — renders a ProjectIR into a working Astro project",
   "type": "module",
