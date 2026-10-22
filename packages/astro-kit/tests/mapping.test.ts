@@ -32,6 +32,10 @@ describe('mapping tables', () => {
     expect(rulesFor(tables.gutenberg!, 'core/details')[0]).toMatchObject({ component: 'faq', variant: { style: 'plain' } })
   })
 
+  it('maps a classic theme\'s other iframe, and a [video] shortcode\'s provider address, to the Embed', () => {
+    expect(rulesFor(tables.classic!, 'classic/embed')).toEqual([expect.objectContaining({ component: 'embed', props: expect.objectContaining({ url: 'dom:iframe, video source@src', title: 'dom:iframe@title' }) })])
+  })
+
   it('catches what a broken rule gets wrong', () => {
     const broken: MappingTable = {
       format: 'astro-kit-mapping@1', builder: 'elementor', version: '1', fallback: 'prose',
