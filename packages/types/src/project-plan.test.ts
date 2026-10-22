@@ -318,12 +318,12 @@ describe('validateProjectPlan', () => {
 
   it('accepts and checks the interface text the source theme printed', () => {
     const p = plan()
-    p.site.uiStrings = { 'blog.read_more': 'Devamını oku', 'nav.skip': 'İçeriğe geç' }
+    p.site.uiStrings = { 'posts.read_more': 'Devamını oku', 'nav.skip': 'İçeriğe geç' }
     expect(validateProjectPlan(p).errors).toEqual([])
-    p.site.uiStrings = { 'Read More': 'x', 'blog.read_more': '<b>x</b>', 'nav.skip': '  ' }
+    p.site.uiStrings = { 'Read More': 'x', 'posts.read_more': '<b>x</b>', 'nav.skip': '  ' }
     expect(validateProjectPlan(p).errors).toEqual([
       'site.uiStrings key Read More is not a ui-strings key',
-      'site.uiStrings.blog.read_more is not a plain text of 1 to 200 characters',
+      'site.uiStrings.posts.read_more is not a plain text of 1 to 200 characters',
       'site.uiStrings.nav.skip is not a plain text of 1 to 200 characters',
     ])
     p.site.uiStrings = Object.fromEntries(Array.from({ length: 101 }, (_, i) => [`k.k${i}`, 'x']))

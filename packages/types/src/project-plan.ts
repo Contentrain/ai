@@ -156,7 +156,7 @@ export interface PlanSite {
   lists?: { display: 'cards' | 'list' | 'full', heading: boolean, text?: string, tone?: 'muted', surface?: boolean, byline?: boolean, prefixed?: boolean, columns?: number, image?: { height?: string, aspect?: string }, gap?: string, headingWidth?: string, tieOrder?: 'asc' | 'desc', moreLabel?: string, dateStyle?: 'full' | 'long' | 'medium' | 'short' }
   /**
    * The interface text the source theme itself printed (its "Read more" link, skip link, search placeholder, the
-   * previous and next labels), by the `site/ui-strings` key it answers (`blog.read_more`, `nav.skip`): written over the
+   * previous and next labels), by the `site/ui-strings` key it answers (`posts.read_more`, `nav.skip`): written over the
    * site's bundled table, because the source's wording is what its visitors saw. Plain text, no markup; at most 100.
    */
   uiStrings?: Record<string, string>
