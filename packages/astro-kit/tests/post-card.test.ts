@@ -25,9 +25,9 @@ describe('PostCard: the source\'s read-more words, its date style, and a readabl
     expect(card).not.toContain("dateStyle: 'long'")
   })
 
-  it('caps the excerpt at ~75 characters a line in every layout', async () => {
+  it('caps the excerpt at ~62ch a line in every layout (75ch ran ~95 real characters, over the 90 limit)', async () => {
     const card = await readFile(COPIES[0]!, 'utf8')
-    expect(card).toContain("excerpt: 'max-w-[75ch] text-ink-muted'")
+    expect(card).toContain("excerpt: 'max-w-[62ch] text-ink-muted'")
   })
 
   it('the starter\'s lists pass the site\'s read-more words and date style; absent, the card is as before', async () => {
