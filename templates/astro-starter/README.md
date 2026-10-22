@@ -28,7 +28,7 @@ pnpm lhci        # Lighthouse CI on the built site
 | `src/components/studio/` | Studio forms and comment threads. |
 | `src/styles/global.css` | The one stylesheet. Design tokens are in `@theme`. |
 | `public/_headers` | Response headers (Netlify, Cloudflare Pages): an SVG under `/media/` opened on its own runs no script and loads nothing (CSP `default-src 'none'`, `sandbox`, `nosniff`). |
-| `redirects` model, `src/lib/redirects.ts` | Old address → new address, edited in Studio. Built as a redirect page per old address and as `_redirects` (Netlify, Cloudflare Pages). A rule whose target is not public is left out. |
+| `redirects` model, `src/lib/redirects.ts` | Old address → new address, edited in Studio. Built as a redirect page per old address and as `_redirects` (Netlify, Cloudflare Pages). A rule whose target is not public is left out. An old attachment page's path gets a redirect page too, so it still redirects when its `_redirects` line is cut at the host's rule limit. |
 
 ### Old addresses on your host
 
