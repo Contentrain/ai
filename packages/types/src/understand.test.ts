@@ -137,6 +137,17 @@ describe('validateRegionSpecs', () => {
     ])
   })
 
+  it('takes an item\'s text as one ref or a list of its blocks; a one-ref slot still refuses a list', () => {
+    const spec = cards()
+    spec.slots.items = [{ title: { node: 84 }, text: { node: 85 } }, { title: { node: 94 }, text: [{ node: 95 }, { node: 96 }] }]
+    expect(validateRegionSpecs([spec], bands())).toEqual([])
+    const paths: string[] = []
+    forEachSlot(spec, (ref, kind, path) => paths.push(`${path} ${kind} ${ref.node}`))
+    expect(paths.filter(path => path.includes('.text'))).toEqual(['items.0.text text 85', 'items.1.text.0 text 95', 'items.1.text.1 text 96'])
+    const listed = untyped(cards(), { slots: { items: [{ title: [{ node: 84 }] }] } })
+    expect(validateRegionSpecs([listed], bands()).map(issue => `${issue.code} ${issue.slot}`)).toEqual(['bad_slot items.0.title'])
+  })
+
   it('rejects a ref that carries the model\'s own text', () => {
     const spec = untyped(hero(), { slots: { heading: { node: 60, text: 'Fast repairs' } } })
     expect(codes(validateRegionSpecs([spec], bands()))).toEqual(['bad_slot'])
