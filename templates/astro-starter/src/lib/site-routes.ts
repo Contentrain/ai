@@ -90,7 +90,8 @@ async function buildRoutes(): Promise<Map<string, Route>> {
     const route: PageRoute = { view: 'page', page, trail, isHome: href === home, subpages }
     // The page WordPress uses as the posts page (Settings → Reading) shows the posts, not its own body; one composed from
     // sections keeps them, the list among them (below).
-    if (siteConfig.home.kind === 'page' && href === blog) {
+    // A site with no posts (a landing or corporate site) has no list to show there: the page stays a page.
+    if (siteConfig.home.kind === 'page' && href === blog && posts.length) {
       if (composedViews[page.data.wp_id ?? -1]) postsRoute = takesList(route)
       continue
     }
@@ -107,7 +108,8 @@ async function buildRoutes(): Promise<Map<string, Route>> {
   // Page 1 of the list in a composed page that prints it: the front page when the list is at `/`, else the posts page when
   // it has sections.
   const carrier = blog === home ? takesList(frontRoute) : postsRoute
-  paginate(blog, posts, blog === home ? {} : { title: postsPage?.data.title ?? t('blog.title'), ...(blogDescription ? { description: blogDescription } : {}), ...(blogSeo ? { seo: blogSeo } : {}) }, posts.filter(post => post.data.sticky), carrier ? list => ({ ...carrier, list }) : undefined)
+  // No posts and the list away from the front page: no empty list at the posts address (a page may stand there, above).
+  if (posts.length || blog === home || carrier) paginate(blog, posts, blog === home ? {} : { title: postsPage?.data.title ?? t('blog.title'), ...(blogDescription ? { description: blogDescription } : {}), ...(blogSeo ? { seo: blogSeo } : {}) }, posts.filter(post => post.data.sticky), carrier ? list => ({ ...carrier, list }) : undefined)
 
   for (const category of categories.values()) {
     paginate(termHref('category', category, categories), posts.filter(post => post.data.categories.some(ref => ref.id === category.id)), {
